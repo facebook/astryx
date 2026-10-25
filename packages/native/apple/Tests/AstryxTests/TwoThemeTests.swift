@@ -63,3 +63,14 @@ private let secondTheme: Theme = {
   #expect(second.contains { $0[0] > 200 && $0[1] < 60 && $0[2] < 60 && $0[3] > 200 })
   #expect(!standard.contains { $0[0] > 200 && $0[1] < 60 && $0[2] < 60 && $0[3] > 200 })
 }
+
+@MainActor
+@Test func textInputFollowsTheThemesTextColorAndTypeSize() {
+  let field = Astryx.TextInput(label: "Name", value: "Ada", isLabelHidden: true).frame(width: 240)
+  let standard = Pixels(field, theme: .default)
+  let second = Pixels(field, theme: secondTheme)
+  #expect(second.contains { close($0, rgba("#FF0000FF"), within: 24) })
+  #expect(!standard.contains { close($0, rgba("#FF0000FF"), within: 24) })
+  // A larger body size makes the field taller.
+  #expect(second.height > standard.height)
+}

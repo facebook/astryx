@@ -114,7 +114,9 @@ public struct TextInput: View {
         if props.isLabelHidden != true {
           labelRow
         }
-        if let description = props.description {
+        // A hidden label hides the description with it, as core's field does;
+        // VoiceOver still reads both on the field.
+        if props.isLabelHidden != true, let description = props.description {
           Text(description, type: .supporting, color: .secondary)
             .accessibilityHidden(true)
         }
@@ -125,9 +127,19 @@ public struct TextInput: View {
       }
       .onAppear {
         if props.hasAutoFocus == true { isFocused = true }
+        // A field that appears busy says so, as core announces a busy start.
+        if props.isLoading == true { AccessibilityNotification.Announcement(AstryxStrings.spinnerLoading).post() }
       }
       .onChange(of: props.isLoading == true) { _, loading in
         if loading { AccessibilityNotification.Announcement(AstryxStrings.spinnerLoading).post() }
+      }
+      .onChange(of: statusAnnouncement) { _, announcement in
+        // A status message that appears or changes is announced: an error at
+        // once, others when VoiceOver is free, as core's field status does.
+        guard let announcement else { return }
+        var words = AttributedString(announcement.message)
+        words.accessibilitySpeechAnnouncementPriority = announcement.isError ? .high : .default
+        AccessibilityNotification.Announcement(words).post()
       }
     }
   }
@@ -135,10 +147,22 @@ public struct TextInput: View {
   // MARK: Label
 
   /// The note after the label: "Optional" or "Required".
+  /// `isOptional` wins when both are set, as in core.
   var labelNote: String? {
-    if props.isRequired == true { return AstryxStrings.fieldRequired }
     if props.isOptional == true { return AstryxStrings.fieldOptional }
+    if props.isRequired == true { return AstryxStrings.fieldRequired }
     return nil
+  }
+
+  /// The status message to announce when it appears or changes.
+  struct StatusAnnouncement: Equatable {
+    var message: String
+    var isError: Bool
+  }
+
+  var statusAnnouncement: StatusAnnouncement? {
+    guard let status = props.status, let message = status.message else { return nil }
+    return StatusAnnouncement(message: message, isError: status.type == .error)
   }
 
   private var labelRow: some View {
@@ -167,10 +191,17 @@ public struct TextInput: View {
 
   /// What VoiceOver reads after the name: the description, the status message,
   /// and the disabled reason, in core's `aria-describedby` order.
+  /// An error leads, since SwiftUI has no invalid state to expose: its
+  /// message, or the error status name when it has none. A read-only field
+  /// says so, as core does where a control cannot expose read-only.
   var accessibilityDescription: String {
     var parts: [String] = []
+    if let status = props.status, status.type == .error {
+      parts.append(status.message ?? AstryxStrings.statusButton(.error))
+    }
     if let description = props.description { parts.append(description) }
-    if let message = props.status?.message { parts.append(message) }
+    if let status = props.status, status.type != .error, let message = status.message { parts.append(message) }
+    if isReadOnly { parts.append(AstryxStrings.inputReadOnly) }
     if isDisabled, let reason = props.disabledMessage { parts.append(reason) }
     return parts.joined(separator: ", ")
   }
@@ -206,9 +237,16 @@ public struct TextInput: View {
           icon("close")
         }
         .buttonStyle(.plain)
+        .astryxMinimumHitArea(iconSide)
         .foregroundStyle(astryx.tokens.color.textSecondary)
         .help(AstryxStrings.clearTooltip)
         .accessibilityLabel(SwiftUI.Text(AstryxStrings.clearLabel(props.label)))
+      }
+      if isDisabled, let reason = props.disabledMessage {
+        // A disabled field cannot take focus in SwiftUI, so its reason sits on
+        // a button keyboard and VoiceOver users can reach.
+        tipButton(reason, icon: "info", label: reason, opens: .disabled)
+          .foregroundStyle(astryx.tokens.color.textSecondary)
       }
       if props.isLoading == true {
         ProgressView().controlSize(.small).accessibilityHidden(true)
@@ -221,15 +259,7 @@ public struct TextInput: View {
       shape.strokeBorder(borderColor, lineWidth: astryx.tokens.size.borderWidth)
     )
     .opacity(isDisabled ? 0.5 : 1)
-    .overlay {
-      // A disabled field with a reason opens it on a tap, as hover would.
-      if isDisabled, props.disabledMessage != nil {
-        Color.clear.contentShape(Rectangle())
-          .onTapGesture { shownTip = .disabled }
-      }
-    }
     .help(isDisabled ? props.disabledMessage ?? "" : "")
-    .popover(item: tipBinding(.disabled)) { _ in tipText(props.disabledMessage ?? "") }
   }
 
   var showsClear: Bool {
@@ -259,11 +289,7 @@ public struct TextInput: View {
       SwiftUI.Text($0).foregroundStyle(astryx.tokens.color.textSecondary)
     }
     if isReadOnly {
-      // Read-only: the value at full strength, selectable, never editable.
-      SwiftUI.Text(props.value)
-        .textSelection(.enabled)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityValue(SwiftUI.Text(props.value))
+      readOnlyField
     } else {
       switch props.type ?? .text {
       case .password:
@@ -280,6 +306,30 @@ public struct TextInput: View {
       case .text:
         TextField("", text: text, prompt: prompt)
       }
+    }
+  }
+
+  /// What a read-only field shows: the value, masked for a password.
+  var readOnlyText: String {
+    props.type == .password ? String(repeating: "\u{2022}", count: props.value.count) : props.value
+  }
+
+  /// Read-only: the value at full strength, never editable. It keeps a focus
+  /// stop and Return still runs `onEnter`, as core's read-only input does; a
+  /// password stays masked and cannot be selected or copied.
+  @ViewBuilder private var readOnlyField: some View {
+    let text = SwiftUI.Text(readOnlyText)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .focusable()
+      .onKeyPress(.return) {
+        props.onEnter?()
+        return .handled
+      }
+      .accessibilityValue(SwiftUI.Text(readOnlyText))
+    if props.type == .password {
+      text.textSelection(.disabled)
+    } else {
+      text.textSelection(.enabled)
     }
   }
 
@@ -370,6 +420,7 @@ public struct TextInput: View {
       icon(name)
     }
     .buttonStyle(.plain)
+    .astryxMinimumHitArea(iconSide)
     .help(text)
     .accessibilityLabel(SwiftUI.Text(label))
     .accessibilityHint(SwiftUI.Text(text))
@@ -392,8 +443,10 @@ public struct TextInput: View {
 
   /// A shared icon at the supporting text size: the theme's SF Symbol or app
   /// asset, else the default symbol; a name nothing maps draws nothing.
+  var iconSide: CGFloat { astryx.tokens.font.supportingSize * astryx.textScale }
+
   @ViewBuilder private func icon(_ name: String) -> some View {
-    let side = astryx.tokens.font.supportingSize * astryx.textScale
+    let side = iconSide
     if let image = astryx.icon(name) {
       image.sized(side).font(.system(size: side))
     }

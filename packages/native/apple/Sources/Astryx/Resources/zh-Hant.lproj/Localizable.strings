@@ -12,6 +12,9 @@
 /* Visible indicator shown next to a form field's label when the field must be filled in (isRequired). Mutually exclusive with the optional indicator. Very short — appears inline after the label text. */
 "@astryx.field.required" = "必填";
 
+/* Screen-reader-only description appended to a read-only form control when the platform does not expose aria-readonly for that control's host element. Short state label, not an instruction. */
+"@astryx.input.readOnly" = "唯讀";
+
 /* Accessible name for the focusable status icon button inside an input when statusVariant is 'tooltip' and the status type is error. Activating or focusing the button reveals the error message in a tooltip. Keep it short — it labels an icon-only button. */
 "@astryx.input.statusButton.error" = "錯誤詳細資料";
 

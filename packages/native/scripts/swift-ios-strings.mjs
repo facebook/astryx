@@ -31,6 +31,7 @@ export const SWIFT_IOS_STRING_KEYS = [
   '@astryx.button.loading',
   '@astryx.field.optional',
   '@astryx.field.required',
+  '@astryx.input.readOnly',
   '@astryx.input.statusButton.error',
   '@astryx.input.statusButton.success',
   '@astryx.input.statusButton.warning',

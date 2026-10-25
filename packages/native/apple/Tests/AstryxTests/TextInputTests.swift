@@ -110,3 +110,59 @@ import Testing
   #expect(alpha < 255)
   #expect(pixels.contains { close($0, premultiplied, within: 3) })
 }
+
+// Read-only, status, and label rules from core's field.
+
+@MainActor
+@Test func aReadOnlyPasswordStaysMasked() {
+  let field = Astryx.TextInput(label: "Password", value: "hunter2", type: .password, isReadOnly: true)
+  #expect(field.readOnlyText == String(repeating: "\u{2022}", count: 7))
+  #expect(!field.readOnlyText.contains("hunter2"))
+  let plain = Astryx.TextInput(label: "Email", value: "a@b.co", isReadOnly: true)
+  #expect(plain.readOnlyText == "a@b.co")
+  #expect(plain.accessibilityDescription.contains(AstryxStrings.inputReadOnly))
+}
+
+@MainActor
+@Test func optionalWinsOverRequired() {
+  let field = Astryx.TextInput(label: "Name", value: "", isOptional: true, isRequired: true)
+  #expect(field.labelNote == AstryxStrings.fieldOptional)
+}
+
+@MainActor
+@Test func anErrorLeadsWhatVoiceOverReads() {
+  let withMessage = Astryx.TextInput(
+    label: "Email", value: "", description: "Work address",
+    status: TextInputStatus(type: .error, message: "Enter a valid email"))
+  #expect(withMessage.accessibilityDescription.hasPrefix("Enter a valid email"))
+  let bare = Astryx.TextInput(label: "Email", value: "", status: TextInputStatus(type: .error))
+  #expect(bare.accessibilityDescription.hasPrefix(AstryxStrings.statusButton(.error)))
+  let warning = Astryx.TextInput(
+    label: "Email", value: "", description: "Work address",
+    status: TextInputStatus(type: .warning, message: "Check the domain"))
+  #expect(warning.accessibilityDescription == "Work address, Check the domain")
+}
+
+@MainActor
+@Test func aStatusMessageIsAnnouncedWithItsUrgency() {
+  let error = Astryx.TextInput(label: "Email", value: "", status: TextInputStatus(type: .error, message: "Required"))
+  #expect(error.statusAnnouncement == .init(message: "Required", isError: true))
+  let success = Astryx.TextInput(label: "Email", value: "", status: TextInputStatus(type: .success, message: "Looks good"))
+  #expect(success.statusAnnouncement == .init(message: "Looks good", isError: false))
+  #expect(Astryx.TextInput(label: "Email", value: "").statusAnnouncement == nil)
+}
+
+@MainActor
+@Test func aHiddenLabelHidesTheDescription() {
+  let hidden = Astryx.TextInput(label: "Search", value: "", isLabelHidden: true, description: "By name or email")
+  let bare = Astryx.TextInput(label: "Search", value: "", isLabelHidden: true)
+  #expect(Pixels(hidden.frame(width: 240)).height == Pixels(bare.frame(width: 240)).height)
+}
+
+@MainActor
+@Test func smallControlsAnswerTapsAcross44PointsWithoutGrowing() {
+  #expect(astryxHitInset(20) == 12)
+  #expect(astryxHitInset(50) == 0)
+  let dot = Color.black.frame(width: 20, height: 20)
+  #expect(Pixels(dot.astryxMinimumHitArea(20)).width == Pixels(dot).width)
+}
