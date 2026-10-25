@@ -30,7 +30,7 @@
  */
 
 import {useRef, useState, useSyncExternalStore, type RefObject} from 'react';
-import {createPager, type Pager} from '../hooks/usePager';
+import {createPager, nearestLoopCopy, type Pager} from '../hooks/usePager';
 import {isRtlElement} from '../hooks/isRtlElement';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 
@@ -235,20 +235,18 @@ export function useCarouselPaging({
   }, [pager, isEnabled, scrollElRef, trackRef]);
 
   function goTo(index: number): void {
-    const target = latestRef.current.loops
-      ? index
-      : Math.max(0, Math.min(latestRef.current.count - 1, index));
-    if (latestRef.current.loops) {
-      // Slides between here and there sit on the way before the move.
-      const g = geometry();
-      if (g != null) {
-        const from = pager.virtualIndex;
-        const n = latestRef.current.count;
-        const step = ((((target - from) % n) + n + n / 2) % n) - n / 2;
-        place(undefined, from + Math.round(step) / 2);
-      }
+    const {loops: isLooping, count: n} = latestRef.current;
+    if (isLooping) {
+      // The copy of the page nearest the one on screen, by the pager's own
+      // rule, so the slides wait where it goes; slides between here and there
+      // sit on the way before the move.
+      const from = pager.virtualIndex;
+      const to = nearestLoopCopy(index, from, n);
+      place(undefined, (from + to) / 2);
+      pager.goTo(to);
+      return;
     }
-    pager.goTo(target);
+    pager.goTo(Math.max(0, Math.min(n - 1, index)));
   }
 
   function goBy(direction: -1 | 1): void {

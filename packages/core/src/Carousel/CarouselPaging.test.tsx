@@ -312,6 +312,90 @@ describe('Carousel hasPaging', () => {
       expect(getTrack().style.translate).toBe('');
     });
 
+    it('with hasLoop and two slides, Next goes forward with its slide waiting where the track goes', () => {
+      // Moves stay in flight (this stub never starts them), so the slides keep
+      // the places they took for the move.
+      const moves: Keyframe[][] = [];
+      HTMLElement.prototype.animate = function (keyframes) {
+        moves.push(keyframes as Keyframe[]);
+        const pending = new Promise(() => {});
+        return {
+          startTime: null,
+          playState: 'running',
+          ready: pending,
+          cancel() {},
+        } as unknown as Animation;
+      };
+      try {
+        const handleRef = createRef<CarouselHandle>();
+        render(
+          <Carousel aria-label="Pages" hasPaging hasLoop handleRef={handleRef}>
+            <div>Page one</div>
+            <div>Page two</div>
+          </Carousel>,
+        );
+        const slides = Array.from(getTrack().children) as HTMLElement[];
+        /** Where the latest move takes the track, in pages. */
+        const destination = () => {
+          const last = moves[moves.length - 1];
+          const frame = last[last.length - 1] as {translate?: string};
+          return -Number.parseFloat(frame.translate ?? '0') / WIDTH;
+        };
+        /** Where slide `i` sits, in pages. */
+        const placeOf = (i: number) => {
+          const value = slides[i].style.translate;
+          return i + (value === '' ? 0 : Number.parseFloat(value) / WIDTH);
+        };
+        act(() => handleRef.current?.scrollNext());
+        // Forward, onto the second slide.
+        expect(destination()).toBe(1);
+        expect(placeOf(1)).toBe(1);
+        expect(placeOf(0)).toBe(0);
+      } finally {
+        Reflect.deleteProperty(HTMLElement.prototype, 'animate');
+      }
+    });
+
+    it('with hasLoop and two slides, a page by index has its slide waiting where the track goes', () => {
+      const moves: Keyframe[][] = [];
+      HTMLElement.prototype.animate = function (keyframes) {
+        moves.push(keyframes as Keyframe[]);
+        const pending = new Promise(() => {});
+        return {
+          startTime: null,
+          playState: 'running',
+          ready: pending,
+          cancel() {},
+        } as unknown as Animation;
+      };
+      try {
+        const handleRef = createRef<CarouselHandle>();
+        render(
+          <Carousel aria-label="Pages" hasPaging hasLoop handleRef={handleRef}>
+            <div>Page one</div>
+            <div>Page two</div>
+          </Carousel>,
+        );
+        const slides = Array.from(getTrack().children) as HTMLElement[];
+        const last = () => moves[moves.length - 1];
+        const destination = () => {
+          const frames = last();
+          const frame = frames[frames.length - 1] as {translate?: string};
+          return -Number.parseFloat(frame.translate ?? '0') / WIDTH;
+        };
+        const placeOf = (i: number) => {
+          const value = slides[i].style.translate;
+          return i + (value === '' ? 0 : Number.parseFloat(value) / WIDTH);
+        };
+        act(() => handleRef.current?.scrollTo(1));
+        // The two copies of page 1 are equally near; the slide waits at
+        // whichever the track goes to.
+        expect(placeOf(1)).toBe(destination());
+      } finally {
+        Reflect.deleteProperty(HTMLElement.prototype, 'animate');
+      }
+    });
+
     it('with hasLoop, keeps going forward past the last page', () => {
       const handle = renderPages({hasLoop: true});
       const slides = Array.from(getTrack().children) as HTMLElement[];
