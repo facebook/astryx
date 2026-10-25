@@ -72,7 +72,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 **Owns**
 
 - The link element, its selected, disabled, and icon-only states, and its
-  bar and drawer renderings (FR1–FR6).
+  bar and drawer renderings (FR1–FR7).
 
 **Does not own / non-goals**
 

@@ -30,15 +30,15 @@ system_specs: []
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                                 |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Public contract         | `TopNav` with `heading`, `startContent` (alias `children`), `centerContent`, `endContent`, and `label`; target `top-nav` with a `mode` state.                                                                            |
-| Behavior                | A labeled navigation landmark with start, optional center, and end regions. Inside AppShell's mobile layout it becomes a compact bar (heading, end content, toggle) and its start and center content move into a drawer. |
-| End-user impact         | Screen-reader users get a named navigation landmark; phone-width users keep the product heading, end controls, and a drawer toggle in view while the navigation items move into the drawer.                              |
-| Builder impact          | None. Callers fill slots; `children` is accepted so nav items are not dropped.                                                                                                                                           |
-| Compatibility/readiness | Records shipped behavior; no prop, default, target, or export changes. Two implementation gaps (see Current-state impact).                                                                                               |
-| Review checks           | Reject dropping `children` when `startContent` is absent, dropping the three-column layout when `centerContent` is present, an unlabeled landmark, or a mobile bar that hides the toggle while drawer content exists.    |
-| Governing rules         | `component:AppShell` FR9–FR10 select the render mode; MobileNav owns the drawer dialog; `architecture:component-theming-surface`.                                                                                        |
+| Area                    | Contract                                                                                                                                                                                                                                                          |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | `TopNav` with `heading`, `startContent` (alias `children`), `centerContent`, `endContent`, and `label`; target `top-nav` with a `mode` state.                                                                                                                     |
+| Behavior                | A labeled navigation landmark with start, optional center, and end regions. Inside AppShell's mobile layout it becomes a compact bar (heading, end content, and, while auto toggles are on, a drawer toggle) and its start and center content move into a drawer. |
+| End-user impact         | Screen-reader users get a named navigation landmark; phone-width users keep the product heading, end controls, and, while auto toggles are on, a drawer toggle in view while the navigation items move into the drawer.                                           |
+| Builder impact          | None. Callers fill slots; `children` is accepted so nav items are not dropped.                                                                                                                                                                                    |
+| Compatibility/readiness | Records shipped behavior; no prop, default, target, or export changes. Two implementation gaps (see Current-state impact).                                                                                                                                        |
+| Review checks           | Reject dropping `children` when `startContent` is absent, dropping the three-column layout when `centerContent` is present, an unlabeled landmark, or a mobile bar that hides the toggle while drawer content exists and auto toggles are on (FR5).               |
+| Governing rules         | `component:AppShell` FR9–FR10 select the render mode; MobileNav owns the drawer dialog; `architecture:component-theming-surface`.                                                                                                                                 |
 
 This table is a review projection; the body below is authoritative.
 
@@ -76,6 +76,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 - The navigation landmark and its default name (FR1, AR1).
 - Slot resolution and the flex and three-column layouts (FR2–FR4).
 - The mobile-bar and drawer renderings of the bar itself (FR5, FR6).
+- The `<nav>`'s positioning and styling inputs (FR8, FR9).
 - The slot each descendant sits in, which TopNav menus read for popover
   alignment (FR7).
 
@@ -124,7 +125,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | --------------------------------- | ------------------------------------------------------------------------ | ------------------- |
 | Heading and items, no center      | Flex row; end content at the inline end.                                 | Gaps and padding.   |
 | Center content present            | Three-column grid; center centered while each side fits its share (FR4). | Column content.     |
-| Mobile bar with a long heading    | Toggle and end content stay inside the bar.                              | Heading truncation. |
+| Mobile bar with a long heading    | With auto toggles on, toggle and end content stay inside the bar.        | Heading truncation. |
 | Mobile bar with no drawer content | No toggle.                                                               | —                   |
 | Drawer with items and side nav    | Items, divider, side nav content.                                        | Item modes.         |
 
@@ -140,8 +141,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 - **AR1 — Named landmark.** Every rendered bar is a navigation landmark with an
   accessible name (FR1).
-- **AR2 — Toggle reachable.** In `mobile-bar` mode with drawer content, the
-  toggle stays fully on screen, and inside the opened drawer the close button
+- **AR2 — Toggle reachable.** In `mobile-bar` mode with drawer content and auto
+  toggles on, the toggle stays fully on screen, and inside the opened drawer the close button
   stays fully in the viewport, even with a long heading.
 
 ## Design relationships

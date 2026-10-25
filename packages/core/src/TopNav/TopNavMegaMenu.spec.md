@@ -83,7 +83,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 **Owns**
 
 - The trigger, panel, open/close and dismissal behavior, panel layout, and
-  drawer group (FR1–FR9).
+  drawer group (FR1–FR11).
 
 **Does not own / non-goals**
 
@@ -174,7 +174,7 @@ map is recorded.
 | FR8               | `TopNavMegaMenu.test.tsx` pass-through and owned-handler suites     | Bar and drawer                              | A replaced handler fails.                            | `audit:TopNavMegaMenu/behavior`      |
 | FR9–FR11, AR3     | `TopNavMegaMenu.test.tsx` mobile-bar, drawer, and focus-ring suites | Collapsed and expanded                      | Reachable collapsed content or a missing ring fails. | `audit:TopNavMegaMenu/behavior`      |
 
-Read from source, with no focused test yet: anchoring below the enclosing `<nav>` and slot alignment (FR2); FR6; FR7; and the bar trigger's focus outline (FR11).
+Read from source, with no focused test yet: the caller `preventDefault()` cancellation (FR8); anchoring below the enclosing `<nav>` and slot alignment (FR2); FR6; FR7; and the bar trigger's focus outline (FR11).
 
 ## Decision log
 

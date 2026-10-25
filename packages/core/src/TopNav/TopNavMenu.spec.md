@@ -80,7 +80,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 **Owns**
 
 - The trigger button, the menu popover and its items, keyboard handling, and the
-  drawer group (FR1–FR9).
+  drawer group (FR1–FR10).
 
 **Does not own / non-goals**
 
@@ -174,7 +174,7 @@ recorded.
 | FR6            | `TopNavMenu.test.tsx` pass-through and owned-handler tests | Bar and drawer triggers                | A replaced built-in handler or lost prop fails.    | `audit:TopNavMenu/behavior`      |
 | FR7, FR10, AR3 | `TopNavMenu.test.tsx` drawer tests                         | Collapsed and expanded                 | Reachable collapsed items or a missing ring fails. | `audit:TopNavMenu/behavior`      |
 
-Read from source, with no focused test yet: hover opening and closing with `delay` and `hideDelay` (FR2); slot alignment (FR3); FR8; FR9; and the bar trigger and item parts of FR10.
+Read from source, with no focused test yet: the caller `preventDefault()` cancellation (FR6); hover opening and closing with `delay` and `hideDelay` (FR2); slot alignment (FR3); FR8; FR9; and the bar trigger and item parts of FR10.
 
 ## Decision log
 

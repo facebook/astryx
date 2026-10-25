@@ -64,7 +64,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 **Owns**
 
-- The card's content order, image semantics, and link condition (FR1–FR3).
+- The card's content order, image semantics, and link condition (FR1–FR4).
 
 **Does not own / non-goals**
 
