@@ -5,7 +5,7 @@
  * @input GestureRecognizer
  * @output internals(recognizer): the members the arena and the host drive
  * @position Internal to packages/core/src/gestures; never exported from the
- *   experimental subpath
+ *   package
  *
  * A recognizer's arena plumbing (its arena, a pending recognition, touch
  * delivery, approved transitions) is `protected` on the class, so the

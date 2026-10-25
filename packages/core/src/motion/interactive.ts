@@ -15,8 +15,7 @@
  * One driver for every transition a finger scrubs and a release settles: a
  * sheet between detents, a list row's swipe actions, a toast swiped away, an
  * interactive pop, a photo dragged to close. Internal to core: components'
- * touch modules use it; it is not on the experimental motion subpath until
- * spec:AST-017 FR21 decides on module-level experimental subpaths.
+ * touch modules use it, and it is not exported from the package.
  *
  * - The release decision is spec:AST-094's: decided once, at the release,
  *   from where the release projects against the positions the component's
