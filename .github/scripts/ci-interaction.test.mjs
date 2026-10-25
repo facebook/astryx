@@ -10,7 +10,10 @@
  * 4-core runner, and otherwise it passes on Linux without work. The proofs run
  * on the pull request's head: a head cut before they existed (no
  * playwright.interaction.config.ts) passes with a notice, and a pull request
- * that deletes the config still runs them, and fails.
+ * that deletes the config still runs them, and fails. The decision reads the
+ * head too, as pr-a11y does: its helper diffs from the merge base to HEAD, and
+ * GitHub's merge commit would count what main gained since the pull request's
+ * base (the config itself, once the proofs landed) as the pull request's own.
  */
 
 import {spawnSync} from 'node:child_process';
@@ -95,6 +98,111 @@ function runStep(
   } finally {
     fs.rmSync(dir, {recursive: true, force: true});
   }
+}
+
+// Real git for the end-to-end routing test, with no user or system config.
+const GIT_ENV = {
+  ...process.env,
+  GIT_CONFIG_GLOBAL: os.devNull,
+  GIT_CONFIG_NOSYSTEM: '1',
+  GIT_AUTHOR_NAME: 'ci',
+  GIT_AUTHOR_EMAIL: 'ci@example.com',
+  GIT_COMMITTER_NAME: 'ci',
+  GIT_COMMITTER_EMAIL: 'ci@example.com',
+};
+function git(cwd, ...args) {
+  const result = spawnSync('git', args, {cwd, encoding: 'utf8', env: GIT_ENV});
+  if (result.status !== 0) {
+    throw new Error(`git ${args.join(' ')}: ${result.stderr}`);
+  }
+  return result.stdout.trim();
+}
+
+// The history that broke pull requests cut before the proofs: the base they
+// branched from, then main gaining the proofs' config. Heads branch from it,
+// each with the merge commit GitHub makes of it, all in a bare origin that
+// serves commits by hash, as GitHub does. The base carries the repository's
+// own helper.
+function proofsLandedHistory(dir) {
+  const work = path.join(dir, 'work');
+  fs.mkdirSync(work);
+  git(work, 'init', '-q', '-b', 'main');
+  const write = (file, text) => {
+    fs.mkdirSync(path.dirname(path.join(work, file)), {recursive: true});
+    fs.writeFileSync(path.join(work, file), text);
+  };
+  const commit = message => {
+    git(work, 'add', '-A');
+    git(work, 'commit', '-q', '-m', message);
+    return git(work, 'rev-parse', 'HEAD');
+  };
+  const helper = '.github/scripts/pr-scope-touches.sh';
+  write(helper, fs.readFileSync(path.join(root, helper), 'utf8'));
+  write('packages/core/src/Popover/Popover.tsx', "export const v = 'base';\n");
+  const base = commit('base');
+  write('playwright.interaction.config.ts', 'export default {};\n');
+  const main = commit('the interaction proofs land');
+  const heads = {};
+  for (const [name, from, change] of [
+    ['predating', base, () => {}],
+    ['carrying', main, () => {}],
+    [
+      'deleting',
+      main,
+      () => fs.rmSync(path.join(work, 'playwright.interaction.config.ts')),
+    ],
+  ]) {
+    git(work, 'checkout', '-q', '--detach', from);
+    change();
+    write(
+      'packages/core/src/Popover/Popover.tsx',
+      `export const v = '${name}';\n`,
+    );
+    const head = commit(name);
+    git(work, 'checkout', '-q', '--detach', main);
+    git(work, 'merge', '-q', '--no-ff', '-m', `Merge ${name}`, head);
+    heads[name] = {head, merge: git(work, 'rev-parse', 'HEAD')};
+    git(work, 'branch', `head-${name}`, head);
+    git(work, 'branch', `merge-${name}`, heads[name].merge);
+  }
+  const origin = path.join(dir, 'origin.git');
+  git(dir, 'clone', '-q', '--bare', work, origin);
+  git(origin, 'config', 'uploadpack.allowAnySHA1InWant', 'true');
+  return {origin, base, main, heads};
+}
+
+// The decide step as the job runs it: a fresh depth-1 clone of CHECKOUT, then
+// the step's script with the base and head the pull request event reports.
+function decideForReal(dir, origin, {checkout, baseSha, headSha}) {
+  const clone = fs.mkdtempSync(path.join(dir, 'checkout-'));
+  git(clone, 'init', '-q');
+  git(clone, 'remote', 'add', 'origin', `file://${origin}`);
+  git(clone, 'fetch', '-q', '--no-tags', '--depth=1', 'origin', checkout);
+  git(clone, 'checkout', '-q', '--detach', 'FETCH_HEAD');
+  const output = `${clone}.output`;
+  fs.writeFileSync(output, '');
+  const result = spawnSync(
+    'bash',
+    ['--noprofile', '--norc', '-eo', 'pipefail', '-c', decide().run],
+    {
+      cwd: clone,
+      encoding: 'utf8',
+      env: {
+        ...GIT_ENV,
+        GITHUB_OUTPUT: output,
+        EVENT_NAME: 'pull_request',
+        DOCSITE_ONLY: 'false',
+        TOOLING_ONLY: 'false',
+        BASE_SHA: baseSha,
+        HEAD_SHA: headSha,
+      },
+    },
+  );
+  return {
+    status: result.status,
+    stdout: result.stdout,
+    output: fs.readFileSync(output, 'utf8'),
+  };
 }
 
 describe('interaction proof routing', () => {
@@ -222,6 +330,57 @@ describe('interaction proof routing', () => {
       '::notice title=Interaction proofs predate this branch::',
     );
   });
+
+  it('decides from the head, so a head cut before the proofs passes after main gains them', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-interaction-git-'));
+    try {
+      const {origin, base, main, heads} = proofsLandedHistory(dir);
+      // Without a ref, a pull_request checkout is GitHub's merge commit.
+      const checkout = scope.steps.find(candidate =>
+        String(candidate.uses).startsWith('actions/checkout'),
+      );
+      const checksOutHead = /github\.event\.pull_request\.head\.sha/.test(
+        checkout.with?.ref ?? '',
+      );
+      for (const [label, name, baseSha, expected] of [
+        // A pull request event can report the base the head was cut from.
+        [
+          'a head cut before the proofs, the base it was cut from',
+          'predating',
+          base,
+          'false',
+        ],
+        [
+          'a head cut before the proofs, the current base',
+          'predating',
+          main,
+          'false',
+        ],
+        ['a head that carries the proofs', 'carrying', main, 'true'],
+        ['a head that deletes their config', 'deleting', main, 'true'],
+      ]) {
+        const {head, merge} = heads[name];
+        const decided = decideForReal(dir, origin, {
+          checkout: checksOutHead ? head : merge,
+          baseSha,
+          headSha: head,
+        });
+        expect(decided.status, label).toBe(0);
+        expect(decided.output, label).toBe(`applies=${expected}\n`);
+        if (name === 'predating') {
+          expect(decided.stdout, label).toContain(
+            '::notice title=Interaction proofs predate this branch::',
+          );
+        }
+      }
+      // As pr-a11y does: the helper diffs from the merge base to HEAD.
+      expect(checkout.with?.ref).toBe(
+        '${{ github.event.pull_request.head.sha }}',
+      );
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  }, 60_000);
 
   it('fails each guard step when it runs', () => {
     for (const [job, name] of [

@@ -1732,8 +1732,14 @@ jobs:
           echo "Change scope could not be classified; refusing to skip required work."
           exit 1
 
+      # The pull request head, as pr-a11y checks out: the helper diffs from the
+      # merge base to HEAD, and GitHub's default merge commit would count what
+      # main gained since the PR's base (the proofs' own config, once they
+      # landed) as the PR's change.
       - uses: actions/checkout@v7
         if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       # The helper comes from the base, since an older head lacks it. Exit 1
       # means out of scope; 0 in scope; 2 unknown, so the proofs run.
