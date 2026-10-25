@@ -3,9 +3,9 @@
 /**
  * @file switchFill.ts
  * @input Switch's track element and the props its other state renders with
- * @output Exports TrackState, trackStateOf, readInState and readFillOf: an
- *   element read in its other state (the track's fill as the theme paints
- *   it, the thumb's place), in place
+ * @output Exports TrackState, sameTrackState, trackStateOf, readInState and
+ *   readFillOf: an element read in its other state (the track's fill as the
+ *   theme paints it, the thumb's place), in place
  * @position Shared by Switch.tsx and useSwitchTouch.ts for the colour fade
  *   under a finger
  *
@@ -27,6 +27,24 @@ export interface TrackState {
 }
 
 /** The track state of rendered props (`className` and `data-*` props). */
+/** Whether two track states render alike: the same class and attributes. */
+export function sameTrackState(
+  a: TrackState | null,
+  b: TrackState | null,
+): boolean {
+  if (a === b) {
+    return true;
+  }
+  if (a == null || b == null || a.className !== b.className) {
+    return false;
+  }
+  const names = Object.keys(a.attributes);
+  return (
+    names.length === Object.keys(b.attributes).length &&
+    names.every(name => a.attributes[name] === b.attributes[name])
+  );
+}
+
 export function trackStateOf(props: object): TrackState {
   const attributes: Record<string, string> = {};
   let className = '';

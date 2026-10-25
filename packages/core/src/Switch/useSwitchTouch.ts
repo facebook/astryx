@@ -56,7 +56,13 @@
  *   (switchFill.ts) and faded on the compositor: clear while the visuals
  *   show the value, opaque while they show the other side. When the value
  *   changes, the layer swaps to the other fill and to the complement of its
- *   opacity, so nothing changes on screen. The layer is composited from the
+ *   opacity, so nothing changes on screen. A change the fade is already
+ *   heading to (a release, a drag that flipped) swaps nothing then: the
+ *   track holds its previous fill inline until the fade lands, and the swap
+ *   happens under the opaque layer. WebKit plays a curve built in a frame a
+ *   long task holds from its start once the task ends, so a swap in the
+ *   change's frame stepped the track back toward the fill it left (iOS
+ *   26.2, a 700 ms task in that frame). The layer is composited from the
  *   start (`will-change` under a coarse pointer, Switch.tsx): iOS Safari
  *   otherwise ran its fade on the main thread, and a busy main thread froze
  *   the track colour while the thumb moved.
@@ -99,7 +105,12 @@ import {
   type SwitchFlip,
   type SwitchTouchGeometry,
 } from './switchTouch';
-import {readFillOf, trackStateOf, type TrackState} from './switchFill';
+import {
+  readFillOf,
+  sameTrackState,
+  trackStateOf,
+  type TrackState,
+} from './switchFill';
 
 export interface SwitchTouchParts {
   /** Receives the touches: the input and the track. */
@@ -129,6 +140,8 @@ export interface SwitchTouchOptions {
 
 /** The fade layer's colour, set on the track for its ::after (Switch.tsx). */
 const FADE_FILL = '--_switch-fade-fill';
+/** The track's own fill while a change is held (inline, over its CSS). */
+const BASE_FILL = 'background-color';
 const TRAVEL = switchControl.travel;
 const TRACKING = switchControl.tracking;
 /**
@@ -226,6 +239,14 @@ export class SwitchTouchController {
   /** When the thumb lifted (document timeline, ms); null while at rest. */
   private liftTime: number | null = null;
   private otherTrack: TrackState | null = null;
+  /**
+   * A change landed mid-fade, the fade already heading to it: the track's own
+   * fill stays the previous value's (inline) until the fade lands, so the
+   * change's frame builds no curve and repaints nothing. `baseHold` counts
+   * holds, so a settled one ignores its late landing.
+   */
+  private baseHeld = false;
+  private baseHold = 0;
   private detachers: (() => void)[] = [];
   /** When the press began (document timeline, ms); null with no press. */
   private pressTime: number | null = null;
@@ -389,6 +410,9 @@ export class SwitchTouchController {
       }
     }
     this.elements?.track.style.removeProperty(FADE_FILL);
+    this.elements?.track.style.removeProperty(BASE_FILL);
+    this.baseHeld = false;
+    this.baseHold++;
     this.thumb = this.fade = this.shadow = null;
     this.liftTime = null;
     this.elements = null;
@@ -407,7 +431,13 @@ export class SwitchTouchController {
 
   /** The track's other state, re-rendered with each value. */
   setOtherTrack(otherTrack: TrackState): void {
+    const previous = this.otherTrack;
     this.otherTrack = otherTrack;
+    // A held fill was read from the previous other state; a re-render that
+    // keeps it keeps the hold.
+    if (this.baseHeld && !sameTrackState(previous, otherTrack)) {
+      this.landBase(now());
+    }
   }
 
   setGeometry(geometry: SwitchTouchGeometry): void {
@@ -481,11 +511,15 @@ export class SwitchTouchController {
     // screen, and keeps heading where the visuals head.
     const fade = this.fade;
     if (fade != null) {
-      const opacity = fade.get('opacity', time);
-      const fadeVelocity = fade.getVelocity('opacity', time);
-      this.paintFade();
-      fade.set({opacity: 1 - opacity});
-      this.animateFade(time, -fadeVelocity);
+      this.landBase(time);
+      // Already heading here (a release, a drag that flipped): the running
+      // fade carries the change, over the previous fill held as the track's
+      // own until it lands. WebKit plays a curve built in a frame that a long
+      // task holds from its start once the task ends, so a swap here would
+      // step the track back toward the fill it left (iOS 26.2).
+      if (this.isVisuallyOn !== isOn || !this.holdBase()) {
+        this.swapFade(time);
+      }
     }
     const wasDragging = this.drag != null && !this.released;
     if (wasDragging) {
@@ -512,6 +546,7 @@ export class SwitchTouchController {
   // --- Touches ---------------------------------------------------------------
 
   private touchDown(time: number): void {
+    this.landBase(time);
     this.released = false;
     this.pendingTravel = false;
     this.drag = null;
@@ -747,6 +782,60 @@ export class SwitchTouchController {
       },
       {at: time, touchRelease},
     );
+  }
+
+  /**
+   * The track now shows the new value's fill: the fade layer swaps to the
+   * other fill and to the complement of its opacity, so nothing changes on
+   * screen, and keeps heading where the visuals head (on the running clock).
+   */
+  private swapFade(time: number): void {
+    const fade = this.fade;
+    if (fade == null) {
+      return;
+    }
+    const opacity = fade.get('opacity', time);
+    const fadeVelocity = fade.getVelocity('opacity', time);
+    this.paintFade();
+    fade.rebase({opacity: 1 - 2 * opacity}, {at: time});
+    this.animateFade(time, -fadeVelocity);
+  }
+
+  /**
+   * Holds the track's own fill at the previous value's (the other state's,
+   * now) until the fade lands. False when there is nothing to read it from.
+   */
+  private holdBase(): boolean {
+    const track = this.elements?.track;
+    const fade = this.fade;
+    if (track == null || fade == null || this.otherTrack == null) {
+      return false;
+    }
+    track.style.setProperty(BASE_FILL, readFillOf(track, this.otherTrack));
+    this.baseHeld = true;
+    const hold = ++this.baseHold;
+    void fade.atRest(['opacity']).then(() => {
+      if (hold === this.baseHold) {
+        this.landBase(now());
+      }
+    });
+    return true;
+  }
+
+  /**
+   * Ends a held fill: the track shows its value's fill again and the fade
+   * layer swaps under it. Landed, the layer is opaque and nothing changes on
+   * screen; called early (a new touch, a new value, a new other state), the
+   * swap keeps the picture where it is.
+   */
+  private landBase(time: number): void {
+    if (!this.baseHeld) {
+      return;
+    }
+    this.baseHeld = false;
+    this.baseHold++;
+    this.elements?.track.style.removeProperty(BASE_FILL);
+    this.swapFade(time);
   }
 
   /** The fade layer's colour: the track's fill in its other state. */
