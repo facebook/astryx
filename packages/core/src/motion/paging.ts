@@ -57,9 +57,11 @@ export interface PageRelease {
  * The page a release settles on, UIKit's rule: faster than
  * `paging.release.advanceSpeed`, the next page in the direction of the
  * velocity from wherever the content is; slower, the page nearest the
- * content (past `commitFraction` of a page, the next one). Never more than
- * `maxPagesFromStart` from the page the drag started on; clamped to the
- * pages unless looping.
+ * content (past `commitFraction` of a page, the next one). A release whose
+ * velocity points back toward the page the drag started on settles there,
+ * whatever the travel (`spec:AST-094` FR37; UIKit, slower than the advance
+ * speed, takes the nearest page). Never more than `maxPagesFromStart` from
+ * the start page; clamped to the pages unless looping.
  *
  * @example
  * ```
@@ -96,6 +98,14 @@ export function selectPage({
   // A stale start page past either end (the count shrank, an overscrolled
   // track) counts from the nearest real page, as selectSnapPoint does.
   const from = loop ? startIndex : Math.min(Math.max(startIndex, 0), count - 1);
+  // Moving back cancels (FR37).
+  const travel = page - from;
+  if (
+    (travel > epsilon && velocity < 0) ||
+    (travel < -epsilon && velocity > 0)
+  ) {
+    target = from;
+  }
   target = Math.max(from - reach, Math.min(from + reach, target));
   if (!loop) {
     target = Math.max(0, Math.min(count - 1, target));

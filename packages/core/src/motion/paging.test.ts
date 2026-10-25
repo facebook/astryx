@@ -355,6 +355,19 @@ describe("selectPage: UIKit's measured page choices (402 pt pages)", () => {
     expect(page(-0.4, 600)).toBe(1);
   });
 
+  // spec:AST-094 FR37, where UIKit, slower than the advance speed, takes the
+  // nearest page.
+  it('a release whose velocity points back toward the start page cancels, whatever the travel', () => {
+    expect(page(0.7, -50)).toBe(1);
+    expect(page(0.95, -299)).toBe(1);
+    expect(page(-0.7, 50)).toBe(1);
+    expect(page(-0.95, 299)).toBe(1);
+    // At rest, or moving on, the travel decides as before.
+    expect(page(0.7, 0)).toBe(2);
+    expect(page(0.7, 50)).toBe(2);
+    expect(page(-0.7, -50)).toBe(0);
+  });
+
   it('clamps to the pages, or leaves the range when looping', () => {
     expect(page(0.3, 600, 5)).toBe(5);
     expect(page(-0.3, -600, 0)).toBe(0);
