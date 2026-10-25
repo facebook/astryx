@@ -47,7 +47,7 @@
 
 import {useEffect, useState} from 'react';
 import {resolveMotion} from '../motion/resolveMotion';
-import {timing} from '../motion/uikit/timing';
+import {registerTimingTable, timing} from '../motion/uikit/timing';
 import {PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE} from '../utils/pressFeedback';
 import {getGestureHost} from './GestureHost';
 import {paintPress} from './pressPaint';
@@ -106,6 +106,10 @@ export function installPressAttribute(
   options: PressAttributeOptions = {},
 ): () => void {
   const attribute = options.attribute ?? PRESSABLE_ATTRIBUTE;
+  // The press timings resolve as motion roles, so the timing table must be
+  // registered before the first touch reads them (idempotent; nothing
+  // registers on import).
+  registerTimingTable();
   let byAttribute = installs.get(doc);
   if (byAttribute == null) {
     byAttribute = new Map();
