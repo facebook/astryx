@@ -648,24 +648,15 @@ function keepAnchorClear(layer: HTMLElement, anchor: HTMLElement | null): void {
 }
 
 /**
- * How long a move observer waits before it re-arms after a report that finds
- * its element wholly outside the rectangle it was armed on although the
- * element has not moved (it is clipped), and how many times in a row it
- * does so before it waits for the next report instead.
- */
-const MOVE_RETRY_MS = 1000;
-const MOVE_RETRIES = 3;
-
-/**
  * Call `onMove` when an element moves on screen without changing size: in
  * layout (a sibling above it grows, a margin changes) or because something
  * scrolled. ResizeObserver sees only size. The element is observed by an
  * IntersectionObserver whose root is the viewport shrunk, through
- * `rootMargin`, to the element's own rectangle, so any move changes the
- * intersection ratio and fires the callback, which calls `onMove` and
- * re-arms on the new rectangle. Intersection callbacks run after the frame
- * that moved the element has painted, so the caller corrects that move in
- * the next frame.
+ * `rootMargin`, to the element's own rectangle (the layout-shift technique of
+ * `@floating-ui/dom`'s `observeMove`), so any move changes the intersection
+ * ratio and fires the callback, which calls `onMove` and re-arms on the new
+ * rectangle. Intersection callbacks run after the frame that moved the
+ * element has painted, so the caller corrects that move in the next frame.
  *
  * A fresh observer's first report can already differ from its threshold: the
  * element is partly outside the viewport, or it kept moving between the
@@ -673,11 +664,12 @@ const MOVE_RETRIES = 3;
  * smooth scroll. Any such report calls `onMove` and re-arms, at the reported
  * ratio, or at once on the element's new rectangle when the report is 0 and
  * the element moved, so a move that spans many frames is followed frame by
- * frame. A report of 0 for an element that has not moved means it is wholly
- * clipped; re-arming at once would report 0 again every frame, so the
- * observer re-arms on a one-second throttle, at most `MOVE_RETRIES` times in
- * a row. This mirrors `observeMove` in `@floating-ui/dom`. Returns the
- * function that stops observing.
+ * frame. A report of 0 for an element that has not moved means a scrolled
+ * container clips it wholly; re-arming then would report 0 again every frame.
+ * Instead a second IntersectionObserver, rooted at the viewport with a
+ * threshold of 0 (it counts every ancestor's overflow clip), waits for the
+ * element to come back into view, then calls `onMove` and re-arms. Nothing
+ * runs on a timer. Returns the function that stops observing.
  */
 function observeMove(element: HTMLElement, onMove: () => void): () => void {
   const doc = element.ownerDocument;
@@ -685,15 +677,12 @@ function observeMove(element: HTMLElement, onMove: () => void): () => void {
     return () => {};
   }
   let observer: IntersectionObserver | null = null;
-  let retry: ReturnType<typeof setTimeout> | undefined;
-  let retries = 0;
+  let visibility: IntersectionObserver | null = null;
   const stop = () => {
-    if (retry !== undefined) {
-      clearTimeout(retry);
-      retry = undefined;
-    }
     observer?.disconnect();
     observer = null;
+    visibility?.disconnect();
+    visibility = null;
   };
   const moved = (threshold: number) => {
     onMove();
@@ -719,6 +708,25 @@ function observeMove(element: HTMLElement, onMove: () => void): () => void {
         now.height !== rect.height
       );
     };
+    // Clipped by a scrolled container: wait, without a timer, for the
+    // element to come back into view. A first report that already finds it
+    // in view only counts if it has moved, so a clip the move observer and
+    // this one judge differently cannot re-arm every frame.
+    const awaitVisible = () => {
+      let isFirstVisible = true;
+      visibility = new IntersectionObserver(
+        entries => {
+          const visible = entries[entries.length - 1]?.isIntersecting ?? false;
+          const firstVisible = isFirstVisible;
+          isFirstVisible = false;
+          if (visible && (!firstVisible || hasMoved())) {
+            moved(1);
+          }
+        },
+        {root: doc, threshold: 0},
+      );
+      visibility.observe(element);
+    };
     let isFirst = true;
     observer = new IntersectionObserver(
       entries => {
@@ -729,27 +737,20 @@ function observeMove(element: HTMLElement, onMove: () => void): () => void {
           // Still over its own rectangle, but a move smaller than the
           // rounding of the root margin can leave the ratio at 1.
           if (ratio === 1 && hasMoved()) {
-            retries = 0;
             moved(1);
           }
           return;
         }
         if (!first || ratio > 0) {
-          retries = 0;
           moved(first ? ratio : 1);
           return;
         }
         if (hasMoved()) {
-          retries = 0;
           moved(1);
           return;
         }
-        if (retries < MOVE_RETRIES) {
-          retries += 1;
-          retry = setTimeout(() => {
-            retry = undefined;
-            moved(1);
-          }, MOVE_RETRY_MS);
+        if (visibility === null) {
+          awaitVisible();
         }
       },
       {

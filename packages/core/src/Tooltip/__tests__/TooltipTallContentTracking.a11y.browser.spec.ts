@@ -8,7 +8,8 @@
  *   that keeps its trigger clear follows a same-size trigger that moves on
  *   screen, in layout or because the page scrolled: at most the first painted
  *   frame after the move shows it over the trigger, a smooth scroll is
- *   followed through every frame and later moves are still observed, it
+ *   followed through every frame and later moves are still observed (also
+ *   after a scrolled container has hidden the trigger), it
  *   ends on the roomier side at a readable size, a scroll alone never
  *   switches a tooltip that fits, and placing a shown tooltip afresh keeps
  *   every animation in its content in its exact state.
@@ -601,6 +602,59 @@ test('a smooth scroll that carries a tall tooltip’s trigger leaves it clear an
   trigger = await rect(page, TRIGGER);
   tooltip = await rect(page, TOOLTIP);
   expect(overlaps(tooltip, trigger)).toBe(false);
+  expect(tooltip.bottom - tooltip.top).toBeGreaterThan(200);
+});
+
+test('a trigger that a scrolled container hides for several seconds is followed again when it scrolls back into view', async ({
+  page,
+}) => {
+  // The 60-line tooltip, held open, with the page inside a 700px scroll
+  // container on a phone. The container scrolls the trigger out of its view
+  // for longer than any short retry would wait, then scrolls it back to
+  // where the room above is the larger.
+  await page.setViewportSize({width: 390, height: 700});
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-tooltip--tall-content&viewMode=story&args=isOpen:!true`,
+  );
+  await holdMotionStill(page);
+  await page.addStyleTag({
+    content: '#storybook-root{height:700px;overflow:auto}',
+  });
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  // Scroll the container so the trigger's centre lands at `y` in the
+  // viewport.
+  const scrollTriggerTo = async (y: number) =>
+    page.evaluate(
+      ([sel, y]) => {
+        const el = document.querySelector(sel as string);
+        if (el == null) {
+          return;
+        }
+        const r = el.getBoundingClientRect();
+        document
+          .getElementById('storybook-root')
+          ?.scrollBy(0, r.top + r.height / 2 - (y as number));
+      },
+      [TRIGGER, y],
+    );
+  // Making the container clips the trigger for a moment; let any recheck of
+  // that settle before the case starts.
+  await scrollTriggerTo(150);
+  await page.waitForTimeout(1500);
+  expect(await hasSwitched(page)).toBe(true);
+
+  await scrollTriggerTo(-150);
+  await page.waitForTimeout(3500);
+  expect((await rect(page, TRIGGER)).bottom).toBeLessThan(0);
+
+  await scrollTriggerTo(590);
+  await page.waitForTimeout(300);
+  const trigger = await rect(page, TRIGGER);
+  const tooltip = await rect(page, TOOLTIP);
+  expect(trigger.top).toBeGreaterThan(500);
+  expect(overlaps(tooltip, trigger), 'covers the trigger').toBe(false);
+  expect(tooltip.top).toBeGreaterThanOrEqual(0);
+  expect(tooltip.bottom).toBeLessThanOrEqual(700);
   expect(tooltip.bottom - tooltip.top).toBeGreaterThan(200);
 });
 

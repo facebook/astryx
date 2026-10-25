@@ -1985,26 +1985,39 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
     vi.unstubAllGlobals();
   });
 
-  it('follows a move that spans several frames and never goes idle after a report of 0', async () => {
+  it('follows a move that spans several frames and never goes idle while a scrolled container clips its trigger', async () => {
+    type Entry = {intersectionRatio: number; isIntersecting?: boolean};
     const observers: {
-      callback: (entries: {intersectionRatio: number}[]) => void;
+      callback: (entries: Entry[]) => void;
       options: IntersectionObserverInit;
+      disconnected: boolean;
     }[] = [];
     vi.stubGlobal(
       'IntersectionObserver',
       class {
+        record: (typeof observers)[number];
         constructor(
-          callback: (entries: {intersectionRatio: number}[]) => void,
+          callback: (entries: Entry[]) => void,
           options: IntersectionObserverInit,
         ) {
-          observers.push({callback, options});
+          this.record = {callback, options, disconnected: false};
+          observers.push(this.record);
         }
         observe() {}
-        disconnect() {}
+        disconnect() {
+          this.record.disconnected = true;
+        }
         unobserve() {}
       },
     );
-    const moves = () => observers.filter(o => o.options?.root === document);
+    const moves = () =>
+      observers.filter(
+        o => o.options?.root === document && o.options.rootMargin != null,
+      );
+    const visibilities = () =>
+      observers.filter(
+        o => o.options?.root === document && o.options.rootMargin == null,
+      );
     const latest = () => moves()[moves().length - 1];
     const user = userEvent.setup();
     let spy = placeBoxes(TRIGGER, rect(200, 350, 100, 200));
@@ -2033,28 +2046,27 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
     expect(moves().length).toBe(armed + 1);
     expect(latest().options.threshold).toBe(1);
 
-    // A first report of 0 for a trigger that has not moved (it is clipped)
-    // re-arms on a one-second throttle, three times in a row at most.
-    vi.useFakeTimers();
-    try {
-      for (let attempt = 0; attempt < 3; attempt++) {
-        armed = moves().length;
-        act(() => latest().callback([{intersectionRatio: 0}]));
-        expect(moves().length).toBe(armed);
-        act(() => {
-          vi.advanceTimersByTime(1000);
-        });
-        expect(moves().length).toBe(armed + 1);
-      }
-      armed = moves().length;
-      act(() => latest().callback([{intersectionRatio: 0}]));
-      act(() => {
-        vi.advanceTimersByTime(5000);
-      });
-      expect(moves().length).toBe(armed);
-    } finally {
-      vi.useRealTimers();
-    }
+    // A first report of 0 for a trigger that has not moved: a scrolled
+    // container clips it. No timer runs; a visibility observer rooted at the
+    // viewport waits for it to come back into view, however long that takes.
+    const timers = vi.spyOn(globalThis, 'setTimeout');
+    armed = moves().length;
+    act(() => latest().callback([{intersectionRatio: 0}]));
+    expect(moves().length).toBe(armed);
+    expect(timers).not.toHaveBeenCalled();
+    const visibility = visibilities()[visibilities().length - 1];
+    expect(visibility?.options.threshold).toBe(0);
+    act(() =>
+      visibility?.callback([{intersectionRatio: 0, isIntersecting: false}]),
+    );
+    expect(moves().length).toBe(armed);
+    // Back in view: it re-reads and re-arms, and the visibility observer goes.
+    act(() =>
+      visibility?.callback([{intersectionRatio: 0.2, isIntersecting: true}]),
+    );
+    expect(moves().length).toBe(armed + 1);
+    expect(visibility?.disconnected).toBe(true);
+    expect(timers).not.toHaveBeenCalled();
     spy.mockRestore();
     vi.unstubAllGlobals();
   });

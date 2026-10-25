@@ -239,8 +239,10 @@ shrunk to the anchor's rectangle and which re-reads and re-arms on each report
 that differs from its threshold, a fresh observer's first report included, so
 an anchor that keeps moving, as through a smooth scroll, is followed frame by
 frame. A report that finds an anchor which has not moved wholly outside that
-rectangle means the anchor is clipped; the observer then re-arms on a
-one-second throttle, at most three times in a row, rather than every frame.
+rectangle means a scrolled container clips it; re-arming then would report the
+same every frame, so a second intersection observer, rooted at the viewport
+with a threshold of 0, waits for the anchor to come back into view and then
+re-reads and re-arms. No timer runs.
 It reports after paint, so on that one path at most one painted frame shows
 the layer over its anchor before it is corrected. Scroll events are not read: one fires before
 the layer has followed its anchor. Apart from that, a layer never paints at a
@@ -433,9 +435,9 @@ layers use Layer rendering without joining Escape/platform dismissal.
   layout or by a scroll, which only an intersection observer reports, after
   paint: at most one painted frame shows the layer over its anchor before the
   correction. Otherwise a layer never paints at a geometry it is about to
-  correct, and the runtime does not poll, except a bounded retry: when a
-  scrolled container clips the anchor, the move observer rechecks at most
-  three times, one second apart.
+  correct, and the runtime polls nothing: an anchor that a scrolled
+  container hides is followed again when an intersection observer reports it
+  back in view.
 
 This record does not make future eligible-owner, branch-association, global-host,
 or browser-support requirements current. It does not own component focus entry or
