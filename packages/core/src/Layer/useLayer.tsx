@@ -45,6 +45,7 @@ import {
   getAnchorClearFallbacks,
   slideRuleName,
 } from './layerSlideRules';
+import {preserveAnimations} from './preserveAnimations';
 import {useLayerContext} from './LayerContext';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
@@ -443,6 +444,24 @@ function toCssLength(value: number | string): string {
   return typeof value === 'number' ? `${value}px` : value;
 }
 
+/**
+ * Make the engine choose a shown layer's position option afresh: a browser
+ * keeps a laid-out layer on the option it last used until the layer stops
+ * being rendered, so the layer is taken out of rendering for one forced
+ * layout and restored, in the same task. No frame paints in between and the
+ * popover stays open, so no toggle event fires and focus and hover are
+ * untouched. Every CSS animation and transition of the layer and its content
+ * is put back in the state it was in (`preserveAnimations`).
+ */
+function placeAfresh(layer: HTMLElement): void {
+  preserveAnimations(layer, () => {
+    const display = layer.style.display;
+    layer.style.display = 'none';
+    layer.getBoundingClientRect();
+    layer.style.display = display;
+  });
+}
+
 const TRANSFORM_PROPERTIES = ['transform', 'translate', 'scale', 'rotate'];
 
 function hasTransform(style: CSSStyleDeclaration): boolean {
@@ -599,13 +618,26 @@ function failsAnchor(layer: HTMLElement, anchor: HTMLElement): boolean {
  * standard list has failed it. The runtime calls this in the same task as
  * every show and remount, and while the layer is open whenever its size, its
  * content's size, its anchor's size or the viewport changes; each of those
- * reads lands before the next frame paints (FR8). Once switched, a layer keeps
- * its anchor-clear list until it next opens, so it never jumps back over its
- * trigger while open.
+ * reads lands before the next frame paints. A same-size anchor that moves on
+ * screen, in layout or because something scrolled, is read after paint, from
+ * the anchor-move observer (FR8). Scroll events are not read: during one the
+ * anchor has moved but the layer anchored to it not yet, so the read would
+ * compare a moved anchor with a stale layer. Once switched, a layer keeps its
+ * anchor-clear list until it next opens, so it never jumps back over its
+ * trigger while open; it is placed afresh (`placeAfresh`) only when the switch
+ * does not take effect at once, or when a later read finds it failing again.
  */
 function keepAnchorClear(layer: HTMLElement, anchor: HTMLElement | null): void {
   if (anchor && failsAnchor(layer, anchor)) {
+    const switching = !layer.hasAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE);
     layer.setAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE, '');
+    // A switch usually takes effect at once. The engine may instead keep the
+    // option it last used, even one the new list does not contain or one a
+    // scroll has since made fail: then, and on any later read that finds the
+    // switched layer failing again, place it afresh.
+    if (!switching || failsAnchor(layer, anchor)) {
+      placeAfresh(layer);
+    }
   }
   // A layer that fits has no scroll range and stays a plain box, so a wheel
   // over it still scrolls the page.
@@ -616,13 +648,132 @@ function keepAnchorClear(layer: HTMLElement, anchor: HTMLElement | null): void {
 }
 
 /**
+ * Call `onMove` when an element moves on screen without changing size: in
+ * layout (a sibling above it grows, a margin changes) or because something
+ * scrolled. ResizeObserver sees only size. The element is observed by an
+ * IntersectionObserver whose root is the viewport shrunk, through
+ * `rootMargin`, to the element's own rectangle (the layout-shift technique of
+ * `@floating-ui/dom`'s `observeMove`), so any move changes the intersection
+ * ratio and fires the callback, which calls `onMove` and re-arms on the new
+ * rectangle. Intersection callbacks run after the frame that moved the
+ * element has painted, so the caller corrects that move in the next frame.
+ *
+ * A fresh observer's first report can already differ from its threshold: the
+ * element is partly outside the viewport, or it kept moving between the
+ * rectangle read and the observer's first check, as it does every frame of a
+ * smooth scroll. Any such report calls `onMove` and re-arms, at the reported
+ * ratio, or at once on the element's new rectangle when the report is 0 and
+ * the element moved, so a move that spans many frames is followed frame by
+ * frame. A report of 0 for an element that has not moved means a scrolled
+ * container clips it wholly; re-arming then would report 0 again every frame.
+ * Instead a second IntersectionObserver, rooted at the viewport with a
+ * threshold of 0 (it counts every ancestor's overflow clip), waits for the
+ * element to come back into view, then calls `onMove` and re-arms. Nothing
+ * runs on a timer. Returns the function that stops observing.
+ */
+function observeMove(element: HTMLElement, onMove: () => void): () => void {
+  const doc = element.ownerDocument;
+  if (typeof IntersectionObserver === 'undefined') {
+    return () => {};
+  }
+  let observer: IntersectionObserver | null = null;
+  let visibility: IntersectionObserver | null = null;
+  const stop = () => {
+    observer?.disconnect();
+    observer = null;
+    visibility?.disconnect();
+    visibility = null;
+  };
+  const moved = (threshold: number) => {
+    onMove();
+    arm(threshold);
+  };
+  const arm = (threshold: number) => {
+    stop();
+    const root = doc.documentElement;
+    const rect = element.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      return;
+    }
+    const top = Math.floor(rect.top);
+    const left = Math.floor(rect.left);
+    const right = Math.floor(root.clientWidth - rect.right);
+    const bottom = Math.floor(root.clientHeight - rect.bottom);
+    const hasMoved = () => {
+      const now = element.getBoundingClientRect();
+      return (
+        now.top !== rect.top ||
+        now.left !== rect.left ||
+        now.width !== rect.width ||
+        now.height !== rect.height
+      );
+    };
+    // Clipped by a scrolled container: wait, without a timer, for the
+    // element to come back into view. A first report that already finds it
+    // in view only counts if it has moved, so a clip the move observer and
+    // this one judge differently cannot re-arm every frame.
+    const awaitVisible = () => {
+      let isFirstVisible = true;
+      visibility = new IntersectionObserver(
+        entries => {
+          const visible = entries[entries.length - 1]?.isIntersecting ?? false;
+          const firstVisible = isFirstVisible;
+          isFirstVisible = false;
+          if (visible && (!firstVisible || hasMoved())) {
+            moved(1);
+          }
+        },
+        {root: doc, threshold: 0},
+      );
+      visibility.observe(element);
+    };
+    let isFirst = true;
+    observer = new IntersectionObserver(
+      entries => {
+        const ratio = entries[entries.length - 1]?.intersectionRatio ?? 0;
+        const first = isFirst;
+        isFirst = false;
+        if (ratio === threshold) {
+          // Still over its own rectangle, but a move smaller than the
+          // rounding of the root margin can leave the ratio at 1.
+          if (ratio === 1 && hasMoved()) {
+            moved(1);
+          }
+          return;
+        }
+        if (!first || ratio > 0) {
+          moved(first ? ratio : 1);
+          return;
+        }
+        if (hasMoved()) {
+          moved(1);
+          return;
+        }
+        if (visibility === null) {
+          awaitVisible();
+        }
+      },
+      {
+        root: doc,
+        rootMargin: `${-top}px ${-right}px ${-bottom}px ${-left}px`,
+        threshold,
+      },
+    );
+    observer.observe(element);
+  };
+  arm(1);
+  return stop;
+}
+
+/**
  * Watch an open layer that keeps its anchor clear, and its anchor, for every
  * change that can re-settle the layer over the anchor or give it a scroll
  * range (spec:AST-059 FR4, FR8): the layer, its content or the anchor
- * resizing (ResizeObserver) and the viewport resizing, all reported before
- * the frame paints. Each calls `keepAnchorClear` for this layer and anchor
- * while `isCurrent` says they are still the live pair. Returns the function
- * that removes every observer and listener it added.
+ * resizing (ResizeObserver, before paint), the viewport resizing (before
+ * paint), and the anchor moving on screen without resizing, in layout or by a
+ * scroll (`observeMove`, after paint). Each calls `keepAnchorClear` for this layer and anchor while
+ * `isCurrent` says they are still the live pair. Returns the function that
+ * removes every observer and listener it added.
  */
 function observeAnchorClearance(
   layer: HTMLElement,
@@ -647,9 +798,11 @@ function observeAnchorClearance(
     }
     observer.observe(anchor);
   }
+  const stopObservingMove = observeMove(anchor, reread);
   view.addEventListener('resize', reread);
   return () => {
     observer?.disconnect();
+    stopObservingMove();
     view.removeEventListener('resize', reread);
   };
 }
@@ -1409,8 +1562,8 @@ function useLayerImplementation(
   }, [isOpen, mode, updateAnchorInView]);
 
   // A layer that keeps its anchor clear (FR4) re-reads its geometry while it
-  // is open: content that grows, an anchor that resizes or a viewport resize
-  // can each re-settle the standard list over the anchor or
+  // is open: content that grows, an anchor that resizes or moves (in layout or
+  // by a scroll) or a viewport resize can each re-settle the standard list over the anchor or
   // give the layer a scroll range (`observeAnchorClearance`). The external
   // systems are those browser observers and listeners; this effect binds them
   // while the layer is open and removes them when it closes, unmounts or is

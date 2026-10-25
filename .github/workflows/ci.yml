@@ -40,6 +40,12 @@ on:
 
 permissions: {}
 
+# PR CI's budget is 15 minutes. Every job in this workflow that does work on a
+# pull request carries `timeout-minutes: 15` (release and maintenance
+# dispatches keep longer limits; macOS-only `test-native-swift` keeps 30), and
+# `ci-duration` reports each job's run time and the run's span. Split a job
+# that nears the limit (shard, scope, cache); do not raise it.
+#
 # One group per pull request (a fork's branch name can repeat across forks),
 # so a new push cancels the superseded run. Merge-queue entries and dispatches
 # get their own groups and are never cancelled by a pull request.
@@ -214,6 +220,7 @@ jobs:
     needs: [check-scope]
     if: ${{ github.event_name == 'pull_request' && needs.check-scope.outputs.release_bump == 'true' }}
     runs-on: 2-core-ubuntu-arm
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -279,6 +286,7 @@ jobs:
     if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
     # Match the stable publisher so byte parity covers the same packed manifest.
     runs-on: 4-core-ubuntu
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -364,6 +372,7 @@ jobs:
     needs: [check-scope, docsite-browser, docsite-data]
     if: ${{ github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.release_bump != 'true' && always() && !cancelled() }}
     runs-on: 2-core-ubuntu-arm
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -406,6 +415,7 @@ jobs:
     needs: [check-scope]
     if: github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
     runs-on: 2-core-ubuntu-arm
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -451,6 +461,7 @@ jobs:
     # The longest docsite owner; the Next.js production build uses every core
     # it gets.
     runs-on: 4-core-ubuntu
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -613,6 +624,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     runs-on: 4-core-ubuntu
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -689,6 +701,7 @@ jobs:
     # Vitest runs one test file per CPU beyond the first, so the 2-core runner
     # ran this suite one file at a time (~23 min). Four cores give it three.
     runs-on: 4-core-ubuntu
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -819,7 +832,7 @@ jobs:
       matrix:
         leg: [preview, production]
     runs-on: 4-core-ubuntu
-    timeout-minutes: 30
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -921,6 +934,7 @@ jobs:
     # Every browser lane waits for this job, and the package builds and the
     # Storybook build run side by side (build-packages-and-storybook.mjs).
     runs-on: 4-core-ubuntu
+    timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
       contents: read
     outputs:
@@ -1076,6 +1090,7 @@ jobs:
     needs: [check-scope]
     if: github.event_name == 'pull_request' && needs.check-scope.result == 'success' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -1157,6 +1172,7 @@ jobs:
     needs: [check-scope]
     if: ${{ (github.event_name != 'workflow_dispatch' || inputs.operation == 'release-check') && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: 2-core-ubuntu-arm
+    timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
       contents: read
     steps:
@@ -1213,6 +1229,7 @@ jobs:
     needs: [check-scope]
     if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
     runs-on: 2-core-ubuntu-arm
+    timeout-minutes: 15
     permissions:
       contents: read
     outputs:
@@ -1429,6 +1446,7 @@ jobs:
     needs: [build-storybook, check-components]
     if: (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) && needs.check-components.outputs.has_components == 'true'
     runs-on: 2-core-ubuntu-arm
+    timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
       contents: read
     steps:
@@ -1689,6 +1707,7 @@ jobs:
     needs: [check-scope]
     if: github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
     runs-on: 2-core-ubuntu-arm
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -1712,6 +1731,7 @@ jobs:
     needs: [check-scope]
     if: github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
     runs-on: 2-core-ubuntu-arm
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -1754,6 +1774,7 @@ jobs:
     # Four pages on four cores: the scout is page-load bound, and on the rig
     # this cut a shard's scout by a quarter against two pages on two cores.
     runs-on: 4-core-ubuntu
+    timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
       contents: read
     steps:
@@ -1821,6 +1842,7 @@ jobs:
           needs.check-components.result == 'success') ||
          (needs.maintenance-request.result == 'success' && inputs.operation == 'capture'))))
     runs-on: 2-core-ubuntu-arm
+    timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 360 || 15 }}
     permissions:
       contents: read
     steps:
@@ -2085,7 +2107,7 @@ jobs:
           - {package: richtext, part: 1, parts: 1}
           - {package: vega, part: 1, parts: 1}
     runs-on: 4-core-ubuntu
-    timeout-minutes: 30
+    timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 30 || 15 }}
     permissions:
       contents: read
     steps:
@@ -2344,6 +2366,71 @@ jobs:
             --should-run "${{ needs.check-components.outputs.has_rtl_components == 'true' || needs.check-components.outputs.has_rtl_harness == 'true' || needs.check-components.outputs.force_full_component_audits == 'true' }}" \
             --force-full "${{ needs.check-components.outputs.force_full_component_audits }}" \
             --reports-dir rtl-shard-reports
+
+  # Report-only: after every pull-request job finishes, each job's run time
+  # (start to finish, no queue) and the run's span go to the job summary, with
+  # a warning for any job past 12 minutes, so a lane growing toward its
+  # 15-minute limit shows before it fails. It never fails and is not required.
+  ci-duration:
+    needs:
+      [
+        check-scope,
+        release-bump,
+        release-merge-back,
+        docsite-data,
+        docsite-browser,
+        docsite-test,
+        check-components,
+        test-ui,
+        test-node,
+        native-swift-scope,
+        test-native-swift,
+        registry-contract,
+        test,
+        build-storybook,
+        size-base,
+        typecheck,
+        build-sandbox,
+        build,
+        pr-a11y,
+        test-build,
+        fixture-contrast,
+        visual-scout,
+        pr-visual,
+        pr-rtl-shard,
+        pr-rtl-merge,
+        pr-rtl,
+      ]
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    continue-on-error: true
+    permissions:
+      actions: read
+    steps:
+      - name: Report job durations
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const jobs = await github.paginate(
+              github.rest.actions.listJobsForWorkflowRunAttempt,
+              {...context.repo, run_id: context.runId, attempt_number: Number(process.env.GITHUB_RUN_ATTEMPT), per_page: 100},
+            );
+            const done = jobs.filter(job => job.started_at && job.completed_at && job.conclusion !== 'skipped' && job.name !== 'ci-duration');
+            const rows = done
+              .map(job => ({name: job.name, minutes: (Date.parse(job.completed_at) - Date.parse(job.started_at)) / 60000}))
+              .sort((a, b) => b.minutes - a.minutes);
+            for (const row of rows.filter(row => row.minutes > 12)) {
+              core.warning(`${row.name} ran ${row.minutes.toFixed(1)} min; PR jobs stop at 15. Split it (shard, scope, cache).`);
+            }
+            const span = done.length
+              ? (Math.max(...done.map(job => Date.parse(job.completed_at))) - Math.min(...done.map(job => Date.parse(job.started_at)))) / 60000
+              : 0;
+            await core.summary
+              .addHeading('Job durations (run time, no queue)', 3)
+              .addRaw(`Run span, first job start to last job end (includes waits between jobs): ${span.toFixed(1)} min\n\n`)
+              .addTable([[{data: 'Job', header: true}, {data: 'Minutes', header: true}], ...rows.map(row => [row.name, row.minutes.toFixed(1)])])
+              .write();
 
   # Release-time projection only: the existing owners above do all measurement.
   # A skipped owner or main drift must never look like passing release evidence.
