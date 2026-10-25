@@ -328,9 +328,9 @@ export function SegmentedControl({
   ...rest
 }: SegmentedControlProps) {
   const size = useSize(sizeProp, 'md');
-  // Under a finger, on every touch device (a coarse primary pointer, #8316):
-  // UIKit's motion, the selection sliding on a spring. Under a mouse, the
-  // theme's transitions.
+  // Under a finger, on every touch device (a coarse primary pointer,
+  // spec:AST-094 FR13): UIKit's motion, the selection sliding on a spring.
+  // Under a mouse, the theme's transitions.
   const isTouchPresentation = useTouchPresentation().isTouch;
   const trackRef = useRef<HTMLDivElement | null>(null);
   useSegmentedSelectionMotion(trackRef, value, isTouchPresentation);
