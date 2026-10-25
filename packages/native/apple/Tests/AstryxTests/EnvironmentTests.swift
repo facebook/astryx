@@ -104,6 +104,9 @@ import Testing
   #expect(Pixels(swatch, theme: .butter).at(10, 10) == Pixels(swatch).at(10, 10))
 }
 
+#if os(iOS)
+// On macOS, stock buttons and links are AppKit controls, which SwiftUI's image
+// renderer does not draw; the iOS Simulator lane checks them.
 @MainActor
 @Test func aStockLinkAndBorderlessButtonTakeTheTint() {
   let accent = rgba(Theme.default.light.color.accent)
@@ -123,6 +126,8 @@ import Testing
   #expect(pixels.contains { close($0, rgba(Theme.default.light.color.accent)) })
   #expect(pixels.contains { $0[0] > 245 && $0[1] > 245 && $0[2] > 245 && $0[3] > 245 })
 }
+
+#endif
 
 // Theme environment spec, E2: stock controls draw white on their tint, so a
 // pale accent is not their tint; a single-mode theme sets its subtree's mode.
