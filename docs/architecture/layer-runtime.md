@@ -455,14 +455,14 @@ layers use Layer rendering without joining Escape/platform dismissal.
   INV7 names), and the backdrop tint, drawn with `::backdrop`. No component
   mounts its own top-layer host, exit copy, or backdrop element. The public
   surface stays `useLayer` and `LayerProvider`.
-- **INV15 — One shared presentation module sits above the runtime.**
-  **Proposed; pending owner decision.** An internal presentation module above
-  the runtime owns the lift from the trigger, using the real trigger or a
-  clone, whichever meets the performance outcomes, and the grow from the
-  trigger's rectangle through the shared rectangle morph. Every menu-style
-  surface uses it: ContextMenu, DropdownMenu's press-open, Selector,
-  MultiSelector, and Popover. Components wire it and never re-implement it.
-  It is internal and unexported (`spec:AST-017` FR21).
+- **INV15 — One lift-from-trigger module, opt-in per surface.** **Proposed;
+  pending owner decision.** A dedicated internal lift-from-trigger module,
+  separate from the layer runtime, owns the lift from the trigger, using the
+  real trigger or a clone, whichever meets the performance outcomes, the grow
+  from the trigger's rectangle through the shared rectangle morph, and the
+  lift's exit. A surface opts into it; no layer or menu uses it by default.
+  Any surface that lifts from its trigger uses this one module, never its own
+  copy. It is internal and unexported (`spec:AST-017` FR21).
 
 This record does not make future eligible-owner, branch-association, global-host,
 or browser-support requirements current. It does not own component focus entry or
@@ -484,7 +484,8 @@ Current gaps are observable facts, not current target behavior:
 - Toast's root and fallback hosts remain behind the other native modals:
   Lightbox, MobileNav, and a scrim BottomSheetSwitcher.
 - The reduced browser fallback is not documented as non-equivalent.
-- Under the proposed INV14 and INV15, ContextMenu's touch lift grows its menu
+- Under the proposed INV14 and INV15, ContextMenu's touch lift, the one surface
+  that lifts today, grows its menu
   with its own copy of the rectangle morph, and its trigger clone, manual
   popover, and `::backdrop` mount are ContextMenu-local rather than shared.
 - Existing tests simulate Popover `toggle` and DOM nesting; they do not prove
@@ -584,17 +585,17 @@ this current architecture record.
 
 ## Verification
 
-| Invariant               | Evidence                                                                                                                                                            | Failure signal                                                                                                                                                                                                |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| INV1, INV2              | `useLayer.test.tsx` and `layerHost.test.ts`                                                                                                                         | Invalid DOM, stale host, lost theme/writing context, or portal mistaken for top-layer promotion                                                                                                               |
-| INV3–INV5               | `useLayer.test.tsx` and `anchorName.test.ts`                                                                                                                        | A mode leaks geometry, RTL resolves from the wrong context, fallback clips, or a sibling anchor is lost                                                                                                       |
-| INV11                   | `layerViewportInset.test.ts`, `useLayer.test.tsx`, and the `Core/Layer` viewport-inset stories under the story play guard at a desktop and a phone viewport         | A second gutter definition, a `100%`-of-span cap, a layer narrower than its explicit size, a layer box wider than the viewport, a layer inside the gutter, or a layer that slides toward an off-screen anchor |
-| INV12                   | The `Core/Layer` viewport-inset stories' first-frame comparison, and `useLayer.test.tsx`'s synchronous anchor read                                                  | A layer whose first painted rectangle differs from its settled one                                                                                                                                            |
-| INV6, INV7              | `useLayer.test.tsx`, `Popover.test.tsx`, `DropdownMenu.test.tsx`, and `useMenuHover.test.tsx`                                                                       | Duplicate close callback or the same press/re-hover reopens a surface                                                                                                                                         |
-| INV8                    | `useLayerDismissal.test.tsx`, `layerDismissalInvariants.test.tsx`, and `useFocusTrap.test.tsx`                                                                      | Current top registered layer is skipped, two layers close, or a blocker leaks through                                                                                                                         |
-| INV9                    | Representative Dialog, ContextMenu, Tooltip/HoverCard, and BottomSheet source/tests                                                                                 | A current local channel silently changes ownership or policy                                                                                                                                                  |
-| INV10                   | `LayerProvider.tsx`, `LayerProvider.test.tsx`, `useToast.tsx`, `ToastViewport.test.tsx`, and `ToastViewport.modalHost.test.tsx`                                     | Provider begins relocating ordinary layers, Toast fallback loses its current lifecycle, or a default provider renders differently from no provider                                                            |
-| INV14, INV15 (proposed) | Source boundary check over Core for top-layer hosts, exit copies, backdrop elements, lift, and rectangle-morph code outside the runtime and the presentation module | A component mounting its own top-layer host, exit copy, or backdrop element, or re-implementing the lift or the grow                                                                                          |
+| Invariant               | Evidence                                                                                                                                                    | Failure signal                                                                                                                                                                                                |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV2              | `useLayer.test.tsx` and `layerHost.test.ts`                                                                                                                 | Invalid DOM, stale host, lost theme/writing context, or portal mistaken for top-layer promotion                                                                                                               |
+| INV3–INV5               | `useLayer.test.tsx` and `anchorName.test.ts`                                                                                                                | A mode leaks geometry, RTL resolves from the wrong context, fallback clips, or a sibling anchor is lost                                                                                                       |
+| INV11                   | `layerViewportInset.test.ts`, `useLayer.test.tsx`, and the `Core/Layer` viewport-inset stories under the story play guard at a desktop and a phone viewport | A second gutter definition, a `100%`-of-span cap, a layer narrower than its explicit size, a layer box wider than the viewport, a layer inside the gutter, or a layer that slides toward an off-screen anchor |
+| INV12                   | The `Core/Layer` viewport-inset stories' first-frame comparison, and `useLayer.test.tsx`'s synchronous anchor read                                          | A layer whose first painted rectangle differs from its settled one                                                                                                                                            |
+| INV6, INV7              | `useLayer.test.tsx`, `Popover.test.tsx`, `DropdownMenu.test.tsx`, and `useMenuHover.test.tsx`                                                               | Duplicate close callback or the same press/re-hover reopens a surface                                                                                                                                         |
+| INV8                    | `useLayerDismissal.test.tsx`, `layerDismissalInvariants.test.tsx`, and `useFocusTrap.test.tsx`                                                              | Current top registered layer is skipped, two layers close, or a blocker leaks through                                                                                                                         |
+| INV9                    | Representative Dialog, ContextMenu, Tooltip/HoverCard, and BottomSheet source/tests                                                                         | A current local channel silently changes ownership or policy                                                                                                                                                  |
+| INV10                   | `LayerProvider.tsx`, `LayerProvider.test.tsx`, `useToast.tsx`, `ToastViewport.test.tsx`, and `ToastViewport.modalHost.test.tsx`                             | Provider begins relocating ordinary layers, Toast fallback loses its current lifecycle, or a default provider renders differently from no provider                                                            |
+| INV14, INV15 (proposed) | Source boundary check over Core for top-layer hosts, exit copies, backdrop elements, lift, and rectangle-morph code outside the runtime and the lift module | A component mounting its own top-layer host, exit copy, or backdrop element, or re-implementing the lift or the grow                                                                                          |
 
 Current unit coverage proves emitted styles, reducers, state transitions, and DOM
 placement. Native Popover, `<dialog>`, focus, top-layer ordering, and rendered
