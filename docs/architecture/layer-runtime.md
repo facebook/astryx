@@ -456,13 +456,14 @@ layers use Layer rendering without joining Escape/platform dismissal.
   mounts its own top-layer host, exit copy, or backdrop element. The public
   surface stays `useLayer` and `LayerProvider`.
 - **INV15 — One lift-from-trigger module, opt-in per surface.** **Proposed;
-  pending owner decision.** A dedicated internal lift-from-trigger module,
-  separate from the layer runtime, owns the lift from the trigger, using the
-  real trigger or a clone, whichever meets the performance outcomes, the grow
-  from the trigger's rectangle through the shared rectangle morph, and the
-  lift's exit. A surface opts into it; no layer or menu uses it by default.
-  Any surface that lifts from its trigger uses this one module, never its own
-  copy. It is internal and unexported (`spec:AST-017` FR21).
+  pending owner decision.** Lift-from-trigger presentation lives in one
+  internal module separate from the layer runtime: the lift from the trigger,
+  using the real trigger or a clone, whichever meets the performance outcomes;
+  the grow from the trigger's rectangle through the shared rectangle morph; and
+  the exit, played through the runtime's exit copy (INV14). Surfaces opt in;
+  any surface that lifts uses this module and never its own copy, and layers
+  that do not lift do not use it. It is internal and unexported
+  (`spec:AST-017` FR21).
 
 This record does not make future eligible-owner, branch-association, global-host,
 or browser-support requirements current. It does not own component focus entry or
