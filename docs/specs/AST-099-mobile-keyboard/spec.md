@@ -59,8 +59,8 @@ a chat composer, or a search field.
 
 - **FR1 — One keyboard height for every component.** Every Core and Lab
   component that positions, sizes, or dismisses relative to the on-screen
-  keyboard responds to the same keyboard height at the same moment (FR2, or
-  FR8 where it applies), including
+  keyboard responds to the same keyboard height (FR2) at the same moment,
+  including
   BottomSheet, the chat composer, a search field placed at the bottom, tab bar
   search, drag to dismiss, and any keyboard layout guide, so no two components disagree about where the
   keyboard is. `architecture:react-component-runtime` INV11 owns the single
@@ -103,20 +103,20 @@ a chat composer, or a search field.
 - **FR6 — Capability detection.** Keyboard handling acts where the visual viewport
   shrinks for the keyboard while the layout viewport keeps its height. It
   detects that from the platform's viewport and keyboard capabilities, never
-  from the user agent (`spec:AST-013` FR6). Where the browser itself reports
-  the on-screen keyboard's geometry, as Chrome on Android does, the
-  visual-viewport measurement does not apply and FR8 governs, on any device
-  that shows an on-screen keyboard; a browser that offers the report but shows
-  no on-screen keyboard reads 0. A page that is not a secure context gets no
-  such report and follows FR2.
+  from the user agent (`spec:AST-013` FR6). Where the browser also reports
+  the on-screen keyboard's geometry, as Chrome on Android does, the height
+  comes from FR2 there too and FR8 governs how surfaces ride the keyboard, on any
+  device that shows an on-screen keyboard; a browser that offers the report but
+  shows no on-screen keyboard reads 0. A page that is not a secure context gets
+  no such report, so FR8 does not apply there.
 - **FR7 — Top-level documents only.** Inside an iframe the frame's visual
   viewport does not change when the keyboard opens, so the keyboard height is
   0 there and nothing changes. Behavior and evidence for this record come
   from a top-level document.
 - **FR8 — Browsers that report the keyboard ride it smoothly.** In a browser
   that reports the on-screen keyboard's geometry itself, such as Chrome on
-  Android, the keyboard height comes from that report rather than FR2's
-  visual-viewport measurement, and Core's
+  Android, the keyboard height comes from FR2's visual-viewport
+  measurement there too (DEC-4), and Core's
   keyboard-aware surfaces ride the keyboard on show and on hide: they move with
   the keyboard's slide, within one frame of it on the measured keyboards, with
   no one-step jump and no surface left under the keyboard, no JavaScript per
@@ -180,7 +180,7 @@ a chat composer, or a search field.
 
 | Contract     | Verification                                                                                           | Representative states                                                                                                                                                                                         | Mutation or failure expectation                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| FR1          | Source boundary check over Core and Lab plus a shared test that drives one keyboard change             | each listed consumer; a new keyboard-aware component                                                                                                                                                          | Two components reading different heights for one keyboard, or a component measuring by a rule other than FR2 or, where it applies, FR8                                                                                                                                                                                                                                                                                                           |
+| FR1          | Source boundary check over Core and Lab plus a shared test that drives one keyboard change             | each listed consumer; a new keyboard-aware component                                                                                                                                                          | Two components reading different heights for one keyboard, or a component measuring by a rule other than FR2                                                                                                                                                                                                                                                                                                                                     |
 | FR2          | Module tests driving visual-viewport resize and scroll events                                          | keyboard shown; hidden; page panned with the keyboard shown; offset without a keyboard; page pinch-zoomed with and without the keyboard                                                                       | A pan that lowers the reported height, or a height when no keyboard is shown                                                                                                                                                                                                                                                                                                                                                                     |
 | FR3          | Consumer tests of computed layout, plus a public-surface check                                         | keyboard shown and hidden; composer, bottom search field, tab bar search, Tall sheet; no animation running; a ride animation running with the composer, a scroll view, and a header together                  | A consumer whose layout ignores the height, layout that is only correct after an animation, riding surfaces out of sync on one keyboard change, per-frame layout work during a ride, content hidden or unscrollable at the resting value, or a public CSS custom property, export, or prop for the height                                                                                                                                        |
 | FR4          | Focus-route tests with document scroll spies                                                           | tap, previous and next buttons, Tab, programmatic focus, Done then tap, app resume while scroll-locked                                                                                                        | A route that scrolls the document, or a slipped scroll left in place                                                                                                                                                                                                                                                                                                                                                                             |
@@ -239,6 +239,21 @@ before the keyboard module ships in a release, because keyboard timing and viewp
 real devices.
 
 Rejected: physical devices as a merge gate, which blocks work on hardware; and physical devices as optional follow-up, which can ship untested keyboard behavior.
+
+### DEC-4 — The keyboard height comes from the visual viewport in every browser
+
+**Reference:** `spec:AST-099/DEC-4`
+**Decider:** `cixzhang`, `2026-10-25`
+
+In Chrome on Android the visual viewport shrinks for the keyboard as the
+keyboard starts to slide, so FR2's measurement reaches the page in time for
+surfaces to join the slide within a frame, and reading it changes nothing on
+the page. The browser's own keyboard geometry report needs the page to overlay
+the keyboard, arrives later and less steadily, and in Chromium hides the
+bottom toolbar on the keyboard's frame, which moves the layout. One
+measurement in every browser also keeps FR1's single height.
+
+Rejected: the browser's keyboard geometry report as the height, which arrives later and less steadily and shifts the layout.
 
 ## Open questions
 
