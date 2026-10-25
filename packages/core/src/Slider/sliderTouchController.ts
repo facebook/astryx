@@ -97,7 +97,10 @@ import {projectDistance} from '../motion/projection';
 import {resolveMotion} from '../motion/resolveMotion';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
-import {slider as UIKIT_SLIDER} from '../motion/uikit/slider';
+import {
+  registerSliderTable,
+  slider as UIKIT_SLIDER,
+} from '../motion/uikit/slider';
 
 /** Frames of a coast before it reports values (the touch hand-off limit). */
 const HAND_OFF_FRAMES = 3;
@@ -269,6 +272,9 @@ export class SliderTouchController {
     if (parts == null || parts.hits.length === 0) {
       return () => {};
     }
+    // The slider's springs are motion roles a theme may retune: register
+    // them before the first lift, drop or coast (idempotent).
+    registerSliderTable();
     const host = getGestureHost(parts.control.ownerDocument);
     const detachers: (() => void)[] = [];
     parts.hits.forEach((hit, owner) => {
