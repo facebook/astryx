@@ -58,8 +58,9 @@ public struct Avatar: View {
         // The Astryx tooltip (library/tooltip.spec.md), as core's Avatar uses
         // core's tooltip: a static avatar is a tab stop and opens on a tap;
         // a link or button keeps its focus and its tap.
-        .astryxTooltip(
-          tooltipText, hint: tooltipHint, focus: Avatar.tooltipFocus(tap), touch: Avatar.tooltipTouch(tap))
+        // Touch is core's `auto`: a static avatar opens on a tap; a control's
+        // tap belongs to its action.
+        .astryxTooltip(tooltipText, hint: tooltipHint, focus: Avatar.tooltipFocus(tap))
         .modifier(AvatarIdentifier(id: props.base.id))
         .onAppear(perform: checkInDevelopment)
     }
@@ -131,10 +132,6 @@ public struct Avatar: View {
   /// How keyboard focus reaches the tooltip: a static avatar is made a tab
   /// stop, as core gives it one; a link or button takes focus already.
   nonisolated static func tooltipFocus(_ tap: Tap) -> TooltipFocus { tap == .none ? .tabStop : .control }
-
-  /// What a direct tap does: a static avatar opens its tooltip; a link or
-  /// button keeps the tap for its action, as core's does.
-  nonisolated static func tooltipTouch(_ tap: Tap) -> TooltipTouch { tap == .none ? .tap : .none }
 
 
   var tap: Tap {
