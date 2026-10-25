@@ -69,7 +69,9 @@ trackpad, or keyboard the change is immediate.
   settle at an edge, is direct movement and does not cross-fade, as scrolling
   keeps decelerating under iOS Reduce Motion. A transition a component starts on
   release, such as snapping to a detent, dismissing, or paging to a target,
-  still cross-fades.
+  still cross-fades. Native scrolling is the browser's and is untouched; a
+  coast Astryx animates itself after a throw behaves like native momentum
+  under Reduce Motion.
 - **DR3 — Fine-pointer presentations change at once.** Under reduced motion,
   every other DR1 transition, when the primary pointer is not coarse, MUST complete
   immediately, with no animated property.
