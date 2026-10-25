@@ -54,68 +54,32 @@ function buildFixture() {
   const upstream = path.join(base, 'upstream');
   const clone = path.join(base, 'clone');
 
-  fs.mkdirSync(path.join(upstream, 'packages/core/src/Card'), {
-    recursive: true,
-  });
-  fs.mkdirSync(path.join(upstream, 'packages/core/src/Button'), {
-    recursive: true,
-  });
-  fs.mkdirSync(path.join(upstream, 'packages/core/src/Line'), {
-    recursive: true,
-  });
-  fs.mkdirSync(
-    path.join(upstream, 'packages/core/src/InteractiveRoleContext'),
-    {recursive: true},
-  );
-  fs.mkdirSync(path.join(upstream, 'packages/lab/src/Sankey'), {
-    recursive: true,
-  });
+  fs.mkdirSync(path.join(upstream, 'packages/core/src/Card'), {recursive: true});
+  fs.mkdirSync(path.join(upstream, 'packages/core/src/Button'), {recursive: true});
+  fs.mkdirSync(path.join(upstream, 'packages/core/src/Line'), {recursive: true});
+  fs.mkdirSync(path.join(upstream, 'packages/core/src/InteractiveRoleContext'), {recursive: true});
+  fs.mkdirSync(path.join(upstream, 'packages/lab/src/Sankey'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/richtext/src'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/vega/src'), {recursive: true});
-  fs.mkdirSync(path.join(upstream, 'packages/themes/neutral/src'), {
-    recursive: true,
-  });
-  fs.mkdirSync(path.join(upstream, 'packages/themes/probe/src'), {
-    recursive: true,
-  });
+  fs.mkdirSync(path.join(upstream, 'packages/themes/neutral/src'), {recursive: true});
+  fs.mkdirSync(path.join(upstream, 'packages/themes/probe/src'), {recursive: true});
 
   git(upstream, ['init', '-q', '-b', 'main']);
   git(upstream, ['config', 'user.email', 'test@test.co']);
   git(upstream, ['config', 'user.name', 'Test']);
   fs.writeFileSync(path.join(upstream, 'package.json'), '{}');
-  fs.writeFileSync(
-    path.join(upstream, 'packages/core/src/index.ts'),
-    "export {Card} from './Card';\n",
-  );
-  fs.writeFileSync(
-    path.join(upstream, 'packages/core/src/Card/Card.tsx'),
-    'export function Card() {}\n',
-  );
-  fs.writeFileSync(
-    path.join(upstream, 'packages/core/src/Card/Card.doc.mjs'),
-    "export default {name: 'Card'};\n",
-  );
-  fs.writeFileSync(
-    path.join(upstream, 'packages/core/src/Card/index.ts'),
-    "export {Card} from './Card';\n",
-  );
-  fs.writeFileSync(
-    path.join(upstream, 'packages/core/src/Button/index.ts'),
-    'export {}\n',
-  );
-  fs.writeFileSync(
-    path.join(upstream, 'packages/core/src/Line/index.ts'),
-    'export {}\n',
-  );
+  fs.writeFileSync(path.join(upstream, 'packages/core/src/index.ts'), "export {Card} from './Card';\n");
+  fs.writeFileSync(path.join(upstream, 'packages/core/src/Card/Card.tsx'), 'export function Card() {}\n');
+  fs.writeFileSync(path.join(upstream, 'packages/core/src/Card/Card.doc.mjs'), "export default {name: 'Card'};\n");
+  fs.writeFileSync(path.join(upstream, 'packages/core/src/Card/index.ts'), "export {Card} from './Card';\n");
+  fs.writeFileSync(path.join(upstream, 'packages/core/src/Button/index.ts'), 'export {}\n');
+  fs.writeFileSync(path.join(upstream, 'packages/core/src/Line/index.ts'), 'export {}\n');
   fs.writeFileSync(
     path.join(upstream, 'packages/richtext/src/RichTextEditor.tsx'),
     'export function RichTextEditor() {}\n',
   );
   fs.writeFileSync(
-    path.join(
-      upstream,
-      'packages/richtext/src/RichTextEditorAutoLinkPlugin.tsx',
-    ),
+    path.join(upstream, 'packages/richtext/src/RichTextEditorAutoLinkPlugin.tsx'),
     'export function RichTextEditorAutoLinkPlugin() {}\n',
   );
   fs.writeFileSync(
@@ -135,48 +99,27 @@ function buildFixture() {
     path.join(upstream, 'packages/vega/src/VegaChart.tsx'),
     'export function VegaChart() {}\n',
   );
-  fs.writeFileSync(
-    path.join(upstream, 'packages/vega/src/index.ts'),
-    "export {VegaChart} from './VegaChart';\n",
-  );
-  fs.writeFileSync(
-    path.join(upstream, 'packages/core/src/InteractiveRoleContext/internal.ts'),
-    'export const shared = true;\n',
-  );
-  fs.writeFileSync(
-    path.join(upstream, 'packages/lab/src/Sankey/internal.ts'),
-    'export const family = true;\n',
-  );
+  fs.writeFileSync(path.join(upstream, 'packages/vega/src/index.ts'), "export {VegaChart} from './VegaChart';\n");
+  fs.writeFileSync(path.join(upstream, 'packages/core/src/InteractiveRoleContext/internal.ts'), 'export const shared = true;\n');
+  fs.writeFileSync(path.join(upstream, 'packages/lab/src/Sankey/internal.ts'), 'export const family = true;\n');
   fs.writeFileSync(
     path.join(upstream, 'packages/themes/neutral/package.json'),
     JSON.stringify({name: '@astryxdesign/theme-neutral', private: false}),
   );
-  fs.writeFileSync(
-    path.join(upstream, 'packages/themes/neutral/src/theme.ts'),
-    'export {}\n',
-  );
+  fs.writeFileSync(path.join(upstream, 'packages/themes/neutral/src/theme.ts'), 'export {}\n');
   fs.writeFileSync(
     path.join(upstream, 'packages/themes/probe/package.json'),
     JSON.stringify({name: '@astryxdesign/theme-probe', private: true}),
   );
-  fs.writeFileSync(
-    path.join(upstream, 'packages/themes/probe/src/theme.ts'),
-    'export {}\n',
-  );
+  fs.writeFileSync(path.join(upstream, 'packages/themes/probe/src/theme.ts'), 'export {}\n');
   git(upstream, ['add', '-A']);
   git(upstream, ['commit', '-qm', 'branch point']);
   const branchPoint = git(upstream, ['rev-parse', 'HEAD']);
 
   // 60 churn commits on main so the branch point is beyond any small depth.
   for (let i = 1; i <= 60; i++) {
-    fs.appendFileSync(
-      path.join(upstream, 'packages/core/src/Button/index.ts'),
-      `b${i}\n`,
-    );
-    fs.appendFileSync(
-      path.join(upstream, 'packages/core/src/Line/index.ts'),
-      `l${i}\n`,
-    );
+    fs.appendFileSync(path.join(upstream, 'packages/core/src/Button/index.ts'), `b${i}\n`);
+    fs.appendFileSync(path.join(upstream, 'packages/core/src/Line/index.ts'), `l${i}\n`);
     git(upstream, ['add', '-A']);
     git(upstream, ['commit', '-qm', `churn ${i}`]);
   }
@@ -184,19 +127,13 @@ function buildFixture() {
   // Feature branch off the branch point, touching Core, Rich Text, and Vega.
   git(upstream, ['branch', 'feature', branchPoint]);
   git(upstream, ['checkout', '-q', 'feature']);
-  fs.appendFileSync(
-    path.join(upstream, 'packages/core/src/Card/index.ts'),
-    'export const Card = {}\n',
-  );
+  fs.appendFileSync(path.join(upstream, 'packages/core/src/Card/index.ts'), 'export const Card = {}\n');
   fs.appendFileSync(
     path.join(upstream, 'packages/richtext/src/RichTextEditor.tsx'),
     'export const richTextChanged = true\n',
   );
   fs.appendFileSync(
-    path.join(
-      upstream,
-      'packages/richtext/src/RichTextEditorAutoLinkPlugin.tsx',
-    ),
+    path.join(upstream, 'packages/richtext/src/RichTextEditorAutoLinkPlugin.tsx'),
     'export const autoLinkChanged = true\n',
   );
   fs.appendFileSync(
@@ -207,34 +144,17 @@ function buildFixture() {
     path.join(upstream, 'packages/vega/src/VegaChart.tsx'),
     'export const vegaChanged = true\n',
   );
-  fs.appendFileSync(
-    path.join(upstream, 'packages/core/src/InteractiveRoleContext/internal.ts'),
-    'export const sharedChanged = true\n',
-  );
-  fs.appendFileSync(
-    path.join(upstream, 'packages/lab/src/Sankey/internal.ts'),
-    'export const familyChanged = true\n',
-  );
-  fs.appendFileSync(
-    path.join(upstream, 'packages/themes/neutral/src/theme.ts'),
-    'export const changed = true\n',
-  );
-  fs.appendFileSync(
-    path.join(upstream, 'packages/themes/probe/src/theme.ts'),
-    'export const changed = true\n',
-  );
+  fs.appendFileSync(path.join(upstream, 'packages/core/src/InteractiveRoleContext/internal.ts'), 'export const sharedChanged = true\n');
+  fs.appendFileSync(path.join(upstream, 'packages/lab/src/Sankey/internal.ts'), 'export const familyChanged = true\n');
+  fs.appendFileSync(path.join(upstream, 'packages/themes/neutral/src/theme.ts'), 'export const changed = true\n');
+  fs.appendFileSync(path.join(upstream, 'packages/themes/probe/src/theme.ts'), 'export const changed = true\n');
   git(upstream, ['add', '-A']);
   git(upstream, ['commit', '-qm', 'touch three component packages']);
 
   // Shallow single-branch clone of the feature branch.
   git(null, [
-    'clone',
-    '-q',
-    '--depth=5',
-    '--single-branch',
-    '--branch=feature',
-    `file://${upstream}`,
-    clone,
+    'clone', '-q', '--depth=5', '--single-branch', '--branch=feature',
+    `file://${upstream}`, clone,
   ]);
 
   return {base, clone, branchPoint};
@@ -250,15 +170,7 @@ describe('analyze-pr shallow-clone recovery', () => {
 
       const stdout = execFileSync(
         process.execPath,
-        [
-          SCRIPT,
-          '--base',
-          'origin/main',
-          '--head',
-          'HEAD',
-          '--output',
-          'analysis.json',
-        ],
+        [SCRIPT, '--base', 'origin/main', '--head', 'HEAD', '--output', 'analysis.json'],
         {cwd: clone, encoding: 'utf8'},
       );
       const analysis = JSON.parse(
@@ -282,9 +194,7 @@ describe('analyze-pr shallow-clone recovery', () => {
         'richtext/RichTextView',
         'vega/VegaChart',
       ]);
-      expect(analysis.modifiedComponentOwners).not.toContain(
-        'core/InteractiveRoleContext',
-      );
+      expect(analysis.modifiedComponentOwners).not.toContain('core/InteractiveRoleContext');
       expect(analysis.modifiedComponentOwners).not.toContain('lab/Sankey');
       expect(analysis.forceFullComponentAudits).toBe(true);
       expect(analysis.unresolvedComponentSources).toEqual(
@@ -305,9 +215,7 @@ describe('analyze-pr shallow-clone recovery', () => {
 
 describe('analyze-pr component ownership', () => {
   it('resolves a folder whose doc names the components it is built from', () => {
-    const repo = fs.mkdtempSync(
-      path.join(os.tmpdir(), 'astryx-analyze-owner-'),
-    );
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-analyze-owner-'));
     const write = (file, content) => {
       fs.mkdirSync(path.dirname(path.join(repo, file)), {recursive: true});
       fs.writeFileSync(path.join(repo, file), content);
@@ -323,26 +231,11 @@ describe('analyze-pr component ownership', () => {
           '',
         ].join('\n'),
       );
-      write(
-        'packages/core/src/Label/index.ts',
-        "export {Label} from './Label';\n",
-      );
-      write(
-        'packages/core/src/Label/Label.tsx',
-        'export function Label() {}\n',
-      );
-      write(
-        'packages/core/src/Label/Label.doc.mjs',
-        "export const docs = {\n  name: 'Label',\n};\n",
-      );
-      write(
-        'packages/core/src/Tokenizer/index.ts',
-        "export {Tokenizer} from './Tokenizer';\n",
-      );
-      write(
-        'packages/core/src/Tokenizer/Tokenizer.tsx',
-        'export function Tokenizer() {}\n',
-      );
+      write('packages/core/src/Label/index.ts', "export {Label} from './Label';\n");
+      write('packages/core/src/Label/Label.tsx', 'export function Label() {}\n');
+      write('packages/core/src/Label/Label.doc.mjs', "export const docs = {\n  name: 'Label',\n};\n");
+      write('packages/core/src/Tokenizer/index.ts', "export {Tokenizer} from './Tokenizer';\n");
+      write('packages/core/src/Tokenizer/Tokenizer.tsx', 'export function Tokenizer() {}\n');
       // Anatomy names the Label the Tokenizer renders; Label is implemented
       // in its own folder, so it must not make this folder a family.
       write(
@@ -355,14 +248,8 @@ describe('analyze-pr component ownership', () => {
         "export {Chat} from './Chat';\nexport {ChatComposer} from './ChatComposer';\n",
       );
       write('packages/core/src/Chat/Chat.tsx', 'export function Chat() {}\n');
-      write(
-        'packages/core/src/Chat/ChatComposer.tsx',
-        'export function ChatComposer() {}\n',
-      );
-      write(
-        'packages/core/src/Chat/Chat.doc.mjs',
-        "export const docs = {\n  name: 'Chat',\n};\n",
-      );
+      write('packages/core/src/Chat/ChatComposer.tsx', 'export function ChatComposer() {}\n');
+      write('packages/core/src/Chat/Chat.doc.mjs', "export const docs = {\n  name: 'Chat',\n};\n");
       write(
         'packages/core/src/Chat/ChatComposer.doc.mjs',
         "export const docs = {\n  name: 'ChatComposer',\n};\n",
@@ -373,32 +260,16 @@ describe('analyze-pr component ownership', () => {
       git(repo, ['add', '-A']);
       git(repo, ['commit', '-qm', 'base']);
       git(repo, ['checkout', '-q', '-b', 'feature']);
-      fs.appendFileSync(
-        path.join(repo, 'packages/core/src/Tokenizer/Tokenizer.tsx'),
-        'export const changed = true;\n',
-      );
-      fs.appendFileSync(
-        path.join(repo, 'packages/core/src/Chat/ChatComposer.tsx'),
-        'export const changed = true;\n',
-      );
+      fs.appendFileSync(path.join(repo, 'packages/core/src/Tokenizer/Tokenizer.tsx'), 'export const changed = true;\n');
+      fs.appendFileSync(path.join(repo, 'packages/core/src/Chat/ChatComposer.tsx'), 'export const changed = true;\n');
       git(repo, ['commit', '-qam', 'touch Tokenizer and Chat']);
 
       execFileSync(
         process.execPath,
-        [
-          SCRIPT,
-          '--base',
-          'main',
-          '--head',
-          'HEAD',
-          '--output',
-          'analysis.json',
-        ],
+        [SCRIPT, '--base', 'main', '--head', 'HEAD', '--output', 'analysis.json'],
         {cwd: repo, encoding: 'utf8'},
       );
-      const analysis = JSON.parse(
-        fs.readFileSync(path.join(repo, 'analysis.json'), 'utf8'),
-      );
+      const analysis = JSON.parse(fs.readFileSync(path.join(repo, 'analysis.json'), 'utf8'));
 
       expect(analysis.modifiedComponentOwners).toEqual(['core/Tokenizer']);
       expect(analysis.unresolvedComponentSources).toEqual(['core/Chat']);
@@ -411,9 +282,7 @@ describe('analyze-pr component ownership', () => {
 
 describe('analyze-pr base and head sizes', () => {
   it('sizes a component whose bundle reaches a changed shared module', () => {
-    const repo = fs.mkdtempSync(
-      path.join(os.tmpdir(), 'astryx-analyze-reach-'),
-    );
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-analyze-reach-'));
     const write = (file, content) => {
       fs.mkdirSync(path.dirname(path.join(repo, file)), {recursive: true});
       fs.writeFileSync(path.join(repo, file), content);
@@ -422,82 +291,33 @@ describe('analyze-pr base and head sizes', () => {
       write('package.json', '{}');
       write('.gitignore', 'dist/\n*.json.out\nanalysis.json\n');
       write('packages/core/package.json', '{"type": "module"}\n');
-      write(
-        'packages/core/src/index.ts',
-        "export {Card} from './Card';\nexport {Badge} from './Badge';\n",
-      );
-      write(
-        'packages/core/src/Card/index.ts',
-        "export {Card} from './Card';\n",
-      );
-      write(
-        'packages/core/src/Card/Card.tsx',
-        "import {useHold} from '../hooks/useHold';\nexport function Card() { return useHold(); }\n",
-      );
-      write(
-        'packages/core/src/Card/Card.doc.mjs',
-        "export const docs = {\n  name: 'Card',\n};\n",
-      );
-      write(
-        'packages/core/src/Badge/index.ts',
-        "export {Badge} from './Badge';\n",
-      );
-      write(
-        'packages/core/src/Badge/Badge.tsx',
-        'export function Badge() {}\n',
-      );
-      write(
-        'packages/core/src/Badge/Badge.doc.mjs',
-        "export const docs = {\n  name: 'Badge',\n};\n",
-      );
-      write(
-        'packages/core/src/hooks/useHold.ts',
-        'export function useHold() { return 1; }\n',
-      );
+      write('packages/core/src/index.ts', "export {Card} from './Card';\nexport {Badge} from './Badge';\n");
+      write('packages/core/src/Card/index.ts', "export {Card} from './Card';\n");
+      write('packages/core/src/Card/Card.tsx', "import {useHold} from '../hooks/useHold';\nexport function Card() { return useHold(); }\n");
+      write('packages/core/src/Card/Card.doc.mjs', "export const docs = {\n  name: 'Card',\n};\n");
+      write('packages/core/src/Badge/index.ts', "export {Badge} from './Badge';\n");
+      write('packages/core/src/Badge/Badge.tsx', 'export function Badge() {}\n');
+      write('packages/core/src/Badge/Badge.doc.mjs', "export const docs = {\n  name: 'Badge',\n};\n");
+      write('packages/core/src/hooks/useHold.ts', 'export function useHold() { return 1; }\n');
       git(repo, ['init', '-q', '-b', 'main']);
       git(repo, ['config', 'user.email', 'test@test.co']);
       git(repo, ['config', 'user.name', 'Test']);
       git(repo, ['add', '-A']);
       git(repo, ['commit', '-qm', 'base']);
       git(repo, ['checkout', '-q', '-b', 'feature']);
-      write(
-        'packages/core/src/hooks/useHold.ts',
-        'export function useHold() { return 2; }\n',
-      );
+      write('packages/core/src/hooks/useHold.ts', 'export function useHold() { return 2; }\n');
       git(repo, ['commit', '-qam', 'touch the shared hook only']);
-      write(
-        'packages/core/dist/Card/Card.js',
-        "import {useHold} from '../hooks/useHold.js';\nexport function Card() { return useHold(); }\n",
-      );
-      write(
-        'packages/core/dist/Badge/Badge.js',
-        'export function Badge() { return 0; }\n',
-      );
-      write(
-        'packages/core/dist/hooks/useHold.js',
-        'export function useHold() { return 2; }\n',
-      );
-      write(
-        'packages/core/dist/index.js',
-        "export {Card} from './Card/Card.js';\nexport {Badge} from './Badge/Badge.js';\n",
-      );
+      write('packages/core/dist/Card/Card.js', "import {useHold} from '../hooks/useHold.js';\nexport function Card() { return useHold(); }\n");
+      write('packages/core/dist/Badge/Badge.js', 'export function Badge() { return 0; }\n');
+      write('packages/core/dist/hooks/useHold.js', 'export function useHold() { return 2; }\n');
+      write('packages/core/dist/index.js', "export {Card} from './Card/Card.js';\nexport {Badge} from './Badge/Badge.js';\n");
 
       execFileSync(
         process.execPath,
-        [
-          SCRIPT,
-          '--base',
-          'main',
-          '--head',
-          'HEAD',
-          '--output',
-          'analysis.json',
-        ],
+        [SCRIPT, '--base', 'main', '--head', 'HEAD', '--output', 'analysis.json'],
         {cwd: repo, encoding: 'utf8'},
       );
-      const analysis = JSON.parse(
-        fs.readFileSync(path.join(repo, 'analysis.json'), 'utf8'),
-      );
+      const analysis = JSON.parse(fs.readFileSync(path.join(repo, 'analysis.json'), 'utf8'));
       expect(Object.keys(analysis.componentSizes)).toEqual(['core/Card']);
     } finally {
       fs.rmSync(repo, {recursive: true, force: true});
@@ -505,9 +325,7 @@ describe('analyze-pr base and head sizes', () => {
   });
 
   it('decides reach in the merge-base build when only the base is built', () => {
-    const repo = fs.mkdtempSync(
-      path.join(os.tmpdir(), 'astryx-analyze-basereach-'),
-    );
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-analyze-basereach-'));
     const baseRoot = path.join(repo, '.size-base');
     const write = (root, file, content) => {
       fs.mkdirSync(path.dirname(path.join(root, file)), {recursive: true});
@@ -517,46 +335,14 @@ describe('analyze-pr base and head sizes', () => {
       write(repo, 'package.json', '{}');
       write(repo, '.gitignore', 'dist/\n.size-base/\nbase.json\n');
       write(repo, 'packages/core/package.json', '{"type": "module"}\n');
-      write(
-        repo,
-        'packages/core/src/index.ts',
-        "export {Card} from './Card';\nexport {Badge} from './Badge';\n",
-      );
-      write(
-        repo,
-        'packages/core/src/Card/index.ts',
-        "export {Card} from './Card';\n",
-      );
-      write(
-        repo,
-        'packages/core/src/Card/Card.tsx',
-        "import {useHold} from '../hooks/useHold';\nexport function Card() { return useHold(); }\n",
-      );
-      write(
-        repo,
-        'packages/core/src/Card/Card.doc.mjs',
-        "export const docs = {\n  name: 'Card',\n};\n",
-      );
-      write(
-        repo,
-        'packages/core/src/Badge/index.ts',
-        "export {Badge} from './Badge';\n",
-      );
-      write(
-        repo,
-        'packages/core/src/Badge/Badge.tsx',
-        'export function Badge() {}\n',
-      );
-      write(
-        repo,
-        'packages/core/src/Badge/Badge.doc.mjs',
-        "export const docs = {\n  name: 'Badge',\n};\n",
-      );
-      write(
-        repo,
-        'packages/core/src/hooks/useHold.ts',
-        'export function useHold() { return 1; }\n',
-      );
+      write(repo, 'packages/core/src/index.ts', "export {Card} from './Card';\nexport {Badge} from './Badge';\n");
+      write(repo, 'packages/core/src/Card/index.ts', "export {Card} from './Card';\n");
+      write(repo, 'packages/core/src/Card/Card.tsx', "import {useHold} from '../hooks/useHold';\nexport function Card() { return useHold(); }\n");
+      write(repo, 'packages/core/src/Card/Card.doc.mjs', "export const docs = {\n  name: 'Card',\n};\n");
+      write(repo, 'packages/core/src/Badge/index.ts', "export {Badge} from './Badge';\n");
+      write(repo, 'packages/core/src/Badge/Badge.tsx', 'export function Badge() {}\n');
+      write(repo, 'packages/core/src/Badge/Badge.doc.mjs', "export const docs = {\n  name: 'Badge',\n};\n");
+      write(repo, 'packages/core/src/hooks/useHold.ts', 'export function useHold() { return 1; }\n');
       git(repo, ['init', '-q', '-b', 'main']);
       git(repo, ['config', 'user.email', 'test@test.co']);
       git(repo, ['config', 'user.name', 'Test']);
@@ -564,66 +350,29 @@ describe('analyze-pr base and head sizes', () => {
       git(repo, ['commit', '-qm', 'base']);
       git(repo, ['worktree', 'add', '-q', '--detach', baseRoot, 'HEAD']);
       git(repo, ['checkout', '-q', '-b', 'feature']);
-      write(
-        repo,
-        'packages/core/src/hooks/useHold.ts',
-        'export function useHold() { return 2; }\n',
-      );
+      write(repo, 'packages/core/src/hooks/useHold.ts', 'export function useHold() { return 2; }\n');
       git(repo, ['commit', '-qam', 'touch the shared hook only']);
       // Only the merge base is built, as in the size-base job.
-      write(
-        baseRoot,
-        'packages/core/dist/Card/Card.js',
-        "import {useHold} from '../hooks/useHold.js';\nexport function Card() { return useHold(); }\n",
-      );
-      write(
-        baseRoot,
-        'packages/core/dist/Badge/Badge.js',
-        'export function Badge() { return 0; }\n',
-      );
-      write(
-        baseRoot,
-        'packages/core/dist/hooks/useHold.js',
-        'export function useHold() { return 1; }\n',
-      );
-      write(
-        baseRoot,
-        'packages/core/dist/index.js',
-        "export {Card} from './Card/Card.js';\nexport {Badge} from './Badge/Badge.js';\n",
-      );
+      write(baseRoot, 'packages/core/dist/Card/Card.js', "import {useHold} from '../hooks/useHold.js';\nexport function Card() { return useHold(); }\n");
+      write(baseRoot, 'packages/core/dist/Badge/Badge.js', 'export function Badge() { return 0; }\n');
+      write(baseRoot, 'packages/core/dist/hooks/useHold.js', 'export function useHold() { return 1; }\n');
+      write(baseRoot, 'packages/core/dist/index.js', "export {Card} from './Card/Card.js';\nexport {Badge} from './Badge/Badge.js';\n");
 
       execFileSync(
         process.execPath,
-        [
-          SCRIPT,
-          '--base',
-          'main',
-          '--head',
-          'HEAD',
-          '--base-root',
-          '.size-base',
-          '--base-only',
-          '--output',
-          'base.json',
-        ],
+        [SCRIPT, '--base', 'main', '--head', 'HEAD', '--base-root', '.size-base', '--base-only', '--output', 'base.json'],
         {cwd: repo, encoding: 'utf8'},
       );
-      const base = JSON.parse(
-        fs.readFileSync(path.join(repo, 'base.json'), 'utf8'),
-      );
+      const base = JSON.parse(fs.readFileSync(path.join(repo, 'base.json'), 'utf8'));
       expect(Object.keys(base.baseComponentSizes)).toEqual(['core/Card']);
-      expect(
-        base.baseComponentSizes['core/Card'].importGzipBytes,
-      ).toBeGreaterThan(0);
+      expect(base.baseComponentSizes['core/Card'].importGzipBytes).toBeGreaterThan(0);
     } finally {
       fs.rmSync(repo, {recursive: true, force: true});
     }
   });
 
   it('measures the merge base through its own defining module when the pull request renames it', () => {
-    const repo = fs.mkdtempSync(
-      path.join(os.tmpdir(), 'astryx-analyze-rename-'),
-    );
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-analyze-rename-'));
     const baseRoot = path.join(repo, '.size-base');
     const write = (root, file, content) => {
       fs.mkdirSync(path.dirname(path.join(root, file)), {recursive: true});
@@ -633,26 +382,10 @@ describe('analyze-pr base and head sizes', () => {
       write(repo, 'package.json', '{}');
       write(repo, '.gitignore', 'dist/\n.size-base/\nbase.json\n');
       write(repo, 'packages/core/package.json', '{"type": "module"}\n');
-      write(
-        repo,
-        'packages/core/src/index.ts',
-        "export {Card} from './Card';\n",
-      );
-      write(
-        repo,
-        'packages/core/src/Card/index.ts',
-        "export {Card} from './Card';\n",
-      );
-      write(
-        repo,
-        'packages/core/src/Card/Card.tsx',
-        'export function Card() {}\n',
-      );
-      write(
-        repo,
-        'packages/core/src/Card/Card.doc.mjs',
-        "export const docs = {\n  name: 'Card',\n};\n",
-      );
+      write(repo, 'packages/core/src/index.ts', "export {Card} from './Card';\n");
+      write(repo, 'packages/core/src/Card/index.ts', "export {Card} from './Card';\n");
+      write(repo, 'packages/core/src/Card/Card.tsx', 'export function Card() {}\n');
+      write(repo, 'packages/core/src/Card/Card.doc.mjs', "export const docs = {\n  name: 'Card',\n};\n");
       git(repo, ['init', '-q', '-b', 'main']);
       git(repo, ['config', 'user.email', 'test@test.co']);
       git(repo, ['config', 'user.name', 'Test']);
@@ -660,52 +393,21 @@ describe('analyze-pr base and head sizes', () => {
       git(repo, ['commit', '-qm', 'base']);
       git(repo, ['worktree', 'add', '-q', '--detach', baseRoot, 'HEAD']);
       git(repo, ['checkout', '-q', '-b', 'feature']);
-      git(repo, [
-        'mv',
-        'packages/core/src/Card/Card.tsx',
-        'packages/core/src/Card/CardView.tsx',
-      ]);
-      write(
-        repo,
-        'packages/core/src/Card/index.ts',
-        "export {Card} from './CardView';\n",
-      );
+      git(repo, ['mv', 'packages/core/src/Card/Card.tsx', 'packages/core/src/Card/CardView.tsx']);
+      write(repo, 'packages/core/src/Card/index.ts', "export {Card} from './CardView';\n");
       git(repo, ['commit', '-qam', 'rename the defining module']);
       // Only the merge base is built; its package entry does not export Card,
       // so a figure proves the defining module was measured.
-      write(
-        baseRoot,
-        'packages/core/dist/Card/Card.js',
-        'export function Card() { return 1; }\n',
-      );
-      write(
-        baseRoot,
-        'packages/core/dist/index.js',
-        'export const other = 1;\n',
-      );
+      write(baseRoot, 'packages/core/dist/Card/Card.js', 'export function Card() { return 1; }\n');
+      write(baseRoot, 'packages/core/dist/index.js', 'export const other = 1;\n');
 
       execFileSync(
         process.execPath,
-        [
-          SCRIPT,
-          '--base',
-          'main',
-          '--head',
-          'HEAD',
-          '--base-root',
-          '.size-base',
-          '--base-only',
-          '--output',
-          'base.json',
-        ],
+        [SCRIPT, '--base', 'main', '--head', 'HEAD', '--base-root', '.size-base', '--base-only', '--output', 'base.json'],
         {cwd: repo, encoding: 'utf8'},
       );
-      const base = JSON.parse(
-        fs.readFileSync(path.join(repo, 'base.json'), 'utf8'),
-      );
-      expect(
-        base.baseComponentSizes['core/Card'].importGzipBytes,
-      ).toBeGreaterThan(0);
+      const base = JSON.parse(fs.readFileSync(path.join(repo, 'base.json'), 'utf8'));
+      expect(base.baseComponentSizes['core/Card'].importGzipBytes).toBeGreaterThan(0);
     } finally {
       fs.rmSync(repo, {recursive: true, force: true});
     }
@@ -732,21 +434,9 @@ describe('analyze-pr base and head sizes', () => {
         'packages/core/src/Chat/index.ts',
         "export {Chat} from './Chat';\nexport {ChatComposer} from './ChatComposer';\n",
       );
-      write(
-        repo,
-        'packages/core/src/Chat/Chat.tsx',
-        'export function Chat() {}\n',
-      );
-      write(
-        repo,
-        'packages/core/src/Chat/ChatComposer.tsx',
-        'export function ChatComposer() {}\n',
-      );
-      write(
-        repo,
-        'packages/core/src/Chat/Chat.doc.mjs',
-        "export const docs = {\n  name: 'Chat',\n};\n",
-      );
+      write(repo, 'packages/core/src/Chat/Chat.tsx', 'export function Chat() {}\n');
+      write(repo, 'packages/core/src/Chat/ChatComposer.tsx', 'export function ChatComposer() {}\n');
+      write(repo, 'packages/core/src/Chat/Chat.doc.mjs', "export const docs = {\n  name: 'Chat',\n};\n");
       write(
         repo,
         'packages/core/src/Chat/ChatComposer.doc.mjs',
@@ -792,26 +482,14 @@ describe('analyze-pr base and head sizes', () => {
         'export const base = 1;\n'.repeat(10),
       );
       write(repo, 'packages/core/dist/Card/index.js', 'x'.repeat(160));
-      write(
-        baseRoot,
-        'packages/core/dist/Card/Card.js',
-        'export function Card() {}\n',
-      );
+      write(baseRoot, 'packages/core/dist/Card/Card.js', 'export function Card() {}\n');
       write(
         repo,
         'packages/core/dist/Card/Card.js',
         'export function Card() { return "a longer head body"; }\nexport const changed = true;\n',
       );
-      write(
-        baseRoot,
-        'packages/core/dist/Chat/Chat.js',
-        'export function Chat() {}\n',
-      );
-      write(
-        repo,
-        'packages/core/dist/Chat/Chat.js',
-        'export function Chat() {}\n',
-      );
+      write(baseRoot, 'packages/core/dist/Chat/Chat.js', 'export function Chat() {}\n');
+      write(repo, 'packages/core/dist/Chat/Chat.js', 'export function Chat() {}\n');
       write(
         repo,
         'packages/core/dist/Chat/ChatComposer.js',
@@ -851,17 +529,11 @@ describe('analyze-pr base and head sizes', () => {
         'core/Chat',
         'core/ChatComposer',
       ]);
-      expect(
-        analysis.componentSizes['core/Card'].importGzipBytes,
-      ).toBeGreaterThan(
+      expect(analysis.componentSizes['core/Card'].importGzipBytes).toBeGreaterThan(
         analysis.baseComponentSizes['core/Card'].importGzipBytes,
       );
-      expect(
-        analysis.componentSizes['core/ChatComposer'].importGzipBytes,
-      ).toBeGreaterThan(0);
-      expect(
-        analysis.baseComponentSizes['core/ChatComposer'].importGzipBytes,
-      ).toBeNull();
+      expect(analysis.componentSizes['core/ChatComposer'].importGzipBytes).toBeGreaterThan(0);
+      expect(analysis.baseComponentSizes['core/ChatComposer'].importGzipBytes).toBeNull();
       const [headBundle] = analysis.bundlePackages;
       const [baseBundle] = analysis.baseBundlePackages;
       expect(headBundle.package).toBe('@astryxdesign/core');
@@ -892,9 +564,7 @@ describe('analyze-pr base and head sizes', () => {
       expect(baseOnly.baseSha).toBe(git(repo, ['rev-parse', 'main']));
       expect(baseOnly.baseComponentStats.Card.esmBytes).toBe(100);
       expect(baseOnly.componentStats).toBeUndefined();
-      expect(
-        baseOnly.baseComponentSizes['core/Chat'].importGzipBytes,
-      ).toBeGreaterThan(0);
+      expect(baseOnly.baseComponentSizes['core/Chat'].importGzipBytes).toBeGreaterThan(0);
     } finally {
       fs.rmSync(repo, {recursive: true, force: true});
     }
