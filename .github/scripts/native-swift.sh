@@ -127,7 +127,9 @@ for spec in $hosts; do
     "$xcodegen" generate --spec project.yml --quiet
     project=$(find . -maxdepth 1 -name '*.xcodeproj' | head -1)
     xcodebuild -list -json -project "$project" > "$work/host-schemes.json"
-    scheme=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["project"]["schemes"][0])' "$work/host-schemes.json")
+    # The host's own scheme is named after its project; the local package
+    # adds schemes of its own beside it.
+    scheme=$(python3 -c 'import json,sys; p=json.load(open(sys.argv[1]))["project"]; print(p["name"] if p["name"] in p["schemes"] else p["schemes"][0])' "$work/host-schemes.json")
     name=$(basename "$(dirname "$host")")
     results="$work/$name-host-ui.xcresult"
     rm -rf "$results"
