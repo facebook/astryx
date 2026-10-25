@@ -171,6 +171,7 @@ astryx/
 | `pnpm build`      | Build all packages                           |
 | `pnpm test`       | Run all tests                                |
 | `pnpm test:watch` | Run tests in watch mode                      |
+| `pnpm typecheck`  | Typecheck every package (after `pnpm build`) |
 | `pnpm storybook`  | Start Storybook at localhost:6006            |
 | `pnpm lint`       | Lint all packages                            |
 
@@ -497,6 +498,44 @@ src/Button/
 └── Button.test.tsx   # Tests live here
 ```
 
+### Where tests go, and how CI finds them
+
+CI runs package scripts, never a list of test files, so a new test or a new
+package needs no edit to `.github/workflows/`. Put the test where its kind is
+collected and CI picks it up:
+
+| Kind                                     | Put it                                                                                                             | Collected by                                                              | CI job                                                        |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Unit and integration (jsdom or Node)     | `*.test.ts(x)` / `*.test.mjs` beside the code, in a path the `ui` or `node` project of `vitest.config.ts` includes | `pnpm test:ui`, `pnpm test:node`                                          | `test-ui`, `test-node` (sharded)                              |
+| Browser accessibility or engine behavior | `*.a11y.chromium.spec.ts` (Chromium) or `*.a11y.browser.spec.ts` (Chromium and WebKit) under `packages/*/src/`     | `pnpm test:a11y-contract`; pull requests run `pnpm test:a11y-contract:pr` | `pr-a11y`; every spec in the release check's `a11y-contracts` |
+| Types                                    | the package's own tsconfig                                                                                         | the package's `typecheck` script, run by `pnpm typecheck`                 | `typecheck`                                                   |
+| Visual regression                        | a Storybook story                                                                                                  | the visual plan                                                           | `pr-visual`                                                   |
+
+A browser spec runs on a pull request when the PR changes the spec, its
+component folder, or the component it is named after (`ChatSendButton.a11y.chromium.spec.ts`
+belongs to `core/ChatSendButton`). Routing lines in the spec's header comment
+change that, and the runner rejects any other value:
+
+```ts
+// @pr-a11y always                 every PR that changes components
+// @pr-a11y scope core/Selector ^apps/storybook/stories/ComboboxA11y
+//                                 also when one token matches: a component, or
+//                                 a regular expression over changed paths
+// @pr-a11y audit DateInput        only on a "[Component Audit] DateInput:" PR
+// @pr-a11y release-only           never on a PR; the release check runs it
+```
+
+`pnpm test:a11y-contract:pr origin/main --dry-run` prints what a pull request
+from your branch would run. Every spec writes its receipts under
+`test-results/<name>/` and CI uploads them in one `pr-a11y-evidence-<sha>`
+artifact.
+
+A new package joins `pnpm typecheck` by defining a `typecheck` script that
+covers all of its own type checks (sources, tests, doc examples, emitted
+declarations). A new check of an existing kind goes into that kind's package
+script (`test:build`, `test:theme-family`, a package's `typecheck`), not into a
+workflow step.
+
 ### Accessibility audits
 
 PRs that touch components run an axe-core audit (the `pr-a11y` CI job) over
@@ -551,7 +590,8 @@ focus, or real activation is reported `unrun` there and proven in Chromium.
 pnpm storybook:build
 npx playwright install chromium
 
-pnpm test:a11y-contract      # the Chromium lane (also runs inside pr-a11y)
+pnpm test:a11y-contract      # the Chromium lane, every spec (the release check)
+pnpm test:a11y-contract:pr   # the specs a pull request from this branch runs
 ```
 
 Adopting the pattern in a new component means binding to the existing contract,

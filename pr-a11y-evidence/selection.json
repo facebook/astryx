@@ -1,0 +1,320 @@
+{
+  "head": null,
+  "discovered": 161,
+  "scopeKnown": false,
+  "components": [],
+  "selected": [
+    {
+      "file": "internal/a11y-spec/src/harness/chromium.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "internal/a11y-spec/src/patterns/accordion.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "internal/a11y-spec/src/patterns/alert-dialog.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "internal/a11y-spec/src/patterns/carousel.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "internal/a11y-spec/src/patterns/combobox.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "internal/a11y-spec/src/patterns/grid.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "internal/a11y-spec/src/patterns/landmark.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "internal/a11y-spec/src/patterns/link.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "internal/a11y-spec/src/patterns/menu-button.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "internal/a11y-spec/src/patterns/menu.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "internal/a11y-spec/src/patterns/progressbar.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "internal/a11y-spec/src/patterns/slider.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "internal/a11y-spec/src/patterns/table.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "internal/a11y-spec/src/patterns/toggle-button.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "internal/a11y-spec/src/patterns/toolbar.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "internal/a11y-spec/src/patterns/tooltip.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "internal/a11y-spec/src/patterns/tree-view.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "internal/a11y-spec/src/patterns/window-splitter.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/AlertDialog/__tests__/AlertDialog.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/Calendar/__tests__/Calendar.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/Carousel/__tests__/Carousel.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/Chat/__tests__/ChatMessageBubble.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/CodeBlock/__tests__/CodeBlockOverflowStop.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/CodeBlock/__tests__/DiffRowPaint.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/Collapsible/__tests__/CollapsibleGroupAccordion.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/DateInput/__tests__/DateInputAudit.a11y.chromium.spec.ts",
+      "reason": "component audit DateInput"
+    },
+    {
+      "file": "packages/core/src/DateInput/__tests__/WheelPinchZoom.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/DropdownMenu/__tests__/Menu.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/DropdownMenu/__tests__/MenuButton.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/DropdownMenu/__tests__/MenuHeaderFooter.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/DropdownMenu/__tests__/MenuHoverFocus.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/DropdownMenu/__tests__/SubMenuHeaderFooter.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/Item/__tests__/ItemSwipePinchZoom.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/Layer/__tests__/LayerReducedMotion.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/Layer/__tests__/TouchTrigger.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/Layout/__tests__/Layout.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/Lightbox/LightboxKeyboard.a11y.browser.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/Link/__tests__/Link.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/Markdown/plugins/headingLinks.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/MobileNav/__tests__/MobileNavWidth.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/MultiSelector/MultiSelector.disabledFocus.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/Outline/OutlineFocus.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/ProgressBar/__tests__/ProgressBar.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/Resizable/__tests__/ResizeHandle.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/Selector/__tests__/EmptyStateAnnouncement.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/Selector/__tests__/Selector.combobox.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/Slider/__tests__/Slider.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/Table/__tests__/Table.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/Table/__tests__/TableMinWidth.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/ToggleButton/__tests__/ToggleButton.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/Token/__tests__/TokenRemoveTarget.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/Toolbar/__tests__/Toolbar.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/Tooltip/__tests__/Tooltip.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/Tooltip/__tests__/TooltipHoverBridge.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/TopNav/__tests__/TopNavMobileLongHeading.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/TreeList/__tests__/TreeList.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/TreeList/__tests__/TreeListRowNames.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/__tests__/CardPress.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/__tests__/DisabledTriggerFocus.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/hooks/__tests__/MenuPressShadowRoot.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/core/src/reset.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/core/src/reset.until-found.a11y.browser.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/lab/src/CircularProgress/__tests__/CircularProgress.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/lab/src/Schedule/__tests__/ScheduleEventPopover.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/lab/src/Schedule/__tests__/ScheduleMonthChip.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/lab/src/Schedule/__tests__/ScheduleMonthEventPopover.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/lab/src/Schedule/__tests__/ScheduleMonthOverflow.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/lab/src/Schedule/__tests__/ScheduleTimeDirection.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/lab/src/Schedule/__tests__/ScheduleTimeGridGeometry.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/lab/src/Schedule/__tests__/ScheduleTimeGridInitialPosition.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/lab/src/Schedule/__tests__/ScheduleTimeGridLongSpan.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/lab/src/Schedule/__tests__/ScheduleTimeGridMidnight.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/lab/src/Schedule/__tests__/ScheduleTimeGridOverlap.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/lab/src/Schedule/__tests__/ScheduleTimeGridSkippedMidnight.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/lab/src/__tests__/ReorderGripPinchZoom.a11y.chromium.spec.ts",
+      "reason": "always"
+    },
+    {
+      "file": "packages/richtext/src/__tests__/MarkdownParitySandbox.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/richtext/src/__tests__/RichTextEditorToolbar.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    },
+    {
+      "file": "packages/richtext/src/__tests__/RichTextView.a11y.chromium.spec.ts",
+      "reason": "scope unknown"
+    }
+  ]
+}

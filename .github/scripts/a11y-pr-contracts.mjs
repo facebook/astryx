@@ -29,7 +29,8 @@
  * the PR's component scope.
  *
  * Unknown scope (no merge base, no changed-file list) runs every scoped spec,
- * never fewer. The CI step loads this file from the merge commit its steps come
+ * never fewer. Locally, `pnpm test:a11y-contract:pr origin/main --dry-run`
+ * prints what a PR from this branch would run. The CI step loads this file from the merge commit its steps come
  * from, so it uses only Node built-ins: an older PR head may not have it.
  */
 
@@ -209,7 +210,12 @@ export function changedSinceMergeBase(base) {
     const head = git(['rev-parse', 'HEAD']);
     const fetch = extra =>
       git(['fetch', '--quiet', '--no-tags', ...extra, 'origin', base, head]);
-    fetch(['--depth=200']);
+    // A local run may name a ref that is already present (origin/main).
+    try {
+      fetch(['--depth=200']);
+    } catch {
+      git(['rev-parse', '--verify', `${base}^{commit}`]);
+    }
     let mergeBase = null;
     for (;;) {
       try {
@@ -288,7 +294,8 @@ function main() {
   const isPullRequest = process.env.GITHUB_EVENT_NAME
     ? process.env.GITHUB_EVENT_NAME === 'pull_request'
     : true;
-  const base = process.env.BASE_SHA || process.argv[2];
+  const base =
+    process.env.BASE_SHA || process.argv.slice(2).find(arg => !arg.startsWith('-'));
   const policySha = process.env.WORKFLOW_SHA;
   const specs = listSpecs(root).map(file => ({
     file,
@@ -323,7 +330,7 @@ function main() {
     `PR accessibility specs: ${selected.length} of ${specs.length} discovered.`,
   );
   for (const {file, reason} of selected) console.log(`  ${file}  (${reason})`);
-  if (selected.length === 0) return 0;
+  if (selected.length === 0 || process.argv.includes('--dry-run')) return 0;
 
   // One run: Playwright keeps going past a failing file, and its own output
   // directory leaves the specs' evidence under test-results/ untouched. The
