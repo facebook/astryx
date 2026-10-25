@@ -210,11 +210,16 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     flexGrow: 1,
-    // Under the touch presentation (a finger) the gesture host sets the touch
-    // targets' and the track's touch-action as their recognizers need it
-    // (the track's tap leaves the page its scrolling), and turns text
-    // selection and the callout off where a finger is held.
-    touchAction: 'none',
+    // Under a finger (a coarse primary pointer) the control leaves the browser
+    // its pans, so a swipe from the track or across a thumb scrolls the page.
+    // The gesture host narrows that per element from the recognizers attached
+    // to it (a thumb's pan keeps its own axis) and never widens it, and it
+    // turns text selection and the callout off where a finger is held. A mouse
+    // or a trackpad keeps the control's `none`.
+    touchAction: {
+      default: 'none',
+      '@media (pointer: coarse)': 'manipulation',
+    },
     userSelect: 'none',
     isolation: 'isolate',
   },
@@ -1354,8 +1359,8 @@ export function Slider({ref, ...props}: SliderProps) {
               styles.thumbHit,
               rtlStyles.centerInline('-50%'),
               styles.thumbHitSize(UIKIT_SLIDER.thumbHitTarget),
-        )}
-      />
+            )}
+          />
         )}
       </div>
     );
