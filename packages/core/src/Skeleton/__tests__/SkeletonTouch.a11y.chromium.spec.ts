@@ -164,6 +164,10 @@ test.describe('with a mouse or trackpad', () => {
   }) => {
     await page.emulateMedia({reducedMotion: 'reduce'});
     await open(page);
+    // A fine primary pointer in this context, before any check.
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(false);
     const {count, animations, first, second} = await placeholders(page);
     expect(count).toBeGreaterThan(0);
     expect(animations.every(n => n === 0)).toBe(true);
