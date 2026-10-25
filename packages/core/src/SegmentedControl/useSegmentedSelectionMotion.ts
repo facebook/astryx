@@ -899,10 +899,18 @@ export class SegmentedSelectionMotion {
       Math.max(touch.toTrackX(clientX), Math.min(...centers) - reach),
       Math.max(...centers) + reach,
     );
-    // The center chases the finger; the size stays lifted.
+    // The center chases the finger; the size stays lifted. Each chase starts
+    // at the call (an explicit start): a call from rest waits for the
+    // browser to start it, and on Android Chrome, whose touch moves arrive
+    // once a frame, the next move came before that start was known, so every
+    // move started the chase from rest again and the lens stuck to its
+    // segment until the finger stopped (or followed it, when the start came
+    // in time).
+    const at = this.now();
     this.springLens(
       {x: target - center(carried.box)},
       this.springFrom({x: target - center(carried.box)}, 'tracking'),
+      {at},
     );
   }
 
