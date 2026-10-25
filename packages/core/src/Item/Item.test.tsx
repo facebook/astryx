@@ -26,6 +26,10 @@ import {rulesDeclaredFor} from '../__tests__/pressState';
 import userEvent from '@testing-library/user-event';
 import {Item} from './Item';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
+import {
+  useItemSwipeReveal,
+  type ItemSwipeReveal,
+} from './ItemSwipeRevealContext';
 import {emulateTouch} from './__tests__/emulateTouch';
 import {TapGestureRecognizer, useGestureRecognizer} from '../gestures';
 import {pointerQuery} from '../gestures/__tests__/pointerQuery';
@@ -2081,6 +2085,174 @@ describe('swipeActions', () => {
             r.includes('background-color: var(--color-error'),
         ),
       ).toBe(true);
+    });
+  });
+
+  describe('a reveal from a control in the row (List’s edit-mode delete control)', () => {
+    /** What the control in the row's marker read at its last render. */
+    let latest: ItemSwipeReveal | null = null;
+
+    /**
+     * UIKit's delete control: its tap opens the row's trailing actions, and a
+     * tap while they are open closes them.
+     */
+    function DeleteControl() {
+      const swipe = useItemSwipeReveal();
+      latest = swipe;
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            if (swipe?.side === 'trailing') {
+              swipe.close();
+            } else {
+              swipe?.reveal('trailing');
+            }
+          }}>
+          Delete control
+        </button>
+      );
+    }
+
+    function renderEditRow({
+      leading,
+      trailing = [
+        {label: 'Delete', onActivate: vi.fn(), variant: 'destructive'},
+      ],
+    }: {leading?: Entry[]; trailing?: Entry[]} = {}) {
+      const onClick = vi.fn();
+      render(
+        <Item
+          label="Conversation"
+          onClick={onClick}
+          data-testid="row"
+          marker={<DeleteControl />}
+          swipeActions={{leading, trailing}}
+        />,
+      );
+      const row = screen.getByTestId('row');
+      layOut(row);
+      const control = screen.getByRole('button', {name: 'Delete control'});
+      return {row, control, onClick};
+    }
+
+    beforeEach(() => {
+      latest = null;
+    });
+
+    it('opens the row on the trailing side as a swipe does: the panel’s width, the live panel, the side reported from the call', async () => {
+      const {row, control, onClick} = renderEditRow();
+      expect(latest).not.toBeNull();
+      expect(latest?.side).toBeNull();
+      fireEvent.click(control);
+      // Open from the call on, as from the release that opens a swipe.
+      expect(latest?.side).toBe('trailing');
+      expect(row).not.toHaveAttribute('data-astryx-pressable');
+      await settled();
+      expect(xOf(row)).toBe(-72);
+      expect(panelOf(row, 'trailing')).not.toHaveAttribute('inert');
+      expect(screen.getByRole('button', {name: 'Delete'})).toBeVisible();
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
+    it('closes from the control again when it is activated with no touch (a key, assistive technology)', async () => {
+      const {row, control} = renderEditRow();
+      fireEvent.click(control);
+      await settled();
+      expect(xOf(row)).toBe(-72);
+      fireEvent.click(control);
+      expect(latest?.side).toBeNull();
+      await settled();
+      expect(xOf(row)).toBe(0);
+      expect(panelOf(row, 'trailing')).toHaveAttribute('inert');
+    });
+
+    it('takes a touch on the control of an open row as the row’s dismissing tap: the row closes, and the control gets no click to open it again', async () => {
+      const {row, control} = renderEditRow();
+      fireEvent.click(control);
+      await settled();
+      expect(xOf(row)).toBe(-72);
+      const f = finger(control, 2);
+      f.down(20);
+      // Taken at the lift: its touchend is cancelled, so the browser makes no
+      // click on the control.
+      expect(f.up().defaultPrevented).toBe(true);
+      expect(latest?.side).toBeNull();
+      await settled();
+      expect(xOf(row)).toBe(0);
+    });
+
+    it('closes a revealed row on a pointer outside it and on Escape, as a swiped-open row', async () => {
+      const {row, control} = renderEditRow();
+      fireEvent.click(control);
+      await settled();
+      fireEvent.pointerDown(document.body, {
+        pointerId: 9,
+        pointerType: 'touch',
+      });
+      await settled();
+      expect(xOf(row)).toBe(0);
+      fireEvent.click(control);
+      await settled();
+      expect(xOf(row)).toBe(-72);
+      const entry = screen.getByRole('button', {name: 'Delete'});
+      act(() => {
+        entry.focus();
+      });
+      fireEvent.keyDown(entry, {key: 'Escape'});
+      await settled();
+      expect(xOf(row)).toBe(0);
+    });
+
+    it('reports the side a swipe opens, and from a row open on the other side closes it first, then opens', async () => {
+      const {row, control} = renderEditRow({
+        leading: [{label: 'Unread', onActivate: vi.fn()}],
+      });
+      dragLeading(row, 45);
+      await settled();
+      expect(xOf(row)).toBe(72);
+      expect(latest?.side).toBe('leading');
+      fireEvent.click(control);
+      await settled();
+      await settled();
+      expect(xOf(row)).toBe(-72);
+      expect(latest?.side).toBe('trailing');
+      expect(panelOf(row, 'leading')).toHaveAttribute('inert');
+      expect(panelOf(row, 'trailing')).not.toHaveAttribute('inert');
+      expect(screen.getByRole('button', {name: 'Delete'})).toBeVisible();
+    });
+
+    it('does nothing on a side with no entries', async () => {
+      const {row, control} = renderEditRow({
+        leading: [{label: 'Unread', onActivate: vi.fn()}],
+        trailing: [],
+      });
+      expect(latest).not.toBeNull();
+      fireEvent.click(control);
+      expect(latest?.side).toBeNull();
+      await settled();
+      expect(xOf(row)).toBe(0);
+    });
+
+    it('is null on a row without swipe actions', () => {
+      render(<Item label="Conversation" marker={<DeleteControl />} />);
+      expect(
+        screen.getByRole('button', {name: 'Delete control'}),
+      ).toBeVisible();
+      expect(latest).toBeNull();
+    });
+
+    it('opens the row under a fine primary pointer too: a finger swipes on every device, so the row has a swipe to reveal there', async () => {
+      vi.unstubAllGlobals();
+      // A fine primary pointer in this context, before anything is checked.
+      expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+      const {row, control} = renderEditRow();
+      expect(latest).not.toBeNull();
+      fireEvent.click(control);
+      expect(latest?.side).toBe('trailing');
+      await settled();
+      expect(xOf(row)).toBe(-72);
+      expect(panelOf(row, 'trailing')).not.toHaveAttribute('inert');
     });
   });
 

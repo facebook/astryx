@@ -9,9 +9,9 @@
  * @output Exports ItemSwipeLayer (default) — the panels of a row's swipe
  *   actions and the gesture that uncovers them — and the ItemSwipeBridge type
  *   through which the root reaches the gesture's key handler
- * @position Internal to Item, imported by Item.tsx with the row (no lazy
- *   chunk: a row's first swipe never waits for one). Tested through
- *   Item.test.tsx and Item.source-build.test.mjs.
+ * @position Internal to Item, reached only through a dynamic import from
+ *   Item.tsx when `swipeActions` is set, so a row without them never loads
+ *   the gesture. Tested through Item.test.tsx and Item.source-build.test.mjs.
  *
  * The row's root stays Item's: it carries the swipe root styles and forwards
  * its key events into the bridge this layer fills; the gesture attaches to
@@ -51,27 +51,32 @@ import type {ItemSwipeAction, ItemSwipeBehavior} from './Item';
 // =============================================================================
 
 /**
- * What the root needs from the gesture: the key handler it forwards its key
- * events into (Escape closes a resting row). The layer writes it on every
- * render; the root reads it on every event.
+ * What Item needs from the gesture: the key handler the root forwards its key
+ * events into (Escape closes a resting row), and the reveal a control in the
+ * row reaches through ItemSwipeRevealContext. The layer publishes it when it
+ * mounts; each call reads the gesture's latest handlers.
  */
 export interface ItemSwipeBridge {
   onKeyDown: (event: React.KeyboardEvent) => void;
+  /** Open the row on `side` as a swipe opens it (useSwipeAction's `reveal`). */
+  reveal: (side: SwipeSide) => void;
+  /** Close the row as a tap outside it does. */
+  close: () => void;
 }
 
 export interface ItemSwipeLayerProps {
   /**
-   * Called with the gesture for the root to forward into, after every render
-   * of the layer, and with `null` when the layer leaves.
+   * Called with the gesture for Item to forward into when the layer mounts,
+   * and with `null` when it leaves.
    */
   onBridge: (bridge: ItemSwipeBridge | null) => void;
   /**
-   * Called with `true` when the row opens (from the release that opens it)
-   * and with `false` when it closes or the layer leaves. The root takes no
-   * press while open: a tap on an open row's content only closes it, as in
-   * UIKit, where the cell never sees that touch.
+   * Called with the side the row opens on (from the release or reveal that
+   * opens it) and with `null` when it closes or the layer leaves. The root
+   * takes no press while open: a tap on an open row's content only closes
+   * it, as in UIKit, where the cell never sees that touch.
    */
-  onOpenChange: (isOpen: boolean) => void;
+  onOpenChange: (side: SwipeSide | null) => void;
   leading: ItemSwipeAction[];
   trailing: ItemSwipeAction[];
   behavior: ItemSwipeBehavior;
@@ -280,17 +285,26 @@ export default function ItemSwipeLayer({
       trailing: trailing.length > 0,
     },
   });
-  // The root forwards its key events into what this publishes. The Effect
-  // installs this layer's key handler on Item's root, which
-  // lives outside the layer, and releases it when the layer leaves. React
-  // flushes effects before it delivers a discrete event, so a handler never
-  // meets a stale bridge.
+  // The root forwards its key events, and a control in the row its reveal,
+  // into what this publishes. The first Effect keeps the gesture's latest
+  // handlers for the bridge to call; the second installs the bridge on Item,
+  // which lives outside this lazily loaded layer, once when the layer mounts,
+  // and releases it when the layer leaves. React flushes effects before it
+  // delivers a discrete event, so a call never meets a stale handler.
+  const swipeRef = useRef(swipe);
   useEffect(() => {
-    onBridge({onKeyDown: swipe.onKeyDown});
+    swipeRef.current = swipe;
+  });
+  useEffect(() => {
+    onBridge({
+      close: () => swipeRef.current.close(),
+      onKeyDown: event => swipeRef.current.onKeyDown(event),
+      reveal: side => swipeRef.current.reveal(side),
+    });
     return () => {
       onBridge(null);
     };
-  });
+  }, [onBridge]);
   const isSwipeResting = swipe.state.phase === 'resting';
 
   // A side's panel: entries as real buttons under `reveal`, presentational

@@ -15,6 +15,10 @@
  * the root itself, so a swipeable row keeps the DOM it had when the gesture
  * was imported here (Item.source-build.test.mjs pins the import graph).
  *
+ * A control Item renders in the row (List's edit-mode delete control, in the
+ * marker slot) reaches the row's swipe through ItemSwipeRevealContext: the
+ * side it is open on, and the swipe's own reveal and close.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Item/Item.doc.mjs
  * - /packages/core/src/Item/Item.test.tsx
@@ -24,7 +28,14 @@
  * - /packages/cli/assets/templates/blocks/components/Item/ (showcase blocks)
  */
 
-import {useCallback, useId, useRef, useState, type ReactNode} from 'react';
+import {
+  useCallback,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -37,6 +48,11 @@ import {
 import type {BaseProps} from '../BaseProps';
 import {isRenderable, mergeProps} from '../utils';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
+import {
+  ItemSwipeRevealContext,
+  type ItemSwipeReveal,
+  type ItemSwipeSide,
+} from './ItemSwipeRevealContext';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {computeTargetAndRel} from '../Link/computeTargetAndRel';
 import {useLinkComponent} from '../Link/useLinkComponent';
@@ -634,12 +650,32 @@ export function Item({
   // Filled by the swipe layer once it has mounted; empty until then and on a
   // row without swipe actions, when the forwarders below do nothing.
   const swipeBridgeRef = useRef<ItemSwipeBridge | null>(null);
+  const [hasSwipeBridge, setHasSwipeBridge] = useState(false);
   const setSwipeBridge = useCallback((bridge: ItemSwipeBridge | null) => {
     swipeBridgeRef.current = bridge;
+    setHasSwipeBridge(bridge != null);
   }, []);
-  // An open row's root is no pressable surface: a tap on its content only
-  // closes it, and UIKit's cell neither sees that touch nor highlights.
-  const [isSwipeOpen, setSwipeOpen] = useState(false);
+  // The side an open row is open on. An open row's root is no pressable
+  // surface: a tap on its content only closes it, and UIKit's cell neither
+  // sees that touch nor highlights.
+  const [swipeOpenSide, setSwipeOpenSide] = useState<ItemSwipeSide | null>(
+    null,
+  );
+  const isSwipeOpen = swipeOpenSide != null;
+  // The row's swipe as a control rendered in the row reaches it (List's
+  // edit-mode delete control, in the marker slot): `null` wherever there is
+  // none to reveal, and until the layer has mounted.
+  const swipeReveal = useMemo<ItemSwipeReveal | null>(
+    () =>
+      hasSwipe && hasSwipeBridge
+        ? {
+            close: () => swipeBridgeRef.current?.close(),
+            reveal: side => swipeBridgeRef.current?.reveal(side),
+            side: swipeOpenSide,
+          }
+        : null,
+    [hasSwipe, hasSwipeBridge, swipeOpenSide],
+  );
   const linkRootProps = isLinkRoot
     ? {
         // A disabled row keeps its place in the tree but goes nowhere.
@@ -868,14 +904,16 @@ export function Item({
       onClick={primaryOnClick}>
       <ItemDescriptionContext
         value={hasRenderableDescription ? descriptionID : null}>
-        {innerContent}
+        <ItemSwipeRevealContext value={swipeReveal}>
+          {innerContent}
+        </ItemSwipeRevealContext>
       </ItemDescriptionContext>
       {hasSwipe && (
         // The panels: out-of-flow children of this root, so the DOM is the one
         // the row had before the split; at rest a panel shows nothing.
         <ItemSwipeLayer
           onBridge={setSwipeBridge}
-          onOpenChange={setSwipeOpen}
+          onOpenChange={setSwipeOpenSide}
           leading={leadingSwipe}
           trailing={trailingSwipe}
           behavior={swipeBehavior}

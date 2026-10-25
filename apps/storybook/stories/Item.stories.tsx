@@ -13,6 +13,7 @@ import {Stack} from '@astryxdesign/core/Layout';
 import {List, ListItem} from '@astryxdesign/core/List';
 import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
 import {StatusDot} from '@astryxdesign/core/StatusDot';
+import {useItemSwipeReveal} from '../../../packages/core/src/Item/ItemSwipeRevealContext';
 
 const storyStyles = stylex.create({
   iconCircle: {
@@ -536,6 +537,65 @@ export const SwipeActions: Story = {
       </List>
     );
   },
+};
+
+/**
+ * A control in the row that opens its trailing actions, as List's edit-mode
+ * delete control does, through Item's internal swipe-reveal seam. It renders
+ * once the row's swipe has mounted.
+ */
+function RevealControl() {
+  const swipe = useItemSwipeReveal();
+  if (swipe == null) {
+    return null;
+  }
+  return (
+    <button
+      type="button"
+      aria-label="Delete control"
+      onClick={() => {
+        if (swipe.side === 'trailing') {
+          swipe.close();
+        } else {
+          swipe.reveal('trailing');
+        }
+      }}>
+      −
+    </button>
+  );
+}
+
+/**
+ * The row's own control opening its swipe actions: a tap on it opens the row
+ * exactly as a swipe does, and any tap while it is open closes it. Internal
+ * (List's edit mode builds on it), kept off the docs page for the interaction
+ * spec.
+ */
+export const SwipeRevealControl: Story = {
+  tags: ['!autodocs'],
+  render: () => (
+    <List>
+      {['Message 1', 'Message 2', 'Message 3'].map(label => (
+        <Item
+          key={label}
+          as="li"
+          label={label}
+          onClick={() => {}}
+          marker={<RevealControl />}
+          swipeActions={{
+            trailing: [
+              {
+                label: 'Delete',
+                icon: <Icon icon={TrashIcon} size="sm" />,
+                variant: 'destructive',
+                onActivate: () => {},
+              },
+            ],
+          }}
+        />
+      ))}
+    </List>
+  ),
 };
 
 /**
