@@ -44,6 +44,9 @@ describe('swift theme generator: names (G6)', () => {
       '--text-body-size': 'font.body.size',
       '--text-heading-1-weight': 'font.heading1.weight',
       '--text-display-1-leading': 'font.display1.leading',
+      '--text-code-leading': 'font.code.leading',
+      '--shadow-low': 'shadow.low',
+      '--shadow-high': 'shadow.high',
     };
     for (const [token, expected] of Object.entries(cases)) {
       const mapped = swiftMember(token);

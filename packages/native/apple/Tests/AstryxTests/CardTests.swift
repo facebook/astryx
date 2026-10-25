@@ -84,3 +84,49 @@ import Testing
     #expect(pixels.height > 10)
   }
 }
+
+// AST-082 FR19: a node the package cannot draw renders as unsupported in its
+// place, and its siblings still render.
+
+@MainActor
+@Test func aNodeThePackageCannotDrawRendersAsUnsupportedInPlace() {
+  let json = """
+    {"component":"Card","key":"c","props":{"padding":0,"children":[
+      {"component":"Chart","key":"x","props":{}},
+      {"component":"Text","key":"t","props":{"children":"Below"}}]}}
+    """
+  let node = try? JSONDecoder().decode(AstryxNode.self, from: Data(json.utf8))
+  guard case .card(let card)? = node else {
+    Issue.record("the card did not decode")
+    return
+  }
+  let children = card.props.children ?? []
+  #expect(children.count == 2)
+  #expect(AstryxNodeView.componentName(children[0]) == "Chart")
+  #expect(AstryxNodeView.componentName(children[1]) == "Text")
+  let both = Pixels(AstryxNodeView(node!) { _ in }.frame(width: 160))
+  let textOnly = Pixels(Astryx.Card(padding: .v0) { Astryx.Text("Below") }.frame(width: 160))
+  #expect(both.height > textOnly.height)
+}
+
+@MainActor
+@Test func aCardGrowsWithItsTextAtTheLargestTextSize() {
+  let card = Astryx.Card { Astryx.Text("Revenue this quarter") }.frame(width: 220)
+  let large = Pixels(card)
+  let largest = Pixels(card, typeSize: .accessibility5)
+  #expect(largest.height > large.height * 2)
+}
+
+@MainActor
+@Test func onlyTheDefaultVariantDrawsABorder() {
+  // Each variant on a body ground: the border color shows at the card's edge
+  // only for `default`.
+  for variant in CardVariant.allCases {
+    let card = Astryx.Card(variant: variant) { Color.clear.frame(width: 40, height: 40) }
+      .frame(width: 80)
+    let pixels = Pixels(card)
+    let edge = pixels.at(pixels.width / 2, 0)
+    let hasBorder = edge[3] > 0 && !close(edge, rgba(Astryx.Card<Color>.ground(variant, Theme.default.light.color)), within: 2)
+    #expect(hasBorder == (variant == .default), "\(variant.rawValue)")
+  }
+}

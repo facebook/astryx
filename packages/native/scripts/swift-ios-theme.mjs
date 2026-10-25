@@ -36,8 +36,9 @@ export const SWIFT_TOKENS_FILE = path.join(SWIFT_THEME_DIR, 'Tokens.swift');
 const THEMES_DIR = path.join(REPO_ROOT, 'packages', 'themes');
 const REGENERATE = 'pnpm -F @astryxdesign/native generate:swift-ios';
 
-// G5: the token groups Swift keeps. Everything else (shadows, motion, layout
-// breakpoints) stays out until a component needs it.
+// G5: the token groups Swift keeps, the elevation shadows included. Everything
+// else (inset rings, motion, layout breakpoints) stays out until a component
+// needs it.
 const KEEP =
   /^--(color-|spacing-|radius-|size-element-|border-width$|font-size-|font-weight-|font-family-|text-(heading-\d|display-\d|body|large|label|supporting|code)-|shadow-(low|med|high)$)/;
 const REM = 16;

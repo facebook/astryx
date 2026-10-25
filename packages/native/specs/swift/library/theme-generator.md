@@ -37,8 +37,8 @@ re-implements theme logic.
 - **G3 — One shared token type, one file per theme.**
   - `apple/Sources/Astryx/Theme/Generated/Tokens.swift` declares the typed
     token surface: `Tokens` with one member per group (`color`, `space`,
-    `radius`, `size`, `font`), each a struct with one typed member per token,
-    except `font`, whose members are the sub-groups G6 names: a
+    `radius`, `size`, `font`, `shadow`), each a struct with one typed member
+    per token, except `font`, whose members are the sub-groups G6 names: a
     `TypeStyleTokens` per type style and `FontFamilyTokens`, `FontSizeTokens`,
     and `FontWeightTokens` for the scales.
     It is generated from core's resolved token names, which are the same for
