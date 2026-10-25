@@ -469,10 +469,19 @@ describe('BreadcrumbItem menu', () => {
       </Breadcrumbs>,
     );
     await user.click(screen.getByRole('button', {name: 'Teams'}));
+    // The crumb focuses the first row in the next animation frame. Wait for
+    // it, then hover another row, so the hover moves focus whether that frame
+    // lands before or after the click settles; a hover on the row the frame
+    // already focused moves nothing.
     const design = screen.getByRole('menuitem', {name: 'Design', hidden: true});
-    const focusSpy = vi.spyOn(design, 'focus');
-    fireEvent.pointerMove(design, {pointerType: 'mouse'});
-    expect(design).toHaveFocus();
+    await waitFor(() => expect(design).toHaveFocus());
+    const engineering = screen.getByRole('menuitem', {
+      name: 'Engineering',
+      hidden: true,
+    });
+    const focusSpy = vi.spyOn(engineering, 'focus');
+    fireEvent.pointerMove(engineering, {pointerType: 'mouse'});
+    expect(engineering).toHaveFocus();
     expect(focusSpy).toHaveBeenCalledWith({
       preventScroll: true,
       focusVisible: false,
