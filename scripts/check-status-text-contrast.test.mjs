@@ -411,6 +411,27 @@ describe('theme generation derives a complete status set (INV17)', () => {
     }
   });
 
+  it('returns a root-derived fill to its alias when a rule changes only its content', () => {
+    const theme = defineTheme({
+      name: 'status-rule-on-only',
+      tokens: {'--color-success': '#22C55E', '--color-on-success': '#FFFFFF'},
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {tokens: {'--color-on-success': '#333333'}},
+          },
+        ],
+      },
+    });
+    const css = allThemeCSS(theme);
+    expect(emittedRootTokens(theme)['--color-success-emphasized']).toMatch(
+      /^light-dark\(#/,
+    );
+    const rule = css.slice(css.indexOf('prefers-contrast: more'));
+    expect(rule).toContain('--color-success-emphasized: var(--color-success);');
+  });
+
   it('keeps a rule-derived fill when the root never set that status colour', () => {
     const theme = defineTheme({
       name: 'status-rule-only',

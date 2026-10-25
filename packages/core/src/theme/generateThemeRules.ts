@@ -846,15 +846,15 @@ function generatedAdaptationStatusRoleDefaults(
           aliases[index].push([role, value]);
         }
       }
-      // A root role computed for the root's colour returns to its INV16
-      // alias where this rule's colour carries its content unadjusted.
+      // A root role computed for the root's colours returns to its INV16
+      // alias where, under this rule, the source carries its content
+      // unadjusted (the rule changed the source, its content, or a surface).
       for (const role of rootDerived) {
         const source = SCOPED_STATUS_ROLE_SOURCES.get(role);
         if (
           source !== undefined &&
           !ruleDerived.has(role) &&
-          authoredRule[role] === undefined &&
-          authoredRule[source] !== undefined
+          authoredRule[role] === undefined
         ) {
           aliases[index].push([role, `var(${source})`]);
         }
