@@ -663,14 +663,14 @@ jobs:
         run: pnpm lab:readiness:check
 
       - name: Run this shard of the UI tests
-        run: pnpm vitest run --project ui --exclude packages/core/src/Markdown/Markdown.fr23.perf.test.ts --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        run: pnpm test:ui --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
 
       # A child process isolates engine state, not CPU or memory contention.
       # FR23 must wait until this runner's other UI workers have exited
       # (AST-036); the other shards run on other machines.
       - name: Run the isolated Markdown benchmark
-        run: pnpm vitest run --project ui packages/core/src/Markdown/Markdown.fr23.perf.test.ts --no-file-parallelism
+        run: pnpm test:ui:isolated
         if: matrix.shard == 1 && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
 
   test-node:
@@ -705,7 +705,7 @@ jobs:
       - uses: ./.github/actions/setup
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
 
-      - run: pnpm vitest run --project node --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+      - run: pnpm test:node --shard=${{ matrix.shard }}/${{ strategy.job-total }}
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
 
       # Theme-family compilation is owned by `theme-build`, not Build. Until
@@ -716,17 +716,9 @@ jobs:
         if: matrix.shard == 1 && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: npx playwright install chromium
 
-      - name: Build theme-family compiler dependencies
+      - name: Run the theme-family contract
         if: matrix.shard == 1 && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-        run: pnpm -F @astryxdesign/core build
-
-      - name: Generate the maintained theme-family fixture
-        if: matrix.shard == 1 && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-        run: pnpm -F @astryxdesign/sandbox generate:theme-family
-
-      - name: Run theme family cascade guard
-        if: matrix.shard == 1 && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-        run: node .github/scripts/theme-family-cascade.js
+        run: pnpm test:theme-family
 
   # Native Swift: the Swift packages of the experimental, canary-only
   # @astryxdesign/native (AST-082) build and test only on macOS. They are
@@ -3819,27 +3811,14 @@ jobs:
 
       - uses: ./.github/actions/setup
 
-      - name: Verify packed consumer dependency contract
-        run: pnpm vitest run packages/build/src/packed-consumer.test.mjs --project node --maxWorkers=1
-
       - name: Install Playwright
         run: npx playwright install chromium
 
-      # The guard imports the plugin's build artifact, the same one a consumer
-      # installs.
-      - name: Build the Vite plugin
-        run: pnpm -F @astryxdesign/build build
-
-      - name: Run Build CSS-layer cascade guard
-        run: node .github/scripts/theme-layer-cascade.js
-
-      # A compile-time ancestor selector on another workspace package's marker
-      # (lab's rule on core's indicatorScope) matches in a real browser: see
-      # scripts/stylex-module-resolution.cjs.
-      - name: Run cross-package StyleX marker browser check
-        env:
-          ASTRYX_STYLEX_BROWSER: '1'
-        run: pnpm vitest run scripts/stylex-module-resolution.browser.test.mjs --project node --maxWorkers=1
+      # The Build package's contracts: the packed consumer's dependencies, the
+      # production CSS-layer cascade, and cross-package StyleX markers in a
+      # real browser. `pnpm test:build` owns the list.
+      - name: Run Build package contracts
+        run: pnpm test:build
 
   # Guest token boundaries cross portals and the host light/dark cascade. This
   # requires a production browser render; source and jsdom checks cannot prove

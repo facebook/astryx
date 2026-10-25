@@ -18,6 +18,9 @@
  * holds if every project has a lane in every workflow: a third project added
  * to the config with no job to run it would be collected by nobody and fail
  * nothing — the first failure again, one level up.
+ *
+ * The lanes call root package scripts (`pnpm test:ui`, `pnpm test:node`), so
+ * the commands are checked with each script expanded to its body.
  */
 
 import fs from 'node:fs';
@@ -78,10 +81,23 @@ function load(file) {
   return yaml.parse(read(`.github/workflows/${file}`));
 }
 
+const rootScripts = JSON.parse(read('package.json')).scripts;
+
+/**
+ * A run block with each `pnpm <root script>` replaced by the script's body,
+ * recursively; arguments after the script name stay after its body.
+ */
+function expandScripts(run) {
+  return run.replace(/\bpnpm ([a-z][\w:-]*)(?=\s|$)/g, (whole, name) =>
+    Object.hasOwn(rootScripts, name) ? expandScripts(rootScripts[name]) : whole,
+  );
+}
+
 function runLines(job) {
   return (job?.steps ?? [])
     .map(step => step.run)
     .filter(Boolean)
+    .map(expandScripts)
     .join('\n');
 }
 
@@ -126,7 +142,15 @@ describe.each(Object.entries(WORKFLOWS))(
       const benchmark = 'packages/core/src/Markdown/Markdown.fr23.perf.test.ts';
       const job = workflow.jobs['test-ui'];
       const suites = job.steps.filter(step =>
-        step.run?.includes('--project ui'),
+        expandScripts(step.run ?? '').includes('--project ui'),
+      );
+      // The two package scripts every lane calls: the parallel suite without
+      // FR23, and FR23 alone with no file parallelism.
+      expect(rootScripts['test:ui']).toBe(
+        `vitest run --project ui --exclude ${benchmark}`,
+      );
+      expect(rootScripts['test:ui:isolated']).toBe(
+        `vitest run --project ui ${benchmark} --no-file-parallelism`,
       );
       expect(job['continue-on-error']).not.toBe(true);
       for (const suite of suites) {
@@ -139,8 +163,8 @@ describe.each(Object.entries(WORKFLOWS))(
         // ignored exits.
         expect(suites).toHaveLength(1);
         expect(suites[0].run.trim().split('\n')).toEqual([
-          `pnpm vitest run --project ui --exclude ${benchmark}`,
-          `pnpm vitest run --project ui ${benchmark} --no-file-parallelism`,
+          'pnpm test:ui',
+          'pnpm test:ui:isolated',
         ]);
         return;
       }
@@ -149,12 +173,8 @@ describe.each(Object.entries(WORKFLOWS))(
       // runs FR23 in a later step on the same runner, after its share exited.
       expect(suites).toHaveLength(2);
       const [share, isolated] = suites;
-      expect(share.run.trim()).toBe(
-        `pnpm vitest run --project ui --exclude ${benchmark} ${SHARD_ARG}`,
-      );
-      expect(isolated.run.trim()).toBe(
-        `pnpm vitest run --project ui ${benchmark} --no-file-parallelism`,
-      );
+      expect(share.run.trim()).toBe(`pnpm test:ui ${SHARD_ARG}`);
+      expect(isolated.run.trim()).toBe('pnpm test:ui:isolated');
       expect(job.steps.indexOf(isolated)).toBeGreaterThan(
         job.steps.indexOf(share),
       );
@@ -174,14 +194,16 @@ describe.each(Object.entries(WORKFLOWS))(
           expect(Object.keys(job.strategy.matrix)).toEqual(['shard']);
           expect(job.strategy['fail-fast']).toBe(false);
           const suites = job.steps.filter(step =>
-            /--project \w+/.test(step.run ?? ''),
+            /--project \w+/.test(expandScripts(step.run ?? '')),
           );
           // The one step that is not sharded is the isolated FR23 benchmark.
           const unsharded = suites.filter(
             step => !step.run.includes(SHARD_ARG),
           );
           for (const step of unsharded) {
-            expect(step.run).toContain('Markdown.fr23.perf.test.ts');
+            expect(expandScripts(step.run)).toContain(
+              'Markdown.fr23.perf.test.ts',
+            );
           }
           expect(suites.length - unsharded.length).toBe(1);
         }
@@ -247,7 +269,9 @@ describe.each(Object.entries(WORKFLOWS))(
         for (const lane of lanes) {
           expect(workflow.jobs[lane].if).toContain('always()');
           const steps = workflow.jobs[lane].steps;
-          const suite = steps.find(step => step.run?.includes('--project'));
+          const suite = steps.find(step =>
+            expandScripts(step.run ?? '').includes('--project'),
+          );
           expect(suite.if, `${lane} suite is unconditional`).toContain(
             "docsite_only != 'true'",
           );

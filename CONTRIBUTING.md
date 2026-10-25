@@ -479,6 +479,10 @@ pnpm test:watch
 # Specific package
 pnpm -F @astryxdesign/core test
 
+# One Vitest project, as CI runs it (CI shards each across legs)
+pnpm test:ui
+pnpm test:node
+
 # With coverage
 pnpm test:coverage
 
