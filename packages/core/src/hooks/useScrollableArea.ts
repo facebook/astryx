@@ -200,6 +200,7 @@ export function useScrollableArea({
     useState<LogicalOverflowGeometry>(INITIAL_OVERFLOW);
   const [mapping, setMapping] = useState<LogicalAxisMapping>(INITIAL_MAPPING);
   const stateRef = useRef<ScrollableAreaState>(INITIAL_STATE);
+  const measureRef = useRef<(() => void) | null>(null);
 
   const viewportRef = useCallback((node: HTMLElement | null) => {
     setViewport(current => (current === node ? current : node));
@@ -278,6 +279,7 @@ export function useScrollableArea({
     };
 
     registerScrollOwner(viewport, stateRef.current);
+    measureRef.current = measure;
     measure();
     const stopObservingViewport = observeResize(viewport, scheduleMeasure);
     const stopObservingContent = observeResize(content, scheduleMeasure);
@@ -323,6 +325,7 @@ export function useScrollableArea({
 
     return () => {
       isActive = false;
+      measureRef.current = null;
       unregisterScrollOwner(viewport);
       stopObservingViewport();
       stopObservingContent();
@@ -341,6 +344,16 @@ export function useScrollableArea({
       }
     };
   }, [axis, content, viewport]);
+
+  // The first measure reads the viewport before this hook has let an
+  // overflowing axis scroll (it is `clip` until then), so it finds overflow
+  // but no scrollable axis yet. Measure again in the same commit once the new
+  // overflow style is on the element, so the viewport is a tab stop from the
+  // first frame it scrolls, not an animation frame later (`spec:AST-025`
+  // FR12).
+  useIsomorphicLayoutEffect(() => {
+    measureRef.current?.();
+  }, [overflow, mapping]);
 
   const state = useMemo<ScrollableAreaState>(
     () => ({

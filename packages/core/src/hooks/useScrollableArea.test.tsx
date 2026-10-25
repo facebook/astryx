@@ -179,6 +179,55 @@ describe('useScrollableArea', () => {
     expect(viewport.getAttribute('style')).toContain('clip');
   });
 
+  it('is a tab stop from the first frame its content overflows, before any animation frame (AST-025 FR12)', () => {
+    // As in a browser, the computed overflow is the one this hook writes: an
+    // axis is `clip` until the hook lets it scroll.
+    vi.mocked(window.getComputedStyle).mockImplementation(element => {
+      const owned = (axis: 'X' | 'Y') =>
+        element
+          .getAttribute('style')
+          ?.match(new RegExp(`--x-overflow${axis}:\\s*(\\w+)`))?.[1] ??
+        'visible';
+      return new Proxy({} as CSSStyleDeclaration, {
+        get(_target, property) {
+          if (property === 'overflowX') {
+            return owned('X');
+          }
+          if (property === 'overflowY') {
+            return owned('Y');
+          }
+          return property === 'display' ? 'block' : '';
+        },
+      });
+    });
+    // Content that is already taller than the viewport when it mounts, such
+    // as loaded data replacing a loading fallback.
+    const extent = (value: number, scrolled: number) =>
+      function (this: HTMLElement) {
+        return this.dataset.testid === 'viewport' ? scrolled : value;
+      };
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(
+      extent(100, 100),
+    );
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(
+      extent(100, 100),
+    );
+    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(
+      extent(100, 100),
+    );
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(
+      extent(100, 180),
+    );
+
+    render(<Fixture axis="block" />);
+    const viewport = screen.getByTestId('viewport');
+
+    // No animation frame has run.
+    expect(viewport.getAttribute('style')).toContain('--x-overflowY: auto');
+    expect(viewport).toHaveAttribute('tabindex', '0');
+    expect(state().block.isScrollable).toBe(true);
+  });
+
   it('owns fitting and explicit Sticky overflow styling for direct adopters', () => {
     const {rerender} = render(<Fixture />);
     const viewport = screen.getByTestId('viewport');
