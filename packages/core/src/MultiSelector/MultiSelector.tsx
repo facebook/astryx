@@ -18,6 +18,7 @@
  */
 
 import React, {
+  use,
   useCallback,
   useEffect,
   useId,
@@ -101,6 +102,7 @@ import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {InputGroupInternalContext} from '../InputGroup/InputGroupInternalContext';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useTranslator} from '../i18n';
 import type {AdaptivePresentation} from '../hooks/useAdaptivePresentation';
@@ -1137,7 +1139,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   ...restProps
 }: MultiSelectorProps<T>) {
   const inputGroup = useInputGroup();
-  const isDisabled = isDisabledProp || !!inputGroup?.isDisabled;
+  const inputGroupState = use(InputGroupInternalContext);
+  const isDisabled = isDisabledProp || inputGroupState.isDisabled;
   const {rest, container} = useFieldInputStyling('MultiSelector', restProps, {
     containerXstyle,
     containerClassName,

@@ -14,8 +14,6 @@ import {createLayerScopedContext as createContext} from '../Layer/layerScopedCon
 
 export interface InputGroupContextValue {
   isInGroup: true;
-  /** Effective group disablement; a child cannot opt out with isDisabled=false. */
-  isDisabled?: boolean;
   /** ID of the group label element, for aria-labelledby composition. */
   labelID: string;
   /** IDs of helper/status text owned by the group, for aria-describedby composition. */

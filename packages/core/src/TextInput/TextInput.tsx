@@ -17,6 +17,7 @@
  */
 
 import {
+  use,
   useId,
   useOptimistic,
   useTransition,
@@ -108,6 +109,7 @@ import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {InputGroupInternalContext} from '../InputGroup/InputGroupInternalContext';
 import type {BaseProps} from '../BaseProps';
 import {
   type FieldInputBaseProps,
@@ -328,7 +330,8 @@ export function TextInput({
   ...restProps
 }: TextInputProps) {
   const inputGroup = useInputGroup();
-  const isDisabled = isDisabledProp || !!inputGroup?.isDisabled;
+  const inputGroupState = use(InputGroupInternalContext);
+  const isDisabled = isDisabledProp || inputGroupState.isDisabled;
   const {rest, container} = useFieldInputStyling('TextInput', restProps, {
     containerXstyle,
     containerClassName,
