@@ -149,8 +149,10 @@ node packages/native/scripts/swift-ios-theme.mjs --theme ./src/acmeTheme.ts#acme
 
 The generator reads any CSS color syntax (including `color-mix()`, relative
 colors, and wide-gamut spaces, kept as Display P3), lengths with `calc()`, and
-`[light, dark]` tuples. A value with no static form, such as `currentColor` or
-`50%`, stops the run naming the theme, mode, token, and value.
+`[light, dark]` tuples. A value it can only approximate prints a warning after
+the run; a value with no static form, such as `currentColor` or `50%`, takes
+core's default for that token with a warning, or stops the run when core has
+none. Add `--strict` to fail on any warning.
 
 A theme's local tokens are not generated yet; the generator names each one it
 leaves out.

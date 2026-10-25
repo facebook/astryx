@@ -2,12 +2,13 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {
   CORE_DEFAULTS,
   SWIFT_THEME_DIR,
   SWIFT_TOKENS_FILE,
   defineTheme,
+  finishRun,
   localTokensLeftOut,
   publishedThemePackages,
   renderAll,
@@ -311,16 +312,6 @@ describe('swift theme generator: values (G7)', () => {
     expect(dark).toContain('s4: 12,');
   });
 
-  it('fails on a value with no static form, naming theme, mode, token, value, and reason', async () => {
-    const theme = await defineTheme({
-      name: 'acme-brand',
-      tokens: {'--color-accent': 'currentColor'},
-    });
-    await expect(renderSwiftTheme(theme)).rejects.toThrow(
-      'acme-brand light: --color-accent = currentColor: currentColor depends on where the token is used; Swift has no static value',
-    );
-  });
-
   it("writes a color outside sRGB as SwiftUI's Display P3 color", async () => {
     const theme = await defineTheme({
       name: 'acme-brand',
@@ -352,6 +343,115 @@ describe('swift theme generator: values (G7)', () => {
     expect(await renderSwiftTheme(theme)).toMatch(
       /body: TypeStyleTokens\(size: 16, weight: \d+, leading: 1\.25\)/,
     );
+  });
+});
+
+describe('swift theme generator: diagnostics (G15)', () => {
+  it('warns on a lossy value with theme, mode, token, value, and output', async () => {
+    const theme = await defineTheme({
+      name: 'acme-brand',
+      tokens: {'--color-accent': 'oklch(0.7 0.4 150)'},
+    });
+    const warnings: string[] = [];
+    const swift = await renderSwiftTheme(theme, {warnings});
+    expect(swift).toContain(
+      'accent: Color(.displayP3, red: 0, green: 0.7843137254901961, blue: 0.19607843137254902, opacity: 1)',
+    );
+    expect(warnings).toEqual([
+      `acme-brand light: --color-accent = oklch(0.7 0.4 150) → Color(.displayP3, red: 0, green: 0.7843137254901961, blue: 0.19607843137254902, opacity: 1): ${P3_MAPPED}`,
+      `acme-brand dark: --color-accent = oklch(0.7 0.4 150) → Color(.displayP3, red: 0, green: 0.7843137254901961, blue: 0.19607843137254902, opacity: 1): ${P3_MAPPED}`,
+    ]);
+  });
+
+  it("takes core's default for a value with no static form, with a warning", async () => {
+    const theme = await defineTheme({
+      name: 'acme-brand',
+      tokens: {'--spacing-4': '2vw'},
+    });
+    const warnings: string[] = [];
+    const swift = await renderSwiftTheme(theme, {warnings});
+    const core = await renderSwiftTheme(CORE_DEFAULTS);
+    const s4 = (text: string) => /s4: [\d.]+/.exec(text)?.[0];
+    expect(s4(swift)).toBe(s4(core));
+    expect(warnings[0]).toMatch(
+      /^acme-brand light: --spacing-4 = 2vw → \d+: viewport units depend on the screen; core's default \S+ used instead$/,
+    );
+  });
+
+  it('fails when a value has no static form and core has no default', async () => {
+    const theme = await defineTheme({
+      name: 'acme-brand',
+      tokens: {'--color-acme-only': 'currentColor'},
+    });
+    await expect(renderSwiftTheme(theme)).rejects.toThrow(
+      'acme-brand light: --color-acme-only = currentColor: currentColor depends on where the token is used; Swift has no static value',
+    );
+  });
+
+  it('prints warnings to standard error when no list is passed', async () => {
+    const theme = await defineTheme({
+      name: 'acme-brand',
+      tokens: {'--color-accent': 'oklch(0.7 0.4 150)'},
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await renderSwiftTheme(theme);
+      expect(warn).toHaveBeenCalledTimes(2);
+      expect(warn.mock.calls[0][0]).toMatch(
+        /^warning: acme-brand light: --color-accent = oklch\(0\.7 0\.4 150\) → /,
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("drops a failed value's notes before falling back to core's default", async () => {
+    const theme = await defineTheme({
+      name: 'acme-brand',
+      tokens: {'--spacing-4': 'calc(1em + 2vw)'},
+    });
+    const warnings: string[] = [];
+    await renderSwiftTheme(theme, {warnings});
+    expect(warnings).toHaveLength(2);
+    for (const warning of warnings) {
+      expect(warning).toMatch(
+        /viewport units depend on the screen; core's default/,
+      );
+      expect(warning).not.toMatch(/em read/);
+    }
+  });
+
+  it("prints a token's note once per mode", async () => {
+    const theme = await defineTheme({
+      name: 'acme-brand',
+      tokens: {'--spacing-4': 'calc(1em + 1em)'},
+    });
+    const warnings: string[] = [];
+    await renderSwiftTheme(theme, {warnings});
+    expect(warnings).toEqual([
+      'acme-brand light: --spacing-4 = calc(1em + 1em) → 32: em read against the 16px root font size',
+      'acme-brand dark: --spacing-4 = calc(1em + 1em) → 32: em read against the 16px root font size',
+    ]);
+  });
+
+  it('turns warnings into errors with --strict, before anything is written', async () => {
+    const theme = await defineTheme({
+      name: 'acme-brand',
+      tokens: {'--color-accent': 'oklch(0.7 0.4 150)'},
+    });
+    await expect(renderSwiftTheme(theme, {strict: true})).rejects.toThrow(
+      /2 warning\(s\), which --strict treats as errors:\nerror: acme-brand light: --color-accent/,
+    );
+    let wrote = false;
+    const write = () => {
+      wrote = true;
+    };
+    expect(() => finishRun(['a warning'], true, write)).toThrow(
+      /error: a warning/,
+    );
+    expect(wrote).toBe(false);
+    finishRun([], true, write);
+    expect(wrote).toBe(true);
   });
 });
 
