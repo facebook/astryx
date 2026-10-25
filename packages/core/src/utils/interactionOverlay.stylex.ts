@@ -534,10 +534,16 @@ export const interactionOverlayStyles = stylex.create({
     // is dropped: the layer fades instead, on the compositor. A row whose
     // descendant fades at the row's strength (a radio row's circle) brings
     // it back with `pressedAlpha`. A fine pointer keeps it as the variant
-    // declares it (its clock and curve are untouched).
+    // declares it (its clock and curve are untouched), Reduce Motion arm
+    // included: a reduced release under a fine pointer does not fade.
     animationName: {
       default: null,
-      [PRESSED_FADING]: {default: pressRelease, [COARSE]: 'none'},
+      [PRESSED_FADING]: {
+        default: pressRelease,
+        '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+          'none',
+        [COARSE]: 'none',
+      },
     },
     // The stacking context the layer needs, for a press only.
     isolation: {
