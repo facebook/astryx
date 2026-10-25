@@ -716,7 +716,7 @@ test('Reduce Motion: the menu lands at its size and cross-fades, opacity only, i
   await holdAnimations(page, story.popover);
   const unit = {x: 0, y: 0, width: 100, height: 100};
   // The animator's Reduce Motion fade: 200 ms on easeInOut, no spring.
-  const easeInOut = cubicBezier(...timing.curves.easeInOut);
+  const easeInOut = cubicBezier(...timing.curves.move);
   const fade = (t: number) => easeInOut(Math.min(1, Math.max(0, t / 200)));
   const samples = await sampleBoxes(story.popover, unit, timeline(400));
   // Resume rather than finish: the close below starts from what the
