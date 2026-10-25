@@ -49,7 +49,7 @@ import {
   type NativeTouchBehavior,
 } from './GestureRecognizer';
 import type {GestureEventContext, GestureTouch, Point} from './types';
-import {VelocityTracker, type VelocityStrategy} from './VelocityTracker';
+import {VelocityTracker} from './VelocityTracker';
 
 /** @experimental */
 export type PanDirection =
@@ -81,8 +81,6 @@ export interface PanGestureRecognizerOptions extends GestureRecognizerOptions<Pa
   scrollEdge?: boolean;
   /** Take over a native scroll at its edge (one-way directions only). */
   scrollHandoff?: boolean;
-  /** @default 'uikit' */
-  velocityStrategy?: VelocityStrategy;
   /**
    * Travel (px) in a one-way pan's direction from which, while it is still
    * possible, it claims its touch: the host cancels the touch's moves, so the
@@ -155,9 +153,7 @@ export class PanGestureRecognizer extends GestureRecognizer {
     this.scrollEdge = options.scrollEdge ?? false;
     this.scrollHandoff = options.scrollHandoff ?? false;
     this.claimDistance = options.claimDistance ?? null;
-    this.tracker = new VelocityTracker({
-      strategy: options.velocityStrategy ?? 'uikit',
-    });
+    this.tracker = new VelocityTracker();
   }
 
   /**
@@ -589,23 +585,10 @@ export class PanGestureRecognizer extends GestureRecognizer {
       x: current.x + this.adjust.x,
       y: current.y + this.adjust.y,
     };
-    if (
-      this.tracker.strategy !== 'uikit' &&
-      this.numberOfTouches === 1 &&
-      touches.length === 1
-    ) {
-      // The fitting estimators take every coalesced sample.
-      for (const sample of touches[0].samples) {
-        this.tracker.add(
-          sample.x + this.adjust.x,
-          sample.y + this.adjust.y,
-          sample.time,
-        );
-      }
-    } else {
-      // UIKit's filter runs once per event.
-      this.tracker.add(virtual.x, virtual.y, time);
-    }
+    // One sample per input event, at the event's own time (`spec:AST-100`
+    // FR4), for every pointer alike.
+    void touches;
+    this.tracker.add(virtual.x, virtual.y, time);
     this.virtual = virtual;
     this.raw = {x: virtual.x - this.origin.x, y: virtual.y - this.origin.y};
   }
