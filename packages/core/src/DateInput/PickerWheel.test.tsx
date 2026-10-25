@@ -1037,3 +1037,15 @@ describe('PickerWheel — RTL', () => {
     }
   });
 });
+
+describe('PickerWheel — markup', () => {
+  // Written before the listbox wiring moved into useWheelListbox: the
+  // snapshot holds the touch column to its markup.
+  it('keeps the touch column’s markup', () => {
+    const {column} = renderWheel();
+    // React's generated ids depend on how many renders ran before.
+    expect(
+      column.parentElement?.innerHTML.replace(/_r_[0-9a-z]+_/g, '_r_id_'),
+    ).toMatchSnapshot();
+  });
+});
