@@ -30,6 +30,7 @@ import {
   compactDefinition,
   DEFAULT_COMPACT_DEFINITION,
 } from '../theme/themeAdaptations';
+import {BottomSheet} from '../BottomSheet';
 import {Popover, type PopoverPresentation} from './Popover';
 
 // Compact as spec:AST-012 FR9 defines it, with a coarse pointer.
@@ -294,6 +295,64 @@ describe('Popover presentation', () => {
       return element!;
     });
     expect(dialog).toHaveAttribute('aria-label', 'Sort by');
+  });
+
+  it('a render-prop trigger without a label names the sheet with its text (DEC-8)', async () => {
+    isCompactTouch = true;
+    render(
+      <Popover
+        presentation="adaptive"
+        content={<button type="button">Apply</button>}>
+        {triggerProps => (
+          <button type="button" {...triggerProps}>
+            Group by
+          </button>
+        )}
+      </Popover>,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', {name: 'Group by'}));
+      await Promise.resolve();
+    });
+    const dialog = await vi.waitFor(() => {
+      const element = document.querySelector<HTMLDialogElement>('dialog');
+      expect(element).toHaveAttribute('open');
+      return element!;
+    });
+    expect(dialog).toHaveAttribute('aria-label', 'Group by');
+  });
+
+  it('a sheet with hasEscapeDismiss={false} leaves Escape on for a sheet opened inside it', async () => {
+    isCompactTouch = true;
+    const onInnerOpenChange = vi.fn();
+    render(
+      <Popover
+        label="Filters"
+        presentation="adaptive"
+        hasEscapeDismiss={false}
+        content={
+          <BottomSheet
+            isOpen
+            onOpenChange={onInnerOpenChange}
+            label="Inner sheet">
+            Inner
+          </BottomSheet>
+        }>
+        <Button label="Filter">Filter</Button>
+      </Popover>,
+    );
+    await tapTrigger();
+    const inner = await vi.waitFor(() => {
+      const element = document.querySelector<HTMLDialogElement>(
+        'dialog[aria-label="Inner sheet"]',
+      );
+      expect(element).not.toBeNull();
+      return element!;
+    });
+    act(() => {
+      fireEvent.keyDown(inner, {key: 'Escape'});
+    });
+    expect(onInnerOpenChange).toHaveBeenCalledWith(false);
   });
 
   it('adaptive: a desktop keeps the anchored popover', async () => {

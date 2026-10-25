@@ -119,17 +119,17 @@ in `BottomSheet.doc.mjs`.
 - Element jobs (`architecture:component-style-authoring` INV7; the
   open-layer allowance of `spec:AST-017` FR60, DEC-29). An open sheet's frame
   has these elements, each with one job:
-  - the dialog carries the sheet's dialog role, and modality and the top
-    layer when the sheet is modal;
-  - the positioner holds the panel at the block end;
-  - the panel paints the `bottom-sheet` target;
-  - the grabber bar is the drag handle, and its pill draws the handle;
+  - the dialog carries the sheet's dialog role, modality and the top layer
+    when the sheet is modal, and holds the panel at the block end with its
+    own grid;
+  - the panel paints the `bottom-sheet` target, and its `::after` gives iOS
+    Safari's toolbar the sheet's color;
+  - the grabber bar is the drag handle, and its `::before` draws the handle;
   - the body is the scroll area;
-  - the content box carries the padding and is the observed content box (FR3);
-  - the edge tint gives iOS Safari's toolbar the sheet's color.
-- Fewer is preferred: the pill and the edge tint are decoration that should
-  move to pseudo-elements, and the positioner should merge into the panel;
-  each is an open gap.
+  - the content box carries the padding and is the observed content box (FR3).
+- The handle's pill and the toolbar tint are pseudo-elements and the dialog
+  holds the panel in place, so the frame has no positioner, pill or tint
+  element of its own.
 - Elements a presenting component adds beyond this frame are its own to
   justify.
 

@@ -398,6 +398,16 @@ const styles = stylex.create({
       default: 0,
       ':focus': spacingVars['--spacing-3'],
     },
+    // Block-level when revealed, so it starts its own line below inline
+    // content rather than sitting on its last line.
+    display: {
+      default: null,
+      ':focus': 'flex',
+    },
+    width: {
+      default: null,
+      ':focus': 'fit-content',
+    },
   },
   // The painted surface is capped to the viewport with the layer runtime's
   // one definition (spec:AST-059 FR2, FR3): the layer box above it caps the
@@ -694,6 +704,16 @@ export function Popover({
   }, [content, popover.isOpen, scheduleOverflowMeasurement]);
 
   // Shared handler for click events on the trigger button.
+  // A render-prop trigger is the caller's element, reached through the ref
+  // the render prop hands it; its text names a sheet that has no `label`.
+  const renderTriggerRef = useRef<HTMLElement | null>(null);
+  const setRenderTrigger = useCallback(
+    (element: HTMLElement | null) => {
+      renderTriggerRef.current = element;
+      popover.triggerRef(element);
+    },
+    [popover],
+  );
   const handleTriggerClick = useCallback(
     (event?: {currentTarget: EventTarget | null}) => {
       // An aria-disabled trigger stays focusable but opens nothing
@@ -711,8 +731,10 @@ export function Popover({
         isSheetOpen ||
         (!popover.isOpen && resolvedPresentation === 'bottom-sheet')
       ) {
-        if (trigger instanceof HTMLElement) {
-          setTriggerText(readTriggerText(trigger));
+        const opener =
+          trigger instanceof HTMLElement ? trigger : renderTriggerRef.current;
+        if (opener != null) {
+          setTriggerText(readTriggerText(opener));
         }
         setSheetOpen(!isSheetOpen);
         return;
@@ -957,7 +979,7 @@ export function Popover({
 
   if (isRenderProp) {
     const triggerProps: PopoverTriggerRenderProps = {
-      ref: popover.triggerRef,
+      ref: setRenderTrigger,
       // The caller renders and owns this trigger element.
       onClick: () => handleTriggerClick(),
       'aria-haspopup': 'dialog',

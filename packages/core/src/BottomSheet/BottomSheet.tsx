@@ -508,7 +508,10 @@ function StandaloneBottomSheet({
         onScrimOpacity={handleScrimOpacity}
         onElementChange={handlePanelElementChange}
         onMotionComplete={handleMotionComplete}>
-        <LayerDepthProvider>{children}</LayerDepthProvider>
+        <LayerDepthProvider>
+          {/* A sheet opened inside this one starts from Escape on. */}
+          <BottomSheetEscapeContext value>{children}</BottomSheetEscapeContext>
+        </LayerDepthProvider>
       </BottomSheetPanel>
     </dialog>
   );
@@ -814,7 +817,12 @@ function SwitcherBottomSheetItem({
               fresh ownership scope so a nested BottomSheet is standalone unless
               it establishes a nested BottomSheetSwitcher of its own. */}
           <BottomSheetSwitcherContext value={null}>
-            <LayerDepthProvider>{children}</LayerDepthProvider>
+            <LayerDepthProvider>
+              {/* A sheet opened inside this one starts from Escape on. */}
+              <BottomSheetEscapeContext value>
+                {children}
+              </BottomSheetEscapeContext>
+            </LayerDepthProvider>
           </BottomSheetSwitcherContext>
         </BottomSheetPanel>
       </div>
