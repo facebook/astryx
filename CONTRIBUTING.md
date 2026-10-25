@@ -480,7 +480,8 @@ pnpm test:watch
 pnpm -F @astryxdesign/core test
 
 # One Vitest project, as CI runs it (CI shards each across legs)
-pnpm test:ui
+pnpm test:ui            # the ui project, without the FR23 benchmark
+pnpm test:ui:isolated   # the FR23 benchmark alone, as test-ui leg 1 runs it
 pnpm test:node
 
 # With coverage

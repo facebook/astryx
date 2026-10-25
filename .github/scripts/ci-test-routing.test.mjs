@@ -212,12 +212,15 @@ describe.each(Object.entries(WORKFLOWS))(
 
     it('gives no lane the whole suite', () => {
       // A bare `pnpm test` runs every project in one job — the shape that hit
-      // the wall.
+      // the wall. Checked on the steps as written: expanded, it is just
+      // `vitest run`.
       for (const lane of lanes) {
-        expect(
-          runLines(workflow.jobs[lane]),
-          `${lane} runs the whole suite`,
-        ).not.toMatch(/^\s*pnpm test\s*$/m);
+        const raw = (workflow.jobs[lane]?.steps ?? [])
+          .map(step => step.run ?? '')
+          .join('\n');
+        expect(raw, `${lane} runs the whole suite`).not.toMatch(
+          /^\s*pnpm test\s*$/m,
+        );
       }
     });
 
