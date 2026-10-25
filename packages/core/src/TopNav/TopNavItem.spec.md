@@ -17,7 +17,7 @@ verified_by:
   ]
 modules: []
 families: [family:navigation-destinations]
-design_specs: []
+design_specs: [design:reduced-motion]
 architecture:
   [
     architecture:interaction-modality,
@@ -38,7 +38,7 @@ system_specs: []
 | Behavior                | A link in the TopNav bar or drawer. Selected marks the current page; disabled drops the destination and leaves the tab order; in the drawer, activating it closes the drawer.                                               |
 | End-user impact         | Users see and hear which destination is current; a disabled item cannot navigate by any input; drawer users return to the page after choosing a destination.                                                                |
 | Builder impact          | None.                                                                                                                                                                                                                       |
-| Compatibility/readiness | Records shipped behavior; no prop, default, target, or export changes. One implementation gap (see Current-state impact).                                                                                                   |
+| Compatibility/readiness | Records shipped behavior; no prop, default, target, or export changes. Two implementation gaps (see Current-state impact).                                                                                                  |
 | Review checks           | Reject a disabled item that keeps an `href` or fires `onClick`, a selected item without `aria-current="page"`, an icon-only item without an accessible name, or a drawer item that leaves the drawer open after navigating. |
 | Governing rules         | `component:TopNav` render modes; `architecture:interaction-modality` (shared focus indicator); `architecture:component-theming-surface`.                                                                                    |
 
@@ -66,6 +66,9 @@ Consumer migration instructions belong in consumer docs and release notes.
   replaces them; a caller `tabIndex` makes a disabled item a tab stop again.
   `architecture:public-component-api` INV5 keeps component-owned accessibility
   from being overwritten by accident.
+- **Color transition under reduced motion.** The bar link's background and text
+  color still animate when reduced motion is requested; `design:reduced-motion`
+  DR3 allows no animated property for a fine pointer.
 
 ## Ownership boundary
 

@@ -67,8 +67,8 @@ Consumer migration instructions belong in consumer docs and release notes.
   which WAI-ARIA 1.2 defines as a menu popup, while the panel is a
   `role="group"` (FR5).
 - **Motion under reduced motion.** The panel's fade and 4 px slide, the drawer
-  group's height, and the chevrons' rotation still animate when reduced motion
-  is requested. `design:reduced-motion` DR1–DR3 allow no animated property for a
+  group's height, the chevrons' rotation, and the trigger's background and text
+  color still animate when reduced motion is requested. `design:reduced-motion` DR1–DR3 allow no animated property for a
   fine pointer and only a short opacity change for touch.
 - **Same-label drawer groups share an id.** The drawer group's id is derived
   from `label`, so two mega menus with the same label in one drawer produce

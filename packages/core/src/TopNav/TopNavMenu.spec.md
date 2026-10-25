@@ -66,8 +66,9 @@ Consumer migration instructions belong in consumer docs and release notes.
   `onClick` renders a link without `href`, so keyboard users cannot reach or
   activate it. WCAG 2.1.1 and `architecture:interaction-modality` INV4 require an
   operable keyboard path.
-- **Motion under reduced motion.** The drawer group's height and the bar and
-  drawer chevrons' rotation still animate when reduced motion is requested;
+- **Motion under reduced motion.** The drawer group's height, the bar and
+  drawer chevrons' rotation, the trigger's background and text color, and each
+  bar item's background color still animate when reduced motion is requested;
   `design:reduced-motion` DR1–DR3 allow no animated property for a fine pointer
   and only a short opacity change for touch.
 - **The drawer trigger drops the ref.** In `drawer` mode the disclosure button
