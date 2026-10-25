@@ -30,7 +30,6 @@ import {
   declaresPressPaint,
   hasPressedArm,
   hasReleaseFade,
-  rulesDeclaredFor,
 } from '../__tests__/pressState';
 
 // FieldStatus announces status messages through the persistent useAnnounce
@@ -1194,19 +1193,83 @@ describe('CheckboxListItem press surface', () => {
   }
 
   /**
-   * Does the layer over the box paint the press paint it inherits from the
-   * row, on no press arm of its own (no `data-astryx-press`, no `:active`)?
+   * The rules for an element's own classes that declare a property, each
+   * with its selector, the media conditions around it and the value.
    */
-  function paintsInheritedPress(wrapper: Element): boolean {
-    return rulesDeclaredFor(wrapper).some(rule => {
-      const selector = rule.slice(0, rule.indexOf('{'));
-      return (
-        selector.includes('::after') &&
-        !selector.includes('data-astryx-press') &&
-        !selector.includes(':active') &&
-        /background-image:\s*var\(--_press-paint-image\)/.test(rule)
-      );
-    });
+  function rulesFor(
+    element: Element,
+    read: (style: CSSStyleDeclaration) => string,
+  ): {selector: string; conditions: string[]; value: string}[] {
+    const classes = Array.from(element.classList).map(name => `.${name}`);
+    const rules: {selector: string; conditions: string[]; value: string}[] = [];
+    const walk = (list: CSSRuleList, conditions: string[]) => {
+      for (const rule of Array.from(list)) {
+        if (rule instanceof CSSMediaRule) {
+          walk(rule.cssRules, [...conditions, rule.media.mediaText]);
+        } else if (
+          rule instanceof CSSStyleRule &&
+          classes.some(cls => rule.selectorText.startsWith(cls))
+        ) {
+          const value = read(rule.style).trim();
+          if (value !== '') {
+            rules.push({selector: rule.selectorText, conditions, value});
+          }
+        }
+      }
+    };
+    for (const sheet of Array.from(document.styleSheets)) {
+      walk(sheet.cssRules, []);
+    }
+    return rules;
+  }
+
+  /**
+   * Does the row declare its own press paint for its box: none at rest, and
+   * the press paint only inside the row's own `data-astryx-press` arms (on
+   * the row itself, not an ancestor), under a coarse pointer?
+   */
+  function declaresRowPressPaint(row: Element): boolean {
+    const rules = rulesFor(row, style =>
+      style.getPropertyValue('--_checkbox-row-press-paint'),
+    );
+    const rest = rules.filter(
+      rule =>
+        rule.conditions.length === 0 &&
+        !rule.selector.includes('data-astryx-press'),
+    );
+    const pressed = rules.filter(rule =>
+      rule.value.includes('var(--_press-paint-image)'),
+    );
+    return (
+      rest.length > 0 &&
+      rest.every(rule => rule.value === 'none') &&
+      pressed.length > 0 &&
+      pressed.every(
+        rule =>
+          /^\.[\w-]+(?:\.[\w-]+)*:is\(\[data-astryx-press="(?:on|fading)"\]\)(?::not\(#\\#\))*$/.test(
+            rule.selector,
+          ) &&
+          rule.conditions.some(condition =>
+            condition.includes('pointer: coarse'),
+          ),
+      )
+    );
+  }
+
+  /**
+   * Does the layer over the box paint its own row's press paint
+   * (`--_checkbox-row-press-paint`), and nothing it would inherit from
+   * further out (the shared `--_press-paint-image`)?
+   */
+  function readsRowPressPaint(wrapper: Element): boolean {
+    const layer = rulesFor(wrapper, style => style.backgroundImage).filter(
+      rule => rule.selector.includes('::after'),
+    );
+    return (
+      layer.some(rule =>
+        rule.value.includes('var(--_checkbox-row-press-paint'),
+      ) && !layer.some(rule => rule.value.includes('var(--_press-paint-image)'))
+    );
   }
 
   it('makes the row the one press surface, so the label and the box press the same element', () => {
@@ -1227,11 +1290,14 @@ describe('CheckboxListItem press surface', () => {
       expect(row.querySelectorAll('[data-astryx-pressable]')).toHaveLength(0);
       expect(control).not.toHaveAttribute('data-astryx-pressable');
       // The row declares the press paint at the press's strength and runs
-      // the release; the box's layer paints that inherited paint, with no
-      // press arm of its own.
+      // the release. It hands its box that paint through its own press
+      // paint, set only while the row itself is pressed under a coarse
+      // pointer, and the box reads nothing else (an outer row, a pressed
+      // ancestor, a pen on a fine-pointer page).
       expect(declaresPressPaint(row)).toBe(true);
       expect(hasReleaseFade(row)).toBe(true);
-      expect(paintsInheritedPress(wrapper)).toBe(true);
+      expect(declaresRowPressPaint(row)).toBe(true);
+      expect(readsRowPressPaint(wrapper)).toBe(true);
       // A mouse's press and hover stay the checkbox's own.
       expect(classesOf(control)).toContain(hoverScopeClass);
       expect(classesOf(row)).not.toContain(hoverScopeClass);
@@ -1267,7 +1333,8 @@ describe('CheckboxListItem press surface', () => {
     const {control} = parts(row);
     expect(row).not.toHaveAttribute('data-astryx-pressable');
     expect(control).toHaveAttribute('data-astryx-pressable');
-    expect(paintsInheritedPress(parts(row).wrapper)).toBe(false);
+    expect(declaresRowPressPaint(row)).toBe(false);
+    expect(readsRowPressPaint(parts(row).wrapper)).toBe(false);
   });
 
   it('paints no press on a disabled item', () => {
@@ -1280,7 +1347,8 @@ describe('CheckboxListItem press surface', () => {
     const {wrapper, control} = parts(row);
     expect(row.querySelectorAll('[data-astryx-pressable]')).toHaveLength(0);
     expect(control).not.toHaveAttribute('data-astryx-pressable');
-    expect(paintsInheritedPress(wrapper)).toBe(false);
+    expect(declaresRowPressPaint(row)).toBe(false);
+    expect(readsRowPressPaint(wrapper)).toBe(false);
     expect(hasPressedArm(wrapper)).toBe(false);
   });
 

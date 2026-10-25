@@ -123,16 +123,19 @@ const styles = stylex.create({
     },
   },
   // The row's own checkbox, under a row that owns the press
-  // (CheckboxRowPressContext): the layer paints the row's press paint, which
-  // the row's shared overlay style declares at the press's strength and the
-  // layer inherits (interactionOverlay.stylex.ts). It stays transparent until
-  // the touch press controller presses that row, then fades with it, so the
-  // row and the box are one press. A checkbox placed in the row's content
-  // declares its own paint and keeps its own press. It replaces the scope
-  // arms: this checkbox's own container is never pressed.
+  // (CheckboxRowPressContext): the layer paints the row's own press paint,
+  // which that row declares (`--_checkbox-row-press-paint`): none at rest,
+  // and the press paint the row's shared overlay style declares at the
+  // press's strength only inside that row's own press arms, under a coarse
+  // pointer (CheckboxListItem). The box reads its nearest row's value, so the
+  // row and the box are one press and nothing else reaches the box: not an
+  // outer row around a list placed in this row's content, not a pressed
+  // ClickableCard, not a pen on a fine-pointer page. A checkbox placed in the
+  // row's content declares its own paint and keeps its own press. It replaces
+  // the scope arms: this checkbox's own container is never pressed.
   indicatorRowPressOverlay: {
     '::after': {
-      backgroundImage: pressedOverlayImage,
+      backgroundImage: 'var(--_checkbox-row-press-paint, none)',
     },
   },
   // Holds only the indicator, so the focus ring has one unambiguous target.

@@ -6,7 +6,9 @@
  *   stylesheet) and real touch input through CDP
  * @output Real-engine proof that a finger on a CheckboxList row's label and a
  *   finger on its box press the same surface and paint the same pixels (the
- *   row and the box over it)
+ *   row and the box over it), and that nothing but the row's own press paints
+ *   its box: not a pen on a fine-pointer page, not a pressed ClickableCard,
+ *   not an outer row around a list placed in a row's content
  * @position Run with `pnpm test:a11y-contract`. Browser layer of the row's
  *   press surface; the jsdom layer is CheckboxList.test.tsx ("CheckboxListItem
  *   press surface").
@@ -254,6 +256,139 @@ test.describe('CheckboxList row press', () => {
     expect(onLabel.box).toEqual(rest.box);
     expect(darker(onBox.box, rest.box)).toBe(true);
     expect(darker(onBox.row, rest.row)).toBe(true);
+  });
+
+  test('a pen on a fine-pointer page paints the box as a mouse does', async ({
+    browser,
+  }) => {
+    // Touch work leaves a fine pointer's behavior as it is (spec:AST-017
+    // FR59): the row's touch press reaches the box only under a coarse
+    // pointer, so a pen's press shows the box's own `:active` paint alone.
+    const row = await openRow(
+      browser,
+      'core-checkboxlist--default',
+      'Email',
+      DESKTOP,
+    );
+    try {
+      expect(
+        await row.page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+      ).toBe(false);
+      const cdp = await row.page.context().newCDPSession(row.page);
+      const send = async (type: string, pointerType: 'mouse' | 'pen') =>
+        cdp.send('Input.dispatchMouseEvent', {
+          type: type as 'mousePressed',
+          x: row.box.x,
+          y: row.box.y,
+          button: 'left',
+          buttons: type === 'mouseReleased' ? 0 : 1,
+          clickCount: 1,
+          pointerType,
+        });
+      const hold = async (pointerType: 'mouse' | 'pen'): Promise<RGB> => {
+        await send('mouseMoved', pointerType);
+        await send('mousePressed', pointerType);
+        await row.page.waitForTimeout(HOLD_MS);
+        const read = await pixel(row.page, row.boxSample);
+        await send('mouseReleased', pointerType);
+        await row.page.waitForTimeout(HOLD_MS);
+        return read;
+      };
+      const rest = await pixel(row.page, row.boxSample);
+      // Each hold toggles the box, so the mouse toggles it back once before
+      // its own read: both reads see the same checked state.
+      const pen = await hold('pen');
+      await hold('mouse');
+      const mouse = await hold('mouse');
+      expect(darker(mouse, rest)).toBe(true);
+      expect(pen).toEqual(mouse);
+    } finally {
+      await row.close();
+    }
+  });
+
+  test('a finger on a ClickableCard around the list leaves its boxes to the card', async ({
+    browser,
+  }) => {
+    // The card's press is the card's own: its overlay covers its content,
+    // so a box under it shows the card's tint, and no press paint of its own.
+    const row = await openRow(
+      browser,
+      'core-checkboxlist--inside-clickable-card',
+      'SMS',
+    );
+    try {
+      const card = await row.page.evaluate(() => {
+        const list = document.querySelector('#storybook-root ul');
+        const surface = list?.parentElement?.closest('[data-astryx-pressable]');
+        if (surface == null) {
+          return null;
+        }
+        const r = surface.getBoundingClientRect();
+        return {x: r.x + 6, y: r.y + 6};
+      });
+      if (card == null) {
+        throw new Error('the story has no pressable card around the list');
+      }
+      const cardRest = await pixel(row.page, card);
+      const boxRest = await pixel(row.page, row.boxSample);
+      await row.press(card);
+      await row.page.waitForTimeout(HOLD_MS);
+      const surface = await pressedSurface(row.page);
+      const cardHeld = await pixel(row.page, card);
+      const boxHeld = await pixel(row.page, row.boxSample);
+      await row.lift(card);
+      expect(surface).not.toBe('li');
+      expect(darker(cardHeld, cardRest)).toBe(true);
+      // An unchecked box is the card's own surface colour at rest, so under
+      // the card's tint alone it matches the card.
+      expect(boxRest).toEqual(cardRest);
+      expect(boxHeld).toEqual(cardHeld);
+    } finally {
+      await row.close();
+    }
+  });
+
+  test("a list in a row's content keeps its boxes at rest while the outer row is held", async ({
+    browser,
+  }) => {
+    // Each row hands its box its own press paint, so a box reads its nearest
+    // row (`architecture:component-style-authoring` INV4).
+    const row = await openRow(
+      browser,
+      'core-checkboxlist--checkbox-list-in-row-content',
+      'Email',
+    );
+    try {
+      const inner = await row.page
+        .getByRole('checkbox', {name: 'Work'})
+        .evaluate(input => {
+          const box = input
+            .closest('li')
+            ?.querySelector('.astryx-checkbox-indicator');
+          if (box == null) {
+            return null;
+          }
+          const r = box.getBoundingClientRect();
+          return {x: r.x + r.width / 2, y: r.y + r.height - 5};
+        });
+      if (inner == null) {
+        throw new Error('the story has no inner row');
+      }
+      const outerRest = await pixel(row.page, row.boxSample);
+      const innerRest = await pixel(row.page, inner);
+      await row.press(row.label);
+      await row.page.waitForTimeout(HOLD_MS);
+      const surface = await pressedSurface(row.page);
+      const outerHeld = await pixel(row.page, row.boxSample);
+      const innerHeld = await pixel(row.page, inner);
+      await row.lift(row.label);
+      expect(surface).toBe('li');
+      expect(darker(outerHeld, outerRest)).toBe(true);
+      expect(innerHeld).toEqual(innerRest);
+    } finally {
+      await row.close();
+    }
   });
 
   test('holding the row leaves a checkbox in its content at rest', async ({
