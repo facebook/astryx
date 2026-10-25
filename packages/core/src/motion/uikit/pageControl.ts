@@ -23,12 +23,9 @@
  * - /packages/core/src/motion/README.md (domain list)
  */
 
-/**
- * UIPageControl on iOS 26.
- * @experimental
- */
 import {registerMotionTable} from '../roles';
 
+/** UIPageControl on iOS 26. */
 export const pageControl = {
   /**
    * Diameter of one page indicator.
