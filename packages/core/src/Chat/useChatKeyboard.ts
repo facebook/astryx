@@ -5,10 +5,12 @@
 /**
  * @file useChatKeyboard.ts
  * @input React refs, the keyboard module (useKeyboardHeight,
- *   claimTapFocus), the keyboard layout guide, observeKeyboardDismiss, the
- *   animator, the keyboard's own spring (`keyboard.spring`)
+ *   claimTapFocus, refuseFocusReveal), the keyboard layout guide (each
+ *   transition's start, resting value and curve), observeKeyboardDismiss, the
+ *   animator, the touch query, the layout viewport's height
+ *   (utils/layoutViewport.ts)
  * @output Exports useChatKeyboard: the lift ChatLayout lays its dock and
- *   keyboard spacer out with, and the refs it puts on its dock, message area
+ *   message area out with, and the refs it puts on its dock, message area
  *   and composer region so the composer rides the software keyboard
  * @position ChatLayout's keyboard behavior (Chat/ChatLayout.tsx); internal
  *
@@ -19,12 +21,13 @@
  *
  * - Layout follows the keyboard height (spec:AST-099 FR3): the dock rests
  *   `lift` px up from its bottom, the part of the keyboard that covers it,
- *   and a spacer after the messages takes the same height so the newest
- *   message can scroll above the lifted composer. ChatLayout applies `lift`
- *   through functional styles, so the layout is right with no animation.
+ *   and the message area's end padding grows by the same height so the
+ *   newest message can scroll above the lifted composer, with no element
+ *   added for it. ChatLayout applies `lift` through functional styles, so
+ *   the layout is right with no animation.
  * - The ride is polish on top, timed by the keyboard layout guide: the dock
- *   moves on the compositor (`translate`) on the keyboard's own spring
- *   (`keyboard.spring`, never a theme's) from the
+ *   moves on the compositor (`translate`) on the curve the guide publishes
+ *   (the keyboard's own spring, never a theme's) from the
  *   keyboard's own start, so it is where the keyboard is from its first
  *   frame, and a transcript at its newest message rides with it. The layout
  *   catches up once the ride ends, with the translate handed back in the
@@ -47,6 +50,16 @@
  *   tap route (claimTapFocus): its end cancels the browser's own focus for
  *   that touch. Taps on anything else in the composer, and taps once the
  *   text has focus, are the browser's.
+ * - Every other move into the composer's text (the keyboard's previous and
+ *   next buttons, Tab, a script moving focus from another element, a text
+ *   control tapped while another element has focus) is delivered the same
+ *   way, by the keyboard module's focus takeover (refuseFocusReveal), under a
+ *   finger and where the keyboard is measured. The keyboard's Done moves
+ *   focus to the composer region ChatLayout names, which is no tab stop. A script's focus() while
+ *   nothing has focus raises no event before Safari reveals the field, so
+ *   nothing can take that move over: the composer's own focus routes pass
+ *   `preventScroll` in this region (keyboardSurface.ts), and the tap route
+ *   covers taps on the composer's text.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/ChatLayout.tsx and ChatLayout.doc.mjs
@@ -55,16 +68,20 @@
 
 import {useRef, useState, useSyncExternalStore, type RefObject} from 'react';
 import {useAnimator} from '../motion/useAnimator';
-import {keyboard as uikitKeyboard} from '../motion/uikit/keyboard';
 import {
   bringsUpKeyboard,
   claimTapFocus,
+  findTextEntryControl,
   getKeyboardLayoutGuide,
   getMobileKeyboardHeight,
+  isKeyboardMeasurable,
   observeKeyboardDismiss,
+  refuseFocusReveal,
   useKeyboardHeight,
   type KeyboardTransition,
 } from '../keyboard';
+import {layoutViewportHeight} from '../utils/layoutViewport';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 
 export interface UseChatKeyboardOptions {
@@ -82,15 +99,13 @@ export interface UseChatKeyboardOptions {
 export interface UseChatKeyboardResult {
   /**
    * The part of the keyboard over the dock, CSS px: the dock's offset from
-   * its bottom and the spacer's height.
+   * its bottom and the room the message area's end padding adds.
    */
   lift: number;
   /** Callback ref for the dock container. */
   dockRef: (element: HTMLElement | null) => void;
   /** Callback ref for the message area. */
   messagesRef: (element: HTMLElement | null) => void;
-  /** Ref for the scroller's last child before the dock (the spacer). */
-  spacerRef: RefObject<HTMLDivElement | null>;
   /** Ref for the composer region whose text taps are claimed. */
   composerRef: RefObject<HTMLDivElement | null>;
 }
@@ -199,13 +214,8 @@ export function focusAtPoint(editable: HTMLElement, x: number, y: number) {
  *
  * @example
  * ```
- * const keyboard = useChatKeyboard({
- *   rootRef,
- *   scrollRef,
- *   isSelfScrolling,
- * });
- * <div ref={keyboard.messagesRef}>…</div>
- * <div ref={keyboard.spacerRef} aria-hidden {...stylex.props(styles.spacer(keyboard.lift))} />
+ * const keyboard = useChatKeyboard({rootRef, scrollRef, isSelfScrolling});
+ * <div ref={keyboard.messagesRef} {...stylex.props(styles.messages(keyboard.lift))}>…</div>
  * <div ref={keyboard.dockRef} {...stylex.props(styles.dock(keyboard.lift))}>
  *   <div ref={keyboard.composerRef}>…</div>
  * </div>
@@ -218,7 +228,6 @@ export function useChatKeyboard({
 }: UseChatKeyboardOptions): UseChatKeyboardResult {
   const dock = useAnimator();
   const messages = useAnimator();
-  const spacerRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
   const keyboardHeight = useKeyboardHeight(
     rootRef.current?.ownerDocument.defaultView,
@@ -260,10 +269,12 @@ export function useChatKeyboard({
       if (inset <= 0) {
         return 0;
       }
+      // In layout px, as the root's rect is, under a pinch zoom too.
+      const viewportBottom = layoutViewportHeight(win);
       const bottom = isSelfScrolling
         ? root.getBoundingClientRect().bottom
-        : win.innerHeight;
-      return Math.max(0, bottom - (win.innerHeight - inset));
+        : viewportBottom;
+      return Math.max(0, bottom - (viewportBottom - inset));
     };
     const isAtEnd = () => {
       const scroller = scrollRef.current;
@@ -316,9 +327,9 @@ export function useChatKeyboard({
     };
     commitRef.current = commit;
 
-    // The ride plays the keyboard's own spring, a value and not a theme
-    // role: the system moves the keyboard on it whatever the theme says, so
-    // a retuned spring would leave the composer out of step with it.
+    // The ride plays the curve the guide publishes with each transition
+    // (INV11): the keyboard's own spring, a value and not a theme role, since
+    // the system moves the keyboard on it whatever the theme says.
     const follow = (transition: KeyboardTransition) => {
       // The ride: the dock goes where the guide says the keyboard will be,
       // from the keyboard's start, relative to the layout it rests in now.
@@ -344,16 +355,13 @@ export function useChatKeyboard({
       rideRef.current += 1;
       const ride = rideRef.current;
       const rides = [
-        dock.animator.animate(shown, {spring: uikitKeyboard.spring}, timing)
+        dock.animator.animate(shown, {spring: transition.spring}, timing)
           .finished,
       ];
       if (atEnd) {
         rides.push(
-          messages.animator.animate(
-            shown,
-            {spring: uikitKeyboard.spring},
-            timing,
-          ).finished,
+          messages.animator.animate(shown, {spring: transition.spring}, timing)
+            .finished,
         );
       }
       void Promise.all(rides)
@@ -448,7 +456,7 @@ export function useChatKeyboard({
       // eslint-disable-next-line react-compiler/react-compiler -- imperative DOM: keeping the newest message in view
       scroller.scrollTop = scroller.scrollHeight - scroller.clientHeight;
     }
-    // The spacer's change may have clamped the scroll already: measure from
+    // The padding's change may have clamped the scroll already: measure from
     // where it was before the layout changed.
     const shifted = scroller.scrollTop - scrollBeforeRef.current;
     if (messagesTarget != null && Math.abs(messagesTarget + shifted) >= 0.5) {
@@ -490,11 +498,36 @@ export function useChatKeyboard({
     });
   }, []);
 
+  // Every other move into the composer's text is the keyboard module's focus
+  // takeover (spec:AST-099 FR4), where the keyboard is measured (FR6). A
+  // desktop browser keeps its own focus (spec:AST-017 FR59): the pointer is
+  // read on every blur, so a tablet that docks a mouse follows it. When the
+  // keyboard's Done ends entry, focus leaves the composer's text for nothing
+  // and moves to the composer region (FR4), a named group that is no tab
+  // stop, so the next tap or Tab starts from the composer.
+  useIsomorphicLayoutEffect(() => {
+    const composer = composerRef.current;
+    const win = composer?.ownerDocument.defaultView;
+    if (composer == null || win == null || !isKeyboardMeasurable(win)) {
+      return undefined;
+    }
+    return refuseFocusReveal(composer.ownerDocument, {
+      isActive: () =>
+        typeof win.matchMedia === 'function' &&
+        win.matchMedia(TOUCH_QUERY).matches,
+      claim: destination => findTextEntryControl(destination, composer),
+      park: origin => {
+        if (findTextEntryControl(origin, composer) != null) {
+          composer.focus({preventScroll: true});
+        }
+      },
+    });
+  }, []);
+
   return {
     lift,
     dockRef: dock.ref,
     messagesRef: messages.ref,
-    spacerRef,
     composerRef,
   };
 }

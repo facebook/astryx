@@ -15,6 +15,7 @@ import path from 'node:path';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, renderHook} from '@testing-library/react';
 import {getKeyboardLayoutGuide} from './keyboardLayoutGuide';
+import {layoutViewportHeight} from '../utils/layoutViewport';
 import {
   claimTapFocus,
   getMobileKeyboardHeight,
@@ -29,6 +30,7 @@ type FakeViewport = EventTarget & {
   height: number;
   offsetTop: number;
   scale: number;
+  width?: number;
 };
 
 let viewport: FakeViewport;
@@ -55,6 +57,8 @@ beforeEach(() => {
 afterEach(() => {
   Reflect.deleteProperty(window, 'visualViewport');
   Reflect.deleteProperty(window.navigator, 'virtualKeyboard');
+  Reflect.deleteProperty(document.documentElement, 'clientWidth');
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
@@ -79,6 +83,90 @@ describe('the keyboard height (spec:AST-099 FR2)', () => {
   });
 
   it('is 0 with no keyboard shown', () => {
+    expect(measureKeyboardHeight(window)).toBe(0);
+  });
+});
+
+describe('the layout viewport WebKit reports under a pinch zoom (FR2)', () => {
+  // Measured in Safari on iOS 26.2 (iPhone 17 Pro, a 402 × 714 layout
+  // viewport, a 337 px keyboard): WebKit reports innerWidth and innerHeight in
+  // the zoomed visual viewport's px, while the visual viewport's height times
+  // its scale stays in layout px.
+  function safari({
+    innerHeight,
+    innerWidth,
+    height,
+    scale,
+    offsetTop = 0,
+  }: {
+    innerHeight: number;
+    innerWidth: number;
+    height: number;
+    scale: number;
+    offsetTop?: number;
+  }) {
+    vi.stubGlobal('innerHeight', innerHeight);
+    vi.stubGlobal('innerWidth', innerWidth);
+    // The visual viewport is the 402 px layout width over the zoom.
+    Object.assign(viewport, {height, scale, offsetTop, width: 402 / scale});
+  }
+
+  it('reads the keyboard at scale 1', () => {
+    safari({innerHeight: 714, innerWidth: 402, height: 377, scale: 1});
+    expect(measureKeyboardHeight(window)).toBe(337);
+    expect(layoutViewportHeight(window)).toBe(714);
+  });
+
+  it('reads the same keyboard pinch-zoomed to 1.33', () => {
+    safari({innerHeight: 536, innerWidth: 302, height: 282.75, scale: 4 / 3});
+    expect(Math.abs(measureKeyboardHeight(window) - 337)).toBeLessThan(1);
+  });
+
+  it('follows the layout viewport WebKit clamps to the document after a scroll', () => {
+    safari({
+      innerHeight: 666,
+      innerWidth: 402,
+      height: 377,
+      scale: 1,
+      offsetTop: 120,
+    });
+    expect(measureKeyboardHeight(window)).toBe(289);
+  });
+
+  it('reads the same keyboard scrolled and pinch-zoomed', () => {
+    safari({
+      innerHeight: 536,
+      innerWidth: 302,
+      height: 282.75,
+      scale: 4 / 3,
+      offsetTop: 154.5,
+    });
+    expect(Math.abs(measureKeyboardHeight(window) - 337)).toBeLessThan(1);
+  });
+
+  it('keeps the keyboard past a 2x zoom, where innerHeight alone reads none', () => {
+    safari({innerHeight: 357, innerWidth: 201, height: 188.5, scale: 2});
+    expect(measureKeyboardHeight(window)).toBe(337);
+  });
+
+  it('reads no keyboard pinch-zoomed with none, in WebKit and where innerHeight ignores the zoom', () => {
+    safari({innerHeight: 536, innerWidth: 302, height: 536, scale: 4 / 3});
+    expect(measureKeyboardHeight(window)).toBe(0);
+    safari({innerHeight: 714, innerWidth: 402, height: 535.5, scale: 4 / 3});
+    expect(measureKeyboardHeight(window)).toBe(0);
+  });
+
+  it('reads no keyboard beside a classic scrollbar', () => {
+    // A desktop page with a 17 px vertical scrollbar, which innerWidth and
+    // not the document's client width or the visual viewport counts.
+    vi.stubGlobal('innerHeight', 800);
+    vi.stubGlobal('innerWidth', 1280);
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      configurable: true,
+      value: 1263,
+    });
+    Object.assign(viewport, {height: 800, scale: 1, width: 1263});
+    expect(layoutViewportHeight(window)).toBe(800);
     expect(measureKeyboardHeight(window)).toBe(0);
   });
 });

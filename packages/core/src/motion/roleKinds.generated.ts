@@ -50,7 +50,6 @@ export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
   'timing.curves.easeInOut': 'curve',
   'timing.curves.easeOut': 'curve',
   'timing.implicitAnimationMs': 'duration',
-  'timing.keyboardNotificationMs': 'duration',
   'timing.navigationBarHideShowMs': 'duration',
   'timing.press.buttonReleaseMs': 'duration',
   'timing.press.flashMs': 'duration',

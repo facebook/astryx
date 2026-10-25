@@ -3,15 +3,15 @@
 /**
  * @file keyboard.ts
  * @input Nothing; data only
- * @output Exports `keyboard`: the software keyboard's own spring, and when
- *   Mobile Safari's visual viewport reports the keyboard relative to its
- *   motion
+ * @output Exports `keyboard`: the software keyboard's own spring and
+ *   notification duration, and when Mobile Safari's visual viewport reports
+ *   the keyboard relative to its motion
  * @position The keyboard domain of the UIKit constants table
- *   (motion/uikit); read by keyboard/keyboardModel.ts and Chat's keyboard
- *   ride. The keyboard's notification duration is
- *   `timing.keyboardNotificationMs`. The spring is not a theme role: the
- *   system moves the keyboard on it whatever the theme says, so content that
- *   rides the keyboard plays this value, never a theme's (spec:AST-099 FR3)
+ *   (motion/uikit); read by keyboard/keyboardModel.ts, the keyboard layout
+ *   guide and Chat's keyboard ride. Neither the spring nor the duration is a
+ *   theme role: the system moves the keyboard on them whatever the theme
+ *   says, so content that rides the keyboard plays these values, never a
+ *   theme's (spec:AST-099 FR3)
  *
  * UIKit hands a view the keyboard's end frame before the keyboard moves. A
  * page only learns it from the visual viewport, which Mobile Safari updates
@@ -29,12 +29,21 @@ export const keyboard = {
   /**
    * The keyboard's frame animation, show and hide alike: critically damped,
    * response 0.2667 s. The notification reports curve 7 and 0.3833 s
-   * (`timing.keyboardNotificationMs`); Core Animation cuts the spring there.
+   * (`notificationMs`); Core Animation cuts the spring there.
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
    *   iPhone 17 Pro, CAAnimation read on the keyboard host and a
    *   keyboardLayoutGuide-pinned view, Oct 23 2026
    */
   spring: {mass: 1, stiffness: 555.0265, damping: 47.118},
+  /**
+   * The duration the keyboard notifications report
+   * (UIKeyboardAnimationDurationUserInfoKey, with curve 7), show and hide
+   * alike, in ms. The frame follows `spring`, cut at this time.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, UIKeyboardWillShow / WillHide / WillChangeFrame read,
+   *   Oct 23 2026
+   */
+  notificationMs: 383.3,
   /**
    * How long after the keyboard starts to rise Mobile Safari usually fires
    * the visual viewport's one `resize` for it, with the final height, in ms
