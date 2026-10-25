@@ -202,35 +202,16 @@ private func onWhite(_ color: Color) -> [Int] {
   return (0..<3).map { (c[$0] * c[3] + 255 * (255 - c[3])) / 255 } + [255]
 }
 
-// FR8, one cell at a time: input (pointer, keyboard, touch, VoiceOver) by
-// tooltip value (default name, given words, off).
+// FR8: Avatar's words, focus, touch, and hint for the shared tooltip
+// (library/tooltip.md), whose inputs `TooltipPresenterTests.swift` covers.
 
-@MainActor
-@Test func pointerAndKeyboardShowTheBubbleAfterCoresDelay() {
-  // Both inputs show `tooltipText` in the bubble, for the name and given
-  // words alike; a press hides it.
-  #expect(AvatarTooltipPresenter.delay == .milliseconds(200))
-  let bubble = Pixels(AvatarTooltipBubble(text: "Ada Lovelace"))
-  #expect(bubble.width > 40)
-  #expect(close(bubble.at(bubble.width / 2, 2), rgba(Theme.default.light.color.textPrimary), within: 6))
-}
-
-@Test func keyboardTabStopsForEachValueAndControl() {
-  // A static avatar with any tooltip is a tab stop; off, it is not.
-  #expect(Avatar.isTooltipTabStop(tap: .none, hasTooltip: true))
-  #expect(!Avatar.isTooltipTabStop(tap: .none, hasTooltip: false))
-  // A link or button is a tab stop already.
-  #expect(!Avatar.isTooltipTabStop(tap: .button, hasTooltip: true))
-  #expect(!Avatar.isTooltipTabStop(tap: .link, hasTooltip: true))
-}
-
-@MainActor
-@Test func touchTapOpensAStaticAvatarsTooltipOnly() {
-  #expect(Avatar.opensTooltipOnTap(Avatar("Ada Lovelace").tap))
-  #expect(Avatar.opensTooltipOnTap(Avatar("Ada Lovelace", tooltip: "Ada Lovelace, Mathematician").tap))
-  // A link or button keeps the tap for its action.
-  #expect(!Avatar.opensTooltipOnTap(Avatar("Ada Lovelace", onClick: {}).tap))
-  #expect(!Avatar.opensTooltipOnTap(Avatar("Ada Lovelace", href: "https://example.com").tap))
+@Test func aStaticAvatarIsATabStopAndOpensOnATapAndAControlKeepsBoth() {
+  #expect(Avatar.tooltipFocus(.none) == .tabStop)
+  #expect(Avatar.tooltipTouch(.none) == .tap)
+  #expect(Avatar.tooltipFocus(.button) == .control)
+  #expect(Avatar.tooltipTouch(.button) == .none)
+  #expect(Avatar.tooltipFocus(.link) == .control)
+  #expect(Avatar.tooltipTouch(.link) == .none)
 }
 
 @MainActor
