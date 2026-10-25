@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {createRef, StrictMode} from 'react';
+import {createRef, StrictMode, useLayoutEffect} from 'react';
 import {describe, it, expect, vi, afterEach, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -216,15 +216,34 @@ describe('ChatComposerInput', () => {
       const user = userEvent.setup();
       const onSelect = vi.fn(() => '@sam ');
       const triggers = [createMentionTrigger({onSelect})];
-      const {rerender} = render(<ChatComposerInput triggers={triggers} />);
+      const onDisabledCommit = vi.fn();
+      function Example({isDisabled = false}: {isDisabled?: boolean}) {
+        useLayoutEffect(() => {
+          if (isDisabled) {
+            const editor = screen.getByRole('combobox');
+            onDisabledCommit({
+              expanded: editor.getAttribute('aria-expanded'),
+              controls: editor.getAttribute('aria-controls'),
+              activeDescendant: editor.getAttribute('aria-activedescendant'),
+            });
+          }
+        }, [isDisabled]);
+        return (
+          <ChatComposerInput isDisabled={isDisabled} triggers={triggers} />
+        );
+      }
+      const {rerender} = render(<Example />);
       const editor = screen.getByRole('combobox');
       await user.type(editor, '@');
       await screen.findByText('Cindy Zhang');
       expect(editor).toHaveAttribute('aria-expanded', 'true');
 
-      rerender(<ChatComposerInput isDisabled triggers={triggers} />);
-      expect(editor).toHaveAttribute('aria-expanded', 'false');
-      expect(editor).not.toHaveAttribute('aria-activedescendant');
+      rerender(<Example isDisabled />);
+      expect(onDisabledCommit).toHaveBeenCalledExactlyOnceWith({
+        expanded: 'false',
+        controls: null,
+        activeDescendant: null,
+      });
       expect(
         screen.queryByRole('option', {hidden: true}),
       ).not.toBeInTheDocument();
@@ -232,7 +251,7 @@ describe('ChatComposerInput', () => {
       expect(onSelect).not.toHaveBeenCalled();
       expect(editor).toHaveTextContent('@');
 
-      rerender(<ChatComposerInput triggers={triggers} />);
+      rerender(<Example />);
       expect(editor).toHaveAttribute('aria-expanded', 'false');
     });
   });

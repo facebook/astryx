@@ -624,6 +624,16 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     debounceMs,
   });
 
+  const editorAriaProps =
+    isDisabled && triggerMenu.ariaProps.role === 'combobox'
+      ? {
+          ...triggerMenu.ariaProps,
+          'aria-expanded': false,
+          'aria-controls': undefined,
+          'aria-activedescendant': undefined,
+        }
+      : triggerMenu.ariaProps;
+
   useEffect(() => {
     if (isDisabled && triggerMenu.state.isActive) {
       // Reset also cancels pending searches, so late results cannot reopen
@@ -923,7 +933,7 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         onPaste={handlePaste}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        {...triggerMenu.ariaProps}
+        {...editorAriaProps}
         aria-disabled={isDisabled || undefined}
         {...mergeProps(stylex.props(styles.editable), {
           style: {maxHeight: `${maxHeight}px`},
