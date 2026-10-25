@@ -109,9 +109,7 @@ a measured, sourced difference exists.
   content-touch delay, the scroll brake, momentum memory) and haptics are not
   motion: they stay internal measured values and are not public concepts (`spec:AST-002` FR3). This adds touch motion roles to the motion
   configuration of `architecture:theme-authoring-contract` and to
-  `architecture:theme-tokens` beside the existing duration and easing tokens, whose rules are unchanged. It
-  amends `spec:AST-057` for touch presentations: Item's swipe springs and
-  durations become theme motion roles instead of constants in source. It departs from the draft `design:motion` DR3
+  `architecture:theme-tokens` beside the existing duration and easing tokens, whose rules are unchanged. It departs from the draft `design:motion` DR3
   wherever the native motion settles with an overshoot or stretches with a
   rubber band.
 
@@ -234,9 +232,13 @@ a measured, sourced difference exists.
   `manipulation` for taps and long presses, everything for a one-way pan or a
   pan that shares its axis with native scrolling. `pinch-zoom` MUST stay
   unless a pinch or rotation recognizer is attached.
-- **FR19 — Claims are made in time and only by an owner.** Recognizers attach
-  only under a coarse pointer; on a fine pointer no recognizer attaches and no
-  touch listener is registered (FR24). A recognizer that begins MUST claim its touches by cancelling
+- **FR19 — Claims are made in time and only by an owner.** Recognizers attach only where the primary pointer
+  is coarse (FR13, DEC-6). Where the primary pointer is fine, no recognizer
+  attaches and no touch listener is registered (FR24), so a finger on a
+  touchscreen whose primary pointer is fine gets the browser's defaults for
+  this record's behaviors (`spec:AST-017` FR59, DEC-25). This rule governs
+  this record's behaviors only; `spec:AST-057` keeps its per-event pointer
+  read for the row swipe, as its record states. A recognizer that begins MUST claim its touches by cancelling
   `touchmove` through a non-passive listener on its element; a watcher,
   which never claims, is exempt (DEC-7). A `touchmove` of a touch no recognizer owns MUST NOT be cancelled, with
   two exceptions. While a scroll lock under a modal presentation holds the
@@ -387,8 +389,8 @@ FR31–FR33 and FR35 apply to anchored menus and to Popover under a finger. A mo
 
 ### Resources and compatibility
 
-- **FR24 — Touch work costs nothing where it is not used.** Under a fine
-  pointer, and while a touch presentation is disabled, no touch-only listener,
+- **FR24 — Touch work costs nothing where it is not used.** Where the
+  primary pointer is fine (FR19), and while a touch presentation is disabled, no touch-only listener,
   observer or timer is active. The number of `document`- or `window`-level
   touch listeners MUST NOT grow with the number of component instances, a
   repeated row or cell adds no touch observer of its own, and nothing
@@ -438,8 +440,6 @@ FR31–FR33 and FR35 apply to anchored menus and to Popover under a finger. A mo
 - Each overlay member's own record (Dialog, BottomSheet, Drawer, Popover, the
   menus): its touch exit and its Reduce Motion cross-fade (FR7, FR8), since
   members own their animation (`family:overlay-dismissal` AV6).
-- `spec:AST-057`: Item's swipe springs and durations become theme motion roles
-  (FR4); its record points here.
 - `design:reduced-motion` owns the reduced-motion rule FR8 applies.
 - `component:Selector` DEC-1: `adaptive` resolves through the FR13 touch rule
   (a coarse pointer and the `spec:AST-012` FR9 compact definition) instead of
@@ -483,7 +483,7 @@ FR31–FR33 and FR35 apply to anchored menus and to Popover under a finger. A mo
 | FR15–FR17       | Recognizer unit tests on synthetic streams with explicit timestamps                                                            | exclusive, simultaneous, require-to-fail, nested; a blocked main thread; a pan at 10 pt per axis                                                                                                                          | a wrong winner, a late deadline, or a translation that keeps the hysteresis fails                                                                                                                                                                                   |
 | FR18–FR22       | Browser tests with real touch input                                                                                            | per-axis pans beside native scrolling, page zoom, cancelled touches, clicks after taps, keyboard activation, a modal scroll lock, a control that keeps its press through a drag                                           | a ghost click, a blocked scroll or zoom, or a cancelled unowned touchmove outside FR19's two exceptions fails                                                                                                                                                       |
 | FR23            | Haptics tests on the recorded moments                                                                                          | tap, drag, lift                                                                                                                                                                                                           | a haptic outside a native moment fails                                                                                                                                                                                                                              |
-| FR24            | Resource tests counting listeners, observers and timers                                                                        | fine pointer; coarse pointer enabled and disabled; many instances; unmount                                                                                                                                                | a touch listener on a fine pointer, a per-instance `document` or `window` listener, or a leak fails                                                                                                                                                                 |
+| FR24            | Resource tests counting listeners, observers and timers                                                                        | fine primary pointer; coarse pointer enabled and disabled; many instances; unmount                                                                                                                                        | a touch listener on a fine pointer, a per-instance `document` or `window` listener, or a leak fails                                                                                                                                                                 |
 | FR25            | Component tests of each moved default and its `presentation` value                                                             | default; `presentation` set to the released surface                                                                                                                                                                       | a moved default that `presentation` does not restore, or a public threshold, fails                                                                                                                                                                                  |
 | FR26–FR28, FR30 | Menu press tests on synthetic touch streams and a real-Chromium touch test                                                     | a slide from one row to another; a lift outside; a cancel; a second finger; edge autoscroll                                                                                                                               | an act on the press-start row, two acts for one gesture, a lift outside that closes, or a lit row after a cancel fails                                                                                                                                              |
 | FR29            | Trigger tests with explicit timestamps                                                                                         | a press in a fixed bar; a press in scrolling content held 149 and 150 ms; a quick tap in scrolling content; a scroll before 150 ms; a drift of 12 and 14 pt; moves before and after the handoff; `presentation="popover"` | a fixed-bar press that waits, a held finger's scroll-view open before 150 ms or after a scroll, a quick tap that does not open at its lift, an open past the drift allowance, a lift that acts before the handoff, or a `popover` trigger that opens on press fails |
