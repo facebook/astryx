@@ -139,7 +139,7 @@ export const docs = {
           name: 'hasLightDismiss',
           type: 'boolean',
           description:
-            'Whether clicking outside dismisses the popover. Under a finger, a pan that starts outside it (its trigger included) dismisses it too. Set to false for surfaces that stay open through both until explicitly dismissed, like onboarding coachmarks.',
+            'Whether clicking outside dismisses the popover. Set to false for surfaces that stay open until explicitly dismissed, like onboarding coachmarks.',
           default: 'true',
         },
         {
@@ -387,7 +387,7 @@ export const docsZh = {
           name: 'hasLightDismiss',
           type: 'boolean',
           description:
-            '点击外部是否关闭弹出框。触摸时，从弹出框外部（包括触发器）开始的拖动也会关闭它。需要显式关闭的界面（如新手引导提示）设为 false，两者都不会关闭它。',
+            '点击外部是否关闭弹出框。需要显式关闭的界面（如新手引导提示）设为 false。',
           default: 'true',
         },
         {
@@ -570,7 +570,7 @@ export const docsDense = {
         hasAutoFocus:
           'Move focus into genuine popover content on open, with a labeled-surface fallback; the generated close control stays hidden until reached by keyboard.',
         hasLightDismiss:
-          'Outside click dismisses, and under a finger an outside pan (trigger included); false for explicit-dismiss surfaces (coachmarks).',
+          'Outside click dismisses; false for explicit-dismiss surfaces (coachmarks).',
         hasEscapeDismiss:
           'Escape dismisses; full effect only with hasLightDismiss=false.',
       },

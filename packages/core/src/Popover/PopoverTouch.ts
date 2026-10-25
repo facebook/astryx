@@ -5,9 +5,8 @@
 /**
  * @file PopoverTouch.ts
  * @input usePopoverSurfaceMotion.ts (UIKit's present and dismiss on the
- *   animator), the layer runtime's pan-outside dismissal
- * @output Popover's touch layer: usePopoverSurfaceMotion,
- *   usePanOutsideDismiss
+ *   animator)
+ * @output Popover's touch layer: usePopoverSurfaceMotion
  * @position The one module Popover imports touch-only code through, and its
  *   only import site is Popover.tsx. The mouse paths stay outside it, so a
  *   desktop build can swap it for a no-op (AST-080 FR8).
@@ -16,4 +15,3 @@
  */
 
 export {usePopoverSurfaceMotion} from './usePopoverSurfaceMotion';
-export {usePanOutsideDismiss} from '../Layer/usePanOutsideDismiss';
