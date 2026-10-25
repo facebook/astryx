@@ -4,7 +4,7 @@
 
 /**
  * @file Typeahead.tsx
- * @input Uses React, BaseTypeahead, Field, Token, InputGroupContext (including disabled state)
+ * @input Uses React, BaseTypeahead, Field, Token, InputGroupContext
  * @output Exports Typeahead styled typeahead component
  * @position Styled wrapper; composes BaseTypeahead with Field or InputGroup
  *

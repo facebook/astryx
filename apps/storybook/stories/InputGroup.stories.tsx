@@ -1,12 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/**
- * @file InputGroup.stories.tsx
- * @input InputGroup and compatible input/addon components
- * @output Connected field examples, including inherited disabled state
- * @position Storybook examples for InputGroup consumer composition
- */
-
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Button} from '@astryxdesign/core/Button';
@@ -340,7 +333,6 @@ export const Disabled: Story = {
     const [value, setValue] = useState('example');
     return (
       <InputGroup {...args}>
-        <InputGroupText>https://</InputGroupText>
         <TextInput
           label="URL"
           value={value}

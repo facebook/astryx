@@ -4,7 +4,7 @@
 
 /**
  * @file NumberInput.tsx
- * @input Uses React, useId, useState, useMemo, useCallback, Field, Icon, InputGroupContext (including disabled state)
+ * @input Uses React, useId, useState, useMemo, useCallback, Field, Icon, InputGroupContext
  * @output Exports NumberInput component, NumberInputProps
  * @position Core implementation; consumed by index.ts, tested by NumberInput.test.tsx
  *

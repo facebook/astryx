@@ -6,7 +6,7 @@
  * @file InputGroupContext.ts
  * @input Layer-scoped React context/use
  * @output Exports InputGroup context and useInputGroup hook
- * @position Shared context; consumed for grouped styling, ARIA associations, and inherited disablement
+ * @position Shared context; consumed by input components for group-aware styling and ARIA associations
  */
 
 import {use} from 'react';

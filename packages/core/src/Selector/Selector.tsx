@@ -5,7 +5,7 @@
 /**
  * @file Selector.tsx
  * @input Uses React, StyleX, adaptive selection surfaces, theme-resolved
- *   indicators, Field, and InputGroup context (including disabled state)
+ *   indicators, Field, and InputGroup context
  * @output Exports Selector with input, secondary, and ghost trigger treatments, content-derived option-mark layout, and token-sized single-line triggers
  * @position Core implementation; consumed by index.ts
  *

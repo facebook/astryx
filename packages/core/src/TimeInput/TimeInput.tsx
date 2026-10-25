@@ -5,7 +5,7 @@
 /**
  * @file TimeInput.tsx
  * @input Uses React, Field, NativeTimeSegment, InputGroupContext, pointer media queries, and shared time utilities
- * @output Exports TimeInput, TimeInputProps, and TimeInputNativePicker; all presentations inherit group disablement
+ * @output Exports TimeInput, TimeInputProps, and TimeInputNativePicker
  * @position Core implementation; consumed by index.ts, tested by TimeInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:

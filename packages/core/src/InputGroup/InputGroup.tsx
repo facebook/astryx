@@ -5,7 +5,7 @@
 /**
  * @file InputGroup.tsx
  * @input Uses React, StyleX, theme tokens, InputGroupContext, Field
- * @output Exports InputGroup with group ARIA wiring and inherited disabled state
+ * @output Exports InputGroup component with group label/description ARIA wiring
  * @position Groups input with prefix/suffix addons; consumed by index.ts
  *
  * Compatible input children consume InputGroup context to remove competing
@@ -84,8 +84,7 @@ export interface InputGroupProps extends Omit<
   description?: string;
 
   /**
-   * Whether compatible inputs and Button addons are disabled. A disabled
-   * ancestor group also disables this group; individual children cannot opt out.
+   * Whether the group is disabled.
    * @default false
    */
   isDisabled?: boolean;
@@ -205,6 +204,7 @@ export function InputGroup({
             data-testid={testId}
             {...rest}
             role="group"
+            aria-disabled={isDisabled || undefined}
             aria-labelledby={labelID}
             aria-describedby={describedByIDs}
             {...mergeProps(

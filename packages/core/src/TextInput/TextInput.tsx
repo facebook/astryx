@@ -4,7 +4,7 @@
 
 /**
  * @file TextInput.tsx
- * @input Uses React, useId, ChangeEvent, Field, Icon, InputGroupContext (including disabled state)
+ * @input Uses React, useId, ChangeEvent, Field, Icon, InputGroupContext
  * @output Exports TextInput component, TextInputProps
  * @position Core implementation; consumed by index.ts, tested by TextInput.test.tsx
  *

@@ -4,7 +4,7 @@
 
 /**
  * @file Button.tsx
- * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator), ButtonGroup/InputGroup disabled contexts
+ * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator), group contexts
  * @output Exports Button component, ButtonProps, ButtonVariant types
  * @position Core implementation; consumed by index.ts, tested by Button.test.tsx
  *
