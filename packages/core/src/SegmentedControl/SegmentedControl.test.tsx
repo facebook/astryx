@@ -938,6 +938,34 @@ describe('selection motion', () => {
     }
   });
 
+  it('touch presentation: the segments paint no press of their own; the pressed title dims instead (UIKit)', () => {
+    const spy = mockCoarsePointer();
+    try {
+      renderControl();
+      for (const name of ['List', 'Icon']) {
+        expect(screen.getByRole('radio', {name})).not.toHaveAttribute(
+          'data-astryx-pressable',
+        );
+      }
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('a mouse keeps the shared press paint on the segments a press can change', () => {
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    renderControl();
+    for (const name of ['List', 'Icon']) {
+      expect(screen.getByRole('radio', {name})).toHaveAttribute(
+        'data-astryx-pressable',
+      );
+    }
+    // The selected segment never paints a press.
+    expect(screen.getByRole('radio', {name: 'Grid'})).not.toHaveAttribute(
+      'data-astryx-pressable',
+    );
+  });
+
   it('touch presentation: a value change starts the slide, StrictMode included', () => {
     const spy = mockCoarsePointer();
     const boxes: Record<string, [number, number]> = {
@@ -983,6 +1011,10 @@ describe('selection motion', () => {
       );
       expect(group.style.getPropertyValue('--_segmented-lens-width')).toBe(
         '96px',
+      );
+      // Laid out on the destination's box, where it lands centered.
+      expect(group.style.getPropertyValue('--_segmented-lens-left')).toBe(
+        '102px',
       );
     } finally {
       rects.mockRestore();

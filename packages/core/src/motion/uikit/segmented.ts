@@ -4,8 +4,11 @@
  * @file segmented.ts
  * @input Nothing; data only
  * @output Exports `segmentedControl`: UISegmentedControl's selection slide
- *   spring; and `registerSegmentedControlTable`, which registers it as a
- *   motion role
+ *   spring and what a finger does to the lens: the lift (size and spring),
+ *   how long a tap keeps it lifted, the spring it chases a dragging finger
+ *   with, how far past the end segments it follows, and the pressed title's
+ *   dim; and `registerSegmentedControlTable`, which registers them as
+ *   motion roles
  * @position The segmented-control domain of the UIKit constants table
  *   (motion/uikit); read by SegmentedControl's touch presentation
  *
@@ -15,8 +18,10 @@
  * position is driven by a spring, published every frame as a presentation
  * value with its velocity: a tap, a programmatic `selectedSegmentIndex`
  * change and the same change inside `UIView.animate` all follow the same
- * spring. Only a finger also lifts and stretches the lens; those clocks
- * belong to the press and are not in this file yet. UIKit also cross-fades
+ * spring. Only a finger also lifts the lens: holding the selected segment
+ * lifts it in place, dragging it carries it with the finger, and a tap on
+ * another segment lifts it for the first part of the slide. (The stretch
+ * along the motion is not modeled yet.) UIKit also cross-fades
  * the two titles that change (0.2 s on Core Animation's default curve; UIKit
  * lab, Oct 23 2026); Astryx switches them at once, because a cross-fade needs
  * a second copy of each title (`architecture:component-style-authoring`
@@ -60,13 +65,124 @@ export const segmentedControl = {
    *   Oct 23 2026
    */
   selectionSpring: {response: 0.4, dampingRatio: 0.85},
+  /**
+   * How much a finger lifts the lens, in pt added to its resting size:
+   * 96 × 27 → 120 × 43 in a three-segment 300 × 31 control, 71 × 27 →
+   * 95 × 43 with four segments, 126 × 40 → 150 × 56 in a 390 × 44 control.
+   * Additive, not a scale, and centered on the lens.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, per-frame lens bounds while holding the selected segment
+   *   of three control sizes, Oct 23 2026
+   */
+  liftGrowth: {width: 24, height: 16},
+  /**
+   * The lift's spring, up when the finger lands on the selected segment (or
+   * a tap starts a slide) and back down when it lets go: response 0.25 s,
+   * damping ratio 1 (about 0.3 s to full size).
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, UIViewSpringAnimationBehaviorSettings read on the lens
+   *   while held (dampingRatio 1.0, response 0.25), Oct 23 2026
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, per-frame lens bounds through a 600 ms hold, spring fit
+   *   of the lift and the release (rms 0.12 pt with 1.0 / 0.25), Oct 23 2026
+   */
+  liftSpring: {response: 0.25, dampingRatio: 1},
+  /**
+   * How long a tap on another segment keeps the lens lifted, in ms after the
+   * slide starts, before it comes back down on the lift spring while still
+   * travelling.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, per-frame lens bounds through a tap slide (bounds = size
+   *   / transform), two-spring fit: lift at +6 ms, release at +236 ms, rms
+   *   0.07 pt, Oct 23 2026
+   */
+  tapLiftHangMs: 230,
+  /**
+   * The spring the lifted lens chases a dragging finger with: its center
+   * trails the finger (about 14 pt at 200 pt/s) and catches up within about
+   * 0.13 s when the finger stops.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, UIViewSpringAnimationBehaviorSettings tracking values
+   *   read during a drag (trackingDampingRatio 0.86, trackingResponse 0.15),
+   *   Oct 23 2026
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, per-frame lens center against the HID touch stream for
+   *   two drags, simulated chase rms 0.51 / 0.77 pt, Oct 23 2026
+   */
+  trackingSpring: {response: 0.15, dampingRatio: 0.86},
+  /**
+   * How far past the first or last segment's center the lens follows a
+   * dragging finger, in pt; beyond that it stays put while the finger goes
+   * on.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, a drag 60 pt past the last segment: the lens stops about
+   *   11 pt past its center (312 vs 301), Oct 23 2026
+   */
+  dragOvershoot: 11,
+  /**
+   * A finger on an unselected segment (the lens stays on the selected one)
+   * dims that segment's title: to `opacity` on `fadeMs` / `fadeCurve`. When
+   * the finger crosses into another segment the dim moves with it on the same
+   * clock (one title comes back as the other dims), and at the lift the
+   * chosen title comes back on `liftMs` / `liftCurve` while its face switches
+   * to the selected one at once. The selected face itself follows the finger
+   * instantly during a drag of the lifted lens.
+   */
+  pressedTitle: {
+    /**
+     * The pressed title's opacity.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, per-tick UISegmentLabel effective opacity during a drag
+     *   that starts on an unselected segment: 0.20 from 432 ms on (F4 batch
+     *   64), Oct 24 2026
+     */
+    opacity: 0.2,
+    /**
+     * How long the dim takes (and the return when the finger moves on), in
+     * ms.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, per-tick UISegmentLabel effective opacity (F4 batch
+     *   64): 0.98 at 19 ms, 0.82 at 81, 0.57 at 149, 0.40 at 214, 0.29 at
+     *   284, 0.23 at 350, 0.20 at 432; fit 470 ms on CSS ease, rms 0.004
+     *   (the return when the finger moves on: the same fit, rms 0.007; a
+     *   plain tap's dim, F4 batch 64b: a 0.47 s opacity animation, rms
+     *   0.007), Oct 24 2026
+     */
+    fadeMs: 470,
+    /**
+     * The dim's curve: Core Animation's default timing function (CSS
+     * `ease`).
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, per-tick UISegmentLabel effective opacity (F4 batch
+     *   64), fit per frame (see `fadeMs`), Oct 24 2026
+     */
+    fadeCurve: [0.25, 0.1, 0.25, 1],
+    /**
+     * How long the chosen title takes to come back at the lift, in ms.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, per-tick UISegmentLabel effective opacity after the
+     *   lift (F4 batch 64): 0.21 → 0.35 at +24 ms, 0.51 at +42, 0.65 at +59,
+     *   0.75 at +75, 0.84 at +92, 0.90 at +109, 0.97 at +143, 1 at +174;
+     *   after a 100 ms tap 0.75 → 0.80 at +23, 0.89 at +57, 0.97 at +105, 1
+     *   at +155 (F4 batch 64b, a 0.2 s opacity animation); fit over both
+     *   180 ms on CSS ease, rms 0.021, Oct 24 2026
+     */
+    liftMs: 180,
+    /**
+     * The return's curve at the lift (CSS `ease`).
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, per-tick UISegmentLabel effective opacity after the
+     *   lift (F4 batch 64), fit per frame (see `liftMs`), Oct 24 2026
+     */
+    liftCurve: [0.25, 0.1, 0.25, 1],
+  },
 } as const;
 
 /**
- * Registers the table's spring as a motion role a theme may retune
- * (motion/roles.ts). Nothing registers on import: the touch code that
- * animates with this table calls it once (it is idempotent), so a page that
- * never does ships no registry.
+ * Registers the table's springs, durations and curves as motion roles a
+ * theme may retune (motion/roles.ts). Nothing registers on import: the
+ * touch code that animates with this table calls it once (it is
+ * idempotent), so a page that never does ships no registry.
  * @experimental
  */
 export function registerSegmentedControlTable(): void {

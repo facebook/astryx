@@ -23,7 +23,12 @@
 
 import React, {useMemo, useCallback, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars, radiusVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  spacingVars,
+  radiusVars,
+  shadowVars,
+} from '../theme/tokens.stylex';
 import {SegmentedControlContext} from './SegmentedControlContext';
 import {useListFocus} from '../hooks/useListFocus';
 import {useKeyboardHint} from '../hooks/useKeyboardHint';
@@ -143,12 +148,14 @@ const styles = stylex.create({
   },
   // The touch presentation's lens: the radiogroup's own pseudo-elements, so
   // no element is added (INV7). ::before is the copy of the selected
-  // segment's surface that springs from the old segment to the new one, then
-  // hands the surface back (useSegmentedSelectionMotion); under Reduced Motion
-  // ::after is the surface that fades out where it is. Each is painted and
-  // laid out from custom properties written when a change starts; at rest
-  // both are hidden. A negative z-index keeps them under every segment's
-  // content however the engine composites them: WebKit's overlap test misses
+  // segment's surface that a finger lifts and drags and that springs from the
+  // old segment to the new one, then hands the surface back
+  // (useSegmentedSelectionMotion); ::after casts the lifted lens's shadow
+  // (laid out with the lens and moved on its curves), or under Reduced Motion
+  // shows the surface that fades out where it is. Each is painted and laid
+  // out from custom properties written when a motion starts; at rest both are
+  // hidden. A negative z-index keeps them under every segment's content
+  // however the engine composites them: WebKit's overlap test misses
   // segments the moving layer will cover, so DOM order alone let it paint
   // over their titles mid-slide on a phone.
   lens: {
@@ -156,13 +163,14 @@ const styles = stylex.create({
       content: '""',
       position: 'absolute',
       zIndex: -1,
+      // eslint-disable-next-line @astryx/no-physical-properties -- intentional: laid out on a segment's box measured from client rects (useSegmentedSelectionMotion), in both directions.
+      left: 'var(--_segmented-lens-left, 0px)',
       top: 'var(--_segmented-lens-top, 0px)',
-      // eslint-disable-next-line @astryx/no-physical-properties -- intentional: the lens is placed by a physical translate measured from client rects (useSegmentedSelectionMotion), in both directions; a logical anchor would start it at the right edge under RTL.
-      left: 0,
       width: 'var(--_segmented-lens-width, 0px)',
       height: 'var(--_segmented-lens-height, 0px)',
       boxSizing: 'border-box',
-      transformOrigin: '0 0',
+      // Scales around its center: the lens's position and size are separate.
+      transformOrigin: '50% 50%',
       pointerEvents: 'none',
       visibility: 'var(--_segmented-lens-visibility, hidden)',
       willChange: 'var(--astryx-motion-will-change-before, auto)',
@@ -216,67 +224,72 @@ const styles = stylex.create({
       content: '""',
       position: 'absolute',
       zIndex: -1,
-      top: 'var(--_segmented-leaving-top, 0px)',
-      // eslint-disable-next-line @astryx/no-physical-properties -- intentional: the lens is placed by a physical translate measured from client rects (useSegmentedSelectionMotion), in both directions; a logical anchor would start it at the right edge under RTL.
-      left: 0,
-      width: 'var(--_segmented-leaving-width, 0px)',
-      height: 'var(--_segmented-leaving-height, 0px)',
+      // eslint-disable-next-line @astryx/no-physical-properties -- intentional: laid out on a segment's box measured from client rects (useSegmentedSelectionMotion), in both directions.
+      left: 'var(--_segmented-after-left, 0px)',
+      top: 'var(--_segmented-after-top, 0px)',
+      width: 'var(--_segmented-after-width, 0px)',
+      height: 'var(--_segmented-after-height, 0px)',
       boxSizing: 'border-box',
-      transformOrigin: '0 0',
+      // Scales around its center: the lens's position and size are separate.
+      transformOrigin: '50% 50%',
       pointerEvents: 'none',
-      visibility: 'var(--_segmented-leaving-visibility, hidden)',
+      visibility: 'var(--_segmented-after-visibility, hidden)',
       willChange: 'var(--astryx-motion-will-change-after, auto)',
       // It carries a copy of an already resolved surface, forced colors
       // included (Highlight), so the UA must not remap it again.
       forcedColorAdjust: 'none',
-      backgroundColor:
-        'var(--_segmented-leaving-background-color, transparent)',
-      backgroundImage: 'var(--_segmented-leaving-background-image, none)',
-      backgroundPosition:
-        'var(--_segmented-leaving-background-position, 0% 0%)',
-      backgroundSize: 'var(--_segmented-leaving-background-size, auto)',
-      backgroundRepeat: 'var(--_segmented-leaving-background-repeat, repeat)',
+      backgroundColor: 'var(--_segmented-after-background-color, transparent)',
+      backgroundImage: 'var(--_segmented-after-background-image, none)',
+      backgroundPosition: 'var(--_segmented-after-background-position, 0% 0%)',
+      backgroundSize: 'var(--_segmented-after-background-size, auto)',
+      backgroundRepeat: 'var(--_segmented-after-background-repeat, repeat)',
       backgroundOrigin:
-        'var(--_segmented-leaving-background-origin, padding-box)',
-      backgroundClip: 'var(--_segmented-leaving-background-clip, border-box)',
-      boxShadow: 'var(--_segmented-leaving-box-shadow, none)',
+        'var(--_segmented-after-background-origin, padding-box)',
+      backgroundClip: 'var(--_segmented-after-background-clip, border-box)',
+      boxShadow: {
+        // Unset while the ::after casts the lifted lens's shadow (proposed;
+        // pending owner review): the theme's high elevation.
+        default: `var(--_segmented-after-box-shadow, ${shadowVars['--shadow-high']})`,
+        // The lifted lens's shadow is decoration: forced colors drop it, as
+        // they drop every other (a copied surface has none there either).
+        '@media (forced-colors: active)': 'none',
+      },
       // eslint-disable-next-line @astryx/no-physical-properties -- intentional: a copy of the segment's computed (physical) surface.
       borderTopLeftRadius:
-        'var(--_segmented-leaving-border-top-left-radius, 0px)',
+        'var(--_segmented-after-border-top-left-radius, 0px)',
       // eslint-disable-next-line @astryx/no-physical-properties -- intentional: a copy of the segment's computed (physical) surface.
       borderTopRightRadius:
-        'var(--_segmented-leaving-border-top-right-radius, 0px)',
+        'var(--_segmented-after-border-top-right-radius, 0px)',
       // eslint-disable-next-line @astryx/no-physical-properties -- intentional: a copy of the segment's computed (physical) surface.
       borderBottomRightRadius:
-        'var(--_segmented-leaving-border-bottom-right-radius, 0px)',
+        'var(--_segmented-after-border-bottom-right-radius, 0px)',
       // eslint-disable-next-line @astryx/no-physical-properties -- intentional: a copy of the segment's computed (physical) surface.
       borderBottomLeftRadius:
-        'var(--_segmented-leaving-border-bottom-left-radius, 0px)',
-      borderTopWidth: 'var(--_segmented-leaving-border-top-width, 0px)',
+        'var(--_segmented-after-border-bottom-left-radius, 0px)',
+      borderTopWidth: 'var(--_segmented-after-border-top-width, 0px)',
       // eslint-disable-next-line @astryx/no-physical-properties -- intentional: a copy of the segment's computed (physical) surface.
-      borderRightWidth: 'var(--_segmented-leaving-border-right-width, 0px)',
-      borderBottomWidth: 'var(--_segmented-leaving-border-bottom-width, 0px)',
+      borderRightWidth: 'var(--_segmented-after-border-right-width, 0px)',
+      borderBottomWidth: 'var(--_segmented-after-border-bottom-width, 0px)',
       // eslint-disable-next-line @astryx/no-physical-properties -- intentional: a copy of the segment's computed (physical) surface.
-      borderLeftWidth: 'var(--_segmented-leaving-border-left-width, 0px)',
-      borderTopStyle: 'var(--_segmented-leaving-border-top-style, none)',
+      borderLeftWidth: 'var(--_segmented-after-border-left-width, 0px)',
+      borderTopStyle: 'var(--_segmented-after-border-top-style, none)',
       // eslint-disable-next-line @astryx/no-physical-properties -- intentional: a copy of the segment's computed (physical) surface.
-      borderRightStyle: 'var(--_segmented-leaving-border-right-style, none)',
-      borderBottomStyle: 'var(--_segmented-leaving-border-bottom-style, none)',
+      borderRightStyle: 'var(--_segmented-after-border-right-style, none)',
+      borderBottomStyle: 'var(--_segmented-after-border-bottom-style, none)',
       // eslint-disable-next-line @astryx/no-physical-properties -- intentional: a copy of the segment's computed (physical) surface.
-      borderLeftStyle: 'var(--_segmented-leaving-border-left-style, none)',
-      borderTopColor:
-        'var(--_segmented-leaving-border-top-color, currentcolor)',
+      borderLeftStyle: 'var(--_segmented-after-border-left-style, none)',
+      borderTopColor: 'var(--_segmented-after-border-top-color, currentcolor)',
       // eslint-disable-next-line @astryx/no-physical-properties -- intentional: a copy of the segment's computed (physical) surface.
       borderRightColor:
-        'var(--_segmented-leaving-border-right-color, currentcolor)',
+        'var(--_segmented-after-border-right-color, currentcolor)',
       borderBottomColor:
-        'var(--_segmented-leaving-border-bottom-color, currentcolor)',
+        'var(--_segmented-after-border-bottom-color, currentcolor)',
       // eslint-disable-next-line @astryx/no-physical-properties -- intentional: a copy of the segment's computed (physical) surface.
       borderLeftColor:
-        'var(--_segmented-leaving-border-left-color, currentcolor)',
-      backdropFilter: 'var(--_segmented-leaving-backdrop-filter, none)',
+        'var(--_segmented-after-border-left-color, currentcolor)',
+      backdropFilter: 'var(--_segmented-after-backdrop-filter, none)',
       WebkitBackdropFilter:
-        'var(--_segmented-leaving-webkit-backdrop-filter, none)',
+        'var(--_segmented-after-webkit-backdrop-filter, none)',
     },
   },
 });
@@ -333,7 +346,14 @@ export function SegmentedControl({
   // theme's transitions.
   const isTouchPresentation = useTouchPresentation().isTouch;
   const trackRef = useRef<HTMLDivElement | null>(null);
-  useSegmentedSelectionMotion(trackRef, value, isTouchPresentation);
+  // Under a finger the control also tracks the touch itself (the touch layer
+  // wires it) and commits the segment nearest the finger at the lift.
+  useSegmentedSelectionMotion(
+    trackRef,
+    value,
+    isTouchPresentation,
+    !isDisabled,
+  );
 
   // Disabled-reason tooltip. Applies to the whole-group disabled state. Disabled
   // controls swallow pointer events, so the tooltip listeners attach to the

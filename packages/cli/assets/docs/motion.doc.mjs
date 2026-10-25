@@ -198,10 +198,52 @@ const calmTheme = defineTheme({
               '0.5s 0',
             ],
             [
+              'segmentedControl.liftSpring',
+              '--motion-segmented-control-lift-spring',
+              'spring',
+              '0.25s 0',
+            ],
+            [
+              'segmentedControl.pressedTitle.fadeCurve',
+              '--motion-segmented-control-pressed-title-fade-curve',
+              'curve',
+              'cubic-bezier(0.25, 0.1, 0.25, 1)',
+            ],
+            [
+              'segmentedControl.pressedTitle.fadeMs',
+              '--motion-segmented-control-pressed-title-fade-ms',
+              'duration',
+              '470ms',
+            ],
+            [
+              'segmentedControl.pressedTitle.liftCurve',
+              '--motion-segmented-control-pressed-title-lift-curve',
+              'curve',
+              'cubic-bezier(0.25, 0.1, 0.25, 1)',
+            ],
+            [
+              'segmentedControl.pressedTitle.liftMs',
+              '--motion-segmented-control-pressed-title-lift-ms',
+              'duration',
+              '180ms',
+            ],
+            [
               'segmentedControl.selectionSpring',
               '--motion-segmented-control-selection-spring',
               'spring',
               '0.4s 0.15',
+            ],
+            [
+              'segmentedControl.tapLiftHangMs',
+              '--motion-segmented-control-tap-lift-hang-ms',
+              'duration',
+              '230ms',
+            ],
+            [
+              'segmentedControl.trackingSpring',
+              '--motion-segmented-control-tracking-spring',
+              'spring',
+              '0.15s 0.14',
             ],
             [
               'springs.actionSheetDismiss',
