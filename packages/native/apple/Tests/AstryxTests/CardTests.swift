@@ -30,6 +30,7 @@ import Testing
   #expect(labeled.props.elevation == fromProps.props.elevation)
 }
 
+@MainActor
 @Test func everyVariantDrawsCoresGroundAndOnlyDefaultHasABorder() {
   let color = Theme.default.light.color
   #expect(Astryx.Card<Color>.ground(.default, color) == color.backgroundCard)
@@ -38,6 +39,7 @@ import Testing
   #expect(Astryx.Card<Color>.ground(.teal, color) == color.backgroundTeal)
 }
 
+@MainActor
 @Test func elevationReadsTheThemesShadows() {
   let shadow = Theme.neutral.light.shadow
   #expect(Astryx.Card<Color>.shadow(.none, shadow).isEmpty)
