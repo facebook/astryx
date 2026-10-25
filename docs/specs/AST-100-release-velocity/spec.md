@@ -87,7 +87,7 @@ means for them.
 
 - Supported feature/engine floor: the package's supported browsers
   (`spec:AST-013` FR1, FR3); pointer events with event timestamps.
-- Unsupported behavior: a gesture with fewer than two samples in the window
+- Unsupported behavior: a gesture with fewer than two moved samples
   has a release velocity of 0.
 - Browser evidence: none required by this record; the unit and component
   tests in Verification prove FR1–FR5, and real-device feel for
