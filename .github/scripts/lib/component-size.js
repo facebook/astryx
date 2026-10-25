@@ -134,6 +134,53 @@ function bundleImportWithInputs(entry, exportName) {
   }
 }
 
+// The modules each entry's bundle reaches, import() targets included, from one
+// build over every entry: Map of absolute entry path to absolute input paths.
+// Returns null when the entries cannot be bundled together.
+function bundleInputsByEntry(entries) {
+  const existing = entries.filter(entry => fs.existsSync(entry));
+  if (existing.length === 0) return new Map();
+  const os = require('node:os');
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-reach-'));
+  try {
+    const esbuild = require('esbuild');
+    const workingDir = process.cwd();
+    const result = esbuild.buildSync({
+      absWorkingDir: workingDir,
+      entryPoints: existing,
+      outdir: scratch,
+      metafile: true,
+      bundle: true,
+      format: 'esm',
+      platform: 'browser',
+      define: {'process.env.NODE_ENV': '"production"'},
+      loader: {'.css': 'empty'},
+      write: false,
+      logLevel: 'silent',
+    });
+    const reach = new Map();
+    for (const output of Object.values(result.metafile.outputs)) {
+      if (output.entryPoint === undefined) continue;
+      reach.set(
+        fs.realpathSync(path.resolve(workingDir, output.entryPoint)),
+        Object.keys(output.inputs).map(input =>
+          path.resolve(workingDir, input),
+        ),
+      );
+    }
+    // Key by the paths callers passed, which may differ from real paths.
+    const byEntry = new Map();
+    for (const entry of existing) {
+      byEntry.set(entry, reach.get(fs.realpathSync(entry)) ?? []);
+    }
+    return byEntry;
+  } catch {
+    return null;
+  } finally {
+    fs.rmSync(scratch, {recursive: true, force: true});
+  }
+}
+
 function bundleImport(entry) {
   return bundleImportWithInputs(entry)?.text ?? null;
 }
@@ -279,4 +326,5 @@ module.exports = {
   classNamesIn,
   rulesForClasses,
   measureComponentImport,
+  bundleInputsByEntry,
 };

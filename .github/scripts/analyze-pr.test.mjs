@@ -281,6 +281,49 @@ describe('analyze-pr component ownership', () => {
 });
 
 describe('analyze-pr base and head sizes', () => {
+  it('sizes a component whose bundle reaches a changed shared module', () => {
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-analyze-reach-'));
+    const write = (file, content) => {
+      fs.mkdirSync(path.dirname(path.join(repo, file)), {recursive: true});
+      fs.writeFileSync(path.join(repo, file), content);
+    };
+    try {
+      write('package.json', '{}');
+      write('.gitignore', 'dist/\n*.json.out\nanalysis.json\n');
+      write('packages/core/package.json', '{"type": "module"}\n');
+      write('packages/core/src/index.ts', "export {Card} from './Card';\nexport {Badge} from './Badge';\n");
+      write('packages/core/src/Card/index.ts', "export {Card} from './Card';\n");
+      write('packages/core/src/Card/Card.tsx', "import {useHold} from '../hooks/useHold';\nexport function Card() { return useHold(); }\n");
+      write('packages/core/src/Card/Card.doc.mjs', "export const docs = {\n  name: 'Card',\n};\n");
+      write('packages/core/src/Badge/index.ts', "export {Badge} from './Badge';\n");
+      write('packages/core/src/Badge/Badge.tsx', 'export function Badge() {}\n');
+      write('packages/core/src/Badge/Badge.doc.mjs', "export const docs = {\n  name: 'Badge',\n};\n");
+      write('packages/core/src/hooks/useHold.ts', 'export function useHold() { return 1; }\n');
+      git(repo, ['init', '-q', '-b', 'main']);
+      git(repo, ['config', 'user.email', 'test@test.co']);
+      git(repo, ['config', 'user.name', 'Test']);
+      git(repo, ['add', '-A']);
+      git(repo, ['commit', '-qm', 'base']);
+      git(repo, ['checkout', '-q', '-b', 'feature']);
+      write('packages/core/src/hooks/useHold.ts', 'export function useHold() { return 2; }\n');
+      git(repo, ['commit', '-qam', 'touch the shared hook only']);
+      write('packages/core/dist/Card/Card.js', "import {useHold} from '../hooks/useHold.js';\nexport function Card() { return useHold(); }\n");
+      write('packages/core/dist/Badge/Badge.js', 'export function Badge() { return 0; }\n');
+      write('packages/core/dist/hooks/useHold.js', 'export function useHold() { return 2; }\n');
+      write('packages/core/dist/index.js', "export {Card} from './Card/Card.js';\nexport {Badge} from './Badge/Badge.js';\n");
+
+      execFileSync(
+        process.execPath,
+        [SCRIPT, '--base', 'main', '--head', 'HEAD', '--output', 'analysis.json'],
+        {cwd: repo, encoding: 'utf8'},
+      );
+      const analysis = JSON.parse(fs.readFileSync(path.join(repo, 'analysis.json'), 'utf8'));
+      expect(Object.keys(analysis.componentSizes)).toEqual(['core/Card']);
+    } finally {
+      fs.rmSync(repo, {recursive: true, force: true});
+    }
+  });
+
   it('measures ESM entries by module type and reads base sizes from a merge-base build', () => {
     const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-analyze-size-'));
     const baseRoot = path.join(repo, '.size-base');

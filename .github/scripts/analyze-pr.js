@@ -17,6 +17,7 @@ const { execSync } = require('node:child_process');
 const {
   gzipBytes: gzipTextBytes,
   measureComponentImport,
+  bundleInputsByEntry,
   packageStylesheetPath,
 } = require('./lib/component-size');
 const {
@@ -524,41 +525,62 @@ function packageStylesheet(pkg) {
   return stylesheetCache.get(file);
 }
 
-// Every canonical public component whose implementation lives in a changed
-// directory (nested packages) or file (flat packages), with the dist module
-// that defines its export. Family folders that hold several components yield
-// each of them.
+// Every canonical public component of a package, with the dist module that
+// defines its export.
+function packageTargets(pkg) {
+  if (pkg.layout === 'flat') {
+    return getComponentNames(pkg).map((name) => ({
+      key: `${pkg.packageName}/${name}`,
+      pkg,
+      name,
+      distModule: `${name}.js`,
+    }));
+  }
+  const sourceDir = path.join(process.cwd(), pkgSrc(pkg));
+  const exports = componentExportsFromBarrel(path.join(sourceDir, 'index.ts'), sourceDir);
+  const targets = [];
+  for (const name of nestedPackageComponentNames(process.cwd(), pkg)) {
+    const file = exports.get(name);
+    if (!file) continue;
+    targets.push({
+      key: `${pkg.packageName}/${name}`,
+      pkg,
+      name,
+      distModule: path.relative(sourceDir, file).replace(/\.tsx?$/, '.js'),
+    });
+  }
+  return targets;
+}
+
+// Every canonical public component a change can affect: its own folder or
+// file changed, or its bundle, import() targets included, reaches a changed
+// module of its package, such as a shared hook or style module. Family folders
+// that hold several components yield each of them.
 function sizeTargets(changedFiles) {
+  const withoutExtension = (file) => file.replace(/\.(tsx?|jsx?|mjs)$/, '');
   const targets = [];
   for (const pkg of PACKAGES) {
-    const sourceDir = path.join(process.cwd(), pkgSrc(pkg));
     const prefix = pkgSrc(pkg) + '/';
-    const changed = new Set(
+    const changedModules = new Set(
       changedFiles
         .filter((file) => file.startsWith(prefix))
-        .map((file) => file.slice(prefix.length).split('/')[0].replace(/\.tsx?$/, '')),
+        .map((file) => withoutExtension(file.slice(prefix.length))),
     );
-    if (changed.size === 0) continue;
-    if (pkg.layout === 'flat') {
-      for (const name of getComponentNames(pkg)) {
-        if (changed.has(name)) {
-          targets.push({ key: `${pkg.packageName}/${name}`, pkg, name, distModule: `${name}.js` });
-        }
-      }
-      continue;
-    }
-    const exports = componentExportsFromBarrel(path.join(sourceDir, 'index.ts'), sourceDir);
-    for (const name of nestedPackageComponentNames(process.cwd(), pkg)) {
-      const file = exports.get(name);
-      if (!file) continue;
-      const relative = path.relative(sourceDir, file);
-      if (!changed.has(relative.split(path.sep)[0])) continue;
-      targets.push({
-        key: `${pkg.packageName}/${name}`,
-        pkg,
-        name,
-        distModule: relative.replace(/\.tsx?$/, '.js'),
+    if (changedModules.size === 0) continue;
+    const changedTops = new Set([...changedModules].map((file) => file.split('/')[0]));
+    const dist = path.join(process.cwd(), pkgDist(pkg));
+    // esbuild reports inputs by real path.
+    const distReal = fs.existsSync(dist) ? fs.realpathSync(dist) : dist;
+    const all = packageTargets(pkg);
+    const reach = bundleInputsByEntry(all.map((target) => path.join(dist, target.distModule)));
+    for (const target of all) {
+      const top = withoutExtension(target.distModule.split('/')[0]);
+      const inputs = reach?.get(path.join(dist, target.distModule)) ?? [];
+      const reachesChange = inputs.some((input) => {
+        const relative = path.relative(distReal, input);
+        return !relative.startsWith('..') && changedModules.has(withoutExtension(relative));
       });
+      if (changedTops.has(top) || reachesChange) targets.push(target);
     }
   }
   return targets;
