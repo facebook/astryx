@@ -269,22 +269,22 @@ export function useChatKeyboard({
         return;
       }
       // Under Reduce Motion the animator's default applies: no travel, a
-      // cross-fade on a touch screen (design:reduced-motion DR1, DR2).
+      // cross-fade on a touch screen (design:reduced-motion DR1, DR2). The
+      // ride names the opacity it ends at: a ride that takes over from one
+      // still fading out would otherwise keep fading to 0 and end hidden.
       const timing = {at: transition.start};
+      const shown = {y: target, opacity: 1};
       ridingRef.current = true;
       rideRef.current += 1;
       const ride = rideRef.current;
       const rides = [
-        dock.animator.animate({y: target}, {spring: springs.keyboard}, timing)
+        dock.animator.animate(shown, {spring: springs.keyboard}, timing)
           .finished,
       ];
       if (atEnd) {
         rides.push(
-          messages.animator.animate(
-            {y: target},
-            {spring: springs.keyboard},
-            timing,
-          ).finished,
+          messages.animator.animate(shown, {spring: springs.keyboard}, timing)
+            .finished,
         );
       }
       void Promise.all(rides)

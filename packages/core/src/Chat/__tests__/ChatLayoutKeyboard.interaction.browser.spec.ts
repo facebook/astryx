@@ -786,5 +786,12 @@ test.describe('under a finger', () => {
     }
     expect(ys.at(-1)).toBeCloseTo(0, 0);
     expect(await dockGap(dock)).toBeCloseTo(0, 0);
+    // The fade ends shown: the dock and the transcript are fully opaque.
+    const opacities = await dock.evaluate(el => {
+      const read = (node: Element) => getComputedStyle(node).opacity;
+      const transcript = (el.parentElement as HTMLElement).firstElementChild;
+      return [read(el), transcript == null ? '1' : read(transcript)];
+    });
+    expect(opacities).toEqual(['1', '1']);
   });
 });
