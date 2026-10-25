@@ -934,6 +934,25 @@ test(
     const cast = await startScreencast(page);
     const at = await center();
     await driver.play(flick(at, {velocity: {x: 900, y: 0}, durationMs: 60}));
+    // Block once the coast itself runs. The lift's scale animation, which
+    // starts at touch-down, also satisfies `during`, and an engine whose
+    // driver returns before the page has handled the whole flick (WebKit)
+    // would otherwise block before the release and judge a thumb at rest.
+    await expect
+      .poll(async () =>
+        thumb.evaluate(element =>
+          element
+            .getAnimations()
+            .some(
+              animation =>
+                animation.playState === 'running' &&
+                (animation.effect as KeyframeEffect)
+                  .getKeyframes()
+                  .some(frame => 'translate' in frame),
+            ),
+        ),
+      )
+      .toBe(true);
     const block = await blockMainThread(page, 400, {
       during: thumb,
       minProgressMs: 16,
