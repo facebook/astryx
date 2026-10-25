@@ -226,7 +226,8 @@ export const doc = {
         'If a protected file still needs rebuilding, the run is incomplete exactly as for any protected file: it exits 1 and the result says `complete: false` and `errorCode: "ERR_CODEMOD_PROTECTED"`. ' +
         'If a file nothing protects still needs rebuilding, no protected file is in the way: the codemod could not make a required change, so it is also in `errors` and the run fails with `ERR_CODEMOD_FAILED`, as described below. ' +
         'Either way, rebuild it, then run the same upgrade again. ' +
-        'When a codemod also failed, the failure is reported as below, and the receipt it carries still lists `declinedCandidates` and `regenerate`.',
+        'When a codemod also failed, the failure is reported as below, and the receipt it carries still lists `declinedCandidates` and `regenerate`, ' +
+        'unless a protected file to regenerate also remains, in which case the run returns `ERR_CODEMOD_PROTECTED` with the failure in `errors`.',
     },
     {type: 'heading', level: 3, text: 'A failed codemod'},
     {
