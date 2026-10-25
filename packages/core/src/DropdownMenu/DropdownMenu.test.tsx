@@ -2970,6 +2970,108 @@ describe('DropdownMenu press model', () => {
     fireEvent.click(trigger, {detail: 1});
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
+
+  // spec:AST-094 FR19 and module:DropdownMenu/useMenuPress FR9: the touch
+  // rules follow the PRIMARY pointer. On a touchscreen whose primary pointer
+  // is fine (a laptop), a finger keeps the released finger behavior; finger
+  // or mouse is still read per gesture on both devices.
+  describe('the primary pointer picks the rules; each gesture is still a finger or a mouse', () => {
+    function stubFinePointer() {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn().mockImplementation((query: string) => ({
+          matches: false,
+          media: query,
+          onchange: null,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      );
+      expect(window.matchMedia(TOUCH_QUERY).matches).toBe(false);
+    }
+    const touchmoveIsPrevented = () => {
+      const event = new Event('touchmove', {bubbles: true, cancelable: true});
+      document.body.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+
+    it('fine primary pointer: a finger\u2019s press does not open the menu; its tap opens it through the click', () => {
+      stubFinePointer();
+      const trigger = renderMenu();
+      fireEvent.pointerDown(trigger, {...touch, clientX: 0, clientY: 0});
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      fireEvent.pointerUp(trigger, {...touch, clientX: 0, clientY: 0});
+      fireEvent.click(trigger, {detail: 1});
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('fine primary pointer: a finger held for the 500 ms delay opens the menu with the finger down, holds the page still until the lift, and picks under the released rules', () => {
+      stubFinePointer();
+      vi.useFakeTimers();
+      try {
+        const onPick = vi.fn<(label: string) => void>();
+        const trigger = renderMenu(onPick);
+        fireEvent.pointerDown(trigger, {...touch, clientX: 0, clientY: 0});
+        act(() => {
+          vi.advanceTimersByTime(MENU_PRESS_LONG_PRESS_MS - 1);
+        });
+        expect(trigger).toHaveAttribute('aria-expanded', 'false');
+        act(() => {
+          vi.advanceTimersByTime(1);
+        });
+        expect(trigger).toHaveAttribute('aria-expanded', 'true');
+        // The finger's later touchmoves are the menu's, not a scroll.
+        expect(touchmoveIsPrevented()).toBe(true);
+        // A release before the settle time acts on nothing (FR8's rule).
+        fireEvent.pointerMove(item('Edit'), {...touch, clientX: 0, clientY: 2});
+        // No handoff distance: once settled, a finger that barely moved
+        // lights the row under it and its lift picks it.
+        act(() => {
+          vi.advanceTimersByTime(MENU_PRESS_SETTLE_MS);
+        });
+        fireEvent.pointerMove(item('Delete'), {
+          ...touch,
+          clientX: 0,
+          clientY: 3,
+        });
+        expect(item('Delete')).toHaveFocus();
+        fireEvent.pointerUp(item('Delete'), {...touch, clientX: 0, clientY: 3});
+        expect(onPick).toHaveBeenCalledWith('Delete');
+        expect(touchmoveIsPrevented()).toBe(false);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('fine primary pointer: a finger that lifts outside the menu leaves it open; a mouse released outside closes it', async () => {
+      stubFinePointer();
+      const user = userEvent.setup();
+      const trigger = renderMenu();
+      await user.click(trigger);
+      fireEvent.pointerDown(item('Edit'), touch);
+      fireEvent.pointerUp(document.body, touch);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      fireEvent.pointerDown(item('Edit'), mouse);
+      fireEvent.pointerUp(document.body, mouse);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('coarse primary pointer: a mouse keeps the mouse path: it opens on its press, and a press in the menu released outside closes it', () => {
+      stubCoarsePointer();
+      const trigger = renderMenu();
+      fireEvent.pointerDown(trigger, mouse);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      fireEvent.pointerUp(trigger, mouse);
+      fireEvent.click(trigger, {detail: 1});
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      fireEvent.pointerDown(item('Edit'), mouse);
+      fireEvent.pointerUp(document.body, mouse);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
 });
 
 describe('DropdownMenu trigger handler composition', () => {
