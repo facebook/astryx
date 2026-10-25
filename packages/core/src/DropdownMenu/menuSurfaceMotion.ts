@@ -5,7 +5,8 @@
 /**
  * @file menuSurfaceMotion.ts
  * @input An anchored menu's popover element, the control it hangs off, the
- *   motion foundation (compositor animator, spring math) and the UIKit table
+ *   motion foundation (compositor animator, spring math), the layer
+ *   runtime's exit copy and presentation hold, and the UIKit table
  * @output Exports `menuCollapsedState` (the transform that shrinks the
  *   surface to UIMenu's collapsed square on its anchor), `menuSpring`,
  *   `menuExitDurationMs` and `createMenuSurfaceMotion` (the touch
@@ -41,6 +42,15 @@
  * on the main thread runs per frame while it collapses (a discrete
  * `display` transition would restyle the element every frame).
  *
+ * While it opens, the menu takes no input (`spec:AST-094` FR35), as UIMenu
+ * takes none until it is presented: the layer runtime's presentation hold
+ * (`holdPresentation`, `scope: 'viewport'`) covers the viewport from
+ * inside the layer until the open settles, so a tap or a drag that lands
+ * then neither closes the menu nor reaches, scrolls or focuses the page. The
+ * finger that opened it is not held: its events stay with the control it
+ * pressed. A close, a reset or a new open lets go at once. Keys and assistive
+ * technology stay live.
+ *
  * Under reduced motion the animator's policy applies (design:reduced-motion):
  * the menu lands at its size and fades in, and fades out where it is,
  * opacity only, in 200 ms under a finger.
@@ -51,6 +61,7 @@
  */
 
 import {placeLayerExitCopy} from '../Layer/layerExitCopy';
+import {holdPresentation} from '../Layer/presentationHold';
 import {
   createAnimator,
   type Animator,
@@ -187,6 +198,13 @@ export function createMenuSurfaceMotion(
   let openHandle: MotionHandle | null = null;
   // The close in progress: its copy and the copy's animator.
   let exiting: {ghost: HTMLElement; animator: Animator} | null = null;
+  // Lets go of the hold the open in progress keeps on the layer.
+  let releaseHold: (() => void) | null = null;
+
+  const endHold = () => {
+    releaseHold?.();
+    releaseHold = null;
+  };
 
   const endExit = () => {
     if (exiting == null) {
@@ -266,6 +284,9 @@ export function createMenuSurfaceMotion(
 
   const settleOpen = (handle: MotionHandle) => {
     openHandle = handle;
+    // No input reaches the menu or the page until it is open (FR35).
+    endHold();
+    releaseHold = holdPresentation(element, {until: handle, scope: 'viewport'});
     void handle.finished.then(() => {
       if (openHandle === handle) {
         openHandle = null;
@@ -296,6 +317,7 @@ export function createMenuSurfaceMotion(
       opacity: animator.getVelocity('opacity'),
     };
     openHandle = null;
+    endHold();
     // The layer runtime's one exit copy (architecture:layer-runtime INV13):
     // in the top layer on the surface's layout box, inert and hidden from
     // assistive technology, its scroll positions kept. Without a top layer
@@ -329,6 +351,7 @@ export function createMenuSurfaceMotion(
     collapsed = null;
     measured = null;
     openHandle = null;
+    endHold();
     endExit();
     animator.set({scaleX: 1, scaleY: 1, opacity: 1});
     for (const property of MOTION_STYLE_PROPERTIES) {

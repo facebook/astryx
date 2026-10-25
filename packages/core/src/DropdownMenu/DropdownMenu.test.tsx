@@ -37,6 +37,7 @@ import {spacingVars} from '../theme/tokens.stylex';
 import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
 import {MENU_PRESS_LONG_PRESS_MS} from '../hooks/useMenuPress';
 import {MENU_PRESS_SETTLE_MS} from '../hooks/menuPressGesture';
+import {isInHeldLayer} from '../Layer/presentationHold';
 import {COMPACT_QUERY, TOUCH_QUERY} from '../utils/touchPresentation';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 
@@ -2766,6 +2767,30 @@ describe('DropdownMenu touch presentation (UIMenu under a finger)', () => {
     const popover = popoverOf();
     expect(popover.style.getPropertyValue('animation-name')).toBe('none');
     expect(popover.style.getPropertyValue('transform-origin')).not.toBe('');
+  });
+
+  it('takes no touch while it grows: the layer is held until the open settles (spec:AST-094 FR35)', async () => {
+    const user = userEvent.setup();
+    const trigger = renderMenu();
+    await user.click(trigger);
+    const edit = screen.getByRole('menuitem', {name: 'Edit', hidden: true});
+    expect(isInHeldLayer(edit)).toBe(true);
+    // Its close lets go at once (the hold is the open's).
+    act(() => {
+      const event = new Event('beforetoggle');
+      Object.defineProperty(event, 'newState', {value: 'closed'});
+      popoverOf().dispatchEvent(event);
+    });
+    expect(isInHeldLayer(edit)).toBe(false);
+  });
+
+  it('under a mouse, holds nothing: the layer’s own entrance plays', async () => {
+    asMouse();
+    const user = userEvent.setup();
+    const trigger = renderMenu();
+    await user.click(trigger);
+    const edit = screen.getByRole('menuitem', {name: 'Edit', hidden: true});
+    expect(isInHeldLayer(edit)).toBe(false);
   });
 
   it('closes on a static copy of the menu, hidden from assistive technology', async () => {

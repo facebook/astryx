@@ -94,7 +94,11 @@ async function installMenuLog(page: Page) {
     document.addEventListener(
       'beforetoggle',
       event => {
-        if (event.newState === 'open') {
+        const target = event.target as Element | null;
+        if (
+          event.newState === 'open' &&
+          target?.matches('[popover]:has([role="menu"])') === true
+        ) {
           log.shown.push(performance.now());
         }
       },
@@ -103,6 +107,12 @@ async function installMenuLog(page: Page) {
     document.addEventListener(
       'toggle',
       event => {
+        // The menu's own popover: a presentation hold's shield is a
+        // popover too, and toggles while the menu grows.
+        const target = event.target as Element | null;
+        if (!target?.matches('[popover]:has([role="menu"])')) {
+          return;
+        }
         const state = event.newState;
         (state === 'open' ? log.opened : log.closed).push(performance.now());
       },

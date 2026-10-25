@@ -11,8 +11,10 @@
  *   light dismiss; the open keeps advancing through a blocked main thread;
  *   neither does Layout or Paint per frame; Reduce Motion cross-fades in place, opacity only, in 200 ms or less (design:reduced-motion DR2);
  *   storyboards of the open and the close. A pan outside dismisses as it
- *   begins. A mouse, with and without Reduce Motion, keeps the layer's own
- *   entrance and close
+ *   begins. While the menu grows it takes no input (spec:AST-094 FR35): a
+ *   tap that lands then neither closes it nor reaches the page nor moves
+ *   focus, and a pan then starts nothing. A mouse, with and without Reduce
+ *   Motion, keeps the layer's own entrance and close
  * @position Evidence for DropdownMenu's touch presentation (and MoreMenu,
  *   which renders it); the model itself is unit-tested in
  *   menuSurfaceMotion.test.ts. The finger's press model has its own spec,
@@ -133,6 +135,12 @@ async function installMenuLog(page: Page) {
     document.addEventListener(
       'toggle',
       event => {
+        // The menu's own popover: a presentation hold's shield is a
+        // popover too, and toggles while the menu grows.
+        const target = event.target as Element | null;
+        if (!target?.matches('[popover]:has([role="menu"])')) {
+          return;
+        }
         const state = event.newState;
         (state === 'open' ? log.opened : log.closed).push(performance.now());
       },
@@ -327,6 +335,92 @@ async function openWithTap(story: OpenStory) {
     );
   });
 }
+
+/** Page-side log of every click and where it landed: inside the menu's layer or not. */
+async function installClickLog(page: Page) {
+  await page.evaluate(() => {
+    const clicks: {insideLayer: boolean}[] = [];
+    (window as unknown as {__clicks: typeof clicks}).__clicks = clicks;
+    document.addEventListener(
+      'click',
+      event => {
+        const layer = document.querySelector('[popover]:has([role="menu"])');
+        const target = event.target instanceof Node ? event.target : null;
+        clicks.push({insideLayer: layer?.contains(target) === true});
+      },
+      true,
+    );
+  });
+}
+
+const readClicks = async (page: Page) =>
+  page.evaluate(
+    () => (window as unknown as {__clicks: {insideLayer: boolean}[]}).__clicks,
+  );
+
+const activeDescription = async (page: Page) =>
+  page.evaluate(() => {
+    const active = document.activeElement;
+    return active == null
+      ? 'none'
+      : `${active.tagName}#${active.id}[${active.getAttribute('role') ?? ''}]`;
+  });
+
+test('a tap that lands while the menu grows is ignored: it finishes, stays open and keeps focus; once it is in, a tap outside dismisses it (spec:AST-094 FR35)', async ({
+  page,
+}) => {
+  const story = await openDefault(page);
+  await installClickLog(page);
+  const viewport = viewportOf(page);
+  const outside = {x: 20, y: viewport.height - 20};
+  await openWithTap(story);
+  const focused = await activeDescription(page);
+  const before = await readMenuLog(page);
+  const openedAt = lastOf(before.opened);
+  // Into the open spring, well before it settles.
+  await story.driver.play(tap(outside, {holdMs: 40}));
+  const log = await readMenuLog(page);
+  const tapUp = lastOf(log.up);
+  expect(tapUp - openedAt).toBeLessThan(
+    settlingDuration(toSpring(springs.menuOpen)) * 1000,
+  );
+  // The menu finished and stayed: no close, nothing beneath was clicked,
+  // and focus is where the open put it.
+  await waitForRest(story.popover);
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'true');
+  expect(log.closed.length).toBe(before.closed.length);
+  expect((await readClicks(page)).filter(click => !click.insideLayer)).toEqual(
+    [],
+  );
+  expect(await activeDescription(page)).toBe(focused);
+  // Once it is in, a tap outside is the browser's light dismiss again.
+  await story.driver.play(tap(outside, {holdMs: 40}));
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('a pan that starts while the menu grows starts nothing: no scroll takes it, and the menu stays (spec:AST-094 FR35)', async ({
+  page,
+}) => {
+  const story = await openDefault(page);
+  test.skip(
+    !story.driver.drivesNativeGestures,
+    'scripted touches do not start native pans in this engine (iOS evidence: the simulator run)',
+  );
+  const viewport = viewportOf(page);
+  await openWithTap(story);
+  const before = await readMenuLog(page);
+  const from = {x: viewport.width / 2, y: viewport.height - 120};
+  await story.driver.play(
+    drag(from, {x: from.x, y: from.y - 100}, {durationMs: 150, hz: 60}),
+  );
+  await waitForRest(story.popover);
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'true');
+  const log = await readMenuLog(page);
+  // The browser never took the touch for a pan: no cancel, and the lift
+  // reached the page (on the hold, inside the menu's layer).
+  expect(log.cancel.length).toBe(before.cancel.length);
+  expect(log.closed.length).toBe(before.closed.length);
+});
 
 test('the open grows out of the trigger on UIKit\u2019s open spring', async ({
   page,

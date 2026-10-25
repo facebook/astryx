@@ -24,6 +24,10 @@ import {
   type UseMenuPressReturn,
 } from './useMenuPress';
 import {MENU_PRESS_SETTLE_MS} from './menuPressGesture';
+import {
+  holdPresentation,
+  isPresentationShield,
+} from '../Layer/presentationHold';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 import {scroll} from '../motion/uikit/scroll';
 
@@ -180,6 +184,66 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
+});
+
+describe('useMenuPress — a presentation hold over the menu', () => {
+  afterEach(() => {
+    Reflect.deleteProperty(document, 'elementFromPoint');
+    Reflect.deleteProperty(document, 'elementsFromPoint');
+  });
+
+  it('its shield does not hide the rows from the finger already in the gesture (spec:AST-094 FR29, FR35)', () => {
+    const onSelect = vi.fn();
+    render(<Harness onSelect={onSelect} />);
+    const menu = screen.getByRole('menu');
+    // The layer runtime's hold covers the viewport while the menu grows; a
+    // hit test there answers with its shield, which is not content.
+    const release = holdPresentation(menu, {
+      until: new Promise(() => {}),
+      scope: 'viewport',
+    });
+    try {
+      const shield = [...menu.children].find(isPresentationShield)!;
+      expect(shield).toBeDefined();
+      Object.defineProperty(document, 'elementFromPoint', {
+        configurable: true,
+        value: () => shield,
+      });
+      Object.defineProperty(document, 'elementsFromPoint', {
+        configurable: true,
+        value: () => [shield, row('B'), menu, document.body],
+      });
+      fireEvent.pointerDown(row('A'), touch());
+      fireEvent.pointerMove(row('A'), {...touch(), clientX: 5, clientY: 20});
+      expect(row('B')).toHaveFocus();
+      fireEvent.pointerUp(row('A'), {...touch(), clientX: 5, clientY: 20});
+      expect(onSelect).toHaveBeenCalledWith('B');
+    } finally {
+      release();
+    }
+  });
+
+  it('anything else over the menu still covers it: only a hold\u2019s shield is seen through', () => {
+    const onSelect = vi.fn();
+    render(<Harness onSelect={onSelect} />);
+    const menu = screen.getByRole('menu');
+    const overlay = document.createElement('div');
+    document.body.append(overlay);
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: () => overlay,
+    });
+    Object.defineProperty(document, 'elementsFromPoint', {
+      configurable: true,
+      value: () => [overlay, row('B'), menu, document.body],
+    });
+    fireEvent.pointerDown(row('A'), touch());
+    fireEvent.pointerMove(row('A'), {...touch(), clientX: 5, clientY: 20});
+    expect(row('B')).not.toHaveFocus();
+    fireEvent.pointerUp(row('A'), {...touch(), clientX: 5, clientY: 20});
+    expect(onSelect).not.toHaveBeenCalled();
+    overlay.remove();
+  });
 });
 
 describe('useMenuPress — tracking inside the menu', () => {

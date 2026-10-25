@@ -6,8 +6,9 @@
  *   Element.animate (jsdom runs no animations)
  * @output Checks the collapsed transform against UIMenu's path (a square on
  *   the anchor, the center on the straight line, the size linear in the
- *   spring's progress) and what the touch presentation hands the browser on
- *   open, close, reopen during the close, and reset
+ *   spring's progress), what the touch presentation hands the browser on
+ *   open, close, reopen during the close, and reset, and the presentation
+ *   hold that keeps every touch off the menu and the page while it grows
  * @position Testing; the curves on a real compositor are proven in
  *   __tests__/DropdownMenu.touchMotion.interaction.browser.spec.ts
  */
@@ -15,6 +16,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {settlingDuration, solveSpring, toSpring} from '../motion/spring';
 import {menu, springs} from '../motion/uikit';
+import {isInHeldLayer} from '../Layer/presentationHold';
 import {TOUCH_QUERY} from '../utils/touchPresentation';
 import {
   createMenuSurfaceMotion,
@@ -334,7 +336,11 @@ describe('createMenuSurfaceMotion', () => {
       const ghost = ghostOf(element);
       expect(ghost).not.toBeNull();
       expect(ghost!.getAttribute('popover')).toBe('manual');
-      expect(shown).toEqual([ghost]);
+      // Shown: the open's presentation hold (spec:AST-094 FR35), gone once
+      // the open settled, then the copy.
+      expect(shown.filter(shownElement => shownElement.isConnected)).toEqual([
+        ghost,
+      ]);
       // The top layer orders it: no z-index of its own.
       expect(ghost!.style.getPropertyValue('z-index')).toBe('');
     } finally {
@@ -498,5 +504,82 @@ describe('createMenuSurfaceMotion', () => {
     expect(fadeEnds(fadeOut, 0)).toBeLessThanOrEqual(200 + 1);
     expect(Number(fadeOut.keyframes[0].opacity)).toBe(1);
     expect(Number(fadeOut.keyframes.at(-1)!.opacity)).toBe(0);
+  });
+
+  describe('holds the menu while it grows (spec:AST-094 FR35)', () => {
+    // By role: the cases before leave their hosts in the document, and an id
+    // query scoped to an element resolves the first such id in the document.
+    const rowOf = (element: HTMLElement) =>
+      element.querySelector<HTMLElement>('[role="menuitem"]')!;
+    // The layer runtime's hold puts its shield inside the layer it holds.
+    const shieldOf = (element: HTMLElement) =>
+      [...element.children].find(
+        child =>
+          child.getAttribute('popover') === 'manual' &&
+          child.getAttribute('aria-hidden') === 'true',
+      ) ?? null;
+    const settle = async () => {
+      clock += 1000;
+      vi.advanceTimersByTime(1000);
+      for (let i = 0; i < 4; i += 1) {
+        await Promise.resolve();
+      }
+    };
+
+    it('takes every touch until the open settles: a tap lands on its shield, inside the menu', async () => {
+      const {element, motion} = create();
+      expect(isInHeldLayer(rowOf(element))).toBe(false);
+      motion.enter(() => GEOMETRY);
+      expect(isInHeldLayer(rowOf(element))).toBe(true);
+      const shield = shieldOf(element);
+      expect(shield).not.toBeNull();
+      await settle();
+      expect(isInHeldLayer(rowOf(element))).toBe(false);
+      expect(shield!.isConnected).toBe(false);
+    });
+
+    it('lets go as soon as the menu closes, resets or is disposed while it grows', () => {
+      for (const end of ['exit', 'reset', 'dispose'] as const) {
+        const {element, motion} = create();
+        motion.enter(() => GEOMETRY);
+        expect(isInHeldLayer(rowOf(element)), end).toBe(true);
+        motion[end]();
+        expect(isInHeldLayer(rowOf(element)), end).toBe(false);
+        expect(shieldOf(element), end).toBeNull();
+        element.parentElement!.remove();
+      }
+    });
+
+    it('reopened during the close, holds again until the new open settles', async () => {
+      const {element, motion} = create();
+      motion.enter(() => GEOMETRY);
+      await settle();
+      motion.exit();
+      expect(isInHeldLayer(rowOf(element))).toBe(false);
+      motion.enter(() => GEOMETRY);
+      expect(isInHeldLayer(rowOf(element))).toBe(true);
+      await settle();
+      expect(isInHeldLayer(rowOf(element))).toBe(false);
+    });
+
+    it('under Reduce Motion, holds for the fade, then lets go', async () => {
+      const {element, motion} = create(true);
+      motion.enter(() => GEOMETRY);
+      expect(isInHeldLayer(rowOf(element))).toBe(true);
+      await settle();
+      expect(isInHeldLayer(rowOf(element))).toBe(false);
+    });
+
+    it('holds nothing with nothing to grow, or in a presentation it does not drive', () => {
+      const {element, motion} = create();
+      motion.reset();
+      expect(isInHeldLayer(rowOf(element))).toBe(false);
+      motion.enter(() => ({
+        surface: {left: 0, top: 0, width: menu.collapsedSize, height: 200},
+        anchor: {x: 10, y: 10},
+      }));
+      expect(isInHeldLayer(rowOf(element))).toBe(false);
+      expect(shieldOf(element)).toBeNull();
+    });
   });
 });

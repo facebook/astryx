@@ -66,6 +66,7 @@ import {
   type RefObject,
 } from 'react';
 import {currentGesture} from '../Layer/gestureCounter';
+import {isPresentationShield} from '../Layer/presentationHold';
 import {
   IDLE_MENU_PRESS,
   menuPressStep,
@@ -556,13 +557,26 @@ export function useDropdownMenuPress(
         // Hit-test in the menu's own tree: inside a shadow root the document
         // answers with the shadow host, never the row under the pointer.
         const tree = menu?.getRootNode();
-        const scope: Pick<Document, 'elementFromPoint'> =
+        const scope: Pick<Document, 'elementFromPoint' | 'elementsFromPoint'> =
           tree != null &&
           tree !== doc &&
           typeof (tree as ShadowRoot).elementFromPoint === 'function'
             ? (tree as ShadowRoot)
             : doc;
         element = scope.elementFromPoint(event.clientX, event.clientY);
+        if (
+          isPresentationShield(element) &&
+          typeof scope.elementsFromPoint === 'function'
+        ) {
+          // A presentation hold covers the viewport while the menu grows
+          // (`spec:AST-094` FR35). It keeps new input away; the press in
+          // flight (the finger that opened the menu, FR29) still reaches the
+          // row under it. Only the hold's shield is seen through.
+          element =
+            scope
+              .elementsFromPoint(event.clientX, event.clientY)
+              .find(candidate => !isPresentationShield(candidate)) ?? null;
+        }
       } else {
         element = event.target instanceof Element ? event.target : null;
       }
