@@ -145,9 +145,9 @@ export interface KbdProps extends BaseProps<HTMLSpanElement> {
  * A general-purpose component for rendering keyboard shortcuts
  * anywhere in the system — tooltips, menus, documentation, etc.
  *
- * Platform-aware: `mod` renders as ⌘ on macOS and Ctrl elsewhere.
- * SSR-safe — defers platform detection through useSyncExternalStore to avoid
- * hydration mismatches.
+ * `mod` renders as ⌘ when `isMac` is true and Ctrl otherwise. Kbd passes
+ * false; PlatformKbd detects the platform after hydration and passes the
+ * result, so server and hydration markup agree.
  *
  * @example
  * ```

@@ -6,7 +6,7 @@
  * @output Exports Text component, TextProps, TextType, TextSize types
  * @position Core implementation; consumed by index.ts, tested by Text.test.tsx.
  *   Server-safe: renders on the server with no client JS. Truncation with a
- *   tooltip (`maxLines` > 0) renders the TruncatedText client part.
+ *   tooltip (any explicit `maxLines`) renders the TruncatedText client part.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Text/Text.doc.mjs (props table, features, implementation notes)
@@ -220,7 +220,7 @@ export function Text({
   color,
   weight,
   display = 'inline',
-  maxLines = 0,
+  maxLines: maxLinesProp,
   hasTruncateTooltip = true,
   wordBreak,
   textWrap,
@@ -246,6 +246,8 @@ export function Text({
   // baseline; the real color comes from theme CSS via the rendered `color`
   // class (see themeProps below).
   const styleColor = resolveStyleColor(resolvedColor);
+
+  const maxLines = maxLinesProp ?? 0;
 
   // Resolve wordBreak with smart default
   const resolvedWordBreak =
@@ -294,8 +296,10 @@ export function Text({
 
   // Truncation with the tooltip measures overflow on the client. Without it the
   // text is clipped by CSS alone and nothing is measured, so it renders on the
-  // server as is.
-  if (maxLines > 0 && hasTruncateTooltip !== false) {
+  // server as is. Any explicit `maxLines`, 0 included, takes the client part,
+  // so a caller toggling it (show more / less) keeps the same element mounted;
+  // at 0 the client part measures nothing.
+  if (maxLinesProp !== undefined && hasTruncateTooltip !== false) {
     const tooltipPlacement: LayerPlacement =
       typeof hasTruncateTooltip === 'string' ? hasTruncateTooltip : 'above';
     return (
