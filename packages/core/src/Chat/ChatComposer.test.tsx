@@ -256,8 +256,22 @@ describe('ChatComposer input composition contract', () => {
     );
     const textarea = getByTestId('bare-textarea') as HTMLTextAreaElement;
     const body = textarea.parentElement!.parentElement!;
+    const focus = vi.spyOn(textarea, 'focus');
     fireEvent.click(body);
     expect(document.activeElement).toBe(textarea);
+    // Without the browser's reveal, which scrolls the page on iOS (AST-099 FR4).
+    expect(focus).toHaveBeenCalledWith({preventScroll: true});
+  });
+
+  it('focuses the default input without the browser\u2019s reveal on an empty-space tap (AST-099 FR4)', () => {
+    const {container} = render(<ChatComposer onSubmit={() => {}} />);
+    const editable = container.querySelector<HTMLElement>(
+      '[contenteditable="true"]',
+    )!;
+    const focus = vi.spyOn(editable, 'focus');
+    const body = editable.closest('[contenteditable="true"]')!.parentElement!;
+    fireEvent.click(body);
+    expect(focus).toHaveBeenCalledWith({preventScroll: true});
   });
 });
 

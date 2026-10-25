@@ -435,7 +435,9 @@ export function ChatComposer(props: ChatComposerProps) {
     const editable = bodyRef.current?.querySelector<HTMLElement>(
       '[contenteditable="true"], textarea',
     );
-    editable?.focus();
+    // The tapped composer is on screen: no browser reveal, which would scroll
+    // the page on iOS (spec:AST-099 FR4).
+    editable?.focus({preventScroll: true});
   }, []);
 
   const handleBodyFocusCapture = useCallback(

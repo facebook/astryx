@@ -469,12 +469,15 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
    * space after a draft means "put me after the text", so it overrides a
    * stale caret rather than restoring one.
    */
+  // The composer's body click (an empty-space tap) lands here: the tapped
+  // composer is already on screen, and the browser's reveal would scroll the
+  // whole page on iOS (spec:AST-099 FR4).
   const focusEditableAtEnd = useCallback(() => {
     const editable = editableRef.current;
     if (!editable) {
       return;
     }
-    editable.focus();
+    editable.focus({preventScroll: true});
     placeCaretAtEnd(editable);
   }, []);
 
