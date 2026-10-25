@@ -134,7 +134,7 @@ anatomy-theming map is recorded.
 | FR1      | `TopNav.test.tsx` featured-card rest-forwarding test | Root props                  | Dropped props fail.                          | `audit:TopNavMegaMenuFeaturedCard/behavior`      |
 | FR2, FR3 | `TopNav.test.tsx` featured-card image tests          | With and without `imageAlt` | Exposed decorative image or lost link fails. | `audit:TopNavMegaMenuFeaturedCard/accessibility` |
 
-Read from source, with no focused test yet: that the link renders only when both `linkLabel` and `linkHref` are set (FR3); the image size (FR1), the `LinkProvider` link and trailing arrow (FR3), and FR4.
+Read from source, with no focused test yet: the forwarded `ref` and the `top-nav-mega-menu-featured-card` target (FR1); that the link renders only when both `linkLabel` and `linkHref` are set (FR3); the image size (FR1), the `LinkProvider` link and trailing arrow (FR3), and FR4.
 
 ## Decision log
 

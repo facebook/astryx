@@ -183,7 +183,7 @@ is recorded.
 | FR4, FR7, AR2–AR3 | `TopNav.test.tsx` menu popover semantics tests             | Whole trigger; links plus trigger     | A modal wrapper or misplaced menu role fails. | `audit:TopNavHeading/accessibility` |
 | FR5, FR8          | `TopNav.test.tsx` hover/click guard tests                  | Hover-open, click, late click, Escape | Losing the guard or focus return fails.       | `audit:TopNavHeading/behavior`      |
 
-Read from source, with no focused test yet: line truncation, part order, and `headerEndContent` (FR1); `as` and `LinkProvider` rendering (FR3); the chevron button's name and size (FR4); FR6; the popover's placement and its repeated identity row (FR7); and FR9.
+Read from source, with no focused test yet: the `top-nav-heading` target (FR1); line truncation, part order, and `headerEndContent` (FR1); `as` and `LinkProvider` rendering (FR3); the chevron button's name and size (FR4); FR6; the popover's placement and its repeated identity row (FR7); and FR9.
 
 ## Decision log
 
