@@ -160,8 +160,22 @@ describe('generated files to regenerate', () => {
             commands: ['astryx theme build'],
           }),
         ],
+        // The config's own error is still listed, as main reports it.
+        errors: [
+          {
+            file: '.',
+            codemod: 'config',
+            error: expect.stringContaining('astryx.config'),
+          },
+        ],
       },
     });
+
+    const configError = applied.envelope.data.errors[0].error;
+    const text = run([...ONLY, '--path', '.', '--apply'], {json: false});
+    expect(text.status).toBe(1);
+    expect(text.stderr).toContain(configError);
+    expect(text.stdout).toMatch(/Upgrade incomplete: protected changes remain/);
   });
 
   it('include protected generated files with their header command, alongside protectedFiles', () => {

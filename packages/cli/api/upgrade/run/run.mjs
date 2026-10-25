@@ -749,6 +749,8 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
         protectedFiles,
         initialOutcomes.outcomes,
       );
+      // The protected result wins, but the config error stays visible.
+      logger.error(configErr.message);
       logProtectedFiles(
         `${ERROR_CODES.ERR_CODEMOD_PROTECTED}: protected codemod changes remain while loading the Astryx config.`,
         protectedFiles,
@@ -791,7 +793,11 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
           regenerate,
           complete: false,
           errorCode: 'ERR_CODEMOD_PROTECTED',
-          errors: [...(coreResult?.errors ?? []), ...staleErrors],
+          errors: [
+            ...(coreResult?.errors ?? []),
+            ...staleErrors,
+            {file: '.', codemod: 'config', error: configErr.message},
+          ],
           ...(cliBehindCore ? {cliBehindCore} : {}),
         },
       };
