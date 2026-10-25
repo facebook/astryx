@@ -193,6 +193,63 @@ describe('theme build adaptations', () => {
     },
   );
 
+  it('carries the reader text size layer through a built theme', async () => {
+    const {defineTheme, generateAdaptationCSS, generateThemeCSS} =
+      await import('@astryxdesign/core/theme');
+    const project = path.join(tmpDir, 'project');
+    const themesDir = path.join(project, 'themes');
+    // Butter's shape: a fixed supporting size, and a phone rule whose scale
+    // turns it back into a step.
+    const input = {
+      name: 'dynamic-type-built',
+      typography: {scale: {base: 14, ratio: 1.25}, dynamicType: true},
+      tokens: {'--text-supporting-size': '12px'},
+      adaptations: {
+        rules: [
+          {
+            when: {width: {below: 'lg'}, pointer: 'coarse'},
+            value: {typography: {scale: {base: 16, ratio: 1.2225}}},
+          },
+        ],
+      },
+    };
+    const themeFile = writeTheme(themesDir, input.name, JSON.stringify(input));
+    const result = await build(project, themeFile);
+    expect(result.code, result.stderr).toBe(0);
+    const css = fs.readFileSync(
+      path.join(themesDir, 'dynamic-type-built.css'),
+      'utf8',
+    );
+    const compact = value => value.replace(/\s+/g, ' ').trim();
+    const source = defineTheme(input);
+    const runtime = generateThemeCSS(source);
+    // The layer comes after the authored rule, in the built CSS as at runtime.
+    const adaptationCSS = generateAdaptationCSS(source).component;
+    expect(adaptationCSS).toContain('@supports (font: -apple-system-body)');
+    expect(compact(css)).toContain(compact(adaptationCSS));
+    expect(css).toContain(
+      '--text-supporting-size: calc(12px * var(--_dynamic-type-footnote, 1));',
+    );
+
+    // The built module keeps the flag: it and a theme extending it compile to
+    // the same CSS as the source.
+    const {dynamicTypeBuiltTheme: builtTheme} = await import(
+      pathToFileURL(path.join(themesDir, 'dynamic-type-built.js')).href
+    );
+    expect(generateThemeCSS(builtTheme)).toEqual(runtime);
+    const childInput = {
+      name: 'dynamic-type-child',
+      tokens: {'--text-body-size': '15px'},
+    };
+    expect(
+      generateThemeCSS(defineTheme({...childInput, extends: builtTheme})),
+    ).toEqual(generateThemeCSS(defineTheme({...childInput, extends: source})));
+    expect(
+      generateThemeCSS(defineTheme({...childInput, extends: builtTheme}))
+        .component,
+    ).toContain('--text-body-size: calc(15px * var(--_dynamic-type-body, 1));');
+  });
+
   it('resolves a plain object whose only input-only field is adaptations', async () => {
     const project = path.join(tmpDir, 'project');
     const themesDir = path.join(project, 'themes');
