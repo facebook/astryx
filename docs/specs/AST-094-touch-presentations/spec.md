@@ -283,7 +283,8 @@ and Selector's listbox, whose options count as rows) when a finger or pen
 drives it and the primary pointer is coarse (FR19); where the primary pointer
 is fine, a finger in a menu keeps today's behavior (`spec:AST-017` FR59,
 DEC-25), and menus make no per-gesture pointer read; FR29 applies to DropdownMenu's trigger; FR34 applies to menus;
-FR31–FR33 and FR35 apply to anchored menus and to Popover under a finger. A mouse keeps today's behavior.
+FR31 and FR35 apply to anchored menus and to Popover under a finger; FR32 and
+FR33 apply to menus only. A mouse keeps today's behavior.
 
 - **FR26 — The lift decides.** A menu row MUST act when the finger lifts over
   it, never because the press began on it; a press that never left its row is
@@ -326,10 +327,9 @@ FR31–FR33 and FR35 apply to anchored menus and to Popover under a finger. A mo
   closed. This is its exit under FR7 (`family:overlay-dismissal` AV6); under
   reduced motion FR8 applies. A menu or popover presented as a bottom sheet
   follows the sheet instead.
-- **FR32 — A pan outside dismisses.** Under a finger, an open anchored menu, or a Popover whose outside
-  dismissal is on, MUST close as a touch outside it begins to pan, and at the
-  lift of a tap or hold outside it. A Popover whose caller turned outside
-  dismissal off stays open. A pinch stays available over it: its surface
+- **FR32 — A pan outside dismisses.** Under a finger, an open anchored menu MUST close as a touch outside it
+  begins to pan, and at the lift of a tap or hold outside it. A Popover's
+  dismissal is unchanged. A pinch stays available over it: its surface
   never takes `touch-action: none`, so the page keeps zooming (FR10, FR18;
   WCAG 2.2 SC 1.4.4). Listening for that outside touch costs nothing once it
   ends (FR24).
@@ -402,14 +402,13 @@ FR31–FR33 and FR35 apply to anchored menus and to Popover under a finger. A mo
 - **FR25 — A moved default keeps a way back.** Where a touch presentation
   moves a released default, the way back and its release note are governed by
   `architecture:public-component-api` INV16 and `spec:AST-017` DEC-23 and FR3.
-  This record moves five: Selector's `adaptive` presentation policy;
+  This record moves four: Selector's `adaptive` presentation policy;
   DropdownMenu's omitted `presentation`, released as `'popover'`, which
   `presentation="popover"` keeps (FR29); ContextMenu's omitted
   `presentation`, released as `'popover'`, which `presentation="popover"`
   keeps without the lift (FR33); and `module:DropdownMenu/useMenuPress`'s
   released 500 ms `longPressDelayMs`, which a caller keeps by passing it
-  (FR29); and Popover's outside dismissal, which a pan outside now triggers
-  under a finger and which `hasLightDismiss={false}` turns off (FR32).
+  (FR29).
   This replaces `component:Selector` DEC-1's width-and-pointer query with the
   FR13 rule for `adaptive`.
 
@@ -451,9 +450,6 @@ FR31–FR33 and FR35 apply to anchored menus and to Popover under a finger. A mo
 - `component:DropdownMenu` and `component:ContextMenu`: an omitted
   `presentation`, released as `'popover'`, follows FR29 and FR33 under a
   finger; `presentation="popover"` keeps the released behavior (FR25).
-- `component:Popover`: under a finger a pan outside dismisses it while its
-  outside dismissal is on (FR32); `hasLightDismiss={false}` keeps it open
-  (FR25).
 - `module:DropdownMenu/useMenuPress`: the released 500 ms `longPressDelayMs`
   default gives way to FR29's timing; a caller that passes it keeps it (FR25).
 - `module:DropdownMenu/useMenuPress`: its finger rules (FR1–FR3, FR6, FR7
@@ -494,7 +490,7 @@ FR31–FR33 and FR35 apply to anchored menus and to Popover under a finger. A mo
 | FR25            | Component tests of each moved default and its `presentation` value                                                             | default; `presentation` set to the released surface                                                                                                                                                                       | a moved default that `presentation` does not restore, or a public threshold, fails                                                                                                                                                                                  |
 | FR26–FR28, FR30 | Menu press tests on synthetic touch streams and a real-Chromium touch test                                                     | a slide from one row to another; a lift outside; a cancel; a second finger; edge autoscroll                                                                                                                               | an act on the press-start row, two acts for one gesture, a lift outside that closes, or a lit row after a cancel fails                                                                                                                                              |
 | FR29            | Trigger tests with explicit timestamps                                                                                         | a press in a fixed bar; a press in scrolling content held 149 and 150 ms; a quick tap in scrolling content; a scroll before 150 ms; a drift of 12 and 14 pt; moves before and after the handoff; `presentation="popover"` | a fixed-bar press that waits, a held finger's scroll-view open before 150 ms or after a scroll, a quick tap that does not open at its lift, an open past the drift allowance, a lift that acts before the handoff, or a `popover` trigger that opens on press fails |
-| FR31–FR33       | Browser tests and storyboards under a finger                                                                                   | a menu, a Popover and a ContextMenu lift: open, close, a pan outside, a tap outside, a pinch over the surface; a mouse                                                                                                    | a surface that does not grow from and shrink into its trigger, a pan outside that leaves it open, a blocked pinch, a tap outside that reaches the page, or a changed mouse path fails                                                                               |
+| FR31–FR33       | Browser tests and storyboards under a finger                                                                                   | a menu, a Popover and a ContextMenu lift: open, close, a pan outside, a tap outside, a pinch over the surface; a mouse                                                                                                    | a surface that does not grow from and shrink into its trigger, a pan outside that leaves a menu open, a Popover whose dismissal changed, a blocked pinch, a tap outside that reaches the page, or a changed mouse path fails                                        |
 | FR34, FR35      | Browser tests and storyboards under a finger                                                                                   | a sub-menu drilling in and its Back row returning; a tap and a drag during a popover's and a menu's growth; a pinch during growth; a mouse                                                                                | a drill-in that leaves the parent's rows in place, a change between levels that does not play on its roles, a tap during growth that closes, scrolls or moves focus, a blocked pinch, or a changed mouse path fails                                                 |
 | FR36–FR40       | Release tests on synthetic touch streams with explicit timestamps, per use                                                     | below and past each commit point; a flick that projects past it; a slow drag past it; a release moving back; Reduce Motion; keyboard and mouse paths                                                                      | a decision that changes mid-settle, a release moving back that commits, a settle that does not start at the release velocity, or an action with no keyboard or mouse path fails                                                                                     |
 | all             | iOS simulator: the UIKit reference capture and the same gesture in Safari; real iOS Safari and Android Chrome devices          | per component                                                                                                                                                                                                             | an unmatched curve or timing is a parity defect                                                                                                                                                                                                                     |
