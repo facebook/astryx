@@ -1,4 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
+// @pr-a11y scope lab/Schedule
 
 /**
  * @file ScheduleMonthChip.a11y.chromium.spec.ts

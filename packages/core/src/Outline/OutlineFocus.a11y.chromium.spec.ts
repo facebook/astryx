@@ -1,4 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
+// @pr-a11y scope core/Outline
 
 /**
  * @file OutlineFocus.a11y.chromium.spec.ts

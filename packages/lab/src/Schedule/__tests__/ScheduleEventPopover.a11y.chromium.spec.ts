@@ -1,4 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
+// @pr-a11y scope lab/Schedule
 
 /**
  * @file ScheduleEventPopover.a11y.chromium.spec.ts

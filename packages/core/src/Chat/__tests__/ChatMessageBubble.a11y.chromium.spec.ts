@@ -1,4 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
+// @pr-a11y scope core/ChatMessageBubble
 
 /**
  * @file ChatMessageBubble.a11y.chromium.spec.ts
