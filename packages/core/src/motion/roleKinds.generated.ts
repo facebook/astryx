@@ -16,6 +16,7 @@ export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
   'refreshControl.endMs': 'duration',
   'refreshControl.exitMs': 'duration',
   'refreshControl.spinMs': 'duration',
+  'refreshControl.triggerGradientSpring': 'spring',
   'refreshControl.triggerTurnSpring': 'spring',
   'scroll.bounce': 'spring',
   'scroll.paging.snap': 'spring',
