@@ -210,14 +210,23 @@ describe('modal backdrop', () => {
     },
   );
 
-  it('Dialog draws an edge in forced colors under a finger, where the blur is gone', () => {
+  it('Dialog draws a border in forced colors under a finger, where the blur is gone', () => {
     const [, element] = modals.find(([name]) => name === 'Dialog')!;
     render(element());
     const dialog = document.querySelector('dialog');
     expect(dialog).not.toBeNull();
-    expect(
-      backdropDeclarations(dialog!, 'touchForcedColors', '').get('outline'),
-    ).toBe('1pxsolidCanvasText');
+    const edge = backdropDeclarations(dialog!, 'touchForcedColors', '');
+    expect(edge.get('border-width')).toBe('1px');
+    expect(edge.get('border-style')).toBe('solid');
+    expect(edge.get('border-color')).toBe('CanvasText');
+    // Not an outline: the focus ring owns the outline longhands, and an
+    // `outline` shorthand would lose to them in the prebuilt stylesheet (or
+    // erase the ring where StyleX resolves styles in application order).
+    for (const where of ['default', 'touch', 'touchForcedColors'] as const) {
+      expect(backdropDeclarations(dialog!, where, '').has('outline')).toBe(
+        false,
+      );
+    }
   });
 
   it.each(modals.filter(([name]) => name === 'Drawer' || name === 'MobileNav'))(

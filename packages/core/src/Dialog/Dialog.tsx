@@ -179,22 +179,35 @@ const styles = stylex.create({
     position: 'fixed',
     margin: 'auto',
     padding: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
+    // Under a finger the backdrop drops its blur (see backdrop); in forced
+    // colors, where the backdrop's colour is overridden, a 1px border keeps
+    // the modal separate from the page. A border, not an outline: the focus
+    // ring (focusOutlineProps) owns the outline longhands on this element.
+    borderWidth: {
+      default: 0,
+      '@media (pointer: coarse)': {
+        default: 0,
+        '@media (forced-colors: active)': 1,
+      },
+    },
+    borderStyle: {
+      default: 'none',
+      '@media (pointer: coarse)': {
+        default: 'none',
+        '@media (forced-colors: active)': 'solid',
+      },
+    },
+    borderColor: {
+      default: null,
+      '@media (pointer: coarse)': {
+        default: null,
+        '@media (forced-colors: active)': 'CanvasText',
+      },
+    },
     backgroundColor: colorVars['--color-background-surface'],
     '--_dialog-radius': radiusVars['--radius-container'],
     borderRadius: 'var(--_dialog-radius)',
     boxShadow: shadowVars['--shadow-high'],
-    // Under a finger the backdrop drops its blur (see backdrop); in forced
-    // colors, where the backdrop's colour is overridden, this edge keeps the
-    // modal separate from the page.
-    outline: {
-      default: null,
-      '@media (pointer: coarse)': {
-        default: null,
-        '@media (forced-colors: active)': '1px solid CanvasText',
-      },
-    },
     display: 'none',
     flexDirection: 'column',
     height: 'fit-content',
@@ -250,6 +263,8 @@ const styles = stylex.create({
     maxWidth: '100dvw',
     maxHeight: '100dvh',
     borderRadius: 0,
+    // Nothing of the page shows around a full-screen dialog: no edge.
+    borderWidth: 0,
     margin: 0,
     inset: 0,
   },

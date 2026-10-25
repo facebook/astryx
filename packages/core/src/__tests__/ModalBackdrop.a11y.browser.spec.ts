@@ -12,9 +12,9 @@
  *   the page behind them, while every modal `::backdrop` keeps the theme's
  *   `--color-overlay` (the base tokens' and a bundled theme's own); with a
  *   mouse they keep the 2px blur; BottomSheet never blurred; in forced
- *   colors, under a finger, each has one 1px edge (Dialog's outline, the side
- *   panels' anchored-side border); screenshots of an open Dialog per mode for
- *   the pull request
+ *   colors, under a finger, each has one 1px edge (Dialog's border, the side
+ *   panels' anchored-side border) and the outline stays the focus ring's;
+ *   screenshots of an open Dialog per mode for the pull request
  * @position Cross-browser proof for the shared modal backdrop; jsdom drops
  *   `backdrop-filter` and paints nothing, so __tests__/modalBackdrop.test.tsx
  *   can only pin the declarations. WebKit here is desktop WebKit under
@@ -214,9 +214,11 @@ test.describe('forced colors', () => {
         expect(edge.sides, JSON.stringify(edge)).toHaveLength(1);
         expect(edge.sides[0], JSON.stringify(edge)).toMatch(/ 1px$/);
       } else {
+        // Dialog's border is its edge, on every side; its outline stays the
+        // focus ring's (none until keyboard focus).
         expect(edge, JSON.stringify(edge)).toEqual({
-          outline: 'solid 1px',
-          sides: [],
+          outline: 'none 0px',
+          sides: ['left 1px', 'right 1px'],
         });
       }
     });
