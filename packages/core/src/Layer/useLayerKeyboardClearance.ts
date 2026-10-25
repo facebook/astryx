@@ -34,7 +34,9 @@
  * the keyboard starts down. A keyboard that changes at once is followed at
  * once. A change that would move the layer under a press in progress inside
  * it waits for that press's click. A layer opened while a keyboard is up is
- * capped before its first paint.
+ * capped before its first paint. When the runtime replaces the layer element
+ * while it is open, the cap and the press tracking move to the new element in
+ * the same commit.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Layer/layerKeyboardClearance.ts
@@ -43,7 +45,7 @@
  * - /docs/specs/AST-059-layer-viewport-inset/spec.md
  */
 
-import type {RefObject} from 'react';
+import {useRef, type RefObject} from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {getKeyboardLayoutGuide, getMobileKeyboardHeight} from '../keyboard';
 import {timing} from '../motion/uikit/timing';
@@ -143,18 +145,38 @@ export function useLayerKeyboardClearance(
   layerRef: RefObject<HTMLElement | null>,
   isAnchoredRef: RefObject<boolean>,
 ): void {
+  // Set while the layer is open: follows the runtime when it replaces the
+  // layer element without closing it.
+  const resyncRef = useRef<(() => void) | null>(null);
+
   useIsomorphicLayoutEffect(() => {
-    const layer = layerRef.current;
-    const win = layer?.ownerDocument.defaultView;
-    if (!isOpen || layer == null || win == null) {
+    const initial = layerRef.current;
+    const win = initial?.ownerDocument.defaultView;
+    if (!isOpen || initial == null || win == null) {
       return;
     }
     // The window, for the hoisted press handlers below.
     const view: Window = win;
     let isDisposed = false;
     const guide = getKeyboardLayoutGuide(win);
+    // The element the cap and the press tracking are on. The runtime can
+    // replace the layer element while it stays open; `sync` moves both to the
+    // element the ref holds now.
+    let layer: HTMLElement = initial;
+    const sync = (): boolean => {
+      const next = layerRef.current;
+      if (next == null || next === layer) {
+        return false;
+      }
+      layer.removeEventListener('pointerdown', handlePress, true);
+      layer.style.removeProperty(LAYER_KEYBOARD_CAP_PROPERTY);
+      layer = next;
+      layer.addEventListener('pointerdown', handlePress, true);
+      return true;
+    };
 
     const avoid = (inset: number) => {
+      sync();
       if (!isAnchoredRef.current) {
         layer.style.removeProperty(LAYER_KEYBOARD_CAP_PROPERTY);
         return;
@@ -234,12 +256,12 @@ export function useLayerKeyboardClearance(
       deferred = null;
       run?.();
     };
-    const handlePress = (event: PointerEvent) => {
+    function handlePress(event: PointerEvent) {
       if (pressed.size === 0) {
         follow();
       }
       pressed.add(event.pointerId);
-    };
+    }
     function handleRelease(event: PointerEvent) {
       if (!pressed.has(event.pointerId)) {
         return;
@@ -292,8 +314,19 @@ export function useLayerKeyboardClearance(
             }
           })
         : null;
+    // A replaced layer element takes the cap for the keyboard of the moment
+    // in the commit that brings it, before it paints.
+    resyncRef.current = () => {
+      if (sync()) {
+        const inset = getMobileKeyboardHeight(win);
+        if (inset > 0) {
+          avoid(inset);
+        }
+      }
+    };
     return () => {
       isDisposed = true;
+      resyncRef.current = null;
       if (opening != null) {
         win.cancelAnimationFrame(opening);
       }
@@ -309,6 +342,11 @@ export function useLayerKeyboardClearance(
       layer.style.removeProperty(LAYER_KEYBOARD_CAP_PROPERTY);
     };
   }, [isOpen, layerRef, isAnchoredRef]);
+
+  // Every commit: the layer element may have been replaced while open.
+  useIsomorphicLayoutEffect(() => {
+    resyncRef.current?.();
+  });
 }
 
 /**

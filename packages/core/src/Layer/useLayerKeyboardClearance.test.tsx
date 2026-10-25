@@ -72,12 +72,15 @@ function Harness({
   box = BOX,
   focusRow = false,
   heldBottom = false,
+  layerKey = 'a',
 }: {
   isOpen?: boolean;
   isAnchored?: boolean;
   box?: {top: number; bottom: number};
   focusRow?: boolean;
   heldBottom?: boolean;
+  /** A new key replaces the layer element while it stays open. */
+  layerKey?: string;
 }) {
   const layerRef = useRef<HTMLDivElement>(null);
   const isAnchoredRef = useRef(isAnchored);
@@ -95,6 +98,7 @@ function Harness({
   };
   return (
     <div
+      key={layerKey}
       data-testid="layer"
       ref={el => {
         layerRef.current = el;
@@ -278,6 +282,42 @@ describe('useLayerKeyboardClearance', () => {
     rerender(<Harness isOpen={false} />);
     expect(capOf(container)).toBe('');
     expect(guide.listeners.size).toBe(0);
+  });
+
+  it('keeps the cap when the runtime replaces the layer element while it is open', () => {
+    const {container, rerender} = render(<Harness />);
+    guide.emit({kind: 'change', from: 0, to: COVER, animated: false});
+    const before = container.querySelector<HTMLElement>(
+      '[data-testid="layer"]',
+    )!;
+    expect(capOf(container)).toBe(CAPPED);
+    guide.inset = COVER;
+    rerender(<Harness layerKey="b" />);
+    const after = container.querySelector<HTMLElement>(
+      '[data-testid="layer"]',
+    )!;
+    expect(after).not.toBe(before);
+    expect(capOf(container)).toBe(CAPPED);
+    // The keyboard going down takes the cap off the new element.
+    guide.emit({kind: 'hide', from: COVER, to: 0, animated: false});
+    expect(capOf(container)).toBe('');
+  });
+
+  it('follows a press in a replaced layer element to its click', () => {
+    const {container, rerender} = render(<Harness />);
+    guide.inset = COVER;
+    guide.emit({kind: 'change', from: 0, to: COVER, animated: false});
+    rerender(<Harness layerKey="b" />);
+    const layer = container.querySelector<HTMLElement>(
+      '[data-testid="layer"]',
+    )!;
+    fireEvent.pointerDown(layer, {pointerId: 1});
+    guide.emit({kind: 'hide', from: COVER, to: 0});
+    // Held for the press's click.
+    expect(capOf(container)).toBe(CAPPED);
+    fireEvent.pointerUp(layer, {pointerId: 1});
+    fireEvent.click(layer);
+    expect(capOf(container)).toBe('');
   });
 
   it('writes nothing but its own cap on the layer', () => {

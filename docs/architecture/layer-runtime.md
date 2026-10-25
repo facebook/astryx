@@ -398,9 +398,10 @@ layers use Layer rendering without joining Escape/platform dismissal.
 - **INV12 — The first frame is the settled frame.** No input to a layer's
   viewport geometry is measured after paint and then applied; the runtime's
   observations, anchor visibility and the layer's box under a software
-  keyboard, are read before first paint, the keyboard's cap again only when
-  the keyboard moves. A layer never paints at a geometry it is about to
-  correct.
+  keyboard, are read before first paint. The keyboard's cap is read again only
+  when the keyboard moves, once more when an entrance in progress at that read
+  ends, and in the commit that brings a replaced layer element. A layer never
+  paints at a geometry it is about to correct.
 - **INV13 — One exit copy per closing layer.** A layer's close plays on at most
   one exit copy, made by `placeLayerExitCopy`: drawn where the layer was drawn,
   inert, hidden from assistive technology, without ids, form names, or form

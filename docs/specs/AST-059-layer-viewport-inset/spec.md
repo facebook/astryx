@@ -241,9 +241,13 @@ the app reaches every layer instead of the components that happen to read it.
   app's; the runtime renders what is declared, when it is declared. A
   paint-then-shift is a failure of this contract, not a quality concern. The
   software keyboard's cap (FR9) is the one input read from the layer's own
-  box: before the first paint when a layer opens with a keyboard up, and
-  otherwise only when the keyboard moves (FR10).
-- **FR9 — The software keyboard caps a layer that would run under it.** While
+  box: before the first paint when a layer opens with a keyboard up, when the
+  keyboard moves (FR10), once more when an entrance in progress at that read
+  ends (a box measured mid-entrance is only close), and in the commit that
+  brings a layer element the runtime swapped in while the layer is open.
+- **FR9 — The software keyboard caps a layer that would run under it.** Where
+  the keyboard module measures a keyboard (`spec:AST-099` FR6–FR8; Chrome for
+  Android reports none, so its layers stay as they are), while
   a software keyboard covers the bottom of the viewport, an anchor-mode layer
   whose block-end edge would run under it keeps its block-start edge and caps
   its block size so that edge sits 10 px above the keyboard, the clearance
