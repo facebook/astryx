@@ -177,6 +177,13 @@ const STATIC_EXPORTS = {
     types: './dist/utils/interactionOverlay.stylex.d.ts',
     default: './dist/utils/interactionOverlay.stylex.js',
   },
+  // Proposed; pending owner review: the touch presentation's style keys, the
+  // spelling a style in another package matches.
+  './utils/touchPresentation.stylex': {
+    source: './src/utils/touchPresentation.stylex.ts',
+    types: './dist/utils/touchPresentation.stylex.d.ts',
+    default: './dist/utils/touchPresentation.stylex.js',
+  },
   './docs.mjs': './docs.mjs',
   './groups.doc.mjs': './groups.doc.mjs',
   // Rich authoring catalogs keep their existing JSON paths. Generated string
