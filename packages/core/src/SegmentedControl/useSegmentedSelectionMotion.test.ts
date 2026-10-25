@@ -910,7 +910,7 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
     ) {
       const finished = new Promise<void>(() => {});
       const cancel = vi.fn();
-      if (this.dataset.segmentTitle == null) {
+      if (this.getAttribute('role') !== 'radio') {
         return {finished, cancel, startTime: null} as unknown as Animation;
       }
       recorded.push({
@@ -934,9 +934,10 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
     }
     return title;
   };
-  // A press dims the title (and the icon, when the segment has one).
+  // A press dims the segment as a whole (an unselected one paints no surface
+  // of its own under a finger), into the item target's pressed state.
   const fadesOf = (segment: HTMLElement) =>
-    recorded.filter(r => r.element === titleOf(segment));
+    recorded.filter(r => r.element === segment);
   const lastFadeOf = (segment: HTMLElement): Recorded => {
     const fade = fadesOf(segment).at(-1);
     if (fade == null) {
@@ -1025,26 +1026,28 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
     expect(recorded).toHaveLength(0);
   });
 
-  it('during a lifted drag the selected face follows the finger at once', () => {
+  it('during a lifted drag the selected face follows the lens, as a colour only (no weight swap mid-drag)', async () => {
     const ctx = setup('grid');
     press(ctx, clientCenterOf('grid'));
     drag(ctx, clientCenterOf('list'));
+    // The lens lags the finger: the face waits for it.
+    expect(faceOf(ctx.segments.list)).toEqual(NO_FACE);
+    await advance(400);
     expect(faceOf(ctx.segments.list)).toEqual({
-      weight: '600',
+      weight: '',
       color: 'rgb(10, 10, 10)',
     });
     expect(faceOf(ctx.segments.grid)).toEqual({
-      weight: '500',
+      weight: '',
       color: 'rgb(110, 110, 110)',
     });
     expect(faceOf(ctx.segments.table)).toEqual(NO_FACE);
-    // One frame: nothing fades.
     expect(recorded).toHaveLength(0);
     drag(ctx, clientCenterOf('table'));
-    expect(faceOf(ctx.segments.table).weight).toBe('600');
+    await advance(400);
+    expect(faceOf(ctx.segments.table).color).toBe('rgb(10, 10, 10)');
     expect(faceOf(ctx.segments.list)).toEqual(NO_FACE);
-    // The lift commits; the selection's own styles take over in its commit,
-    // and nothing fades: the faces are already the ones on screen.
+    // The lift commits; the selection's own styles take over in its commit.
     expect(release(ctx, clientCenterOf('table'))).toBe('table');
     select(ctx, 'grid', 'table');
     for (const segment of Object.values(ctx.segments)) {
@@ -1053,33 +1056,30 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
     expect(recorded).toHaveLength(0);
   });
 
-  it('a finger in the gap between two segments counts for the nearer one, never for a segment further on', () => {
+  it('the face crosses a boundary only once the lens is a quarter segment past it, so a ±3 px dither changes it at most once', async () => {
     const ctx = setup('grid');
-    // Gaps of 4 px between the segments, as the track's padding lays out.
-    const gapped: Record<string, [number, number]> = {
-      grid: [12, 96],
-      list: [112, 96],
-      table: [212, 102],
-    };
-    for (const [value, [left, width]] of Object.entries(gapped)) {
-      ctx.segments[value].getBoundingClientRect = () =>
-        rect(left, TRACK.top + 2, width, 27);
+    const faced = () =>
+      Object.entries(ctx.segments).find(
+        ([, segment]) => faceOf(segment).color === 'rgb(10, 10, 10)',
+      )?.[0] ?? 'grid';
+    press(ctx, clientCenterOf('grid'));
+    // Grid | List boundary at x 108; List is 100 px wide: 25 px of hysteresis.
+    drag(ctx, 108 + 20);
+    await advance(400);
+    expect(faced()).toBe('grid');
+    drag(ctx, 108 + 30);
+    await advance(400);
+    expect(faced()).toBe('list');
+    // A slow dither of ±3 px around the boundary, the lens following it.
+    const seen = [faced()];
+    for (let i = 0; i < 24; i++) {
+      drag(ctx, 108 + (i % 2 === 0 ? 3 : -3));
+      await advance(50);
+      if (faced() !== seen.at(-1)) {
+        seen.push(faced());
+      }
     }
-    const weightOf = (value: string) => faceOf(ctx.segments[value]).weight;
-    press(ctx, 60);
-    // Just past Grid, in the gap but nearer Grid: still Grid's.
-    drag(ctx, 109);
-    expect([weightOf('list'), weightOf('table')]).toEqual(['', '']);
-    // Nearer List: List's.
-    drag(ctx, 111);
-    expect(weightOf('list')).toBe('600');
-    expect(weightOf('table')).toBe('');
-    // In the next gap, nearer List, then nearer Table.
-    drag(ctx, 209);
-    expect(weightOf('list')).toBe('600');
-    drag(ctx, 211);
-    expect(weightOf('table')).toBe('600');
-    expect(weightOf('list')).toBe('');
+    expect(seen.length - 1).toBeLessThanOrEqual(1);
   });
 
   it('a lifted drag back onto the selected segment, or a cancel, puts the faces back', () => {

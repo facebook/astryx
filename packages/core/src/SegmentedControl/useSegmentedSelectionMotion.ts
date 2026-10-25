@@ -111,10 +111,38 @@ import {
 } from '../motion/uikit/segmented';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {observeResize} from '../utils/sharedResizeObserver';
+import {spacingVars} from '../theme/tokens.stylex';
 import {useSegmentedTouchTracking} from './useSegmentedTouchTracking';
 
 /** The segments, in DOM order. */
 export const SEGMENT_SELECTOR = '[role="radio"][data-value]';
+/**
+ * The `segmented-control-item` target's pressed state, on the segment a
+ * finger dims (an unselected one); its `opacity` is the dim.
+ */
+const PRESSED_STATE = 'data-pressed';
+
+/**
+ * The selected face moves to another segment only once the lens's center is
+ * this far past the boundary: a quarter of that segment's width, at least
+ * 8 px.
+ */
+const FACE_HYSTERESIS_RATIO = 0.25;
+const FACE_HYSTERESIS_MIN_PX = 8;
+
+/**
+ * The dim the pressed state's opacity sets (SegmentedControlItem.tsx gives
+ * UIKit's 0.2; a theme may retune it), or UIKit's when it cannot be read.
+ */
+function pressedOpacityOf(segment: HTMLElement): number {
+  const view = segment.ownerDocument.defaultView;
+  const opacity =
+    view == null ? NaN : parseFloat(view.getComputedStyle(segment).opacity);
+  return Number.isFinite(opacity)
+    ? opacity
+    : segmentedControl.pressedTitle.opacity;
+}
+
 /** A segment's title: the text assistive technology reads. */
 export const TITLE_SELECTOR = '[data-segment-title]';
 /** A segment's icon. */
@@ -403,10 +431,69 @@ function isSameBox(a: Box, b: Box): boolean {
 }
 
 /** The scale that lifts a lens resting on `box` (UIKit adds, not scales). */
-function lifted(box: Box): MotionValues {
+/**
+ * A length token's value in px on `element`, as its theme sets it (a `px` or
+ * `rem` length), or `fallback` when it is not one.
+ */
+function lengthTokenPx(
+  element: Element | null,
+  token: string,
+  fallback: number,
+): number {
+  const name = /^var\((--[^,)\s]+)/.exec(token)?.[1];
+  const view = element?.ownerDocument.defaultView;
+  if (element == null || name == null || view == null) {
+    return fallback;
+  }
+  const raw = view.getComputedStyle(element).getPropertyValue(name).trim();
+  const match = /^(-?\d*\.?\d+)(px|rem)$/.exec(raw);
+  if (match == null) {
+    return fallback;
+  }
+  const value = parseFloat(match[1]);
+  if (match[2] === 'px') {
+    return value;
+  }
+  const root = parseFloat(
+    view.getComputedStyle(element.ownerDocument.documentElement).fontSize,
+  );
+  return value * (Number.isFinite(root) && root > 0 ? root : 16);
+}
+
+/**
+ * How much a finger lifts the lens, px added to its resting size: twice the
+ * theme's `--spacing-3` across and twice its `--spacing-2` down (UIKit's
+ * 24 × 16 pt at the default spacing), so a theme's spacing retunes it.
+ */
+function liftGrowthOf(element: Element | null): {
+  width: number;
+  height: number;
+} {
   return {
-    scaleX: (box.width + segmentedControl.liftGrowth.width) / box.width,
-    scaleY: (box.height + segmentedControl.liftGrowth.height) / box.height,
+    width:
+      2 *
+      lengthTokenPx(
+        element,
+        spacingVars['--spacing-3'],
+        segmentedControl.liftGrowth.width / 2,
+      ),
+    height:
+      2 *
+      lengthTokenPx(
+        element,
+        spacingVars['--spacing-2'],
+        segmentedControl.liftGrowth.height / 2,
+      ),
+  };
+}
+
+function lifted(
+  box: Box,
+  growth: {readonly width: number; readonly height: number},
+): MotionValues {
+  return {
+    scaleX: (box.width + growth.width) / box.width,
+    scaleY: (box.height + growth.height) / box.height,
   };
 }
 
@@ -462,13 +549,6 @@ function titleOf(segment: HTMLElement): HTMLElement | null {
 }
 
 /** What a press dims on a segment: its title and icon, as UIKit's label and image. */
-function pressedContentOf(segment: HTMLElement): HTMLElement[] {
-  return [
-    titleOf(segment),
-    segment.querySelector<HTMLElement>(ICON_SELECTOR),
-  ].filter((element): element is HTMLElement => element != null);
-}
-
 export interface SegmentedSelectionMotionOptions {
   /** The animator's clock (ms, document timeline); `performance.now()` by default. */
   readonly now?: () => number;
@@ -504,6 +584,8 @@ export class SegmentedSelectionMotion {
   private readonly titleDims = new Map<HTMLElement, Animation[]>();
   /** The segment showing the selected face under a dragging finger. */
   private facedSegment: HTMLElement | null = null;
+  /** The frame request that keeps the face on the lens while it is carried. */
+  private lensFrame: number | null = null;
   /** Titles wearing another face for the drag (inline weight and color). */
   private readonly faceOverrides = new Set<HTMLElement>();
   /** The motions the hand-back waits for. */
@@ -675,15 +757,11 @@ export class SegmentedSelectionMotion {
       return;
     }
     touch.under = segment;
-    if (!touch.carriesLens) {
-      if (touch.isPressed) {
-        this.pressTitle(segment);
-      }
-      return;
+    if (!touch.carriesLens && touch.isPressed) {
+      this.pressTitle(segment);
     }
-    if (this.isLifted) {
-      this.showFaceAt(segment);
-    }
+    // A carried lens's selected face follows the lens, not the finger
+    // (followLens).
   }
 
   /**
@@ -717,7 +795,8 @@ export class SegmentedSelectionMotion {
     }
     const at = this.carry(touch.origin, box, null, touch.origin);
     this.isLifted = true;
-    this.springLens(lifted(box), this.springFrom(lifted(box), 'lift'), {at});
+    const peak = lifted(box, liftGrowthOf(this.track));
+    this.springLens(peak, this.springFrom(peak, 'lift'), {at});
     this.trackHandle(
       this.after.animate(
         {opacity: 1},
@@ -740,13 +819,68 @@ export class SegmentedSelectionMotion {
       return;
     }
     // A drag that starts before the press is on (a scroller's delay) lifts
-    // the lens as it takes the touch; the selected face is on the segment
-    // under the finger, at once (the lens lags behind it).
+    // the lens as it takes the touch.
     this.lift();
-    if (this.isLifted) {
-      this.showFaceAt(touch.under);
-    }
     this.chase(clientX);
+    this.followLens();
+  }
+
+  /**
+   * The selected face follows the lifted lens: the segment the lens's
+   * presented center is over, with hysteresis around each boundary (a
+   * quarter of the segment's width, at least 8 px), so a finger resting on a
+   * boundary never flips it back and forth. It runs every frame while a
+   * lifted lens is carried, so the face keeps up as the lens settles under a
+   * still finger.
+   */
+  private followLens(): void {
+    const touch = this.touch;
+    const carried = this.carried;
+    if (
+      touch == null ||
+      !touch.carriesLens ||
+      !this.isLifted ||
+      carried == null ||
+      touch.origin == null
+    ) {
+      this.lensFrame = null;
+      return;
+    }
+    const lensCenter = this.presented(carried.box, this.now()).center;
+    const spans = [...touch.boxes.entries()]
+      .filter(([segment]) => isEnabledSegment(segment))
+      .sort((a, b) => a[1].x - b[1].x);
+    const current = this.facedSegment ?? touch.origin;
+    const at = spans.findIndex(([segment]) => segment === current);
+    if (at >= 0) {
+      const edge = (i: number) =>
+        (spans[i][1].x + spans[i][1].width + spans[i + 1][1].x) / 2;
+      let next = at;
+      while (next + 1 < spans.length && lensCenter > edge(next)) {
+        next += 1;
+      }
+      while (next > 0 && lensCenter < edge(next - 1)) {
+        next -= 1;
+      }
+      if (next !== at) {
+        const boundary = next > at ? edge(at) : edge(at - 1);
+        const hysteresis = Math.max(
+          FACE_HYSTERESIS_MIN_PX,
+          FACE_HYSTERESIS_RATIO * spans[next][1].width,
+        );
+        if (Math.abs(lensCenter - boundary) >= hysteresis) {
+          const segment = spans[next][0];
+          this.showFaceAt(segment === touch.origin ? null : segment);
+        }
+      }
+    }
+    const view = this.track?.ownerDocument.defaultView;
+    if (this.lensFrame == null && view != null) {
+      this.lensFrame = view.requestAnimationFrame(() => {
+        this.lensFrame = null;
+        this.followLens();
+      });
+    }
   }
 
   /** The lifted lens's center chases the finger at `clientX`. */
@@ -978,9 +1112,16 @@ export class SegmentedSelectionMotion {
    */
   stop(): void {
     this.touch = null;
+    if (this.lensFrame != null) {
+      this.track?.ownerDocument.defaultView?.cancelAnimationFrame(
+        this.lensFrame,
+      );
+      this.lensFrame = null;
+    }
     this.committed = null;
     this.isAwaitingValue = false;
     this.clearFaces();
+    this.pressedTitle?.removeAttribute(PRESSED_STATE);
     this.pressedTitle = null;
     for (const animations of this.titleDims.values()) {
       for (const animation of animations) {
@@ -1236,7 +1377,7 @@ export class SegmentedSelectionMotion {
     // while the main thread is busy. The lift's spring and hang as the
     // control's theme sets them (motion roles), UIKit's by default: the curve
     // is baked here, so it resolves them itself.
-    const peak = lifted(box);
+    const peak = lifted(box, liftGrowthOf(this.track));
     const liftSpring = resolveMotion(this.track, segmentedControl.liftSpring);
     const hang =
       resolveMotion(this.track, segmentedControl, 'tapLiftHangMs') / 1000;
@@ -1465,12 +1606,38 @@ export class SegmentedSelectionMotion {
       return;
     }
     if (this.pressedTitle != null) {
-      this.fadeTitle(this.pressedTitle, 1, 'fade');
+      this.setPressed(this.pressedTitle, false, 'fade');
     }
     this.pressedTitle = next;
     if (next != null) {
-      this.fadeTitle(next, segmentedControl.pressedTitle.opacity, 'fade');
+      this.setPressed(next, true, 'fade');
     }
+  }
+
+  /**
+   * Puts `segment` in or out of the `segmented-control-item` target's pressed
+   * state and fades it there from what it shows now: dimmed to the state's
+   * opacity (the theme's, UIKit's 0.2 by default), or back to 1.
+   */
+  private setPressed(
+    segment: HTMLElement,
+    isPressed: boolean,
+    clock: 'fade' | 'lift',
+  ): void {
+    const view = segment.ownerDocument.defaultView;
+    const shown =
+      view == null ? NaN : parseFloat(view.getComputedStyle(segment).opacity);
+    for (const animation of this.titleDims.get(segment) ?? []) {
+      animation.cancel();
+    }
+    this.titleDims.delete(segment);
+    if (isPressed) {
+      segment.setAttribute(PRESSED_STATE, 'pressed');
+    } else {
+      segment.removeAttribute(PRESSED_STATE);
+    }
+    const to = isPressed ? pressedOpacityOf(segment) : 1;
+    this.fadeTitle(segment, to, clock, Number.isFinite(shown) ? shown : 1);
   }
 
   /** The finger let go: the pressed title comes back on the lift's clock. */
@@ -1478,7 +1645,7 @@ export class SegmentedSelectionMotion {
     const pressed = this.pressedTitle;
     this.pressedTitle = null;
     if (pressed != null) {
-      this.fadeTitle(pressed, 1, 'lift');
+      this.setPressed(pressed, false, 'lift');
     }
   }
 
@@ -1490,13 +1657,17 @@ export class SegmentedSelectionMotion {
     segment: HTMLElement,
     to: number,
     clock: 'fade' | 'lift',
+    from: number,
   ): void {
     for (const animation of this.titleDims.get(segment) ?? []) {
       animation.cancel();
     }
     this.titleDims.delete(segment);
-    const targets = pressedContentOf(segment);
-    if (targets.length === 0 || typeof targets[0].animate !== 'function') {
+    // The pressed segment fades as a whole: it is an unselected one, which
+    // paints no surface of its own under a finger, so its content is all it
+    // shows.
+    const targets = [segment];
+    if (typeof segment.animate !== 'function') {
       return;
     }
     // The clock and curve as the segment's theme sets them (motion roles),
@@ -1518,8 +1689,6 @@ export class SegmentedSelectionMotion {
       ),
     };
     const animations = targets.map(target => {
-      const shown = parseFloat(getComputedStyle(target).opacity);
-      const from = Number.isFinite(shown) ? shown : 1;
       return target.animate([{opacity: from}, {opacity: to}], {
         ...timing,
         fill: 'forwards',
@@ -1573,8 +1742,13 @@ export class SegmentedSelectionMotion {
     this.facedSegment = segment;
   }
 
+  /**
+   * Mid-drag the face is the colour alone: a weight swap would change the
+   * titles' widths, move the segments under the finger and the lens, and
+   * shake the boundary. The commit's own styles give the new weight at the
+   * lift.
+   */
   private wearFace(title: HTMLElement, face: TitleFace): void {
-    title.style.fontWeight = face.fontWeight;
     title.style.color = face.color;
     this.faceOverrides.add(title);
   }
@@ -1582,7 +1756,6 @@ export class SegmentedSelectionMotion {
   /** Every title back to its own face. */
   private clearFaces(): void {
     for (const title of this.faceOverrides) {
-      title.style.removeProperty('font-weight');
       title.style.removeProperty('color');
     }
     this.faceOverrides.clear();

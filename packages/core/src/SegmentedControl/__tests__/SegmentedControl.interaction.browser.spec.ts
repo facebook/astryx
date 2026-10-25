@@ -1596,14 +1596,13 @@ test('a drag that starts on another segment leaves the lens alone and commits wh
   expect((await selections()).map(change => change.value)).toEqual(['table']);
 });
 
-test('a finger on an unselected segment dims its title on UIKit’s 470 ms ease and paints no press box; at the lift it comes back in 180 ms', async ({
+test('a finger on an unselected segment dims it (the item target’s pressed state) on UIKit’s 470 ms ease and paints no press box; at the lift it comes back in 180 ms', async ({
   page,
 }) => {
   const control = await openControl(page);
   const list = control.segment('list');
-  const title = list.locator('[data-segment-title]');
   const lastFade = async () =>
-    title.evaluate(element => {
+    list.evaluate(element => {
       const animation = element.getAnimations().at(-1);
       if (animation == null) {
         return null;
@@ -1645,77 +1644,74 @@ test('a finger on an unselected segment dims its title on UIKit’s 470 ms ease 
   expect(EASE).toContain(
     (atLift as {easing?: string} | null)?.easing ?? 'none',
   );
-  // Back at rest, nothing is left on the title.
+  // Back at rest, nothing is left on the segment.
   await expect.poll(async () => (await lastFade()) == null).toBe(true);
-  await expect(title).toHaveCSS('opacity', '1');
+  await expect(list).toHaveCSS('opacity', '1');
+  await expect(list).not.toHaveAttribute('data-pressed');
 });
 
-test('during a lifted drag the selected face follows the finger at once, and the commit keeps it as shown', async ({
+test('during a lifted drag the selected face follows the lens as a colour, with no weight swap mid-drag, and the commit keeps it as shown', async ({
   page,
 }) => {
   const control = await openControl(page);
-  const weight = async (value: string) =>
+  const read = async (value: string) =>
     control
       .segment(value)
       .locator('[data-segment-title]')
-      .evaluate(element => getComputedStyle(element).fontWeight);
-  const selected = await weight('grid');
-  const unselected = await weight('list');
-  expect(selected).not.toBe(unselected);
+      .evaluate(element => {
+        const style = getComputedStyle(element);
+        return {weight: style.fontWeight, color: style.color};
+      });
+  const selected = await read('grid');
+  const unselected = await read('list');
+  expect(selected.color).not.toBe(unselected.color);
   const boxes = await control.boxes();
   const list = boxOf(boxes, 'list');
+  const table = boxOf(boxes, 'table');
   const groupBox = await control.group.boundingBox();
-  const seen: {finger: number; grid: string; list: string; table: string}[] =
-    [];
+  const seen: {
+    finger: number;
+    grid: {weight: string; color: string};
+    list: {weight: string; color: string};
+    table: {weight: string; color: string};
+  }[] = [];
   await control.driver.play(
     touchDrag(
       await clientCenter(control, 'grid'),
       await clientCenter(control, 'table'),
-      {durationMs: 600, restMs: 200},
+      {durationMs: 600, restMs: 300},
     ),
     {
       onEvent: async step => {
         if (step.type === 'touchMove') {
           seen.push({
             finger: step.changed[0].x - (groupBox?.x ?? 0),
-            grid: await weight('grid'),
-            list: await weight('list'),
-            table: await weight('table'),
+            grid: await read('grid'),
+            list: await read('list'),
+            table: await read('table'),
           });
         }
       },
     },
   );
-  // While the finger is over List, List wears the selected face and Grid an
-  // unselected one; over Table, Table does.
-  const overList = seen.filter(
-    s => s.finger > list.x + 4 && s.finger < list.x + list.width - 4,
-  );
-  expect(overList.length).toBeGreaterThan(2);
-  for (const s of overList) {
-    expect(s).toMatchObject({
-      grid: unselected,
-      list: selected,
-      table: unselected,
-    });
+  expect(seen.length).toBeGreaterThan(5);
+  // No title changes weight mid-drag: the segments never reflow under it.
+  for (const s of seen) {
+    expect(s.grid.weight).toBe(selected.weight);
+    expect(s.list.weight).toBe(unselected.weight);
+    expect(s.table.weight).toBe(unselected.weight);
   }
-  // Never a face ahead of the finger: Table's only once the finger is past
-  // the gap before it (the gap counts for the nearer segment).
-  const table = boxOf(boxes, 'table');
+  // The face trails the finger with the lens, never ahead of it.
   const gapMiddle = (list.x + list.width + table.x) / 2;
   for (const s of seen.filter(s => s.finger < gapMiddle - 1)) {
-    expect(s.table, `finger at ${s.finger}`).toBe(unselected);
+    expect(s.table.color, `finger at ${s.finger}`).toBe(unselected.color);
   }
-  expect(seen.at(-1)).toMatchObject({
-    grid: unselected,
-    list: unselected,
-    table: selected,
-  });
-  // The commit takes the face over: no borrowed style is left.
+  expect(seen.at(-1)?.table.color).toBe(selected.color);
   await expect(control.segment('table')).toHaveAttribute(
     'aria-checked',
     'true',
   );
+  // The commit takes the face over: no borrowed style is left.
   expect(
     await control.group.evaluate(group =>
       [...group.querySelectorAll<HTMLElement>('[data-segment-title]')]
@@ -1723,7 +1719,84 @@ test('during a lifted drag the selected face follows the finger at once, and the
         .join(''),
     ),
   ).toBe('');
-  expect(await weight('table')).toBe(selected);
+  expect((await read('table')).weight).toBe(selected.weight);
+});
+
+test('a slow ±3 px dither across a boundary changes the selected face at most once', async ({
+  page,
+}) => {
+  const control = await openControl(page);
+  const colorOf = async (value: string) =>
+    control
+      .segment(value)
+      .locator('[data-segment-title]')
+      .evaluate(element => getComputedStyle(element).color);
+  const selectedColor = await colorOf('grid');
+  const faced = async () => {
+    for (const value of ['list', 'grid', 'table']) {
+      if (value !== 'grid' && (await colorOf(value)) === selectedColor) {
+        return value;
+      }
+    }
+    return 'grid';
+  };
+  const boxes = await control.boxes();
+  const grid = boxOf(boxes, 'grid');
+  const list = boxOf(boxes, 'list');
+  const groupBox = await control.group.boundingBox();
+  const y = (groupBox?.y ?? 0) + (groupBox?.height ?? 0) / 2;
+  const boundary = (groupBox?.x ?? 0) + (grid.x + grid.width + list.x) / 2;
+  const start = await clientCenter(control, 'grid');
+  // Held on Grid, carried to the boundary, then dithered ±3 px, 70 ms a step.
+  const script = [
+    {t: 0, fingers: [{id: 0, x: start.x, y}]},
+    {t: 300, fingers: [{id: 0, x: boundary, y}]},
+    ...Array.from({length: 24}, (_, i) => ({
+      t: 700 + i * 70,
+      fingers: [{id: 0, x: boundary + (i % 2 === 0 ? 3 : -3), y}],
+    })),
+    {t: 700 + 24 * 70 + 50, fingers: []},
+  ];
+  const faces: string[] = [];
+  await control.driver.play(script, {
+    onEvent: async step => {
+      if (step.type === 'touchMove' && step.t >= 700) {
+        faces.push(await faced());
+      }
+    },
+  });
+  const changes = faces.filter((face, i) => i > 0 && face !== faces[i - 1]);
+  expect(changes.length, faces.join(' ')).toBeLessThanOrEqual(1);
+});
+
+test('a tap’s commit is the browser’s own click (spec:AST-094 FR11)', async ({
+  page,
+}) => {
+  const control = await openControl(page);
+  await control.segment('table').evaluate(element => {
+    const w = window as unknown as {__trusted: boolean[]};
+    w.__trusted = [];
+    element.addEventListener(
+      'click',
+      event => w.__trusted.push(event.isTrusted),
+      {
+        capture: true,
+      },
+    );
+  });
+  await control.driver.play(
+    touchTap(await clientCenter(control, 'table'), {holdMs: 80}),
+  );
+  await expect(control.segment('table')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  await page.waitForTimeout(400);
+  expect(
+    await page.evaluate(
+      () => (window as unknown as {__trusted: boolean[]}).__trusted,
+    ),
+  ).toEqual([true]);
 });
 
 /**

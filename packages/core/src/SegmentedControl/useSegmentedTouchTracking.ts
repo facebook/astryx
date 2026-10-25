@@ -38,11 +38,14 @@
  * across a group of targets: the segment under the finger, else the nearest
  * (a gap splits at its middle; past the ends, the end one; nothing over a
  * disabled segment), resolved from rects read once when the finger lands. Its highlight moves the
- * selected face (a carried lens) or the pressed title's dim. At the lift it
- * clicks that segment, so an item's consumer `onClick` runs first and can
- * veto the selection with `preventDefault()`, for a tap and a drag alike,
- * exactly as under a mouse; the browser's own click for that touch is
- * swallowed, so the click path never runs twice. A vetoed click sends the
+ * pressed title's dim. A tap (the finger lifts on the segment it landed on,
+ * with no drag) is committed by the browser's own click (`spec:AST-094`
+ * FR11); the control waits for it and clicks the segment itself only if no
+ * click comes. A drag, or a lift on another segment, gets no click from the
+ * browser: the tracker clicks that segment at the lift and swallows any
+ * click the browser sends after. Either way an item's consumer `onClick`
+ * runs and can veto the selection with `preventDefault()`, exactly as under
+ * a mouse, and the click path never runs twice. A vetoed click sends the
  * lens back at once; otherwise the motion waits for the value to come back
  * (a controlled parent may adopt it later) and sends the lens back only if
  * a later render keeps the old value or the slide settles without it.
@@ -73,6 +76,66 @@ import {
   SEGMENT_SELECTOR,
   type SegmentedSelectionMotion,
 } from './useSegmentedSelectionMotion';
+
+/**
+ * How long a tap's lift waits for the browser's own click before the segment
+ * is clicked directly, ms: the browser sends it with the lift's `touchend`
+ * (the track has no double-tap delay), so this only runs out for a lift the
+ * browser does not count as a click.
+ */
+const BROWSER_CLICK_WAIT_MS = 300;
+
+/**
+ * Waits for the browser's own click on `segment` after a tap and reports
+ * whether a handler cancelled it; with no click in time, clicks the segment
+ * itself (its activation and every handler run) and reports that.
+ */
+function awaitBrowserClick(
+  segment: HTMLElement,
+  onClicked: (isCancelled: boolean) => void,
+): void {
+  const view = segment.ownerDocument.defaultView;
+  if (view == null) {
+    return;
+  }
+  let isDone = false;
+  const finish = (isCancelled: boolean) => {
+    if (isDone) {
+      return;
+    }
+    isDone = true;
+    view.removeEventListener('click', grab, true);
+    view.clearTimeout(timer);
+    onClicked(isCancelled);
+  };
+  const grab = (event: MouseEvent) => {
+    if (!event.isTrusted || !segment.contains(event.target as Node | null)) {
+      return;
+    }
+    // After every handler has run: was it cancelled?
+    view.setTimeout(() => finish(event.defaultPrevented), 0);
+  };
+  const timer = view.setTimeout(() => {
+    if (isDone) {
+      return;
+    }
+    let clicked: Event | null = null;
+    const own = (event: Event) => {
+      if (clicked == null && event.target === segment) {
+        clicked = event;
+      }
+    };
+    view.removeEventListener('click', grab, true);
+    view.addEventListener('click', own, true);
+    try {
+      segment.click();
+    } finally {
+      view.removeEventListener('click', own, true);
+    }
+    finish((clicked as Event | null)?.defaultPrevented === true);
+  }, BROWSER_CLICK_WAIT_MS);
+  view.addEventListener('click', grab, true);
+}
 
 /** A ref to nothing: hooks given it attach nothing. */
 const DETACHED: RefObject<HTMLElement | null> = {current: null};
@@ -135,6 +198,8 @@ export function useSegmentedTouchTracking(
   });
   /** A finger is down on the track (its press has not ended). */
   const isPressingRef = useRef(false);
+  /** The horizontal pan began for this touch: it is a drag, not a tap. */
+  const isDraggingRef = useRef(false);
   /** The segments as the finger found them (disabled ones too). */
   const segmentsRef = useRef<SegmentSpan[]>([]);
   const trackerRef = useRef<ActionGroupTracker | null>(null);
@@ -176,6 +241,7 @@ export function useSegmentedTouchTracking(
       switch (event) {
         case 'touchDown':
           isPressingRef.current = true;
+          isDraggingRef.current = false;
           segmentsRef.current = measureSegments(track);
           tracker.begin(touch.x, touch.y);
           motion.begin(track, tracker.beganOn);
@@ -185,10 +251,22 @@ export function useSegmentedTouchTracking(
           isPressingRef.current = false;
           // Where the finger lifts decides, wherever it landed.
           tracker.move(touch.x, touch.y);
-          const value = motion.release(tracker.highlighted);
-          if (value != null) {
-            // The segment's own click, inside the lift's event: its
-            // onClick may veto the commit.
+          const lifted = tracker.highlighted;
+          const isTap =
+            event === 'touchUpInside' &&
+            !isDraggingRef.current &&
+            lifted != null &&
+            lifted === tracker.beganOn;
+          const value = motion.release(lifted);
+          if (value != null && isTap && lifted != null) {
+            // A tap: the browser's own click commits it (spec:AST-094 FR11).
+            tracker.cancel();
+            awaitBrowserClick(lifted, isCancelled =>
+              motion.clicked(track, value, isCancelled),
+            );
+          } else if (value != null) {
+            // No click comes from the browser for a drag: the segment's own
+            // click, inside the lift's event; its onClick may veto it.
             tracker.end();
           } else {
             tracker.cancel();
@@ -229,6 +307,9 @@ export function useSegmentedTouchTracking(
         preventsTextSelection: true,
       }),
     recognizer => {
+      if (recognizer.state === 'began') {
+        isDraggingRef.current = true;
+      }
       if (recognizer.state === 'began' || recognizer.state === 'changed') {
         const {x, y} = recognizer.location();
         // The lens chases the finger, then the tracker moves the highlight.
