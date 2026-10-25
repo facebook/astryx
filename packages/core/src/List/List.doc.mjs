@@ -54,6 +54,12 @@ export const docs = {
       default: "'moves'",
     },
     {
+      name: 'onReorder',
+      type: '(fromIndex: number, toIndex: number) => void',
+      description:
+        "Makes the rows reorderable: each row gets a reorder handle at its end, and a ListItem with isReorderDisabled keeps its place instead. Called with a row's index before and after a move; render the rows in the new order to apply it. On a touch screen, a finger held still on a handle for a moment picks up its row (a flick on it still scrolls): the row follows the finger, the rows it passes slide out of its way, the page scrolls near the edges, and on release the row settles into its new place on UIKit's springs, as an iOS table reorders. A mouse drags a handle at once, and the rows take their places without motion. From the keyboard, a handle's arrow keys move its row one place, Home and End to either end; Space picks it up and Escape puts it back. Every move is announced once the new order renders; a move you decline (by keeping the order) is announced as cancelled. A disabled row's handle stays focusable but moves nothing.",
+    },
+    {
       name: 'edge',
       type: "'padded' | 'flush' | 'outset' | 'bleed'",
       description:

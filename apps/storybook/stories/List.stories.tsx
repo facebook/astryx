@@ -630,3 +630,89 @@ export const AnimatedChangesSwipe: Story = {
     },
   },
 };
+
+function moveRow<T>(rows: ReadonlyArray<T>, from: number, to: number): T[] {
+  const next = [...rows];
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved);
+  return next;
+}
+
+function ReorderDemo({
+  initial,
+  fixed,
+}: {
+  initial: ReadonlyArray<string>;
+  fixed?: string;
+}) {
+  const [rows, setRows] = useState(initial);
+  return (
+    <List
+      hasDividers
+      hasAnimatedChanges
+      onReorder={(from, to) => setRows(current => moveRow(current, from, to))}>
+      {rows.map(label => (
+        <ListItem
+          key={label}
+          label={label}
+          isReorderDisabled={label === fixed}
+        />
+      ))}
+    </List>
+  );
+}
+
+export const Reorderable: Story = {
+  render: () => (
+    <ReorderDemo
+      initial={['Inbox', 'Sent', 'Drafts', 'Archive', 'Spam', 'Trash']}
+    />
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'With `onReorder`, each row gets a reorder handle. On a touch ' +
+          'screen, hold a handle for a moment, then drag: the rows you pass ' +
+          'slide out of the way and the row settles into its new place on ' +
+          'release. A mouse drags a handle at once; from the keyboard, the ' +
+          'arrow keys move the focused handle’s row.',
+      },
+    },
+  },
+};
+
+export const ReorderWithFixedRow: Story = {
+  render: () => (
+    <ReorderDemo
+      initial={['Favorites', 'Inbox', 'Sent', 'All mail', 'Drafts', 'Spam']}
+      fixed="All mail"
+    />
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A ListItem with `isReorderDisabled` has no handle and keeps its ' +
+          'place: rows above and below it reorder within their own group.',
+      },
+    },
+  },
+};
+
+export const ReorderLongList: Story = {
+  render: () => (
+    <ReorderDemo
+      initial={Array.from({length: 30}, (_, index) => `Item ${index + 1}`)}
+    />
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Dragging a row near the top or bottom of the screen scrolls the ' +
+          'page, faster the further past the edge the row goes.',
+      },
+    },
+  },
+};
