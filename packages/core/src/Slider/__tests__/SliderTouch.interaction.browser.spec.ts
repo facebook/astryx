@@ -569,10 +569,10 @@ test('a slow release does not coast: the value stays where the finger left it', 
   );
 });
 
-test('a drag that rests before the lift still coasts on its last velocity, as UIKit does', async ({
+test('a drag that rests 40 ms before the lift does not coast: the release filter’s stillness reset (AST-100 FR2)', async ({
   page,
 }) => {
-  const {driver, center, value, length} = await openSlider(
+  const {driver, center, value} = await openSlider(
     page,
     'core-slider--touch-tracking',
     {name: 'Brightness'},
@@ -582,8 +582,11 @@ test('a drag that rests before the lift still coasts on its last velocity, as UI
     'the velocity filter needs the scripted timestamps (README: engine limits)',
   );
   const at = await center();
-  // 60 px at 300 px/s, then 300 ms without a move: UIKit's pan velocity does
-  // not decay while the finger rests (a 312 ms rest still coasted 12.56 pt).
+  // 60 px at 300 px/s, then 300 ms without a move. UIKit keeps the last
+  // motion through a silent rest (a 312 ms rest still coasted 12.56 pt);
+  // the one release filter every gesture shares reads zero once the finger
+  // has been still for its stillness interval (40 ms, AST-100 FR2), so the
+  // value stays where the finger left it.
   const {script, ends} = legs(
     at,
     [{to: {x: at.x + 60, y: at.y}, durationMs: 200, restMs: 300}],
@@ -591,11 +594,7 @@ test('a drag that rests before the lift still coasts on its last velocity, as UI
   );
   const [atLift] = await playReading(page, driver, script, [ends[0]], value);
   await page.waitForTimeout(900);
-  const expected = Math.round(
-    atLift + (UISLIDER.projectionShare * project(300) * 100) / length,
-  );
-  expect(expected).toBeGreaterThan(atLift);
-  expect(await value()).toBe(expected);
+  expect(await value()).toBe(atLift);
 });
 
 test('Reduce Motion: no lift, and a release or a track tap cross-fades the thumb to its value within 200 ms (design:reduced-motion)', async ({
