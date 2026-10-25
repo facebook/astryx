@@ -10,14 +10,19 @@ final class ComponentScreensUITests: XCTestCase {
   /// Every component screen the host app offers, in its order.
   static let screens = ["Banner", "Button", "Card", "Heading", "Icon", "Text", "TextInput"]
 
+  static let loadingLabel =
+    "A loading button keeps its label at zero opacity under the spinner so its width holds; the audit measures that hidden label."
+  static let scrolledValue =
+    "A single-line field scrolls a value wider than itself; the audit reports the value as clipped."
+
   /// Audit issues found when the audit first ran, each with what is known of
   /// its cause. Any other issue fails, and so does a listed issue that no
   /// longer occurs, so the list only shrinks.
   static let knownAuditIssues: [String: String] = [
-    "Button 'Sending', default text: Contrast failed":
-      "A loading button keeps its label at zero opacity under the spinner so its width holds; the audit measures that hidden label.",
-    "TextInput 'Email', default text: Text clipped":
-      "A single-line field scrolls a value wider than itself; the audit reports the value as clipped.",
+    "Button 'Sending', default text: Contrast failed": loadingLabel,
+    "Button 'Sending', largest text: Contrast failed": loadingLabel,
+    "TextInput 'Email', default text: Text clipped": scrolledValue,
+    "TextInput 'Email', largest text: Text clipped": scrolledValue,
   ]
 
   override func setUp() {
