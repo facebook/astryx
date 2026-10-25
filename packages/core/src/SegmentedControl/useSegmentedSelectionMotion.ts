@@ -57,7 +57,10 @@ import {
   type Animator,
   type MotionHandle,
 } from '../motion/animator';
-import {registerSegmentedControlTable, segmentedControl} from '../motion/uikit';
+import {
+  registerSegmentedControlTable,
+  segmentedControl,
+} from '../motion/uikit/segmented';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {observeResize} from '../utils/sharedResizeObserver';
 
