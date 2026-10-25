@@ -271,6 +271,30 @@ describe('ComplexSelector', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('commits through a helper kept from a disabled render once enabled', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const kept: {current: ((value: string) => void) | null} = {current: null};
+    const renderSelector = (isDisabled: boolean) => (
+      <ComplexSelector
+        label="Fruit"
+        value="Apple"
+        isDisabled={isDisabled}
+        onChange={onChange}>
+        {(_value, commit) => {
+          kept.current ??= commit;
+          return <span>Choices</span>;
+        }}
+      </ComplexSelector>
+    );
+    const {rerender} = render(renderSelector(true));
+    expect(kept.current).not.toBeNull();
+    rerender(renderSelector(false));
+    await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+    act(() => kept.current?.('Banana'));
+    expect(onChange).toHaveBeenCalledExactlyOnceWith('Banana');
+  });
+
   it('blocks commits when disabled while open and allows them after re-enabling', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

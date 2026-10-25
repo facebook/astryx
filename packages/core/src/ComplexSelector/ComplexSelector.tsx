@@ -20,6 +20,7 @@ import React, {
   useCallback,
   useId,
   useImperativeHandle,
+  useInsertionEffect,
   useOptimistic,
   useRef,
   useTransition,
@@ -33,7 +34,6 @@ import {
   type FieldPartStyleProps,
 } from '../Field/fieldParts';
 import {useDevWarning} from '../hooks/useDevWarning';
-import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {mergeRefs} from '../utils/mergeRefs';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
@@ -688,12 +688,14 @@ export function ComplexSelector<Value>({
     [isDisabled, popover],
   );
 
-  // The helper checks both the render it came from and the latest commit:
-  // content may call a helper it kept from an enabled render (after an await,
-  // say) once the selector is disabled, or commit from its own layout effect
-  // in the render that disables it, before the ref below is written.
+  // The helper reads the selector's availability when it runs, not the
+  // render it came from: content may keep a helper from an earlier render
+  // (after an await, say) across a change either way. The insertion effect
+  // runs before any layout effect of the content, so a commit from the
+  // content's own layout effect in the render that changes it sees the new
+  // availability too.
   const isDisabledRef = useRef(isDisabled);
-  useIsomorphicLayoutEffect(() => {
+  useInsertionEffect(() => {
     isDisabledRef.current = isDisabled;
   }, [isDisabled]);
 
@@ -701,7 +703,7 @@ export function ComplexSelector<Value>({
     (nextValue: Value) => {
       // Caller-owned popup controls may remain mounted after disablement.
       // Guard the supplied commit boundary, not just the trigger.
-      if (isDisabled || isDisabledRef.current) {
+      if (isDisabledRef.current) {
         return;
       }
       onChange?.(nextValue);
@@ -712,7 +714,7 @@ export function ComplexSelector<Value>({
         });
       }
     },
-    [isDisabled, changeAction, onChange, setOptimisticValue, startTransition],
+    [changeAction, onChange, setOptimisticValue, startTransition],
   );
 
   const triggerContent = triggerLabel ?? placeholder;
