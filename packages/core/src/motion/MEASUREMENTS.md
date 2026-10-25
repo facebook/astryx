@@ -268,3 +268,19 @@ fades in, with Prefer Cross-Fade Transitions on or off.
 | M-CM4 | Reduce Motion press feedback    | Probe app with Reduce Motion on: long press, then dismiss                                                                   | press feedback, lift and dismiss animations under Reduce Motion                                                                                                                           | A, B   |
 | M-CM5 | Commit haptic stand-in          | An Android device: `navigator.vibrate` patterns against the platform's HapticFeedbackConstants for the context-click moment | the pattern that matches; not a UIKit parity value (as M-G18)                                                                                                                             | H      |
 | M-CM6 | Press thresholds                | Probe app: repeated long presses at random vsync phases                                                                     | from touch receipt and from the HID timestamp, the tick before and the tick at the press observer's began and at the click commit; the intersection pins the 150 ms and 400 ms thresholds | C      |
+
+## Swipe actions (UIContextualAction)
+
+UIKit lab host app: a plain `UITableView` (402 and 375 pt wide, 60 pt rows)
+with one, two and three trailing `UIContextualAction`s (the last one
+`.destructive`) and one leading `.normal` action; drags driven with known
+velocity, the touch stream, the swipe handler's tracking and move calls and
+every animator and `CAAnimation` logged.
+
+| ID     | Value                                             | Gesture                                                                                                                                | Extract                                                                                                                    | Method |
+| ------ | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------ |
+| M-SA01 | `swipeActions.openFraction`                       | swipes released at rest at 0.3, 0.35, 0.4, 0.45, 0.5, 0.55 × the open width (past the 25 pt threshold)                                 | open or closed per release: the fraction                                                                                   | C      |
+| M-SA02 | `swipeActions.commitPastPanel`, `.commitFraction` | slow drag out past the full-swipe point and back; releases at rest and at ±1000 pt/s around it; 1, 2, 3 actions; 375, 402, 440 pt wide | the offsets where the primary action expands and collapses; perform or not per release; `confirmationThreshold`            | C, D   |
+| M-SA03 | `swipeActions.overdragResistance`                 | drag to the row width + 200 pt at 100 pt/s, with `performsFirstActionWithFullSwipe` on and off                                         | the row's offset against the finger's, per frame; `-[UISwipeOccurrence _extraOffsetForOffset:withDirection:]` over a sweep | C, D   |
+| M-SA04 | `swipeActions.slideOutOvershoot`                  | full swipe released past the confirmation point, `.normal` and `.destructive`                                                          | the row's position per frame until the action runs and the row returns or is removed; when the handler runs                | A, C   |
+| M-SA05 | `swipeActions.releaseVelocity`                    | releases past half the open width closing at 42, 44, 46, 48, 50, 52 and 54 pt/s (the pan's velocity at its end)                        | open or closed per release: the slowest closing speed that closes the row                                                  | C      |
