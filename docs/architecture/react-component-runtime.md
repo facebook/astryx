@@ -154,7 +154,8 @@ those contracts.
   keyboard change. A component outside Core does not ride; it commits the
   resting value once. Packages outside Core cannot import the hook; a
   component there that responds to the keyboard keeps one listener that
-  measures as `spec:AST-099` FR2 defines, keeps focus from panning as FR4
+  measures as `spec:AST-099` FR2 defines, or takes the browser's keyboard report
+  where FR8 applies, keeps focus from panning as FR4
   does, blurs as FR5 does, applies the height through a functional style on
   its own elements, and follows INV3 and INV5. The hook follows INV3 and
   INV5.
