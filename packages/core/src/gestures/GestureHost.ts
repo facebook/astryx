@@ -3,10 +3,9 @@
 /**
  * @file GestureHost.ts
  * @input DOM touch, pointer, click, contextmenu, scroll and focus events of
- *   one document; elements with recognizers and consumers attached, and
- *   consumer types found by attribute
- * @output Exports GestureHost (the DOM side of the gesture system),
- *   getGestureHost (one host per document) and the delegated consumer type
+ *   one document; elements with recognizers and consumers attached
+ * @output Exports GestureHost (the DOM side of the gesture system) and
+ *   getGestureHost (one host per document)
  * @position Browser adapter of packages/core/src/gestures: turns real events
  *   into GestureArena input, and carries out what the arena decides
  *
@@ -200,21 +199,6 @@ export interface AttachOptions {
   perEventPointer?: boolean;
 }
 
-/**
- * A kind of view-level consumer found by attribute instead of attached to
- * each element.
- */
-export interface DelegatedConsumerType {
-  /** Marks an element as this kind of consumer. */
-  readonly attribute: string;
-  /**
-   * The consumer for one contact on `element`, or null for none (a disabled
-   * control). The innermost marked element decides, even with null: a press
-   * on a disabled button does not light the row around it.
-   */
-  create(element: Element, pointerType: PointerKind): TouchConsumer | null;
-}
-
 const STYLE_PROPERTIES: Record<keyof GestureHostStyle, string> = {
   touchAction: 'touch-action',
   WebkitTouchCallout: '-webkit-touch-callout',
@@ -301,7 +285,6 @@ export class GestureHost {
   readonly arena: GestureArena;
   private readonly doc: Document;
   private readonly registry = new Map<Element, Registration>();
-  private readonly delegated = new Set<DelegatedConsumerType>();
   /** The selection lock each contact holds, by host contact id. */
   private readonly lockedBy = new Map<number, () => void>();
   private readonly presentedHitTesting: 'auto' | 'always' | 'never';
@@ -496,23 +479,8 @@ export class GestureHost {
   }
 
   /**
-   * Find consumers of a kind by attribute, one instance per contact. Returns
-   * the function that stops it.
+   * @internal The document this host serves.
    */
-  addDelegatedConsumer(type: DelegatedConsumerType): () => void {
-    this.delegated.add(type);
-    this.watchPointer();
-    if (!this.isCoarse) {
-      this.warnFinePointer();
-    }
-    this.install();
-    return () => {
-      this.delegated.delete(type);
-      this.uninstallIfIdle();
-    };
-  }
-
-  /** @internal The document this host serves. */
   get document(): Document {
     return this.doc;
   }
@@ -842,11 +810,7 @@ export class GestureHost {
   }
 
   private uninstallIfIdle(): void {
-    if (
-      this.registry.size === 0 &&
-      this.delegated.size === 0 &&
-      this.retainers === 0
-    ) {
+    if (this.registry.size === 0 && this.retainers === 0) {
       this.uninstall();
       this.stopWatchingPointer?.();
       this.stopWatchingPointer = null;
@@ -969,7 +933,7 @@ export class GestureHost {
   /**
    * The recognizers on the path from `target` to the document, innermost
    * first, and (for a contact) its consumer: the innermost element with an
-   * attached consumer or a delegated consumer type's attribute.
+   * attached consumer.
    */
   private participantsAt(
     target: unknown,
@@ -1022,16 +986,6 @@ export class GestureHost {
         consumer = registration.consumer;
         hasConsumerOwner = true;
         continue;
-      }
-      if (!this.isCoarse) {
-        continue;
-      }
-      for (const type of this.delegated) {
-        if (node.hasAttribute(type.attribute)) {
-          consumer = type.create(node, pointerType);
-          hasConsumerOwner = true;
-          break;
-        }
       }
     }
     return {recognizers, consumer, hovers};

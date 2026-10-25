@@ -19,11 +19,7 @@ export {GestureHost, getGestureHost} from './GestureHost';
 export {isFingerScroll, watchFingerScrolls} from './fingerScroll';
 export {holdPageScroll} from './pageHold';
 export type {PageScrollDecision} from './pageHold';
-export type {
-  AttachOptions,
-  DelegatedConsumerType,
-  GestureHostOptions,
-} from './GestureHost';
+export type {AttachOptions, GestureHostOptions} from './GestureHost';
 export {
   GestureRecognizer,
   isActive,
