@@ -37,9 +37,9 @@ affects_consumer_docs: []
 When a person flicks a sheet, a toast, a row, a page, or a wheel and lifts
 their finger, every Astryx component reads the same speed from that motion, so
 a flick of the same speed does the same thing everywhere, and a finger that
-stopped before lifting never counts as a flick. One velocity source in Core
-owns the samples and the release filter; components decide only what a given
-velocity means for them.
+stopped before lifting never counts as a flick. One release filter defines the
+speed every component reads; components decide only what a given velocity
+means for them.
 
 ## Non-goals
 
@@ -59,7 +59,7 @@ velocity means for them.
   swipe, a row swipe, paging, a wheel picker, a navigation pop, and interactive
   dismiss, reports the same velocity, in CSS pixels per second on each physical
   axis, for the same contact motion. `architecture:interaction-modality` INV10
-  owns the single source of that velocity.
+  owns the source in Core and how a component outside Core matches it.
 - **FR2 — A still finger never flicks.** The velocity a component reads when
   the contact lifts reflects only the motion just before the lift: it is 0
   when the contact stayed still for longer than a fixed stillness interval
@@ -87,15 +87,16 @@ velocity means for them.
   (`spec:AST-013` FR1, FR3); pointer events with event timestamps.
 - Unsupported behavior: a gesture with fewer than two samples in the window
   has a release velocity of 0.
-- Browser evidence: none required by this record; the unit, source-boundary,
-  and component tests in Verification prove FR1–FR5, and real-device feel for
+- Browser evidence: none required by this record; the unit and component
+  tests in Verification prove FR1–FR5, and real-device feel for
   each component remains that component's evidence.
 
 ## Current-state impact
 
-- No single velocity source exists in Core on `main`. Its first landing meets
-  FR1–FR5 and `architecture:interaction-modality` INV10: one release filter
-  with the FR2 stillness reset, with no selectable alternative filters.
+- No velocity source exists in Core on `main`. Its first landing meets FR1–FR5
+  and `architecture:interaction-modality` INV10: one release filter with the
+  FR2 stillness reset, with no selectable alternative filters. A Lab gesture
+  matches it as INV10 describes.
 - BottomSheet's drag estimates velocity from a two-point window over its
   recent samples with event timestamps. Under FR1 and FR2 it reads the tracker.
 - Item's row swipe compares a speed in pixels per millisecond timed with the
@@ -119,15 +120,16 @@ velocity means for them.
 
 ## Decision log
 
-### DEC-1 — One tracker and one release filter; thresholds stay per component
+### DEC-1 — One release filter for every gesture; thresholds stay per component
 
 **Reference:** `spec:AST-100/DEC-1`
 **Decider:** `cixzhang`, `2026-10-24`
 
 Each component estimating velocity its own way makes the same flick dismiss a
 toast but not a sheet, and a finger that paused before lifting count as a
-flick in one place and not another. One tracker with one release filter gives
-every component the same speed for the same motion, and the stillness reset
+flick in one place and not another. One release filter, with one source in
+Core and the same filter wherever a package cannot reach it, gives every
+component the same speed for the same motion, and the stillness reset
 stops a resting finger from flinging. What a speed means stays with each
 component as internal tuning, so components keep their feel without a second
 estimator.
