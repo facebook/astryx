@@ -400,6 +400,13 @@ test('the surface lands exactly where the segment paints it', async ({
   page,
 }) => {
   const control = await openControl(page);
+  // The surfaces are compared, not the titles: text drawn over a composited
+  // layer (the lens) loses subpixel antialiasing where the platform uses it,
+  // and gets it back at the hand-back (a desktop Linux runner does; phones
+  // antialias text in grayscale either way).
+  await page.addStyleTag({
+    content: '[role="radiogroup"] * { color: transparent !important; }',
+  });
   // Gate timers: the hand-back runs from the slide's completion timer, which
   // must wait while the landed frame is photographed.
   await installTimerGate(page);
@@ -878,6 +885,11 @@ test('with a mouse nothing changes: no lens, the theme’s color transition, and
   try {
     const page = await context.newPage();
     await openStory(page, storybook(), 'core-segmentedcontrol--default');
+    // This context's pointer is fine (a context without touch can still
+    // match a coarse one).
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(false);
     const group = page.getByRole('radiogroup', {
       name: 'View mode',
       exact: true,

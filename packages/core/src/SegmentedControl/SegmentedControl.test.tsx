@@ -922,6 +922,8 @@ describe('selection motion', () => {
   });
 
   it('touch presentation: as many elements as under a mouse; selection unchanged', async () => {
+    // A fine pointer for the first render.
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
     const mouse = renderControl().container.querySelectorAll('*').length;
     cleanup();
     const spy = mockCoarsePointer();
