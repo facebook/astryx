@@ -67,7 +67,7 @@
  * frame. `options.start` changes that per call: `'commit'` dates a retarget
  * by the browser's commit as well, and `'presented'` creates the call's
  * animations two frames later, once its element at rest has been presented
- * (a new layer, or a UI process that applies commits late).
+ * (a UI process that applies commits late).
  * `handle.curve(property)` hands out the curve a call plays, so a
  * companion can follow it on the same clock.
  * `options.additive` retargets as UIKit does: the old curve keeps going and a
@@ -243,10 +243,9 @@ export interface AnimateOptions {
    * - `'commit'`: a call that continues motion also starts when the browser
    *   commits it, dated by the browser rather than by the main thread, as a
    *   call from rest is.
-   * - `'presented'`: the call promotes its element and shows its current
-   *   value at once, and creates its animations two frames later, once the
-   *   frame that carries the element at rest has been presented; they then
-   *   start at their commit. A new layer's first presentation or a busy UI
+   * - `'presented'`: the call leaves its element at rest and creates its
+   *   animations two frames later, once the frame that carries the element at
+   *   rest has been presented; they then start at their commit. A busy UI
    *   process delays the motion instead of skipping into it, for two frames
    *   more before an idle start. Any other change to the animator before then
    *   creates the animations first, in call order.
@@ -570,16 +569,19 @@ const MAX_KEYFRAMES = 1200;
  * The keyframes hold the end state this long after a curve ends. An engine
  * whose compositor ends an animation while the main thread is blocked falls
  * back to the value its main thread last committed, the curve's start
- * (WebKit); the hold keeps the end state on screen through any such block. It
- * only stretches the last keyframe. The main thread retires the animation as
- * soon as it runs after the curve's end.
+ * (WebKit on Linux); the hold keeps the end state on screen through any such
+ * block. It only stretches the last keyframe. The main thread retires the
+ * animation as soon as it runs after the curve's end.
  *
  * Why a tail inside the curve's own animation, with a bound (measured Oct 24
  * 2026; do not replace it without these proofs):
- * - WebKit's compositor ignores `fill`: an animation that ends during a
- *   main-thread block falls back to the last committed inline value, the
- *   curve's start here. The browser proof "a spring that ends inside the
- *   block keeps showing its end state" catches it.
+ * - WebKit on Linux (WebKitGTK and WPE) ignores `fill` on its compositor:
+ *   a 400 ms move that ends during a 1 s main-thread block snaps back to the
+ *   block-start position 13 ms after its end, with `fill: forwards` or with
+ *   no fill, and holds with this tail. iOS 26.2 Mobile Safari holds the end
+ *   in all three forms, so there the tail is unneeded but harmless (measured
+ *   Oct 25 2026). The browser proof "a spring that ends inside the block
+ *   keeps showing its end state" catches it.
  * - A separate static animation of the end state under the curve would hold
  *   it without a bound, but two animations on one property push Chromium to
  *   run the curve on the main thread: the 1 s block proof moved in 0 of 57
@@ -902,6 +904,7 @@ export function createAnimator(
   const writeInline = (
     channel: Channel,
     value: (property: MotionProperty) => number,
+    release = true,
   ) => {
     if (target == null || pseudoElement != null) {
       return;
@@ -914,7 +917,7 @@ export function createAnimator(
     if (target.style.getPropertyValue(channel) !== text) {
       target.style.setProperty(channel, text);
     }
-    if (text === IDENTITY_TEXT[channel]) {
+    if (release && text === IDENTITY_TEXT[channel]) {
       // Identity leaves the element when nothing else would move it.
       releaseIdentity(channel);
     }
@@ -1197,8 +1200,11 @@ export function createAnimator(
       if (pseudoElement != null) {
         hold(channel, now());
       } else {
-        // The end goes inline in the task that cancels the animation.
-        writeInline(channel, finalValue);
+        // The end goes inline in the task that cancels the animation. Whether
+        // an identity end may leave the element is judged after the cancel:
+        // until then the end-state tail still holds the end, so the computed
+        // style would hide a stylesheet value (an opacity 0) under it.
+        writeInline(channel, finalValue, false);
       }
       animation.cancel();
       releaseIdentity(channel);
@@ -1407,11 +1413,10 @@ export function createAnimator(
       }
     }
     if (presented && group != null && requestFrame != null) {
-      // Promoted and at rest now; the animations come two frames later.
-      for (const channel of new Set(changed.map(p => CHANNEL_OF[p]))) {
-        promote(channel);
-        writeInline(channel, p => valueAt(p, time));
-      }
+      // At rest until then: the animations, and the layer they promote, come
+      // two frames later. Promoting now, a layer at rest for two frames, left
+      // a stale paint of the element's rest in WebKit on iOS 26.2 (a title in
+      // a scroller inside a clipped card) after the motion ended.
       deferredCalls.push({group, changed});
       if (!deferredWait) {
         deferredWait = true;

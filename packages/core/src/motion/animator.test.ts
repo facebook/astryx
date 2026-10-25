@@ -66,9 +66,28 @@ beforeEach(() => {
   vi.spyOn(window, 'getComputedStyle').mockImplementation(
     element =>
       ({
-        getPropertyValue: (property: string) =>
-          (element as HTMLElement).style.getPropertyValue(property) ||
-          (stylesheet[property] ?? ''),
+        getPropertyValue: (property: string) => {
+          // A live animation wins over the inline value, holding its last
+          // keyframe (the end-state tail) until it is cancelled.
+          const held = recorded
+            .filter(
+              animation =>
+                animation.element === element &&
+                !animation.cancelled &&
+                animation.keyframes.some(frame => property in frame),
+            )
+            .at(-1);
+          const last = held?.keyframes
+            .filter(frame => property in frame)
+            .at(-1) as Record<string, unknown> | undefined;
+          if (last != null) {
+            return String(last[property]);
+          }
+          return (
+            (element as HTMLElement).style.getPropertyValue(property) ||
+            (stylesheet[property] ?? '')
+          );
+        },
       }) as unknown as CSSStyleDeclaration,
   );
   vi.useFakeTimers();
@@ -318,6 +337,19 @@ describe('animate: keyframes on the compositor', () => {
     animator.animate({scale: 1}, {spring: springs.snappy});
     await advance(5000);
     expect(element.style.scale).toBe('none');
+  });
+
+  it('keeps a fade to 1 inline where the stylesheet rests at 0', async () => {
+    const {animator, element} = setup();
+    // A scroll edge layer: transparent in its stylesheet, faded in on a
+    // spring. At retire the end-state tail still holds 1, so the end can only
+    // be judged against the stylesheet once the animation is gone.
+    stylesheet.opacity = '0';
+    animator.set({opacity: 0});
+    animator.animate({opacity: 1}, {spring: springs.snappy});
+    await advance(5000);
+    expect(live('opacity')).toHaveLength(0);
+    expect(element.style.opacity).toBe('1');
   });
 
   it('holds the value on screen inline while a curve runs, and the end once it retires', async () => {
@@ -771,18 +803,22 @@ describe('additive: a retarget adds to the curve on screen', () => {
 });
 
 describe('start: when a call\u2019s animations start', () => {
-  it('presented: shows the value at rest, and creates the animations two frames later', async () => {
+  it('presented: leaves the element at rest, and creates the animations two frames later', async () => {
     const {animator, element} = setup();
     animator.set({x: 20});
+    // The set's own promotion ends first.
+    await vi.advanceTimersByTimeAsync(PROMOTION_LINGER_MS + 1);
+    expect(element.style.willChange).toBe('');
     const handle = animator.animate(
       {x: 100},
       {spring: springs.smooth},
       {start: 'presented'},
     );
-    // Promoted and at rest: the next frame commits the layer where it is.
+    // At rest, with no layer yet: the next frame commits it where it is.
+    // (A layer at rest for two frames left a stale paint in WebKit on iOS.)
     expect(live('translate')).toHaveLength(0);
     expect(element.style.translate).toBe('20px 0px');
-    expect(element.style.willChange).toContain('translate');
+    expect(element.style.willChange).toBe('');
     expect(animator.get('x')).toBe(20);
     clock = 1016;
     await commitFrame(1016);
@@ -791,6 +827,7 @@ describe('start: when a call\u2019s animations start', () => {
     clock = 1033;
     await commitFrame(1033);
     expect(live('translate')).toHaveLength(1);
+    expect(element.style.willChange).toContain('translate');
     clock = 1050;
     await commitFrame(1050);
     await expect(handle.started).resolves.toBe(1050);
