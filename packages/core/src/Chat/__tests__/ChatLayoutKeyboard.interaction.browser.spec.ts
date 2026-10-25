@@ -216,6 +216,17 @@ const showKeyboard = async (page: Page, cover = COVER) =>
 // layout gives it from the keyboard height (spec:AST-099 FR3).
 const dockY = async (dock: Locator) => dock.evaluate(presentedY);
 
+// How far above the bottom of the transcript's scrollport the dock is drawn:
+// 0 at rest with no keyboard. A sticky dock leaves the bottom when the
+// content ends inside the scrollport, which a translate or a deferred scroll
+// clamp can cause, and its styles alone would not show it.
+const dockGap = async (dock: Locator) =>
+  dock.evaluate(
+    el =>
+      (el.parentElement as HTMLElement).getBoundingClientRect().bottom -
+      el.getBoundingClientRect().bottom,
+  );
+
 function presentedY(el: Element): number {
   const style = getComputedStyle(el);
   const translate =
@@ -262,6 +273,87 @@ test('the dock rises on the keyboard spring by the cover over it', async ({
   expect(samples.at(-1)?.value).toBeCloseTo(-lift, 0);
 });
 
+test('the lift is the part of the keyboard over the dock\u2019s resting bottom: a root ending below the viewport rises by more than the cover', async ({
+  page,
+}) => {
+  const {dock, editable, lift} = await openChat(page);
+  // The story's root ends below the layout viewport (the preview's padding).
+  expect(lift).toBeGreaterThan(COVER);
+  await editable.focus();
+  await showKeyboard(page);
+  await waitForRest(dock);
+  await page.waitForTimeout(100);
+  const dockBottom = await dock.evaluate(
+    el => el.getBoundingClientRect().bottom,
+  );
+  const keyboardTop = await page.evaluate(c => window.innerHeight - c, COVER);
+  expect(dockBottom).toBeCloseTo(keyboardTop, 0);
+});
+
+test('a page with room under the chat: the dock rises only by the part of the keyboard that reaches it, and not at all when none does', async ({
+  page,
+}) => {
+  const {dock, editable} = await openChat(page);
+  // Leave 200 px of page under the chat's root.
+  const room = 200;
+  await dock.evaluate((el, r) => {
+    const root = el.parentElement as HTMLElement;
+    (root.parentElement as HTMLElement).style.height = `calc(100vh - ${r}px)`;
+  }, room);
+  await page.waitForTimeout(200);
+  const restingBottom = await dock.evaluate(
+    el => (el.parentElement as HTMLElement).getBoundingClientRect().bottom,
+  );
+  await editable.focus();
+  await showKeyboard(page);
+  await waitForRest(dock);
+  await page.waitForTimeout(100);
+  const expected = await page.evaluate(
+    ([c, b]) => Math.max(0, b - (window.innerHeight - c)),
+    [COVER, restingBottom],
+  );
+  expect(expected).toBeGreaterThan(0);
+  expect(expected).toBeLessThan(COVER);
+  expect(await dockY(dock)).toBeCloseTo(-expected, 0);
+  expect(
+    await dock.evaluate(el => el.getBoundingClientRect().bottom),
+  ).toBeCloseTo(await page.evaluate(c => window.innerHeight - c, COVER), 0);
+
+  // A keyboard that stops short of the chat's bottom moves nothing.
+  const short = Math.floor(
+    await page.evaluate(b => window.innerHeight - b - 20, restingBottom),
+  );
+  await showKeyboard(page, short);
+  await waitForRest(dock);
+  await page.waitForTimeout(100);
+  expect(await dockY(dock)).toBeCloseTo(0, 0);
+});
+
+test('in a vertical writing mode the lift stays on the physical bottom, where the keyboard is', async ({
+  page,
+}) => {
+  const {dock, editable, lift} = await openChat(page);
+  // A logical inset-block-end would map to left under vertical-rl; the
+  // on-screen keyboard is still at the bottom of the screen.
+  await dock.evaluate(el => {
+    (el.parentElement as HTMLElement).style.writingMode = 'vertical-rl';
+  });
+  await editable.focus();
+  await showKeyboard(page);
+  await page.waitForTimeout(1200);
+  const style = await dock.evaluate(el => {
+    const computed = getComputedStyle(el);
+    return {
+      bottom: computed.bottom,
+      left: computed.left,
+      right: computed.right,
+    };
+  });
+  expect(parseFloat(style.bottom)).toBeCloseTo(lift, 0);
+  expect(style.left).toBe('auto');
+  expect(style.right).toBe('auto');
+});
+
 test('the transcript at its newest message stays there', async ({page}) => {
   const {dock, lift} = await openChat(page);
   const atEnd = async () =>
@@ -292,7 +384,28 @@ test('the dock comes down when the composer text loses focus', async ({
   await page.waitForTimeout(440);
   await showKeyboard(page, 0);
   await waitForRest(dock);
+  await page.waitForTimeout(100);
   expect(await dockY(dock)).toBeCloseTo(0, 0);
+  // Drawn at the bottom, not where the transcript ends.
+  expect(await dockGap(dock)).toBeCloseTo(0, 0);
+});
+
+test('a hide the home-screen app reports early: the dock rests at the bottom once the layout takes over', async ({
+  page,
+}) => {
+  const {dock, editable} = await openChat(page);
+  await editable.focus();
+  await showKeyboard(page);
+  await waitForRest(dock);
+  await page.waitForTimeout(300);
+  await editable.evaluate(async el => {
+    (el as HTMLElement).blur();
+    await new Promise(resolve => setTimeout(resolve, 30));
+    (window as unknown as {__keyboard: (c: number) => void}).__keyboard(0);
+  });
+  await page.waitForTimeout(1200);
+  expect(await dockY(dock)).toBeCloseTo(0, 0);
+  expect(await dockGap(dock)).toBeCloseTo(0, 0);
 });
 
 test('a hide the viewport never confirms puts the dock back on the keyboard', async ({
@@ -614,3 +727,64 @@ test(
     expect(trace.at(-1)?.dockY).toBeCloseTo(-lift, 0);
   },
 );
+
+test.describe('under a finger', () => {
+  test.use({hasTouch: true, isMobile: true});
+
+  test('Reduce Motion: the dock cross-fades down on a hide and rests where the layout puts it (design:reduced-motion)', async ({
+    page,
+  }) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    const {dock, editable, lift} = await openChat(page);
+    await editable.focus();
+    // The home-screen app reports the show in two steps, 33 ms apart (the
+    // keyboard, then its bar settling).
+    await page.evaluate(async cover => {
+      const keyboard = (window as unknown as {__keyboard: (c: number) => void})
+        .__keyboard;
+      keyboard(cover + 17);
+      await new Promise(resolve => setTimeout(resolve, 33));
+      keyboard(cover);
+    }, COVER);
+    await page.waitForTimeout(800);
+    expect(await dockY(dock)).toBeCloseTo(-lift, 0);
+    // In the page, so the frames are read without a round trip: blur (the
+    // predicted hide), report the keyboard gone the way the home-screen app
+    // does, 30 ms later, and read every frame.
+    const ys = await editable.evaluate(async el => {
+      let host: HTMLElement | null = el as HTMLElement;
+      while (host != null && getComputedStyle(host).position !== 'sticky') {
+        host = host.parentElement;
+      }
+      const read = () => {
+        const style = getComputedStyle(host as HTMLElement);
+        const value = style.translate;
+        const translate =
+          value === 'none' ? 0 : parseFloat(value.split(' ')[1] ?? '0');
+        return translate - (parseFloat(style.bottom) || 0);
+      };
+      const out: number[] = [];
+      const until = performance.now() + 900;
+      const sample = () => {
+        out.push(read());
+        if (performance.now() < until) {
+          requestAnimationFrame(sample);
+        }
+      };
+      requestAnimationFrame(sample);
+      (el as HTMLElement).blur();
+      await new Promise(resolve => setTimeout(resolve, 30));
+      (window as unknown as {__keyboard: (c: number) => void}).__keyboard(0);
+      await new Promise(resolve => setTimeout(resolve, 900));
+      return out;
+    });
+    for (const y of ys) {
+      expect(
+        Math.abs(y) < 0.5 || Math.abs(y + lift) < 0.5,
+        JSON.stringify(ys.map(Math.round)),
+      ).toBe(true);
+    }
+    expect(ys.at(-1)).toBeCloseTo(0, 0);
+    expect(await dockGap(dock)).toBeCloseTo(0, 0);
+  });
+});

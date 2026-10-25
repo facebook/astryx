@@ -354,6 +354,12 @@ export function useChatKeyboard({
     if (scroller == null) {
       return;
     }
+    // A translated transcript extends the scroller's range (WebKit counts it),
+    // so its ride translate goes before the scroll is set, or the scroll can
+    // stop past the content's end and the sticky dock rises to meet it.
+    if (messagesTarget != null) {
+      messages.animator.set({y: 0});
+    }
     if (atEndRef.current) {
       // eslint-disable-next-line react-compiler/react-compiler -- imperative DOM: keeping the newest message in view
       scroller.scrollTop = scroller.scrollHeight - scroller.clientHeight;
@@ -361,7 +367,7 @@ export function useChatKeyboard({
     // The spacer's change may have clamped the scroll already: measure from
     // where it was before the layout changed.
     const shifted = scroller.scrollTop - scrollBeforeRef.current;
-    if (messagesTarget != null) {
+    if (messagesTarget != null && Math.abs(messagesTarget + shifted) >= 0.5) {
       messages.animator.set({y: messagesTarget + shifted});
     }
   }, [lift, scrollRef, dock.animator, messages.animator]);
