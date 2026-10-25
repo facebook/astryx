@@ -493,6 +493,27 @@ describe('createPager', () => {
     touch('touchend', f.page, 288, 100, now + 200);
   });
 
+  it('a release whose report is still waiting reports nothing when the pager detaches: no callback from an unmount', async () => {
+    const f = setup({defaultIndex: 1});
+    await drag(f, {from: 300, dx: -250, step: 4, dt: 8, hold: 100});
+    expect(f.pager.index).toBe(2);
+    expect(f.calls).toEqual([]);
+    f.pager.dispose();
+    await frames(f, 4);
+    expect(f.calls).toEqual([]);
+  });
+
+  it("a controlled move during a release's waiting report drops it: the owner's own page wins, with no callback", async () => {
+    const f = setup({defaultIndex: 1});
+    await drag(f, {from: 300, dx: -250, step: 4, dt: 8, hold: 100});
+    expect(f.pager.index).toBe(2);
+    f.pager.goTo(3, {reason: 'controlled'});
+    expect(f.calls).toEqual([]);
+    await settle(f);
+    expect(f.pager.index).toBe(3);
+    expect(f.calls).toEqual(['settle:3:1']);
+  });
+
   it('released slowly before half a page, returns to the page it started on', async () => {
     const f = setup({defaultIndex: 1});
     // 2 px every 16 ms (125 px/s), then still.
@@ -693,6 +714,20 @@ describe('createPager', () => {
     // goTo takes the nearest copy: from virtual 5 (page 0), page 4 is back one.
     f.pager.goTo(4, {animated: false});
     expect(f.pager.virtualIndex).toBe(4);
+  });
+
+  it("with two pages, a loop's step forward goes forward: of two copies equally near, the one asked for", () => {
+    const f = setup({count: 2, loop: true});
+    f.pager.goTo(f.pager.virtualIndex + 1, {animated: false});
+    expect(f.pager.virtualIndex).toBe(1);
+    f.pager.goTo(f.pager.virtualIndex + 1, {animated: false});
+    expect(f.pager.virtualIndex).toBe(2);
+    expect(f.x()).toBe(-2 * WIDTH);
+    f.pager.goTo(f.pager.virtualIndex - 1, {animated: false});
+    expect(f.pager.virtualIndex).toBe(1);
+    // A page index takes its nearest copy as before.
+    f.pager.goTo(0, {animated: false});
+    expect(f.pager.virtualIndex).toBe(0);
   });
 
   it('clamps goTo to the pages when not looping', () => {
