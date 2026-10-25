@@ -65,7 +65,9 @@ constrained renderer seams. Callers may opt into the canonical plugin protocol f
 bounded source syntax, immutable document transformation, typed extension
 rendering, and native typed document-start frontmatter. They may separately opt into dollar-delimited math by supplying one typed
 renderer for both inline and display expressions. The parser accepts matching
-explicit options. Plugins and math change nothing when absent; the default Code
+explicit options. They may also list CodeBlock language values in
+`codeLanguages` so fences in those languages paint with them (FR30). Plugins,
+math, and `codeLanguages` change nothing when absent; the default Code
 block path renders `diff` and `diff-<language>` fences as CodeBlock's diff layer
 (FR29), wraps every fence's long lines (`spec:AST-061` FR5, DEC-9), and lays
 out a fence with no header the way CodeBlock does (`component:CodeBlock` FR11),
@@ -79,8 +81,8 @@ released one.
   default-path rendering changes (the FR29 diff layer, the fenced-code wrap, and
   the headerless layout, below); existing parser nodes, DOM, styling, targets,
   dollar-delimited text, `components`, and `inlinePlugins` remain unchanged unless
-  the caller supplies `plugins`, supplies `components.math`, or passes the matching
-  explicit parser option.
+  the caller supplies `plugins`, supplies `components.math`, supplies
+  `codeLanguages`, or passes the matching explicit parser option.
 - Controlled/uncontrolled behavior: not applicable
 - Migration decision: none
 - Additive opt-in prop (FR30): `codeLanguages` lets fences in less common languages paint with `component:CodeBlock` language modules; without it nothing changes.
