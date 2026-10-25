@@ -468,7 +468,10 @@ export function createPager(
    * Children pages: each child's start edge from the track's start (the
    * track's own translate moves both alike, so it cancels), clamped to the
    * travel that keeps the track's end at or past the end of the viewport's
-   * content box; children clamped onto one offset share its page.
+   * content box; children clamped onto one offset share its page. Rects are
+   * read in the track's own CSS pixels, the ones its `translate` moves in:
+   * an ancestor's `zoom` scales them, so its scale (the rect's width over the
+   * track's used width) is divided out.
    */
   function measureChildOffsets(): ReadonlyArray<number> {
     const track = trackElement;
@@ -476,6 +479,8 @@ export function createPager(
       return [0];
     }
     const box = track.getBoundingClientRect();
+    const used = Number.parseFloat(getComputedStyle(track).width);
+    const scale = used > 0 && box.width > 0 ? box.width / used : 1;
     const style = getComputedStyle(viewport);
     const inner =
       viewport.clientWidth -
@@ -485,10 +490,12 @@ export function createPager(
     let extent = 0;
     for (const child of Array.from(track.children)) {
       const rect = child.getBoundingClientRect();
-      starts.push(isRtl ? box.right - rect.right : rect.left - box.left);
+      starts.push(
+        (isRtl ? box.right - rect.right : rect.left - box.left) / scale,
+      );
       extent = Math.max(
         extent,
-        isRtl ? box.right - rect.left : rect.right - box.left,
+        (isRtl ? box.right - rect.left : rect.right - box.left) / scale,
       );
     }
     const end = Math.max(0, extent - inner);

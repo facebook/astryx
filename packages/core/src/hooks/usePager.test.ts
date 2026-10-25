@@ -1142,6 +1142,22 @@ describe("children pages: each child's start edge, as a snap container places it
     expect(pages).toEqual([5]);
   });
 
+  it("under a CSS zoom the rects are scaled; the pages are measured in the track's own pixels", () => {
+    const f = setupChildren(CARDS, 10);
+    // Rects at twice the size, as an ancestor's \`zoom: 2\` reports them;
+    // the track's own width stays 790 CSS px.
+    const children = Array.from(f.track.children) as HTMLElement[];
+    children.forEach((child, i) => {
+      child.getBoundingClientRect = () => rectOf(2 * i * 160, 2 * 150);
+    });
+    f.track.getBoundingClientRect = () => rectOf(0, 2 * 790);
+    f.track.style.width = '790px';
+    f.pager.setOptions({count: 5});
+    expect([0, 1, 2, 3].map(i => f.pager.pageOffset(i))).toEqual([
+      0, 160, 320, 390,
+    ]);
+  });
+
   it('RTL: pages measure from the right edge, and a drag right goes forward', async () => {
     const f = setupChildren(CARDS, 10, {}, true);
     expect(f.pager.pageCount).toBe(4);
