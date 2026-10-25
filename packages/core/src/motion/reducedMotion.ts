@@ -16,9 +16,10 @@
  * call site lengthens the fade (DR4). The animator follows the same policy on
  * its own (animator.ts).
  *
- * In StyleX, a media query key must be spelled in the file that uses it, so a
- * transition spells these two keys and takes its values from
- * reducedMotion.stylex.ts:
+ * In StyleX, a transition spells the two keys literally and takes its values
+ * from reducedMotion.stylex.ts. A constant used as a computed key compiles to
+ * a later priority layer than the literal media key, which would outrank the
+ * element's state styles, so the keys stay literal:
  *
  * ```
  * transitionProperty: {
@@ -34,7 +35,8 @@
  * },
  * ```
  *
- * reducedMotion.test.ts checks every such key in core against these queries.
+ * reducedMotion.test.ts requires every such key in core to equal one of
+ * `reducedMotionKeys`, exactly.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/motion/reducedMotion.stylex.ts
@@ -44,15 +46,14 @@
 
 import {defaultIsCoarsePointer, defaultPrefersReducedMotion} from './animator';
 import {resolveMotion} from './resolveMotion';
-import {timing} from './uikit/timing';
+import {registerTimingTable, timing} from './uikit/timing';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
 
 /** Reduce Motion on a coarse primary pointer: an opacity-only cross-fade. */
-export const REDUCED_MOTION_FADE_QUERY =
-  '(prefers-reduced-motion: reduce) and (pointer: coarse)';
+export const REDUCED_MOTION_FADE_QUERY = `(prefers-reduced-motion: reduce) and ${TOUCH_QUERY}`;
 
 /** Reduce Motion on any other primary pointer: the change completes at once. */
-export const REDUCED_MOTION_INSTANT_QUERY =
-  '(prefers-reduced-motion: reduce) and (not (pointer: coarse))';
+export const REDUCED_MOTION_INSTANT_QUERY = `(prefers-reduced-motion: reduce) and (not ${TOUCH_QUERY})`;
 
 /**
  * The fade to play under Reduce Motion. `duration` 0 means the change
@@ -90,6 +91,9 @@ export function reducedMotionFade(
     (options.isCoarsePointer ?? defaultIsCoarsePointer)();
   if (!fades) {
     return {duration: 0, easing: 'linear'};
+  }
+  if (element != null) {
+    registerTimingTable();
   }
   const curve =
     element != null

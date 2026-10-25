@@ -15,7 +15,19 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {createAnimator} from './animator';
 import {resolveMotion} from './resolveMotion';
 import {solveSpring, toSpring} from './spring';
-import {navigation, springs, timing} from './uikit';
+import {
+  navigation,
+  registerNavigationTable,
+  registerSpringsTable,
+  registerTimingTable,
+  springs,
+  timing,
+} from './uikit';
+
+// Like a touch module: register the tables these motions resolve from.
+registerSpringsTable();
+registerTimingTable();
+registerNavigationTable();
 
 /** Theme variables by scope element, as the stubbed computed style reports. */
 let variables: Map<Element, Record<string, string>>;
@@ -49,6 +61,15 @@ function themed(name: string, values: Record<string, string>) {
   variables.set(scope, values);
   return {scope, child};
 }
+
+describe('a table nothing registered', () => {
+  it('plays its own value, whatever the theme sets', () => {
+    const element = document.createElement('div');
+    element.style.setProperty('--motion-fixture-unregistered-push', '0.9s 0.4');
+    const table = {push: {response: 0.3, dampingRatio: 1}};
+    expect(resolveMotion(element, table.push)).toBe(table.push);
+  });
+});
 
 describe('resolveMotion', () => {
   it("takes the theme scope's value for a spring, a curve and a duration", () => {
@@ -116,6 +137,41 @@ describe('resolveMotion', () => {
 });
 
 describe('the animator under a theme', () => {
+  it('reads again in the next task, and listens to nothing', async () => {
+    const listen = vi.spyOn(window, 'addEventListener');
+    const Observer = vi.fn();
+    vi.stubGlobal('MutationObserver', Observer);
+    const {child} = themed('soft', {
+      '--motion-springs-sheet-present': '0.8s 0.3',
+    });
+    resolveMotion(child, springs.sheetPresent);
+    resolveMotion(child, springs.sheetPresent);
+    expect(reads).toBe(1);
+    await Promise.resolve();
+    resolveMotion(child, springs.sheetPresent);
+    expect(reads).toBe(2);
+    expect(listen).not.toHaveBeenCalled();
+    expect(Observer).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it('sees a theme switched earlier in the same task', () => {
+    const {scope, child} = themed('soft', {
+      '--motion-springs-sheet-present': '0.8s 0.3',
+    });
+    expect(resolveMotion(child, springs.sheetPresent)).toEqual({
+      duration: 0.8,
+      bounce: 0.3,
+    });
+    // Same task: the observer's callback has not run yet.
+    scope.setAttribute('data-astryx-theme', 'firm');
+    variables.set(scope, {'--motion-springs-sheet-present': '0.4s 0'});
+    expect(resolveMotion(child, springs.sheetPresent)).toEqual({
+      duration: 0.4,
+      bounce: 0,
+    });
+  });
+
   it('plays the spring its theme sets for a table spring', () => {
     const {child} = themed('soft', {
       '--motion-springs-sheet-present': '0.8s 0.3',

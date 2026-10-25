@@ -4,7 +4,8 @@
  * @file segmented.ts
  * @input Nothing; data only
  * @output Exports `segmentedControl`: UISegmentedControl's selection slide
- *   spring
+ *   spring; and `registerSegmentedControlTable`, which registers it as a
+ *   motion role
  * @position The segmented-control domain of the UIKit constants table
  *   (motion/uikit); read by SegmentedControl's touch presentation
  *
@@ -61,6 +62,13 @@ export const segmentedControl = {
   selectionSpring: {response: 0.4, dampingRatio: 0.85},
 } as const;
 
-// The spring above is a motion role a theme may retune
-// (motion/roles.ts).
-registerMotionTable('segmentedControl', segmentedControl);
+/**
+ * Registers the table's spring as a motion role a theme may retune
+ * (motion/roles.ts). Nothing registers on import: the touch code that
+ * animates with this table calls it once (it is idempotent), so a page that
+ * never does ships no registry.
+ * @experimental
+ */
+export function registerSegmentedControlTable(): void {
+  registerMotionTable('segmentedControl', segmentedControl);
+}

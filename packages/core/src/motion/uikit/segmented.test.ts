@@ -15,7 +15,7 @@ import {describe, expect, it} from 'vitest';
 import {dampingRatioOf, responseOf, solveSpring, toSpring} from '../spring';
 import {motionRoleIn, motionRoleOf} from '../roles';
 import {resolveMotion} from '../resolveMotion';
-import {segmentedControl} from './segmented';
+import {registerSegmentedControlTable, segmentedControl} from './segmented';
 import {springs} from './springs';
 
 /**
@@ -127,6 +127,9 @@ describe('segmentedControl.selectionSpring reproduces UIKit’s slide', () => {
 });
 
 describe('motion roles', () => {
+  // The touch module registers the table before its first animation.
+  registerSegmentedControlTable();
+
   it('the slide spring is a role a theme can retune, and the only one: the titles switch at once', () => {
     expect(motionRoleOf(segmentedControl.selectionSpring)).toMatchObject({
       id: 'segmentedControl.selectionSpring',

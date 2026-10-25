@@ -57,7 +57,7 @@ import {
   type Animator,
   type MotionHandle,
 } from '../motion/animator';
-import {segmentedControl} from '../motion/uikit';
+import {registerSegmentedControlTable, segmentedControl} from '../motion/uikit';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {observeResize} from '../utils/sharedResizeObserver';
 
@@ -274,6 +274,9 @@ export class SegmentedSelectionMotion {
     }),
     options: SegmentedSelectionMotionOptions = {},
   ) {
+    // The selection spring is a motion role a theme may retune: registered
+    // before the first animation (idempotent; nothing registers on import).
+    registerSegmentedControlTable();
     this.now = options.now ?? defaultNow;
     this.leavingAnimator =
       options.leavingAnimator ??
