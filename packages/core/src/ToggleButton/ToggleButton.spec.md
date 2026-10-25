@@ -172,7 +172,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 | Spinner          | Button's Spinner over hidden content while an Action runs. | Current source           | Supporting     | FR4                |
 | Pressed surface  | Pressed overlay fill; `Highlight` under forced colors.     | Current source and tests | Prominent      | FR8                |
 
-No design record governs ToggleButton. The root carries `toggle-button` (and
+`design:reduced-motion` governs the inherited press scale and Spinner reveal
+(FR14); no other design record governs ToggleButton. The root carries `toggle-button` (and
 Button's `button`); Icon, Pressed icon, and Label take color from them, and the
 Spinner is a Spinner instance. The consumer anatomy names no root part, so this
 record carries no anatomy-theming map.
