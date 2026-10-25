@@ -81,13 +81,17 @@ adopter.
 
 ## Compatibility and migration
 
-- Released default preserved: `no` for one behavior (DEC-3: a mouse released
-  outside a menu now dismisses it); `yes` for every consumer prop and every
-  item, divider, section and presentation API
+- Released default preserved: `no` for two behaviors: DEC-3 (a mouse
+  released outside a menu now dismisses it), and an unset `longPressDelayMs`,
+  whose released 500 ms wait gives way to `spec:AST-094` FR29's timing;
+  `yes` for every consumer prop and every item, divider, section and
+  presentation API
 - Compatibility class: additive public hook and types; behavior change inside
   the menu family
 - Migration decision: `module:DropdownMenu/useMenuPress/DEC-3`; proposed
-  `module:DropdownMenu/useMenuPress/DEC-4` (pending owner review)
+  `module:DropdownMenu/useMenuPress/DEC-4` (pending owner review);
+  `spec:AST-094` FR25 (a caller that needs the released 500 ms wait passes
+  `longPressDelayMs: 500`)
 
 Consumer migration instructions belong in consumer docs and release notes.
 

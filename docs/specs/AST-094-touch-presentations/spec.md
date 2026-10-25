@@ -118,25 +118,25 @@ a measured, sourced difference exists.
   it publishes no public API and no module-level `/experimental` subpath
   (`spec:AST-017` FR21).
 
-  | Role                       | Default                              | Source                                                                                         |
-  | -------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------- |
-  | `springs.fingerTracking`   | response 0.15 s, damping ratio 0.86  | Apple: SwiftUI `interactiveSpring()`                                                           |
-  | `springs.emphasis`         | duration 0.5 s, bounce 0.3           | Apple: SwiftUI `.bouncy`                                                                       |
-  | `springs.settle`           | duration 0.5 s, bounce 0             | Apple: SwiftUI `.smooth`                                                                       |
-  | `springs.quickChange`      | duration 0.5 s, bounce 0.15          | Apple: SwiftUI `.snappy`                                                                       |
-  | `springs.viewChange`       | mass 3, stiffness 1000, damping 500  | measured: UIKit `UISpringTimingParameters()`, iOS 26.2 simulator, 2026-10-23                   |
-  | `springs.timedChange`      | duration 0.5 s, bounce 0             | Apple: UIKit `UIView.animate(springDuration:bounce:)`                                          |
-  | `springs.stateChange`      | response 0.55 s, damping ratio 1     | Apple: SwiftUI `Animation.default`                                                             |
-  | `springs.directChange`     | response 0.5 s, damping ratio 0.825  | Apple: SwiftUI `.spring(response:dampingFraction:)`                                            |
-  | `springs.menuOpen`         | damping ratio 0.8, response 0.32 s   | measured: UIMenu opening, iOS 26.2 simulator, 2026-10-23                                       |
-  | `springs.menuClose`        | damping ratio 0.85, response 0.35 s  | measured: UIMenu closing, iOS 26.2 simulator, 2026-10-23                                       |
-  | `springs.subMenuOpen`      | damping ratio 0.84, response 0.415 s | measured: a single-spring fit to UIMenu's sub-menu opening, iOS 26.2 simulator, 2026-10-23     |
-  | `springs.subMenuBack`      | damping ratio 1, response 0.385 s    | measured: a single-spring fit to UIMenu's sub-menu header back, iOS 26.2 simulator, 2026-10-23 |
-  | `timing.stateChangeMs`     | 250 ms                               | measured: Core Animation's implicit transaction, iOS 26.2 simulator, 2026-10-23                |
-  | `timing.curves.viewChange` | cubic-bezier(0.25, 0.1, 0.25, 1)     | Apple: `CAMediaTimingFunctionName.default`                                                     |
-  | `timing.curves.exit`       | cubic-bezier(0.42, 0, 1, 1)          | measured: UIKit's ease-in, iOS 26.2 simulator, 2026-10-23                                      |
-  | `timing.curves.entrance`   | cubic-bezier(0, 0, 0.58, 1)          | measured: UIKit's ease-out, iOS 26.2 simulator, 2026-10-23                                     |
-  | `timing.curves.move`       | cubic-bezier(0.42, 0, 0.58, 1)       | measured: UIKit's ease-in-out, iOS 26.2 simulator, 2026-10-23                                  |
+  | Role                       | Default                             | Source                                                                                         |
+  | -------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------- |
+  | `springs.fingerTracking`   | response 0.15 s, damping ratio 0.86 | Apple: SwiftUI `interactiveSpring()`                                                           |
+  | `springs.emphasis`         | duration 0.5 s, bounce 0.3          | Apple: SwiftUI `.bouncy`                                                                       |
+  | `springs.settle`           | duration 0.5 s, bounce 0            | Apple: SwiftUI `.smooth`                                                                       |
+  | `springs.quickChange`      | duration 0.5 s, bounce 0.15         | Apple: SwiftUI `.snappy`                                                                       |
+  | `springs.viewChange`       | mass 3, stiffness 1000, damping 500 | measured: UIKit `UISpringTimingParameters()`, iOS 26.2 simulator, 2026-10-23                   |
+  | `springs.timedChange`      | duration 0.5 s, bounce 0            | Apple: UIKit `UIView.animate(springDuration:bounce:)`                                          |
+  | `springs.stateChange`      | response 0.55 s, damping ratio 1    | Apple: SwiftUI `Animation.default`                                                             |
+  | `springs.directChange`     | response 0.5 s, damping ratio 0.825 | Apple: SwiftUI `.spring(response:dampingFraction:)`                                            |
+  | `springs.menuOpen`         | damping ratio 0.8, response 0.32 s  | measured: UIMenu opening, iOS 26.2 simulator, 2026-10-23                                       |
+  | `springs.menuClose`        | damping ratio 0.85, response 0.35 s | measured: UIMenu closing, iOS 26.2 simulator, 2026-10-23                                       |
+  | `springs.subMenuOpen`      | damping ratio 0.85, response 0.4 s  | measured: UIKit's own spring for UIMenu's sub-menu opening, iOS 26.2 simulator, 2026-10-24     |
+  | `springs.subMenuBack`      | damping ratio 1, response 0.4 s     | measured: UIKit's own spring for UIMenu's sub-menu header back, iOS 26.2 simulator, 2026-10-24 |
+  | `timing.stateChangeMs`     | 250 ms                              | measured: Core Animation's implicit transaction, iOS 26.2 simulator, 2026-10-23                |
+  | `timing.curves.viewChange` | cubic-bezier(0.25, 0.1, 0.25, 1)    | Apple: `CAMediaTimingFunctionName.default`                                                     |
+  | `timing.curves.exit`       | cubic-bezier(0.42, 0, 1, 1)         | measured: UIKit's ease-in, iOS 26.2 simulator, 2026-10-23                                      |
+  | `timing.curves.entrance`   | cubic-bezier(0, 0, 0.58, 1)         | measured: UIKit's ease-out, iOS 26.2 simulator, 2026-10-23                                     |
+  | `timing.curves.move`       | cubic-bezier(0.42, 0, 0.58, 1)      | measured: UIKit's ease-in-out, iOS 26.2 simulator, 2026-10-23                                  |
 
 ### Motion
 
@@ -230,8 +230,10 @@ a measured, sourced difference exists.
   report and never the moment reported.
 - **FR17 — Native readings.** A recognizer's thresholds MUST follow UIKit's
   measured values (FR1, FR2). A pan begins at 10 pt of travel on either axis,
-  and its translation excludes that travel. Release velocity is governed by
-  `spec:AST-100`.
+  and its translation excludes that travel. Release velocity is governed by `spec:AST-100`: a Lab gesture
+  reports the same release velocity as Core's tracker for the same motion
+  (`spec:AST-100` FR1, `architecture:interaction-modality` INV10), and its
+  access path follows `spec:AST-017` FR21 once that is settled.
 - **FR18 — `touch-action` leaves the browser the rest.** An element with touch
   recognizers MUST get a `touch-action` that leaves the browser exactly what
   its recognizers do not use: the other axis for an axis-limited pan or swipe,
@@ -263,7 +265,9 @@ a measured, sourced difference exists.
   `touchmove`, or a native scroll under the touch MUST count as the browser
   taking the touch: possible recognizers that share it fail, active ones are
   cancelled, and the view's press is cancelled without a release. Proposed (DEC-7): a recognizer that never claims (a watcher) registers
-  only passive listeners (`architecture:react-component-runtime` INV3, INV5).
+  only passive listeners (`architecture:react-component-runtime` INV3, INV5),
+  and a watcher is not cancelled when the browser takes the touch: it follows
+  the scroll to the lift.
 - **FR21 — Clicks follow the gesture.** When a gesture takes a touch, its
   `touchend` MUST be cancelled, and no click or compatibility mouse event
   reaches the page. A click held for a recognizer that may still recognize (a
@@ -333,7 +337,10 @@ FR31–FR33 and FR35 apply to anchored menus and to Popover under a finger. A mo
   ends (FR24).
 - **FR33 — A ContextMenu under a finger.** With a finger or pen, the long
   press that opens a ContextMenu MUST NOT close it at the lift, and a press
-  outside it follows FR32. On every touch device, a ContextMenu that a held
+  outside it follows FR32. After a held
+  finger opens it, nothing is lit and a lift acts on nothing until that finger
+  has travelled the handoff distance (FR2) from the first position the open
+  menu sees; from then on FR26–FR28 apply. On every touch device, a ContextMenu that a held
   finger opens on a block trigger MUST lift the trigger above the page and
   show the menu beside it, with no row lit. A tap outside closes the menu and
   reaches nothing beneath it, and closing returns the trigger to its place.
@@ -562,13 +569,15 @@ style keyed on the literal touch media query conforms: the server and
 hydrating markup are identical, and the browser applies the style at first
 paint.
 
-### DEC-7 (proposed) — A watcher recognizer is passive only
+### DEC-7 (proposed) — A watcher recognizer is passive and follows the scroll
 
 **Reference:** `spec:AST-094/DEC-7`
 **Decider:** proposed by `vjeux`, `2026-10-25`; pending owner review
 
 A recognizer that never claims registers only passive listeners (FR20), so
-watching a touch never delays the browser's scroll.
+watching a touch never delays the browser's scroll, and it is not cancelled
+when the browser takes the touch: it follows the scroll to the lift, so a bar
+that reacts to scrolling keeps hearing it.
 
 ## Open questions
 

@@ -54,8 +54,10 @@ highlight follows the pointer — is contracted by
   `presentation`, released as `'popover'`, follows `spec:AST-094` FR29 (open
   on press) under a finger; `presentation="popover"` keeps the released
   behavior (`spec:AST-094` FR25). Mouse and keyboard are unchanged.
-- Compatibility class: additive documentation; the press-model behavior
-  delta is recorded in `module:DropdownMenu/useMenuPress`
+- Compatibility class: compatible behavior correction; public API, DOM
+  shape, styling, and targets are preserved; the default under a finger
+  changes as above, and the press-model behavior delta is recorded in
+  `module:DropdownMenu/useMenuPress`
 - Controlled/uncontrolled behavior: unchanged
 - Migration decision: `module:DropdownMenu/useMenuPress/DEC-3`; proposed
   `module:DropdownMenu/useMenuPress/DEC-4`; `spec:AST-094/DEC-4` (a caller
