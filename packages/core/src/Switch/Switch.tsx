@@ -56,7 +56,11 @@ import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {
+  interactionOverlayStyles,
+  pressConsts,
+} from '../utils/interactionOverlay.stylex';
+import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 import {useSwitchTouch, type SwitchTouchParts} from './useSwitchTouch';
 
 /**
@@ -182,11 +186,15 @@ const thumbOnSizeStyles = stylex.create({
 // hover tint already is: pressing the input, the track or the label all
 // activate the row.
 const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
-// The touch press's paint, declared by the shared overlay styles on the
-// element the controller writes to (`pressedAlpha`) at the press's strength,
-// 1 while on and 1 → 0 over the release, and inherited resolved by the layer
-// that paints it. See interactionOverlay.stylex.ts.
-const pressedOverlayImage = 'var(--_press-paint-image)';
+
+/**
+ * The touch press's release: opacity 1 → 0, the same keyframes as a
+ * control's release in interactionOverlay.stylex.ts (StyleX emits one rule).
+ */
+const pressLayerRelease = stylex.keyframes({
+  from: {opacity: 1},
+  to: {opacity: 0},
+});
 
 const labelWrapperSizeStyles = stylex.create({
   sm: {
@@ -257,10 +265,12 @@ const styles = stylex.create({
   track: {
     display: 'flex',
     alignItems: 'center',
-    // Under a finger the fade layer (::before) and the thumb box sit in the
-    // track, the box sized in the track's container units.
+    // Under a finger the press layer (::before), the colour fade (::after)
+    // and the thumb sit in the track, the thumb sized in its container units,
+    // stacked in a context of the track's own.
     position: {default: null, [TOUCH]: 'relative'},
     containerType: {default: null, [TOUCH]: 'size'},
+    isolation: {default: null, [TOUCH]: 'isolate'},
     borderRadius: radiusVars['--radius-full'],
     transitionProperty: 'background-color',
     // Under a finger the track's fill changes at once and the fade layer
@@ -299,39 +309,100 @@ const styles = stylex.create({
         default: null,
         '@media (forced-colors: none)': {
           default: pressedImage,
-          // Under a coarse pointer the touch press model writes
-          // `data-astryx-press` on the row instead; see
-          // interactionOverlay.stylex.ts.
+          // Under a coarse pointer the touch press controller writes
+          // `data-astryx-press` on the row instead, and the press layer
+          // (::before) paints it.
           '@media (pointer: coarse)': 'none',
         },
       },
-      // Nested in the same media as the arm above so it outranks the drop: an
-      // ancestor-scoped attribute selector gets no priority of its own.
-      [stylex.when.ancestor('[data-astryx-press="on"]', switchScope)]: {
+    },
+    // The press, under a finger: a layer over the track's fill and colour
+    // fade and under the thumb, present only while the row the press
+    // controller writes to is pressed or releasing. Its opacity is the
+    // press: on at once, then a control's release (UIButton's clock and
+    // curve, shared with interactionOverlay.stylex.ts's `control`) that runs
+    // on the compositor, so it never sticks while the main thread is busy;
+    // under reduced motion the system's cross-fade (design:reduced-motion).
+    '::before': {
+      content: {
         default: null,
-        '@media (forced-colors: none)': {
+        [stylex.when.ancestor('[data-astryx-press="on"]', switchScope)]: {
           default: null,
-          '@media (pointer: coarse)': pressedOverlayImage,
+          [TOUCH]: '""',
+        },
+        [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+          default: null,
+          [TOUCH]: '""',
         },
       },
-      [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+      position: 'absolute',
+      inset: 0,
+      zIndex: 1,
+      borderRadius: 'inherit',
+      pointerEvents: 'none',
+      backgroundColor: {
         default: null,
-        '@media (forced-colors: none)': {
+        '@media (forced-colors: none)': colorVars['--color-overlay-pressed'],
+      },
+      opacity: {
+        default: null,
+        [stylex.when.ancestor('[data-astryx-press="on"]', switchScope)]: {
           default: null,
-          '@media (pointer: coarse)': pressedOverlayImage,
+          [TOUCH]: 1,
+        },
+        [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+          default: null,
+          [TOUCH]: 0,
+        },
+      },
+      animationName: {
+        default: null,
+        [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+          default: null,
+          [TOUCH]: pressLayerRelease,
+        },
+      },
+      animationDuration: {
+        default: null,
+        [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+          default: null,
+          [TOUCH]: {
+            default: `${pressConsts.controlReleaseMs}ms`,
+            '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+              reducedMotionFadeConsts.duration,
+          },
+        },
+      },
+      animationTimingFunction: {
+        default: null,
+        [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+          default: null,
+          [TOUCH]: {
+            default: pressConsts.controlReleaseEase,
+            '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+              reducedMotionFadeConsts.easing,
+          },
+        },
+      },
+      animationFillMode: {
+        default: null,
+        [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+          default: null,
+          [TOUCH]: 'both',
         },
       },
     },
-    // The fade layer, under a finger: over the track's own fill (themed in
+    // The colour fade, under a finger: over the track's own fill (themed in
     // both states), it shows the fill the track is leaving (or, mid-drag,
     // the one it is heading to) and fades it on the compositor. Its colour is
     // the theme's, read from the track (switchFill.ts) into a variable; the
     // animator owns its opacity, and at rest it is clear.
-    '::before': {
+    '::after': {
       content: '""',
       display: {default: 'none', [TOUCH]: 'block'},
       position: 'absolute',
       inset: 0,
+      zIndex: 0,
       borderRadius: 'inherit',
       pointerEvents: 'none',
       opacity: 0,
@@ -408,10 +479,12 @@ const styles = stylex.create({
     justifyContent: 'center',
     borderRadius: radiusVars['--radius-full'],
     // Under a finger it sits in the track at UISwitch's inset, above the
-    // track's fade layer (::before), and useSwitchTouch moves and lifts it on
-    // the compositor: nothing of its own transitions.
+    // track's colour fade (::after) and press layer (::before), and
+    // useSwitchTouch moves and lifts it on the compositor: nothing of its
+    // own transitions.
     position: {default: null, [TOUCH]: 'absolute'},
     top: {default: null, [TOUCH]: '7.1429cqh'},
+    zIndex: {default: null, [TOUCH]: 2},
     pointerEvents: {default: null, [TOUCH]: 'none'},
     transitionProperty: {
       default: 'transform, width, height',
@@ -440,9 +513,10 @@ const styles = stylex.create({
       boxShadow: shadowVars['--shadow-low'],
       willChange: {default: null, [TOUCH]: 'opacity'},
     },
-    // Pressed: the same overlay as the track, so the whole control darkens
-    // under the finger rather than the thumb standing out against a darker
-    // track.
+    // Pressed with a mouse: the same overlay as the track, so the whole
+    // control darkens rather than the thumb standing out against a darker
+    // track. Under a finger the track's press layer paints under the thumb,
+    // which lifts.
     backgroundImage: {
       default: null,
       [stylex.when.ancestor(':active', switchScope)]: {
@@ -450,22 +524,6 @@ const styles = stylex.create({
         '@media (forced-colors: none)': {
           default: pressedImage,
           '@media (pointer: coarse)': 'none',
-        },
-      },
-      // Nested in the same media as the arm above so it outranks the drop: an
-      // ancestor-scoped attribute selector gets no priority of its own.
-      [stylex.when.ancestor('[data-astryx-press="on"]', switchScope)]: {
-        default: null,
-        '@media (forced-colors: none)': {
-          default: null,
-          '@media (pointer: coarse)': pressedOverlayImage,
-        },
-      },
-      [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
-        default: null,
-        '@media (forced-colors: none)': {
-          default: null,
-          '@media (pointer: coarse)': pressedOverlayImage,
         },
       },
     },
@@ -953,7 +1011,7 @@ export function Switch({
           !isDisabled && switchScope,
           // The touch press's strength and release live on the row the
           // controller writes to; the track and thumb inherit and paint it.
-          !isDisabled && interactionOverlayStyles.pressedAlpha,
+          !isDisabled && interactionOverlayStyles.pressedAlphaLayered,
         )}>
         {' '}
         {labelPosition === 'start' ? (

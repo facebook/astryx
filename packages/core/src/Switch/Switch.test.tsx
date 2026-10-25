@@ -33,9 +33,12 @@ import {
 } from '../__tests__/forcedColors';
 import {
   hasPressedArm,
-  hasReleaseFade,
   readsPressStrength,
+  releasesOnLayer,
+  rulesDeclaredFor,
+  rulesWithSelector,
 } from '../__tests__/pressState';
+import {button as uikitButton} from '../motion/uikit/button';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
 
@@ -978,7 +981,7 @@ describe('Switch', () => {
       expect(hasPressedArm(thumb)).toBe(true);
     });
 
-    it('fades the touch press out from the row, with the track and thumb reading its strength', () => {
+    it("paints the touch press on the track's ::before and releases it on the compositor", () => {
       const {container} = render(
         <Switch label="Notifications" value={false} onChange={() => {}} />,
       );
@@ -988,15 +991,58 @@ describe('Switch', () => {
       if (track == null || thumb == null || row == null) {
         throw new Error('the switch has no pressable row, track or thumb');
       }
-      // The controller writes the row; the row owns the strength and its
-      // release, and the two parts paint the pressed token at that strength
-      // on both touch arms, so they fade together. Under a finger nothing
-      // lifts (UISwitch's lift waits on its look decision), so the press
-      // shows this overlay.
-      expect(hasReleaseFade(row)).toBe(true);
+      const coarse = {
+        insideMedia: /\(pointer: coarse\)/,
+        outsideMedia: /prefers-reduced-motion/,
+      };
+      const selector = (rule: string) => rule.slice(0, rule.indexOf('{'));
+      const body = (rule: string) => rule.slice(rule.indexOf('{'));
+      // The controller writes the row. Under a finger the press is a layer
+      // on the track, under the thumb: it exists only while the row is
+      // pressed or releasing (no element and no box at rest), paints the
+      // pressed token, shows at once, and releases on a control's clock on
+      // the compositor.
+      const layer = rulesDeclaredFor(track).filter(rule =>
+        selector(rule).includes('::before'),
+      );
+      const creates = layer.filter(rule =>
+        /(^|[{;\s])content:/.test(body(rule)),
+      );
+      expect(creates.length).toBeGreaterThan(0);
+      for (const rule of creates) {
+        expect(selector(rule)).toMatch(/data-astryx-press="(on|fading)"/);
+      }
+      expect(
+        layer.some(rule =>
+          /background-color:[^;}]*--color-overlay-pressed/.test(rule),
+        ),
+      ).toBe(true);
+      const on = rulesWithSelector(track, '[data-astryx-press="on"]', coarse);
+      expect(on.some(rule => /opacity:\s*1\b/.test(rule))).toBe(true);
+      expect(on.some(rule => /animation-name:\s*(?!none)/.test(rule))).toBe(
+        false,
+      );
+      expect(
+        releasesOnLayer(track, '::before', uikitButton.highlight.releaseMs),
+      ).toBe(true);
+      // Nothing reads the strength under a finger, so its main-thread
+      // release stops there; any other pointer keeps it (the desktop rule).
+      expect(
+        rulesWithSelector(row, '[data-astryx-press="fading"]', coarse).some(
+          rule => /animation-name:\s*none/.test(rule),
+        ),
+      ).toBe(true);
+      const fine = {outsideMedia: /prefers-reduced-motion|\(pointer: coarse\)/};
+      expect(
+        rulesWithSelector(row, '[data-astryx-press="fading"]', fine).some(
+          rule => /animation-name:\s*(?!none)/.test(rule),
+        ),
+      ).toBe(true);
       for (const part of [track, thumb]) {
-        expect(readsPressStrength(part, '[data-astryx-press="on"]')).toBe(true);
-        expect(readsPressStrength(part)).toBe(true);
+        expect(readsPressStrength(part, '[data-astryx-press="on"]')).toBe(
+          false,
+        );
+        expect(readsPressStrength(part)).toBe(false);
       }
     });
   });

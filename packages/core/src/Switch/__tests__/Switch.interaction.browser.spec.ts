@@ -39,6 +39,7 @@ import {
   blockMainThread,
   busyWindowProof,
   compareCurve,
+  cubicBezier,
   countBetween,
   drag,
   freezeTimers,
@@ -47,6 +48,7 @@ import {
   markElement,
   openStory,
   releaseAnimations,
+  seekAnimations,
   springStep,
   startScreencast,
   tap,
@@ -63,6 +65,7 @@ import {
   type CastFrame,
   type TouchDriver,
 } from '@astryxdesign/interaction-harness';
+import {button} from '../../motion/uikit/button';
 import {SWITCH_CLAIMS_HELD_TOUCH} from '../switchTouchClaim';
 
 const storybook = withStorybook(test);
@@ -86,6 +89,12 @@ const LIFT_SCALE = Math.min(
  * opacity-only cross-fade of this many ms or less.
  */
 const REDUCED_FADE_MAX_MS = 200;
+/** A control's press release (UIButton's, motion/uikit/button.ts), ms. */
+const PRESS_RELEASE_MS = button.highlight.releaseMs;
+const pressReleaseEase = cubicBezier(...button.highlight.releaseCurve);
+/** The press layer's opacity t ms into the release, 1 → 0. */
+const pressReleaseAt = (t: number) =>
+  1 - pressReleaseEase(Math.min(1, Math.max(0, t / PRESS_RELEASE_MS)));
 
 interface ChangeSample {
   t: number;
@@ -128,7 +137,7 @@ async function sampleChange(
     const start = performance.now();
     const tick = () => {
       const t = performance.now() - start;
-      const faded = Number(getComputedStyle(track, '::before').opacity);
+      const faded = Number(getComputedStyle(track, '::after').opacity);
       w.__change.push({
         t,
         scale: scaleOf(thumb),
@@ -248,7 +257,7 @@ async function openSwitch(
   const root = page.locator('#storybook-root');
   const input = root.getByRole('switch').first();
   const thumb = root.locator('.astryx-switch-thumb').first();
-  // The track: its ::before is the fade layer.
+  // The track: its ::after is the colour fade, its ::before the press.
   const onLayer = root.locator('.astryx-switch').first();
   // Under a finger the thumb itself moves and lifts.
   const box = await thumb.boundingBox();
@@ -271,6 +280,40 @@ interface Presented {
   fill: number;
 }
 
+/**
+ * A tap the browser turns into its own click (`spec:AST-094` FR11): the
+ * scripted touch where the engine synthesises a click from it (Chromium), the
+ * engine's tap path where it synthesises one only from that (WebKit, whose
+ * tap path has no hold).
+ */
+async function tapForClick(
+  driver: TouchDriver,
+  at: {x: number; y: number},
+  holdMs = 50,
+): Promise<void> {
+  if (driver.engine === 'webkit') {
+    await driver.tap(at);
+  } else {
+    await driver.play(tap(at, {holdMs}));
+  }
+}
+
+/**
+ * The opacity of the first track's press layer (its ::before), or null when
+ * the track has none (at rest).
+ */
+async function pressLayer(page: Page): Promise<number | null> {
+  return page.evaluate(() => {
+    const track = document.querySelector<HTMLElement>(
+      '#storybook-root .astryx-switch',
+    )!;
+    const layer = getComputedStyle(track, '::before');
+    return layer.content === 'none' || layer.content === 'normal'
+      ? null
+      : Number(layer.opacity);
+  });
+}
+
 /** The press state the row's press feedback shows (`data-astryx-press`). */
 async function pressState(page: Page, index = 0): Promise<string | null> {
   return page.evaluate(i => {
@@ -282,7 +325,7 @@ async function pressState(page: Page, index = 0): Promise<string | null> {
 
 /**
  * The switch at rest: the thumb still, and the track's colour fade (its
- * ::before, which waitForRest does not read) finished too.
+ * ::after, which waitForRest does not read) finished too.
  */
 async function waitForSwitchRest(page: Page, thumb: Locator): Promise<void> {
   await waitForRest(thumb);
@@ -308,7 +351,7 @@ async function presented(page: Page): Promise<Presented> {
     const input = document.querySelector<HTMLInputElement>(
       '#storybook-root [role="switch"]',
     )!;
-    const faded = Number(getComputedStyle(fade, '::before').opacity);
+    const faded = Number(getComputedStyle(fade, '::after').opacity);
     const scale = getComputedStyle(thumb).scale;
     const [sx, sy = sx] = (scale === 'none' ? '1' : scale)
       .split(' ')
@@ -444,7 +487,7 @@ async function visibleFill(page: Page): Promise<string> {
     const track = document.querySelector<HTMLElement>(
       '#storybook-root .astryx-switch',
     )!;
-    const fade = getComputedStyle(track, '::before');
+    const fade = getComputedStyle(track, '::after');
     return Number(fade.opacity) > 0.5
       ? fade.backgroundColor
       : getComputedStyle(track).backgroundColor;
@@ -495,22 +538,26 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     const script = tap(center, {holdMs: 700});
     let held: Presented | null = null;
     let press: string | null = null;
+    let layer: number | null = null;
     await driver.play(script, {
       onEvent: async step => {
         if (step.type === 'touchStart') {
           await page.waitForTimeout(500);
           held = await presented(page);
           press = await pressState(page);
+          layer = await pressLayer(page);
         }
       },
     });
     expect(held).not.toBeNull();
     // The thumb grows into half the gap around it and keeps its fill; the row
-    // shows the pressed overlay.
+    // is pressed, and the track's press layer (its ::before, under the
+    // thumb) shows the pressed overlay in full.
     expect(held!.scaleX).toBeCloseTo(LIFT_SCALE, 2);
     expect(held!.scaleY).toBeCloseTo(LIFT_SCALE, 2);
     expect(held!.fill).toBeCloseTo(1, 2);
     expect(press).toBe('on');
+    expect(layer).toBeCloseTo(1, 2);
     await expect(input).toBeChecked();
   });
 
@@ -577,7 +624,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
         .querySelector('#storybook-root [role="switch"]')!
         .addEventListener('click', event => w.__clicks.push(event.isTrusted));
     });
-    await driver.play(tap(center, {holdMs: 50}));
+    await tapForClick(driver, center);
     await expect(input).toBeChecked();
     const clicks = await page.evaluate(
       () => (window as unknown as {__clicks: boolean[]}).__clicks,
@@ -613,6 +660,64 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     // On: the circle rests at the far inset, the same gap as its top.
     expect(placed.gapEnd).toBeCloseTo(INSET, 0);
     expect(placed.gapStart).toBeGreaterThan(INSET);
+  });
+
+  test('the touch press is a layer on the track, absent at rest, released on UIButton’s clock and curve on the compositor', async ({
+    page,
+  }, testInfo) => {
+    const {driver, center} = await openSwitch(page);
+    // At rest the track has no press layer: it exists only while the row is
+    // pressed or releasing.
+    expect(await pressLayer(page)).toBeNull();
+    // Gate the page's timers before the press, so the release timer (which
+    // removes the attribute when the clock runs out) holds while seeking.
+    await installTimerGate(page);
+    await driver.play(tap(center, {holdMs: 400}));
+    expect(await pressState(page)).toBe('fading');
+    await freezeTimers(page);
+    const row = page.locator('#storybook-root [data-astryx-pressable]').first();
+    const held = await holdAnimations(page, row);
+    // One CSS animation runs the release: the layer's opacity, on UIButton's
+    // clock. The row's strength has no release of its own under a finger (no
+    // main-thread fade), and the lift and travel are the animator's.
+    const css = held.filter(a => a.kind === 'CSSAnimation');
+    expect(css, JSON.stringify(held)).toHaveLength(1);
+    expect(css[0].durationMs).toBe(PRESS_RELEASE_MS);
+    // The lift's settle started at the lift's touch event, a frame or two
+    // before the attribute's change started the release: seek on the
+    // release's own clock.
+    const samples: {t: number; value: number}[] = [];
+    for (const t of timeline(PRESS_RELEASE_MS)) {
+      await seekAnimations(page, t + css[0].offsetMs);
+      samples.push({t, value: (await pressLayer(page)) ?? 0});
+    }
+    await releaseAnimations(page, {finish: true});
+    await thawTimers(page);
+    const comparison = compareCurve(samples, pressReleaseAt, 0.005);
+    await writeEvidence(
+      'curves/switch-press-release',
+      {
+        [`${testInfo.project.name}.json`]: JSON.stringify(
+          {
+            releaseMs: PRESS_RELEASE_MS,
+            curve: button.highlight.releaseCurve,
+            held,
+            samples,
+            comparison,
+          },
+          null,
+          2,
+        ),
+      },
+      testInfo,
+    );
+    expect(samples[0].value).toBeCloseTo(1, 2);
+    expect(
+      comparison.maxError,
+      JSON.stringify(comparison.worst),
+    ).toBeLessThanOrEqual(0.005);
+    await expect.poll(async () => pressState(page)).toBeNull();
+    expect(await pressLayer(page)).toBeNull();
   });
 
   /**
@@ -693,7 +798,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
             dx: step.fingers[0].x - center.x,
             on: Number(
               await onLayer.evaluate(
-                el => getComputedStyle(el, '::before').opacity,
+                el => getComputedStyle(el, '::after').opacity,
               ),
             ),
           });
@@ -1005,9 +1110,9 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
             fade: t.transitionDuration,
             size: [box.width, box.height],
             slide: getComputedStyle(thumb).transitionProperty,
-            // The fade layer (the track's ::before) exists only under a
+            // The fade layer (the track's ::after) exists only under a
             // finger, and the thumb sits directly in the track (no wrapper).
-            layer: getComputedStyle(track, '::before').display,
+            layer: getComputedStyle(track, '::after').display,
             direct: thumb.parentElement === track,
             children: track.children.length,
           };
@@ -1042,7 +1147,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     await page.emulateMedia({reducedMotion: 'reduce'});
     const {driver, input, center} = await openSwitch(page);
     const samples = await sampleChange(page, async () => {
-      await driver.play(tap(center));
+      await tapForClick(driver, center);
     });
     await expect(input).toBeChecked();
     expectCrossFade(samples);
@@ -1136,7 +1241,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
                 dx: center.x - step.fingers[0].x,
                 on: Number(
                   await onLayer.evaluate(
-                    el => getComputedStyle(el, '::before').opacity,
+                    el => getComputedStyle(el, '::after').opacity,
                   ),
                 ),
               });
@@ -1170,7 +1275,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
               ons.push(
                 Number(
                   await onLayer.evaluate(
-                    el => getComputedStyle(el, '::before').opacity,
+                    el => getComputedStyle(el, '::after').opacity,
                   ),
                 ),
               );
@@ -1204,13 +1309,20 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
       requestAnimationFrame(loop);
     });
     const finger = {id: 0, ...center};
-    // The second tap lands 70 ms into the first one's travel.
-    await driver.play([
-      {t: 0, fingers: [finger]},
-      {t: 40, fingers: []},
-      {t: 110, fingers: [finger]},
-      {t: 140, fingers: []},
-    ]);
+    // The second tap lands 70 ms into the first one's travel; each is the
+    // browser's click (WebKit's comes only from its own tap path).
+    if (driver.engine === 'webkit') {
+      await driver.tap(center);
+      await page.waitForTimeout(70);
+      await driver.tap(center);
+    } else {
+      await driver.play([
+        {t: 0, fingers: [finger]},
+        {t: 40, fingers: []},
+        {t: 110, fingers: [finger]},
+        {t: 140, fingers: []},
+      ]);
+    }
     await waitForSwitchRest(page, thumb);
     await expect(input).not.toBeChecked();
     expect(await thumbOffset(page)).toBeCloseTo(INSET, 0);
@@ -1299,20 +1411,90 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     );
     const {driver, input, thumb, center} = await openSwitch(page);
     await markElement(thumb, {size: 6, inset: 2});
+    // The block starts in the page two frames after the value changes, so the
+    // travel has just begun whatever the page's own timing (the lift, which
+    // starts at touch-down, is the thumb's first animation, and a round trip
+    // from here would start the block late).
+    await page.evaluate(() => {
+      const w = window as unknown as {
+        __block?: {from: number; to: number; spins: number};
+        __travel?: {from: number; to: number};
+      };
+      const input = document.querySelector('#storybook-root [role="switch"]')!;
+      const thumb = document.querySelector<HTMLElement>(
+        '#storybook-root .astryx-switch-thumb',
+      )!;
+      input.addEventListener(
+        'change',
+        () =>
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => {
+              const travel = thumb
+                .getAnimations()
+                .filter(
+                  a =>
+                    a.playState === 'running' &&
+                    (a.effect as KeyframeEffect)
+                      .getKeyframes()
+                      .some(k => 'translate' in k),
+                )
+                .at(-1);
+              if (travel?.startTime != null) {
+                const effect = travel.effect as KeyframeEffect;
+                const from = performance.timeOrigin + Number(travel.startTime);
+                const ends = effect
+                  .getKeyframes()
+                  .map(k => k.computedOffset)
+                  .filter(o => o < 1);
+                w.__travel = {
+                  from,
+                  to:
+                    from +
+                    Number(effect.getComputedTiming().activeDuration) *
+                      Math.max(...ends),
+                };
+              }
+              const from = performance.timeOrigin + performance.now();
+              const end = performance.now() + 700;
+              let spins = 0;
+              while (performance.now() < end) {
+                spins++;
+              }
+              w.__block = {
+                from,
+                to: performance.timeOrigin + performance.now(),
+                spins,
+              };
+            }),
+          ),
+        {once: true},
+      );
+    });
     const cast = await startScreencast(page);
     await driver.play(tap(center, {holdMs: 50}));
     await expect(input).toBeChecked();
-    await waitForAnimation(thumb, {minProgressMs: 16});
-    const travel = await travelAnimation(page);
-    const block = await blockMainThread(page, 700);
+    await page.waitForFunction(
+      () => (window as unknown as {__block?: unknown}).__block != null,
+    );
+    const {block, travel} = await page.evaluate(() => {
+      const w = window as unknown as {
+        __block: {from: number; to: number; spins: number};
+        __travel: {from: number; to: number};
+      };
+      return {block: w.__block, travel: w.__travel};
+    });
+    expect(travel, 'the travel was running when the block began').toBeDefined();
     await page.waitForTimeout(150);
     const castFrames = await cast.stop();
     const tracked = await trackMarker(page, castFrames);
     const proof = busyWindowProof(
       tracked,
       {from: block.from, to: Math.min(block.to, travel.to)},
-      // The travel's tail moves less than a frame pixel per frame.
-      {axis: 'x', settledWithin: 1.5},
+      // The screencast places the marker to the whole px. The 13 px travel on
+      // UISwitch's critically damped 0.3 s spring moves less than 1 px per
+      // 60 Hz frame once 4.3 px remain (110 ms in), so from there a frame
+      // can show no change while the thumb moves: judged until then.
+      {axis: 'x', settledWithin: 4.5},
     );
     await writeEvidence(
       'busy-main-thread/switch-toggle',
@@ -1629,8 +1811,8 @@ async function sampleThumb(
           scaleX: Number(scale.split(' ')[0]),
           fill: Number(getComputedStyle(thumb).opacity),
           on: input.checked
-            ? 1 - Number(getComputedStyle(fade, '::before').opacity)
-            : Number(getComputedStyle(fade, '::before').opacity),
+            ? 1 - Number(getComputedStyle(fade, '::after').opacity)
+            : Number(getComputedStyle(fade, '::after').opacity),
           boxOpacity: Number(style.opacity),
         };
       });

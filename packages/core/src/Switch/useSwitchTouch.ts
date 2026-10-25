@@ -4,9 +4,10 @@
 
 /**
  * @file useSwitchTouch.ts
- * @input Switch's parts (gesture surface, input, thumb and track; the fade
- *   layer is the track's ::before, so the touch presentation adds no
- *   element), its value, whether it is interactive, the track's
+ * @input Switch's parts (gesture surface, input, thumb and track; the colour
+ *   fade is the track's ::after and the lifted shadow the thumb's ::after,
+ *   so the touch presentation adds no element), its value, whether it is
+ *   interactive, the track's
  *   other state (switchFill.ts) and the thumb geometry (switchTouch.ts)
  * @output Exports useSwitchTouch: Switch's touch presentation. A drag moves
  *   the thumb with a rubber band and flips
@@ -57,7 +58,8 @@
  *   spring, no sooner than the minimum lift time after it began. The lift
  *   and the settle are one curve built at the release, so the settle starts
  *   on time on the compositor. The press also shows the shared pressed
- *   overlay (design:user-states).
+ *   overlay (design:user-states), as the track's ::before under the thumb,
+ *   released on the compositor (Switch.tsx, interactionOverlay.stylex.ts).
  * - The track keeps its own fill, the theme's, in both states; the colour
  *   change is a fade layer over it, painted with the track's other fill
  *   (switchFill.ts) and faded on the compositor: clear while the visuals
@@ -120,7 +122,7 @@ export interface SwitchTouchParts {
   /** Moves: the themed thumb itself. */
   readonly thumb: RefObject<HTMLElement | null>;
   /**
-   * The track: its `::before` is the fade layer over its own fill, showing
+   * The track: its `::after` is the fade layer over its own fill, showing
    * the fill it is leaving or heading to (switchFill.ts).
    */
   readonly track: RefObject<HTMLElement | null>;
@@ -139,7 +141,7 @@ export interface SwitchTouchOptions {
   readonly otherTrackProps: object;
 }
 
-/** The fade layer's colour, set on the track for its ::before (Switch.tsx). */
+/** The fade layer's colour, set on the track for its ::after (Switch.tsx). */
 const FADE_FILL = '--_switch-fade-fill';
 const TRAVEL = switchControl.travel;
 const TRACKING = switchControl.tracking;
@@ -314,7 +316,7 @@ export class SwitchTouchController {
     // The layer rests clear (its class's opacity 0) while the visuals show
     // the value; from here its opacity is the animator's.
     this.fade = createAnimator(elements.track, {
-      pseudoElement: '::before',
+      pseudoElement: '::after',
       initial: {opacity: 0},
     });
     this.fade.set({opacity: 0});
