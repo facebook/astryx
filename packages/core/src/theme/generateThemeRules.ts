@@ -503,6 +503,10 @@ const SCOPED_STATUS_ROLE_DEFAULTS: ReadonlyArray<
 
 const SCOPED_STATUS_ROLE_SOURCES = new Map(SCOPED_STATUS_ROLE_DEFAULTS);
 
+/** Colours INV17's derivation measures; a scope that sets one re-derives. */
+const STATUS_MEASURED =
+  /^--color-(?:success|warning|error|accent|on-|background-surface|background-card|icon-blue)/;
+
 const STATUS_ROLE_ORDER = new Map(
   SCOPED_STATUS_ROLE_DEFAULTS.map(([role], index) => [role, index]),
 );
@@ -713,7 +717,8 @@ function retainedAdaptationRules(
   return resolvedAdaptationRules(theme as DefinedTheme);
 }
 
-function generatedScopedStatusRoleDefaults(
+/** Root status roles a theme leaves unset: INV17-derived values and INV16 aliases. */
+export function generatedScopedStatusRoleDefaults(
   tokens: Record<string, string>,
   localTokens: Record<string, string> = {},
   rules: ReadonlyArray<ResolvedThemeAdaptationRule> = [],
@@ -824,6 +829,18 @@ function generatedAdaptationStatusRoleDefaults(
       rule.tokens,
       rule.localTokens,
     ).values;
+    // INV17 in an adaptation: a rule that changes a colour the derivation
+    // measures gets the roles derived from the root and that rule together.
+    if (Object.keys(authoredRule).some(token => STATUS_MEASURED.test(token))) {
+      for (const [role, value] of deriveStatusRoleTokens(
+        {...rootTokens, ...rule.tokens},
+        {...rootLocalTokens, ...rule.localTokens},
+      )) {
+        if (authoredRule[role] === undefined && rootValues[role] !== value) {
+          aliases[index].push([role, value]);
+        }
+      }
+    }
     for (const [role, source] of SCOPED_STATUS_ROLE_DEFAULTS) {
       const alias = `var(${source})`;
       const rootRole = rootValues[role];
@@ -869,6 +886,12 @@ function generatedMediaStatusRoleDefaults(
     Object.fromEntries(rootAliases),
     rootLocalTokens,
   ).values;
+  // A media surface sits on content the compiler cannot measure, so a status
+  // colour set there reaches its roles as an INV16 alias, even where the root
+  // holds an INV17-derived value.
+  const rootDerived = new Set(
+    deriveStatusRoleTokens(rootTokens, rootLocalTokens).map(([role]) => role),
+  );
   const authoredMedia = createTokenCascade(tokens).values;
   const authoredRolesByRule = rules.map(
     rule => new Map(authoredStatusRoleEntries(rule.tokens)),
@@ -903,7 +926,9 @@ function generatedMediaStatusRoleDefaults(
       (role === '--color-info-emphasized' &&
         source === '--color-accent' &&
         authoredMedia['--color-on-accent'] === undefined) ||
-      (rootRole !== undefined && !tokenValueIsAliasOf(rootRole, source))
+      (rootRole !== undefined &&
+        !tokenValueIsAliasOf(rootRole, source) &&
+        !rootDerived.has(role))
     ) {
       continue;
     }

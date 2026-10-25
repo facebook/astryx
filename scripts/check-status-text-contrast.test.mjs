@@ -22,8 +22,30 @@
 import {describe, expect, it} from 'vitest';
 import {
   defineTheme,
+  generateAdaptationCSS,
+  generateOnMediaCSS,
+  generateThemeRules,
   resolveThemeTokens,
 } from '../packages/core/dist/theme/index.js';
+
+/** All CSS a theme generates: root rules, adaptations, and media surfaces. */
+function allThemeCSS(theme) {
+  const text = value =>
+    typeof value === 'string'
+      ? value
+      : Array.isArray(value)
+        ? value.map(text).join('\n')
+        : value && typeof value === 'object'
+          ? Object.values(value).map(text).join('\n')
+          : '';
+  return [
+    generateThemeRules(theme),
+    generateAdaptationCSS(theme),
+    generateOnMediaCSS(theme),
+  ]
+    .map(text)
+    .join('\n');
+}
 import {emittedRootTokens} from './lib/theme-emitted-tokens.mjs';
 import {
   composite,
@@ -164,6 +186,44 @@ describe('component-scoped status icons and borders keep 3:1 (INV11)', () => {
   });
 });
 
+describe('component-scoped pale status fills keep their content at 4.5:1 (INV11)', () => {
+  // A theme may repaint a FieldStatus fill in its component map; the content
+  // drawn on it (its own colour, or the on-muted role) keeps the 4.5:1 floor.
+  const fills = [];
+  for (const [themeName, theme] of Object.entries(THEMES)) {
+    if (theme === null) continue;
+    for (const [key, block] of Object.entries(
+      theme.components?.['field-status'] ?? {},
+    )) {
+      const status = key.replace(/^type:/, '');
+      if (typeof block !== 'object' || block.backgroundColor === undefined) {
+        continue;
+      }
+      fills.push([`${themeName} field-status ${key}`, theme, status, block]);
+    }
+  }
+
+  it.each(fills.map(([label]) => [label]))('%s', label => {
+    const [, theme, status, block] = fills.find(([l]) => l === label);
+    for (const mode of MODES) {
+      const t = resolveThemeTokens(
+        {
+          tokens: {
+            ...emittedRootTokens(theme),
+            '--probe-fill': block.backgroundColor,
+            '--probe-ink': block.color ?? `var(--color-on-${status}-muted)`,
+          },
+        },
+        {mode},
+      );
+      const surface = opaque(color(t, '--color-background-surface'), WHITE);
+      const fill = opaque(color(t, '--probe-fill'), surface);
+      const ink = opaque(color(t, '--probe-ink'), fill);
+      expect(contrastRatio(ink, fill)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+});
+
 describe('released base status tokens keep their values', () => {
   // Core's released defaults (light, dark).
   const RELEASED = {
@@ -254,6 +314,39 @@ describe('theme generation derives a complete status set (INV17)', () => {
       /^light-dark\(#/,
     );
     expect(emitted['--color-success-emphasized']).toBe('var(--color-success)');
+  });
+
+  it('re-derives in an adaptation rule that changes a status colour', () => {
+    const theme = defineTheme({
+      name: 'status-adaptive',
+      tokens: {'--color-success': '#3FB950'},
+      adaptations: {
+        rules: [
+          {
+            when: {contrast: 'more'},
+            value: {tokens: {'--color-success': '#1A7F37'}},
+          },
+        ],
+      },
+    });
+    const css = allThemeCSS(theme);
+    expect(css).toContain('prefers-contrast: more');
+    const rule = css.slice(css.indexOf('prefers-contrast: more'));
+    expect(rule).toMatch(/--color-text-success: light-dark\(#/);
+  });
+
+  it('aliases a status colour a media surface sets, over a derived root role', () => {
+    const theme = defineTheme({
+      name: 'status-media',
+      tokens: {'--color-success': '#3FB950', '--color-on-success': '#3FB950'},
+      onDark: {tokens: {'--color-success': '#A5F690'}},
+    });
+    const css = allThemeCSS(theme);
+    expect(css).toContain('[data-astryx-media="dark"]');
+    const media = css.slice(css.indexOf('[data-astryx-media="dark"]'));
+    expect(media).toContain(
+      '--color-success-emphasized: var(--color-success);',
+    );
   });
 
   it('counts a role inherited through extends as set', () => {

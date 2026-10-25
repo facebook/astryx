@@ -422,12 +422,15 @@ export const stoneTheme = defineTheme({
     'field-status': {
       'type:success': {
         backgroundColor: 'var(--color-background-green)',
+        color: 'var(--color-text-green)',
       },
       'type:warning': {
         backgroundColor: 'var(--color-background-yellow)',
+        color: 'var(--color-text-yellow)',
       },
       'type:error': {
         backgroundColor: 'var(--color-background-red)',
+        color: 'var(--color-text-red)',
       },
     },
 

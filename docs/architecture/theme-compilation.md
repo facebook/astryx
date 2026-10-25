@@ -362,11 +362,11 @@ tiers.
 
 ## Known conformance and verification gaps
 
-INV17 derivation runs on a theme's root tokens, in its generated CSS and in
-non-CSS resolution. A status colour or surface that a theme sets only in an
-adaptation rule or an `onDark`/`onLight` surface gets no derived value in that
-scope: its roles keep the root values or the INV16 aliases. INV17's scope
-clause for those surfaces is current authority but not yet enforcement.
+Inside an `onDark`/`onLight` media surface, which sits on content the compiler
+cannot measure, a status colour the theme sets reaches its roles as an INV16
+alias rather than a derived value. Inside adaptation rules, each rule's derived
+values combine the root with that rule alone, so rules that match together and
+each set a measured colour do not yet derive from their combination.
 
 Declaration-boundary enforcement and the warnings-array collector in INV13–INV14
 are accepted but not yet shipped. Their verification obligations above describe

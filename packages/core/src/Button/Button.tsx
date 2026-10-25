@@ -235,6 +235,15 @@ const variants = stylex.create({
   destructive: {
     backgroundColor: colorVars['--color-error-emphasized'],
     color: colorVars['--color-on-error'],
+    // Forced colors replace the fill with ButtonFace; a border keeps the
+    // destructive fill's shape visible (architecture:theme-tokens INV11). A
+    // border, not an outline, leaves the shared focus ring intact.
+    borderWidth: {default: null, '@media (forced-colors: active)': '1px'},
+    borderStyle: {default: null, '@media (forced-colors: active)': 'solid'},
+    borderColor: {
+      default: null,
+      '@media (forced-colors: active)': 'CanvasText',
+    },
     // The ring matches the variant it rings: an accent-colored outline on a
     // red button reads as another control's focus. Only the color differs —
     // width, style and offset come from the shared outline.

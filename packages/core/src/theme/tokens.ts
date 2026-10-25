@@ -27,7 +27,7 @@ import {
   type TokenValue,
 } from './defineTheme';
 import {parseColor, formatColor} from '../utils/color';
-import {deriveStatusRoleTokens} from './statusRoleDerivation';
+import {generatedScopedStatusRoleDefaults} from './generateThemeRules';
 
 /** Resolved color mode used when choosing the side of light/dark token values. */
 export type ResolvedThemeMode = 'light' | 'dark';
@@ -413,10 +413,10 @@ export function resolveThemeTokens(
     resolved[key] = resolveXDSTokenValue(value, mode);
   }
 
-  // Status roles the theme leaves unset resolve to the values its generated
-  // CSS derives (architecture:theme-compilation INV17), so JavaScript and CSS
-  // agree (architecture:theme-tokens INV6).
-  for (const [key, value] of deriveStatusRoleTokens(
+  // Status roles the theme leaves unset resolve as its generated root CSS
+  // declares them (architecture:theme-compilation INV16 and INV17), so
+  // JavaScript and CSS agree (architecture:theme-tokens INV6).
+  for (const [key, value] of generatedScopedStatusRoleDefaults(
     theme.tokens,
     theme.localTokens ?? {},
   )) {
