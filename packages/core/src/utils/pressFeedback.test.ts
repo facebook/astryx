@@ -301,7 +301,9 @@ describe('the release', () => {
     // AST-094 FR4: the release is the motion role
     // `timing.press.highlightOutMs`; the stylesheet's fade plays the same
     // role, so the attribute stays until that fade ends.
-    const root = document.documentElement;
+    // Set on the row itself: a browser inherits a theme's variable down to
+    // it, which jsdom does not model.
+    const root = rows[0];
     root.style.setProperty('--motion-timing-press-highlight-out-ms', '400ms');
     try {
       press(rows[0], 'pointerdown', 10, 10);
