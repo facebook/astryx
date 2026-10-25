@@ -180,6 +180,31 @@ those contracts.
   content in it keeps today's flow, and making a boundary public needs
   `spec:AST-002` admission and `architecture:public-component-api` INV21.
 
+  Internal usage, not exported:
+
+  ```tsx
+  // A boundary: ScrollArea provides it around its scrolling element.
+  const boundary = useDisclosureBoundary(scrollRef);
+  <DisclosureBoundary value={boundary}>{children}</DisclosureBoundary>;
+
+  // A participant registers an element it already renders.
+  useDisclosureParticipant(rowRef);
+
+  // A disclosing element measures before its commit and animates after it.
+  const change = useDisclosureChange(groupRef);
+  const toggle = () => {
+    change.measureBefore();
+    setExpanded(open => !open);
+  };
+  useLayoutEffect(() => change.animate(), [expanded]);
+
+  // App content inside a ScrollArea needs nothing; it takes its place at once.
+  <ScrollArea>
+    <TreeList items={items} />
+    <p>Notes</p>
+  </ScrollArea>;
+  ```
+
 ## Authoring guidance
 
 The following are preferred techniques, not independent compatibility promises:
