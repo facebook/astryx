@@ -11,10 +11,11 @@
  *   arrival; the coast keeps advancing every frame through a blocked main
  *   thread; it does no Layout or Paint per frame; a finger landing on the
  *   coasting wheel stops it where it is and the wheel then eases onto the
- *   nearest row; a storyboard of a flick and its coast; under reduced motion,
- *   a flick that cross-fades onto its row (design:reduced-motion: opacity
- *   only, 200 ms or less). Under a mouse, a drag scrolls today's column onto
- *   a row.
+ *   nearest row; a storyboard of a flick and its coast; under reduced motion
+ *   (design:reduced-motion DR2), a flick that still coasts as momentum with
+ *   its rows flat, and a tap that cross-fades onto its row (opacity only,
+ *   200 ms or less). Under a mouse, a drag scrolls today's column onto a
+ *   row.
  * @position Browser proof for DateInput/PickerWheel.tsx and the Wheel switch,
  *   run by
  *   `pnpm test:interaction`; jsdom runs no animations, and wheelPhysics.test.ts
@@ -55,11 +56,12 @@ import {
   type TouchDriver,
 } from '@astryxdesign/interaction-harness';
 import {UIKIT_GESTURES} from '../../motion/uikit';
+import {WHEEL_ROW_PITCH} from '../wheelLook';
 import {planRelease, type WheelLayout} from '../wheelPhysics';
 
 const storybook = withStorybook(test);
 
-const ROW = 32;
+const ROW = WHEEL_ROW_PITCH;
 const MINUTES: WheelLayout = {rowHeight: ROW, rowCount: 60};
 const HYSTERESIS = UIKIT_GESTURES.pan.hysteresis.value;
 /** A flick up the minute wheel: the rows run on towards higher minutes. */
@@ -148,6 +150,29 @@ function translateYOf(transform: string): number {
   return Number(match[1]);
 }
 
+type WheelAnimation = Awaited<ReturnType<typeof waitForAnimation>>[number];
+
+/**
+ * The strip's own animation among those under it (each row also animates its
+ * tip and fade): the one whose keyframes are all translations.
+ */
+function stripAnimationOf(animations: WheelAnimation[]): WheelAnimation {
+  const strip = animations.find(
+    animation =>
+      (animation.keyframes ?? []).length > 0 &&
+      (animation.keyframes ?? []).every(
+        frame =>
+          frame.opacity == null &&
+          typeof frame.transform === 'string' &&
+          frame.transform.startsWith('translateY('),
+      ),
+  );
+  if (strip == null) {
+    throw new Error('no strip animation');
+  }
+  return strip;
+}
+
 /** The strip's translation is minus the wheel's offset. */
 const stripOffset = async (strip: Locator) =>
   strip.evaluate(element => {
@@ -163,7 +188,7 @@ test('a flick coasts on UIKit’s curve onto the row it projects, and commits it
   const {script, offsetAtLift} = flickUp(start);
   expect(releaseVelocity(script).y).toBeCloseTo(-FLICK_VELOCITY, -1);
   await driver.play(script);
-  const [coast] = await waitForAnimation(strip);
+  const coast = stripAnimationOf(await waitForAnimation(strip));
   const held = await holdAnimations(page, strip);
   const motion = held.find(animation => animation.kind === 'Animation');
   if (motion == null) {
@@ -260,7 +285,9 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
   const {script} = flickUp(start);
   const cast = await startScreencast(page);
   await driver.play(script);
-  const [coast] = await waitForAnimation(strip, {minProgressMs: 16});
+  const coast = stripAnimationOf(
+    await waitForAnimation(strip, {minProgressMs: 16}),
+  );
   // Read the coast the page is playing (WebKit's real-time input gives it its
   // own release velocity): where the strip is at each moment, from its
   // keyframes.
@@ -272,9 +299,9 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
   const when = (distance: number) =>
     points.find(point => rest - point.offset <= distance)?.t ??
     coast.durationMs;
-  // The row the coast ends on, on the cylinder below the band: block while
-  // it rises from four rows below the band to just over one, in sight and
-  // moving every frame the whole time.
+  // The row the coast ends on, below the band: block while it rises from four
+  // rows below the band to just over one, in sight and moving every frame the
+  // whole time.
   const blockFrom = when(4 * ROW);
   const blockTo = when(1.25 * ROW);
   expect(blockTo - blockFrom, 'the block covers the coast').toBeGreaterThan(
@@ -283,9 +310,25 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
   const marked = minutes.getByRole('option', {
     name: String(Math.round(rest / ROW)).padStart(2, '0'),
   });
-  // The dimmed copy's rows are 44.7 % opaque, which washes out the marker
-  // chip's colour; this one row is drawn opaque for the evidence.
+  // Today's rows fade toward the edges, which washes out the marker chip's
+  // colour; this one row is drawn opaque for the evidence (its coast keeps
+  // its keyframes' movement and tip, without their fade).
   await marked.evaluate(element => {
+    for (const animation of element.getAnimations()) {
+      const effect = animation.effect;
+      if (effect instanceof KeyframeEffect) {
+        effect.setKeyframes(
+          effect.getKeyframes().map(frame => {
+            const {
+              opacity: _opacity,
+              computedOffset: _computed,
+              ...rest
+            } = frame;
+            return rest;
+          }),
+        );
+      }
+    }
     (element as HTMLElement).style.opacity = '1';
   });
   await markElement(marked);
@@ -354,7 +397,7 @@ test('the coast does no Layout or Paint per frame', async ({
   let coast = {from: 0, to: 0};
   const trace = await traceRendering(page, async () => {
     await driver.play(script);
-    [coast] = await waitForAnimation(strip);
+    coast = stripAnimationOf(await waitForAnimation(strip));
     await waitForRest(strip);
   });
   const during = countBetween(trace, coast.from + 50, coast.to - 50);
@@ -368,7 +411,9 @@ test('a finger landing on the coasting wheel stops it where it is, then it eases
 }) => {
   const {driver, field, strip, start} = await openWheel(page);
   await driver.play(flickUp(start).script);
-  const [coast] = await waitForAnimation(strip, {minProgressMs: 16});
+  const coast = stripAnimationOf(
+    await waitForAnimation(strip, {minProgressMs: 16}),
+  );
   const coastEnd = -translateYOf(String(coast.keyframes?.at(-1)?.transform));
   await page.waitForTimeout(300);
   // Land and hold still: the wheel stops at once, between rows.
@@ -455,17 +500,13 @@ test(
   },
 );
 
-test('under reduced motion, a flick cross-fades onto its row: opacity only, 200 ms or less', async ({
-  page,
-}) => {
-  // design:reduced-motion DR1/DR2: the release of a touch drag starts a
-  // transition that changes opacity only and finishes in 200 ms or less.
-  await page.emulateMedia({reducedMotion: 'reduce'});
-  const {driver, field, minutes, start} = await openWheel(page);
-  // Every animation under the minute column, every frame, as the record's
-  // verification reads them: its animated properties and its length.
-  await minutes.evaluate(column => {
-    const seen = new Map<Animation, {props: string[]; duration: number}>();
+/** Records every animation under `column`, every frame: its animated properties, length and transforms. */
+async function recordAnimations(column: Locator) {
+  await column.evaluate(element => {
+    const seen = new Map<
+      Animation,
+      {props: string[]; duration: number; transforms: string[]}
+    >();
     (window as unknown as {wheelAnimations: typeof seen}).wheelAnimations =
       seen;
     const sample = () => {
@@ -475,10 +516,15 @@ test('under reduced motion, a flick cross-fades onto its row: opacity only, 200 
           continue;
         }
         const target = effect.target;
-        if (target == null || !column.contains(target) || seen.has(animation)) {
+        if (
+          target == null ||
+          !element.contains(target) ||
+          seen.has(animation)
+        ) {
           continue;
         }
         const props = new Set<string>();
+        const transforms: string[] = [];
         for (const frame of effect.getKeyframes()) {
           for (const key of Object.keys(frame)) {
             if (
@@ -487,25 +533,84 @@ test('under reduced motion, a flick cross-fades onto its row: opacity only, 200 
               props.add(key);
             }
           }
+          if (frame.transform != null) {
+            transforms.push(String(frame.transform));
+          }
         }
         seen.set(animation, {
           props: [...props],
           duration: Number(effect.getTiming().duration),
+          transforms,
         });
       }
       requestAnimationFrame(sample);
     };
     requestAnimationFrame(sample);
   });
+  return async () =>
+    column.page().evaluate(() => [
+      ...(
+        window as unknown as {
+          wheelAnimations: Map<
+            unknown,
+            {props: string[]; duration: number; transforms: string[]}
+          >;
+        }
+      ).wheelAnimations.values(),
+    ]);
+}
+
+test('under reduced motion, a flick still coasts as momentum, its rows flat', async ({
+  page,
+}) => {
+  // design:reduced-motion DR2: the momentum that continues a throw is direct
+  // movement, not a transition, so it coasts as scrolling does; only the
+  // rows' tip gives way to their fade.
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const {driver, field, minutes, start} = await openWheel(page);
+  const read = await recordAnimations(minutes);
   await driver.play(flickUp(start).script);
-  await expect(field).not.toHaveValue('10:00 AM', {timeout: 3000});
-  const seen = await page.evaluate(() => [
-    ...(
-      window as unknown as {
-        wheelAnimations: Map<unknown, {props: string[]; duration: number}>;
-      }
-    ).wheelAnimations.values(),
-  ]);
+  await expect(field).not.toHaveValue('10:00 AM', {timeout: 4000});
+  const seen = await read();
+  // The strip coasts: a translation longer than any cross-fade.
+  const coasts = seen.filter(
+    animation =>
+      animation.props.includes('transform') &&
+      animation.transforms.some(transform =>
+        transform.startsWith('translateY'),
+      ),
+  );
+  expect(coasts.length).toBeGreaterThan(0);
+  expect(
+    Math.max(...coasts.map(animation => animation.duration)),
+  ).toBeGreaterThan(200);
+  // No row tips: every row stays upright and full size.
+  for (const animation of seen) {
+    for (const transform of animation.transforms) {
+      expect(transform).not.toMatch(/rotateX\((?!0deg)|scale\((?!1\))/);
+    }
+  }
+});
+
+test('under reduced motion, a tap cross-fades onto its row: opacity only, 200 ms or less', async ({
+  page,
+}) => {
+  // design:reduced-motion DR2: a transition the wheel starts, here a tap's
+  // turn, changes opacity only and finishes in 200 ms or less.
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const {driver, field, minutes} = await openWheel(page);
+  const read = await recordAnimations(minutes);
+  const box = await minutes.boundingBox();
+  if (box == null) {
+    throw new Error('no minute column');
+  }
+  // Two rows below the band: minute 02.
+  await driver.tap({
+    x: Math.round(box.x + box.width / 2),
+    y: Math.round(box.y + box.height / 2 + 2 * ROW),
+  });
+  await expect(field).toHaveValue('10:02 AM', {timeout: 3000});
+  const seen = await read();
   expect(seen.length).toBeGreaterThan(0);
   for (const animation of seen) {
     expect(animation.props).toEqual(['opacity']);
