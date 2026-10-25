@@ -52,7 +52,7 @@ not reorder loads none of it.
 ## Public contract
 
 ```tsx
-import {createReorderable} from '@astryx/core/reorderable';
+import {createReorderable} from '@astryxdesign/core';
 
 const reorderable = createReorderable({
   onReorder: ({key, to}) => setItems(items => moveTo(items, key, to)),
