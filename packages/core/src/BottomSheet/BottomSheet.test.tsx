@@ -136,7 +136,13 @@ function mockWindowHeight(height: number) {
   vi.stubGlobal('innerHeight', height);
 }
 
+// A touch platform that measures the keyboard (spec:AST-099 FR6): a visual
+// viewport, and no keyboard geometry API of its own. The user agent below no
+// longer decides anything; the capability does.
 function mockIOSWebKit() {
+  if (window.visualViewport == null) {
+    mockVisualViewport(window.innerHeight);
+  }
   const navigatorMock = Object.create(window.navigator);
   Object.defineProperties(navigatorMock, {
     userAgent: {
@@ -145,6 +151,18 @@ function mockIOSWebKit() {
         'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15',
     },
     maxTouchPoints: {configurable: true, value: 5},
+  });
+  vi.stubGlobal('navigator', navigatorMock);
+}
+
+// Desktop Chrome and Android Chrome: the platform's own keyboard geometry API
+// (navigator.virtualKeyboard), where the sheet neither measures nor claims
+// focus (spec:AST-099 FR6).
+function mockKeyboardGeometryApi() {
+  const navigatorMock = Object.create(window.navigator);
+  Object.defineProperty(navigatorMock, 'virtualKeyboard', {
+    configurable: true,
+    value: {overlaysContent: false},
   });
   vi.stubGlobal('navigator', navigatorMock);
 }
@@ -1449,6 +1467,7 @@ describe('BottomSheet', () => {
     it('does not alter ordinary desktop focus when the viewport is unobstructed', () => {
       mockVisualViewport(800);
       mockWindowHeight(800);
+      mockKeyboardGeometryApi();
       const onFocus = vi.fn();
       render(
         <BottomSheet
@@ -1472,6 +1491,7 @@ describe('BottomSheet', () => {
     });
 
     it('keeps Tall geometry fixed while extending and cleaning up its internal scroll range', () => {
+      mockWindowHeight(800);
       const viewport = mockVisualViewport(500);
       render(
         <BottomSheet
@@ -2132,6 +2152,7 @@ describe('BottomSheet', () => {
 
     it('does not scroll a browser-driven transition when the viewport is unobstructed', () => {
       mockIOSWebKit();
+      mockWindowHeight(800);
       mockVisualViewport(800);
       render(
         <BottomSheet

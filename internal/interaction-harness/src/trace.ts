@@ -17,6 +17,16 @@
  * `performance.mark` calls, and to the time between the start and end marks,
  * so other pages, the browser process and setup work are excluded.
  *
+ * With `{invalidations: true}` the trace also records why each style
+ * recalculation happened, which elements animations ran on and whether they
+ * ran on the compositor, and when script ran. `countBetween` can then leave
+ * out the one rendering pass Chrome makes on its own for a compositor
+ * animation (its start time arriving from the compositor, late on a loaded
+ * machine): a pass whose style recalculations all have the reason
+ * `Animation`, on elements whose animations run on the compositor, with no
+ * script since the previous pass. Anything the page causes (a style write, a
+ * layout read, an animation the compositor cannot run) is still counted.
+ *
  * SYNC: Keep RENDERING_EVENTS equal to the README's list.
  */
 
@@ -53,6 +63,107 @@ export interface RenderingTrace {
   readonly events: readonly {readonly name: string; readonly t: number}[];
   /** The window, epoch ms on the page's clock. */
   readonly window: {readonly from: number; readonly to: number};
+  /**
+   * With `invalidations`: each style recalculation Chrome scheduled, with its
+   * reason (`Animation`, `Inline CSS style declaration was mutated`, …) and
+   * the element's trace node id, epoch ms.
+   */
+  readonly styleInvalidations?: readonly {
+    readonly t: number;
+    readonly reason: string;
+    readonly nodeId?: number;
+  }[];
+  /**
+   * With `invalidations`: the elements animations ran on, and whether each
+   * of them ran on the compositor (Chrome reported no reason it could not).
+   */
+  readonly animations?: readonly {
+    readonly nodeId: number;
+    readonly composited: boolean;
+  }[];
+  /**
+   * With `invalidations`: when script started on the main thread (function
+   * calls, animation frame callbacks, timers, event dispatch), epoch ms.
+   */
+  readonly scripts?: readonly number[];
+}
+
+export interface TraceRenderingOptions {
+  /**
+   * Also record style recalculation reasons, the animations and whether they
+   * ran on the compositor, and script, for
+   * `countBetween(…, {skipCompositorAnimationUpdates: true})`.
+   */
+  invalidations?: boolean;
+}
+
+export interface CountBetweenOptions {
+  /**
+   * Leave out a rendering pass Chrome makes on its own for compositor
+   * animations: every style recalculation since the previous pass has the
+   * reason `Animation` and is on an element whose animations run on the
+   * compositor, and no script ran in between. Needs a trace recorded with
+   * `{invalidations: true}`.
+   */
+  skipCompositorAnimationUpdates?: boolean;
+}
+
+// Rendering events closer than this belong to one pass (one frame's style,
+// layout and paint); passes are a frame apart.
+const PASS_GAP_MS = 4;
+
+/**
+ * The times of the rendering events that belong to passes Chrome made on its
+ * own for compositor animations (see `CountBetweenOptions`).
+ */
+function compositorAnimationUpdates(trace: RenderingTrace): Set<number> {
+  const {styleInvalidations, animations, scripts} = trace;
+  if (styleInvalidations == null || animations == null || scripts == null) {
+    throw new Error(
+      'countBetween: skipCompositorAnimationUpdates needs traceRendering(…, {invalidations: true})',
+    );
+  }
+  const composited = new Set<number>();
+  const notComposited = new Set<number>();
+  for (const animation of animations) {
+    (animation.composited ? composited : notComposited).add(animation.nodeId);
+  }
+  const events = [...trace.events].sort((a, b) => a.t - b.t);
+  const skipped = new Set<number>();
+  let previousEnd = -Infinity;
+  let i = 0;
+  while (i < events.length) {
+    let j = i;
+    while (
+      j + 1 < events.length &&
+      events[j + 1].t - events[j].t <= PASS_GAP_MS
+    ) {
+      j += 1;
+    }
+    const start = events[i].t;
+    const end = events[j].t;
+    const causes = styleInvalidations.filter(
+      inv => inv.t > previousEnd && inv.t <= end,
+    );
+    const isAnimationUpdate =
+      causes.length > 0 &&
+      causes.every(
+        inv =>
+          inv.reason === 'Animation' &&
+          inv.nodeId != null &&
+          composited.has(inv.nodeId) &&
+          !notComposited.has(inv.nodeId),
+      ) &&
+      !scripts.some(t => t > previousEnd && t <= start);
+    if (isAnimationUpdate) {
+      for (let k = i; k <= j; k += 1) {
+        skipped.add(events[k].t);
+      }
+    }
+    previousEnd = end;
+    i = j + 1;
+  }
+  return skipped;
 }
 
 /** Counts rendering events by name inside `[from, to]` (epoch ms). */
@@ -60,10 +171,14 @@ export function countBetween(
   trace: RenderingTrace,
   from: number,
   to: number,
+  {skipCompositorAnimationUpdates = false}: CountBetweenOptions = {},
 ): Record<string, number> {
+  const skipped = skipCompositorAnimationUpdates
+    ? compositorAnimationUpdates(trace)
+    : new Set<number>();
   const counts: Record<string, number> = {};
   for (const e of trace.events) {
-    if (e.t >= from && e.t <= to) {
+    if (e.t >= from && e.t <= to && !skipped.has(e.t)) {
       counts[e.name] = (counts[e.name] ?? 0) + 1;
     }
   }
@@ -89,6 +204,7 @@ interface TraceEvent {
 export async function traceRendering(
   page: Page,
   body: () => Promise<unknown>,
+  {invalidations = false}: TraceRenderingOptions = {},
 ): Promise<RenderingTrace> {
   const cdp: CDPSession = await page.context().newCDPSession(page);
   const events: TraceEvent[] = [];
@@ -106,6 +222,9 @@ export async function traceRendering(
         'disabled-by-default-devtools.timeline',
         'blink.user_timing',
         'toplevel',
+        ...(invalidations
+          ? ['disabled-by-default-devtools.timeline.invalidationTracking']
+          : []),
       ],
       excludedCategories: ['*'],
     },
@@ -146,6 +265,64 @@ export async function traceRendering(
       counted.push({name: e.name, t: toEpochMs(e.ts)});
     }
   }
+  const extra: {
+    -readonly [
+      K in 'styleInvalidations' | 'animations' | 'scripts'
+    ]?: RenderingTrace[K];
+  } = {};
+  if (invalidations) {
+    const data = (e: TraceEvent) =>
+      ((e.args as {data?: Record<string, unknown>} | undefined)?.data ??
+        {}) as Record<string, unknown>;
+    const asyncId = (e: TraceEvent) =>
+      (e as TraceEvent & {id2?: {local?: string}; id?: string}).id2?.local ??
+      (e as TraceEvent & {id?: string}).id ??
+      '';
+    const animationNode = new Map<string, number>();
+    const animationComposited = new Map<string, boolean>();
+    for (const e of events) {
+      if (e.name !== 'Animation' || e.pid !== start.pid) {
+        continue;
+      }
+      const d = data(e);
+      if (typeof d.nodeId === 'number') {
+        animationNode.set(asyncId(e), d.nodeId);
+      }
+      if (typeof d.compositeFailed === 'number') {
+        const id = asyncId(e);
+        animationComposited.set(
+          id,
+          (animationComposited.get(id) ?? true) && d.compositeFailed === 0,
+        );
+      }
+    }
+    extra.animations = [...animationNode].map(([id, nodeId]) => ({
+      nodeId,
+      composited: animationComposited.get(id) ?? false,
+    }));
+    extra.styleInvalidations = events
+      .filter(e => onMain(e) && e.name === 'StyleRecalcInvalidationTracking')
+      .map(e => {
+        const d = data(e);
+        return {
+          t: toEpochMs(e.ts),
+          reason: String(d.reason ?? ''),
+          nodeId: typeof d.nodeId === 'number' ? d.nodeId : undefined,
+        };
+      });
+    extra.scripts = events
+      .filter(
+        e =>
+          onMain(e) &&
+          [
+            'FunctionCall',
+            'FireAnimationFrame',
+            'TimerFire',
+            'EventDispatch',
+          ].includes(e.name),
+      )
+      .map(e => toEpochMs(e.ts));
+  }
   const longTasks = events
     .filter(e => onMain(e) && e.name === 'RunTask' && (e.dur ?? 0) > 50_000)
     .map(e => ({start: toEpochMs(e.ts), durationMs: (e.dur ?? 0) / 1000}));
@@ -159,6 +336,7 @@ export async function traceRendering(
     longTasks,
     events: counted,
     window: {from: fromEpoch, to: toEpoch},
+    ...extra,
   };
 }
 
