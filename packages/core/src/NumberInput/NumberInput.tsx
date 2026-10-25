@@ -892,11 +892,12 @@ export function NumberInput({
       if (!e || e.detail === 0) {
         inputRef.current?.focus();
       } else {
-        // Defer focus restoration past the button's unmount task so iOS Safari
-        // and touch browsers don't jump the page scroll to 0 on tap.
-        requestAnimationFrame(() => {
-          inputRef.current?.focus({preventScroll: true});
-        });
+        // Focus inside the tap: iOS Safari brings up its keyboard only for a
+        // focus made while handling the touch, so a field the tap reaches
+        // unfocused gets its keyboard, as UIKit's clear button makes the
+        // field first responder. `preventScroll` keeps a scrolled page where
+        // it is.
+        inputRef.current?.focus({preventScroll: true});
       }
     },
     [hasClear, onChange],

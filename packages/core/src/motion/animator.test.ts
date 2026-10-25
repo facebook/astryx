@@ -21,6 +21,7 @@ import {
   type AnimatorOptions,
 } from './animator';
 import {cubicBezier} from './bezier';
+import {motionRoleIn} from './roles';
 import {solveDecay} from './decay';
 import {solveSpring, solveSpringTowardRamp, toSpring} from './spring';
 import {scroll} from './uikit/scroll';
@@ -710,52 +711,93 @@ describe('finished', () => {
   });
 });
 
-describe('Reduced Motion (M5): UIKit cross-fades instead of travel', () => {
-  const reduced = () => setup({prefersReducedMotion: () => true});
+describe('Reduced Motion (design:reduced-motion)', () => {
+  // A coarse primary pointer cross-fades (DR2); any other completes at once
+  // unless a touch release started the call (DR3).
+  const reduced = (coarse = true) =>
+    setup({prefersReducedMotion: () => true, isCoarsePointer: () => coarse});
   const fade = timing.reducedMotionCrossFadeMs;
   const ease = cubicBezier(timing.curves.easeInOut);
+  /** Every animation the browser was handed changes opacity only. */
+  const opacityOnly = () =>
+    recorded.every(animation =>
+      animation.keyframes.every(keyframe =>
+        Object.keys(keyframe).every(key =>
+          ['opacity', 'offset', 'easing', 'composite'].includes(key),
+        ),
+      ),
+    );
 
-  it('a move dips: fades out, jumps at the midpoint, fades back in', () => {
+  it('fades for 200 ms at most, and the length is not a theme role', () => {
+    expect(fade).toBeGreaterThan(0);
+    expect(fade).toBeLessThanOrEqual(200);
+    expect(motionRoleIn(timing, 'reducedMotionCrossFadeMs')).toBeUndefined();
+  });
+
+  it('never animates a transform, on either pointer', async () => {
+    for (const coarse of [true, false]) {
+      const {animator} = reduced(coarse);
+      animator.animate({x: 100}, {spring: springs.navigationPush});
+      animator.animate({y: 400, opacity: 0}, {spring: springs.sheetDismiss});
+      animator.animate(
+        {scale: 0.9},
+        {spring: springs.snappy},
+        {crossfadeAs: 'exit'},
+      );
+      animator.play({
+        rotate: {duration: 0.3, at: t => 30 * t, velocity: () => 30},
+      });
+      await advance(1000);
+    }
+    expect(recorded.length).toBeGreaterThan(0);
+    expect(opacityOnly()).toBe(true);
+  });
+
+  it('a move dips: fades out, lands while transparent, fades back in', async () => {
     const {animator, element} = reduced();
     animator.animate({x: 100}, {spring: springs.navigationPush});
-    expect(animator.get('x', 1000 + fade / 2 - 1)).toBe(0);
-    expect(animator.get('x', 1000 + fade / 2)).toBe(100);
+    // Fading out in place.
+    expect(animator.get('x')).toBe(0);
     expect(animator.get('opacity', 1000 + fade / 4)).toBeCloseTo(
       1 - ease(0.5),
       9,
     );
-    expect(animator.get('opacity', 1000 + fade / 2)).toBeCloseTo(0, 9);
-    expect(animator.get('opacity', 1000 + fade)).toBe(1);
-    // The move is a hold that ends in a jump: two keyframes at its last
-    // offset, the value before and after. The fade runs on the same clock.
-    const [translate] = live('translate');
-    const [opacity] = live('opacity');
-    expect(translate.startTime).toBe(opacity.startTime);
-    expect(Number(translate.options.duration)).toBeCloseTo(
-      fade / 2 + END_HOLD_MS,
-      6,
-    );
-    const jump = fade / 2 / (fade / 2 + END_HOLD_MS);
-    const atJump = translate.keyframes.filter(
-      k => Math.abs(Number(k.offset) - jump) < 1e-12,
-    );
-    expect(atJump.map(k => k.translate)).toEqual(['0px 0px', '100px 0px']);
-    expect(translate.keyframes[translate.keyframes.length - 1]).toMatchObject({
-      offset: 1,
-      translate: '100px 0px',
-    });
-    expect(sampleAt(translate, 'translate', 1000 + fade / 2 - 2)[0]).toBe(0);
+    expect(live('translate')).toHaveLength(0);
+    await advance(fade / 2);
+    // Landed with a plain write at the bottom, and fading back in from there.
+    expect(animator.get('x')).toBe(100);
     expect(element.style.translate).toBe('100px 0px');
-    expect(element.style.opacity).toBe('1');
+    expect(animator.get('opacity')).toBeCloseTo(0, 9);
+    expect(animator.get('opacity', clock + fade / 4)).toBeCloseTo(ease(0.5), 9);
+    expect(live('translate')).toHaveLength(0);
+    expect(opacityOnly()).toBe(true);
+  });
+
+  it('a busy main thread keeps the element transparent longer, never in the wrong place', async () => {
+    const {animator} = reduced();
+    const handle = animator.animate({x: 100}, {spring: springs.navigationPush});
+    await commitFrame(1000);
+    // The task that would land it runs 300 ms late.
+    clock += fade / 2 + 300;
+    expect(animator.get('x')).toBe(0);
+    expect(animator.get('opacity')).toBe(0);
+    await vi.advanceTimersByTimeAsync(fade / 2 + 300);
+    expect(animator.get('x')).toBe(100);
+    let finished: boolean | null = null;
+    void handle.finished.then(value => {
+      finished = value;
+    });
+    await advance(fade);
+    expect(animator.get('opacity')).toBe(1);
+    expect(finished).toBe(true);
   });
 
   it('an entrance lands in place and fades in', () => {
-    const {animator, element} = reduced();
+    const {animator} = reduced();
     animator.set({y: 400, opacity: 0});
     animator.animate({y: 0, opacity: 1}, {spring: springs.sheetPresent});
     expect(animator.get('y')).toBe(0);
     expect(live('translate')).toHaveLength(0);
-    expect(element.style.translate).toBe('0px 0px');
     expect(animator.get('opacity', 1000 + fade / 2)).toBeCloseTo(ease(0.5), 9);
     expect(Number(live('opacity')[0].options.duration)).toBeCloseTo(
       fade + END_HOLD_MS,
@@ -763,148 +805,129 @@ describe('Reduced Motion (M5): UIKit cross-fades instead of travel', () => {
     );
   });
 
-  it('an exit fades out in place, then moves', () => {
+  it('an exit fades out in place, then lands', async () => {
     const {animator} = reduced();
     animator.animate({y: 400, opacity: 0}, {spring: springs.sheetDismiss});
-    expect(animator.get('y', 1000 + fade - 1)).toBe(0);
-    expect(animator.get('y', 1000 + fade)).toBe(400);
-    const [translate] = live('translate');
-    expect(sampleAt(translate, 'translate', 1000 + fade - 1)[1]).toBe(0);
-    expect(translate.keyframes[translate.keyframes.length - 1].translate).toBe(
-      '0px 400px',
-    );
-  });
-
-  it("'instant' jumps, 'keep' keeps the motion", () => {
-    const a = reduced();
-    a.animator.animate(
-      {x: 50},
-      {spring: springs.smooth},
-      {reducedMotion: 'instant'},
-    );
-    expect(a.animator.get('x')).toBe(50);
-    expect(recorded).toHaveLength(0);
-    const b = reduced();
-    b.animator.animate(
-      {x: 50},
-      {spring: springs.smooth},
-      {reducedMotion: 'keep'},
-    );
-    expect(b.animator.getVelocity('x', 1010)).toBeGreaterThan(0);
-  });
-
-  it('a cross-fade can follow the presentation\u2019s own spring', () => {
-    const {animator} = reduced();
-    // An exit: fades out on the spring, then moves once the fade settles.
-    animator.set({y: 0, opacity: 1});
-    animator.animate(
-      {y: 400, opacity: 0},
-      {spring: springs.sheetDismiss},
-      {crossfade: springs.sheetDismiss},
-    );
-    const curve = solveSpring(toSpring(springs.sheetDismiss), {from: 1, to: 0});
-    const settle = curve.settleTime(0.001) * 1000;
-    for (const t of [0, 50, 120, 250]) {
-      expect(animator.get('opacity', 1000 + t)).toBeCloseTo(
-        curve.value(t / 1000),
-        9,
-      );
-      expect(animator.get('y', 1000 + t)).toBe(0);
-    }
-    expect(animator.get('y', 1000 + settle + 1)).toBe(400);
-  });
-
-  it('a dip on a spring fades out, moves at the bottom, fades back in', () => {
-    const {animator} = reduced();
-    animator.animate(
-      {x: 100},
-      {spring: springs.alertPresent},
-      {crossfade: springs.alertPresent},
-    );
-    const spring = toSpring(springs.alertPresent);
-    const out = solveSpring(spring, {from: 1, to: 0});
-    const half = out.settleTime(0.001) * 1000;
-    expect(animator.get('opacity', 1000 + half / 2)).toBeCloseTo(
-      out.value(half / 2000),
+    expect(animator.get('opacity', 1000 + fade / 2)).toBeCloseTo(
+      1 - ease(0.5),
       9,
     );
-    expect(animator.get('x', 1000 + half - 1)).toBe(0);
-    expect(animator.get('x', 1000 + half)).toBe(100);
-    const back = solveSpring(spring, {from: 0, to: 1});
-    expect(animator.get('opacity', 1000 + half + 60)).toBeCloseTo(
-      back.value(0.06),
+    await advance(fade - 1);
+    expect(animator.get('y')).toBe(0);
+    await advance(1);
+    expect(animator.get('y')).toBe(400);
+    expect(animator.get('opacity')).toBe(0);
+    expect(opacityOnly()).toBe(true);
+  });
+
+  it('an opacity change on a spring becomes the timed fade, never the spring', () => {
+    const {animator} = reduced();
+    animator.animate({opacity: 0}, {spring: springs.alertDismiss});
+    expect(animator.get('opacity', 1000 + fade / 2)).toBeCloseTo(
+      1 - ease(0.5),
       9,
     );
-  });
-
-  it('an opacity-only change is not travel and keeps its spring', () => {
-    const {animator} = reduced();
-    animator.animate({opacity: 0}, {spring: springs.smooth});
-    expect(animator.getVelocity('opacity', 1010)).toBeLessThan(0);
-  });
-
-  it('crossfadeAs entrance: a slide-in lands at once and fades in on its spring', () => {
-    const {animator} = reduced();
-    animator.set({y: 800});
-    animator.animate(
-      {y: 0},
-      {spring: springs.sheetPresent},
-      {crossfade: springs.sheetPresent, crossfadeAs: 'entrance'},
+    expect(animator.get('opacity', 1000 + fade)).toBe(0);
+    expect(Number(live('opacity')[0].options.duration)).toBeCloseTo(
+      fade + END_HOLD_MS,
+      6,
     );
-    const curve = solveSpring(toSpring(springs.sheetPresent), {from: 0, to: 1});
-    expect(animator.get('y', 1000)).toBe(0);
-    for (const t of [0, 40, 120]) {
-      expect(animator.get('opacity', 1000 + t)).toBeCloseTo(
-        curve.value(t / 1000),
-        9,
-      );
-    }
-    expect(animator.get('opacity', 1000 + 5000)).toBe(1);
   });
 
-  it('crossfadeAs entrance with the timed fade', () => {
+  it('a played curve, opacity alone included, becomes the timed fade', () => {
     const {animator} = reduced();
-    animator.set({x: 300});
-    animator.animate(
+    // A long dim that would follow a sheet's spring.
+    animator.play({
+      opacity: {duration: 0.6, at: t => 1 - t / 0.6, velocity: () => -1 / 0.6},
+    });
+    expect(animator.get('opacity', 1000 + fade)).toBe(0);
+    expect(Number(live('opacity')[0].options.duration)).toBeCloseTo(
+      fade + END_HOLD_MS,
+      6,
+    );
+  });
+
+  it('a slide without opacity takes its direction from crossfadeAs', async () => {
+    const entrance = reduced().animator;
+    entrance.set({x: 300});
+    entrance.animate(
       {x: 0},
       {spring: springs.navigationPush},
       {crossfadeAs: 'entrance'},
     );
-    expect(animator.get('x', 1000)).toBe(0);
-    expect(animator.get('opacity', 1000)).toBe(0);
-    expect(animator.get('opacity', 1000 + fade / 2)).toBeCloseTo(ease(0.5), 9);
-    expect(animator.get('opacity', 1000 + fade)).toBe(1);
-  });
+    expect(entrance.get('x', 1000)).toBe(0);
+    expect(entrance.get('opacity', 1000)).toBe(0);
+    expect(entrance.get('opacity', 1000 + fade / 2)).toBeCloseTo(ease(0.5), 9);
+    expect(entrance.get('opacity', 1000 + fade)).toBe(1);
 
-  it('crossfadeAs exit: fades out in place, then lands and restores the opacity', () => {
-    const {animator} = reduced();
-    animator.set({y: 0});
-    animator.animate(
+    const exit = reduced().animator;
+    exit.animate(
       {y: 800},
       {spring: springs.sheetDismiss},
-      {crossfade: springs.sheetDismiss, crossfadeAs: 'exit'},
+      {crossfadeAs: 'exit'},
     );
-    const curve = solveSpring(toSpring(springs.sheetDismiss), {from: 1, to: 0});
-    const settle = curve.settleTime(0.001) * 1000;
-    expect(animator.get('y', 1000 + settle - 1)).toBe(0);
-    expect(animator.get('opacity', 1000 + settle / 2)).toBeCloseTo(
-      curve.value(settle / 2000),
+    expect(exit.get('opacity', clock + fade / 2)).toBeCloseTo(1 - ease(0.5), 9);
+    await advance(fade);
+    // Lands, and the opacity returns to its value, in one plain write.
+    expect(exit.get('y')).toBe(800);
+    expect(exit.get('opacity')).toBe(1);
+  });
+
+  it('a later call before the landing takes the property over', async () => {
+    const {animator} = reduced();
+    animator.animate({x: 100}, {spring: springs.navigationPush});
+    await advance(fade / 4);
+    animator.set({x: 40});
+    await advance(fade);
+    expect(animator.get('x')).toBe(40);
+  });
+
+  it('completes at once on a fine pointer, opacity included', () => {
+    const {animator} = reduced(false);
+    animator.animate({x: 100, opacity: 0.5}, {spring: springs.navigationPush});
+    animator.play({
+      y: {duration: 0.4, at: t => 100 * t, velocity: () => 100},
+    });
+    expect(recorded).toHaveLength(0);
+    expect(animator.get('x')).toBe(100);
+    expect(animator.get('opacity')).toBe(0.5);
+    expect(animator.get('y')).toBeCloseTo(40, 9);
+  });
+
+  it('fades on a fine pointer when a touch release started the call', async () => {
+    const {animator} = reduced(false);
+    animator.animate(
+      {y: 400, opacity: 0},
+      {spring: springs.sheetDismiss},
+      {touchRelease: true},
+    );
+    expect(animator.get('opacity', 1000 + fade / 2)).toBeCloseTo(
+      1 - ease(0.5),
       9,
     );
-    expect(animator.get('y', 1000 + settle)).toBe(800);
-    expect(animator.get('opacity', 1000 + settle)).toBe(1);
-    // Baked: the fade, then a jump back to 1 at its end, held.
-    const [opacity] = live('opacity');
-    const last = opacity.keyframes[opacity.keyframes.length - 1];
-    expect(last.opacity).toBe('1');
-    const jump = settle / (settle + END_HOLD_MS);
-    const atJump = opacity.keyframes.filter(
-      k => Math.abs(Number(k.offset) - jump) < 1e-9,
+    await advance(fade);
+    expect(animator.get('y')).toBe(400);
+  });
+
+  it('no theme lengthens the fade', () => {
+    const {animator, element} = reduced();
+    element.style.setProperty(
+      '--motion-timing-reduced-motion-cross-fade-ms',
+      '900ms',
     );
-    expect(atJump.map(k => Number(k.opacity))).toEqual([
-      expect.closeTo(curve.value(settle / 1000), 3),
-      1,
-    ]);
+    document.documentElement.append(element);
+    animator.animate({opacity: 0}, {spring: springs.smooth});
+    expect(animator.get('opacity', 1000 + fade)).toBe(0);
+    element.remove();
+  });
+
+  it('says what it makes of a call, for feedback with no fade of its own', () => {
+    expect(setup().animator.reducedMotion()).toBe('off');
+    expect(reduced().animator.reducedMotion()).toBe('crossfade');
+    expect(reduced(false).animator.reducedMotion()).toBe('instant');
+    expect(reduced(false).animator.reducedMotion({touchRelease: true})).toBe(
+      'crossfade',
+    );
   });
 
   it('crossfadeAs changes nothing without Reduced Motion', () => {
@@ -913,7 +936,7 @@ describe('Reduced Motion (M5): UIKit cross-fades instead of travel', () => {
     animator.animate(
       {y: 0},
       {spring: springs.sheetPresent},
-      {crossfade: springs.sheetPresent, crossfadeAs: 'entrance'},
+      {crossfadeAs: 'entrance'},
     );
     expect(live('opacity')).toHaveLength(0);
     expect(animator.getVelocity('y', 1010)).toBeLessThan(0);
@@ -1002,24 +1025,19 @@ describe('play: any closed-form curve', () => {
     expect(element.style.opacity).toBe('0.4');
   });
 
-  it('under Reduced Motion a played travel cross-fades unless kept', () => {
-    const reduced = setup({prefersReducedMotion: () => true});
+  it('under Reduced Motion a played travel cross-fades to its end', async () => {
+    const reduced = setup({
+      prefersReducedMotion: () => true,
+      isCoarsePointer: () => true,
+    });
     reduced.animator.play({
       x: {duration: 0.3, at: t => 300 * t, velocity: () => 300},
     });
     const [opacity] = live('opacity');
     expect(opacity).toBeDefined();
-    expect(
-      reduced.animator.get('x', 1000 + timing.reducedMotionCrossFadeMs),
-    ).toBeCloseTo(90, 9);
-    recorded = [];
-    const kept = setup({prefersReducedMotion: () => true});
-    kept.animator.play(
-      {x: {duration: 0.3, at: t => 300 * t, velocity: () => 300}},
-      {reducedMotion: 'keep'},
-    );
-    expect(live('opacity')).toHaveLength(0);
-    expect(kept.animator.get('x', 1150)).toBeCloseTo(45, 9);
+    expect(live('translate')).toHaveLength(0);
+    await advance(timing.reducedMotionCrossFadeMs);
+    expect(reduced.animator.get('x')).toBeCloseTo(90, 9);
   });
 
   it('its handle retargets only with a spring', () => {
