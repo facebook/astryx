@@ -29,6 +29,7 @@ export {
   type SourcedGestureConstant,
 } from './gestures';
 export {navigation, registerNavigationTable} from './navigation';
+export {pageControl} from './pageControl';
 export {registerScrollTable, scroll} from './scroll';
 export {registerSpringsTable, springs} from './springs';
 export {registerTimingTable, timing} from './timing';
