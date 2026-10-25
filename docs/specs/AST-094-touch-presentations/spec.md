@@ -386,16 +386,19 @@ FR33 apply to menus only. A mouse keeps today's behavior.
 ### Text selection
 
 - **FR41 — A held finger on a menu element opens the menu, not a selection.**
-  **Proposed; pending owner decision (OQ11, OQ12).** A tap activates as it
-  does today and never selects text. On an element that opens a menu on a long
-  press, such as a ContextMenu trigger or a row with actions, the long press
-  opens the menu at FR29's or FR33's timing and suppresses the browser's
-  text-selection start and callout for that press only, lifting the
-  suppression at the lift or a cancel. Elsewhere the browser's long-press
-  selection and its handles are untouched. A person who wants that element's
-  text gets it through a Copy or Select Text item the caller puts in the menu;
-  Astryx adds no item of its own. Keyboard, mouse, and assistive-technology
-  selection are unchanged (`spec:AST-017` FR59).
+  A tap activates as it does today and never selects text. On an element that
+  opens a menu on a long press, such as a ContextMenu trigger or a row with
+  actions, the long press opens the menu at FR29's or FR33's timing and
+  suppresses the browser's text-selection start and callout for that press
+  only, lifting the suppression at the lift or a cancel; that element's text is
+  not selectable by a long press, and Astryx adds no Copy item to its menu. A
+  long press on text with no long-press action selects natively, with the
+  browser's handles. Keyboard, mouse, and assistive-technology selection are
+  unchanged (`spec:AST-017` FR59). Whether other held controls also suppress
+  selection is OQ12 (DEC-9).
+
+  Guidance: a caller whose menu element carries text a person may want offers
+  a Copy action in its menu.
 
 ### Haptics
 
@@ -457,7 +460,7 @@ FR33 apply to menus only. A mouse keeps today's behavior.
   (FR13) sit beside the shared modality state; its invariants are unchanged.
 - `architecture:react-component-runtime`: FR24 states the caller-visible
   outcome of INV5 and INV7 for touch work; both are unchanged.
-- Under proposed FR41, a held finger on a touch control, a row, or a menu
+- Under FR41, a held finger on a touch control, a row, or a menu
   trigger can start a text selection or the callout today; no shared,
   press-scoped suppression exists.
 - `family:buttons`: the control and cell press profiles (FR11).
@@ -514,7 +517,7 @@ FR33 apply to menus only. A mouse keeps today's behavior.
 | FR31–FR33       | Browser tests and storyboards under a finger                                                                                   | a menu, a Popover and a ContextMenu lift: open, close, a pan outside, a tap outside, a pinch over the surface; a mouse                                                                                                    | a surface that does not grow from and shrink into its trigger, a pan outside that leaves a menu open, a Popover whose dismissal changed, a blocked pinch, a tap outside that reaches the page, or a changed mouse path fails                                        |
 | FR34, FR35      | Browser tests and storyboards under a finger                                                                                   | a sub-menu drilling in and its Back row returning; a tap and a drag during a popover's and a menu's growth; a pinch during growth; a mouse                                                                                | a drill-in that leaves the parent's rows in place, a change between levels that does not play on its roles, a tap during growth that closes, scrolls or moves focus, a blocked pinch, or a changed mouse path fails                                                 |
 | FR36–FR40       | Release tests on synthetic touch streams with explicit timestamps, per use                                                     | below and past each commit point; a flick that projects past it; a slow drag past it; a release moving back; Reduce Motion; keyboard and mouse paths                                                                      | a decision that changes mid-settle, a release moving back that commits, a settle that does not start at the release velocity, or an action with no keyboard or mouse path fails                                                                                     |
-| FR41 (proposed) | Browser tests with real touch input (`spec:AST-013` FR10)                                                                      | a tap; a long press on a ContextMenu trigger and on a row with actions; a long press on plain text; a cancelled press; mouse and keyboard selection                                                                       | a tap that selects, a menu long press that starts a selection or callout, a suppression that outlives the press, or a change to native selection elsewhere or to mouse, keyboard, or assistive-technology selection fails                                           |
+| FR41            | Browser tests with real touch input (`spec:AST-013` FR10)                                                                      | a tap; a long press on a ContextMenu trigger and on a row with actions; a long press on plain text; a cancelled press; mouse and keyboard selection                                                                       | a tap that selects, a menu long press that starts a selection or callout, a suppression that outlives the press, or a change to native selection elsewhere or to mouse, keyboard, or assistive-technology selection fails                                           |
 | all             | iOS simulator: the UIKit reference capture and the same gesture in Safari; real iOS Safari and Android Chrome devices          | per component                                                                                                                                                                                                             | an unmatched curve or timing is a parity defect                                                                                                                                                                                                                     |
 
 ## Decision log
@@ -598,15 +601,25 @@ watching a touch never delays the browser's scroll, and it is not cancelled
 when the browser takes the touch: it follows the scroll to the lift, so a bar
 that reacts to scrolling keeps hearing it.
 
+### DEC-9 — A long press opens a menu, not a selection; copying is the caller's menu item
+
+**Reference:** `spec:AST-094/DEC-9`
+**Decider:** `cixzhang`, `2026-10-25`
+
+Under a finger a tap, a long press that opens a menu, and a long press on plain
+text are three different intents. A tap activates; a long press on an element
+with a menu opens that menu without starting a selection or the loupe, as
+UIKit's context menus and Android's long clicks do; a long press on plain text
+selects natively. Text on a menu element is not selectable by a long press,
+and the system adds no Copy item, so a caller that wants copying puts a Copy
+action in its own menu.
+
+Rejected: a system Copy item, and long-press selection on menu elements.
+
 ## Open questions
 
-- **OQ11 — Selecting text on a menu element.** (`human-design`) FR41
-  proposes a Copy or Select Text item the caller adds to the menu, the pattern
-  UIKit and Android context menus use for copying from a cell. Options: that
-  caller item; selectable text inside the opened surface; or a double tap,
-  where the platform uses one to select.
 - **OQ12 — Which elements suppress selection.** (`human-design`) FR41
-  suppresses selection only on elements with a long-press menu. Options: keep
+  suppresses selection on elements with a long-press menu. Options: keep
   that scope; or also suppress it on other press-tracked controls a finger
   holds, such as sliders, steppers, and checkbox rows.
 
