@@ -347,12 +347,25 @@ export function useScrollableArea({
 
   // The first measure reads the viewport before this hook has let an
   // overflowing axis scroll (it is `clip` until then), so it finds overflow
-  // but no scrollable axis yet. Measure again in the same commit once the new
-  // overflow style is on the element, so the viewport is a tab stop from the
-  // first frame it scrolls, not an animation frame later (`spec:AST-025`
-  // FR12).
+  // but no scrollable axis yet. Measure again in the same commit once an axis
+  // has just gained overflow (or the axis mapping changed), so the viewport is
+  // a tab stop from the first frame it scrolls, not an animation frame later
+  // (`spec:AST-025` FR12). Only on a gain: content that fits only once a
+  // scrollbar takes space would otherwise flip overflow back and forth inside
+  // one commit; a loss waits for the next frame, as before.
+  const previousOverflowRef = useRef<LogicalOverflowGeometry>(INITIAL_OVERFLOW);
+  const previousMappingRef = useRef<LogicalAxisMapping>(INITIAL_MAPPING);
   useIsomorphicLayoutEffect(() => {
-    measureRef.current?.();
+    const previous = previousOverflowRef.current;
+    const hasGainedOverflow =
+      (overflow.inline && !previous.inline) ||
+      (overflow.block && !previous.block);
+    const hasRemapped = mapping !== previousMappingRef.current;
+    previousOverflowRef.current = overflow;
+    previousMappingRef.current = mapping;
+    if (hasGainedOverflow || hasRemapped) {
+      measureRef.current?.();
+    }
   }, [overflow, mapping]);
 
   const state = useMemo<ScrollableAreaState>(

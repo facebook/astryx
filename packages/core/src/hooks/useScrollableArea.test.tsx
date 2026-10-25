@@ -228,6 +228,49 @@ describe('useScrollableArea', () => {
     expect(state().block.isScrollable).toBe(true);
   });
 
+  it('settles content that fits only once a scrollbar takes space, without looping in one commit (AST-025 FR7)', () => {
+    // As in a browser, the computed overflow is the one this hook writes: an
+    // axis is `clip` until the hook lets it scroll.
+    vi.mocked(window.getComputedStyle).mockImplementation(element => {
+      const owned = (axis: 'X' | 'Y') =>
+        element
+          .getAttribute('style')
+          ?.match(new RegExp(`--x-overflow${axis}:\\s*(\\w+)`))?.[1] ??
+        'visible';
+      return new Proxy({} as CSSStyleDeclaration, {
+        get(_target, property) {
+          if (property === 'overflowX') {
+            return owned('X');
+          }
+          if (property === 'overflowY') {
+            return owned('Y');
+          }
+          return property === 'display' ? 'block' : '';
+        },
+      });
+    });
+    // Under `clip` the content is 105 tall and overflows; under `auto` its
+    // scrollbar narrows it and it fits (a 16:9 child at full width).
+    const viewportOverflowY = (element: HTMLElement) =>
+      element.getAttribute('style')?.match(/--x-overflowY:\s*(\w+)/)?.[1];
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(100);
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(100);
+    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(100);
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return this.dataset.testid === 'viewport' &&
+          viewportOverflowY(this) !== 'auto'
+          ? 105
+          : 100;
+      },
+    );
+
+    expect(() => render(<Fixture axis="block" />)).not.toThrow();
+    // At most one flip per animation frame, as before.
+    expect(() => flushFrame()).not.toThrow();
+    expect(() => flushFrame()).not.toThrow();
+  });
+
   it('owns fitting and explicit Sticky overflow styling for direct adopters', () => {
     const {rerender} = render(<Fixture />);
     const viewport = screen.getByTestId('viewport');
