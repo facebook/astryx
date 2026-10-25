@@ -1,0 +1,9 @@
+{
+  "name": "@astryxdesign/ci-probe",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  }
+}
