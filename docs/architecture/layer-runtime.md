@@ -201,12 +201,16 @@ the engine places it afresh from the new list; a later read that finds it
 failing again does the same, since no engine re-runs the list when a scroll
 carries the anchor. Leaving rendering cancels the CSS animations and
 transitions of the layer and its content: the browser recreates the animations
-at their start and the transitions not at all. The runtime gives each recreated
-animation its predecessor's play state, time, playback rate, timing, keyframes,
-composition, id and timeline, resumes each transition with a script animation at
-the same point, and finishes a recreated animation that had no predecessor.
-Script animations are untouched. The Animation objects of CSS animations and
-transitions are new, and the browser fires their cancel and start events.
+at their start and the transitions not at all. `Layer/preserveAnimations.ts`
+reads every accessor with a setter on each animation's and effect's prototype
+chains, the effect's timing and keyframes, and the play and replace state,
+before the reset, and writes back whatever differs on the recreated animation;
+it resumes each transition with a script animation in the same state and
+finishes a recreated animation that had no predecessor. Script animations are
+untouched. The Animation and effect objects of CSS animations and transitions
+are new (their listeners and promises stay with the old ones, and the browser
+fires their cancel and start events), and a finished animation's start time is
+counted again from now while its held end time is kept.
 Chromium tries no more than five
 options, so the second list replaces the first rather than extending it.
 Once the anchor has left the viewport the runtime pins the layer's
@@ -493,6 +497,9 @@ be updated only as that work ships.
   `Layer/layerInset.ts` owns the `--astryx-layer-inset-*` properties a layer or
   the toast viewport writes on itself to carry it; `Layer/clampInlineSize.ts`
   owns the clamp a consumer applies to a size of its own.
+- `Layer/preserveAnimations.ts` owns carrying the CSS animations and
+  transitions of a layer and its content across the re-placement's display
+  reset.
 - `Layer/gestureCounter.ts` owns physical pointer/key gesture identity.
 - `Layer/layerStack.ts`, `Layer/useLayerDismissal.ts`, and
   `Layer/LayerDepthContext.tsx` own current registration, presence, ordering, and

@@ -969,170 +969,87 @@ test('placing a shown tooltip afresh never replays its entry animation', async (
 });
 
 /**
- * Every kind of animation state inside a Tooltip's content that the
- * re-placement's display reset could disturb, one content element each. Each
- * row sets its state up in the page; `expect` checks the state after the
- * re-placement against the state before it, `elapsed` milliseconds apart.
+ * The animation-state regression for the re-placement, driven by what the
+ * engine exposes. In the page it lists every accessor with a setter on a CSS
+ * animation's and its keyframe effect's prototype chains, plus every field of
+ * the effect's timing, and fails if any has no row here. Each row gives one
+ * content element's animation a non-default value for that member (or a
+ * method-only state), and the test checks that the element's whole
+ * animation state is the same after the after-paint re-placement as before.
  */
-interface AnimationRowState {
-  times: number[];
-  rates: number[];
-  playStates: string[];
-  durations: number[];
-  composites: string[];
-  ids: string[];
-  ends: string[];
-  sameObject: boolean;
-  translate: number;
-}
-
-/** The script set-up of the rows whose state script sets, run in the page. */
-function setUpRows() {
-  const row = (name: string) =>
-    document.querySelector(`[data-row="${name}"]`) as HTMLElement;
-  const first = (name: string) => row(name).getAnimations()[0];
-  first('paused').pause();
-  first('rate').playbackRate = 2;
-  first('reversed').reverse();
-  const [one, two] = row('duplicate').getAnimations();
-  two.currentTime = Number(one.currentTime) + 3000;
-  first('timing').effect?.updateTiming({duration: 20000});
-  (first('composite').effect as KeyframeEffect).composite = 'add';
-  (first('keyframes').effect as KeyframeEffect).setKeyframes([
-    {translate: '0px'},
-    {translate: '50px'},
-  ]);
-  first('id').id = 'kept';
-  // Kept to prove the re-placement below really recreated the animations.
-  (window as unknown as {__runningBefore: Animation}).__runningBefore =
-    first('running');
-  (window as unknown as {__scriptAnimation: Animation}).__scriptAnimation = row(
-    'script',
-  ).animate([{translate: '0px'}, {translate: '100px'}], {duration: 10000});
-  row('transition').style.translate = '100px';
-}
-
-const ANIMATION_ROWS: {
-  name: string;
-  css?: string;
-  expect: (b: AnimationRowState, a: AnimationRowState, elapsed: number) => void;
-}[] = [
-  {
-    name: 'running',
-    expect: (b, a, e) => {
-      expect(a.playStates).toEqual(['running']);
-      expect(a.times[0] - b.times[0]).toBeCloseTo(e, -2.5);
-    },
+const STATE_ROWS: Record<
+  string,
+  {css?: string; extraCss?: string; set?: string}
+> = {
+  // Animation accessors.
+  currentTime: {set: 'a.currentTime = 4321'},
+  startTime: {set: 'a.startTime = document.timeline.currentTime - 2500'},
+  playbackRate: {set: 'a.playbackRate = 2'},
+  id: {set: "a.id = 'kept'"},
+  onfinish: {set: 'a.onfinish = window.__handler'},
+  oncancel: {set: 'a.oncancel = window.__handler'},
+  onremove: {set: 'a.onremove = window.__handler'},
+  timeline: {
+    set: 'a.timeline = new ScrollTimeline({source: document.documentElement})',
   },
-  {
-    name: 'paused',
-    expect: (b, a) => {
-      expect(a.playStates).toEqual(['paused']);
-      expect(a.times[0]).toBeCloseTo(b.times[0], 0);
-      expect(a.translate).toBeCloseTo(b.translate, 1);
-    },
+  rangeStart: {
+    css: 'animation-timeline:scroll(nearest block);animation-range:entry 10% exit 80%',
+    set: "a.rangeStart = 'cover 20%'",
   },
-  {
-    name: 'rate',
-    expect: (b, a, e) => {
-      expect(a.rates).toEqual([2]);
-      expect(a.times[0] - b.times[0]).toBeCloseTo(2 * e, -2.5);
-    },
+  rangeEnd: {
+    css: 'animation-timeline:scroll(nearest block);animation-range:entry 10% exit 80%',
+    set: "a.rangeEnd = 'cover 70%'",
   },
-  {
-    name: 'reversed',
-    expect: (b, a, e) => {
-      expect(a.rates).toEqual([-1]);
-      expect(b.times[0] - a.times[0]).toBeCloseTo(e, -2.5);
-    },
+  effect: {
+    set: "a.effect = new KeyframeEffect(el, [{translate: '0px'}, {translate: '30px'}], {duration: 7000, fill: 'both'})",
   },
-  {
-    name: 'finished',
-    css: 'animation-duration:1ms;animation-fill-mode:forwards',
-    expect: (b, a) => {
-      expect(b.playStates).toEqual(['finished']);
-      expect(a.playStates).toEqual(['finished']);
-      expect(a.translate).toBe(100);
-    },
+  // Keyframe effect accessors.
+  target: {set: 'a.effect.target = el.nextElementSibling'},
+  pseudoElement: {
+    extraCss: '[data-row="pseudoElement"]::before{content:"·"}',
+    set: "a.effect.pseudoElement = '::before'",
   },
-  {
-    name: 'duplicate',
+  composite: {set: "a.effect.composite = 'add'"},
+  iterationComposite: {set: "a.effect.iterationComposite = 'accumulate'"},
+  // Effect timing fields.
+  delay: {set: 'a.effect.updateTiming({delay: 500})'},
+  direction: {set: "a.effect.updateTiming({direction: 'alternate'})"},
+  duration: {set: 'a.effect.updateTiming({duration: 20000})'},
+  easing: {set: "a.effect.updateTiming({easing: 'ease-in'})"},
+  endDelay: {set: 'a.effect.updateTiming({endDelay: 300})'},
+  fill: {set: "a.effect.updateTiming({fill: 'forwards'})"},
+  iterationStart: {set: 'a.effect.updateTiming({iterationStart: 0.25})'},
+  iterations: {set: 'a.effect.updateTiming({iterations: 3})'},
+  // Method-only state.
+  keyframes: {
+    set: "a.effect.setKeyframes([{translate: '0px'}, {translate: '50px'}])",
+  },
+  paused: {set: 'a.pause()'},
+  reversed: {set: 'a.reverse()'},
+  finished: {css: 'animation-duration:1ms;animation-fill-mode:forwards'},
+  persisted: {set: 'a.persist()'},
+  // Shapes.
+  running: {},
+  'stylesheet-paused': {css: 'animation-play-state:paused'},
+  duplicate: {
     css: 'animation:test-shift 10s linear both,test-shift 10s linear both;animation-composition:add,add',
-    expect: (b, a, e) => {
-      expect(a.times[0] - b.times[0]).toBeCloseTo(e, -2.5);
-      expect(a.times[1] - b.times[1]).toBeCloseTo(e, -2.5);
-      expect(a.translate - b.translate).toBeCloseTo((2 * e) / 100, -0.5);
-    },
+    set: 'el.getAnimations()[1].currentTime = Number(a.currentTime) + 3000',
   },
-  {
-    name: 'descendant',
-    expect: (b, a, e) => {
-      expect(a.times[0] - b.times[0]).toBeCloseTo(e, -2.5);
-    },
-  },
-  {
-    name: 'timing',
-    expect: (b, a, e) => {
-      expect(a.durations).toEqual([20000]);
-      expect(a.times[0] - b.times[0]).toBeCloseTo(e, -2.5);
-    },
-  },
-  {
-    name: 'composite',
-    expect: (b, a) => {
-      expect(a.composites).toEqual(['add']);
-    },
-  },
-  {
-    name: 'keyframes',
-    expect: (b, a) => {
-      expect(a.ends).toEqual(['50px']);
-    },
-  },
-  {
-    name: 'id',
-    expect: (b, a) => {
-      expect(a.ids).toEqual(['kept']);
-    },
-  },
-  {
-    name: 'stylesheet-paused',
-    css: 'animation-play-state:paused',
-    expect: (b, a) => {
-      // Paused by the stylesheet, not by script: it stays under the
-      // stylesheet's control (checked after the re-placement below).
-      expect(a.playStates).toEqual(['paused']);
-      expect(a.times[0]).toBeCloseTo(b.times[0], 0);
-    },
-  },
-  {
-    name: 'script',
+  descendant: {},
+  script: {
     css: 'animation:none',
-    expect: (b, a, e) => {
-      expect(a.sameObject).toBe(true);
-      expect(a.times[0] - b.times[0]).toBeCloseTo(e, -2.5);
-    },
+    set: "window.__scriptAnimation = el.animate([{translate: '0px'}, {translate: '100px'}], {duration: 10000})",
   },
-  {
-    name: 'transition',
+  transition: {
     css: 'animation:none;transition:translate 10s linear',
-    expect: (b, a, e) => {
-      expect(b.playStates).toEqual(['running']);
-      expect(a.playStates).toEqual(['running']);
-      expect(a.times[0] - b.times[0]).toBeCloseTo(e, -2.5);
-      expect(a.translate).toBeGreaterThan(b.translate);
-      expect(a.translate).toBeLessThan(50);
-    },
+    set: "el.style.translate = '100px'",
   },
-];
+};
 
 test('placing a shown tooltip afresh keeps every animation in its content in its exact state', async ({
   page,
   browserName,
 }) => {
-  // A held-open short tooltip whose content holds one element per row. It
-  // grows and its trigger moves up, so the engine's old option leaves it past
-  // the top of the viewport and the runtime places it afresh after paint.
   await page.setViewportSize({width: 1280, height: 720});
   await page.goto(
     `${storybook.origin}/iframe.html?id=core-tooltip--tall-content&viewMode=story&args=content:A+short+tooltip;isOpen:!true`,
@@ -1144,11 +1061,19 @@ test('placing a shown tooltip afresh keeps every animation in its content in its
   }, TRIGGER);
   await page.waitForTimeout(300);
   await page.addStyleTag({
-    content: `@keyframes test-shift{from{translate:0}to{translate:100px}}[data-row]{display:inline-block;margin-inline-end:4px;animation:test-shift 10s linear both}${ANIMATION_ROWS.map(
-      row => (row.css ? `[data-row="${row.name}"]{${row.css}}` : ''),
-    ).join('')}`,
+    content: `@keyframes test-shift{from{translate:0}to{translate:100px}}[data-row]{display:inline-block;margin-inline-end:4px;animation:test-shift 10s linear both}${Object.entries(
+      STATE_ROWS,
+    )
+      .map(
+        ([name, row]) =>
+          (row.css ? `[data-row="${name}"]{${row.css}}` : '') +
+          (row.extraCss ?? ''),
+      )
+      .join('')}`,
   });
-  await page.evaluate(
+  // One element per row (and a spare sibling to retarget to), then enough
+  // lines for the switch below.
+  const uncovered = await page.evaluate(
     ({sel, names}) => {
       const content = document.querySelector(sel)?.firstElementChild;
       for (const name of names) {
@@ -1164,47 +1089,173 @@ test('placing a shown tooltip afresh keeps every animation in its content in its
         row.dataset.row = name;
         row.textContent = name.slice(0, 2);
         host?.appendChild(row);
+        const spare = document.createElement('span');
+        spare.textContent = '·';
+        host?.appendChild(spare);
       }
       for (let i = 1; i <= 17; i++) {
         const line = document.createElement('div');
         line.textContent = `Line ${i}`;
         content?.appendChild(line);
       }
+      // What the engine exposes as writable state.
+      const sample = document.querySelector('[data-row="running"]') as Element;
+      const animation = sample.getAnimations()[0];
+      const accessors = (object: object) => {
+        const out: string[] = [];
+        for (
+          let proto = Object.getPrototypeOf(object);
+          proto != null && proto !== Object.prototype;
+          proto = Object.getPrototypeOf(proto)
+        ) {
+          for (const [key, d] of Object.entries(
+            Object.getOwnPropertyDescriptors(proto),
+          )) {
+            if (d.set != null) {
+              out.push(key);
+            }
+          }
+        }
+        return out;
+      };
+      const members = [
+        ...accessors(animation),
+        ...accessors(animation.effect as object),
+        ...Object.keys((animation.effect as KeyframeEffect).getTiming()),
+      ];
+      return members.filter(member => !names.includes(member));
     },
-    {sel: TOOLTIP, names: ANIMATION_ROWS.map(row => row.name)},
+    {sel: TOOLTIP, names: Object.keys(STATE_ROWS)},
   );
+  expect(uncovered, 'writable animation members with no row').toEqual([]);
   await page.waitForTimeout(700);
-  await page.evaluate(setUpRows);
+  // Give each row its state. A row whose member this engine lacks (WebKit's
+  // `iterationComposite` is missing from Chromium) is skipped.
+  await page.evaluate(() => {
+    (window as unknown as {__handler: unknown}).__handler =
+      function handler() {};
+  });
+  const skipped: string[] = [];
+  for (const [name, row] of Object.entries(STATE_ROWS)) {
+    if (row.set == null) {
+      continue;
+    }
+    const applied = await page.evaluate(
+      `(() => {
+        const el = document.querySelector('[data-row="${name}"]');
+        const a = el.getAnimations()[0];
+        if (${name === 'iterationComposite'} && !('iterationComposite' in a.effect)) {
+          return false;
+        }
+        ${row.set};
+        return true;
+      })()`,
+    );
+    if (applied !== true) {
+      skipped.push(name);
+    }
+  }
+  await page.evaluate(() => {
+    (window as unknown as {__runningBefore: unknown}).__runningBefore = (
+      document.querySelector('[data-row="running"]') as Element
+    ).getAnimations()[0];
+  });
   await page.waitForTimeout(100);
   const read = async () =>
-    page.evaluate(
-      names => {
-        const out: Record<string, AnimationRowState> = {};
-        for (const name of names) {
-          const el = document.querySelector(
-            `[data-row="${name}"]`,
-          ) as HTMLElement;
-          const animations = el.getAnimations();
-          const effects = animations.map(a => a.effect as KeyframeEffect);
-          out[name] = {
-            times: animations.map(a => Number(a.currentTime ?? 0)),
-            rates: animations.map(a => a.playbackRate),
-            playStates: animations.map(a => a.playState),
-            durations: effects.map(e => Number(e.getTiming().duration)),
-            composites: effects.map(e => e.composite),
-            ids: animations.map(a => a.id),
-            ends: effects.map(e => String(e.getKeyframes().at(-1)?.translate)),
-            sameObject:
-              animations[0] ===
-              (window as unknown as {__scriptAnimation?: Animation})
-                .__scriptAnimation,
-            translate: parseFloat(getComputedStyle(el).translate) || 0,
-          };
+    page.evaluate(names => {
+      const handler = (window as unknown as {__handler: unknown}).__handler;
+      type Serialized =
+        | string
+        | number
+        | boolean
+        | null
+        | undefined
+        | {[key: string]: Serialized};
+      const ser = (value: unknown): Serialized => {
+        if (
+          value == null ||
+          typeof value === 'boolean' ||
+          typeof value === 'string'
+        ) {
+          return value;
         }
-        return {rows: out, at: performance.now()};
-      },
-      ANIMATION_ROWS.map(row => row.name),
-    );
+        if (typeof value === 'number') {
+          return Math.round(value * 10) / 10;
+        }
+        if (typeof value === 'function') {
+          return value === handler ? 'handler' : 'function';
+        }
+        if (
+          typeof CSSNumericValue !== 'undefined' &&
+          value instanceof CSSNumericValue
+        ) {
+          return value.toString();
+        }
+        if (value instanceof Element) {
+          return (value as HTMLElement).dataset.row ?? value.textContent;
+        }
+        if (Object.getPrototypeOf(value) === Object.prototype) {
+          return Object.fromEntries(
+            Object.entries(value).map(([k, v]) => [k, ser(v)]),
+          );
+        }
+        return value.constructor.name;
+      };
+      const stateOf = (a: Animation) => {
+        const effect = a.effect as KeyframeEffect;
+        const out: Record<string, unknown> = {};
+        for (const object of [a, effect]) {
+          for (
+            let proto = Object.getPrototypeOf(object);
+            proto != null && proto !== Object.prototype;
+            proto = Object.getPrototypeOf(proto)
+          ) {
+            for (const [key, d] of Object.entries(
+              Object.getOwnPropertyDescriptors(proto),
+            )) {
+              if (d.get != null && d.set != null && !(key in out)) {
+                out[key] = ser(
+                  (object as unknown as Record<string, unknown>)[key],
+                );
+              }
+            }
+          }
+        }
+        out.timing = ser(effect.getTiming());
+        out.keyframes = JSON.stringify(effect.getKeyframes());
+        out.playState = a.playState;
+        out.replaceState = a.replaceState;
+        return out;
+      };
+      const rows: Record<string, Record<string, unknown>[]> = {};
+      for (const name of names) {
+        const el = document.querySelector(`[data-row="${name}"]`) as Element;
+        // Its animations, including one moved to a pseudo-element or (for a
+        // retargeted effect) to the spare sibling.
+        const tooltip = document.querySelector('[role="tooltip"]') as Element;
+        rows[name] = tooltip
+          .getAnimations({subtree: true})
+          .filter(animation => {
+            const target = (animation.effect as KeyframeEffect).target;
+            return target === el || target === el.nextElementSibling;
+          })
+          .map(stateOf);
+      }
+      const script = (
+        document.querySelector('[data-row="script"]') as Element
+      ).getAnimations()[0];
+      const running = (
+        document.querySelector('[data-row="running"]') as Element
+      ).getAnimations()[0];
+      const w = window as unknown as Record<string, unknown>;
+      return {
+        rows,
+        at: performance.now(),
+        scrollY: window.scrollY,
+        scriptSame: script === w.__scriptAnimation,
+        recreated: running !== w.__runningBefore,
+      };
+    }, Object.keys(STATE_ROWS));
   const before = await read();
   await page.evaluate(sel => {
     const el = document.querySelector(sel) as HTMLElement;
@@ -1213,35 +1264,73 @@ test('placing a shown tooltip afresh keeps every animation in its content in its
   }, TRIGGER);
   await page.waitForTimeout(450);
   expect(await hasSwitched(page)).toBe(true);
+  const after = await read();
   // In Chromium the browser recreated the content's CSS animations: this is
   // the path that has to put them back. (WebKit's first layout of a
   // just-shown popover reads a few pixels over the trigger, so there this
   // short tooltip switched when it opened, and the move re-places it without
   // a reset; every row must hold either way.)
-  const recreated = await page.evaluate(
-    () =>
-      (
-        document.querySelector('[data-row="running"]') as HTMLElement
-      ).getAnimations()[0] !==
-      (window as unknown as {__runningBefore: Animation}).__runningBefore,
-  );
   if (browserName === 'chromium') {
-    expect(recreated).toBe(true);
+    expect(after.recreated).toBe(true);
   }
-  const after = await read();
+  expect(after.scriptSame).toBe(true);
   const elapsed = after.at - before.at;
-  // Every row is checked, and the ones that fail are named together.
   const failed: string[] = [];
-  for (const row of ANIMATION_ROWS) {
-    try {
-      row.expect(before.rows[row.name], after.rows[row.name], elapsed);
-    } catch (error) {
-      failed.push(`${row.name}: ${String(error).split('\n')[0]}`);
+  for (const name of Object.keys(STATE_ROWS)) {
+    if (skipped.includes(name)) {
+      continue;
+    }
+    const b = before.rows[name];
+    const a = after.rows[name];
+    if (a.length !== b.length) {
+      failed.push(`${name}: ${b.length} animations before, ${a.length} after`);
+      continue;
+    }
+    for (const [i, stateBefore] of b.entries()) {
+      const stateAfter = a[i];
+      // Times move on with the clock; every other member must be unchanged.
+      const {currentTime: t0, startTime: s0, ...restBefore} = stateBefore;
+      const {currentTime: t1, startTime: s1, ...restAfter} = stateAfter;
+      if (JSON.stringify(restBefore) !== JSON.stringify(restAfter)) {
+        failed.push(
+          `${name}: ${JSON.stringify(restBefore)} -> ${JSON.stringify(restAfter)}`,
+        );
+        continue;
+      }
+      const rate = Number(stateBefore.playbackRate);
+      // A scroll-driven animation's time follows the page's scroll position,
+      // which WebKit moves by itself when an open popover's anchor moves.
+      const scrollDriven = stateBefore.timeline !== 'DocumentTimeline';
+      if (scrollDriven && after.scrollY !== before.scrollY) {
+        // Its time is the browser's to change; the rest was compared above.
+      } else if (typeof t0 === 'number' && typeof t1 === 'number') {
+        const expected =
+          stateBefore.playState === 'running' &&
+          stateBefore.timeline === 'DocumentTimeline'
+            ? t0 + rate * elapsed
+            : t0;
+        if (Math.abs(t1 - expected) > 150) {
+          failed.push(
+            `${name}: currentTime ${t0} -> ${t1}, expected about ${Math.round(expected)}`,
+          );
+        }
+      } else if (t0 !== t1) {
+        failed.push(`${name}: currentTime ${String(t0)} -> ${String(t1)}`);
+      }
+      // A finished animation's start time is the one documented limitation:
+      // script cannot set a start time and a held end time together.
+      if (
+        stateBefore.playState !== 'finished' &&
+        typeof s0 === 'number' &&
+        typeof s1 === 'number' &&
+        Math.abs(s1 - s0) > 50
+      ) {
+        failed.push(`${name}: startTime ${s0} -> ${s1}`);
+      }
     }
   }
   expect(failed).toEqual([]);
-  // The stylesheet still controls the animation it paused: unpausing it in
-  // the stylesheet sets it running.
+  // The stylesheet still controls the animation it paused.
   await page.addStyleTag({
     content: '[data-row="stylesheet-paused"]{animation-play-state:running}',
   });

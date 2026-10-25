@@ -45,6 +45,7 @@ import {
   getAnchorClearFallbacks,
   slideRuleName,
 } from './layerSlideRules';
+import {preserveAnimations} from './preserveAnimations';
 import {useLayerContext} from './LayerContext';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
@@ -444,212 +445,21 @@ function toCssLength(value: number | string): string {
 }
 
 /**
- * What a restarted CSS animation is matched by: the element (and
- * pseudo-element) it runs on and its animation name. One element can run
- * several animations of the same name, so matches are made in order.
- */
-function animationKey(animation: Animation): string {
-  const effect = animation.effect as KeyframeEffect | null;
-  const name =
-    (animation as Animation & {animationName?: string}).animationName ?? '';
-  return `${effect?.pseudoElement ?? ''}|${name}`;
-}
-
-const TIMING_FIELDS = [
-  'delay',
-  'endDelay',
-  'fill',
-  'iterationStart',
-  'iterations',
-  'duration',
-  'direction',
-  'easing',
-] as const;
-
-/**
- * Everything script can observe or set on a CSS animation or transition that
- * taking its element out of rendering resets, read before the reset.
- */
-interface AnimationState {
-  animation: Animation;
-  target: Element | null;
-  key: string;
-  playState: AnimationPlayState;
-  currentTime: CSSNumberish | null;
-  playbackRate: number;
-  id: string;
-  timeline: AnimationTimeline | null;
-  timing: EffectTiming | null;
-  keyframes: ComputedKeyframe[] | null;
-  composite: CompositeOperation | null;
-  // Not implemented by every engine, so it may be missing at runtime.
-  iterationComposite: IterationCompositeOperation | null;
-}
-
-function readAnimationState(animation: Animation): AnimationState {
-  const effect = animation.effect as
-    (KeyframeEffect & {iterationComposite?: string}) | null;
-  return {
-    animation,
-    target: effect?.target ?? null,
-    key: animationKey(animation),
-    playState: animation.playState,
-    currentTime: animation.currentTime,
-    playbackRate: animation.playbackRate,
-    id: animation.id,
-    timeline: animation.timeline,
-    timing: effect?.getTiming() ?? null,
-    keyframes: effect?.getKeyframes() ?? null,
-    composite: effect?.composite ?? null,
-    iterationComposite: effect?.iterationComposite ?? null,
-  };
-}
-
-/**
- * Give `next`, the CSS animation the browser created again when its element
- * returned to rendering, the state its predecessor had. Only what differs is
- * set, so a value the stylesheet controls (a duration, a paused
- * `animation-play-state`) stays under the stylesheet's control.
- */
-function restoreAnimationState(next: Animation, saved: AnimationState): void {
-  const effect = next.effect as
-    (KeyframeEffect & {iterationComposite?: string}) | null;
-  if (effect != null) {
-    if (saved.timing != null) {
-      const timing = effect.getTiming();
-      const changed: OptionalEffectTiming = {};
-      for (const field of TIMING_FIELDS) {
-        if (saved.timing[field] !== timing[field]) {
-          Object.assign(changed, {[field]: saved.timing[field]});
-        }
-      }
-      if (Object.keys(changed).length > 0) {
-        effect.updateTiming(changed);
-      }
-    }
-    if (
-      saved.keyframes != null &&
-      JSON.stringify(saved.keyframes) !== JSON.stringify(effect.getKeyframes())
-    ) {
-      effect.setKeyframes(saved.keyframes);
-    }
-    if (saved.composite != null && saved.composite !== effect.composite) {
-      effect.composite = saved.composite;
-    }
-    if (
-      saved.iterationComposite != null &&
-      effect.iterationComposite != null &&
-      saved.iterationComposite !== effect.iterationComposite
-    ) {
-      effect.iterationComposite = saved.iterationComposite;
-    }
-  }
-  if (saved.id !== next.id) {
-    next.id = saved.id;
-  }
-  if (saved.timeline !== next.timeline) {
-    next.timeline = saved.timeline;
-  }
-  if (saved.playbackRate !== next.playbackRate) {
-    next.playbackRate = saved.playbackRate;
-  }
-  if (saved.playState === 'paused' && next.playState !== 'paused') {
-    next.pause();
-  } else if (saved.playState !== 'paused' && next.playState === 'paused') {
-    next.play();
-  }
-  if (saved.currentTime != null) {
-    next.currentTime = saved.currentTime;
-  }
-}
-
-/**
- * Put back a CSS transition that the reset cancelled: the browser does not
- * start it again, because the element returns to rendering already at the
- * transition's end value. A script animation with the transition's
- * keyframes, timing and state takes its place until it ends.
- */
-function resumeTransition(saved: AnimationState): void {
-  const target = saved.target;
-  if (target == null || saved.keyframes == null || saved.timing == null) {
-    return;
-  }
-  const effect = saved.animation.effect as KeyframeEffect | null;
-  const replacement = target.animate(saved.keyframes, {
-    ...(saved.timing as KeyframeAnimationOptions),
-    pseudoElement: effect?.pseudoElement ?? undefined,
-    composite: saved.composite ?? undefined,
-  });
-  restoreAnimationState(replacement, saved);
-}
-
-/**
  * Make the engine choose a shown layer's position option afresh: a browser
  * keeps a laid-out layer on the option it last used until the layer stops
  * being rendered, so the layer is taken out of rendering for one forced
  * layout and restored, in the same task. No frame paints in between and the
  * popover stays open, so no toggle event fires and focus and hover are
- * untouched.
- *
- * Leaving rendering cancels every CSS animation and transition of the layer
- * and its content; the browser creates the animations again from the
- * stylesheet, at their start, and the transitions not at all. Script
- * animations are untouched. So every CSS animation the browser recreated is
- * given its predecessor's state (play state, time, playback rate, timing,
- * keyframes, composition, id and timeline; same-name animations on one
- * element are matched in order), every cancelled transition is resumed by a
- * script animation at the same point, and a recreated animation with no
- * predecessor (an entry fade that had already played) is finished. The
- * Animation objects themselves are new: the old ones are idle, and the
- * browser fires `animationcancel` and `transitioncancel` for them and
- * `animationstart` for the new ones.
+ * untouched. Every CSS animation and transition of the layer and its content
+ * is put back in the state it was in (`preserveAnimations`).
  */
 function placeAfresh(layer: HTMLElement): void {
-  const canAnimate = typeof layer.getAnimations === 'function';
-  const before = canAnimate ? layer.getAnimations({subtree: true}) : [];
-  const saved = before.map(readAnimationState);
-  const display = layer.style.display;
-  layer.style.display = 'none';
-  layer.getBoundingClientRect();
-  layer.style.display = display;
-  if (!canAnimate) {
-    return;
-  }
-  const survivors = new Set(before);
-  const after = layer.getAnimations({subtree: true});
-  const current = new Set(after);
-  const recreated = new Set(
-    after.filter(animation => !survivors.has(animation)),
-  );
-  // Cancelled CSS animations, by element and key, in their original order.
-  const cancelled = new Map<Element | null, Map<string, AnimationState[]>>();
-  for (const state of saved) {
-    if (current.has(state.animation)) {
-      continue;
-    }
-    if (
-      typeof CSSTransition !== 'undefined' &&
-      state.animation instanceof CSSTransition
-    ) {
-      resumeTransition(state);
-      continue;
-    }
-    const forTarget = cancelled.get(state.target) ?? new Map();
-    forTarget.set(state.key, [...(forTarget.get(state.key) ?? []), state]);
-    cancelled.set(state.target, forTarget);
-  }
-  for (const animation of recreated) {
-    const effect = animation.effect as KeyframeEffect | null;
-    const predecessor = cancelled
-      .get(effect?.target ?? null)
-      ?.get(animationKey(animation))
-      ?.shift();
-    if (predecessor == null) {
-      animation.finish();
-    } else {
-      restoreAnimationState(animation, predecessor);
-    }
-  }
+  preserveAnimations(layer, () => {
+    const display = layer.style.display;
+    layer.style.display = 'none';
+    layer.getBoundingClientRect();
+    layer.style.display = display;
+  });
 }
 
 /**

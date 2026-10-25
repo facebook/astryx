@@ -200,9 +200,13 @@ the app reaches every layer instead of the components that happen to read it.
   at once places it afresh from the second list in the same frame, without
   closing it, and so does a later read that finds it failing again, because
   no engine re-runs the list when a scroll carries the anchor. Every CSS
-  animation and transition of the layer and its content keeps its state
-  (play state, time, rate, timing, keyframes, composition); the browser does
-  replace their Animation objects and fires cancel and start events for them.
+  animation and transition of the layer and its content keeps every writable
+  member the engine exposes on it and its effect, its timing, keyframes, play
+  and replace state, and its time. Three things are not kept: the Animation
+  and effect objects (the browser replaces them, with their listeners and
+  promises, and fires cancel and start events), a finished animation's start
+  time (its held end time is kept), and a transition's own object (a script
+  animation resumes it, so it fires no `transitionend`).
   Chromium tries no more than five position
   options, so this is a second list that replaces the first, not an extension
   of it. The runtime authors both orders; a component passes no fallbacks of
