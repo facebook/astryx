@@ -784,6 +784,10 @@ test.describe('with a mouse', () => {
     page,
   }) => {
     await openStory(page, storybook(), 'lab-searchfield--default');
+    // A fine primary pointer, asserted in this test's own context.
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(false);
     const field = page.getByRole('searchbox', {name: 'Search'});
     await expect(field).toBeVisible();
     await field.click();
@@ -838,6 +842,10 @@ test.describe('with Reduce Motion', () => {
     }) => {
       await page.emulateMedia({reducedMotion: 'reduce'});
       await openStory(page, storybook(), 'lab-searchfield--default');
+      // A fine primary pointer, asserted in this test's own context.
+      expect(
+        await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+      ).toBe(false);
       const field = page.getByRole('searchbox', {name: 'Search'});
       await expect(field).toBeVisible();
       await field.click();

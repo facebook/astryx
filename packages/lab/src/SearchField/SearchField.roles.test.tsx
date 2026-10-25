@@ -189,6 +189,8 @@ describe('SearchField motion roles', () => {
         dispatchEvent: vi.fn(),
       })),
     );
+    // A fine primary pointer, asserted in this test's own context.
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
     themed({'--motion-search-activation-ms': '600ms'});
     render(<SearchField label="Search" />);
     act(() => screen.getByRole('searchbox').focus());
