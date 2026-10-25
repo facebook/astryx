@@ -30,18 +30,15 @@ affects_consumer_docs: []
 
 ## Intent
 
-People see the typography their theme chose in the text of every Core and Lab
-web component: no component swaps in a platform font or its own text size.
-Where a shipped Astryx theme has no brand typeface for body text, it can use
-the platform's own body font, so text reads like the rest of the person's
-device.
+People who set their own text size see it in every Core and Lab web
+component, whatever the theme; people who have not set one see exactly the
+font family and size the theme chose. No component swaps in a platform font or
+its own text size. Where a shipped Astryx theme has no brand typeface for body
+text, it can use the platform's own body font, so text reads like the rest of
+the person's device.
 
 ## Non-goals
 
-- Whether a theme scales its text sizes with the person's system text-size
-  setting, such as iOS Dynamic Type (OQ1).
-- Any new public theme option or document attribute for system text size
-  (OQ2).
 - Which typeface a branded theme uses; a brand keeps its own.
 - The type scale itself: `design:typography-hierarchy` and
   `design:mobile-typography` own roles, sizes, and the mobile reading base.
@@ -53,7 +50,8 @@ device.
   except through the theme's typography tokens; a value inherited from the
   surrounding text conforms. That includes platform font keywords such as `-apple-system-body`
   and system font stacks: a component never applies one directly, on any
-  pointer. A font size that sizes an icon, such as a `1em` icon at a
+  pointer. A hidden internal element that only measures a platform text style
+  renders no text and conforms. A font size that sizes an icon, such as a `1em` icon at a
   `spec:AST-087` FR10 size, is not text typography. Native components follow
   the platform's own text settings (`spec:AST-082` FR11). Values a component
   sets come only from the theme. The one
@@ -62,10 +60,25 @@ device.
 - **FR2 — Unbranded shipped themes may use the system body font.** An Astryx
   shipped theme whose body font is not branded MAY set its body font token to
   the platform's system body font family, such as `system-ui` or Apple's
-  system font. Whether body text also takes its size from the person's iOS
-  text-size setting, through `-apple-system-body`, is OQ1. A branded theme
+  system font. A branded theme
   keeps its brand font for body text. The choice lives in the theme's token
   value, so components pick it up without change (FR1).
+
+- **FR3 — A text size the person set wins; otherwise the theme's.** When the
+  person has set a text size, through iOS Dynamic Type, the Android font scale,
+  the browser's default font size, or zoom, Core and Lab web text follows it in
+  every theme, branded included: the theme's sizes scale from the person's
+  size, each role keeps its order, and the family stays the theme's. When the
+  person has not set one, or the platform gives no signal, text uses exactly
+  the theme's family and size. Following the setting adds no public theme
+  option, prop, or document attribute and does not change the document-root
+  font size (`design:mobile-typography` DR4).
+- **FR4 — Larger text stays usable.** Up to 200% of the theme's sizes, every
+  component keeps all of its content and function (WCAG 2.2 success criterion
+  1.4.4). Above 200%, reading text keeps growing; a label inside a dense,
+  fixed-size control, such as a tab, badge, table cell, or segmented control,
+  MAY stop growing at 200% but is never cut off. A control grows with its text
+  rather than holding a fixed height.
 
 ### Platform support
 
@@ -73,8 +86,11 @@ device.
   (`spec:AST-013` FR1, FR3). Platform font keywords that an engine does not
   recognize fall back to the rest of the theme's font stack.
 - Unsupported behavior: none beyond the font fallback above.
-- Browser evidence: Safari on iOS proves an FR2 theme's body text in the system
-  body font (`spec:AST-013` FR10); token and source checks prove FR1.
+- Browser evidence (`spec:AST-013` FR10): Safari on iOS proves an FR2 theme's
+  body text in the system body font and FR3 across Dynamic Type categories;
+  Chrome on Android in the emulator proves FR3 with the system font scale; a
+  desktop browser proves FR3 with its default font size and zoom, and FR4 at
+  200% and above; token and source checks prove FR1.
 
 ## Current-state impact
 
@@ -84,13 +100,23 @@ device.
   Sankey labels using `system-ui` directly and several Core and Lab components
   setting their own sizes or line heights; under FR1 those are conformance
   gaps.
+- Defects under FR3 and FR4:
+  - On iOS and iPadOS, text ignores Dynamic Type in every theme.
+  - Butter, Stone, and Y2K fix supporting text at 12 px, so it does not follow
+    a larger browser or Android text size.
+  - Controls hold fixed heights, such as 40 px elements, so a larger label can
+    overflow.
+  - Whether Chrome on Android carries the system font scale to Astryx text is
+    unverified until the emulator check FR3 names.
 
 ## Verification
 
-| Contract | Verification                                                      | Representative states                                                                                                                                                                 | Mutation or failure expectation                                                                                                                                                                                                       |
-| -------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1      | Source check over Core and Lab component styles plus token review | family, size, and line height of rendered text in component styles; an inherited value; a `1em` icon size; coarse and fine pointer; a platform font keyword; the iOS text-entry floor | A Core or Lab web component sets the family, size, or line height of text it renders outside typography tokens and not by inheritance, or applies a platform font keyword directly; icon sizing and the family floor are not failures |
-| FR2      | Theme token review plus Safari on iOS, top-level document         | an unbranded shipped theme using the system body font family; a branded theme; the default theme                                                                                      | A branded theme's body font replaced by the system font, or a system body font applied by a component instead of a theme token                                                                                                        |
+| Contract | Verification                                                                                                                                                                   | Representative states                                                                                                                                                                 | Mutation or failure expectation                                                                                                                                                                                                       |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1      | Source check over Core and Lab component styles plus token review                                                                                                              | family, size, and line height of rendered text in component styles; an inherited value; a `1em` icon size; coarse and fine pointer; a platform font keyword; the iOS text-entry floor | A Core or Lab web component sets the family, size, or line height of text it renders outside typography tokens and not by inheritance, or applies a platform font keyword directly; icon sizing and the family floor are not failures |
+| FR2      | Theme token review plus Safari on iOS, top-level document                                                                                                                      | an unbranded shipped theme using the system body font family; a branded theme; the default theme                                                                                      | A branded theme's body font replaced by the system font, or a system body font applied by a component instead of a theme token                                                                                                        |
+| FR3      | Safari on iOS across Dynamic Type categories; Chrome on Android in the emulator with font scale; a desktop browser with a larger default font size and with zoom; theme review | a branded and an unbranded theme; no size set; default category; a size set on each platform; macOS Safari                                                                            | Text that ignores a size the person set; text that differs from the theme's family or size when none is set; a theme family replaced; a public option, prop, or document attribute; a changed root font size                          |
+| FR4      | Desktop browser at 200%, 250%, and 300% text size, plus Safari on iOS at accessibility categories                                                                              | reading text; a button, text input, tab, badge, table cell, and segmented control                                                                                                     | Lost content or function at 200% or less; a cut-off label at any size; a control that keeps a fixed height while its text grows                                                                                                       |
 
 ## Decision log
 
@@ -108,18 +134,33 @@ may use it through their own token; a brand keeps its typeface.
 
 Rejected: components applying a platform font such as `-apple-system-body` directly.
 
+### DEC-2 — A text size the person set wins in every theme
+
+**Reference:** `spec:AST-102/DEC-2`
+**Decider:** `cixzhang`, `2026-10-25`
+
+A person who sets their text size expects to see it everywhere; a person who
+has not expects the font the app chose. So every theme, branded included,
+follows a size the person set, keeping its own family and scale relative to
+that size, and gives its exact sizes when none is set. Large text stays usable
+to 200% everywhere, and dense controls may stop at 200% without cutting text
+off.
+
+Rejected: only unbranded or opted-in themes following the person's size.
+
+### DEC-3 — Following the person's size adds no public surface
+
+**Reference:** `spec:AST-102/DEC-3`
+**Decider:** `cixzhang`, `2026-10-25`
+
+The person's size is honored by default, so products need no switch to turn it
+on. Core reads it where the platform exposes it only through a system text
+style, as on iOS, and lets the root font size carry it elsewhere; neither read
+is a theme option, prop, or document attribute.
+
+Rejected: a public theme option to opt in, and a public document attribute
+carrying the size.
+
 ## Open questions
 
-- **OQ1 — Which themes may scale sizes with the system text-size setting?**
-  (`human-design`) A theme could scale its own font-size tokens with iOS
-  Dynamic Type, alongside `design:mobile-typography` DR1's reading base.
-  Options: any theme that opts in, branded ones included; or only unbranded
-  shipped themes. This includes whether an unbranded theme's body text uses
-  `-apple-system-body`, which carries the system text size as well as the
-  family.
-- **OQ2 — New public surface for system text size.** (`human-design`) Scaling
-  would add a theme option (such as `typography.dynamicType`) and a document
-  attribute carrying the system text size (such as `data-astryx-text-size`),
-  both new public surface under `spec:AST-002`. Options: admit both; admit only
-  the theme option and keep the attribute internal; or add neither and leave
-  sizes fixed.
+None.
