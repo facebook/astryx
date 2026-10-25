@@ -154,9 +154,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 | More menu             | A caller-placed menu; TopNav renders none itself. | Public docs                    | Supporting     | FR2                |
 | Flex area             | End content for search, actions, or profile.      | Current source and public docs | Supporting     | FR3, FR5           |
 
-No anatomy-theming map is recorded: `TopNav.doc.mjs` lists the whole family's
-seven targets against four anatomy parts, so each part cannot own one target.
-Each family component's record names its own target.
+No anatomy-theming map is recorded yet; the block is optional during migration.
+Mapping TopNav's four anatomy parts against the family's seven targets, by
+delegation where a part belongs to a sub-component, is deferred. Each family
+component's record names its own target.
 
 ## Family and system relationships
 

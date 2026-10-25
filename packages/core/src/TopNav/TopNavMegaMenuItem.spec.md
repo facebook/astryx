@@ -139,7 +139,7 @@ anatomy-theming map is recorded.
 | FR3      | `TopNavMegaMenu.test.tsx` TopNavMegaMenuItem pass-through tests    | Both modes                  | Dropped props or styling fails.          | `audit:TopNavMegaMenuItem/behavior`      |
 | FR4      | `TopNavMegaMenu.test.tsx` drawer focus-ring test                   | Drawer item                 | Missing shared ring classes fail.        | `audit:TopNavMegaMenuItem/accessibility` |
 
-Read from source, with no focused test yet: closing the drawer on activation (FR2) and the desktop focus outline (FR4).
+Read from source, with no focused test yet: the `as` and `LinkProvider` precedence (FR1, ORD1); closing the drawer on activation (FR2) and the desktop focus outline (FR4).
 
 ## Decision log
 

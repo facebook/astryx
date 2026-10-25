@@ -13,6 +13,7 @@ review_triggers: [public-api, behavior, accessibility]
 verified_by:
   [
     packages/core/src/TopNav/TopNavMenu.test.tsx,
+    packages/core/src/hooks/useMenuHover.test.tsx,
     apps/storybook/stories/TopNavMenu.stories.tsx,
   ]
 modules: []
@@ -103,7 +104,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | ID   | Invariant                                                                                                                                                                                                                                                                                                                                                              | Basis                    |
 | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
 | FR1  | In `default` mode the trigger is a `<button>` showing `label` and a chevron that turns when open; it carries `top-nav-menu`, the forwarded `ref`, and other DOM props, and announces a menu popup with its expanded state.                                                                                                                                             | Current source and tests |
-| FR2  | On a hover-capable pointer, hovering the trigger opens the menu after `delay` ms and leaving closes it after `hideDelay` ms; focus stays on the trigger. A click opens the menu and moves focus to the first item; a click within 500 ms of a hover-open keeps it open.                                                                                                | Current source and tests |
+| FR2  | On a hover-capable pointer, hovering the trigger opens the menu after `delay` ms and leaving closes it after `hideDelay` ms; a hover-open does not move focus. A click opens the menu and moves focus to the first item; a click within 500 ms of a hover-open keeps it open.                                                                                          | Current source and tests |
 | FR3  | The popup is a non-modal popover below the trigger, aligned to the trigger's TopNav slot (start, center, or end). It contains one `role="menu"` named by `label`.                                                                                                                                                                                                      | Current source and tests |
 | FR4  | Each item is a `role="menuitem"`: an `<a>` when `href` is set (rendering its `href` only when the URL is accepted), else a `div`. Bar items render a native `<a>`, not the `LinkProvider` link. It shows an icon box, the title, and the description, and runs the item's `onClick` on activation.                                                                     | Current source and tests |
 | FR5  | Items use a roving tab index with exactly one tab stop. ArrowDown and ArrowUp move focus and wrap at both ends; typing a character moves to the matching item; Enter or Space activates the focused item; Escape closes the menu and returns focus to the trigger.                                                                                                     | APG menu pattern; tests  |
@@ -122,7 +123,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | State            | Required invariant                                | Allowed variation |
 | ---------------- | ------------------------------------------------- | ----------------- |
 | Closed           | Trigger with collapsed state.                     | Theme styling.    |
-| Hover-open       | Menu open; focus on the trigger.                  | Delay.            |
+| Hover-open       | Menu open; focus does not move.                   | Delay.            |
 | Click-open       | Menu open; focus on the first item.               | —                 |
 | Drawer collapsed | Items inert and hidden from assistive technology. | —                 |
 | Drawer expanded  | Items reachable; activation closes the drawer.    | Animation.        |
@@ -168,12 +169,13 @@ recorded.
 
 ## Verification map
 
-| Contract       | Verification                                               | Representative states                  | Mutation or failure expectation                    | Audit section                    |
-| -------------- | ---------------------------------------------------------- | -------------------------------------- | -------------------------------------------------- | -------------------------------- |
-| FR1, FR3, AR1  | `TopNavMenu.test.tsx` trigger and semantics tests          | Closed and open                        | A dialog wrapper or wrong popup type fails.        | `audit:TopNavMenu/accessibility` |
-| FR4, FR5, AR2  | `TopNavMenu.test.tsx` keyboard tests                       | Arrows, wrap, typeahead, Enter, Escape | Extra tab stops or lost activation fails.          | `audit:TopNavMenu/accessibility` |
-| FR6            | `TopNavMenu.test.tsx` pass-through and owned-handler tests | Bar and drawer triggers                | A replaced built-in handler or lost prop fails.    | `audit:TopNavMenu/behavior`      |
-| FR7, FR10, AR3 | `TopNavMenu.test.tsx` drawer tests                         | Collapsed and expanded                 | Reachable collapsed items or a missing ring fails. | `audit:TopNavMenu/behavior`      |
+| Contract          | Verification                                               | Representative states                           | Mutation or failure expectation                                               | Audit section                    |
+| ----------------- | ---------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------- |
+| FR1, FR3, AR1     | `TopNavMenu.test.tsx` trigger and semantics tests          | Closed and open                                 | A dialog wrapper or wrong popup type fails.                                   | `audit:TopNavMenu/accessibility` |
+| FR4, FR5, AR2     | `TopNavMenu.test.tsx` keyboard tests                       | Arrows, wrap, typeahead, Enter, Escape          | Extra tab stops or lost activation fails.                                     | `audit:TopNavMenu/accessibility` |
+| FR6               | `TopNavMenu.test.tsx` pass-through and owned-handler tests | Bar and drawer triggers                         | A replaced built-in handler or lost prop fails.                               | `audit:TopNavMenu/behavior`      |
+| FR7, FR10, AR3    | `TopNavMenu.test.tsx` drawer tests                         | Collapsed and expanded                          | Reachable collapsed items or a missing ring fails.                            | `audit:TopNavMenu/behavior`      |
+| Shared menu focus | `useMenuHover.test.tsx`                                    | Hover-open, click-open, Escape, Enter and Space | Focus moved on hover, not moved in on click, or not returned on Escape fails. | `audit:TopNavMenu/accessibility` |
 
 Read from source, with no focused test yet: the caller `preventDefault()` cancellation (FR6); hover opening and closing with `delay` and `hideDelay` (FR2); slot alignment (FR3); FR8; FR9; and the bar trigger and item parts of FR10.
 
@@ -183,7 +185,9 @@ No component-local decision is recorded.
 
 ## Open questions
 
-None.
+- **OQ1 — Should bar menu items render through the `LinkProvider` link, as the
+  drawer items do?** (`human-api`) Today bar items render a native `<a>` and
+  drawer items the `LinkProvider` link (FR4, FR8).
 
 ## Content boundary
 
