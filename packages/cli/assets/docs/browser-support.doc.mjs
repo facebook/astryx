@@ -32,7 +32,12 @@ export const docs = {
         },
         {
           type: 'table',
-          headers: ['Tier', 'Baseline', 'Representative versions', 'What your users experience'],
+          headers: [
+            'Tier',
+            'Baseline',
+            'Representative versions',
+            'What your users experience',
+          ],
           rows: [
             [
               'Tier 1: Full fidelity',
@@ -193,6 +198,36 @@ const hasLightDark = CSS.supports('color', 'light-dark(#000, #fff)');`,
         {
           type: 'prose',
           text: 'This is not an arbitrary window: Baseline − 2 is close to where anchor positioning stops being available while the `Popover` API and `light-dark()` still are, so the tier boundary tracks a real capability edge, not a guessed date. The version floors above are reviewed and advanced roughly once a year as new Baseline years land. Always feature-detect rather than hardcoding version numbers, so your app adapts automatically as the platform moves.',
+        },
+      ],
+    },
+    {
+      title: 'Desktop Bundles Without Touch Code',
+      content: [
+        {
+          type: 'prose',
+          text: "One Astryx bundle serves every device, so it carries the code components use under a finger: gesture handling, springs and each component's touch behavior. A desktop never runs that code. If you already serve desktops a bundle of their own, build it with `__ASTRYX_TOUCH__` defined as `false`. In that bundle every component presents the pointer way on any device and leaves its touch code out. A build without the define keeps it, as before.",
+        },
+        {
+          type: 'code',
+          lang: 'ts',
+          label: 'The desktop build',
+          code: `// Vite (vite.config.desktop.ts) or esbuild
+define: {__ASTRYX_TOUCH__: 'false'},
+
+// webpack
+new webpack.DefinePlugin({__ASTRYX_TOUCH__: 'false'}),
+
+// Next.js (next.config.js)
+compiler: {define: {__ASTRYX_TOUCH__: 'false'}},`,
+        },
+        {
+          type: 'prose',
+          text: 'Serve the desktop bundle only to devices whose primary pointer is a mouse or trackpad, and the full bundle to phones and tablets. Choose on the server from the `User-Agent` header: the `Sec-CH-UA-Mobile` client hint comes only from Chromium-based browsers, so it cannot pick out an iPhone. A device sent the desktop bundle by mistake still works the pointer way; the stylesheet is the same in both bundles, so its touch sizing still applies.',
+        },
+        {
+          type: 'prose',
+          text: 'Next.js builds the client bundles once per deployment and cannot choose between two per request. Two bundles there mean two builds of the app, each deployed on its own, with middleware rewriting each request to one of them. If that costs more than the smaller desktop bundle saves, ship the one bundle.',
         },
       ],
     },

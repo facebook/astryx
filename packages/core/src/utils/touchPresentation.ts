@@ -4,7 +4,8 @@
 
 /**
  * @file touchPresentation.ts
- * @input Uses the SSR-safe useMediaQuery hook and window.matchMedia
+ * @input Uses the SSR-safe useMediaQuery hook, window.matchMedia and
+ *   touchLayers' TOUCH_LAYERS
  * @output The one definition of when a component presents itself the touch
  *   way: TOUCH_QUERY, COMPACT_QUERY, COMPACT_TOUCH_QUERY, the iOS style gate
  *   (IOS_SUPPORTS_QUERY and its StyleX keys); the hook useTouchPresentation;
@@ -31,6 +32,10 @@
  * nothing here chooses a platform. Touch motion reads the theme's motion
  * roles, whose defaults are the measured table.
  *
+ * A build without touch layers (the app defines `__ASTRYX_TOUCH__` as false;
+ * touchLayers.ts) answers not touch on every device, so no component reaches
+ * for a layer that build left out. Compact still follows the size.
+ *
  * CSS first: a style that changes with these conditions writes the same
  * query as a StyleX media key, spelled exactly as here (`@media` followed by
  * the constant's text), so the right rule paints before hydration. The iOS
@@ -53,8 +58,8 @@
  * hint, and follows the pointer and size when they change (a tablet docking
  * a mouse).
  *
- * SYNC: When modified, update touchPresentation.test.ts and every StyleX
- * media key that spells these queries.
+ * SYNC: When modified, update touchPresentation.test.ts, touchLayers.test.ts
+ * and every StyleX media key that spells these queries.
  */
 
 import {useMemo} from 'react';
@@ -65,6 +70,7 @@ import {
   type CompactDefinition,
 } from '../theme/themeAdaptations';
 import {useThemeDefinition} from '../theme/useTheme';
+import {TOUCH_LAYERS} from './touchLayers';
 
 /** The primary pointer is coarse: touch behaviours. */
 export const TOUCH_QUERY = '(pointer: coarse)';
@@ -119,13 +125,14 @@ export function useCompactDefinition(): CompactDefinition {
 
 /**
  * The touch presentation now. SSR-safe: hooks render the server default and
- * update after hydration.
+ * update after hydration. Never touch in a build without touch layers.
  */
 export function useTouchPresentation(
   serverDefault: Partial<TouchPresentation> = {},
 ): TouchPresentation {
   const compact = useCompactDefinition();
-  const isTouch = useMediaQuery(TOUCH_QUERY, serverDefault.isTouch ?? false);
+  const isCoarse = useMediaQuery(TOUCH_QUERY, serverDefault.isTouch ?? false);
+  const isTouch = TOUCH_LAYERS && isCoarse;
   const isCompact = useMediaQuery(
     compact.query,
     serverDefault.isCompact ?? false,
@@ -138,7 +145,8 @@ export function useTouchPresentation(
  * deciding how it presents as it opens). `compact` is the active theme's
  * definition (`useCompactDefinition()`, read while rendering), required so a
  * theme that moves `md` is never ignored (spec:AST-012 FR9). Not touch and
- * not compact where there is no window.
+ * not compact where there is no window; never touch in a build without touch
+ * layers.
  */
 export function readTouchPresentation(
   view: Window | null,
@@ -147,7 +155,7 @@ export function readTouchPresentation(
   if (view == null || typeof view.matchMedia !== 'function') {
     return {isTouch: false, isCompact: false};
   }
-  const isTouch = view.matchMedia(TOUCH_QUERY).matches;
+  const isTouch = TOUCH_LAYERS && view.matchMedia(TOUCH_QUERY).matches;
   const isCompact = view.matchMedia(compact.query).matches;
   return {isTouch, isCompact};
 }
