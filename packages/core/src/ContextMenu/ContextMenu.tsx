@@ -52,6 +52,7 @@ import {Icon} from '../Icon';
 import {useLayer} from '../Layer/useLayer';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
+import {currentGesture} from '../Layer/gestureCounter';
 import {MenuBottomSheetActionList} from '../DropdownMenu/MenuBottomSheetActionList';
 import {renderDropdownItems} from '../DropdownMenu/renderDropdownItems';
 import {
@@ -354,11 +355,11 @@ export function ContextMenu({
   // Element focused before the menu opened, restored when it closes so focus
   // does not fall to <body> after Escape or outside-click dismissal.
   const triggerFocusRef = useRef<HTMLElement | null>(null);
-  // Fingers and pens that went down outside the open menu; each closes it if
-  // it lifts without the browser cancelling it (a tap, not a scroll).
-  const outsidePressesRef = useRef(new Set<number>());
-  // The latest closeMenu, for the outside-press listeners (see below).
-  const closeMenuRef = useRef<() => void>(() => {});
+  // The gesture of the finger press that opened the menu (`Layer/
+  // gestureCounter`), null when a mouse or the keyboard opened it: the
+  // browser's compatibility mouse events for that same press are not presses
+  // outside.
+  const openingGestureRef = useRef<number | null>(null);
 
   const [isOpen, setIsOpen] = useState(false);
   const [submenuPath, setSubmenuPath] = useState<ContextMenuItemData[]>([]);
@@ -463,138 +464,43 @@ export function ContextMenu({
       ),
   });
 
-  // Dismiss on a press outside the menu. The menu is popover="manual" (not
-  // "auto") because native light dismiss reads the release of the opening
-  // right-click as a dismissal, so the press is read here, from pointer
-  // events: a touch's compatibility mouse events (the mousedown Chromium sends
-  // as a long press lifts, or one sent while it is still held)
-  // have no pointer event of their own, so the press that opened the menu
-  // never closes it. A mouse press outside closes the menu at once; a finger
-  // or a pen closes it on a tap, lifted rather than cancelled, so a scroll
-  // that starts outside leaves it open, as before. A pen goes with the finger
-  // because the menu press model (useMenuPress) groups them. They listen in
-  // the capture phase, so a control that stops the press (a resize handle)
-  // still closes the menu.
-  //
-  // Inside a shadow root, even a closed or nested one, the document sees a
-  // press on the menu as a press on a shadow host, and only the menu's own
-  // root sees where it landed. So each root from the document down to the
-  // menu's own listens too: capture reaches the outer ones first, and each
-  // defers a press on the host of the next root down to that root. A press
-  // on such a host itself reaches no deeper root, so the host judges it,
-  // whatever the host's own listeners do with it. Each press is judged once.
-  //
-  // The listeners read the latest `closeMenu` through a ref, so they are
-  // installed once per open: a caller's inline `onOpenChange` gives
-  // `closeMenu` a new identity on every render, and re-installing them would
-  // forget a press recorded between its down and its lift.
-  closeMenuRef.current = closeMenu;
+  // Dismiss on any click outside the menu. We use popover="manual" (not
+  // "auto") because the native light-dismiss treats the mouseup from the
+  // opening right-click as a dismiss event. Handling it ourselves via
+  // mousedown avoids that race. A touch's compatibility mousedown for the
+  // press that opened the menu (sent mid-hold by iOS, or as a long press
+  // lifts by Chromium) belongs to that press's gesture, so it is not read as
+  // a press outside; any later press is a new gesture and closes as before.
   useEffect(() => {
     if (!isOpen || usesBottomSheet) {
       return;
     }
-    const outsidePresses = outsidePressesRef.current;
-    // A finger's or a pen's lift is followed only while such a press is live:
-    // the document's pointerup and pointercancel listeners come on with the
-    // first one and off once none is left (`architecture:react-component-runtime`
-    // INV5), so an open menu with no press in flight holds none.
-    let isFollowingLifts = false;
-    const stopFollowingLifts = () => {
-      if (isFollowingLifts) {
-        isFollowingLifts = false;
-        document.removeEventListener('pointerup', handlePointerUp, true);
-        document.removeEventListener(
-          'pointercancel',
-          handlePointerCancel,
-          true,
-        );
-      }
-    };
-    function handlePointerUp(e: PointerEvent) {
-      const wasOutside = outsidePresses.delete(e.pointerId);
-      if (outsidePresses.size === 0) {
-        stopFollowingLifts();
-      }
-      if (wasOutside) {
-        closeMenuRef.current();
-      }
-    }
-    function handlePointerCancel(e: PointerEvent) {
-      outsidePresses.delete(e.pointerId);
-      if (outsidePresses.size === 0) {
-        stopFollowingLifts();
-      }
-    }
-    const pressOutside = (e: PointerEvent) => {
-      if (e.pointerType === 'touch' || e.pointerType === 'pen') {
-        outsidePresses.add(e.pointerId);
-        if (!isFollowingLifts) {
-          isFollowingLifts = true;
-          document.addEventListener('pointerup', handlePointerUp, true);
-          document.addEventListener('pointercancel', handlePointerCancel, true);
-        }
-        return;
-      }
-      closeMenuRef.current();
-    };
-    // The menu's own root, each root around it, and the document, each with
-    // the host of the root below it (none for the menu's own).
-    const levels: [Document | ShadowRoot, Element | null][] = [];
-    let tree: Node | undefined = listRef.current?.getRootNode();
-    let innerHost: Element | null = null;
-    while (tree instanceof ShadowRoot) {
-      levels.push([tree, innerHost]);
-      innerHost = tree.host;
-      tree = innerHost.getRootNode();
-    }
-    levels.push([document, innerHost]);
+    // Inside a shadow root, even a closed or nested one, the document sees a
+    // press on the menu as a press on an outer shadow host, so the menu's own
+    // tree judges its presses first and the document skips those.
+    const tree = listRef.current?.getRootNode();
+    const shadow = tree instanceof ShadowRoot ? tree : null;
     const judged = new WeakSet<Event>();
-    const judgePress = (e: Event) => {
+    const handleClickOutside = (e: Event) => {
+      const menu = listRef.current;
       if (judged.has(e)) {
         return;
       }
       judged.add(e);
-      const menu = listRef.current;
-      if (menu != null && !menu.contains(e.target as Node)) {
-        pressOutside(e as PointerEvent);
+      if (currentGesture() === openingGestureRef.current) {
+        return;
+      }
+      if (menu && !menu.contains(e.target as Node)) {
+        closeMenu();
       }
     };
-    const pressListeners = levels.map(([root, hostBelow]) => {
-      const handlePointerDown = (e: Event) => {
-        if (hostBelow == null || e.target !== hostBelow) {
-          judgePress(e);
-        }
-      };
-      return [root, handlePointerDown] as const;
-    });
-    // A press on a host itself, which no deeper root sees.
-    const handleUnjudgedPointerDown = (e: Event) => {
-      if (!judged.has(e)) {
-        judged.add(e);
-        pressOutside(e as PointerEvent);
-      }
-    };
-    for (const [, hostBelow] of levels) {
-      hostBelow?.addEventListener('pointerdown', handleUnjudgedPointerDown);
-    }
-    for (const [root, handlePointerDown] of pressListeners) {
-      root.addEventListener('pointerdown', handlePointerDown, true);
-    }
+    document.addEventListener('mousedown', handleClickOutside);
+    shadow?.addEventListener('mousedown', handleClickOutside);
     return () => {
-      outsidePresses.clear();
-      document.removeEventListener('pointerup', handlePointerUp, true);
-      document.removeEventListener('pointercancel', handlePointerCancel, true);
-      for (const [, hostBelow] of levels) {
-        hostBelow?.removeEventListener(
-          'pointerdown',
-          handleUnjudgedPointerDown,
-        );
-      }
-      for (const [root, handlePointerDown] of pressListeners) {
-        root.removeEventListener('pointerdown', handlePointerDown, true);
-      }
+      document.removeEventListener('mousedown', handleClickOutside);
+      shadow?.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, listRef, usesBottomSheet]);
+  }, [isOpen, closeMenu, listRef, usesBottomSheet]);
 
   const listKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -660,9 +566,6 @@ export function ContextMenu({
         document.activeElement instanceof HTMLElement
           ? document.activeElement
           : focusEl;
-      // A finger held on the trigger while the menu was open is now the long
-      // press that moved it, not a tap outside it.
-      outsidePressesRef.current.clear();
       if (usesBottomSheet) {
         updateOpenState(true);
       } else {
@@ -698,6 +601,14 @@ export function ContextMenu({
       const localX = isKeyboardInvoked || !rect ? 0 : e.clientX - rect.left;
       const localY =
         isKeyboardInvoked || !rect ? (rect?.height ?? 0) : e.clientY - rect.top;
+      // A finger's long press reaches here as a pointer `contextmenu` where
+      // the browser sends one (Chromium); its compatibility mousedown then
+      // belongs to the opening press. A mouse or the keyboard opens without
+      // one, so every later mousedown is a press outside.
+      openingGestureRef.current =
+        (e.nativeEvent as Partial<PointerEvent>).pointerType === 'touch'
+          ? currentGesture()
+          : null;
       openAtLocalPoint(localX, localY, e.currentTarget as HTMLElement);
     },
     [isDisabled, openAtLocalPoint, getAnchorBaseRect],
@@ -719,6 +630,9 @@ export function ContextMenu({
     onLongPress: useCallback(
       (point: {x: number; y: number}) => {
         const rect = getAnchorBaseRect();
+        // The finger is still down: the compatibility mousedown iOS sends
+        // mid-hold, or Chromium as it lifts, belongs to this press.
+        openingGestureRef.current = currentGesture();
         openAtLocalPoint(
           rect ? point.x - rect.left : point.x,
           rect ? point.y - rect.top : point.y,
