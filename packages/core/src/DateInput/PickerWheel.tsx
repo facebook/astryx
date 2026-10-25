@@ -106,7 +106,7 @@ import {focusOutlineStyles} from '../utils';
 import {wheelGeometry} from './wheelGeometry.stylex';
 import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {useWheelListbox} from './useWheelListbox';
-import {PARKED_ANGLE, drumGeometry, rowAtPoint} from './wheelDrum';
+import {drumGeometry, rowAtPoint} from './wheelDrum';
 import {WheelMotion, type PlayOptions} from './wheelMotion';
 import {reducedMotionFade} from '../motion/reducedMotion';
 import {
@@ -294,11 +294,6 @@ interface MoveOptions extends PlayOptions {
   touchRelease?: boolean;
 }
 
-/** Whether a looping wheel of `rowCount` rows can hide its seam. */
-function canLoop(rowCount: number): boolean {
-  return (rowCount * ROW_HEIGHT) / 2 > PARKED_ANGLE * GEOMETRY.radius;
-}
-
 /**
  * The position (an index along the drum, any integer when looping) of row
  * `row` nearest `offset`.
@@ -414,7 +409,9 @@ export function PickerWheel({
   const bandCopyRef = useRef<HTMLDivElement | null>(null);
   const stripRef = useRef<HTMLDivElement | null>(null);
   const rowCount = options.length;
-  const loops = isLooping && canLoop(rowCount);
+  // UIPickerView's looping table loops a list of any length: a minute column
+  // every 15 or 30 minutes repeats around the whole cylinder (measured).
+  const loops = isLooping && rowCount > 1;
   const layout = useMemo<WheelLayout>(
     () => ({rowHeight: ROW_HEIGHT, rowCount, looping: loops}),
     [rowCount, loops],
@@ -570,7 +567,7 @@ export function PickerWheel({
     const rows = new Map<number, HTMLElement>();
     for (const child of drumRef.current?.children ?? []) {
       if (child instanceof HTMLElement) {
-        rows.set(Number(child.dataset.index), child);
+        rows.set(Number(child.dataset.position ?? child.dataset.index), child);
       }
     }
     motion.attach(rows, stripRef.current);
@@ -757,20 +754,17 @@ export function PickerWheel({
       const {y} = recognizer.location();
       const offset = motion.offset();
       const currentLayout = latestRef.current.layout;
-      const row = rowAtPoint(
+      // The tapped copy itself: on a short loop a copy of the row under the
+      // band can sit two rows away, and the wheel turns onto it (UIKit).
+      const target = rowAtPoint(
         y - (box.top + box.height / 2),
         offset,
         currentLayout,
         GEOMETRY,
       );
-      const restingRow = wrapIndex(
-        nearestIndex(offset, currentLayout),
-        currentLayout.rowCount,
-      );
-      if (row == null || row === restingRow) {
+      if (target == null || target === nearestIndex(offset, currentLayout)) {
         return;
       }
-      const target = nearestPosition(row, offset, currentLayout);
       play(turnCurve(columnRef.current, offset, target * ROW_HEIGHT), {
         onEnd,
       });
@@ -853,19 +847,34 @@ export function PickerWheel({
 
   useImperativeHandle(ref, () => ({spinTo}), [spinTo]);
 
-  // A key commits `row` at once and turns the wheel there from `offset`,
-  // onto the copy of the row nearest where it was heading.
-  const turnTo = useCallback(
-    (row: number, heading: number, offset: number) => {
+  // A key commits the row at `position` at once and turns the wheel there
+  // from `offset`.
+  const turnToPosition = useCallback(
+    (position: number, offset: number) => {
       const current = latestRef.current;
-      const option = current.options[row];
-      const target = nearestPosition(row, heading, current.layout);
+      const option =
+        current.options[
+          current.layout.looping
+            ? wrapIndex(position, current.options.length)
+            : position
+        ];
       if (option.value !== current.value) {
         current.onChange(option.value);
       }
-      play(turnCurve(columnRef.current, offset, target * ROW_HEIGHT));
+      play(turnCurve(columnRef.current, offset, position * ROW_HEIGHT));
     },
     [play],
+  );
+
+  // The same onto `row`'s copy nearest where the wheel was heading.
+  const turnTo = useCallback(
+    (row: number, heading: number, offset: number) => {
+      turnToPosition(
+        nearestPosition(row, heading, latestRef.current.layout),
+        offset,
+      );
+    },
+    [turnToPosition],
   );
 
   const moveBy = useCallback(
@@ -879,7 +888,8 @@ export function PickerWheel({
       // passing: two quick presses move two rows.
       const heading = motion.target();
       const offset = motion.isMoving() ? motion.stop() : motion.offset();
-      const from = wrapIndex(nearestIndex(heading, current.layout), count);
+      const headingPosition = nearestIndex(heading, current.layout);
+      const from = wrapIndex(headingPosition, count);
       const looping = Boolean(current.layout.looping);
       const isEnabled = (index: number) => {
         const option =
@@ -912,9 +922,11 @@ export function PickerWheel({
       if (found == null) {
         return;
       }
-      turnTo(looping ? wrapIndex(found, count) : found, heading, offset);
+      // The step's own direction, even on a loop shorter than the cylinder,
+      // where the same row also sits the other way round.
+      turnToPosition(headingPosition + (found - from), offset);
     },
-    [motion, turnTo],
+    [motion, turnToPosition],
   );
 
   // Home and End: the first and the last enabled row, wherever the wheel is
@@ -968,9 +980,9 @@ export function PickerWheel({
     activate: activateRow,
   });
 
-  // The mounted rows: each option index once on the drum (a looping wheel
-  // shows a row at its copy nearest the band), and each position of the band
-  // copy's run on its strip.
+  // The mounted rows: each position of the window on the drum (on a looping
+  // wheel each copy has its own, so a short list repeats around the
+  // cylinder), and each position of the band copy's run on its strip.
   const positions: number[] = [];
   for (let position = rowWindow.from; position <= rowWindow.to; position++) {
     positions.push(position);
@@ -985,11 +997,9 @@ export function PickerWheel({
   }
   const rowIndexAt = (position: number) =>
     loops ? wrapIndex(position, rowCount) : position;
-  const drumRows = [
-    ...new Set(
-      positions.map(rowIndexAt).filter(index => index >= 0 && index < rowCount),
-    ),
-  ].sort((a, b) => a - b);
+  const drumRows = positions.filter(
+    position => loops || (position >= 0 && position < rowCount),
+  );
 
   return (
     <div
@@ -1019,12 +1029,14 @@ export function PickerWheel({
         aria-hidden="true"
         data-wheel-drum=""
         {...stylex.props(styles.drum)}>
-        {drumRows.map(index => {
+        {drumRows.map(position => {
+          const index = rowIndexAt(position);
           const option = options[index];
           return (
             <div
-              key={option.value}
+              key={loops ? position : option.value}
               data-index={index}
+              data-position={loops ? position : undefined}
               data-label={option.label}
               {...stylex.props(
                 styles.row,

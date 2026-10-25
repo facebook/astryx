@@ -156,7 +156,10 @@ function canAnimate(element: Element): boolean {
 export class WheelMotion {
   private layout: WheelLayout;
   private geometry: DrumGeometry;
-  /** The mounted rows by option index (the Wheel mounts a window of them). */
+  /**
+   * The mounted rows by position along the wheel: an option index, or on a
+   * looping wheel any integer, one row per copy (the Wheel mounts a window).
+   */
   private rows: ReadonlyMap<number, HTMLElement> = new Map();
   private strip: HTMLElement | null = null;
   private restingOffset = 0;
@@ -173,7 +176,7 @@ export class WheelMotion {
   }
 
   /**
-   * The drum's mounted rows, by option index, and the band's strip. A
+   * The drum's mounted rows, by position, and the band's strip. A
    * running motion carries on through a re-attach: the rows it already
    * animates keep their animations (an owner re-rendered, say with other
    * rows disabled), rows that unmounted lose theirs, and rows that mounted
