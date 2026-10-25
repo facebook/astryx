@@ -37,7 +37,9 @@
  *
  * BottomSheet's hook (`useMobileKeyboard`) gives a fully expanded, explicitly
  * Tall sheet a keyboard-aware internal scroll range while leaving the sheet
- * itself stationary. Shorter detents and other heights opt out entirely.
+ * itself stationary: it returns the room the keyboard takes at the end of the
+ * body, which the sheet lays out through a functional style on its own body,
+ * with no CSS custom property of its own (FR3). Shorter detents and other heights opt out entirely.
  * Starting Tall-sheet travel or closing the sheet blurs the field and
  * dismisses the keyboard (FR5).
  *
@@ -48,9 +50,15 @@ import {
   REDUCED_MOTION_FADE_QUERY,
   REDUCED_MOTION_INSTANT_QUERY,
 } from '../motion/reducedMotion';
-import {useEffect, useRef, useSyncExternalStore, type RefObject} from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type RefObject,
+} from 'react';
+import {flushSync} from 'react-dom';
 
-const MOBILE_KEYBOARD_INSET_VAR = '--_sheet-keyboard-inset';
 // A shortfall smaller than this is rounding, not a keyboard.
 const KEYBOARD_EPSILON = 1;
 const NON_TEXT_INPUT_TYPES = new Set([
@@ -499,7 +507,8 @@ function isVisualViewportRecovered(): boolean {
 
 /**
  * BottomSheet's use of the keyboard: a Tall sheet's scroll range, its focus
- * moves and its dismissal (see the file header).
+ * moves and its dismissal (see the file header). Returns the room the
+ * keyboard takes at the end of the body, CSS px (0 without a keyboard).
  */
 export function useMobileKeyboard({
   bodyRef,
@@ -511,7 +520,10 @@ export function useMobileKeyboard({
   isOpen,
   isPresented,
   sheetRef,
-}: UseMobileKeyboardOptions): void {
+}: UseMobileKeyboardOptions): number {
+  // The room the keyboard takes at the end of the body, CSS px: the sheet lays
+  // it out through a functional style on its own body (spec:AST-099 FR3).
+  const [keyboardInset, setKeyboardInset] = useState(0);
   const hasKeyboardLayoutRef = useRef(false);
   const retainKeyboardLayoutRef = useRef(false);
   const isFullyExpandedRef = useRef(isFullyExpanded);
@@ -569,8 +581,15 @@ export function useMobileKeyboard({
     // FR6: where this window measures the keyboard, never by user agent.
     const ownsFocusTransitions = isKeyboardMeasurable(window);
 
+    // Lays the inset out before anything measures or scrolls the body: the
+    // reveal scrolls into the room it adds in the same frame.
+    const writeInset = (inset: number) => {
+      // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- the reveal scrolls into this room in the same frame, so it must be laid out before the reveal measures
+      flushSync(() => setKeyboardInset(inset));
+    };
+
     const clearKeyboardLayout = () => {
-      body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, '0px');
+      writeInset(0);
       keyboardGeometry = null;
       documentScrollAtKeyboard = null;
       hasKeyboardLayoutRef.current = false;
@@ -645,7 +664,7 @@ export function useMobileKeyboard({
         0,
         geometry.bodyBottom - (obstructionTop - bottomClearance),
       );
-      body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, `${inset}px`);
+      writeInset(inset);
     };
 
     // Take every focus move into a field over before the browser performs it
@@ -717,7 +736,7 @@ export function useMobileKeyboard({
         overlap > 0
           ? Math.max(0, measuredBodyRect.bottom - (obstructionTop - clearance))
           : 0;
-      body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, `${inset}px`);
+      writeInset(inset);
 
       scrollControlIntoSafeArea(activeElement, overlap > 0);
     };
@@ -796,7 +815,7 @@ export function useMobileKeyboard({
       typeof MutationObserver === 'undefined'
         ? null
         : new MutationObserver(records => {
-            // Ignore the internal inset written on the body. Consumer DOM,
+            // Ignore the inset the sheet lays out on the body. Consumer DOM,
             // text, class, style, or visibility changes can all move the
             // focused control without a viewport event.
             if (
@@ -859,7 +878,7 @@ export function useMobileKeyboard({
       window.removeEventListener('scroll', handleDocumentScroll);
       resizeObserver?.disconnect();
       mutationObserver?.disconnect();
-      body.style.removeProperty(MOBILE_KEYBOARD_INSET_VAR);
+      setKeyboardInset(0);
       hasKeyboardLayoutRef.current = false;
       retainKeyboardLayoutRef.current = false;
     };
@@ -871,4 +890,5 @@ export function useMobileKeyboard({
     isPresented,
     sheetRef,
   ]);
+  return keyboardInset;
 }

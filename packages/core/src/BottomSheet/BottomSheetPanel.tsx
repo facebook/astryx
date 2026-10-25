@@ -266,10 +266,17 @@ const styles = stylex.create({
     '::after': {
       content: '""',
       display: 'block',
-      blockSize: 'var(--_sheet-keyboard-inset, 0px)',
+      blockSize: 0,
       pointerEvents: 'none',
     },
   },
+  // The room the keyboard takes at the end of a Tall sheet's body
+  // (useMobileKeyboard), so its last control can scroll above the keyboard.
+  keyboardInset: (inset: number) => ({
+    '::after': {
+      blockSize: inset,
+    },
+  }),
   budget: {
     height: `calc(var(--_sheet-budget) + ${OVERSCROLL_PADDING}px)`,
   },
@@ -551,7 +558,7 @@ export function BottomSheetPanel({
     },
     [onElementChange, sheetRef],
   );
-  useMobileKeyboard({
+  const keyboardInset = useMobileKeyboard({
     bodyRef: bodyElementRef,
     bottomClearance: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
     isEnabled: height === 'tall',
@@ -747,6 +754,9 @@ export function BottomSheetPanel({
               focusOutlineStyles.focusVisible,
               styles.body,
               height === 'tall' && styles.tallKeyboardBody,
+              height === 'tall' &&
+                keyboardInset > 0 &&
+                styles.keyboardInset(keyboardInset),
             ),
             scrollPreservationInset > 0
               ? {style: {paddingBlockEnd: `${scrollPreservationInset}px`}}
