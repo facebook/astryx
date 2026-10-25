@@ -5,11 +5,12 @@
 /**
  * @file rootScrollStyles.ts
  * @input The inline style of the element whose overflow the viewport uses
- *   (the root, or `<body>` when its own overflow propagates to the viewport)
- *   and the root's inline style
- * @output claimRootScrollStyle, the one owner of the page's `overflow` and the
- *   root's `overscroll-behavior-y`; isScrollLockActive / subscribeScrollLock,
- *   which report whether a scroll lock holds the page
+ *   (the root, or `<body>` when its own overflow propagates to the viewport),
+ *   and the inline styles of the root and `<body>`
+ * @output claimRootScrollStyle, the one owner of the page's `overflow` and its
+ *   `overscroll-behavior-y` (written on the root and on `<body>`, which Chrome
+ *   on Android reads for its pull-to-refresh); isScrollLockActive /
+ *   subscribeScrollLock, which report whether a scroll lock holds the page
  * @position Internal hook utility. Everything that changes how the page itself
  *   scrolls (a modal's scroll lock, a drawer's lock, a control that turns the
  *   page's top-edge bounce off) claims the root's styles here, so no caller
@@ -57,17 +58,17 @@ const SAVED: Record<RootScrollProperty, ReadonlyArray<SavedStyle>> = {
 };
 
 /**
- * Where a property's claims are written while any is held: the element, the
- * page's own inline values there (saved when the first claim arrives), and the
- * value these claims last wrote.
+ * One element a property's claims are written to while any is held: the
+ * element, the page's own inline values there (saved when the first claim
+ * arrives), and the value these claims last wrote.
  */
-interface Held {
+interface HeldTarget {
   readonly element: HTMLElement;
   readonly pageValues: Partial<Record<SavedStyle, string>>;
   written: string;
 }
 
-const held = new Map<RootScrollProperty, Held>();
+const held = new Map<RootScrollProperty, HeldTarget[]>();
 
 let nextClaimId = 0;
 
@@ -95,37 +96,61 @@ function overflowTarget(doc: Document): HTMLElement {
   return isVisible(root) && !isVisible(body) ? body : root;
 }
 
+/**
+ * Where a property's claims go. `overflow`: the element the viewport takes it
+ * from (overflowTarget). `overscroll-behavior-y`: the root and `<body>`, since
+ * Chrome on Android reads `<body>`'s value for its own pull-to-refresh while
+ * other browsers read the root's.
+ */
+function claimTargets(
+  property: RootScrollProperty,
+  doc: Document,
+): HTMLElement[] {
+  if (property === 'overflow') {
+    return [overflowTarget(doc)];
+  }
+  return doc.body == null
+    ? [doc.documentElement]
+    : [doc.documentElement, doc.body];
+}
+
 function applyTopClaim(property: RootScrollProperty): void {
-  const entry = held.get(property);
-  if (entry == null) {
+  const targets = held.get(property);
+  if (targets == null) {
     return;
   }
-  const {style} = entry.element;
   const stack = claims[property];
   const top = stack[stack.length - 1];
-  if (top != null) {
-    style[property] = top.value;
-    entry.written = top.value;
-    return;
-  }
-  // The last claim is gone: the page gets its own values back, unless a writer
-  // outside these claims changed the style meanwhile; its value stays.
-  if (style[property] === entry.written) {
-    style[property] = '';
-    for (const name of SAVED[property]) {
-      const value = entry.pageValues[name];
-      if (value) {
-        style[name] = value;
+  for (const target of targets) {
+    const {style} = target.element;
+    if (top != null) {
+      style[property] = top.value;
+      target.written = top.value;
+      continue;
+    }
+    // The last claim is gone: the page gets its own values back, unless a
+    // writer outside these claims changed the style meanwhile; its value stays.
+    if (style[property] === target.written) {
+      style[property] = '';
+      for (const name of SAVED[property]) {
+        const value = target.pageValues[name];
+        if (value) {
+          style[name] = value;
+        }
       }
     }
   }
-  held.delete(property);
+  if (top == null) {
+    held.delete(property);
+  }
 }
 
 /**
- * Sets the page's `overflow` and/or the root's `overscroll-behavior-y` until
- * the returned release runs. `overflow` goes where the viewport takes it from:
- * the root, or `<body>` when the root's is `visible` and `<body>` sets its own.
+ * Sets the page's `overflow` and/or `overscroll-behavior-y` until the returned
+ * release runs. `overflow` goes where the viewport takes it from: the root, or
+ * `<body>` when the root's is `visible` and `<body>` sets its own.
+ * `overscroll-behavior-y` goes on both the root and `<body>` (Chrome on
+ * Android reads `<body>`'s for its pull-to-refresh).
  * Claims stack per property: the latest claim wins, releasing a claim restores
  * the one beneath it whatever the release order, and the page's own inline
  * value comes back once the last claim on a property is released, unless
@@ -152,15 +177,16 @@ export function claimRootScrollStyle(claim: RootScrollStyle): () => void {
       continue;
     }
     if (claims[property].length === 0) {
-      const element =
-        property === 'overflow'
-          ? overflowTarget(document)
-          : document.documentElement;
-      const pageValues: Partial<Record<SavedStyle, string>> = {};
-      for (const name of SAVED[property]) {
-        pageValues[name] = element.style[name];
-      }
-      held.set(property, {element, pageValues, written: ''});
+      held.set(
+        property,
+        claimTargets(property, document).map(element => {
+          const pageValues: Partial<Record<SavedStyle, string>> = {};
+          for (const name of SAVED[property]) {
+            pageValues[name] = element.style[name];
+          }
+          return {element, pageValues, written: ''};
+        }),
+      );
     }
     claims[property].push({id, value});
     claimed.push(property);

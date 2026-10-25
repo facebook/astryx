@@ -81,12 +81,23 @@ describe('useScrollLock', () => {
     expect(document.documentElement.style.overflow).toBe('auto');
   });
 
+  it("turns the page's overscroll off on the root and the body while locked, so a pull cannot refresh the page behind the overlay", () => {
+    const {unmount} = renderHook(() => useScrollLock(true));
+    expect(document.documentElement.style.overscrollBehaviorY).toBe('none');
+    expect(document.body.style.overscrollBehaviorY).toBe('none');
+
+    unmount();
+    expect(document.documentElement.style.overscrollBehaviorY).toBe('');
+    expect(document.body.style.overscrollBehaviorY).toBe('');
+  });
+
   it('never moves the page: no body pinning, no scroll restore', () => {
     vi.spyOn(window, 'scrollY', 'get').mockReturnValue(480);
     vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
     const lock = renderHook(() => useScrollLock(true));
-    expect(document.body.style.cssText).toBe('');
+    // The body carries only the overscroll mirror, never a pin.
+    expect(document.body.style.cssText).toBe('overscroll-behavior-y: none;');
 
     lock.unmount();
     expect(document.body.style.cssText).toBe('');
