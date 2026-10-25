@@ -32,7 +32,6 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheetPanel.tsx
- * - /packages/core/src/BottomSheet/BottomSheetEdgeTint.tsx
  * - /packages/core/src/BottomSheet/BottomSheet.doc.mjs
  * - /packages/core/src/BottomSheet/BottomSheet.test.tsx
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.tsx
@@ -71,7 +70,6 @@ import {
   type BottomSheetPanelMotion,
   type BottomSheetPanelState,
 } from './BottomSheetPanel';
-import {BottomSheetEdgeTint} from './BottomSheetEdgeTint';
 import {
   BottomSheetSwitcherContext,
   type BottomSheetSwitcherContextValue,
@@ -100,6 +98,15 @@ const styles = stylex.create({
   },
   dialogOpen: {
     display: 'block',
+  },
+  // An open standalone dialog is its panel's positioner: the panel sits at its
+  // block end, centred, with no wrapper between them
+  // (architecture:component-style-authoring INV7). A tap beside a narrower
+  // panel lands on the dialog itself, which light dismiss reads.
+  dialogPanelHost: {
+    display: 'grid',
+    alignContent: 'end',
+    justifyItems: 'center',
   },
   dialogNonModal: {
     pointerEvents: 'none',
@@ -470,6 +477,7 @@ function StandaloneBottomSheet({
       {...stylex.props(
         styles.dialog,
         shouldPresent && styles.dialogOpen,
+        shouldPresent && styles.dialogPanelHost,
         hasScrim && styles.scrim,
         hasScrim && !isOpen && isPresented && styles.scrimClosing,
         !hasScrim && styles.dialogNonModal,
@@ -482,25 +490,22 @@ function StandaloneBottomSheet({
       inert={!isOpen && isPresented ? true : undefined}
       onCancel={handleCancel}
       onClick={handleClick}>
-      <div {...stylex.props(styles.positioner)}>
-        <BottomSheetPanel
-          {...props}
-          ref={ref}
-          state={panelState}
-          height={height}
-          label={label}
-          snapPoints={snapPoints}
-          isSwipeDismissAllowed={purpose === 'info'}
-          isPageScrollLocked={shouldPresent && hasScrim}
-          xstyle={xstyle}
-          onDismiss={dismissOnLightInteraction}
-          onScrimOpacity={handleScrimOpacity}
-          onElementChange={handlePanelElementChange}
-          onMotionComplete={handleMotionComplete}>
-          <LayerDepthProvider>{children}</LayerDepthProvider>
-        </BottomSheetPanel>
-      </div>
-      <BottomSheetEdgeTint />
+      <BottomSheetPanel
+        {...props}
+        ref={ref}
+        state={panelState}
+        height={height}
+        label={label}
+        snapPoints={snapPoints}
+        isSwipeDismissAllowed={purpose === 'info'}
+        isPageScrollLocked={shouldPresent && hasScrim}
+        xstyle={xstyle}
+        onDismiss={dismissOnLightInteraction}
+        onScrimOpacity={handleScrimOpacity}
+        onElementChange={handlePanelElementChange}
+        onMotionComplete={handleMotionComplete}>
+        <LayerDepthProvider>{children}</LayerDepthProvider>
+      </BottomSheetPanel>
     </dialog>
   );
 }
@@ -809,7 +814,6 @@ function SwitcherBottomSheetItem({
           </BottomSheetSwitcherContext>
         </BottomSheetPanel>
       </div>
-      {isPresented && <BottomSheetEdgeTint />}
     </dialog>
   );
 }
