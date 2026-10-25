@@ -47,16 +47,19 @@ final class ComponentScreensUITests: XCTestCase {
   /// regions, Dynamic Type, traits, clipped text) on every screen. Each issue
   /// fails the test with the element and the audit's own words.
   func testEveryScreenPassesTheAccessibilityAudit() throws {
+    var issues: [String] = []
     for screen in Self.screens {
       let app = launch(screen)
       attachScreenshot(app, named: screen)
       try app.performAccessibilityAudit { issue in
-        let element = issue.element.map { "\($0.elementType) '\($0.label)'" } ?? "screen"
-        XCTFail("\(screen): \(element): \(issue.compactDescription). \(issue.detailedDescription)")
+        let element = issue.element.map { "'\($0.label)'" } ?? "the screen"
+        issues.append("\(screen) \(element): \(issue.compactDescription)")
         return true
       }
       app.terminate()
     }
+    // One failure listing every issue, so the log shows them all.
+    XCTAssertEqual(issues, [], issues.joined(separator: "; "))
   }
 
   /// What VoiceOver reads for Button: its label, the button role, Loading as
