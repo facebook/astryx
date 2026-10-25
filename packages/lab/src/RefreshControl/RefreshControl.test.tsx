@@ -22,7 +22,7 @@ import {
   onTestFinished,
   vi,
 } from 'vitest';
-import {uikit} from '@astryxdesign/core/motion/experimental';
+import {refreshControl} from '@astryxdesign/core/motion/uikit/refresh';
 import {RefreshControl} from './RefreshControl';
 
 const COARSE = /\(\s*pointer\s*:\s*coarse\s*\)/;
@@ -170,7 +170,7 @@ describe('RefreshControl', () => {
 });
 
 describe('RefreshControl indicator: UIRefreshControl\u2019s replicator', () => {
-  const table = uikit.refreshControl;
+  const table = refreshControl;
   const glyphOf = () =>
     document.querySelector('.astryx-refresh-control')?.lastElementChild
       ?.firstElementChild?.firstElementChild as HTMLElement;
