@@ -102,6 +102,11 @@ import Testing
   let field = Astryx.TextInput(
     label: "Email", value: "", status: TextInputStatus(type: .warning, message: "Check the domain"))
   let pixels = Pixels(field.frame(width: 240))
+  // The muted ground is translucent, and Pixels reads premultiplied RGBA, so
+  // compare against the premultiplied color.
   let ground = rgba(Theme.default.light.color.warningMuted)
-  #expect(pixels.contains { close($0, ground) })
+  let alpha = ground[3]
+  let premultiplied = ground.prefix(3).map { $0 * alpha / 255 } + [alpha]
+  #expect(alpha < 255)
+  #expect(pixels.contains { close($0, premultiplied, within: 3) })
 }
