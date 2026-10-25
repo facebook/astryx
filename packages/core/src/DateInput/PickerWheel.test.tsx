@@ -930,6 +930,40 @@ describe('PickerWheel — a short looping list', () => {
     expect(bandPosition(column)).toBe(start + 1);
   });
 
+  it('stays put when a key would turn onto a copy of its own row', () => {
+    // PageDown moves ten rows: on a two-row loop that is a copy of the row
+    // under the band, so nothing turns and nothing commits.
+    const {column, onChange} = renderWheel({
+      options: HALVES,
+      value: 30,
+      label: 'Minute',
+      isLooping: true,
+    });
+    const start = bandPosition(column);
+    fireEvent.keyDown(column, {key: 'PageDown'});
+    advance(1000);
+    expect(bandPosition(column)).toBe(start);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('never turns a whole revolution when no other row is enabled', () => {
+    // Only :15 is enabled, so an arrow key has nowhere to go.
+    const {column, onChange} = renderWheel({
+      options: QUARTERS.map(option => ({
+        ...option,
+        isDisabled: option.value !== 15,
+      })),
+      value: 15,
+      label: 'Minute',
+      isLooping: true,
+    });
+    const start = bandPosition(column);
+    fireEvent.keyDown(column, {key: 'ArrowDown'});
+    advance(1000);
+    expect(bandPosition(column)).toBe(start);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('flings on through the seam, its copies drawn all the way', () => {
     const {column, onChange} = renderWheel({
       options: QUARTERS,

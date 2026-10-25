@@ -924,8 +924,18 @@ export function PickerWheel({
         return;
       }
       // The step's own direction, even on a loop shorter than the cylinder,
-      // where the same row also sits the other way round.
-      turnToPosition(headingPosition + (found - from), offset);
+      // where the same row also sits the other way round. A key never turns a
+      // whole revolution: a target that folds back onto the row the wheel is
+      // heading to stays put, and any other travels less than one turn.
+      let travel = found - from;
+      if (looping) {
+        const ahead = (((travel * step) % count) + count) % count;
+        if (ahead === 0) {
+          return;
+        }
+        travel = ahead * step;
+      }
+      turnToPosition(headingPosition + travel, offset);
     },
     [motion, turnToPosition],
   );
