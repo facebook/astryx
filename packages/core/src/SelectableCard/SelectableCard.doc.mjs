@@ -8,116 +8,38 @@ export const docs = {
   category: 'Container',
   keywords: ['card', 'selectable', 'toggle', 'checkbox', 'radio', 'selection'],
   usage: {
-    description:
-      'A card that toggles between selected and unselected states with an accent border. For navigation use ClickableCard.',
+    description: 'A card that toggles between selected and unselected states with an accent border. For navigation use ClickableCard.',
     bestPractices: [
-      {
-        guidance: true,
-        description: 'Use for plan pickers, filter chips, or option grids.',
-      },
-      {
-        guidance: true,
-        description:
-          'For single-select track one ID and give each card inputType="radio" and the set\'s shared htmlName; for multi-select use a Set.',
-      },
-      {
-        guidance: true,
-        description: 'When focused, toggle selection with Space or Enter.',
-      },
-      {
-        guidance: false,
-        description: 'Use for navigation; use ClickableCard for that.',
-      },
+      {guidance: true, description: 'Use for multi-select choices: filter chips, feature add-ons, or option grids where several can be on.'},
+      {guidance: true, description: 'Use for multi-select groups; track the selected IDs in a Set.'},
+      {guidance: true, description: 'When focused, toggle selection with Space or Enter.'},
+      {guidance: false, description: 'Use for navigation; use ClickableCard for that.'},
+      {guidance: false, description: 'Use for a single-select group: each card is a checkbox, so assistive technology announces a multi-select group with one tab stop per card.'},
     ],
     anatomy: [
-      {
-        name: 'Container',
-        required: true,
-        description: 'Interactive div with accent border on selection.',
-      },
-      {
-        name: 'Content',
-        required: true,
-        description: 'Children rendered inside the card.',
-      },
+      {name: 'Container', required: true, description: 'Interactive div with accent border on selection.'},
+      {name: 'Content', required: true, description: 'Children rendered inside the card.'},
     ],
   },
   props: [
-    {
-      name: 'label',
-      type: 'string',
-      description: 'Accessibility label.',
-      required: true,
-    },
-    {
-      name: 'isSelected',
-      type: 'boolean',
-      description: 'Controlled selection state.',
-      required: true,
-    },
-    {
-      name: 'onChange',
-      type: '(isSelected: boolean) => void',
-      description: 'Called when toggled. A radio card only calls it with true.',
-      required: true,
-    },
-    {
-      name: 'inputType',
-      type: "'checkbox' | 'radio'",
-      description:
-        'The native control inside the card. A radio card is one choice of a set: it selects and never deselects itself. Give the set one `name` and put it in a role="radiogroup" with an accessible name; the browser then makes it one tab stop, arrow keys move and select, and "2 of 3" is spoken.',
-      default: "'checkbox'",
-    },
-    {
-      name: 'htmlName',
-      type: 'string',
-      description:
-        'The native input name, as on RadioList and CheckboxInput. Radio cards that share it form one group; a disabled card submits nothing.',
-    },
-    {
-      name: 'isDisabled',
-      type: 'boolean',
-      description: 'Disables the card.',
-      default: 'false',
-    },
+    {name: 'label', type: 'string', description: 'Accessibility label.', required: true},
+    {name: 'isSelected', type: 'boolean', description: 'Controlled selection state.', required: true},
+    {name: 'onChange', type: '(isSelected: boolean) => void', description: 'Called when toggled. A radio card only calls it with true.', required: true},
+    {name: 'inputType', type: "'checkbox' | 'radio'", description: "The native control inside the card. 'radio' makes the card one choice of a single-select set; SelectableCardGroup (lab) builds that set and documents it.", default: "'checkbox'"},
+    {name: 'htmlName', type: 'string', description: 'The native input name, as on RadioList and CheckboxInput. Radio cards that share it form one group; a disabled card submits nothing.'},
+    {name: 'isDisabled', type: 'boolean', description: 'Disables the card.', default: 'false'},
     {name: 'children', type: 'ReactNode', description: 'Card content.'},
-    {
-      name: 'padding',
-      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
-      description: 'Inner padding.',
-      default: '4',
-    },
-    {
-      name: 'variant',
-      type: "'default' | 'transparent' | 'muted' | 'blue' | 'cyan' | 'gray' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'",
-      description: 'Background color variant.',
-      default: "'default'",
-    },
-    {
-      name: 'elevation',
-      type: "'none' | 'low' | 'med' | 'high'",
-      description:
-        'Resting shadow depth. The selection ring composes on top, so a selected card keeps its shadow.',
-      default: "'none'",
-    },
+    {name: 'padding', type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10', description: 'Inner padding.', default: '4'},
+    {name: 'variant', type: "'default' | 'transparent' | 'muted' | 'blue' | 'cyan' | 'gray' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'", description: 'Background color variant.', default: "'default'"},
+    {name: 'elevation', type: "'none' | 'low' | 'med' | 'high'", description: 'Resting shadow depth. The selection ring composes on top, so a selected card keeps its shadow.', default: "'none'"},
     {name: 'width', type: 'SizeValue', description: 'Card width.'},
     {name: 'height', type: 'SizeValue', description: 'Card height.'},
     {name: 'maxWidth', type: 'SizeValue', description: 'Maximum card width.'},
-    {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
-    },
+    {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.'},
   ],
   theming: {
     container: true,
-    targets: [
-      {
-        className: 'astryx-selectable-card',
-        visualProps: ['selected', 'variant'],
-      },
-    ],
+    targets: [{className: 'astryx-selectable-card', visualProps: ['selected', 'variant']}],
     vars: [
       {name: '--selectable-card-ring-color', description: 'Colour of the selection ring drawn for a variant a theme added. The built-in variants each ring in their own border token and ignore this; a theme that adds a variant sets it in the same rule as that variant\'s `backgroundColor`, because no token the component could pick is guaranteed to contrast with a fill it cannot know.', default: 'var(--color-accent)'},
       {name: '--_press-overlay', description: 'Colour of the ::after interaction overlay for the hover and mouse states: transparent at rest, the hover overlay token on hover (hover-capable pointers), the pressed overlay token while a mouse holds `:active`. A press the touch press controller paints (`data-astryx-press`) is the overlay\'s image instead, at the press\'s strength, and the colour yields to it. Set on the card element by its own interaction arms.', default: 'transparent', private: true},
@@ -133,11 +55,7 @@ export const docs = {
         props: {gap: 1},
         children: [
           {__element: 'XDSHeading', props: {level: 3}, children: 'Pro plan'},
-          {
-            __element: 'XDSText',
-            props: {type: 'body'},
-            children: '$29/month, unlimited projects and priority support.',
-          },
+          {__element: 'XDSText', props: {type: 'body'}, children: '$29/month, unlimited projects and priority support.'},
         ],
       },
     },
@@ -146,29 +64,15 @@ export const docs = {
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
-  description:
-    'Card toggling between selected/unselected states w/ accent border. For navigation use ClickableCard instead.',
+  description: 'Card toggling between selected/unselected states w/ accent border. For navigation use ClickableCard instead.',
   usage: {
-    description:
-      'Card toggling between selected/unselected states w/ accent border. For navigation use ClickableCard instead.',
+    description: 'Card toggling between selected/unselected states w/ accent border. For navigation use ClickableCard instead.',
     bestPractices: [
-      {
-        guidance: true,
-        description: 'Use for plan pickers, filter chips, option grids.',
-      },
-      {
-        guidance: true,
-        description:
-          'For single-select track one ID and give each card inputType="radio" and the set\'s shared htmlName; for multi-select use a Set.',
-      },
-      {
-        guidance: true,
-        description: 'When focused, toggle selection with Space or Enter.',
-      },
-      {
-        guidance: false,
-        description: 'Use for navigation; use ClickableCard instead.',
-      },
+      {guidance: true, description: 'Use for multi-select choices: filter chips, add-ons, option grids.'},
+      {guidance: true, description: 'Use for multi-select groups; track selected IDs in a Set.'},
+      {guidance: true, description: 'When focused, toggle selection with Space or Enter.'},
+      {guidance: false, description: 'Use for navigation; use ClickableCard instead.'},
+      {guidance: false, description: 'Use for single-select: each card is a checkbox, so screen readers announce multi-select.'},
     ],
   },
   propDescriptions: {
@@ -178,8 +82,7 @@ export const docsDense = {
     isDisabled: 'disables card',
     padding: 'inner padding',
     variant: 'background color variant',
-    elevation:
-      'resting shadow depth: none|low|med|high; selection ring composes on top',
+    elevation: 'resting shadow depth: none|low|med|high; selection ring composes on top',
     width: 'card width',
     height: 'card height',
     maxWidth: 'max card width',

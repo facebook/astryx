@@ -285,10 +285,8 @@ export interface SelectableCardProps extends Omit<BaseProps, 'onChange'> {
 
   /**
    * The native control inside the card. `checkbox` toggles. `radio` makes the
-   * card one choice of a set: it selects and never deselects itself. Give the
-   * set's cards one `htmlName` so the browser groups them: one tab stop, arrow
-   * keys move and select, and the position ("2 of 3") is spoken. Put them in
-   * an element with role="radiogroup" and an accessible name.
+   * card one choice of a single-select set: it selects and never deselects
+   * itself. SelectableCardGroup (lab) builds that set and documents it.
    * @default 'checkbox'
    */
   inputType?: 'checkbox' | 'radio';
@@ -354,18 +352,17 @@ export interface SelectableCardProps extends Omit<BaseProps, 'onChange'> {
  * the accessible role, label, and checked state. The card surface
  * is a plain <div> — no role or tabIndex on the container.
  *
- * @compositionHint Use for multi-select or single-select card groups.
- * Manage selection state externally — use a Set for multi-select
- * or a single value for a single choice, where each card takes
- * inputType="radio" and the set's shared `htmlName`.
+ * @compositionHint Use for multi-select card groups, managing selection
+ * state externally in a Set. Not for single-select: each card is a
+ * checkbox, so assistive technology announces a multi-select group.
  * For navigation/action cards, use ClickableCard instead.
  *
  * @example
  * ```
  * <SelectableCard
  *   label="Option A"
- *   isSelected={selected === 'a'}
- *   onChange={() => setSelected('a')}>
+ *   isSelected={selected.has('a')}
+ *   onChange={isSelected => toggle('a', isSelected)}>
  *   <Text type="body" weight="bold">Option A</Text>
  * </SelectableCard>
  * ```
