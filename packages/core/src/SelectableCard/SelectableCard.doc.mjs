@@ -10,7 +10,7 @@ export const docs = {
   usage: {
     description: 'A card that toggles between selected and unselected states with an accent border. For navigation use ClickableCard.',
     bestPractices: [
-      {guidance: true, description: 'Use for plan pickers, filter chips, or option grids.'},
+      {guidance: true, description: 'Use for multi-select choices: filter chips, feature add-ons, or option grids where several can be on.'},
       {guidance: true, description: 'Use for multi-select groups; track the selected IDs in a Set.'},
       {guidance: true, description: 'When focused, toggle selection with Space or Enter.'},
       {guidance: false, description: 'Use for navigation; use ClickableCard for that.'},
@@ -66,7 +66,7 @@ export const docsDense = {
   usage: {
     description: 'Card toggling between selected/unselected states w/ accent border. For navigation use ClickableCard instead.',
     bestPractices: [
-      {guidance: true, description: 'Use for plan pickers, filter chips, option grids.'},
+      {guidance: true, description: 'Use for multi-select choices: filter chips, add-ons, option grids.'},
       {guidance: true, description: 'Use for multi-select groups; track selected IDs in a Set.'},
       {guidance: true, description: 'When focused, toggle selection with Space or Enter.'},
       {guidance: false, description: 'Use for navigation; use ClickableCard instead.'},

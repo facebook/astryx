@@ -343,8 +343,8 @@ export interface SelectableCardProps extends Omit<BaseProps, 'onChange'> {
  * ```
  * <SelectableCard
  *   label="Option A"
- *   isSelected={selected === 'a'}
- *   onChange={() => setSelected('a')}>
+ *   isSelected={selected.has('a')}
+ *   onChange={isSelected => toggle('a', isSelected)}>
  *   <Text type="body" weight="bold">Option A</Text>
  * </SelectableCard>
  * ```
