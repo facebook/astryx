@@ -500,6 +500,45 @@ describe('CircularProgress', () => {
     }
   });
 
+  it('releases a running change when it unmounts', () => {
+    let cancelled = 0;
+    const original = Element.prototype.animate;
+    const originalStyle = window.getComputedStyle;
+    Element.prototype.animate = function () {
+      return {
+        cancel() {
+          cancelled += 1;
+        },
+        playState: 'running',
+        effect: {getComputedTiming: () => ({progress: 0.5})},
+        onfinish: null,
+      } as unknown as Animation;
+    } as typeof Element.prototype.animate;
+    window.getComputedStyle = ((element: Element) => {
+      const real = originalStyle(element);
+      if (element.classList.contains('astryx-circular-progress-fill')) {
+        return {
+          ...real,
+          transitionDuration: '400ms',
+          transitionTimingFunction: 'linear',
+        } as CSSStyleDeclaration;
+      }
+      return real;
+    }) as typeof window.getComputedStyle;
+    try {
+      const {rerender, unmount} = render(
+        <CircularProgress value={0} size="md" label="Progress" />,
+      );
+      rerender(<CircularProgress value={80} size="md" label="Progress" />);
+      unmount();
+      // The change's cleanup cancels the four layers' animations.
+      expect(cancelled).toBe(4);
+    } finally {
+      Element.prototype.animate = original;
+      window.getComputedStyle = originalStyle;
+    }
+  });
+
   it('shows a new value at once under reduced motion', () => {
     render(<CircularProgress value={30} size="md" label="Progress" />);
     const fill = document.querySelector(

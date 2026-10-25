@@ -16,7 +16,7 @@
  * - /apps/storybook/stories/CircularProgress.stories.tsx (storybook stories)
  */
 
-import {useEffect, useId, useLayoutEffect, useRef, type ReactNode} from 'react';
+import {useId, useLayoutEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {
@@ -414,13 +414,6 @@ function easingOf(easing: string): (t: number) => number {
   }
 }
 
-interface FillMotion {
-  from: number;
-  to: number;
-  ease: (t: number) => number;
-  animations: Animation[];
-}
-
 /**
  * Keyframes for a change from `from` to `to` (filled shares), sampled once a
  * frame on the theme's easing, with an extra sample exactly where the arc
@@ -653,22 +646,17 @@ export function CircularProgress({
   const leftRef = useRef<HTMLSpanElement | null>(null);
   const capRef = useRef<HTMLSpanElement | null>(null);
   const startRef = useRef<SVGPathElement | null>(null);
-  const shown = useRef(percentage);
-  const motion = useRef<FillMotion | null>(null);
+  // Where the arc is drawn: the value at rest, or, when a change is
+  // interrupted, the point its own curve has reached. A change's cleanup
+  // records it and releases the change's animations (react-component-runtime
+  // INV3), so the next change starts from there and an unmount or a switch to
+  // indeterminate leaves nothing running.
+  const drawn = useRef(percentage);
   useLayoutEffect(() => {
-    const previous = shown.current;
-    shown.current = percentage;
-    const running = motion.current;
-    if (isIndeterminate) {
-      // The determinate layers are about to unmount: a change running on
-      // them stops here, and a return to a value starts from rest.
-      for (const animation of running?.animations ?? []) {
-        animation.cancel();
-      }
-      motion.current = null;
-      return;
-    }
-    if (previous === percentage) {
+    const from = drawn.current;
+    if (isIndeterminate || from === percentage) {
+      // Indeterminate draws its own arc; a return to a value starts from rest.
+      drawn.current = percentage;
       return;
     }
     const fill = fillRef.current;
@@ -678,28 +666,12 @@ export function CircularProgress({
       capRef.current,
       startRef.current,
     ];
+    drawn.current = percentage;
     if (
       fill == null ||
       layers.some(layer => typeof layer?.animate !== 'function')
     ) {
       return;
-    }
-    let from = previous;
-    if (running != null) {
-      const [first] = running.animations;
-      const timing = first?.effect?.getComputedTiming();
-      const progress =
-        first != null && first.playState !== 'finished'
-          ? Number(timing?.progress ?? 1)
-          : 1;
-      // `progress` is the running change's linear time fraction; the arc is
-      // drawn on that change's easing, so the eased position is where it is.
-      from =
-        running.from + (running.to - running.from) * running.ease(progress);
-      for (const animation of running.animations) {
-        animation.cancel();
-      }
-      motion.current = null;
     }
     const style = getComputedStyle(fill);
     const duration = parseTime(style.transitionDuration);
@@ -725,27 +697,20 @@ export function CircularProgress({
       cap.animate(frames.cap, timing),
       start.animate(frames.start, timing),
     ];
-    const current: FillMotion = {
-      from,
-      to: percentage,
-      ease,
-      animations,
-    };
-    motion.current = current;
-    animations[0].onfinish = () => {
-      if (motion.current === current) {
-        motion.current = null;
+    return () => {
+      const [first] = animations;
+      const progress =
+        first.playState !== 'finished'
+          ? Number(first.effect?.getComputedTiming().progress ?? 1)
+          : 1;
+      // `progress` is the change's linear time fraction; the arc is drawn on
+      // its easing, so the eased position is where it is.
+      drawn.current = from + (percentage - from) * ease(progress);
+      for (const animation of animations) {
+        animation.cancel();
       }
     };
   }, [percentage, isIndeterminate]);
-  useEffect(
-    () => () => {
-      for (const animation of motion.current?.animations ?? []) {
-        animation.cancel();
-      }
-    },
-    [],
-  );
   // Indeterminate: the same layers, turned by endless Web Animations on the
   // compositor (a stroke-dash animation repaints on the main thread and stops
   // while a script runs), with the whole arc spinning in its own layer and
