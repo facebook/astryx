@@ -129,6 +129,9 @@ public struct TextInput: View {
         if props.hasAutoFocus == true { isFocused = true }
         // A field that appears busy says so, as core announces a busy start.
         if props.isLoading == true { AccessibilityNotification.Announcement(AstryxStrings.spinnerLoading).post() }
+        // A status message already present when the field appears is
+        // announced too, as core's field status does.
+        if let announcement = statusAnnouncement { announce(announcement) }
       }
       .onChange(of: props.isLoading == true) { _, loading in
         if loading { AccessibilityNotification.Announcement(AstryxStrings.spinnerLoading).post() }
@@ -136,10 +139,7 @@ public struct TextInput: View {
       .onChange(of: statusAnnouncement) { _, announcement in
         // A status message that appears or changes is announced: an error at
         // once, others when VoiceOver is free, as core's field status does.
-        guard let announcement else { return }
-        var words = AttributedString(announcement.message)
-        words.accessibilitySpeechAnnouncementPriority = announcement.isError ? .high : .default
-        AccessibilityNotification.Announcement(words).post()
+        if let announcement { announce(announcement) }
       }
     }
   }
@@ -154,15 +154,24 @@ public struct TextInput: View {
     return nil
   }
 
-  /// The status message to announce when it appears or changes.
+  /// The status message to announce when the field appears with it, and when
+  /// its words or its type change.
   struct StatusAnnouncement: Equatable {
     var message: String
-    var isError: Bool
+    var type: TextInputStatusType
+    var isError: Bool { type == .error }
   }
 
   var statusAnnouncement: StatusAnnouncement? {
     guard let status = props.status, let message = status.message else { return nil }
-    return StatusAnnouncement(message: message, isError: status.type == .error)
+    return StatusAnnouncement(message: message, type: status.type)
+  }
+
+  /// Posts a status message: an error at once, others when VoiceOver is free.
+  func announce(_ announcement: StatusAnnouncement) {
+    var words = AttributedString(announcement.message)
+    words.accessibilitySpeechAnnouncementPriority = announcement.isError ? .high : .default
+    AccessibilityNotification.Announcement(words).post()
   }
 
   private var labelRow: some View {
@@ -225,35 +234,38 @@ public struct TextInput: View {
         .foregroundStyle(astryx.tokens.color.textPrimary)
         .focused($isFocused)
         .onSubmit { props.onEnter?() }
-        .disabled(isDisabled)
+        .disabled(isDisabled && !keepsFocusWhileDisabled)
         .accessibilityLabel(SwiftUI.Text(accessibilityName))
         .accessibilityHint(SwiftUI.Text(accessibilityDescription))
         .astryxIdentifier(props.base.id)
-      if showsClear {
-        SwiftUI.Button {
-          props.onChange?("")
-          isFocused = true
-        } label: {
-          icon("close")
-        }
-        .buttonStyle(.plain)
-        .astryxMinimumHitArea(iconSide)
-        .foregroundStyle(astryx.tokens.color.textSecondary)
-        .help(AstryxStrings.clearTooltip)
-        .accessibilityLabel(SwiftUI.Text(AstryxStrings.clearLabel(props.label)))
-      }
-      if isDisabled, let reason = props.disabledMessage {
-        // A disabled field cannot take focus in SwiftUI, so its reason sits on
-        // a button keyboard and VoiceOver users can reach.
-        tipButton(reason, icon: "info", label: reason, opens: .disabled)
-          .foregroundStyle(astryx.tokens.color.textSecondary)
-      }
       if props.isLoading == true {
         ProgressView().controlSize(.small).accessibilityHidden(true)
       }
-      statusIcon
+      // Trailing controls sit side by side, each across its own 44-point
+      // target, so no two tap regions overlap.
+      SwiftUI.HStack(spacing: 0) {
+        if showsClear {
+          SwiftUI.Button {
+            props.onChange?("")
+            isFocused = true
+          } label: {
+            icon("close").frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+          .foregroundStyle(astryx.tokens.color.textSecondary)
+          .help(AstryxStrings.clearTooltip)
+          .accessibilityLabel(SwiftUI.Text(AstryxStrings.clearLabel(props.label)))
+        }
+        if isDisabled, let reason = props.disabledMessage {
+          tipButton(reason, icon: "info", label: reason, opens: .disabled, inField: true)
+            .foregroundStyle(astryx.tokens.color.textSecondary)
+        }
+        statusIcon
+          .frame(minWidth: hasTrailingButtons ? 44 : nil)
+      }
     }
-    .padding(.horizontal, astryx.tokens.space.s3)
+    .padding(.leading, astryx.tokens.space.s3)
+    .padding(.trailing, hasTrailingButtons ? 0 : astryx.tokens.space.s3)
     .frame(minHeight: max(44, height * astryx.textScale))
     .background(
       shape.strokeBorder(borderColor, lineWidth: astryx.tokens.size.borderWidth)
@@ -261,6 +273,17 @@ public struct TextInput: View {
     .opacity(isDisabled ? 0.5 : 1)
     .help(isDisabled ? props.disabledMessage ?? "" : "")
   }
+
+  /// Whether the field row ends in buttons, whose 44-point targets reach its
+  /// edge in place of the trailing padding.
+  var hasTrailingButtons: Bool {
+    showsClear || (isDisabled && props.disabledMessage != nil)
+      || (statusVariant == .tooltip && props.status?.message != nil)
+  }
+
+  /// A disabled field with a reason keeps its focus stop, as core's disabled
+  /// input does, so keyboard and VoiceOver users reach the reason on it.
+  var keepsFocusWhileDisabled: Bool { isDisabled && props.disabledMessage != nil }
 
   var showsClear: Bool {
     props.hasClear == true && !props.value.isEmpty && !isDisabled && !isReadOnly
@@ -288,7 +311,7 @@ public struct TextInput: View {
     let prompt = props.placeholder.map {
       SwiftUI.Text($0).foregroundStyle(astryx.tokens.color.textSecondary)
     }
-    if isReadOnly {
+    if isReadOnly || keepsFocusWhileDisabled {
       readOnlyField
     } else {
       switch props.type ?? .text {
@@ -314,14 +337,24 @@ public struct TextInput: View {
     props.type == .password ? String(repeating: "\u{2022}", count: props.value.count) : props.value
   }
 
-  /// Read-only: the value at full strength, never editable. It keeps a focus
-  /// stop and Return still runs `onEnter`, as core's read-only input does; a
+  /// Whether a read-only field shows its placeholder: when it has no value.
+  var showsReadOnlyPlaceholder: Bool { props.value.isEmpty && props.placeholder != nil }
+
+  /// Read-only, and disabled with a reason: the value, never editable, with
+  /// the placeholder when empty. It keeps a focus stop, as core's read-only
+  /// and disabled inputs do, without raising a keyboard; Return runs `onEnter`
+  /// only while read-only. It reads as text with its value, plus "Read only"
+  /// or the disabled reason, since SwiftUI has no read-only text field. A
   /// password stays masked and cannot be selected or copied.
   @ViewBuilder private var readOnlyField: some View {
-    let text = SwiftUI.Text(readOnlyText)
+    let shown = showsReadOnlyPlaceholder
+      ? SwiftUI.Text(props.placeholder ?? "").foregroundStyle(astryx.tokens.color.textSecondary)
+      : SwiftUI.Text(readOnlyText)
+    let text = shown
       .frame(maxWidth: .infinity, alignment: .leading)
       .focusable()
       .onKeyPress(.return) {
+        guard isReadOnly else { return .ignored }
         props.onEnter?()
         return .handled
       }
@@ -340,7 +373,7 @@ public struct TextInput: View {
   @ViewBuilder private var statusIcon: some View {
     if let status = props.status, statusVariant != .detached {
       if statusVariant == .tooltip, let message = status.message {
-        tipButton(message, icon: status.type.rawValue, label: AstryxStrings.statusButton(status.type), opens: .status)
+        tipButton(message, icon: status.type.rawValue, label: AstryxStrings.statusButton(status.type), opens: .status, inField: true)
           .foregroundStyle(statusColor(status.type))
       } else {
         icon(status.type.rawValue)
@@ -413,14 +446,18 @@ public struct TextInput: View {
 
   /// An icon that shows `text` in a tip: on hover with a pointer, and in a
   /// popover on a tap, as core opens a tip on touch.
-  private func tipButton(_ text: String, icon name: String, label: String, opens tip: Tip) -> some View {
+  /// In the field row the button lays out across its whole 44-point target;
+  /// beside the label it reaches 44 points without growing the row.
+  private func tipButton(_ text: String, icon name: String, label: String, opens tip: Tip, inField: Bool = false) -> some View {
     SwiftUI.Button {
       shownTip = tip
     } label: {
       icon(name)
+        .frame(minWidth: inField ? 44 : nil, minHeight: inField ? 44 : nil)
+        .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
-    .astryxMinimumHitArea(iconSide)
+    .astryxMinimumHitArea(inField ? 44 : iconSide)
     .help(text)
     .accessibilityLabel(SwiftUI.Text(label))
     .accessibilityHint(SwiftUI.Text(text))

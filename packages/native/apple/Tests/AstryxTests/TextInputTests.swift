@@ -147,9 +147,12 @@ import Testing
 @MainActor
 @Test func aStatusMessageIsAnnouncedWithItsUrgency() {
   let error = Astryx.TextInput(label: "Email", value: "", status: TextInputStatus(type: .error, message: "Required"))
-  #expect(error.statusAnnouncement == .init(message: "Required", isError: true))
+  #expect(error.statusAnnouncement == .init(message: "Required", type: .error))
+  #expect(error.statusAnnouncement?.isError == true)
   let success = Astryx.TextInput(label: "Email", value: "", status: TextInputStatus(type: .success, message: "Looks good"))
-  #expect(success.statusAnnouncement == .init(message: "Looks good", isError: false))
+  #expect(success.statusAnnouncement == .init(message: "Looks good", type: .success))
+  // The same words with another type are a change to announce.
+  #expect(success.statusAnnouncement != .init(message: "Looks good", type: .warning))
   #expect(Astryx.TextInput(label: "Email", value: "").statusAnnouncement == nil)
 }
 
@@ -166,4 +169,27 @@ import Testing
   #expect(astryxHitInset(50) == 0)
   let dot = Color.black.frame(width: 20, height: 20)
   #expect(Pixels(dot.astryxMinimumHitArea(20)).width == Pixels(dot).width)
+}
+
+@MainActor
+@Test func aDisabledFieldWithAReasonKeepsItsFocusStop() {
+  let withReason = Astryx.TextInput(label: "Plan", value: "Team", isDisabled: true, disabledMessage: "Managed by your admin")
+  #expect(withReason.keepsFocusWhileDisabled)
+  let bare = Astryx.TextInput(label: "Plan", value: "Team", isDisabled: true)
+  #expect(!bare.keepsFocusWhileDisabled)
+}
+
+@MainActor
+@Test func anEmptyReadOnlyFieldShowsItsPlaceholder() {
+  #expect(Astryx.TextInput(label: "Notes", value: "", isReadOnly: true, placeholder: "None").showsReadOnlyPlaceholder)
+  #expect(!Astryx.TextInput(label: "Notes", value: "Hi", isReadOnly: true, placeholder: "None").showsReadOnlyPlaceholder)
+}
+
+@MainActor
+@Test func trailingButtonsTakeTheirTargetsInPlaceOfThePadding() {
+  let clearAndTip = Astryx.TextInput(
+    label: "Email", value: "you@", status: TextInputStatus(type: .error, message: "Enter a full address"),
+    statusVariant: .tooltip, hasClear: true)
+  #expect(clearAndTip.hasTrailingButtons)
+  #expect(!Astryx.TextInput(label: "Email", value: "").hasTrailingButtons)
 }
