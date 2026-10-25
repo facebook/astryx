@@ -152,13 +152,10 @@ states Avatar's choices.
   app-hosted target exists.
 - **AR4 — Unnamed taps are flagged.** A link or button avatar without `alt`
   or `name` logs a development warning, as core warns.
-- **AR5 — Known audit findings.** The initials draw in core's tokens,
+- **AR5 — Initials contrast.** The initials draw in core's tokens,
   `color.textSecondary` on `color.neutral`, as core's Avatar does. In the
   default and neutral themes' dark appearance that pair is below 4.5:1, in
-  core as well, so the platform accessibility audit can report its contrast;
-  the fix belongs to the theme tokens. The initials grow with the avatar only
-  up to 1.6 times (FR3), where core's initials keep their pixel size, so the
-  audit can report Dynamic Type as partly supported for them.
+  core as well; the fix belongs to the theme tokens.
 
 ## Design relationships
 
