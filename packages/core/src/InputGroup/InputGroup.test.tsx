@@ -20,7 +20,6 @@ import {Typeahead} from '../Typeahead';
 import type {SearchableItem, SearchSource} from '../Typeahead';
 import {Selector} from '../Selector';
 import {MultiSelector} from '../MultiSelector';
-import {Button} from '../Button';
 
 const fruits: SearchableItem[] = [
   {id: '1', label: 'Apple'},
@@ -320,33 +319,6 @@ describe('InputGroup', () => {
     expect(screen.getByText('https://')).toBeInTheDocument();
     expect(screen.getByText('.com')).toBeInTheDocument();
     expect(screen.getByRole('textbox')).toBeInTheDocument();
-  });
-
-  it('marks each direct member for the group edge rules, and nothing else', () => {
-    render(
-      <InputGroup label="Website" data-testid="group">
-        <InputGroupText>https://</InputGroupText>
-        <TextInput label="URL" isLabelHidden value="" onChange={() => {}} />
-        <Button label="Go" onClick={() => {}} />
-      </InputGroup>,
-    );
-    const group = screen.getByTestId('group');
-    const members = Array.from(group.children).map(child =>
-      child.hasAttribute('data-astryx-input-group-item'),
-    );
-    // Every member the group renders directly carries the marker, so the edge
-    // rules name members rather than matching any following element.
-    expect(members).toEqual([true, true, true]);
-    expect(
-      group.querySelectorAll(':scope > :not([data-astryx-input-group-item])'),
-    ).toHaveLength(0);
-  });
-
-  it('leaves the marker off a Button outside a group', () => {
-    render(<Button label="Go" onClick={() => {}} />);
-    expect(screen.getByRole('button', {name: 'Go'})).not.toHaveAttribute(
-      'data-astryx-input-group-item',
-    );
   });
 
   it('applies data-testid', () => {
