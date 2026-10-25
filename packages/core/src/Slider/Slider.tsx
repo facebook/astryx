@@ -5,7 +5,7 @@
 /**
  * @file Slider.tsx
  * @input Uses React, useId, useRef, useCallback, useEffect, Field, useTooltip, VisuallyHidden
- * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it; the thumbs and the filled range travel by `translate` from a progress custom property in container units of a box filling the control's padding box, so moving them never lays out (a value tooltip or text display still does) and padding on the control moves no part; the value tooltip anchors to a box layout places at the value
+ * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; a drag belongs to the pointer that started it; the thumbs and the filled range travel by `translate` from a progress custom property in container units of a box filling the control's padding box, so moving them never lays out (a value tooltip or text display still does) and padding on the control moves no part; the value tooltip anchors to the untransformed travel box and moves by the thumb's own `translate`, so every engine places it over the thumb with no added element
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -23,7 +23,6 @@ import {
   useRef,
   useState,
   useCallback,
-  type CSSProperties,
   type FocusEvent,
   type KeyboardEvent,
   type PointerEvent,
@@ -60,6 +59,7 @@ import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 // =============================================================================
 // Types
 // =============================================================================
@@ -174,6 +174,11 @@ const THUMB_SIZE = 20;
  * still lays out as its text changes), and the server renders the right place.
  */
 const THUMB_PROGRESS = '--_slider-progress';
+/**
+ * A thumb's progress, written inline on its value tooltip, which is not a
+ * descendant of the thumb (see styles.valueTooltipHorizontal).
+ */
+const TOOLTIP_PROGRESS = '--_slider-tooltip-progress';
 /** Half a thumb: the inset of the thumb's travel at each end of the track. */
 const THUMB_INSET_PX = THUMB_SIZE / 2;
 /** The filled range's ends as progress, written inline on the fill parts. */
@@ -182,6 +187,8 @@ const FILL_END = '--_slider-fill-end';
 
 // The private progress properties a thumb and the fill parts publish inline.
 type ThumbStyle = React.CSSProperties & Record<typeof THUMB_PROGRESS, number>;
+type TooltipStyle = React.CSSProperties &
+  Record<typeof TOOLTIP_PROGRESS, number>;
 type FillStyle = React.CSSProperties &
   Record<typeof FILL_START | typeof FILL_END, number>;
 
@@ -213,15 +220,27 @@ const styles = stylex.create({
     inset: 0,
     containerType: 'size',
   },
-  // Where layout places a thumb at its value: the value tooltip's position
-  // anchor. CSS anchor positioning reads the anchor's layout box, which the
-  // thumb's `translate` does not move in every engine, so the tooltip anchors
-  // here while hover and focus stay on the thumb.
-  valueAnchor: {
-    position: 'absolute',
-    width: THUMB_SIZE,
-    height: THUMB_SIZE,
-    pointerEvents: 'none',
+  // The value tooltip anchors to the travel box, which no transform moves, so
+  // every engine resolves the same anchor box (Firefox anchors to an
+  // element's untransformed box, Chromium follows a `translate` on it). The
+  // tooltip starts at the travel's start edge (bottom when vertical) and
+  // moves by the thumb's own travel, `translate` again, so a value change
+  // lays out nothing. It is clamped to the travel box: a label wider than the
+  // thumb shifts inward at the ends instead of leaving the control, which
+  // keeps it in the viewport wherever the slider is.
+  valueTooltipHorizontal: {
+    translate: {
+      default: `clamp(0px, ${THUMB_INSET_PX}px + var(${TOOLTIP_PROGRESS}) * (100cqi - ${THUMB_SIZE}px) - 50%, 100cqi - 100%) 0`,
+      ':dir(rtl)': `calc(-1 * clamp(0px, ${THUMB_INSET_PX}px + var(${TOOLTIP_PROGRESS}) * (100cqi - ${THUMB_SIZE}px) - 50%, 100cqi - 100%)) 0`,
+    },
+  },
+  valueTooltipVertical: {
+    translate: `0 calc(-1 * clamp(0px, ${THUMB_INSET_PX}px + var(${TOOLTIP_PROGRESS}) * (100cqb - ${THUMB_SIZE}px) - 50%, 100cqb - 100%))`,
+    // A vertical travel box is as wide as the field, with the thumb centred
+    // in it, so the tooltip beside the box's start edge is pulled in to the
+    // thumb: half the box, less half a thumb, keeping the usual gap. A margin
+    // rather than a translate, so the inline flip mirrors it with the side.
+    marginInlineEnd: `calc(${THUMB_INSET_PX}px - 50cqi + ${spacingVars['--spacing-1']})`,
   },
   trackContainerHorizontal: {
     height: THUMB_SIZE,
@@ -568,21 +587,24 @@ function cssLength(percent: number, px: number): string {
 }
 
 /**
- * A thumb's value tooltip: hover and focus on the thumb, position from a
- * thumb-sized anchor that layout places at the value (styles.valueAnchor).
+ * A thumb's value tooltip: hover and focus on the thumb; position from the
+ * travel box (no transform moves it) plus the thumb's own travel
+ * (styles.valueTooltipHorizontal). No element is added for it.
  */
 function SliderValueTooltip({
   content,
   placement,
   isOpen,
-  anchorStyle,
+  anchor,
+  progress,
   thumbRef,
   children,
 }: {
   content: ReactNode;
   placement: 'above' | 'start';
   isOpen: boolean | undefined;
-  anchorStyle: CSSProperties;
+  anchor: HTMLElement | null;
+  progress: number;
   thumbRef: Ref<HTMLDivElement> | undefined;
   children: (trigger: {
     ref: Ref<HTMLDivElement>;
@@ -595,19 +617,36 @@ function SliderValueTooltip({
     focusTrigger: 'always',
     isOpen,
   });
+  const {positionRef} = tooltip;
+  useIsomorphicLayoutEffect(() => {
+    positionRef(anchor);
+    return () => {
+      positionRef(null);
+    };
+  }, [anchor, positionRef]);
   const triggerRef = useMergedRefs<HTMLDivElement>(
     thumbRef,
     tooltip.interactionRef,
   );
+  const isHorizontal = placement === 'above';
+  const tooltipStyle: TooltipStyle = {
+    [TOOLTIP_PROGRESS]: progress,
+    // Only the placement-axis flip: the translate already keeps the tooltip
+    // inside the control on the other axis, and an alignment fallback would
+    // move the edge the translate starts from.
+    positionTryFallbacks: isHorizontal ? 'flip-block' : 'flip-inline',
+  };
   return (
     <>
-      <span
-        aria-hidden="true"
-        ref={tooltip.positionRef}
-        {...mergeProps(stylex.props(styles.valueAnchor), {style: anchorStyle})}
-      />
       {children({ref: triggerRef, describedBy: tooltip.describedBy})}
-      {tooltip.renderTooltip(content)}
+      {tooltip.renderTooltip(content, {
+        // The travel's start edge; a vertical thumb starts at the bottom.
+        alignment: isHorizontal ? 'start' : 'end',
+        xstyle: isHorizontal
+          ? styles.valueTooltipHorizontal
+          : styles.valueTooltipVertical,
+        style: tooltipStyle,
+      })}
     </>
   );
 }
@@ -699,6 +738,8 @@ export function Slider({ref, ...props}: SliderProps) {
 
   const trackRef = useRef<HTMLDivElement>(null);
   const draggingThumbRef = useRef<number | null>(null);
+  // The travel box: every part sits in it, and the value tooltips anchor to it.
+  const [travelBox, setTravelBox] = useState<HTMLDivElement | null>(null);
   const [draggingThumb, setDraggingThumb] = useState<number | null>(null);
 
   // A thumb is a div[role="slider"], and `handlePointerDown` focuses it from
@@ -1205,24 +1246,14 @@ export function Slider({ref, ...props}: SliderProps) {
     );
 
     if (useValueTooltip) {
-      const anchorAt = `calc(${insetPosition(percent)} - ${THUMB_SIZE / 2}px)`;
       return (
         <SliderValueTooltip
           key={thumbIndex}
           content={displayValue(val)}
           placement={tooltipPlacement}
           isOpen={draggingThumb === thumbIndex ? true : undefined}
-          anchorStyle={
-            isHorizontal
-              ? {
-                  insetInlineStart: anchorAt,
-                  top: `calc(50% - ${THUMB_SIZE / 2}px)`,
-                }
-              : {
-                  bottom: anchorAt,
-                  insetInlineStart: `calc(50% - ${THUMB_SIZE / 2}px)`,
-                }
-          }
+          anchor={travelBox}
+          progress={percent / 100}
           thumbRef={!isRange ? ref : undefined}>
           {thumbElement}
         </SliderValueTooltip>
@@ -1339,7 +1370,7 @@ export function Slider({ref, ...props}: SliderProps) {
             controlClassName,
             controlStyle,
           )}>
-          <div {...stylex.props(styles.travelBox)}>
+          <div ref={setTravelBox} {...stylex.props(styles.travelBox)}>
             {/* Background track */}
             <div
               aria-hidden="true"

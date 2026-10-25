@@ -1547,6 +1547,28 @@ jobs:
             --project chromium \
             --output slider-geometry-output
 
+      # The Slider value tooltip follows a thumb that travels by translate,
+      # which CSS anchor positioning resolves differently per engine, so its
+      # contract runs in Chromium, Firefox and WebKit. Screenshots and a drag
+      # clip per engine are uploaded as evidence.
+      - name: Install Firefox and WebKit for the Slider value tooltip contract
+        run: npx playwright install --with-deps firefox webkit
+
+      - name: Run Slider value tooltip contract (Chromium, Firefox, WebKit)
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Slider/__tests__/SliderValueTooltip.a11y.browser.spec.ts \
+            --project chromium --project firefox --project webkit \
+            --output slider-value-tooltip-output
+
+      - name: Upload Slider value tooltip evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: slider-value-tooltip-evidence
+          path: slider-value-tooltip-output/
+          retention-days: 14
+
       # Table merges a consumer min-width with its column floors through CSS
       # max(). jsdom keeps any string, so only a real engine shows whether the
       # emitted declaration parses; an invalid one drops the floors entirely.

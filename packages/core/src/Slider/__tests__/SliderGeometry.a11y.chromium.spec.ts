@@ -3,7 +3,7 @@
 /**
  * @file SliderGeometry.a11y.chromium.spec.ts
  * @input Built Slider stories in real Chromium, under LTR, RTL and mixed-direction regions, and vertical
- * @output Browser evidence that thumbs and fills sit where their values put them and never leave the control (padding on it included), that the value tooltip anchors to a box layout places at the value, and that a drag of a slider displaying no value lays out nothing per move
+ * @output Browser evidence that thumbs and fills sit where their values put them and never leave the control (padding on it included), and that a drag of a slider displaying no value lays out nothing per move
  * @position Slider geometry proof; jsdom computes neither container units nor translate, so placement is checked here
  */
 
@@ -302,106 +302,8 @@ test('a drag lays out nothing per move when no value is displayed', async ({
   expect(after - before).toBe(0);
 });
 
-/**
- * The value tooltip's position anchor, measured as layout places it (offsets,
- * which no transform or `translate` moves): CSS anchor positioning reads the
- * anchor's box, and not every engine follows a `translate` on it (Firefox
- * anchors to the untranslated box), so the anchor itself must sit at the value.
- */
-async function measureTooltipAnchor(page: Page) {
-  return page.evaluate(() => {
-    const control = document.querySelector<HTMLElement>(
-      '.astryx-slider-control',
-    );
-    const thumb = control?.querySelector<HTMLElement>('[role="slider"]');
-    if (control == null || thumb == null) {
-      throw new Error('missing slider');
-    }
-    const t = thumb.getBoundingClientRect();
-    const anchors = Array.from(control.querySelectorAll<HTMLElement>('*'))
-      .filter(element => {
-        const name = getComputedStyle(element).getPropertyValue('anchor-name');
-        return name !== '' && name !== 'none';
-      })
-      .map(element => {
-        let x = 0;
-        let y = 0;
-        for (
-          let node: HTMLElement | null = element;
-          node != null;
-          node = node.offsetParent as HTMLElement | null
-        ) {
-          x += node.offsetLeft;
-          y += node.offsetTop;
-        }
-        return {
-          x: x - window.scrollX + element.offsetWidth / 2,
-          y: y - window.scrollY + element.offsetHeight / 2,
-        };
-      });
-    const tooltip = Array.from(
-      document.querySelectorAll<HTMLElement>('[role="tooltip"]'),
-    ).find(element => element.getBoundingClientRect().width > 0);
-    const tip = tooltip?.getBoundingClientRect();
-    return {
-      thumb: {x: (t.left + t.right) / 2, y: (t.top + t.bottom) / 2},
-      anchors,
-      tooltip: tip == null ? null : {x: (tip.left + tip.right) / 2},
-    };
-  });
-}
-
-for (const region of REGIONS) {
-  test(`the value tooltip anchors where layout places the value: ${region.name}`, async ({
-    page,
-  }) => {
-    await mount(page, 'core-slider--default', region.page, region.region);
-    const thumb = page.getByRole('slider');
-    await thumb.focus();
-    let m = await measureTooltipAnchor(page);
-    // At 50, away from the viewport's edges, the open tooltip is centred on
-    // the thumb.
-    expect(m.tooltip, 'the value tooltip is open').not.toBeNull();
-    expect(Math.abs((m.tooltip?.x ?? 0) - m.thumb.x)).toBeLessThanOrEqual(
-      TOLERANCE,
-    );
-    for (const key of ['Home', 'End', 'ArrowLeft']) {
-      await page.keyboard.press(key);
-      await page.evaluate(
-        async () =>
-          new Promise(resolve => requestAnimationFrame(() => resolve(null))),
-      );
-      m = await measureTooltipAnchor(page);
-      expect(m.anchors, `${key}: one anchor`).toHaveLength(1);
-      expect(
-        Math.abs(m.anchors[0].x - m.thumb.x),
-        `${key}: the anchor's layout box is centred on the thumb`,
-      ).toBeLessThanOrEqual(TOLERANCE);
-      expect(Math.abs(m.anchors[0].y - m.thumb.y)).toBeLessThanOrEqual(
-        TOLERANCE,
-      );
-    }
-  });
-}
-
-test('the value tooltip of a vertical slider anchors where layout places the value', async ({
-  page,
-}) => {
-  await mount(page, 'core-slider--vertical-orientation', 'ltr', 'ltr');
-  const thumb = page.getByRole('slider');
-  await thumb.focus();
-  for (const key of ['Home', 'End']) {
-    await page.keyboard.press(key);
-    await page.evaluate(
-      async () =>
-        new Promise(resolve => requestAnimationFrame(() => resolve(null))),
-    );
-    const m = await measureTooltipAnchor(page);
-    expect(m.anchors, `${key}: one anchor`).toHaveLength(1);
-    expect(Math.abs(m.anchors[0].x - m.thumb.x)).toBeLessThanOrEqual(TOLERANCE);
-    expect(Math.abs(m.anchors[0].y - m.thumb.y)).toBeLessThanOrEqual(TOLERANCE);
-  }
-});
+// The value tooltip's position at every value, end, flip, direction and
+// engine: SliderValueTooltip.a11y.browser.spec.ts.
 
 // The parts sit in the control's padding box (the track and the marks
 // always did), so inline padding on the control, from a theme rule or

@@ -620,8 +620,15 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
         alignment: props?.alignment ?? alignment,
         offset: spacingVars['--spacing-1'],
         role: 'tooltip',
-        xstyle: [popoverXstyle, layerAnimations[renderPlacement]],
+        xstyle: [
+          popoverXstyle,
+          layerAnimations[renderPlacement],
+          props?.xstyle,
+        ],
         className: themeProps('tooltip').className,
+        // A caller that places the tooltip itself (Slider's value tooltip
+        // follows a thumb that travels by `translate`) passes its own style.
+        style: props?.style,
         // Keep the tooltip open while the pointer is over the surface itself
         // (WCAG 1.4.13 hoverable). These sit on the layer container — the
         // element the user actually hovers — not the inner content div, since
