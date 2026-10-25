@@ -7,6 +7,7 @@ import {
   plainDateFromISO,
   plainDateToISO,
   plainDateToDate,
+  dateTimeFormatFor,
   plainDateFromDate,
   plainDateToday,
   getDaysInMonth,
@@ -754,6 +755,25 @@ describe('plainDateGetWeekNumber', () => {
 });
 
 describe('plainDateFormat', () => {
+  it('keeps one formatter per locale and options, whatever order the options are in', () => {
+    // A month of day labels, as a calendar renders them, reuses one formatter.
+    const first = dateTimeFormatFor('en-NZ', DATE_FORMAT_WITH_WEEKDAY);
+    expect(dateTimeFormatFor('en-NZ', DATE_FORMAT_WITH_WEEKDAY)).toBe(first);
+    expect(
+      dateTimeFormatFor('en-NZ', {
+        year: 'numeric',
+        day: 'numeric',
+        month: 'long',
+        weekday: 'long',
+      }),
+    ).toBe(first);
+    // Other options, or another locale, get their own.
+    expect(dateTimeFormatFor('en-NZ', DATE_FORMAT_MONTH_YEAR)).not.toBe(first);
+    expect(dateTimeFormatFor('en-ZA', DATE_FORMAT_WITH_WEEKDAY)).not.toBe(
+      first,
+    );
+  });
+
   it('returns a human-readable date string with weekday', () => {
     const result = plainDateFormat(
       {year: 2026, month: 1, day: 25},
