@@ -83,6 +83,7 @@ import Testing
   #expect(Astryx.TextInput(label: "Name", value: "x", isReadOnly: true, hasClear: true).showsClear == false)
 }
 
+@MainActor
 @Test func theClearButtonNamesItsField() {
   #expect(AstryxStrings.clearLabel("Email") == "Clear Email")
   #expect(AstryxStrings.statusButton(.error) == "Error details")
