@@ -17,12 +17,13 @@
  * interactive pop, a photo dragged to close. Internal to core: components'
  * touch modules use it, and it is not exported from the package.
  *
- * - The release decision is spec:AST-094's: decided once, at the release,
- *   from where the release projects against the positions the component's
- *   rule names, velocity back toward the start cancelling; the settle
- *   continues the finger's velocity. The velocity is spec:AST-100's tracker's
- *   (a pan's `velocity()`): the caller passes it in, and the driver never
- *   estimates one.
+ * - The release is decided once, at the release (spec:AST-094 FR36), by the
+ *   component's own rule: a sheet settles on the position nearest where the
+ *   release projects, with no direction rule, as UIKit's sheet does (a slow
+ *   release back toward where it started stays where it is nearest); a row
+ *   keeps spec:AST-057's rule. The settle continues the finger's velocity.
+ *   The velocity is spec:AST-100's tracker's (a pan's `velocity()`): the
+ *   caller passes it in, and the driver never estimates one.
  *
  * - The driver is one animator channel, in its own units. Velocities are in
  *   those units per second. A rule converts at its own boundary (a pop's
