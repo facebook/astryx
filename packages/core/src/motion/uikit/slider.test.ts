@@ -15,12 +15,12 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {projectDistance} from '../projection';
 import {listMotionRoles, motionRole, motionRoleOf} from '../roles';
 import {solveSpring, toSpring} from '../spring';
 import {UIKIT_GESTURES} from './gestures';
-import {slider} from './slider';
+import {registerSliderTable, slider} from './slider';
 
 /** The lab's slider: 300 pt long, value 0…1. */
 const TRACK = 300;
@@ -128,7 +128,32 @@ describe('slider on the experimental surface', () => {
   });
 });
 
+describe('slider table registration', () => {
+  it('registers nothing on import: its roles appear once registerSliderTable runs', async () => {
+    vi.resetModules();
+    const roles = await import('../roles');
+    const table = await import('./slider');
+    const sliderRoles = () =>
+      roles
+        .listMotionRoles()
+        .map(role => role.id)
+        .filter(id => id.startsWith('slider.'))
+        .sort();
+    expect(sliderRoles()).toEqual([]);
+    table.registerSliderTable();
+    // Idempotent: every touch module that animates with it may call it.
+    table.registerSliderTable();
+    expect(sliderRoles()).toEqual([
+      'slider.dropSpring',
+      'slider.liftSpring',
+      'slider.releaseSpring',
+    ]);
+  });
+});
+
 describe('slider motion roles', () => {
+  registerSliderTable();
+
   it('registers its three springs, and nothing else, as roles a theme may retune', () => {
     const ids = listMotionRoles()
       .map(role => role.id)

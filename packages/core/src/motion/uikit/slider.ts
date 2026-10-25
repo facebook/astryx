@@ -3,7 +3,9 @@
 /**
  * @file slider.ts
  * @input Nothing; data only
- * @output Exports `slider`: UISlider's thumb hit target, its tracking rule
+ * @output Exports `slider` and `registerSliderTable` (its motion roles,
+ *   registered by the touch module that animates with it): UISlider's thumb
+ *   hit target, its tracking rule
  *   (the value follows the pan's translation over the track's length), the
  *   release coast (spring, projection rate and share), the thumb's lift and
  *   drop springs and scale, and the end-of-track haptic. It sets no Reduce
@@ -157,4 +159,13 @@ export const slider = {
   endHaptic: 'impactMedium',
 } as const;
 
-registerMotionTable('slider', slider);
+/**
+ * Makes the table's three springs motion roles a theme may retune
+ * (motion/roles.ts). Nothing registers on import: the slider's touch module
+ * calls it once before its first animation (it is idempotent), so a page that
+ * never animates a slider ships no registry.
+ * @experimental
+ */
+export function registerSliderTable(): void {
+  registerMotionTable('slider', slider);
+}
