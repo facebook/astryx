@@ -339,10 +339,14 @@ test('the settle is the UIKit release spring, sampled frame by frame', async ({
   // The critically damped detent spring from where the finger left the
   // sheet, handed the drag's speed, which survives the frame's rest before
   // the lift.
+  // In Chromium the page measures the drag's speed: its input carries the
+  // script's timestamps. WebKit's carries real dispatch times in whole
+  // milliseconds, so what it measures varies with the box; the curve below
+  // is checked against that measurement either way.
   const velocity = uikitReleaseVelocity(await readInputLog(page));
-  expect(Math.abs(velocity / slowDragSpeed(dy) - 1)).toBeLessThan(
-    driver.scriptedTimestamps ? 0.01 : 0.1,
-  );
+  if (driver.scriptedTimestamps) {
+    expect(Math.abs(velocity / slowDragSpeed(dy) - 1)).toBeLessThan(0.01);
+  }
   const {result, samples, to} = await compareRelease(page, sheet, velocity);
   await writeEvidence(
     'curves/bottomsheet-settle',
@@ -389,12 +393,16 @@ for (const {name, speed, travel} of [
     await readInputLog(page, {clear: true});
     await driver.play(script);
     // What the page measured: `speed` in Chromium, whose input carries the
-    // script's timestamps and sub-pixel positions; within 10 % in WebKit,
-    // whose input carries real dispatch times and whole pixels.
+    // script's timestamps and sub-pixel positions. WebKit's carries real
+    // dispatch times in whole milliseconds and whole pixels: at 120 Hz one
+    // millisecond is 12 % of an interval, and UIKit's two-sample filter
+    // reads 1333–1625 px/s of a steady 1500 from that rounding alone, more
+    // when a dispatch runs late. The curve and the hand-off below are
+    // checked against what the page measured, in both engines.
     const velocity = uikitReleaseVelocity(await readInputLog(page));
-    expect(Math.abs(velocity - speed) / speed).toBeLessThan(
-      driver.scriptedTimestamps ? 0.01 : 0.1,
-    );
+    if (driver.scriptedTimestamps) {
+      expect(Math.abs(velocity - speed) / speed).toBeLessThan(0.01);
+    }
     const {result, samples, from, to} = await compareRelease(
       page,
       sheet,
