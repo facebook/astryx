@@ -22,13 +22,14 @@ import {isRtlElement} from '@astryxdesign/core/hooks';
 import {
   LongPressGestureRecognizer,
   useGestureRecognizer,
-} from '@astryxdesign/core/gestures/experimental';
+} from '@astryxdesign/core/gestures';
+import {animatorFor} from '@astryxdesign/core/motion/animator';
+import {reducedMotionFade} from '@astryxdesign/core/motion/reducedMotion';
+import {resolveMotion} from '@astryxdesign/core/motion/resolveMotion';
 import {
-  animatorFor,
-  reducedMotionFade,
-  resolveMotion,
-  uikit,
-} from '@astryxdesign/core/motion/experimental';
+  pageControl,
+  registerPageControlTable,
+} from '@astryxdesign/core/motion/uikit';
 import {
   BOX,
   PITCH,
@@ -43,7 +44,7 @@ import {
   type Latest,
 } from './pageControlModel';
 
-const PC = uikit.pageControl;
+const PC = pageControl;
 
 /**
  * Under Reduce Motion every opacity change takes the one policy's fade
@@ -102,7 +103,7 @@ export function usePageControlTouch({
   // The table's roles, once, before the first motion resolves one.
   useLayoutEffect(() => {
     if (isTouch) {
-      uikit.registerPageControlTable();
+      registerPageControlTable();
     }
   }, [isTouch]);
 

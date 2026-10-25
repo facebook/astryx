@@ -32,7 +32,7 @@ import {
 
 const storybook = withStorybook(test);
 
-/** Indicator pitch, px (uikit.pageControl: 9.67 + 8). */
+/** Indicator pitch, px (the pageControl table: 9.67 + 8). */
 const PITCH = 17.67;
 
 /**

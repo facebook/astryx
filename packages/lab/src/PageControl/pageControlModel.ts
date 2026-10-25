@@ -2,7 +2,7 @@
 
 /**
  * @file pageControlModel.ts
- * @input The UIKit page-control table (`uikit.pageControl`)
+ * @input The UIKit page-control table (`pageControl`, motion/uikit)
  * @output Pure page-control math: the control's size for a page count, the
  *   window of indicators (which pages show, at what size, and when the
  *   window moves), the step a tap makes, the page a scrubbing finger points
@@ -15,9 +15,9 @@
  * SYNC: When modified, update pageControlModel.test.ts and PageControl.tsx.
  */
 
-import {uikit} from '@astryxdesign/core/motion/experimental';
+import {pageControl} from '@astryxdesign/core/motion/uikit';
 
-const PC = uikit.pageControl;
+const PC = pageControl;
 
 /**
  * Each indicator is a whole-pixel box scaled to its size (9.67 px, or the

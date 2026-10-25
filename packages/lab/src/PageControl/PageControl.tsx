@@ -5,10 +5,11 @@
 /**
  * @file PageControl.tsx
  * @input React, StyleX, core's theme tokens and translator, the gesture
- *   system's press recognizer (`@astryxdesign/core/gestures/experimental`),
- *   the compositor animator and the UIKit page-control table
- *   (`@astryxdesign/core/motion/experimental`), pageControlModel.ts for the
- *   math
+ *   system's press recognizer (`@astryxdesign/core/gestures`), the touch
+ *   presentation (`@astryxdesign/core/utils/touchPresentation`), the
+ *   compositor animator (`@astryxdesign/core/motion/animator`) and the UIKit
+ *   page-control table (`@astryxdesign/core/motion/uikit`),
+ *   pageControlModel.ts for the math
  * @output Exports PageControl: a row of page indicators, the current one
  *   highlighted, that pages one step per tap and follows a finger scrubbing
  *   across it, like UIPageControl
@@ -55,7 +56,7 @@
  * (`useTouchPresentation`; one touch model, no platform idiom). With a mouse
  * or a trackpad the control pages by tap (UIKit's tap rule: up to 45 px of
  * travel) and keys over a row cropped to the control, with instant opacity
- * changes. The motion values are theme roles (`uikit.pageControl`,
+ * changes. The motion values are theme roles (`pageControl`,
  * resolveMotion).
  *
  * The touch presentation lives in PageControlTouch.ts, imported once here.
@@ -87,10 +88,11 @@ import {isRtlElement} from '@astryxdesign/core/hooks';
 import {colorVars, focusVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {
   TapGestureRecognizer,
-  useTouchPresentation,
   useGestureRecognizer,
-} from '@astryxdesign/core/gestures/experimental';
-import {animatorFor, uikit} from '@astryxdesign/core/motion/experimental';
+} from '@astryxdesign/core/gestures';
+import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
+import {animatorFor} from '@astryxdesign/core/motion/animator';
+import {pageControl} from '@astryxdesign/core/motion/uikit';
 import {usePageControlTouch} from './PageControlTouch';
 import {
   BOX,
@@ -106,7 +108,7 @@ import {
   type Latest,
 } from './pageControlModel';
 
-const PC = uikit.pageControl;
+const PC = pageControl;
 /** A 10 px box scaled to the 9.67 px indicator (see BOX). */
 const DOT_SCALE = PC.indicatorSize / BOX;
 // UIKit draws the other indicators at 45 %; at that alpha Core's primary text
