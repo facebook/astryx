@@ -89,6 +89,7 @@ import {
   MenuBottomSheet,
   MenuBottomSheetActionList,
 } from './lazyMenuBottomSheet';
+import {menuBottomSheetStyles} from './menuBottomSheet.stylex';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {
@@ -771,6 +772,23 @@ function DropdownMenuBottomSheet({
     setOpen(!isOpen);
   };
 
+  // The root view's heading stands alone; a sub-menu's sits in a row with its
+  // back button.
+  const viewHeading = (
+    <Heading
+      ref={viewHeadingRef}
+      level={3}
+      tabIndex={-1}
+      xstyle={[
+        bottomSheetStyles.viewHeading,
+        submenuPath.length === 0 && [
+          bottomSheetStyles.rootHeading,
+          menuBottomSheetStyles.headingAlone,
+        ],
+      ]}>
+      {currentTitle}
+    </Heading>
+  );
   return (
     <>
       {renderTrigger != null ? (
@@ -830,12 +848,16 @@ function DropdownMenuBottomSheet({
           {...rest}
           {...mergeProps(
             themeProps('dropdown-menu', {presentation: 'bottom-sheet'}),
-            stylex.props(bottomSheetStyles.content, xstyle),
+            stylex.props(
+              bottomSheetStyles.content,
+              menuBottomSheetStyles.content,
+              xstyle,
+            ),
             className,
             style,
           )}>
-          <div {...stylex.props(bottomSheetStyles.header)}>
-            {submenuPath.length > 0 && (
+          {submenuPath.length > 0 ? (
+            <div {...stylex.props(bottomSheetStyles.header)}>
               <Button
                 label={backLabel}
                 variant="ghost"
@@ -850,18 +872,11 @@ function DropdownMenuBottomSheet({
                 isIconOnly
                 onClick={() => setSubmenuPath(path => path.slice(0, -1))}
               />
-            )}
-            <Heading
-              ref={viewHeadingRef}
-              level={3}
-              tabIndex={-1}
-              xstyle={[
-                bottomSheetStyles.viewHeading,
-                submenuPath.length === 0 && bottomSheetStyles.rootHeading,
-              ]}>
-              {currentTitle}
-            </Heading>
-          </div>
+              {viewHeading}
+            </div>
+          ) : (
+            viewHeading
+          )}
           {isRenderable(header) && (
             <div {...stylex.props(bottomSheetStyles.region)}>{header}</div>
           )}
