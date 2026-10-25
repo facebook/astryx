@@ -282,7 +282,8 @@ FR26–FR28 and FR30 apply to every surface that carries the press model of
 and Selector's listbox, whose options count as rows) when a finger or pen
 drives it and the primary pointer is coarse (FR19); where the primary pointer
 is fine, a finger in a menu keeps today's behavior (`spec:AST-017` FR59,
-DEC-25), and menus make no per-gesture pointer read; FR29 applies to DropdownMenu's trigger; FR34 applies to menus;
+DEC-25), and menus make no per-gesture pointer read; FR29 applies to DropdownMenu's trigger under the same
+condition; FR34 applies to menus;
 FR31 and FR35 apply to anchored menus and to Popover under a finger; FR32 and
 FR33 apply to menus only. A mouse keeps today's behavior.
 
@@ -331,8 +332,9 @@ FR33 apply to menus only. A mouse keeps today's behavior.
   begins to pan, and at the lift of a tap or hold outside it. A Popover's
   dismissal is unchanged. A pinch stays available over it: its surface
   never takes `touch-action: none`, so the page keeps zooming (FR10, FR18;
-  WCAG 2.2 SC 1.4.4). Listening for that outside touch costs nothing once it
-  ends (FR24).
+  WCAG 2.2 SC 1.4.4). Listening for that outside touch costs nothing once it ends (FR24). A menu
+  whose caller passes `presentation="popover"` keeps its released outside
+  dismissal (FR25).
 - **FR33 — A ContextMenu under a finger.** With a finger or pen, the long
   press that opens a ContextMenu MUST NOT close it at the lift, and a press
   outside it follows FR32. After a held
@@ -393,8 +395,10 @@ FR33 apply to menus only. A mouse keeps today's behavior.
 ### Resources and compatibility
 
 - **FR24 — Touch work costs nothing where it is not used.** Where the
-  primary pointer is fine (FR19), and while a touch presentation is disabled, no touch-only listener,
-  observer or timer is active. The number of `document`- or `window`-level
+  primary pointer is fine (FR19), and while a touch presentation is
+  disabled, no touch-only listener, observer or timer is active, except the
+  released `module:DropdownMenu/useMenuPress` behavior a finger keeps there
+  (its FR9). The number of `document`- or `window`-level
   touch listeners MUST NOT grow with the number of component instances, a
   repeated row or cell adds no touch observer of its own, and nothing
   touch-related remains after the last instance unmounts
