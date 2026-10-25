@@ -713,7 +713,13 @@ export function ContextMenu({
       {...mergeProps(
         themeProps('context-menu'),
         stylex.props(
-          usesBottomSheet ? styles.sheetMenu : styles.menu,
+          usesBottomSheet
+            ? [
+                styles.sheetMenu,
+                menuBottomSheetStyles.content,
+                styles.sheetMenuInset,
+              ]
+            : styles.menu,
           !usesBottomSheet &&
             (hasOverflow ? styles.touchPanYPinchZoom : styles.touchPinchZoom),
           xstyle,

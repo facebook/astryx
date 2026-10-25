@@ -51,7 +51,7 @@ export function MenuBottomSheet({
     }
     const dialog = panelRef.current?.closest('dialog');
     if (dialog == null || !dialog.open) {
-      // eslint-disable-next-line @eslint-react/set-state-in-effect -- the closed sheet's exit is already over: unmount it
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- the native <dialog> has already closed, so the exit is over: unmount the sheet
       setIsMounted(false);
       return;
     }
