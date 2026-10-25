@@ -97,15 +97,15 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Behavioral and layout contract
 
-| ID  | Invariant                                                                                                                                                                                                                                           | Basis                    |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| FR1 | An enabled item renders the `as` component, else the `LinkProvider` link component, else `<a>`, with `href` and `target`, the forwarded `ref`, and other DOM props. It shows `icon`, then `children` if given, else `label`.                        | Current source and tests |
-| FR2 | `isSelected` sets `aria-current="page"` and the selected treatment; the selected fill stays under hover and touch press with no overlay.                                                                                                            | Current source and tests |
-| FR3 | `isDisabled` renders a plain `<a>` with no `href` and no `target`, `aria-disabled="true"`, and `tabIndex=-1`, and suppresses clicks, so no input can navigate or fire `onClick`.                                                                    | Current source and tests |
-| FR4 | `isIconOnly` hides the text and sets `aria-label` to `label`.                                                                                                                                                                                       | Current source and tests |
-| FR5 | In `default` and `mobile-bar` modes the item is a horizontal bar link with `top-nav-item`. In `drawer` mode it is a full-width row sized by `size`, carries `mode="drawer"`, and on activation calls `onClick` and then closes the AppShell drawer. | Current source and tests |
-| FR6 | Both renderings paint the shared focus outline on keyboard focus and use the shared press feedback.                                                                                                                                                 | Current source           |
-| FR7 | `className`, `style`, and `xstyle` merge after component styles.                                                                                                                                                                                    | Current source           |
+| ID  | Invariant                                                                                                                                                                                                                                                | Basis                    |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| FR1 | An enabled item renders the `as` component, else the `LinkProvider` link component, else `<a>`, with `href` and `target`, the forwarded `ref`, and other DOM props. It shows `icon`, then `children` if given, else `label`.                             | Current source and tests |
+| FR2 | `isSelected` sets `aria-current="page"` and the selected treatment; the selected fill stays under hover and touch press with no overlay.                                                                                                                 | Current source and tests |
+| FR3 | `isDisabled` renders a plain `<a>` with no `href` and no `target`, `aria-disabled="true"`, and `tabIndex=-1`, and suppresses clicks, so no input can navigate or fire `onClick`.                                                                         | Current source and tests |
+| FR4 | `isIconOnly` hides the text and sets `aria-label` to `label`.                                                                                                                                                                                            | Current source and tests |
+| FR5 | In `default` and `mobile-bar` modes the item is a horizontal bar link with `top-nav-item`. In `drawer` mode it is a full-width row sized by `size`, carries `data-mode="drawer"`, and on activation calls `onClick` and then closes the AppShell drawer. | Current source and tests |
+| FR6 | Both renderings paint the shared focus outline on keyboard focus and use the shared press feedback.                                                                                                                                                      | Current source           |
+| FR7 | `className`, `style`, and `xstyle` merge after component styles.                                                                                                                                                                                         | Current source           |
 
 ### Allowed variation
 
@@ -165,7 +165,7 @@ is recorded.
 | FR2–FR4, AR1–AR3 | `TopNav.test.tsx` TopNavItem state tests                      | Selected, disabled, icon only | Missing attribute or a navigating disabled item fails. | `audit:TopNavItem/accessibility` |
 | FR5              | `TopNav.test.tsx` disabled-navigation tests in both modes     | Default and drawer            | Lost click forwarding or href handling fails.          | `audit:TopNavItem/behavior`      |
 
-Read from source, with no focused test yet: the `top-nav-item` target and its `mode` and `selected` states (FR5); the selected fill under hover and press (FR2); the drawer row size, `mode="drawer"`, and closing the drawer on activation (FR5); FR6; and FR7.
+Read from source, with no focused test yet: other DOM props reaching the link (FR1); the `top-nav-item` target and its `mode` and `selected` states (FR5); the selected fill under hover and press (FR2); the drawer row size, `data-mode="drawer"`, and closing the drawer on activation (FR5); FR6; and FR7.
 
 ## Decision log
 

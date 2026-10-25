@@ -85,7 +85,7 @@ No component-local concept beyond the consumer props.
 | ID  | Invariant                                                                                                                                                                                                                                                       | Basis                    |
 | --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
 | FR1 | Outside the drawer the item is the `as` component, else the `LinkProvider` link, else `<a>` when `href` is set, and a `div` otherwise. It shows an icon box, then the title and the description, carries `top-nav-mega-menu-item`, and runs `onClick` on click. | Current source and tests |
-| FR2 | In `drawer` mode the item is a link when `href` is set and a `<button type="button">` otherwise, carries `mode="drawer"`, and on activation runs `onClick` and then closes the AppShell drawer.                                                                 | Current source and tests |
+| FR2 | In `drawer` mode the item is a link when `href` is set and a `<button type="button">` otherwise, carries `data-mode="drawer"`, and on activation runs `onClick` and then closes the AppShell drawer.                                                            | Current source and tests |
 | FR3 | Both modes forward the `ref`, `tabIndex`, other DOM props, and event handlers, and merge `className`, `style`, and `xstyle` after component styles.                                                                                                             | Current source and tests |
 | FR4 | Both modes paint the shared focus outline on keyboard focus and use the shared press feedback.                                                                                                                                                                  | Current source and tests |
 
@@ -139,7 +139,7 @@ anatomy-theming map is recorded.
 | FR3      | `TopNavMegaMenu.test.tsx` TopNavMegaMenuItem pass-through tests    | Both modes                  | Dropped props or styling fails.          | `audit:TopNavMegaMenuItem/behavior`      |
 | FR4      | `TopNavMegaMenu.test.tsx` drawer focus-ring test                   | Drawer item                 | Missing shared ring classes fail.        | `audit:TopNavMegaMenuItem/accessibility` |
 
-Read from source, with no focused test yet: the forwarded `ref` and the `top-nav-mega-menu-item` target and its `mode` state (FR1–FR3); the `as` and `LinkProvider` precedence (FR1, ORD1); closing the drawer on activation (FR2) and the desktop focus outline (FR4).
+Read from source, with no focused test yet: the desktop item's forwarded `tabIndex` (FR3); the forwarded `ref` and the `top-nav-mega-menu-item` target and its `mode` state (FR1–FR3); the `as` and `LinkProvider` precedence (FR1, ORD1); closing the drawer on activation (FR2) and the desktop focus outline (FR4).
 
 ## Decision log
 
