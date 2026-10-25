@@ -9,10 +9,19 @@
  * SYNC: When modified, update this header
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  it,
+  expect,
+  vi,
+} from 'vitest';
 import {cleanup, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {rulesDeclaredFor} from '../__tests__/pressState';
+import {emulateTouch} from '../Item/__tests__/emulateTouch';
 import {List} from './List';
 import {ListItem} from './ListItem';
 import {ListMarkerScope} from './ListContext';
@@ -1013,6 +1022,20 @@ describe('List', () => {
 });
 
 describe('List and swipe actions', () => {
+  // A row's swipe panels arrive with a lazily loaded module; load it first,
+  // so a test waits on the import (however long a cold one takes) rather
+  // than on waitFor's one second.
+  beforeAll(async () => {
+    await import('../Item/ItemSwipeLayer');
+  });
+  // The swipe exists under a finger (a coarse primary pointer).
+  beforeEach(() => {
+    emulateTouch();
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('clips the rows in the inline axis with clip, never hidden, so a row dragged aside paints no further than the list', () => {
     render(
       <List>
