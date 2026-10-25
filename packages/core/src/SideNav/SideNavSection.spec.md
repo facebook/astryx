@@ -34,7 +34,7 @@ system_specs: []
 | Behavior                | A labeled group of SideNav items. Its header is visible in an expanded rail and visually hidden, but still read, when `isHeaderHidden` is set or the rail is collapsed. |
 | End-user impact         | Screen-reader users hear each group's title in every rail state; sighted users see section titles only in the expanded rail.                                            |
 | Builder impact          | None.                                                                                                                                                                   |
-| Compatibility/readiness | Records shipped behavior; no public change.                                                                                                                             |
+| Compatibility/readiness | Records shipped behavior; no public change. One implementation gap (see Current-state impact).                                                                          |
 | Review checks           | Reject a section without `role="group"` named by its title, or a hidden header removed from the accessibility tree.                                                     |
 | Governing rules         | `architecture:public-component-api` INV5–INV6; `architecture:component-theming-surface`.                                                                                |
 
@@ -54,6 +54,14 @@ semantics and its header's visibility. Consumer usage lives in
 - Migration decision: none
 
 Consumer migration instructions belong in consumer docs and release notes.
+
+## Current-state impact
+
+- **A hidden header keeps its end content focusable.** When the header is
+  visually hidden (`isHeaderHidden` or a collapsed rail), a control placed in
+  `endContent` stays in the tab order while it is clipped out of sight, so
+  keyboard users land on a control they cannot see. WCAG 2.4.7 requires visible
+  focus. OQ1 asks whether a hidden header renders `endContent`.
 
 ## Ownership boundary
 
@@ -135,7 +143,9 @@ No component-local decision is recorded.
 
 ## Open questions
 
-None.
+- **OQ1 — Does a hidden header render `endContent`?** (`human-api`) Today it
+  does, and a control there stays focusable while hidden (Current-state
+  impact).
 
 ## Content boundary
 

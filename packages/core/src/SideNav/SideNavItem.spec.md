@@ -74,8 +74,8 @@ Consumer migration instructions belong in consumer docs and release notes.
   expose `aria-disabled="true"` and keep its tab stop.
 - **A disabled parent stays operable in a collapsed rail.** In a collapsed rail,
   a disabled item with children renders its flyout trigger with neither
-  `disabled` nor `aria-disabled`, so it keeps its tab stop, announces no
-  disabled state, and Enter or a click opens its flyout. `spec:AST-085` FR2 and
+  `disabled` nor `aria-disabled`, so it keeps its tab stop and announces no
+  disabled state; a click does nothing, while Enter opens its flyout. `spec:AST-085` FR2 and
   FR5 have a disabled control block activation and expose its disabled state.
 - **A disabled split row's toggle answers only the keyboard.** On a disabled
   item with `href` or `onClick` and children, the expand toggle inherits the
