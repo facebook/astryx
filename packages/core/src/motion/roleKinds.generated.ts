@@ -16,6 +16,7 @@ export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
   'datePicker.wheels.columnTurn.curve': 'curve',
   'datePicker.wheels.columnTurn.durationMs': 'duration',
   'navigation.transitionMs': 'duration',
+  'picker.tapSpin.durationMs': 'duration',
   'scroll.bounce': 'spring',
   'scroll.paging.snap': 'spring',
   'springs.actionSheetDismiss': 'spring',

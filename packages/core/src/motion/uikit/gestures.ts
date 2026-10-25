@@ -174,6 +174,20 @@ export const UIKIT_GESTURES = {
       unit: 'px',
       source: `${UIKIT_LAB}: UIPanGestureRecognizer _hysteresis 10; x and y began at 10.0, a diagonal at (10.67, 10.67); translation(in:) is 0 at .began`,
     },
+    /**
+     * Travel in a one-way pan's direction from which a pan that opts in
+     * (`claimDistance: 'early'`) cancels its touch's moves before it begins,
+     * under the distance at which WebKit claims a slow drag for scrolling.
+     * Not a UIKit value: it gives an overlay's drag (a toast, a banner) on
+     * the web the outcome UIKit gives it, where a drag that starts on an
+     * overlay never reaches the content behind it.
+     */
+    earlyClaimDistance: {
+      value: 5,
+      unit: 'px',
+      source:
+        'measured: Mobile Safari 26.2, iOS 26.2 simulator, HID drags: cancelling every touchmove from 8 px keeps a scrollable page still; a one-way upward pan over a scrollable page that cancels from 4–5 px keeps the page still and its card follows the finger exactly, Oct 24 2026',
+    },
   },
   swipe: {
     /** Travel along the swipe direction before a swipe is recognized. */
@@ -309,37 +323,43 @@ export const UIKIT_GESTURES = {
      * (instantaneous velocity: position change over timestamp change between
      * consecutive events, the touch-down counting as the first). The lift
      * does not update it, and a finger at rest sends no events, so a release
-     * after a pause reports the last moving value.
+     * after a silent pause reports the last moving value; moved samples at
+     * the same point bring it to 0 on the second.
      */
     currentWeight: {
       value: 0.2,
       unit: 'ratio',
-      source: `${UIKIT_LAB}: fitted to all 69 velocity(in:) values of six HID streams (constant, accelerating, pauses before the lift) to 0.0 pt/s`,
+      source: `${UIKIT_LAB}: fitted to all 69 velocity(in:) values of six HID streams (constant, accelerating, pauses before the lift) to 0.0 pt/s; synthetic touches, Oct 24 2026: a 1000 pt/s stroke then same-point moved samples reads 1000, 800, 0 at .ended`,
     },
-    /** For the least-squares alternative: samples older than this are ignored. */
-    horizon: {
-      value: 100,
+    /**
+     * A scroll view's release (the velocity it hands
+     * scrollViewWillEndDragging) is this times its pan recognizer's newest
+     * velocity(in:) plus the rest times the previous one.
+     */
+    scrollReleaseWeight: {
+      value: 0.25,
+      unit: 'ratio',
+      source:
+        'measured: UIKit lab, iOS 26.2 simulator, HID swipes on a UIPickerView recorded by Oct 24 2026: scrollViewWillEndDragging velocity 933.4, 2114, 1016.2 and 543.6 px/s on 200 pt in 50, 100 and 200 ms and a 90 pt flick, reproduced to 0.03%; a UIScrollView coasts after a silent rest of up to 1 s as after none (Oct 24 2026)',
+    },
+    /**
+     * A contact still for longer than this before lifting releases at 0
+     * (`spec:AST-100` FR2: a still finger never flicks). iOS has no such
+     * reset: its blend keeps the last motion through a silent rest.
+     */
+    stillness: {
+      value: 40,
       unit: 'ms',
-      guess:
-        "Android's VelocityTracker and Flutter's fit the last 100 ms (least squares, degree 2); UIKit itself uses currentWeight.",
-      measure: 'M-G14: Not a parity value: UIKit uses the two-event filter.',
+      source:
+        'aosp frameworks/native/libs/input/VelocityTracker.cpp: ASSUME_POINTER_STOPPED_TIME is 40 ms; the AST-100 FR2 stillness reset (#8312) takes its value from Android, since iOS has no time cutoff',
     },
-    /** For the least-squares alternative: at most this many samples. */
+    /** The tracker keeps at most this many samples (a bound on its buffer). */
     maxSamples: {
       value: 20,
       unit: 'count',
       guess: 'Android VelocityTracker and Flutter VelocityTracker keep 20.',
-      measure: 'M-G15: Not a parity value: UIKit uses the two-event filter.',
-    },
-    /**
-     * For the least-squares alternative: a gap this long between samples
-     * separates two motions.
-     */
-    assumeStopped: {
-      value: 40,
-      unit: 'ms',
-      guess: 'Android VelocityTracker and Flutter VelocityTracker use 40 ms.',
-      measure: 'M-G16: Not a parity value: UIKit uses the two-event filter.',
+      measure:
+        'M-G15: Not a parity value: the filter reads the last four samples.',
     },
   },
   click: {

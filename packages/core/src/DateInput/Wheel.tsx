@@ -4,11 +4,22 @@
 
 /**
  * @file Wheel.tsx
- * @input Option list, selected value, change callback
- * @output Exports Wheel — a snap-scrolling picker column
- * @position Internal component; consumed by MonthYearWheels.tsx
+ * @input Option list, selected value, change callback; under a finger also
+ *   looping, a rest rule and a ref for programmatic turns
+ * @output Exports Wheel — one picker column — ScrollWheel (today's column),
+ *   and the shared types of wheelOptions.ts
+ * @position Internal component; consumed by MonthYearWheels.tsx,
+ *   TouchTimeField.tsx and TouchDateTimeField.tsx
  *
- * A wheel is a scroll container, not a custom gesture surface. Momentum,
+ * Wheel picks its column by the primary pointer (useTouchPresentation): one
+ * touch model on every touch device, iOS and Android alike. Under a finger
+ * it is UIPickerView's wheel: PickerWheel.tsx, the touch layer, imported
+ * here alone. Under a mouse or other fine pointer it is the snap-scrolling
+ * column below, today's Astryx wheel. A wheel draws only on a sheet, so a caller who
+ * pins the fine surface (`presentation="popover"` on its input) gets no
+ * sheet and no wheel (architecture:public-component-api INV16).
+ *
+ * The scrolling column is a scroll container, not a custom gesture surface. Momentum,
  * rubber-banding, and the settle animation are the platform's; all this adds
  * is `scroll-snap-align: center` on each option, half a viewport of padding at
  * each end so the first and last option can reach the middle, and a commit
@@ -21,19 +32,33 @@
  * browser that does not understand `animation-timeline` would otherwise run
  * the same keyframes on the document timeline and simply play them once.
  *
+ * Reduced motion (design:reduced-motion): the wheel's own scrolls (a step
+ * from a key or a click, the travel to the nearest enabled row) land without
+ * travel, cross-fading on a touch screen and at once otherwise. A finger's
+ * scroll and its momentum are the platform's.
+ *
  * Accessibility: this is a listbox, not a novel widget. It is one tab stop
  * with arrow/Home/End/PageUp/PageDown keys, `aria-activedescendant` tracking
  * the active row, and every row reachable by tap — none of which depends on
  * the scroll-driven decoration.
  *
  * SYNC: When modified, update:
+ * - /packages/core/src/DateInput/PickerWheel.tsx (the touch column)
+ * - /packages/core/src/DateInput/wheelOptions.ts
  * - /packages/core/src/DateInput/TouchDateField.tsx
  * - /packages/core/src/DateTimeInput/TouchDateTimeField.tsx
  * - /packages/core/src/DateInput/DateInput.doc.mjs
  * - /packages/core/src/DateInput/DateInputTouch.test.tsx
  */
 
-import {useCallback, useEffect, useId, useRef, useState} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -44,10 +69,22 @@ import {
   durationVars,
 } from '../theme/tokens.stylex';
 import {focusOutlineStyles} from '../utils';
+import {reducedMotionFade} from '../motion/reducedMotion';
+import {useTouchPresentation} from '../utils/touchPresentation';
+import {PickerWheel} from './PickerWheel';
 import {dateInputTouchSizes, dateInputTouchGeometry} from './tokens.stylex';
 import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {usePointerDragScroll} from './usePointerDragScroll';
 import {useScrollSettle} from './useScrollSettle';
+import {nearestEnabledIndex, type WheelProps} from './wheelOptions';
+
+export {
+  nearestEnabledIndex,
+  type WheelHandle,
+  type WheelOption,
+  type WheelProps,
+  type WheelSpinOptions,
+} from './wheelOptions';
 
 const ITEM_BLOCK_SIZE = dateInputTouchSizes.wheelItemSize;
 
@@ -204,33 +241,9 @@ const styles = stylex.create({
   },
 });
 
-export interface WheelOption {
-  /** Stable numeric identity of the row (a month 1-12, or a year). */
-  value: number;
-  /** Row text. */
-  label: string;
-  /** Rows outside min/max stay visible but cannot be committed. */
-  isDisabled?: boolean;
-}
-
-export interface WheelProps {
-  /** Accessible name for the column, e.g. "Month". */
-  label: string;
-  /** Rows, top to bottom. */
-  options: ReadonlyArray<WheelOption>;
-  /** Committed value; must match one option's `value`. */
-  value: number;
-  /** Fired when the wheel comes to rest on a different, enabled row. */
-  onChange: (value: number) => void;
-  /**
-   * False while the wheel is hidden — scroll offsets of a display:none
-   * scroller are meaningless, so listeners and the initial scroll wait.
-   */
-  isActive?: boolean;
-}
-
 /**
- * One snap-scrolling picker column.
+ * One picker column: UIPickerView's wheel under a finger, today's
+ * snap-scrolling column under a fine pointer.
  *
  * @example
  * ```
@@ -242,7 +255,69 @@ export interface WheelProps {
  * />
  * ```
  */
-export function Wheel({
+export function Wheel(props: WheelProps) {
+  // One touch model on every touch device: a finger gets UIPickerView's
+  // wheel, a fine pointer today's column.
+  const {isTouch} = useTouchPresentation();
+  return isTouch ? <PickerWheel {...props} /> : <TodayWheel {...props} />;
+}
+
+Wheel.displayName = 'Wheel';
+
+/**
+ * The scrolling column with the handle the touch wheel offers: `spinTo`
+ * commits its row at once, and the new value scrolls the column there as any
+ * new value does. `isLooping` and `resolveRest` are the touch wheel's alone.
+ */
+function TodayWheel({
+  ref,
+  label,
+  options,
+  value,
+  onChange,
+  isActive,
+}: WheelProps) {
+  useImperativeHandle(
+    ref,
+    () => ({
+      spinTo: async index => {
+        const option = options[index];
+        if (option == null || option.isDisabled) {
+          return false;
+        }
+        if (option.value !== value) {
+          onChange(option.value);
+        }
+        return true;
+      },
+    }),
+    [options, value, onChange],
+  );
+  return (
+    <ScrollWheel
+      label={label}
+      options={options}
+      value={value}
+      onChange={onChange}
+      isActive={isActive}
+    />
+  );
+}
+
+/**
+ * One snap-scrolling picker column: today's wheel, under a fine pointer.
+ *
+ * @example
+ * ```
+ * <ScrollWheel
+ *   label="Month"
+ *   options={monthOptions}
+ *   value={month}
+ *   onChange={setMonth}
+ * />
+ * ```
+ */
+export function ScrollWheel({
   label,
   options,
   value,
@@ -268,6 +343,10 @@ export function Wheel({
       : 0;
   }, []);
 
+  // The kind of pointer that last pressed the wheel: a touch's release
+  // cross-fades under reduced motion whatever the primary pointer.
+  const lastPointerRef = useRef<string | null>(null);
+
   const scrollToIndex = useCallback(
     (index: number, behavior: ScrollBehavior) => {
       const scroller = scrollerRef.current;
@@ -275,13 +354,42 @@ export function Wheel({
       if (scroller == null || size === 0) {
         return;
       }
-      scroller.scrollTo({top: index * size, behavior});
+      const top = index * size;
+      // Under reduced motion (design:reduced-motion) the wheel's own scroll
+      // lands without travel: a dip on a touch screen or after a touch, at
+      // once otherwise.
+      const fadeTiming =
+        behavior === 'smooth'
+          ? reducedMotionFade(scroller, {
+              touchRelease: lastPointerRef.current === 'touch',
+            })
+          : null;
+      if (fadeTiming == null) {
+        scroller.scrollTo({top, behavior});
+        return;
+      }
+      if (fadeTiming.duration === 0 || typeof scroller.animate !== 'function') {
+        scroller.scrollTo({top, behavior: 'auto'});
+        return;
+      }
+      const {duration, easing} = fadeTiming;
+      scroller.animate(
+        [{opacity: 1, easing}, {opacity: 0, easing}, {opacity: 1}],
+        {duration, easing: 'linear'},
+      );
+      window.setTimeout(() => {
+        scroller.scrollTo({top, behavior: 'auto'});
+      }, duration / 2);
     },
     [itemBlockSize],
   );
 
-  // Commit on rest. A disabled row is bounced back to the committed one
-  // rather than silently keeping a value the wheel is not showing.
+  // Commit on rest. A wheel that stopped on a disabled row (one outside the
+  // bounds) travels on to the nearest enabled row, as UIDatePicker does, and
+  // that second rest commits it. Resting on the committed row itself is not a
+  // stop to correct: the park after the sheet opens settles there with no
+  // touch, and a committed value outside the bounds stays until a person
+  // moves the wheel.
   //
   // Declared here, above the park effect, because that effect consults the
   // `isAtRestRef` this returns before it repositions anything.
@@ -296,12 +404,16 @@ export function Wheel({
         options.length - 1,
         Math.max(0, Math.round(scroller.scrollTop / size)),
       );
-      const option = options[index];
-      if (option == null || option.isDisabled) {
-        scrollToIndex(selectedIndex, 'smooth');
+      const restIndex =
+        index === selectedIndex
+          ? index
+          : nearestEnabledIndex(options, index, selectedIndex);
+      if (restIndex !== index) {
+        scrollToIndex(restIndex, 'smooth');
         return;
       }
-      if (option.value !== value) {
+      const option = options[index];
+      if (option != null && !option.isDisabled && option.value !== value) {
         onChange(option.value);
       }
     },
@@ -443,6 +555,9 @@ export function Wheel({
         aria-activedescendant={`${id}-${options[activeIndex]?.value}`}
         tabIndex={0}
         onKeyDown={handleKeyDown}
+        onPointerDown={event => {
+          lastPointerRef.current = event.pointerType;
+        }}
         {...stylex.props(styles.scroller, focusOutlineStyles.focusVisible)}>
         {options.map((option, index) => (
           <div
@@ -474,4 +589,4 @@ export function Wheel({
   );
 }
 
-Wheel.displayName = 'Wheel';
+ScrollWheel.displayName = 'ScrollWheel';

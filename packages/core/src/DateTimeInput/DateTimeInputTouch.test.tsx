@@ -190,6 +190,38 @@ afterEach(() => {
 });
 
 describe('DateTimeInput touch surface', () => {
+  it('draws the time wheels as one picker, with one band across them, under a finger', () => {
+    withMonthLayout(() => {
+      const {container} = render(
+        <DateTimeInput label="Meeting" onChange={() => {}} />,
+      );
+      openDateSheet();
+      switchToTimePanel();
+      const timePanel = container.querySelector('[data-panel="time"]')!;
+      expect(timePanel.querySelectorAll('[data-wheel-band]')).toHaveLength(1);
+    });
+  });
+
+  it('keeps the scrolling time columns, with no shared band, under a mouse', () => {
+    // A desktop whose field asks for the sheet: today's columns.
+    stubMedia('fine');
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    withMonthLayout(() => {
+      const {container} = render(
+        <DateTimeInput
+          label="Meeting"
+          presentation="bottom-sheet"
+          onChange={() => {}}
+        />,
+      );
+      openDateSheet();
+      switchToTimePanel();
+      const timePanel = container.querySelector('[data-panel="time"]')!;
+      expect(timePanel.querySelector('[data-wheel-band]')).toBeNull();
+      expect(timePanel.querySelector('[data-wheel]')).toBeNull();
+    });
+  });
+
   it('uses the bottom-sheet picker on a coarse pointer', () => {
     withMonthLayout(() => {
       render(<DateTimeInput label="Meeting" onChange={() => {}} />);

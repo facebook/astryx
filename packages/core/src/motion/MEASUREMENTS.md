@@ -77,27 +77,25 @@ Thresholds the gesture system reads (`uikit/gestures.ts`). Safari on iOS runs
 UIKit's own recognizers for tap-to-click, long press, double tap and the start
 of a page scroll, so many of these can be read off Safari itself.
 
-| ID    | Feeds                                           | Capture                                                                                                                                                                                              | Method |
-| ----- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| M-G01 | `UIKIT_GESTURES.tap.allowableMovement`          | Safari (UIKit tap -> click): on a touch-action:none box, HID touch down, move N px over 100 ms, lift; binary-search the largest N that still fires click.                                            | C      |
-| M-G02 | `UIKIT_GESTURES.tap.maximumIntervalBetweenTaps` | Safari with user-scalable=no (UIKit double-tap -> dblclick): two HID taps T ms apart; binary-search the largest T that fires dblclick.                                                               | C      |
-| M-G03 | `UIKIT_GESTURES.tap.allowableSeparation`        | Safari with user-scalable=no: two HID taps 150 ms apart, the second D px away; binary-search the largest D that fires dblclick.                                                                      | C      |
-| M-G04 | `UIKIT_GESTURES.tap.maximumTapDuration`         | Safari: HID hold on a <button> for 0.5, 1, 2, 4 s then lift; record which fire click.                                                                                                                | C      |
-| M-G05 | `UIKIT_GESTURES.pan.hysteresis`                 | Settings list (UIScrollView pan): slow HID drag at 20 px/s filmed at 60 fps; touch travel at the first frame the content moves.                                                                      | B, C   |
-| M-G06 | `UIKIT_GESTURES.swipe.minimumDistance`          | Needs a UIKit app that uses UISwipeGestureRecognizer (no built-in candidate known): HID swipes of increasing length at 600 px/s.                                                                     | C      |
-| M-G07 | `UIKIT_GESTURES.swipe.maximumDuration`          | Same rig as minimumDistance: 120 px swipes at decreasing speed; longest duration that still recognizes.                                                                                              | C      |
-| M-G08 | `UIKIT_GESTURES.swipe.maximumSecondaryMovement` | Same rig: 120 px swipes at increasing angles; largest angle that still recognizes.                                                                                                                   | C      |
-| M-G09 | `UIKIT_GESTURES.pinch.hysteresis`               | Photos (zoomable image): two HID touches spreading at 20 px/s filmed at 60 fps; span change at the first frame the image scales.                                                                     | B, C   |
-| M-G10 | `UIKIT_GESTURES.rotation.hysteresis`            | Maps: two touches rotating at 10 deg/s filmed at 60 fps; angle at the first frame the map turns. The simulator HID cannot rotate two fingers: a device run or an XCUITest rotate.                    | B, C   |
-| M-G11 | `UIKIT_GESTURES.screenEdgePan.edgeRegion`       | Settings > General (UINavigationController pop): HID drags inward starting at x = 5, 10 ... 40 pt; largest x that still pops.                                                                        | C      |
-| M-G12 | `UIKIT_GESTURES.control.trackingExpansion`      | Calculator (UIButton): HID press, drag away at 20 px/s filmed at 60 fps; distance from the frame at which the highlight turns off, then back on.                                                     | B, C   |
-| M-G13 | `UIKIT_GESTURES.scroll.contentEndHandoffSlop`   | A UIKit sheet (Maps place card at the medium detent) over a scrolled list: HID drag down from mid-list; finger travel between the list reaching its top and the sheet moving.                        | C      |
-| M-G14 | `UIKIT_GESTURES.velocity.horizon`               | Safari page scroll (UIScrollView): HID flings with known speed profiles; back out the release velocity from the coast distance (0.998/ms decay) and compare with this estimator on the same samples. | C      |
-| M-G15 | `UIKIT_GESTURES.velocity.maxSamples`            | Same comparison as horizon (M-G14).                                                                                                                                                                  | C      |
-| M-G16 | `UIKIT_GESTURES.velocity.assumeStopped`         | Safari page scroll: HID drag, pause P ms, lift; smallest P after which the page does not coast.                                                                                                      | C      |
-| M-G17 | `UIKIT_GESTURES.click.strayClickWindow`         | Not a parity value: confirm in Safari and Chromium that the click follows touchend within one frame.                                                                                                 | C      |
-| M-G18 | `HAPTIC_VIBRATION_PATTERNS` (every kind)        | On an Android device, compare against the platform HapticFeedbackConstants for the same moments.                                                                                                     | C      |
-| M-G19 | `UIKIT_GESTURES.press.momentumMemory`           | Safari page, hardest HID flick: time from the lift to the last scroll event.                                                                                                                         | C      |
+| ID    | Feeds                                           | Capture                                                                                                                                                                           | Method |
+| ----- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| M-G01 | `UIKIT_GESTURES.tap.allowableMovement`          | Safari (UIKit tap -> click): on a touch-action:none box, HID touch down, move N px over 100 ms, lift; binary-search the largest N that still fires click.                         | C      |
+| M-G02 | `UIKIT_GESTURES.tap.maximumIntervalBetweenTaps` | Safari with user-scalable=no (UIKit double-tap -> dblclick): two HID taps T ms apart; binary-search the largest T that fires dblclick.                                            | C      |
+| M-G03 | `UIKIT_GESTURES.tap.allowableSeparation`        | Safari with user-scalable=no: two HID taps 150 ms apart, the second D px away; binary-search the largest D that fires dblclick.                                                   | C      |
+| M-G04 | `UIKIT_GESTURES.tap.maximumTapDuration`         | Safari: HID hold on a <button> for 0.5, 1, 2, 4 s then lift; record which fire click.                                                                                             | C      |
+| M-G05 | `UIKIT_GESTURES.pan.hysteresis`                 | Settings list (UIScrollView pan): slow HID drag at 20 px/s filmed at 60 fps; touch travel at the first frame the content moves.                                                   | B, C   |
+| M-G06 | `UIKIT_GESTURES.swipe.minimumDistance`          | Needs a UIKit app that uses UISwipeGestureRecognizer (no built-in candidate known): HID swipes of increasing length at 600 px/s.                                                  | C      |
+| M-G07 | `UIKIT_GESTURES.swipe.maximumDuration`          | Same rig as minimumDistance: 120 px swipes at decreasing speed; longest duration that still recognizes.                                                                           | C      |
+| M-G08 | `UIKIT_GESTURES.swipe.maximumSecondaryMovement` | Same rig: 120 px swipes at increasing angles; largest angle that still recognizes.                                                                                                | C      |
+| M-G09 | `UIKIT_GESTURES.pinch.hysteresis`               | Photos (zoomable image): two HID touches spreading at 20 px/s filmed at 60 fps; span change at the first frame the image scales.                                                  | B, C   |
+| M-G10 | `UIKIT_GESTURES.rotation.hysteresis`            | Maps: two touches rotating at 10 deg/s filmed at 60 fps; angle at the first frame the map turns. The simulator HID cannot rotate two fingers: a device run or an XCUITest rotate. | B, C   |
+| M-G11 | `UIKIT_GESTURES.screenEdgePan.edgeRegion`       | Settings > General (UINavigationController pop): HID drags inward starting at x = 5, 10 ... 40 pt; largest x that still pops.                                                     | C      |
+| M-G12 | `UIKIT_GESTURES.control.trackingExpansion`      | Calculator (UIButton): HID press, drag away at 20 px/s filmed at 60 fps; distance from the frame at which the highlight turns off, then back on.                                  | B, C   |
+| M-G13 | `UIKIT_GESTURES.scroll.contentEndHandoffSlop`   | A UIKit sheet (Maps place card at the medium detent) over a scrolled list: HID drag down from mid-list; finger travel between the list reaching its top and the sheet moving.     | C      |
+| M-G15 | `UIKIT_GESTURES.velocity.maxSamples`            | Not a parity value: the filter reads the last four samples; a bound on the buffer.                                                                                                | C      |
+| M-G17 | `UIKIT_GESTURES.click.strayClickWindow`         | Not a parity value: confirm in Safari and Chromium that the click follows touchend within one frame.                                                                              | C      |
+| M-G18 | `HAPTIC_VIBRATION_PATTERNS` (every kind)        | On an Android device, compare against the platform HapticFeedbackConstants for the same moments.                                                                                  | C      |
+| M-G19 | `UIKIT_GESTURES.press.momentumMemory`           | Safari page, hardest HID flick: time from the lift to the last scroll event.                                                                                                      | C      |
 
 Done (UIKit lab, iOS 26.2 simulator, Oct 23 2026: the recognizers' ivars read
 in process, each confirmed with HID touches and the state log; values in
@@ -109,8 +107,9 @@ from the starting span moved by its hysteresis; the swipe is recognized
 during the motion; `velocity(in:)` is 0.2 × the newest event's
 instantaneous velocity + 0.8 × the previous one's (it reproduces every value
 UIKit reported on six recorded streams), does not decay through a rest and
-ignores the lift, which settles M-G14 to M-G16 for parity (the least-squares
-values remain for the non-UIKit estimator); a sheet over a scrolled list
+ignores the lift; a scroll view's release blends its pan recognizer's last
+two values once more (0.25 × the newest + 0.75 × the previous), which
+reproduces UIPickerView's four recorded releases; a sheet over a scrolled list
 leaves the whole drag to the list (no mid-gesture handoff), which leaves
 M-G13 without a parity value.
 
@@ -286,3 +285,17 @@ fades in, with Prefer Cross-Fade Transitions on or off.
 | M-CM4 | Reduce Motion press feedback    | Probe app with Reduce Motion on: long press, then dismiss                                                                   | press feedback, lift and dismiss animations under Reduce Motion                                                                                                                           | A, B   |
 | M-CM5 | Commit haptic stand-in          | An Android device: `navigator.vibrate` patterns against the platform's HapticFeedbackConstants for the context-click moment | the pattern that matches; not a UIKit parity value (as M-G18)                                                                                                                             | H      |
 | M-CM6 | Press thresholds                | Probe app: repeated long presses at random vsync phases                                                                     | from touch receipt and from the HID timestamp, the tick before and the tick at the press observer's began and at the click commit; the intersection pins the 150 ms and 400 ms thresholds | C      |
+
+## Picker (UIPickerView)
+
+Values the Wheel reads from its own table (`uikit/picker.ts`).
+
+Done (UIKit lab, iOS 26.2 simulator, Oct 23 2026; in the picker's table): the
+geometry (row pitch, cylinder, perspective, band, the band copy's
+magnification, the dimmed copies' opacity), the rubber band's dimension, the
+coast's stop speed, the velocity floor, the snap at rest, the tap spin and
+the selection tick. Measured and kept by the gesture system instead: the
+scroll view coasts with 0.25 × the pan's velocity plus 0.75 × its value one
+event earlier (four HID releases; `velocity.scrollReleaseWeight`, which
+ScrollViewPanGestureRecognizer reads). On UIKit, Reduce Motion with Prefer Cross-Fade changes
+nothing on a picker; the Wheel follows design:reduced-motion instead.
