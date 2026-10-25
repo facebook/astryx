@@ -473,6 +473,34 @@ describe('theme generation derives a complete status set (INV17)', () => {
     );
   });
 
+  it("re-derives when a theme changes only a surface or a fill's content", () => {
+    const darkCard = defineTheme({
+      name: 'status-surface-only',
+      tokens: {
+        '--color-background-surface': '#101010',
+        '--color-background-card': '#101010',
+      },
+    });
+    const onOnly = defineTheme({
+      name: 'status-on-only',
+      tokens: {'--color-on-success': '#4A4A4A'},
+    });
+    for (const mode of MODES) {
+      const t = effectiveTokens(darkCard, mode);
+      const surface = opaque(color(t, '--color-background-surface'), WHITE);
+      for (const status of STATUSES) {
+        expect(
+          contrastRatio(color(t, `--color-text-${status}`), surface),
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+      const o = effectiveTokens(onOnly, mode);
+      const fill = opaque(color(o, '--color-success-emphasized'), WHITE);
+      expect(
+        contrastRatio(opaque(color(o, '--color-on-success'), fill), fill),
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
   it('counts a role inherited through extends as set', () => {
     const parent = defineTheme({
       name: 'status-parent',

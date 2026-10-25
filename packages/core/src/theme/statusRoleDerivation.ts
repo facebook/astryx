@@ -271,7 +271,20 @@ export function deriveStatusRoleTokens(
   localTokens: Record<string, string> = {},
 ): [string, string][] {
   const authored = new Set(Object.keys(tokens));
-  const sources = STATUS_NAMES.filter(s => authored.has(statusSourceToken(s)));
+  // A status re-derives when the theme sets any colour its roles are
+  // measured against: its source, its content, its pale fill, or a surface.
+  const surfaceSet =
+    authored.has('--color-background-surface') ||
+    authored.has('--color-background-card');
+  const sources = STATUS_NAMES.filter(
+    s =>
+      surfaceSet ||
+      authored.has(statusSourceToken(s)) ||
+      authored.has(`--color-on-${s}`) ||
+      (s === 'info'
+        ? authored.has('--color-on-accent') || authored.has('--color-icon-blue')
+        : authored.has(`--color-${s}-muted`)),
+  );
   if (sources.length === 0) {
     return [];
   }
