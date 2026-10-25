@@ -67,6 +67,8 @@ beforeEach(() => {
   });
   HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
     this.removeAttribute('open');
+    // A closed dialog fires `close`, as the browsers do.
+    this.dispatchEvent(new Event('close'));
   });
   if (!Element.prototype.setPointerCapture) {
     Element.prototype.setPointerCapture = vi.fn();
@@ -421,6 +423,51 @@ describe('Popover presentation', () => {
       expect(openLayer()).not.toBeNull();
     });
     expect(openLayer()).toHaveTextContent('Apply');
+  });
+
+  it('mounts one presentation at a time, and nothing of the sheet at rest', async () => {
+    // The elements a render adds to the document.
+    let before = 0;
+    const elements = () => document.body.querySelectorAll('*').length - before;
+    // A desktop: the anchored layer, at rest and open.
+    before = document.body.querySelectorAll('*').length;
+    const desktop = render(<Filters presentation="adaptive" />);
+    const desktopAtRest = elements();
+    await tapTrigger();
+    const desktopOpen = elements();
+    desktop.unmount();
+    // A compact touch screen: at rest exactly the desktop's elements.
+    isCompactTouch = true;
+    before = document.body.querySelectorAll('*').length;
+    render(<Filters presentation="adaptive" />);
+    expect(elements()).toBe(desktopAtRest);
+    expect(sheetDialog()).toBeNull();
+    await tapTrigger();
+    const dialog = await vi.waitFor(() => {
+      const element = sheetDialog();
+      expect(element).toHaveAttribute('open');
+      return element!;
+    });
+    // Open, the sheet stands in place of the anchored layer.
+    expect(openLayer()).toBeNull();
+    expect(document.querySelector('[popover]')).toBeNull();
+    expect(elements()).toBeLessThanOrEqual(desktopOpen);
+    expect(screen.getAllByRole('button', {name: 'Apply'})).toHaveLength(1);
+    // Closed, the sheet stays through its exit, then leaves.
+    act(() => {
+      fireEvent.keyDown(dialog, {key: 'Escape'});
+    });
+    expect(dialog.isConnected).toBe(true);
+    act(() => {
+      fireEvent.transitionEnd(
+        dialog.querySelector<HTMLElement>('.astryx-bottom-sheet')!,
+        {propertyName: 'transform'},
+      );
+    });
+    await vi.waitFor(() => {
+      expect(sheetDialog()).toBeNull();
+    });
+    expect(elements()).toBe(desktopAtRest);
   });
 
   it('without a Theme provider, adaptive measures compact against the registered root theme', async () => {

@@ -6,7 +6,7 @@
  * @file lazyPopoverBottomSheet.ts
  * @input Uses React lazy and Suspense, useIsHydrating and BottomSheet
  * @output Exports `PopoverBottomSheet`, a BottomSheet that loads on its first
- *   render
+ *   render, and `preloadPopoverBottomSheet`, which loads it without rendering
  * @position Internal to Popover: the surface of its bottom-sheet presentation
  *
  * A Popover only renders a BottomSheet when its presentation asks for one, so
@@ -27,11 +27,21 @@ import {
 import type {BottomSheet as EagerBottomSheet} from '../BottomSheet/BottomSheet';
 import {useIsHydrating} from '../hooks/useIsHydrating';
 
+const loadBottomSheet = async () => import('../BottomSheet/BottomSheet');
+
 const LazyBottomSheet = lazy(async () =>
-  import('../BottomSheet/BottomSheet').then(module => ({
+  loadBottomSheet().then(module => ({
     default: module.BottomSheet,
   })),
 );
+
+/**
+ * Loads the sheet's module with nothing rendered, so a Popover whose sheet
+ * can be the surface opens it at once.
+ */
+export function preloadPopoverBottomSheet(): void {
+  void loadBottomSheet();
+}
 
 export function PopoverBottomSheet(
   props: ComponentProps<typeof EagerBottomSheet>,

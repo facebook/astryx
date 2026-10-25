@@ -28,6 +28,7 @@
 
 import React, {
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -56,7 +57,10 @@ import {clampInlineSize, isIntrinsicInlineSize} from '../Layer/clampInlineSize';
 import {spacingVars} from '../theme/tokens.stylex';
 import {InteractiveRoleContext} from '../InteractiveRoleContext/InteractiveRoleContext';
 import type {SpacingStep} from '../utils/types';
-import {PopoverBottomSheet} from './lazyPopoverBottomSheet';
+import {
+  PopoverBottomSheet,
+  preloadPopoverBottomSheet,
+} from './lazyPopoverBottomSheet';
 import {Button} from '../Button';
 import {useTranslator} from '../i18n';
 
@@ -543,18 +547,39 @@ export function Popover({
   const isSheetOpen = isControlled
     ? isOpen === true && controlledSurface === 'bottom-sheet'
     : isSheetOpenState;
-  // A sheet that has been the open surface stays mounted after it closes, so
-  // its exit plays out and its dialog hands focus back to the trigger
-  // (component:Popover AR4), even when the screen stopped being compact while
-  // it was open. The anchored popover opening releases it.
+  // One presentation at a time, and nothing of the sheet at rest
+  // (architecture:component-style-authoring INV7): the sheet mounts as it
+  // opens, in place of the anchored layer, and stays mounted after it closes
+  // only through its exit, so the exit plays out and its dialog hands focus
+  // back to the trigger (component:Popover AR4), even when the screen stopped
+  // being compact while it was open. It unmounts once its dialog has closed.
   const [hasSheetBeenOpen, setHasSheetBeenOpen] = useState(false);
   if (isSheetOpen && !hasSheetBeenOpen) {
     setHasSheetBeenOpen(true);
-  } else if (!isSheetOpen && popover.isOpen && hasSheetBeenOpen) {
-    setHasSheetBeenOpen(false);
   }
-  const isSheetTheSurface =
-    hasSheetBeenOpen || resolvedPresentation === 'bottom-sheet';
+  const isSheetMounted = isSheetOpen || hasSheetBeenOpen;
+  const sheetPanelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (isSheetOpen || !hasSheetBeenOpen) {
+      return;
+    }
+    const dialog = sheetPanelRef.current?.closest('dialog');
+    if (dialog == null || !dialog.open) {
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- the closed sheet's exit is already over: unmount it
+      setHasSheetBeenOpen(false);
+      return;
+    }
+    const handleClose = () => setHasSheetBeenOpen(false);
+    dialog.addEventListener('close', handleClose);
+    return () => dialog.removeEventListener('close', handleClose);
+  }, [hasSheetBeenOpen, isSheetOpen]);
+  // An open on a compact touch screen shows the sheet at once: its module
+  // loads as soon as the sheet can be the surface, with nothing rendered.
+  useEffect(() => {
+    if (resolvedPresentation === 'bottom-sheet') {
+      preloadPopoverBottomSheet();
+    }
+  }, [resolvedPresentation]);
   const isAnySurfaceOpen = popover.isOpen || isSheetOpen;
   const sheetId = `${popover.id}-sheet`;
 
@@ -697,7 +722,7 @@ export function Popover({
       button.setAttribute('aria-expanded', String(isAnySurfaceOpen));
       button.setAttribute(
         'aria-controls',
-        isSheetOpen ? sheetId : popover.triggerProps['aria-controls'],
+        isSheetMounted ? sheetId : popover.triggerProps['aria-controls'],
       );
 
       // Event handlers
@@ -835,10 +860,8 @@ export function Popover({
   const layerXstyle = [popoverSizeXstyle, layerAnimations[placement]];
 
   // One instance of the content at a time: the sheet holds it while it is
-  // the surface (open, the one an open would choose, or closing after it was
-  // open), the anchored layer otherwise.
-  const isContentInSheet =
-    isSheetOpen || (isSheetTheSurface && !popover.isOpen);
+  // mounted, the anchored layer otherwise.
+  const isContentInSheet = isSheetMounted;
   const anchoredContent = (
     <div data-testid={isContentInSheet ? undefined : testId}>
       {isContentInSheet ? null : content}
@@ -849,51 +872,55 @@ export function Popover({
     : hasEscapeDismiss
       ? 'form'
       : 'required';
-  // The sheet renders once it can be the surface (it then loads), while it
-  // is the open one, and through its exit after it was. A sheet with no
-  // dismissal keeps the anchored surface's fallback close control, so it can
-  // always be closed.
-  const sheet =
-    isSheetOpen || isSheetTheSurface ? (
-      <PopoverBottomSheet
-        id={sheetId}
-        isOpen={isSheetOpen}
-        onOpenChange={setSheetOpen}
-        label={label ?? ''}
-        height="tall"
-        padding={padding}
-        purpose={sheetPurpose}
-        xstyle={xstyle}
-        className={className}
-        style={style}
-        data-testid={isContentInSheet ? testId : undefined}>
-        {isContentInSheet ? content : null}
-        {isContentInSheet &&
-        sheetPurpose === 'required' &&
-        hasCloseButton !== false ? (
-          <div
-            data-astryx-popover-fallback-close=""
-            {...stylex.props(styles.sheetFallbackClose)}>
-            <Button
-              variant="secondary"
-              label={closeButtonLabel ?? t('@astryx.popover.close')}
-              onClick={() => setSheetOpen(false)}
-            />
-          </div>
-        ) : null}
-      </PopoverBottomSheet>
-    ) : null;
+  // The sheet renders while it is the open surface and through its exit. A
+  // sheet with no dismissal keeps the anchored surface's fallback close
+  // control, so it can always be closed.
+  const sheet = isSheetMounted ? (
+    <PopoverBottomSheet
+      ref={sheetPanelRef}
+      id={sheetId}
+      isOpen={isSheetOpen}
+      onOpenChange={setSheetOpen}
+      label={label ?? ''}
+      height="tall"
+      padding={padding}
+      purpose={sheetPurpose}
+      xstyle={xstyle}
+      className={className}
+      style={style}
+      data-testid={isContentInSheet ? testId : undefined}>
+      {isContentInSheet ? content : null}
+      {isContentInSheet &&
+      sheetPurpose === 'required' &&
+      hasCloseButton !== false ? (
+        <div
+          data-astryx-popover-fallback-close=""
+          {...stylex.props(styles.sheetFallbackClose)}>
+          <Button
+            variant="secondary"
+            label={closeButtonLabel ?? t('@astryx.popover.close')}
+            onClick={() => setSheetOpen(false)}
+          />
+        </div>
+      ) : null}
+    </PopoverBottomSheet>
+  ) : null;
+
+  // The anchored layer, unless the sheet is the presentation that is mounted.
+  const anchoredLayer = isSheetMounted
+    ? null
+    : popover.render(anchoredContent, {
+        placement,
+        alignment,
+        offset: spacingVars['--spacing-1'],
+        xstyle: layerXstyle,
+      });
 
   // Sibling mode: render only the popover (no wrapper needed)
   if (anchorRef && children == null) {
     return (
       <>
-        {popover.render(anchoredContent, {
-          placement,
-          alignment,
-          offset: spacingVars['--spacing-1'],
-          xstyle: layerXstyle,
-        })}
+        {anchoredLayer}
         {sheet}
       </>
     );
@@ -909,18 +936,13 @@ export function Popover({
       onClick: () => handleTriggerClick(),
       'aria-haspopup': 'dialog',
       'aria-expanded': isAnySurfaceOpen,
-      'aria-controls': isSheetOpen ? sheetId : popover.id,
+      'aria-controls': isSheetMounted ? sheetId : popover.id,
     };
 
     return (
       <>
         {children(triggerProps)}
-        {popover.render(anchoredContent, {
-          placement,
-          alignment,
-          offset: spacingVars['--spacing-1'],
-          xstyle: layerXstyle,
-        })}
+        {anchoredLayer}
         {sheet}
       </>
     );
@@ -934,12 +956,7 @@ export function Popover({
           {children}
         </div>
       </InteractiveRoleContext>
-      {popover.render(anchoredContent, {
-        placement,
-        alignment,
-        offset: spacingVars['--spacing-1'],
-        xstyle: layerXstyle,
-      })}
+      {anchoredLayer}
       {sheet}
     </>
   );
