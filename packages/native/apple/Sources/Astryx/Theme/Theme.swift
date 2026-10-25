@@ -324,7 +324,11 @@ struct AstryxThemeColor: ShapeStyle {
     let color = (environment.colorScheme == .dark ? theme.dark : theme.light).color
     switch role {
     case .tint: return astryxStockTint(color.accent)
-    case .textPrimary: return color.textPrimary
+    // On a prominent background, such as a `.borderedProminent` button's
+    // tint, stock labels keep the theme's on-accent color, as they would draw
+    // white without a theme.
+    case .textPrimary:
+      return environment.backgroundProminence == .increased ? color.onAccent : color.textPrimary
     }
   }
 }
