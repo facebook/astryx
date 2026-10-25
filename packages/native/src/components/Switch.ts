@@ -14,4 +14,10 @@ export const switchControl: NativeAdditions = {
   name: 'Switch',
   // The web Switch forwards base props to its root wrapper.
   baseTarget: 'root',
+  webOnly: {
+    labelPosition:
+      'an Apple switch row follows the system toggle layout, label leading (component API A2)',
+    labelSpacing:
+      "an Apple switch row uses the system's spacing between label and switch (component API A2)",
+  },
 };
