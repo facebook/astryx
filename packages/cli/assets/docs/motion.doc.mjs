@@ -192,12 +192,6 @@ const calmTheme = defineTheme({
             ],
             ['scroll.bounce', '--motion-scroll-bounce', 'spring', '0.5s 0'],
             [
-              'scroll.paging.snap',
-              '--motion-scroll-paging-snap',
-              'spring',
-              '0.5s 0',
-            ],
-            [
               'springs.actionSheetDismiss',
               '--motion-springs-action-sheet-dismiss',
               'spring',

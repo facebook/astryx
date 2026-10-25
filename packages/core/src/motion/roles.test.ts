@@ -109,7 +109,7 @@ describe('motion roles', () => {
       springs.navigationPush,
     );
     const ids = listMotionRoles().map(role => role.id);
-    expect(ids).toContain('scroll.paging.snap');
+    expect(ids).toContain('scroll.bounce');
     expect(ids.some(id => id.startsWith('gestures.'))).toBe(false);
     // Every role has its own CSS variable.
     const variables = listMotionRoles().map(role => role.variable);
