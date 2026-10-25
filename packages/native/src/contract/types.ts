@@ -53,6 +53,13 @@ export interface ComponentContract {
   readonly platforms: Readonly<Partial<Record<NativePlatform, PropMap>>>;
   /** Core-doc props that stay in the web contract. */
   readonly webOnly: readonly WebOnlyProp[];
+  /**
+   * Core props projected from a wider web type: each portable value and the
+   * one web value it means (AST-082 FR4).
+   */
+  readonly projections?: Readonly<
+    Record<string, Readonly<Record<string, string>>>
+  >;
   /** Core props that share a toolkit name with the same meaning (FR8). */
   readonly sameMeaning?: readonly string[];
 }
