@@ -105,6 +105,7 @@ import {
 import {VelocityTracker} from '../gestures/VelocityTracker';
 import {playHaptic} from '../gestures/haptics';
 import {readTouchPresentation} from './sheetTouch';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
 import {useMediaQuery} from '../hooks';
 import {
   createAnimator,
@@ -1196,6 +1197,10 @@ export function useSheetGestures({
   // pointer (design:reduced-motion DR2).
   const dragTouchRef = useRef(false);
 
+  // Whether the primary pointer is coarse, subscribed: the sheet's touch-only
+  // listeners exist only then (spec:AST-094 FR24), and come and go with it.
+  const coarsePrimary = useMediaQuery(TOUCH_QUERY);
+
   // Moves the sheet to `offset` on the travel channel, holding the layout
   // split it is rendered with (`layoutOffset`) until it lands; landing a
   // settle reconciles the layout, and the host folds the travel into its new
@@ -2212,11 +2217,13 @@ export function useSheetGestures({
     // it has to yield again if the finger comes back down.
     promotedAtContentEnd: boolean;
   } | null>(null);
-  const previousTouchHandlersRef = useRef<{
+  // The body's touch handlers, made with its node; attached by an Effect.
+  const bodyTouchHandlersRef = useRef<{
     start: (e: TouchEvent) => void;
     move: (e: TouchEvent) => void;
     end: (e: TouchEvent) => void;
   } | null>(null);
+  const [bodyMounts, setBodyMounts] = useState(0);
 
   // A second finger is a pinch, and pinch-zoom is the browser's. Whichever
   // surface it lands on and whichever finger came first, drop every armed
@@ -2289,7 +2296,9 @@ export function useSheetGestures({
   useEffect(() => {
     const sheetNode = sheetElRef.current;
     const dialog = sheetNode?.closest('dialog');
-    if (!isOpen || sheetNode == null || dialog == null) {
+    // Touch-only work: none where the primary pointer is fine (spec:AST-094
+    // FR24).
+    if (!isOpen || !coarsePrimary || sheetNode == null || dialog == null) {
       return;
     }
     const asPointer = (touch: Touch, timeStamp: number) =>
@@ -2420,7 +2429,7 @@ export function useSheetGestures({
       dialog.removeEventListener('click', onClick, true);
       caughtTouchRef.current = null;
     };
-  }, [drawnSheetRect, isOpen, sheetMounts]);
+  }, [coarsePrimary, drawnSheetRect, isOpen, sheetMounts]);
 
   const bodyRef = useCallback((node: HTMLElement | null) => {
     // `timeStamp` is the touch event's own: when the finger was there, on the
@@ -2592,29 +2601,33 @@ export function useSheetGestures({
       }
     };
 
-    const prev = bodyNodeRef.current;
-    if (prev && previousTouchHandlersRef.current) {
-      const h = previousTouchHandlersRef.current;
-      prev.removeEventListener('touchstart', h.start);
-      prev.removeEventListener('touchmove', h.move);
-      prev.removeEventListener('touchend', h.end);
-      prev.removeEventListener('touchcancel', h.end);
-    }
     bodyNodeRef.current = node;
-    if (node) {
-      node.addEventListener('touchstart', onTouchStart, {passive: true});
-      node.addEventListener('touchmove', onTouchMove, {passive: false});
-      node.addEventListener('touchend', onTouchEnd, {passive: true});
-      node.addEventListener('touchcancel', onTouchEnd, {passive: true});
-      previousTouchHandlersRef.current = {
-        start: onTouchStart,
-        move: onTouchMove,
-        end: onTouchEnd,
-      };
-    } else {
-      previousTouchHandlersRef.current = null;
-    }
+    bodyTouchHandlersRef.current =
+      node == null
+        ? null
+        : {start: onTouchStart, move: onTouchMove, end: onTouchEnd};
+    setBodyMounts(mounts => mounts + 1);
   }, []);
+  // The body's touch listeners, only where the primary pointer is coarse
+  // (spec:AST-094 FR24): attached for each mounted body, removed when it
+  // goes or the primary pointer turns fine.
+  useEffect(() => {
+    const node = bodyNodeRef.current;
+    const h = bodyTouchHandlersRef.current;
+    if (!coarsePrimary || node == null || h == null) {
+      return;
+    }
+    node.addEventListener('touchstart', h.start, {passive: true});
+    node.addEventListener('touchmove', h.move, {passive: false});
+    node.addEventListener('touchend', h.end, {passive: true});
+    node.addEventListener('touchcancel', h.end, {passive: true});
+    return () => {
+      node.removeEventListener('touchstart', h.start);
+      node.removeEventListener('touchmove', h.move);
+      node.removeEventListener('touchend', h.end);
+      node.removeEventListener('touchcancel', h.end);
+    };
+  }, [bodyMounts, coarsePrimary]);
 
   // Subscribed, not memoized: the preference can change while a sheet is open,
   // and it turns the sheet's CSS transitions off (the theme's motion under a
