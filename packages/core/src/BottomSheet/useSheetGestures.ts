@@ -189,6 +189,18 @@ function scrimClearOffset(
 // its last stretch, not between its last two samples (one slow sample before
 // the lift must not cancel a throw), and none after a pause before the lift.
 const VELOCITY_WINDOW_MS = 100;
+// A mouse or pen drag keeps the sheet's pointer behavior (spec:AST-017 FR59):
+// within this many px of a detent the live drag eases toward it, so it
+// "clicks" into place instead of hovering just off the mark. A finger tracks
+// 1:1, as UIKit's sheet does.
+const MAGNET_RANGE = 40;
+// Rubber-band factor for a mouse or pen dragging up past fully open, capped
+// at OVERSCROLL_MAX (the sheet reserves that much bottom padding for the lift
+// to reveal). A finger holds at the tallest detent, as UIKit's sheet does.
+const OVERSCROLL_RESISTANCE = 0.35;
+// SYNC: must match OVERSCROLL_PADDING in BottomSheetPanel.tsx (the reserved
+// bottom padding the lift reveals).
+const OVERSCROLL_MAX = 48;
 // The touch path drives the sheet through the same machinery the pointer path
 // uses, by handing it a pointer-shaped object built from a `Touch`. On iOS
 // Safari that object is indistinguishable from the real thing: WebKit raises
@@ -221,6 +233,40 @@ const CONTENT_END_HANDOFF_SLOP = 4;
 // 8px is the conventional tap slop, a shade over iOS's own recognizer, and
 // well under what a real pull covers in its first frames.
 const DRAG_PROMOTION_SLOP = 8;
+
+// Pull a value toward the nearest of `targets` when within MAGNET_RANGE, easing
+// the last stretch so the surface settles crisply onto a detent while dragging.
+function magnetize(value: number, targets: number[]): number {
+  let nearestTarget = targets[0];
+  let nearestDist = Math.abs(value - nearestTarget);
+  for (const t of targets) {
+    const d = Math.abs(value - t);
+    if (d < nearestDist) {
+      nearestDist = d;
+      nearestTarget = t;
+    }
+  }
+  if (nearestDist >= MAGNET_RANGE) {
+    return value;
+  }
+  // Ease-in over the range: pull grows as you approach (t^2), so the click
+  // feels magnetic near the detent but doesn't fight a deliberate drag-through.
+  const t = nearestDist / MAGNET_RANGE;
+  const pull = 1 - t * t;
+  return value + (nearestTarget - value) * pull;
+}
+
+// The live offset for a mouse or pen drag at `raw`: a damped, capped rubber
+// band up past fully open, 1:1 in the dismiss zone, magnetic between detents.
+function pointerDragOffset(raw: number, offsets: number[]): number {
+  if (raw < 0) {
+    return Math.max(-OVERSCROLL_MAX, raw * OVERSCROLL_RESISTANCE);
+  }
+  if (raw > offsets[offsets.length - 1]) {
+    return raw;
+  }
+  return magnetize(raw, offsets);
+}
 
 function preservationInsetForOffset(
   baseOffset: number,
@@ -1953,11 +1999,13 @@ export function useSheetGestures({
       const {offsets, peekOffset} = resolveDetents(state.height);
 
       const raw = state.baseOffset + delta;
-      // 1:1 with the finger between detents and into the dismiss zone, as
-      // UIKit's sheet tracks (the release, not the drag, picks the detent).
-      // Up past fully open it holds: UIKit's sheet doesn't stretch beyond its
-      // largest detent.
-      const next = Math.max(0, raw);
+      // A finger: 1:1 between detents and into the dismiss zone, as UIKit's
+      // sheet tracks (the release, not the drag, picks the detent), and held
+      // at fully open, since UIKit's sheet doesn't stretch beyond its largest
+      // detent. A mouse or pen keeps the pointer behavior (spec:AST-017 FR59).
+      const next = dragTouchRef.current
+        ? Math.max(0, raw)
+        : pointerDragOffset(raw, offsets);
       // Dragging above the base restores the full layout height below the
       // viewport; otherwise keep whatever layout the base detent settled with
       // (0 at a peek, so a peek drag stays transform-only).
