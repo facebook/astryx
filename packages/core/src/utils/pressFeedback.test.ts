@@ -947,9 +947,7 @@ describe('what the list pays for it', () => {
     ];
     try {
       release = installPressFeedback();
-      const types = added.flatMap(spy =>
-        spy.mock.calls.map(([type]) => String(type)),
-      );
+      const types = added.flatMap(spy => spy.mock.calls.map(([type]) => type));
       expect(types.filter(type => type.startsWith('touch'))).toEqual([]);
       expect(types).toContain('pointerdown');
     } finally {
