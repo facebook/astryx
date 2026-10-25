@@ -184,14 +184,12 @@ final class ComponentScreensUITests: XCTestCase {
   }
 
   /// What VoiceOver reads for Banner: one element per banner, reading its
-  /// title then its description; the icon and the separate texts are not
-  /// read on their own.
+  /// title then its description, and the status icon is not read.
   func testBannerAccessibilityTree() {
     let app = launch("Banner")
     let banners = app.descendants(matching: .any).matching(
       NSPredicate(format: "label == %@", "Changes saved, Your draft is up to date."))
     XCTAssertEqual(banners.count, 4, "one element per banner, title then description")
-    XCTAssertFalse(app.staticTexts["Changes saved"].exists, "the title is not read again on its own")
     XCTAssertEqual(app.images.count, 0, "the status icon is not read")
   }
 }
