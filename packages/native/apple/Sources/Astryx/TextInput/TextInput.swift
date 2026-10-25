@@ -390,8 +390,12 @@ public struct TextInput: View {
       .presentationCompactAdaptation(.popover)
   }
 
-  private func icon(_ name: String) -> some View {
-    Image(systemName: astryx.icon(name) ?? "questionmark")
-      .font(.system(size: astryx.tokens.font.supportingSize * astryx.textScale))
+  /// A shared icon at the supporting text size: the theme's SF Symbol or app
+  /// asset, else the default symbol; a name nothing maps draws nothing.
+  @ViewBuilder private func icon(_ name: String) -> some View {
+    let side = astryx.tokens.font.supportingSize * astryx.textScale
+    if let image = astryx.icon(name) {
+      image.sized(side).font(.system(size: side))
+    }
   }
 }
