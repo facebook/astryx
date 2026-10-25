@@ -472,6 +472,140 @@ test('moving back before the lift cancels the pop', async ({page}) => {
   expect(await topTitle()).toBe('About');
 });
 
+test('brought back past its start, the screen follows with resistance, then springs back as UIKit’s does', async ({
+  page,
+}) => {
+  // UIKit lab batch 62 (iOS 26.2): a back swipe scrubbed out and brought back
+  // past its start at ~310 pt/s, lifted 10.7 pt of finger after the screen
+  // crossed its start. UIKit's screen stood at −6.89 pt at the lift, reached
+  // −14.21 pt 50 ms later, was within 0.5 pt of rest ~0.23 s after the lift
+  // and never went past it.
+  const {driver, width, left} = await openStack(page, 'pushed', {
+    standalone: true,
+  });
+  const top = card(page, 'screen-About');
+  const start = {x: left + 4, y: 400};
+  const far = left + width * 0.4;
+  const sampler = async () =>
+    page.evaluate(() => {
+      const w = window as unknown as {
+        __samples: {t: number; x: number}[];
+        __liftAt: number | null;
+        __atLift: number | null;
+      };
+      w.__samples = [];
+      w.__liftAt = null;
+      w.__atLift = null;
+      const element = document.querySelector<HTMLElement>(
+        '[data-navigation-screen="screen-About"]',
+      );
+      const read = () => {
+        const x = parseFloat(
+          element == null ? '' : getComputedStyle(element).translate,
+        );
+        return Number.isFinite(x) ? x : 0;
+      };
+      // At the lift, before the stack sees it: where the last move put it.
+      for (const type of ['touchend', 'pointerup']) {
+        addEventListener(
+          type,
+          () => {
+            if (w.__liftAt == null) {
+              w.__liftAt = performance.now();
+              w.__atLift = read();
+            }
+          },
+          {capture: true},
+        );
+      }
+      const tick = () => {
+        w.__samples.push({t: performance.now(), x: read()});
+        if (w.__samples.length < 600) {
+          requestAnimationFrame(tick);
+        }
+      };
+      requestAnimationFrame(tick);
+    });
+  const samples = async () =>
+    page.evaluate(() => {
+      const w = window as unknown as {
+        __samples: {t: number; x: number}[];
+        __liftAt: number | null;
+        __atLift: number | null;
+      };
+      return {xs: w.__samples, liftAt: w.__liftAt, atLift: w.__atLift};
+    });
+  // The drag out, without its lift.
+  const out = (to: number, durationMs: number) => {
+    const frames = [...drag(start, {x: to, y: 400}, {durationMs})];
+    frames.pop();
+    return frames;
+  };
+
+  // Where the screen's start is in finger coordinates: the swipe begins
+  // after its threshold, so the screen sits that far behind the finger.
+  // A slow swipe to a quarter, held still, then lifted (it springs back).
+  await sampler();
+  const near = left + width * 0.25;
+  const hold = out(near, 900);
+  const held = hold[hold.length - 1];
+  for (let i = 1; i <= 8; i++) {
+    hold.push({t: held.t + i * 16.7, fingers: [{id: 0, x: near, y: 400}]});
+  }
+  hold.push({t: held.t + 8 * 16.7 + 4, fingers: []});
+  await driver.play(hold);
+  await waitForRest(top);
+  const calibration = await samples();
+  const offset =
+    near - Math.max(...calibration.xs.map(sample => sample.x)) - start.x;
+
+  // Batch 62's path: back past the start at ~310 px/s, lifted 10.7 px of
+  // finger after the screen crossed it.
+  await sampler();
+  const frames = out(far, 450);
+  const last = frames[frames.length - 1];
+  const from = last.fingers[0].x;
+  const liftX = start.x + offset - 10.7;
+  const steps = Math.ceil((from - liftX) / 5.2);
+  for (let i = 1; i <= steps; i++) {
+    frames.push({
+      t: last.t + i * 16.7,
+      fingers: [{id: 0, x: Math.max(liftX, from - i * 5.2), y: 400}],
+    });
+  }
+  frames.push({t: last.t + steps * 16.7 + 4, fingers: []});
+  await driver.play(frames);
+  await waitForRest(top);
+  const {xs, liftAt, atLift} = await samples();
+  const after = xs.filter(sample => sample.t > (liftAt ?? Infinity));
+  const peak = after.reduce(
+    (low, sample) => (sample.x < low.x ? sample : low),
+    {t: 0, x: Infinity},
+  );
+  const settledAt = after.find(
+    (sample, i) =>
+      sample.t > peak.t && after.slice(i).every(rest => Math.abs(rest.x) < 0.5),
+  )?.t;
+  const detail = JSON.stringify({
+    offset,
+    atLift,
+    peak: {x: peak.x, ms: peak.t - (liftAt ?? 0)},
+    settledMs: settledAt == null ? null : settledAt - (liftAt ?? 0),
+    after: after.slice(0, 24).map(sample => Math.round(sample.x * 10) / 10),
+  });
+  // Within ~1 pt of UIKit's at the lift and at the peak; settled as soon.
+  expect(atLift ?? 0, detail).toBeGreaterThan(-6.89 - 1);
+  expect(atLift ?? 0, detail).toBeLessThan(-6.89 + 1);
+  expect(peak.x, detail).toBeGreaterThan(-14.21 - 1);
+  expect(peak.x, detail).toBeLessThan(-14.21 + 1);
+  expect(peak.t - (liftAt ?? 0), detail).toBeGreaterThan(20);
+  expect(peak.t - (liftAt ?? 0), detail).toBeLessThan(85);
+  // UIKit's: within 0.5 pt of rest ~0.25 s after the lift, never past it.
+  expect((settledAt ?? Infinity) - (liftAt ?? 0), detail).toBeLessThan(340);
+  expect(Math.max(...after.map(sample => sample.x)), detail).toBeLessThan(0.5);
+  expect(Math.abs(await translateX(top))).toBeLessThan(0.5);
+});
+
 test('a fast swipe that pauses before the lift still finishes (the velocity does not decay)', async ({
   page,
 }) => {
