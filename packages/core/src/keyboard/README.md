@@ -110,18 +110,19 @@ at any time, for something that appears while the keyboard moves.
 - Safari reveals a focused field by scrolling the whole page, so a layout that
   keeps its own content above the keyboard focuses its field with
   `preventScroll` (a claimed tap, or `refuseFocusReveal`).
-- Firefox for Android reports the keyboard once it is up, and 34 to 39 ms
+- Firefox for Android reports the keyboard once it is up, and 34 to 104 ms
   later pans the visual viewport to a focused field the keyboard still
   covers. So BottomSheet reveals in the report's own event, and where a
   browser has panned to the field after a report (the visual viewport moved
-  down with no touch, document scroll or zoom since), it scrolls the dialog's
-  top back into view and lands every later reveal at once in the report's
-  frame. A browser that never pans keeps the smooth reveal.
-
-## Consumers
-
+  down with no touch, document scroll or zoom since), it lands the field with
+  its own scroller, leaving a smooth reveal under way to land it, and only
+  then scrolls the dialog's top back into view; a field it cannot bring up
+  keeps the browser's reveal. Every later reveal lands at once in the
+  report's frame. A browser that never pans keeps the smooth reveal.
 - BottomSheet (`BottomSheet/BottomSheetPanel.tsx`): `useMobileKeyboard`, whose
-  inset the body's `keyboardInset` functional style lays out; it reveals the
+  inset the content box's `keyboardInset` functional style lays out as the
+  content's last box (after its own children, so it adds scroll range in
+  Firefox too, which keeps the content box at the body's height); it reveals the
   focused field in the keyboard report's own event.
 - ChatLayout (`Chat/useChatKeyboard.ts`): the dock and the message area's end
   padding are laid out from `useKeyboardHeight`; the guide's ride moves the

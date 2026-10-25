@@ -290,9 +290,12 @@ function fireTimedPointer(
 
 // The room the keyboard takes at the end of a Tall sheet's body, CSS px: the
 // value its functional style writes on the body (0 when none is laid out).
+// The keyboard room: the functional style on the body's content box, whose
+// `::after` is the room's box.
 function keyboardInsetOf(body: HTMLElement): number {
+  const content = body.firstElementChild;
   const match = /--[\w-]+:\s*(-?[\d.]+)px/.exec(
-    body.getAttribute('style') ?? '',
+    content?.getAttribute('style') ?? '',
   );
   return match == null ? 0 : Number(match[1]);
 }
@@ -1816,6 +1819,50 @@ describe('BottomSheet', () => {
           top: 248,
           behavior: 'instant',
         });
+      });
+
+      it('puts the pan back without a second scroll while the smooth reveal is still on its way', () => {
+        const {body, input, scrollBy, scrollIntoView, report, pan} =
+          renderLowField();
+        // The body can scroll far enough; the smooth reveal is under way.
+        Object.defineProperty(body, 'scrollHeight', {
+          configurable: true,
+          value: 2000,
+        });
+        Object.defineProperty(body, 'clientHeight', {
+          configurable: true,
+          value: 700,
+        });
+        input.focus();
+        report(500);
+        expect(scrollBy).toHaveBeenLastCalledWith({
+          top: 248,
+          behavior: 'smooth',
+        });
+        scrollBy.mockClear();
+        pan(256);
+        // Firefox keeps adding a smooth scrollBy's distance after an instant
+        // scroll, so a second scroll here would overshoot.
+        expect(scrollBy).not.toHaveBeenCalled();
+        expect(scrollIntoView).toHaveBeenCalledWith({
+          block: 'start',
+          inline: 'nearest',
+          behavior: 'instant',
+        });
+        // The put-back moves the visual viewport up again; the reveal that
+        // follows leaves the smooth one to land the field.
+        pan(0);
+        expect(scrollBy).not.toHaveBeenCalled();
+      });
+
+      it('keeps the browser\u2019s reveal when the sheet cannot bring the field above the keyboard', () => {
+        const {input, scrollBy, scrollIntoView, report, pan} = renderLowField();
+        // The body cannot scroll further: the field stays under the keyboard.
+        scrollBy.mockImplementation(() => {});
+        input.focus();
+        report(500);
+        pan(256);
+        expect(scrollIntoView).not.toHaveBeenCalled();
       });
 
       it('leaves a pan the reader makes', () => {

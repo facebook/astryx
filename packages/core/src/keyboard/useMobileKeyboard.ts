@@ -597,6 +597,8 @@ export function useMobileKeyboard({
     }
 
     let keyboardGeometry: KeyboardGeometry | null = null;
+    // Where a smooth reveal under way is taking the body's scrollTop.
+    let smoothTarget: number | null = null;
     let documentScrollAtKeyboard: {x: number; y: number} | null = null;
     // FR6: where this window measures the keyboard, never by user agent.
     const ownsFocusTransitions = isKeyboardMeasurable(window);
@@ -624,6 +626,7 @@ export function useMobileKeyboard({
     };
 
     const scrollBodyBy = (distance: number, smoothly: boolean) => {
+      smoothTarget = null;
       if (typeof body.scrollBy !== 'function') {
         body.scrollTop += distance;
         return;
@@ -635,13 +638,32 @@ export function useMobileKeyboard({
         [REDUCED_MOTION_FADE_QUERY, REDUCED_MOTION_INSTANT_QUERY].some(
           query => window.matchMedia(query).matches,
         );
+      const behavior = smoothly && !reduceMotion ? 'smooth' : 'instant';
+      if (behavior === 'smooth') {
+        smoothTarget = body.scrollTop + distance;
+      }
       body.scrollBy({
         top: distance,
         // Not 'auto': that defers to the element's computed `scroll-behavior`,
         // so a consumer's `scroll-behavior: smooth` would animate a scroll this
         // hook needs to land in the same frame.
-        behavior: smoothly && !reduceMotion ? 'smooth' : 'instant',
+        behavior,
       });
+    };
+
+    // The distance a smooth reveal under way has still to scroll, as far as
+    // the body can scroll; 0 once it has landed, or with none under way.
+    const smoothDistanceLeft = () => {
+      if (smoothTarget == null) {
+        return 0;
+      }
+      const maxScroll = Math.max(
+        body.scrollTop,
+        body.scrollHeight - body.clientHeight,
+      );
+      const target = Math.min(smoothTarget, maxScroll);
+      const left = target - body.scrollTop;
+      return Math.abs(left) < 1 ? 0 : left;
     };
 
     // Scroll `control` into the part of the body the keyboard leaves visible,
@@ -664,10 +686,16 @@ export function useMobileKeyboard({
         return;
       }
 
-      if (measuredControlRect.bottom > safeBottom) {
-        scrollBodyBy(measuredControlRect.bottom - safeBottom, smoothly);
-      } else if (measuredControlRect.top < safeTop) {
-        scrollBodyBy(measuredControlRect.top - safeTop, smoothly);
+      // Where the control will be once a smooth reveal under way lands: if
+      // it lands the control, scrolling again would overshoot in Firefox,
+      // which keeps adding a smooth scrollBy's distance after another scroll.
+      const pending = smoothDistanceLeft();
+      const controlBottom = measuredControlRect.bottom - pending;
+      const controlTop = measuredControlRect.top - pending;
+      if (controlBottom > safeBottom) {
+        scrollBodyBy(controlBottom - safeBottom, smoothly);
+      } else if (controlTop < safeTop) {
+        scrollBodyBy(controlTop - safeTop, smoothly);
       }
     };
 
@@ -815,8 +843,10 @@ export function useMobileKeyboard({
       resizeObserver.disconnect();
 
       // Body/sheet box changes include public height and xstyle updates. The
-      // generated inset pseudo-element changes only scroll overflow, so these
-      // observations do not feed the keyboard inset back into sheet geometry.
+      // inset pseudo-element is the content box's last box: where the content
+      // grows with it, the observation re-runs the reveal, which computes the
+      // same inset from the body's unchanged box, so nothing feeds back into
+      // sheet geometry.
       const targets = new Set<Element>([body]);
       if (sheet) {
         targets.add(sheet);
@@ -882,13 +912,17 @@ export function useMobileKeyboard({
     // FR4). Such a pan (the visual viewport moved down within the layout
     // viewport after the report, with no touch since, no document scroll and
     // no zoom) is put back by scrolling the full-viewport dialog's top into
-    // view, and the field lands at once, then and on every later report.
+    // view once the sheet lands the field itself, and the field lands at once
+    // on every later report.
     let lastHeight = getMobileKeyboardHeight(window);
     let atReport: {x: number; y: number; top: number; scale: number} | null =
       null;
     let touchedSinceReport = false;
     const handleTouchStart = () => {
       touchedSinceReport = true;
+      // The reader's own scroll may stop a smooth reveal short: forget where
+      // it was going.
+      smoothTarget = null;
     };
     const isBrowserReveal = (height: number) => {
       const viewport = window.visualViewport;
@@ -933,13 +967,32 @@ export function useMobileKeyboard({
       }
       if (isBrowserReveal(event.height)) {
         revealsAtReport.add(window);
-        sheet?.closest('dialog')?.scrollIntoView({
-          block: 'start',
-          inline: 'nearest',
-          behavior: 'instant',
-        });
         cancelAnimationFrame(animationFrame);
-        revealFocusedControl();
+        // A smooth reveal still under way lands the field where it is going.
+        // Another scroll on top of it would overshoot in Firefox, which keeps
+        // adding a smooth scrollBy's distance after an instant scroll (the
+        // field ended 244 px too high); with none under way the field lands at
+        // once.
+        const distanceLeft = smoothDistanceLeft();
+        if (distanceLeft === 0) {
+          revealFocusedControl();
+        }
+        // The pan is put back only if the sheet holds the field above the
+        // keyboard with its own scroller (rects are layout-viewport
+        // coordinates, which the pan does not move); a field the sheet cannot
+        // bring up keeps the browser's reveal.
+        const activeElement = document.activeElement;
+        if (
+          activeElement instanceof HTMLElement &&
+          activeElement.getBoundingClientRect().bottom - distanceLeft <=
+            getObstructionTop()
+        ) {
+          sheet?.closest('dialog')?.scrollIntoView({
+            block: 'start',
+            inline: 'nearest',
+            behavior: 'instant',
+          });
+        }
         return;
       }
       scheduleReveal();
