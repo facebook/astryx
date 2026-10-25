@@ -337,8 +337,9 @@ describe('Slider touch presentation (UISlider tracking)', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('ignores a finger on the track, while a mouse still moves the value there', async () => {
+  it('under a coarse primary pointer (a mouse on a touch device): ignores a finger on the track, while the mouse still moves the value there', async () => {
     stubMatchMedia(true);
+    expect(matchMedia('(pointer: coarse)').matches).toBe(true);
     stubControlGeometry();
     const onChange = vi.fn();
     await renderTouch(<Controlled initial={50} onChange={onChange} />);

@@ -448,6 +448,11 @@ test('a desktop slider keeps its pointer styles: no touch targets, no inline tou
   page,
 }) => {
   await mount(page, 'core-slider--default', 'ltr', 'ltr');
+  // A fine primary pointer in this context (a context without touch can still
+  // match coarse under some configurations).
+  expect(
+    await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+  ).toBe(false);
   const styles = await page.evaluate(() => {
     const control = document.querySelector<HTMLElement>(
       '.astryx-slider-control',
