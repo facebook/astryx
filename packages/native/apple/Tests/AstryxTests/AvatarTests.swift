@@ -206,12 +206,14 @@ private func onWhite(_ color: Color) -> [Int] {
 // (library/tooltip.spec.md), whose inputs `TooltipPresenterTests.swift` covers.
 
 @Test func aStaticAvatarIsATabStopAndOpensOnATapAndAControlKeepsBoth() {
+  // Core's `auto` touch resolves from focus: a static avatar opens on a tap,
+  // a control keeps its tap.
   #expect(Avatar.tooltipFocus(.none) == .tabStop)
-  #expect(Avatar.tooltipTouch(.none) == .tap)
+  #expect(TooltipPresenter.resolvedTouch(.auto, focus: Avatar.tooltipFocus(.none)) == .tap)
   #expect(Avatar.tooltipFocus(.button) == .control)
-  #expect(Avatar.tooltipTouch(.button) == .none)
+  #expect(TooltipPresenter.resolvedTouch(.auto, focus: Avatar.tooltipFocus(.button)) == .none)
   #expect(Avatar.tooltipFocus(.link) == .control)
-  #expect(Avatar.tooltipTouch(.link) == .none)
+  #expect(TooltipPresenter.resolvedTouch(.auto, focus: Avatar.tooltipFocus(.link)) == .none)
 }
 
 @MainActor
