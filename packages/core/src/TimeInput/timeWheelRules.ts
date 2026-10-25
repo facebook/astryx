@@ -117,26 +117,31 @@ function overlaps(start: number, end: number, bounds: TimeBounds): boolean {
   );
 }
 
+const NO_BOUNDS: TimeBounds = {min: null, max: null};
+
+/** Whether `time` is inside the bounds. */
+function isInside(time: TimeParts, bounds: TimeBounds): boolean {
+  const seconds = secondsOf(time);
+  return (
+    (bounds.min == null || seconds >= bounds.min) &&
+    (bounds.max == null || seconds <= bounds.max)
+  );
+}
+
 /**
- * The time the wheels show for `time`: its minutes rounded to the minute
- * interval, as UIDatePicker's `roundsToMinuteInterval` rounds its date, with
- * the seconds kept when the picker has a seconds column (and dropped when it
- * has none). The rounding stays inside the day and inside the bounds: a step
- * past midnight or past a bound is replaced by the nearest step on the near
- * side, so the wheels rest on a row that can commit. 10:58 with a 15-minute
- * interval shows 11:00; 23:58 shows 23:45; 16:55 under a 16:55 maximum shows
- * 16:45.
+ * `time` on the nearest row of a minute column stepped by `interval` (1 for
+ * every minute), the seconds kept when the picker has a seconds column and
+ * dropped when it has none. The step stays inside the day and inside
+ * `bounds`: a step past midnight or past a bound is replaced by the nearest
+ * step on the near side.
  */
-export function displayedTime(
+function roundedToStep(
   time: TimeParts,
   interval: number,
   hasSeconds: boolean,
-  bounds: TimeBounds = {min: null, max: null},
+  bounds: TimeBounds,
 ): TimeParts {
   const second = hasSeconds ? time.second : 0;
-  if (interval <= 1) {
-    return {...time, second};
-  }
   const minutes =
     time.hour * 60 + time.minute + (hasSeconds ? 0 : time.second / 60);
   const lastStep = Math.floor((24 * 60 - 1) / interval) * interval;
@@ -155,6 +160,55 @@ export function displayedTime(
   const step =
     [nearest, below, above].find(allowed) ?? Math.min(nearest, lastStep);
   return {...partsOf(step * 60), second};
+}
+
+/**
+ * The time the wheels show for `time`: its minutes rounded to the minute
+ * interval, as UIDatePicker's `roundsToMinuteInterval` rounds its date, with
+ * the seconds kept when the picker has a seconds column (and dropped when it
+ * has none). A time inside the bounds rounds to the nearest step inside the
+ * day and the bounds, so the wheels rest on a row that can commit: 10:58 with
+ * a 15-minute interval shows 11:00; 23:58 shows 23:45; 16:52 under a 16:55
+ * maximum shows 16:45. A time outside the bounds is shown on its own nearest
+ * step, disabled: opening the sheet never moves an untouched value (8:50
+ * under a 9:00 minimum shows 8:45, not 9:00).
+ */
+export function displayedTime(
+  time: TimeParts,
+  interval: number,
+  hasSeconds: boolean,
+  bounds: TimeBounds = NO_BOUNDS,
+): TimeParts {
+  if (interval <= 1) {
+    return {...time, second: hasSeconds ? time.second : 0};
+  }
+  return roundedToStep(
+    time,
+    interval,
+    hasSeconds,
+    isInside(time, bounds) ? bounds : NO_BOUNDS,
+  );
+}
+
+/**
+ * The time a column's rest commits when it would make `time`: the nearest
+ * time inside the bounds that the columns have a row for. Past a bound, that
+ * is the bound itself, or the nearest step inside it when the bound is off
+ * the minute interval (16:55 under a 15-minute interval: 16:45), so what
+ * commits is what the wheels show, as UIDatePicker's date always rounds to
+ * the interval. Inside the bounds, `time` itself.
+ */
+export function restingTime(
+  time: TimeParts,
+  interval: number,
+  hasSeconds: boolean,
+  bounds: TimeBounds,
+): TimeParts {
+  const clamped = clampToBounds(time, bounds);
+  if (interval <= 1 && hasSeconds) {
+    return clamped;
+  }
+  return roundedToStep(clamped, Math.max(1, interval), hasSeconds, bounds);
 }
 
 /**

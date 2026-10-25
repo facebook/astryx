@@ -930,6 +930,52 @@ describe('DateInput — calendar surface', () => {
     expect(document.activeElement).toHaveAttribute('data-date', '2025-04-21');
   });
 
+  it('under a finger: only the month the pager shows takes a tab stop', () => {
+    // The neighbouring months are mounted off-screen; Tab into one would
+    // scroll the clipped viewport under the pager's track.
+    renderAndOpen(
+      <Controlled initial="2026-03-21" min="2025-01-01" max="2026-12-31" />,
+    );
+    const tabStops = () =>
+      [
+        ...document.querySelectorAll<HTMLElement>(
+          '[data-scroller="months"] [data-date]',
+        ),
+      ].filter(day => day.tabIndex === 0);
+    expect(within(pane('April 2026')).queryAllByRole('button').length).toBe(42);
+    expect(tabStops().map(day => day.dataset.date)).toEqual(['2026-03-21']);
+    fireEvent.click(screen.getByRole('button', {name: 'Next month'}));
+    expect(tabStops().map(day => day.dataset.date)).toEqual(['2026-04-01']);
+  });
+
+  it('with a mouse: PageUp/PageDown take the title and the arrows with the focus', () => {
+    // Today's native scroller drops every scroll report while a steered
+    // scroll runs, its arrival included, so the month is reported with the
+    // focus move itself.
+    stubTouchscreenLaptop();
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
+    renderAndOpen(
+      <Controlled
+        initial="2026-03-21"
+        min="2025-01-01"
+        max="2026-12-31"
+        presentation="bottom-sheet"
+      />,
+    );
+    const header = () =>
+      document.querySelector<HTMLElement>('[data-title="month-year"]')!;
+    const day = within(pane('March 2026')).getByRole('button', {
+      name: /March 21, 2026/,
+    });
+    day.focus();
+    fireEvent.keyDown(day, {key: 'PageDown'});
+    expect(document.activeElement).toHaveAttribute('data-date', '2026-04-21');
+    expect(header()).toHaveTextContent('April 2026');
+    fireEvent.keyDown(document.activeElement!, {key: 'PageUp', shiftKey: true});
+    expect(document.activeElement).toHaveAttribute('data-date', '2025-04-21');
+    expect(header()).toHaveTextContent('April 2025');
+  });
+
   it('under a finger: pages the keyboard focus by month with PageUp/PageDown and by year with Shift', () => {
     renderAndOpen(
       <Controlled initial="2026-03-21" min="2025-01-01" max="2026-12-31" />,
@@ -1204,21 +1250,40 @@ describe('DateInput — calendar surface', () => {
    * break if it ever became global, since April 1 is both the selection and
    * a spill day in March's pane.
    */
-  it('gives a spilled date no tab stop in the pane that borrows it', () => {
+  const tabbableIn = (label: string) =>
+    within(pane(label))
+      .getAllByRole('button')
+      .filter(b => b.getAttribute('tabindex') === '0')
+      .map(b => b.getAttribute('aria-label'));
+
+  it('under a finger: gives a spilled date no tab stop, and the off-screen month none at all', () => {
     renderAndOpen(
       <Controlled initial="2026-04-01" min="2026-01-01" max="2026-12-31" />,
     );
-    const tabbableIn = (label: string) =>
-      within(pane(label))
-        .getAllByRole('button')
-        .filter(b => b.getAttribute('tabindex') === '0')
-        .map(b => b.getAttribute('aria-label'));
-
-    // April owns the date, so its stop is the date itself.
+    // April owns the date, so its stop is the date itself; March, mounted
+    // off-screen beside it, takes none (only the month the pager shows has a
+    // tab stop).
     expect(tabbableIn('April 2026')).toHaveLength(1);
     expect(tabbableIn('April 2026')[0]).toMatch(/April 1, 2026/);
-    // March shows the same date, but its stop falls back to a March date —
-    // every pane keeps exactly one, and never on a day it does not own.
+    expect(tabbableIn('March 2026')).toHaveLength(0);
+  });
+
+  it('with a mouse: gives a spilled date no tab stop in the pane that borrows it', () => {
+    stubTouchscreenLaptop();
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
+    renderAndOpen(
+      <Controlled
+        initial="2026-04-01"
+        min="2026-01-01"
+        max="2026-12-31"
+        presentation="bottom-sheet"
+      />,
+    );
+    // Today's native scroller keeps one stop in every pane: March shows the
+    // same date, but its stop falls back to a March date, never a day it
+    // does not own.
+    expect(tabbableIn('April 2026')).toHaveLength(1);
+    expect(tabbableIn('April 2026')[0]).toMatch(/April 1, 2026/);
     expect(tabbableIn('March 2026')).toHaveLength(1);
     expect(tabbableIn('March 2026')[0]).toMatch(/March/);
   });
