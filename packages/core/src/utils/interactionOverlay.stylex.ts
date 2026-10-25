@@ -8,8 +8,12 @@
  * @file Shared hover and pressed overlay states
  * @input Uses StyleX and the semantic interaction-overlay color tokens
  * @output Exports reusable background-color and background-image state styles,
- *   the touch press's registered strength variable (`pressVars`) and its
- *   clocks (`pressConsts`)
+ *   the compositor press layers for list rows (`cell`) and, under a coarse
+ *   primary pointer, for a button and the cards (`control`, `controlOver`),
+ *   the press's strength for an owner whose descendant layer releases the
+ *   paint (`pressedAlphaLayered`), the touch press's
+ *   registered strength variable (`pressVars`) and its clocks (`pressConsts`,
+ *   and `cellPressConsts` for the row layer)
  * @position Internal styling utility for interactive core surfaces
  *
  * Every surface that paints a press composes one of these (or carries its own
@@ -31,7 +35,10 @@
  * dropped and the press is written by the touch press controller
  * (`utils/pressFeedback.ts`) as `data-astryx-press="on"` once the press is
  * believed (150 ms, no travel, no scroll) and `data-astryx-press="fading"` for the
- * 200 ms release. The two arms paint those through ONE number:
+ * 200 ms release. The query reads the PRIMARY pointer, so on a phone or tablet
+ * a mouse, trackpad or Space-key press loses `:active` too; the controller
+ * writes the same attribute for those, at once. The two arms paint those
+ * through ONE number:
  *
  *  - `--astryx-press-alpha` is the press's strength, 0 to 1. It is a
  *    registered custom property (`@property`, syntax `<number>`, declared once
@@ -79,10 +86,12 @@
  * clock), hooks/usePressFeedback.doc.mjs, the components that paint the touch
  * press off an ancestor scope or a pseudo-element (Switch, Tab,
  * CheckboxInput, RadioListItem, ClickableCard, SelectableCard, Thumbnail)
- * and scripts/build-css.test.mjs.
+ * selectionHold.ts (the held state on the row layer) and
+ * scripts/build-css.test.mjs.
  */
 
 import * as stylex from '@stylexjs/stylex';
+import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 import {colorVars} from '../theme/tokens.stylex';
 
 /**
@@ -109,12 +118,43 @@ export const pressVars = stylex.defineVars({
  * cannot drift apart.
  */
 export const pressConsts = stylex.defineConsts({
-  /** How long the release takes, in ms. UIKit's deselect clock. */
+  /**
+   * How long a cell's release takes, in ms: UIKit's deselect clock
+   * (`list.highlight.releaseMs`), for a surface marked as a `cell`.
+   */
   releaseMs: 200,
+  /**
+   * How long a control's release takes, in ms: UIButton's highlight release
+   * (`button.highlight.releaseMs`), for every other surface.
+   */
+  controlReleaseMs: 250,
+  /**
+   * A control's release curve, as CSS: UIButton's, UIKit's easeInEaseOut
+   * (`button.highlight.releaseCurve`), for a surface that runs a control's
+   * release on a layer of its own.
+   */
+  controlReleaseEase: 'cubic-bezier(0.42, 0, 0.58, 1)',
 });
 
-/** The release's clock as CSS. */
+/**
+ * A list row's release (`cell`), mirrored for the stylesheet: StyleX evaluates
+ * a style at build time and cannot read the constants table, so these are the
+ * table's `list.highlight` values (motion/uikit/list.ts), and
+ * interactionOverlay.cell.test.ts fails if they drift.
+ */
+export const cellPressConsts = stylex.defineConsts({
+  /** `list.highlight.releaseMs`, in ms. */
+  cellReleaseMs: 200,
+  /** `list.highlight.releaseCurve`, as CSS. */
+  cellReleaseEase: 'cubic-bezier(0, 0, 0.2, 1)',
+});
+
+/** The cell release's clock as CSS. */
 const PRESS_RELEASE_DURATION = `${pressConsts.releaseMs}ms`;
+/** The control release's clock as CSS. */
+const CONTROL_RELEASE_DURATION = `${pressConsts.controlReleaseMs}ms`;
+/** Reduce Motion on a coarse primary pointer: the policy's cross-fade. */
+const REDUCED_MOTION_RELEASE_DURATION = reducedMotionFadeConsts.duration;
 
 const ENABLED = ':where(:not(:disabled,[aria-disabled="true"]))';
 const HOVER_HOVER = '@media (hover: hover)';
@@ -128,6 +168,21 @@ const COARSE = '@media (pointer: coarse)';
 const PRESSED_ON = '[data-astryx-press="on"]';
 /** Written by the touch press controller for the release's exit. */
 const PRESSED_FADING = '[data-astryx-press="fading"]';
+/**
+ * Written by a selection hold (selectionHold.ts) on the row it keeps
+ * selected through a navigation push; the controller never overwrites it.
+ */
+const PRESSED_HELD = '[data-astryx-press="held"]';
+/**
+ * A press in any of its states (on, releasing, or held by a selection hold):
+ * the row layer (`cell`) exists only then, so at rest a row's own `::before`
+ * and its stacking are untouched.
+ */
+const PRESSED_ANY =
+  ':is([data-astryx-press="on"],[data-astryx-press="fading"],[data-astryx-press="held"])';
+/** A press that is on or fading: Button's press layer exists only then. */
+const PRESSED_LIVE =
+  ':is([data-astryx-press="on"],[data-astryx-press="fading"])';
 
 const PRESS_ALPHA = pressVars['--astryx-press-alpha'];
 
@@ -162,6 +217,21 @@ const pressRelease = stylex.keyframes({
   to: {[PRESS_ALPHA]: 0},
 });
 
+/** The row layer's clock as CSS. */
+const CELL_RELEASE = `${cellPressConsts.cellReleaseMs}ms`;
+
+/** Opacity 1 → 0: the row layer leaves; its fading arm runs it. */
+const cellRelease = stylex.keyframes({
+  from: {opacity: 1},
+  to: {opacity: 0},
+});
+
+/** Opacity 1 → 0: a control's press layer leaves; its fading arm runs it. */
+const controlRelease = stylex.keyframes({
+  from: {opacity: 1},
+  to: {opacity: 0},
+});
+
 /**
  * The release's curve: a gentle ease-out that spends the whole clock fading
  * (strength ≈ 0.2 at the midpoint), which is what a deselect crossfade reads
@@ -170,6 +240,12 @@ const pressRelease = stylex.keyframes({
  * would read as half its clock.
  */
 const RELEASE_EASE = 'cubic-bezier(0, 0, 0.2, 1)';
+
+/**
+ * A control's release curve: UIButton's, UIKit's easeInEaseOut
+ * (`button.highlight.releaseCurve`).
+ */
+const CONTROL_RELEASE_EASE = pressConsts.controlReleaseEase;
 
 /**
  * The touch press's strength and its release, on the element the controller
@@ -193,22 +269,105 @@ const RELEASE_EASE = 'cubic-bezier(0, 0, 0.2, 1)';
 const pressStrength = {
   default: null,
   '[data-astryx-press="on"]': 1,
-  '[data-astryx-press="fading"]': 1,
+  '[data-astryx-press="fading"]': {
+    default: 1,
+    // Reduce Motion with a fine primary pointer: the release completes at
+    // once (design:reduced-motion DR3), the paint gone at the lift.
+    '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))': 0,
+  },
 };
+/**
+ * The release, an in-place fade of the paint's alpha: an opacity-only
+ * change, since nothing moves or scales. Under Reduce Motion it is the
+ * system's cross-fade on a coarse pointer (DR2: its duration and curve from
+ * reducedMotionFadeConsts) and nothing on any other (DR3). The keys are the
+ * literal spellings of reducedMotionKeys.fade and .instant.
+ */
 const pressReleaseAnimation = {
   animationName: {
     default: null,
-    '[data-astryx-press="fading"]': pressRelease,
+    '[data-astryx-press="fading"]': {
+      default: pressRelease,
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        'none',
+    },
   },
+  // Under a coarse primary pointer the marker's value is the press's
+  // profile: a `cell` releases on the deselect clock, every other surface on
+  // a control's. With any other pointer every release keeps the deselect
+  // clock and curve (the desktop rule, `spec:AST-017` FR59/DEC-25: touch work leaves
+  // a fine pointer's behavior as it is).
   animationDuration: {
     default: null,
-    '[data-astryx-press="fading"]': PRESS_RELEASE_DURATION,
+    '[data-astryx-press="fading"]': {
+      default: PRESS_RELEASE_DURATION,
+      '@media (pointer: coarse)': {
+        default: CONTROL_RELEASE_DURATION,
+        // The Reduce Motion arm sits inside the cell arm as well, so it
+        // outranks the cell's clock too.
+        '[data-astryx-pressable="cell"]': {
+          default: PRESS_RELEASE_DURATION,
+          '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+            reducedMotionFadeConsts.duration,
+        },
+        '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+          reducedMotionFadeConsts.duration,
+      },
+    },
   },
   animationTimingFunction: {
     default: null,
-    '[data-astryx-press="fading"]': RELEASE_EASE,
+    '[data-astryx-press="fading"]': {
+      default: RELEASE_EASE,
+      '@media (pointer: coarse)': {
+        default: CONTROL_RELEASE_EASE,
+        '[data-astryx-pressable="cell"]': {
+          default: RELEASE_EASE,
+          '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+            reducedMotionFadeConsts.easing,
+        },
+        '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+          reducedMotionFadeConsts.easing,
+      },
+    },
   },
   animationFillMode: {default: null, '[data-astryx-press="fading"]': 'both'},
+};
+
+/**
+ * The strength's release on the element, for a surface whose own layer runs
+ * the release under a coarse primary pointer (`control`, `controlOver`): as
+ * the overlay variants run it for any other pointer, and dropped under a
+ * coarse one, where the layer releases on the compositor instead. Composed
+ * after the variant, it replaces the variant's `animationName` whole, so its
+ * other arms are the variant's own.
+ */
+const strengthReleaseOutsideCoarse = {
+  animationName: {
+    default: null,
+    '[data-astryx-press="fading"]': {
+      default: pressRelease,
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        'none',
+      '@media (pointer: coarse)': 'none',
+    },
+  },
+};
+
+/**
+ * The `backgroundImage` variant's arms for a mouse (`:active`) and a hover:
+ * shared with `control`, which replaces that variant's `backgroundImage`.
+ */
+const pointerImageArms = {
+  ':active': {
+    default: pressedImage,
+    [COARSE]: 'none',
+  },
+  [HOVER_HOVER]: {
+    default: null,
+    ':hover': hoverImage,
+    ':active': pressedImage,
+  },
 };
 
 export const interactionOverlayStyles = stylex.create({
@@ -254,15 +413,7 @@ export const interactionOverlayStyles = stylex.create({
       default: null,
       [ENABLED]: {
         default: null,
-        ':active': {
-          default: pressedImage,
-          [COARSE]: 'none',
-        },
-        [HOVER_HOVER]: {
-          default: null,
-          ':hover': hoverImage,
-          ':active': pressedImage,
-        },
+        ...pointerImageArms,
         [PRESSED_ON]: pressedOverlayImage,
         [PRESSED_FADING]: pressedOverlayImage,
       },
@@ -336,5 +487,364 @@ export const interactionOverlayStyles = stylex.create({
     [PRESS_ALPHA]: pressStrength,
     ...pressReleaseAnimation,
     ...pressPaint,
+  },
+  /**
+   * `pressedAlpha` for an owner whose press paint is released by a
+   * descendant's own compositor layer (a switch row: the track's `::before`
+   * fades its opacity on the control clock). Under a coarse primary pointer
+   * the strength holds through the release instead of animating on the main
+   * thread, so the layer's opacity is the one fade. With any other pointer it
+   * is `pressedAlpha` exactly (the desktop rule, `spec:AST-017` FR59/DEC-25).
+   */
+  pressedAlphaLayered: {
+    [PRESS_ALPHA]: pressStrength,
+    ...pressReleaseAnimation,
+    ...pressPaint,
+    ...strengthReleaseOutsideCoarse,
+  },
+  /**
+   * A list row's touch press on a compositor layer (Item, and TreeList's row
+   * box), composed AFTER the row's overlay variant (StyleX is last-wins per
+   * property). The variant's own touch paint, a gradient whose strength is a
+   * registered custom property, animates on the main thread: while script
+   * runs, a pressed row would stay at full strength and every frame of the
+   * fade would paint. Here the press is an element-sized `::before` under the
+   * row's content whose OPACITY is the strength: `on` shows it at once and
+   * `fading` runs a keyframe animation of its opacity, 1 → 0, on the cell's
+   * release clock (`list.highlight`), which engines run on the compositor:
+   * it keeps advancing while the main thread is blocked and lays out and
+   * paints nothing. Same pixels as the variant's paint at that strength. The
+   * variant keeps the hover and a mouse's `:active`. The row must be
+   * positioned (the layer is placed absolutely); `isolation: isolate` keeps
+   * the layer above the row's background (a selected fill) and below its
+   * content. The layer exists only while a press is on or releasing, or a
+   * selection hold keeps the row: at rest a row's own `::before` and its
+   * stacking are as they were; during a press the layer is the row's
+   * `::before`, so a caller's decoration there is replaced for that time
+   * (decorate with `::after` or a child). A selection hold (selectionHold.ts)
+   * writes `held` on the row it keeps selected through a navigation push: the
+   * layer shows at full strength, and the hold's own Web Animations move it
+   * from there.
+   *
+   * Under a finger only (a coarse primary pointer): a fine pointer keeps the
+   * variant exactly, with no layer, no stacking context and its own touch
+   * paint (`spec:AST-017` FR59/DEC-25, touch work leaves desktop as it was).
+   */
+  cell: {
+    // The `backgroundColor` variant's own image arms (Item's), its touch
+    // paint yielding to the layer under a finger. Only the row's own image
+    // turns off: the press paint (`--_press-paint`) stays the variant's, so
+    // what a row's descendants paint from it still paints. A fine pointer
+    // keeps the arms exactly. `cellOnImage` is the same for the
+    // `backgroundImage` variant (TreeList's row box).
+    backgroundImage: {
+      default: null,
+      [ENABLED]: {
+        default: null,
+        [PRESSED_ON]: {default: pressedOverlayImage, [COARSE]: 'none'},
+        [PRESSED_FADING]: {default: pressedOverlayImage, [COARSE]: 'none'},
+      },
+    },
+    // Under a finger the strength's own release (a main-thread animation)
+    // is dropped: the layer fades instead, on the compositor. A row whose
+    // descendant fades at the row's strength (a radio row's circle) brings
+    // it back with `pressedAlpha`. A fine pointer keeps it as the variant
+    // declares it (its clock and curve are untouched), Reduce Motion arm
+    // included: a reduced release under a fine pointer does not fade.
+    animationName: {
+      default: null,
+      [PRESSED_FADING]: {
+        default: pressRelease,
+        '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+          'none',
+        [COARSE]: 'none',
+      },
+    },
+    // The stacking context the layer needs, for a press only.
+    isolation: {
+      default: null,
+      [COARSE]: {default: null, [PRESSED_ANY]: 'isolate'},
+    },
+    // The whole layer is under a finger only, and only while a press is on
+    // or releasing: with a fine pointer none of it applies, and at rest a
+    // row's own `::before` is exactly as it was.
+    '::before': {
+      content: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [ENABLED]: {default: null, [PRESSED_ANY]: '""'},
+        },
+      },
+      position: {
+        default: null,
+        [COARSE]: {default: null, [PRESSED_ANY]: 'absolute'},
+      },
+      inset: {default: null, [COARSE]: {default: null, [PRESSED_ANY]: 0}},
+      zIndex: {default: null, [COARSE]: {default: null, [PRESSED_ANY]: -1}},
+      borderRadius: {
+        default: null,
+        [COARSE]: {default: null, [PRESSED_ANY]: 'inherit'},
+      },
+      pointerEvents: {
+        default: null,
+        [COARSE]: {default: null, [PRESSED_ANY]: 'none'},
+      },
+      backgroundColor: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [PRESSED_ANY]: colorVars['--color-overlay-pressed'],
+        },
+      },
+      // On at once while the press is believed, and while a selection hold
+      // keeps the row selected (its own animations move it from there);
+      // nothing transitions it.
+      opacity: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [PRESSED_ON]: 1,
+          [PRESSED_HELD]: 1,
+          [PRESSED_FADING]: 0,
+        },
+      },
+      animationName: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [ENABLED]: {default: null, [PRESSED_FADING]: cellRelease},
+        },
+      },
+      animationDuration: {
+        default: null,
+        [COARSE]: {default: null, [PRESSED_FADING]: CELL_RELEASE},
+      },
+      animationTimingFunction: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [PRESSED_FADING]: cellPressConsts.cellReleaseEase,
+        },
+      },
+      animationFillMode: {
+        default: null,
+        [COARSE]: {default: null, [PRESSED_FADING]: 'both'},
+      },
+      // The motion foundation's animator promotes the layer it animates (a
+      // held row's deselect) through this variable on the row, so the
+      // animation has its own compositing layer: iOS Safari keeps a script
+      // animation running through a busy main thread only on a layer.
+      willChange: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [PRESSED_ANY]: 'var(--astryx-motion-will-change-before, auto)',
+        },
+      },
+    },
+  },
+  /**
+   * `cell`'s own-image arms for a row on the `backgroundImage` variant
+   * (TreeList's row box), composed after `cell`: the variant's arms, its
+   * touch press paint yielding to the layer under a coarse primary pointer.
+   */
+  cellOnImage: {
+    backgroundImage: {
+      default: null,
+      [ENABLED]: {
+        default: null,
+        ':active': {
+          default: pressedImage,
+          [COARSE]: 'none',
+        },
+        [HOVER_HOVER]: {
+          default: null,
+          ':hover': hoverImage,
+          ':active': pressedImage,
+        },
+        [PRESSED_ON]: {default: pressedOverlayImage, [COARSE]: 'none'},
+        [PRESSED_FADING]: {default: pressedOverlayImage, [COARSE]: 'none'},
+      },
+    },
+  },
+  /**
+   * A control whose press lives on its own surface: Button (and the
+   * IconButton and ToggleButton built on it), composed after the
+   * `backgroundImage` variant. Under a coarse primary pointer the press is a
+   * `::before` layer under the label, present only while a press is on or
+   * fading, and its release is UIButton's (`button.highlight`): an opacity
+   * animation, which engines run on the compositor. At rest, and with any
+   * other pointer, nothing here applies: no layer, no
+   * `isolation`, and the variant's own paint and release, as before (the
+   * desktop rule, `spec:AST-017` FR59/DEC-25).
+   */
+  control: {
+    // The variant's arms, its touch paint yielding to the layer under a
+    // coarse primary pointer.
+    backgroundImage: {
+      default: null,
+      [ENABLED]: {
+        default: null,
+        ...pointerImageArms,
+        [PRESSED_ON]: {default: pressedOverlayImage, [COARSE]: 'none'},
+        [PRESSED_FADING]: {default: pressedOverlayImage, [COARSE]: 'none'},
+      },
+    },
+    ...strengthReleaseOutsideCoarse,
+    // The layer and its stacking context exist only while a press is on or
+    // fading: at rest the control is no stacking context and has no
+    // `::before` of its own, so a `::before` a caller styles keeps its
+    // opacity, z-index and position.
+    isolation: {
+      default: null,
+      [COARSE]: {
+        default: null,
+        [ENABLED]: {default: null, [PRESSED_LIVE]: 'isolate'},
+      },
+    },
+    '::before': {
+      content: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [ENABLED]: {default: null, [PRESSED_LIVE]: '""'},
+        },
+      },
+      position: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [ENABLED]: {default: null, [PRESSED_LIVE]: 'absolute'},
+        },
+      },
+      inset: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [ENABLED]: {default: null, [PRESSED_LIVE]: 0},
+        },
+      },
+      zIndex: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [ENABLED]: {default: null, [PRESSED_LIVE]: -1},
+        },
+      },
+      borderRadius: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [ENABLED]: {default: null, [PRESSED_LIVE]: 'inherit'},
+        },
+      },
+      pointerEvents: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [ENABLED]: {default: null, [PRESSED_LIVE]: 'none'},
+        },
+      },
+      backgroundColor: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [ENABLED]: {
+            default: null,
+            [PRESSED_LIVE]: colorVars['--color-overlay-pressed'],
+          },
+        },
+      },
+      // Shown at once on the on arm; the release animates 1 → 0 and leaves
+      // it at 0 until the controller removes the attribute.
+      opacity: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [ENABLED]: {default: null, [PRESSED_ON]: 1, [PRESSED_FADING]: 0},
+        },
+      },
+      animationName: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [ENABLED]: {default: null, [PRESSED_FADING]: controlRelease},
+        },
+      },
+      animationDuration: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [PRESSED_FADING]: {
+            default: CONTROL_RELEASE_DURATION,
+            '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+              REDUCED_MOTION_RELEASE_DURATION,
+          },
+        },
+      },
+      animationTimingFunction: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [PRESSED_FADING]: {
+            default: CONTROL_RELEASE_EASE,
+            '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+              reducedMotionFadeConsts.easing,
+          },
+        },
+      },
+      animationFillMode: {
+        default: null,
+        [COARSE]: {default: null, [PRESSED_FADING]: 'both'},
+      },
+    },
+  },
+  /**
+   * A control whose overlay is a `::after` over its content: the cards,
+   * composed after `pressedAlpha`. The card owns that `::after` (its box, its
+   * hover and mouse colour, and the press's image at the strength). Under a
+   * coarse primary pointer the strength holds while the press fades and the
+   * `::after`'s opacity releases the paint on the control clock, on the
+   * compositor. With any other pointer nothing here applies: the strength's
+   * own release runs, as before (the desktop rule, `spec:AST-017` FR59/DEC-25).
+   */
+  controlOver: {
+    ...strengthReleaseOutsideCoarse,
+    '::after': {
+      animationName: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [ENABLED]: {default: null, [PRESSED_FADING]: controlRelease},
+        },
+      },
+      animationDuration: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [PRESSED_FADING]: {
+            default: CONTROL_RELEASE_DURATION,
+            '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+              REDUCED_MOTION_RELEASE_DURATION,
+          },
+        },
+      },
+      animationTimingFunction: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [PRESSED_FADING]: {
+            default: CONTROL_RELEASE_EASE,
+            '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+              reducedMotionFadeConsts.easing,
+          },
+        },
+      },
+      animationFillMode: {
+        default: null,
+        [COARSE]: {default: null, [PRESSED_FADING]: 'both'},
+      },
+    },
   },
 });

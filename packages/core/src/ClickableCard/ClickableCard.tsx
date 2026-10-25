@@ -376,6 +376,10 @@ export function ClickableCard({
           // The touch press's strength and release, on the element the
           // controller writes to; the `::after` above paints off it.
           !isDisabled && interactionOverlayStyles.pressedAlpha,
+          // Under a coarse primary pointer, the press's release runs on the
+          // `::after`'s opacity, on the compositor; any other pointer keeps
+          // the strength's release.
+          !isDisabled && interactionOverlayStyles.controlOver,
           !isDisabled && hasBorder && styles.borderedHoverOnPointer,
           isDisabled && styles.disabled,
           xstyleProp,

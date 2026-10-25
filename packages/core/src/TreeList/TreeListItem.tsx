@@ -4,7 +4,8 @@
 
 /**
  * @file TreeListItem.tsx
- * @input Uses React, StyleX, theme tokens, TreeListBranches
+ * @input Uses React, StyleX, theme tokens, TreeListBranches, the shared press
+ *   overlays and the compositor press layer
  * @output Exports TreeListItem component (internal, not publicly exported)
  * @position Internal implementation; consumed by TreeList.tsx
  *
@@ -27,6 +28,7 @@ import {
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
+import {useInteractionModalityTracking} from '../utils/interactionModality';
 import {
   hasInteractiveAncestor,
   useClickableContainer,
@@ -405,7 +407,12 @@ export function TreeListItem({
   setSize,
   isTabbable,
 }: TreeListItemInternalProps) {
-  const pressable = usePressFeedback();
+  // A row's press is a cell's: it waits UIScrollView's content-touch delay,
+  // yields to the pan, and releases on the deselect clock.
+  const pressable = usePressFeedback({profile: 'cell'});
+  // A selection hold returns focus to this row after a pop; its ring follows
+  // how the user last interacted (List/selectionHold.ts).
+  useInteractionModalityTracking();
   const t = useTranslator();
   const labelId = useId();
   const descriptionId = useId();
@@ -679,6 +686,10 @@ export function TreeListItem({
                   densityStyles[density],
                   styles.interactive,
                   interactionOverlayStyles.backgroundImage,
+                  // The touch press on a compositor layer (after the
+                  // overlay, whose own touch paint it turns off).
+                  interactionOverlayStyles.cell,
+                  interactionOverlayStyles.cellOnImage,
                   isDisabled && styles.disabled,
                   isSelected && styles.selected,
                   xstyle,
