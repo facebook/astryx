@@ -152,10 +152,6 @@ function restingDismissOffset(
     shortestDetentHeight * (isUIKit ? 0.5 : DEFAULT_DISMISS_OVERSHOOT_RATIO)
   );
 }
-// Under a mouse the release speed is today's: the pointer's speed over
-// its last stretch, not between its last two samples (one slow sample before
-// the lift must not cancel a throw), and none after a pause before the lift.
-const VELOCITY_WINDOW_MS = 100;
 // The touch path drives the sheet through the same machinery the pointer path
 // uses, by handing it a pointer-shaped object built from a `Touch`. On iOS
 // Safari that object is indistinguishable from the real thing: WebKit raises
@@ -602,11 +598,6 @@ export function useSheetGestures({
     // The finger's positions on the timestamps their events carry, for the
     // release velocity (the gesture foundation's estimator, UIKit's filter).
     tracker: VelocityTracker;
-    // Today's estimator, under a mouse: the samples of the last
-    // VELOCITY_WINDOW_MS, the speed over them (px/ms) and the last move's time.
-    samples: {t: number; y: number}[];
-    windowVelocity: number;
-    lastTime: number;
     height: number;
     baseOffset: number;
     baseLayoutOffset: number;
@@ -672,15 +663,16 @@ export function useSheetGestures({
   // Set while a drag-dismissed sheet is carried off screen by its release
   // spring (see SheetGestureExit).
   const gestureExitRef = useRef<SheetGestureExit | null>(null);
-  // The mounted sheet, as state: the dialog-level touch listeners (see
-  // `drawnSheetRect`) attach once it is in the DOM.
-  const [sheetNode, setSheetNode] = useState<HTMLElement | null>(null);
+  // Counts the sheet's mounts: the dialog-level touch listeners (see
+  // `drawnSheetRect`) attach once it is in the DOM. The node itself stays in
+  // `sheetElRef`, out of React state.
+  const [sheetMounts, setSheetMounts] = useState(0);
   const sheetRef = useCallback(
     (node: HTMLElement | null) => {
       observerRef.current?.disconnect();
       observerRef.current = null;
       sheetElRef.current = node;
-      setSheetNode(node);
+      setSheetMounts(mounts => mounts + 1);
       animator.attach(node);
       if (!node || typeof ResizeObserver === 'undefined') {
         if (node) {
@@ -1356,9 +1348,6 @@ export function useSheetGestures({
         pointerId: event.pointerId,
         startCoord: start,
         tracker,
-        samples: [{t: event.timeStamp, y: event.clientY}],
-        windowVelocity: 0,
-        lastTime: event.timeStamp,
         height: sheetHeight,
         baseOffset,
         baseLayoutOffset,
@@ -1445,23 +1434,6 @@ export function useSheetGestures({
       // event's own timestamp: when the finger was there, however late a busy
       // main thread gets to the event.
       state.tracker.add(0, event.clientY, event.timeStamp);
-      if (event.timeStamp > state.lastTime) {
-        state.lastTime = event.timeStamp;
-        state.samples.push({t: event.timeStamp, y: event.clientY});
-        // Drop what fell out of the window while a partner remains: a throw
-        // that begins after a rest reads its own speed.
-        while (
-          state.samples.length > 2 &&
-          event.timeStamp - state.samples[0].t > VELOCITY_WINDOW_MS
-        ) {
-          state.samples.shift();
-        }
-        const first = state.samples[0];
-        // A lone partner older than the window says only where the finger
-        // rested; the move it precedes is read as if it took the window.
-        const span = Math.min(event.timeStamp - first.t, VELOCITY_WINDOW_MS);
-        state.windowVelocity = span > 0 ? (event.clientY - first.y) / span : 0;
-      }
       const {offsets, peekOffset} = resolveDetents(state.height);
 
       const raw = state.baseOffset + delta;
@@ -1564,14 +1536,13 @@ export function useSheetGestures({
         state.tracker.add(0, event.clientY, event.timeStamp);
       }
       const velocity = state.tracker.velocity(event.timeStamp).y;
-      // Today's inputs, for a release under a mouse.
+      // Today's inputs, for a release under a mouse: the drag's direction
+      // and travel, and the release velocity every pointer reads
+      // (spec:AST-100 FR2, FR4).
       const today = {
         direction: delta === 0 ? 0 : delta > 0 ? 1 : -1,
         travel: Math.abs(delta),
-        velocity:
-          event.timeStamp - state.lastTime < VELOCITY_WINDOW_MS
-            ? state.windowVelocity * 1000
-            : 0,
+        velocity,
       };
       dragStateRef.current = null;
       unlockSelection();
@@ -1763,8 +1734,9 @@ export function useSheetGestures({
   const caughtTouchRef = useRef<number | null>(null);
   const suppressClickUntilRef = useRef(-Infinity);
   useEffect(() => {
+    const sheetNode = sheetElRef.current;
     const dialog = sheetNode?.closest('dialog');
-    if (!isOpen || dialog == null) {
+    if (!isOpen || sheetNode == null || dialog == null) {
       return;
     }
     const asPointer = (touch: Touch, timeStamp: number) =>
@@ -1892,7 +1864,7 @@ export function useSheetGestures({
       dialog.removeEventListener('click', onClick, true);
       caughtTouchRef.current = null;
     };
-  }, [drawnSheetRect, isOpen, sheetNode]);
+  }, [drawnSheetRect, isOpen, sheetMounts]);
 
   const bodyRef = useCallback((node: HTMLElement | null) => {
     // `timeStamp` is the touch event's own: when the finger was there, on the
