@@ -62,7 +62,7 @@ describe('ChatDictationButton', () => {
       ?.getAttribute('style');
     expect(barStyle).toContain('color-mix(in srgb');
     expect(barStyle).toContain(colorVars['--color-accent']);
-    expect(barStyle).toContain(colorVars['--color-error-emphasized']);
+    expect(barStyle).toContain(colorVars['--color-error']);
     expect(barStyle).not.toContain('hsl(');
   });
 

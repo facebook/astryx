@@ -7,18 +7,18 @@
  * @position Theme generation step for architecture:theme-compilation INV17,
  *   called by generateThemeRules for runtime and static output alike.
  *
- * A theme that sets a status source (its base `--color-success`,
- * `--color-warning`, or `--color-error`, or its accent for Info) gets every
- * status role it leaves unset, computed against its own surfaces:
- * - `--color-text-<status>`: the status hue at 4.5:1 on surface and card;
- * - `--color-<status>-emphasized`: the hue, adjusted until `--color-on-<status>`
- *   reaches 4.5:1 on it;
- * - `--color-info-muted`: the Info hue at Core's pale strength (released
- *   success, warning, and error muted tokens are never derived);
- * - `--color-on-<status>-muted`: the hue at 4.5:1 on the pale fill over the
- *   surface.
- * Icon and border roles alias the text role through the scoped status-role
- * aliases in generateThemeRules, so they are not computed here.
+ * Each status (`info`, `success`, `warning`, `error`) has one strong fill,
+ * `--color-<status>`. A theme that sets a fill, its content, its pale fill, or
+ * a surface gets the roles it leaves unset, computed against its own colours:
+ * - `--color-on-<status>`: the theme's light or dark content colour
+ *   (`--color-on-dark` or `--color-on-light`), whichever contrasts more with
+ *   the fill;
+ * - `--color-text-<status>`: the fill's hue at 4.5:1 on surface and card;
+ * - `--color-on-<status>-muted`: the fill's hue at 4.5:1 on the pale fill over
+ *   the surface.
+ * Fills are never derived: a fill a theme does not set is Core's. Icon and
+ * border roles alias the text role through the scoped status-role aliases in
+ * generateThemeRules, so they are not computed here.
  */
 
 import {colorDefaults} from './tokens.stylex';
@@ -35,18 +35,16 @@ import type {RGBA} from '../utils/color';
 export const STATUS_NAMES = ['info', 'success', 'warning', 'error'] as const;
 export type StatusName = (typeof STATUS_NAMES)[number];
 
-/** Core's pale-fill strength for a derived Info fill. */
 type ResolvedThemeMode = 'light' | 'dark';
 
-const PALE_ALPHA: Record<ResolvedThemeMode, number> = {light: 0.2, dark: 0.25};
 const TEXT_RATIO = 4.5;
 // Solve slightly above the floor so rounding to #RRGGBB never lands below it.
 const SOLVE_RATIO = TEXT_RATIO + 0.08;
 const MODES: ReadonlyArray<ResolvedThemeMode> = ['light', 'dark'];
 
-/** The token whose presence in a theme makes its status roles derivable. */
+/** The strong fill of a status, the source its other roles derive from. */
 export function statusSourceToken(status: StatusName): string {
-  return status === 'info' ? '--color-accent' : `--color-${status}`;
+  return `--color-${status}`;
 }
 
 function splitTopLevel(input: string): string[] {
@@ -153,31 +151,14 @@ function statusHue(
   resolved: Record<string, string>,
   mode: ResolvedThemeMode,
 ): RGBA | null {
-  const candidates =
-    status === 'info'
-      ? [resolved['--color-accent'], resolved['--color-icon-blue']]
-      : [resolved[`--color-${status}`]];
-  for (const value of candidates) {
-    const color = parseConcreteColor(value);
-    if (color !== null && isChromatic(color)) {
-      return {...color, a: 1};
-    }
+  const color = parseConcreteColor(resolved[statusSourceToken(status)]);
+  if (color !== null && isChromatic(color)) {
+    return {...color, a: 1};
   }
-  // A grey or unresolvable source falls back to Core's own status hue.
-  const fallback = parseConcreteColor(
-    status === 'info'
-      ? core()[mode]['--color-icon-blue']
-      : core()[mode][`--color-${status}`],
-  );
+  // A grey source falls back to Core's own status hue, so derived text stays
+  // chromatic.
+  const fallback = parseConcreteColor(core()[mode][statusSourceToken(status)]);
   return fallback === null ? null : {...fallback, a: 1};
-}
-
-function sourceIsHue(
-  status: StatusName,
-  resolved: Record<string, string>,
-): boolean {
-  const source = parseConcreteColor(resolved[statusSourceToken(status)]);
-  return source !== null && source.a >= 1 && isChromatic(source);
 }
 
 function opaqueOver(color: RGBA, under: RGBA): RGBA {
@@ -185,9 +166,8 @@ function opaqueOver(color: RGBA, under: RGBA): RGBA {
 }
 
 interface ModeRoles {
+  on?: RGBA;
   text?: RGBA;
-  emphasized?: RGBA;
-  muted?: RGBA;
   onMuted?: RGBA;
 }
 
@@ -203,52 +183,39 @@ function deriveForMode(
   const hue = statusHue(status, resolved, mode);
   const surface = parseConcreteColor(resolved['--color-background-surface']);
   const cardColor = parseConcreteColor(resolved['--color-background-card']);
-  const on = parseConcreteColor(
-    resolved[`--color-on-${status}`] ??
-      (status === 'info' ? resolved['--color-on-accent'] : undefined),
-  );
-  const muted =
-    status === 'info'
-      ? hue && {...hue, a: PALE_ALPHA[mode]}
-      : parseConcreteColor(resolved[`--color-${status}-muted`]);
+  const muted = parseConcreteColor(resolved[`--color-${status}-muted`]);
+  const onDark = parseConcreteColor(resolved['--color-on-dark']);
+  const onLight = parseConcreteColor(resolved['--color-on-light']);
   if (
     source === null ||
     hue === null ||
     surface === null ||
     cardColor === null ||
-    on === null ||
-    muted === null
+    muted === null ||
+    onDark === null ||
+    onLight === null
   ) {
     return null;
   }
   const opaqueSurface = opaqueOver(surface, {r: 255, g: 255, b: 255, a: 1});
   const card = opaqueOver(cardColor, opaqueSurface);
+  const fill = opaqueOver(source, opaqueSurface);
   const roles: ModeRoles = {};
+
+  const lightInk = opaqueOver(onDark, fill);
+  const darkInk = opaqueOver(onLight, fill);
+  roles.on =
+    contrastRatio(lightInk, fill) >= contrastRatio(darkInk, fill)
+      ? lightInk
+      : darkInk;
 
   const text = solveLightness(hue, [opaqueSurface, card], SOLVE_RATIO);
   if (text !== null) {
     roles.text = text;
   }
 
-  const onOpaque = opaqueOver(on, hue);
-  // A source that already carries its content keeps the scoped alias to
-  // that source; only a source that needs adjusting, or a grey Info accent,
-  // gets a concrete value.
-  if (
-    contrastRatio(onOpaque, hue) < TEXT_RATIO ||
-    !sourceIsHue(status, resolved)
-  ) {
-    const emphasized = solveLightness(hue, [onOpaque], SOLVE_RATIO);
-    if (emphasized !== null) {
-      roles.emphasized = emphasized;
-    }
-  }
-
-  if (status === 'info') {
-    roles.muted = muted;
-  }
-  const fill = composite(muted.a < 1 ? muted : {...muted, a: 1}, opaqueSurface);
-  const onMuted = solveLightness(hue, [fill], SOLVE_RATIO);
+  const pale = composite(muted.a < 1 ? muted : {...muted, a: 1}, opaqueSurface);
+  const onMuted = solveLightness(hue, [pale], SOLVE_RATIO);
   if (onMuted !== null) {
     roles.onMuted = onMuted;
   }
@@ -256,62 +223,52 @@ function deriveForMode(
 }
 
 const ROLE_TOKENS: Record<keyof ModeRoles, (status: StatusName) => string> = {
+  on: s => `--color-on-${s}`,
   text: s => `--color-text-${s}`,
-  emphasized: s => `--color-${s}-emphasized`,
-  muted: s => `--color-${s}-muted`,
   onMuted: s => `--color-on-${s}-muted`,
 };
 
 /**
  * Concrete `light-dark()` values for every status role a theme leaves unset
- * while setting that status's source. Authored roles are never overridden.
+ * while setting a colour that role is measured against. Authored roles are
+ * never overridden.
  */
 export function deriveStatusRoleTokens(
   tokens: Record<string, string>,
   localTokens: Record<string, string> = {},
 ): [string, string][] {
   const authored = new Set(Object.keys(tokens));
-  // A status re-derives when the theme sets any colour its roles are
-  // measured against: its source, its content, its pale fill, or a surface.
   const surfaceSet =
     authored.has('--color-background-surface') ||
     authored.has('--color-background-card');
-  const sources = STATUS_NAMES.filter(
-    s =>
-      surfaceSet ||
-      authored.has(statusSourceToken(s)) ||
-      authored.has(`--color-on-${s}`) ||
-      (s === 'info'
-        ? authored.has('--color-on-accent') || authored.has('--color-icon-blue')
-        : authored.has(`--color-${s}-muted`)),
-  );
-  if (sources.length === 0) {
-    return [];
-  }
+  const inkSet =
+    authored.has('--color-on-dark') || authored.has('--color-on-light');
   const resolved = resolveModes({...localTokens, ...tokens});
   const entries: [string, string][] = [];
-  for (const status of sources) {
+  for (const status of STATUS_NAMES) {
+    const fillSet = authored.has(statusSourceToken(status));
+    const mutedSet = authored.has(`--color-${status}-muted`);
+    // Which roles this theme's own colours affect.
+    const affects: Record<keyof ModeRoles, boolean> = {
+      on: fillSet || inkSet,
+      text: fillSet || surfaceSet,
+      onMuted: fillSet || mutedSet || surfaceSet,
+    };
+    if (!affects.on && !affects.text && !affects.onMuted) {
+      continue;
+    }
     const perMode = MODES.map(mode =>
       deriveForMode(status, resolved[mode], mode),
     );
-    const hues = MODES.map(mode => statusHue(status, resolved[mode], mode));
     if (perMode.some(r => r === null)) {
       continue;
     }
     for (const key of Object.keys(ROLE_TOKENS) as (keyof ModeRoles)[]) {
-      if (key === 'muted' && status !== 'info') {
-        continue;
-      }
       const token = ROLE_TOKENS[key](status);
-      if (authored.has(token)) {
+      if (!affects[key] || authored.has(token)) {
         continue;
       }
-      let [light, dark] = perMode.map(r => r?.[key]);
-      if (key === 'emphasized' && (light !== undefined || dark !== undefined)) {
-        // One mode needed adjusting: the other keeps its source hue.
-        light ??= hues[0] ?? undefined;
-        dark ??= hues[1] ?? undefined;
-      }
+      const [light, dark] = perMode.map(r => r?.[key]);
       if (light === undefined || dark === undefined) {
         continue;
       }

@@ -9,10 +9,10 @@
  * and dark mode:
  * - `--color-text-<status>` reaches 4.5:1 on the surface and card;
  * - `--color-icon-<status>` and `--color-border-<status>` reach 3:1 there;
- * - `--color-on-<status>` reaches 4.5:1 on `--color-<status>-emphasized`;
+ * - `--color-on-<status>` reaches 4.5:1 on the strong fill `--color-<status>`;
  * - `--color-on-<status>-muted` reaches 4.5:1 on the pale fill over the surface;
  * - every status fill and text colour is chromatic.
- * It also pins that the released base status tokens keep their values.
+ * It also pins Core's released fill values.
  *
  * @input Core defaults, the seven first-party theme objects, and theme generation.
  * @output Fails naming the theme, mode, role, and measured value.
@@ -118,9 +118,9 @@ describe('status roles meet the INV11 floors', () => {
         check(`${role}-${s} on surface`, contrastRatio(c, surface), 3);
         check(`${role}-${s} on card`, contrastRatio(c, card), 3);
       }
-      const fill = opaque(color(t, `--color-${s}-emphasized`), surface);
+      const fill = opaque(color(t, `--color-${s}`), surface);
       check(
-        `on-${s} on ${s}-emphasized`,
+        `on-${s} on ${s}`,
         contrastRatio(color(t, `--color-on-${s}`), fill),
         4.5,
       );
@@ -132,7 +132,7 @@ describe('status roles meet the INV11 floors', () => {
       );
       for (const role of [
         `--color-text-${s}`,
-        `--color-${s}-emphasized`,
+        `--color-${s}`,
         `--color-${s}-muted`,
       ]) {
         if (!isChromatic(color(t, role)))
@@ -224,7 +224,7 @@ describe('component-scoped pale status fills keep their content at 4.5:1 (INV11)
   });
 });
 
-describe('released base status tokens keep their values', () => {
+describe("Core's released status fills keep their values", () => {
   // Core's released defaults (light, dark).
   const RELEASED = {
     '--color-success': ['#0D8626', '#0D8626'],
@@ -241,10 +241,10 @@ describe('theme generation derives a complete status set (INV17)', () => {
   const minimal = defineTheme({
     name: 'status-minimal',
     tokens: {
+      '--color-info': 'light-dark(#1F6FEB, #79C0FF)',
       '--color-success': 'light-dark(#3FB950, #3FB950)',
       '--color-warning': 'light-dark(#D29922, #D29922)',
       '--color-error': 'light-dark(#F85149, #F85149)',
-      '--color-accent': 'light-dark(#6E40C9, #A371F7)',
     },
   });
 
@@ -255,29 +255,37 @@ describe('theme generation derives a complete status set (INV17)', () => {
       expect(
         contrastRatio(color(t, `--color-text-${s}`), surface),
       ).toBeGreaterThanOrEqual(4.5);
+      const fill = opaque(color(t, `--color-${s}`), surface);
       expect(
-        contrastRatio(
-          color(t, `--color-on-${s}`),
-          opaque(color(t, `--color-${s}-emphasized`), surface),
-        ),
+        contrastRatio(opaque(color(t, `--color-on-${s}`), fill), fill),
       ).toBeGreaterThanOrEqual(4.5);
       expect(isChromatic(color(t, `--color-text-${s}`))).toBe(true);
     }
   });
 
-  it('derives Info from the blue hue when the accent is grey', () => {
-    const grey = defineTheme({
-      name: 'status-grey-accent',
-      tokens: {'--color-accent': 'light-dark(#555555, #BBBBBB)'},
-    });
-    for (const mode of MODES) {
-      const t = effectiveTokens(grey, mode);
-      expect(isChromatic(color(t, '--color-info-emphasized'))).toBe(true);
-      expect(isChromatic(color(t, '--color-text-info'))).toBe(true);
+  it('keeps the fills the theme sets and derives the content on them', () => {
+    const emitted = emittedRootTokens(minimal);
+    expect(emitted['--color-success']).toBe('light-dark(#3FB950, #3FB950)');
+    for (const s of STATUSES) {
+      expect(emitted[`--color-on-${s}`]).toMatch(/^light-dark\(#/);
     }
   });
 
-  it("falls back to Core's hue when a base status colour is grey", () => {
+  it('derives dark content on a light fill', () => {
+    const theme = defineTheme({
+      name: 'status-light-fill',
+      tokens: {'--color-warning': '#F2C00B'},
+    });
+    for (const mode of MODES) {
+      const t = effectiveTokens(theme, mode);
+      const fill = opaque(color(t, '--color-warning'), WHITE);
+      expect(
+        contrastRatio(opaque(color(t, '--color-on-warning'), fill), fill),
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it("falls back to Core's hue for text when a fill is grey", () => {
     const grey = defineTheme({
       name: 'status-grey-success',
       tokens: {'--color-success': 'light-dark(#666666, #AAAAAA)'},
@@ -285,19 +293,18 @@ describe('theme generation derives a complete status set (INV17)', () => {
     for (const mode of MODES) {
       const t = effectiveTokens(grey, mode);
       expect(isChromatic(color(t, '--color-text-success'))).toBe(true);
-      expect(isChromatic(color(t, '--color-success-emphasized'))).toBe(true);
     }
   });
 
-  it('keeps aliases for a source that is not a concrete colour', () => {
+  it('keeps aliases for a fill that is not a concrete colour', () => {
     const theme = defineTheme({
       name: 'status-unresolved',
       tokens: {'--color-success': 'var(--brand-success)'},
     });
     const emitted = emittedRootTokens(theme);
-    expect(emitted['--color-success-emphasized']).toBe('var(--color-success)');
-    // Unset here, so Core's own alias to the hue text token applies.
+    // Unset here, so Core's own aliases to the hue text token apply.
     expect(emitted).not.toHaveProperty('--color-text-success');
+    expect(emitted).not.toHaveProperty('--color-on-success');
     expect(emitted).not.toHaveProperty('--color-on-success-muted');
   });
 
@@ -313,10 +320,9 @@ describe('theme generation derives a complete status set (INV17)', () => {
     expect(emitted['--color-text-success'] ?? 'alias').not.toMatch(
       /^light-dark\(#/,
     );
-    expect(emitted['--color-success-emphasized']).toBe('var(--color-success)');
   });
 
-  it('re-derives in an adaptation rule that changes a status colour', () => {
+  it('re-derives in an adaptation rule that changes a fill', () => {
     const theme = defineTheme({
       name: 'status-adaptive',
       tokens: {'--color-success': '#3FB950'},
@@ -333,36 +339,62 @@ describe('theme generation derives a complete status set (INV17)', () => {
     expect(css).toContain('prefers-contrast: more');
     const rule = css.slice(css.indexOf('prefers-contrast: more'));
     expect(rule).toMatch(/--color-text-success: light-dark\(#/);
+    expect(rule).toMatch(/--color-on-success: light-dark\(#/);
   });
 
-  it('returns a root-derived fill to its alias in a rule whose colour carries its content', () => {
+  it('derives in a rule when only that rule sets a fill', () => {
     const theme = defineTheme({
-      name: 'status-adaptive-fill',
-      tokens: {'--color-success': '#7EE787', '--color-on-success': '#FFFFFF'},
+      name: 'status-rule-only',
+      tokens: {},
       adaptations: {
         rules: [
           {
             when: {contrast: 'more'},
-            value: {tokens: {'--color-success': '#0A5C2E'}},
+            value: {tokens: {'--color-success': '#ABCDEF'}},
           },
         ],
       },
     });
     const css = allThemeCSS(theme);
-    expect(emittedRootTokens(theme)['--color-success-emphasized']).toMatch(
-      /^light-dark\(#/,
-    );
     const rule = css.slice(css.indexOf('prefers-contrast: more'));
-    expect(rule).toContain('--color-success-emphasized: var(--color-success);');
+    expect(rule).toMatch(/--color-on-success: light-dark\(#/);
+    expect(rule).toContain('--color-icon-success: var(--color-text-success);');
+  });
+
+  it('aliases a hue text token a media surface sets, over a derived root role', () => {
+    const theme = defineTheme({
+      name: 'status-media',
+      tokens: {'--color-success': '#3FB950'},
+      onDark: {tokens: {'--color-text-green': '#A5F690'}},
+    });
+    const css = allThemeCSS(theme);
+    expect(css).toContain('[data-astryx-media="dark"]');
+    const media = css.slice(css.indexOf('[data-astryx-media="dark"]'));
+    expect(media).toContain('--color-text-success: var(--color-text-green);');
+  });
+
+  it('re-derives text when a theme changes only a surface', () => {
+    const darkCard = defineTheme({
+      name: 'status-surface-only',
+      tokens: {
+        '--color-background-surface': '#101010',
+        '--color-background-card': '#101010',
+      },
+    });
+    for (const mode of MODES) {
+      const t = effectiveTokens(darkCard, mode);
+      const surface = opaque(color(t, '--color-background-surface'), WHITE);
+      for (const status of STATUSES) {
+        expect(
+          contrastRatio(color(t, `--color-text-${status}`), surface),
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    }
   });
 
   it('resolves every fixture the same way in JavaScript as in its CSS', () => {
     const fixtures = [
       minimal,
-      defineTheme({
-        name: 'js-grey-accent',
-        tokens: {'--color-accent': 'light-dark(#555555, #BBBBBB)'},
-      }),
       defineTheme({
         name: 'js-grey-base',
         tokens: {'--color-success': 'light-dark(#666666, #AAAAAA)'},
@@ -396,7 +428,7 @@ describe('theme generation derives a complete status set (INV17)', () => {
             `--color-text-${status}`,
             `--color-icon-${status}`,
             `--color-border-${status}`,
-            `--color-${status}-emphasized`,
+            `--color-on-${status}`,
             `--color-on-${status}-muted`,
           ]) {
             expect([theme.name, mode, role, fromJs[role]]).toEqual([
@@ -408,96 +440,6 @@ describe('theme generation derives a complete status set (INV17)', () => {
           }
         }
       }
-    }
-  });
-
-  it('returns a root-derived fill to its alias when a rule changes only its content', () => {
-    const theme = defineTheme({
-      name: 'status-rule-on-only',
-      tokens: {'--color-success': '#22C55E', '--color-on-success': '#FFFFFF'},
-      adaptations: {
-        rules: [
-          {
-            when: {contrast: 'more'},
-            value: {tokens: {'--color-on-success': '#333333'}},
-          },
-        ],
-      },
-    });
-    const css = allThemeCSS(theme);
-    expect(emittedRootTokens(theme)['--color-success-emphasized']).toMatch(
-      /^light-dark\(#/,
-    );
-    const rule = css.slice(css.indexOf('prefers-contrast: more'));
-    expect(rule).toContain('--color-success-emphasized: var(--color-success);');
-  });
-
-  it('keeps a rule-derived fill when the root never set that status colour', () => {
-    const theme = defineTheme({
-      name: 'status-rule-only',
-      tokens: {},
-      adaptations: {
-        rules: [
-          {
-            when: {contrast: 'more'},
-            value: {
-              tokens: {
-                '--color-success': '#ABCDEF',
-                '--color-on-success': '#FFFFFF',
-              },
-            },
-          },
-        ],
-      },
-    });
-    const css = allThemeCSS(theme);
-    const rule = css.slice(css.indexOf('prefers-contrast: more'));
-    expect(rule).toMatch(/--color-success-emphasized: light-dark\(#/);
-    expect(rule).not.toContain(
-      '--color-success-emphasized: var(--color-success);',
-    );
-    expect(rule).toContain('--color-icon-success: var(--color-text-success);');
-  });
-
-  it('aliases a status colour a media surface sets, over a derived root role', () => {
-    const theme = defineTheme({
-      name: 'status-media',
-      tokens: {'--color-success': '#3FB950', '--color-on-success': '#3FB950'},
-      onDark: {tokens: {'--color-success': '#A5F690'}},
-    });
-    const css = allThemeCSS(theme);
-    expect(css).toContain('[data-astryx-media="dark"]');
-    const media = css.slice(css.indexOf('[data-astryx-media="dark"]'));
-    expect(media).toContain(
-      '--color-success-emphasized: var(--color-success);',
-    );
-  });
-
-  it("re-derives when a theme changes only a surface or a fill's content", () => {
-    const darkCard = defineTheme({
-      name: 'status-surface-only',
-      tokens: {
-        '--color-background-surface': '#101010',
-        '--color-background-card': '#101010',
-      },
-    });
-    const onOnly = defineTheme({
-      name: 'status-on-only',
-      tokens: {'--color-on-success': '#4A4A4A'},
-    });
-    for (const mode of MODES) {
-      const t = effectiveTokens(darkCard, mode);
-      const surface = opaque(color(t, '--color-background-surface'), WHITE);
-      for (const status of STATUSES) {
-        expect(
-          contrastRatio(color(t, `--color-text-${status}`), surface),
-        ).toBeGreaterThanOrEqual(4.5);
-      }
-      const o = effectiveTokens(onOnly, mode);
-      const fill = opaque(color(o, '--color-success-emphasized'), WHITE);
-      expect(
-        contrastRatio(opaque(color(o, '--color-on-success'), fill), fill),
-      ).toBeGreaterThanOrEqual(4.5);
     }
   });
 
@@ -527,12 +469,12 @@ describe('theme generation derives a complete status set (INV17)', () => {
     expect(emitted['--color-icon-success']).toBe('var(--color-text-success)');
   });
 
-  it('never derives the released muted tokens', () => {
+  it('never derives a fill or a pale fill', () => {
     const emitted = emittedRootTokens(minimal);
-    expect(emitted).not.toHaveProperty('--color-success-muted');
-    expect(emitted).not.toHaveProperty('--color-warning-muted');
-    expect(emitted).not.toHaveProperty('--color-error-muted');
-    expect(emitted).toHaveProperty('--color-info-muted');
+    for (const s of STATUSES) {
+      expect(emitted[`--color-${s}`]).toBe(minimal.tokens[`--color-${s}`]);
+      expect(emitted).not.toHaveProperty(`--color-${s}-muted`);
+    }
   });
 
   it('keeps a value the theme sets, and icon and border follow it', () => {

@@ -173,7 +173,7 @@ const swipeVariantStyles = stylex.create({
     color: colorVars['--color-on-accent'],
   },
   destructive: {
-    backgroundColor: colorVars['--color-error-emphasized'],
+    backgroundColor: colorVars['--color-error'],
     color: colorVars['--color-on-error'],
     // Forced colors replace the fill with Canvas; a border keeps the
     // destructive fill's shape visible (architecture:theme-tokens INV11). A

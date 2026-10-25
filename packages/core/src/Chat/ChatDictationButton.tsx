@@ -134,7 +134,7 @@ export function ChatDictationButton({
   const clippingStrength = Math.min((rawVolume - 0.2) / 0.1, 1) * 100;
 
   const barColor = isClipping
-    ? `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-error-emphasized']} ${clippingStrength}%)`
+    ? `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-error']} ${clippingStrength}%)`
     : colorVars['--color-accent'];
 
   const {barWidth, barGap, barMaxHeight} = SIZE_CONFIG[size];

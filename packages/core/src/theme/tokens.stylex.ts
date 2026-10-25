@@ -56,30 +56,23 @@ export const colorDefaults = {
   '--color-background-inverted': 'light-dark(#0A1317, #FFFFFF)',
   '--color-background-error-inverted': 'light-dark(#AA071E, #E3193B)',
 
-  // Status/Sentiment. The base success/warning/error tokens are released and
-  // keep their values; Astryx components use the surface roles below
-  // (architecture:theme-tokens INV11).
+  // Status fills (architecture:theme-tokens INV11). Each `--color-<status>` is
+  // the strong status fill, and `--color-on-<status>` is content on it at
+  // 4.5:1 or more. `-muted` is the pale fill, with `--color-on-<status>-muted`.
+  // Info is independent of the accent.
+  '--color-info': 'light-dark(#0064E0, #0064E0)',
+  '--color-info-muted': 'light-dark(#0082FB33, #0082FB3F)',
+  '--color-on-info': 'light-dark(#FFFFFF, #FFFFFF)',
   '--color-success': 'light-dark(#0D8626, #0D8626)',
   '--color-success-muted': 'light-dark(#0B991F33, #0B991F3F)',
   '--color-on-success': 'light-dark(#FFFFFF, #FFFFFF)',
   '--color-error': 'light-dark(#E3193B, #F5394F)',
   '--color-error-muted': 'light-dark(#E3193B33, #F5394F3F)',
-  '--color-on-error': 'light-dark(#FFFFFF, #FFFFFF)',
+  // Dark error is light enough that white misses 4.5:1, so its content is dark.
+  '--color-on-error': 'light-dark(#FFFFFF, #0A1317)',
   '--color-warning': 'light-dark(#E9AF08, #F2C00B)',
   '--color-warning-muted': 'light-dark(#E2A40033, #E2A4003F)',
   '--color-on-warning': 'light-dark(#0A1317, #0A1317)',
-
-  // Strong status fills, paired with --color-on-<status> at 4.5:1 or more.
-  // Dark Info and Error are deeper than the accent and base error, which miss
-  // 4.5:1 under white content.
-  '--color-info-emphasized': 'light-dark(#0064E0, #0064E0)',
-  '--color-on-info': 'var(--color-on-accent)',
-  '--color-success-emphasized': 'var(--color-success)',
-  '--color-warning-emphasized': 'var(--color-warning)',
-  '--color-error-emphasized': 'light-dark(#E3193B, #E3193B)',
-
-  // Pale status fills (Info is new; the others are the released muted tokens).
-  '--color-info-muted': 'var(--color-accent-muted)',
 
   // Status text on the default page and card surfaces, 4.5:1 or more.
   '--color-text-info': 'var(--color-text-blue)',

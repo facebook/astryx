@@ -54,9 +54,9 @@ describe('onMediaTokens', () => {
 
     it('merges user token overrides with defaults', () => {
       const result = resolveOnMedia('dark', {
-        tokens: {'--color-accent': '#90CAF9'},
+        tokens: {'--color-text-blue': '#90CAF9'},
       });
-      expect(result.tokens['--color-accent']).toBe('#90CAF9');
+      expect(result.tokens['--color-text-blue']).toBe('#90CAF9');
       expect(result.tokens['--color-text-primary']).toBe(
         'var(--color-on-dark)',
       );
@@ -64,9 +64,9 @@ describe('onMediaTokens', () => {
 
     it('resolves [light, dark] tuple tokens', () => {
       const result = resolveOnMedia('dark', {
-        tokens: {'--color-accent': ['#AAA', '#BBB']},
+        tokens: {'--color-text-blue': ['#AAA', '#BBB']},
       });
-      expect(result.tokens['--color-accent']).toBe('light-dark(#AAA, #BBB)');
+      expect(result.tokens['--color-text-blue']).toBe('light-dark(#AAA, #BBB)');
     });
 
     it('passes through component overrides', () => {
@@ -91,11 +91,11 @@ describe('defineTheme with onDark/onLight', () => {
     const theme = defineTheme({
       name: 'test',
       onDark: {
-        tokens: {'--color-accent': '#90CAF9'},
+        tokens: {'--color-text-blue': '#90CAF9'},
       },
     });
     expect(theme.__onDark).toBeDefined();
-    expect(theme.__onDark!.tokens['--color-accent']).toBe('#90CAF9');
+    expect(theme.__onDark!.tokens['--color-text-blue']).toBe('#90CAF9');
     expect(theme.__onDark!.tokens['--color-text-primary']).toBe(
       'var(--color-on-dark)',
     );
@@ -105,11 +105,11 @@ describe('defineTheme with onDark/onLight', () => {
     const theme = defineTheme({
       name: 'test',
       onLight: {
-        tokens: {'--color-accent': '#333'},
+        tokens: {'--color-text-blue': '#333'},
       },
     });
     expect(theme.__onLight).toBeDefined();
-    expect(theme.__onLight!.tokens['--color-accent']).toBe('#333');
+    expect(theme.__onLight!.tokens['--color-text-blue']).toBe('#333');
   });
 
   it('generates defaults even without explicit onDark/onLight', () => {
@@ -146,7 +146,7 @@ describe('generateOnMediaCSS', () => {
     expect(css).toContain('[data-astryx-media="dark"]');
     expect(css).toContain('color-scheme: dark');
     expect(css).toContain('var(--color-on-dark)');
-    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
+    expect(css).not.toContain('--color-text-info: var(--color-text-blue);');
   });
 
   it('emits light media rules', () => {
@@ -160,61 +160,59 @@ describe('generateOnMediaCSS', () => {
     const concrete = defineTheme({
       name: 'status-role-media',
       tokens: {
-        '--color-accent': '#0074E2',
-        '--color-info-emphasized': '#6D9CFE',
+        '--color-text-blue': '#0074E2',
+        '--color-text-info': '#6D9CFE',
       },
-      onDark: {tokens: {'--color-accent': '#FFFFFF'}},
+      onDark: {tokens: {'--color-text-blue': '#FFFFFF'}},
     });
     const concreteCss = generateOnMediaCSS(concrete);
 
-    expect(concreteCss).toContain('--color-accent: #FFFFFF;');
+    expect(concreteCss).toContain('--color-text-blue: #FFFFFF;');
     expect(concreteCss).not.toContain(
-      '--color-info-emphasized: var(--color-accent);',
+      '--color-text-info: var(--color-text-blue);',
     );
 
     const canonical = defineTheme({
       name: 'status-role-media-alias',
       tokens: {
-        '--color-accent': '#0074E2',
-        '--color-info-emphasized': 'var(--color-accent)',
+        '--color-text-blue': '#0074E2',
+        '--color-text-info': 'var(--color-text-blue)',
       },
       onDark: {
         tokens: {
-          '--color-accent': '#FFFFFF',
-          '--color-on-accent': '#000000',
+          '--color-text-blue': '#FFFFFF',
         },
       },
     });
     const canonicalCss = generateOnMediaCSS(canonical);
 
-    expect(canonicalCss).toContain('--color-accent: #FFFFFF;');
+    expect(canonicalCss).toContain('--color-text-blue: #FFFFFF;');
     expect(canonicalCss).toContain(
-      '--color-info-emphasized: var(--color-accent);',
+      '--color-text-info: var(--color-text-blue);',
     );
   });
 
   it.each([
-    'VAR( /*x*/ --color-accent ) !important',
-    'v\\61r(--color-accent)',
-    'var( --color-accent )',
-    'var(--color-accent) !important',
+    'VAR( /*x*/ --color-text-blue ) !important',
+    'v\\61r(--color-text-blue)',
+    'var( --color-text-blue )',
+    'var(--color-text-blue) !important',
   ])('rebinds a semantically equivalent authored root alias: %s', info => {
     const theme = defineTheme({
       name: 'status-role-media-equivalent-alias',
       tokens: {
-        '--color-accent': '#0074E2',
-        '--color-info-emphasized': info,
+        '--color-text-blue': '#0074E2',
+        '--color-text-info': info,
       },
       onDark: {
         tokens: {
-          '--color-accent': '#FFFFFF',
-          '--color-on-accent': '#000000',
+          '--color-text-blue': '#FFFFFF',
         },
       },
     });
 
     expect(generateOnMediaCSS(theme)).toContain(
-      '--color-info-emphasized: var(--color-accent);',
+      '--color-text-info: var(--color-text-blue);',
     );
   });
 
@@ -225,26 +223,23 @@ describe('generateOnMediaCSS', () => {
         rules: [
           {
             when: {contrast: 'more'},
-            value: {tokens: {'--color-info-emphasized': '#123456'}},
+            value: {tokens: {'--color-text-info': '#123456'}},
           },
         ],
       },
       onDark: {
         tokens: {
-          '--color-accent': '#FFFFFF',
-          '--color-on-accent': '#000000',
+          '--color-text-blue': '#FFFFFF',
         },
       },
     });
     const css = generateOnMediaCSS(theme);
 
-    expect(css).toContain('--color-accent: #FFFFFF;');
-    expect(css).toContain('--color-info-emphasized: var(--color-accent);');
-    expect(css).toContain('--color-info-emphasized: inherit;');
-    expect(
-      css.lastIndexOf('--color-info-emphasized: inherit;'),
-    ).toBeGreaterThan(
-      css.lastIndexOf('--color-info-emphasized: var(--color-accent);'),
+    expect(css).toContain('--color-text-blue: #FFFFFF;');
+    expect(css).toContain('--color-text-info: var(--color-text-blue);');
+    expect(css).toContain('--color-text-info: inherit;');
+    expect(css.lastIndexOf('--color-text-info: inherit;')).toBeGreaterThan(
+      css.lastIndexOf('--color-text-info: var(--color-text-blue);'),
     );
   });
 
@@ -257,7 +252,7 @@ describe('generateOnMediaCSS', () => {
           {
             when: {contrast: 'more'},
             value: {
-              tokens: {'--color-info-emphasized': 'var(--color-text-purple)'},
+              tokens: {'--color-text-info': 'var(--color-text-purple)'},
             },
           },
         ],
@@ -265,17 +260,14 @@ describe('generateOnMediaCSS', () => {
       onDark: {
         tokens: {
           '--color-text-purple': '#ffffff',
-          '--color-accent': '#ffffff',
-          '--color-on-accent': '#000000',
+          '--color-text-blue': '#ffffff',
         },
       },
     });
     const css = generateOnMediaCSS(theme);
 
-    expect(css).toContain('--color-info-emphasized: inherit;');
-    expect(css).not.toContain(
-      '--color-info-emphasized: var(--color-text-purple);',
-    );
+    expect(css).toContain('--color-text-info: inherit;');
+    expect(css).not.toContain('--color-text-info: var(--color-text-purple);');
   });
 
   it('avoids a descendant-local cycle while replaying an adaptation role', () => {
@@ -286,12 +278,12 @@ describe('generateOnMediaCSS', () => {
           {
             when: {contrast: 'more'},
             value: {
-              tokens: {'--color-info-emphasized': 'var(--color-text-blue)'},
+              tokens: {'--color-text-info': 'var(--color-text-blue)'},
             },
           },
         ],
       },
-      onDark: {tokens: {'--color-text-blue': 'var(--color-info-emphasized)'}},
+      onDark: {tokens: {'--color-text-blue': 'var(--color-text-info)'}},
     });
     const css = generateOnMediaCSS(theme);
     const darkBlocks = Array.from(
@@ -301,12 +293,8 @@ describe('generateOnMediaCSS', () => {
 
     expect(darkBlocks.length).toBeGreaterThan(0);
     for (const block of darkBlocks) {
-      expect(block).not.toContain(
-        '--color-info-emphasized: var(--color-accent);',
-      );
-      expect(block).not.toContain(
-        '--color-info-emphasized: var(--color-text-blue);',
-      );
+      expect(block).not.toContain('--color-text-info: var(--color-text-blue);');
+      expect(block).not.toContain('--color-text-info: var(--color-text-blue);');
     }
   });
 
@@ -319,7 +307,7 @@ describe('generateOnMediaCSS', () => {
             when: {contrast: 'more'},
             value: {
               tokens: {
-                '--color-info-emphasized': 'var(--color-on-info-muted)',
+                '--color-text-info': 'var(--color-on-info-muted)',
                 '--color-on-info-muted': 'var(--color-text-green)',
               },
             },
@@ -329,7 +317,7 @@ describe('generateOnMediaCSS', () => {
       onDark: {
         tokens: {
           '--color-text-blue': '#ffffff',
-          '--color-text-green': 'var(--color-info-emphasized)',
+          '--color-text-green': 'var(--color-text-info)',
         },
       },
     });
@@ -346,11 +334,11 @@ describe('generateOnMediaCSS', () => {
   it('stringifies a legacy non-string media status source without throwing', () => {
     const theme = defineTheme({
       name: 'legacy-media-status-source',
-      onDark: {tokens: {'--color-accent': null as never}},
+      onDark: {tokens: {'--color-text-blue': null as never}},
     });
 
     expect(() => generateOnMediaCSS(theme)).not.toThrow();
-    expect(generateOnMediaCSS(theme)).toContain('--color-accent: null;');
+    expect(generateOnMediaCSS(theme)).toContain('--color-text-blue: null;');
   });
 
   it('emits component override rules', () => {
@@ -438,6 +426,6 @@ describe('reset.css baseline media rules', () => {
     );
     expect(darkMatch![1]).not.toContain('--color-text-primary');
     expect(darkMatch![1]).not.toContain('--color-icon-primary');
-    expect(darkMatch![1]).not.toContain('--color-accent');
+    expect(darkMatch![1]).not.toContain('--color-text-blue');
   });
 });

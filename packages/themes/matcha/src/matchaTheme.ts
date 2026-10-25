@@ -107,9 +107,9 @@ export const matchaTheme = defineTheme({
     '--color-on-error': neutral.dark[5],
     '--color-on-warning': [neutral.light[20], neutral.dark[20]],
 
-    '--color-info-emphasized': 'var(--color-accent)',
-    '--color-info-muted': 'var(--color-accent-muted)',
-    '--color-on-info': 'var(--color-on-accent)',
+    // Info is its own blue status, independent of the accent.
+    '--color-info': [blue.light[50], blue.dark[80]],
+    '--color-info-muted': 'var(--color-background-blue)',
 
     '--color-text-info': [blue.light[35], blue.dark[75]],
     '--color-text-success': [green.light[35], green.dark[75]],

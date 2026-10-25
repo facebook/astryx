@@ -149,14 +149,14 @@ const groups = [
             '—',
           ],
           [
-            '--color-<status>-emphasized',
+            '--color-<status>',
             'Strong status fill, such as a Badge or StatusDot.',
             '--color-on-<status>',
           ],
           [
             '--color-on-<status>',
             'Text and icons on the strong fill (4.5:1 or more).',
-            '--color-<status>-emphasized',
+            '--color-<status>',
           ],
           [
             '--color-<status>-muted',
@@ -167,11 +167,6 @@ const groups = [
             '--color-on-<status>-muted',
             'Text and icons on the pale fill (4.5:1 or more).',
             '--color-<status>-muted',
-          ],
-          [
-            '--color-success / -warning / -error',
-            'Released base colours, unchanged for compatibility. Prefer the roles above.',
-            '—',
           ],
         ],
       },

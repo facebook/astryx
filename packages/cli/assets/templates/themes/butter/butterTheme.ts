@@ -206,15 +206,15 @@ export const butterTheme = defineTheme({
     '--color-on-error': [red.light[95], red.dark[15]],
     '--color-on-warning': [yellow.light[95], yellow.dark[15]],
 
-    '--color-info-emphasized': 'var(--color-accent)',
-    '--color-info-muted': 'var(--color-accent-muted)',
-    '--color-on-info': 'var(--color-on-accent)',
+    // Info is its own blue status, independent of the accent.
+    '--color-info': [accent.light[40], accent.dark[70]],
+    '--color-info-muted': 'var(--color-background-blue)',
 
-    '--color-text-info': [accent.light[40], yellow.dark[90]],
+    '--color-text-info': [accent.light[40], accent.dark[70]],
     '--color-text-success': [green.light[25], green.dark[80]],
     '--color-text-warning': [yellow.light[25], yellow.dark[85]],
     '--color-text-error': [red.light[25], red.dark[80]],
-    '--color-on-info-muted': [neutral.light[15], neutral.dark[90]],
+    '--color-on-info-muted': 'var(--color-text-blue)',
     '--color-on-success-muted': [green.light[25], green.dark[80]],
     '--color-on-warning-muted': [yellow.light[25], yellow.dark[85]],
     '--color-on-error-muted': [red.light[25], red.dark[90]],

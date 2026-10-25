@@ -74,7 +74,7 @@ describe('neutral theme palette mappings', () => {
         neutralPalettes.neutral.light[10],
         neutralPalettes.neutral.dark[95],
       ),
-      '--color-info-emphasized':
+      '--color-info':
         'var(--astryx-theme-neutral-color-status-fill-accent)',
       '--color-info-muted': lightDark(
         neutralPalettes.blue.light[85],
@@ -97,11 +97,11 @@ describe('neutral theme palette mappings', () => {
         neutralPalettes.red.light[25],
         neutralPalettes.red.dark[85],
       ),
-      '--color-success-emphasized':
+      '--color-success':
         'var(--astryx-theme-neutral-color-status-fill-success)',
-      '--color-warning-emphasized':
+      '--color-warning':
         'var(--astryx-theme-neutral-color-status-fill-warning)',
-      '--color-error-emphasized':
+      '--color-error':
         'var(--astryx-theme-neutral-color-status-fill-error)',
       '--color-text-info': lightDark(
         neutralPalettes.blue.light[45],
@@ -418,7 +418,7 @@ describe('neutral semantic status roles', () => {
 
   it('uses public semantic roles on plain and pale surfaces while preserving fill roles', () => {
     expect(neutralTheme.tokens).toMatchObject({
-      '--color-info-emphasized':
+      '--color-info':
         'var(--astryx-theme-neutral-color-status-fill-accent)',
       // Released base tokens keep their values; strong fills are -emphasized.
       '--color-success': lightDark(
@@ -433,11 +433,11 @@ describe('neutral semantic status roles', () => {
         neutralPalettes.red.light[25],
         neutralPalettes.red.dark[85],
       ),
-      '--color-success-emphasized':
+      '--color-success':
         'var(--astryx-theme-neutral-color-status-fill-success)',
-      '--color-warning-emphasized':
+      '--color-warning':
         'var(--astryx-theme-neutral-color-status-fill-warning)',
-      '--color-error-emphasized':
+      '--color-error':
         'var(--astryx-theme-neutral-color-status-fill-error)',
     });
     expect(neutralTheme.components).not.toHaveProperty('icon');

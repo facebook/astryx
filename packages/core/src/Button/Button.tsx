@@ -233,7 +233,7 @@ const variants = stylex.create({
     color: colorVars['--color-text-primary'],
   },
   destructive: {
-    backgroundColor: colorVars['--color-error-emphasized'],
+    backgroundColor: colorVars['--color-error'],
     color: colorVars['--color-on-error'],
     // Forced colors replace the fill with ButtonFace; a border keeps the
     // destructive fill's shape visible (architecture:theme-tokens INV11). A
@@ -249,7 +249,7 @@ const variants = stylex.create({
     // width, style and offset come from the shared outline.
     outlineColor: {
       default: null,
-      ':focus-visible': colorVars['--color-error-emphasized'],
+      ':focus-visible': colorVars['--color-error'],
     },
   },
 });

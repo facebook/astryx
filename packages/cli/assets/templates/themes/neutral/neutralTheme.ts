@@ -156,8 +156,7 @@ export const neutralTheme = defineTheme({
     '--color-on-error': [neutral.light[100], neutral.dark[5]],
     '--color-on-warning': neutral.light[5],
 
-    '--color-info-emphasized':
-      'var(--astryx-theme-neutral-color-status-fill-accent)',
+    '--color-info': 'var(--astryx-theme-neutral-color-status-fill-accent)',
     '--color-info-muted': [blue.light[85], withAlpha(blue.dark[75], '3D')],
     '--color-on-info': [neutral.light[100], neutral.dark[5]],
 
@@ -177,17 +176,11 @@ export const neutralTheme = defineTheme({
     '--color-icon-secondary': [neutral.light[45], neutral.dark[65]],
     '--color-icon-disabled': [neutral.light[60], neutral.dark[35]],
 
-    // Released base status tokens keep their values; strong fills are the
-    // -emphasized roles (architecture:theme-tokens INV11).
-    '--color-success': [green.light[25], green.light[80]],
-    '--color-error': [red.light[25], red.dark[85]],
-    '--color-warning': [yellow.light[25], yellow.light[85]],
-    '--color-success-emphasized':
-      'var(--astryx-theme-neutral-color-status-fill-success)',
-    '--color-warning-emphasized':
-      'var(--astryx-theme-neutral-color-status-fill-warning)',
-    '--color-error-emphasized':
-      'var(--astryx-theme-neutral-color-status-fill-error)',
+    // Strong status fills (architecture:theme-tokens INV11): Neutral's
+    // reviewed status-fill colours, with --color-on-<status> above.
+    '--color-success': 'var(--astryx-theme-neutral-color-status-fill-success)',
+    '--color-warning': 'var(--astryx-theme-neutral-color-status-fill-warning)',
+    '--color-error': 'var(--astryx-theme-neutral-color-status-fill-error)',
     '--color-success-muted': [green.dark[85], withAlpha(green.light[75], '3D')],
     '--color-error-muted': [red.light[85], withAlpha(red.dark[75], '3D')],
     '--color-warning-muted': [

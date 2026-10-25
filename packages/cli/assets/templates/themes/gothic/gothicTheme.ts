@@ -135,7 +135,7 @@ export const gothicTheme = defineTheme({
     '--color-on-error': neutral.dark[10],
     '--color-on-warning': neutral.dark[10],
 
-    '--color-info-emphasized': blue.dark[65],
+    '--color-info': blue.dark[65],
     '--color-info-muted': blue.dark[75],
     '--color-on-info': neutral.dark[10],
 

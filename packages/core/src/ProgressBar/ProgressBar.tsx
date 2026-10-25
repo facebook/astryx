@@ -309,13 +309,13 @@ const variantStyles = stylex.create({
     backgroundColor: colorVars['--color-accent'],
   },
   success: {
-    backgroundColor: colorVars['--color-success-emphasized'],
+    backgroundColor: colorVars['--color-success'],
   },
   warning: {
-    backgroundColor: colorVars['--color-warning-emphasized'],
+    backgroundColor: colorVars['--color-warning'],
   },
   error: {
-    backgroundColor: colorVars['--color-error-emphasized'],
+    backgroundColor: colorVars['--color-error'],
   },
   neutral: {
     backgroundColor: colorVars['--color-text-disabled'],

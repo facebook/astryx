@@ -594,15 +594,15 @@ const styles = stylex.create({
     color: colorVars['--color-on-accent'],
   },
   numberSuccess: {
-    backgroundColor: colorVars['--color-success-emphasized'],
+    backgroundColor: colorVars['--color-success'],
     color: colorVars['--color-on-success'],
   },
   numberWarning: {
-    backgroundColor: colorVars['--color-warning-emphasized'],
+    backgroundColor: colorVars['--color-warning'],
     color: colorVars['--color-on-warning'],
   },
   numberError: {
-    backgroundColor: colorVars['--color-error-emphasized'],
+    backgroundColor: colorVars['--color-error'],
     color: colorVars['--color-on-error'],
   },
 

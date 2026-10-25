@@ -103,8 +103,7 @@ describe('theme build adaptations', () => {
     const input = {
       name: 'status-aliases',
       tokens: {
-        '--color-accent': '#225bff',
-        '--color-on-accent': '#ffffff',
+        '--color-info': '#225bff',
         '--color-text-blue': '#203a6c',
       },
       adaptations: {
@@ -122,10 +121,7 @@ describe('theme build adaptations', () => {
         ],
       },
       onDark: {
-        tokens: {
-          '--color-accent': '#fefefe',
-          '--color-on-accent': '#101010',
-        },
+        tokens: {'--color-text-blue': '#fefefe'},
       },
     };
     const themeFile = writeTheme(themesDir, input.name, JSON.stringify(input));
@@ -137,19 +133,20 @@ describe('theme build adaptations', () => {
       path.join(themesDir, 'status-aliases.css'),
       'utf8',
     );
-    const infoAlias = '--color-info-emphasized: var(--color-accent);';
+    const mediaAlias = '--color-text-info: var(--color-text-blue);';
     const adaptationAlias = '--color-text-success: var(--color-text-green);';
     const authoredRole = '--color-text-success: #123456;';
-    expect(css).toContain('--color-on-info: var(--color-on-accent);');
-    // The authored accent is a concrete hue, so theme generation derives the
-    // Info text and pale-fill content (theme-compilation INV17).
-    expect(css).toMatch(
-      /--color-text-info: light-dark\(#[0-9A-F]{6}, #[0-9A-F]{6}\);/,
-    );
-    expect(css).toMatch(
-      /--color-on-info-muted: light-dark\(#[0-9A-F]{6}, #[0-9A-F]{6}\);/,
-    );
-    expect(css.split(infoAlias).length - 1).toBeGreaterThanOrEqual(2);
+    // The authored Info fill is a concrete hue, so theme generation derives
+    // its content, text, and pale-fill content (theme-compilation INV17).
+    for (const role of ['on-info', 'text-info', 'on-info-muted']) {
+      expect(css).toMatch(
+        new RegExp(
+          `--color-${role}: light-dark\\(#[0-9A-F]{6}, #[0-9A-F]{6}\\);`,
+        ),
+      );
+    }
+    // The dark media surface that sets the hue rebinds the text alias.
+    expect(css).toContain(mediaAlias);
     expect(css).toContain(adaptationAlias);
     expect(css.split(authoredRole).length - 1).toBeGreaterThanOrEqual(2);
     expect(css.lastIndexOf(authoredRole)).toBeGreaterThan(
@@ -180,7 +177,7 @@ describe('theme build adaptations', () => {
         '--color-success': '#3FB950',
         '--color-warning': '#D29922',
         '--color-error': '#F85149',
-        '--color-accent': '#6E40C9',
+        '--color-info': '#6E40C9',
       },
     };
     const themeFile = writeTheme(themesDir, input.name, JSON.stringify(input));

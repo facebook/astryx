@@ -213,8 +213,6 @@ public struct ColorTokens: Equatable, Sendable {
   public var dataYellow5: Color
   /// `--color-error`
   public var error: Color
-  /// `--color-error-emphasized`
-  public var errorEmphasized: Color
   /// `--color-error-muted`
   public var errorMuted: Color
   /// `--color-icon-accent`
@@ -253,8 +251,8 @@ public struct ColorTokens: Equatable, Sendable {
   public var iconWarning: Color
   /// `--color-icon-yellow`
   public var iconYellow: Color
-  /// `--color-info-emphasized`
-  public var infoEmphasized: Color
+  /// `--color-info`
+  public var info: Color
   /// `--color-info-muted`
   public var infoMuted: Color
   /// `--color-neutral`
@@ -293,8 +291,6 @@ public struct ColorTokens: Equatable, Sendable {
   public var skeleton: Color
   /// `--color-success`
   public var success: Color
-  /// `--color-success-emphasized`
-  public var successEmphasized: Color
   /// `--color-success-muted`
   public var successMuted: Color
   /// `--color-syntax-added`
@@ -377,8 +373,6 @@ public struct ColorTokens: Equatable, Sendable {
   public var track: Color
   /// `--color-warning`
   public var warning: Color
-  /// `--color-warning-emphasized`
-  public var warningEmphasized: Color
   /// `--color-warning-muted`
   public var warningMuted: Color
 
@@ -475,7 +469,6 @@ public struct ColorTokens: Equatable, Sendable {
     dataYellow4: Color,
     dataYellow5: Color,
     error: Color,
-    errorEmphasized: Color,
     errorMuted: Color,
     iconAccent: Color,
     iconBlue: Color,
@@ -495,7 +488,7 @@ public struct ColorTokens: Equatable, Sendable {
     iconTeal: Color,
     iconWarning: Color,
     iconYellow: Color,
-    infoEmphasized: Color,
+    info: Color,
     infoMuted: Color,
     neutral: Color,
     onAccent: Color,
@@ -515,7 +508,6 @@ public struct ColorTokens: Equatable, Sendable {
     shadow: Color,
     skeleton: Color,
     success: Color,
-    successEmphasized: Color,
     successMuted: Color,
     syntaxAdded: Color,
     syntaxAddedMarker: Color,
@@ -557,7 +549,6 @@ public struct ColorTokens: Equatable, Sendable {
     tintHover: Color,
     track: Color,
     warning: Color,
-    warningEmphasized: Color,
     warningMuted: Color
   ) {
     self.accent = accent
@@ -652,7 +643,6 @@ public struct ColorTokens: Equatable, Sendable {
     self.dataYellow4 = dataYellow4
     self.dataYellow5 = dataYellow5
     self.error = error
-    self.errorEmphasized = errorEmphasized
     self.errorMuted = errorMuted
     self.iconAccent = iconAccent
     self.iconBlue = iconBlue
@@ -672,7 +662,7 @@ public struct ColorTokens: Equatable, Sendable {
     self.iconTeal = iconTeal
     self.iconWarning = iconWarning
     self.iconYellow = iconYellow
-    self.infoEmphasized = infoEmphasized
+    self.info = info
     self.infoMuted = infoMuted
     self.neutral = neutral
     self.onAccent = onAccent
@@ -692,7 +682,6 @@ public struct ColorTokens: Equatable, Sendable {
     self.shadow = shadow
     self.skeleton = skeleton
     self.success = success
-    self.successEmphasized = successEmphasized
     self.successMuted = successMuted
     self.syntaxAdded = syntaxAdded
     self.syntaxAddedMarker = syntaxAddedMarker
@@ -734,7 +723,6 @@ public struct ColorTokens: Equatable, Sendable {
     self.tintHover = tintHover
     self.track = track
     self.warning = warning
-    self.warningEmphasized = warningEmphasized
     self.warningMuted = warningMuted
   }
 
@@ -834,7 +822,6 @@ public struct ColorTokens: Equatable, Sendable {
     case "color-data-yellow-4": dataYellow4
     case "color-data-yellow-5": dataYellow5
     case "color-error": error
-    case "color-error-emphasized": errorEmphasized
     case "color-error-muted": errorMuted
     case "color-icon-accent": iconAccent
     case "color-icon-blue": iconBlue
@@ -854,7 +841,7 @@ public struct ColorTokens: Equatable, Sendable {
     case "color-icon-teal": iconTeal
     case "color-icon-warning": iconWarning
     case "color-icon-yellow": iconYellow
-    case "color-info-emphasized": infoEmphasized
+    case "color-info": info
     case "color-info-muted": infoMuted
     case "color-neutral": neutral
     case "color-on-accent": onAccent
@@ -874,7 +861,6 @@ public struct ColorTokens: Equatable, Sendable {
     case "color-shadow": shadow
     case "color-skeleton": skeleton
     case "color-success": success
-    case "color-success-emphasized": successEmphasized
     case "color-success-muted": successMuted
     case "color-syntax-added": syntaxAdded
     case "color-syntax-added-marker": syntaxAddedMarker
@@ -916,7 +902,6 @@ public struct ColorTokens: Equatable, Sendable {
     case "color-tint-hover": tintHover
     case "color-track": track
     case "color-warning": warning
-    case "color-warning-emphasized": warningEmphasized
     case "color-warning-muted": warningMuted
     default: nil
     }

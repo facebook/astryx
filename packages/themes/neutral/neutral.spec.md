@@ -92,13 +92,14 @@ tone coordinates.
 ## Component and state mappings
 
 Core components choose semantic roles by surface (`architecture:theme-tokens`
-INV11): strong fills use `--color-*-emphasized` with `--color-on-*`, pale
-surfaces use `--color-*-muted` with `--color-on-*-muted`, and status text,
-icons, and borders on the default surfaces use `--color-text-*`,
+INV11): strong fills use `--color-<status>` with `--color-on-<status>`, pale
+surfaces use `--color-<status>-muted` with `--color-on-<status>-muted`, and
+status text, icons, and borders on the default surfaces use `--color-text-*`,
 `--color-icon-*`, and `--color-border-*`. Neutral's status fills
-(`--astryx-theme-neutral-color-status-fill-*`) are its `-emphasized` roles, and
-its accent fill also paints the accent variants of ProgressBar, StatusDot, and
-Stepper indicators. Every new mapping needs exact-head theme review and
+(`--astryx-theme-neutral-color-status-fill-*`) are its `--color-info`,
+`--color-success`, `--color-warning`, and `--color-error`, and its accent fill
+also paints the accent variants of ProgressBar, StatusDot, and Stepper
+indicators. Every new mapping needs exact-head theme review and
 rendered light/dark evidence; shared color alone is not enough.
 
 This work does not add component states. It intentionally excludes
@@ -245,9 +246,10 @@ changing semantic token mappings in the palette-value change.
 
 Neutral's semantic, categorical, syntax, and color-bearing effect values use
 named palette-stop references when an approved match exists. Token names and
-meanings remain unchanged: the released `--color-success`, `--color-warning`,
-and `--color-error` keep their Neutral values, and the status roles of
-`architecture:theme-tokens` INV11 carry the surface-specific values. Alpha
+meanings remain unchanged. Neutral's `--color-success`, `--color-warning`, and
+`--color-error` are its reviewed status fills, and the text roles of
+`architecture:theme-tokens` INV11 carry the darker values readable on the
+page. Alpha
 variants derive from the referenced stop rather than duplicating its hex value.
 
 The mapping is role-aware rather than a blind nearest-color conversion. Very

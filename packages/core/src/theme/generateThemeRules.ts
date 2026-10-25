@@ -476,12 +476,6 @@ function joinDeclarations(
 const SCOPED_STATUS_ROLE_DEFAULTS: ReadonlyArray<
   readonly [role: string, source: string]
 > = [
-  ['--color-info-emphasized', '--color-accent'],
-  ['--color-success-emphasized', '--color-success'],
-  ['--color-warning-emphasized', '--color-warning'],
-  ['--color-error-emphasized', '--color-error'],
-  ['--color-info-muted', '--color-accent-muted'],
-  ['--color-on-info', '--color-on-accent'],
   ['--color-text-info', '--color-text-blue'],
   ['--color-text-success', '--color-text-green'],
   ['--color-text-warning', '--color-text-yellow'],
@@ -505,7 +499,7 @@ const SCOPED_STATUS_ROLE_SOURCES = new Map(SCOPED_STATUS_ROLE_DEFAULTS);
 
 /** Colours INV17's derivation measures; a scope that sets one re-derives. */
 const STATUS_MEASURED =
-  /^--color-(?:success|warning|error|accent|on-|background-surface|background-card|icon-blue)/;
+  /^--color-(?:info|success|warning|error|on-|background-surface|background-card)/;
 
 const STATUS_ROLE_ORDER = new Map(
   SCOPED_STATUS_ROLE_DEFAULTS.map(([role], index) => [role, index]),
@@ -813,9 +807,6 @@ function generatedAdaptationStatusRoleDefaults(
     Object.fromEntries(rootAliases),
     rootLocalTokens,
   ).values;
-  const rootDerived = new Set(
-    deriveStatusRoleTokens(rootTokens, rootLocalTokens).map(([role]) => role),
-  );
   const states = reachableAdaptationMatchSets(rules).map(indexes => ({
     indexes,
     values: effectiveAdaptationTokenValues(
@@ -845,19 +836,6 @@ function generatedAdaptationStatusRoleDefaults(
       for (const [role, value] of ruleDerived) {
         if (authoredRule[role] === undefined && rootValues[role] !== value) {
           aliases[index].push([role, value]);
-        }
-      }
-      // A root role computed for the root's colours returns to its INV16
-      // alias where, under this rule, the source carries its content
-      // unadjusted (the rule changed the source, its content, or a surface).
-      for (const role of rootDerived) {
-        const source = SCOPED_STATUS_ROLE_SOURCES.get(role);
-        if (
-          source !== undefined &&
-          !ruleDerived.has(role) &&
-          authoredRule[role] === undefined
-        ) {
-          aliases[index].push([role, `var(${source})`]);
         }
       }
     }
@@ -950,9 +928,6 @@ function generatedMediaStatusRoleDefaults(
       authoredMedia[role] !== undefined ||
       (authoredMedia[source] === undefined &&
         !aliases.some(([emitted]) => emitted === source)) ||
-      (role === '--color-info-emphasized' &&
-        source === '--color-accent' &&
-        authoredMedia['--color-on-accent'] === undefined) ||
       (rootRole !== undefined &&
         !tokenValueIsAliasOf(rootRole, source) &&
         !rootDerived.has(role))

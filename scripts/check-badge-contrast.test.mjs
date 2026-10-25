@@ -147,19 +147,19 @@ function surfaceOf(theme, modeIndex) {
 
 const CORE_SEMANTIC_BADGE = {
   info: {
-    backgroundColor: 'var(--color-info-emphasized)',
+    backgroundColor: 'var(--color-info)',
     color: 'var(--color-on-info)',
   },
   success: {
-    backgroundColor: 'var(--color-success-emphasized)',
+    backgroundColor: 'var(--color-success)',
     color: 'var(--color-on-success)',
   },
   warning: {
-    backgroundColor: 'var(--color-warning-emphasized)',
+    backgroundColor: 'var(--color-warning)',
     color: 'var(--color-on-warning)',
   },
   error: {
-    backgroundColor: 'var(--color-error-emphasized)',
+    backgroundColor: 'var(--color-error)',
     color: 'var(--color-on-error)',
   },
 };

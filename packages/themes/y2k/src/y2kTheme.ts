@@ -192,9 +192,8 @@ export const y2kTheme = defineTheme({
     '--color-on-error': [red.light[30], red.dark[20]],
     '--color-on-warning': [yellow.light[30], yellow.dark[20]],
 
-    '--color-info-emphasized': [blue.light[40], blue.dark[75]],
+    '--color-info': [blue.light[40], blue.dark[75]],
     '--color-info-muted': 'var(--color-background-blue)',
-    '--color-on-info': 'var(--color-on-accent)',
 
     '--color-text-info': [blue.light[20], blue.dark[75]],
     '--color-text-success': [green.light[30], green.dark[75]],

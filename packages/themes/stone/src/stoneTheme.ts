@@ -195,7 +195,7 @@ export const stoneTheme = defineTheme({
     '--color-on-error': [neutral.light[100], neutral.dark[10]],
     '--color-on-warning': [neutral.light[100], neutral.dark[10]],
 
-    '--color-info-emphasized': [blue.light[40], blue.dark[70]],
+    '--color-info': [blue.light[40], blue.dark[70]],
     '--color-info-muted': [blue.light[90], blue.dark[25]],
     '--color-on-info': [neutral.light[100], neutral.dark[15]],
 

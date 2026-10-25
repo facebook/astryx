@@ -25,13 +25,13 @@ describe('defineTheme', () => {
     const theme = defineTheme({
       name: 'custom',
       tokens: {
-        '--color-accent': '#CC0000',
+        '--color-text-blue': '#CC0000',
       },
     });
-    expect(theme.tokens['--color-accent']).toBe('#CC0000');
-    expect(theme.tokens['--color-info-emphasized']).toBeUndefined();
+    expect(theme.tokens['--color-text-blue']).toBe('#CC0000');
+    expect(theme.tokens['--color-text-info']).toBeUndefined();
     expect(generateThemeTestCSS(theme)).toContain(
-      '--color-info-emphasized: var(--color-accent);',
+      '--color-text-info: var(--color-text-blue);',
     );
     // Unrelated defaults remain owned by StyleX rather than copied into every
     // theme scope.
@@ -42,46 +42,47 @@ describe('defineTheme', () => {
     const theme = defineTheme({
       name: 'custom-info',
       tokens: {
-        '--color-accent': '#FF0000',
-        '--color-info-emphasized': '#0066CC',
+        '--color-text-blue': '#FF0000',
+        '--color-text-info': '#0066CC',
       },
     });
 
-    expect(theme.tokens['--color-info-emphasized']).toBe('#0066CC');
+    expect(theme.tokens['--color-text-info']).toBe('#0066CC');
   });
 
   it('does not generate a status alias that would create a token cycle', () => {
     const theme = defineTheme({
       name: 'parent-role-reference',
-      tokens: {'--color-accent': 'var(--color-info-emphasized)'},
+      tokens: {'--color-text-blue': 'var(--color-text-info)'},
     });
     const css = generateThemeRules(theme).join('\n');
 
-    expect(css).toContain('--color-accent: var(--color-info-emphasized);');
-    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
+    expect(css).toContain('--color-text-blue: var(--color-text-info);');
+    expect(css).not.toContain('--color-text-info: var(--color-text-blue);');
   });
 
   it('checks the complete generated alias graph for cycles', () => {
     const theme = defineTheme({
       name: 'generated-role-cycle',
       tokens: {
-        '--color-accent': 'var(--color-text-info)',
-        '--color-text-blue': 'var(--color-info-emphasized)',
+        '--color-text-blue': 'var(--color-text-success)',
+        '--color-text-green': 'var(--color-text-info)',
       },
     });
     const css = generateThemeRules(theme).join('\n');
 
-    expect(css).toContain('--color-info-emphasized: var(--color-accent);');
-    expect(css).not.toContain('--color-text-info: var(--color-text-blue);');
+    // The first alias is safe; the second would close a loop through it.
+    expect(css).toContain('--color-text-info: var(--color-text-blue);');
+    expect(css).not.toContain('--color-text-success: var(--color-text-green);');
   });
 
   it('includes theme-local references in generated alias cycle checks', () => {
     const css = generateThemeRules({
-      tokens: {'--color-accent': 'var(--local-info-loop)'},
-      localTokens: {'--local-info-loop': 'var(--color-info-emphasized)'},
+      tokens: {'--color-text-blue': 'var(--local-info-loop)'},
+      localTokens: {'--local-info-loop': 'var(--color-text-info)'},
     }).join('\n');
 
-    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
+    expect(css).not.toContain('--color-text-info: var(--color-text-blue);');
   });
 
   it.each([null, 16, false])(
@@ -89,12 +90,12 @@ describe('defineTheme', () => {
     value => {
       const theme = defineTheme({
         name: `legacy-status-source-${String(value)}`,
-        tokens: {'--color-accent': value as never},
+        tokens: {'--color-text-blue': value as never},
       });
 
       expect(() => generateThemeRules(theme)).not.toThrow();
       expect(generateThemeRules(theme).join('\n')).toContain(
-        `--color-accent: ${String(value)};`,
+        `--color-text-blue: ${String(value)};`,
       );
     },
   );
@@ -103,63 +104,57 @@ describe('defineTheme', () => {
     const value = {toString: () => '#123456'};
     const theme = defineTheme({
       name: 'legacy-object-status-source',
-      tokens: {'--color-accent': value as never},
+      tokens: {'--color-text-blue': value as never},
     });
 
     expect(generateThemeRules(theme).join('\n')).toContain(
-      '--color-accent: #123456;',
+      '--color-text-blue: #123456;',
     );
   });
 
   it.each([
-    ['uppercase VAR()', 'VAR(--color-info-emphasized)', undefined],
-    ['mixed-case var()', 'vAr(--color-info-emphasized)', undefined],
-    ['escaped identifier', 'var(--\\63 olor-info-emphasized)', undefined],
-    ['escaped function name', 'v\\61r(--color-info-emphasized)', undefined],
-    [
-      'escaped leading hyphens',
-      'var(\\2d\\2d color-info-emphasized)',
-      undefined,
-    ],
+    ['uppercase VAR()', 'VAR(--color-text-info)', undefined],
+    ['mixed-case var()', 'vAr(--color-text-info)', undefined],
+    ['escaped identifier', 'var(--\\63 olor-text-info)', undefined],
+    ['escaped function name', 'v\\61r(--color-text-info)', undefined],
+    ['escaped leading hyphens', 'var(\\2d\\2d color-text-info)', undefined],
     [
       'comment-separated identifier',
-      'var(/*ok*/ --color-info-emphasized)',
+      'var(/*ok*/ --color-text-info)',
       undefined,
     ],
     [
       'non-ASCII local token',
       'var(--品牌)',
-      {'--品牌': 'var(--color-info-emphasized)'},
+      {'--品牌': 'var(--color-text-info)'},
     ],
   ])(
     'recognizes %s while checking generated alias cycles',
     (_, accent, localTokens) => {
       const css = generateThemeRules({
-        tokens: {'--color-accent': accent},
+        tokens: {'--color-text-blue': accent},
         localTokens,
       }).join('\n');
 
-      expect(css).not.toContain(
-        '--color-info-emphasized: var(--color-accent);',
-      );
+      expect(css).not.toContain('--color-text-info: var(--color-text-blue);');
     },
   );
 
   it('canonicalizes escaped declaration keys while checking cycles', () => {
     const css = generateThemeRules({
-      tokens: {'--color-accent': 'var(--\\62 rand)'},
-      localTokens: {'--\\62 rand': 'var(--color-info-emphasized)'},
+      tokens: {'--color-text-blue': 'var(--\\62 rand)'},
+      localTokens: {'--\\62 rand': 'var(--color-text-info)'},
     }).join('\n');
 
-    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
+    expect(css).not.toContain('--color-text-info: var(--color-text-blue);');
   });
 
   it('ignores var() text inside CSS comments', () => {
     const css = generateThemeRules({
-      tokens: {'--color-accent': '#123456 /* var(--color-info-emphasized) */'},
+      tokens: {'--color-text-blue': '#123456 /* var(--color-text-info) */'},
     }).join('\n');
 
-    expect(css).toContain('--color-info-emphasized: var(--color-accent);');
+    expect(css).toContain('--color-text-info: var(--color-text-blue);');
   });
 
   it.each([
@@ -167,89 +162,81 @@ describe('defineTheme', () => {
     ['escaped backslash', '--x\\\\y'],
   ])('canonicalizes an %s declaration key exactly once', (_, localToken) => {
     const css = generateThemeRules({
-      tokens: {'--color-accent': `var(${localToken})`},
-      localTokens: {[localToken]: 'var(--color-info-emphasized)'},
+      tokens: {'--color-text-blue': `var(${localToken})`},
+      localTokens: {[localToken]: 'var(--color-text-info)'},
     }).join('\n');
 
-    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
+    expect(css).not.toContain('--color-text-info: var(--color-text-blue);');
   });
 
   it.each([
-    [
-      'CRLF-preprocessed escape',
-      'v\\61\r\nr(--color-info-emphasized)',
-      undefined,
-    ],
-    [
-      'surrogate escape',
-      'var(--\\d800)',
-      {'--�': 'var(--color-info-emphasized)'},
-    ],
-    ['NUL replacement', 'var(--\0)', {'--�': 'var(--color-info-emphasized)'}],
+    ['CRLF-preprocessed escape', 'v\\61\r\nr(--color-text-info)', undefined],
+    ['surrogate escape', 'var(--\\d800)', {'--�': 'var(--color-text-info)'}],
+    ['NUL replacement', 'var(--\0)', {'--�': 'var(--color-text-info)'}],
   ])('uses browser preprocessing for %s', (_, accent, localTokens) => {
     const css = generateThemeRules({
-      tokens: {'--color-accent': accent},
+      tokens: {'--color-text-blue': accent},
       localTokens,
     }).join('\n');
 
-    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
+    expect(css).not.toContain('--color-text-info: var(--color-text-blue);');
   });
 
-  it.each([
-    'var (--color-info-emphasized)',
-    'var/**/(--color-info-emphasized)',
-  ])('does not treat non-function text as a reference: %s', accent => {
-    const css = generateThemeRules({tokens: {'--color-accent': accent}}).join(
-      '\n',
-    );
-    expect(css).toContain('--color-info-emphasized: var(--color-accent);');
-  });
+  it.each(['var (--color-text-info)', 'var/**/(--color-text-info)'])(
+    'does not treat non-function text as a reference: %s',
+    accent => {
+      const css = generateThemeRules({
+        tokens: {'--color-text-blue': accent},
+      }).join('\n');
+      expect(css).toContain('--color-text-info: var(--color-text-blue);');
+    },
+  );
 
   it.each([
-    'var(--color-text-red, #var(--color-info-emphasized))',
-    '1var(--color-info-emphasized)',
-    '@var(--color-info-emphasized)',
+    'var(--color-text-red, #var(--color-text-info))',
+    '1var(--color-text-info)',
+    '@var(--color-text-info)',
   ])(
     'does not create references inside non-function CSS tokens: %s',
     accent => {
       const css = generateThemeRules({
         tokens: {
-          '--color-accent': accent,
+          '--color-text-blue': accent,
           '--color-text-red': '#123456',
         },
       }).join('\n');
 
-      expect(css).toContain('--color-info-emphasized: var(--color-accent);');
+      expect(css).toContain('--color-text-info: var(--color-text-blue);');
     },
   );
 
   it('does not let unquoted URL contents hide a following var() reference', () => {
     const css = generateThemeRules({
       tokens: {
-        '--color-accent': 'url(/*) var(--color-info-emphasized) /* */',
+        '--color-text-blue': 'url(/*) var(--color-text-info) /* */',
       },
     }).join('\n');
 
-    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
+    expect(css).not.toContain('--color-text-info: var(--color-text-blue);');
   });
 
   it('ignores pre-existing unrelated legacy cycles', () => {
     const css = generateThemeRules({
       tokens: {
-        '--color-accent': '#123456',
+        '--color-text-blue': '#123456',
         '--color-background-body': 'var(--color-background-surface)',
         '--color-background-surface': 'var(--color-background-body)',
       },
     }).join('\n');
 
-    expect(css).toContain('--color-info-emphasized: var(--color-accent);');
+    expect(css).toContain('--color-text-info: var(--color-text-blue);');
   });
 
   it('handles long runs of adjacent comments without recursion', () => {
     const comments = '/**/'.repeat(10_000);
     expect(() =>
       generateThemeRules({
-        tokens: {'--color-accent': `#123456 ${comments}`},
+        tokens: {'--color-text-blue': `#123456 ${comments}`},
       }),
     ).not.toThrow();
   });
@@ -258,7 +245,7 @@ describe('defineTheme', () => {
     const references = 'var(--wide-target) '.repeat(200_000);
     expect(() =>
       generateThemeRules({
-        tokens: {'--color-accent': references},
+        tokens: {'--color-text-blue': references},
         localTokens: {'--wide-target': '#123456'},
       }),
     ).not.toThrow();
@@ -277,7 +264,7 @@ describe('defineTheme', () => {
     }
     const started = performance.now();
     generateThemeRules({
-      tokens: {'--color-accent': 'var(--layer-0-a)'},
+      tokens: {'--color-text-blue': 'var(--layer-0-a)'},
       localTokens,
     });
 
@@ -288,9 +275,6 @@ describe('defineTheme', () => {
     const theme = defineTheme({
       name: 'custom-status-sources',
       tokens: {
-        '--color-accent': '#100001',
-        '--color-accent-muted': '#100002',
-        '--color-on-accent': '#100003',
         '--color-text-blue': '#200001',
         '--color-text-green': '#200002',
         '--color-text-yellow': '#200003',
@@ -299,42 +283,33 @@ describe('defineTheme', () => {
     });
     const css = generateThemeTestCSS(theme);
 
-    expect(theme.tokens['--color-info-emphasized']).toBeUndefined();
+    expect(theme.tokens['--color-text-info']).toBeUndefined();
     for (const declaration of [
-      '--color-on-info: var(--color-on-accent);',
+      '--color-text-info: var(--color-text-blue);',
       '--color-text-success: var(--color-text-green);',
       '--color-text-warning: var(--color-text-yellow);',
       '--color-text-error: var(--color-text-red);',
+      '--color-on-info-muted: var(--color-text-blue);',
       '--color-on-success-muted: var(--color-text-green);',
       '--color-on-warning-muted: var(--color-text-yellow);',
       '--color-on-error-muted: var(--color-text-red);',
     ]) {
       expect(css).toContain(declaration);
     }
-    // INV17: an Info source that is not a hue (this accent is near-black)
-    // derives concrete Info roles from the blue hue instead of aliasing it.
-    for (const role of [
-      '--color-info-emphasized',
-      '--color-info-muted',
-      '--color-text-info',
-      '--color-on-info-muted',
-    ]) {
-      expect(css).toMatch(new RegExp(`${role}: light-dark\\(#`));
-    }
     for (const role of ['icon', 'border']) {
       expect(css).toContain(`--color-${role}-info: var(--color-text-info);`);
     }
   });
 
-  it('derives a strong fill that carries its content when the source does not (INV17)', () => {
+  it('derives the content on a status fill the theme sets (INV17)', () => {
     const theme = defineTheme({
-      name: 'bright-accent',
-      tokens: {'--color-accent': '#FF0000'},
+      name: 'bright-error',
+      tokens: {'--color-error': '#FF0000'},
     });
     const css = generateThemeTestCSS(theme);
-    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
+    expect(css).toContain('--color-error: #FF0000;');
     expect(css).toMatch(
-      /--color-info-emphasized: light-dark\(#[0-9A-F]{6}, #[0-9A-F]{6}\)/,
+      /--color-on-error: light-dark\(#[0-9A-F]{6}, #[0-9A-F]{6}\)/,
     );
   });
 

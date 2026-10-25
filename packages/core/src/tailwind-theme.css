@@ -67,9 +67,6 @@
 
   /* --- Interactive --- */
   --color-accent-bg: var(--color-accent);
-  --color-info-emphasized: var(--color-info-emphasized);
-  --color-info-muted: var(--color-info-muted);
-  --color-on-info: var(--color-on-info);
   --color-accent-muted: var(--color-accent-muted);
   --color-on-accent: var(--color-on-accent);
   --color-neutral: var(--color-neutral);
@@ -78,6 +75,9 @@
   --color-tint-hover: var(--color-tint-hover);
 
   /* --- Status --- */
+  --color-info: var(--color-info);
+  --color-info-muted: var(--color-info-muted);
+  --color-on-info: var(--color-on-info);
   --color-success: var(--color-success);
   --color-success-muted: var(--color-success-muted);
   --color-on-success: var(--color-on-success);
@@ -87,13 +87,10 @@
   --color-warning: var(--color-warning);
   --color-warning-muted: var(--color-warning-muted);
   --color-on-warning: var(--color-on-warning);
-  /* Surface-specific status roles (architecture:theme-tokens INV11). The
-   * released bg-/text-/border-success keys above keep resolving to the base
-   * tokens. text-status-* reads the status text role; icons and borders use
-   * the same colour by default. */
-  --color-success-emphasized: var(--color-success-emphasized);
-  --color-warning-emphasized: var(--color-warning-emphasized);
-  --color-error-emphasized: var(--color-error-emphasized);
+  /* Each --color-<status> is the strong status fill, with --color-on-<status>
+   * content at 4.5:1 or more (architecture:theme-tokens INV11). text-status-*
+   * reads the status text role for page text; icons and borders use the same
+   * colour by default. */
   --color-status-info: var(--color-text-info);
   --color-status-success: var(--color-text-success);
   --color-status-warning: var(--color-text-warning);

@@ -151,7 +151,7 @@ describe('StatusDot', () => {
       // pairing is what keeps custom icons legible.
       const probe = stylex.create({
         warning: {
-          backgroundColor: colorVars['--color-warning-emphasized'],
+          backgroundColor: colorVars['--color-warning'],
           color: colorVars['--color-on-warning'],
         },
       });

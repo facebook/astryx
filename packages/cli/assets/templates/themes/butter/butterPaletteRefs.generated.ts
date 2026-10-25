@@ -40,6 +40,7 @@ export const butterPaletteRefs = {
   },
   accent: {
     light: {35: '#194ce8', 40: '#225bff', 55: '#4d82ff'},
+    dark: {70: '#81a9ff'},
   },
   cyan: {
     light: {25: '#004649', 80: '#8dd2d3', 90: '#a9eff0'},

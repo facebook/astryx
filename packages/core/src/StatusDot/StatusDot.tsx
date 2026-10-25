@@ -87,7 +87,7 @@ const styles = stylex.create({
  */
 const variants = stylex.create({
   success: {
-    backgroundColor: colorVars['--color-success-emphasized'],
+    backgroundColor: colorVars['--color-success'],
     color: colorVars['--color-on-success'],
     // Forced colors replace status fills with Canvas; this boundary keeps the
     // fill's shape visible (architecture:theme-tokens INV11).
@@ -100,7 +100,7 @@ const variants = stylex.create({
     outlineOffset: {default: null, '@media (forced-colors: active)': '-1px'},
   },
   warning: {
-    backgroundColor: colorVars['--color-warning-emphasized'],
+    backgroundColor: colorVars['--color-warning'],
     color: colorVars['--color-on-warning'],
     // Forced colors replace status fills with Canvas; this boundary keeps the
     // fill's shape visible (architecture:theme-tokens INV11).
@@ -113,7 +113,7 @@ const variants = stylex.create({
     outlineOffset: {default: null, '@media (forced-colors: active)': '-1px'},
   },
   error: {
-    backgroundColor: colorVars['--color-error-emphasized'],
+    backgroundColor: colorVars['--color-error'],
     color: colorVars['--color-on-error'],
     // Forced colors replace status fills with Canvas; this boundary keeps the
     // fill's shape visible (architecture:theme-tokens INV11).

@@ -303,33 +303,33 @@ describe('rule order and writes', () => {
   it('keeps status aliases at the root so conditional authored roles win', () => {
     const theme = defineTheme({
       name: 'conditional-status-role-precedence',
-      tokens: {'--color-accent': '#0074e2'},
+      tokens: {'--color-text-blue': '#0074e2'},
       adaptations: {
         rules: [
           {
             when: {contrast: 'more'},
-            value: {tokens: {'--color-info-emphasized': '#123456'}},
+            value: {tokens: {'--color-text-info': '#123456'}},
           },
           {
             when: {pointer: 'coarse'},
-            value: {tokens: {'--color-accent': '#0055aa'}},
+            value: {tokens: {'--color-text-blue': '#0055aa'}},
           },
         ],
       },
-      onDark: {tokens: {'--color-accent': '#ffffff'}},
+      onDark: {tokens: {'--color-text-blue': '#ffffff'}},
     });
     const {component} = generateThemeCSS(theme);
     const adaptationCss = generateAdaptationCSS(theme).component;
 
-    // The root alias follows source-only adaptation writes through var(), but
-    // no media alias is generated from the unpaired default accent collapse.
-    expect(
-      count(component, '--color-info-emphasized: var(--color-accent);'),
-    ).toBe(1);
-    expect(component).toContain('--color-info-emphasized: #123456;');
-    expect(adaptationCss).toContain('--color-accent: #0055aa;');
+    // The root alias follows source-only adaptation writes through var(); the
+    // dark media surface that sets the hue rebinds its own alias.
+    expect(count(component, '--color-text-info: var(--color-text-blue);')).toBe(
+      2,
+    );
+    expect(component).toContain('--color-text-info: #123456;');
+    expect(adaptationCss).toContain('--color-text-blue: #0055aa;');
     expect(adaptationCss).not.toContain(
-      '--color-info-emphasized: var(--color-accent);',
+      '--color-text-info: var(--color-text-blue);',
     );
   });
 
@@ -340,38 +340,39 @@ describe('rule order and writes', () => {
         rules: [
           {
             when: {contrast: 'more'},
-            value: {tokens: {'--color-info-emphasized': '#123456'}},
+            value: {tokens: {'--color-text-info': '#123456'}},
           },
           {
             when: {pointer: 'coarse'},
-            value: {tokens: {'--color-accent': '#0055aa'}},
+            value: {tokens: {'--color-text-blue': '#0055aa'}},
           },
         ],
       },
-      onDark: {tokens: {'--color-accent': '#ffffff'}},
+      onDark: {tokens: {'--color-text-blue': '#ffffff'}},
     });
     const css = generateThemeCSS(theme).component;
-    const alias = '--color-info-emphasized: var(--color-accent);';
-    const authored = '--color-info-emphasized: #123456;';
+    const alias = '--color-text-info: var(--color-text-blue);';
+    const authored = '--color-text-info: #123456;';
 
-    // The adaptation-only source keeps its alias where that condition matches.
-    // Default media accent collapses are intentionally not propagated without
-    // a paired on-accent override.
-    expect(count(css, alias)).toBe(1);
+    // The adaptation-only source keeps its alias where that condition matches,
+    // and the media surface that sets the hue gets its own.
+    expect(count(css, alias)).toBe(2);
     // The authored role is emitted normally and replayed after adaptation aliases.
     expect(count(css, authored)).toBe(2);
-    expect(css.lastIndexOf(authored)).toBeGreaterThan(css.lastIndexOf(alias));
+    // The replay follows the adaptation alias; the media alias sits in its
+    // own surface block.
+    expect(css.lastIndexOf(authored)).toBeGreaterThan(css.indexOf(alias));
   });
 
   it('suppresses a root alias that an adaptation would turn into a cycle', () => {
     const theme = defineTheme({
       name: 'adaptation-closes-root-role-cycle',
-      tokens: {'--color-accent': '#0074e2'},
+      tokens: {'--color-text-blue': '#0074e2'},
       adaptations: {
         rules: [
           {
             when: {contrast: 'more'},
-            value: {tokens: {'--color-accent': 'var(--color-info-emphasized)'}},
+            value: {tokens: {'--color-text-blue': 'var(--color-text-info)'}},
           },
         ],
       },
@@ -379,10 +380,8 @@ describe('rule order and writes', () => {
     const rootCss = generateThemeRules(theme).join('\n');
     const fullCss = generateThemeCSS(theme).component;
 
-    expect(fullCss).toContain('--color-accent: var(--color-info-emphasized);');
-    expect(rootCss).not.toContain(
-      '--color-info-emphasized: var(--color-accent);',
-    );
+    expect(fullCss).toContain('--color-text-blue: var(--color-text-info);');
+    expect(rootCss).not.toContain('--color-text-info: var(--color-text-blue);');
   });
 
   it('checks generated aliases across overlapping adaptation rules', () => {
@@ -394,14 +393,14 @@ describe('rule order and writes', () => {
             when: {contrast: 'more'},
             value: {
               tokens: {
-                '--color-accent': 'var(--color-text-info)',
+                '--color-text-blue': 'var(--color-text-success)',
               },
             },
           },
           {
             when: {pointer: 'coarse'},
             value: {
-              tokens: {'--color-text-blue': 'var(--color-info-emphasized)'},
+              tokens: {'--color-text-green': 'var(--color-text-info)'},
             },
           },
         ],
@@ -409,30 +408,28 @@ describe('rule order and writes', () => {
     });
     const css = generateAdaptationCSS(theme).component;
 
-    // The first rule changes the accent, so INV17 derives a concrete Info
-    // fill there (its dark accent cannot carry white). With no alias left in
-    // the loop, the second rule's text-info alias is cycle-free.
-    expect(css).toMatch(/--color-info-emphasized: light-dark\(#/);
-    expect(css).not.toContain('--color-info-emphasized: var(--color-accent);');
+    // Both rules can match together, so the second alias would close a loop
+    // through the first and is not emitted.
     expect(css).toContain('--color-text-info: var(--color-text-blue);');
+    expect(css).not.toContain('--color-text-success: var(--color-text-green);');
   });
 
   it('keeps aliases across mutually exclusive adaptation conditions', () => {
     const theme = defineTheme({
       name: 'mutually-exclusive-status-references',
-      tokens: {'--color-accent': '#0066cc'},
+      tokens: {'--color-text-blue': '#0066cc'},
       adaptations: {
         rules: [
           {
             when: {pointer: 'coarse'},
             value: {
-              tokens: {'--color-accent': 'var(--color-text-blue)'},
+              tokens: {'--color-text-blue': 'var(--color-text-success)'},
             },
           },
           {
             when: {pointer: 'fine'},
             value: {
-              tokens: {'--color-text-blue': 'var(--color-info-emphasized)'},
+              tokens: {'--color-text-green': 'var(--color-text-info)'},
             },
           },
         ],
@@ -440,30 +437,30 @@ describe('rule order and writes', () => {
     });
 
     expect(generateThemeCSS(theme).component).toContain(
-      '--color-info-emphasized: var(--color-accent);',
+      '--color-text-info: var(--color-text-blue);',
     );
   });
 
   it('keeps an alias when a later matching rule repairs the cycle', () => {
     const theme = defineTheme({
       name: 'repaired-status-reference',
-      tokens: {'--color-accent': '#0066cc'},
+      tokens: {'--color-text-blue': '#0066cc'},
       adaptations: {
         rules: [
           {
             when: {pointer: 'coarse'},
-            value: {tokens: {'--color-accent': 'var(--color-info-emphasized)'}},
+            value: {tokens: {'--color-text-blue': 'var(--color-text-info)'}},
           },
           {
             when: {pointer: 'coarse'},
-            value: {tokens: {'--color-accent': '#abcdef'}},
+            value: {tokens: {'--color-text-blue': '#abcdef'}},
           },
         ],
       },
     });
 
     expect(generateThemeCSS(theme).component).toContain(
-      '--color-info-emphasized: var(--color-accent);',
+      '--color-text-info: var(--color-text-blue);',
     );
   });
 
@@ -475,15 +472,15 @@ describe('rule order and writes', () => {
           {
             when: {pointer: 'coarse'},
             value: {
-              tokens: {'--color-info-emphasized': 'var(--color-on-info)'},
+              tokens: {'--color-text-info': 'var(--color-text-success)'},
             },
           },
           {
             when: {pointer: 'coarse'},
             value: {
               tokens: {
-                '--color-accent': '#123456',
-                '--color-on-accent': 'var(--color-info-emphasized)',
+                '--color-text-blue': '#123456',
+                '--color-text-green': 'var(--color-text-info)',
               },
             },
           },
@@ -492,99 +489,97 @@ describe('rule order and writes', () => {
     });
     const css = generateAdaptationCSS(theme).component;
 
-    expect(css).not.toContain('--color-on-info: var(--color-on-accent);');
+    expect(css).not.toContain('--color-text-success: var(--color-text-green);');
   });
 
   it('preserves important declarations while modeling later repairs', () => {
     const theme = defineTheme({
       name: 'important-status-reference',
-      tokens: {'--color-accent': '#0066cc'},
+      tokens: {'--color-text-blue': '#0066cc'},
       adaptations: {
         rules: [
           {
             when: {pointer: 'coarse'},
             value: {
               tokens: {
-                '--color-accent': 'var(--color-info-emphasized) !important',
+                '--color-text-blue': 'var(--color-text-info) !important',
               },
             },
           },
           {
             when: {pointer: 'coarse'},
-            value: {tokens: {'--color-accent': '#123456'}},
+            value: {tokens: {'--color-text-blue': '#123456'}},
           },
         ],
       },
     });
     const rootCss = generateThemeRules(theme).join('\n');
 
-    expect(rootCss).not.toContain(
-      '--color-info-emphasized: var(--color-accent);',
-    );
+    expect(rootCss).not.toContain('--color-text-info: var(--color-text-blue);');
   });
 
   it('does not treat an escaped bang as declaration priority', () => {
     const theme = defineTheme({
       name: 'escaped-bang-status-reference',
-      tokens: {'--color-accent': '#0066cc'},
+      tokens: {'--color-text-blue': '#0066cc'},
       adaptations: {
         rules: [
           {
             when: {pointer: 'coarse'},
             value: {
               tokens: {
-                '--color-accent': 'var(--color-info-emphasized) \\!important',
+                '--color-text-blue': 'var(--color-text-info) \\!important',
               },
             },
           },
           {
             when: {pointer: 'coarse'},
-            value: {tokens: {'--color-accent': '#123456'}},
+            value: {tokens: {'--color-text-blue': '#123456'}},
           },
         ],
       },
     });
     const rootCss = generateThemeRules(theme).join('\n');
 
-    expect(rootCss).toContain('--color-info-emphasized: var(--color-accent);');
+    expect(rootCss).toContain('--color-text-info: var(--color-text-blue);');
   });
 
   it('does not treat an important() function as declaration priority', () => {
     const theme = defineTheme({
       name: 'important-function-status-reference',
-      tokens: {'--color-accent': '#0066cc'},
+      tokens: {'--color-text-blue': '#0066cc'},
       adaptations: {
         rules: [
           {
             when: {pointer: 'coarse'},
-            value: {tokens: {'--color-accent': 'red !important()'}},
+            value: {tokens: {'--color-text-blue': 'red !important()'}},
           },
           {
             when: {pointer: 'coarse'},
-            value: {tokens: {'--color-accent': 'var(--color-info-emphasized)'}},
+            value: {tokens: {'--color-text-blue': 'var(--color-text-info)'}},
           },
         ],
       },
     });
 
     expect(generateThemeRules(theme).join('\n')).not.toContain(
-      '--color-info-emphasized: var(--color-accent);',
+      '--color-text-info: var(--color-text-blue);',
     );
   });
 
   it('does not model a dropped declaration as a cycle repair', () => {
     const theme = defineTheme({
       name: 'dropped-status-repair',
-      tokens: {'--color-accent': '#0066cc'},
+      tokens: {'--color-text-blue': '#0066cc'},
       adaptations: {
         rules: [
           {
             when: {pointer: 'coarse'},
-            value: {tokens: {'--color-accent': 'var(--color-info-emphasized)'}},
+            value: {tokens: {'--color-text-blue': 'var(--color-text-info)'}},
           },
           {
             when: {pointer: 'coarse'},
-            value: {tokens: {'--color-accent': '#abcdef;'}},
+            value: {tokens: {'--color-text-blue': '#abcdef;'}},
           },
         ],
       },
@@ -592,11 +587,9 @@ describe('rule order and writes', () => {
     const warnings: string[] = [];
     const rootCss = generateThemeRules(theme, warnings).join('\n');
 
-    expect(rootCss).not.toContain(
-      '--color-info-emphasized: var(--color-accent);',
-    );
+    expect(rootCss).not.toContain('--color-text-info: var(--color-text-blue);');
     expect(generateAdaptationCSS(theme, warnings).component).not.toContain(
-      '--color-accent: #abcdef;',
+      '--color-text-blue: #abcdef;',
     );
     expect(warnings.some(warning => warning.includes('dropped'))).toBe(true);
   });
@@ -604,36 +597,36 @@ describe('rule order and writes', () => {
   it('keeps a root alias when a matching rule overwrites that alias', () => {
     const theme = defineTheme({
       name: 'overwritten-root-status-alias',
-      tokens: {'--color-accent': '#0066cc'},
+      tokens: {'--color-text-blue': '#0066cc'},
       adaptations: {
         rules: [
           {
             when: {pointer: 'coarse'},
-            value: {tokens: {'--color-info-emphasized': '#123456'}},
+            value: {tokens: {'--color-text-info': '#123456'}},
           },
         ],
       },
     });
-    theme.__adaptationRules![0].tokens['--color-info-emphasized'] =
-      'var(--color-info-emphasized)';
+    theme.__adaptationRules![0].tokens['--color-text-info'] =
+      'var(--color-text-info)';
 
     expect(generateThemeRules(theme).join('\n')).toContain(
-      '--color-info-emphasized: var(--color-accent);',
+      '--color-text-info: var(--color-text-blue);',
     );
   });
 
   it('invalidates cached status aliases after legacy token mutation', () => {
     const theme = defineTheme({
       name: 'mutated-status-alias-cache',
-      tokens: {'--color-accent': '#0074e2'},
+      tokens: {'--color-text-blue': '#0074e2'},
     });
 
     expect(generateThemeCSS(theme).component).toContain(
-      '--color-info-emphasized: var(--color-accent);',
+      '--color-text-info: var(--color-text-blue);',
     );
-    theme.tokens['--color-accent'] = 'var(--color-info-emphasized)';
+    theme.tokens['--color-text-blue'] = 'var(--color-text-info)';
     expect(generateThemeCSS(theme).component).not.toContain(
-      '--color-info-emphasized: var(--color-accent);',
+      '--color-text-info: var(--color-text-blue);',
     );
   });
 
@@ -669,15 +662,15 @@ describe('rule order and writes', () => {
         rules: [
           {
             when: {contrast: 'more'},
-            value: {tokens: {'--color-accent': '#0055aa'}},
+            value: {tokens: {'--color-text-blue': '#0055aa'}},
           },
         ],
       },
     });
     const css = generateAdaptationCSS(theme).component;
 
-    expect(css).toContain('--color-accent: #0055aa;');
-    expect(css).toContain('--color-info-emphasized: var(--color-accent);');
+    expect(css).toContain('--color-text-blue: #0055aa;');
+    expect(css).toContain('--color-text-info: var(--color-text-blue);');
   });
 
   it('lets explicit values beat generated values within one rule', () => {
@@ -690,14 +683,14 @@ describe('rule order and writes', () => {
             when: {contrast: 'more'},
             value: {
               color: {accent: '#00AA00'},
-              tokens: {'--color-accent': '#FF0000'},
+              tokens: {'--color-text-blue': '#FF0000'},
             },
           },
         ],
       },
     });
 
-    expect(theme.__adaptationRules?.[0].tokens['--color-accent']).toBe(
+    expect(theme.__adaptationRules?.[0].tokens['--color-text-blue']).toBe(
       '#FF0000',
     );
   });

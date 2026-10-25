@@ -54,14 +54,14 @@ export const docs = {
               "—"
             ],
             [
-              "--color-<status>-emphasized",
+              "--color-<status>",
               "Strong status fill, such as a Badge or StatusDot.",
               "--color-on-<status>"
             ],
             [
               "--color-on-<status>",
               "Text and icons on the strong fill (4.5:1 or more).",
-              "--color-<status>-emphasized"
+              "--color-<status>"
             ],
             [
               "--color-<status>-muted",
@@ -72,11 +72,6 @@ export const docs = {
               "--color-on-<status>-muted",
               "Text and icons on the pale fill (4.5:1 or more).",
               "--color-<status>-muted"
-            ],
-            [
-              "--color-success / -warning / -error",
-              "Released base colours, unchanged for compatibility. Prefer the roles above.",
-              "—"
             ]
           ]
         },
@@ -209,6 +204,21 @@ export const docs = {
               "#E3193B"
             ],
             [
+              "--color-info",
+              "#0064E0",
+              "#0064E0"
+            ],
+            [
+              "--color-info-muted",
+              "#0082FB33",
+              "#0082FB3F"
+            ],
+            [
+              "--color-on-info",
+              "#FFFFFF",
+              "#FFFFFF"
+            ],
+            [
               "--color-success",
               "#0D8626",
               "#0D8626"
@@ -236,7 +246,7 @@ export const docs = {
             [
               "--color-on-error",
               "#FFFFFF",
-              "#FFFFFF"
+              "#0A1317"
             ],
             [
               "--color-warning",
@@ -252,36 +262,6 @@ export const docs = {
               "--color-on-warning",
               "#0A1317",
               "#0A1317"
-            ],
-            [
-              "--color-info-emphasized",
-              "#0064E0",
-              "#0064E0"
-            ],
-            [
-              "--color-on-info",
-              "var(--color-on-accent)",
-              "var(--color-on-accent)"
-            ],
-            [
-              "--color-success-emphasized",
-              "var(--color-success)",
-              "var(--color-success)"
-            ],
-            [
-              "--color-warning-emphasized",
-              "var(--color-warning)",
-              "var(--color-warning)"
-            ],
-            [
-              "--color-error-emphasized",
-              "#E3193B",
-              "#E3193B"
-            ],
-            [
-              "--color-info-muted",
-              "var(--color-accent-muted)",
-              "var(--color-accent-muted)"
             ],
             [
               "--color-text-info",

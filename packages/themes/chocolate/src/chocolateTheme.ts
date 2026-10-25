@@ -124,9 +124,9 @@ export const chocolateTheme = defineTheme({
     '--color-on-error': '#141010',
     '--color-on-warning': ['#4a3520', '#4a3520'],
 
-    '--color-info-emphasized': 'var(--color-accent)',
-    '--color-info-muted': 'var(--color-accent-muted)',
-    '--color-on-info': 'var(--color-on-accent)',
+    // Info is its own blue status, independent of the accent.
+    '--color-info': ['#3a5e8c', '#7ba8d4'],
+    '--color-info-muted': 'var(--color-background-blue)',
 
     '--color-text-info': ['#2e4a6e', '#8dbce0'],
     '--color-text-success': ['#526f00', '#a8d43a'],

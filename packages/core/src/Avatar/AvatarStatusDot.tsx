@@ -136,7 +136,7 @@ const styles = stylex.create({
   // drawn on the dot — the shape glyph and any user `icon` — paints from
   // `currentColor`, so the two can never drift out of contrast.
   success: {
-    backgroundColor: colorVars['--color-success-emphasized'],
+    backgroundColor: colorVars['--color-success'],
     color: colorVars['--color-on-success'],
   },
   // The ring variant inverts: a hollow shape only reads as hollow if its
@@ -148,7 +148,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   error: {
-    backgroundColor: colorVars['--color-error-emphasized'],
+    backgroundColor: colorVars['--color-error'],
     color: colorVars['--color-on-error'],
   },
   icon: {
