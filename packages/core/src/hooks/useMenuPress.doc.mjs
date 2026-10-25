@@ -79,8 +79,7 @@ export const docs = {
       name: 'options.longPressDelayMs',
       type: 'number',
       description:
-        "How long a finger must rest on the trigger before the menu opens under it. A tap released sooner opens the menu through the trigger's click.",
-      default: '500',
+        "How long a finger must rest on the trigger before the menu opens under it. Unset, a finger on a touch screen (a coarse primary pointer) opens the menu as it presses, or after 150 ms inside a scroll view, and a fine primary pointer waits 500 ms. Set, it is that wait everywhere. A tap released sooner opens the menu through the trigger's click.",
     },
     {
       name: 'options.isEnabled',
@@ -171,7 +170,8 @@ export const docsDense = {
       'close: a MOUSE released outside; a finger released outside: not called.',
     'options.getScroller':
       'element to edge-autoscroll while tracking; default = menu root if it overflows.',
-    'options.longPressDelayMs': 'finger hold before open, ms (default 500).',
+    'options.longPressDelayMs':
+      'finger hold before open, ms; unset: touch screen opens on press (150 ms in a scroller), fine pointer 500.',
     'options.isEnabled': 'false = inert.',
   },
   returnDescriptions: {

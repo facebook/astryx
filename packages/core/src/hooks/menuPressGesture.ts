@@ -41,7 +41,7 @@
  * - /packages/core/src/hooks/useMenuPress.ts
  */
 
-import {UIKIT_GESTURES} from '../motion/uikit/gestures';
+import {MENU_PRESS_HANDOFF_PX as UIKIT_MENU_PRESS_HANDOFF_PX} from './menuPressValues';
 
 /** How long a MOUSE's opening press must last before its release may act. */
 export const MENU_PRESS_SETTLE_MS = 300;
@@ -50,8 +50,7 @@ export const MENU_PRESS_SETTLE_MS = 300;
  * How far a finger that opened the menu travels, from the first sample the
  * menu sees, before it starts picking (UIMenu's scrub handoff).
  */
-export const MENU_PRESS_HANDOFF_PX: number =
-  UIKIT_GESTURES.menuPress.handoff.value;
+export const MENU_PRESS_HANDOFF_PX: number = UIKIT_MENU_PRESS_HANDOFF_PX;
 
 export type MenuPressPointerType = 'mouse' | 'touch' | 'pen';
 
@@ -69,6 +68,7 @@ export type MenuPressGesture<T> =
       /**
        * A finger's handoff: the first position the menu saw after it opened,
        * which the scrub distance is counted from. Unset until that sample.
+       * @internal Implements `spec:AST-094` FR29; not public contract.
        */
       handoffFrom?: {x: number; y: number};
     }
@@ -97,8 +97,12 @@ export type MenuPressEvent<T> =
       row: T | null;
       isInMenu: boolean;
       time: number;
-      /** Viewport position, for a finger's handoff distance. */
+      /**
+       * Viewport position, for a finger's handoff distance.
+       * @internal Implements `spec:AST-094` FR29; not public contract.
+       */
       x?: number;
+      /** @internal See `x`. */
       y?: number;
     }
   | {
@@ -107,8 +111,12 @@ export type MenuPressEvent<T> =
       isInMenu: boolean;
       isOnTrigger: boolean;
       time: number;
-      /** Viewport position, for a finger's handoff distance. */
+      /**
+       * Viewport position, for a finger's handoff distance.
+       * @internal Implements `spec:AST-094` FR29; not public contract.
+       */
       x?: number;
+      /** @internal See `x`. */
       y?: number;
     }
   /** The browser took the gesture: pointercancel, a second pointer, a scroll. */
@@ -124,8 +132,9 @@ export type MenuPressEffect<T> =
   /**
    * The gesture ended without a row acting. `stray` says whether the browser
    * will still report a `click` for this gesture that must not act; `dismiss`
-   * says the menu should close: a mouse released outside it. `clear` says a
-   * row was still lit and its highlight goes (the browser took the press).
+   * says the menu should close: a mouse released outside it. `clear`
+   * (@internal, `spec:AST-094` FR28) says a row a finger lit loses its
+   * highlight (the browser took the press).
    */
   | {type: 'settle'; stray: boolean; dismiss: boolean; clear?: true};
 
@@ -361,14 +370,17 @@ function stepTracking<T>(
       return release(gesture.pointerType, event);
     case 'cancel':
       // The browser took the gesture (a scroll, a second finger): nothing
-      // acts, the menu stays, and no click follows a cancelled pointer. The
-      // row the press lit loses its highlight, as UIKit clears it when the
-      // list starts scrolling.
+      // acts, the menu stays, and no click follows a cancelled pointer. A
+      // row a finger lit loses its highlight, as UIKit clears it when the
+      // list starts scrolling; a mouse's highlight stays where it was
+      // (spec:AST-017 FR59).
       return idle({
         type: 'settle',
         stray: false,
         dismiss: false,
-        ...(gesture.row != null ? {clear: true as const} : {}),
+        ...(gesture.row != null && isFinger(gesture.pointerType)
+          ? {clear: true as const}
+          : {}),
       });
     case 'down':
     case 'opened':

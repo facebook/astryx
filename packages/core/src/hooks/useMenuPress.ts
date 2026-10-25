@@ -35,6 +35,9 @@
  *   inside a scroll view once the 150 ms content-touch delay has passed with
  *   no scroll; the opening finger then travels UIMenu's handoff distance
  *   before it picks.
+ * - A gesture that began elsewhere (a context menu's long press) continues
+ *   into the menu through the same internal entry's `continueGesture`, as
+ *   the opening press under the same handoff.
  * - `pointercancel`, a second pointer, or the window losing focus end the
  *   gesture with nothing acting; the model never re-implements scrolling.
  * - While a press is tracked in an overflowing menu, a pointer resting near
@@ -72,8 +75,12 @@ import {
   type MenuPressPointerType,
 } from './menuPressGesture';
 import {createNativeScrollProbe} from '../gestures/nativeScroll';
-import {UIKIT_GESTURES} from '../motion/uikit/gestures';
-import {scroll} from '../motion/uikit/scroll';
+import {
+  DELAYS_CONTENT_TOUCHES_MS,
+  MENU_PRESS_HOLD_OPEN_SLOP_PX,
+} from './menuPressValues';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
+import {useMediaQuery} from './useMediaQuery';
 import {useLongPress, type UseLongPressHandlers} from './useLongPress';
 import {edgeAutoscroll} from '../utils/edgeAutoscroll';
 import {focusForLastInput} from '../utils/focusReturn';
@@ -239,7 +246,10 @@ export interface UseMenuPressOptions {
   hitTest?: (x: number, y: number) => Element | null;
   /**
    * How long a finger rests on the trigger before the menu opens under it.
-   * @default 500
+   * Unset, the wait follows `spec:AST-094` FR29 where the primary pointer is
+   * coarse (none in a fixed bar, 150 ms in a scroll view, the opening finger
+   * picking after UIMenu's handoff) and is 500 ms where it is fine. Set, it
+   * is that wait everywhere, as released (`spec:AST-094` FR25).
    */
   longPressDelayMs?: number;
   /** Whether the model is live. @default true */
@@ -288,6 +298,42 @@ export interface UseMenuPressReturn {
   cancel: () => void;
 }
 
+/**
+ * An in-flight pointer handed to
+ * {@link DropdownMenuPressReturn.continueGesture}.
+ *
+ * @internal
+ */
+export interface MenuPressContinuation {
+  pointerId: number;
+  pointerType: MenuPressPointerType;
+  /** `Date.now()` of the moment the menu opened under it. */
+  time: number;
+}
+
+/**
+ * What core's own menus get from {@link useDropdownMenuPress}: the public
+ * return, and the continuation of a pointer that went down elsewhere. Not
+ * exported from the hooks entry point.
+ *
+ * @internal
+ */
+export interface DropdownMenuPressReturn extends UseMenuPressReturn {
+  /**
+   * Continue a pointer that went down elsewhere (a context menu's long press,
+   * a trigger this hook does not own) into the menu that just opened under
+   * it. The pointer is tracked from here as the opening press
+   * (`module:DropdownMenu/useMenuPress` FR11). With the `'uikit'` touch model
+   * (the primary pointer is coarse) a finger picks only after UIMenu's handoff
+   * distance from the first position the menu sees after it opened, as a
+   * trigger's opening finger does, and its lift before that acts on nothing and
+   * leaves the menu open; otherwise, and for a mouse, the opening press follows
+   * the settle rule. Ignored while another gesture is live or the hook is
+   * disabled.
+   */
+  continueGesture: (pointer: MenuPressContinuation) => void;
+}
+
 // =============================================================================
 // Helpers
 // =============================================================================
@@ -297,21 +343,23 @@ function normalizePointerType(type: string): MenuPressPointerType | null {
 }
 
 /**
- * Where a pointer is, for a finger's handoff distance: given only with
- * `touchModel: 'uikit'`. Without it the machine keeps the settle rule.
+ * Where a pointer is, for a finger's handoff distance: given with
+ * `touchModel: 'uikit'`, the primary pointer being coarse, for the trigger's
+ * opening finger and a continued one alike (`spec:AST-094` FR29, FR33). Without
+ * it the machine keeps the settle rule.
  */
 function handoffPosition(
   event: PointerEvent,
-  touchModel: DropdownMenuPressOptions['touchModel'],
+  hasHandoff: boolean,
 ): {x?: number; y?: number} {
-  return touchModel === 'uikit' ? {x: event.clientX, y: event.clientY} : {};
+  return hasHandoff ? {x: event.clientX, y: event.clientY} : {};
 }
 
 /**
  * Whether a control is inside a scroll view (`spec:AST-094` FR11): it sits in
- * a scrollable container, or in scrolling page content with no fixed
- * ancestor. A control in a fixed bar (a top bar, a tab bar, a toolbar, fixed
- * or stuck) is not.
+ * a scrollable container (under a sticky ancestor too), or in scrolling page
+ * content with no fixed or sticky ancestor. A control in a fixed bar (a top
+ * bar, a tab bar, a toolbar, fixed or stuck to the page) is not.
  */
 function isInScrollView(control: Element): boolean {
   if (!createNativeScrollProbe(control).isInsideScroller) {
@@ -320,6 +368,10 @@ function isInScrollView(control: Element): boolean {
   const doc = control.ownerDocument;
   const view = doc.defaultView;
   const root = doc.scrollingElement ?? doc.documentElement;
+  // A sticky ancestor sticks within the nearest scroller: inside a
+  // scrollable container it is still in a scroll view; stuck to the page it
+  // is a bar.
+  let isStuck = false;
   for (
     let node = control.parentElement;
     node != null && node !== root && node !== doc.body;
@@ -335,11 +387,14 @@ function isInScrollView(control: Element): boolean {
     if (scrolls) {
       return true;
     }
-    if (style?.position === 'fixed' || style?.position === 'sticky') {
+    if (style?.position === 'fixed') {
       return false;
     }
+    if (style?.position === 'sticky') {
+      isStuck = true;
+    }
   }
-  return true;
+  return !isStuck;
 }
 
 function isRowFocusable(row: HTMLElement): boolean {
@@ -423,7 +478,22 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
   // `touchModel` does not reach the model.
   const {touchModel: _touchModel, ...publicOptions} =
     options as DropdownMenuPressOptions;
-  return useDropdownMenuPress(publicOptions);
+  // An unset delay follows FR29 where the primary pointer is coarse
+  // (spec:AST-094 FR25); a set one, or a fine primary pointer, keeps the
+  // released wait.
+  const isCoarsePrimary = useMediaQuery(TOUCH_QUERY, false);
+  const press = useDropdownMenuPress({
+    ...publicOptions,
+    touchModel:
+      publicOptions.longPressDelayMs === undefined && isCoarsePrimary
+        ? 'uikit'
+        : 'pointer',
+  });
+  // Neither is the continuation: the public return is the public contract.
+  return useMemo(() => {
+    const {continueGesture: _continueGesture, ...publicPress} = press;
+    return publicPress;
+  }, [press]);
 }
 
 /**
@@ -435,7 +505,7 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
  */
 export function useDropdownMenuPress(
   options: DropdownMenuPressOptions,
-): UseMenuPressReturn {
+): DropdownMenuPressReturn {
   const optionsRef = useRef(options);
   optionsRef.current = options;
   // The highlight, and the hover focus of the rows in this menu, follow the
@@ -785,7 +855,10 @@ export function useDropdownMenuPress(
             row: point.row,
             isInMenu: point.isInMenu,
             time: Date.now(),
-            ...handoffPosition(event, optionsRef.current.touchModel),
+            ...handoffPosition(
+              event,
+              optionsRef.current.touchModel === 'uikit',
+            ),
           },
           event,
         );
@@ -803,7 +876,10 @@ export function useDropdownMenuPress(
             isInMenu: point.isInMenu,
             isOnTrigger: point.isOnTrigger,
             time: Date.now(),
-            ...handoffPosition(event, optionsRef.current.touchModel),
+            ...handoffPosition(
+              event,
+              optionsRef.current.touchModel === 'uikit',
+            ),
           },
           event,
         );
@@ -896,10 +972,8 @@ export function useDropdownMenuPress(
   });
   const scrollerHold = useLongPress({
     onLongPress: fireLongPress,
-    delayMs: isUikit ? scroll.delaysContentTouchesMs : pointerHoldMs,
-    ...(isUikit
-      ? {moveCancelPx: UIKIT_GESTURES.menuPress.holdOpenSlop.value}
-      : {}),
+    delayMs: isUikit ? DELAYS_CONTENT_TOUCHES_MS : pointerHoldMs,
+    ...(isUikit ? {moveCancelPx: MENU_PRESS_HOLD_OPEN_SLOP_PX} : {}),
   });
   const holdDetectorsRef = useRef({plain: plainHold, scroller: scrollerHold});
   holdDetectorsRef.current = {plain: plainHold, scroller: scrollerHold};
@@ -1039,6 +1113,29 @@ export function useDropdownMenuPress(
     );
   }, []);
 
+  const continueGesture = useCallback(
+    (pointer: MenuPressContinuation) => {
+      const {isEnabled = true} = optionsRef.current;
+      if (!isEnabled || gestureRef.current.phase !== 'idle') {
+        return;
+      }
+      attach(pointer.pointerId);
+      // The menu opened under this pointer: the gesture is the opening press.
+      // Where the primary pointer is coarse a finger's handoff counts from the
+      // first position the menu sees after it opened, as the trigger's opening
+      // finger's does; elsewhere the settle rule decides its release.
+      gestureRef.current = {
+        phase: 'open',
+        pointerType: pointer.pointerType,
+        openedAt: pointer.time,
+      };
+      if (pointer.pointerType !== 'mouse') {
+        installTouchMovePreventer();
+      }
+    },
+    [attach, installTouchMovePreventer],
+  );
+
   const cancel = useCallback(() => {
     // The host closed the menu under the gesture: end it with no effect of
     // its own.
@@ -1053,7 +1150,7 @@ export function useDropdownMenuPress(
     };
   }, [endGesture]);
 
-  return useMemo<UseMenuPressReturn>(
+  return useMemo<DropdownMenuPressReturn>(
     () => ({
       menuProps: {
         onPointerDown: handleMenuPointerDown,
@@ -1065,6 +1162,7 @@ export function useDropdownMenuPress(
       },
       isTriggerClickFromPress,
       cancel,
+      continueGesture,
     }),
     [
       handleMenuPointerDown,
@@ -1072,6 +1170,7 @@ export function useDropdownMenuPress(
       handleTriggerContextMenu,
       isTriggerClickFromPress,
       cancel,
+      continueGesture,
     ],
   );
 }
