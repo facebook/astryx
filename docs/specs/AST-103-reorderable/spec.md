@@ -3,12 +3,12 @@ schema_version: 4
 template_version: 2
 kind: system-spec
 id: spec:AST-103
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-10-25
+phase: accepted
 owners: [cixzhang]
 affects_architecture: [architecture:public-component-api]
 affects_families: []
@@ -27,9 +27,6 @@ affects_consumer_docs: []
 ```
 
 <!-- Describe the system, not the project: present tense, what it does. No proposals, history, pull requests, or research in the record; see docs/contributing/spec-writing.md and report its rubric results in the pull request. -->
-
-**Proposed; pending owner decision.** Every requirement below awaits the
-owner's decision, except DEC-1 through DEC-4, which are decided.
 
 ## Intent
 
@@ -82,7 +79,7 @@ const reorderable = createReorderable({
   onReorder: ({key, to}) => setTree(tree => moveNode(tree, key, to)),
 });
 
-<TreeList reorderable={reorderable} items={tree} />;
+<TreeList reorderable={reorderable} items={tree} getKey={node => node.id} />;
 ```
 
 Here `to` is `{ parent, index }`; the handle, keys, actions, and
