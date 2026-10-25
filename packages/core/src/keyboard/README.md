@@ -146,4 +146,4 @@ at any time, for something that appears while the keyboard moves.
 | `index.ts`               | Entry point.                                                                               |
 
 The timing constants live in `../motion/uikit/keyboard.ts`, the spring in
-`keyboard.spring`, the duration in `keyboard.notificationMs`.
+`keyboard.spring`, the duration in `timing.keyboardNotificationMs`.
