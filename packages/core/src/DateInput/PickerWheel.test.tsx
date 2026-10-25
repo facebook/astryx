@@ -26,14 +26,16 @@ import {
   vi,
 } from 'vitest';
 import {timing} from '../motion/uikit';
+import {fontWeightVars} from '../theme/tokens.stylex';
 import {PickerWheel} from './PickerWheel';
 import type {WheelHandle, WheelOption, WheelProps} from './wheelOptions';
-import {rowTransform} from './wheelDrum';
+import {WHEEL_ROW_PITCH, todayLook} from './wheelLook';
 
-const ROW = 32;
-const RADIUS = 97.2;
+const ROW = WHEEL_ROW_PITCH;
 /** The column is laid out 216 px tall, its band's centre 108 px down. */
 const CENTRE = 108;
+/** The row resting on the band, as today's look draws it in that column. */
+const AT_BAND = `translateY(0px) ${todayLook(2 * CENTRE).rowFrame(0).transform}`;
 
 /** Hours 0-23 with 09:00-17:00 bounds: 0-8 and 18-23 are disabled. */
 const HOURS: WheelOption[] = Array.from({length: 24}, (_, hour) => ({
@@ -170,28 +172,37 @@ function advance(ms: number) {
   });
 }
 
-/** The angle a row is drawn at, from its inline transform. */
-function angleOf(element: Element): number {
-  const match = /rotateX\((-?[\d.]+)rad\)/.exec(
-    (element as HTMLElement).style.transform,
+/**
+ * How far below the band's centre a row is drawn: its place along the
+ * strip, the strip's translation, and any whole cycles a looping row moves.
+ */
+function distanceOf(element: Element): number {
+  const row = element as HTMLElement;
+  const strip = row.parentElement!;
+  const index = Array.prototype.indexOf.call(strip.children, row);
+  const translateY = (transform: string) =>
+    Number(/translateY\((-?[\d.]+)px\)/.exec(transform)?.[1] ?? 0);
+  return (
+    index * ROW +
+    translateY(strip.style.transform) +
+    translateY(row.style.transform)
   );
-  return match ? -Number(match[1]) : NaN;
 }
 
 describe('PickerWheel — at rest', () => {
   it('is a listbox with one option per row, each label once', () => {
     const {column} = renderWheel();
     expect(screen.getAllByRole('option')).toHaveLength(24);
-    // The band's magnified copy is generated content, not text.
+    // Each option is drawn once, as its own row.
     expect(screen.getAllByText('10')).toHaveLength(1);
     expect(column).toHaveAttribute('tabindex', '0');
   });
 
   it('parks the committed row under the band, the others on the cylinder', () => {
     const {option, column} = renderWheel();
-    expect(option('10').style.transform).toBe(rowTransform(0));
-    expect(angleOf(option('11'))).toBeCloseTo(ROW / RADIUS, 4);
-    expect(angleOf(option('09'))).toBeCloseTo(-ROW / RADIUS, 4);
+    expect(option('10').style.transform).toBe(AT_BAND);
+    expect(distanceOf(option('11'))).toBeCloseTo(ROW, 2);
+    expect(distanceOf(option('09'))).toBeCloseTo(-ROW, 2);
     expect(column.getAttribute('aria-activedescendant')).toBe(option('10').id);
   });
 
@@ -238,11 +249,51 @@ describe('PickerWheel — at rest', () => {
         onChange={onChange}
       />,
     );
-    expect(option('14').style.transform).toBe(rowTransform(0));
+    expect(option('14').style.transform).toBe(AT_BAND);
   });
 });
 
+/** Whether a row carries the band's mark: painted, or styled in render and not overridden. */
+function isMarked(row: HTMLElement): boolean {
+  if (row.style.fontWeight !== '') {
+    return row.style.fontWeight === fontWeightVars['--font-weight-semibold'];
+  }
+  return row.className.includes('rowActive');
+}
+
 describe('PickerWheel — a finger', () => {
+  it('turns text selection off while a finger holds it (spec:AST-094 FR41)', () => {
+    // A held finger turns the wheel, so its pan takes the selection lock
+    // (jsdom keeps only the standard property of the lock).
+    const {column} = renderWheel();
+    touch('touchstart', column, CENTRE);
+    expect(column.style.getPropertyValue('user-select')).toBe('none');
+    advance(300);
+    touch('touchend', column, CENTRE);
+    expect(column.style.getPropertyValue('user-select')).toBe('');
+  });
+
+  it('marks no row while a fling coasts, then the row it rests on', () => {
+    const {column, onChange} = renderWheel({
+      options: MINUTES,
+      value: 10,
+      label: 'Minute',
+    });
+    const marked = () =>
+      screen
+        .getAllByRole('option')
+        .filter(isMarked)
+        .map(row => row.textContent);
+    expect(marked()).toEqual(['10']);
+    drag(column, 180, 60, {steps: 6, interval: 16});
+    // The coast plays (jsdom shows its end inline, but no row is marked).
+    expect(marked()).toEqual([]);
+    advance(4000);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    const rested = String(onChange.mock.calls[0][0]).padStart(2, '0');
+    expect(marked()).toEqual([rested]);
+  });
+
   it('drags the rows with it, without committing until the wheel rests', () => {
     const {column, option, onChange} = renderWheel();
     touch('touchstart', column, 150);
@@ -251,7 +302,7 @@ describe('PickerWheel — a finger', () => {
       touch('touchmove', column, 150 - i * 6);
     }
     // 48 px of travel, 10 of it the pan's hysteresis: 38 px up.
-    expect(angleOf(option('10'))).toBeCloseTo(-38 / RADIUS, 3);
+    expect(distanceOf(option('10'))).toBeCloseTo(-38, 1);
     expect(onChange).not.toHaveBeenCalled();
     touch('touchend', column, 102);
     advance(2000);
@@ -275,7 +326,7 @@ describe('PickerWheel — a finger', () => {
     advance(2000);
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith(9);
-    expect(option('09').style.transform).toBe(rowTransform(0));
+    expect(option('09').style.transform).toBe(AT_BAND);
   });
 
   it('flings across several rows before committing', () => {
@@ -302,7 +353,7 @@ describe('PickerWheel — a finger', () => {
     // It rests on 23 (disabled), then turns back onto 17.
     advance(2000);
     expect(onChange).not.toHaveBeenCalledWith(23);
-    expect(option('17').style.transform).toBe(rowTransform(0));
+    expect(option('17').style.transform).toBe(AT_BAND);
   });
 
   it('is stopped where it is by a finger that lands on it, and commits nothing', () => {
@@ -313,21 +364,28 @@ describe('PickerWheel — a finger', () => {
     });
     drag(column, 180, 60, {steps: 6, interval: 16});
     advance(150);
-    const caught = angleOf(option('10'));
+    // jsdom runs no animations: a motion shows its end inline.
+    const heading = distanceOf(option('10'));
     touch('touchstart', column, 100);
+    const caught = distanceOf(option('10'));
+    // Stopped where it was on screen, well short of where it was heading,
+    // and held there.
+    expect(Math.abs(caught - heading)).toBeGreaterThan(ROW);
     advance(50);
-    expect(angleOf(option('10'))).toBeCloseTo(caught, 1);
+    expect(Math.abs(distanceOf(option('10')) - caught)).toBeLessThan(1);
     touch('touchend', column, 100);
     // A catch is not a tap: no turn onto the touched row, only the snap.
     advance(1000);
     expect(onChange).toHaveBeenCalledTimes(1);
     const rested = onChange.mock.calls[0][0] as number;
-    expect(Math.abs(angleOf(option(String(rested).padStart(2, '0'))))).toBe(0);
+    expect(Math.abs(distanceOf(option(String(rested).padStart(2, '0'))))).toBe(
+      0,
+    );
   });
 
   it('turns onto a tapped row and commits it on arrival', () => {
     const {column, onChange} = renderWheel();
-    const below = CENTRE + RADIUS * Math.sin(ROW / RADIUS);
+    const below = CENTRE + ROW;
     touch('touchstart', column, below);
     advance(60);
     touch('touchend', column, below);
@@ -354,14 +412,14 @@ describe('PickerWheel — a finger', () => {
       advance(16);
       touch('touchmove', column, 150 - 12 * i);
     }
-    expect(angleOf(option('10'))).not.toBeCloseTo(0, 2);
+    expect(distanceOf(option('10'))).not.toBeCloseTo(0, 2);
     rerender(<PickerWheel {...props} isActive={false} />);
     touch('touchend', column, 78);
     advance(1000);
     rerender(<PickerWheel {...props} isActive />);
     advance(100);
     expect(onChange).not.toHaveBeenCalled();
-    expect(angleOf(option('10'))).toBeCloseTo(0, 4);
+    expect(distanceOf(option('10'))).toBeCloseTo(0, 4);
   });
 
   it('ignores fingers while hidden', () => {
@@ -530,26 +588,46 @@ describe('PickerWheel — under reduced motion', () => {
     }
   }
 
-  it('lands a fling on its row by a fade, then commits it', () => {
+  it('coasts a fling as momentum, its rows flat, then commits it', () => {
+    // design:reduced-motion DR2: the momentum that continues a throw is
+    // direct movement, not a transition, so it plays; only the rows' tip
+    // gives way to their fade.
     const {column, onChange} = renderWheel({
       options: MINUTES,
       value: 10,
       label: 'Minute',
     });
     drag(column, 180, 60, {steps: 6, interval: 16});
-    expectFadesOnly();
-    advance(FADE_MS - 1);
+    expect(animations.length).toBeGreaterThan(0);
+    for (const {keyframes, options} of animations) {
+      expect(options.duration).toBeGreaterThan(FADE_MS);
+      for (const frame of keyframes) {
+        // The strip travels; the rows stay upright and full size.
+        expect(String(frame.transform)).not.toMatch(
+          /rotateX\((?!0deg)|scale\((?!1\))/,
+        );
+      }
+    }
     expect(onChange).not.toHaveBeenCalled();
-    advance(1);
+    advance(4000);
     expect(onChange).toHaveBeenCalledTimes(1);
     // The row the fling projects, as without the preference.
     expect(onChange.mock.calls[0][0]).toBeGreaterThan(15);
   });
 
+  it('fades a slow release onto its row', () => {
+    // A release that snaps is a transition the wheel starts: it cross-fades.
+    const {column, onChange} = renderWheel();
+    drag(column, 60, 60 + 10 + 1.4 * ROW, {steps: 20, interval: 40, hold: 300});
+    expectFadesOnly();
+    advance(FADE_MS);
+    expect(onChange).toHaveBeenLastCalledWith(9);
+  });
+
   it('fades for a tap, a key and a spin, whatever spin it is asked for', async () => {
     const ref = createRef<WheelHandle>();
     const {column, onChange} = renderWheel({ref});
-    const below = CENTRE + RADIUS * Math.sin(ROW / RADIUS);
+    const below = CENTRE + ROW;
     touch('touchstart', column, below);
     advance(60);
     touch('touchend', column, below);
@@ -636,7 +714,7 @@ describe('PickerWheel — mechanics for its owners', () => {
       isLooping: true,
     });
     // Minute 00 is drawn just below 59.
-    expect(angleOf(option('00'))).toBeCloseTo(ROW / RADIUS, 4);
+    expect(distanceOf(option('00'))).toBeCloseTo(ROW, 2);
     fireEvent.keyDown(column, {key: 'ArrowDown'});
     expect(onChange).toHaveBeenLastCalledWith(0);
   });

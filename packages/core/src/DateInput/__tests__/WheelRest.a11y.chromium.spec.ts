@@ -22,7 +22,8 @@ import {
   serveStorybook,
   type StaticServer,
 } from '@astryxdesign/a11y-spec/storybook';
-import {picker, UIKIT_GESTURES} from '../../motion/uikit';
+import {UIKIT_GESTURES} from '../../motion/uikit';
+import {WHEEL_ROW_PITCH} from '../wheelLook';
 
 let storybook: StaticServer;
 test.beforeAll(async () => {
@@ -96,8 +97,8 @@ async function drag(page: Page, wheel: Locator, dy: number, steps = 30) {
 const selectedHour = (hours: Locator) =>
   hours.locator('[role="option"][aria-selected="true"]');
 
-/** UIPickerView's row pitch: the touch column's. */
-const ROW = picker.geometry.rowHeight;
+/** The touch column's row pitch: today's row. */
+const ROW = WHEEL_ROW_PITCH;
 /**
  * A drag begins only once the finger has travelled the pan's hysteresis,
  * which the rows never show, so each drag adds that and a little more and
@@ -170,20 +171,20 @@ test('under reduced motion an arrow key step lands under its cross-fade, never a
   const {field, hours} = await openHourWheel(page);
   await hours.focus();
   // Every frame from before the key until well after the 200 ms dip: where
-  // the rows are drawn (the band copy's strip where the column has one,
-  // its first row otherwise) and how opaque they are.
+  // the committed row (10) is drawn and how opaque its rows are (the scroller
+  // or the touch column's rows, whichever holds the options).
   const frames = hours.evaluate(
     async column =>
       new Promise<{at: number; opacity: number}[]>(resolve => {
         const seen: {at: number; opacity: number}[] = [];
+        const row = column.querySelector<HTMLElement>(
+          '[role="option"][aria-selected="true"]',
+        );
+        const faded = row?.parentElement ?? column;
         const sample = () => {
-          const strip = column.querySelector<HTMLElement>('[data-wheel-strip]');
-          const rows =
-            strip ?? column.querySelector<HTMLElement>('[role="option"]');
-          const faded = strip?.parentElement ?? column;
           seen.push({
             at: Math.round(
-              (rows?.getBoundingClientRect().top ?? 0) -
+              (row?.getBoundingClientRect().top ?? 0) -
                 column.getBoundingClientRect().top,
             ),
             opacity: Number(getComputedStyle(faded).opacity),
