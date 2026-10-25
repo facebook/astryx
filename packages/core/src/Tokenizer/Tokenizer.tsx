@@ -1049,6 +1049,16 @@ export function Tokenizer<T extends SearchableItem>({
     },
     [value, handleRemove, isTouch, renderToken, selectedItem, announce, t],
   );
+  // Text arriving with no key press (a paste, dictation, a keyboard
+  // suggestion) goes on after the selected token too: the selection goes,
+  // so Delete erases text again.
+  const handleChangeQuery = useCallback(
+    (query: string) => {
+      setSelectedId(null);
+      onChangeQuery?.(query);
+    },
+    [onChangeQuery],
+  );
 
   // Click wrapper to focus input
   const handleWrapperClick = useCallback(() => {
@@ -1221,7 +1231,7 @@ export function Tokenizer<T extends SearchableItem>({
                 .filter(Boolean)
                 .join(' ') || undefined
             }
-            onChangeQuery={onChangeQuery}
+            onChangeQuery={handleChangeQuery}
             __queryEntries={createEntries}
             debounceMs={debounceMs}
             onKeyDown={handleKeyDown}

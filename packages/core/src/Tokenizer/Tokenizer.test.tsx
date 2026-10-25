@@ -452,6 +452,23 @@ describe('Tokenizer', () => {
       expect(input).not.toHaveAccessibleDescription(message);
     });
 
+    it('drops the selection when text arrives with no key press: a paste, dictation or a keyboard suggestion', () => {
+      stubPointer(true);
+      const onChange = vi.fn();
+      render(<Controlled onChange={onChange} />);
+      const input = screen.getByRole('combobox');
+      act(() => input.focus());
+      fireEvent.keyDown(input, {key: 'Backspace'});
+      expect(tokenNamed('Bob')).toHaveAttribute('data-selected', 'true');
+      // A paste: the value changes, with no keydown.
+      fireEvent.change(input, {target: {value: 'xy'}});
+      expect(tokenNamed('Bob')).not.toHaveAttribute('data-selected');
+      expect(input).not.toHaveAccessibleDescription(
+        'Bob selected. Delete again to remove it.',
+      );
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
     it('keeps the selected token when another key is typed', () => {
       stubPointer(true);
       const onChange = vi.fn();
