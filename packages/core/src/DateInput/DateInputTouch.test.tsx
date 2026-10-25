@@ -1950,7 +1950,7 @@ describe('DateInput — month/year wheels', () => {
     expect(onChange).toHaveBeenLastCalledWith('2026-01-10');
   });
 
-  it('under a finger: brings a year change past the range back onto it, date and month wheel too', async () => {
+  it('under a finger: takes a year change past the range on to its nearest reachable month, date and month wheel too', async () => {
     const onChange = vi.fn();
     renderAndOpen(
       <Controlled
@@ -1973,6 +1973,23 @@ describe('DateInput — month/year wheels', () => {
         document.getElementById(months.getAttribute('aria-activedescendant')!),
       ).toHaveTextContent('June'),
     );
+  });
+
+  it('under a finger: opening the wheels on a date outside the range changes nothing until a wheel moves', () => {
+    // An untouched value is never changed by opening: the wheels show the
+    // calendar's month, inside the range, and nothing commits.
+    const onChange = vi.fn();
+    renderAndOpen(
+      <Controlled
+        initial="2025-12-15"
+        min="2026-01-01"
+        max="2026-12-31"
+        onChange={onChange}
+      />,
+    );
+    openWheels();
+    expect(onChange).not.toHaveBeenCalled();
+    expect(field()).toHaveValue('December 15, 2025');
   });
 
   it('only moves the calendar when no date is chosen', () => {

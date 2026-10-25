@@ -550,7 +550,7 @@ describe('DateTimeInput touch surface', () => {
     });
   });
 
-  it('under a finger: a date the month wheel moves runs changeAction after onChange, and is busy until it settles (family:input-fields FR6)', async () => {
+  it('under a finger: a date the month wheel moves runs changeAction after onChange, shows at once, and is busy until it settles (family:input-fields FR6)', async () => {
     const calls: string[] = [];
     let resolve: () => void = () => {};
     const changeAction = vi.fn(async (value: string | undefined) => {
@@ -584,6 +584,9 @@ describe('DateTimeInput touch surface', () => {
         'changeAction 2026-05-21T09:30',
       ]);
     });
+    // Optimistic: the moved date shows while the Action is pending, though
+    // the controlled value is still March 21.
+    expect(dateField()).toHaveValue('May 21, 2026');
     expect(document.querySelector('[aria-busy="true"]')).not.toBeNull();
     await act(async () => {
       resolve();
@@ -591,6 +594,26 @@ describe('DateTimeInput touch surface', () => {
     await waitFor(() => {
       expect(document.querySelector('[aria-busy="true"]')).toBeNull();
     });
+  });
+
+  it('under a finger: opening the month/year wheels on a date outside the range changes nothing', () => {
+    const onChange = vi.fn();
+    withMonthLayout(() => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2025-12-15T09:30' as ISODateTimeString}
+          min={'2026-01-01T00:00' as ISODateTimeString}
+          max={'2026-12-31T23:59' as ISODateTimeString}
+          onChange={onChange}
+        />,
+      );
+      openDateSheet();
+      fireEvent.click(
+        screen.getByRole('button', {name: /Choose month and year/}),
+      );
+    });
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it('under a finger: keeps a date a custom constraint refuses, while the calendar moves', () => {
