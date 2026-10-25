@@ -7,18 +7,16 @@
  *   the rubber-band coefficient, the bounce-back spring, paging and the
  *   content-touch delay
  * @position The scroll domain of the UIKit constants table (motion/uikit);
- *   read by decay.ts, rubberBand.ts, projection.ts and components
+ *   read by the motion math and components
  *
  * Every leaf carries one `@source` (apple-docs | wwdc | webkit | measured |
  * GUESS); webkit and GUESS values also carry the `@measure` task that will
- * confirm or replace them (listed in motion/README.md). sources.test.ts
+ * confirm or replace them (listed in MEASUREMENTS.md). uikit.test.ts
  * enforces both.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/motion/MEASUREMENTS.md (measurement tasks)
  */
-
-import {registerMotionTable} from '../roles';
 
 /**
  * UIScrollView's deceleration, rubber band, bounce, paging and touch-delay
@@ -124,8 +122,4 @@ export const scroll = {
 } as const;
 
 // Each spring, duration and curve above is a motion role a theme may retune
-// (motion/roles.ts).
-registerMotionTable('scroll', scroll, {
-  // Arbitration: who gets the touch, not how anything moves.
-  exclude: ['delaysContentTouchesMs'],
-});
+// (motion/roles.ts); registerTables.ts registers them.

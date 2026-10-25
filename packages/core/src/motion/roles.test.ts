@@ -10,6 +10,7 @@
  */
 
 import {describe, expect, it} from 'vitest';
+import {MOTION_ROLE_KINDS} from './roleKinds.generated';
 import {
   formatMotionRoleValue,
   isMotionRoleId,
@@ -23,6 +24,9 @@ import {
 } from './roles';
 import {dampingRatioOf, naturalFrequency, toSpring} from './spring';
 import {navigation, scroll, springs, timing} from './uikit';
+import {registerSharedTables} from './uikit/registerTables';
+
+registerSharedTables();
 
 describe('motion roles', () => {
   it('names a role by its table path, and its CSS variable in kebab case', () => {
@@ -76,9 +80,8 @@ describe('motion roles', () => {
     expect(motionRoleOf(scroll.bounce)?.kind).toBe('spring');
     expect(motionRoleOf(timing.curves.easeInOut)?.kind).toBe('curve');
     expect(motionRoleIn(timing.press, 'flashMs')?.kind).toBe('duration');
-    expect(motionRoleIn(timing, 'reducedMotionCrossFadeMs')?.id).toBe(
-      'timing.reducedMotionCrossFadeMs',
-    );
+    // The Reduced Motion fade is not a role: no theme lengthens it.
+    expect(motionRoleIn(timing, 'reducedMotionCrossFadeMs')).toBeUndefined();
     expect(motionRoleIn(navigation, 'transitionMs')?.id).toBe(
       'navigation.transitionMs',
     );
@@ -94,6 +97,18 @@ describe('motion roles', () => {
     // Every role has its own CSS variable.
     const variables = listMotionRoles().map(role => role.variable);
     expect(new Set(variables).size).toBe(variables.length);
+  });
+
+  it('lists every registered role, and its kind, in the generated role kinds', () => {
+    // The shared tables (other tests here register tables of their own).
+    const shared = listMotionRoles().filter(role =>
+      ['springs', 'scroll', 'timing', 'navigation'].includes(
+        role.id.split('.')[0],
+      ),
+    );
+    expect(
+      Object.fromEntries(shared.map(role => [role.id, role.kind])),
+    ).toEqual(MOTION_ROLE_KINDS);
   });
 
   it('writes every table value in CSS form and reads back the same motion', () => {

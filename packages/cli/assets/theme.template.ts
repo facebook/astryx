@@ -189,7 +189,7 @@ export const myTheme = defineTheme({
    * `springs`, `durations` and `curves` retune touch motion roles by table
    * path; a role left out keeps its measured default:
    *   springs: {'springs.sheetPresent': {duration: 0.6, bounce: 0.1}}
-   *   durations: {'timing.reducedMotionCrossFadeMs': 300}
+   *   durations: {'navigation.transitionMs': 300}
    *
    * Reference: `astryx docs motion`.
    */
@@ -359,7 +359,7 @@ export const myTheme = defineTheme({
    *
    * `from` includes its point; `below` excludes it. The other supported axes
    * are primary-pointer precision, contrast preference, motion preference, and
-   * platform (`ios` for iOS and iPadOS browsers, `other` for the rest).
+   * platform (`ios` for the browsers of iPhone and iPad, `other` for the rest).
    * Component writes in a rule are validated exactly like root `components`.
    * The one addition: a custom value that is valid only because a theme
    * enrolls it must be declared at the root first, since generated type

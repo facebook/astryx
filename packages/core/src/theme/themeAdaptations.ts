@@ -3,7 +3,8 @@
 /**
  * @file themeAdaptations.ts
  * @input Ordered environment-conditioned theme value rules from defineTheme
- * @output Validated breakpoint metadata and resolved CSS-first rule layers
+ * @output Validated breakpoint metadata, the compact definition, and resolved
+ *   CSS-first rule layers
  * @position Theme system core; consumed by defineTheme, AppShell, and the CSS compiler
  *
  * Adaptations are deliberately closed and ordered. Width points are fixed names,
@@ -55,6 +56,47 @@ export const DEFAULT_WIDTH_BREAKPOINTS: Readonly<WidthBreakpoints> =
     '2xl': 1536,
   });
 
+/**
+ * When a screen is compact, for a component that chooses a presentation by
+ * screen size (`spec:AST-012` FR9): width below the theme's effective `md`
+ * point, or height below 500. The numbers are the same on every platform (CSS
+ * pixels on the web, points on iOS, density-independent pixels on Android).
+ */
+export interface CompactDefinition {
+  /** Compact below this viewport width: the effective `md` point. */
+  readonly widthBelow: number;
+  /** Compact below this viewport height. */
+  readonly heightBelow: number;
+  /** The definition as a media query list, without the `@media` keyword. */
+  readonly query: string;
+  /** Compact and a coarse primary pointer, without the `@media` keyword. */
+  readonly coarsePointerQuery: string;
+}
+
+/** The viewport height below which a screen is compact (`spec:AST-012` FR9). */
+const COMPACT_HEIGHT_BELOW = 500;
+
+/**
+ * The compact definition for a theme's width points (`spec:AST-012` FR9).
+ * Pass a theme's effective width breakpoints; omit them for the defaults.
+ */
+export function compactDefinition(
+  points: Readonly<Pick<WidthBreakpoints, 'md'>> = DEFAULT_WIDTH_BREAKPOINTS,
+): CompactDefinition {
+  const width = `(width < ${points.md}px)`;
+  const height = `(height < ${COMPACT_HEIGHT_BELOW}px)`;
+  return Object.freeze({
+    widthBelow: points.md,
+    heightBelow: COMPACT_HEIGHT_BELOW,
+    query: `${width}, ${height}`,
+    coarsePointerQuery: `${width} and (pointer: coarse), ${height} and (pointer: coarse)`,
+  });
+}
+
+/** The compact definition at the default width points. */
+export const DEFAULT_COMPACT_DEFINITION: CompactDefinition =
+  compactDefinition();
+
 /** Inclusive lower and exclusive upper edges for one width condition. */
 export interface ThemeAdaptationWidthCondition {
   /** Match at and above this named point. */
@@ -74,7 +116,7 @@ export interface ThemeAdaptationCondition {
   /** User reduced-motion preference. */
   motion?: 'reduce' | 'no-preference';
   /**
-   * The platform's web engine: `ios` is iOS and iPadOS WebKit (every browser
+   * The platform's web engine: `ios` is the WebKit of iPhone and iPad (every browser
    * there), detected with `@supports (-webkit-touch-callout: none)`; `other`
    * is everything else. Pair `ios` with `pointer: 'coarse'` for a touch
    * profile, such as touch motion tuned per platform.
@@ -676,7 +718,7 @@ function mediaQueryForCondition(
   return parts.join(' and ');
 }
 
-/** iOS and iPadOS WebKit: the one engine with the touch-callout property. */
+/** The WebKit of iPhone and iPad: the one engine with the touch-callout property. */
 const IOS_SUPPORTS = '(-webkit-touch-callout: none)';
 
 /** The @supports prelude (without the keyword) for a platform condition. */

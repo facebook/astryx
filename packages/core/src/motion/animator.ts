@@ -95,21 +95,28 @@
  * - a tap-driven start can show its first moving frame two to four frames
  *   into the curve (simulator, not yet confirmed on a device).
  *
- * Reduced Motion (law M5): with `prefers-reduced-motion: reduce`, UIKit's
- * Reduce Motion with Prefer Cross-Fade Transitions replaces travel with a
- * cross-fade. An `animate` or `play` that moves something (x, y, rotate,
- * scale) by default (`reducedMotion: 'crossfade'`):
- * - entering (opacity rises in the same call, or `crossfadeAs: 'entrance'`):
- *   jumps to the new place and fades in;
- * - leaving (opacity falls, or `crossfadeAs: 'exit'`): fades out in place,
- *   then jumps;
- * - otherwise: dips (fades out, jumps at the midpoint, fades back in).
- * The fade runs `timing.reducedMotionCrossFadeMs` on `timing.curves.easeInOut`
- * (a navigation push or pop), or on the spring given as `crossfade` (a sheet,
- * a full-screen modal or an alert fades on its presentation spring).
- * `'instant'` jumps without a fade; `'keep'` plays the motion unchanged (for
- * direct manipulation that UIKit keeps under Reduce Motion). Decays keep their
- * motion: they follow a finger's throw.
+ * Reduced Motion (design:reduced-motion): with `prefers-reduced-motion:
+ * reduce`, every `animate` and `play` (travel or opacity, on a spring or any
+ * curve) is replaced, and nothing moves, scales or springs:
+ * - on a coarse primary pointer (DR2), or for a call started by a touch
+ *   drag's release on any pointer (`touchRelease`, DR3), it becomes an
+ *   opacity-only cross-fade of `timing.reducedMotionCrossFadeMs` (200 ms)
+ *   on `timing.curves.easeInOut`:
+ *   - entering (opacity rises in the same call, or `crossfadeAs:
+ *     'entrance'`): lands in its new place at once and fades in;
+ *   - leaving (opacity falls, or `crossfadeAs: 'exit'`): fades out in place,
+ *     then lands;
+ *   - an opacity change alone: fades to its value;
+ *   - otherwise: dips (fades out, lands, fades back in);
+ *   travel lands with a plain style write while the element is transparent,
+ *   never as an animated transform; a busy main thread only keeps it
+ *   transparent longer, and a dip fades back in from the landing; a later
+ *   call that lands too carries a landing still waiting (two calls in one
+ *   frame land together), and a later opacity change lands it at once;
+ * - on any other primary pointer (DR3) it completes at once.
+ * No call option and no theme value lengthens the fade or keeps travel (DR4):
+ * the fade's length is not a theme role. Decays keep their motion: they
+ * follow a finger's throw.
  *
  * Theme: a spring or curve from a motion table (`springs.sheetPresent`,
  * `scroll.bounce`, the Reduce Motion fade's duration and curve) plays the
@@ -135,12 +142,7 @@
 
 import {cubicBezier} from './bezier';
 import {solveDecay} from './decay';
-import {
-  solveSpring,
-  toSpring,
-  type SpringCurve,
-  type SpringDescription,
-} from './spring';
+import {solveSpring, toSpring, type SpringDescription} from './spring';
 import {resolveMotion} from './resolveMotion';
 import {scroll} from './uikit/scroll';
 import {timing} from './uikit/timing';
@@ -198,15 +200,14 @@ export interface AnimateOptions {
    * animations on one clock.
    */
   at?: number;
-  /** Reduced Motion substitution; see the file header. */
-  reducedMotion?: 'crossfade' | 'instant' | 'keep';
   /**
-   * The substituted cross-fade's curve. By default a timed fade
-   * (`timing.reducedMotionCrossFadeMs` on easeInOut: UIKit's navigation
-   * cross-fade); with a spring the fade follows it, as UIKit fades a sheet, a
-   * full-screen modal or an alert on the presentation's own spring.
+   * The call starts from the release of a touch drag (a sheet let go, a swipe
+   * back released). Under Reduced Motion it then cross-fades whatever the
+   * primary pointer, where another call on a fine primary pointer completes
+   * at once (design:reduced-motion DR3). The gesture host knows; nothing is
+   * inferred from the last pointer.
    */
-  crossfade?: SpringDescription;
+  touchRelease?: boolean;
   /**
    * Which way the substituted cross-fade goes when the call's own opacity
    * does not say (a sheet slides in or out without fading): `'entrance'`
@@ -253,6 +254,12 @@ export interface AnimatorOptions {
   /** The Reduced Motion preference; `prefers-reduced-motion` by default. */
   prefersReducedMotion?: () => boolean;
   /**
+   * Whether the primary pointer is coarse; `(pointer: coarse)` by default.
+   * Under Reduced Motion a coarse pointer cross-fades and any other completes
+   * at once.
+   */
+  isCoarsePointer?: () => boolean;
+  /**
    * Runs a callback in the next animation frame; `requestAnimationFrame` by
    * default. A call from rest reads the start the browser gave it there.
    */
@@ -296,6 +303,16 @@ export interface MotionHandle {
  * @experimental
  */
 export interface Animator {
+  /**
+   * What Reduced Motion makes of a call on this element right now:
+   * `'off'` (motion plays), `'crossfade'` (an opacity-only fade: a coarse
+   * pointer, or `touchRelease`) or `'instant'` (any other pointer). For
+   * feedback that has no fade of its own (a press lift, a lens chasing the
+   * finger): skip it unless `'off'`.
+   */
+  reducedMotion(options?: {
+    touchRelease?: boolean;
+  }): 'off' | 'crossfade' | 'instant';
   /** The element the animator writes to, if attached. */
   readonly element: HTMLElement | null;
   /**
@@ -397,14 +414,49 @@ interface StartGroup {
   readonly animations: Animation[];
   readonly channels: Set<Channel>;
   resolved: boolean;
+  /** A later call in the same task that took over its curves. */
+  adoptedBy?: StartGroup;
   readonly resolve: (start: number) => void;
   readonly started: Promise<number>;
+}
+
+/** An atRest() call waiting for its curves to end. */
+interface RestWait {
+  timer: ReturnType<typeof setTimeout> | null;
+  settle: () => void;
 }
 
 interface HandleState {
   resolve: (finished: boolean) => void;
   settled: boolean;
   timer: ReturnType<typeof setTimeout> | null;
+}
+
+/**
+ * Reduced Motion travel that lands with a plain style write while the
+ * element is fully transparent (never an animated transform), then, in a
+ * dip, the fade back in.
+ */
+interface Landing {
+  readonly owner: HandleState;
+  /** ms after the call's start. */
+  readonly at: number;
+  readonly values: Map<MotionProperty, number>;
+  /** The fade back in that follows the landing (a dip). */
+  fadeIn: {readonly to: number; readonly ms: number} | null;
+  /** The opacity written with the landing (an exit by role). */
+  restore: number | null;
+  /** Earlier calls whose landings this one carries: they land with it. */
+  readonly carried: HandleState[];
+  timer: ReturnType<typeof setTimeout> | null;
+}
+
+/** What Reduced Motion makes of a call: its segments, and any landing. */
+interface ReducedPlan {
+  readonly next: Partial<Record<MotionProperty, Segment | null>>;
+  /** Values that stay where they are until the landing writes them. */
+  readonly holds: Partial<Record<MotionProperty, number>>;
+  readonly landing: Omit<Landing, 'owner' | 'timer' | 'carried'> | null;
 }
 
 const PROPERTIES: ReadonlyArray<MotionProperty> = [
@@ -540,6 +592,57 @@ export function animatorFor(
   return animator;
 }
 
+/**
+ * The inline text for a channel: `format`, except that an identity transform
+ * is written `none`. Any other value, `translate: 0px 0px` included, makes
+ * the element the containing block of its `position: fixed` descendants and
+ * a stacking context, so a motion back to identity would leave a fixed child
+ * moved with its parent; Mobile Safari also lets no finger scroll a list
+ * inside an element left at `scale: 1`. At rest the identity leaves the
+ * element entirely when its stylesheet agrees (`releaseIdentity`).
+ */
+function inlineText(
+  channel: Channel,
+  value: (property: MotionProperty) => number,
+): string {
+  const at = (property: MotionProperty, identity: number, digits: number) =>
+    round(value(property), digits) === identity;
+  switch (channel) {
+    case 'translate':
+      return at('x', 0, 3) && at('y', 0, 3) ? 'none' : format(channel, value);
+    case 'rotate':
+      return at('rotate', 0, 4) ? 'none' : format(channel, value);
+    case 'scale':
+      return at('scaleX', 1, 5) && at('scaleY', 1, 5)
+        ? 'none'
+        : format(channel, value);
+    case 'opacity':
+      return format(channel, value);
+  }
+}
+
+/** What `inlineText` writes for each channel at identity. */
+const IDENTITY_TEXT: Record<Channel, string> = {
+  translate: 'none',
+  rotate: 'none',
+  scale: 'none',
+  opacity: '1',
+};
+
+/** Whether a computed value (or an unset one) is the channel's identity. */
+function isIdentityText(channel: Channel, text: string): boolean {
+  const value = text.trim();
+  if (value === '' || value === 'none') {
+    return true;
+  }
+  const numbers = value.split(/\s+/).map(part => Number.parseFloat(part));
+  if (numbers.some(number => !Number.isFinite(number))) {
+    return false;
+  }
+  const identity = channel === 'scale' || channel === 'opacity' ? 1 : 0;
+  return numbers.every(number => Math.abs(number - identity) < 1e-6);
+}
+
 function expand(values: MotionValues): Partial<Record<MotionProperty, number>> {
   const out: Partial<Record<MotionProperty, number>> = {};
   for (const [key, value] of Object.entries(values)) {
@@ -577,6 +680,15 @@ export function defaultPrefersReducedMotion(): boolean {
   );
 }
 
+/** Whether the primary pointer is coarse: `(pointer: coarse)`. */
+export function defaultIsCoarsePointer(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(pointer: coarse)').matches
+  );
+}
+
 /**
  * Creates an animator for `element` (or for an element attached later).
  *
@@ -606,6 +718,7 @@ export function createAnimator(
   const pseudoElement = options.pseudoElement;
   const prefersReducedMotion =
     options.prefersReducedMotion ?? defaultPrefersReducedMotion;
+  const isCoarsePointer = options.isCoarsePointer ?? defaultIsCoarsePointer;
   const resting: Record<MotionProperty, number> = {
     ...IDENTITY,
     ...expand(options.initial ?? {}),
@@ -618,6 +731,8 @@ export function createAnimator(
   let target: HTMLElement | null = null;
   /** Calls from rest whose start still waits for the browser's commit. */
   const pendingGroups = new Set<StartGroup>();
+  /** atRest() calls still waiting; dispose settles them. */
+  const restWaits = new Set<RestWait>();
   /** The call being committed, when it starts from rest. */
   let callGroup: StartGroup | null = null;
   /** Channels promoted to the element's compositing layer (will-change). */
@@ -647,7 +762,15 @@ export function createAnimator(
     return segment;
   };
 
-  const valueAt = (property: MotionProperty, time: number): number => {
+  /**
+   * A curve whose call the browser has not started yet: still at its start
+   * on screen (valueAt), already moving in the model (velocityAt).
+   */
+  const isHeld = (segment: Segment) =>
+    segment.group != null && !segment.group.resolved;
+
+  /** The curve itself at `time`: what the keyframes play. */
+  const curveAt = (property: MotionProperty, time: number): number => {
     const segment = segments.get(property);
     if (segment == null) {
       return resting[property];
@@ -658,7 +781,24 @@ export function createAnimator(
     return segment.at(Math.max(0, time - segment.start));
   };
 
+  /** The value on screen at `time`. */
+  const valueAt = (property: MotionProperty, time: number): number => {
+    const segment = segments.get(property);
+    if (segment != null && isHeld(segment)) {
+      // Nothing has moved on screen until the browser starts the call.
+      return segment.at(0);
+    }
+    return curveAt(property, time);
+  };
+
   const velocityAt = (property: MotionProperty, time: number): number => {
+    const held = segments.get(property);
+    if (held != null && isHeld(held)) {
+      // Still at its start on screen, but moving in the model: a retarget
+      // carries the velocity the curve has reached by now, so a flick whose
+      // moves all land before the browser starts any keeps its speed.
+      return held.speed(Math.max(0, time - held.start));
+    }
     const segment = segmentAt(property, time);
     if (segment == null || time < segment.start) {
       return 0;
@@ -666,9 +806,9 @@ export function createAnimator(
     return segment.speed(time - segment.start);
   };
 
-  // A value just before a jump at absolute time `time`.
+  // The curve just before a jump at absolute time `time`.
   const valueBefore = (property: MotionProperty, time: number): number =>
-    valueAt(property, time - 1e-6);
+    curveAt(property, time - 1e-6);
 
   // -- writing --------------------------------------------------------------
 
@@ -683,7 +823,14 @@ export function createAnimator(
       return;
     }
     touched.add(channel);
-    target.style.setProperty(channel, format(channel, value));
+    const text = inlineText(channel, value);
+    if (text === IDENTITY_TEXT[channel]) {
+      // Identity leaves the element when nothing else would move it.
+      target.style.setProperty(channel, text);
+      releaseIdentity(channel);
+    } else {
+      target.style.setProperty(channel, text);
+    }
   };
 
   const sampleTimes = (
@@ -702,7 +849,7 @@ export function createAnimator(
       return [];
     }
     const times: number[] = [begin];
-    const value = (t: number) => valueAt(property, t);
+    const value = (t: number) => curveAt(property, t);
     const breaks = segment.jumps
       .map(j => segment.start + j)
       .filter(t => t > begin && t < end);
@@ -805,6 +952,15 @@ export function createAnimator(
       previous?.cancel();
       return;
     }
+    // A channel rebuilt by an explicit call (set, rebase, a retarget of
+    // another axis) while one of its curves still waits for the browser's
+    // start keeps that start: no explicit start for this animation.
+    const waiting =
+      callGroup ??
+      moving
+        .map(p => (segments.get(p) as Segment).group)
+        .find(group => group != null && !group.resolved) ??
+      null;
     if (callGroup != null) {
       // A curve of an earlier call still waiting for its first frame is
       // rebaked here: it starts with this call's commit.
@@ -812,7 +968,11 @@ export function createAnimator(
         const segment = segments.get(property) as Segment;
         const group = segment.group;
         if (group != null && group !== callGroup && !group.resolved) {
-          group.segments.splice(group.segments.indexOf(segment), 1);
+          const index = group.segments.indexOf(segment);
+          if (index >= 0) {
+            group.segments.splice(index, 1);
+          }
+          group.adoptedBy = callGroup;
           segment.group = callGroup;
           callGroup.segments.push(segment);
         }
@@ -865,7 +1025,7 @@ export function createAnimator(
       keyframes.push({
         offset,
         [channel]: format(channel, p =>
-          t >= end ? finalValue(p) : valueAt(p, t),
+          t >= end ? finalValue(p) : curveAt(p, t),
         ),
       });
     }
@@ -881,12 +1041,14 @@ export function createAnimator(
       easing: 'linear',
       ...(pseudoElement != null ? {pseudoElement} : {}),
     });
-    if (callGroup != null) {
+    if (waiting != null) {
       // From rest: no start time, so the browser starts the animation when
       // it commits it (StartGroup); the keyframes are sampled from `time`,
       // the call's own start.
-      callGroup.animations.push(animation);
-      callGroup.channels.add(channel);
+      waiting.animations.push(animation);
+      waiting.channels.add(channel);
+      // A cancel before the first frame rejects its ready promise.
+      (animation as Partial<Animation>).ready?.catch(() => {});
     } else {
       // One clock: the keyframes were sampled from `time`.
       animation.startTime = time;
@@ -931,8 +1093,31 @@ export function createAnimator(
         hold(channel, now());
       }
       animation.cancel();
+      releaseIdentity(channel);
     };
     retireTimers.set(channel, setTimeout(retire, Math.max(0, end - now())));
+  };
+
+  /**
+   * A channel at identity with no animation of its own leaves the element:
+   * its inline value is removed, unless the stylesheet would then move the
+   * element, in which case the identity stays inline. Runs when such a value
+   * is written and again when a motion ends.
+   */
+  const releaseIdentity = (channel: Channel) => {
+    if (target == null || pseudoElement != null || running.has(channel)) {
+      return;
+    }
+    const text = target.style.getPropertyValue(channel);
+    if (text !== IDENTITY_TEXT[channel]) {
+      return;
+    }
+    target.style.removeProperty(channel);
+    const view = target.ownerDocument.defaultView;
+    const resting = view?.getComputedStyle(target).getPropertyValue(channel);
+    if (resting != null && !isIdentityText(channel, resting)) {
+      target.style.setProperty(channel, text);
+    }
   };
 
   /**
@@ -1043,12 +1228,27 @@ export function createAnimator(
     properties: Iterable<MotionProperty>,
     at: number | undefined,
   ): StartGroup | null => {
-    if (at != null || target == null || typeof target.animate !== 'function') {
+    if (target == null || typeof target.animate !== 'function') {
       return null;
     }
     const channels = new Set<Channel>();
     for (const property of properties) {
       channels.add(CHANNEL_OF[property]);
+    }
+    if (at != null) {
+      // An explicit clock is the caller's, except the clock of a call from
+      // rest on these channels still waiting for the browser's start (a drop
+      // and the reorder that rebases it in the same task): the new call joins
+      // that call, and the browser's start moves both.
+      for (const channel of channels) {
+        for (const property of CHANNELS[channel]) {
+          const group = segments.get(property)?.group;
+          if (group != null && !group.resolved && at >= group.provisional - 1) {
+            return group;
+          }
+        }
+      }
+      return null;
     }
     for (const channel of channels) {
       for (const property of CHANNELS[channel]) {
@@ -1123,8 +1323,28 @@ export function createAnimator(
     requestFrame?.(() => syncGroup(group));
     ready.then(
       () => syncGroup(group),
-      () => resolveGroup(group, group.provisional), // cancelled: never started
+      () => settleCancelled(group),
     );
+  };
+
+  /**
+   * A call whose first animation was cancelled before its first frame: if a
+   * later call in the same task took over its curves, it starts with that
+   * call; otherwise it never started.
+   */
+  const settleCancelled = (group: StartGroup) => {
+    if (group.resolved) {
+      return;
+    }
+    let adopter = group.adoptedBy;
+    while (adopter?.adoptedBy != null) {
+      adopter = adopter.adoptedBy;
+    }
+    if (adopter != null && adopter !== group) {
+      void adopter.started.then(start => resolveGroup(group, start));
+      return;
+    }
+    resolveGroup(group, group.provisional);
   };
 
   const syncGroup = (group: StartGroup) => {
@@ -1203,11 +1423,15 @@ export function createAnimator(
   const lastSpring = new WeakMap<HandleState, SpringDescription>();
 
   const interrupt = (property: MotionProperty, time: number) => {
+    cancelLanding(property);
     const segment = segments.get(property);
     if (segment == null) {
       return;
     }
-    if (time < segment.start + segment.duration) {
+    if (
+      time < segment.start + segment.duration &&
+      !carriedOwners.has(segment.owner)
+    ) {
       settle(segment.owner, false);
     }
   };
@@ -1352,23 +1576,6 @@ export function createAnimator(
     };
   };
 
-  const jumpSegment = (
-    owner: HandleState,
-    start: number,
-    from: number,
-    to: number,
-    after: number,
-  ): Segment => ({
-    start,
-    duration: after,
-    target: to,
-    at: t => (t < after ? from : to),
-    speed: () => 0,
-    jumps: [after],
-    steps: true,
-    owner,
-  });
-
   // -- the animator -----------------------------------------------------------
 
   const commit = (changed: Iterable<MotionProperty>, time: number) => {
@@ -1381,26 +1588,204 @@ export function createAnimator(
     }
   };
 
+  /** Reduced Motion landings still waiting for the element to be transparent. */
+  const landings = new Set<Landing>();
+  /** Calls a later call's landing carries: an interrupt does not settle them. */
+  const carriedOwners = new Set<HandleState>();
+
   /**
-   * Reduced Motion: travel becomes UIKit's cross-fade (see the file header).
-   * Returns each property's new segment, or null to put it in place at once.
+   * A later write to `property` takes it from any landing. A write to opacity
+   * decides what shows, so a landing still waiting writes its travel at once
+   * rather than never, and its calls settle as interrupted.
    */
-  const crossfade = (
+  const cancelLanding = (property: MotionProperty) => {
+    for (const landing of [...landings]) {
+      if (property === 'opacity') {
+        endLanding(landing);
+        landNow(landing);
+      } else {
+        landing.values.delete(property);
+      }
+    }
+  };
+
+  const landNow = (landing: Landing) => {
+    const changed: MotionProperty[] = [];
+    for (const [property, value] of landing.values) {
+      segments.delete(property);
+      resting[property] = value;
+      changed.push(property);
+    }
+    if (changed.length > 0) {
+      commit(changed, now());
+    }
+    for (const owner of [landing.owner, ...landing.carried]) {
+      carriedOwners.delete(owner);
+      if (!owner.settled) {
+        settle(owner, false);
+      }
+    }
+  };
+
+  /**
+   * A later Reduced Motion call that lands too carries the landings still
+   * waiting: their travel lands with its own, which wins where both move a
+   * property, and their calls settle when it lands. So two calls in one
+   * frame (a drag cancel's position and scale) both land.
+   */
+  const adoptLandings = (
+    plan: NonNullable<ReducedPlan['landing']>,
+    properties: ReadonlyArray<MotionProperty>,
+  ): HandleState[] => {
+    const carried: HandleState[] = [];
+    for (const landing of [...landings]) {
+      for (const [property, value] of landing.values) {
+        if (!properties.includes(property) && !plan.values.has(property)) {
+          plan.values.set(property, value);
+        }
+      }
+      carried.push(landing.owner, ...landing.carried);
+      endLanding(landing);
+    }
+    for (const owner of carried) {
+      carriedOwners.add(owner);
+    }
+    return carried;
+  };
+
+  /** Where opacity is heading: past a waiting landing's fade back in. */
+  const opacityHeading = (): number => {
+    let to = finalValue('opacity');
+    for (const landing of landings) {
+      if (landing.fadeIn != null) {
+        to = landing.fadeIn.to;
+      } else if (landing.restore != null) {
+        to = landing.restore;
+      }
+    }
+    return to;
+  };
+
+  const endLanding = (landing: Landing) => {
+    if (landing.timer != null) {
+      clearTimeout(landing.timer);
+    }
+    landings.delete(landing);
+  };
+
+  /** Arms a landing from the call's start (the browser's, for a call from rest). */
+  const scheduleLanding = (
+    owner: HandleState,
+    started: Promise<number>,
+    plan: NonNullable<ReducedPlan['landing']>,
+    carried: HandleState[],
+  ) => {
+    const landing: Landing = {...plan, owner, carried, timer: null};
+    landings.add(landing);
+    // The handle settles when the landing (and its fade back in) is done.
+    if (owner.timer != null) {
+      clearTimeout(owner.timer);
+      owner.timer = null;
+    }
+    void started.then(start => {
+      if (!landings.has(landing)) {
+        return;
+      }
+      landing.timer = setTimeout(
+        () => land(landing),
+        Math.max(0, start + landing.at - now()),
+      );
+    });
+  };
+
+  /**
+   * Writes the travel while the element is transparent: a plain style write,
+   * never an animation. A busy main thread only keeps it transparent longer.
+   * In a dip the fade back in starts from here.
+   */
+  const land = (landing: Landing) => {
+    landings.delete(landing);
+    landing.timer = null;
+    const time = now();
+    const changed: MotionProperty[] = [];
+    for (const [property, value] of landing.values) {
+      segments.delete(property);
+      resting[property] = value;
+      changed.push(property);
+    }
+    let end = time;
+    if (landing.fadeIn != null) {
+      segments.set(
+        'opacity',
+        fadeSegment(landing.owner, time, [
+          {at: 0, value: valueAt('opacity', time)},
+          {at: landing.fadeIn.ms, value: landing.fadeIn.to},
+        ]),
+      );
+      changed.push('opacity');
+      end = time + landing.fadeIn.ms;
+    } else if (landing.restore != null) {
+      segments.delete('opacity');
+      resting.opacity = landing.restore;
+      changed.push('opacity');
+    }
+    commit(changed, time);
+    // The calls it carries are done: their travel has landed.
+    for (const carried of landing.carried) {
+      carriedOwners.delete(carried);
+      if (!carried.settled) {
+        settle(carried, true);
+      }
+    }
+    const {owner} = landing;
+    if (owner.settled) {
+      return;
+    }
+    if (end <= time) {
+      settle(owner, true);
+    } else {
+      owner.timer = setTimeout(
+        () => {
+          owner.timer = null;
+          settle(owner, true);
+        },
+        Math.max(0, end - now()),
+      );
+    }
+  };
+
+  /**
+   * Reduced Motion (see the file header): with `fade`, an opacity-only
+   * cross-fade whose travel lands while the element is transparent; without,
+   * everything at once.
+   */
+  const reducedMotion = (
     owner: HandleState,
     time: number,
     targets: Partial<Record<MotionProperty, number>>,
     properties: MotionProperty[],
-    mode: 'crossfade' | 'instant',
-    fadeSpring?: SpringDescription,
+    fade: boolean,
     role?: 'entrance' | 'exit',
-  ): Partial<Record<MotionProperty, Segment | null>> => {
+  ): ReducedPlan => {
     const next: Partial<Record<MotionProperty, Segment | null>> = {};
+    const holds: Partial<Record<MotionProperty, number>> = {};
+    if (!fade) {
+      for (const property of properties) {
+        next[property] = null;
+      }
+      return {next, holds, landing: null};
+    }
     const opacityNow = valueAt('opacity', time);
-    const opacityTo = targets.opacity ?? opacityNow;
+    // A fade the call does not name keeps going where it was heading.
+    const opacityTo = targets.opacity ?? opacityHeading();
+    const travel = properties.filter(
+      property =>
+        TRAVEL.includes(property) &&
+        Math.abs((targets[property] as number) - valueAt(property, time)) >
+          1e-9,
+    );
     let entering = opacityTo > opacityNow + 1e-6;
     let leaving = opacityTo < opacityNow - 1e-6;
-    // The fade runs fadeFrom -> fadeTo; an exit by role then returns the
-    // opacity to its value (`restore`) when the travel lands.
     let fadeFrom = opacityNow;
     let fadeTo = opacityTo;
     let restore: number | null = null;
@@ -1412,103 +1797,72 @@ export function createAnimator(
       fadeTo = 0;
       restore = opacityTo;
     }
-    // The fade, and when the travel lands (ms after `time`): at once for an
-    // entrance, after the fade out for an exit, at the bottom of a dip.
-    let opacity: Segment | null = null;
-    let landsAt = 0;
-    if (mode === 'crossfade' && fadeSpring == null) {
-      const fade = resolveMotion(target, timing, 'reducedMotionCrossFadeMs');
-      if (entering || leaving) {
-        opacity =
-          restore == null
-            ? fadeSegment(owner, time, [
-                {at: 0, value: fadeFrom},
-                {at: fade, value: fadeTo},
-              ])
-            : fadeSegment(
-                owner,
-                time,
-                [
-                  {at: 0, value: fadeFrom},
-                  {at: fade, value: fadeTo},
-                  {at: fade, value: restore},
-                ],
-                [fade],
-              );
-        landsAt = entering ? 0 : fade;
-      } else {
-        opacity = fadeSegment(owner, time, [
-          {at: 0, value: opacityNow},
-          {at: fade / 2, value: 0},
-          {at: fade, value: opacityTo},
-        ]);
-        landsAt = fade / 2;
-      }
-    } else if (mode === 'crossfade' && fadeSpring != null) {
-      const spring = toSpring(resolveMotion(target, fadeSpring));
-      const settle = (curve: SpringCurve) =>
-        Math.min(
-          MAX_DURATION_MS / 2,
-          curve.settleTime(SETTLE_THRESHOLD.opacity) * 1000,
-        );
-      if (entering || leaving) {
-        const curve = solveSpring(spring, {from: fadeFrom, to: fadeTo});
-        const duration = settle(curve);
-        const end = restore ?? fadeTo;
-        opacity = {
-          start: time,
-          duration,
-          target: end,
-          at: t =>
-            restore != null && t >= duration ? restore : curve.value(t / 1000),
-          speed: t =>
-            restore != null && t >= duration ? 0 : curve.velocity(t / 1000),
-          jumps: restore != null ? [duration] : [],
-          owner,
-        };
-        landsAt = entering ? 0 : duration;
-      } else {
-        const out = solveSpring(spring, {from: opacityNow, to: 0});
-        const back = solveSpring(spring, {from: 0, to: opacityTo});
-        const half = settle(out);
-        opacity = {
-          start: time,
-          duration: half + settle(back),
-          target: opacityTo,
-          at: t =>
-            t < half ? out.value(t / 1000) : back.value((t - half) / 1000),
-          speed: t =>
-            t < half
-              ? out.velocity(t / 1000)
-              : back.velocity((t - half) / 1000),
-          jumps: [],
-          owner,
-        };
-        landsAt = half;
-      }
-    }
+    // Not a theme role: no theme lengthens it (design:reduced-motion DR4).
+    const ms = timing.reducedMotionCrossFadeMs;
     for (const property of properties) {
-      if (!TRAVEL.includes(property)) {
-        continue;
+      if (TRAVEL.includes(property)) {
+        next[property] = null;
       }
-      next[property] =
-        landsAt === 0
-          ? null // in place at once
-          : jumpSegment(
-              owner,
-              time,
-              valueAt(property, time),
-              targets[property] as number,
-              landsAt,
-            );
     }
-    next.opacity = opacity;
-    return next;
+    const landsLater = (at: number, fadeIn: Landing['fadeIn']) => {
+      const values = new Map<MotionProperty, number>();
+      for (const property of travel) {
+        holds[property] = valueAt(property, time);
+        values.set(property, targets[property] as number);
+      }
+      return {at, values, fadeIn, restore};
+    };
+    if (entering) {
+      // Lands at once (the travel is null above) and fades in.
+      next.opacity = fadeSegment(owner, time, [
+        {at: 0, value: fadeFrom},
+        {at: ms, value: fadeTo},
+      ]);
+      return {next, holds, landing: null};
+    }
+    if (leaving) {
+      // Fades out in place, then lands.
+      next.opacity = fadeSegment(owner, time, [
+        {at: 0, value: fadeFrom},
+        {at: ms, value: fadeTo},
+      ]);
+      return {
+        next,
+        holds,
+        landing:
+          travel.length > 0 || restore != null ? landsLater(ms, null) : null,
+      };
+    }
+    if (travel.length > 0) {
+      // A dip: fades out, lands while transparent, fades back in.
+      next.opacity = fadeSegment(owner, time, [
+        {at: 0, value: opacityNow},
+        {at: ms / 2, value: 0},
+      ]);
+      return {
+        next,
+        holds,
+        landing: landsLater(ms / 2, {to: opacityTo, ms: ms / 2}),
+      };
+    }
+    if ('opacity' in targets) {
+      next.opacity = null;
+    }
+    return {next, holds, landing: null};
   };
 
   const animator: Animator = {
     get element() {
       return target;
+    },
+
+    reducedMotion(reducedOptions = {}) {
+      if (!prefersReducedMotion()) {
+        return 'off';
+      }
+      return isCoarsePointer() || reducedOptions.touchRelease === true
+        ? 'crossfade'
+        : 'instant';
     },
 
     attach(next) {
@@ -1577,29 +1931,19 @@ export function createAnimator(
       const {owner, finished} = newOwner();
       lastSpring.set(owner, transition.spring);
       const properties = Object.keys(targets) as MotionProperty[];
-      const mode = animateOptions.reducedMotion ?? 'crossfade';
-      const travels = properties.filter(
-        p =>
-          TRAVEL.includes(p) &&
-          Math.abs((targets[p] as number) - valueAt(p, time)) > 1e-9,
-      );
-      const reduce =
-        mode !== 'keep' && travels.length > 0 && prefersReducedMotion();
       const next: Partial<Record<MotionProperty, Segment | null>> = {};
+      let plan: ReducedPlan | null = null;
 
-      if (reduce) {
-        Object.assign(
-          next,
-          crossfade(
-            owner,
-            time,
-            targets,
-            properties,
-            mode === 'instant' ? 'instant' : 'crossfade',
-            animateOptions.crossfade,
-            animateOptions.crossfadeAs,
-          ),
+      if (prefersReducedMotion()) {
+        plan = reducedMotion(
+          owner,
+          time,
+          targets,
+          properties,
+          isCoarsePointer() || animateOptions.touchRelease === true,
+          animateOptions.crossfadeAs,
         );
+        Object.assign(next, plan.next);
       } else {
         for (const property of properties) {
           const velocity = velocities[property] ?? velocityAt(property, time);
@@ -1619,6 +1963,10 @@ export function createAnimator(
         Object.keys(next) as MotionProperty[],
         animateOptions.at,
       );
+      const carried =
+        plan?.landing != null
+          ? adoptLandings(plan.landing, Object.keys(next) as MotionProperty[])
+          : [];
       const changed: MotionProperty[] = [];
       for (const [property, segment] of Object.entries(next) as [
         MotionProperty,
@@ -1627,14 +1975,23 @@ export function createAnimator(
         interrupt(property, time);
         changed.push(property);
         if (segment == null) {
+          // Read before the segment goes: valueAt falls back to resting.
+          const value =
+            plan?.holds[property] ??
+            targets[property] ??
+            valueAt(property, time);
           segments.delete(property);
-          resting[property] = targets[property] ?? valueAt(property, time);
+          resting[property] = value;
         } else {
           segments.set(property, segment);
         }
       }
       commitCall(group, owner, changed, time);
-      return makeHandle(owner, changed, finished, time, group);
+      const handle = makeHandle(owner, changed, finished, time, group);
+      if (plan?.landing != null) {
+        scheduleLanding(owner, handle.started, plan.landing, carried);
+      }
+      return handle;
     },
 
     play(curves, playOptions = {}) {
@@ -1664,25 +2021,19 @@ export function createAnimator(
         const curve = byProperty[property] as MotionCurve;
         targets[property] = curve.at(curve.duration);
       }
-      const mode = playOptions.reducedMotion ?? 'crossfade';
-      const travels = properties.some(
-        p =>
-          TRAVEL.includes(p) &&
-          ((byProperty[p] as MotionCurve).duration > 0 ||
-            Math.abs((targets[p] as number) - valueAt(p, time)) > 1e-9),
-      );
-      const next: Partial<Record<MotionProperty, Segment | null>> =
-        mode !== 'keep' && travels && prefersReducedMotion()
-          ? crossfade(
-              owner,
-              time,
-              targets,
-              properties,
-              mode === 'instant' ? 'instant' : 'crossfade',
-              playOptions.crossfade,
-              playOptions.crossfadeAs,
-            )
-          : {};
+      const plan = prefersReducedMotion()
+        ? reducedMotion(
+            owner,
+            time,
+            targets,
+            properties,
+            isCoarsePointer() || playOptions.touchRelease === true,
+            playOptions.crossfadeAs,
+          )
+        : null;
+      const next: Partial<Record<MotionProperty, Segment | null>> = {
+        ...plan?.next,
+      };
       for (const property of properties) {
         if (property in next) {
           continue;
@@ -1706,6 +2057,10 @@ export function createAnimator(
         Object.keys(next) as MotionProperty[],
         playOptions.at,
       );
+      const carried =
+        plan?.landing != null
+          ? adoptLandings(plan.landing, Object.keys(next) as MotionProperty[])
+          : [];
       const changed: MotionProperty[] = [];
       for (const [property, segment] of Object.entries(next) as [
         MotionProperty,
@@ -1714,14 +2069,23 @@ export function createAnimator(
         interrupt(property, time);
         changed.push(property);
         if (segment == null) {
+          // Read before the segment goes: valueAt falls back to resting.
+          const value =
+            plan?.holds[property] ??
+            targets[property] ??
+            valueAt(property, time);
           segments.delete(property);
-          resting[property] = targets[property] ?? valueAt(property, time);
+          resting[property] = value;
         } else {
           segments.set(property, segment);
         }
       }
       commitCall(group, owner, changed, time);
-      return makeHandle(owner, changed, finished, time, group);
+      const handle = makeHandle(owner, changed, finished, time, group);
+      if (plan?.landing != null) {
+        scheduleLanding(owner, handle.started, plan.landing, carried);
+      }
+      return handle;
     },
 
     decay(velocity, decayOptions = {}) {
@@ -1831,6 +2195,7 @@ export function createAnimator(
       const list = properties == null ? PROPERTIES : expandList(properties);
       const changed: MotionProperty[] = [];
       for (const property of list) {
+        cancelLanding(property);
         if (!segments.has(property)) {
           continue;
         }
@@ -1863,6 +2228,23 @@ export function createAnimator(
           continue;
         }
         owners.add(segment.owner);
+        // A curve still waiting for the browser's start stays in its call:
+        // it starts with that call's commit.
+        const group =
+          segment.group != null && !segment.group.resolved
+            ? segment.group
+            : undefined;
+        const replace = (next: Segment) => {
+          if (group != null) {
+            const index = group.segments.indexOf(segment);
+            if (index >= 0) {
+              group.segments[index] = next;
+            } else {
+              group.segments.push(next);
+            }
+          }
+          segments.set(property, next);
+        };
         if (segment.spring != null) {
           const from = valueAt(property, time) + delta;
           const velocity = velocityAt(property, time);
@@ -1871,8 +2253,9 @@ export function createAnimator(
             to: segment.target,
             velocity,
           });
-          segments.set(property, {
-            start: time,
+          replace({
+            start: group?.provisional ?? time,
+            ...(group != null ? {group} : {}),
             duration: Math.min(
               MAX_DURATION_MS,
               curve.settleTime(SETTLE_THRESHOLD[property]) * 1000,
@@ -1885,7 +2268,7 @@ export function createAnimator(
             spring: segment.spring,
           });
         } else {
-          segments.set(property, {
+          replace({
             ...segment,
             target: segment.target + delta,
             at: t => segment.at(t) + delta,
@@ -1918,7 +2301,18 @@ export function createAnimator(
     async atRest(properties) {
       const list = properties == null ? PROPERTIES : expandList(properties);
       return new Promise<void>(resolve => {
+        const wait: RestWait = {timer: null, settle: () => {}};
+        const done = () => {
+          if (wait.timer != null) {
+            clearTimeout(wait.timer);
+          }
+          restWaits.delete(wait);
+          resolve();
+        };
+        wait.settle = done;
+        restWaits.add(wait);
         const check = () => {
+          wait.timer = null;
           syncPending();
           const time = now();
           let end = time;
@@ -1928,11 +2322,14 @@ export function createAnimator(
               end = Math.max(end, segment.start + segment.duration);
             }
           }
-          if (end <= time) {
-            resolve();
+          if (landings.size > 0) {
+            // A Reduced Motion landing is still to come.
+            wait.timer = setTimeout(check, 16);
+          } else if (end <= time) {
+            done();
           } else {
             // A retarget or a later start moves the end: look again then.
-            setTimeout(check, end - time);
+            wait.timer = setTimeout(check, end - time);
           }
         };
         check();
@@ -1940,6 +2337,13 @@ export function createAnimator(
     },
 
     dispose() {
+      for (const landing of [...landings]) {
+        endLanding(landing);
+      }
+      // Nothing moves any more: every atRest() wait settles.
+      for (const wait of [...restWaits]) {
+        wait.settle();
+      }
       const time = now();
       for (const property of PROPERTIES) {
         interrupt(property, time);
