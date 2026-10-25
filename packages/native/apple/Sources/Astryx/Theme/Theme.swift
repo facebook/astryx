@@ -267,11 +267,17 @@ extension View {
 }
 
 extension Theme {
-  /// The mode a theme with the same tokens in light and dark belongs to, by
-  /// its page ground: dark for a dark ground. Nil for a theme with both modes.
+  /// The mode a single-mode theme belongs to, by its page ground: dark for a
+  /// dark ground. A theme is single-mode when its page ground, card ground,
+  /// primary text, and accent are the same in light and dark; core still fills
+  /// a few tokens such a theme leaves out with per-mode defaults, so the whole
+  /// token set never matches. Nil for a theme with both modes.
   var singleMode: ColorScheme? {
-    guard light == dark else { return nil }
-    return astryxLuminance(light.color.backgroundBody) < 0.5 ? .dark : .light
+    let (l, d) = (light.color, dark.color)
+    guard l.backgroundBody == d.backgroundBody, l.backgroundCard == d.backgroundCard,
+      l.textPrimary == d.textPrimary, l.accent == d.accent
+    else { return nil }
+    return astryxLuminance(l.backgroundBody) < 0.5 ? .dark : .light
   }
 }
 
