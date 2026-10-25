@@ -152,6 +152,8 @@ function runJson(args) {
 // ---------------------------------------------------------------------------
 section('\ncomponent listing');
 check('astryx component --list', ['component', '--list']);
+// Run before discovery, so a CLI that cannot start shows its error first.
+await flush();
 
 // data.components is a map of category/group key -> [{name, package}, ...].
 const listData = runJson(['component', '--list', '--json'])?.data;
