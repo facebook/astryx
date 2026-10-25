@@ -92,11 +92,17 @@ describe('the drum at rest', () => {
     expect(rowAngle(28, geometry)).toBeCloseTo(rowAngle(32, GEOMETRY), 12);
   });
 
-  it('shows each row of a looping wheel once, at the copy nearest the band', () => {
-    // Minute 0 at an offset on minute 58 sits two rows below the band.
-    expect(rowDistance(0, 58 * 32, LOOPING)).toBe(64);
-    expect(rowDistance(58, 0, LOOPING)).toBe(-64);
-    expect(rowDistance(30, 0, LOOPING)).toBe(-960);
+  it('draws each copy of a looping wheel at its own position', () => {
+    // Minute 0's next copy (position 60) at an offset on minute 58 sits two
+    // rows below the band; minute 58's copy above minute 0, two rows above.
+    expect(rowDistance(60, 58 * 32, LOOPING)).toBe(64);
+    expect(rowDistance(-2, 0, LOOPING)).toBe(-64);
+    expect(rowDistance(30, 0, LOOPING)).toBe(960);
+    // A minute column every 15 minutes, on :45: its 45 shows again four rows
+    // above and four below, as UIPickerView's looping table draws it.
+    const quarters = {rowHeight: 32, rowCount: 4, looping: true};
+    expect(rowDistance(7, 3 * 32, quarters)).toBe(128);
+    expect(rowDistance(-1, 3 * 32, quarters)).toBe(-128);
   });
 });
 
@@ -113,7 +119,8 @@ describe('which row is under a point', () => {
       rowAtPoint(GEOMETRY.radius + 1, 31 * 32, MINUTES, GEOMETRY),
     ).toBeNull();
     expect(rowAtPoint(-40, 0, MINUTES, GEOMETRY)).toBeNull();
-    expect(rowAtPoint(-40, 0, LOOPING, GEOMETRY)).toBe(59);
+    // On a looping wheel, the copy's own position: minute 59 above minute 0.
+    expect(rowAtPoint(-40, 0, LOOPING, GEOMETRY)).toBe(-1);
   });
 });
 
@@ -159,37 +166,51 @@ describe('a baked motion', () => {
     expect(row50![row50!.length - 1].transform).toBe(rowTransform(0));
   });
 
-  it('steps a looping row to its other copy while it is out of sight', () => {
-    // From minute 58 across 0 to minute 3: minute 30 changes sides behind
-    // the drum and must never be drawn on the front on the way.
+  it('moves a looping copy on from its own position across the seam', () => {
+    // From minute 58 across 0 to minute 3. Minute 28 stays at the back: no
+    // keyframes.
     const spin = spinCurve(58 * 32, 63 * 32);
     const samples = sampleCurve(spin);
-    const frames = rowKeyframes(28, samples, spin.duration, LOOPING, GEOMETRY);
-    expect(frames).toBeNull();
-    const minute1 = rowKeyframes(1, samples, spin.duration, LOOPING, GEOMETRY)!;
+    expect(
+      rowKeyframes(28, samples, spin.duration, LOOPING, GEOMETRY),
+    ).toBeNull();
+    const minute1 = rowKeyframes(
+      61,
+      samples,
+      spin.duration,
+      LOOPING,
+      GEOMETRY,
+    )!;
     for (const frame of minute1) {
       expect(frame.transform).not.toContain('NaN');
     }
-    // Minute 33 is at the back the whole time: no keyframes. Minute 0 comes
-    // into view from below and passes the band.
-    const minute0 = rowKeyframes(0, samples, spin.duration, LOOPING, GEOMETRY)!;
+    // Minute 0 past the seam (position 60) comes into view from below and
+    // passes the band.
+    const minute0 = rowKeyframes(
+      60,
+      samples,
+      spin.duration,
+      LOOPING,
+      GEOMETRY,
+    )!;
     expect(minute0[0].transform).toBe(rowTransform(rowAngle(64, GEOMETRY)));
     expect(minute0[minute0.length - 1].transform).toBe(
       rowTransform(rowAngle(-96, GEOMETRY)),
     );
   });
 
-  it('jumps a parked looping row with two keyframes at the same progress', () => {
-    // A long looping spin: row 0 goes once round the back.
+  it('parks a looping copy that leaves the drum, with no jump', () => {
+    // A long looping spin: the copy at position 0 turns up off the drum and
+    // stays parked; the copies further on have positions of their own.
     const spin = spinCurve(0, 40 * 32);
     const samples = sampleCurve(spin);
     const frames = rowKeyframes(0, samples, spin.duration, LOOPING, GEOMETRY)!;
-    const steps = frames.filter(
-      (frame, i) => i > 0 && frame.offset === frames[i - 1].offset,
+    expect(frames[0].transform).toBe(rowTransform(0));
+    expect(frames.at(-1)!.transform).toBe(
+      rowTransform(rowAngle(-40 * 32, GEOMETRY)),
     );
-    expect(steps.length).toBe(1);
     for (let i = 1; i < frames.length; i++) {
-      expect(frames[i].offset).toBeGreaterThanOrEqual(frames[i - 1].offset);
+      expect(frames[i].offset).toBeGreaterThan(frames[i - 1].offset);
     }
   });
 

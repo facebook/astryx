@@ -13,7 +13,7 @@
  *   specs
  */
 
-import {act, fireEvent, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen, within} from '@testing-library/react';
 import {Profiler, createRef} from 'react';
 import {
   afterAll,
@@ -828,6 +828,139 @@ describe('PickerWheel — a window of rows', () => {
     expect(onChange).toHaveBeenLastCalledWith(2099);
     advance(400);
     expect(drumIndices(column)).toContain(199);
+  });
+});
+
+describe('PickerWheel — a short looping list', () => {
+  /** A minute column every 15 minutes, and one every 30. */
+  const QUARTERS: WheelOption[] = [0, 15, 30, 45].map(minute => ({
+    value: minute,
+    label: String(minute).padStart(2, '0'),
+  }));
+  const HALVES = QUARTERS.filter(option => option.value % 30 === 0);
+
+  function drumRowsOf(column: HTMLElement): HTMLElement[] {
+    return [
+      ...column.querySelectorAll<HTMLElement>(
+        '[data-wheel-drum] > [data-label]',
+      ),
+    ];
+  }
+
+  /** The labels on the front of the drum, top to bottom. */
+  function frontLabels(column: HTMLElement): string[] {
+    return drumRowsOf(column)
+      .map(row => ({label: row.dataset.label!, angle: angleOf(row)}))
+      .filter(({angle}) => Math.abs(angle) < Math.PI / 2 - 1e-6)
+      .sort((a, b) => a.angle - b.angle)
+      .map(({label}) => label);
+  }
+
+  /** The position of the copy under the band. */
+  function bandPosition(column: HTMLElement): number {
+    const row = drumRowsOf(column).find(
+      element => Math.abs(angleOf(element)) < 1e-6,
+    );
+    return Number(row?.dataset.position);
+  }
+
+  it('fills the cylinder with copies, as UIPickerView’s looping table does', () => {
+    const {column} = renderWheel({
+      options: QUARTERS,
+      value: 45,
+      label: 'Minute',
+      isLooping: true,
+    });
+    // UIKit at :45, top to bottom: 45 · 00 · 15 · 30 · 45 · 00 · 15 · 30 · 45.
+    expect(frontLabels(column)).toEqual([
+      '45',
+      '00',
+      '15',
+      '30',
+      '45',
+      '00',
+      '15',
+      '30',
+      '45',
+    ]);
+    // One option per value for assistive technology.
+    expect(within(column).getAllByRole('option')).toHaveLength(4);
+  });
+
+  it('turns onto a tapped copy, and commits nothing when it holds the same value', () => {
+    const {column, onChange} = renderWheel({
+      options: HALVES,
+      value: 30,
+      label: 'Minute',
+      isLooping: true,
+    });
+    expect(frontLabels(column)).toEqual([
+      '30',
+      '00',
+      '30',
+      '00',
+      '30',
+      '00',
+      '30',
+      '00',
+      '30',
+    ]);
+    const start = bandPosition(column);
+    // Two rows below the band: the next copy of 30.
+    const twoBelow = CENTRE + RADIUS * Math.sin((2 * ROW) / RADIUS);
+    touch('touchstart', column, twoBelow);
+    advance(60);
+    touch('touchend', column, twoBelow);
+    advance(500);
+    expect(bandPosition(column)).toBe(start + 2);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('steps by key in the key’s direction across the seam', () => {
+    const {column, onChange} = renderWheel({
+      options: QUARTERS,
+      value: 45,
+      label: 'Minute',
+      isLooping: true,
+    });
+    const start = bandPosition(column);
+    fireEvent.keyDown(column, {key: 'ArrowDown'});
+    expect(onChange).toHaveBeenLastCalledWith(0);
+    advance(500);
+    expect(bandPosition(column)).toBe(start + 1);
+  });
+
+  it('flings on through the seam, its copies drawn all the way', () => {
+    const {column, onChange} = renderWheel({
+      options: QUARTERS,
+      value: 0,
+      label: 'Minute',
+      isLooping: true,
+    });
+    // 120 px in 90 ms, UIKit's measured fling.
+    drag(column, 180, 60, {steps: 6, interval: 15});
+    advance(4000);
+    // More than one turn of the list past the seam, and a full cylinder.
+    expect(bandPosition(column)).toBeGreaterThan(4);
+    expect(frontLabels(column)).toHaveLength(9);
+    const rested = QUARTERS[((bandPosition(column) % 4) + 4) % 4].value;
+    if (rested === 0) {
+      expect(onChange).not.toHaveBeenCalled();
+    } else {
+      expect(onChange).toHaveBeenLastCalledWith(rested);
+    }
+  });
+
+  it('keeps a two-row list that does not loop to its two rows (AM/PM)', () => {
+    const {column} = renderWheel({
+      options: [
+        {value: 0, label: 'AM'},
+        {value: 1, label: 'PM'},
+      ],
+      value: 0,
+      label: 'AM/PM',
+    });
+    expect(frontLabels(column)).toEqual(['AM', 'PM']);
   });
 });
 
