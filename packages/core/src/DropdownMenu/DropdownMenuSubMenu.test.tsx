@@ -2259,6 +2259,11 @@ describe('DropdownMenuSubMenu header and footer', () => {
       expect(isShown(rootMenu)).toBe(false);
       expect(isShown(rootField)).toBe(false);
       expect(dialog.closest('[popover]')).toBe(rootMenu.closest('[popover]'));
+      // The rule that steps the root aside finds the view through the host
+      // the menu marks for it, not through a universal sibling selector.
+      const host = dialog.closest('[data-astryx-submenu-host]');
+      expect(host).not.toBeNull();
+      expect(host?.parentElement).toBe(rootMenu.parentElement);
       const viewRows = Array.from(
         labelsMenu().querySelectorAll('[role="menuitem"]'),
       )
