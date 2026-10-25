@@ -176,6 +176,11 @@
       "types": "./dist/motion/reducedMotion.stylex.d.ts",
       "default": "./dist/motion/reducedMotion.stylex.js"
     },
+    "./utils/touchPresentation.stylex": {
+      "source": "./src/utils/touchPresentation.stylex.ts",
+      "types": "./dist/utils/touchPresentation.stylex.d.ts",
+      "default": "./dist/utils/touchPresentation.stylex.js"
+    },
     "./docs.mjs": "./docs.mjs",
     "./groups.doc.mjs": "./groups.doc.mjs",
     "./locales/*.json": "./locales/*.json",

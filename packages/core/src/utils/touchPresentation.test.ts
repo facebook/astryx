@@ -32,6 +32,7 @@ import {
   readTouchPresentation,
   useTouchPresentation,
 } from './touchPresentation';
+import {touchKeys} from './touchPresentation.stylex';
 
 /**
  * A device: what its primary pointer is, how big its viewport is, and
@@ -186,6 +187,51 @@ describe('touch presentation', () => {
     });
   });
 
+  it('exports the same keys core spells, for other packages', () => {
+    expect(touchKeys.touch).toBe(`@media ${TOUCH_QUERY}`);
+    expect(touchKeys.compact).toBe(`@media ${COMPACT_QUERY}`);
+    expect(touchKeys.compactTouch).toBe(`@media ${COMPACT_TOUCH_QUERY}`);
+    expect(touchKeys.iosSupports).toBe(`@supports ${IOS_SUPPORTS_QUERY}`);
+    expect(IOS_TOUCH_STYLE_KEYS).toEqual([
+      touchKeys.touch,
+      touchKeys.iosSupports,
+    ]);
+  });
+
+  it('keeps every touch and Reduce Motion key literal in core: no computed StyleX key', () => {
+    // An imported defineConsts at-rule key compiles to a different StyleX
+    // priority than the same literal (6000 vs 3200), which reorders the
+    // cascade; core spells the keys and matches them to the constants.
+    const root = path.resolve(__dirname, '..');
+    const computed: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (entry.name !== '__tests__' && entry.name !== 'node_modules') {
+            walk(full);
+          }
+        } else if (
+          /\.(ts|tsx)$/.test(entry.name) &&
+          !/\.test\.|\.spec\./.test(entry.name)
+        ) {
+          fs.readFileSync(full, 'utf8')
+            .split('\n')
+            .forEach((line, index) => {
+              if (
+                !/^\s*(\*|\/\/)/.test(line) &&
+                /\[(touchKeys|reducedMotionKeys)\.[a-zA-Z]+\]\s*:/.test(line)
+              ) {
+                computed.push(`${path.relative(root, full)}:${index + 1}`);
+              }
+            });
+        }
+      }
+    };
+    walk(root);
+    expect(computed).toEqual([]);
+  });
+
   it('keeps every iOS gate in core spelled and nested as the resolver', () => {
     // The gate is the media query outside and the supports query inside; a
     // single supports query that names the pointer never matches anywhere.
@@ -206,7 +252,8 @@ describe('touch presentation', () => {
         } else if (
           /\.(ts|tsx)$/.test(entry.name) &&
           !/\.test\.|\.spec\./.test(entry.name) &&
-          entry.name !== 'touchPresentation.ts'
+          entry.name !== 'touchPresentation.ts' &&
+          entry.name !== 'touchPresentation.stylex.ts'
         ) {
           const lines = fs.readFileSync(full, 'utf8').split('\n');
           lines.forEach((line, index) => {
