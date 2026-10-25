@@ -29,6 +29,7 @@ describe('registerRefreshControlTable', () => {
       'refreshControl.endMs',
       'refreshControl.exitMs',
       'refreshControl.spinMs',
+      'refreshControl.triggerGradientSpring',
       'refreshControl.triggerTurnSpring',
     ]);
   });

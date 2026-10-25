@@ -132,6 +132,14 @@ function LayeredRefreshable({
       data-testid="refresh"
       ref={control.contentRef}
       aria-busy={control.isRefreshing || undefined}>
+      {/* The layers' resting opacities, as RefreshControl's stylesheet sets
+          them (`uniformSet`, `gradientSet`): the animator leaves an opacity
+          of 1 inline only where the stylesheet would otherwise hide it. */}
+      <style>
+        {
+          '[data-testid="reveal-layer"]{opacity:1}[data-testid="spin-layer"]{opacity:0}'
+        }
+      </style>
       <div ref={control.indicatorRef} aria-hidden>
         <span ref={control.spinnerRef}>
           <span data-testid="reveal-layer" ref={control.revealLayerRef} />
@@ -146,12 +154,11 @@ function LayeredRefreshable({
   );
 }
 
-/** The two spoke layers' opacities, as the hook last wrote them. */
+/** The two spoke layers' opacities as shown: inline, over the stylesheet. */
 function layers(): {reveal: string; spin: string} {
-  return {
-    reveal: screen.getByTestId('reveal-layer').style.opacity,
-    spin: screen.getByTestId('spin-layer').style.opacity,
-  };
+  const shown = (testId: string) =>
+    getComputedStyle(screen.getByTestId(testId)).opacity;
+  return {reveal: shown('reveal-layer'), spin: shown('spin-layer')};
 }
 
 function content(): HTMLElement {
