@@ -35,8 +35,8 @@ affects_consumer_docs: []
 ## Intent
 
 When a person flicks a sheet, a toast, a row, a page, or a wheel and lifts
-their finger, every Astryx component reads the same speed from that motion, so
-a flick of the same speed does the same thing everywhere, and a finger that
+their finger, every Core and Lab component reads the same speed from that
+motion, so a flick of the same speed does the same thing in each of them, and a finger that
 stopped before lifting never counts as a flick. One release filter defines the
 speed every component reads; components decide only what a given velocity
 means for them.
