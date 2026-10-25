@@ -55,6 +55,8 @@ export type {
   ScreenEdge,
   ScreenEdgePanGestureRecognizerOptions,
 } from './ScreenEdgePanGestureRecognizer';
+export {ScrollViewPanGestureRecognizer} from './ScrollViewPanGestureRecognizer';
+export type {ScrollViewPanGestureRecognizerOptions} from './ScrollViewPanGestureRecognizer';
 export {SwipeGestureRecognizer} from './SwipeGestureRecognizer';
 export type {
   SwipeDirection,
