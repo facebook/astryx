@@ -688,8 +688,10 @@ export function ComplexSelector<Value>({
     [isDisabled, popover],
   );
 
-  // Read when the helper runs: popup content may call a helper it kept from
-  // an enabled render (after an await, say) once the selector is disabled.
+  // The helper checks both the render it came from and the latest commit:
+  // content may call a helper it kept from an enabled render (after an await,
+  // say) once the selector is disabled, or commit from its own layout effect
+  // in the render that disables it, before the ref below is written.
   const isDisabledRef = useRef(isDisabled);
   useIsomorphicLayoutEffect(() => {
     isDisabledRef.current = isDisabled;
@@ -699,7 +701,7 @@ export function ComplexSelector<Value>({
     (nextValue: Value) => {
       // Caller-owned popup controls may remain mounted after disablement.
       // Guard the supplied commit boundary, not just the trigger.
-      if (isDisabledRef.current) {
+      if (isDisabled || isDisabledRef.current) {
         return;
       }
       onChange?.(nextValue);
@@ -710,7 +712,7 @@ export function ComplexSelector<Value>({
         });
       }
     },
-    [changeAction, onChange, setOptimisticValue, startTransition],
+    [isDisabled, changeAction, onChange, setOptimisticValue, startTransition],
   );
 
   const triggerContent = triggerLabel ?? placeholder;

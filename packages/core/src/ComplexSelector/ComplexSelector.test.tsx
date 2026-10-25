@@ -9,7 +9,7 @@
  * SYNC: When ComplexSelector.tsx API changes, update these tests.
  */
 
-import React from 'react';
+import React, {useLayoutEffect} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -234,6 +234,40 @@ describe('ComplexSelector', () => {
     expect(kept.current).not.toBeNull();
     rerender(renderSelector(true));
     act(() => kept.current?.('Banana'));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('blocks a commit from content in the render that disables it', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    function CommitOnDisable({
+      isDisabled,
+      commit,
+    }: {
+      isDisabled: boolean;
+      commit: (value: string) => void;
+    }) {
+      useLayoutEffect(() => {
+        if (isDisabled) {
+          commit('Banana');
+        }
+      }, [isDisabled, commit]);
+      return <span>Choices</span>;
+    }
+    const renderSelector = (isDisabled: boolean) => (
+      <ComplexSelector
+        label="Fruit"
+        value="Apple"
+        isDisabled={isDisabled}
+        onChange={onChange}>
+        {(_value, commit) => (
+          <CommitOnDisable isDisabled={isDisabled} commit={commit} />
+        )}
+      </ComplexSelector>
+    );
+    const {rerender} = render(renderSelector(false));
+    await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+    rerender(renderSelector(true));
     expect(onChange).not.toHaveBeenCalled();
   });
 
