@@ -114,7 +114,8 @@ export const docsDense = {
       'creates the recognizer once; set up requireToFail/simultaneity here.',
     onGesture:
       'began/changed/ended/cancelled, inside the input event; write to the DOM, no render per move.',
-    'options.isEnabled': 'live toggle; off mid-gesture cancels it.',
+    'options.isEnabled':
+      'live toggle; off mid-gesture cancels it, and the listener receives cancelled from that commit (UIKit sends .cancelled).',
     'options.manageStyle':
       'let the system set touch-action (and long-press callout) from the recognizers.',
   },
