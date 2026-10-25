@@ -286,15 +286,12 @@ private struct AstryxThemeModifier: ViewModifier {
       .tint(AstryxThemeColor(theme: theme, role: .tint))
       .foregroundStyle(AstryxThemeColor(theme: theme, role: .textPrimary))
       .environment(\.astryxTheme, theme)
-      .astryxSingleModeScheme(theme.singleMode)
-  }
-}
-
-extension View {
-  /// A single-mode theme sets its subtree's color scheme, so stock controls
-  /// inside draw the appearance its grounds belong to.
-  @ViewBuilder fileprivate func astryxSingleModeScheme(_ scheme: ColorScheme?) -> some View {
-    if let scheme { environment(\.colorScheme, scheme) } else { self }
+      // A single-mode theme sets its subtree's color scheme, so stock controls
+      // inside draw the appearance its grounds belong to. Written without a
+      // view branch, so switching themes at run time keeps the subtree's state.
+      .transformEnvironment(\.colorScheme) { scheme in
+        if let mode = theme.singleMode { scheme = mode }
+      }
   }
 }
 
