@@ -454,18 +454,19 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
   }, []);
 
   /**
-   * Stamp the roving tab stop: exactly one enabled item is tabbable (0), the
-   * rest are -1. Prefer keeping the currently-tabbable item if it is still
-   * enabled; otherwise promote the first enabled item (tab-stop repair).
+   * Stamp the roving tab stop: exactly one item is tabbable (0), the rest are
+   * -1. Prefer keeping the currently-tabbable item if it is still enabled;
+   * otherwise promote the first enabled item (tab-stop repair), or, when every
+   * item is disabled, keep the current stop (or the first item).
    */
   const syncTabStops = useCallback(() => {
     const items = getItems();
     const enabled = items.filter(el => !isItemDisabled(el));
-    if (enabled.length === 0) {
-      return;
-    }
-    const current = enabled.find(el => el.getAttribute('tabindex') === '0');
-    const tabbable = current ?? enabled[0];
+    // A fully disabled group keeps its one Tab stop (spec:AST-085 FR1, FR7);
+    // arrow keys still skip disabled items.
+    const candidates = enabled.length > 0 ? enabled : items;
+    const current = candidates.find(el => el.getAttribute('tabindex') === '0');
+    const tabbable = current ?? candidates[0];
     for (const el of items) {
       setTabIndex(el, el === tabbable ? 0 : -1);
     }

@@ -147,8 +147,12 @@ describe('Carousel', () => {
     const right = screen.getByLabelText('Scroll right');
     expect(left).toBeInTheDocument();
     expect(right).toBeInTheDocument();
-    expect(left).toBeDisabled();
-    expect(right).toBeDisabled();
+    expect(left).toHaveAttribute('aria-disabled', 'true');
+    expect(right).toHaveAttribute('aria-disabled', 'true');
+    // Disabled buttons stay focusable (spec:AST-085 FR1), so the hidden pill
+    // around each is inert: an invisible button is never a Tab stop.
+    expect(left.closest('[inert]')).not.toBeNull();
+    expect(right.closest('[inert]')).not.toBeNull();
   });
 
   describe('Shift + wheel horizontal scroll', () => {
@@ -283,8 +287,12 @@ describe('Carousel', () => {
       // At the start edge: without loop the left button would be disabled.
       makeOverflowing(scroller, 0);
 
-      expect(screen.getByLabelText('Scroll left')).toBeEnabled();
-      expect(screen.getByLabelText('Scroll right')).toBeEnabled();
+      expect(screen.getByLabelText('Scroll left')).not.toHaveAttribute(
+        'aria-disabled',
+      );
+      expect(screen.getByLabelText('Scroll right')).not.toHaveAttribute(
+        'aria-disabled',
+      );
     });
 
     it('wraps to the start when pressing next at the end', () => {
@@ -535,7 +543,7 @@ describe('Carousel', () => {
       const next = screen.getByLabelText('Scroll right');
       await user.click(next);
 
-      expect(next).toBeDisabled();
+      expect(next).toHaveAttribute('aria-disabled', 'true');
       expect(document.activeElement).toBe(getScroller());
       expect(document.activeElement).not.toBe(document.body);
     });
@@ -558,7 +566,7 @@ describe('Carousel', () => {
       const previous = screen.getByLabelText('Scroll left');
       await user.click(previous);
 
-      expect(previous).toBeDisabled();
+      expect(previous).toHaveAttribute('aria-disabled', 'true');
       expect(document.activeElement).toBe(getScroller());
     });
 
@@ -602,7 +610,7 @@ describe('Carousel', () => {
       const next = screen.getByLabelText('Scroll right');
       await user.click(next);
 
-      expect(next).toBeDisabled();
+      expect(next).toHaveAttribute('aria-disabled', 'true');
       expect(document.activeElement).toBe(getScroller());
     });
 
@@ -623,7 +631,7 @@ describe('Carousel', () => {
       const next = screen.getByLabelText('Scroll right');
       await user.click(next);
 
-      expect(next).toBeDisabled();
+      expect(next).toHaveAttribute('aria-disabled', 'true');
       expect(document.activeElement).toBe(getScroller());
     });
 
@@ -648,8 +656,14 @@ describe('Carousel', () => {
 
       await user.click(screen.getByLabelText('Scroll right'));
 
-      expect(screen.getByLabelText('Scroll right')).toBeDisabled();
-      expect(screen.getByLabelText('Scroll left')).toBeDisabled();
+      expect(screen.getByLabelText('Scroll right')).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
+      expect(screen.getByLabelText('Scroll left')).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
       expect(document.activeElement).toBe(scroller);
       expect(document.activeElement).not.toBe(document.body);
     });
@@ -678,7 +692,10 @@ describe('Carousel', () => {
       scroller.scrollLeft = 200;
       fireEvent.scroll(scroller);
 
-      expect(screen.getByLabelText('Scroll right')).toBeDisabled();
+      expect(screen.getByLabelText('Scroll right')).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
       expect(document.activeElement).toBe(document.body);
     });
 
@@ -716,7 +733,7 @@ describe('Carousel', () => {
       const next = screen.getByLabelText('Scroll right');
       await user.click(next);
 
-      expect(next).toBeEnabled();
+      expect(next).not.toHaveAttribute('aria-disabled');
       expect(document.activeElement).toBe(next);
     });
 
@@ -733,7 +750,7 @@ describe('Carousel', () => {
       const next = screen.getByLabelText('Scroll right');
       await user.click(next);
 
-      expect(next).toBeEnabled();
+      expect(next).not.toHaveAttribute('aria-disabled');
       expect(document.activeElement).toBe(next);
     });
 
