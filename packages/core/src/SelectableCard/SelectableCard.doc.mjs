@@ -13,12 +13,13 @@ export const docs = {
     bestPractices: [
       {
         guidance: true,
-        description: 'Use for plan pickers, filter chips, or option grids.',
+        description:
+          'Use for multi-select choices: filter chips, feature add-ons, or option grids where several can be on.',
       },
       {
         guidance: true,
         description:
-          'For single-select track one ID; for multi-select use a Set.',
+          'Use for multi-select groups; track the selected IDs in a Set.',
       },
       {
         guidance: true,
@@ -27,6 +28,11 @@ export const docs = {
       {
         guidance: false,
         description: 'Use for navigation; use ClickableCard for that.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use for a single-select group: each card is a checkbox, so assistive technology announces a multi-select group with one tab stop per card.',
       },
     ],
     anatomy: [
@@ -153,12 +159,13 @@ export const docsDense = {
     bestPractices: [
       {
         guidance: true,
-        description: 'Use for plan pickers, filter chips, option grids.',
+        description:
+          'Use for multi-select choices: filter chips, add-ons, option grids.',
       },
       {
         guidance: true,
         description:
-          'For single-select track one ID; for multi-select use a Set.',
+          'Use for multi-select groups; track selected IDs in a Set.',
       },
       {
         guidance: true,
@@ -167,6 +174,11 @@ export const docsDense = {
       {
         guidance: false,
         description: 'Use for navigation; use ClickableCard instead.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use for single-select: each card is a checkbox, so screen readers announce multi-select.',
       },
     ],
   },
