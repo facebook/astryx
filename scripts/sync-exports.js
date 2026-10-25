@@ -17,6 +17,10 @@
  * transforms.
  *
  * Condition ordering matters — Node.js resolves top-to-bottom:
+ *   0. "react-server" — only for a directory with src/Component/index.server.ts:
+ *      the entry a React Server Component's import resolves, itself split
+ *      into "source" and "default". It comes first so a bundler with both
+ *      the "react-server" and "source" conditions picks the server entry.
  *   1. "source"  — for bundlers configured with the "source" condition
  *   2. "types"   — for TypeScript
  *   3. "default" — for all JS consumers (ESM-only)
@@ -247,10 +251,20 @@ function discoverExportDirs() {
 
 /**
  * Generate the export entry for a directory.
- * Condition order: source → types → default
+ * Condition order: react-server (when src/<dir>/index.server.ts exists) →
+ * source → types → default
  */
 function makeExportEntry(dirName) {
+  const serverEntry = path.join(SRC_DIR, dirName, 'index.server.ts');
   return {
+    ...(fs.existsSync(serverEntry)
+      ? {
+          'react-server': {
+            source: `./src/${dirName}/index.server.ts`,
+            default: `./dist/${dirName}/index.server.js`,
+          },
+        }
+      : {}),
     source: `./src/${dirName}/index.ts`,
     types: `./dist/${dirName}/index.d.ts`,
     default: `./dist/${dirName}/index.js`,

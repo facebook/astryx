@@ -1,0 +1,206 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file KbdView.tsx
+ * @input Uses React types, StyleX, theme tokens, shortcut key names and aliases
+ * @output Exports KbdView (the markup for a given platform) and KbdProps
+ * @position Server-safe implementation shared by Kbd.tsx (static shortcuts)
+ *   and PlatformKbd.tsx (shortcuts with `mod`, resolved after hydration)
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/Kbd/Kbd.tsx
+ * - /packages/core/src/Kbd/index.ts
+ * - /packages/cli/assets/templates/blocks/components/Kbd/ (showcase blocks)
+ */
+
+import type React from 'react';
+import * as stylex from '@stylexjs/stylex';
+import {mergeProps} from '../utils';
+import type {BaseProps} from '../BaseProps';
+import {themeProps} from '../utils/themeProps';
+import {
+  colorVars,
+  spacingVars,
+  radiusVars,
+  typographyVars,
+  fontWeightVars,
+  typeScaleVars,
+} from '../theme/tokens.stylex';
+
+const styles = stylex.create({
+  wrapper: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+    flexShrink: 0,
+  },
+  kbd: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: spacingVars['--spacing-5'],
+    height: spacingVars['--spacing-5'],
+    paddingInline: spacingVars['--spacing-1'],
+    borderRadius: radiusVars['--radius-inner'],
+    backgroundColor: colorVars['--color-neutral'],
+    borderBottomWidth: '2px',
+    borderBottomStyle: 'solid',
+    borderBottomColor: colorVars['--color-border-emphasized'],
+    color: colorVars['--color-text-primary'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    userSelect: 'none',
+  },
+});
+
+/**
+ * Map of modifier key names to display symbols.
+ * Note: `mod` is not in this map — it resolves dynamically via platform
+ * detection inside the component.
+ */
+const KEY_DISPLAY = new Map<string, string>([
+  ['ctrl', '\u2303'], // ⌃
+  ['alt', '\u2325'], // ⌥
+  ['shift', '\u21E7'], // ⇧
+  ['enter', '\u21B5'], // ↵
+  ['backspace', '\u232B'], // ⌫
+  ['escape', 'Esc'],
+  ['tab', '\u21E5'], // ⇥
+  ['up', '\u2191'],
+  ['down', '\u2193'],
+  ['left', '\u2190'],
+  ['right', '\u2192'],
+  ['plus', '+'],
+]);
+
+const KBD_KEY_ALIASES = new Map<string, string>([
+  ['esc', 'escape'],
+  ['return', 'enter'],
+]);
+
+/**
+ * Resolves a key name to its display string. Handles the platform-aware
+ * `mod` key (⌘ on macOS, Ctrl on other platforms) and falls back to
+ * KEY_DISPLAY or uppercased key name.
+ */
+function getKeyDisplay(key: string, isMac: boolean): string {
+  if (key === 'mod') {
+    return isMac ? '\u2318' : 'Ctrl';
+  }
+  return KEY_DISPLAY.get(key) ?? key.toUpperCase();
+}
+
+/**
+ * Spoken-word labels for screen readers. The visual `KEY_DISPLAY` uses glyphs
+ * (⌘, ⇧, ↵, …) that assistive tech cannot announce meaningfully, so the
+ * accessible name for the shortcut is built from these words instead.
+ */
+const KEY_LABEL = new Map<string, string>([
+  ['ctrl', 'Control'],
+  ['alt', 'Alt'],
+  ['shift', 'Shift'],
+  ['enter', 'Enter'],
+  ['backspace', 'Backspace'],
+  ['escape', 'Escape'],
+  ['tab', 'Tab'],
+  ['up', 'Up arrow'],
+  ['down', 'Down arrow'],
+  ['left', 'Left arrow'],
+  ['right', 'Right arrow'],
+  ['plus', 'Plus'],
+]);
+
+function getKeyLabel(key: string, isMac: boolean): string {
+  if (key === 'mod') {
+    return isMac ? 'Command' : 'Control';
+  }
+  return KEY_LABEL.get(key) ?? key.toUpperCase();
+}
+
+export interface KbdProps extends BaseProps<HTMLSpanElement> {
+  ref?: React.Ref<HTMLSpanElement>;
+  /**
+   * Keyboard shortcut string. Use "+" to separate keys.
+   * Special keys: mod (Cmd on Mac), ctrl, alt, shift, enter, backspace, escape,
+   * tab, up, down, left, and right.
+   * Aliases: "esc" for "escape" and "return" for "enter".
+   * Use "plus" to render a literal "+" key (e.g. "shift+plus").
+   *
+   * @example
+   * ```
+   * "mod+k"
+   * "mod+shift+p"
+   * "shift+plus"
+   * "enter"
+   * ```
+   */
+  keys: string;
+}
+
+/**
+ * Displays a keyboard shortcut as styled <kbd> elements.
+ *
+ * A general-purpose component for rendering keyboard shortcuts
+ * anywhere in the system — tooltips, menus, documentation, etc.
+ *
+ * `mod` renders as ⌘ when `isMac` is true and Ctrl otherwise. Kbd passes
+ * false; PlatformKbd detects the platform after hydration and passes the
+ * result, so server and hydration markup agree.
+ *
+ * @example
+ * ```
+ * <Kbd keys="mod+k" />
+ * ```
+ */
+export function KbdView({
+  keys,
+  isMac,
+  ref,
+  xstyle,
+  className,
+  style,
+  ...rest
+}: KbdProps & {readonly isMac: boolean}) {
+  const keyOccurrences = new Map<string, number>();
+  const parts = keys
+    .split('+')
+    .map(key => key.trim().toLowerCase())
+    .map(sourceKey => {
+      const occurrence = keyOccurrences.get(sourceKey) ?? 0;
+      keyOccurrences.set(sourceKey, occurrence + 1);
+      return {
+        key: KBD_KEY_ALIASES.get(sourceKey) ?? sourceKey,
+        reactKey: `${sourceKey}:${occurrence}`,
+      };
+    });
+
+  // Screen-reader name: the joined spoken labels (e.g. "Command + K"), since
+  // the visual glyphs below are announced meaninglessly by assistive tech.
+  const accessibleName = parts
+    .map(({key}) => getKeyLabel(key, isMac))
+    .join(' + ');
+
+  return (
+    <span
+      {...rest}
+      ref={ref}
+      role="img"
+      aria-label={accessibleName}
+      {...mergeProps(
+        themeProps('kbd'),
+        stylex.props(styles.wrapper, xstyle),
+        className,
+        style,
+      )}>
+      {parts.map(({key, reactKey}) => (
+        <kbd key={reactKey} aria-hidden="true" {...stylex.props(styles.kbd)}>
+          {getKeyDisplay(key, isMac)}
+        </kbd>
+      ))}
+    </span>
+  );
+}
+
+KbdView.displayName = 'KbdView';

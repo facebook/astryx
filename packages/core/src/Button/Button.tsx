@@ -4,14 +4,19 @@
 
 /**
  * @file Button.tsx
- * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator), group contexts
+ * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator), group contexts,
+ *   getButtonStyleProps (buttonStyles.stylex.ts), ButtonContent
  * @output Exports Button component, ButtonProps, ButtonVariant types
- * @position Core implementation; consumed by index.ts, tested by Button.test.tsx
+ * @position Core implementation; consumed by index.ts, tested by Button.test.tsx.
+ *   The interactive Button. In a Server Component the `react-server` entry
+ *   (index.server.ts) renders ButtonShell.tsx instead, which renders this
+ *   component only for the props and contexts that need it.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Button/Button.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Button/Button.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Button/index.ts (exports if types change)
+ * - /packages/core/src/Button/ButtonShell.tsx (server shell: which props need this client part)
  * - /apps/storybook/stories/Button.stories.tsx (storybook stories)
  * - /packages/cli/assets/templates/blocks/components/Button/ (showcase blocks)
  *
@@ -27,237 +32,126 @@ import {
 } from 'react';
 import type {BaseProps} from '../BaseProps';
 import type {Elevation, SizeValue} from '../utils/types';
-import * as stylex from '@stylexjs/stylex';
 import {useTooltip} from '../Tooltip/useTooltip';
-import {
-  colorVars,
-  sizeVars,
-  spacingVars,
-  radiusVars,
-  borderVars,
-  durationVars,
-  easeVars,
-  fontWeightVars,
-  typeScaleVars,
-  shadowVars,
-  focusVars,
-} from '../theme/tokens.stylex';
 import {Spinner} from '../Spinner';
-import {VisuallyHidden} from '../VisuallyHidden';
-import {IconDefaultSizeProvider} from '../Icon/IconDefaultSizeContext';
-import {iconBoxSizeStyles, type IconSize} from '../Icon/IconSize.stylex';
-
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useSize} from '../SizeContext/SizeContext';
 import {useButtonGroup} from '../ButtonGroup/ButtonGroupContext';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {groupStyles as inputGroupStyles} from '../InputGroup/groupStyles';
-import {mergeProps} from '../utils';
+import * as stylex from '@stylexjs/stylex';
+import {radiusVars, borderVars, colorVars} from '../theme/tokens.stylex';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
-import {themeProps} from '../utils/themeProps';
-import {focusOutlineProps} from '../utils/focusOutline.stylex';
-import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
-import type {ButtonVariantMap} from './index';
+import {mergeProps} from '../utils';
+import {themeProps} from '../utils/themeProps';
+import {
+  getButtonStyleProps,
+  iconSizeByButtonSize,
+  type ButtonSize,
+  type ButtonVariant,
+} from './buttonStyles.stylex';
+import {ButtonContent} from './ButtonContent';
+
+export type {ButtonSize, ButtonVariant} from './buttonStyles.stylex';
 
 /**
- * Base button styles
- * Pseudo-classes are nested within properties per StyleX recommendation:
- * https://stylexjs.com/docs/learn/styling-ui/defining-styles#pseudo-classes
+ * "I am the last member of the group" — the trailing end cap.
+ *
+ * NOT `:last-child`: several members render an invisible layer element AFTER
+ * their button (a tooltip'd Button returns button + layer; DropdownMenu returns
+ * trigger + popover). `useLayer` renders those inline rather than portaling
+ * them, so the layer — not the button — took the `:last-child` slot and the real
+ * trailing button silently kept square corners (#2508).
+ *
+ * Layers always carry the native `popover` attribute (useLayer.tsx), and a
+ * popover is never an in-flow member — it is `display: none` until shown, then
+ * promoted to the top layer. Context layers also retain an inert `<template>`
+ * marker so they can re-resolve their JSX position. Neither element is a group
+ * member, so "last member" is: no following element sibling besides those two
+ * pieces of layer infrastructure.
+ *
+ * Reading it the other way round — marking the *buttons* and testing for a
+ * marked sibling — is the trap: it silently reclassifies anything it doesn't
+ * recognise as "not a member", so a member wrapped in a `display: contents`
+ * wrapper (Tooltip, HoverCard) or a raw child would make the button BEFORE it
+ * round mid-group. Ignoring known layers keeps the predicate conservative: an
+ * unrecognised sibling still counts, exactly as `:last-child` did, so the worst
+ * case degrades to the old behaviour instead of a wrong corner.
+ *
+ * Kept as a same-file const: StyleX only statically evaluates a selector key
+ * from a const in the same file.
+ *
+ * The leading edge still uses `:first-child` — a member's button always precedes
+ * its own layer, so the first button is genuinely `:first-child`.
  */
-const styles = stylex.create({
-  base: {
-    // Kept as a public themeable var (documented in Button.doc.mjs) even though
-    // it now defaults to the shared token: removing it would break any theme
-    // setting it, for no gain. It overrides the shared offset, so a theme can
-    // still tune the ring distance on buttons specifically.
-    '--button-focus-offset': focusVars['--focus-outline-offset'],
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': 'var(--button-focus-offset)',
-    },
-    position: 'relative',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-3'],
-    borderWidth: 0,
-    borderStyle: 'none',
+const IS_LAST_ITEM = ':not(:has(~ *:not([popover]):not(template):not(dialog)))';
 
-    borderRadius: `var(--_button-radius, ${radiusVars['--radius-element']})`,
-    fontFamily: 'inherit',
-    fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: typeScaleVars['--text-label-leading'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    whiteSpace: 'nowrap',
-    // One line by construction, so a label wider than the space available
-    // has to truncate. As a flex item the automatic minimum size would hold
-    // the button at its full label width (and `nowrap` lets an inline button
-    // run past its container), so the label's ellipsis never engaged. These
-    // let a row shrink the button and cap it at its container.
-    minWidth: 0,
-    maxWidth: '100%',
-    cursor: {
-      default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'default',
+const groupStyles = stylex.create({
+  horizontal: {
+    borderStartStartRadius: {
+      default: 0,
+      ':first-child': radiusVars['--radius-element'],
     },
-    transitionProperty:
-      'background-image, background-color, color, opacity, transform',
-    transitionDuration: {
-      default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
+    borderEndStartRadius: {
+      default: 0,
+      ':first-child': radiusVars['--radius-element'],
     },
-    transitionTimingFunction: easeVars['--ease-standard'],
-  },
-  pressable: {
-    transform: {
-      default: 'scale(1)',
-      // A mouse press. Under a coarse pointer `:active` is not a press (it
-      // paints on the touch and outlives a scroll), so the touch press model
-      // writes `data-astryx-press` instead; see interactionOverlay.stylex.ts.
-      ':active:where(:not(:disabled,[aria-disabled="true"]))': {
-        default: 'scale(0.98)',
-        '@media (pointer: coarse)': 'scale(1)',
-      },
-      '[data-astryx-press="on"]': 'scale(0.98)',
+    borderStartEndRadius: {
+      default: 0,
+      [IS_LAST_ITEM]: radiusVars['--radius-element'],
     },
-  },
-  inactive: {
-    cursor: 'default',
-    backgroundImage: 'none',
-    transform: {
-      default: 'none',
-      ':active': 'none',
-      '[data-astryx-press="on"]': 'none',
+    borderEndEndRadius: {
+      default: 0,
+      [IS_LAST_ITEM]: radiusVars['--radius-element'],
     },
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  ariaDisabled: {
-    // The variants' hover treatment already steps aside for
-    // `[aria-disabled]`; `:active` still matches a press on an aria-disabled
-    // button, so that one is suppressed here.
-    backgroundImage: {
-      default: 'none',
-      ':active': 'none',
-      '[data-astryx-press="on"]': 'none',
+    borderInlineStartWidth: {
+      default: borderVars['--border-width'],
+      ':first-child': 0,
     },
+    borderInlineStartStyle: {
+      default: 'solid' as const,
+      ':first-child': 'none' as const,
+    },
+    borderInlineStartColor: colorVars['--color-border'],
   },
-  iconOnly: {
-    '--button-icon-only-aspect': '1 / 1',
-    aspectRatio: 'var(--button-icon-only-aspect)',
-    paddingInline: 0,
-    paddingBlock: 0,
-    // An icon-only button has no label to truncate: keep it square rather
-    // than letting a crowded row squeeze it.
-    flexShrink: 0,
-    maxWidth: 'none',
+  vertical: {
+    borderStartStartRadius: {
+      default: 0,
+      ':first-child': radiusVars['--radius-element'],
+    },
+    borderStartEndRadius: {
+      default: 0,
+      ':first-child': radiusVars['--radius-element'],
+    },
+    borderEndStartRadius: {
+      default: 0,
+      [IS_LAST_ITEM]: radiusVars['--radius-element'],
+    },
+    borderEndEndRadius: {
+      default: 0,
+      [IS_LAST_ITEM]: radiusVars['--radius-element'],
+    },
+    borderBlockStartWidth: {
+      default: borderVars['--border-width'],
+      ':first-child': 0,
+    },
+    borderBlockStartStyle: {
+      default: 'solid' as const,
+      ':first-child': 'none' as const,
+    },
+    borderBlockStartColor: colorVars['--color-border'],
   },
-  endContentWrapper: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    color: 'inherit',
+  onSolidHorizontal: {
+    borderInlineStartColor: colorVars['--color-on-accent'],
   },
-  iconWrapper: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  contentWrapper: {
-    display: 'contents',
-  },
-  labelText: {
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    minWidth: 0,
-  },
-  link: {
-    textDecoration: 'none',
+  onSolidVertical: {
+    borderBlockStartColor: colorVars['--color-on-accent'],
   },
 });
-
-// Dynamic style for the consumer-controlled button width. Numbers are treated
-// as pixels by StyleX; strings (e.g. '100%') are used as-is.
-const dynamicStyles = stylex.create({
-  width: (width: SizeValue | null) => ({width}),
-});
-
-const sizeStyles = stylex.create({
-  sm: {
-    height: sizeVars['--size-element-sm'],
-  },
-  md: {
-    height: sizeVars['--size-element-md'],
-  },
-  lg: {
-    height: sizeVars['--size-element-lg'],
-  },
-});
-
-/**
- * Resting elevation for floating buttons (e.g. a FAB). `none` is the default
- * flat button; `low`/`med`/`high` map to the shadow token scale. 'none' stays
- * a literal so it never conflicts with a variant's background layering.
- */
-const elevationStyles = stylex.create({
-  none: {boxShadow: 'none'},
-  low: {boxShadow: shadowVars['--shadow-low']},
-  med: {boxShadow: shadowVars['--shadow-med']},
-  high: {boxShadow: shadowVars['--shadow-high']},
-});
-
-/**
- * Variant styles using backgroundImage for layered colors
- * Pseudo-classes are nested within properties per StyleX recommendation
- * Overlay is stacked on top of base color using multiple linear-gradients
- * Focus outline is shared across variants for consistent keyboard affordance.
- */
-const variants = stylex.create({
-  primary: {
-    backgroundColor: colorVars['--color-accent'],
-    color: colorVars['--color-on-accent'],
-  },
-  secondary: {
-    backgroundColor: colorVars['--color-neutral'],
-    color: colorVars['--color-text-primary'],
-  },
-  ghost: {
-    backgroundColor: 'transparent',
-    color: colorVars['--color-text-primary'],
-  },
-  destructive: {
-    backgroundColor: colorVars['--color-error'],
-    color: colorVars['--color-on-error'],
-    // The ring matches the variant it rings: an accent-colored outline on a
-    // red button reads as another control's focus. Only the color differs —
-    // width, style and offset come from the shared outline.
-    outlineColor: {default: null, ':focus-visible': colorVars['--color-error']},
-  },
-});
-
-/**
- * Button variant type derived from ButtonVariantMap.
- * Extensible via module augmentation of ButtonVariantMap.
- */
-export type ButtonVariant = keyof ButtonVariantMap;
-
-/**
- * Button size type derived from the sizeStyles StyleX object
- */
-export type ButtonSize = keyof typeof sizeStyles;
-
-const iconSizeByButtonSize = {
-  sm: 'sm',
-  md: 'sm',
-  lg: 'md',
-} satisfies Record<ButtonSize, IconSize>;
 
 export interface ButtonProps extends BaseProps<HTMLButtonElement> {
   /** Ref forwarded to the root element */
@@ -378,155 +272,6 @@ export interface ButtonProps extends BaseProps<HTMLButtonElement> {
    */
   rel?: string;
 }
-
-const spinnerReveal = stylex.keyframes({
-  from: {opacity: 0},
-  to: {opacity: 1},
-});
-
-const contentHide = stylex.keyframes({
-  from: {color: 'inherit'},
-  to: {color: 'transparent'},
-});
-
-// Hold the loading swap for a short delay so a fast action (e.g. clickAction)
-// that settles within the delay never flashes a spinner. The spinner fade-in
-// and the content hide share the same delay so the button never shows an empty
-// frame in between. Reduced motion is instant.
-const SPINNER_DELAY = durationVars['--duration-medium-min'];
-
-const loadingStyles = stylex.create({
-  // Hide the button's own content while the spinner overlay is shown. Applied
-  // to the content wrapper (not the button) so the button keeps its variant
-  // foreground color, which the spinner inherits via shade="inherit" (#2717).
-  hiddenContent: {
-    color: 'transparent',
-  },
-  // Delayed variant: keep content visible, then hide it in lockstep with the
-  // spinner reveal once the delay elapses.
-  hiddenContentDelayed: {
-    animationName: contentHide,
-    animationDuration: '1ms',
-    animationFillMode: 'forwards',
-    animationDelay: {
-      default: SPINNER_DELAY,
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-  },
-  spinnerOverlay: {
-    position: 'absolute',
-    top: 0,
-    insetInlineStart: 0,
-    insetInlineEnd: 0,
-    bottom: 0,
-    display: 'grid',
-    placeItems: 'center',
-  },
-  spinnerDelayed: {
-    animationName: spinnerReveal,
-    animationDuration: durationVars['--duration-fast'],
-    animationFillMode: 'backwards',
-    animationDelay: {
-      default: SPINNER_DELAY,
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-  },
-});
-
-/**
- * "I am the last member of the group" — the trailing end cap.
- *
- * NOT `:last-child`: several members render an invisible layer element AFTER
- * their button (a tooltip'd Button returns button + layer; DropdownMenu returns
- * trigger + popover). `useLayer` renders those inline rather than portaling
- * them, so the layer — not the button — took the `:last-child` slot and the real
- * trailing button silently kept square corners (#2508).
- *
- * Layers always carry the native `popover` attribute (useLayer.tsx), and a
- * popover is never an in-flow member — it is `display: none` until shown, then
- * promoted to the top layer. Context layers also retain an inert `<template>`
- * marker so they can re-resolve their JSX position. Neither element is a group
- * member, so "last member" is: no following element sibling besides those two
- * pieces of layer infrastructure.
- *
- * Reading it the other way round — marking the *buttons* and testing for a
- * marked sibling — is the trap: it silently reclassifies anything it doesn't
- * recognise as "not a member", so a member wrapped in a `display: contents`
- * wrapper (Tooltip, HoverCard) or a raw child would make the button BEFORE it
- * round mid-group. Ignoring known layers keeps the predicate conservative: an
- * unrecognised sibling still counts, exactly as `:last-child` did, so the worst
- * case degrades to the old behaviour instead of a wrong corner.
- *
- * Kept as a same-file const: StyleX only statically evaluates a selector key
- * from a const in the same file.
- *
- * The leading edge still uses `:first-child` — a member's button always precedes
- * its own layer, so the first button is genuinely `:first-child`.
- */
-const IS_LAST_ITEM = ':not(:has(~ *:not([popover]):not(template):not(dialog)))';
-
-const groupStyles = stylex.create({
-  horizontal: {
-    borderStartStartRadius: {
-      default: 0,
-      ':first-child': radiusVars['--radius-element'],
-    },
-    borderEndStartRadius: {
-      default: 0,
-      ':first-child': radiusVars['--radius-element'],
-    },
-    borderStartEndRadius: {
-      default: 0,
-      [IS_LAST_ITEM]: radiusVars['--radius-element'],
-    },
-    borderEndEndRadius: {
-      default: 0,
-      [IS_LAST_ITEM]: radiusVars['--radius-element'],
-    },
-    borderInlineStartWidth: {
-      default: borderVars['--border-width'],
-      ':first-child': 0,
-    },
-    borderInlineStartStyle: {
-      default: 'solid' as const,
-      ':first-child': 'none' as const,
-    },
-    borderInlineStartColor: colorVars['--color-border'],
-  },
-  vertical: {
-    borderStartStartRadius: {
-      default: 0,
-      ':first-child': radiusVars['--radius-element'],
-    },
-    borderStartEndRadius: {
-      default: 0,
-      ':first-child': radiusVars['--radius-element'],
-    },
-    borderEndStartRadius: {
-      default: 0,
-      [IS_LAST_ITEM]: radiusVars['--radius-element'],
-    },
-    borderEndEndRadius: {
-      default: 0,
-      [IS_LAST_ITEM]: radiusVars['--radius-element'],
-    },
-    borderBlockStartWidth: {
-      default: borderVars['--border-width'],
-      ':first-child': 0,
-    },
-    borderBlockStartStyle: {
-      default: 'solid' as const,
-      ':first-child': 'none' as const,
-    },
-    borderBlockStartColor: colorVars['--color-border'],
-  },
-  onSolidHorizontal: {
-    borderInlineStartColor: colorVars['--color-on-accent'],
-  },
-  onSolidVertical: {
-    borderBlockStartColor: colorVars['--color-on-accent'],
-  },
-});
 
 /**
  * A versatile button component with multiple variants.
@@ -704,37 +449,9 @@ export function Button({
   const isFlat = variant === 'ghost';
   const edgeCompAttr = isFlat ? {[EDGE_COMP_ATTR]: ''} : null;
 
-  // Shared StyleX props for both button and link rendering
-  const sharedStylexProps = focusOutlineProps.focusVisible(
-    styles.base,
-    sizeStyles[size],
-    isIconOnly && styles.iconOnly,
-    interactionOverlayStyles.backgroundImage,
-    buttonDisabled && styles.inactive,
-    isTrueDisabled && styles.disabled,
-    useAriaDisabled && styles.ariaDisabled,
-    renderAsLink && styles.link,
-    !buttonGroup && styles.pressable,
-    buttonGroup &&
-      (buttonGroup.orientation === 'horizontal'
-        ? groupStyles.horizontal
-        : groupStyles.vertical),
-    inputGroup != null && buttonGroup == null && inputGroupStyles.buttonAddon,
-    buttonGroup &&
-      (variant === 'primary' || variant === 'destructive') &&
-      (buttonGroup.orientation === 'horizontal'
-        ? groupStyles.onSolidHorizontal
-        : groupStyles.onSolidVertical), // Standalone floating buttons only — a grouped button's elevation is owned
-    // by the ButtonGroup so the shared surface lifts as one unit.
-    !buttonGroup && elevationStyles[elevation],
-    width != null && dynamicStyles.width(width),
-    // AFTER the shared focus outline: the outline supplies width/style/offset
-    // for every variant, and `destructive` re-colors just the ring to match
-    // its own surface. Ordering is the mechanism — StyleX is last-wins.
-    variants[variant],
-    xstyle,
-  );
-
+  // Shared root props (classes, tokens, theme attributes) for both button and
+  // link rendering. The server shell composes the same parts
+  // (getButtonRootProps in buttonStyles.stylex.ts).
   const sharedMergedProps = mergeProps(
     // Inside a group the group owns the surface's elevation, so the button
     // reflects the tier it actually paints rather than the prop it was handed.
@@ -743,54 +460,52 @@ export function Button({
       size,
       elevation: buttonGroup ? 'none' : elevation,
     }),
-    sharedStylexProps,
+    getButtonStyleProps({
+      variant,
+      size,
+      elevation,
+      isIconOnly,
+      isInactive: buttonDisabled,
+      isTrueDisabled,
+      isAriaDisabled: useAriaDisabled,
+      isLink: renderAsLink,
+      isGrouped: buttonGroup != null,
+      groupXstyle: [
+        buttonGroup &&
+          (buttonGroup.orientation === 'horizontal'
+            ? groupStyles.horizontal
+            : groupStyles.vertical),
+        inputGroup != null &&
+          buttonGroup == null &&
+          inputGroupStyles.buttonAddon,
+        buttonGroup &&
+          (variant === 'primary' || variant === 'destructive') &&
+          (buttonGroup.orientation === 'horizontal'
+            ? groupStyles.onSolidHorizontal
+            : groupStyles.onSolidVertical),
+      ],
+      width,
+      xstyle,
+    }),
     className,
     style,
   );
 
-  const iconSize = iconSizeByButtonSize[size];
-
   const buttonContent = (
-    <>
-      {isLoadingState && (
-        <span
-          {...stylex.props(
-            loadingStyles.spinnerOverlay,
-            delaySpinner && loadingStyles.spinnerDelayed,
-          )}
-          aria-hidden="true">
-          <Spinner size="sm" shade="inherit" />
-        </span>
-      )}
-      <span
-        {...stylex.props(
-          styles.contentWrapper,
-          isLoadingState &&
-            (delaySpinner
-              ? loadingStyles.hiddenContentDelayed
-              : loadingStyles.hiddenContent),
-        )}
-        aria-hidden={isLoadingState || undefined}>
-        {icon && (
-          <span
-            {...stylex.props(styles.iconWrapper, iconBoxSizeStyles[iconSize])}>
-            <IconDefaultSizeProvider value={iconSize}>
-              {icon}
-            </IconDefaultSizeProvider>
-          </span>
-        )}
-        {isIconOnly ? null : (
-          <span {...stylex.props(styles.labelText)}>{children ?? label}</span>
-        )}
-        {!isIconOnly && endContent && (
-          <span {...stylex.props(styles.endContentWrapper)}>{endContent}</span>
-        )}
-      </span>
-      {/* Live region for loading state announcements */}
-      <VisuallyHidden role="status" aria-live="polite">
-        {isLoadingState && isLiveRegionReady ? t('@astryx.button.loading') : ''}
-      </VisuallyHidden>
-    </>
+    <ButtonContent
+      icon={icon}
+      iconSize={iconSizeByButtonSize[size]}
+      isIconOnly={isIconOnly}
+      label={label}
+      endContent={endContent}
+      isLoading={isLoadingState}
+      isSpinnerDelayed={delaySpinner}
+      spinner={<Spinner size="sm" shade="inherit" />}
+      liveText={
+        isLoadingState && isLiveRegionReady ? t('@astryx.button.loading') : ''
+      }>
+      {children}
+    </ButtonContent>
   );
 
   // aria-label is set when:

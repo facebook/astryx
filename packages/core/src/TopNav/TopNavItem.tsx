@@ -12,22 +12,14 @@
  * - /packages/core/src/TopNav/TopNav.doc.mjs
  * - /packages/core/src/TopNav/TopNav.test.tsx
  * - /packages/core/src/TopNav/index.ts
+ * - /packages/core/src/TopNav/TopNavItemShell.tsx (server shell: horizontal item markup)
  * - /apps/storybook/stories/TopNav.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
-import * as stylex from '@stylexjs/stylex';
-import {
-  colorVars,
-  spacingVars,
-  radiusVars,
-  durationVars,
-  easeVars,
-  fontWeightVars,
-  typeScaleVars,
-} from '../theme/tokens.stylex';
+import {topNavItemStyles as styles} from './topNavItemStyles.stylex';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {useTopNavRenderMode} from './TopNavRenderContext';
@@ -38,57 +30,6 @@ import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-
-/**
- * NavItem styles with hover/selected states
- */
-const styles = stylex.create({
-  base: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-1-5'],
-    paddingInline: spacingVars['--spacing-3'],
-    borderRadius: radiusVars['--radius-element'],
-    fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: typeScaleVars['--text-label-leading'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    color: colorVars['--color-text-secondary'],
-    textDecoration: 'none',
-    cursor: {
-      default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'default',
-    },
-    transitionProperty: 'background-color, color',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-  },
-  selected: {
-    color: colorVars['--color-text-primary'],
-    fontWeight: fontWeightVars['--font-weight-semibold'],
-    backgroundColor: {
-      default: colorVars['--color-neutral'],
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': colorVars['--color-neutral'],
-      },
-      ':active': colorVars['--color-neutral'],
-      // The touch press model writes these instead of `:active`; the selected
-      // item keeps its fill under a finger the way it does under a mouse, and
-      // paints no overlay at any phase of the press.
-      '[data-astryx-press="on"]': colorVars['--color-neutral'],
-      '[data-astryx-press="fading"]': colorVars['--color-neutral'],
-    },
-    backgroundImage: {
-      default: null,
-      '[data-astryx-press="on"]': 'none',
-      '[data-astryx-press="fading"]': 'none',
-    },
-  },
-  iconOnly: {
-    paddingInline: spacingVars['--spacing-2'],
-  },
-  // Drawer mode — focus outline (base item + selected come from navItemStyles)
-});
 
 export interface TopNavItemProps extends BaseProps<HTMLAnchorElement> {
   /** Ref forwarded to the root element */

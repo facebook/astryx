@@ -220,6 +220,10 @@
       "default": "./dist/Breadcrumbs/index.js"
     },
     "./Button": {
+      "react-server": {
+        "source": "./src/Button/index.server.ts",
+        "default": "./dist/Button/index.server.js"
+      },
       "source": "./src/Button/index.ts",
       "types": "./dist/Button/index.d.ts",
       "default": "./dist/Button/index.js"
@@ -390,6 +394,10 @@
       "default": "./dist/Icon/index.js"
     },
     "./IconButton": {
+      "react-server": {
+        "source": "./src/IconButton/index.server.ts",
+        "default": "./dist/IconButton/index.server.js"
+      },
       "source": "./src/IconButton/index.ts",
       "types": "./dist/IconButton/index.d.ts",
       "default": "./dist/IconButton/index.js"
@@ -675,6 +683,10 @@
       "default": "./dist/Tooltip/index.js"
     },
     "./TopNav": {
+      "react-server": {
+        "source": "./src/TopNav/index.server.ts",
+        "default": "./dist/TopNav/index.server.js"
+      },
       "source": "./src/TopNav/index.ts",
       "types": "./dist/TopNav/index.d.ts",
       "default": "./dist/TopNav/index.js"

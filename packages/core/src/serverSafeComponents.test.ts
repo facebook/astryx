@@ -4,8 +4,10 @@
  * @file Guards the RSC server/client boundary of every public component (#823).
  * @input Reads packages/core/package.json export map + every source file under
  *   packages/core/src, parsed with the TypeScript compiler API
- * @output Unit tests for the detection rules, plus two invariants tying the
- *   presence of `'use client'` to what a component's import graph actually needs
+ * @output Unit tests for the detection rules, two invariants tying the
+ *   presence of `'use client'` to what a component's import graph actually
+ *   needs, and the invariants of the `react-server` entries: same exports as
+ *   the default entry, no client code on the server, declared client parts
  * @position Cross-cutting meta-test; sibling of scripts/check-use-client.mjs
  *
  * `scripts/check-use-client.mjs` enforces one direction only, and only
@@ -34,6 +36,7 @@ import {readdirSync, readFileSync, existsSync, statSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {join, dirname, resolve, relative} from 'node:path';
 import ts from 'typescript';
+import {SERVER_ENTRY_CLIENT_PARTS} from './__tests__/serverEntryClientParts';
 
 const SRC_DIR = __dirname;
 const PKG_JSON = join(SRC_DIR, '..', 'package.json');
@@ -73,10 +76,16 @@ const EXTENSIONS = ['.tsx', '.ts', '.mjs', '.js', '.jsx'];
 
 /**
  * `'use client'` modules a server-safe component may render as a client
- * island: each does nothing on the server, so the component's server output
- * is unchanged. The walk stops at them.
+ * island: on the server each renders nothing, or exactly the markup the
+ * component would render statically, so the component's server output is
+ * unchanged; the island only adds behavior after hydration, and only when the
+ * props that need it are passed. The walk stops at them.
  */
-const CLIENT_ISLANDS = new Set(['hooks/AnnounceRenderedText.tsx']);
+const CLIENT_ISLANDS = new Set([
+  'hooks/AnnounceRenderedText.tsx',
+  'Kbd/PlatformKbd.tsx',
+  'Text/TruncatedText.tsx',
+]);
 
 const isSourceFile = (name: string) =>
   /\.[jt]sx?$/.test(name) &&
@@ -343,10 +352,14 @@ function parseSource(text: string, file: string): ModuleInfo {
  * @param ownDir When set, `'use client'` directives on files directly inside
  *   this directory are ignored, so the walk reports what the component's code
  *   actually *needs* rather than what it is currently *marked* as.
+ * @param clientReferences When set, the walk follows a `react-server` entry:
+ *   every `'use client'` module it reaches is added here and not entered, as a
+ *   bundler turns it into a client reference.
  */
 function findClientSurfaces(
   entry: string,
   ownDir: string | null,
+  clientReferences: Set<string> | null = null,
 ): {reason: string; file: string; via: string}[] {
   const problems: {reason: string; file: string; via: string}[] = [];
   const visited = new Set<string>();
@@ -364,13 +377,24 @@ function findClientSurfaces(
       continue;
     }
     visited.add(key);
-    if (CLIENT_ISLANDS.has(relative(SRC_DIR, file))) {
+    if (
+      clientReferences === null &&
+      CLIENT_ISLANDS.has(relative(SRC_DIR, file))
+    ) {
       continue;
     }
 
     const info = parseModule(file);
     const chain = via.join(' -> ');
     const insideOwnDir = ownDir !== null && dirname(file) === ownDir;
+
+    // A `react-server` entry walk: a `'use client'` module is where the server
+    // graph ends. The bundler swaps it for a client reference, so its code
+    // never runs on the server; record it and stop.
+    if (clientReferences !== null && info.hasUseClient) {
+      clientReferences.add(info.rel);
+      continue;
+    }
 
     if (info.hasUseClient && !insideOwnDir) {
       problems.push({
@@ -672,4 +696,134 @@ describe('RSC server/client boundary (#823)', () => {
         `restore the directive. scripts/check-use-client.mjs cannot see this:\n`,
     ).toBe('');
   });
+});
+
+interface ServerEntry {
+  name: string;
+  /** src/Name/index.server.ts */
+  serverEntry: string;
+  /** src/Name/index.ts, the default entry */
+  defaultEntry: string;
+}
+
+/**
+ * Every package export with a `react-server` condition. The condition comes
+ * first, so a bundler that also honors `source` still picks it, and splits
+ * into the server entry's source and built file (scripts/sync-exports.js).
+ */
+function serverEntries(): ServerEntry[] {
+  const pkg = JSON.parse(readFileSync(PKG_JSON, 'utf-8')) as {
+    exports?: Record<string, Record<string, unknown>>;
+  };
+  const entries: ServerEntry[] = [];
+  for (const [subpath, conditions] of Object.entries(pkg.exports ?? {})) {
+    const server = conditions?.['react-server'] as
+      {source?: string; default?: string} | undefined;
+    if (server == null) {
+      continue;
+    }
+    expect(Object.keys(conditions)[0], `${subpath}: react-server first`).toBe(
+      'react-server',
+    );
+    const match = /^\.\/src\/([^/]+)\/index\.server\.ts$/.exec(
+      server.source ?? '',
+    );
+    expect(
+      match,
+      `${subpath}: react-server.source must be ./src/<Name>/index.server.ts`,
+    ).not.toBeNull();
+    const name = match![1];
+    expect(server.default).toBe(`./dist/${name}/index.server.js`);
+    expect(conditions.source).toBe(`./src/${name}/index.ts`);
+    entries.push({
+      name,
+      serverEntry: join(SRC_DIR, name, 'index.server.ts'),
+      defaultEntry: join(SRC_DIR, name, 'index.ts'),
+    });
+  }
+  return entries;
+}
+
+/** Every name a module exports, value and type. */
+function exportedNames(file: string): string[] {
+  const sourceFile = ts.createSourceFile(
+    file,
+    readFileSync(file, 'utf-8'),
+    ts.ScriptTarget.ESNext,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const names: string[] = [];
+  for (const statement of sourceFile.statements) {
+    if (ts.isExportDeclaration(statement)) {
+      const clause = statement.exportClause;
+      expect(
+        clause && ts.isNamedExports(clause),
+        `${relative(SRC_DIR, file)}: entries list their exports by name`,
+      ).toBe(true);
+      for (const element of (clause as ts.NamedExports).elements) {
+        names.push(element.name.text);
+      }
+    } else if (
+      (ts.isInterfaceDeclaration(statement) ||
+        ts.isTypeAliasDeclaration(statement) ||
+        ts.isFunctionDeclaration(statement) ||
+        ts.isClassDeclaration(statement)) &&
+      statement.name &&
+      statement.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword)
+    ) {
+      names.push(statement.name.text);
+    } else if (
+      ts.isVariableStatement(statement) &&
+      statement.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword)
+    ) {
+      for (const declaration of statement.declarationList.declarations) {
+        names.push(declaration.name.getText(sourceFile));
+      }
+    }
+  }
+  return names.sort();
+}
+
+describe('react-server entries (#823)', () => {
+  const ENTRIES = serverEntries();
+
+  it('lists exactly the entries that declare their client parts', () => {
+    expect(ENTRIES.map(entry => entry.name).sort()).toEqual(
+      Object.keys(SERVER_ENTRY_CLIENT_PARTS).sort(),
+    );
+  });
+
+  it.each(ENTRIES.map(entry => [entry.name, entry] as const))(
+    '%s exports the same names through both entries',
+    (_name, entry) => {
+      expect(existsSync(entry.serverEntry)).toBe(true);
+      // index.server.ts re-exports ButtonVariantMap from index.ts, so the
+      // interface declared there counts once on each side.
+      expect(exportedNames(entry.serverEntry)).toEqual(
+        exportedNames(entry.defaultEntry),
+      );
+    },
+  );
+
+  it.each(ENTRIES.map(entry => [entry.name, entry] as const))(
+    '%s server graph runs no client code and reaches only its declared client parts',
+    (name, entry) => {
+      expect(parseModule(entry.serverEntry).hasUseClient).toBe(false);
+      const clientReferences = new Set<string>();
+      const problems = findClientSurfaces(
+        entry.serverEntry,
+        null,
+        clientReferences,
+      );
+      expect(
+        format(problems),
+        `\nThese modules run on the server under the react-server condition but\n` +
+          `reach a client-only surface. Move the code into a 'use client' part:\n`,
+      ).toBe('');
+      expect([...clientReferences].sort()).toEqual(
+        Object.keys(SERVER_ENTRY_CLIENT_PARTS[name]).sort(),
+      );
+    },
+  );
 });

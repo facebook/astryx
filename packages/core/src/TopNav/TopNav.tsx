@@ -12,6 +12,7 @@
  * - /packages/core/src/TopNav/TopNav.doc.mjs
  * - /packages/core/src/TopNav/TopNav.test.tsx
  * - /packages/core/src/TopNav/index.ts
+ * - /packages/core/src/TopNav/TopNavShell.tsx (server shell) and TopNavMobileBar.tsx
  * - /apps/storybook/stories/TopNav.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/TopNav/ (showcase blocks)
  */
@@ -19,7 +20,7 @@
 import type {ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '../theme/tokens.stylex';
+import {topNavStyles as styles} from './topNavStyles';
 import {mergeProps} from '../utils';
 import {useTranslator} from '../i18n';
 import {TopNavSlotContext} from './TopNavContext';
@@ -30,95 +31,7 @@ import {MobileNav} from '../MobileNav/MobileNav';
 import {MobileNavToggle} from '../MobileNav/MobileNavToggle';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {themeProps} from '../utils/themeProps';
-
-/**
- * Base TopNav styles
- */
-const styles = stylex.create({
-  base: {
-    alignItems: 'center',
-    width: '100%',
-    padding: spacingVars['--spacing-2'],
-    boxSizing: 'border-box',
-  },
-  // Flex layout (default, used when no centerContent)
-  baseFlex: {
-    display: 'flex',
-  },
-  // Grid layout (used when centerContent is present)
-  baseGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr auto 1fr',
-  },
-  leftSection: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-4'],
-    flex: '1 1 0%',
-    minWidth: 0,
-  },
-  heading: {
-    display: 'flex',
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  startContent: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
-  },
-  centerContent: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacingVars['--spacing-1'],
-  },
-  rightSection: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: spacingVars['--spacing-1'],
-  },
-  endContent: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
-    flexShrink: 0,
-    marginInlineStart: 'auto',
-  },
-  // Mobile bar mode — simplified top bar with heading + toggle + endContent
-  mobileBar: {
-    display: 'flex',
-    alignItems: 'center',
-    width: '100%',
-    padding: spacingVars['--spacing-2'],
-    boxSizing: 'border-box',
-  },
-  // The heading gives up space first so the end content and toggle stay in view
-  mobileBarHeading: {
-    display: 'flex',
-    alignItems: 'center',
-    flex: '0 1 auto',
-    minWidth: 0,
-  },
-  mobileBarEnd: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
-    flexShrink: 0,
-    marginInlineStart: 'auto',
-  },
-  // Drawer mode — vertical list of nav items
-  drawerItems: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: spacingVars['--spacing-0-5'],
-  },
-  drawerDivider: {
-    marginBlock: spacingVars['--spacing-2'],
-  },
-  drawerExtraContent: {},
-});
+import {TopNavMobileBar} from './TopNavMobileBar';
 
 export interface TopNavProps extends BaseProps<HTMLElement> {
   /** Ref forwarded to the root element */
@@ -212,25 +125,19 @@ export function TopNav({
   // =========================================================================
   if (renderMode === 'mobile-bar') {
     return (
-      <nav
+      <TopNavMobileBar
         ref={ref}
-        role="navigation"
-        aria-label={label}
-        {...mergeProps(
-          themeProps('top-nav', {mode: 'mobile-bar'}),
-          stylex.props(styles.mobileBar, xstyle),
-          className,
-          style,
-        )}
-        {...props}>
-        {heading && (
-          <div {...stylex.props(styles.mobileBarHeading)}>{heading}</div>
-        )}
-        <div {...stylex.props(styles.mobileBarEnd)}>
-          {endContent}
-          {hasMobileDrawerContent && hasAutoToggle && <MobileNavToggle />}
-        </div>
-      </nav>
+        label={label}
+        heading={heading}
+        endContent={endContent}
+        toggle={
+          hasMobileDrawerContent && hasAutoToggle ? <MobileNavToggle /> : null
+        }
+        xstyle={xstyle}
+        className={className}
+        style={style}
+        {...props}
+      />
     );
   }
 
