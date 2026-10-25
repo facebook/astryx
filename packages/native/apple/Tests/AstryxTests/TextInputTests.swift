@@ -172,11 +172,12 @@ import Testing
 }
 
 @MainActor
-@Test func aDisabledFieldWithAReasonKeepsItsFocusStop() {
+@Test func everyDisabledFieldKeepsItsFocusStop() {
   let withReason = Astryx.TextInput(label: "Plan", value: "Team", isDisabled: true, disabledMessage: "Managed by your admin")
   #expect(withReason.keepsFocusWhileDisabled)
   let bare = Astryx.TextInput(label: "Plan", value: "Team", isDisabled: true)
-  #expect(!bare.keepsFocusWhileDisabled)
+  #expect(bare.keepsFocusWhileDisabled)
+  #expect(!Astryx.TextInput(label: "Plan", value: "Team").keepsFocusWhileDisabled)
 }
 
 @MainActor

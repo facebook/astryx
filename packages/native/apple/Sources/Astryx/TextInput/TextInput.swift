@@ -227,7 +227,6 @@ public struct TextInput: View {
         .foregroundStyle(astryx.tokens.color.textPrimary)
         .focused($isFocused)
         .onSubmit { props.onEnter?() }
-        .disabled(isDisabled && !keepsFocusWhileDisabled)
         .accessibilityLabel(SwiftUI.Text(accessibilityName))
         .accessibilityHint(SwiftUI.Text(accessibilityDescription))
         .astryxIdentifier(props.base.id)
@@ -262,7 +261,7 @@ public struct TextInput: View {
     .opacity(isDisabled ? 0.5 : 1)
     // A disabled field shows its reason in the shared tooltip on hover, on
     // keyboard focus, and on a tap; VoiceOver reads the reason on the field.
-    .astryxTooltip(isDisabled ? props.disabledMessage : nil, focus: keepsFocusWhileDisabled ? .control : .none, touch: .tap)
+    .astryxTooltip(isDisabled ? props.disabledMessage : nil, focus: .control, touch: .tap)
   }
 
   /// Whether the field row ends in buttons, whose 44-point targets reach its
@@ -271,9 +270,9 @@ public struct TextInput: View {
     showsClear || (statusVariant == .tooltip && props.status?.message != nil)
   }
 
-  /// A disabled field with a reason keeps its focus stop, as core's disabled
-  /// input does, so keyboard and VoiceOver users reach the reason on it.
-  var keepsFocusWhileDisabled: Bool { isDisabled && props.disabledMessage != nil }
+  /// A disabled field keeps its focus stop, as core's disabled input does
+  /// (`aria-disabled`), so keyboard users reach it and its reason.
+  var keepsFocusWhileDisabled: Bool { isDisabled }
 
   var showsClear: Bool {
     props.hasClear == true && !props.value.isEmpty && !isDisabled && !isReadOnly
@@ -330,12 +329,13 @@ public struct TextInput: View {
   /// Whether a read-only field shows its placeholder: when it has no value.
   var showsReadOnlyPlaceholder: Bool { props.value.isEmpty && props.placeholder != nil }
 
-  /// Read-only, and disabled with a reason: the value, never editable, with
-  /// the placeholder when empty. It keeps a focus stop, as core's read-only
-  /// and disabled inputs do, without raising a keyboard; Return runs `onEnter`
-  /// only while read-only. It reads as text with its value, plus "Read only"
-  /// or the disabled reason, since SwiftUI has no read-only text field. A
-  /// password stays masked and cannot be selected or copied.
+  /// Read-only or disabled: the value, never editable, with the placeholder
+  /// when empty. It keeps a focus stop, as core's read-only and disabled
+  /// inputs do, without raising a keyboard; Return runs `onEnter` only while
+  /// read-only. VoiceOver reads a SwiftUI text field in its place, dimmed when
+  /// disabled, with "Read only" or the disabled reason in its description,
+  /// since a SwiftUI text field cannot be read-only and a disabled one takes
+  /// no focus. A password stays masked and cannot be selected or copied.
   @ViewBuilder private var readOnlyField: some View {
     let shown = showsReadOnlyPlaceholder
       ? SwiftUI.Text(props.placeholder ?? "").foregroundStyle(astryx.tokens.color.textSecondary)
@@ -348,12 +348,29 @@ public struct TextInput: View {
         props.onEnter?()
         return .handled
       }
-      .accessibilityValue(SwiftUI.Text(readOnlyText))
+      // VoiceOver reads it as the platform's text field: dimmed when
+      // disabled, a secure field for a password, with the name and the
+      // description the field reads in every state.
+      .accessibilityRepresentation { accessibleField }
     if props.type == .password {
       text.textSelection(.disabled)
     } else {
       text.textSelection(.enabled)
     }
+  }
+
+  /// The platform text field VoiceOver reads for a read-only or disabled field.
+  @ViewBuilder private var accessibleField: some View {
+    let value = Binding.constant(props.value)
+    Group {
+      if props.type == .password {
+        SecureField(accessibilityName, text: value)
+      } else {
+        TextField(accessibilityName, text: value)
+      }
+    }
+    .disabled(isDisabled)
+    .accessibilityHint(SwiftUI.Text(accessibilityDescription))
   }
 
   // MARK: Status
