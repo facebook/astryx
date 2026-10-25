@@ -344,9 +344,9 @@ export interface ClaimTapFocusOptions {
  * FR4's tap route: a one-finger tap on `region` that `claim` accepts (a
  * field without focus) is delivered by `deliver` instead of by the browser,
  * whose own focus would reveal the field by scrolling the document. The tap's
- * default is prevented at its end, which also cancels the click it would
- * make; a touch that moves past the scroll slop, or a second finger, is left
- * to the browser. Returns a cleanup.
+ * default is prevented at its end, and the mouse events Safari may still send
+ * for it are swallowed for a moment; a touch that moves past the scroll slop,
+ * or a second finger, is left to the browser. Returns a cleanup.
  *
  * @example
  * ```
@@ -363,6 +363,48 @@ export function claimTapFocus(
   // The touch being followed, and the listeners that follow it: on the
   // region only, and only while that touch is down.
   let start: {x: number; y: number; control: HTMLElement} | null = null;
+  // After a delivered tap, the mouse events Safari may still send for it are
+  // swallowed. On the iOS simulator, a tap held about 250 ms still gets its
+  // mousedown and click a few ms after its touchend, though that touchend was
+  // cancelable and cancelled (a quick tap's gets none, and a non-passive
+  // listener present from the touch's start changes nothing). They are aimed
+  // at whatever is under the finger by then: the transcript, once the
+  // composer has started down with the keyboard, where the mousedown takes
+  // the focus the tap delivered. So the document listens, from the tap's end
+  // until its click, or until the next touch, pointer press or key starts a
+  // new interaction. A click a key makes (detail 0) is never the tap's.
+  let disarmGhost: (() => void) | null = null;
+  const swallowGhost = () => {
+    disarmGhost?.();
+    const doc = region.ownerDocument;
+    const swallow = (event: MouseEvent) => {
+      if (event.detail === 0) {
+        return;
+      }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+    const onClick = (event: MouseEvent) => {
+      swallow(event);
+      disarm();
+    };
+    const disarm = () => {
+      doc.removeEventListener('mousedown', swallow, true);
+      doc.removeEventListener('mouseup', swallow, true);
+      doc.removeEventListener('click', onClick, true);
+      doc.removeEventListener('touchstart', disarm, true);
+      doc.removeEventListener('pointerdown', disarm, true);
+      doc.removeEventListener('keydown', disarm, true);
+      disarmGhost = null;
+    };
+    doc.addEventListener('mousedown', swallow, true);
+    doc.addEventListener('mouseup', swallow, true);
+    doc.addEventListener('click', onClick, true);
+    doc.addEventListener('touchstart', disarm, {capture: true, passive: true});
+    doc.addEventListener('pointerdown', disarm, {capture: true, passive: true});
+    doc.addEventListener('keydown', disarm, {capture: true, passive: true});
+    disarmGhost = disarm;
+  };
   const stopFollowing = () => {
     start = null;
     region.removeEventListener('touchmove', onMove);
@@ -395,6 +437,7 @@ export function claimTapFocus(
     }
     event.preventDefault();
     deliver(tap.control, touch.clientX, touch.clientY);
+    swallowGhost();
   }
   const onStart = (event: TouchEvent) => {
     if (start != null) {
@@ -418,6 +461,7 @@ export function claimTapFocus(
   region.addEventListener('touchstart', onStart, {passive: true});
   return () => {
     stopFollowing();
+    disarmGhost?.();
     region.removeEventListener('touchstart', onStart);
   };
 }

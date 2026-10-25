@@ -343,8 +343,91 @@ describe('the tap route (FR4)', () => {
       'touchend',
       'touchcancel',
     ]);
-    expect(documentAdd).not.toHaveBeenCalled();
+    // The only document listeners: after the tap, until its click or a new
+    // press, the swallower of the mouse events Safari may still send.
+    expect(documentAdd.mock.calls.map(([type]) => type)).toEqual([
+      'mousedown',
+      'mouseup',
+      'click',
+      'touchstart',
+      'pointerdown',
+      'keydown',
+    ]);
     stop();
+    region.remove();
+  });
+
+  it('swallows the mouse events Safari still sends for a delivered tap, wherever they land, until its click', () => {
+    const {region, field, deliver, stop} = setup();
+    const elsewhere = document.createElement('button');
+    document.body.append(elsewhere);
+    const pressed = vi.fn();
+    elsewhere.addEventListener('mousedown', pressed);
+    elsewhere.addEventListener('click', pressed);
+    // Safari's events for a tap carry its click count.
+    const mouse = (type: string) => {
+      const event = new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        detail: 1,
+      });
+      elsewhere.dispatchEvent(event);
+      return event;
+    };
+    field.dispatchEvent(touchEvent('touchstart', [{x: 10, y: 10}]));
+    field.dispatchEvent(touchEvent('touchend', [], [{x: 12, y: 11}]));
+    expect(deliver).toHaveBeenCalledTimes(1);
+    // Aimed at what is under the finger now.
+    expect(mouse('mousedown').defaultPrevented).toBe(true);
+    expect(mouse('click').defaultPrevented).toBe(true);
+    expect(pressed).not.toHaveBeenCalled();
+    // The tap's click ends it.
+    expect(mouse('click').defaultPrevented).toBe(false);
+    expect(pressed).toHaveBeenCalledTimes(1);
+    stop();
+    elsewhere.remove();
+    region.remove();
+  });
+
+  it('lets go when no click comes and a new touch or pointer press starts', () => {
+    const {region, field, stop} = setup();
+    const mousedown = () => {
+      const event = new MouseEvent('mousedown', {
+        bubbles: true,
+        cancelable: true,
+        detail: 1,
+      });
+      document.body.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    field.dispatchEvent(touchEvent('touchstart', [{x: 10, y: 10}]));
+    field.dispatchEvent(touchEvent('touchend', [], [{x: 10, y: 10}]));
+    // A new touch anywhere.
+    document.body.dispatchEvent(touchEvent('touchstart', [{x: 300, y: 300}]));
+    expect(mousedown()).toBe(false);
+
+    field.dispatchEvent(touchEvent('touchstart', [{x: 10, y: 10}]));
+    field.dispatchEvent(touchEvent('touchend', [], [{x: 10, y: 10}]));
+    // A mouse's own press.
+    document.body.dispatchEvent(new Event('pointerdown', {bubbles: true}));
+    expect(mousedown()).toBe(false);
+
+    field.dispatchEvent(touchEvent('touchstart', [{x: 10, y: 10}]));
+    field.dispatchEvent(touchEvent('touchend', [], [{x: 10, y: 10}]));
+    // A key, whose own click (detail 0) goes through.
+    document.body.dispatchEvent(new KeyboardEvent('keydown', {bubbles: true}));
+    expect(mousedown()).toBe(false);
+    field.dispatchEvent(touchEvent('touchstart', [{x: 10, y: 10}]));
+    field.dispatchEvent(touchEvent('touchend', [], [{x: 10, y: 10}]));
+    const keyClick = new MouseEvent('click', {bubbles: true, cancelable: true});
+    document.body.dispatchEvent(keyClick);
+    expect(keyClick.defaultPrevented).toBe(false);
+
+    field.dispatchEvent(touchEvent('touchstart', [{x: 10, y: 10}]));
+    field.dispatchEvent(touchEvent('touchend', [], [{x: 10, y: 10}]));
+    // And when the route goes.
+    stop();
+    expect(mousedown()).toBe(false);
     region.remove();
   });
 

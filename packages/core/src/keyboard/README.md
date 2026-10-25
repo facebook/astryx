@@ -32,7 +32,10 @@ exported from the package entry.
   `claimTapFocus(region, {claim, deliver})` is that route. It follows one
   finger with listeners on the region, only while the touch is down, and on a
   tap (within 10 px) prevents the touch's default and delivers the focus
-  itself (ChatLayout puts the caret where the finger lifted).
+  itself (ChatLayout puts the caret where the finger lifted). Safari still
+  sends a held tap's mousedown and click, aimed at whatever is under the
+  finger by then, so the route swallows them on the document until the tap's
+  click or the next touch, pointer press or key.
 - **BottomSheet's hook (FR4, FR5):** `useMobileKeyboard(options)` gives a
   fully expanded Tall sheet its keyboard scroll range, claims focus moves into
   it, puts back a document scroll while the page is locked, and dismisses the
