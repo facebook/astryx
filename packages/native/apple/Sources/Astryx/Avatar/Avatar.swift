@@ -191,13 +191,15 @@ public struct Avatar: View {
     ZStack {
       astryx.tokens.color.neutral
       if let initials {
-        SwiftUI.Text(initials)
-          .font(initialsFont)
-          .foregroundStyle(astryx.tokens.color.textSecondary)
-          .lineLimit(1)
-          .fixedSize()
-          // The name, not the initials, names the avatar.
-          .accessibilityHidden(true)
+        // Drawn, not laid out as a Text view, so the initials are never an
+        // accessibility element of their own; the name names the avatar.
+        let font = initialsFont
+        let color = astryx.tokens.color.textSecondary
+        Canvas { context, size in
+          let text = context.resolve(SwiftUI.Text(initials).font(font).foregroundColor(color))
+          context.draw(text, at: CGPoint(x: size.width / 2, y: size.height / 2), anchor: .center)
+        }
+        .accessibilityHidden(true)
       } else {
         Image(systemName: "person.fill")
           .resizable()
