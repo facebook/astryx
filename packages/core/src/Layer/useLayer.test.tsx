@@ -1626,12 +1626,12 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
     vi.restoreAllMocks();
   });
 
-  it('lists beside the trigger first, then the preferred and the other block side, each only where it is the roomier side', () => {
+  it('lists beside the trigger, then the other block side at its own size, and only then each block side sized to its room', () => {
     expect(getAnchorClearFallbacks('above')).toBe(
-      '--astryx-layer-beside-end, --astryx-layer-beside-start, --astryx-layer-fit-above, --astryx-layer-fit-below',
+      '--astryx-layer-beside-end, --astryx-layer-beside-start, flip-block, --astryx-layer-fit-above, --astryx-layer-fit-below',
     );
     expect(getAnchorClearFallbacks('below')).toBe(
-      '--astryx-layer-beside-end, --astryx-layer-beside-start, --astryx-layer-fit-below, --astryx-layer-fit-above',
+      '--astryx-layer-beside-end, --astryx-layer-beside-start, flip-block, --astryx-layer-fit-below, --astryx-layer-fit-above',
     );
     // Side placements already slide along the block axis at full height.
     expect(getAnchorClearFallbacks('start')).toBe('');

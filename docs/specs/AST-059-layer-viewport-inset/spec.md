@@ -189,12 +189,16 @@ the app reaches every layer instead of the components that happen to read it.
   side, partly off-screen), an above or below layer tries instead beside the
   anchor on the inline end, then on the inline
   start, each at its content's inline size and capped to the viewport, then
-  the preferred block side, then the other, each only while it is the side
-  with more room and sized to the room on that side. No option in the second
-  list is sized to whatever room is left, because a browser keeps an open
-  layer on the option it last used for as long as that option still fits:
-  when its anchor moves, the layer moves to the side that is now roomier
-  rather than shrinking to a sliver. It scrolls what it cannot show, and only
+  the opposite block side at its own size, and only then the preferred block
+  side and the other, each only while it is the side with more room and sized
+  to the room on that side. A layer whose content fits on some side keeps its
+  own size there; only content taller than the room on both sides is sized to
+  a room. No option is sized to whatever room is left, because a browser keeps
+  an open layer on the option it last used for as long as that option still
+  fits: when its anchor moves, the layer moves to the side that is now roomier
+  rather than shrinking to a sliver. Whether the first list has failed is read
+  from the layer's settled box, without the transform its entry animation
+  applies while it enters. It scrolls what it cannot show, and only
   then, so a layer that fits stays a plain box (FR3). Once switched, it keeps
   the second list until it next opens; a switch that the engine does not apply
   at once places it afresh from the second list in the same frame, without
@@ -247,8 +251,9 @@ the app reaches every layer instead of the components that happen to read it.
   (FR5) is read before the layer's first paint and thereafter only when the
   anchor's visibility changes, so a layer opened while its anchor is already
   out of view holds from its first frame. For a layer that keeps its anchor
-  clear (FR4), whether its settled box covers its anchor or leaves the
-  viewport, and whether its content overflows the box, are read in the same
+  clear (FR4), whether its settled box (without its own transform) covers its
+  anchor or leaves the viewport, and whether its content overflows the box, are
+  read in the same
   call that shows or remounts it, and again while it is open whenever its size,
   its content's size, its anchor's size or the viewport changes, including
   after the caller replaces the anchor element while the layer stays open;

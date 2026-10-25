@@ -797,7 +797,6 @@ async function hasSwitched(page: Page): Promise<boolean | undefined> {
 
 test('a scroll never switches a tooltip that fits, so it still flips below when it grows', async ({
   page,
-  browserName,
 }) => {
   // A short tooltip opened by keyboard focus above a trigger near the top.
   await page.setViewportSize({width: 1280, height: 720});
@@ -838,16 +837,12 @@ test('a scroll never switches a tooltip that fits, so it still flips below when 
   expect(overlaps(tooltip, trigger)).toBe(false);
   expect(tooltip.top).toBeGreaterThanOrEqual(0);
   expect(tooltip.bottom).toBeLessThanOrEqual(720);
-  if (browserName === 'chromium') {
-    // On the standard list it flips below, as any layer does, rather than
-    // moving beside its trigger. (WebKit's first layout of a just-shown
-    // popover reads a few pixels over its trigger, so there the short
-    // tooltip has switched since it opened and moves beside instead.)
-    expect(atOpen).toBe(false);
-    expect(tooltip.top).toBeGreaterThanOrEqual(trigger.bottom);
-    expect(tooltip.left).toBeLessThan(trigger.right);
-    expect(await hasSwitched(page)).toBe(false);
-  }
+  // On the standard list it flips below, as any layer does, rather than
+  // moving beside its trigger.
+  expect(atOpen).toBe(false);
+  expect(tooltip.top).toBeGreaterThanOrEqual(trigger.bottom);
+  expect(tooltip.left).toBeLessThan(trigger.right);
+  expect(await hasSwitched(page)).toBe(false);
 });
 
 test('a scroll that moves a tall tooltip’s trigger never leaves the tooltip over it past the first painted frame, and it ends on the roomier side', async ({
@@ -958,9 +953,9 @@ test('placing a shown tooltip afresh never replays its entry animation', async (
     {sel: TRIGGER, tip: TOOLTIP},
   );
   if (browserName === 'chromium') {
-    // WebKit switches this tooltip when it opens (its first layout of a
-    // just-shown popover reads a few pixels over the trigger), before the
-    // fade, so only Chromium switches it here, after paint.
+    // Chromium keeps the tooltip on its old option until the runtime
+    // switches and re-places it; WebKit re-runs the standard list itself when
+    // the trigger moves, so there it never fails and is never re-placed.
     expect(opacities.switched).toBe(true);
   }
   for (const [i, opacity] of opacities.out.entries()) {
@@ -1263,13 +1258,14 @@ test('placing a shown tooltip afresh keeps every animation in its content in its
     el.style.insetBlockStart = '-310px';
   }, TRIGGER);
   await page.waitForTimeout(450);
-  expect(await hasSwitched(page)).toBe(true);
+  if (browserName === 'chromium') {
+    expect(await hasSwitched(page)).toBe(true);
+  }
   const after = await read();
   // In Chromium the browser recreated the content's CSS animations: this is
-  // the path that has to put them back. (WebKit's first layout of a
-  // just-shown popover reads a few pixels over the trigger, so there this
-  // short tooltip switched when it opened, and the move re-places it without
-  // a reset; every row must hold either way.)
+  // the path that has to put them back. (WebKit re-runs the standard list
+  // itself when the trigger moves, so there the tooltip is never re-placed;
+  // every row must hold either way.)
   if (browserName === 'chromium') {
     expect(after.recreated).toBe(true);
   }
@@ -1345,4 +1341,107 @@ test('placing a shown tooltip afresh keeps every animation in its content in its
         ).getAnimations()[0].playState,
     ),
   ).toBe('running');
+});
+
+test('with motion allowed, a tooltip that fits does not switch at open, and fitting growth keeps its own size and flips', async ({
+  page,
+}) => {
+  // The entry animation moves the tooltip toward its trigger, scaled down,
+  // while it enters. The clearance read uses the settled box, so a 28px
+  // tooltip that fits above its trigger stays on the standard list.
+  await page.setViewportSize({width: 390, height: 700});
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-tooltip--tall-content&viewMode=story&args=content:A+short+tooltip`,
+  );
+  const button = page.getByRole('button', {name: 'Hover for details'});
+  await expect(button).toBeVisible();
+  await page.evaluate(sel => {
+    const el = document.querySelector(sel) as HTMLElement;
+    const r = el.getBoundingClientRect();
+    window.scrollBy(0, r.top + r.height / 2 - 200);
+  }, TRIGGER);
+  const t = await rect(page, TRIGGER);
+  await page.mouse.move((t.left + t.right) / 2, (t.top + t.bottom) / 2);
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  await page.waitForTimeout(400);
+  expect(await hasSwitched(page)).toBe(false);
+  const open = await rect(page, TOOLTIP);
+  expect(open.bottom).toBeLessThanOrEqual(t.top);
+  // Grown to about 290px, which fits below (464px of room) but not above:
+  // it flips below at its own size, with nothing to scroll.
+  await page.evaluate(sel => {
+    const content = document.querySelector(sel)?.firstElementChild;
+    for (let i = 1; i <= 13; i++) {
+      const line = document.createElement('div');
+      line.textContent = `Line ${i}`;
+      content?.appendChild(line);
+    }
+  }, TOOLTIP);
+  await page.waitForTimeout(400);
+  expect(await hasSwitched(page)).toBe(false);
+  const grown = await rect(page, TOOLTIP);
+  const metrics = await page.evaluate(sel => {
+    const el = document.querySelector(sel) as HTMLElement;
+    return {scrollHeight: el.scrollHeight, clientHeight: el.clientHeight};
+  }, TOOLTIP);
+  expect(grown.top).toBeGreaterThanOrEqual(t.bottom);
+  expect(grown.bottom - grown.top).toBeLessThan(400);
+  expect(metrics.scrollHeight).toBeLessThanOrEqual(metrics.clientHeight + 1);
+});
+
+test('a short, wide tooltip carried past the viewport edge moves to the other side at its own size', async ({
+  page,
+}) => {
+  // A held-open tooltip too wide to go beside its trigger on a phone sits
+  // above a trigger near the bottom. A scroll carries the trigger to the top,
+  // so the tooltip can no longer fit above: it moves below, keeping its size
+  // rather than stretching to the room there, and still keeps its size when
+  // its content then grows within that room.
+  await page.setViewportSize({width: 390, height: 700});
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-tooltip--tall-content&viewMode=story&args=isOpen:!true;content:A+short+but+wide+tooltip+whose+text+wraps+onto+a+few+lines+here`,
+  );
+  await holdMotionStill(page);
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  const scrollTriggerTo = async (y: number) => {
+    await page.evaluate(
+      ([sel, top]) => {
+        const el = document.querySelector(sel as string) as HTMLElement;
+        const r = el.getBoundingClientRect();
+        window.scrollBy(0, r.top + r.height / 2 - (top as number));
+      },
+      [TRIGGER, y],
+    );
+    await page.waitForTimeout(400);
+  };
+  await scrollTriggerTo(650);
+  const before = await rect(page, TOOLTIP);
+  const triggerBefore = await rect(page, TRIGGER);
+  expect(before.bottom).toBeLessThanOrEqual(triggerBefore.top);
+  const height = before.bottom - before.top;
+  expect(height).toBeLessThan(120);
+  await scrollTriggerTo(28);
+  const after = await rect(page, TOOLTIP);
+  const trigger = await rect(page, TRIGGER);
+  expect(overlaps(after, trigger)).toBe(false);
+  expect(after.top).toBeGreaterThanOrEqual(trigger.bottom);
+  expect(Math.abs(after.bottom - after.top - height)).toBeLessThanOrEqual(1);
+  // Grown within the room below, it still takes only the room it needs.
+  await page.evaluate(sel => {
+    const content = document.querySelector(sel)?.firstElementChild;
+    for (let i = 1; i <= 10; i++) {
+      const line = document.createElement('div');
+      line.textContent = `Line ${i}`;
+      content?.appendChild(line);
+    }
+  }, TOOLTIP);
+  await page.waitForTimeout(400);
+  const grown = await rect(page, TOOLTIP);
+  const metrics = await page.evaluate(sel => {
+    const el = document.querySelector(sel) as HTMLElement;
+    return {scrollHeight: el.scrollHeight, clientHeight: el.clientHeight};
+  }, TOOLTIP);
+  expect(grown.top).toBeGreaterThanOrEqual(trigger.bottom);
+  expect(grown.bottom - grown.top).toBeLessThan(400);
+  expect(metrics.scrollHeight).toBeLessThanOrEqual(metrics.clientHeight + 1);
 });

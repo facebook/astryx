@@ -188,10 +188,12 @@ anchor or, while the anchor is in view, past the viewport on the block axis
 (Chromium shifts a box that fits no option over the anchor; WebKit leaves it on
 its preferred side, partly off-screen), it switches to beside the anchor on the
 inline end, then the inline start, at the content's inline size, then the
-preferred block side, then the other, each only while it is the roomier side and
-sized to the room there, keeps that list until it next opens, and scrolls only
-while its content overflows. No option in that list is sized to whatever room
-is left: a browser keeps an open layer on the option it last used while that
+opposite block side at its own size, and only then the preferred block side and
+the other, each only while it is the roomier side and sized to the room there;
+it keeps that list until it next opens, and scrolls only while its content
+overflows. Content that fits on some side keeps its own size there, and no
+option is sized to whatever room is left: a browser keeps an open layer on the
+option it last used while that
 option still fits, so an anchor that moves takes the layer to the side now
 roomier instead of shrinking it. A browser also keeps a laid-out layer on its
 last option when its list changes, so when a switch does not take effect at
@@ -224,8 +226,10 @@ runtime measures nothing after paint to apply them. Anchor visibility is read
 synchronously in a layout effect before the layer's first paint and then
 observed while the layer is open, so a layer opened with its anchor already out
 of view holds from its first frame. Whether a layer that keeps its anchor clear
-covers its anchor or leaves the viewport, and whether its content overflows, is
-read inside `show()` and the open-remount path right after the popover is shown,
+covers its anchor or leaves the viewport, judged from its box without its own
+transform (so an entry animation that starts it closer to the anchor does not
+count), and whether its content overflows, is read inside `show()` and the
+open-remount path right after the popover is shown,
 and again while it is open from ResizeObserver callbacks and resize events, all
 of which run before the frame paints; the observers move to the replacement when
 the caller replaces the anchor element while the layer stays open. An anchor

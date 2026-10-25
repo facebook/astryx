@@ -26,10 +26,12 @@
  * squeezing. `fit` lands above or below sized to the room on that side, so
  * overflow scrolls inside the layer, and is never smaller than half of the room
  * the trigger leaves on the block axis, so it fits only on the side with more
- * room. Every option in the list fits only where it is a good place: a browser
- * keeps a layer on the option it last used for as long as that option still
- * fits, so an option sized to whatever room is left would hold an open layer on
- * a side shrunk to a sliver after its anchor moved. Chromium applies a position
+ * room; the list tries both only after the layer's own position, `beside` and
+ * the opposite side at the layer's own size, so only content taller than the
+ * room on both sides is sized to a room. No option is sized to whatever room
+ * is left: a browser keeps a layer on the option it last used for as long as
+ * that option still fits, so such an option would hold an open layer on a side
+ * shrunk to a sliver after its anchor moved. Chromium applies a position
  * option's width and height properties but not their min/max forms, so the
  * sizes are `inline-size` and `block-size`.
  *
@@ -196,19 +198,23 @@ function fitRule(side: 'above' | 'below'): string {
 
 /**
  * The fallback list of a layer that must never settle over its anchor, once
- * its settled box covers it (FR4): beside the trigger on the inline end, then
- * the inline start, then the preferred block side when it is the roomier side,
- * then the opposite side when it is, each sized to its room. Chromium tries
- * no more than five options, so this replaces the standard list rather than
- * extending it. Side placements already slide along the block axis at full
- * height, so they have none.
+ * the standard list has failed it (FR4). After the layer's own position (the
+ * preferred block side, at its own size): beside the trigger on the inline
+ * end, then the inline start, then the opposite block side at its own size,
+ * and only then the preferred block side and the opposite one sized to the
+ * room there, each only while it is the roomier side. Every option before the
+ * last two keeps the layer at its own size, so a layer whose content fits
+ * somewhere is never stretched to a room; the last two are for content taller
+ * than the room on both sides. Chromium tries no more than five options, so
+ * this replaces the standard list rather than extending it. Side placements
+ * already slide along the block axis at full height, so they have none.
  */
 export function getAnchorClearFallbacks(placement: LayerPlacement): string {
   if (placement !== 'above' && placement !== 'below') {
     return '';
   }
   const opposite = placement === 'above' ? 'below' : 'above';
-  return `${besideRuleName('end')}, ${besideRuleName('start')}, ${fitRuleName(placement)}, ${fitRuleName(opposite)}`;
+  return `${besideRuleName('end')}, ${besideRuleName('start')}, flip-block, ${fitRuleName(placement)}, ${fitRuleName(opposite)}`;
 }
 
 /** The custom property a layer writes its anchor-clear fallback list to. */
