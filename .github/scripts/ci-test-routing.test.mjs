@@ -648,7 +648,10 @@ describe('deploy.yml push gating', () => {
     // break the `build` check on every open PR (#3197).
     const gates = runLines(workflow.jobs.typecheck);
     expect(gates).toContain('scripts/verify-exports.mjs');
-    expect(gates).toMatch(/^pnpm typecheck$/m);
+    // runLines expands root scripts, so look for the step as written.
+    const steps = workflow.jobs.typecheck.steps.map(step => step.run ?? '');
+    expect(steps.some(run => /^pnpm typecheck$/m.test(run))).toBe(true);
+    expect(gates).toContain('--if-present');
     // Every package that guarded main still defines the script it reaches.
     for (const dir of [
       'packages/core',
