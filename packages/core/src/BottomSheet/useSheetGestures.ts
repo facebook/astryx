@@ -109,7 +109,7 @@ import {
   type MotionHandle,
 } from '../motion/animator';
 import type {SpringDescription} from '../motion/spring';
-import {springs} from '../motion/uikit/springs';
+import {registerSpringsTable, springs} from '../motion/uikit/springs';
 import {
   readReleaseMotion,
   themeCurve,
@@ -965,6 +965,9 @@ export function useSheetGestures({
       velocity?: number,
       crossfadeAs?: 'exit',
     ): MotionHandle => {
+      // The springs table's roles, so a theme's values for them apply: once,
+      // before the sheet's first animation (motion/roles.ts).
+      registerSpringsTable();
       const to = offset - layoutOffset - travelBaseRef.current;
       const motion = releaseMotionRef.current;
       // Under reduced motion the animator's own cross-fade replaces the
