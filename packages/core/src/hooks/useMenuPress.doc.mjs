@@ -67,7 +67,7 @@ export const docs = {
       name: 'options.onDismiss',
       type: '() => void',
       description:
-        'A MOUSE was released outside the menu with nothing acting: close it. A finger released outside leaves the menu open, so this is never called then.',
+        'Close the menu: a MOUSE was released outside it with nothing acting. A finger released outside leaves the menu open, so this is never called then.',
     },
     {
       name: 'options.getScroller',
@@ -79,7 +79,7 @@ export const docs = {
       name: 'options.longPressDelayMs',
       type: 'number',
       description:
-        'How long a finger must rest on the trigger before the menu opens under it.',
+        "How long a finger must rest on the trigger before the menu opens under it. A tap released sooner opens the menu through the trigger's click.",
       default: '500',
     },
     {
@@ -167,10 +167,11 @@ export const docsDense = {
       'move highlight (null clears); default = focus w/ preventScroll (not :focus-visible after a pointer press), menu root when no row.',
     'options.onActivate':
       'act on row under release; default = dispatch click w/ release button + modifiers.',
-    'options.onDismiss': 'MOUSE released outside: close. Finger: never called.',
+    'options.onDismiss':
+      'close: a MOUSE released outside; a finger released outside: not called.',
     'options.getScroller':
       'element to edge-autoscroll while tracking; default = menu root if it overflows.',
-    'options.longPressDelayMs': 'finger hold before open, ms.',
+    'options.longPressDelayMs': 'finger hold before open, ms (default 500).',
     'options.isEnabled': 'false = inert.',
   },
   returnDescriptions: {
