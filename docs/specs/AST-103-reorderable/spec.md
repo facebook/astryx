@@ -98,7 +98,7 @@ announcements are those of FR3 and FR4, and the tree adds no option.
   tree, `to` is `{ parent, index }`: `parent` is the new parent's key (`null`
   at the root) and `index` is the item's position among that parent's children
   after the move (DEC-3). It carries no gesture, animation, or timing settings. An optional
-  `isMovable(key)` predicate keeps a row in place: a row it rejects shows no
+  `isReorderable(key)` predicate keeps a row in place: a row it rejects shows no
   handle and cannot be picked up (DEC-2). A row it rejects at either end of the
   collection also bounds the drop range: nothing drops beyond it, and a
   keyboard or assistive-technology move past it is not offered.
@@ -183,7 +183,7 @@ Rejected: shipping it as experimental first.
 **Decider:** `cixzhang`, `2026-10-25`
 
 Some rows must not move, such as a pinned first row, and a person should see
-that before trying. An optional `isMovable(key)` predicate marks them: the row
+that before trying. An optional `isReorderable(key)` predicate marks them: the row
 shows no handle and cannot be picked up, as a UIKit table's `canMoveRow` does.
 The name follows Astryx's `is…` predicate convention.
 
@@ -195,7 +195,7 @@ Rejected: no per-row control, with unwanted moves ignored after the drop.
 **Decider:** `cixzhang`, `2026-10-25`
 
 `onReorder` receives the moved item's key and its new position, and
-`isMovable` receives a key, so the contract names items by key everywhere. A
+`isReorderable` receives a key, so the contract names items by key everywhere. A
 key stays correct when a list is virtualized and when a tree moves an item
 between parents, where a pair of indices would not. A caller that filters the
 items it passes maps `to` back to its full list.
