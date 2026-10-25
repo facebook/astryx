@@ -24,15 +24,15 @@ system_specs: [spec:AST-082, spec:AST-093]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                                     |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | `Button(label:variant:size:elevation:isLoading:isInterruptible:isDisabled:width:tooltip:href:base:onClick:)` and `Button(_ props: ButtonProps)`, a SwiftUI `View` in module `Astryx`.                                        |
-| Behavior                | A SwiftUI `Button` drawn with the Astryx button style, or a SwiftUI `Link` when an enabled Button has `href`. While loading, a spinner covers the label, which keeps its place, and presses wait unless it is interruptible. |
-| End-user impact         | A person gets one action control whose width holds while it loads and which never runs twice by accident; a link Button stays a link while busy, so VoiceOver and keyboard focus stay on it.                                 |
-| Builder impact          | An app passes core's Button props; `href` makes the same view open a destination through the system.                                                                                                                         |
-| Compatibility/readiness | Additive. Draft; built and tested on macOS and the iOS Simulator.                                                                                                                                                            |
-| Review checks           | Reject a loading link that swaps to a button, a loading Button that runs `onClick` or opens its link while not interruptible, a size change while loading, or a disabled Button with `href` that opens.                      |
-| Governing rules         | `component:Button` FR7–FR11; `spec:AST-082` FR3; `spec:AST-093` FR1–FR5; the Swift component API record (A2–A5) under `packages/native/specs/swift/library/`.                                                                |
+| Area                    | Contract                                                                                                                                                                                                                                                                                 |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | `Button(label:variant:size:elevation:isLoading:isInterruptible:isDisabled:width:tooltip:href:base:onClick:)` and `Button(_ props: ButtonProps)`, a SwiftUI `View` in module `Astryx`.                                                                                                    |
+| Behavior                | A SwiftUI `Button` drawn with the Astryx button style, or a SwiftUI `Link` when an enabled Button has `href`. While loading, a spinner covers the label, which keeps its place, and presses wait unless it is interruptible.                                                             |
+| End-user impact         | A person gets one action control whose width holds while it loads and which never runs twice by accident; a link Button stays a link while busy, so VoiceOver and keyboard focus stay on it.                                                                                             |
+| Builder impact          | An app passes core's Button props; `href` makes the same view open a destination through the system.                                                                                                                                                                                     |
+| Compatibility/readiness | Breaking for canary callers: `action:`, `fillsWidth:`, `icon:`, and the hand-written `AstryxButtonVariant` and `AstryxButtonSize` give way to the generated `ButtonProps` (`onClick:`, `width:`, `ButtonVariant`, `ButtonSize`). Draft; built and tested on macOS and the iOS Simulator. |
+| Review checks           | Reject a loading link that swaps to a button, a loading Button that runs `onClick` or opens its link while not interruptible, a size change while loading, or a disabled Button with `href` that opens.                                                                                  |
+| Governing rules         | `component:Button` FR7–FR11; `spec:AST-082` FR3; `spec:AST-093` FR1–FR5; the Swift component API record (A2–A5) under `packages/native/specs/swift/library/`.                                                                                                                            |
 
 This table is a review projection; the body below is authoritative.
 
@@ -45,7 +45,7 @@ its look, loading, and link behavior follow the core `Button` contract.
 ## Compatibility and migration
 
 - Released default preserved: `not yet released`
-- Compatibility class: additive
+- Compatibility class: breaking for canary callers (hand-written parameters → generated `ButtonProps`)
 - Controlled/uncontrolled behavior: not applicable
 - Migration decision: none
 
