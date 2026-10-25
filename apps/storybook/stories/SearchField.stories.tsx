@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useLayoutEffect, useRef, useState} from 'react';
+import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {SearchField} from '@astryxdesign/lab';
+import {SearchField, type SearchFieldHandle} from '@astryxdesign/lab';
 import {type MotionCurve} from '@astryxdesign/core/motion/animator';
 import {cubicBezier} from '@astryxdesign/core/motion/bezier';
 import {resolveMotion} from '@astryxdesign/core/motion/resolveMotion';
@@ -313,4 +313,132 @@ export const Bottom: Story = {
 /** The bottom field right to left: it narrows from the left. */
 export const BottomRightToLeft: Story = {
   render: () => <BottomScreen dir="rtl" />,
+};
+
+// A tab bar's search tab draws the field's glass and its cancel button (its
+// search circle) and moves them above the keyboard; here a plain box and
+// button stand in for them, in a bar kept at the bottom of the viewport.
+const TAB_BAR_BOTTOM = 33;
+const tabBar: React.CSSProperties = {
+  position: 'fixed',
+  insetInline: 0,
+  height: 48,
+};
+const tabGlass: React.CSSProperties = {
+  position: 'absolute',
+  insetInlineStart: 8,
+  top: 0,
+  width: 330,
+  height: 48,
+  borderRadius: 24,
+  background: 'rgba(127, 127, 127, 0.14)',
+};
+const tabCircle: React.CSSProperties = {
+  position: 'absolute',
+  insetInlineEnd: 8,
+  top: 0,
+  width: 48,
+  height: 48,
+  borderRadius: 24,
+  border: 0,
+  background: 'rgba(127, 127, 127, 0.14)',
+  fontSize: 20,
+};
+
+/**
+ * The stand-in bar keeps above the software keyboard as a tab bar keeps its
+ * search field: by layout, its centre 36 px above the keyboard's top while
+ * the keyboard is up (the keyboard's height as spec:AST-099 FR2 defines it:
+ * Mobile Safari's cover; 0 where the page has the VirtualKeyboard API),
+ * committed on each report with no ride, as a Lab surface does (FR8).
+ */
+function useStandInTabBarLift() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [lift, setLift] = useState(0);
+  const shown = useRef(0);
+  useLayoutEffect(() => {
+    shown.current = lift;
+  }, [lift]);
+  useEffect(() => {
+    const element = ref.current;
+    const win = element?.ownerDocument.defaultView;
+    if (element == null || win == null) {
+      return undefined;
+    }
+    const read = () => {
+      const viewport = win.visualViewport;
+      const inset =
+        viewport == null ||
+        'virtualKeyboard' in win.navigator ||
+        win !== win.top
+          ? 0
+          : Math.max(
+              0,
+              win.innerHeight - viewport.height * (viewport.scale ?? 1),
+            );
+      const rect = element.getBoundingClientRect();
+      // Where layout puts the bar without the lift.
+      const restGap =
+        win.innerHeight - (rect.top + shown.current + rect.height / 2);
+      setLift(inset > 0 ? Math.max(0, inset + 36 - restGap) : 0);
+    };
+    read();
+    win.visualViewport?.addEventListener('resize', read);
+    win.addEventListener('resize', read);
+    return () => {
+      win.visualViewport?.removeEventListener('resize', read);
+      win.removeEventListener('resize', read);
+    };
+  }, []);
+  return {ref, lift};
+}
+
+function TabScreen() {
+  const handle = useRef<SearchFieldHandle>(null);
+  const [query, setQuery] = useState('');
+  const [isActive, setIsActive] = useState(false);
+  const bar = useStandInTabBarLift();
+  return (
+    <div style={{...page, paddingBottom: 104}}>
+      <h1 style={largeTitle}>Search</h1>
+      <p
+        data-testid="search-state"
+        style={{padding: '0 16px', fontSize: 13, opacity: 0.6}}>
+        {isActive ? 'active' : 'inactive'}
+      </p>
+      <div
+        ref={bar.ref}
+        style={{...tabBar, bottom: TAB_BAR_BOTTOM + bar.lift}}
+        data-search-story-tab-bar="">
+        <div style={tabGlass}>
+          <SearchField
+            label="Search"
+            placeholder="Fruits"
+            placement="tab"
+            handleRef={handle}
+            value={query}
+            onChange={setQuery}
+            isActive={isActive}
+            onActiveChange={setIsActive}
+          />
+        </div>
+        <button
+          type="button"
+          aria-label="Cancel"
+          style={tabCircle}
+          onClick={() => handle.current?.cancel()}>
+          ×
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The field as a tab bar's search tab holds it: content only, in the box the
+ * tab bar gives it; the tab bar's own cancel button calls `cancel()`, and the
+ * stand-in bar keeps above the keyboard as a tab bar does.
+ */
+export const InTabBar: Story = {
+  render: () => <TabScreen />,
 };

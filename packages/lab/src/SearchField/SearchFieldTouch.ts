@@ -16,9 +16,9 @@
  *   presents them at rest, a change of mind adding to the curves on screen.
  *   A bottom field keeps above the software keyboard by layout, committed
  *   on each keyboard report with no ride. Where the keyboard covers the
- *   page, a tap on a bottom field's text is claimed, so Safari does not pan
- *   the page. Under a mouse or a trackpad the parts take their places at
- *   once
+ *   page, a tap on the text of a bottom or tab field is claimed, so Safari
+ *   does not pan the page. Under a mouse or a trackpad the parts take their
+ *   places at once
  * @position SearchField's one touch-layer module, imported only by
  *   SearchField.tsx, so a desktop build can swap it and the size report can
  *   measure it
@@ -71,7 +71,7 @@ import {
 const {bottom} = search;
 
 /** Where the field lives (SearchField's `placement`). */
-export type SearchFieldPlacement = 'stacked' | 'bottom';
+export type SearchFieldPlacement = 'stacked' | 'bottom' | 'tab';
 
 /** The refs SearchField puts on the parts the touch layer moves. */
 export interface SearchFieldMotion {
@@ -469,13 +469,13 @@ export function useSearchFieldMotion({
     : 0;
 
   // ---------------------------------------------------------------------------
-  // Bottom: a claimed tap on the text
+  // Bottom and tab: a claimed tap on the text
   // ---------------------------------------------------------------------------
 
-  // A tap on the text of a field at the bottom of the screen focuses it
-  // without Safari's reveal (`preventScroll`): Safari would otherwise pan
-  // the whole page up to show a field the keyboard is about to cover
-  // (spec:AST-099 FR4). The tap is the gesture system's: recognizing it
+  // A tap on the text of a field at the bottom of the screen (`bottom`,
+  // `tab`) focuses it without Safari's reveal (`preventScroll`): Safari would
+  // otherwise pan the whole page up to show a field the keyboard is about to
+  // cover (spec:AST-099 FR4). The tap is the gesture system's: recognizing it
   // cancels the browser's own focus for that touch. Taps on the buttons, and
   // taps once the text has focus, stay the browser's. Only where the
   // keyboard covers the page (Mobile Safari, FR2): where the browser reports
@@ -567,7 +567,8 @@ export function useSearchFieldMotion({
   useLayoutEffect(() => {
     const field = fieldRef.current;
     const Observer = field?.ownerDocument.defaultView?.ResizeObserver;
-    if (field == null || Observer == null) {
+    // The tab bar lays out and moves a tab field's box; it has no parts.
+    if (field == null || Observer == null || placement === 'tab') {
       return;
     }
     const observer = new Observer(() => {
@@ -582,7 +583,15 @@ export function useSearchFieldMotion({
     });
     observer.observe(field);
     return () => observer.disconnect();
-  }, [fieldRef, isBottom, geometry, place, placeBottom, bottomShape]);
+  }, [
+    fieldRef,
+    placement,
+    isBottom,
+    geometry,
+    place,
+    placeBottom,
+    bottomShape,
+  ]);
 
   return {
     rootRef: rootAnimator.ref,

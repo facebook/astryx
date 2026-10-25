@@ -75,12 +75,14 @@
  * the compositor. Under a mouse or a trackpad the parts take their places
  * at once.
  *
- * Where the keyboard covers the page (Mobile Safari), a tap on a bottom
- * field's text focuses it without Safari's reveal, which would pan the
- * whole page (spec:AST-099 FR4), and puts the caret where the finger
- * lifted. In Chrome on Android the tap stays the browser's: only its own
- * tap brings the keyboard up, and with the keyboard overlaying the page its
- * focus pans nothing.
+ * Where the keyboard covers the page (Mobile Safari), a tap on the text of
+ * a field at the bottom of the screen (`bottom`, `tab`) focuses it without
+ * Safari's reveal, which would pan the whole page (spec:AST-099 FR4), and
+ * puts the caret where the finger lifted. In Chrome on Android the tap
+ * stays the browser's: only its own tap brings the keyboard up, and with
+ * the keyboard overlaying the page its focus pans nothing. `tab` is the
+ * field inside a tab bar's search tab: the tab bar draws the glass, its
+ * cancel button and every motion, so the field draws only its content.
  *
  * Accessibility: a `search` landmark holding a `searchbox` named by
  * `label`; the clear and close buttons are named by `clearLabel` and
@@ -127,16 +129,22 @@ const {bottom} = search;
 // Types
 // =============================================================================
 
-/** What `handleRef` exposes: focus and blur the field's input. */
+/** What `handleRef` exposes: focus, blur and cancel the field. */
 export interface SearchFieldHandle {
   /**
    * Focuses the input. Called inside a tap, it raises the touch keyboard
-   * and activates the field. A bottom field does not let Safari scroll it
-   * into view.
+   * and activates the field. At the bottom of the screen (`bottom`, `tab`)
+   * it does not let Safari scroll the field into view.
    */
   focus(): void;
   /** Ends editing; the field stays active. */
   blur(): void;
+  /**
+   * Cancels search as the close button does: clears the query, ends
+   * editing and reports `onActiveChange(false)`. For a host that draws its
+   * own cancel button (a tab bar's search tab).
+   */
+  cancel(): void;
 }
 
 export interface SearchFieldProps extends Omit<
@@ -161,7 +169,10 @@ export interface SearchFieldProps extends Omit<
   onActiveChange?: (isActive: boolean) => void;
   /** Called with the query when the keyboard's Search key (Enter) is used. */
   onSubmit?: (value: string) => void;
-  /** Focus and blur, for a host that activates the field from its own tap. */
+  /**
+   * Focus, blur and cancel, for a host that activates the field from its own
+   * tap or draws its own cancel button.
+   */
   handleRef?: Ref<SearchFieldHandle>;
   /**
    * How far the active field rises into its host's bar, px: the host knows
@@ -173,7 +184,10 @@ export interface SearchFieldProps extends Omit<
    * Where the field lives: `stacked` (default) in a page header or under a
    * navigation bar's title, or `bottom`, iOS 26's toolbar field, in a bar
    * the app keeps at the bottom of the viewport; it keeps above the software
-   * keyboard. `lift` applies to `stacked` only.
+   * keyboard. `lift` applies to `stacked` only. `tab` is the field inside a
+   * tab bar's search tab: the tab bar draws the glass, the cancel button
+   * (its search circle) and every motion, so the field draws only its
+   * content, sized to the box it is given.
    */
   placement?: SearchFieldPlacement;
   /** The close button's accessible name (default: "Cancel", translated). */
@@ -208,6 +222,11 @@ const styles = stylex.create({
   // Above the software keyboard, by layout (SearchFieldTouch.ts's
   // `keyboardLift`); physical, as the keyboard is.
   keyboardLift: (lift: string) => ({bottom: lift}),
+  // Inside a tab bar's search tab the field fills the box the tab bar gives
+  // it; the tab bar's glass is its background.
+  tabFill: {
+    height: '100%',
+  },
   field: {
     position: 'relative',
     display: 'flex',
@@ -449,6 +468,7 @@ export function SearchField({
   const resolvedClearLabel = clearLabel ?? t('@astryx.searchField.clear');
   const fieldRef = useRef<HTMLDivElement>(null);
   const isBottom = placement === 'bottom';
+  const isTab = placement === 'tab';
   // The touch layer (SearchFieldTouch.ts): the parts' poses, UIKit's
   // activation under a finger, the keyboard and the claimed tap.
   const motion = useSearchFieldMotion({
@@ -489,6 +509,8 @@ export function SearchField({
     [isActiveProp, onActiveChange],
   );
 
+  // The handle's cancel reads the latest cancel (defined with the events).
+  const cancelRef = useRef<() => void>(() => {});
   useImperativeHandle(
     handleRef,
     () => ({
@@ -497,6 +519,9 @@ export function SearchField({
       },
       blur() {
         inputRef.current?.blur();
+      },
+      cancel() {
+        cancelRef.current();
       },
     }),
     [],
@@ -517,6 +542,9 @@ export function SearchField({
     inputRef.current?.blur();
     setActive(false);
   }, [setValue, setActive]);
+  useLayoutEffect(() => {
+    cancelRef.current = cancel;
+  }, [cancel]);
 
   // A cancel from the keyboard (Escape in the field, or the close button
   // with focus) leaves focus on the search landmark: the close button turns
@@ -577,11 +605,13 @@ export function SearchField({
   // the narrowed field gives up to the close button (at the bottom, less
   // the leading edge's own move, which carries the text with it).
   const edges = bottomEdges(0);
-  const activeGiveUp = isBottom
-    ? edges.restTrailing -
-      edges.activeTrailing -
-      (edges.restLeading - edges.activeLeading)
-    : search.stacked.closeGap + search.stacked.closeSize;
+  const activeGiveUp = isTab
+    ? 0
+    : isBottom
+      ? edges.restTrailing -
+        edges.activeTrailing -
+        (edges.restLeading - edges.activeLeading)
+      : search.stacked.closeGap + search.stacked.closeSize;
   const inputEnd =
     (showsClear ? search.clear.size + CLEAR_INSET : 0) +
     (isActive ? activeGiveUp : 0) +
@@ -624,9 +654,11 @@ export function SearchField({
         themeProps('search-field'),
         stylex.props(
           styles.root,
-          styles.rootInset(
-            px(isBottom ? bottom.restInset : search.stacked.fieldInset),
-          ),
+          isTab
+            ? styles.tabFill
+            : styles.rootInset(
+                px(isBottom ? bottom.restInset : search.stacked.fieldInset),
+              ),
           isBottom && styles.keyboardLift(px(motion.keyboardLift)),
           xstyle,
         ),
@@ -635,23 +667,30 @@ export function SearchField({
       )}>
       <div
         ref={fieldRef}
-        {...stylex.props(styles.field, styles.fieldHeight(px(fieldHeight)))}>
-        <span
-          ref={motion.startRef}
-          aria-hidden
-          data-search-field-start=""
-          {...stylex.props(styles.piece, styles.start(cap))}
-        />
-        <span
-          ref={motion.middleRef}
-          aria-hidden
-          data-search-field-middle=""
-          {...stylex.props(
-            styles.piece,
-            styles.middle(cap),
-            !isBottom && styles.beforePlacement,
-          )}
-        />
+        {...stylex.props(
+          styles.field,
+          isTab ? styles.tabFill : styles.fieldHeight(px(fieldHeight)),
+        )}>
+        {isTab ? null : (
+          <>
+            <span
+              ref={motion.startRef}
+              aria-hidden
+              data-search-field-start=""
+              {...stylex.props(styles.piece, styles.start(cap))}
+            />
+            <span
+              ref={motion.middleRef}
+              aria-hidden
+              data-search-field-middle=""
+              {...stylex.props(
+                styles.piece,
+                styles.middle(cap),
+                !isBottom && styles.beforePlacement,
+              )}
+            />
+          </>
+        )}
         {isBottom ? (
           <div
             ref={motion.contentRef}
@@ -673,12 +712,14 @@ export function SearchField({
             styles.end,
             placement === 'stacked' && styles.beforePlacement,
           )}>
-          <span
-            ref={motion.endCapRef}
-            aria-hidden
-            data-search-field-end-cap=""
-            {...stylex.props(styles.endCap(cap))}
-          />
+          {isTab ? null : (
+            <span
+              ref={motion.endCapRef}
+              aria-hidden
+              data-search-field-end-cap=""
+              {...stylex.props(styles.endCap(cap))}
+            />
+          )}
           {showsClear ? (
             <button
               type="button"
@@ -694,21 +735,24 @@ export function SearchField({
           ) : null}
         </div>
       </div>
-      <button
-        ref={motion.closeRef}
-        type="button"
-        aria-label={resolvedCancelLabel}
-        tabIndex={isActive ? undefined : -1}
-        aria-hidden={isActive ? undefined : true}
-        data-search-field-close=""
-        onClick={handleClose}
-        {...stylex.props(
-          styles.close,
-          styles.closeGeometry(px(closeSize), px(closeInset)),
-          !isActive && (isBottom ? styles.closeInertBottom : styles.closeInert),
-        )}>
-        <Icon icon="close" size="sm" color="inherit" />
-      </button>
+      {isTab ? null : (
+        <button
+          ref={motion.closeRef}
+          type="button"
+          aria-label={resolvedCancelLabel}
+          tabIndex={isActive ? undefined : -1}
+          aria-hidden={isActive ? undefined : true}
+          data-search-field-close=""
+          onClick={handleClose}
+          {...stylex.props(
+            styles.close,
+            styles.closeGeometry(px(closeSize), px(closeInset)),
+            !isActive &&
+              (isBottom ? styles.closeInertBottom : styles.closeInert),
+          )}>
+          <Icon icon="close" size="sm" color="inherit" />
+        </button>
+      )}
     </div>
   );
 }

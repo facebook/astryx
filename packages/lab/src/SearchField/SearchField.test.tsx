@@ -13,7 +13,7 @@
  *   activation it committed (a tab bar's tap); controlled and uncontrolled;
  *   the bottom placement's geometry and its lift above the software
  *   keyboard (spec:AST-099 FR2; none where the page has the VirtualKeyboard
- *   API, or under a mouse)
+ *   API, or under a mouse), and the tab placement's content and cancel
  * @position Testing; the motion is proven in real engines by
  *   __tests__/SearchField.interaction.browser.spec.ts
  */
@@ -490,6 +490,54 @@ describe('SearchField', () => {
           '300px',
         );
       });
+    });
+  });
+
+  describe('tab placement', () => {
+    it('draws only its content: the tab bar draws the glass and the cancel button', () => {
+      render(<SearchField label="Search" placement="tab" />);
+      const root = screen.getByRole('search');
+      expect(box()).toBeInTheDocument();
+      expect(root.querySelector('[data-search-field-middle]')).toBeNull();
+      expect(root.querySelector('[data-search-field-end-cap]')).toBeNull();
+      expect(root.querySelector('[data-search-field-close]')).toBeNull();
+    });
+
+    it('focuses without Safari’s reveal and cancels from the handle, for the tab bar’s own cancel button', () => {
+      const handle = createRef<SearchFieldHandle>();
+      const onActiveChange = vi.fn();
+      const onChange = vi.fn();
+      render(
+        <SearchField
+          label="Search"
+          placement="tab"
+          handleRef={handle}
+          defaultValue="ap"
+          onChange={onChange}
+          onActiveChange={onActiveChange}
+        />,
+      );
+      const input = box();
+      // An own property, not an assignment: some DOMs expose `focus` as a
+      // getter-only accessor.
+      const calls: unknown[] = [];
+      const focus = HTMLElement.prototype.focus;
+      Object.defineProperty(input, 'focus', {
+        configurable: true,
+        value(options?: FocusOptions) {
+          calls.push(options);
+          focus.call(input, options);
+        },
+      });
+      act(() => handle.current?.focus());
+      expect(input).toHaveFocus();
+      expect(calls).toEqual([{preventScroll: true}]);
+      expect(onActiveChange).toHaveBeenLastCalledWith(true);
+      act(() => handle.current?.cancel());
+      expect(onChange).toHaveBeenLastCalledWith('');
+      expect(onActiveChange).toHaveBeenLastCalledWith(false);
+      expect(input).not.toHaveFocus();
+      expect(input).toHaveValue('');
     });
   });
 });
