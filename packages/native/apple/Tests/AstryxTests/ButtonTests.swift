@@ -97,6 +97,10 @@ import Testing
   let loading = Astryx.Button(label: "Docs", isLoading: true, href: "https://example.com")
   #expect(loading.link != nil)
   #expect(loading.acceptsPress == false)
+  // An interruptible loading link opens on each activation.
+  let interruptible = Astryx.Button(label: "Docs", isLoading: true, isInterruptible: true, href: "https://example.com")
+  #expect(interruptible.link != nil)
+  #expect(interruptible.acceptsPress)
 }
 
 @MainActor
