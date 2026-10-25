@@ -1119,7 +1119,9 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
   const declinedCandidates = logged(
     summarizeDeclinedCandidates(
       [...remainingDeclined, ...manualDeclinedRows(finalOutcomes)],
-      remainingProtected,
+      // The complete final set, regeneration rows included: a file listed
+      // under protectedFiles is never also declined.
+      protectedFiles,
     ),
   );
   receipt.declinedCandidates = declinedCandidates;

@@ -47,6 +47,19 @@ vi.mock('../../../assets/codemods/registry.mjs', async importOriginal => {
             },
           },
           {
+            name: 'report-legacy',
+            meta: {title: 'Report legacy calls', fileExtensions: ['.ts']},
+            /** @param {{source: string}} file */
+            transform(file) {
+              if (file.source.includes('LEGACY')) {
+                throw new ManualMigrationRequired('Call the new API.', {
+                  line: 3,
+                });
+              }
+              return undefined;
+            },
+          },
+          {
             name: 'rename-foo',
             meta: {title: 'Rename foo', fileExtensions: ['.ts']},
             /** @param {{source: string}} file */
@@ -176,6 +189,54 @@ describe('manual migrations beside other declined candidates', () => {
     ]);
     expect(result.data.declinedCandidates).toEqual([
       expect.objectContaining({file: 'src/chart.ts', location: '2'}),
+    ]);
+  });
+});
+
+describe('a protected file with both a manual migration and a regeneration', () => {
+  const BOTH = '// @generated\n// STALE\nLEGACY();\n';
+
+  it('is listed once, under protectedFiles, never also declined', async () => {
+    write('src/theme.ts', BOTH);
+    logger.setSilent(false);
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const result = await upgrade(APPLY, {cwd: dir});
+
+    expect(result.data.errorCode).toBe('ERR_CODEMOD_PROTECTED');
+    expect(result.data.protectedFiles).toEqual([
+      expect.objectContaining({file: 'src/theme.ts'}),
+    ]);
+    expect(result.data.regenerate).toEqual([
+      expect.objectContaining({file: 'src/theme.ts'}),
+    ]);
+    expect(result.data.declinedCandidates).toEqual([
+      expect.objectContaining({file: 'src/chart.ts'}),
+    ]);
+    const stderr = err.mock.calls.map(c => c.join(' ')).join('\n');
+    expect(stderr).toContain('1 file needs a manual migration');
+    expect(stderr).not.toMatch(/src\/theme\.ts:3 - manual migration needed/);
+  });
+
+  it('is listed once after a post-codemod hook re-checks it', async () => {
+    write('src/theme.ts', BOTH);
+    write(
+      'astryx.config.mjs',
+      `export default {hooks: {postCodemod: [{name: 'mark', buildCommand: () => ({command: process.execPath, args: ['-e', "require('node:fs').writeFileSync('hook-ran', '')"]})}]}};
+`,
+    );
+
+    const result = await upgrade(APPLY, {cwd: dir});
+
+    // The hook ran, so this receipt comes from the re-check.
+    expect(fs.existsSync(path.join(dir, 'hook-ran'))).toBe(true);
+    expect(result.data.errorCode).toBe('ERR_CODEMOD_PROTECTED');
+    expect(result.data.protectedFiles).toEqual([
+      expect.objectContaining({file: 'src/theme.ts'}),
+    ]);
+    expect(result.data.declinedCandidates).toEqual([
+      expect.objectContaining({file: 'src/chart.ts'}),
     ]);
   });
 });
