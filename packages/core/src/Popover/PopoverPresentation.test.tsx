@@ -25,8 +25,11 @@ import {
   vi,
 } from 'vitest';
 import {Button} from '../Button';
-import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
+import {DEFAULT_COMPACT_DEFINITION} from '../theme/themeAdaptations';
 import {Popover, type PopoverPresentation} from './Popover';
+
+// Compact as spec:AST-012 FR9 defines it, with a coarse pointer.
+const COMPACT_TOUCH_QUERY = DEFAULT_COMPACT_DEFINITION.coarsePointerQuery;
 
 let isCompactTouch = false;
 // The media query's change listeners, so a test can turn the phone.
@@ -68,8 +71,7 @@ beforeEach(() => {
   vi.stubGlobal(
     'matchMedia',
     vi.fn((query: string) => ({
-      matches:
-        query === COMPACT_TOUCH_PRESENTATION_QUERY ? isCompactTouch : false,
+      matches: query === COMPACT_TOUCH_QUERY ? isCompactTouch : false,
       media: query,
       onchange: null,
       addEventListener: vi.fn((_type: string, listener: () => void) => {
@@ -115,6 +117,10 @@ function Filters({
 }
 
 const trigger = () => screen.getByRole('button', {name: 'Filter'});
+const compactQueryReads = () =>
+  vi
+    .mocked(window.matchMedia)
+    .mock.calls.filter(([query]) => query === COMPACT_TOUCH_QUERY).length;
 const sheetDialog = () =>
   document.querySelector<HTMLDialogElement>('dialog[aria-label="Filters"]');
 const openLayer = () =>
@@ -130,6 +136,42 @@ async function tapTrigger() {
 }
 
 describe('Popover presentation', () => {
+  it('reads the compact-touch query only for an adaptive popover', async () => {
+    const {unmount} = render(<Filters />);
+    await tapTrigger();
+    render(<Filters presentation="bottom-sheet" />);
+    expect(compactQueryReads()).toBe(0);
+    unmount();
+    render(<Filters presentation="adaptive" />);
+    expect(compactQueryReads()).toBeGreaterThan(0);
+  });
+
+  it('takes compact from the compact definition: a short landscape phone gets the sheet', async () => {
+    // FR9 counts a screen shorter than 500 as compact whatever its width.
+    expect(COMPACT_TOUCH_QUERY).toContain('height < 500px');
+    isCompactTouch = true;
+    render(<Filters presentation="adaptive" />);
+    await tapTrigger();
+    expect(sheetDialog()).not.toBeNull();
+  });
+
+  it("styles the sheet's panel with the caller's xstyle, className and style", async () => {
+    render(
+      <Popover
+        label="Filters"
+        presentation="bottom-sheet"
+        className="caller-popover"
+        style={{outlineWidth: 3}}
+        content={<button type="button">Apply</button>}>
+        <Button label="Filter">Filter</Button>
+      </Popover>,
+    );
+    await tapTrigger();
+    const styled = sheetDialog()?.querySelector<HTMLElement>('.caller-popover');
+    expect(styled).not.toBeNull();
+    expect(styled?.style.outlineWidth).toBe('3px');
+  });
+
   it('stays anchored on a phone by default', async () => {
     isCompactTouch = true;
     render(<Filters />);

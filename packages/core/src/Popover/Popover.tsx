@@ -27,17 +27,25 @@
  */
 
 import React, {
+  use,
   useCallback,
+  useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactElement,
   type ReactNode,
 } from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import {
-  useAdaptivePresentation,
-  type AdaptivePresentation,
+import type {
+  AdaptivePresentation,
+  ResolvedAdaptivePresentation,
 } from '../hooks/useAdaptivePresentation';
+import {
+  compactDefinition,
+  DEFAULT_COMPACT_DEFINITION,
+} from '../theme/themeAdaptations';
+import {ThemeContext} from '../theme/useTheme';
 import * as stylex from '@stylexjs/stylex';
 import {devWarn} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
@@ -58,6 +66,54 @@ import {useTranslator} from '../i18n';
 // =============================================================================
 
 const BUTTON_SELECTOR = 'button, [role="button"]';
+
+const subscribeToNothing = () => () => {};
+const notCompactTouch = () => false;
+
+/**
+ * The surface `presentation` resolves to now. `adaptive` takes the sheet on a
+ * compact screen with a coarse pointer, compact as the active theme defines
+ * it (spec:AST-012 FR9: narrower than its `md` point or shorter than 500).
+ * Only an adaptive popover reads the theme and subscribes to that query, so a
+ * default popover holds no viewport or document listener. The theme is the
+ * nearest Theme provider's; without one, compact is at the default points.
+ */
+function usePresentationSurface(
+  presentation: AdaptivePresentation,
+): ResolvedAdaptivePresentation {
+  const isAdaptive = presentation === 'adaptive';
+  // `use` may be called conditionally, unlike the other hooks.
+  const points = isAdaptive
+    ? use(ThemeContext)?.theme.__adaptations?.widthBreakpoints
+    : undefined;
+  const query = useMemo(
+    () =>
+      (points == null ? DEFAULT_COMPACT_DEFINITION : compactDefinition(points))
+        .coarsePointerQuery,
+    [points],
+  );
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => {
+      const mql = window.matchMedia(query);
+      mql.addEventListener('change', onStoreChange);
+      return () => mql.removeEventListener('change', onStoreChange);
+    },
+    [query],
+  );
+  const getSnapshot = useCallback(
+    () => window.matchMedia(query).matches,
+    [query],
+  );
+  const isCompactTouch = useSyncExternalStore(
+    isAdaptive ? subscribe : subscribeToNothing,
+    isAdaptive ? getSnapshot : notCompactTouch,
+    notCompactTouch,
+  );
+  if (!isAdaptive) {
+    return presentation;
+  }
+  return isCompactTouch ? 'bottom-sheet' : 'popover';
+}
 /**
  * Find the trigger button inside a container element.
  * Looks for `<button>` or `[role="button"]` — either the element itself
@@ -273,14 +329,15 @@ export interface PopoverProps extends Pick<
    * The surface that holds the content. `'popover'` anchors it to the
    * trigger. `'bottom-sheet'` presents it in a modal BottomSheet, labeled
    * by `label`. `'adaptive'` presents the BottomSheet on a compact touch
-   * screen (a coarse pointer and a viewport at most 768 px wide: a phone in
-   * portrait, and in landscape only while it stays that narrow) and the
-   * anchored popover elsewhere, which is what iOS does with a popover by
-   * default.
+   * screen (a coarse pointer on a screen the theme counts as compact:
+   * narrower than its `md` width point or shorter than 500px, so a phone in
+   * either orientation) and the anchored popover elsewhere, which is what iOS
+   * does with a popover by default.
    *
-   * In a sheet, `placement`, `alignment`, `width`, `xstyle`, `className`,
-   * `style`, `role`, `isModal` and `hasAutoFocus` do not apply (the sheet is
-   * a modal dialog with its own focus handling); `padding` insets the
+   * In a sheet, `placement`, `alignment`, `width`, `role`, `isModal` and
+   * `hasAutoFocus` do not apply (the sheet is a modal dialog with its own
+   * focus handling); `xstyle`, `className` and `style` style the sheet's
+   * panel, as they style the anchored surface; `padding` insets the
    * sheet's content; dismissal follows `hasLightDismiss` and
    * `hasEscapeDismiss` (a sheet without light dismiss keeps Escape unless
    * that is off too, and one with neither keeps the hidden fallback close
@@ -432,7 +489,7 @@ export function Popover({
   const isControlled = isOpen !== undefined;
   // The bottom-sheet presentation: the surface it resolves to now, and
   // whether the sheet is the surface that is open.
-  const resolvedPresentation = useAdaptivePresentation(presentation);
+  const resolvedPresentation = usePresentationSurface(presentation);
   const [isSheetOpenState, setIsSheetOpenState] = useState(false);
 
   const handlePopoverShow = useCallback(() => {
@@ -476,6 +533,15 @@ export function Popover({
   const [controlledSurface, setControlledSurface] = useState<
     'popover' | 'bottom-sheet' | null
   >(null);
+  // The latch is set during render, as the controlled `isOpen` turns on or
+  // off, so the open surface is known in the same render that opens it.
+  if (isControlled) {
+    if (isOpen !== true && controlledSurface != null) {
+      setControlledSurface(null);
+    } else if (isOpen === true && controlledSurface == null) {
+      setControlledSurface(popover.isOpen ? 'popover' : resolvedPresentation);
+    }
+  }
   const isSheetOpen = isControlled
     ? isOpen === true && controlledSurface === 'bottom-sheet'
     : isSheetOpenState;
@@ -729,9 +795,9 @@ export function Popover({
     };
   }, [anchorRef, popover, attachTrigger]);
 
-  // Sync controlled state: latch the surface as `isOpen` turns on (before
-  // paint), and show or hide the anchored popover, the one surface with an
-  // imperative API. The sheet follows the latch in render (`isSheetOpen`).
+  // Sync controlled state: show or hide the anchored popover, the one surface
+  // with an imperative API, to follow the latch. The sheet follows the latch
+  // in render (`isSheetOpen`).
   useIsomorphicLayoutEffect(() => {
     if (!isControlled) {
       return;
@@ -740,22 +806,12 @@ export function Popover({
       if (popover.isOpen) {
         popover.hide();
       }
-      if (controlledSurface != null) {
-        // eslint-disable-next-line @eslint-react/set-state-in-effect -- the latch clears as the controlled popover closes
-        setControlledSurface(null);
-      }
       return;
     }
-    const surface =
-      controlledSurface ?? (popover.isOpen ? 'popover' : resolvedPresentation);
-    if (surface !== controlledSurface) {
-      // eslint-disable-next-line @eslint-react/set-state-in-effect -- the surface is chosen once, as the controlled popover opens
-      setControlledSurface(surface);
-    }
-    if (surface === 'popover' && !popover.isOpen) {
+    if (controlledSurface === 'popover' && !popover.isOpen) {
       popover.show();
     }
-  }, [isOpen, isControlled, popover, resolvedPresentation, controlledSurface]);
+  }, [isOpen, isControlled, popover, controlledSurface]);
 
   // Popover's one sizing fact: an explicit width wins over trigger matching.
   // Fit against the viewport is the layer runtime's (spec:AST-059).
@@ -796,6 +852,9 @@ export function Popover({
         height="tall"
         padding={padding}
         purpose={sheetPurpose}
+        xstyle={xstyle}
+        className={className}
+        style={style}
         data-testid={isContentInSheet ? testId : undefined}>
         {isContentInSheet ? content : null}
         {isContentInSheet &&
