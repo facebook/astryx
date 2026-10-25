@@ -375,20 +375,39 @@ export function plainDateFormat(
   locale: Locale = 'en',
 ): string {
   const calendar = options.calendar ?? 'gregory';
-  if (options.timeZone == null) {
-    // A PlainDate has no zone. Formatted as UTC midnight in UTC, neither the
-    // cached formatter nor the date depends on the host's zone, which can
-    // change while a page is open.
-    return dateTimeFormatFor(locale, {
-      ...options,
-      calendar,
-      timeZone: 'UTC',
-    }).format(utcTime(pd.year, pd.month - 1, pd.day));
+  if (options.timeZone != null) {
+    return dateTimeFormatFor(locale, {...options, calendar}).format(
+      plainDateToDate(pd),
+    );
   }
-  return dateTimeFormatFor(locale, {...options, calendar}).format(
-    plainDateToDate(pd),
-  );
+  if (TIME_OF_DAY_FIELDS.some(field => options[field] != null)) {
+    // A zone name or a time of day reads local midnight in the zone current
+    // at the call. A cached formatter would keep the zone it was built in,
+    // so this one is built for the call.
+    return new Intl.DateTimeFormat(locale, {...options, calendar}).format(
+      plainDateToDate(pd),
+    );
+  }
+  // Date fields alone: UTC midnight formatted in UTC, so neither the cached
+  // formatter nor the date depends on the host's zone, which can change while
+  // a page is open.
+  return dateTimeFormatFor(locale, {
+    ...options,
+    calendar,
+    timeZone: 'UTC',
+  }).format(utcTime(pd.year, pd.month - 1, pd.day));
 }
+
+/** Options that print a time of day or a zone, which a PlainDate lacks. */
+const TIME_OF_DAY_FIELDS = [
+  'timeZoneName',
+  'hour',
+  'minute',
+  'second',
+  'fractionalSecondDigits',
+  'dayPeriod',
+  'timeStyle',
+] as const satisfies ReadonlyArray<keyof Intl.DateTimeFormatOptions>;
 
 /**
  * One `Intl.DateTimeFormat` per locale and options, built on first use.

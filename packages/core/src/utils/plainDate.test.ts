@@ -29,6 +29,7 @@ import {
   plainDateGetWeekNumber,
   plainDateFormat,
   formatSharedDate,
+  DATE_FORMAT_LONG,
   DATE_FORMAT_WITH_WEEKDAY,
   DATE_FORMAT_MONTH_YEAR,
   plainDateWeekFieldName,
@@ -804,7 +805,42 @@ describe('plainDateFormat', () => {
         ),
       ).toBe('Sunday 1 February 2026');
     } finally {
-      process.env.TZ = zone;
+      if (zone === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = zone;
+      }
+    }
+  });
+
+  it('prints a zone name or a time of day in the host zone, as before', () => {
+    // A PlainDate has neither: such fields read local midnight in the zone
+    // current at the call, not the UTC the date-only path formats in.
+    const zone = process.env.TZ;
+    try {
+      process.env.TZ = 'America/Los_Angeles';
+      const withZone = plainDateFormat(
+        {year: 2026, month: 1, day: 25},
+        {...DATE_FORMAT_LONG, timeZoneName: 'short'},
+        'en-US',
+      );
+      expect(withZone).toContain('January 25, 2026');
+      expect(withZone).toContain('PST');
+      expect(withZone).not.toContain('UTC');
+      process.env.TZ = 'America/New_York';
+      expect(
+        plainDateFormat(
+          {year: 2026, month: 1, day: 25},
+          {...DATE_FORMAT_LONG, timeZoneName: 'short'},
+          'en-US',
+        ),
+      ).toContain('EST');
+    } finally {
+      if (zone === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = zone;
+      }
     }
   });
 
