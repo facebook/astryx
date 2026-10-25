@@ -200,7 +200,7 @@ export function resolveDefaultRelease({
   /** Whether a drag may dismiss the sheet. */
   dismissible: boolean;
   position: number;
-  /** The finger's speed over its last 100 ms, px/s; 0 after a pause. */
+  /** The release velocity, px/s: the pan's (spec:AST-100's filter), 0 after a still pointer. */
   velocity: number;
   /** How far the gesture traveled, px. */
   travel: number;
@@ -306,7 +306,7 @@ export interface SheetReleaseContext {
   readonly shortestDetentHeight: number;
   /** The detent offset the drag started from (today's rule). */
   readonly startOffset: number;
-  /** Today's estimator: the drag's direction, travel and last-100 ms speed. */
+  /** Today's inputs: the drag's direction, travel and release velocity. */
   readonly today: {direction: number; travel: number; velocity: number};
 }
 

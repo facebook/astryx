@@ -218,21 +218,96 @@ function getHandle(): HTMLElement {
   return handle;
 }
 
-// Drive a pointer drag on the grab handle. jsdom PointerEvents don't carry
-// clientY, so dispatch plain events with the coords the handlers read.
-function drag(handle: HTMLElement, points: {y: number}[]) {
-  const [down, ...rest] = points;
-  fireEvent.pointerDown(handle, {
-    pointerId: 1,
-    clientY: down.y,
-    button: 0,
-    isPrimary: true,
+// Input reaches the sheet through the document's gesture host, as in a
+// browser: a mouse (the stubbed primary pointer is fine) on explicit
+// timestamps. The host outlives a test and its clock never runs backwards,
+// so every test's times start past the previous test's.
+let timeBase = 0;
+beforeEach(() => {
+  timeBase += 1_000_000;
+  pendingPress = null;
+  // A test that ends mid-drag leaves its pointer down in the host: losing
+  // window focus cancels every contact in flight.
+  window.dispatchEvent(new Event('blur'));
+  // jsdom has no hit test; the host asks for one only on iOS WebKit, while
+  // the animator moves an element. Null keeps the touch where it was sent.
+  Object.defineProperty(document, 'elementFromPoint', {
+    configurable: true,
+    value: () => null,
   });
-  for (const p of rest) {
-    fireEvent.pointerMove(handle, {pointerId: 1, clientY: p.y});
+});
+
+function mouse(
+  target: Element,
+  type: 'pointerdown' | 'pointermove' | 'pointerup',
+  y: number,
+  time: number,
+): boolean {
+  const event = new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+    pointerId: 1,
+    pointerType: 'mouse',
+    isPrimary: true,
+    clientX: 50,
+    clientY: y,
+    button: type === 'pointermove' ? -1 : 0,
+    buttons: type === 'pointerup' ? 0 : 1,
+  });
+  Object.defineProperty(event, 'timeStamp', {value: timeBase + time});
+  return fireEvent(target, event);
+}
+
+// A finger where a test stubs a coarse primary pointer, else a mouse. jsdom
+// lacks TouchEvent: the touch events carry the fields the host reads.
+function contact(
+  target: Element,
+  type: 'pointerdown' | 'pointermove' | 'pointerup',
+  y: number,
+  time: number,
+): boolean {
+  if (!matchMedia('(pointer: coarse)').matches) {
+    return mouse(target, type, y, time);
   }
-  const last = points[points.length - 1];
-  fireEvent.pointerUp(handle, {pointerId: 1, clientY: last.y});
+  const touchType = {
+    pointerdown: 'touchstart',
+    pointermove: 'touchmove',
+    pointerup: 'touchend',
+  }[type];
+  const event = new Event(touchType, {
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+  });
+  const touch = {identifier: 1, clientX: 50, clientY: y, target};
+  Object.defineProperties(event, {
+    changedTouches: {value: [touch]},
+    touches: {value: type === 'pointerup' ? [] : [touch]},
+    timeStamp: {value: timeBase + time},
+  });
+  return fireEvent(target, event);
+}
+
+// The handle's pan reports UIKit's translation, which leaves out the travel
+// before the pan begins: a press lands that far behind its first move, so the
+// positions a test moves to are the drag's (one that never moves lifts where
+// it landed).
+const PAN_THRESHOLD = 10;
+let pendingPress: {y: number; time: number} | null = null;
+
+// Drive a drag on the grab handle, 16 ms between its events.
+function drag(handle: HTMLElement, points: {y: number}[]) {
+  points.forEach((point, i) =>
+    fireTimedPointer(handle, i === 0 ? 'pointerdown' : 'pointermove', {
+      time: i * 16,
+      y: point.y,
+    }),
+  );
+  fireTimedPointer(handle, 'pointerup', {
+    time: points.length * 16,
+    y: points[points.length - 1].y,
+  });
 }
 
 // The sheet's translation: its resting transform plus the travel channel
@@ -284,16 +359,22 @@ function fireTimedPointer(
   target: Element,
   type: 'pointerdown' | 'pointermove' | 'pointerup',
   {time, y}: {time: number; y: number},
-) {
-  const event = new Event(type, {bubbles: true, cancelable: true});
-  Object.defineProperties(event, {
-    button: {value: 0},
-    clientY: {value: y},
-    isPrimary: {value: true},
-    pointerId: {value: 1},
-    timeStamp: {value: time},
-  });
-  return fireEvent(target, event);
+): boolean {
+  if (type === 'pointerdown') {
+    pendingPress = {y, time};
+    return true;
+  }
+  if (pendingPress != null) {
+    const landing = pendingPress;
+    pendingPress = null;
+    contact(
+      target,
+      'pointerdown',
+      landing.y - Math.sign(y - landing.y) * PAN_THRESHOLD,
+      landing.time,
+    );
+  }
+  return contact(target, type, y, time);
 }
 
 describe('BottomSheet', () => {
@@ -1077,14 +1158,16 @@ describe('BottomSheet', () => {
         </BottomSheet>,
       );
       measureTallSheet();
+      // A sheet takes a finger once its entrance has landed.
+      await landSpring();
       const dialog = screen.getByRole('dialog');
       const handle = getHandle();
       fireTimedPointer(handle, 'pointerdown', {time: 0, y: 0});
+      fireTimedPointer(handle, 'pointermove', {time: 1000, y: 200});
       // The dim follows the finger with no easing of its own.
       expect(dialog.style.getPropertyValue('--_sheet-scrim-duration')).toBe(
         '0s',
       );
-      fireTimedPointer(handle, 'pointermove', {time: 1000, y: 200});
       // Gone is 736px below open (the sheet's visible height): the dim is
       // linear in position to there.
       expect(
@@ -1108,13 +1191,8 @@ describe('BottomSheet', () => {
       const handle = getHandle();
       const dialog = screen.getByRole('dialog');
 
-      fireEvent.pointerDown(handle, {
-        pointerId: 1,
-        clientY: 0,
-        button: 0,
-        isPrimary: true,
-      });
-      fireEvent.pointerMove(handle, {pointerId: 1, clientY: 300});
+      fireTimedPointer(handle, 'pointerdown', {time: 0, y: 0});
+      fireTimedPointer(handle, 'pointermove', {time: 16, y: 300});
       expect(translationOf(getSheet())).toBe(300);
 
       expect(fireEvent.contextMenu(handle)).toBe(false);
@@ -2226,16 +2304,11 @@ describe('BottomSheet', () => {
         '348px',
       );
 
-      const pointerDownAllowed = fireEvent.pointerDown(getHandle(), {
-        pointerId: 1,
-        clientY: 0,
-        button: 0,
-        isPrimary: true,
-      });
+      const pointerDownAllowed = mouse(getHandle(), 'pointerdown', 0, 0);
       expect(pointerDownAllowed).toBe(false);
       expect(document.activeElement).toBe(input);
 
-      fireEvent.pointerMove(getHandle(), {pointerId: 1, clientY: 40});
+      mouse(getHandle(), 'pointermove', 40, 16);
 
       expect(document.activeElement).toBe(sheet);
       expect(positioner.style.getPropertyValue('--_sheet-keyboard-lift')).toBe(
