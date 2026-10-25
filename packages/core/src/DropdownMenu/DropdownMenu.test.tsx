@@ -35,6 +35,10 @@ import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
+import {MENU_PRESS_LONG_PRESS_MS} from '../hooks/useMenuPress';
+import {MENU_PRESS_SETTLE_MS} from '../hooks/menuPressGesture';
+import {COMPACT_QUERY, TOUCH_QUERY} from '../utils/touchPresentation';
+import {menu as uikitMenu} from '../motion/uikit/menu';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -339,10 +343,16 @@ describe('DropdownMenu', () => {
   });
 
   it('uses the BottomSheet for adaptive presentation on compact touch', async () => {
+    // A compact touch screen answers each of its queries: the pointer, the
+    // width, and the two together.
     vi.stubGlobal(
       'matchMedia',
       vi.fn().mockImplementation((query: string) => ({
-        matches: query === COMPACT_TOUCH_PRESENTATION_QUERY,
+        matches: [
+          COMPACT_TOUCH_PRESENTATION_QUERY,
+          TOUCH_QUERY,
+          COMPACT_QUERY,
+        ].includes(query),
         media: query,
         onchange: null,
         addEventListener: vi.fn(),
@@ -2689,6 +2699,24 @@ describe('DropdownMenu press model', () => {
   const item = (name: string) =>
     screen.getByRole('menuitem', {name, hidden: true});
 
+  // A phone or tablet: the touch modes are DropdownMenu's default there.
+  function stubCoarsePointer() {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches: query === TOUCH_QUERY,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+    expect(window.matchMedia(TOUCH_QUERY).matches).toBe(true);
+  }
+
   it('a finger that lands on one row and lifts on another acts on the second, once', async () => {
     const onPick = vi.fn();
     const user = userEvent.setup();
@@ -2839,24 +2867,73 @@ describe('DropdownMenu press model', () => {
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
   });
 
-  it('a held touch on the trigger opens with the finger down and a slide picks', () => {
+  it('under a coarse pointer a finger opens the menu as it presses the trigger (no scroll view), and a slide picks', () => {
+    stubCoarsePointer();
     vi.useFakeTimers();
     try {
       const onPick = vi.fn();
       const trigger = renderMenu(onPick);
-      fireEvent.pointerDown(trigger, touch);
-      expect(trigger).toHaveAttribute('aria-expanded', 'false');
-      act(() => {
-        vi.advanceTimersByTime(500);
-      });
+      // spec:AST-094 FR29: a trigger in no scroll view opens on the press.
+      fireEvent.pointerDown(trigger, {...touch, clientX: 0, clientY: 0});
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
-      fireEvent.pointerMove(item('Delete'), touch);
+      // UIMenu's handoff: the finger picks once it travels from the first
+      // sample the menu saw.
+      fireEvent.pointerMove(item('Delete'), {...touch, clientX: 0, clientY: 3});
+      expect(item('Delete')).not.toHaveFocus();
+      fireEvent.pointerMove(item('Delete'), {
+        ...touch,
+        clientX: 0,
+        clientY: 3 + uikitMenu.scrubHandoffPx,
+      });
       expect(item('Delete')).toHaveFocus();
-      fireEvent.pointerUp(item('Delete'), touch);
+      fireEvent.pointerUp(item('Delete'), {
+        ...touch,
+        clientX: 0,
+        clientY: 3 + uikitMenu.scrubHandoffPx,
+      });
       expect(onPick).toHaveBeenCalledWith('Delete');
       // The click the browser aims at the trigger for this gesture is spent.
       fireEvent.click(trigger, {detail: 1});
       expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('presentation="popover" pins the released trigger under a finger: it opens at 500 ms and its opening press follows the settle rule', () => {
+    // spec:AST-094 FR25: a moved touch default comes back through
+    // `presentation`, never through a public threshold.
+    stubCoarsePointer();
+    vi.useFakeTimers();
+    try {
+      const onPick = vi.fn<(label: string) => void>();
+      render(
+        <DropdownMenu button={{label: 'Pinned'}} presentation="popover">
+          <DropdownMenuItem label="Edit" onClick={() => onPick('Edit')} />
+          <DropdownMenuItem label="Delete" onClick={() => onPick('Delete')} />
+        </DropdownMenu>,
+      );
+      const trigger = screen.getByRole('button', {name: /Pinned/});
+      fireEvent.pointerDown(trigger, {...touch, clientX: 0, clientY: 0});
+      // Not on the press, as the touch modes would open it.
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      act(() => {
+        vi.advanceTimersByTime(MENU_PRESS_LONG_PRESS_MS - 1);
+      });
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect(MENU_PRESS_LONG_PRESS_MS).toBe(500);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      // No handoff distance: once the press has settled, a finger that barely
+      // moved picks the row under it, as before.
+      act(() => {
+        vi.advanceTimersByTime(MENU_PRESS_SETTLE_MS);
+      });
+      fireEvent.pointerMove(item('Delete'), {...touch, clientX: 0, clientY: 2});
+      fireEvent.pointerUp(item('Delete'), {...touch, clientX: 0, clientY: 2});
+      expect(onPick).toHaveBeenCalledWith('Delete');
     } finally {
       vi.useRealTimers();
     }

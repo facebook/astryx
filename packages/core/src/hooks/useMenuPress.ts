@@ -27,9 +27,14 @@
  *   tracked release and disarms at the next pointer press or after a short
  *   window; a click with `detail === 0` (a keyboard's or a screen reader's)
  *   always passes.
- * - A mouse press on the trigger opens the menu at once; a finger held on the
- *   trigger opens it after the long-press delay. The settle rule decides
- *   whether the opening gesture's release may act (see menuPressGesture.ts).
+ * - A mouse press on the trigger opens the menu at once. With
+ *   `touchModel: 'uikit'` (DropdownMenu under a finger, `spec:AST-094` FR29)
+ *   a finger on a trigger in a fixed bar opens it as it presses, and inside a
+ *   scroll view once the 150 ms content-touch delay has passed with no
+ *   scroll; the opening finger then travels UIMenu's handoff distance before
+ *   it picks. With `touchModel: 'pointer'` (the default) a finger held for
+ *   `longPressDelayMs` opens it and the opening press follows the settle
+ *   rule, as before (see menuPressGesture.ts).
  * - `pointercancel`, a second pointer, or the window losing focus end the
  *   gesture with nothing acting; the model never re-implements scrolling.
  * - While a press is tracked in an overflowing menu, a pointer resting near
@@ -58,6 +63,9 @@ import {
   type MenuPressGesture,
   type MenuPressPointerType,
 } from './menuPressGesture';
+import {createNativeScrollProbe} from '../gestures/nativeScroll';
+import {menu} from '../motion/uikit/menu';
+import {scroll} from '../motion/uikit/scroll';
 import {useLongPress, type UseLongPressHandlers} from './useLongPress';
 import {focusForLastInput} from '../utils/focusReturn';
 import {useInteractionModalityTracking} from '../utils/interactionModality';
@@ -76,7 +84,11 @@ export const MENU_PRESS_SURFACE_ATTR = 'data-astryx-menu-press-surface';
 
 /** How long after a tracked release the browser's click is still swallowed. */
 export const MENU_PRESS_STRAY_CLICK_MS = 400;
-/** How long a finger must rest on the trigger before the menu opens under it. */
+/**
+ * How long a finger rests on the trigger before the menu opens under it,
+ * with `touchModel: 'pointer'` and no `longPressDelayMs`. A tap released
+ * sooner opens the menu through the trigger's click.
+ */
 export const MENU_PRESS_LONG_PRESS_MS = 500;
 /** Distance from a scrolling menu's edge within which a resting pointer scrolls. */
 export const MENU_PRESS_AUTOSCROLL_ZONE_PX = 24;
@@ -183,10 +195,10 @@ export interface UseMenuPressOptions {
   itemSelector: string;
   /**
    * A mouse pressed the trigger, or a finger has rested on it for the
-   * long-press delay: open the menu under the held pointer. Return whether
-   * it opened; a `false` (the press closed an open menu instead) ends the
-   * gesture. The click the trigger receives for this same gesture is reported
-   * by {@link UseMenuPressReturn.isTriggerClickFromPress} so the caller can
+   * long-press delay: open the menu under the held pointer. Return whether it opened; a `false` (the
+   * press closed an open menu instead) ends the gesture. The click the
+   * trigger receives for this same gesture is reported by
+   * {@link UseMenuPressReturn.isTriggerClickFromPress} so the caller can
    * leave it alone.
    */
   onTriggerPress?: (pointerType: MenuPressPointerType) => boolean;
@@ -203,7 +215,7 @@ export interface UseMenuPressOptions {
    * exactly as its own click would.
    */
   onActivate?: (row: HTMLElement, release: PointerEvent) => void;
-  /** A MOUSE was released outside the menu with nothing acting: close it. */
+  /** Close the menu: a MOUSE was released outside it with nothing acting. */
   onDismiss?: () => void;
   /**
    * The element to scroll while a tracked pointer rests near its edge.
@@ -216,8 +228,22 @@ export interface UseMenuPressOptions {
    * to the event target where the document lacks it (jsdom). A test seam.
    */
   hitTest?: (x: number, y: number) => Element | null;
-  /** @default 500 */
+  /**
+   * How long a finger rests on the trigger before the menu opens under it,
+   * with `touchModel: 'pointer'`.
+   * @default 500
+   */
   longPressDelayMs?: number;
+  /**
+   * How a finger on the trigger opens the menu and picks from it.
+   * `'pointer'`: after `longPressDelayMs`, and the opening press follows the
+   * settle rule. `'uikit'` (`spec:AST-094` FR29): as the finger presses on a
+   * trigger in a fixed bar, and inside a scroll view once the content-touch
+   * delay has passed with no scroll; the opening finger picks only after
+   * UIMenu's handoff distance. A mouse is unaffected.
+   * @default 'pointer'
+   */
+  touchModel?: 'pointer' | 'uikit';
   /** Whether the model is live. @default true */
   isEnabled?: boolean;
 }
@@ -249,6 +275,52 @@ export interface UseMenuPressReturn {
 
 function normalizePointerType(type: string): MenuPressPointerType | null {
   return type === 'mouse' || type === 'touch' || type === 'pen' ? type : null;
+}
+
+/**
+ * Where a pointer is, for a finger's handoff distance: given only with
+ * `touchModel: 'uikit'`. Without it the machine keeps the settle rule.
+ */
+function handoffPosition(
+  event: PointerEvent,
+  touchModel: UseMenuPressOptions['touchModel'],
+): {x?: number; y?: number} {
+  return touchModel === 'uikit' ? {x: event.clientX, y: event.clientY} : {};
+}
+
+/**
+ * Whether a control is inside a scroll view (`spec:AST-094` FR11): it sits in
+ * a scrollable container, or in scrolling page content with no fixed
+ * ancestor. A control in a fixed bar (a top bar, a tab bar, a toolbar, fixed
+ * or stuck) is not.
+ */
+function isInScrollView(control: Element): boolean {
+  if (!createNativeScrollProbe(control).isInsideScroller) {
+    return false;
+  }
+  const doc = control.ownerDocument;
+  const view = doc.defaultView;
+  const root = doc.scrollingElement ?? doc.documentElement;
+  for (
+    let node = control.parentElement;
+    node != null && node !== root && node !== doc.body;
+    node = node.parentElement
+  ) {
+    const style = view?.getComputedStyle(node);
+    const scrolls =
+      style != null &&
+      ((/(auto|scroll)/.test(style.overflowY) &&
+        node.scrollHeight > node.clientHeight) ||
+        (/(auto|scroll)/.test(style.overflowX) &&
+          node.scrollWidth > node.clientWidth));
+    if (scrolls) {
+      return true;
+    }
+    if (style?.position === 'fixed' || style?.position === 'sticky') {
+      return false;
+    }
+  }
+  return true;
 }
 
 function isRowFocusable(row: HTMLElement): boolean {
@@ -343,6 +415,8 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
   // callbacks and the hook is created further down, once `fireLongPress`
   // exists.
   const longPressApiRef = useRef<UseLongPressHandlers | null>(null);
+  // Which detector the live press uses: inside a scrolling region or not.
+  const holdKindRef = useRef<'plain' | 'scroller'>('plain');
   const touchMovePreventerRef = useRef<(() => void) | null>(null);
   const autoscrollRef = useRef<{
     timer: ReturnType<typeof setInterval>;
@@ -521,6 +595,9 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
           return;
         }
         case 'settle': {
+          if (effect.clear === true) {
+            highlight(null);
+          }
           endGesture();
           if (effect.stray) {
             armStrayClick(doc);
@@ -655,6 +732,7 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
             row: point.row,
             isInMenu: point.isInMenu,
             time: Date.now(),
+            ...handoffPosition(event, optionsRef.current.touchModel),
           },
           event,
         );
@@ -672,6 +750,7 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
             isInMenu: point.isInMenu,
             isOnTrigger: point.isOnTrigger,
             time: Date.now(),
+            ...handoffPosition(event, optionsRef.current.touchModel),
           },
           event,
         );
@@ -712,6 +791,23 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
 
   // --- The held finger on the trigger ----------------------------
 
+  // `touch-action` was decided when the finger landed; the page must not
+  // scroll under a finger that is now driving a menu. Taken off when the
+  // gesture ends.
+  const installTouchMovePreventer = useCallback(() => {
+    touchMovePreventerRef.current?.();
+    const doc = getDocument();
+    const prevent = (event: TouchEvent) => {
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+    };
+    doc.addEventListener('touchmove', prevent, {passive: false, capture: true});
+    touchMovePreventerRef.current = () => {
+      doc.removeEventListener('touchmove', prevent, true);
+    };
+  }, [getDocument]);
+
   const fireLongPress = useCallback(() => {
     const gesture = gestureRef.current;
     if (gesture.phase !== 'triggerPress') {
@@ -724,29 +820,36 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
       step({type: 'cancel'});
       return;
     }
-    // `touch-action` on the trigger was decided when the finger landed; the
-    // page must not scroll under a finger that is now driving a menu.
-    const doc = getDocument();
-    const prevent = (event: TouchEvent) => {
-      if (event.cancelable) {
-        event.preventDefault();
-      }
-    };
-    doc.addEventListener('touchmove', prevent, {passive: false, capture: true});
-    touchMovePreventerRef.current = () => {
-      doc.removeEventListener('touchmove', prevent, true);
-    };
+    installTouchMovePreventer();
     step({type: 'opened', time: Date.now()});
-  }, [getDocument, step]);
+  }, [installTouchMovePreventer, step]);
 
-  // One long-press detector for the system: the same hook ContextMenu spreads
+  // The long-press detector of the system: the same hook ContextMenu spreads
   // onto its trigger, driven here from the pointer stream this model already
   // observes. Its touch handlers go unused; the hold duration, the movement
-  // tolerance and the timer are what matter, and they now have one home.
-  longPressApiRef.current = useLongPress({
+  // tolerance and the timer are what matter, and they have one home. Inside
+  // a scrolling region UIKit first holds the touch for the scroll view's
+  // content-touch delay (`scroll.delaysContentTouchesMs`), so a held finger
+  // opens the menu that much later; the press picks its detector when it
+  // lands.
+  // With `touchModel: 'uikit'` only a trigger inside a scroll view waits
+  // (the content-touch delay, within the drift allowance); one in a fixed bar
+  // opens as the finger presses, so its detector never runs.
+  const isUikit = options.touchModel === 'uikit';
+  const pointerHoldMs = options.longPressDelayMs ?? MENU_PRESS_LONG_PRESS_MS;
+  const plainHold = useLongPress({
     onLongPress: fireLongPress,
-    delayMs: options.longPressDelayMs ?? MENU_PRESS_LONG_PRESS_MS,
+    delayMs: pointerHoldMs,
   });
+  const scrollerHold = useLongPress({
+    onLongPress: fireLongPress,
+    delayMs: isUikit ? scroll.delaysContentTouchesMs : pointerHoldMs,
+    ...(isUikit ? {moveCancelPx: menu.holdOpenSlopPx} : {}),
+  });
+  const holdDetectorsRef = useRef({plain: plainHold, scroller: scrollerHold});
+  holdDetectorsRef.current = {plain: plainHold, scroller: scrollerHold};
+  longPressApiRef.current =
+    holdKindRef.current === 'scroller' ? scrollerHold : plainHold;
 
   // --- Handlers ------------------------------------------------------------
 
@@ -823,23 +926,43 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
         return;
       }
       const native = event.nativeEvent;
+      const down = {
+        type: 'down',
+        target: 'trigger',
+        pointerType,
+        row: null,
+        time: Date.now(),
+      } as const;
+      const isUikitFinger =
+        pointerType !== 'mouse' && optionsRef.current.touchModel === 'uikit';
+      const inScrollView =
+        pointerType !== 'mouse' && isInScrollView(event.currentTarget);
+      if (isUikitFinger && !inScrollView) {
+        // spec:AST-094 FR29: a trigger in a fixed bar opens as the finger
+        // presses, and the page holds still under it as a bar's does in
+        // UIKit. The finger's compatibility mouse events must not follow it
+        // onto the trigger: their mousedown would take focus back from the
+        // menu.
+        event.preventDefault();
+        attach(native.pointerId);
+        lastPointerEventRef.current = native;
+        step(down, native);
+        fireLongPress();
+        return;
+      }
       attach(native.pointerId);
       lastPointerEventRef.current = native;
       if (pointerType !== 'mouse') {
-        longPressApiRef.current?.start({x: native.clientX, y: native.clientY});
+        holdKindRef.current = inScrollView ? 'scroller' : 'plain';
+        longPressApiRef.current =
+          holdKindRef.current === 'scroller'
+            ? holdDetectorsRef.current.scroller
+            : holdDetectorsRef.current.plain;
+        longPressApiRef.current.start({x: native.clientX, y: native.clientY});
       }
-      step(
-        {
-          type: 'down',
-          target: 'trigger',
-          pointerType,
-          row: null,
-          time: Date.now(),
-        },
-        native,
-      );
+      step(down, native);
     },
-    [attach, step],
+    [attach, fireLongPress, step],
   );
 
   const handleTriggerContextMenu = useCallback(
@@ -862,11 +985,10 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
   }, []);
 
   const cancel = useCallback(() => {
-    if (gestureRef.current.phase !== 'idle') {
-      step({type: 'cancel'});
-    }
+    // The host closed the menu under the gesture: end it with no effect of
+    // its own.
     endGesture();
-  }, [endGesture, step]);
+  }, [endGesture]);
 
   useEffect(() => {
     // Install the gesture counter's listeners before the first press.

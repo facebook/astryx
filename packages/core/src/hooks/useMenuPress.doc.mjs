@@ -67,7 +67,7 @@ export const docs = {
       name: 'options.onDismiss',
       type: '() => void',
       description:
-        'A MOUSE was released outside the menu with nothing acting: close it. A finger released outside leaves the menu open, so this is never called then.',
+        'Close the menu: a MOUSE was released outside it with nothing acting. A finger released outside leaves the menu open, so this is never called then.',
     },
     {
       name: 'options.getScroller',
@@ -79,8 +79,15 @@ export const docs = {
       name: 'options.longPressDelayMs',
       type: 'number',
       description:
-        'How long a finger must rest on the trigger before the menu opens under it.',
+        "How long a finger must rest on the trigger before the menu opens under it, with touchModel 'pointer'. A tap released sooner opens the menu through the trigger's click.",
       default: '500',
+    },
+    {
+      name: 'options.touchModel',
+      type: "'pointer' | 'uikit'",
+      description:
+        "How a finger on the trigger opens the menu and picks from it. 'pointer': after longPressDelayMs, and the opening press acts once it has settled. 'uikit': as the finger presses on a trigger in a fixed bar, and inside a scroll view once the 150 ms content-touch delay has passed with no scroll; the finger that opened the menu picks only once it has moved 10 px. A mouse is unaffected. DropdownMenu passes 'uikit' under a finger unless its presentation is pinned to 'popover'.",
+      default: "'pointer'",
     },
     {
       name: 'options.isEnabled',
@@ -167,10 +174,14 @@ export const docsDense = {
       'move highlight (null clears); default = focus w/ preventScroll (not :focus-visible after a pointer press), menu root when no row.',
     'options.onActivate':
       'act on row under release; default = dispatch click w/ release button + modifiers.',
-    'options.onDismiss': 'MOUSE released outside: close. Finger: never called.',
+    'options.onDismiss':
+      'close: a MOUSE released outside; a finger released outside: not called.',
     'options.getScroller':
       'element to edge-autoscroll while tracking; default = menu root if it overflows.',
-    'options.longPressDelayMs': 'finger hold before open, ms.',
+    'options.longPressDelayMs':
+      "finger hold before open, ms, with touchModel 'pointer' (default 500).",
+    'options.touchModel':
+      "'pointer' (default): longPressDelayMs + settle rule. 'uikit': opens on the press in a fixed bar, after 150 ms (content-touch delay) in a scroll view; 10 px handoff before the opening finger picks.",
     'options.isEnabled': 'false = inert.',
   },
   returnDescriptions: {
