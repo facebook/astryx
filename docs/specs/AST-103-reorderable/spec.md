@@ -42,6 +42,9 @@ not reorder loads none of it.
 
 ## Non-goals
 
+- Moving several items in one drag, a destination predicate, and moves
+  between collection instances; each can be added later without changing this
+  contract.
 - Moving items between collections, freeform canvas placement, and file drops.
 - Reorder motion values, thresholds, and timing: these stay internal
   (`spec:AST-002` FR3) and come from the theme's motion roles and
@@ -84,8 +87,11 @@ announcements are those of FR3 and FR4, and the tree adds no option.
 - **FR1 — One factory makes the behavior.** `createReorderable(options)`
   returns a reorderable object. `options` carries only the change callback,
   `onReorder({ key, to })`, where `key` names the moved item by its key and
-  `to` is its new position in the collection's own model: an index in a flat
-  collection, a parent and an index in a tree (DEC-3). It carries no gesture, animation, or timing settings. An optional
+  `to` is the index the item has after the move, counted in the
+  collection's full item order (every item it was given, mounted or not). In a
+  tree, `to` is `{ parent, index }`: `parent` is the new parent's key (`null`
+  at the root) and `index` is the item's position among that parent's children
+  after the move (DEC-3). It carries no gesture, animation, or timing settings. An optional
   `isMovable(key)` predicate keeps a row in place: a row it rejects shows no
   handle and cannot be picked up (DEC-2).
 - **FR2 — Present means enabled.** A collection that accepts reordering takes
@@ -100,13 +106,14 @@ announcements are those of FR3 and FR4, and the tree adds no option.
   - a drag starts from a row's handle (`design:ordered-collection-reordering`
     DR1); under a finger, a hold on the handle picks the row up at
     `spec:AST-094`'s values, and a flick still scrolls;
-  - the arrow keys, Home, and End move the focused row while it is picked up,
+  - the arrow keys along the collection's layout axis, Home, and End move the
+    focused item while it is picked up,
     Space or Enter picks it up and drops it, and Escape cancels;
   - the order commits once, at the drop (DR4), and `onReorder` is called once
     per committed move; a cancel calls nothing;
   - under Reduce Motion nothing travels (`design:reduced-motion` DR2).
 - **FR4 — Assistive technology can reorder.** Each reorderable row's handle
-  exposes "Move up" and "Move down" actions with their keyboard equivalents,
+  exposes "Move before" and "Move after" actions with their keyboard equivalents,
   and a pick-up, each move, a drop, and a cancel are announced once, after
   they render, through the shared announcement channel. Focus stays on the
   handle throughout.
@@ -140,7 +147,7 @@ announcements are those of FR3 and FR4, and the tree adds no option.
 | FR1, FR6–FR8 | Public-API review, type tests, and descriptor checks                   | the factory's options; a collection's `reorderable` type; the factory's and List's descriptors     | an extra gesture, timing, or animation option, an experimental name or subpath, a missing descriptor, or a second public reorder API, fails        |
 | FR2          | Bundle and runtime check of a collection with and without the prop     | without the prop; with the prop                                                                    | reorder code in the bundle, a handle, or a listener without the prop fails; the measured cost is recorded in the pull request                      |
 | FR3          | Browser tests with real touch input and keyboard (`spec:AST-013` FR10) | a hold and drag; a flick; arrows, Home, End, Space, Enter, Escape; a drop; a cancel; Reduce Motion | a drag that starts off the handle, a commit before the drop, two callbacks for one move, a callback on cancel, or travel under Reduce Motion fails |
-| FR4          | Screen-reader and announcement tests                                   | "Move up" and "Move down"; pick-up, move, drop, cancel                                             | a missing action, an announcement before render or repeated, or focus leaving the handle fails                                                     |
+| FR4          | Screen-reader and announcement tests                                   | "Move before" and "Move after"; a horizontal collection's arrow keys; pick-up, move, drop, cancel  | a missing action, an announcement before render or repeated, or focus leaving the handle fails                                                     |
 | FR5          | Element counts of a row with and without the prop                      | a row at rest; a row picked up                                                                     | an added element per row, or a copy of the moving row, fails                                                                                       |
 
 ## Decision log
@@ -175,8 +182,8 @@ Rejected: no per-row control, with unwanted moves ignored after the drop.
 
 `onReorder` receives the moved item's key and its new position, and
 `isMovable` receives a key, so the contract names items by key everywhere. A
-key stays correct when a list is filtered or virtualized and when a tree moves
-an item between parents, where a pair of indices would not.
+key stays correct when a list is virtualized and when a tree moves an item
+between parents, where a pair of indices would not.
 
 Rejected: `onReorder(from, to)` with a pair of positions.
 
