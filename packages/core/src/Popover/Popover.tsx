@@ -4,14 +4,24 @@
 
 /**
  * @file Popover.tsx
- * @input Uses React layout measurement and the usePopover hook
+ * @input Uses React layout measurement, the usePopover hook and the touch
+ *   presentation's surface motion
  * @output Exports Popover with conditional overflow and content-first focus above the layer runtime's viewport fit
  * @position Layer component; declarative wrapper around usePopover hook
+ *
+ * Under a finger (the shared touch resolver's coarse primary pointer, one
+ * touch model on every touch device) the popover is presented and dismissed
+ * the way a UIKit popover is: it grows out of its anchor on UIKit's present
+ * spring and shrinks back into it on the dismiss spring
+ * (popoverSurfaceMotion.ts). A fine primary pointer keeps the layer's own
+ * entrance and the theme's motion tokens (spec:AST-094 FR31).
  *
  * For hover-triggered overlays, use HoverCard instead.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Popover/Popover.test.tsx
+ * - /packages/core/src/Popover/PopoverTouch.ts (its touch layer)
+ * - /packages/core/src/Popover/usePopoverSurfaceMotion.ts
  * - /packages/core/src/Popover/index.ts
  * - /apps/storybook/stories/Popover.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/Popover/ (showcase blocks)
@@ -29,6 +39,7 @@ import * as stylex from '@stylexjs/stylex';
 import {devWarn} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
 import {usePopover} from './usePopover';
+import {usePopoverSurfaceMotion} from './PopoverTouch';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
@@ -368,8 +379,16 @@ export function Popover({
   const measurementFrameRef = useRef<number | null>(null);
   const [hasOverflow, setHasOverflow] = useState(false);
   const isControlled = isOpen !== undefined;
+  // The element the popover is anchored to, whichever way it was attached:
+  // the touch presentation grows the popover out of it.
+  const anchorElementRef = useRef<HTMLElement | null>(null);
+  const presentSurface = usePopoverSurfaceMotion();
+  // Runs as the popover opens, before it paints; set once `usePopover` has
+  // returned the surface it presents.
+  const presentSurfaceRef = useRef<() => void>(() => {});
 
   const handlePopoverShow = useCallback(() => {
+    presentSurfaceRef.current();
     onOpenChange?.(true);
   }, [onOpenChange]);
 
@@ -403,6 +422,20 @@ export function Popover({
     onShow: handlePopoverShow,
     onHide: handlePopoverHide,
   });
+
+  // Syncs the layer's show handler, an event callback outside React, with
+  // the latest presentation call and the anchor element it reads: under a
+  // finger the popover grows out of its anchor and shrinks back into it, as a
+  // UIKit popover (usePopoverSurfaceMotion.ts). Nothing to clean up.
+  const {contentRef: surfaceRef} = popover;
+  useIsomorphicLayoutEffect(() => {
+    presentSurfaceRef.current = () => {
+      presentSurface(
+        surfaceRef.current?.closest<HTMLElement>('[popover]') ?? null,
+        anchorElementRef.current,
+      );
+    };
+  }, [presentSurface, surfaceRef]);
 
   const measureOverflow = useCallback(() => {
     const surface = popover.contentRef.current;
@@ -578,12 +611,14 @@ export function Popover({
     }
 
     // Set up anchor positioning on the anchorRef element itself
+    anchorElementRef.current = el;
     popover.triggerRef(el);
 
     // Attach handlers + ARIA to the button
     const detach = attachTrigger(button);
 
     return () => {
+      anchorElementRef.current = null;
       popover.triggerRef(null);
       detach();
     };
@@ -606,6 +641,7 @@ export function Popover({
 
     // Use the wrapper as the CSS anchor — it doesn't receive pressed-state
     // transforms, so the anchor position stays stable.
+    anchorElementRef.current = wrapper;
     popover.triggerRef(wrapper);
 
     // Find the button inside the wrapper
@@ -624,6 +660,7 @@ export function Popover({
     const detach = attachTrigger(button);
 
     return () => {
+      anchorElementRef.current = null;
       popover.triggerRef(null);
       detach();
     };
@@ -671,7 +708,10 @@ export function Popover({
 
   if (isRenderProp) {
     const triggerProps: PopoverTriggerRenderProps = {
-      ref: popover.triggerRef,
+      ref: (el: HTMLElement | null) => {
+        anchorElementRef.current = el;
+        popover.triggerRef(el);
+      },
       // The caller renders and owns this trigger element.
       onClick: () => handleTriggerClick(),
       'aria-haspopup': 'dialog',

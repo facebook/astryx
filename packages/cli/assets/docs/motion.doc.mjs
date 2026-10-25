@@ -295,6 +295,18 @@ const calmTheme = defineTheme({
               '0.3s 0',
             ],
             [
+              'springs.popoverDismiss',
+              '--motion-springs-popover-dismiss',
+              'spring',
+              '0.372856s 0.149987',
+            ],
+            [
+              'springs.popoverPresent',
+              '--motion-springs-popover-present',
+              'spring',
+              '0.344886s 0.200001',
+            ],
+            [
               'springs.segmentedThumb',
               '--motion-springs-segmented-thumb',
               'spring',

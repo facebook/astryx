@@ -32,6 +32,8 @@ export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
   'springs.navigationInteractivePopFinish': 'spring',
   'springs.navigationPop': 'spring',
   'springs.navigationPush': 'spring',
+  'springs.popoverDismiss': 'spring',
+  'springs.popoverPresent': 'spring',
   'springs.segmentedThumb': 'spring',
   'springs.sheetDetent': 'spring',
   'springs.sheetDismiss': 'spring',
