@@ -501,7 +501,6 @@ test('leaving the column pauses the repeat, and coming back resumes it with no s
 
 test('under a finger each half takes at least a 24 x 24 target, and the layout does not move', async ({
   page,
-  browser,
 }) => {
   const {driver} = await openStepper(page);
   const columnBox = async (p: Page) =>
@@ -556,41 +555,44 @@ test('under a finger each half takes at least a 24 x 24 target, and the layout d
   );
   await page.waitForTimeout(500);
   expectOneCommitAtRelease(await readLog(page), 3);
-  // Under a mouse the column sits in its field the same way: the reach moves
-  // no layout. (The two profiles place the field itself differently.)
-  const placement = async (p: Page) =>
-    p.evaluate(() => {
+  // The reach moves no layout: with it taken away, every box is where it was
+  // (and the point above the column no longer reaches it).
+  const boxes = async () =>
+    page.evaluate(() => {
       const column = document.querySelector(
         '[aria-label^="Increment"]',
       )?.parentElement;
-      const field = column?.parentElement;
-      if (column == null || field == null) {
+      const input = document.querySelector('[role="spinbutton"]');
+      if (column?.parentElement == null || input == null) {
         throw new Error('no stepper column');
       }
-      const c = column.getBoundingClientRect();
-      const f = field.getBoundingClientRect();
-      return {
-        width: c.width,
-        height: c.height,
-        fromFieldLeft: c.left - f.left,
-        fromFieldTop: c.top - f.top,
-        fieldWidth: f.width,
-        fieldHeight: f.height,
-      };
+      return [column, column.parentElement, input].map(element => {
+        const {left, top, width, height} = element.getBoundingClientRect();
+        return {left, top, width, height};
+      });
     });
-  const touchPlacement = await placement(page);
-  const context = await browser.newContext({
-    viewport: page.viewportSize() ?? {width: 402, height: 714},
-    hasTouch: false,
-    isMobile: false,
+  const withReach = await boxes();
+  await page.addStyleTag({
+    content: '[data-no-reach]::before { content: none !important; }',
   });
-  const mousePage = await context.newPage();
-  await openStepper(mousePage);
+  await page.evaluate(() => {
+    document
+      .querySelector('[aria-label^="Increment"]')
+      ?.parentElement?.setAttribute('data-no-reach', '');
+  });
+  expect(await boxes()).toEqual(withReach);
   expect(
-    await mousePage.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    await page.evaluate(
+      ({x, y}) => {
+        const column = document.querySelector(
+          '[aria-label^="Increment"]',
+        )?.parentElement;
+        const element = document.elementFromPoint(x, y);
+        return element != null && column?.contains(element) === true;
+      },
+      {x: (column.left + column.right) / 2, y: column.top - block + 1},
+    ),
   ).toBe(false);
-  expect(await placement(mousePage)).toEqual(touchPlacement);
-  await context.close();
 });
 
 test('a scroll that starts on a stepper scrolls the page and steps nothing', async ({
