@@ -267,6 +267,15 @@ function fireTimedPointer(
   return fireEvent(target, event);
 }
 
+// The room the keyboard takes at the end of a Tall sheet's body, CSS px: the
+// value its functional style writes on the body (0 when none is laid out).
+function keyboardInsetOf(body: HTMLElement): number {
+  const match = /--[\w-]+:\s*(-?[\d.]+)px/.exec(
+    body.getAttribute('style') ?? '',
+  );
+  return match == null ? 0 : Number(match[1]);
+}
+
 describe('BottomSheet', () => {
   it('renders children when open and applies the accessible label', () => {
     render(
@@ -1485,9 +1494,7 @@ describe('BottomSheet', () => {
 
       expect(focus).not.toHaveBeenCalledWith({preventScroll: true});
       expect(onFocus).toHaveBeenCalledTimes(1);
-      expect(getBody().style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '0px',
-      );
+      expect(keyboardInsetOf(getBody())).toBe(0);
     });
 
     it('keeps Tall geometry fixed while extending and cleaning up its internal scroll range', () => {
@@ -1530,17 +1537,13 @@ describe('BottomSheet', () => {
         '',
       );
       // 300px keyboard overlap + 48px room for Android suggestion UI.
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
       // Visible bottom is 500px; preserve the same 48px focus gap.
       expect(body.scrollTop).toBe(248);
 
       viewport.height = 800;
       void act(() => viewport.dispatchEvent(new Event('resize')));
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '0px',
-      );
+      expect(keyboardInsetOf(body)).toBe(0);
       expect(sheet.getBoundingClientRect()).toEqual(initialRect);
       expect(sheet.style.height).toBe('');
     });
@@ -1603,9 +1606,7 @@ describe('BottomSheet', () => {
 
       input.focus();
 
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '0px',
-      );
+      expect(keyboardInsetOf(body)).toBe(0);
       expect(body.scrollTop).toBe(0);
     });
 
@@ -1664,9 +1665,7 @@ describe('BottomSheet', () => {
       input.focus();
       void act(() => viewport.dispatchEvent(new Event('resize')));
 
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '0px',
-      );
+      expect(keyboardInsetOf(body)).toBe(0);
       expect(body.scrollTop).toBe(0);
       // The keyboard moved nothing: the sheet still rests at that detent.
       expect(sheet.style.transform).toBe('');
@@ -1717,7 +1716,7 @@ describe('BottomSheet', () => {
         expect(body.scrollTop).toBe(120);
         expect(focus).not.toHaveBeenCalled();
         expect(sheetFocus).not.toHaveBeenCalled();
-        expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe('');
+        expect(keyboardInsetOf(body)).toBe(0);
         expect(
           positioner.style.getPropertyValue('--_sheet-keyboard-lift'),
         ).toBe('');
@@ -1773,9 +1772,7 @@ describe('BottomSheet', () => {
 
         input.focus();
 
-        expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-          '348px',
-        );
+        expect(keyboardInsetOf(body)).toBe(348);
         expect(body.scrollTop).toBe(248);
         result.unmount();
       },
@@ -1849,9 +1846,7 @@ describe('BottomSheet', () => {
 
       input.focus();
       expect(body.scrollTop).toBe(248);
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
 
       const pointerDownAllowed = fireEvent.pointerDown(getHandle(), {
         pointerId: 1,
@@ -1868,16 +1863,12 @@ describe('BottomSheet', () => {
       expect(positioner.style.getPropertyValue('--_sheet-keyboard-lift')).toBe(
         '',
       );
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
       expect(body.scrollTop).toBe(248);
 
       viewport.height = 800;
       void act(() => viewport.dispatchEvent(new Event('resize')));
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '0px',
-      );
+      expect(keyboardInsetOf(body)).toBe(0);
     });
 
     it('retains Tall keyboard scroll space after blur until the viewport recovers', () => {
@@ -1903,21 +1894,15 @@ describe('BottomSheet', () => {
         }),
       );
       input.focus();
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
 
       input.blur();
 
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
 
       viewport.height = 800;
       void act(() => viewport.dispatchEvent(new Event('resize')));
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '0px',
-      );
+      expect(keyboardInsetOf(body)).toBe(0);
     });
 
     it('blurs the focused Tall field and retains its inset until the viewport recovers', () => {
@@ -1945,22 +1930,16 @@ describe('BottomSheet', () => {
         }),
       );
       input.focus();
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
 
       rerender(content(false));
 
       expect(document.activeElement).not.toBe(input);
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
 
       viewport.height = 800;
       void act(() => viewport.dispatchEvent(new Event('resize')));
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '0px',
-      );
+      expect(keyboardInsetOf(body)).toBe(0);
     });
 
     it('retains Tall keyboard scroll space through a switcher handoff until the viewport recovers', () => {
@@ -1990,22 +1969,16 @@ describe('BottomSheet', () => {
         }),
       );
       input.focus();
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
 
       rerender(content('confirmation'));
 
       expect(document.activeElement).not.toBe(input);
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
 
       viewport.height = 800;
       void act(() => viewport.dispatchEvent(new Event('resize')));
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '0px',
-      );
+      expect(keyboardInsetOf(body)).toBe(0);
     });
 
     it('puts back a document scroll the browser makes to reveal a field', () => {
@@ -2132,9 +2105,7 @@ describe('BottomSheet', () => {
       // The first field opens the keyboard and is already inside the safe
       // area, so nothing has to move for it.
       title.focus();
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      expect(keyboardInsetOf(body)).toBe(348);
       expect(scrolls).toEqual([]);
 
       // A keyboard accessory "Next" or a Tab arrives as a blur naming the
@@ -2265,8 +2236,8 @@ describe('BottomSheet', () => {
         rect({top: 660 - body.scrollTop, bottom: 700 - body.scrollTop}),
       );
       input.focus();
-      const inset = body.style.getPropertyValue('--_sheet-keyboard-inset');
-      expect(inset).toBe(`${layoutBottom - (500 - 48)}px`);
+      const inset = keyboardInsetOf(body);
+      expect(inset).toBe(layoutBottom - (500 - 48));
 
       // The browser pans the page up to reveal a field: the same 500px of
       // visible page, now offset so its bottom edge coincides with the layout
@@ -2276,9 +2247,7 @@ describe('BottomSheet', () => {
       input.blur();
 
       // The keyboard did not change size, so neither does the scroll range.
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        inset,
-      );
+      expect(keyboardInsetOf(body)).toBe(inset);
     });
 
     it('keeps defending a pinned sheet after the browser has panned it once', () => {
@@ -2324,14 +2293,12 @@ describe('BottomSheet', () => {
       );
 
       title.focus();
-      const inset = body.style.getPropertyValue('--_sheet-keyboard-inset');
-      expect(inset).toBe(`${layoutBottom - (500 - 48)}px`);
+      const inset = keyboardInsetOf(body);
+      expect(inset).toBe(layoutBottom - (500 - 48));
 
       viewport.offsetTop = layoutBottom - 500;
       void act(() => viewport.dispatchEvent(new Event('resize')));
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        inset,
-      );
+      expect(keyboardInsetOf(body)).toBe(inset);
 
       // And the next browser-driven transition is still claimed and revealed,
       // by a distance measured against the unshifted keyboard boundary.

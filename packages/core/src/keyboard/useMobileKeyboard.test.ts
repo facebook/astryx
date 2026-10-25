@@ -185,6 +185,21 @@ describe('one set of listeners per window (FR1, INV11)', () => {
     unmount();
   });
 
+  it('reads a keyboard that is already up when the first component mounts', () => {
+    // Nothing listens yet: the keyboard came up before any keyboard-aware
+    // component mounted (a sheet opened from a focused field).
+    viewport.height = window.innerHeight - 300;
+    const {result, unmount} = renderHook(() => useKeyboardHeight());
+    expect(result.current).toBe(300);
+    const guide = getKeyboardLayoutGuide(window);
+    const stopGuide = guide.subscribe(() => {});
+    expect(guide.inset).toBe(300);
+    report({height: window.innerHeight});
+    expect(result.current).toBe(0);
+    stopGuide();
+    unmount();
+  });
+
   it('leaves no listener once every component has unmounted, StrictMode replay included', () => {
     const remove = vi.spyOn(viewport, 'removeEventListener');
     const {unmount} = renderHook(() => useKeyboardHeight(), {

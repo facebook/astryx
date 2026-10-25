@@ -39,7 +39,10 @@ exported from the package entry.
 - **BottomSheet's hook (FR4, FR5):** `useMobileKeyboard(options)` gives a
   fully expanded Tall sheet its keyboard scroll range, claims focus moves into
   it, puts back a document scroll while the page is locked, and dismisses the
-  keyboard when the sheet starts to move.
+  keyboard when the sheet starts to move. It returns the room the keyboard
+  takes at the end of the sheet's body, which the sheet lays out through a
+  functional style on its own body (FR3), committed before the reveal scrolls
+  into it.
 
 ## Laying out from the height, riding on top
 
@@ -103,7 +106,8 @@ at any time, for something that appears while the keyboard moves.
 
 ## Consumers
 
-- BottomSheet (`BottomSheet/BottomSheetPanel.tsx`): `useMobileKeyboard`.
+- BottomSheet (`BottomSheet/BottomSheetPanel.tsx`): `useMobileKeyboard`, whose
+  inset the body's `keyboardInset` functional style lays out.
 - ChatLayout (`Chat/useChatKeyboard.ts`): the dock and the spacer after the
   messages are laid out from `useKeyboardHeight`; the guide's ride moves the
   dock, and a transcript at its newest message, with the keyboard; a tap on the

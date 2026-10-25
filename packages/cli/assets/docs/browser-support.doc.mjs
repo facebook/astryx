@@ -32,7 +32,12 @@ export const docs = {
         },
         {
           type: 'table',
-          headers: ['Tier', 'Baseline', 'Representative versions', 'What your users experience'],
+          headers: [
+            'Tier',
+            'Baseline',
+            'Representative versions',
+            'What your users experience',
+          ],
           rows: [
             [
               'Tier 1: Full fidelity',
@@ -135,6 +140,27 @@ export const docs = {
             'Astryx does not guarantee correct layer positioning below Tier 1 (anchor positioning). Closing that gap for a Tier 2 audience is a consumer choice; see below.',
             'Astryx does not ship a `light-dark()` fallback, so theme colors are not guaranteed below Tier 2.',
           ],
+        },
+      ],
+    },
+    {
+      title: 'The On-Screen Keyboard',
+      content: [
+        {
+          type: 'prose',
+          text: "On a phone, the components that respond to the on-screen keyboard, a fully expanded `height='tall'` BottomSheet and ChatLayout's composer, measure it the same way: the layout viewport's height minus the visual viewport's height times its scale. Where the visual viewport shrinks for the keyboard, as in Safari on iOS in the browser and as a home-screen app, they keep the focused field and the surface around it above the keyboard, and focusing a field never pans the page.",
+        },
+        {
+          type: 'prose',
+          text: "Chrome on Android follows your page's viewport setting. By default (`interactive-widget=resizes-visual`) it lays the keyboard over the page and pans to the focused field. With `interactive-widget=resizes-content` it shrinks the layout viewport instead, so content anchored to the bottom, such as a chat composer, sits above the keyboard. Astryx documents this setting and never sets it: your app owns its viewport `<meta>` element.",
+        },
+        {
+          type: 'code',
+          lang: 'html',
+          label: 'Chrome on Android resizes the page for the keyboard',
+          code: `<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />`,
         },
       ],
     },
