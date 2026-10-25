@@ -219,8 +219,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **AR4 — Focus after a pick is the component's.** The model activates the
   row as its own click would; where focus goes once the menu closes stays
   with the owning component record and is unchanged by this module.
-- **AR5 — One open, one close.** A finger opens the menu once, as
-  `spec:AST-094` FR29 states or through a tap's click, and nothing withdraws
+- **AR5 — One open, one close.** A finger opens a menu once, through
+  `spec:AST-094` FR29's opening, a context menu's long press (`spec:AST-094`
+  FR33), FR9's held press, or a tap's click, and nothing withdraws
   an open: a screen reader hears the menu open once, and close once at a
   pick, a dismissal or Escape (DEC-8).
 
@@ -318,8 +319,9 @@ availability alone does not make a component an adopter.
 A finger that lifts on a sub-menu's row opens it, as a tap would, and a finger
 resting on the row never opens it, so a sub-menu does not open from under a
 finger that is still choosing. A finger handed to a menu as it opens, such as
-the long press that opened a context menu, is that menu's opening press: it
-picks once it has travelled the handoff distance, so the press that opened the
+the long press that opened a context menu, is that menu's opening press: where
+the primary pointer is coarse, it picks once it has travelled the handoff
+distance, so the press that opened the
 menu never picks by itself. A finger opens a menu once, and nothing withdraws
 the open, so a screen reader hears one open and one close.
 
