@@ -10,7 +10,8 @@
  * @output Exports the on-screen keyboard module: measureKeyboardHeight,
  *   isKeyboardMeasurable, subscribeMobileKeyboard, getMobileKeyboardHeight,
  *   useKeyboardHeight, isTextEntryControl, findTextEntryControl,
- *   refuseFocusReveal, claimTapFocus, and BottomSheet's useMobileKeyboard
+ *   refuseFocusReveal, blurAsDismissal, claimTapFocus, and BottomSheet's
+ *   useMobileKeyboard
  *   hook
  * @position Core's one source for the on-screen keyboard (spec:AST-099,
  *   architecture:react-component-runtime INV11). Internal to core: nothing
@@ -293,13 +294,36 @@ export function findTextEntryControl(
     : null;
 }
 
+// Documents whose keyboard the keyboard module is dismissing just now (a drag
+// that dismisses it, keyboardDismiss.ts). The blur that dismissal makes is not
+// the keyboard's Done: focus it leaves for nothing is not parked, so a
+// dismissal moves focus nowhere (spec:AST-099 FR4 parks after Done).
+const dismissing = new WeakSet<Document>();
+
+/**
+ * Blurs `element` as the keyboard module's dismissal: the keyboard goes down,
+ * and no surface's focus takeover parks the focus it leaves.
+ */
+export function blurAsDismissal(element: HTMLElement): void {
+  const doc = element.ownerDocument;
+  dismissing.add(doc);
+  try {
+    element.blur();
+  } finally {
+    dismissing.delete(doc);
+  }
+}
+
 /** The caller's rules for refuseFocusReveal. */
 export interface RefuseFocusRevealOptions {
   /** Whether to claim at all just now, checked on every blur. */
   isActive?: () => boolean;
   /** The control a focus move is heading to, when this caller claims it. */
   claim: (destination: EventTarget | null) => HTMLElement | null;
-  /** Focus left `origin` for nothing (the keyboard's Done): park it, if at all. */
+  /**
+   * Focus left `origin` for nothing (the keyboard's Done): park it, if at
+   * all. Never called for the module's own dismissal (blurAsDismissal).
+   */
   park?: (origin: EventTarget | null) => void;
 }
 
@@ -337,7 +361,7 @@ export function refuseFocusReveal(
       }
       return;
     }
-    if (event.relatedTarget == null) {
+    if (event.relatedTarget == null && !dismissing.has(doc)) {
       park?.(event.target);
     }
   };

@@ -637,6 +637,11 @@ test('a drag that reaches the composer dismisses the keyboard and the dock rides
     ),
   );
   await expect(chat.editable).not.toBeFocused();
+  // The dismissal only blurs the composer (FR10): focus moves nowhere else,
+  // not to the composer group the keyboard's Done parks it on.
+  await expect(
+    page.getByRole('group', {name: 'Message composer'}),
+  ).not.toBeFocused();
   await waitForAnimation(chat.dock);
 });
 

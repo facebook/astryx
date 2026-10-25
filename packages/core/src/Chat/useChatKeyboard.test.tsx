@@ -427,6 +427,37 @@ describe('focus moves into the composer (spec:AST-099 FR4)', () => {
     act(() => message.blur());
     expect(document.activeElement).toBe(document.body);
   });
+
+  it('moves focus nowhere when a drag dismisses the keyboard, not to the composer group (FR10)', () => {
+    primaryPointer('coarse');
+    const {message} = renderWithSearch('textarea');
+    const viewport = window.visualViewport as unknown as EventTarget & {
+      height: number;
+    };
+    viewport.height = window.innerHeight - 300;
+    act(() => {
+      viewport.dispatchEvent(new Event('resize'));
+    });
+    // The composer rests at the keyboard's top edge, so the drag dismisses
+    // where the finger reaches the keyboard.
+    screen.getByRole('group', {
+      name: 'Message composer',
+    }).getBoundingClientRect = () =>
+      new DOMRect(0, window.innerHeight - 300, 400, 60);
+    act(() => message.focus());
+    const transcript = screen.getByText('Hello');
+    const finger = (type: string, clientY: number) => {
+      const point = {identifier: 0, clientX: 100, clientY};
+      const event = new Event(type, {bubbles: true});
+      Object.assign(event, {touches: [point], changedTouches: [point]});
+      act(() => {
+        transcript.dispatchEvent(event);
+      });
+    };
+    finger('touchstart', 100);
+    finger('touchmove', window.innerHeight - 300);
+    expect(document.activeElement).toBe(document.body);
+  });
 });
 
 describe('the taps the composer claims', () => {

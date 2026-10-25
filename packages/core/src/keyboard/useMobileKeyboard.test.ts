@@ -17,6 +17,7 @@ import {act, renderHook} from '@testing-library/react';
 import {getKeyboardLayoutGuide} from './keyboardLayoutGuide';
 import {layoutViewportHeight} from '../utils/layoutViewport';
 import {
+  blurAsDismissal,
   claimTapFocus,
   getMobileKeyboardHeight,
   isKeyboardMeasurable,
@@ -363,6 +364,23 @@ describe('the focus refusal (FR4)', () => {
     stop();
     first.remove();
     second.remove();
+  });
+
+  it('parks nothing for the keyboard module\u2019s own dismissal, which is not the keyboard\u2019s Done', () => {
+    const field = document.createElement('input');
+    const park = vi.fn();
+    document.body.append(field);
+    const stop = refuseFocusReveal(document, {claim: () => null, park});
+    field.focus();
+    blurAsDismissal(field);
+    expect(park).not.toHaveBeenCalled();
+    expect(document.activeElement).not.toBe(field);
+    // A blur after the dismissal is the Done again.
+    field.focus();
+    field.blur();
+    expect(park).toHaveBeenCalledWith(field);
+    stop();
+    field.remove();
   });
 });
 

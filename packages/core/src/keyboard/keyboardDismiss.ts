@@ -3,7 +3,8 @@
 /**
  * @file keyboardDismiss.ts
  * @input A scroller element, the keyboard module's height
- *   (getMobileKeyboardHeight), bringsUpKeyboard
+ *   (getMobileKeyboardHeight) and its dismissal blur (blurAsDismissal),
+ *   bringsUpKeyboard
  * @output Exports observeKeyboardDismiss and KeyboardDismissMode: dismisses
  *   the software keyboard from a drag on a scroller, as UIScrollView's
  *   `keyboardDismissMode`
@@ -37,7 +38,7 @@
  */
 
 import {bringsUpKeyboard} from './keyboardLayoutGuide';
-import {getMobileKeyboardHeight} from './useMobileKeyboard';
+import {blurAsDismissal, getMobileKeyboardHeight} from './useMobileKeyboard';
 
 /** UIScrollView's `keyboardDismissMode`. */
 export type KeyboardDismissMode = 'none' | 'onDrag' | 'interactive';
@@ -105,7 +106,11 @@ export function observeKeyboardDismiss(
   const dismiss = () => {
     touchId = null;
     pointerId = null;
-    focusedEditable(doc)?.blur();
+    // The keyboard module's dismissal: no surface parks the focus it leaves.
+    const editable = focusedEditable(doc);
+    if (editable != null) {
+      blurAsDismissal(editable);
+    }
   };
 
   const onTouchStart = (event: TouchEvent) => {
