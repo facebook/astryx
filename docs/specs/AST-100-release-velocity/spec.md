@@ -36,9 +36,9 @@ affects_consumer_docs: []
 
 When a person flicks a sheet, a toast, a row, a page, or a wheel and lifts
 their finger, every Core and Lab component of that kind reads the same speed
-from that motion, as iOS does, so a flick of the same speed does the same thing
-in each of them, and a finger that
-stopped before lifting never counts as a flick. One release filter defines the
+from that motion, as iOS does, and a finger that stopped before lifting never
+counts as a flick. Components share the reading of a flick; each decides, by
+its own threshold, what that speed does. One release filter defines the
 speed every component reads; components decide only what a given velocity
 means for them.
 
@@ -114,13 +114,13 @@ means for them.
 
 ## Verification
 
-| Contract | Verification                                                                        | Representative states                                                                                                               | Mutation or failure expectation                                                                                      |
-| -------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| FR1      | One recorded sample stream read through two different components, plus a unit check | a sheet drag and a row swipe fed the same stream; a Lab gesture and a Core gesture fed the same stream; steady motion in x and y    | Two components reporting different velocities for the same stream, or a unit other than pixels per second            |
-| FR2      | Release velocity tests through a component over recorded iOS streams                | recorded pan and scroll-view releases; acceleration before lift; a pause longer than the stillness interval before lift; one sample | A release that differs from the velocity iOS recorded for the same stream, or a non-zero release after a still pause |
-| FR3      | Component tests at each threshold                                                   | a flick just under and just over a component's threshold; the same velocity across two components                                   | Two components acting on different velocities for the same flick, or a threshold reachable from public API           |
-| FR4      | Unit tests with handler delay and per-pointer streams                               | delayed handlers with fixed event timestamps; touch, pen, and mouse streams                                                         | Velocity that changes with handler delay or pointer type                                                             |
-| FR5      | Component tests in both directions                                                  | a flick toward the inline end in left-to-right and right-to-left                                                                    | A flick toward the inline end treated as the opposite action in right-to-left                                        |
+| Contract | Verification                                                                        | Representative states                                                                                                               | Mutation or failure expectation                                                                                            |
+| -------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| FR1      | One recorded sample stream read through two different components, plus a unit check | a sheet drag and a row swipe fed the same stream; a Lab gesture and a Core gesture fed the same stream; steady motion in x and y    | Two components of the same kind reporting different velocities for the same stream, or a unit other than pixels per second |
+| FR2      | Release velocity tests through a component over recorded iOS streams                | recorded pan and scroll-view releases; acceleration before lift; a pause longer than the stillness interval before lift; one sample | A release that differs from the velocity iOS recorded for the same stream, or a non-zero release after a still pause       |
+| FR3      | Component tests at each threshold                                                   | a flick just under and just over a component's threshold; the same velocity across two components                                   | Two components of the same kind reading different velocities for the same flick, or a threshold reachable from public API  |
+| FR4      | Unit tests with handler delay and per-pointer streams                               | delayed handlers with fixed event timestamps; touch, pen, and mouse streams                                                         | Velocity that changes with handler delay or pointer type                                                                   |
+| FR5      | Component tests in both directions                                                  | a flick toward the inline end in left-to-right and right-to-left                                                                    | A flick toward the inline end treated as the opposite action in right-to-left                                              |
 
 ## Decision log
 
@@ -129,9 +129,9 @@ means for them.
 **Reference:** `spec:AST-100/DEC-1`
 **Decider:** `cixzhang`, `2026-10-24`
 
-Each component estimating velocity its own way makes the same flick dismiss a
-toast but not a sheet, and a finger that paused before lifting count as a
-flick in one place and not another. One release filter, with one source in
+Each component estimating velocity its own way reads the same flick at
+different speeds in components of the same kind, and counts a finger that
+paused before lifting as a flick in one place and not another. One release filter, with one source in
 Core and the same filter in Lab, gives every component of a kind the same
 speed for the same motion. Reading a moving finger the way
 iOS does keeps flicks, paging, and dismissal near their thresholds where an

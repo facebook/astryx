@@ -46,8 +46,8 @@ deciding_specs: [spec:AST-100/DEC-1]
 Astryx components behave predictably when people move between keyboard, pointer,
 touch, pen, and programmatic focus. Essential actions remain perceivable and
 reachable while their controlled state or task context is presented, and newer user
-intent remains authoritative over stale work, and every Core and Lab gesture
-reads the same release velocity. This record defines those shared interaction invariants, the
+intent remains authoritative over stale work, and every Core and Lab gesture of one kind, dragged or scrolling, reads the
+same release velocity. This record defines those shared interaction invariants, the
 one gesture velocity source, the shared modality state, the boundary between modality and
 component focus ownership, and the evidence required when any of them changes.
 
@@ -230,7 +230,7 @@ is asked to carry a new decision.
 
 ## Deciding specs
 
-`spec:AST-100/DEC-1` decides one release velocity for every gesture (INV10).
+`spec:AST-100/DEC-1` decides one release velocity per kind of surface (INV10).
 Otherwise no separate specification changes this record. The last-input rule was approved as
 a system architecture decision by `cixzhang` on 2026-08-30. Essential-action
 reachability, newer-intent precedence, and the evidence/scope guard were approved by
