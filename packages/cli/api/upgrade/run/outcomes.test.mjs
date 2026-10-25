@@ -573,3 +573,39 @@ describe('a failure beside outcomes', () => {
     });
   });
 });
+
+describe('folding declined rows from different path spellings', () => {
+  it("groups a runner's backslash path with a manual row's / path into one row", async () => {
+    const {summarizeDeclinedCandidates} = await import('./run.mjs');
+
+    const rows = summarizeDeclinedCandidates(
+      [
+        {
+          file: 'src\\vendor.ts',
+          codemod: 'core:parse-strict',
+          location: '4:1',
+          reason: 'unparseable protected file (generated): Unexpected token',
+        },
+        {
+          file: 'src/vendor.ts',
+          codemod: 'core:report-raw',
+          location: '2',
+          reason:
+            'manual migration needed (core:report-raw): Read it through dataVars.',
+        },
+      ],
+      [],
+      '\\',
+    );
+
+    expect(rows).toEqual([
+      {
+        file: 'src/vendor.ts',
+        location: '4:1',
+        reason:
+          'unparseable protected file (generated): Unexpected token; ' +
+          'manual migration needed (core:report-raw): Read it through dataVars. (at 2)',
+      },
+    ]);
+  });
+});

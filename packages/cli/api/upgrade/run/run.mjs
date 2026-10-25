@@ -123,17 +123,27 @@ const LOCATION_UNKNOWN = '(location unknown)';
  * its end: ` (at <location>)` when known, ` (location unknown)` when not; a
  * later finding without a suffix is at the row's location. So no finding is
  * ever read at another finding's location.
+ *
+ * Rows are grouped by their `/`-separated path, which is also the spelling
+ * the row carries: a runner's row keeps the platform separator (backslashes on
+ * Windows), while a manual row already uses `/`.
  * @param {Array<{file: string, codemod: string, location?: string, reason: string}>} rows
  * @param {Array<{file: string}>} [protectedRows]
+ * @param {string} [sep] The platform path separator (a parameter for tests).
  * @returns {Array<{file: string, location?: string, reason: string}>}
  */
-function summarizeDeclinedCandidates(rows, protectedRows = []) {
+export function summarizeDeclinedCandidates(
+  rows,
+  protectedRows = [],
+  sep = path.sep,
+) {
   /** @type {Map<string, Array<{location?: string, reason: string}>>} */
   const byFile = new Map();
-  for (const {file, location, reason} of withoutProtected(
+  for (const {file: raw, location, reason} of withoutProtected(
     rows,
     protectedRows,
   )) {
+    const file = raw.split(sep).join('/');
     const findings = byFile.get(file) ?? [];
     if (!findings.some(f => f.reason === reason && f.location === location)) {
       findings.push({...(location ? {location} : {}), reason});
