@@ -387,15 +387,17 @@ FR33 apply to menus only. A mouse keeps today's behavior.
 
 - **FR41 — A held finger does what the hold does, not a selection.** A tap
   activates as it does today and never selects text. On an element whose hold
-  does something, such as a ContextMenu trigger or a row with actions (a
-  long-press menu at FR29's or FR33's timing), a stepper's hold-repeat, or a
-  slider's thumb, the hold does that and the browser's text-selection start
-  and callout are suppressed for that press only, lifted at the lift or a
-  cancel; that element's text is not selectable by a long press, and Astryx
-  adds no Copy item to a menu. On anything whose hold does nothing, such as a
-  checkbox row's label or plain text, a long press selects natively, with the
-  browser's handles. Keyboard, mouse, and assistive-technology selection are
-  unchanged (`spec:AST-017` FR59; DEC-9).
+  does something, such as a ContextMenu trigger or a row with a context menu
+  (a long press at FR12's threshold), or a control whose own record defines a
+  hold action, such as a slider's thumb or a stepper's hold-repeat, the hold
+  does that and the browser's text-selection start and callout are suppressed
+  for that press only, lifted at the lift or a cancel; that element's text is
+  not selectable by a long press, and Astryx adds no Copy item to a menu. An
+  element's existing always-on suppression stays as it is. On a label or plain
+  text whose hold does nothing, such as a checkbox row's label, a long press
+  selects natively, with the browser's handles; any other element follows its
+  own record. Keyboard and assistive-technology selection are unchanged, and a
+  mouse keeps its released behavior (`spec:AST-017` FR59; DEC-9).
 
   Guidance: a caller whose menu element carries text a person may want offers
   a Copy action in its menu.
@@ -460,8 +462,10 @@ FR33 apply to menus only. A mouse keeps today's behavior.
   (FR13) sit beside the shared modality state; its invariants are unchanged.
 - `architecture:react-component-runtime`: FR24 states the caller-visible
   outcome of INV5 and INV7 for touch work; both are unchanged.
-- Under FR41, a held finger on a touch control, a row, or a menu
-  trigger can start a text selection or the callout today; no shared,
+- Under FR41: ContextMenu's trigger, DropdownMenu's trigger and menu, and
+  Slider's track already turn selection off at all times (the menus also the
+  callout), and that stays. A held finger on other rows and controls with a
+  hold action can start a selection or the callout today, and no shared,
   press-scoped suppression exists.
 - `family:buttons`: the control and cell press profiles (FR11).
 - Each overlay member's own record (Dialog, BottomSheet, Drawer, Popover, the
@@ -517,7 +521,7 @@ FR33 apply to menus only. A mouse keeps today's behavior.
 | FR31–FR33       | Browser tests and storyboards under a finger                                                                                   | a menu, a Popover and a ContextMenu lift: open, close, a pan outside, a tap outside, a pinch over the surface; a mouse                                                                                                    | a surface that does not grow from and shrink into its trigger, a pan outside that leaves a menu open, a Popover whose dismissal changed, a blocked pinch, a tap outside that reaches the page, or a changed mouse path fails                                                                   |
 | FR34, FR35      | Browser tests and storyboards under a finger                                                                                   | a sub-menu drilling in and its Back row returning; a tap and a drag during a popover's and a menu's growth; a pinch during growth; a mouse                                                                                | a drill-in that leaves the parent's rows in place, a change between levels that does not play on its roles, a tap during growth that closes, scrolls or moves focus, a blocked pinch, or a changed mouse path fails                                                                            |
 | FR36–FR40       | Release tests on synthetic touch streams with explicit timestamps, per use                                                     | below and past each commit point; a flick that projects past it; a slow drag past it; a release moving back; Reduce Motion; keyboard and mouse paths                                                                      | a decision that changes mid-settle, a release moving back that commits, a settle that does not start at the release velocity, or an action with no keyboard or mouse path fails                                                                                                                |
-| FR41            | Browser tests with real touch input (`spec:AST-013` FR10)                                                                      | a tap; a long press on a ContextMenu trigger, a row with actions, a stepper, and a slider thumb; a long press on a checkbox row's label and on plain text; a cancelled press; mouse and keyboard selection                | a tap that selects, a hold with an action that starts a selection or callout, a label or plain text whose long press does not select natively, a suppression that outlives the press, or a change to native selection elsewhere or to mouse, keyboard, or assistive-technology selection fails |
+| FR41            | Browser tests with real touch input (`spec:AST-013` FR10)                                                                      | a tap; a long press on a ContextMenu trigger, a row with a context menu, and a slider thumb; a long press on a checkbox row's label and on plain text; a cancelled press; mouse and keyboard selection                    | a tap that selects, a hold with an action that starts a selection or callout, a label or plain text whose long press does not select natively, a suppression that outlives the press, or a change to native selection elsewhere or to mouse, keyboard, or assistive-technology selection fails |
 | all             | iOS simulator: the UIKit reference capture and the same gesture in Safari; real iOS Safari and Android Chrome devices          | per component                                                                                                                                                                                                             | an unmatched curve or timing is a parity defect                                                                                                                                                                                                                                                |
 
 ## Decision log
