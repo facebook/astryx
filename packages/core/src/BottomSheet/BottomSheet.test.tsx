@@ -153,6 +153,25 @@ function mockIOSWebKit() {
     maxTouchPoints: {configurable: true, value: 5},
   });
   vi.stubGlobal('navigator', navigatorMock);
+  mockPrimaryPointer('coarse');
+}
+
+// The primary pointer `matchMedia` reports: a touch screen's coarse finger,
+// or a desktop's fine mouse.
+function mockPrimaryPointer(pointer: 'coarse' | 'fine') {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches: query === `(pointer: ${pointer})`,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
 }
 
 // Desktop Chrome and Android Chrome: the platform's own keyboard geometry API
@@ -1471,6 +1490,38 @@ describe('BottomSheet', () => {
       fireEvent.blur(input, {relatedTarget: null});
 
       expect(sheetFocus).toHaveBeenCalledWith({preventScroll: true});
+    });
+
+    it('leaves focus to desktop Safari and Firefox, which measure but have a fine pointer (AST-017 FR59)', () => {
+      // A visual viewport and no keyboard geometry API, as on iOS, but a mouse.
+      mockVisualViewport(800);
+      mockWindowHeight(800);
+      mockPrimaryPointer('fine');
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Title" />
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const sheet = getSheet();
+      const title = screen.getByRole('textbox', {name: 'Title'});
+      const comment = screen.getByRole('textbox', {name: 'Comment'});
+      title.focus();
+      const commentFocus = vi.spyOn(comment, 'focus');
+      const sheetFocus = vi.spyOn(sheet, 'focus');
+
+      // Tab between fields: the browser's own move, not one delivered here.
+      fireEvent.blur(title, {relatedTarget: comment});
+      expect(commentFocus).not.toHaveBeenCalled();
+
+      // A window switch blurs the field for nothing: focus is not parked on
+      // the sheet, so it comes back to the field.
+      fireEvent.blur(title, {relatedTarget: null});
+      expect(sheetFocus).not.toHaveBeenCalled();
     });
 
     it('does not alter ordinary desktop focus when the viewport is unobstructed', () => {

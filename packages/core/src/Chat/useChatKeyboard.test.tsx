@@ -9,7 +9,8 @@
  *   text blurs, nothing moves without a keyboard, a hide under a scrolling
  *   finger keeps the room until the scroll ends; which touches the composer
  *   claims (unfocused contenteditable text, never a token's control or a
- *   text control)
+ *   text control); the caret a claimed tap places, where the browser has
+ *   either caret-from-point API
  * @position Unit tests for Chat/useChatKeyboard.ts (motion and the tap claim
  *   are proven in Mobile Safari; see the pull request evidence)
  */
@@ -20,7 +21,7 @@ import {fileURLToPath} from 'node:url';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, render, screen} from '@testing-library/react';
 import {ChatLayout} from './ChatLayout';
-import {editableToClaim} from './useChatKeyboard';
+import {editableToClaim, focusAtPoint} from './useChatKeyboard';
 
 type FakeViewport = EventTarget & {
   height: number;
@@ -286,6 +287,67 @@ describe('the taps the composer claims', () => {
       '<div contenteditable="true" id="editor"><p id="text">Hello</p></div>';
     document.getElementById('editor')!.focus();
     expect(editableToClaim(document.getElementById('text'))).toBeNull();
+  });
+});
+
+describe('the caret a claimed tap places', () => {
+  // Installs (or, with undefined, removes) one caret-from-point API on the
+  // document, as each engine has its own.
+  function stubCaretApi(
+    name: 'caretPositionFromPoint' | 'caretRangeFromPoint',
+    value: unknown,
+  ) {
+    Object.defineProperty(document, name, {configurable: true, value});
+  }
+
+  function editable(): {element: HTMLElement; text: Text} {
+    const element = document.createElement('div');
+    element.setAttribute('contenteditable', 'true');
+    // jsdom does not compute isContentEditable.
+    Object.defineProperty(element, 'isContentEditable', {value: true});
+    const text = document.createTextNode('Hello there');
+    element.append(text);
+    document.body.append(element);
+    return {element, text};
+  }
+
+  afterEach(() => {
+    Reflect.deleteProperty(document, 'caretPositionFromPoint');
+    Reflect.deleteProperty(document, 'caretRangeFromPoint');
+    document.body.replaceChildren();
+  });
+
+  it('reads the standard caretPositionFromPoint, the only one Firefox has', () => {
+    const {element, text} = editable();
+    stubCaretApi(
+      'caretPositionFromPoint',
+      vi.fn(() => ({offsetNode: text, offset: 3})),
+    );
+
+    focusAtPoint(element, 20, 10);
+
+    expect(document.activeElement).toBe(element);
+    const selection = document.getSelection();
+    expect(selection?.anchorNode).toBe(text);
+    expect(selection?.anchorOffset).toBe(3);
+    expect(selection?.isCollapsed).toBe(true);
+  });
+
+  it('falls back to caretRangeFromPoint where only WebKit\u2019s exists', () => {
+    const {element, text} = editable();
+    stubCaretApi(
+      'caretRangeFromPoint',
+      vi.fn(() => {
+        const range = document.createRange();
+        range.setStart(text, 5);
+        range.collapse(true);
+        return range;
+      }),
+    );
+
+    focusAtPoint(element, 20, 10);
+
+    expect(document.getSelection()?.anchorOffset).toBe(5);
   });
 });
 

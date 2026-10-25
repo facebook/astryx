@@ -247,12 +247,6 @@ const calmTheme = defineTheme({
               '0.15s 0.14',
             ],
             [
-              'springs.keyboard',
-              '--motion-springs-keyboard',
-              'spring',
-              '0.2667s 1.71163e-8',
-            ],
-            [
               'springs.menuClose',
               '--motion-springs-menu-close',
               'spring',
