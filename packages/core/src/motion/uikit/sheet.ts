@@ -12,9 +12,9 @@
  *
  * Read from UIKit with a `[.medium(), .large()]` sheet in an injected host
  * app on the iOS 26.2 simulator: the release velocity UIKit computed, the
- * offset it released at, the detent it settled on and the
- * `CASpringAnimation` it attached, for every release. Speeds are in pt/s
- * (CSS px/s); times in seconds.
+ * offset it released at and the detent it settled on, for 134 releases, and
+ * the `CASpringAnimation` it attached for the 55 of them whose spring was
+ * read. Speeds are in pt/s (CSS px/s); times in seconds.
  *
  * Every leaf carries one or more `@source`; webkit and GUESS values also carry
  * the `@measure` task that will confirm or replace them. uikit.test.ts
@@ -50,12 +50,13 @@ export const sheet = {
      * (80 % damping); an interactive dismissal at it takes
      * `springs.sheetDismissSwipe`. Inside the measured bracket.
      * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-     *   iPhone 17 Pro, 134 drag releases with the CASpringAnimation dump of
-     *   each: damping 36.515 (ζ 1) at every release up to 997 pt/s and
-     *   29.212 (ζ 0.8) at every one from 1147 pt/s on (Oct 23 2026); with
-     *   the 0.1 s projection the outcomes fit the flick branch for a
-     *   threshold from 997 to 1028 pt/s, and the spring follows the branch on
-     *   all 87 releases of Oct 24 2026, so the switch lies in (997, 1028]
+     *   iPhone 17 Pro, 134 drag releases, 55 of them with the
+     *   CASpringAnimation UIKit attached (29 of the 47 on Oct 23, 26 of the
+     *   87 on Oct 24 2026): damping 36.515 (ζ 1) at every read release up to
+     *   997 pt/s and 29.212 (ζ 0.8) at every one from 1147 pt/s on; with the
+     *   0.1 s projection the outcomes of all 134 fit the flick branch for a
+     *   threshold from 997 to 1028 pt/s, and every read spring follows the
+     *   branch, so the switch lies in (997, 1028]
      */
     fastSpeed: 1008,
     /**

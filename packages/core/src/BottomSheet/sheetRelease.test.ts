@@ -6,8 +6,9 @@
  * @output Holds the release rule to UIKit's own releases: 134 drags of a
  *   UISheetPresentationController `[.medium(), .large()]` sheet read from
  *   UIKit (offset and velocity of the sheet interaction's last drag update
- *   before the lift, the detent it settled on, the damping of the spring it
- *   attached); plus the rule's own edges
+ *   before the lift, the detent it settled on, and for the 55 whose spring
+ *   was read the damping of the spring it attached); plus the rule's own
+ *   edges
  * @position Testing; pure, no DOM
  */
 
