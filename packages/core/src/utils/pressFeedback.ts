@@ -30,7 +30,11 @@
  *
  * While a finger or a pen is down on a surface, its text selection and the
  * touch callout are off (gestures/selectionLock.ts, shared with the gesture
- * host), as on UIKit's controls and cells; a mouse never takes the lock.
+ * host), as on UIKit's controls and cells, where the primary pointer is
+ * coarse; elsewhere every contact keeps the browser's selection.
+ *
+ * Its one touch-only listener, `touchcancel`, is on only while the primary
+ * pointer is coarse (gestures/coarsePointer.ts, `spec:AST-094` FR24).
  *
  * SYNC: When modified, update pressGesture.ts, hooks/usePressFeedback.ts,
  * utils/interactionOverlay.stylex.ts, gestures/selectionLock.ts and
@@ -46,7 +50,8 @@ import {
   PRESS_SCROLL_BRAKE_MS,
   pressGestureStep,
 } from './pressGesture';
-import {lockSelection} from '../gestures/selectionLock';
+import {isCoarsePointer, watchCoarsePointer} from '../gestures/coarsePointer';
+import {lockSelection, locksSelectionFor} from '../gestures/selectionLock';
 
 /**
  * The marker the controller finds with `closest()`. Every Astryx component
@@ -302,8 +307,15 @@ function onPointerDown(event: PointerEvent): void {
     pointerId: event.pointerId,
     timer: null,
     // A held finger never starts text selection on the surface (UIKit's
-    // controls and cells never do), on any coarse pointer.
-    unlock: lockSelection([element], event.target),
+    // controls and cells never do), where the primary pointer is coarse: a
+    // touchscreen laptop's finger and a desktop pen keep selection, as a
+    // mouse does (spec:AST-094 FR19).
+    unlock: locksSelectionFor(
+      event.pointerType,
+      element.ownerDocument.defaultView,
+    )
+      ? lockSelection([element], event.target)
+      : null,
   };
   apply(
     pressGestureStep(live.gesture, {
@@ -415,12 +427,34 @@ function onVisibilityChange(): void {
 
 const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
 
+/** Whether the touch-only `touchcancel` listener is on. */
+let hearsTouchCancel = false;
+let stopWatchingPointer: (() => void) | null = null;
+
+/**
+ * The one touch-only listener is on only while the primary pointer is coarse
+ * (`spec:AST-094` FR24); where it is fine, a finger's press still ends
+ * through `pointercancel`.
+ */
+function hearTouchCancel(on: boolean): void {
+  if (on === hearsTouchCancel) {
+    return;
+  }
+  hearsTouchCancel = on;
+  if (on) {
+    window.addEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
+  } else {
+    window.removeEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
+  }
+}
+
 function addListeners(): void {
   window.addEventListener('pointerdown', onPointerDown, PASSIVE_CAPTURE);
   window.addEventListener('pointermove', onPointerMove, PASSIVE_CAPTURE);
   window.addEventListener('pointerup', onPointerUp, PASSIVE_CAPTURE);
   window.addEventListener('pointercancel', onCancel, PASSIVE_CAPTURE);
-  window.addEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
+  stopWatchingPointer = watchCoarsePointer(window, hearTouchCancel);
+  hearTouchCancel(isCoarsePointer(window));
   // `dragstart`, and NOT `contextmenu`: a long press that becomes a drag has
   // taken the gesture, but a right-click is a mouse act this controller never
   // tracks, and listening for it would read as a takeover of the browser's
@@ -437,7 +471,9 @@ function removeListeners(): void {
   window.removeEventListener('pointermove', onPointerMove, PASSIVE_CAPTURE);
   window.removeEventListener('pointerup', onPointerUp, PASSIVE_CAPTURE);
   window.removeEventListener('pointercancel', onCancel, PASSIVE_CAPTURE);
-  window.removeEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
+  stopWatchingPointer?.();
+  stopWatchingPointer = null;
+  hearTouchCancel(false);
   window.removeEventListener('dragstart', onCancel, PASSIVE_CAPTURE);
   document.removeEventListener('scroll', onScroll, PASSIVE_CAPTURE);
   document.removeEventListener('visibilitychange', onVisibilityChange);
