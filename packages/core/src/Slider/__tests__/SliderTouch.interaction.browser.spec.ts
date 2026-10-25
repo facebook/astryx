@@ -746,12 +746,16 @@ test('a finger held on a thumb or on the track starts no selection: the gesture 
   const control = thumb.locator(
     'xpath=ancestor::*[contains(@class, "astryx-slider-control")][1]',
   );
-  // The lock is inline, on the element the finger holds (Safari reads the
-  // prefixed forms; this engine keeps the standard one in the CSSOM).
+  // The lock is inline, on the element the finger holds; an engine keeps
+  // the standard or the prefixed form in its CSSOM (WebKit the prefixed).
   const lockOf = async (element: Locator) =>
-    element.evaluate(node =>
-      (node as HTMLElement).style.getPropertyValue('user-select'),
-    );
+    element.evaluate(node => {
+      const {style} = node as HTMLElement;
+      return (
+        style.getPropertyValue('user-select') ||
+        style.getPropertyValue('-webkit-user-select')
+      );
+    });
   const at = await center();
   const [onThumb] = await playReading(
     page,
