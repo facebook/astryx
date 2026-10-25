@@ -225,3 +225,14 @@ private func onWhite(_ color: Color) -> [Int] {
   #expect(Avatar("Ada Lovelace").accessibilityLabel == "Ada Lovelace")
 }
 
+@Test func aStaticAvatarWhoseTapOpensItsTooltipAnswersAcross44Points() {
+  // xsm, sm, and md grow their tap area to 44 points; a static avatar with
+  // no tooltip takes no taps and adds nothing.
+  for side in [CGFloat(20), 24, 36] {
+    let target = Avatar.tapTargetSide(side, takesTaps: true)
+    #expect(target + 2 * Avatar.tapOutset(side: target) == 44)
+  }
+  #expect(Avatar.tapOutset(side: Avatar.tapTargetSide(20, takesTaps: false)) == 0)
+  #expect(Avatar.tapOutset(side: 128) == 0)
+}
+

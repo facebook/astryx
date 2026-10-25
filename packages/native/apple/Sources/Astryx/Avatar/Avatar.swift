@@ -121,6 +121,9 @@ public struct Avatar: View {
         .modifier(AvatarName(label: accessibilityLabel, isInteractive: true))
     } else {
       picture
+        // A static avatar whose tap opens its tooltip answers taps across
+        // 44 points too.
+        .modifier(AvatarTarget(side: Avatar.tapTargetSide(side, takesTaps: tooltipText != nil)))
         .modifier(AvatarName(label: accessibilityLabel, isInteractive: false))
     }
   }
@@ -128,6 +131,14 @@ public struct Avatar: View {
   /// How the avatar takes a tap: a link with a usable `href`, else a button
   /// with `onClick`, else none.
   enum Tap: Equatable { case link, button, none }
+
+  /// How far a tappable avatar's tap area reaches past its side: to 44
+  /// points (Swift accessibility, X7).
+  nonisolated static func tapOutset(side: CGFloat) -> CGFloat { max(0, (44 - side) / 2) }
+
+  /// The side a static avatar's tap area grows from: its own when a tap
+  /// opens its tooltip, and 44, which adds nothing, when it takes no taps.
+  nonisolated static func tapTargetSide(_ side: CGFloat, takesTaps: Bool) -> CGFloat { takesTaps ? side : 44 }
 
   /// How keyboard focus reaches the tooltip: a static avatar is made a tab
   /// stop, as core gives it one; a link or button takes focus already.
@@ -204,9 +215,9 @@ public struct Avatar: View {
   /// Initials drawn at 40% of the side in the theme's body family, medium weight.
   private var initialsFont: Font {
     astryxFont(
-      families: astryx.tokens.font.familyBody,
+      families: astryx.tokens.font.family.body,
       size: side * 0.4,
-      weight: astryx.fontWeight(astryx.tokens.font.weightMedium),
+      weight: astryx.fontWeight(astryx.tokens.font.weight.medium),
       isBoldText: astryx.isBoldText
     )
   }
@@ -361,8 +372,7 @@ private struct AvatarTarget: ViewModifier {
   let side: CGFloat
 
   func body(content: Content) -> some View {
-    let outset = max(0, (44 - side) / 2)
-    content.contentShape(.interaction, Rectangle().inset(by: -outset))
+    content.contentShape(.interaction, Rectangle().inset(by: -Avatar.tapOutset(side: side)))
   }
 }
 
