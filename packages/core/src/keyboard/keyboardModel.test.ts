@@ -13,7 +13,7 @@
 
 import {describe, expect, it} from 'vitest';
 import {createKeyboardModel} from './keyboardModel';
-import {keyboard} from '../motion/uikit';
+import {keyboard, timing} from '../motion/uikit';
 import {keyboard as androidKeyboard} from '../motion/android';
 import {cubicBezier} from '../motion/bezier';
 import {MOTION_ROLE_KINDS} from '../motion/roleKinds.generated';
@@ -25,7 +25,7 @@ const remaining = (ms: number) =>
   (1 + (OMEGA * ms) / 1000) * Math.exp((-OMEGA * ms) / 1000);
 const INSET = 337;
 const LAG = keyboard.showReportLagMs;
-const DURATION = keyboard.notificationMs;
+const DURATION = timing.keyboardNotificationMs;
 
 describe('createKeyboardModel', () => {
   it('starts at rest at the initial inset', () => {
@@ -356,8 +356,8 @@ describe('createKeyboardModel on Chrome', () => {
 describe('the keyboard\u2019s own timing (spec:AST-099 FR3)', () => {
   it('cuts the spring at the notification duration, which no theme retunes', () => {
     // The system moves the keyboard on its own spring and duration whatever
-    // the theme says, so neither is a motion role.
-    expect(keyboard.notificationMs).toBe(383.3);
+    // the theme says, so neither is a motion role (spec:AST-094 FR4).
+    expect(timing.keyboardNotificationMs).toBe(383.3);
     expect(MOTION_ROLE_KINDS).not.toHaveProperty(
       'timing.keyboardNotificationMs',
     );

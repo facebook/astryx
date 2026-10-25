@@ -181,4 +181,4 @@ keyboard module measures them from the visual viewport under a finger
 
 The timing constants live in `../motion/uikit/keyboard.ts` (iOS) and
 `../motion/android/keyboard.ts` (Chrome with Gboard), the spring in
-`keyboard.spring`, the duration in `keyboard.notificationMs`.
+`keyboard.spring`, the duration in `timing.keyboardNotificationMs`.
