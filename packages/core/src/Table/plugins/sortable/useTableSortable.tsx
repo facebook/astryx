@@ -18,7 +18,7 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, radiusVars} from '../../../theme/tokens.stylex';
 import {focusOutlineProps} from '../../../utils/focusOutline.stylex';
 import {Icon} from '../../../Icon';
-import {resolveContextActions} from '../../tableContextMenu';
+import {resolveContextActions} from '../../tableContextActions';
 import {useTranslator, type TranslatorFn} from '../../../i18n';
 import type {
   TablePlugin,

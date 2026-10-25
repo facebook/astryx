@@ -28,7 +28,7 @@ import type {StyleXStyles} from '../theme/types';
 import type {TableContextActions} from './types';
 import {overflowStyles, containerEdgeStyles} from './table.stylex';
 import {useTableContext, mergeXStyle} from './useTableCellStyles';
-import {wrapInTableContextMenu} from './tableContextMenu';
+import {TableCellContextMenu} from './TableCellContextMenu';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 
@@ -150,7 +150,11 @@ export function TableHeaderCell({
 
   // The cell owns the context-menu wrapper so it controls how the menu
   // interacts with its padding / content. No-op when no actions.
-  const content = wrapInTableContextMenu(children, contextMenuActions);
+  const content = (
+    <TableCellContextMenu actions={contextMenuActions}>
+      {children}
+    </TableCellContextMenu>
+  );
 
   return (
     <th

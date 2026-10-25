@@ -5,11 +5,13 @@
 /**
  * @file tableContextMenu.tsx
  * @input React, ContextMenu, Icon, types
- * @output wrapInTableContextMenu helper
+ * @output wrapInTableContextMenu helper, TableContextMenu component
  * @position Renders the aggregated `contextMenuActions` for a header cell / row
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Table/BaseTable.tsx (call sites)
+ * - /packages/core/src/Table/TableCellContextMenu.tsx (lazy loader)
+ * - /packages/core/src/Table/tableContextActions.ts (resolveContextActions)
  * - /packages/core/src/Table/types.ts (TableContextAction)
  */
 
@@ -19,26 +21,9 @@ import {Icon} from '../Icon';
 import type {StyleXStyles} from '../theme/types';
 import type {TableContextAction, TableContextActions} from './types';
 
-/**
- * Resolve a `contextMenuActions` value (array or getter) to a plain array.
- * Use this when composing actions from a prior plugin's render props so you
- * don't have to branch on the array-vs-getter form:
- *
- * ```
- * contextMenuActions: () => [
- *   ...resolveContextActions(props.contextMenuActions),
- *   ...myActions,
- * ]
- * ```
- */
-export function resolveContextActions(
-  actions: TableContextActions | undefined,
-): TableContextAction[] {
-  if (typeof actions === 'function') {
-    return actions();
-  }
-  return actions ?? [];
-}
+// Kept here for existing imports; the dependency-free copy lives in
+// tableContextActions so cells and plugins can read actions without the menu.
+export {resolveContextActions} from './tableContextActions';
 
 /**
  * Convert the flat action list into ContextMenu options, inserting a divider
@@ -158,4 +143,20 @@ export function wrapInTableContextMenu(
       {element}
     </ContextMenu>
   );
+}
+
+/**
+ * `wrapInTableContextMenu` as a component, so TableCell and TableHeaderCell
+ * can load the context menu lazily (see TableCellContextMenu).
+ */
+export function TableContextMenu({
+  children,
+  actions,
+  triggerXstyle,
+}: {
+  children: ReactNode;
+  actions: TableContextActions | undefined;
+  triggerXstyle?: StyleXStyles | StyleXStyles[];
+}): ReactNode {
+  return wrapInTableContextMenu(children, actions, triggerXstyle);
 }
