@@ -20,9 +20,11 @@
  * - dismissing, the alert and the dimming only fade out, on the same spring,
  *   from where they are (closed mid-presentation, or reopened mid-exit, the
  *   fade springs from the presented opacity with its velocity);
- * - touches during either transition are ignored: input comes back when the
- *   presentation completes (counted from when the browser started it,
- *   `handle.started`), and none is delivered while the alert leaves;
+ * - input is held during either transition (Layer/presentationHold): while
+ *   it presents, a touch, a press or a click anywhere reaches nothing until
+ *   the presentation completes (UIKit's touch window, counted from when the
+ *   browser started it, `handle.started`); while it leaves, its content is
+ *   inert under the same shield until it is hidden;
  * - under reduced motion the animator's own policy applies
  *   (docs/design/reduced-motion.md): the alert and the dimming only
  *   cross-fade, and touches come back when that cross-fade ends. The alert
@@ -56,6 +58,7 @@ import {
   type MotionHandle,
 } from '../motion/animator';
 import type {SpringDescription} from '../motion/spring';
+import {holdPresentation, isInHeldLayer} from '../Layer/presentationHold';
 import {resolveMotion} from '../motion/resolveMotion';
 import {alertController} from '../motion/uikit/alert';
 import {springs} from '../motion/uikit/springs';
@@ -188,16 +191,23 @@ export function useAlertMotion({
   // Starts hidden even when mounted open, so a first render that is already
   // open presents like any other opening.
   const statusRef = useRef<Status>('hidden');
-  const transitionEndsAtRef = useRef(0);
   // The exit in flight: only its own end may hide the dialog.
   const exitRef = useRef<MotionHandle | null>(null);
-  // The presentation in flight: only its own start times the touch window.
-  const presentRef = useRef<MotionHandle | null>(null);
+  // The presentation hold in place (Layer/presentationHold): a touch during
+  // either transition reaches nothing.
+  const releaseHoldRef = useRef<(() => void) | null>(null);
   const acceptsTouches = useCallback(
     () =>
       !isEnabledRef.current ||
-      (statusRef.current === 'open' &&
-        performance.now() >= transitionEndsAtRef.current),
+      (statusRef.current === 'open' && !isInHeldLayer(elementRef.current)),
+    [],
+  );
+  // Unmounting lets the alert go at once, hold included.
+  useEffect(
+    () => () => {
+      releaseHoldRef.current?.();
+      releaseHoldRef.current = null;
+    },
     [],
   );
 
@@ -209,26 +219,37 @@ export function useAlertMotion({
       return;
     }
     const {panel, backdrop} = animators;
-    // Touches come back when the presentation completes: counted from when
-    // the browser actually started it, or, under reduced motion, when the
-    // animator's cross-fade ends (its duration is the animator's).
-    const armTouchWindow = (handle: MotionHandle) => {
-      const isCurrent = () =>
-        presentRef.current === handle && statusRef.current === 'open';
+    // One hold at a time on the alert: a new transition replaces the last.
+    const hold = (
+      until: PromiseLike<unknown>,
+      scope: 'viewport' | 'layer',
+      cancel?: () => void,
+    ) => {
+      releaseHoldRef.current?.();
+      const element = elementRef.current;
+      const release =
+        element == null ? null : holdPresentation(element, {until, scope});
+      releaseHoldRef.current = () => {
+        cancel?.();
+        release?.();
+      };
+    };
+    // A presentation holds every touch until it completes: UIKit's measured
+    // touch window after the browser actually started it
+    // (`alertController.present.ignoresTouchesForMs`: UIKit lab, iOS 26.2,
+    // taps at 400 ms ignored and at 450 ms handled; UIKit completes a frame
+    // or two after the 404 ms spring, so the hold outlasts the animation's
+    // `finished`), or, under reduced motion, the animator's cross-fade's end
+    // (its duration is the animator's).
+    const holdWhilePresenting = (handle: MotionHandle) => {
       if (panel.reducedMotion() !== 'off') {
-        void handle.finished.then(() => {
-          if (isCurrent()) {
-            transitionEndsAtRef.current = performance.now();
-          }
-        });
+        hold(handle.finished, 'viewport');
         return;
       }
-      void handle.started.then(start => {
-        if (isCurrent()) {
-          transitionEndsAtRef.current =
-            start + touchWindowMs(elementRef.current);
-        }
-      });
+      const window = windowAfterStart(handle.started, () =>
+        touchWindowMs(elementRef.current),
+      );
+      hold(window.end, 'viewport', window.cancel);
     };
     if (now === 'open' && was === 'hidden') {
       // The Dialog opened its modal in this same flush (its effect runs
@@ -238,28 +259,26 @@ export function useAlertMotion({
       // an animation at its transaction's commit, and the animator promotes
       // it in this task, so Mobile Safari runs it on the compositor from that
       // first frame through a busy main thread (measured on iOS 26.2).
-      transitionEndsAtRef.current = Number.POSITIVE_INFINITY;
       panel.set({opacity: 0, scale: presentScaleFrom(elementRef.current)});
       backdrop.set({opacity: 0});
-      const handle = present(panel, backdrop);
-      presentRef.current = handle;
-      armTouchWindow(handle);
+      holdWhilePresenting(present(panel, backdrop));
       return;
     }
-    presentRef.current = null;
     if (now === 'open' && was === 'leaving') {
       // Reopened mid-exit: fade back from where it is, with its velocity.
       // Touches come back a presentation's time after that fade starts.
       exitRef.current = null;
-      transitionEndsAtRef.current = Number.POSITIVE_INFINITY;
-      const handle = fadeFromHere(panel, backdrop, 1, springs.alertPresent);
-      presentRef.current = handle;
-      armTouchWindow(handle);
+      holdWhilePresenting(
+        fadeFromHere(panel, backdrop, 1, springs.alertPresent),
+      );
       return;
     }
     if (now === 'leaving') {
-      transitionEndsAtRef.current = Number.POSITIVE_INFINITY;
+      // A dismissal drops every input until it ends: the alert's content is
+      // inert (no click, key or assistive-technology activation reaches an
+      // action) and the hold's shield catches every touch.
       const handle = fadeFromHere(panel, backdrop, 0, springs.alertDismiss);
+      hold(handle.finished, 'layer');
       exitRef.current = handle;
       void handle.finished.then(isDone => {
         if (isDone && exitRef.current === handle) {
@@ -271,6 +290,8 @@ export function useAlertMotion({
     }
     // Hidden: the exit ended and the Dialog closed its modal.
     exitRef.current = null;
+    releaseHoldRef.current?.();
+    releaseHoldRef.current = null;
   }, [animators, isEnabled, isOpen, isPresented]);
 
   // An exit whose end is never reported (animations disabled, a detached
@@ -293,6 +314,35 @@ export function useAlertMotion({
   }, [isLeaving]);
 
   return {isPresented, isDriving: isEnabled, ref, acceptsTouches};
+}
+
+/**
+ * Settles `windowMs()` after the time `started` reports (performance.now()
+ * time), counted when it reports; `cancel` stops the timer.
+ */
+function windowAfterStart(
+  started: Promise<number>,
+  windowMs: () => number,
+): {end: Promise<void>; cancel: () => void} {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let isCancelled = false;
+  const end = new Promise<void>(resolve => {
+    void started.then(start => {
+      if (!isCancelled) {
+        timer = setTimeout(
+          resolve,
+          Math.max(0, start + windowMs() - performance.now()),
+        );
+      }
+    });
+  });
+  return {
+    end,
+    cancel: () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    },
+  };
 }
 
 function present(panel: Animator, backdrop: Animator): MotionHandle {

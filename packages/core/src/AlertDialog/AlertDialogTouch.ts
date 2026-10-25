@@ -80,8 +80,9 @@ export function useAlertDialogTouch(
     }
   }, [isDriving]);
   const motion = useAlertMotion({isOpen, isEnabled: isDriving});
-  // Tracked while presented, leaving included: a touch then is taken and
-  // dropped (isInert) rather than reaching the button under it.
+  // Tracked while presented, leaving included. During either transition the
+  // presentation hold (useAlertMotion) keeps every touch from the group and
+  // from the buttons under it.
   const isTracking = motion.isPresented && !isInline;
   const isBodyScrollable = useIsScrollable(bodyRef, isTracking);
   useActionGroupTracking(surfaceRef, {
@@ -89,7 +90,6 @@ export function useAlertDialogTouch(
     highlightOnsetMs: alertController.actions.highlightOnsetMs,
     highlightExpansion: alertController.actions.highlightExpansion,
     shouldTrack: target => target !== surfaceRef.current,
-    isInert: () => !motion.acceptsTouches(),
     isEnabled: isTracking,
     // A mouse keeps selecting the alert's text: the host's permanent
     // long-press styles stay off, and its selection lock covers a finger.

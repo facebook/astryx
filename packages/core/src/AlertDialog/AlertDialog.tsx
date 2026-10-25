@@ -243,21 +243,20 @@ export function AlertDialog({
     },
   );
   // While the alert leaves (closed by the caller, still presented while it
-  // fades out under a finger), UIKit delivers no input to it: a click, Enter
-  // or an assistive-technology activation on an action, and Escape, do
-  // nothing until it is hidden. Focus stays where it is, so Dialog returns it
-  // to the opener when the fade ends.
+  // fades out under a finger), UIKit delivers no input to it: the touch
+  // layer's presentation hold makes its content inert under a shield, so a
+  // tap, a click, Enter or an assistive-technology activation on an action
+  // does nothing, and the dialog's own Escape (its cancel event, which inert
+  // content does not stop) is ignored here until it is hidden. Focus leaves
+  // the inert content, and Dialog returns it to the opener when the fade
+  // ends.
   const isLeaving = motion.isDriving && motion.isPresented && !isOpen;
   const handleCancel = useCallback(() => {
-    if (!isLeaving) {
-      onOpenChange(false);
-    }
-  }, [isLeaving, onOpenChange]);
+    onOpenChange(false);
+  }, [onOpenChange]);
   const handleAction = useCallback(() => {
-    if (!isLeaving) {
-      void onAction();
-    }
-  }, [isLeaving, onAction]);
+    void onAction();
+  }, [onAction]);
   const handleOpenChange = useCallback(
     (next: boolean) => {
       if (!isLeaving) {

@@ -510,17 +510,16 @@ describe('AlertDialog touch tracking', () => {
   }
 
   /**
-   * Lets the presentation complete: UIKit drops touches until it does. Lets
-   * the animator report its start (a promise), then moves the clock past the
-   * touch window.
+   * Lets the presentation complete: UIKit drops touches until it does. The
+   * presentation hold ends UIKit's touch window after the animator reports
+   * its start.
    */
   async function completePresentation(): Promise<void> {
-    const presentedAt = performance.now();
-    const clock = vi.spyOn(performance, 'now').mockReturnValue(presentedAt);
-    await act(async () => {});
-    clock.mockReturnValue(
-      presentedAt + alertController.present.ignoresTouchesForMs,
-    );
+    await act(async () => {
+      await new Promise(resolve =>
+        setTimeout(resolve, alertController.present.ignoresTouchesForMs + 20),
+      );
+    });
   }
 
   afterEach(() => {
@@ -618,15 +617,22 @@ describe('AlertDialog touch tracking', () => {
     expect(dialog).toHaveAttribute('open');
   });
 
-  it('under a finger, while the alert leaves, runs nothing: a click or Enter on an action, Cancel, or Escape', async () => {
-    const {onOpenChange, onAction, cancel, action, close} = renderOpen();
+  it('under a finger, while the alert leaves, holds it inert and ignores Escape', async () => {
+    const {onOpenChange, onAction, close} = renderOpen();
     await completePresentation();
-    const dialog = screen.getByRole('alertdialog');
+    const dialog = screen.getByRole('alertdialog', {hidden: true});
+    const content = () =>
+      [...dialog.children].filter(child => !child.hasAttribute('popover'));
+    expect(content().some(child => child.hasAttribute('inert'))).toBe(false);
     close();
-    // Leaving: still open while it fades out.
+    // Leaving: still open while it fades out, its content inert under the
+    // presentation hold's shield, so no click, Enter or assistive-technology
+    // activation reaches an action; the browser checks cover the taps.
     expect(dialog).toHaveAttribute('open');
-    fireEvent.click(action);
-    fireEvent.click(cancel);
+    expect(content().length).toBeGreaterThan(0);
+    expect(content().every(child => child.hasAttribute('inert'))).toBe(true);
+    expect(dialog.querySelector(':scope > [popover]')).not.toBeNull();
+    // The dialog's own Escape still reaches it: ignored while it leaves.
     fireEvent.keyDown(dialog, {key: 'Escape'});
     expect(onAction).not.toHaveBeenCalled();
     expect(onOpenChange).not.toHaveBeenCalled();

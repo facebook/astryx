@@ -141,7 +141,11 @@ let latest: AlertMotion | null = null;
 function Alert({isOpen, isEnabled}: {isOpen: boolean; isEnabled: boolean}) {
   const motion = useAlertMotion({isOpen, isEnabled});
   latest = motion;
-  return <div ref={motion.ref} data-testid="alert" />;
+  return (
+    <div ref={motion.ref} data-testid="alert">
+      <button type="button">Delete</button>
+    </div>
+  );
 }
 
 /** The alert under a theme that retunes both of its durations. */
@@ -356,6 +360,7 @@ describe('useAlertMotion', () => {
   });
 
   it('fades back without hiding when reopened mid-exit', async () => {
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
     const view = render(<Alert isOpen isEnabled />);
     const {panel, backdrop} = animators();
     view.rerender(<Alert isOpen={false} isEnabled />);
@@ -387,7 +392,11 @@ describe('useAlertMotion', () => {
     await act(async () => {
       panel.starts.at(-1)?.(1216);
     });
-    now = 1216 + alertController.present.ignoresTouchesForMs;
+    await act(async () => {
+      vi.advanceTimersByTime(
+        1216 + alertController.present.ignoresTouchesForMs - now,
+      );
+    });
     expect(motion().acceptsTouches()).toBe(true);
     // The abandoned exit ending late does not hide the reopened alert.
     await act(async () => {
@@ -396,22 +405,40 @@ describe('useAlertMotion', () => {
     expect(motion().isPresented).toBe(true);
   });
 
-  it('refuses touches until the presentation completes, counted from its actual start, and while it leaves', async () => {
+  it('holds input until the presentation completes, counted from its actual start, and while it leaves', async () => {
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
     const view = render(<Alert isOpen isEnabled />);
     const {panel} = animators();
+    const shield = () => document.querySelector('[popover="manual"]');
     // The browser has not reported its start yet (a busy main thread can
-    // push it later): refused, however long that takes.
-    now = 9000;
+    // push it later): held, however long that takes, with a shield over
+    // the viewport (a presentation's scope).
+    now = 6300;
     expect(motion().acceptsTouches()).toBe(false);
+    expect(shield()).not.toBeNull();
+    // Reported late: the window still counts from the start it reports.
     await act(async () => {
       panel.starts.at(-1)?.(6100);
     });
-    now = 6100 + alertController.present.ignoresTouchesForMs - 1;
+    await act(async () => {
+      vi.advanceTimersByTime(
+        6100 + alertController.present.ignoresTouchesForMs - 6300 - 1,
+      );
+    });
     expect(motion().acceptsTouches()).toBe(false);
-    now = 6100 + alertController.present.ignoresTouchesForMs;
+    await act(async () => {
+      vi.advanceTimersByTime(1);
+    });
     expect(motion().acceptsTouches()).toBe(true);
+    expect(shield()).toBeNull();
+    // Leaving: a dismissal's scope, the shield again and the alert's
+    // content inert.
     view.rerender(<Alert isOpen={false} isEnabled />);
     expect(motion().acceptsTouches()).toBe(false);
+    expect(shield()).not.toBeNull();
+    expect(
+      document.querySelector('[data-testid="alert"] > button[inert]'),
+    ).not.toBeNull();
   });
 
   it("under reduced motion refuses touches until the animator's cross-fade ends, not a spring's time after it starts", async () => {
@@ -454,6 +481,7 @@ describe('useAlertMotion', () => {
     vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
     const view = render(<ThemedAlert isOpen />);
     const {panel} = animators();
+    now = 2000;
     await act(async () => {
       panel.starts.at(-1)?.(2000);
     });
@@ -461,9 +489,13 @@ describe('useAlertMotion', () => {
     const lag =
       alertController.present.ignoresTouchesForMs -
       alertController.present.durationMs;
-    now = 2000 + 600 + lag - 1;
+    await act(async () => {
+      vi.advanceTimersByTime(600 + lag - 1);
+    });
     expect(motion().acceptsTouches()).toBe(false);
-    now = 2000 + 600 + lag;
+    await act(async () => {
+      vi.advanceTimersByTime(1);
+    });
     expect(motion().acceptsTouches()).toBe(true);
     view.rerender(<ThemedAlert isOpen={false} />);
     act(() => {
