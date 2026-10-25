@@ -135,12 +135,19 @@ function componentMatches(token, components) {
 }
 
 /**
- * Audited component names from a "[Component Audit] <Name>: ..." title.
+ * Audited component names from a "[Component Audit] <Name>: ..." title. Like
+ * GitHub's `startsWith`, the match ignores case; names compare with
+ * `sameComponent`.
  * @param {string} title
  */
 export function auditedComponents(title) {
-  const match = /^\[Component Audit\] ([A-Z]\w*):/.exec(title ?? '');
+  const match = /^\[component audit\] (\w+):/i.exec(title ?? '');
   return match ? [match[1]] : [];
+}
+
+/** Component names compared without case, as an audit title is. */
+export function sameComponent(a, b) {
+  return a.toLowerCase() === b.toLowerCase();
 }
 
 /** `DropdownMenuItem` -> `dropdown-menu-item`. */
@@ -191,10 +198,14 @@ export function auditPlan(name, config) {
  */
 export function planFor(name, specs, config) {
   if (!name) return null;
-  const configured =
-    Object.hasOwn(config, name) ||
-    specs.some(({routing}) => routing.audits.includes(name));
-  return configured ? auditPlan(name, config) : null;
+  const canonical =
+    Object.keys(config).find(
+      key => key !== '$comment' && sameComponent(key, name),
+    ) ??
+    specs
+      .flatMap(({routing}) => routing.audits)
+      .find(audit => sameComponent(audit, name));
+  return canonical ? auditPlan(canonical, config) : null;
 }
 
 /** The `accessibility-audit.js` arguments for an audit plan. */
@@ -239,7 +250,9 @@ export function selectSpecs({
       if (routing.mode === 'always') return 'always';
       if (!isPullRequest || routing.mode === 'release-only') return null;
       if (routing.mode === 'audit') {
-        const name = routing.audits.find(n => audited.includes(n));
+        const name = routing.audits.find(n =>
+          audited.some(a => sameComponent(a, n)),
+        );
         return name ? `component audit ${name}` : null;
       }
       if (changedPaths == null) return 'scope unknown';
