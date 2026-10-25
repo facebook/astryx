@@ -39,8 +39,8 @@ Astryx adds no second settings system for an app to keep in step.
   | `.tint(_:)`            | `color.accent`, in a mode where white meets 3:1 against it, because stock controls draw white on their tint; the system tint in any other mode |
   | `.foregroundStyle(_:)` | `color.textPrimary`, the primary level only, so multi-layer SF Symbols keep their own rendering                                                |
 
-  A theme with the same tokens in light and dark (a single-mode theme, such as
-  Gothic) also sets its subtree's `colorScheme` to the mode its page ground
+  A theme whose page ground, card ground, primary text, and accent are the same
+  in light and dark (a single-mode theme, such as Gothic) also sets its subtree's `colorScheme` to the mode its page ground
   belongs to, dark for a dark ground, so stock controls inside draw that
   appearance on its grounds.
 

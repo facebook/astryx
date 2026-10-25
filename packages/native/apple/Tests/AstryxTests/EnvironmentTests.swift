@@ -136,13 +136,15 @@ import Testing
 
 @MainActor
 @Test func aDarkSectionInALightThemeGetsDarkColors() {
+  // Core's default dark accent keeps its tint (3.11:1 against white), so the
+  // swatch shows the dark-mode decision rather than the system fallback.
   let swatches = SwiftUI.HStack(spacing: 0) {
     Rectangle().fill(.tint).frame(width: 20, height: 20)
     Rectangle().fill(.primary).frame(width: 20, height: 20)
   }
-  let pixels = Pixels(swatches.environment(\.colorScheme, .dark), theme: .butter, scheme: .light)
-  #expect(close(pixels.at(10, 10), rgba(Theme.butter.dark.color.accent)))
-  #expect(close(pixels.at(30, 10), rgba(Theme.butter.dark.color.textPrimary)))
+  let pixels = Pixels(swatches.environment(\.colorScheme, .dark), theme: .default, scheme: .light)
+  #expect(close(pixels.at(10, 10), rgba(Theme.default.dark.color.accent)))
+  #expect(close(pixels.at(30, 10), rgba(Theme.default.dark.color.textPrimary)))
 }
 
 @MainActor
