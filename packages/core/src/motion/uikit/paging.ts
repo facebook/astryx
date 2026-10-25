@@ -9,7 +9,8 @@
  *   page, the catch, and `setContentOffset(_:animated:)`; and
  *   `registerPagingTable`, which makes its motions roles
  * @position The paging domain of the UIKit constants table (motion/uikit);
- *   read by motion/paging.ts and the pager components
+ *   read inside core only (motion/paging.ts and the pager), so the `uikit`
+ *   namespace does not re-export it
  *
  * One model drives every motion of a paging scroll view after the finger
  * lifts: the settle onto the chosen page AND the return from a rubber-banded
