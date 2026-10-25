@@ -110,8 +110,9 @@ at any time, for something that appears while the keyboard moves.
   inset the body's `keyboardInset` functional style lays out.
 - ChatLayout (`Chat/useChatKeyboard.ts`): the dock and the message area's end
   padding are laid out from `useKeyboardHeight`; the guide's ride moves the
-  dock, and a transcript at its newest message, with the keyboard; a tap on the
-  composer's text focuses it without Safari's reveal.
+  dock, and a transcript at its newest message, with the keyboard; a tap on
+  the composer's text is the tap route, and every other move into it the
+  focus takeover (`refuseFocusReveal`), so none scrolls the page.
 
 ## Files
 

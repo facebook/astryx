@@ -23,8 +23,8 @@
  * Software keyboard (useChatKeyboard): the dock rests above the keyboard and
  * the message area's end padding lets the newest message scroll above it,
  * both laid out from the keyboard height (functional styles, no added
- * element), with the keyboard's own spring riding on top; a tap on the
- * composer's text focuses it without Safari scrolling the page.
+ * element), with the keyboard's own spring riding on top; every route into
+ * the composer's text focuses it without Safari scrolling the page.
  *
  * Density (compact/balanced/spacious) is controlled via a prop with
  * 'balanced' as the default. No JS measurement or ResizeObserver needed.

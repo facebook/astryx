@@ -5,8 +5,9 @@
 /**
  * @file useChatKeyboard.ts
  * @input React refs, the keyboard module (useKeyboardHeight,
- *   claimTapFocus), the keyboard layout guide (each transition's start,
- *   resting value and curve), the animator
+ *   claimTapFocus, refuseFocusReveal), the keyboard layout guide (each
+ *   transition's start, resting value and curve), the animator, the touch
+ *   query
  * @output Exports useChatKeyboard: the lift ChatLayout lays its dock and
  *   message area out with, and the refs it puts on its dock, message area
  *   and composer region so the composer rides the software keyboard
@@ -38,6 +39,17 @@
  *   tap route (claimTapFocus): its end cancels the browser's own focus for
  *   that touch. Taps on anything else in the composer, and taps once the
  *   text has focus, are the browser's.
+ * - Every other move into the composer's text (the keyboard's previous and
+ *   next buttons, Tab, a script moving focus from another element, a text
+ *   control tapped while another element has focus) is delivered the same
+ *   way, by the keyboard module's focus takeover (refuseFocusReveal), under a
+ *   finger and where the keyboard is measured. A script's focus() while
+ *   nothing has focus raises no event before Safari reveals the field, so
+ *   nothing can take that move over: the composer's own focus routes pass
+ *   `preventScroll` in this region (keyboardSurface.ts), and the tap route
+ *   covers taps on the composer's text.
+ *   Focus that leaves the composer's text for nothing (the keyboard's Done, a
+ *   dismissal) stays where the browser leaves it.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/ChatLayout.tsx and ChatLayout.doc.mjs
@@ -49,11 +61,15 @@ import {useAnimator} from '../motion/useAnimator';
 import {
   bringsUpKeyboard,
   claimTapFocus,
+  findTextEntryControl,
   getKeyboardLayoutGuide,
   getMobileKeyboardHeight,
+  isKeyboardMeasurable,
+  refuseFocusReveal,
   useKeyboardHeight,
   type KeyboardTransition,
 } from '../keyboard';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 
 export interface UseChatKeyboardOptions {
@@ -399,6 +415,24 @@ export function useChatKeyboard({
     return claimTapFocus(composer, {
       claim: editableToClaim,
       deliver: focusAtPoint,
+    });
+  }, []);
+
+  // Every other move into the composer's text is the keyboard module's focus
+  // takeover (spec:AST-099 FR4), where the keyboard is measured (FR6). A
+  // desktop browser keeps its own focus (spec:AST-017 FR59): the pointer is
+  // read on every blur, so a tablet that docks a mouse follows it.
+  useIsomorphicLayoutEffect(() => {
+    const composer = composerRef.current;
+    const win = composer?.ownerDocument.defaultView;
+    if (composer == null || win == null || !isKeyboardMeasurable(win)) {
+      return undefined;
+    }
+    return refuseFocusReveal(composer.ownerDocument, {
+      isActive: () =>
+        typeof win.matchMedia === 'function' &&
+        win.matchMedia(TOUCH_QUERY).matches,
+      claim: destination => findTextEntryControl(destination, composer),
     });
   }, []);
 

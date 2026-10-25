@@ -8,9 +8,10 @@
  *   room, with no element added for it, a transcript at its newest message
  *   stays there, the dock comes down when the composer's text blurs, nothing
  *   moves without a keyboard; which touches the composer claims (unfocused
- *   contenteditable text, never a token's control or a text control); the
- *   caret a claimed tap places, where the browser has either caret-from-point
- *   API
+ *   contenteditable text, never a token's control or a text control); focus
+ *   moves into the composer's text delivered without the browser's reveal
+ *   under a finger, and left to the browser under a mouse; the caret a
+ *   claimed tap places, where the browser has either caret-from-point API
  * @position Unit tests for Chat/useChatKeyboard.ts (motion and the tap claim
  *   are proven in Mobile Safari; see the pull request evidence)
  */
@@ -212,6 +213,101 @@ describe('ChatLayout and the software keyboard', () => {
     expect(dockOf(container).style.translate).toBe('');
     expect(layoutLift(dockOf(container))).toBe(0);
     expect(keyboardRoom(messagesOf())).toBe(0);
+  });
+});
+
+describe('focus moves into the composer (spec:AST-099 FR4)', () => {
+  // The primary pointer `matchMedia` reports: a touch screen's coarse finger,
+  // or a desktop's fine mouse.
+  function primaryPointer(pointer: 'coarse' | 'fine') {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === `(pointer: ${pointer})`,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+  }
+
+  function renderWithSearch(composerText: 'textarea' | 'contenteditable') {
+    render(
+      <>
+        <input aria-label="Search" />
+        <ChatLayout
+          data-testid="layout"
+          composer={
+            composerText === 'textarea' ? (
+              <textarea aria-label="Message" />
+            ) : (
+              <div
+                aria-label="Message"
+                contentEditable
+                role="textbox"
+                suppressContentEditableWarning
+              />
+            )
+          }>
+          <p>Hello</p>
+        </ChatLayout>
+      </>,
+    );
+    return {
+      search: screen.getByRole('textbox', {name: 'Search'}),
+      message: screen.getByRole('textbox', {name: 'Message'}),
+    };
+  }
+
+  beforeEach(() => {
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      value: Object.assign(new EventTarget(), {
+        height: window.innerHeight,
+        offsetTop: 0,
+        scale: 1,
+      }),
+    });
+  });
+
+  afterEach(() => {
+    Reflect.deleteProperty(window, 'visualViewport');
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('delivers a move from another field into the composer without the browser\u2019s reveal', () => {
+    primaryPointer('coarse');
+    const {search, message} = renderWithSearch('textarea');
+    act(() => search.focus());
+    const focus = vi.spyOn(message, 'focus');
+    // The keyboard's next button, Tab, or a script moving focus.
+    act(() => message.focus());
+    expect(focus).toHaveBeenCalledWith({preventScroll: true});
+    expect(document.activeElement).toBe(message);
+  });
+
+  it('delivers a move into contenteditable composer text the same way', () => {
+    primaryPointer('coarse');
+    const {search, message} = renderWithSearch('contenteditable');
+    act(() => search.focus());
+    const focus = vi.spyOn(message, 'focus');
+    act(() => message.focus());
+    expect(focus).toHaveBeenCalledWith({preventScroll: true});
+  });
+
+  it('leaves focus moves to the browser under a mouse', () => {
+    primaryPointer('fine');
+    const {search, message} = renderWithSearch('textarea');
+    act(() => search.focus());
+    const focus = vi.spyOn(message, 'focus');
+    act(() => message.focus());
+    expect(focus).not.toHaveBeenCalledWith({preventScroll: true});
+  });
+
+  it('moves focus nowhere when the composer\u2019s text blurs to nothing', () => {
+    primaryPointer('coarse');
+    const {message} = renderWithSearch('textarea');
+    act(() => message.focus());
+    act(() => message.blur());
+    expect(document.activeElement).toBe(document.body);
   });
 });
 
