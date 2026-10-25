@@ -59,7 +59,7 @@ means for them.
   swipe, a row swipe, paging, a wheel picker, a navigation pop, and interactive
   dismiss, reports the same velocity, in CSS pixels per second on each physical
   axis, for the same contact motion. `architecture:interaction-modality` INV10
-  owns the source in Core and how a component outside Core matches it.
+  owns the source in Core and how a Lab component matches it.
 - **FR2 — A still finger never flicks.** The velocity a component reads when
   the contact lifts reflects only the motion just before the lift: it is 0
   when the contact stayed still for longer than a fixed stillness interval
@@ -128,7 +128,7 @@ means for them.
 Each component estimating velocity its own way makes the same flick dismiss a
 toast but not a sheet, and a finger that paused before lifting count as a
 flick in one place and not another. One release filter, with one source in
-Core and the same filter wherever a package cannot reach it, gives every
+Core and the same filter in Lab, gives every
 component the same speed for the same motion, and the stillness reset
 stops a resting finger from flinging. What a speed means stays with each
 component as internal tuning, so components keep their feel without a second
