@@ -6,14 +6,14 @@
  * @file SearchField.tsx
  * @input React, StyleX, core's theme tokens, Icon, the UIKit search table
  *   (`@astryxdesign/core/motion/uikit`) and its touch layer,
- *   SearchFieldTouch.ts (the animator, the touch resolver and
- *   searchFieldModel.ts's math)
+ *   SearchFieldTouch.ts (the animator, the touch resolver, the keyboard's
+ *   height and searchFieldModel.ts's math)
  * @output Exports SearchField (the phone search field of iOS 26's
  *   UISearchController: a field that activates into its host's bar with a
  *   glass close button) and the SearchFieldHandle type
  * @position Lab component (packages/lab/src/SearchField); the field a
  *   navigation stack's bar or a tab bar's search tab hosts, standalone in a
- *   page header otherwise
+ *   page header otherwise, or in a bottom toolbar (`placement="bottom"`)
  *
  * WHAT IT DRAWS
  *
@@ -53,6 +53,35 @@
  * editing but leaves the search active, as UIKit does when the results do
  * not dim (`obscuresBackgroundDuringPresentation` false, its default).
  *
+ * BOTTOM PLACEMENT
+ *
+ * `placement="bottom"` is iOS 26's toolbar field on a phone (UIKit's
+ * `.integrated`): 38 px tall, 33 px from each side, in a bar the app keeps
+ * at the bottom of the viewport. It keeps above the software keyboard by
+ * layout: while active its centre stays 36 px above the keyboard's top (a
+ * 17 px gap), otherwise the bar keeps its resting gap above it. The
+ * keyboard's height is the one spec:AST-099 FR2 defines where the keyboard
+ * covers the page (Mobile Safari); where the browser reports the keyboard
+ * itself (Chrome on Android, FR8), the field reads that report while it has
+ * focus, the keyboard overlaying the page meanwhile. Each report moves the
+ * bar at once: a Lab surface commits the resting value and never rides the
+ * keyboard (FR8).
+ * Under a finger, activating swells the field, narrows it past its place to
+ * make room for a 38 px glass close button 22 px after it, and grows the
+ * button in from inside the field's end; cancelling narrows the field by
+ * 16 px at each side, then springs it out to rest while the button shrinks
+ * and fades in place. iOS draws these frame by frame with no animation
+ * object, so they play the measured frames (`search.bottom.*Frames`), on
+ * the compositor. Under a mouse or a trackpad the parts take their places
+ * at once.
+ *
+ * Where the keyboard covers the page (Mobile Safari), a tap on a bottom
+ * field's text focuses it without Safari's reveal, which would pan the
+ * whole page (spec:AST-099 FR4), and puts the caret where the finger
+ * lifted. In Chrome on Android the tap stays the browser's: only its own
+ * tap brings the keyboard up, and with the keyboard overlaying the page its
+ * focus pans nothing.
+ *
  * Accessibility: a `search` landmark holding a `searchbox` named by
  * `label`; the clear and close buttons are named by `clearLabel` and
  * `cancelLabel`. The close button is in the tab order only while active.
@@ -65,6 +94,7 @@
 import {
   useCallback,
   useImperativeHandle,
+  useLayoutEffect,
   useRef,
   useState,
   type ChangeEvent,
@@ -84,8 +114,14 @@ import {
   textSizeVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps, themeProps} from '@astryxdesign/core/utils';
-import {useSearchFieldMotion} from './SearchFieldTouch';
+import {
+  useSearchFieldMotion,
+  type SearchFieldPlacement,
+} from './SearchFieldTouch';
+import {bottomEdges} from './searchFieldModel';
 import {search} from '@astryxdesign/core/motion/uikit';
+
+const {bottom} = search;
 
 // =============================================================================
 // Types
@@ -95,7 +131,8 @@ import {search} from '@astryxdesign/core/motion/uikit';
 export interface SearchFieldHandle {
   /**
    * Focuses the input. Called inside a tap, it raises the touch keyboard
-   * and activates the field.
+   * and activates the field. A bottom field does not let Safari scroll it
+   * into view.
    */
   focus(): void;
   /** Ends editing; the field stays active. */
@@ -132,6 +169,13 @@ export interface SearchFieldProps extends Omit<
    * title to the bar's row). 0, the default, keeps it in place.
    */
   lift?: number;
+  /**
+   * Where the field lives: `stacked` (default) in a page header or under a
+   * navigation bar's title, or `bottom`, iOS 26's toolbar field, in a bar
+   * the app keeps at the bottom of the viewport; it keeps above the software
+   * keyboard. `lift` applies to `stacked` only.
+   */
+  placement?: SearchFieldPlacement;
   /** The close button's accessible name (default: "Cancel", translated). */
   cancelLabel?: string;
   /** The clear button's accessible name (default: "Clear text", translated). */
@@ -161,6 +205,9 @@ const styles = stylex.create({
     WebkitTapHighlightColor: 'transparent',
   },
   rootInset: (inset: string) => ({paddingInline: inset}),
+  // Above the software keyboard, by layout (SearchFieldTouch.ts's
+  // `keyboardLift`); physical, as the keyboard is.
+  keyboardLift: (lift: string) => ({bottom: lift}),
   field: {
     position: 'relative',
     display: 'flex',
@@ -213,6 +260,16 @@ const styles = stylex.create({
     borderEndEndRadius: cap,
     backgroundColor: colorVars['--color-background-muted'],
   }),
+  // A bottom field's magnifier and text, carried together with its leading
+  // edge through the gel.
+  content: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    flexGrow: 1,
+    minWidth: 0,
+    height: '100%',
+  },
   magnifier: {
     position: 'relative',
     display: 'flex',
@@ -327,6 +384,18 @@ const styles = stylex.create({
       ':is([dir="rtl"] *)': '-44px 0',
     },
   },
+  // The resting bottom close button, in CSS too: hidden inside the field's
+  // trailing end at a fifth of its size, 16.67 px toward the field
+  // (`search.bottom.closeEnterFrames`' first row, kept equal by a test).
+  closeInertBottom: {
+    pointerEvents: 'none',
+    opacity: 0,
+    scale: 0.2,
+    translate: {
+      default: '-16.67px 0',
+      ':is([dir="rtl"] *)': '16.67px 0',
+    },
+  },
 });
 
 // Where the clear button sits inside the field's trailing end, px.
@@ -359,6 +428,7 @@ export function SearchField({
   onSubmit,
   handleRef,
   lift = 0,
+  placement = 'stacked',
   cancelLabel,
   clearLabel,
   xstyle,
@@ -378,10 +448,27 @@ export function SearchField({
   const resolvedCancelLabel = cancelLabel ?? t('@astryx.searchField.cancel');
   const resolvedClearLabel = clearLabel ?? t('@astryx.searchField.clear');
   const fieldRef = useRef<HTMLDivElement>(null);
-  // The touch layer (SearchFieldTouch.ts): the parts' poses, and UIKit's
-  // activation under a finger.
-  const motion = useSearchFieldMotion({fieldRef, isActive, lift});
-  const fieldHeight = search.stacked.fieldHeight;
+  const isBottom = placement === 'bottom';
+  // The touch layer (SearchFieldTouch.ts): the parts' poses, UIKit's
+  // activation under a finger, the keyboard and the claimed tap.
+  const motion = useSearchFieldMotion({
+    fieldRef,
+    inputRef,
+    isActive,
+    lift,
+    placement,
+  });
+  const fieldHeight = isBottom
+    ? bottom.fieldHeight
+    : search.stacked.fieldHeight;
+  // A field at the bottom of the screen focuses without Safari's reveal,
+  // which would pan the page (spec:AST-099 FR4).
+  const focusOptions =
+    placement === 'stacked' ? undefined : {preventScroll: true};
+  const focusOptionsRef = useRef(focusOptions);
+  useLayoutEffect(() => {
+    focusOptionsRef.current = focusOptions;
+  });
 
   const setValue = useCallback(
     (next: string) => {
@@ -406,7 +493,7 @@ export function SearchField({
     handleRef,
     () => ({
       focus() {
-        inputRef.current?.focus();
+        inputRef.current?.focus(focusOptionsRef.current);
       },
       blur() {
         inputRef.current?.blur();
@@ -481,17 +568,51 @@ export function SearchField({
   // keyboard rises, as UIKit's clear button makes its field first responder.
   const handleClear = useCallback(() => {
     setValue('');
-    inputRef.current?.focus();
+    inputRef.current?.focus(focusOptionsRef.current);
   }, [setValue]);
 
   const cap = px(fieldHeight / 2);
   const showsClear = value !== '';
   // Text stops before the clear button and, while active, before the space
-  // the narrowed field gives up to the close button.
+  // the narrowed field gives up to the close button (at the bottom, less
+  // the leading edge's own move, which carries the text with it).
+  const edges = bottomEdges(0);
+  const activeGiveUp = isBottom
+    ? edges.restTrailing -
+      edges.activeTrailing -
+      (edges.restLeading - edges.activeLeading)
+    : search.stacked.closeGap + search.stacked.closeSize;
   const inputEnd =
     (showsClear ? search.clear.size + CLEAR_INSET : 0) +
-    (isActive ? search.stacked.closeGap + search.stacked.closeSize : 0) +
+    (isActive ? activeGiveUp : 0) +
     (showsClear ? 0 : CLEAR_INSET);
+  const closeSize = isBottom ? bottom.closeSize : search.stacked.closeSize;
+  const closeInset = isBottom ? bottom.activeInset : search.stacked.fieldInset;
+  const magnifier = (
+    <Icon icon="search" size="sm" color="inherit" xstyle={styles.magnifier} />
+  );
+  const input = (
+    <input
+      ref={inputRef}
+      type="text"
+      role="searchbox"
+      aria-label={label}
+      placeholder={placeholder ?? label}
+      value={value}
+      onChange={(event: ChangeEvent<HTMLInputElement>) =>
+        setValue(event.target.value)
+      }
+      onFocus={handleFocus}
+      onKeyDown={handleKeyDown}
+      // A UIKit search field's text field: the `.search` return key and
+      // `autocorrectionType = .no` (measured on iOS 26.2).
+      enterKeyHint="search"
+      autoCorrect="off"
+      autoComplete="off"
+      spellCheck={false}
+      {...stylex.props(styles.input, styles.inputEnd(px(inputEnd)))}
+    />
+  );
 
   return (
     <div
@@ -503,7 +624,10 @@ export function SearchField({
         themeProps('search-field'),
         stylex.props(
           styles.root,
-          styles.rootInset(px(search.stacked.fieldInset)),
+          styles.rootInset(
+            px(isBottom ? bottom.restInset : search.stacked.fieldInset),
+          ),
+          isBottom && styles.keyboardLift(px(motion.keyboardLift)),
           xstyle,
         ),
         className,
@@ -512,7 +636,12 @@ export function SearchField({
       <div
         ref={fieldRef}
         {...stylex.props(styles.field, styles.fieldHeight(px(fieldHeight)))}>
-        <span aria-hidden {...stylex.props(styles.piece, styles.start(cap))} />
+        <span
+          ref={motion.startRef}
+          aria-hidden
+          data-search-field-start=""
+          {...stylex.props(styles.piece, styles.start(cap))}
+        />
         <span
           ref={motion.middleRef}
           aria-hidden
@@ -520,40 +649,36 @@ export function SearchField({
           {...stylex.props(
             styles.piece,
             styles.middle(cap),
-            styles.beforePlacement,
+            !isBottom && styles.beforePlacement,
           )}
         />
-        <Icon
-          icon="search"
-          size="sm"
-          color="inherit"
-          xstyle={styles.magnifier}
-        />
-        <input
-          ref={inputRef}
-          type="text"
-          role="searchbox"
-          aria-label={label}
-          placeholder={placeholder ?? label}
-          value={value}
-          onChange={(event: ChangeEvent<HTMLInputElement>) =>
-            setValue(event.target.value)
-          }
-          onFocus={handleFocus}
-          onKeyDown={handleKeyDown}
-          // A UIKit search field's text field: the `.search` return key and
-          // `autocorrectionType = .no` (measured on iOS 26.2).
-          enterKeyHint="search"
-          autoCorrect="off"
-          autoComplete="off"
-          spellCheck={false}
-          {...stylex.props(styles.input, styles.inputEnd(px(inputEnd)))}
-        />
+        {isBottom ? (
+          <div
+            ref={motion.contentRef}
+            data-search-field-content=""
+            {...stylex.props(styles.content)}>
+            {magnifier}
+            {input}
+          </div>
+        ) : (
+          <>
+            {magnifier}
+            {input}
+          </>
+        )}
         <div
           ref={motion.endRef}
           data-search-field-end=""
-          {...stylex.props(styles.end, styles.beforePlacement)}>
-          <span aria-hidden {...stylex.props(styles.endCap(cap))} />
+          {...stylex.props(
+            styles.end,
+            placement === 'stacked' && styles.beforePlacement,
+          )}>
+          <span
+            ref={motion.endCapRef}
+            aria-hidden
+            data-search-field-end-cap=""
+            {...stylex.props(styles.endCap(cap))}
+          />
           {showsClear ? (
             <button
               type="button"
@@ -579,11 +704,8 @@ export function SearchField({
         onClick={handleClose}
         {...stylex.props(
           styles.close,
-          styles.closeGeometry(
-            px(search.stacked.closeSize),
-            px(search.stacked.fieldInset),
-          ),
-          !isActive && styles.closeInert,
+          styles.closeGeometry(px(closeSize), px(closeInset)),
+          !isActive && (isBottom ? styles.closeInertBottom : styles.closeInert),
         )}>
         <Icon icon="close" size="sm" color="inherit" />
       </button>

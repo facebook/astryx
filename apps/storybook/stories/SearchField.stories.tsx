@@ -254,3 +254,63 @@ export const Lifted: Story = {
 export const RightToLeft: Story = {
   render: () => <Screen dir="rtl" />,
 };
+
+// The bottom placement's bar: kept at the bottom of the viewport, the field's
+// bottom 33 px above it, as iOS 26's toolbar holds its search field.
+const bottomBar: React.CSSProperties = {
+  position: 'fixed',
+  insetInline: 0,
+  bottom: 33,
+};
+
+function BottomScreen({dir}: {dir?: 'rtl'}) {
+  const [query, setQuery] = useState('');
+  const [isActive, setIsActive] = useState(false);
+  const results = FRUITS.filter(fruit =>
+    fruit.toLowerCase().includes(query.trim().toLowerCase()),
+  );
+  return (
+    <div style={{...page, paddingBottom: 104}} dir={dir}>
+      <h1 style={largeTitle}>Search</h1>
+      <ul style={list} aria-label="Results">
+        {results.map(fruit => (
+          <li key={fruit} style={row}>
+            {fruit}
+          </li>
+        ))}
+      </ul>
+      <p
+        data-testid="search-state"
+        style={{padding: '0 16px', fontSize: 13, opacity: 0.6}}>
+        {isActive ? 'active' : 'inactive'}
+      </p>
+      <div style={bottomBar}>
+        <SearchField
+          label="Search"
+          placeholder="Fruits"
+          placement="bottom"
+          value={query}
+          onChange={setQuery}
+          isActive={isActive}
+          onActiveChange={setIsActive}
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * iOS 26's toolbar field at the bottom of the screen. A tap activates it: it
+ * keeps above the keyboard (its centre 36 px above the keyboard's top),
+ * swells, narrows past its place and grows a 38 px glass close button in
+ * beside it; cancelling springs it back out to rest as the keyboard goes
+ * down.
+ */
+export const Bottom: Story = {
+  render: () => <BottomScreen />,
+};
+
+/** The bottom field right to left: it narrows from the left. */
+export const BottomRightToLeft: Story = {
+  render: () => <BottomScreen dir="rtl" />,
+};

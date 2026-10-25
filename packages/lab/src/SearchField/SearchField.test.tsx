@@ -10,7 +10,10 @@
  *   inactive; Escape cancels outside composition; Enter submits and keeps
  *   focus; the clear button appears with text, clears and keeps or restores
  *   focus inside the tap; a host's handle focuses the field right after an
- *   activation it committed (a tab bar's tap); controlled and uncontrolled
+ *   activation it committed (a tab bar's tap); controlled and uncontrolled;
+ *   the bottom placement's geometry and its lift above the software
+ *   keyboard (spec:AST-099 FR2; none where the page has the VirtualKeyboard
+ *   API, or under a mouse)
  * @position Testing; the motion is proven in real engines by
  *   __tests__/SearchField.interaction.browser.spec.ts
  */
@@ -44,6 +47,79 @@ const close = () => {
   }
   return button;
 };
+
+/**
+ * A finger (or a mouse) and a visual viewport that reports a software
+ * keyboard the way Mobile Safari does, for `run`: `keyboard(cover)` shrinks
+ * it from the bottom and fires one `resize`.
+ */
+interface VirtualKeyboardStandIn extends EventTarget {
+  overlaysContent: boolean;
+  boundingRect: DOMRect;
+  /** The keyboard now covers `cover` px of the bottom; Chrome reports it. */
+  report(cover: number): void;
+}
+
+async function withKeyboard(
+  {isTouch = true, virtualKeyboardApi = false} = {},
+  run: (
+    keyboard: (cover: number) => void,
+    virtualKeyboard: VirtualKeyboardStandIn,
+  ) => Promise<void> | void,
+) {
+  const viewport = Object.assign(new EventTarget(), {
+    height: window.innerHeight,
+    scale: 1,
+  });
+  vi.stubGlobal('visualViewport', viewport);
+  // The browser's own keyboard report (Chrome on Android): its rect, and a
+  // `geometrychange` when the keyboard moves.
+  const virtualKeyboard = Object.assign(new EventTarget(), {
+    overlaysContent: false,
+    boundingRect: new DOMRect(0, 0, 0, 0),
+    report(cover: number) {
+      act(() => {
+        virtualKeyboard.boundingRect = new DOMRect(
+          0,
+          window.innerHeight - cover,
+          window.innerWidth,
+          cover,
+        );
+        virtualKeyboard.dispatchEvent(new Event('geometrychange'));
+      });
+    },
+  });
+  if (virtualKeyboardApi) {
+    Object.defineProperty(navigator, 'virtualKeyboard', {
+      configurable: true,
+      value: virtualKeyboard,
+    });
+  }
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches: isTouch && query.includes('pointer: coarse'),
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
+  try {
+    await run(cover => {
+      act(() => {
+        viewport.height = window.innerHeight - cover;
+        viewport.dispatchEvent(new Event('resize'));
+      });
+    }, virtualKeyboard);
+  } finally {
+    Reflect.deleteProperty(navigator, 'virtualKeyboard');
+    vi.unstubAllGlobals();
+  }
+}
 
 describe('SearchField', () => {
   it('is a search landmark holding a searchbox named by its label', () => {
@@ -301,5 +377,119 @@ describe('SearchField', () => {
     rerender(<Field value="figs" isActive />);
     expect(box()).toHaveValue('figs');
     expect(close()).not.toHaveAttribute('aria-hidden');
+  });
+
+  describe('bottom placement', () => {
+    it('is a 38 px field 33 px from each side, with a 38 px close button 17 px from the end', () => {
+      render(<SearchField label="Search" placement="bottom" />);
+      const root = screen.getByRole('search');
+      const field = screen
+        .getByRole('searchbox')
+        .closest('[data-search-field-content]')?.parentElement as HTMLElement;
+      expect(root.getAttribute('style')).toContain('33px');
+      expect(field.getAttribute('style')).toContain('38px');
+      expect(close().getAttribute('style')).toContain('38px');
+      expect(close().getAttribute('style')).toContain('17px');
+    });
+
+    it('activates on focus and cancels from the close button, as the stacked field does', () => {
+      const onActiveChange = vi.fn();
+      render(
+        <SearchField
+          label="Search"
+          placement="bottom"
+          onActiveChange={onActiveChange}
+        />,
+      );
+      act(() => box().focus());
+      expect(onActiveChange).toHaveBeenLastCalledWith(true);
+      fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+      expect(onActiveChange).toHaveBeenLastCalledWith(false);
+      expect(box()).not.toHaveFocus();
+    });
+
+    it('the clear button refocuses the field without the browser scrolling it into view', () => {
+      render(
+        <SearchField label="Search" placement="bottom" defaultValue="ap" />,
+      );
+      const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+      fireEvent.click(screen.getByRole('button', {name: 'Clear text'}));
+      expect(focus).toHaveBeenLastCalledWith({preventScroll: true});
+      focus.mockRestore();
+    });
+
+    it('keeps above the software keyboard by layout: under a finger the keyboard’s height lifts the field', async () => {
+      await withKeyboard({}, keyboard => {
+        render(<SearchField label="Search" placement="bottom" />);
+        const root = screen.getByRole('search');
+        expect(root.getAttribute('style')).not.toContain('300px');
+        keyboard(300);
+        // Inactive, the bar keeps its resting gap above the keyboard.
+        expect(root.getAttribute('style')).toContain('300px');
+        keyboard(0);
+        expect(root.getAttribute('style')).not.toContain('300px');
+      });
+    });
+
+    /** The bottom field resting 52 px above the viewport's bottom edge. */
+    function renderActiveBottom() {
+      render(<SearchField label="Search" placement="bottom" />);
+      const root = screen.getByRole('search');
+      vi.spyOn(root, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(0, window.innerHeight - 52 - 19, 402, 38),
+      );
+      act(() => box().focus());
+      return root;
+    }
+
+    it('moves the bar only on the keyboard’s report, with no prediction: a blur alone moves nothing', async () => {
+      await withKeyboard({}, keyboard => {
+        const root = renderActiveBottom();
+        keyboard(300);
+        // Active: its centre 36 px above the keyboard, 52 px above the edge
+        // at rest.
+        expect(root.getAttribute('style')).toContain('284px');
+        act(() => box().blur());
+        expect(root.getAttribute('style')).toContain('284px');
+        keyboard(0);
+        expect(root.getAttribute('style')).not.toContain('284px');
+      });
+    });
+
+    it('in Chrome on Android reads the browser’s keyboard report while it has focus, the keyboard overlaying the page meanwhile', async () => {
+      await withKeyboard({virtualKeyboardApi: true}, (keyboard, chrome) => {
+        const root = renderActiveBottom();
+        // Focused: the keyboard overlays the page and reports itself.
+        expect(chrome.overlaysContent).toBe(true);
+        chrome.report(300);
+        expect(root.getAttribute('style')).toContain('284px');
+        // The visual viewport is not the measure there.
+        keyboard(100);
+        expect(root.getAttribute('style')).toContain('284px');
+        // After the blur the bar keeps its place until Chrome reports the
+        // keyboard down; then the app's own setting goes back.
+        act(() => box().blur());
+        expect(chrome.overlaysContent).toBe(true);
+        expect(root.getAttribute('style')).toContain('284px');
+        chrome.report(0);
+        expect(chrome.overlaysContent).toBe(false);
+        expect(root.getAttribute('style')).not.toContain('284px');
+        // A report while the field does not hold the overlay moves nothing.
+        chrome.report(300);
+        expect(root.getAttribute('style')).not.toContain('284px');
+      });
+    });
+
+    it('measures no keyboard under a mouse', async () => {
+      await withKeyboard({isTouch: false}, keyboard => {
+        // A fine primary pointer, asserted in this test's own context.
+        expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+        render(<SearchField label="Search" placement="bottom" />);
+        keyboard(300);
+        expect(screen.getByRole('search').getAttribute('style')).not.toContain(
+          '300px',
+        );
+      });
+    });
   });
 });
