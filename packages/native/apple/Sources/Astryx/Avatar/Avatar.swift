@@ -113,18 +113,18 @@ public struct Avatar: View {
         .buttonStyle(.plain)
         .modifier(AvatarRunsBeforeOpening(onClick: props.onClick))
         .modifier(AvatarTarget(side: side))
-        .modifier(AvatarName(label: accessibilityLabel, isInteractive: true))
+        .modifier(AvatarName(label: accessibilityLabel, tap: .link))
     } else if let onClick = props.onClick {
       SwiftUI.Button(action: onClick) { picture }
         .buttonStyle(.plain)
         .modifier(AvatarTarget(side: side))
-        .modifier(AvatarName(label: accessibilityLabel, isInteractive: true))
+        .modifier(AvatarName(label: accessibilityLabel, tap: .button))
     } else {
       picture
         // A static avatar whose tap opens its tooltip answers taps across
         // 44 points too.
         .modifier(AvatarTarget(side: Avatar.tapTargetSide(side, takesTaps: tooltipText != nil)))
-        .modifier(AvatarName(label: accessibilityLabel, isInteractive: false))
+        .modifier(AvatarName(label: accessibilityLabel, tap: .none))
     }
   }
 
@@ -154,7 +154,18 @@ public struct Avatar: View {
   /// The traits the avatar adds: a named static avatar is an image; a link or
   /// button keeps its own trait and adds none (Swift accessibility, X1).
   nonisolated static func addedTraits(tap: Tap, isNamed: Bool) -> AccessibilityTraits {
-    tap == .none && isNamed ? .isImage : []
+    guard isNamed else { return [] }
+    switch tap {
+    case .none: return .isImage
+    case .link: return .isLink
+    case .button: return []
+    }
+  }
+
+  /// Traits a named avatar drops: a link avatar is a link, not the button
+  /// SwiftUI reports for `Link`.
+  nonisolated static func removedTraits(tap: Tap, isNamed: Bool) -> AccessibilityTraits {
+    isNamed && tap == .link ? .isButton : []
   }
 
   /// A link or button avatar needs a name, as core warns in development.
@@ -185,12 +196,15 @@ public struct Avatar: View {
           .foregroundStyle(astryx.tokens.color.textSecondary)
           .lineLimit(1)
           .fixedSize()
+          // The name, not the initials, names the avatar.
+          .accessibilityHidden(true)
       } else {
         Image(systemName: "person.fill")
           .resizable()
           .scaledToFit()
           .frame(width: side * 0.6, height: side * 0.6)
           .foregroundStyle(astryx.tokens.color.textSecondary)
+          .accessibilityHidden(true)
       }
     }
   }
@@ -348,17 +362,23 @@ private struct AvatarShapeOutline: Shape {
 /// is hidden; an interactive one keeps its link or button trait.
 private struct AvatarName: ViewModifier {
   let label: String?
-  let isInteractive: Bool
+  let tap: Avatar.Tap
 
   func body(content: Content) -> some View {
+    let isNamed = label != nil
+    let added = Avatar.addedTraits(tap: tap, isNamed: isNamed)
+    let removed = Avatar.removedTraits(tap: tap, isNamed: isNamed)
     if let label {
-      if isInteractive {
+      if tap == .none {
+        // One image element named by the name.
         content.accessibilityElement(children: .ignore).accessibilityLabel(label)
+          .accessibilityAddTraits(added)
       } else {
-        content.accessibilityElement(children: .ignore).accessibilityLabel(label)
-          .accessibilityAddTraits(Avatar.addedTraits(tap: .none, isNamed: true))
+        // The link or button itself carries the name, so VoiceOver reads
+        // "Grace Hopper, button", not the initials inside it.
+        content.accessibilityLabel(label).accessibilityAddTraits(added).accessibilityRemoveTraits(removed)
       }
-    } else if isInteractive {
+    } else if tap != .none {
       content
     } else {
       content.accessibilityHidden(true)

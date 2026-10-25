@@ -132,7 +132,10 @@ import Testing
   #expect(Avatar("Ada", href: "https://example.com", onClick: {}).tap == .link)
   #expect(Avatar("Ada", href: "not a url", onClick: {}).tap == .button)
   #expect(Avatar.addedTraits(tap: .none, isNamed: true) == .isImage)
-  #expect(Avatar.addedTraits(tap: .link, isNamed: true) == [])
+  // A link avatar is a link, not the button SwiftUI reports for `Link`.
+  #expect(Avatar.addedTraits(tap: .link, isNamed: true) == .isLink)
+  #expect(Avatar.removedTraits(tap: .link, isNamed: true) == .isButton)
+  #expect(Avatar.removedTraits(tap: .button, isNamed: true) == [])
   #expect(Avatar.addedTraits(tap: .button, isNamed: true) == [])
 }
 
