@@ -22,17 +22,32 @@ const sheetLoad = vi.hoisted(() => {
   const gate = new Promise<void>(resolve => {
     release = resolve;
   });
-  return {gate, release: () => release(), requested: [] as string[]};
+  let announce: (name: string) => void = () => {};
+  // Settles the moment any sheet module is requested.
+  const firstRequest = new Promise<string>(resolve => {
+    announce = resolve;
+  });
+  const requested: string[] = [];
+  return {
+    gate,
+    release: () => release(),
+    requested,
+    firstRequest,
+    request(name: string) {
+      requested.push(name);
+      announce(name);
+    },
+  };
 });
 
 vi.mock('./MenuBottomSheet', async importOriginal => {
-  sheetLoad.requested.push('MenuBottomSheet');
+  sheetLoad.request('MenuBottomSheet');
   await sheetLoad.gate;
   return importOriginal();
 });
 
 vi.mock('./MenuBottomSheetActionList', async importOriginal => {
-  sheetLoad.requested.push('MenuBottomSheetActionList');
+  sheetLoad.request('MenuBottomSheetActionList');
   await sheetLoad.gate;
   return importOriginal();
 });
@@ -40,10 +55,21 @@ vi.mock('./MenuBottomSheetActionList', async importOriginal => {
 let DropdownMenu: typeof DropdownMenuComponent;
 
 // If any module the dropdown loads imported the sheet eagerly, this import
-// would wait on the held sheet and the hook would time out.
+// would wait on the held sheet forever: fail the moment a sheet module is
+// requested instead, so the check does not depend on how long the import takes
+// on a busy machine. The hook timeout is only a backstop.
 beforeAll(async () => {
-  ({DropdownMenu} = await import('./DropdownMenu'));
-}, 10000);
+  const loaded = await Promise.race([
+    import('./DropdownMenu').then(module => ({module})),
+    sheetLoad.firstRequest.then(name => ({eager: name})),
+  ]);
+  if ('eager' in loaded) {
+    throw new Error(
+      `Importing DropdownMenu requested ${loaded.eager}: the sheet must load only when a menu shows it.`,
+    );
+  }
+  ({DropdownMenu} = loaded.module);
+}, 120_000);
 
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = vi.fn(function (
