@@ -365,8 +365,9 @@ FR31–FR33 and FR35 apply to anchored menus and to Popover under a finger. A mo
   reaches the use's commit point, the action commits; otherwise the surface
   springs back. The decision MUST NOT change while the surface settles. The
   same rule backs dismissing a BottomSheet, a Toast or a Lightbox, popping a
-  NavigationStack, completing a row swipe, and dismissing the keyboard; each
-  use's commit point and projection are measured values (FR1, FR2).
+  NavigationStack, and dismissing the keyboard; each use's commit point and
+  projection are measured values (FR1, FR2). A row swipe keeps
+  `spec:AST-057`'s own release rule.
 - **FR37 — Moving back cancels.** A release whose velocity points back
   toward the start MUST cancel, whatever the travel so far.
 - **FR38 — The settle continues the finger.** The commit or the spring-back
@@ -455,8 +456,8 @@ FR31–FR33 and FR35 apply to anchored menus and to Popover under a finger. A mo
   mouse halves of FR1–FR3) and its non-gesture rules stay in the module.
 - `component:DropdownMenu`, `component:ContextMenu` and `component:Popover`:
   under a finger they follow FR26–FR35 as each applies.
-- BottomSheet, Toast, Lightbox, NavigationStack, row swipes and keyboard
-  dismissal: a drag that commits follows FR36–FR40.
+- BottomSheet, Toast, Lightbox, NavigationStack and keyboard dismissal: a
+  drag that commits follows FR36–FR40.
 - `spec:AST-100` owns release velocity, which FR17 reads.
 - `design:user-states` DR1 and DR3, `spec:AST-025` FR14 and `spec:AST-013` FR3
   each carry an amendment for touch presentations (FR11, FR14, Platform
