@@ -16,9 +16,9 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
-  hasPressedArm,
   readsPressStrength,
   rulesDeclaredFor,
+  rulesWithSelector,
 } from '../__tests__/pressState';
 import {
   declaresIndicatorPressOwner,
@@ -892,6 +892,26 @@ describe('forced colors (WCAG 1.4.11)', () => {
   });
 });
 
+/** Does the element's own CSS paint the row's mouse press (`--_radio-row-press`)? */
+function readsRowPress(el: Element): boolean {
+  return rulesDeclaredFor(el).some(rule =>
+    rule.includes('var(--_radio-row-press'),
+  );
+}
+
+/**
+ * Does the row declare the mouse press's paint while pressed, but not while a
+ * nested link or button is the pressed one?
+ */
+function declaresRowPress(el: Element): boolean {
+  return rulesWithSelector(el, ':active').some(
+    rule =>
+      rule.includes('--_radio-row-press:') &&
+      rule.includes('var(--color-overlay-pressed)') &&
+      /:not\(:has\(a:active, ?button:active/.test(rule),
+  );
+}
+
 describe('pressed state', () => {
   it('paints the pressed overlay over the radio indicator while the row is pressed', () => {
     const {container} = render(
@@ -902,10 +922,14 @@ describe('pressed state', () => {
     );
     const circle = container.querySelector('.astryx-radio-indicator');
     const wrapper = circle?.parentElement?.parentElement;
-    if (wrapper == null) {
-      throw new Error('the radio has no indicator wrapper to press');
+    const row = circle?.closest('[data-astryx-pressable]');
+    if (wrapper == null || row == null) {
+      throw new Error('the radio has no pressable row or indicator wrapper');
     }
-    expect(hasPressedArm(wrapper)).toBe(true);
+    // The row declares the mouse press's paint while it is pressed, and the
+    // layer over the circle reads it.
+    expect(declaresRowPress(row)).toBe(true);
+    expect(readsRowPress(wrapper)).toBe(true);
   });
 
   it('does not expose a pressed arm on a disabled radio', () => {
@@ -916,10 +940,12 @@ describe('pressed state', () => {
     );
     const circle = container.querySelector('.astryx-radio-indicator');
     const wrapper = circle?.parentElement?.parentElement;
-    if (wrapper == null) {
-      throw new Error('the radio has no indicator wrapper');
+    const row = wrapper?.closest('.astryx-item');
+    if (wrapper == null || row == null) {
+      throw new Error('the radio has no row or indicator wrapper');
     }
-    expect(hasPressedArm(wrapper)).toBe(false);
+    expect(declaresRowPress(row)).toBe(false);
+    expect(readsRowPress(wrapper)).toBe(false);
   });
 
   it('paints the touch press on the circle’s own layer and releases it on the row’s clock', () => {

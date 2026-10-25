@@ -35,6 +35,8 @@ const PRESS_STRENGTH = '--astryx-press-alpha';
 const PRESS_PAINT = '--_press-paint';
 const FADING_ARM = '[data-astryx-press="fading"]';
 const ON_ARM = '[data-astryx-press="on"]';
+/** A selection hold's arm: the row it keeps selected through a push. */
+const HELD_ARM = '[data-astryx-press="held"]';
 /** The marker's value for a surface whose press is a cell's. */
 const CELL_ARM = '[data-astryx-pressable="cell"]';
 
@@ -218,8 +220,9 @@ export function showsLayerPress(el: Element): boolean {
 /**
  * Under a coarse primary pointer, does every declaration of the element's
  * press layer on `pseudo`, and its `isolation`, apply only while a press is
- * on or fading? At rest the element then has no layer and is no stacking
- * context, and a caller's own `pseudo` keeps its styles.
+ * on, fading or held (a list row's selection hold)? At rest the element then
+ * has no layer and is no stacking context, and a caller's own `pseudo` keeps
+ * its styles.
  */
 export function layerOnlyWhilePressed(
   el: Element,
@@ -232,7 +235,7 @@ export function layerOnlyWhilePressed(
       /(^|[{;\s])isolation:/.test(declarations(rule)),
   );
   const onPressArm = (rule: string) =>
-    selectorOf(rule).includes(ON_ARM) || selectorOf(rule).includes(FADING_ARM);
+    [ON_ARM, FADING_ARM, HELD_ARM].some(arm => selectorOf(rule).includes(arm));
   return layer.length > 0 && layer.every(onPressArm);
 }
 

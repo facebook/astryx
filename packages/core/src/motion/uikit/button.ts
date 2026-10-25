@@ -40,8 +40,8 @@ export const button = {
      * easeInEaseOut.
      * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
      *   iPhone 17 Pro, CAAnimation read (CATransition fade and
-     *   backgroundColor), Oct 23 2026 (timing.curves.easeInOut)
+     *   backgroundColor), Oct 23 2026 (timing.curves.move)
      */
-    releaseCurve: timing.curves.easeInOut,
+    releaseCurve: timing.curves.move,
   },
 } as const;

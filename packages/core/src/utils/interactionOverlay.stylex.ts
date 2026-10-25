@@ -10,7 +10,8 @@
  * @output Exports reusable background-color and background-image state styles,
  *   the compositor press layers for list rows (`cell`) and, under a coarse
  *   primary pointer, for a button and the cards (`control`, `controlOver`),
- *   the touch press's
+ *   the press's strength for an owner whose descendant layer releases the
+ *   paint (`pressedAlphaLayered`), the touch press's
  *   registered strength variable (`pressVars`) and its clocks (`pressConsts`,
  *   and `cellPressConsts` for the row layer)
  * @position Internal styling utility for interactive core surfaces
@@ -488,6 +489,20 @@ export const interactionOverlayStyles = stylex.create({
     ...pressPaint,
   },
   /**
+   * `pressedAlpha` for an owner whose press paint is released by a
+   * descendant's own compositor layer (a switch row: the track's `::before`
+   * fades its opacity on the control clock). Under a coarse primary pointer
+   * the strength holds through the release instead of animating on the main
+   * thread, so the layer's opacity is the one fade. With any other pointer it
+   * is `pressedAlpha` exactly (the desktop rule, `spec:AST-017` FR59/DEC-25).
+   */
+  pressedAlphaLayered: {
+    [PRESS_ALPHA]: pressStrength,
+    ...pressReleaseAnimation,
+    ...pressPaint,
+    ...strengthReleaseOutsideCoarse,
+  },
+  /**
    * A list row's touch press on a compositor layer (Item, and TreeList's row
    * box), composed AFTER the row's overlay variant (StyleX is last-wins per
    * property). The variant's own touch paint, a gradient whose strength is a
@@ -534,10 +549,16 @@ export const interactionOverlayStyles = stylex.create({
     // is dropped: the layer fades instead, on the compositor. A row whose
     // descendant fades at the row's strength (a radio row's circle) brings
     // it back with `pressedAlpha`. A fine pointer keeps it as the variant
-    // declares it (its clock and curve are untouched).
+    // declares it (its clock and curve are untouched), Reduce Motion arm
+    // included: a reduced release under a fine pointer does not fade.
     animationName: {
       default: null,
-      [PRESSED_FADING]: {default: pressRelease, [COARSE]: 'none'},
+      [PRESSED_FADING]: {
+        default: pressRelease,
+        '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+          'none',
+        [COARSE]: 'none',
+      },
     },
     // The stacking context the layer needs, for a press only.
     isolation: {
