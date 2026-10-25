@@ -34,10 +34,9 @@ Astryx adds no second settings system for an app to keep in step.
 - **E2 — The theme writes SwiftUI's own values where a native equivalent
   exists.** `.astryxTheme(_:)` sets, for the subtree, in the current mode:
 
-  | SwiftUI value          | From the theme                                                                                                                                 |
-  | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-  | `.tint(_:)`            | `color.accent`, in a mode where white meets 3:1 against it, because stock controls draw white on their tint; the system tint in any other mode |
-  | `.foregroundStyle(_:)` | `color.textPrimary`, the primary level only, so multi-layer SF Symbols keep their own rendering                                                |
+  | SwiftUI value | From the theme                                                                                                                                 |
+  | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `.tint(_:)`   | `color.accent`, in a mode where white meets 3:1 against it, because stock controls draw white on their tint; the system tint in any other mode |
 
   A theme whose page ground, card ground, primary text, and accent are the same
   in light and dark (a single-mode theme, such as Gothic) also sets its subtree's `colorScheme` to the mode its page ground
@@ -45,8 +44,11 @@ Astryx adds no second settings system for an app to keep in step.
   appearance on its grounds.
 
   So stock SwiftUI controls (`Toggle`, `Picker`, `ProgressView`, `Menu`,
-  `List`, `Slider`, `Link`) draw with the brand's accent and text colors
-  wherever those stay legible.
+  `List`, `Slider`, `Link`) draw with the brand's accent wherever it stays
+  legible. The theme writes no foreground style: an inherited one would
+  override stock controls' own label colors, turning a link into plain text
+  and a prominent button's white label dark. Plain stock text keeps the
+  system's primary color; Astryx's own text uses the theme's.
   Whether the theme also sets the default font is OQ1. Theme values with no SwiftUI environment equivalent are read by
   Astryx components and Astryx's SwiftUI styles (corner radius, spacing,
   element heights, borders, and backgrounds), and an app reads spacing for its
@@ -68,13 +70,13 @@ Astryx adds no second settings system for an app to keep in step.
 
 ## Acceptance checks
 
-| Requirement | Check                                                                                                                                                                                                                                                                                                                                                         |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| E1, E3      | A view test with only `.preferredColorScheme(.dark)` (no other Astryx setting) draws an Astryx component with dark tokens; with `colorSchemeContrast` increased, a Card draws `color.borderEmphasized`. With `legibilityWeight` set to `.bold`, an Astryx Text in butter's registered body face at regular weight resolves to semibold, and at bold to heavy. |
-| E2          | A stock SwiftUI `Toggle` inside `.astryxTheme(.butter)` in light draws butter's accent, and in dark, where butter's pale accent fails 3:1 against white, the system tint; a plain `SwiftUI.Text` inside it draws butter's primary text color; under `.astryxTheme(.gothic)` in a light appearance, a stock surface draws dark.                                |
-| E4          | With no `.astryxTheme(_:)`, an Astryx component under `.preferredColorScheme(.dark)` draws core's default dark tokens.                                                                                                                                                                                                                                        |
-| E5          | A subtree with `.astryxTheme(.neutral)` inside `.astryxTheme(.butter)` draws neutral's accent, and its stock `Toggle` does too.                                                                                                                                                                                                                               |
-| E6          | A source check finds no static or singleton theme state; the environment key is declared with `@Entry`.                                                                                                                                                                                                                                                       |
+| Requirement | Check                                                                                                                                                                                                                                                                                                                                                                              |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| E1, E3      | A view test with only `.preferredColorScheme(.dark)` (no other Astryx setting) draws an Astryx component with dark tokens; with `colorSchemeContrast` increased, a Card draws `color.borderEmphasized`. With `legibilityWeight` set to `.bold`, an Astryx Text in butter's registered body face at regular weight resolves to semibold, and at bold to heavy.                      |
+| E2          | A stock SwiftUI `Toggle` inside `.astryxTheme(.butter)` in light draws butter's accent, and in dark, where butter's pale accent fails 3:1 against white, the system tint; a stock `Link` and a borderless `Button` draw their labels in the tint, and a prominent `Button` keeps its white label; under `.astryxTheme(.gothic)` in a light appearance, a stock surface draws dark. |
+| E4          | With no `.astryxTheme(_:)`, an Astryx component under `.preferredColorScheme(.dark)` draws core's default dark tokens.                                                                                                                                                                                                                                                             |
+| E5          | A subtree with `.astryxTheme(.neutral)` inside `.astryxTheme(.butter)` draws neutral's accent, and its stock `Toggle` does too.                                                                                                                                                                                                                                                    |
+| E6          | A source check finds no static or singleton theme state; the environment key is declared with `@Entry`.                                                                                                                                                                                                                                                                            |
 
 ## Current state
 
