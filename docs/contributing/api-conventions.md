@@ -435,12 +435,12 @@ out of architecture records.
 - A parent wraps slot content or mirrors props that belong to the slotted child.
 - A prop reaches into a subcomponent's anatomy, a composition renders a slot
   the anatomy does not describe, or a slot has no component of its own
-  (proposed [INV18](../architecture/public-component-api.md#boundaries-and-invariants)).
+  ([INV18](../architecture/public-component-api.md#boundaries-and-invariants)).
 - A feature with a large resource cost loads for every caller, with no plug-in
-  path or named feature prop (proposed INV19).
-- A boolean prop only swaps visuals where a variant fits (proposed INV20).
+  path or named feature prop (INV19).
+- A boolean prop only swaps visuals where a variant fits (INV20).
 - A new API shares a job with an existing one that is not being deprecated in
-  its favor (proposed INV21).
+  its favor (INV21).
 - A proposal invents a nested `theme.components.button.variants` layer instead of
   using the current component target and style-key contract.
 - A green docs parser is treated as full API proof. Parsing and selected drift

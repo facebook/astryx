@@ -172,8 +172,7 @@ guidance owns the process used to propose and test APIs.
   platform (`spec:AST-012` FR9). It keeps no compact numbers of its own, as
   INV14 keeps no parallel breakpoint table. A layout width the caller picks,
   such as AppShell's `mobileNav.breakpoint`, follows INV14 instead.
-- **INV18 — Compose along the anatomy.** **Proposed; pending owner
-  decision.** Avoid props that reach deep into a component's anatomy (e.g.
+- **INV18 — Compose along the anatomy.** Avoid props that reach deep into a component's anatomy (e.g.
   picking a specific prop or label of a subcomponent). Build compositions
   instead. Compositions must follow the component's anatomy; never expose a way
   to compose or render a slot not described in the anatomy; and slots must have
@@ -186,11 +185,10 @@ guidance owns the process used to propose and test APIs.
   functionality and cross-platform concerns. If a feature has a large resource
   cost, consider plugging the behavior in. Named props for features are also
   fine (like `collapsible`).
-- **INV20 — Variants, not visual booleans.** **Proposed; pending owner
-  decision.** Avoid boolean flags that only swap visuals; prefer variants. This
+- **INV20 — Variants, not visual booleans.** Avoid boolean flags that only swap visuals; prefer variants. This
   applies INV2's naming and INV4's caller-owned intent to visual choices; see
   [Open visual vocabularies and closed axes](../contributing/api-conventions.md#open-visual-vocabularies-and-closed-axes).
-- **INV21 — One API per job.** **Proposed; pending owner decision.** No new
+- **INV21 — One API per job.** No new
   API that shares a job with existing API, unless the existing API is being
   deprecated in favor of it. INV3 keeps one prop to one concept and INV16 keeps
   one `presentation` prop for a surface choice; INV21 applies the same rule
