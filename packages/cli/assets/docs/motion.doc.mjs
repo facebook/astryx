@@ -295,6 +295,12 @@ const calmTheme = defineTheme({
               '0.3s 0.15',
             ],
             [
+              'springs.navigationInteractivePopReturn',
+              '--motion-springs-navigation-interactive-pop-return',
+              'spring',
+              '0.381s 0.19',
+            ],
+            [
               'springs.navigationPop',
               '--motion-springs-navigation-pop',
               'spring',

@@ -71,6 +71,18 @@ export const navigation = {
    */
   interactivePopFinishProjection: 0.35,
   /**
+   * Past its start (a finger brought back beyond where the screen is fully
+   * in place), the interactive pop's top screen follows the finger at this
+   * share of its travel, linearly; a release there returns on
+   * `springs.navigationInteractivePopReturn`.
+   * @source measured: UIKit lab batch 62 (iOS 26.2 simulator, iPhone 17
+   *   Pro), a back swipe scrubbed to ~50 % and brought back past its start
+   *   at ~310 pt/s, lifted 10.7 pt of finger after the view crossed its
+   *   start: fitted jointly with `springs.navigationInteractivePopReturn` to
+   *   the view's x at the lift (−6.89 pt) and after it, Oct 24 2026
+   */
+  interactivePopRubberBand: 0.71,
+  /**
    * The progress the projected release must pass to finish the pop (a still
    * finger at 0.475 cancels).
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,

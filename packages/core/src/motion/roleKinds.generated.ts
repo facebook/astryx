@@ -32,6 +32,7 @@ export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
   'springs.navigationBackButton': 'spring',
   'springs.navigationBarElements': 'spring',
   'springs.navigationInteractivePopFinish': 'spring',
+  'springs.navigationInteractivePopReturn': 'spring',
   'springs.navigationPop': 'spring',
   'springs.navigationPush': 'spring',
   'springs.segmentedThumb': 'spring',

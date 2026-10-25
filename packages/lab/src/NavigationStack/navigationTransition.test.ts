@@ -98,9 +98,19 @@ describe('progressFromTravel', () => {
     expect(progressFromTravel(0.4, W / 10, W)).toBeCloseTo(0.5, 10);
   });
 
-  it('clamps at both ends: no travel past the edge or back over it', () => {
-    expect(progressFromTravel(0, -50, W)).toBe(0);
+  it('never passes the far edge', () => {
     expect(progressFromTravel(0.9, W, W)).toBe(1);
+  });
+
+  it('back past the start, follows at the measured rubber-band share', () => {
+    expect(progressFromTravel(0, -50, W)).toBeCloseTo(
+      (-50 / W) * navigation.interactivePopRubberBand,
+      10,
+    );
+    expect(progressFromTravel(0.05, -W * 0.1, W)).toBeCloseTo(
+      -0.05 * navigation.interactivePopRubberBand,
+      10,
+    );
   });
 
   it('reads leftward travel as a pop under RTL', () => {

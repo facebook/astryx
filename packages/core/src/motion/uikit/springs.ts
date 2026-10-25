@@ -151,6 +151,22 @@ export const springs = {
    */
   navigationInteractivePopFinish: {response: 0.3, dampingRatio: 0.85},
   /**
+   * Interactive pop released past its start (the screen rubber-banded by
+   * `navigation.interactivePopRubberBand`): it returns to rest from the
+   * finger's velocity, overshooting further first.
+   * @source measured: UIKit lab batch 62 (iOS 26.2 simulator, iPhone 17
+   *   Pro), the cancelled scrub's per-frame view x (−6.89 pt at the lift at
+   *   −310 pt/s, −14.21 pt 50 ms later, |x| < 0.5 pt from ~0.23 s, no
+   *   overshoot past rest). Damped spring
+   *   x(t) = e^(−ζωt)(x0 cos ω_d t + (v0 + ζωx0)/ω_d sin ω_d t), v0 the
+   *   finger's velocity, x0 from `navigation.interactivePopRubberBand`,
+   *   fitted jointly: ω = 16.5 rad/s, ζ = 0.81, with the at-lift value
+   *   within 0.8 pt, the peak within 0.6 pt (−13.7 pt at 47 ms), at most
+   *   0.2 pt past rest and |x| < 0.5 pt by 0.27 s; worst frame 1.8 pt,
+   *   mid-return, Oct 24 2026
+   */
+  navigationInteractivePopReturn: {response: 0.381, dampingRatio: 0.81},
+  /**
    * Navigation bar elements (Liquid Glass) moving during a push or pop.
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
    *   iPhone 17 Pro, UIView.animate(springDuration: 0.6, bounce: 0,

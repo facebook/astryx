@@ -1174,7 +1174,10 @@ export function NavigationStack<T>({
           0,
           top,
           under,
-          springs.navigationInteractivePopFinish,
+          // Released past its start (rubber-banded), UIKit's return.
+          progressRef.current < 0
+            ? springs.navigationInteractivePopReturn
+            : springs.navigationInteractivePopFinish,
           v,
           true,
           'rest',

@@ -146,7 +146,9 @@ export function useBackSwipes(
           );
           const along =
             (direction === 'rtl' ? -1 : 1) * recognizer.translation().x;
-          const travel = Math.max(0, along - deadZone);
+          // Back past where it started, the screen follows with resistance
+          // (progressFromTravel).
+          const travel = along - deadZone;
           stack.setProgress(
             progressFromTravel(
               swipe.start,

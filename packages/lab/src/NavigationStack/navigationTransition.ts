@@ -57,7 +57,7 @@ export function layersAt(
   return {
     topX: sign * p * width,
     underX: sign * navigation.parallax * width * (1 - p),
-    dim: 1 - p,
+    dim: clamp01(1 - p),
   };
 }
 
@@ -91,8 +91,9 @@ export function programmaticVelocity(kind: 'push' | 'pop'): number {
 /**
  * Progress from a finger's horizontal travel since the pop began, px, added
  * to the progress the cards had when it began (a pop grabbed mid-flight
- * continues from where it is). Clamped to [0, 1]: there is no travel past
- * either end.
+ * continues from where it is). At most 1; below 0 (the finger brought back
+ * past where the screen is fully in place) it follows at a share of the
+ * travel, and the release springs it back.
  */
 export function progressFromTravel(
   startProgress: number,
@@ -104,7 +105,11 @@ export function progressFromTravel(
     return clamp01(startProgress);
   }
   const sign = direction === 'rtl' ? -1 : 1;
-  return clamp01(startProgress + (sign * travelX) / width);
+  const p = startProgress + (sign * travelX) / width;
+  // Past the start the screen follows at a share of the finger, as UIKit's
+  // does (`navigation.interactivePopRubberBand`, measured in batch 62);
+  // never past the far edge.
+  return p < 0 ? p * navigation.interactivePopRubberBand : Math.min(1, p);
 }
 
 /**
