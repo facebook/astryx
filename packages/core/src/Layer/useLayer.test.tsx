@@ -1985,6 +1985,80 @@ describe('a layer that keeps its anchor clear (spec:AST-059 FR4)', () => {
     vi.unstubAllGlobals();
   });
 
+  it('follows a move that spans several frames and never goes idle after a report of 0', async () => {
+    const observers: {
+      callback: (entries: {intersectionRatio: number}[]) => void;
+      options: IntersectionObserverInit;
+    }[] = [];
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(
+          callback: (entries: {intersectionRatio: number}[]) => void,
+          options: IntersectionObserverInit,
+        ) {
+          observers.push({callback, options});
+        }
+        observe() {}
+        disconnect() {}
+        unobserve() {}
+      },
+    );
+    const moves = () => observers.filter(o => o.options?.root === document);
+    const latest = () => moves()[moves().length - 1];
+    const user = userEvent.setup();
+    let spy = placeBoxes(TRIGGER, rect(200, 350, 100, 200));
+    const {container, getByText} = render(<ClearHarness />);
+    await user.click(getByText('Trigger'));
+    const layerEl = container.querySelector('[popover]') as HTMLElement;
+    expect(layerEl).not.toHaveAttribute('data-astryx-clears-anchor');
+
+    // A fresh observer's first report already differs: the trigger kept
+    // moving after its rectangle was read, as in a smooth scroll. That is a
+    // move: it re-reads, and re-arms at the reported ratio.
+    spy.mockRestore();
+    spy = placeBoxes(TRIGGER, rect(16, 350, 688, 300));
+    let armed = moves().length;
+    act(() => latest().callback([{intersectionRatio: 0.7}]));
+    expect(layerEl).toHaveAttribute('data-astryx-clears-anchor');
+    expect(moves().length).toBe(armed + 1);
+    expect(latest().options.threshold).toBe(0.7);
+
+    // A first report of 0 for a trigger that moved since the observer read
+    // its rectangle re-arms at once on the new rectangle.
+    spy.mockRestore();
+    spy = placeBoxes(rect(260, 400, 30, 100), rect(16, 350, 688, 300));
+    armed = moves().length;
+    act(() => latest().callback([{intersectionRatio: 0}]));
+    expect(moves().length).toBe(armed + 1);
+    expect(latest().options.threshold).toBe(1);
+
+    // A first report of 0 for a trigger that has not moved (it is clipped)
+    // re-arms on a one-second throttle, three times in a row at most.
+    vi.useFakeTimers();
+    try {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        armed = moves().length;
+        act(() => latest().callback([{intersectionRatio: 0}]));
+        expect(moves().length).toBe(armed);
+        act(() => {
+          vi.advanceTimersByTime(1000);
+        });
+        expect(moves().length).toBe(armed + 1);
+      }
+      armed = moves().length;
+      act(() => latest().callback([{intersectionRatio: 0}]));
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+      expect(moves().length).toBe(armed);
+    } finally {
+      vi.useRealTimers();
+    }
+    spy.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
   it('moves its open-state observers to a trigger the caller replaces while it is open', async () => {
     const observed: Element[] = [];
     const disconnected: Element[][] = [];

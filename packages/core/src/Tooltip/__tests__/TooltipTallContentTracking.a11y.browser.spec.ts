@@ -7,10 +7,11 @@
  * @output Real-engine proof, in Chromium and WebKit, that an open tooltip
  *   that keeps its trigger clear follows a same-size trigger that moves on
  *   screen, in layout or because the page scrolled: at most the first painted
- *   frame after the move shows it over the trigger, it ends on the roomier
- *   side at a readable size, a scroll alone never switches a tooltip that
- *   fits, and placing a shown tooltip afresh keeps every animation in its
- *   content in its exact state.
+ *   frame after the move shows it over the trigger, a smooth scroll is
+ *   followed through every frame and later moves are still observed, it
+ *   ends on the roomier side at a readable size, a scroll alone never
+ *   switches a tooltip that fits, and placing a shown tooltip afresh keeps
+ *   every animation in its content in its exact state.
  * @position Run with `pnpm test:a11y-contract` (Chromium) and
  *   `pnpm exec playwright test TooltipTallContentTracking --project webkit`.
  *   The tracking reads geometry after paint, which only a real engine paints.
@@ -520,6 +521,87 @@ test('a scroll that moves a tall tooltip’s trigger never leaves the tooltip ov
   const tooltip = await rect(page, TOOLTIP);
   expect(trigger.top).toBeGreaterThan(700 - trigger.bottom);
   expect(tooltip.bottom).toBeLessThanOrEqual(trigger.top);
+});
+
+test('a smooth scroll that carries a tall tooltip’s trigger leaves it clear and in view, and a later scroll is still followed', async ({
+  page,
+}) => {
+  // The 60-line tooltip, switched and below a trigger near the top of a
+  // phone. One smooth scroll carries the trigger 440px down the screen over
+  // many frames; the observer must follow every frame of it, not only the
+  // first, and stay armed for the next move.
+  await openHeldTooltip(page, {width: 390, height: 700}, '', 150);
+  expect(await hasSwitched(page)).toBe(true);
+  const settle = async () =>
+    page.evaluate(async () => {
+      const frame = async () =>
+        new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      let last = Number.NaN;
+      let still = 0;
+      while (still < 5) {
+        await frame();
+        still = window.scrollY === last ? still + 1 : 0;
+        last = window.scrollY;
+      }
+    });
+  await page.evaluate(() => window.scrollBy({top: -440, behavior: 'smooth'}));
+  await settle();
+  let trigger = await rect(page, TRIGGER);
+  let tooltip = await rect(page, TOOLTIP);
+  expect(trigger.top).toBeGreaterThan(500);
+  expect(overlaps(tooltip, trigger), 'covers the trigger').toBe(false);
+  expect(tooltip.top).toBeGreaterThanOrEqual(0);
+  expect(tooltip.bottom).toBeLessThanOrEqual(700);
+  expect(tooltip.bottom - tooltip.top).toBeGreaterThan(200);
+
+  // A later instant scroll that would carry the tooltip past the top of the
+  // viewport is still observed and corrected by the second painted frame.
+  const frames = await page.evaluate(
+    async ({sel, tip}) => {
+      const box = (el: Element) => {
+        const r = el.getBoundingClientRect();
+        return {top: r.top, bottom: r.bottom, left: r.left, right: r.right};
+      };
+      window.scrollBy(0, 240);
+      const out: {tooltip: Box; trigger: Box}[] = [];
+      for (let i = 0; i < 4; i++) {
+        await new Promise<void>(resolve => {
+          requestAnimationFrame(() => {
+            const channel = new MessageChannel();
+            channel.port1.onmessage = () => resolve();
+            channel.port2.postMessage(null);
+          });
+        });
+        const t = document.querySelector(tip);
+        const a = document.querySelector(sel);
+        if (t != null && a != null) {
+          out.push({tooltip: box(t), trigger: box(a)});
+        }
+      }
+      return out;
+    },
+    {sel: TRIGGER, tip: TOOLTIP},
+  );
+  expect(frames.length).toBe(4);
+  for (const [i, frame] of frames.entries()) {
+    if (i === 0) {
+      continue;
+    }
+    expect(
+      overlaps(frame.tooltip, frame.trigger),
+      `painted frame ${i + 1} covers the trigger`,
+    ).toBe(false);
+    expect(
+      frame.tooltip.top,
+      `painted frame ${i + 1} leaves the viewport`,
+    ).toBeGreaterThanOrEqual(0);
+    expect(frame.tooltip.bottom).toBeLessThanOrEqual(700);
+  }
+  await settle();
+  trigger = await rect(page, TRIGGER);
+  tooltip = await rect(page, TOOLTIP);
+  expect(overlaps(tooltip, trigger)).toBe(false);
+  expect(tooltip.bottom - tooltip.top).toBeGreaterThan(200);
 });
 
 test('placing a shown tooltip afresh never replays its entry animation', async ({

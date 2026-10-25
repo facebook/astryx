@@ -648,15 +648,36 @@ function keepAnchorClear(layer: HTMLElement, anchor: HTMLElement | null): void {
 }
 
 /**
+ * How long a move observer waits before it re-arms after a report that finds
+ * its element wholly outside the rectangle it was armed on although the
+ * element has not moved (it is clipped), and how many times in a row it
+ * does so before it waits for the next report instead.
+ */
+const MOVE_RETRY_MS = 1000;
+const MOVE_RETRIES = 3;
+
+/**
  * Call `onMove` when an element moves on screen without changing size: in
  * layout (a sibling above it grows, a margin changes) or because something
  * scrolled. ResizeObserver sees only size. The element is observed by an
  * IntersectionObserver whose root is the viewport shrunk, through
  * `rootMargin`, to the element's own rectangle, so any move changes the
- * intersection ratio and fires the callback, which then re-arms on the new
- * rectangle. Intersection callbacks run after the frame that moved the
- * element has painted, so the caller corrects that move in the next frame.
- * Returns the function that stops observing.
+ * intersection ratio and fires the callback, which calls `onMove` and
+ * re-arms on the new rectangle. Intersection callbacks run after the frame
+ * that moved the element has painted, so the caller corrects that move in
+ * the next frame.
+ *
+ * A fresh observer's first report can already differ from its threshold: the
+ * element is partly outside the viewport, or it kept moving between the
+ * rectangle read and the observer's first check, as it does every frame of a
+ * smooth scroll. Any such report calls `onMove` and re-arms, at the reported
+ * ratio, or at once on the element's new rectangle when the report is 0 and
+ * the element moved, so a move that spans many frames is followed frame by
+ * frame. A report of 0 for an element that has not moved means it is wholly
+ * clipped; re-arming at once would report 0 again every frame, so the
+ * observer re-arms on a one-second throttle, at most `MOVE_RETRIES` times in
+ * a row. This mirrors `observeMove` in `@floating-ui/dom`. Returns the
+ * function that stops observing.
  */
 function observeMove(element: HTMLElement, onMove: () => void): () => void {
   const doc = element.ownerDocument;
@@ -664,9 +685,22 @@ function observeMove(element: HTMLElement, onMove: () => void): () => void {
     return () => {};
   }
   let observer: IntersectionObserver | null = null;
-  const arm = (threshold: number) => {
+  let retry: ReturnType<typeof setTimeout> | undefined;
+  let retries = 0;
+  const stop = () => {
+    if (retry !== undefined) {
+      clearTimeout(retry);
+      retry = undefined;
+    }
     observer?.disconnect();
     observer = null;
+  };
+  const moved = (threshold: number) => {
+    onMove();
+    arm(threshold);
+  };
+  const arm = (threshold: number) => {
+    stop();
     const root = doc.documentElement;
     const rect = element.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) {
@@ -676,23 +710,46 @@ function observeMove(element: HTMLElement, onMove: () => void): () => void {
     const left = Math.floor(rect.left);
     const right = Math.floor(root.clientWidth - rect.right);
     const bottom = Math.floor(root.clientHeight - rect.bottom);
+    const hasMoved = () => {
+      const now = element.getBoundingClientRect();
+      return (
+        now.top !== rect.top ||
+        now.left !== rect.left ||
+        now.width !== rect.width ||
+        now.height !== rect.height
+      );
+    };
     let isFirst = true;
     observer = new IntersectionObserver(
       entries => {
         const ratio = entries[entries.length - 1]?.intersectionRatio ?? 0;
-        if (isFirst) {
-          isFirst = false;
-          // Partly outside the viewport: watch for any change from the ratio
-          // it has now. Wholly outside: nothing to keep clear of until the
-          // anchor-visibility observation brings it back.
-          if (ratio !== threshold && ratio > 0) {
-            arm(ratio);
+        const first = isFirst;
+        isFirst = false;
+        if (ratio === threshold) {
+          // Still over its own rectangle, but a move smaller than the
+          // rounding of the root margin can leave the ratio at 1.
+          if (ratio === 1 && hasMoved()) {
+            retries = 0;
+            moved(1);
           }
           return;
         }
-        if (ratio !== threshold) {
-          onMove();
-          arm(1);
+        if (!first || ratio > 0) {
+          retries = 0;
+          moved(first ? ratio : 1);
+          return;
+        }
+        if (hasMoved()) {
+          retries = 0;
+          moved(1);
+          return;
+        }
+        if (retries < MOVE_RETRIES) {
+          retries += 1;
+          retry = setTimeout(() => {
+            retry = undefined;
+            moved(1);
+          }, MOVE_RETRY_MS);
         }
       },
       {
@@ -704,10 +761,7 @@ function observeMove(element: HTMLElement, onMove: () => void): () => void {
     observer.observe(element);
   };
   arm(1);
-  return () => {
-    observer?.disconnect();
-    observer = null;
-  };
+  return stop;
 }
 
 /**

@@ -235,9 +235,14 @@ of which run before the frame paints; the observers move to the replacement when
 the caller replaces the anchor element while the layer stays open. An anchor
 that moves on screen without resizing, in layout or by a scroll, is reported
 only by an intersection observer on the anchor, whose root is the viewport
-shrunk to the anchor's rectangle and which re-arms on each report; it reports
-after paint, so on that one path at most one painted frame shows the layer over
-its anchor before it is corrected. Scroll events are not read: one fires before
+shrunk to the anchor's rectangle and which re-reads and re-arms on each report
+that differs from its threshold, a fresh observer's first report included, so
+an anchor that keeps moving, as through a smooth scroll, is followed frame by
+frame. A report that finds an anchor which has not moved wholly outside that
+rectangle means the anchor is clipped; the observer then re-arms on a
+one-second throttle, at most three times in a row, rather than every frame.
+It reports after paint, so on that one path at most one painted frame shows
+the layer over its anchor before it is corrected. Scroll events are not read: one fires before
 the layer has followed its anchor. Apart from that, a layer never paints at a
 geometry it is about to correct.
 
