@@ -33,6 +33,7 @@ import {
   type FieldPartStyleProps,
 } from '../Field/fieldParts';
 import {useDevWarning} from '../hooks/useDevWarning';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {mergeRefs} from '../utils/mergeRefs';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
@@ -687,11 +688,18 @@ export function ComplexSelector<Value>({
     [isDisabled, popover],
   );
 
+  // Read when the helper runs: popup content may call a helper it kept from
+  // an enabled render (after an await, say) once the selector is disabled.
+  const isDisabledRef = useRef(isDisabled);
+  useIsomorphicLayoutEffect(() => {
+    isDisabledRef.current = isDisabled;
+  }, [isDisabled]);
+
   const commitValue = useCallback(
     (nextValue: Value) => {
       // Caller-owned popup controls may remain mounted after disablement.
       // Guard the supplied commit boundary, not just the trigger.
-      if (isDisabled) {
+      if (isDisabledRef.current) {
         return;
       }
       onChange?.(nextValue);
@@ -702,7 +710,7 @@ export function ComplexSelector<Value>({
         });
       }
     },
-    [isDisabled, changeAction, onChange, setOptimisticValue, startTransition],
+    [changeAction, onChange, setOptimisticValue, startTransition],
   );
 
   const triggerContent = triggerLabel ?? placeholder;
