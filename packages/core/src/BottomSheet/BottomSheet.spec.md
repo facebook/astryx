@@ -117,20 +117,21 @@ in `BottomSheet.doc.mjs`.
 ### Performance and resources
 
 - Element jobs (`architecture:component-style-authoring` INV7; proposed
-  allowance in `spec:AST-017` FR60, DEC-29). An open sheet's frame has 8
-  elements:
+  allowance in `spec:AST-017` FR60, DEC-29). An open sheet's frame is these
+  elements, each with one job:
   - the dialog carries the sheet's dialog role, and modality and the top
     layer when the sheet is modal;
-  - the positioner holds the panel at the block end;
-  - the panel paints the `bottom-sheet` target;
-  - the grabber bar is the drag handle, and its pill draws the handle;
+  - the panel holds itself at the block end and paints the `bottom-sheet`
+    target;
+  - the grabber bar is the drag handle, and its pseudo-element draws the pill;
   - the body is the scroll area;
-  - the content box carries the padding and is the observed content box (FR3);
-  - the edge tint gives iOS Safari's toolbar tint the sheet's color.
+  - the content box carries the padding and is the observed content box (FR3).
+- The edge tint that gives iOS Safari's toolbar the sheet's color is drawn by
+  a pseudo-element of an existing element.
+- Open conformance gaps: a separate positioner element, the pill as its own
+  element, and the edge tint as its own element.
 - Elements a presenting component adds beyond this frame are its own to
   justify.
-- The pill and the edge tint are decoration, which INV7 gives to
-  pseudo-elements; carrying them on pseudo-elements is an open conformance gap.
 
 ## Accessibility contract
 
