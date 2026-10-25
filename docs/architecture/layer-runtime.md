@@ -70,8 +70,10 @@ deciding_specs: [spec:AST-038, spec:AST-059]
 }
 ```
 
-This record describes the layer runtime shipped on current `main`. Accepted but
-unimplemented changes live in `spec:AST-003`; they are not current architecture.
+This record describes the layer runtime shipped on current `main`, except
+INV14 and INV15, which state required ownership the runtime does not yet meet;
+Current gaps lists where it falls short. Other accepted but unimplemented
+changes live in `spec:AST-003`; they are not current architecture.
 
 ## Purpose
 
@@ -455,7 +457,8 @@ layers use Layer rendering without joining Escape/platform dismissal.
   `architecture:component-style-authoring` INV7 names), and the backdrop tint,
   drawn with `::backdrop`. A component that needs one of these uses the
   runtime's rather than building its own. Each component still decides when it
-  dismisses, how it is hosted, and how it is presented (INV9;
+  dismisses, how it is hosted, and how it is presented, including the
+  backdrop's color and every other visual treatment (INV9;
   `family:overlay-dismissal` AV3, AV4, AV6; `spec:AST-003` FR10). The public
   surface stays `useLayer` and `LayerProvider`.
 - **INV15 — One lift-from-trigger module, opt-in per surface.** Lift-from-trigger presentation lives in one
@@ -491,6 +494,10 @@ Current gaps are observable facts, not current target behavior:
 - Toast's root and fallback hosts remain behind the other native modals:
   Lightbox, MobileNav, and a scrim BottomSheetSwitcher.
 - The reduced browser fallback is not documented as non-equivalent.
+- INV14 and INV15 are not met yet: no shared presentation hold, exit copy,
+  runtime backdrop tint, or lift module exists, and Dialog, Drawer,
+  BottomSheet, Lightbox, MobileNav, ToastViewport, and Selector each build
+  their own top-layer mounting, exit, or backdrop.
 - Existing tests simulate Popover `toggle` and DOM nesting; they do not prove
   native pointer light dismissal, top-layer/modal ordering, real anchor geometry,
   SSR parser repair, or nested portal behavior in supported browsers.
