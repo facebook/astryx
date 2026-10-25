@@ -63,7 +63,6 @@ import {
   type CastFrame,
   type TouchDriver,
 } from '@astryxdesign/interaction-harness';
-import {SWITCH_CLAIMS_HELD_TOUCH} from '../switchTouchClaim';
 
 const storybook = withStorybook(test);
 
@@ -685,7 +684,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
       {x: center.x + FLIP_DISTANCE + 6, y: center.y},
       {durationMs: 600, holdMs: 300, restMs: 200},
     );
-    const onAt: {dx: number; on: number}[] = [];
+    const onAt: {dx: number; on: number; press: string | null}[] = [];
     await driver.play(script, {
       onEvent: async step => {
         if (step.type === 'touchMove') {
@@ -696,16 +695,67 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
                 el => getComputedStyle(el, '::before').opacity,
               ),
             ),
+            press: await pressState(page),
           });
         }
       },
     });
+    // The pressed overlay stays on through the whole drag (design:user-states
+    // DR1: during a hold or drag).
+    expect(onAt.length).toBeGreaterThan(3);
+    expect(onAt.every(s => s.press === 'on')).toBe(true);
     // The track turned on during the drag, only after the flip distance.
     const before = onAt.filter(s => s.dx < FLIP_DISTANCE - 0.5);
     expect(before.every(s => s.on < 0.01)).toBe(true);
     expect(onAt.at(-1)!.on).toBeGreaterThan(0.1);
     await expect(input).toBeChecked();
   });
+
+  for (const direction of ['ltr', 'rtl'] as const) {
+    test(`a press slid off and lifted outside leaves the switch alone (WCAG 2.5.2, ${direction})`, async ({
+      page,
+    }) => {
+      // Held, slid 160 px down, lifted outside.
+      {
+        const {driver, input, thumb, center} = await openSwitch(
+          page,
+          undefined,
+          {
+            direction,
+          },
+        );
+        await driver.play(
+          drag(
+            center,
+            {x: center.x, y: center.y + 160},
+            {durationMs: 300, holdMs: 300, restMs: 100},
+          ),
+        );
+        await waitForSwitchRest(page, thumb);
+        await expect(input).not.toBeChecked();
+      }
+      // Held, slid 160 px toward the off end (no flip), lifted outside.
+      {
+        const {driver, input, thumb, center} = await openSwitch(
+          page,
+          undefined,
+          {
+            direction,
+          },
+        );
+        const sign = direction === 'rtl' ? 1 : -1;
+        await driver.play(
+          drag(
+            center,
+            {x: center.x + sign * 160, y: center.y},
+            {durationMs: 300, holdMs: 300, restMs: 100},
+          ),
+        );
+        await waitForSwitchRest(page, thumb);
+        await expect(input).not.toBeChecked();
+      }
+    });
+  }
 
   test('P4 · a drag past the flip and back to where it landed commits nothing', async ({
     page,
@@ -853,7 +903,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     expect(root.computed).not.toBe('none');
   });
 
-  test('P8 · a held switch in a scrolling list keeps the touch: a held drag up toggles and never scrolls', async ({
+  test('P8 · a held switch in a scrolling list yields a vertical drag to the page: it scrolls and the switch changes nothing (spec:AST-094 FR20)', async ({
     page,
   }) => {
     const {driver, input, thumb, center} = await openSwitch(
@@ -864,10 +914,9 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
       !driver.drivesNativeGestures,
       'injected touches do not scroll natively in this engine (the iOS simulator rig covers it)',
     );
-    // Held 300 ms, then dragged up 200 px. UIKit (a switch in a table cell):
-    // only the switch tracks, the table stays put and the release toggles. The
-    // passive variant (switchTouchClaim.ts) scrolls the page and the switch
-    // yields instead.
+    // Held 300 ms, then dragged up 200 px: the page scrolls and the switch
+    // yields (AST-094 FR20), where UISwitch in a table cell would keep the
+    // touch.
     await driver.play(
       drag(
         center,
@@ -877,17 +926,11 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     );
     await waitForSwitchRest(page, thumb);
     const scrollY = await page.evaluate(() => window.scrollY);
-    if (SWITCH_CLAIMS_HELD_TOUCH) {
-      expect(scrollY).toBe(0);
-      // The first row starts on: the lift turned it off.
-      await expect(input).not.toBeChecked();
-    } else {
-      expect(scrollY).toBeGreaterThan(100);
-      await expect(input).toBeChecked();
-      const rest = await presented(page);
-      expect(rest.scaleX).toBeCloseTo(1, 2);
-      expect(rest.on).toBeCloseTo(1, 2);
-    }
+    expect(scrollY).toBeGreaterThan(100);
+    await expect(input).toBeChecked();
+    const rest = await presented(page);
+    expect(rest.scaleX).toBeCloseTo(1, 2);
+    expect(rest.on).toBeCloseTo(1, 2);
   });
 
   test('P9 · a horizontal drag in a scrolling list flips the switch and never scrolls the page', async ({

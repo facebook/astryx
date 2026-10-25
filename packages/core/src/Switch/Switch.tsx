@@ -56,6 +56,7 @@ import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {usePressFeedback} from '../hooks/usePressFeedback';
+import {PRESS_HOLDS_DRAG_ATTRIBUTE} from '../utils/pressFeedback';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useSwitchTouch, type SwitchTouchParts} from './useSwitchTouch';
 
@@ -224,7 +225,7 @@ const styles = stylex.create({
     isolation: 'isolate',
     // Under a finger, horizontal moves are the switch's drag and vertical
     // ones the page's scroll; set in CSS so it holds before hydration
-    // (switchTouchClaim.ts).
+    // (useSwitchTouch.ts).
     touchAction: {
       default: null,
       [TOUCH]: 'pan-y pinch-zoom',
@@ -943,6 +944,8 @@ export function Switch({
           disabledMessageTooltip.interactionRef(el);
         }}
         {...(isDisabled ? undefined : pressable)}
+        // The thumb's drag keeps the row's press painted (user-states DR1).
+        {...(isDisabled ? undefined : {[PRESS_HOLDS_DRAG_ATTRIBUTE]: ''})}
         {...stylex.props(
           styles.container,
           isLabelHidden && styles.containerLabelHidden,

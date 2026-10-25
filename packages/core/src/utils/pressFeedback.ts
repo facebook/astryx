@@ -60,6 +60,14 @@ export const PRESSABLE_ATTRIBUTE = 'data-astryx-pressable';
 /** `on` while the press is believed and the finger is down; `fading` for the release's exit. */
 export const PRESSED_ATTRIBUTE = 'data-astryx-press';
 
+/**
+ * Internal: on a pressable whose own drag the finger moves (a Switch's
+ * thumb), travel is not a scroll, so the press stays painted through the
+ * drag (`design:user-states` DR1: during a hold or drag). A scroll or a
+ * cancel still ends it. Not public API.
+ */
+export const PRESS_HOLDS_DRAG_ATTRIBUTE = 'data-astryx-press-holds-drag';
+
 /** Spread onto the element that paints the press. */
 export const pressableProps: {readonly [PRESSABLE_ATTRIBUTE]: ''} = {
   [PRESSABLE_ATTRIBUTE]: '',
@@ -319,6 +327,10 @@ function onPointerMove(event: PointerEvent): void {
     live == null ||
     (live.pointerId != null && event.pointerId !== live.pointerId)
   ) {
+    return;
+  }
+  // The finger drags the surface's own control: its travel keeps the press.
+  if (live.element.hasAttribute(PRESS_HOLDS_DRAG_ATTRIBUTE)) {
     return;
   }
   apply(

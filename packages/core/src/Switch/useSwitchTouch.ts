@@ -24,28 +24,19 @@
  *   ever moves the thumb by a delta from that place (`translate`), and when
  *   the value changes and the CSS place jumps, the delta is rebased in the
  *   same layout effect, so nothing moves on screen and the velocity is kept.
- * - Touches go to the gesture system, in one of two ways chosen by the
- *   switch-point in switchTouchClaim.ts:
- *   - Claiming (UISwitch): its own recognizers, a long press
- *     that begins on the touch (after a scroll view's content delay inside
- *     one) and then owns it, a horizontal pan, and a release tap with no
- *     movement or time limit. A held switch keeps the touch, so a vertical
- *     drag after the hold does not scroll and the release toggles; a scroll
- *     that starts on the switch waits for a busy main thread, as UIKit's
- *     own scroll view would.
- *   - Passive (the default, `spec:AST-094` FR11): a PressTracker,
- *     UIControl's tracking, which never blocks a scroll. The press begins with the touch or once a horizontal move
- *     would begin a pan; `touch-action: pan-y` (Switch.tsx) keeps
- *     horizontal moves for the switch, so a drag follows and flips it, and
- *     the release commits. A vertical drag, even after a hold, is the page's
- *     scroll: the browser takes the touch and the switch yields.
- *   Passive, a tap, a hold or a short drag activates through the browser's
- *   own click (`spec:AST-094` FR11); where the browser sends no click for
- *   the lift, the switch clicks its input itself once the click window
- *   passes. A drag that flipped the switch gets no click from the browser,
- *   so its `touchend` is cancelled and the switch clicks its input. Claiming,
- *   the browser's click is cancelled with the gesture and the switch always
- *   clicks its input. Either way forms, `onChange` and keyboard activation
+ * - Touches go to the gesture system's PressTracker, UIControl's tracking,
+ *   which never blocks a scroll (`spec:AST-094` FR11, FR20, FR21): no
+ *   recognizer claims the touch. The press begins with the touch or once a
+ *   horizontal move would begin a pan; `touch-action: pan-y` (Switch.tsx)
+ *   keeps horizontal moves for the switch, so a drag follows and flips it,
+ *   and the release commits. A vertical drag, even after a hold, is the
+ *   page's scroll: the browser takes the touch and the switch yields.
+ *   A tap, a hold or a short drag activates through the browser's own click
+ *   (FR11); where the browser sends no click for the lift, the switch clicks
+ *   its input itself once the click window passes. A drag that flipped the
+ *   switch gets no click from the browser, so its `touchend` is cancelled
+ *   and the switch clicks its input. A press slid off and lifted outside
+ *   commits nothing (WCAG 2.5.2). Forms, `onChange` and keyboard activation
  *   stay the native checkbox's.
  * - The drag never renders: each move retargets the thumb's tracking spring
  *   (one style write) and steps the flip rule on the finger's travel; the
@@ -76,17 +67,13 @@
  * - The springs are motion roles a theme can retune: the animator resolves
  *   each spring it is handed.
  *
- * SYNC: When modified, update switchTouch.ts, switchTouchClaim.ts, Switch.tsx
+ * SYNC: When modified, update switchTouch.ts, Switch.tsx
  * and __tests__/Switch.interaction.browser.spec.ts.
  */
 
 import {useMemo, useState, type RefObject} from 'react';
 import {getGestureHost} from '../gestures/GestureHost';
-import {isActive, type GestureRecognizer} from '../gestures/GestureRecognizer';
-import {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer';
-import {PanGestureRecognizer} from '../gestures/PanGestureRecognizer';
 import {PressTracker, type ControlEvent} from '../gestures/PressTracker';
-import {TapGestureRecognizer} from '../gestures/TapGestureRecognizer';
 import type {GestureTouch} from '../gestures/types';
 import {isRtlElement} from '../hooks/isRtlElement';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
@@ -111,7 +98,6 @@ import {
   type SwitchTouchGeometry,
 } from './switchTouch';
 import {readFillOf, trackStateOf, type TrackState} from './switchFill';
-import {SWITCH_CLAIMS_HELD_TOUCH} from './switchTouchClaim';
 
 export interface SwitchTouchParts {
   /** Receives the touches: the input and the track. */
@@ -143,16 +129,13 @@ export interface SwitchTouchOptions {
 const FADE_FILL = '--_switch-fade-fill';
 const TRAVEL = switchControl.travel;
 const TRACKING = switchControl.tracking;
-/** UIScrollView's content-touch delay: the press waits for it in a scroller. */
-const PRESS_DELAY = UIKIT_GESTURES.press.contentTouchDelay.value;
-const TOUCH_TYPES = ['touch', 'pen'] as const;
 /**
- * Passive: horizontal travel at which the press begins if it has not (a pan
+ * Horizontal travel at which the press begins if it has not (a pan
  * begins here), px.
  */
 const PAN_HYSTERESIS = UIKIT_GESTURES.pan.hysteresis.value;
 /**
- * Passive: how long after the switch's own release the browser's trusted
+ * How long after the switch's own release the browser's trusted
  * click is swallowed, ms (it follows the release within a frame or two).
  */
 const CLICK_GUARD_MS = 1000;
@@ -207,23 +190,6 @@ function liftThenSettle({
   };
 }
 
-function latestTime(recognizer: GestureRecognizer): number {
-  let time = Number.NEGATIVE_INFINITY;
-  for (const touch of recognizer.trackedTouches) {
-    time = Math.max(time, touch.time);
-  }
-  return Number.isFinite(time) ? time : now();
-}
-
-/** The finger's travel along x since it landed, or null once it lifted. */
-function travelX(recognizer: GestureRecognizer): number | null {
-  if (recognizer instanceof PanGestureRecognizer) {
-    return recognizer.totalTranslation().x;
-  }
-  const touch = recognizer.trackedTouches[0];
-  return touch == null ? null : touch.x - touch.startX;
-}
-
 interface Elements {
   surface: HTMLElement;
   input: HTMLInputElement;
@@ -258,9 +224,6 @@ export class SwitchTouchController {
   /** When the thumb lifted (document timeline, ms); null while at rest. */
   private liftTime: number | null = null;
   private otherTrack: TrackState | null = null;
-  private press: LongPressGestureRecognizer | null = null;
-  private pan: PanGestureRecognizer | null = null;
-  private tap: TapGestureRecognizer | null = null;
   private detachers: (() => void)[] = [];
   /** When the press began (document timeline, ms); null with no press. */
   private pressTime: number | null = null;
@@ -283,6 +246,11 @@ export class SwitchTouchController {
   private pendingTravel = false;
   /** Passive: a finger is down on the switch. */
   private isTracking = false;
+  /**
+   * Whether the finger is inside the switch's tracking bounds (the press
+   * tracker's): a press slid off and lifted outside commits nothing.
+   */
+  private isInside = true;
   /** Passive: until when the browser's next trusted click is swallowed. */
   private clickGuardUntil = 0;
   /** Passive: the switch released on this touch; its `touchend` is cancelled. */
@@ -326,79 +294,7 @@ export class SwitchTouchController {
     this.paintFade();
 
     const host = getGestureHost(elements.surface.ownerDocument);
-    this.detachers = SWITCH_CLAIMS_HELD_TOUCH
-      ? this.attachClaiming(host, elements)
-      : this.attachPassive(host, elements);
-  }
-
-  /**
-   * Claiming (UISwitch): a long press that begins on the touch (after the
-   * content delay inside a scroller) and owns it from then on; a horizontal
-   * pan for a drag that starts before the press begins; a tap with no limits
-   * for a release before the press begins.
-   */
-  private attachClaiming(
-    host: ReturnType<typeof getGestureHost>,
-    elements: Elements,
-  ): (() => void)[] {
-    const isBraking = () => host.isScrollBraking(elements.surface);
-    const press = new LongPressGestureRecognizer({
-      name: 'switch-press',
-      minimumPressDuration: 0,
-      allowedPointerTypes: TOUCH_TYPES,
-      shouldReceiveTouch: (recognizer, touch) => {
-        if (isBraking()) {
-          return false;
-        }
-        if (recognizer.numberOfTouches === 0) {
-          recognizer.minimumPressDuration =
-            touch.pointerType === 'touch' &&
-            touch.scroll?.isInsideScroller === true
-              ? PRESS_DELAY
-              : 0;
-          this.touchDown(touch.startTime);
-        }
-        return true;
-      },
-    });
-    const pan = new PanGestureRecognizer({
-      name: 'switch-drag',
-      direction: 'horizontal',
-      maximumNumberOfTouches: 1,
-      allowedPointerTypes: TOUCH_TYPES,
-      // A drag that drives the thumb selects no text (the gesture host locks
-      // the surface for the contact); the press's own styles do the same.
-      preventsTextSelection: true,
-      shouldReceiveTouch: () => !isBraking(),
-    });
-    const tap = new TapGestureRecognizer({
-      name: 'switch-release',
-      allowableMovement: Number.POSITIVE_INFINITY,
-      maximumTapDuration: Number.POSITIVE_INFINITY,
-      allowedPointerTypes: TOUCH_TYPES,
-      shouldReceiveTouch: () => !isBraking(),
-    });
-    press.recognizeSimultaneouslyWith(pan);
-    pan.recognizeSimultaneouslyWith(press);
-    tap.requireToFail(press);
-    for (const recognizer of [press, pan, tap]) {
-      recognizer.setEnabled(this.isInteractive);
-    }
-    this.press = press;
-    this.pan = pan;
-    this.tap = tap;
-    return [
-      host.attach(elements.surface, press),
-      host.attach(elements.surface, pan),
-      host.attach(elements.surface, tap),
-      press.addListener(recognizer => this.onGesture(recognizer)),
-      pan.addListener(recognizer => this.onGesture(recognizer)),
-      tap.addListener(recognizer => {
-        if (recognizer.state === 'ended') {
-          this.release(latestTime(recognizer));
-        }
-      }),
-    ];
+    this.detachers = this.attachPassive(host, elements);
   }
 
   /**
@@ -493,7 +389,6 @@ export class SwitchTouchController {
     this.elements?.track.style.removeProperty(FADE_FILL);
     this.thumb = this.fade = this.shadow = null;
     this.liftTime = null;
-    this.press = this.pan = this.tap = null;
     this.elements = null;
     this.pressTime = null;
     this.drag = null;
@@ -503,9 +398,6 @@ export class SwitchTouchController {
 
   setInteractive(isInteractive: boolean): void {
     this.isInteractive = isInteractive;
-    for (const recognizer of [this.press, this.pan, this.tap]) {
-      recognizer?.setEnabled(isInteractive);
-    }
     if (!isInteractive && this.pressTime != null) {
       this.abandon(now());
     }
@@ -599,10 +491,6 @@ export class SwitchTouchController {
       // gesture ends without committing.
       this.drag = null;
       this.released = true;
-      for (const recognizer of [this.press, this.pan]) {
-        recognizer?.setEnabled(false);
-        recognizer?.setEnabled(this.isInteractive);
-      }
       this.pressEnded();
     }
     // A release already sent the visuals here; any other change (the app's,
@@ -639,6 +527,7 @@ export class SwitchTouchController {
     switch (event) {
       case 'touchDown':
         this.isTracking = true;
+        this.isInside = true;
         this.clickGuardUntil = 0;
         this.touchDown(touch.startTime);
         return;
@@ -665,13 +554,21 @@ export class SwitchTouchController {
         // The finger's lift is a step of its own: a flip armed by the last
         // move happens here (a fast swipe flips on the lift).
         this.move(touch.time, travel);
-        if (event === 'touchUpInside' && this.drag?.flip.didFlip !== true) {
-          // A tap, a hold or a short drag: the browser's click activates it.
-          this.release(touch.time, {byBrowserClick: true});
+        this.isInside = event === 'touchUpInside';
+        if (this.drag?.flip.didFlip !== true) {
+          if (this.isInside) {
+            // A tap, a hold or a short drag: the browser's click activates
+            // it.
+            this.release(touch.time, {byBrowserClick: true});
+          } else {
+            // Slid off and lifted outside: the press is aborted (WCAG 2.5.2).
+            this.released = true;
+            this.abandon(touch.time);
+          }
           return;
         }
-        // A drag that flipped, or a lift outside: no click comes from the
-        // browser, so the switch clicks its input and cancels the lift.
+        // A drag that flipped: no click comes from the browser, so the
+        // switch clicks its input and cancels the lift.
         this.cancelsTouchEnd = true;
         this.clickGuardUntil = now() + CLICK_GUARD_MS;
         this.release(touch.time);
@@ -686,47 +583,10 @@ export class SwitchTouchController {
         }
         return;
       case 'touchDragEnter':
+        this.isInside = true;
+        return;
       case 'touchDragExit':
-        return;
-    }
-  }
-
-  private onGesture(
-    recognizer: LongPressGestureRecognizer | PanGestureRecognizer,
-  ): void {
-    if (this.released) {
-      return;
-    }
-    const time = latestTime(recognizer);
-    switch (recognizer.state) {
-      case 'began':
-        if (this.pressTime == null) {
-          this.pressBegan(time);
-        }
-        if (recognizer === this.pan) {
-          // The pan begins past its threshold: the thumb catches up now.
-          this.move(time, travelX(recognizer));
-        }
-        return;
-      case 'changed':
-        this.move(time, travelX(recognizer));
-        return;
-      case 'ended':
-        // The finger's lift is a step of its own: a flip armed by the last
-        // move happens here (a fast swipe flips on the lift).
-        this.move(time, travelX(recognizer));
-        this.release(time);
-        return;
-      case 'cancelled':
-        if (
-          !(this.press != null && isActive(this.press.state)) &&
-          !(this.pan != null && isActive(this.pan.state))
-        ) {
-          this.abandon(time);
-        }
-        return;
-      case 'possible':
-      case 'failed':
+        this.isInside = false;
         return;
     }
   }
@@ -779,7 +639,11 @@ export class SwitchTouchController {
     }
     this.released = true;
     this.clearTimers();
-    const commit = commitOnRelease(this.drag?.flip ?? null, this.isOn);
+    const commit = commitOnRelease(
+      this.drag?.flip ?? null,
+      this.isOn,
+      this.isInside,
+    );
     this.drag = null;
     if (this.pressTime == null) {
       // A tap quicker than a scroller's content delay: the press begins now.

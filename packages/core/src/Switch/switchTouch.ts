@@ -184,14 +184,20 @@ export function stepFlip(
 }
 
 /**
- * What a release commits: the side a drag flipped to, or the other side of
- * the value when nothing flipped during the gesture.
+ * What a release commits: the side a drag flipped to; when nothing flipped,
+ * the other side of the value for a lift inside the switch's tracking bounds,
+ * and the value as it is for a press slid off and lifted outside (WCAG 2.5.2:
+ * an aborted press leaves the switch alone).
  */
 export function commitOnRelease(
   flip: SwitchFlip | null,
   isOn: boolean,
+  isInside = true,
 ): boolean {
-  return flip?.didFlip === true ? flip.isVisuallyOn : !isOn;
+  if (flip?.didFlip === true) {
+    return flip.isVisuallyOn;
+  }
+  return isInside ? !isOn : isOn;
 }
 
 /**
