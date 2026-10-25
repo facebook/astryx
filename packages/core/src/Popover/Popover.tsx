@@ -748,7 +748,7 @@ export function Popover({
     [
       popover,
       isAnySurfaceOpen,
-      isSheetOpen,
+      isSheetMounted,
       sheetId,
       handleTriggerClick,
       handleTriggerKeyDown,
