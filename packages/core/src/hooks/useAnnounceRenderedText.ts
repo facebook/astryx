@@ -63,8 +63,12 @@ function blockText(element: HTMLElement): string {
       if (child.nodeType === Node.TEXT_NODE) {
         return (child.textContent ?? '').replace(/\s+/g, ' ').trim();
       }
-      if (child instanceof HTMLElement || child instanceof SVGElement) {
-        return child.matches(HIDDEN) ? '' : renderedText(child as HTMLElement);
+      // By node type, not `instanceof`: an element from another document's
+      // window (a portal into a same-origin iframe) fails this window's
+      // constructor checks.
+      if (child.nodeType === Node.ELEMENT_NODE) {
+        const part = child as HTMLElement;
+        return part.matches(HIDDEN) ? '' : renderedText(part);
       }
       return '';
     })
