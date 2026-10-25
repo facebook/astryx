@@ -415,12 +415,32 @@ describe('createPager', () => {
     expect(f.calls).toEqual(['index:2:drag', 'settle:2:1']);
   });
 
-  it('move samples that stand still bring the release velocity to zero: the settle starts at rest', async () => {
+  // A sample at the finger's last place is not motion (spec:AST-100's one
+  // filter): a finger that keeps reporting while it stands still keeps the
+  // speed it had until the stillness interval runs out.
+  it('move samples that stand still are not motion: a lift 32 ms after the last move keeps the release velocity', async () => {
     const f = setup({defaultIndex: 1});
-    // The same drag, then three samples at the same place, 8 ms apart: a
-    // scroll view's release reaches 0 on the third (the lift comes 8 ms
-    // later, well inside the stillness interval).
+    // The same drag, then three samples at the same place, 8 ms apart; the
+    // lift comes 8 ms later, 32 ms after the last move.
     await drag(f, {from: 300, dx: -250, step: 4, dt: 8, still: 3});
+    expect(f.pager.index).toBe(2);
+    const position = -f.x();
+    const velocity = (250 / Math.round(250 / 4) / 8) * 1000;
+    const carried = solvePaging({from: position, velocity, to: 2 * WIDTH});
+    const rest = solvePaging({from: position, velocity: 0, to: 2 * WIDTH});
+    await advance(16, f.clock);
+    await advance(100, f.clock);
+    expect(carried.at(0.116) - rest.at(0.116)).toBeGreaterThan(5);
+    expect(-f.x()).toBeCloseTo(carried.at(0.116), 0);
+    await settle(f);
+    expect(f.x()).toBe(-2 * WIDTH);
+  });
+
+  it('a finger that stands still, still reporting, for more than 40 ms before the lift starts the settle at rest (spec:AST-100 FR2)', async () => {
+    const f = setup({defaultIndex: 1});
+    // The same drag, then six samples at the same place, 8 ms apart; the
+    // lift comes 56 ms after the last move.
+    await drag(f, {from: 300, dx: -250, step: 4, dt: 8, still: 6});
     expect(f.pager.index).toBe(2);
     const position = -f.x();
     const rest = solvePaging({from: position, velocity: 0, to: 2 * WIDTH});
