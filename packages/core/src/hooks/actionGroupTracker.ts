@@ -9,7 +9,8 @@
  *   held finger across a group of targets, as a plain object any gesture
  *   recognizer can drive
  * @position The one tracker for a held finger that slides onto an action,
- *   internal to core. Gesture recognizers drive it: an alert's or an action
+ *   exported (experimental) from `@astryxdesign/core/hooks`. Gesture
+ *   recognizers drive it: an alert's or an action
  *   sheet's long press on its group of actions, a menu trigger whose held
  *   finger slides into the menu it opened, a menu's list, a segmented
  *   control's segments, a page control's dots
@@ -54,7 +55,10 @@ import {PRESS_FADE_MS} from '../utils/pressGesture';
 /** An action that is not enabled takes no highlight and does not run. */
 const DISABLED = ':disabled, [aria-disabled="true"]';
 
-/** A target the tracker measured: its element and viewport rect, px. */
+/**
+ * A target the tracker measured: its element and viewport rect, px.
+ * @experimental
+ */
 export interface ActionGroupTarget {
   readonly element: HTMLElement;
   readonly left: number;
@@ -63,6 +67,10 @@ export interface ActionGroupTarget {
   readonly bottom: number;
 }
 
+/**
+ * Options of {@link createActionGroupTracker}, read on every call.
+ * @experimental
+ */
 export interface ActionGroupTrackerOptions {
   /** The elements whose actions are tracked, read when a press begins. */
   roots: () => Iterable<Element | null | undefined>;
@@ -113,6 +121,10 @@ export interface ActionGroupTrackerOptions {
   swallowsNativeClick?: boolean;
 }
 
+/**
+ * A tracker made by {@link createActionGroupTracker}.
+ * @experimental
+ */
 export interface ActionGroupTracker {
   /**
    * A press began at viewport (x, y): read the actions' rects once and
@@ -211,6 +223,7 @@ function clickAndReport(element: HTMLElement): boolean {
 /**
  * Create a tracker. `getOptions` is read on every call, so a hook can pass
  * the latest props without recreating it.
+ * @experimental
  */
 export function createActionGroupTracker(
   getOptions: () => ActionGroupTrackerOptions,
