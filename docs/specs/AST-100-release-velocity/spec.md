@@ -91,9 +91,11 @@ means for them.
   (`spec:AST-013` FR1, FR3); pointer events with event timestamps.
 - Unsupported behavior: a gesture with fewer than two moved samples
   has a release velocity of 0.
-- Browser evidence: none required by this record; the unit and component
-  tests in Verification prove FR1–FR5, and real-device feel for
-  each component remains that component's evidence.
+- Browser evidence: FR4 depends on the timestamps browsers put on pointer
+  events, so it needs real-browser evidence in Safari on iOS and Chrome on
+  Android (`spec:AST-013` FR10); unit and component tests in Verification prove
+  FR1–FR3 and FR5, and real-device feel for each component remains that
+  component's evidence.
 
 ## Current-state impact
 
@@ -114,13 +116,13 @@ means for them.
 
 ## Verification
 
-| Contract | Verification                                                                        | Representative states                                                                                                               | Mutation or failure expectation                                                                                            |
-| -------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| FR1      | One recorded sample stream read through two different components, plus a unit check | a sheet drag and a row swipe fed the same stream; a Lab gesture and a Core gesture fed the same stream; steady motion in x and y    | Two components of the same kind reporting different velocities for the same stream, or a unit other than pixels per second |
-| FR2      | Release velocity tests through a component over recorded iOS streams                | recorded pan and scroll-view releases; acceleration before lift; a pause longer than the stillness interval before lift; one sample | A release that differs from the velocity iOS recorded for the same stream, or a non-zero release after a still pause       |
-| FR3      | Component tests at each threshold                                                   | a flick just under and just over a component's threshold; the same velocity across two components                                   | Two components of the same kind reading different velocities for the same flick, or a threshold reachable from public API  |
-| FR4      | Unit tests with handler delay and per-pointer streams                               | delayed handlers with fixed event timestamps; touch, pen, and mouse streams                                                         | Velocity that changes with handler delay or pointer type                                                                   |
-| FR5      | Component tests in both directions                                                  | a flick toward the inline end in left-to-right and right-to-left                                                                    | A flick toward the inline end treated as the opposite action in right-to-left                                              |
+| Contract | Verification                                                                                                                          | Representative states                                                                                                               | Mutation or failure expectation                                                                                            |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| FR1      | One recorded sample stream read through two different components, plus a unit check                                                   | a sheet drag and a row swipe fed the same stream; a Lab gesture and a Core gesture fed the same stream; steady motion in x and y    | Two components of the same kind reporting different velocities for the same stream, or a unit other than pixels per second |
+| FR2      | Release velocity tests through a component over recorded iOS streams                                                                  | recorded pan and scroll-view releases; acceleration before lift; a pause longer than the stillness interval before lift; one sample | A release that differs from the velocity iOS recorded for the same stream, or a non-zero release after a still pause       |
+| FR3      | Component tests at each threshold                                                                                                     | a flick just under and just over a component's threshold; the same velocity across two components                                   | Two components of the same kind reading different velocities for the same flick, or a threshold reachable from public API  |
+| FR4      | Unit tests with handler delay and per-pointer streams, plus real-browser pointer-event streams in Safari on iOS and Chrome on Android | delayed handlers with fixed event timestamps; touch, pen, and mouse streams                                                         | Velocity that changes with handler delay or pointer type                                                                   |
+| FR5      | Component tests in both directions                                                                                                    | a flick toward the inline end in left-to-right and right-to-left                                                                    | A flick toward the inline end treated as the opposite action in right-to-left                                              |
 
 ## Decision log
 
