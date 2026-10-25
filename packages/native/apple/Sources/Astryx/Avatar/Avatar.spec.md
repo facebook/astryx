@@ -186,6 +186,12 @@ No component-local decision is recorded.
 - **OQ2 — Status dots.** (`human-api`) `status` holds `AvatarStatusDot`, which
   has no Swift view, so it stays on the web until one exists.
 
+- **OQ3 — The tooltip on touch.** (`human-api`) Core's tooltip opens on a tap
+  of a static avatar on touch screens and closes on the next tap elsewhere.
+  The Swift tooltip opens on hover and keyboard focus; on touch the name
+  reaches people as the accessible name. A tap-to-show tooltip follows once
+  Swift has a Tooltip, in line with the touch default of `spec:AST-017`.
+
 ## Content boundary
 
 This file does not duplicate consumer prop tables/examples, current audit
