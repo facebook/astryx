@@ -91,7 +91,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | FR4 | Initials and the person symbol MUST draw in `color.textSecondary` on `color.neutral`; initials use the theme's body family at medium weight and 40% of the side.                                                                                                                                                                                                                                                                                                                                                                                       | core `Avatar` fallback styles; `spec:AST-093` FR4 | verify             |
 | FR5 | With an `href` that is an absolute URL (it has a scheme), the avatar MUST be a SwiftUI `Link`; with `onClick` too, `onClick` runs as it opens and the URL then goes to the app's own URL handler, or the system's. An `href` that is not an absolute URL, such as a web path, MUST stop a development build with a message naming it; a release build draws the avatar without a link, as a button with `onClick` or static. With only `onClick`, a SwiftUI `Button`. Either draws exactly as the static avatar, and the avatar has no disabled state. | Swift component API A4                            | verify             |
 | FR6 | Both initializers MUST build the same `AvatarProps`; `name` is the unlabeled first parameter and `onClick` the last, so it can be a trailing closure. Base props come through `AvatarProps`: with `isHidden` the view draws nothing; `id` becomes the accessibility identifier.                                                                                                                                                                                                                                                                        | Swift component API A2–A4, A7; `spec:AST-082` FR7 | verify             |
-| FR8 | `tooltip` MUST show, where there is a pointer, the name for `nil` or `true`, the given words for a string, and nothing for `false` or blank words, through SwiftUI's `.help`; on touch the name reaches people as the accessible name. On the wire it is the web value, a string or a Bool.                                                                                                                                                                                                                                                            | core `Avatar` `tooltip`; `spec:AST-082` FR3       | verify             |
+| FR8 | `tooltip` MUST resolve, as core does, to the name for `nil` or `true`, the given words for a string, and nothing for `false` or blank words. Given words MUST show where there is a pointer through SwiftUI's `.help`, which VoiceOver also reads as the hint. The default name tooltip is not drawn, because `.help` would make VoiceOver read the name twice and core keeps it out of the description (AV3). On the wire it is the web value, a string or a Bool.                                                                                    | core `Avatar` `tooltip`; `spec:AST-082` FR3       | verify             |
 
 ### Allowed variation
 
@@ -99,6 +99,10 @@ Consumer migration instructions belong in consumer docs and release notes.
   show instead of an empty plate.
 - **AV2 — Glyph.** The person symbol is the SF Symbol `person.fill`, not core's
   SVG.
+
+- **AV3 — Default tooltip.** The name is not shown as a pointer tooltip,
+  since SwiftUI's only tooltip, `.help`, is also the VoiceOver hint; given
+  tooltip words are.
 
 ### Representative states
 

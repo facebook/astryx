@@ -164,6 +164,14 @@ import Testing
   #expect(Avatar(src: "https://example.com/a.png").tooltipText == nil)
 }
 
+@MainActor
+@Test func onlyGivenTooltipWordsBecomeHelpSoTheNameIsNotReadTwice() {
+  #expect(Avatar("Ada Lovelace").helpText == nil)
+  #expect(Avatar("Ada Lovelace", tooltip: true).helpText == nil)
+  #expect(Avatar("Ada Lovelace", tooltip: "Ada Lovelace, Mathematician").helpText == "Ada Lovelace, Mathematician")
+  #expect(Avatar("Ada Lovelace", tooltip: false).helpText == nil)
+}
+
 @Test func tooltipsTravelAsTheWebValue() throws {
   let encoded = try JSONEncoder().encode([AvatarTooltip.on, .off, "Ada"])
   #expect(String(decoding: encoded, as: UTF8.self) == #"[true,false,"Ada"]"#)
