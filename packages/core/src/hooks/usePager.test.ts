@@ -976,6 +976,155 @@ describe('createPager', () => {
   });
 });
 
+/** A rect for jsdom, which lays nothing out. */
+function rectOf(left: number, width: number): DOMRect {
+  return new DOMRect(left, 0, width, 100);
+}
+
+/**
+ * A pager whose pages are the track's children (`pages: 'children'`): one
+ * child per width, `gap` px apart, laid out from the start edge (the right
+ * one in RTL) of a WIDTH-wide viewport.
+ */
+function setupChildren(
+  widths: number[],
+  gap: number,
+  options: Partial<PagerOptions> = {},
+  rtl = false,
+): Fixture {
+  const clock = new ManualClock();
+  clock.time = now;
+  const host = new GestureHost(document, {clock});
+  const viewport = document.createElement('div');
+  const track = document.createElement('div');
+  if (rtl) {
+    viewport.style.direction = 'rtl';
+  }
+  let start = 0;
+  for (const width of widths) {
+    const child = document.createElement('div');
+    const from = start;
+    child.getBoundingClientRect = () =>
+      rtl ? rectOf(WIDTH - from - width, width) : rectOf(from, width);
+    track.appendChild(child);
+    start += width + gap;
+  }
+  const extent = start - gap;
+  track.getBoundingClientRect = () =>
+    rtl ? rectOf(WIDTH - extent, extent) : rectOf(0, extent);
+  viewport.appendChild(track);
+  document.body.appendChild(viewport);
+  Object.defineProperty(viewport, 'clientWidth', {
+    value: WIDTH,
+    configurable: true,
+  });
+  const animator = createAnimator(track, {
+    now: () => now,
+    requestFrame: callback => {
+      frameQueue.push(callback);
+    },
+  });
+  const calls: string[] = [];
+  const pager = createPager(
+    {
+      count: widths.length,
+      pages: 'children',
+      onIndexChange: (index, reason) => calls.push(`index:${index}:${reason}`),
+      onSettle: (index, previous) => calls.push(`settle:${index}:${previous}`),
+      ...options,
+    },
+    {
+      host,
+      animator,
+      requestFrame: callback => {
+        frameQueue.push(callback);
+      },
+    },
+  );
+  pager.attach(viewport, track);
+  return {
+    pager,
+    viewport,
+    track,
+    page: track.children[0] as HTMLElement,
+    animator,
+    clock,
+    host,
+    calls,
+    x: () => animator.get('x', now),
+  };
+}
+
+describe("children pages: each child's start edge, as a snap container places it", () => {
+  // Five 150 px children 10 px apart in a 400 px viewport: starts at 0, 160,
+  // 320, 480 and 640; the track ends at 790, so its end meets the viewport's
+  // at 390, where the last two children rest.
+  const CARDS = [150, 150, 150, 150, 150];
+
+  it("measures one page per child start, the last children sharing the page where the track's end meets the viewport's", () => {
+    const f = setupChildren(CARDS, 10);
+    expect(f.pager.pageCount).toBe(4);
+    f.pager.goTo(2, {animated: false});
+    expect(f.x()).toBe(-320);
+    f.pager.goTo(4, {animated: false});
+    expect(f.pager.index).toBe(3);
+    expect(f.x()).toBe(-390);
+  });
+
+  it('a flick moves one child, on the paging settle', async () => {
+    const f = setupChildren(CARDS, 10);
+    // 625 px/s, lifted 32 ms after the last move.
+    await drag(f, {from: 300, dx: -50, step: 10, dt: 16, hold: 16});
+    expect(f.pager.index).toBe(1);
+    await settle(f);
+    expect(f.x()).toBe(-160);
+    expect(f.calls).toEqual(['index:1:drag', 'settle:1:0']);
+  });
+
+  it('a slow drag past half the way to the next child settles there; short of half, back', async () => {
+    const f = setupChildren(CARDS, 10);
+    // 125 px/s to 90 px, past half of the 160 px to the next child.
+    await drag(f, {from: 300, dx: -90, step: 2, dt: 16, hold: 100});
+    await settle(f);
+    expect(f.pager.index).toBe(1);
+    expect(f.x()).toBe(-160);
+    // 70 px of the 160 px back toward the first child: short of half.
+    await drag(f, {from: 100, dx: 70, step: 2, dt: 16, hold: 100});
+    await settle(f);
+    expect(f.pager.index).toBe(1);
+    expect(f.x()).toBe(-160);
+  });
+
+  it('past the last page the track rubber-bands and returns: children pages never loop', async () => {
+    const f = setupChildren(CARDS, 10, {loop: true});
+    f.pager.goTo(3, {animated: false});
+    await drag(f, {from: 300, dx: -100, step: 10, dt: 16, hold: 16});
+    expect(f.pager.index).toBe(3);
+    await settle(f);
+    expect(f.x()).toBe(-390);
+    f.pager.goTo(-1, {animated: false});
+    expect(f.pager.index).toBe(0);
+  });
+
+  it('content that fits is one page: nothing pages', async () => {
+    const f = setupChildren([150, 150], 10);
+    expect(f.pager.pageCount).toBe(1);
+    await drag(f, {from: 300, dx: -50, step: 10, dt: 16, hold: 16});
+    await settle(f);
+    expect(f.pager.index).toBe(0);
+    expect(f.x()).toBe(0);
+  });
+
+  it('RTL: pages measure from the right edge, and a drag right goes forward', async () => {
+    const f = setupChildren(CARDS, 10, {}, true);
+    expect(f.pager.pageCount).toBe(4);
+    await drag(f, {from: 100, dx: 50, step: 10, dt: 16, hold: 16});
+    expect(f.pager.index).toBe(1);
+    await settle(f);
+    expect(f.x()).toBe(160);
+  });
+});
+
 describe("the drag's axis: UIKit's rule for a pager inside a scroll view", () => {
   /**
    * A drag `degrees` up from leftward, in 4 px steps every 8 ms, then a lift.

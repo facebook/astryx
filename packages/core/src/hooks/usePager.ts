@@ -5,8 +5,8 @@
 /**
  * @file usePager.ts
  * @input A viewport element (the gesture surface) and a track element (the
- *   row of pages it translates), a page count and gap, the gesture system and
- *   the motion animator
+ *   row of pages it translates), a page count and gap (or the track's children
+ *   as the pages), the gesture system and the motion animator
  * @output Exports `createPager` (the framework-free pager), `usePager` (its
  *   React face) and their types
  * @position Shared hook for core components that page like a UIKit paging
@@ -52,7 +52,8 @@
  *
  * Positions are content offsets in px, 0 at page 0 and growing toward later
  * pages; the track is translated by −position, or +position when the
- * viewport is right-to-left. Pages sit at index × (page width + gap); how
+ * viewport is right-to-left. Pages sit at index × (page width + gap), or,
+ * with `pages: 'children'`, at each child's start edge (see that option); how
  * they are rendered (all of them, a window, a wrapped copy for looping) is
  * the owner's. With `loop`, indexes are unbounded ("virtual"); `index` wraps
  * them into [0, count).
@@ -112,6 +113,21 @@ export interface PagerOptions {
   gap?: number;
   /** Pages wrap around; indexes become unbounded. @default false */
   loop?: boolean;
+  /**
+   * What a page is. `'viewport'`: every page is the viewport's width, at
+   * index × (width + `gap`). `'children'`: each child of the track is a page
+   * at its own start edge, as `scroll-snap-align: start` places it in a
+   * scroll container: the viewport's padding stays an inset, and a child
+   * whose start lies past the point where the track's end meets the end of
+   * the viewport's content box rests at that point, so the last children can
+   * share one page. The count is then the number of distinct pages measured
+   * (`pageCount`); `count` and `gap` serve only before the first measure, and
+   * children pages do not loop. The pager measures the children when it
+   * attaches, when the viewport or the track resizes, when the options
+   * change and when a drag begins, never while a finger moves.
+   * @default 'viewport'
+   */
+  pages?: 'viewport' | 'children';
   /** Starting page. @default 0 */
   defaultIndex?: number;
   /**
@@ -150,6 +166,11 @@ export interface Pager {
   readonly index: number;
   /** The target page, unbounded when looping. */
   readonly virtualIndex: number;
+  /**
+   * How many pages there are: `count`, or with `pages: 'children'` the
+   * distinct pages last measured.
+   */
+  readonly pageCount: number;
   /** Whether the track is moving on its own (a settle or a `goTo`). */
   readonly isSettling: boolean;
   /** Whether a finger is dragging the track. */
@@ -184,6 +205,18 @@ export function nearestLoopCopy(
     from +
       (((mod(index, count) - mod(from, count) + count + count / 2) % count) -
         count / 2),
+  );
+}
+
+/** Whether two measured page lists are the same to within half a pixel. */
+function sameOffsets(
+  a: ReadonlyArray<number>,
+  b: ReadonlyArray<number> | null,
+): boolean {
+  return (
+    b != null &&
+    a.length === b.length &&
+    a.every((offset, i) => Math.abs(offset - b[i]) < 0.5)
   );
 }
 
@@ -343,12 +376,120 @@ export function createPager(
   let animator: Animator | null = null;
   let pageWidth = 0;
   let isRtl = false;
+  // With `pages: 'children'`, each page's offset (px, ascending), once
+  // measured.
+  let childOffsets: ReadonlyArray<number> | null = null;
 
-  const count = () => Math.max(1, Math.floor(options.count));
+  const isChildPages = () => options.pages === 'children';
+  const isLooping = () => options.loop === true && !isChildPages();
+  const count = () =>
+    isChildPages() && childOffsets != null
+      ? childOffsets.length
+      : Math.max(1, Math.floor(options.count));
   const stride = () => pageWidth + (options.gap ?? 0);
   const sign = () => (isRtl ? 1 : -1);
   const clampIndex = (index: number) =>
-    options.loop === true ? index : Math.max(0, Math.min(count() - 1, index));
+    isLooping() ? index : Math.max(0, Math.min(count() - 1, index));
+
+  /** Where page `index` rests (px). */
+  function offsetOf(index: number): number {
+    if (isChildPages() && childOffsets != null) {
+      return childOffsets[
+        Math.max(0, Math.min(childOffsets.length - 1, index))
+      ];
+    }
+    return index * stride();
+  }
+
+  /**
+   * Where `position` falls, in pages: an index plus the fraction of the way
+   * to the next page (past either end, in the end page's spacing).
+   */
+  function pageAt(position: number): number {
+    if (!(isChildPages() && childOffsets != null)) {
+      return position / stride();
+    }
+    const at = childOffsets;
+    const n = at.length;
+    if (n === 1) {
+      return (position - at[0]) / (pageWidth > 0 ? pageWidth : 1);
+    }
+    if (position < at[0]) {
+      return (position - at[0]) / (at[1] - at[0]);
+    }
+    for (let i = 0; i < n - 1; i++) {
+      if (position < at[i + 1]) {
+        return i + (position - at[i]) / (at[i + 1] - at[i]);
+      }
+    }
+    return n - 1 + (position - at[n - 1]) / (at[n - 1] - at[n - 2]);
+  }
+
+  /** The page nearest `position`, or the target before anything is measured. */
+  function nearestPage(position: number): number {
+    if (!isChildPages() && !(stride() > 0)) {
+      return target;
+    }
+    return Math.round(pageAt(position));
+  }
+
+  /**
+   * The page a release from `position` at `velocity` settles on (UIKit's
+   * rule, motion/paging.ts), in children pages' own spacing.
+   */
+  function releasePage(
+    position: number,
+    velocity: number,
+    startIndex: number,
+  ): number {
+    const pages = isChildPages() && childOffsets != null;
+    return selectPage({
+      position: pages ? pageAt(position) : position,
+      velocity,
+      stride: pages ? 1 : stride(),
+      count: count(),
+      startIndex,
+      loop: isLooping(),
+    });
+  }
+
+  /**
+   * Children pages: each child's start edge from the track's start (the
+   * track's own translate moves both alike, so it cancels), clamped to the
+   * travel that keeps the track's end at or past the end of the viewport's
+   * content box; children clamped onto one offset share its page.
+   */
+  function measureChildOffsets(): ReadonlyArray<number> {
+    const track = trackElement;
+    if (viewport == null || track == null || track.children.length === 0) {
+      return [0];
+    }
+    const box = track.getBoundingClientRect();
+    const style = getComputedStyle(viewport);
+    const inner =
+      viewport.clientWidth -
+      (Number.parseFloat(style.paddingLeft) || 0) -
+      (Number.parseFloat(style.paddingRight) || 0);
+    const starts: number[] = [];
+    let extent = 0;
+    for (const child of Array.from(track.children)) {
+      const rect = child.getBoundingClientRect();
+      starts.push(isRtl ? box.right - rect.right : rect.left - box.left);
+      extent = Math.max(
+        extent,
+        isRtl ? box.right - rect.left : rect.right - box.left,
+      );
+    }
+    const end = Math.max(0, extent - inner);
+    const offsets: number[] = [];
+    for (const start of starts) {
+      const offset = Math.min(Math.max(start, 0), end);
+      if (offsets.length === 0 || offset > offsets[offsets.length - 1] + 0.5) {
+        offsets.push(offset);
+      }
+    }
+    return offsets.length > 0 ? offsets : [0];
+  }
 
   // The page the track rests on or is heading for (unbounded when looping),
   // and the one it last rested on.
@@ -402,7 +543,7 @@ export function createPager(
 
   function presentation(): number {
     if (animator == null) {
-      return target * stride();
+      return offsetOf(target);
     }
     return sign() * animator.get('x');
   }
@@ -425,7 +566,7 @@ export function createPager(
   }
 
   function wrapped(index: number): number {
-    return options.loop === true ? mod(index, count()) : index;
+    return isLooping() ? mod(index, count()) : index;
   }
 
   // The page last reported through onIndexChange, and a report that waits
@@ -592,7 +733,7 @@ export function createPager(
     velocity: number,
     touchRelease: boolean,
   ): void {
-    const to = target * stride();
+    const to = offsetOf(target);
     // A theme that retunes the settle hands it a spring; without one the
     // settle runs UIKit's integrator itself.
     const spring = resolveMotion(viewport, paging, 'settle');
@@ -620,15 +761,29 @@ export function createPager(
     }
     const width = viewport.clientWidth;
     isRtl = isRtlElement(viewport);
-    if (width === pageWidth) {
+    let changed = width !== pageWidth;
+    pageWidth = width;
+    if (isChildPages()) {
+      const offsets = measureChildOffsets();
+      if (!sameOffsets(offsets, childOffsets)) {
+        childOffsets = offsets;
+        changed = true;
+      }
+    }
+    if (!changed) {
       return;
     }
-    pageWidth = width;
+    if (!isDragging && target > count() - 1) {
+      // Fewer pages (children clamped onto one): the last one, as a smaller
+      // count clamps.
+      goTo(count() - 1, {animated: false, reason: 'controlled'});
+      return;
+    }
     // A resize lands on the target page at its new offset (a settle in
     // flight ends there), as a paging scroll view does on rotation.
     if (!isDragging) {
       stopSettle();
-      animator?.set({x: positionToX(target * stride())});
+      animator?.set({x: positionToX(offsetOf(target))});
       if (settled !== target) {
         rest();
       }
@@ -646,28 +801,30 @@ export function createPager(
       // A track caught past an end is shown rubber-banded: the drag starts
       // from its unbanded position, so the first move keeps it under the
       // finger.
-      dragStart =
-        options.loop === true
-          ? current
-          : rubberBandUnclamp(
-              current,
-              0,
-              (count() - 1) * stride(),
-              pageWidth > 0 ? pageWidth : 1,
-            );
+      dragStart = isLooping()
+        ? current
+        : rubberBandUnclamp(
+            current,
+            offsetOf(0),
+            offsetOf(count() - 1),
+            pageWidth > 0 ? pageWidth : 1,
+          );
       dragPosition = current;
-      dragStartIndex = stride() > 0 ? Math.round(current / stride()) : target;
+      dragStartIndex = nearestPage(current);
       return;
     }
     if (state === 'changed') {
       const dx = recognizer.translation().x;
       // Finger right (dx > 0) moves content toward earlier pages in LTR.
       const raw = dragStart + sign() * dx;
-      const max = (count() - 1) * stride();
-      dragPosition =
-        options.loop === true
-          ? raw
-          : rubberBandClamp(raw, 0, max, pageWidth > 0 ? pageWidth : 1);
+      dragPosition = isLooping()
+        ? raw
+        : rubberBandClamp(
+            raw,
+            offsetOf(0),
+            offsetOf(count() - 1),
+            pageWidth > 0 ? pageWidth : 1,
+          );
       animator?.set({x: positionToX(dragPosition)});
       return;
     }
@@ -683,14 +840,7 @@ export function createPager(
       // content moves against the finger in LTR (sign()).
       const velocity =
         state === 'ended' ? sign() * recognizer.scrollVelocity().x : 0;
-      const next = selectPage({
-        position: dragPosition,
-        velocity,
-        stride: stride(),
-        count: count(),
-        startIndex: dragStartIndex,
-        loop: options.loop === true,
-      });
+      const next = releasePage(dragPosition, velocity, dragStartIndex);
       setTarget(next, 'drag', true);
       settleFrom(
         dragPosition,
@@ -759,14 +909,7 @@ export function createPager(
       ) {
         // Held, then lifted without dragging: settle on the nearest page.
         const position = presentation();
-        const next = selectPage({
-          position,
-          velocity: 0,
-          stride: stride(),
-          count: count(),
-          startIndex: stride() > 0 ? Math.round(position / stride()) : target,
-          loop: options.loop === true,
-        });
+        const next = releasePage(position, 0, nearestPage(position));
         setTarget(next, 'drag', true);
         settleFrom(position, 0, catcher.pointerType === 'touch');
       }
@@ -776,7 +919,7 @@ export function createPager(
   function goTo(index: number, goToOptions: GoToOptions = {}): void {
     const {animated = true, reason = 'goTo'} = goToOptions;
     let next = Math.round(index);
-    if (options.loop === true) {
+    if (isLooping()) {
       next = nearestLoopCopy(next, target, count());
     } else {
       next = clampIndex(next);
@@ -792,7 +935,7 @@ export function createPager(
     }
     stopSettle();
     setTarget(next, reason);
-    const to = next * stride();
+    const to = offsetOf(next);
     if (!animated || animator == null || from === to) {
       animator?.set({x: positionToX(to)});
       rest();
@@ -813,20 +956,28 @@ export function createPager(
   }
 
   function setOptions(update: Partial<PagerOptions>): void {
-    const wasLooping = options.loop === true;
-    const previousStride = stride();
+    const wasLooping = isLooping();
+    const previousOffset = offsetOf(target);
     options = {...options, ...update};
-    if (options.loop !== true && (target < 0 || target > count() - 1)) {
+    if (isChildPages() && viewport != null && !isDragging) {
+      // The children may have changed with the options (a count, a gap).
+      const offsets = measureChildOffsets();
+      if (!sameOffsets(offsets, childOffsets)) {
+        childOffsets = offsets;
+      }
+    }
+    if (!isLooping() && (target < 0 || target > count() - 1)) {
       // Turning `loop` off keeps the page shown; a smaller `count` clamps.
       const shown = wasLooping ? mod(target, count()) : target;
       goTo(clampIndex(shown), {animated: false, reason: 'controlled'});
       return;
     }
-    if (stride() !== previousStride && !isDragging) {
-      // A new gap: the target page at its new offset (a settle ends there).
+    if (offsetOf(target) !== previousOffset && !isDragging) {
+      // A new gap (or children): the target page at its new offset (a settle
+      // ends there).
       const wasSettling = settleHandle != null;
       stopSettle();
-      animator?.set({x: positionToX(target * stride())});
+      animator?.set({x: positionToX(offsetOf(target))});
       if (wasSettling || settled !== target) {
         rest();
       }
@@ -843,7 +994,12 @@ export function createPager(
     pageWidth = 0;
     isRtl = isRtlElement(nextViewport);
     pageWidth = nextViewport.clientWidth;
-    animator.set({x: positionToX(target * stride())});
+    if (isChildPages()) {
+      childOffsets = measureChildOffsets();
+      target = clampIndex(target);
+      settled = target;
+    }
+    animator.set({x: positionToX(offsetOf(target))});
     const removePanListener = pan.addListener(onPan);
     const removeCatchListener = catcher.addListener(onCatch);
     const host = environment.host ?? getGestureHost(nextViewport.ownerDocument);
@@ -853,8 +1009,14 @@ export function createPager(
     // already covers the touches that land on the track.
     const detachCatch = host.attach(nextTrack, catcher, {manageStyle: false});
     const unobserve = observeResize(nextViewport, measure);
+    // Children pages also move when the track's own size changes (a child
+    // added, removed or resized).
+    const unobserveTrack = isChildPages()
+      ? observeResize(nextTrack, measure)
+      : () => {};
     detachAll = () => {
       unobserve();
+      unobserveTrack();
       detachCatch();
       detachPan();
       removeCatchListener();
@@ -875,6 +1037,9 @@ export function createPager(
     },
     get virtualIndex() {
       return target;
+    },
+    get pageCount() {
+      return count();
     },
     get isSettling() {
       return settleHandle != null;
@@ -941,10 +1106,10 @@ export function usePager({
 
   // Synchronizes the pager (the track's animation and the gesture host) with
   // these props. A clamp it causes is not reported back (reason 'controlled').
-  const {count, gap, loop} = options;
+  const {count, gap, loop, pages} = options;
   useIsomorphicLayoutEffect(() => {
-    pager.setOptions({count, gap, loop});
-  }, [pager, count, gap, loop]);
+    pager.setOptions({count, gap, loop, pages});
+  }, [pager, count, gap, loop, pages]);
 
   // Attaches the pager to the viewport and track nodes, and again whenever
   // either node is replaced: it runs after every commit and does nothing while
