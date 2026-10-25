@@ -62,7 +62,24 @@ export interface ListContextValue {
    * touch layer, reached only through the list).
    */
   keepRowPresentation?: (row: HTMLElement) => void;
+  /**
+   * The list is in edit mode (`isEditing`); internal. Each row makes room
+   * for an editing control at its leading edge: the row carries
+   * `EDITING_ATTRIBUTE`, and its leading padding grows by the indent.
+   */
+  isEditing?: boolean;
+  /**
+   * Whether rows show their trailing content (`endContent`): not in edit
+   * mode, once it has faded out (List/useListEditingMotion.ts); internal.
+   */
+  showsTrailing?: boolean;
 }
+
+/**
+ * Marks a row in edit mode: its leading padding grows by the list table's
+ * indent, which makes room for an editing control (no element of its own).
+ */
+export const EDITING_ATTRIBUTE = 'data-astryx-editing';
 
 export const ListContext = createContext<ListContextValue | null>(null);
 ListContext.displayName = 'ListContext';

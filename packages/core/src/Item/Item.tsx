@@ -809,6 +809,9 @@ export function Item({
 
       {endContent != null && (
         <span
+          // The end slot: a list in edit mode fades it out in place
+          // (List/useListEditingMotion.ts).
+          data-astryx-item-end=""
           {...stylex.props(
             styles.endContent,
             align === 'first-line' && styles.firstLineSlot,

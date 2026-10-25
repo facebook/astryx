@@ -53,7 +53,7 @@ export type RowCrossfade = 'entrance' | 'exit';
  * elements this module has touched without creating an animator for others.
  */
 const moved = new WeakSet<HTMLElement>();
-type RowProperty = 'y' | 'rotate' | 'opacity';
+type RowProperty = 'x' | 'y' | 'rotate' | 'opacity';
 
 /** A motion started through this module: its handle and the spring it runs. */
 export interface RowMotion {
@@ -220,6 +220,35 @@ export async function springHome(
   ).finished;
 }
 
+/**
+ * Moves `element`'s `property` by `shift` (the layout just moved it the
+ * other way) and springs it to rest from the frame on screen. Unlike
+ * `springHome`, a running motion is retargeted to rest too, keeping its
+ * velocity: a change that the layout reverses mid-motion (edit mode
+ * toggled back) turns it around with no jump. A resting property starts
+ * when the browser commits the call. Resolves true when a motion started
+ * here arrives.
+ */
+export async function springBack(
+  element: HTMLElement,
+  property: RowProperty,
+  shift: number,
+  spring: SpringDescription,
+  at: number,
+  crossfadeAs?: RowCrossfade,
+): Promise<boolean> {
+  const running = motionOf(element, property);
+  if (shift !== 0) {
+    animatorFor(element).rebase({[property]: shift}, {at});
+  }
+  return animateRow(
+    element,
+    {[property]: property === 'opacity' ? 1 : 0},
+    spring,
+    {at: running == null ? undefined : at, crossfadeAs},
+  ).finished;
+}
+
 /** Springs `element`'s `y` to `to` from the value on screen. */
 export async function springTo(
   element: HTMLElement,
@@ -283,7 +312,7 @@ export function stopRow(
   if (!moved.has(element)) {
     return;
   }
-  animatorFor(element).set({y: 0, rotate: 0, opacity: 1});
+  animatorFor(element).set({x: 0, y: 0, rotate: 0, opacity: 1});
   motions.delete(element);
   releaseMotion(element, ...properties);
 }

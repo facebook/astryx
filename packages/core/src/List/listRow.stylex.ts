@@ -30,6 +30,8 @@ export const listRowConsts = stylex.defineConsts({
   touchSubtitleRowHeight: '62px',
   /** `list.metrics.controlSize`: the floor of a compact touch row. */
   touchControlSize: '44px',
+  /** `list.metrics.editingIndent`: how far edit mode moves a row's text. */
+  editingIndent: '40px',
 });
 
 /**

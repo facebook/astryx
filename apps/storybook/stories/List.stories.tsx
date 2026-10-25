@@ -243,6 +243,45 @@ export const Interactive: Story = {
   ),
 };
 
+function EditingDemo() {
+  const [isEditing, setIsEditing] = useState(false);
+  return (
+    <VStack gap={2}>
+      <div>
+        <Button
+          label={isEditing ? 'Done' : 'Edit'}
+          onClick={() => setIsEditing(editing => !editing)}
+        />
+      </div>
+      <List isEditing={isEditing} hasDividers>
+        {['Inbox', 'Sent', 'Drafts', 'Archive'].map(label => (
+          <ListItem
+            key={label}
+            label={label}
+            onClick={() => {}}
+            endContent={<Icon icon={ChevronRightIcon} />}
+          />
+        ))}
+      </List>
+    </VStack>
+  );
+}
+
+export const Editing: Story = {
+  render: () => <EditingDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'With `isEditing`, every row makes room at its leading edge for an ' +
+          'editing control and its trailing content leaves. Under a finger, ' +
+          'the rows slide on UIKit’s table spring and the chevrons fade out ' +
+          'in place; with a mouse the list switches at once.',
+      },
+    },
+  },
+};
+
 export const Links: Story = {
   render: args => (
     <List {...args}>

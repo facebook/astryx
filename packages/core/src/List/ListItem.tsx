@@ -35,13 +35,13 @@ import {
   borderVars,
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
-import {ListContext, type ListMarker} from './ListContext';
+import {EDITING_ATTRIBUTE, ListContext, type ListMarker} from './ListContext';
 import {CheckboxInput} from '../CheckboxInput';
 import {isRenderable, mergeProps} from '../utils';
 import {Item} from '../Item';
 import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
-import {listRowStyles} from './listRow.stylex';
+import {listRowConsts, listRowStyles} from './listRow.stylex';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 
@@ -208,8 +208,8 @@ const styles = stylex.create({
   // closer to the row's edge than its own inset. Square corners: the row
   // meets the container's straight sides.
   edgeBleed: {
-    paddingInlineStart:
-      'max(var(--container-padding-inline-start, 0px), var(--_item-inset-inline))',
+    // The leading padding is edit mode's `rowBleed`, which starts from the
+    // same value.
     paddingInlineEnd:
       'max(var(--container-padding-inline-end, 0px), var(--_item-inset-inline))',
     borderRadius: 0,
@@ -333,6 +333,27 @@ const markerStyles = stylex.create({
 
 /** The width and height of CheckboxInput's small control. */
 const TASK_CHECKBOX_SIZE = 20;
+
+const editingStyles = stylex.create({
+  // The room edit mode makes at a row's leading edge for an editing control,
+  // on the row itself (no element of its own): its leading padding grows by
+  // the indent while it carries EDITING_ATTRIBUTE, so the content moves by
+  // exactly the indent. The default is the row's leading padding out of edit
+  // mode, as Item and the edge treatment set it (`rowBleed` for 'bleed').
+  row: {
+    paddingInlineStart: {
+      default: 'var(--_item-inset-inline)',
+      '[data-astryx-editing]': `calc(var(--_item-inset-inline) + ${listRowConsts.editingIndent})`,
+    },
+  },
+  rowBleed: {
+    paddingInlineStart: {
+      default:
+        'max(var(--container-padding-inline-start, 0px), var(--_item-inset-inline))',
+      '[data-astryx-editing]': `calc(max(var(--container-padding-inline-start, 0px), var(--_item-inset-inline)) + ${listRowConsts.editingIndent})`,
+    },
+  },
+});
 
 const taskMarkerStyles = stylex.create({
   // A task item's checkbox stands where the marker would, centered on the
@@ -458,6 +479,12 @@ export function ListItem({
       <span {...stylex.props(markerStyles.number, NUMBER_STYLES[markerKind])} />
     ) : null;
 
+  // Edit mode: room at the leading edge for an editing control (the row's
+  // own padding, through EDITING_ATTRIBUTE), and no trailing content once it
+  // has faded (List/useListEditingMotion.ts).
+  const isEditing = ctx?.isEditing ?? false;
+  const showsTrailing = ctx?.showsTrailing ?? true;
+
   return (
     <Item
       as="li"
@@ -466,7 +493,7 @@ export function ListItem({
       startContent={startContent}
       label={label}
       description={description}
-      endContent={endContent}
+      endContent={showsTrailing ? endContent : undefined}
       onClick={onClick}
       interactiveRef={interactiveRef}
       href={href}
@@ -480,6 +507,7 @@ export function ListItem({
         [
           hasMarkers && styles.withCounter,
           styles.travelling,
+          edge === 'bleed' ? editingStyles.rowBleed : editingStyles.row,
           hasDividers && styles.withDivider,
           hasDividers && embeddedStyles.noRadius,
           // A list with markers is running text (bullets, numbers, a
@@ -498,6 +526,7 @@ export function ListItem({
         ] as StyleXStyles
       }
       {...mergeProps(themeProps('list-item'), {className, style})}
+      {...(isEditing ? {[EDITING_ATTRIBUTE]: ''} : undefined)}
       {...restProps}
     />
   );

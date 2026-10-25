@@ -18,7 +18,7 @@
  * - /packages/cli/assets/templates/blocks/components/List/ (showcase blocks)
  */
 
-import {useId, useMemo, useRef, type ReactNode} from 'react';
+import {useId, useMemo, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
@@ -33,6 +33,8 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 import {keepPresentation, useListUpdateMotion} from './useListUpdateMotion';
 import {themeProps} from '../utils/themeProps';
 import {useDevWarning} from '../hooks/useDevWarning';
+import {useTouchPresentation} from '../utils/touchPresentation';
+import {useListEditingMotion} from './useListEditingMotion';
 
 export {
   type ListDensity,
@@ -86,6 +88,18 @@ export interface ListProps extends BaseProps<
    * @default 'moves'
    */
   followingContent?: 'moves' | 'stays';
+
+  /**
+   * Edit mode, as a UIKit table's: every row makes room at its leading
+   * edge for an editing control (UIKit indents a row in edit mode whatever
+   * its editing style) and its trailing content (`endContent`) leaves, as a
+   * table cell's accessory does. Under a finger (iOS and Android alike),
+   * entering and leaving animate on UIKit's table spring: the rows' content
+   * slides by the indent and the trailing content fades out in place; with
+   * a mouse the list switches at once.
+   * @default false
+   */
+  isEditing?: boolean;
 
   /**
    * Whether to show dividers between list items. Under a finger, a touch
@@ -243,6 +257,7 @@ export function List({
   children,
   hasAnimatedChanges = false,
   followingContent = 'moves',
+  isEditing = false,
   density = 'balanced',
   hasDividers = false,
   edge: edgeProp,
@@ -260,6 +275,19 @@ export function List({
   const headerId = useId();
   const listRef = useRef<HTMLUListElement & HTMLOListElement>(null);
   useListUpdateMotion(listRef, hasAnimatedChanges, followingContent);
+  // Edit mode's trailing content stays while it fades out under a finger,
+  // and leaves once faded; leaving edit mode brings it back at once.
+  const editingAnimates = useTouchPresentation().isTouch;
+  const [trailingFading, setTrailingFading] = useState(false);
+  const [editingSeen, setEditingSeen] = useState(isEditing);
+  if (editingSeen !== isEditing) {
+    setEditingSeen(isEditing);
+    setTrailingFading(isEditing && editingAnimates);
+  }
+  useListEditingMotion(listRef, isEditing, editingAnimates, () =>
+    setTrailingFading(false),
+  );
+  const showsTrailing = !isEditing || trailingFading;
   const mergedRef = useMergedRefs(
     listRef,
     ref as React.Ref<HTMLUListElement & HTMLOListElement>,
@@ -285,8 +313,18 @@ export function List({
       edge,
       listStyle,
       keepRowPresentation: hasAnimatedChanges ? keepPresentation : undefined,
+      isEditing,
+      showsTrailing,
     }),
-    [density, hasDividers, edge, listStyle, hasAnimatedChanges],
+    [
+      density,
+      hasDividers,
+      edge,
+      listStyle,
+      hasAnimatedChanges,
+      isEditing,
+      showsTrailing,
+    ],
   );
 
   const listElement = (

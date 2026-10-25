@@ -106,6 +106,18 @@ export const list = {
      *   pt)
      */
     controlSize: 44,
+    /**
+     * How far a row's text moves into the table when it enters edit mode:
+     * the content view moves 44 pt to make room for the editing control and
+     * its margin shrinks from 20 to 16 pt, so the visible text of a plain
+     * table's rows moves 40 pt (every cell style, a `.none` style row
+     * included, unless it opts out of the indent). The trailing accessories
+     * fade out in place and do not move.
+     * @source measured: UIKit lab, iOS 26.2 sim iPhone 17 Pro,
+     *   `setEditing(_:animated:)` on a plain UITableView, view frames read
+     *   frame by frame (batch 75), Oct 24 2026
+     */
+    editingIndent: 40,
   },
   update: {
     /**
@@ -123,10 +135,13 @@ export const list = {
     /**
      * A table's row updates: insert, delete, move and reload (`.automatic`
      * and `.fade`), batch updates, editing's slide-in and self-sizing
-     * growth (critically damped, response 0.3 s, 0.441 s to settle).
+     * growth (critically damped, response 0.3 s, 0.441 s to settle). Edit
+     * mode (`setEditing(_:animated:)`) enters and leaves on this spring,
+     * `UIView.animate(springDuration: 0.3, bounce: 0)`: the rows' content,
+     * the editing controls and the reorder grips together.
      * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone
      *   17 Pro, CAAnimation dump (CASpringAnimation m1 k438.649 c41.888),
-     *   Oct 23 2026
+     *   Oct 23 2026; edit mode, batch 75, Oct 24 2026
      */
     tableSpring: {mass: 1, stiffness: 438.649, damping: 41.888},
   },

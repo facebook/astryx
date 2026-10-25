@@ -54,6 +54,12 @@ export const docs = {
       default: "'moves'",
     },
     {
+      name: 'isEditing',
+      type: 'boolean',
+      description: 'Edit mode, as a UIKit table has: every row makes room at its leading edge for an editing control and its trailing content (endContent) leaves, as a table cell\'s accessory does. Under a finger, entering and leaving animate on UIKit\'s table spring: the rows\' content slides by the indent and the trailing content fades out in place. With a mouse the list switches at once.',
+      default: 'false',
+    },
+    {
       name: 'edge',
       type: "'padded' | 'flush' | 'outset' | 'bleed'",
       description:
