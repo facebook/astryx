@@ -11,6 +11,28 @@ public enum AvatarShape: String, CaseIterable, Codable, Sendable {
   case rounded = "rounded"
   case square = "square"
 }
+/// Words or a switch: `.on` is the component's own words, `.off` none,
+/// `.text` the given words. On the wire it is the web value, a string or a Bool.
+public enum AvatarTooltip: Equatable, Codable, Sendable, ExpressibleByStringLiteral, ExpressibleByBooleanLiteral {
+  case on
+  case off
+  case text(String)
+  public init(stringLiteral value: String) { self = .text(value) }
+  public init(booleanLiteral value: Bool) { self = value ? .on : .off }
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    if let value = try? container.decode(Bool.self) { self = value ? .on : .off }
+    else { self = .text(try container.decode(String.self)) }
+  }
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.singleValueContainer()
+    switch self {
+    case .on: try container.encode(true)
+    case .off: try container.encode(false)
+    case .text(let value): try container.encode(value)
+    }
+  }
+}
 #if os(iOS)
 public struct AvatarProps {
   /// Base props attach to this part on every platform.
@@ -22,15 +44,17 @@ public struct AvatarProps {
   public var alt: String?
   public var size: AvatarSize?
   public var shape: AvatarShape?
+  public var tooltip: AvatarTooltip?
   public var href: String?
   public var onClick: (() -> Void)?
-  public init(src: String? = nil, fallbackSrc: String? = nil, name: String? = nil, alt: String? = nil, size: AvatarSize? = nil, shape: AvatarShape? = nil, href: String? = nil, onClick: (() -> Void)? = nil, base: AstryxBaseProps = AstryxBaseProps()) {
+  public init(src: String? = nil, fallbackSrc: String? = nil, name: String? = nil, alt: String? = nil, size: AvatarSize? = nil, shape: AvatarShape? = nil, tooltip: AvatarTooltip? = nil, href: String? = nil, onClick: (() -> Void)? = nil, base: AstryxBaseProps = AstryxBaseProps()) {
     self.src = src
     self.fallbackSrc = fallbackSrc
     self.name = name
     self.alt = alt
     self.size = size
     self.shape = shape
+    self.tooltip = tooltip
     self.href = href
     self.onClick = onClick
     self.base = base
@@ -44,6 +68,7 @@ public struct AvatarNode: Decodable, Equatable, Sendable {
     public var alt: String?
     public var size: AvatarSize?
     public var shape: AvatarShape?
+    public var tooltip: AvatarTooltip?
     public var href: String?
   }
   public let key: String
@@ -64,6 +89,7 @@ public struct AvatarNode: Decodable, Equatable, Sendable {
       alt: props.alt,
       size: props.size,
       shape: props.shape,
+      tooltip: props.tooltip,
       href: props.href,
       onClick: listens("onClick") ? { send(AstryxAction(key: key, component: "Avatar", event: "onClick", args: [])) } : nil,
       base: base ?? AstryxBaseProps()
@@ -82,15 +108,17 @@ public struct AvatarProps {
   public var alt: String?
   public var size: AvatarSize?
   public var shape: AvatarShape?
+  public var tooltip: AvatarTooltip?
   public var href: String?
   public var onClick: (() -> Void)?
-  public init(src: String? = nil, fallbackSrc: String? = nil, name: String? = nil, alt: String? = nil, size: AvatarSize? = nil, shape: AvatarShape? = nil, href: String? = nil, onClick: (() -> Void)? = nil, base: AstryxBaseProps = AstryxBaseProps()) {
+  public init(src: String? = nil, fallbackSrc: String? = nil, name: String? = nil, alt: String? = nil, size: AvatarSize? = nil, shape: AvatarShape? = nil, tooltip: AvatarTooltip? = nil, href: String? = nil, onClick: (() -> Void)? = nil, base: AstryxBaseProps = AstryxBaseProps()) {
     self.src = src
     self.fallbackSrc = fallbackSrc
     self.name = name
     self.alt = alt
     self.size = size
     self.shape = shape
+    self.tooltip = tooltip
     self.href = href
     self.onClick = onClick
     self.base = base
@@ -104,6 +132,7 @@ public struct AvatarNode: Decodable, Equatable, Sendable {
     public var alt: String?
     public var size: AvatarSize?
     public var shape: AvatarShape?
+    public var tooltip: AvatarTooltip?
     public var href: String?
   }
   public let key: String
@@ -124,6 +153,7 @@ public struct AvatarNode: Decodable, Equatable, Sendable {
       alt: props.alt,
       size: props.size,
       shape: props.shape,
+      tooltip: props.tooltip,
       href: props.href,
       onClick: listens("onClick") ? { send(AstryxAction(key: key, component: "Avatar", event: "onClick", args: [])) } : nil,
       base: base ?? AstryxBaseProps()

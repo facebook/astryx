@@ -26,6 +26,7 @@ public struct Avatar: View {
   ///   - alt: The accessible name, when it differs from `name` (core `alt`).
   ///   - size: `xsm` 20, `sm` 24, `md` 36, `lg` 48, or `xl` 128 points; `nil` is `md` (core `size`).
   ///   - shape: `circle`, `rounded`, or `square`; `nil` is `circle` (core `shape`).
+  ///   - tooltip: Words shown where there is a pointer: `nil` or `true` the name, a string those words, `false` none (core `tooltip`).
   ///   - href: A URL the system opens when the avatar is tapped; the avatar becomes a link (core `href`).
   ///   - onClick: Runs when the avatar is tapped; without `href` the avatar becomes a button (core `onClick`).
   public init(
@@ -35,12 +36,13 @@ public struct Avatar: View {
     alt: String? = nil,
     size: AvatarSize? = nil,
     shape: AvatarShape? = nil,
+    tooltip: AvatarTooltip? = nil,
     href: String? = nil,
     onClick: (() -> Void)? = nil
   ) {
     self.init(
       AvatarProps(
-        src: src, fallbackSrc: fallbackSrc, name: name, alt: alt, size: size, shape: shape, href: href,
+        src: src, fallbackSrc: fallbackSrc, name: name, alt: alt, size: size, shape: shape, tooltip: tooltip, href: href,
         onClick: onClick
       ))
   }
@@ -53,18 +55,42 @@ public struct Avatar: View {
   public var body: some View {
     if props.base.isHidden != true {
       control
+        .modifier(AvatarTooltipModifier(text: tooltipText))
         .modifier(AvatarIdentifier(id: props.base.id))
-        .onAppear(perform: warnIfUnnamed)
+        .onAppear(perform: checkInDevelopment)
     }
   }
 
-  private func warnIfUnnamed() {
+  /// Development checks core makes too: an `href` an app cannot open stops
+  /// the build with its value, and an unnamed link or button is flagged.
+  private func checkInDevelopment() {
     #if DEBUG
+    if Avatar.isUnusableHref(props.href) {
+      assertionFailure(
+        "Avatar href \"\(props.href ?? "")\" is not an absolute URL an app can open; it draws without a link.")
+    }
     if Avatar.needsNameWarning(tap: tap, isNamed: accessibilityLabel != nil) {
       Logger(subsystem: "Astryx", category: "Avatar").warning(
         "An Avatar with href or onClick has no alt or name, so VoiceOver reads it without a name.")
     }
     #endif
+  }
+
+  /// The tooltip's words: the name for `nil` or `true`, the given words, or
+  /// none for `false` or blank words, as core resolves it.
+  var tooltipText: String? {
+    switch props.tooltip ?? .on {
+    case .on: Avatar.meaningful(props.name)
+    case .off: nil
+    case .text(let words): Avatar.meaningful(words)
+    }
+  }
+
+  /// A non-empty `href` that is not an absolute URL, such as a web path.
+  nonisolated static func isUnusableHref(_ href: String?) -> Bool {
+    guard let href, !href.isEmpty else { return false }
+    guard let url = URL(string: href) else { return true }
+    return url.scheme == nil
   }
 
   /// The picture as a link with `href`, a button with only `onClick`, or a
@@ -142,7 +168,16 @@ public struct Avatar: View {
   }
 
   /// The side of the avatar in points.
-  var side: CGFloat { Avatar.points(for: props.size ?? .md) }
+  /// The side of the avatar in points: core's size grown with Dynamic Type,
+  /// as the name beside it grows, up to 1.6 times so it never swallows a row.
+  var side: CGFloat { Avatar.side(for: props.size ?? .md, textScale: astryx.textScale) }
+
+  /// The most an avatar grows with Dynamic Type.
+  nonisolated static var maximumTextScale: CGFloat { 1.6 }
+
+  nonisolated static func side(for size: AvatarSize, textScale: CGFloat) -> CGFloat {
+    (points(for: size) * min(max(textScale, 1), maximumTextScale)).rounded()
+  }
 
   var resolvedShape: AvatarShape { props.shape ?? .circle }
 
@@ -311,6 +346,20 @@ private struct AvatarTarget: ViewModifier {
   func body(content: Content) -> some View {
     let outset = max(0, (44 - side) / 2)
     content.contentShape(.interaction, Rectangle().inset(by: -outset))
+  }
+}
+
+/// The tooltip where there is a pointer (SwiftUI `.help`; on touch it is the
+/// name VoiceOver already reads).
+private struct AvatarTooltipModifier: ViewModifier {
+  let text: String?
+
+  func body(content: Content) -> some View {
+    if let text {
+      content.help(text)
+    } else {
+      content
+    }
   }
 }
 

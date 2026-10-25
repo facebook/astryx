@@ -158,6 +158,8 @@ describe('native contracts', () => {
         'onClick',
       ]),
     );
+    // `string | boolean`: words, or on (the name) and off.
+    expect(avatar!.core.tooltip?.type).toEqual({kind: 'textOrBoolean'});
     expect(avatar!.webOnly.map(prop => prop.name)).toEqual(
       expect.arrayContaining(['target', 'rel', 'status', 'as']),
     );

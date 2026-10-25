@@ -74,7 +74,7 @@ import Testing
   #expect(Avatar.points(for: .md) == 36)
   #expect(Avatar.points(for: .lg) == 48)
   #expect(Avatar.points(for: .xl) == 128)
-  #expect(Avatar("Ada").side == 36)
+  #expect(Avatar.side(for: .md, textScale: 1) == 36)
   let drawn = Pixels(Avatar("Ada", size: .lg).fixedSize())
   #expect(drawn.width == 48 && drawn.height == 48)
 }
@@ -144,10 +144,38 @@ import Testing
 }
 
 @MainActor
-@Test func avatarsKeepTheirSizeAtTheLargestTextSize() {
-  let large = Pixels(Avatar("Ada Lovelace", size: .lg).fixedSize())
-  let largest = Pixels(Avatar("Ada Lovelace", size: .lg).fixedSize(), typeSize: .accessibility5)
-  #expect(largest.width == large.width && largest.height == large.height)
+@Test func avatarsGrowWithTextSizeUpToTheirCap() {
+  let large = Pixels(Avatar("Ada Lovelace", size: .md).fixedSize())
+  let larger = Pixels(Avatar("Ada Lovelace", size: .md).fixedSize(), typeSize: .xxLarge)
+  let largest = Pixels(Avatar("Ada Lovelace", size: .md).fixedSize(), typeSize: .accessibility5)
+  #expect(large.width == 36)
+  #expect(larger.width == Int(Avatar.side(for: .md, textScale: 1.23)))
+  #expect(largest.width == Int((36 * Avatar.maximumTextScale).rounded()))
+  #expect(Avatar.side(for: .xl, textScale: 0.82) == 128)
+}
+
+@MainActor
+@Test func theTooltipIsTheNameUnlessGivenWordsOrTurnedOff() {
+  #expect(Avatar("Ada Lovelace").tooltipText == "Ada Lovelace")
+  #expect(Avatar("Ada Lovelace", tooltip: true).tooltipText == "Ada Lovelace")
+  #expect(Avatar("Ada Lovelace", tooltip: "Ada Lovelace, Mathematician").tooltipText == "Ada Lovelace, Mathematician")
+  #expect(Avatar("Ada Lovelace", tooltip: false).tooltipText == nil)
+  #expect(Avatar("Ada Lovelace", tooltip: " ").tooltipText == nil)
+  #expect(Avatar(src: "https://example.com/a.png").tooltipText == nil)
+}
+
+@Test func tooltipsTravelAsTheWebValue() throws {
+  let encoded = try JSONEncoder().encode([AvatarTooltip.on, .off, "Ada"])
+  #expect(String(decoding: encoded, as: UTF8.self) == #"[true,false,"Ada"]"#)
+  #expect(try JSONDecoder().decode([AvatarTooltip].self, from: encoded) == [.on, .off, .text("Ada")])
+}
+
+@Test func aWebPathIsAnHrefTheAppCannotOpen() {
+  #expect(Avatar.isUnusableHref("/people/ada"))
+  #expect(Avatar.isUnusableHref("not a url"))
+  #expect(!Avatar.isUnusableHref("https://example.com/ada"))
+  #expect(!Avatar.isUnusableHref(""))
+  #expect(!Avatar.isUnusableHref(nil))
 }
 
 @MainActor
