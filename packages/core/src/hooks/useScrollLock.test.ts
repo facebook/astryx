@@ -199,6 +199,58 @@ describe('useScrollLock', () => {
       expect(pan(list, 200, 300)).toBe(false);
     });
 
+    describe('an overlay rendered inside a scrolling container', () => {
+      /** An open modal dialog: jsdom has no top layer, so `:modal` is stubbed. */
+      function modalDialog(parent: HTMLElement): HTMLDialogElement {
+        const dialog = document.createElement('dialog');
+        dialog.setAttribute('open', '');
+        const matches = Element.prototype.matches;
+        vi.spyOn(dialog, 'matches').mockImplementation(
+          selector => selector === ':modal' || matches.call(dialog, selector),
+        );
+        parent.append(dialog);
+        return dialog;
+      }
+
+      it("cancels a scrim drag: a modal dialog's untaken pans go to the page, not to the container", () => {
+        const container = scroller(400, 100);
+        const dialog = modalDialog(container);
+        renderHook(() => useScrollLock(true));
+
+        expect(pan(dialog, 300, 200)).toBe(true);
+        expect(pan(dialog, 200, 300)).toBe(true);
+      });
+
+      it('cancels a drag on a fixed-position overlay inside the container', () => {
+        const container = scroller(400, 100);
+        const overlay = document.createElement('div');
+        overlay.style.position = 'fixed';
+        container.append(overlay);
+        renderHook(() => useScrollLock(true));
+
+        expect(pan(overlay, 300, 200)).toBe(true);
+      });
+
+      it('still lets a pan through to a scroller inside the dialog, or the dialog itself', () => {
+        const container = scroller(400, 100);
+        const dialog = modalDialog(container);
+        const list = scroller(400, 100);
+        const row = document.createElement('div');
+        list.append(row);
+        dialog.append(list);
+        renderHook(() => useScrollLock(true));
+
+        expect(pan(row, 300, 200)).toBe(false);
+
+        const scrolling = modalDialog(container);
+        scrolling.style.overflowY = 'auto';
+        Object.defineProperty(scrolling, 'clientHeight', {value: 200});
+        Object.defineProperty(scrolling, 'scrollHeight', {value: 600});
+        scrolling.scrollTop = 100;
+        expect(pan(scrolling, 300, 200)).toBe(false);
+      });
+    });
+
     it('lets a pan through when the scroller under the finger is inside a shadow root', () => {
       const host = document.createElement('div');
       document.body.append(host);

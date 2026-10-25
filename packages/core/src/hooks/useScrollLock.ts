@@ -4,9 +4,9 @@
 
 /**
  * @file useScrollLock.ts
- * @input Uses React useEffect, the root scroll-style owner, the gesture host's
- *   page-scroll hold with the scroll lock's pan decision, and the scrollbar
- *   gutter hold
+ * @input Uses React useEffect, the root scroll-style owner, the page hold
+ *   (gestures/pageHold) with the scroll lock's pan decision, and the
+ *   scrollbar gutter hold
  * @output Exports useScrollLock hook for locking page scroll behind a modal
  * @position Core hook; used by Dialog, BottomSheet, Drawer and Lightbox to
  *   prevent background scrolling
@@ -16,10 +16,11 @@
  * root, or `<body>` when its own overflow propagates), stops wheel, keyboard
  * and scrollbar scrolling, and `overscroll-behavior-y: none` (on the root and
  * `<body>`) keeps the browser's pull-to-refresh from reloading the page behind
- * the overlay. Under a finger, the gesture host also cancels the
- * one-finger pans that would still scroll the page (`holdPageScroll`, deciding
- * with `isPanAbsorbedBeforePage`), because iOS Safari before 26.4 scrolls an
- * `overflow: hidden` page under a finger. The page's scroll offset never changes, so there is nothing
+ * the overlay. Under a finger, the lock also cancels the one-finger pans that
+ * would still scroll the page (`holdPageScroll`, deciding with
+ * `isPanAbsorbedBeforePage` along the browser's scroll chain, and leaving a
+ * touch a gesture recognizer owns to it), because iOS Safari before 26.4
+ * scrolls an `overflow: hidden` page under a finger. The page's scroll offset never changes, so there is nothing
  * to restore on unlock, and iOS Safari's toolbar keeps the state it had.
  *
  * SYNC: When modified, update:
