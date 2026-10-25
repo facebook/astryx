@@ -14,6 +14,9 @@
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
  *
+ * In a List with `onReorder` (List/useListReorder.ts), each row ends with a
+ * ListReorderHandle, or keeps its place with `isReorderDisabled`.
+ *
  * Composes Item for the shared start content + label + description + end content layout
  * and the invisible button/anchor interactive pattern.
  *
@@ -41,9 +44,12 @@ import {isRenderable, mergeProps} from '../utils';
 import {Item} from '../Item';
 import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {listRowStyles} from './listRow.stylex';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {ListReorderHandle, ListReorderSlot} from './ListReorderHandle';
+import {FIXED_ROW_ATTRIBUTE, ListReorderContext} from './useListReorder';
 
 // =============================================================================
 // Types
@@ -133,6 +139,14 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
    * @default false
    */
   isSelected?: boolean;
+
+  /**
+   * In a List with `onReorder`, this row has no reorder handle and keeps its
+   * place: other rows cannot be dragged or moved past it, so it splits the
+   * list into groups that each reorder on their own. No effect elsewhere.
+   * @default false
+   */
+  isReorderDisabled?: boolean;
 
   /**
    * Swipe actions for touch, passed through to `Item` unchanged: the verbs a
@@ -388,6 +402,7 @@ export function ListItem({
   rel,
   isDisabled = false,
   isSelected = false,
+  isReorderDisabled = false,
   align,
   xstyle,
   className,
@@ -417,6 +432,9 @@ export function ListItem({
       }
     };
   }, []);
+  // In a List with `onReorder`: a trailing handle, or a row that stays put.
+  const isReorderable = use(ListReorderContext) != null;
+  const hasReorderHandle = isReorderable && !isReorderDisabled;
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
   const edge = ctx?.edge ?? 'padded';
@@ -466,7 +484,22 @@ export function ListItem({
       startContent={startContent}
       label={label}
       description={description}
-      endContent={endContent}
+      endContent={
+        hasReorderHandle ? (
+          <>
+            {endContent}
+            <ListReorderHandle label={label} isDisabled={isDisabled} />
+          </>
+        ) : isReorderable && isRenderable(endContent) ? (
+          // A fixed row keeps its end content in the movable rows' column.
+          <>
+            {endContent}
+            <ListReorderSlot />
+          </>
+        ) : (
+          endContent
+        )
+      }
       onClick={onClick}
       interactiveRef={interactiveRef}
       href={href}
@@ -494,10 +527,16 @@ export function ListItem({
           edge === 'flush' && styles.edgeFlush,
           edge === 'outset' && styles.edgeOutset,
           edge === 'bleed' && styles.edgeBleed,
+          // A focused handle rings itself; the row's focus-within ring stays
+          // off for it (two rings, and the list clips the row's sides).
+          hasReorderHandle && focusOutlineStyles.focusWithinExceptOwnRing,
           xstyle,
         ] as StyleXStyles
       }
       {...mergeProps(themeProps('list-item'), {className, style})}
+      {...(isReorderable && isReorderDisabled
+        ? {[FIXED_ROW_ATTRIBUTE]: ''}
+        : null)}
       {...restProps}
     />
   );

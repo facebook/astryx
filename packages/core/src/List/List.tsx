@@ -10,6 +10,9 @@
  *   types
  * @position Core implementation; consumed by index.ts, tested by List.test.tsx
  *
+ * `hasAnimatedChanges` runs the update motion (utils/useListUpdateMotion.ts);
+ * `onReorder` runs the reorder session (List/useListReorder.ts) after it.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/List/List.doc.mjs
  * - /packages/core/src/List/List.test.tsx
@@ -33,6 +36,8 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 import {keepPresentation, useListUpdateMotion} from './useListUpdateMotion';
 import {themeProps} from '../utils/themeProps';
 import {useDevWarning} from '../hooks/useDevWarning';
+import {useTranslator} from '../i18n/useTranslator';
+import {ListReorderContext, useListReorder} from './useListReorder';
 
 export {
   type ListDensity,
@@ -75,6 +80,23 @@ export interface ListProps extends BaseProps<
    * @default false
    */
   hasAnimatedChanges?: boolean;
+
+  /**
+   * Makes the rows reorderable: each row gets a reorder handle at its end
+   * (a ListItem with `isReorderDisabled` keeps its place instead). Called
+   * with a row's index before and after a move; apply it by rendering the
+   * rows in their new order. A drag that ends on its starting place, or a
+   * move the order does not take, changes nothing.
+   *
+   * On a touch screen a finger held still on a handle for a moment picks up
+   * its row (a flick on it still scrolls); the row follows the finger, the
+   * rows it passes slide out of its way, the list scrolls near the edges, and
+   * on release the row settles into its new place, the way an iOS table
+   * reorders. A mouse drags a handle at once. From the keyboard, a handle's
+   * arrow keys move its row one place, Home and End to the ends; Space picks
+   * it up, and Escape puts it back.
+   */
+  onReorder?: (fromIndex: number, toIndex: number) => void;
 
   /**
    * With `hasAnimatedChanges`, page content below the list moves with its
@@ -241,6 +263,7 @@ const dynamicStyles = stylex.create({
  */
 export function List({
   children,
+  onReorder,
   hasAnimatedChanges = false,
   followingContent = 'moves',
   density = 'balanced',
@@ -258,8 +281,12 @@ export function List({
   ...props
 }: ListProps) {
   const headerId = useId();
+  const reorderHintId = useId();
+  const t = useTranslator();
   const listRef = useRef<HTMLUListElement & HTMLOListElement>(null);
   useListUpdateMotion(listRef, hasAnimatedChanges, followingContent);
+  // After the update motion, so a drop's commit is the reorder's.
+  const reorderContext = useListReorder(listRef, onReorder, reorderHintId);
   const mergedRef = useMergedRefs(
     listRef,
     ref as React.Ref<HTMLUListElement & HTMLOListElement>,
@@ -326,18 +353,36 @@ export function List({
     </Tag>
   );
 
+  // The handles' instructions, read by each handle's description.
+  const reorderHint =
+    reorderContext == null ? null : (
+      <span id={reorderHintId} hidden>
+        {t('@astryx.list.reorderHint')}
+      </span>
+    );
+
   if (header == null) {
-    return <ListContext value={contextValue}>{listElement}</ListContext>;
+    return (
+      <ListContext value={contextValue}>
+        <ListReorderContext value={reorderContext}>
+          {listElement}
+          {reorderHint}
+        </ListReorderContext>
+      </ListContext>
+    );
   }
 
   return (
     <ListContext value={contextValue}>
-      <div {...stylex.props(styles.root)}>
-        <div id={headerId} {...stylex.props(styles.header)}>
-          {header}
+      <ListReorderContext value={reorderContext}>
+        <div {...stylex.props(styles.root)}>
+          <div id={headerId} {...stylex.props(styles.header)}>
+            {header}
+          </div>
+          {listElement}
+          {reorderHint}
         </div>
-        {listElement}
-      </div>
+      </ListReorderContext>
     </ListContext>
   );
 }
