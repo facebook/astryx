@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-10-25
+approved_at: 2026-10-26
 owners: [cixzhang]
 review_triggers: [public-api, behavior, layout, theming, accessibility]
 verified_by:
@@ -63,10 +63,14 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Current-state impact
 
-- **Stale keyboard hint (FR5, AR3).** When a member becomes a link or button,
-  or turns static, through its own state while the group does not render, the
-  group keeps its previous hint and tab stop: new interactive members get no
-  hint, and a group left with no interactive members keeps a stale one.
+- **Stale hint and tab stop (FR5, AR2, AR3).** When a member becomes a link or
+  button, or turns static, through its own state while the group does not
+  render, the group keeps its previous hint and tab stop. New interactive
+  members get no hint and are separate Tab stops until focus enters the group;
+  a group left with no interactive members keeps a stale hint; and when the
+  member holding the tab stop turns static, the remaining links keep
+  `tabindex="-1"`, so Tab skips the group and keyboard users cannot reach them
+  until it renders again.
 
 ## Ownership boundary
 
@@ -92,7 +96,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | -------- | ------------------------------- | --------------------------------------------------- | ----------------------------------------- | -------- | ----------------------- | --------- | -------------------------------- |
 | Size     | Any `component:Avatar` size     | Applied to every member and the overflow indicator. | All groups                                | `md`     | `component:AvatarGroup` | Stable    | TypeScript rejects other values. |
 | Shape    | `circle`, `rounded`, `square`   | Applied to every member and the overflow indicator. | All groups                                | `circle` | `component:AvatarGroup` | Stable    | TypeScript rejects other values. |
-| Keyboard | static group; interactive group | Whether any member carries the avatar item marker.  | Resolved after each render                | static   | `component:AvatarGroup` | Stable    | —                                |
+| Keyboard | static group; interactive group | Whether any member carries the avatar item marker.  | Read at each of the group's own renders                | static   | `component:AvatarGroup` | Stable    | —                                |
 
 ## Behavioral and layout contract
 
@@ -141,7 +145,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **AR1 — Named group.** The root is `role="group"` with a translated default
   name the caller can replace.
 - **AR2 — One tab stop.** Interactive members share a single tab stop and are
-  reached with arrow keys, Home, and End, in visual order in both directions.
+  reached with arrow keys, Home, and End, in visual order in both directions,
+  as read at the group's own last render (FR5 gap for member-local changes).
 - **AR3 — Keyboard hint.** The hint describes the group only while roving
   applies, as read at the group's own last render (FR5 gap for member-local
   changes).
