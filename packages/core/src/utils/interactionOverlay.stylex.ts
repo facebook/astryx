@@ -88,6 +88,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
+import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 import {colorVars} from '../theme/tokens.stylex';
 
 /**
@@ -232,20 +233,44 @@ const RELEASE_EASE = 'cubic-bezier(0, 0, 0.2, 1)';
 const pressStrength = {
   default: null,
   '[data-astryx-press="on"]': 1,
-  '[data-astryx-press="fading"]': 1,
+  '[data-astryx-press="fading"]': {
+    default: 1,
+    // Reduce Motion with a fine primary pointer: the release completes at
+    // once (design:reduced-motion DR3), the paint gone at the lift.
+    '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))': 0,
+  },
 };
+/**
+ * The release, an in-place fade of the paint's alpha: an opacity-only
+ * change, since nothing moves or scales. Under Reduce Motion it is the
+ * system's cross-fade on a coarse pointer (DR2: its duration and curve from
+ * reducedMotionFadeConsts) and nothing on any other (DR3). The keys are the
+ * literal spellings of reducedMotionKeys.fade and .instant.
+ */
 const pressReleaseAnimation = {
   animationName: {
     default: null,
-    '[data-astryx-press="fading"]': pressRelease,
+    '[data-astryx-press="fading"]': {
+      default: pressRelease,
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        'none',
+    },
   },
   animationDuration: {
     default: null,
-    '[data-astryx-press="fading"]': PRESS_RELEASE_DURATION,
+    '[data-astryx-press="fading"]': {
+      default: PRESS_RELEASE_DURATION,
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+        reducedMotionFadeConsts.duration,
+    },
   },
   animationTimingFunction: {
     default: null,
-    '[data-astryx-press="fading"]': RELEASE_EASE,
+    '[data-astryx-press="fading"]': {
+      default: RELEASE_EASE,
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+        reducedMotionFadeConsts.easing,
+    },
   },
   animationFillMode: {default: null, '[data-astryx-press="fading"]': 'both'},
 };

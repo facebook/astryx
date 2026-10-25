@@ -32,21 +32,34 @@ const PRESS_STRENGTH = '--astryx-press-alpha';
 const PRESS_PAINT = '--_press-paint';
 const FADING_ARM = '[data-astryx-press="fading"]';
 
-function walk(list: CSSRuleList, visit: (rule: CSSRule) => void): void {
+function walk(
+  list: CSSRuleList,
+  visit: (rule: CSSRule, conditions: string) => void,
+  conditions = '',
+): void {
   for (const rule of Array.from(list)) {
-    visit(rule);
+    visit(rule, conditions);
     const nested = (rule as CSSGroupingRule).cssRules;
     if (nested != null) {
-      walk(nested, visit);
+      const media = (rule as CSSMediaRule).media?.mediaText ?? '';
+      walk(nested, visit, `${conditions} ${media}`);
     }
   }
+}
+
+interface RuleFilter {
+  /** Skip rules inside an `@media` whose condition matches. */
+  outsideMedia?: RegExp;
 }
 
 /**
  * Every injected style rule (rules nested in `@media` included) whose selector
  * names one of the element's classes, as `selector {declarations}` text.
  */
-export function rulesDeclaredFor(el: Element): string[] {
+export function rulesDeclaredFor(
+  el: Element,
+  filter: RuleFilter = {},
+): string[] {
   const classes = el.className
     .split(/\s+/)
     .filter(Boolean)
@@ -59,8 +72,11 @@ export function rulesDeclaredFor(el: Element): string[] {
     } catch {
       continue;
     }
-    walk(rules, rule => {
+    walk(rules, (rule, conditions) => {
       if (!(rule instanceof CSSStyleRule)) {
+        return;
+      }
+      if (filter.outsideMedia?.test(conditions) === true) {
         return;
       }
       const selector = rule.selectorText;
@@ -73,8 +89,12 @@ export function rulesDeclaredFor(el: Element): string[] {
 }
 
 /** The rules on `el` whose selector matches `pseudo` (e.g. `:active`). */
-export function rulesWithSelector(el: Element, pseudo: string): string[] {
-  return rulesDeclaredFor(el).filter(rule => {
+export function rulesWithSelector(
+  el: Element,
+  pseudo: string,
+  filter: RuleFilter = {},
+): string[] {
+  return rulesDeclaredFor(el, filter).filter(rule => {
     const selector = rule.slice(0, rule.indexOf('{'));
     return selector.includes(pseudo);
   });
@@ -194,11 +214,12 @@ export function durationToMs(value: string): number {
  * on a descendant that merely reads the strength.
  */
 export function hasReleaseFade(el: Element): boolean {
-  // The element's own release: a layer of its own (a row's `::before`, a
-  // card's `::after`) runs its clock separately.
-  const fading = rulesWithSelector(el, FADING_ARM).filter(
-    rule => !rule.slice(0, rule.indexOf('{')).includes('::'),
-  );
+  // The element's own release without Reduce Motion: a layer of its own (a
+  // row's `::before`, a card's `::after`) runs its clock separately, and the
+  // Reduce Motion arms are checked in pressPaintReducedMotion.test.ts.
+  const fading = rulesWithSelector(el, FADING_ARM, {
+    outsideMedia: /prefers-reduced-motion/,
+  }).filter(rule => !rule.slice(0, rule.indexOf('{')).includes('::'));
   const durations = fading.flatMap(rule => {
     const match = rule.match(/animation-duration:\s*([^;}]+)/);
     return match == null ? [] : [durationToMs(match[1])];
