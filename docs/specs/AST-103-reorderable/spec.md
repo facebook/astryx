@@ -131,10 +131,12 @@ announcements are those of FR3 and FR4, and the tree adds no option.
   and a pick-up, each move, a drop, and a cancel are announced once, after
   they render, through the shared announcement channel. Focus stays on the
   handle throughout.
-- **FR5 — Reordering adds no elements to a row.** The handle is drawn in an
-  element the row already renders, with its glyph from a theme role, and the
-  moving row is the row itself, moved in place, not a copy
-  (`architecture:component-style-authoring` INV7).
+- **FR5 — Reordering adds at most one element to a row.** The one added
+  element is the handle, the interactive drag target, with its role. Its grip
+  is decoration, drawn by a pseudo-element or a theme-role glyph, not by
+  elements. The moving row is the row itself, moved in place, not a copy
+  (`architecture:component-style-authoring` INV7). Reorder listeners are per
+  collection or on the document, never per row (`spec:AST-094` FR24).
 - **FR6 — Stable from the start.** `createReorderable`, its options, and a
   collection's `reorderable` prop are stable public Core API: no
   `_experimental` name and no experimental subpath (DEC-1). `spec:AST-017`
@@ -162,7 +164,7 @@ announcements are those of FR3 and FR4, and the tree adds no option.
 | FR2          | Bundle and runtime check of a collection with and without the prop     | without the prop; with the prop                                                                    | reorder code in the bundle, a handle, or a listener without the prop fails; the measured cost is recorded in the pull request                      |
 | FR3          | Browser tests with real touch input and keyboard (`spec:AST-013` FR10) | a hold and drag; a flick; arrows, Home, End, Space, Enter, Escape; a drop; a cancel; Reduce Motion | a drag that starts off the handle, a commit before the drop, two callbacks for one move, a callback on cancel, or travel under Reduce Motion fails |
 | FR4          | Screen-reader and announcement tests                                   | "Move before" and "Move after"; a horizontal collection's arrow keys; pick-up, move, drop, cancel  | a missing action, an announcement before render or repeated, or focus leaving the handle fails                                                     |
-| FR5          | Element counts of a row with and without the prop                      | a row at rest; a row picked up                                                                     | an added element per row, or a copy of the moving row, fails                                                                                       |
+| FR5          | Element and listener counts of a list with and without the prop        | a row at rest; a row picked up                                                                     | more than one added element per row, a grip drawn with elements, a per-row listener, or a copy of the moving row, fails                            |
 
 ## Decision log
 
