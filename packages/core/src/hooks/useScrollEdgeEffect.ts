@@ -43,14 +43,20 @@
  * finger drives the scroll (a finger is down in the scroller, or its
  * momentum is still running: `useFingerScroll`, over the gesture host,
  * which ends at the scroller's `scrollend`). A scroll the program starts
- * (`scrollTo`, a status-bar tap) switches it at once. That is a WebKit
- * engine workaround: on iOS 26.2 an opacity fade that starts as a
- * programmatic scroll crosses the switch makes WebKit drop the sticky bar's
- * items for one to three frames (minimal repro: a sticky header with a
- * child, scroll the page 120 px and back to 0 with `scrollTo`, and start any
- * opacity animation or transition on the child when the second scroll
- * crosses back; a fade that starts on a finger's scroll, or a switch without
- * a fade, does not). The fade is opacity only; under Reduce Motion the
+ * (`scrollTo`, a status-bar tap) switches it at once, with no compositing
+ * layer. That is a WebKit engine workaround: on iOS 26.2, while a composited
+ * layer sits under a sticky header (a running animation, `will-change`, a
+ * fixed element), a programmatic scroll back to the top makes WebKit drop
+ * the header's items for about two frames (plain-HTML repro: a sticky
+ * header over a child layer, `scrollTo` 120 px and back to 0; no layer, no
+ * blank frame in 5 takes; `will-change: opacity` on the child, a blank in
+ * 5 of 5, with no opacity change at all; the layer dropped in the same task
+ * as the scroll, none in 6). A finger's scroll never blanks them. So
+ * the layer is composited only while a finger works the page: from the
+ * finger's landing, so a fade that starts mid-drag finds its layer (on a
+ * software rasterizer, creating it as the fade starts costs that frame),
+ * until the finger's scroll has ended; the program's switch is written
+ * without promotion. The fade is opacity only; under Reduce Motion the
  * animator plays its own cross-fade (design:reduced-motion DR2). The springs
  * are motion roles (`bars.scrollEdgeEffect.appear` / `.disappear`): the
  * animator plays a theme's values for them.
@@ -60,6 +66,7 @@
  */
 
 import {useCallback, useEffect, useRef, type RefObject} from 'react';
+import {getGestureHost} from '../gestures/GestureHost';
 import {useFingerScroll} from '../gestures/useFingerScroll';
 import type {SpringDescription} from '../motion/spring';
 import {useAnimator} from '../motion/useAnimator';
@@ -67,6 +74,14 @@ import {useTouchPresentation} from '../utils/touchPresentation';
 
 /** No scroller: nothing is watched (a mouse, or the effect is off). */
 const NO_SCROLLER: RefObject<Element | null> = {current: null};
+
+/**
+ * The custom property the layer's `will-change` reads: `opacity` while a
+ * finger works the page (see the file header), unset otherwise.
+ */
+export const SCROLL_EDGE_LAYER_PROMOTION = '--astryx-scroll-edge-will-change';
+
+const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
 
 export interface UseScrollEdgeEffectOptions {
   /**
@@ -181,10 +196,11 @@ export function useScrollEdgeEffect({
             // cross-fade on a coarse pointer (design:reduced-motion DR2).
           );
         } else {
-          // The first report, or a scroll the program drives: at once. For
-          // the program's scroll this is the WebKit workaround in the file
-          // header (a fade starting on its crossing blanks the bar's items).
-          animator.set({opacity: next ? 1 : 0});
+          // The first report, or a scroll the program drives: at once, and
+          // with no compositing layer. For the program's scroll this is the
+          // WebKit workaround in the file header (a layer under the sticky
+          // bar as the program scrolls back to the top blanks its items).
+          animator.set({opacity: next ? 1 : 0}, {promote: false});
         }
         isShown = next;
       },
@@ -196,10 +212,37 @@ export function useScrollEdgeEffect({
     if (sentinel != null) {
       observer.observe(sentinel);
     }
+    // The layer is composited only while a finger works the page (the file
+    // header): from its landing until its scroll, momentum included, ends.
+    const scroller: Node = root?.current ?? doc;
+    const host = getGestureHost(doc);
+    const releaseHost = host.retain();
+    let isPromoted = false;
+    const updatePromotion = () => {
+      const layer = animator.element;
+      const next = host.isFingerDownIn(scroller) || isFingerScroll();
+      if (layer == null || next === isPromoted) {
+        return;
+      }
+      isPromoted = next;
+      if (next) {
+        layer.style.setProperty(SCROLL_EDGE_LAYER_PROMOTION, 'opacity');
+      } else {
+        layer.style.removeProperty(SCROLL_EDGE_LAYER_PROMOTION);
+      }
+    };
+    const unsubscribeFingers = host.onFingersChange(updatePromotion);
+    // After the finger-scroll watch has heard the same `scrollend`.
+    const onScrollEnd = () => queueMicrotask(updatePromotion);
+    doc.addEventListener('scrollend', onScrollEnd, PASSIVE_CAPTURE);
     return () => {
       observerRef.current = null;
       observer.disconnect();
-      animator.set({opacity: 0});
+      unsubscribeFingers();
+      doc.removeEventListener('scrollend', onScrollEnd, PASSIVE_CAPTURE);
+      releaseHost();
+      animator.element?.style.removeProperty(SCROLL_EDGE_LAYER_PROMOTION);
+      animator.set({opacity: 0}, {promote: false});
     };
   }, [isOn, root, animator, isFingerScroll, springs, registerSprings]);
 

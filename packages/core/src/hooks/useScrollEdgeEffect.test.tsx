@@ -25,6 +25,8 @@ import {useScrollEdgeEffect} from './useScrollEdgeEffect';
 const animator = {
   set: vi.fn(),
   animate: vi.fn(),
+  /** The layer, where a test attaches it (the mocked ref attaches nothing). */
+  element: null as HTMLElement | null,
 };
 
 vi.mock('../motion/useAnimator', () => ({
@@ -100,7 +102,21 @@ class RecordingObserver {
   }
 }
 
+/** A touch event on `target` from finger 1 (down for touchstart). */
+function touch(type: 'touchstart' | 'touchend', target: Element) {
+  const event = new Event(type, {bubbles: true, cancelable: true});
+  const finger = {identifier: 1, clientX: 10, clientY: 10, target};
+  Object.defineProperty(event, 'changedTouches', {value: [finger]});
+  Object.defineProperty(event, 'touches', {
+    value: type === 'touchstart' ? [finger] : [],
+  });
+  act(() => {
+    target.dispatchEvent(event);
+  });
+}
+
 beforeEach(() => {
+  animator.element = null;
   pointer.isTouch = true;
   host.isFinger = true;
   host.watched = [];
@@ -135,7 +151,7 @@ function Bar({
   });
   return (
     <div ref={containerRef} data-testid="container">
-      <div ref={layerRef} />
+      <div ref={layerRef} data-testid="layer" />
       <div key={sentinelKey} ref={sentinelRef} data-testid="sentinel" />
     </div>
   );
@@ -165,14 +181,20 @@ describe('useScrollEdgeEffect', () => {
   it('puts the first report in place without a fade', () => {
     render(<Bar enabled />);
     observer().report(true);
-    expect(animator.set).toHaveBeenLastCalledWith({opacity: 0});
+    expect(animator.set).toHaveBeenLastCalledWith(
+      {opacity: 0},
+      {promote: false},
+    );
     expect(animator.animate).not.toHaveBeenCalled();
   });
 
   it('shows the effect at once when the page loads scrolled', () => {
     render(<Bar enabled />);
     observer().report(false);
-    expect(animator.set).toHaveBeenLastCalledWith({opacity: 1});
+    expect(animator.set).toHaveBeenLastCalledWith(
+      {opacity: 1},
+      {promote: false},
+    );
     expect(animator.animate).not.toHaveBeenCalled();
   });
 
@@ -208,9 +230,15 @@ describe('useScrollEdgeEffect', () => {
     render(<Bar enabled />);
     observer().report(true);
     observer().report(false);
-    expect(animator.set).toHaveBeenLastCalledWith({opacity: 1});
+    expect(animator.set).toHaveBeenLastCalledWith(
+      {opacity: 1},
+      {promote: false},
+    );
     observer().report(true);
-    expect(animator.set).toHaveBeenLastCalledWith({opacity: 0});
+    expect(animator.set).toHaveBeenLastCalledWith(
+      {opacity: 0},
+      {promote: false},
+    );
     expect(animator.animate).not.toHaveBeenCalled();
   });
 
@@ -223,7 +251,10 @@ describe('useScrollEdgeEffect', () => {
     // …and a status-bar tap brings it back.
     host.isFinger = false;
     observer().report(true);
-    expect(animator.set).toHaveBeenLastCalledWith({opacity: 0});
+    expect(animator.set).toHaveBeenLastCalledWith(
+      {opacity: 0},
+      {promote: false},
+    );
     expect(animator.animate).toHaveBeenCalledTimes(1);
   });
 
@@ -242,6 +273,51 @@ describe('useScrollEdgeEffect', () => {
     render(<Bar enabled />);
     expect(renders).toBe(1);
     expect(observer().observed).toEqual([screen.getByTestId('sentinel')]);
+  });
+
+  // The WebKit workaround (the file header): the layer is composited only
+  // while a finger works the scroller, and the program's switch writes no
+  // compositing layer.
+  it('a scroll the program drives switches the layer without promotion', () => {
+    host.isFinger = false;
+    render(<Bar enabled />);
+    observer().report(true);
+    observer().report(false);
+    expect(animator.set).toHaveBeenLastCalledWith(
+      {opacity: 1},
+      {promote: false},
+    );
+    expect(animator.animate).not.toHaveBeenCalled();
+  });
+
+  it('in a scroll container, a finger’s landing composites the layer until it lifts', () => {
+    host.isFinger = false;
+    const {getByTestId} = render(<Bar enabled inContainer />);
+    const layer = getByTestId('layer');
+    animator.element = layer;
+    const promotion = () =>
+      layer.style.getPropertyValue('--astryx-scroll-edge-will-change');
+    expect(promotion()).toBe('');
+    touch('touchstart', getByTestId('sentinel'));
+    expect(promotion()).toBe('opacity');
+    touch('touchend', getByTestId('sentinel'));
+    expect(promotion()).toBe('');
+  });
+
+  it('keeps the layer composited through the finger’s momentum, until its scroll ends', async () => {
+    const {getByTestId} = render(<Bar enabled inContainer />);
+    const layer = getByTestId('layer');
+    animator.element = layer;
+    const promotion = () =>
+      layer.style.getPropertyValue('--astryx-scroll-edge-will-change');
+    touch('touchstart', getByTestId('sentinel'));
+    // Lifted while its scroll still moves (useFingerScroll still reads it).
+    touch('touchend', getByTestId('sentinel'));
+    expect(promotion()).toBe('opacity');
+    host.isFinger = false;
+    document.dispatchEvent(new Event('scrollend'));
+    await Promise.resolve();
+    expect(promotion()).toBe('');
   });
 
   it('moves the observer to a replacement sentinel node', () => {
@@ -278,7 +354,10 @@ describe('useScrollEdgeEffect', () => {
     rerender(<Bar enabled={false} />);
     expect(first.disconnected).toBe(true);
     expect(watchedNode()).toBeNull();
-    expect(animator.set).toHaveBeenLastCalledWith({opacity: 0});
+    expect(animator.set).toHaveBeenLastCalledWith(
+      {opacity: 0},
+      {promote: false},
+    );
   });
 
   it('does nothing where IntersectionObserver is missing', () => {

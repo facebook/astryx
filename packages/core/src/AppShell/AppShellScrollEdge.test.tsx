@@ -79,14 +79,37 @@ beforeEach(() => {
   };
 });
 
-/** A finger lands on `target` and the page scrolls under it. */
-function fingerScroll(target: Element) {
+/** A finger lands on `target`. */
+function fingerDown(target: Element) {
   const event = new Event('touchstart', {bubbles: true, cancelable: true});
   const touch = {identifier: 1, clientX: 10, clientY: 300, target};
   Object.defineProperty(event, 'changedTouches', {value: [touch]});
   Object.defineProperty(event, 'touches', {value: [touch]});
   target.dispatchEvent(event);
+}
+
+/** The finger that landed on `target` lifts. */
+function fingerUp(target: Element) {
+  const event = new Event('touchend', {bubbles: true, cancelable: true});
+  const touch = {identifier: 1, clientX: 10, clientY: 300, target};
+  Object.defineProperty(event, 'changedTouches', {value: [touch]});
+  Object.defineProperty(event, 'touches', {value: []});
+  target.dispatchEvent(event);
+}
+
+/** A finger lands on `target` and the page scrolls under it. */
+function fingerScroll(target: Element) {
+  fingerDown(target);
   document.dispatchEvent(new Event('scroll'));
+}
+
+/** Whether useScrollEdgeEffect asks for the layer to be composited. */
+function isPromoted(layer: Element | null): boolean {
+  return (
+    (layer as HTMLElement | null)?.style.getPropertyValue(
+      '--astryx-scroll-edge-will-change',
+    ) === 'opacity'
+  );
 }
 
 afterEach(() => {
@@ -269,8 +292,45 @@ describe('AppShell scroll edge effect', () => {
     expect(fade?.keyframes.at(-1)?.opacity).toBe('1');
   });
 
-  // The WebKit workaround: a fade that starts as a programmatic scroll
-  // crosses the switch blanks the sticky bar's items on iOS 26.2.
+  // The WebKit workaround: iOS 26.2 drops the sticky bar's items when the
+  // program jumps the page under a composited layer, so the layer is
+  // composited only while a finger works the page.
+  it('the layer is composited from a finger’s landing until its scroll ends', async () => {
+    stubPointer(true);
+    renderShell({height: 'auto'});
+    const layer = layerOf(screen.getByRole('banner'));
+    const content = screen.getByText('Content');
+    expect(isPromoted(layer)).toBe(false);
+    fingerDown(content);
+    expect(isPromoted(layer)).toBe(true);
+    document.dispatchEvent(new Event('scroll'));
+    // Lifted with the page still moving: the momentum is the finger's.
+    fingerUp(content);
+    expect(isPromoted(layer)).toBe(true);
+    document.dispatchEvent(new Event('scrollend'));
+    await Promise.resolve();
+    expect(isPromoted(layer)).toBe(false);
+  });
+
+  it('a tap that lifts without scrolling drops the layer at once', () => {
+    stubPointer(true);
+    renderShell({height: 'auto'});
+    const layer = layerOf(screen.getByRole('banner'));
+    const content = screen.getByText('Content');
+    fingerDown(content);
+    expect(isPromoted(layer)).toBe(true);
+    fingerUp(content);
+    expect(isPromoted(layer)).toBe(false);
+  });
+
+  it('a mouse never composites the layer', () => {
+    stubPointer(false);
+    renderShell({height: 'auto'});
+    const content = screen.getByText('Content');
+    fingerDown(content);
+    expect(isPromoted(layerOf(screen.getByRole('banner')))).toBe(false);
+  });
+
   it('leaving the sentinel during a scroll the program drives switches the layer at once', () => {
     stubPointer(true);
     renderShell({height: 'auto'});
@@ -282,6 +342,9 @@ describe('AppShell scroll edge effect', () => {
     observer.report(false);
     expect(animations.some(({element}) => element === layer)).toBe(false);
     expect((layer as HTMLElement | null)?.style.opacity).toBe('1');
+    // ...with no compositing layer: the switch is written without promotion.
+    expect((layer as HTMLElement | null)?.style.willChange).toBe('');
+    expect(isPromoted(layer)).toBe(false);
   });
 });
 
@@ -299,6 +362,12 @@ describe('AppShell scroll edge effect follows the constants table', () => {
   it('the layer reaches softExtentPt below the bar', () => {
     expect(styleBlock('scrollEdge')).toContain(
       `default: 'calc(100% + ${bars.scrollEdgeEffect.softExtentPt}px)'`,
+    );
+  });
+
+  it('the layer’s will-change follows the hook’s promotion property', () => {
+    expect(styleBlock('scrollEdge')).toContain(
+      "willChange: 'var(--astryx-scroll-edge-will-change, auto)',",
     );
   });
 

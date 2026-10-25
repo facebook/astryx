@@ -492,6 +492,11 @@ const styles = stylex.create({
     zIndex: -1,
     pointerEvents: 'none',
     opacity: 0,
+    // Composited only while a finger works the page: useScrollEdgeEffect
+    // sets the property from the finger's landing until its scroll ends (a
+    // composited layer here makes iOS 26.2 drop the header's items when the
+    // program jumps the page; see the hook's header).
+    willChange: 'var(--astryx-scroll-edge-will-change, auto)',
     maskImage: {
       default:
         'linear-gradient(to bottom, rgb(0 0 0 / 0.950) calc(100% - 118.8px), rgb(0 0 0 / 0.949) calc(100% - 112.8px), rgb(0 0 0 / 0.948) calc(100% - 106.8px), rgb(0 0 0 / 0.945) calc(100% - 100.8px), rgb(0 0 0 / 0.938) calc(100% - 94.8px), rgb(0 0 0 / 0.922) calc(100% - 88.8px), rgb(0 0 0 / 0.893) calc(100% - 82.8px), rgb(0 0 0 / 0.845) calc(100% - 76.8px), rgb(0 0 0 / 0.772) calc(100% - 70.8px), rgb(0 0 0 / 0.675) calc(100% - 64.8px), rgb(0 0 0 / 0.559) calc(100% - 58.8px), rgb(0 0 0 / 0.433) calc(100% - 52.8px), rgb(0 0 0 / 0.312) calc(100% - 46.8px), rgb(0 0 0 / 0.207) calc(100% - 40.8px), rgb(0 0 0 / 0.127) calc(100% - 34.8px), rgb(0 0 0 / 0.071) calc(100% - 28.8px), rgb(0 0 0 / 0.036) calc(100% - 22.8px), rgb(0 0 0 / 0.017) calc(100% - 16.8px), rgb(0 0 0 / 0.007) calc(100% - 10.8px))',
