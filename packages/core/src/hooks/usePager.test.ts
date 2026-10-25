@@ -1206,6 +1206,46 @@ describe("the drag's axis: UIKit's rule for a pager inside a scroll view", () =>
 });
 
 describe('review fixes', () => {
+  // react-component-runtime INV2: setOptions and a controlled goTo run from
+  // the owner's Effect, so nothing they cause may call back from inside it.
+  it('a gap change before a release reports keeps the report and delivers it, and the settle, from a frame callback', async () => {
+    const f = setup({defaultIndex: 1});
+    await drag(f, {from: 300, dx: -250, step: 4, dt: 8, hold: 100});
+    expect(f.pager.index).toBe(2);
+    expect(f.calls).toEqual([]);
+    f.pager.setOptions({gap: 10});
+    // Nothing from inside the update.
+    expect(f.calls).toEqual([]);
+    expect(f.x()).toBe(-2 * (WIDTH + 10));
+    await advance(16, f.clock);
+    expect(f.calls).toEqual(['index:2:drag', 'settle:2:1']);
+  });
+
+  it('a controlled move calls nothing from inside the update: its settle comes on the next frame', async () => {
+    const f = setup({defaultIndex: 1});
+    f.pager.goTo(3, {animated: false, reason: 'controlled'});
+    expect(f.calls).toEqual([]);
+    await advance(16, f.clock);
+    expect(f.calls).toEqual(['settle:3:1']);
+  });
+
+  it('a count that clamps the page calls nothing from inside the update', async () => {
+    const f = setup({defaultIndex: 4});
+    f.pager.setOptions({count: 3});
+    expect(f.pager.index).toBe(2);
+    expect(f.calls).toEqual([]);
+    await advance(16, f.clock);
+    expect(f.calls).toEqual(['settle:2:4']);
+  });
+
+  it('callbacks an update left for the next frame are dropped when the pager detaches first', async () => {
+    const f = setup({defaultIndex: 1});
+    f.pager.goTo(3, {animated: false, reason: 'controlled'});
+    f.pager.dispose();
+    await advance(16, f.clock);
+    expect(f.calls).toEqual([]);
+  });
+
   it('a vertical swipe that starts on a settling track still reaches the page: the catch never cancels its moves', async () => {
     const f = setup();
     await drag(f, {dx: -250, step: 10, dt: 8});

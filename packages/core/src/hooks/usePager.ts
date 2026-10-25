@@ -569,6 +569,48 @@ export function createPager(
     return isLooping() ? mod(index, count()) : index;
   }
 
+  // Callbacks caused by the owner's own update (setOptions, a controlled
+  // goTo), which the owner passes from an Effect, run from a frame callback,
+  // never from inside that Effect (architecture:react-component-runtime
+  // INV2). A detach drops those still waiting.
+  let deferDepth = 0;
+  let deferred: (() => void)[] = [];
+  let deferredToken = 0;
+
+  function deliver(callback: () => void): void {
+    if (deferDepth > 0) {
+      deferred.push(callback);
+    } else {
+      callback();
+    }
+  }
+
+  function deferringCallbacks(work: () => void): void {
+    deferDepth += 1;
+    try {
+      work();
+    } finally {
+      deferDepth -= 1;
+      if (deferDepth === 0 && deferred.length > 0) {
+        const calls = deferred;
+        deferred = [];
+        const token = deferredToken;
+        requestFrame(() => {
+          if (token === deferredToken) {
+            for (const call of calls) {
+              call();
+            }
+          }
+        });
+      }
+    }
+  }
+
+  function dropDeferred(): void {
+    deferred = [];
+    deferredToken += 1;
+  }
+
   // The page last reported through onIndexChange, and a report that waits
   // for a release's settle to reach the compositor.
   let reported = wrapped(target);
@@ -584,7 +626,7 @@ export function createPager(
       // A controlled move (the owner's `index`, or a `count` that clamps the
       // page) is the owner's own change: it is not reported back.
       if (reason !== 'controlled') {
-        options.onIndexChange?.(index, reason);
+        deliver(() => options.onIndexChange?.(index, reason));
       }
     }
   }
@@ -658,9 +700,10 @@ export function createPager(
 
   function rest(): void {
     flushReport();
-    const previous = settled;
+    const previous = wrapped(settled);
     settled = target;
-    options.onSettle?.(wrapped(settled), wrapped(previous));
+    const index = wrapped(settled);
+    deliver(() => options.onSettle?.(index, previous));
   }
 
   /**
@@ -917,6 +960,11 @@ export function createPager(
   }
 
   function goTo(index: number, goToOptions: GoToOptions = {}): void {
+    if (goToOptions.reason === 'controlled' && deferDepth === 0) {
+      // The owner's own move: what it calls back waits for a frame.
+      deferringCallbacks(() => goTo(index, goToOptions));
+      return;
+    }
     const {animated = true, reason = 'goTo'} = goToOptions;
     let next = Math.round(index);
     if (isLooping()) {
@@ -956,6 +1004,10 @@ export function createPager(
   }
 
   function setOptions(update: Partial<PagerOptions>): void {
+    deferringCallbacks(() => applyOptions(update));
+  }
+
+  function applyOptions(update: Partial<PagerOptions>): void {
     const wasLooping = isLooping();
     const previousOffset = offsetOf(target);
     options = {...options, ...update};
@@ -1023,6 +1075,7 @@ export function createPager(
       removePanListener();
       dropReport();
       stopSettle();
+      dropDeferred();
       holdSelection(false);
       isDragging = false;
       detachAll = null;
