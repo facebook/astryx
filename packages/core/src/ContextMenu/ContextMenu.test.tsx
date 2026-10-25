@@ -631,7 +631,7 @@ function stubAndroidTouch() {
 // so every case moves the faked clock past the ones before it.
 let clockEpoch = 0;
 
-// One touch model on every touch device (#8316): iOS and Android alike.
+// One touch model on every touch device (AST-094 FR13): iOS and Android alike.
 describe.each([
   ['iOS', stubIosTouch],
   ['Android', stubAndroidTouch],

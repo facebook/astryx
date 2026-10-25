@@ -18,8 +18,7 @@
  *   finger, on screen and as laid out, while the trigger is grown, and the
  *   menu stays put; a finger held until the menu shows slides onto a row
  *   (the highlight follows it) and picks it on the lift, and picks nothing
- *   when it lifts before UIMenu's handoff (outside the iOS idiom it picks
- *   nothing, and the menu stays for a tap); the press feedback's presented
+ *   when it lifts before UIMenu's handoff; the press feedback's presented
  *   scale follows UIKit's measured frames; it keeps advancing every frame
  *   through a blocked main thread; it does no Layout or Paint; the page does
  *   not scroll under the held finger, nor when that finger slides on past
