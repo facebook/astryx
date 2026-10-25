@@ -55,8 +55,8 @@ apple/
   and values (`variant: .primary`, `size: .lg`, `isLoading`), so code reads
   the same across web and native. Every view with a core contract takes its
   generated `<Name>Props` (AST-093 FR5) and has a labeled initializer that
-  builds the same props; `Banner` has no core contract yet, so its parameters
-  are hand-written.
+  builds the same props; `Banner` has no native contract yet (the generated
+  contracts do not include it), so its parameters are hand-written.
 - **`Templates/`** holds one folder per page template, named after the
   `astryx template` id. Templates are clone-only, as on the web: you copy a
   template's folder into your app and own it from then on. They are a

@@ -121,3 +121,14 @@ private func astryxComposite(_ top: Color, over under: Color) -> Color {
   func mix(_ x: Float, _ y: Float) -> Double { Double(x) * a + Double(y) * (1 - a) }
   return Color(.sRGB, red: mix(t.red, u.red), green: mix(t.green, u.green), blue: mix(t.blue, u.blue), opacity: 1)
 }
+
+@MainActor
+@Test func bannerFollowsTheThemesTextColorAndTypeSize() {
+  let banner = Astryx.Banner(status: .info, title: "Saved").frame(width: 240)
+  let standard = Pixels(banner, theme: .default)
+  let second = Pixels(banner, theme: secondTheme)
+  #expect(second.contains { close($0, rgba("#FF0000FF"), within: 24) })
+  #expect(!standard.contains { close($0, rgba("#FF0000FF"), within: 24) })
+  // A larger body size makes the banner taller.
+  #expect(second.height > standard.height)
+}
