@@ -1169,13 +1169,22 @@ describe('AppShell page scroll owner', () => {
 
   const TOUCH = '(pointer: coarse)';
 
-  it('resolves touch through the shared touch resolver', () => {
+  it('reads touch in script only through the shared touch resolver', () => {
     const source = readFileSync(
       'packages/core/src/AppShell/AppShell.tsx',
       'utf8',
     );
     expect(source).toContain('useTouchPresentation(');
-    expect(source).not.toContain('(pointer: coarse)');
+    // No pointer check of its own in script: no media query on the pointer,
+    // literal or through a constant. A StyleX key spelled as the resolver's
+    // constant ('@media (pointer: coarse)') stays allowed; the resolver's
+    // spelling test pins it.
+    expect(source).not.toMatch(
+      /(?:matchMedia|useMediaQuery)\(\s*['"`][^'"`]*pointer/,
+    );
+    expect(source).not.toMatch(
+      /(?:matchMedia|useMediaQuery)\(\s*[A-Z_]*(?:TOUCH|POINTER)/,
+    );
   });
 
   it('adaptive scrolls the page, not the main region, where the primary pointer is touch', () => {
