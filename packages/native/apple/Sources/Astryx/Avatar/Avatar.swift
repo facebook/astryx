@@ -56,7 +56,7 @@ public struct Avatar: View {
     if props.base.isHidden != true {
       control
         .modifier(AvatarTooltipModifier(text: helpText))
-        .modifier(AvatarPointerTooltip(text: pointerTooltipText))
+        .modifier(AvatarPointerTooltip(text: pointerTooltipText, isTabStop: Avatar.isTooltipTabStop(tap: tap, hasNameTooltip: pointerTooltipText != nil)))
         .modifier(AvatarTapTooltip(text: Avatar.opensTooltipOnTap(tap) ? tooltipText : nil))
         .modifier(AvatarIdentifier(id: props.base.id))
         .onAppear(perform: checkInDevelopment)
@@ -137,6 +137,13 @@ public struct Avatar: View {
   /// Whether a tap on a touch screen opens the tooltip: only for a static
   /// avatar; a link or button keeps the tap for its action, as core's does.
   nonisolated static func opensTooltipOnTap(_ tap: Tap) -> Bool { tap == .none }
+
+  /// Whether a static avatar takes keyboard focus: while it has a name
+  /// tooltip, as core gives it a tab stop, so a keyboard user can see the
+  /// name. A link or button is a tab stop already.
+  nonisolated static func isTooltipTabStop(tap: Tap, hasNameTooltip: Bool) -> Bool {
+    tap == .none && hasNameTooltip
+  }
 
   var tap: Tap {
     if linkURL != nil { return .link }
@@ -384,12 +391,14 @@ private struct AvatarTooltipModifier: ViewModifier {
   }
 }
 
-/// The default name tooltip: when the pointer rests on the avatar, or a link
-/// or button avatar has keyboard focus, for core's 200 ms, a bubble below it
-/// shows the name in core's tooltip colors. The bubble is hidden from
+/// The default name tooltip: when the pointer rests on the avatar, or the
+/// avatar has keyboard focus, for core's 200 ms, a bubble below it shows the
+/// name in core's tooltip colors; a press hides it. The bubble is hidden from
 /// VoiceOver, which reads the name as the avatar's own.
 struct AvatarPointerTooltip: ViewModifier {
   let text: String?
+  /// Makes a static avatar focusable, so keyboard focus can show the name.
+  let isTabStop: Bool
   @State private var isShown = false
   @State private var isHovering = false
   @State private var pending: Task<Void, Never>?
@@ -401,7 +410,15 @@ struct AvatarPointerTooltip: ViewModifier {
   func body(content: Content) -> some View {
     if let text {
       content
+        // Only a static avatar is made focusable; `focusable(false)` would
+        // take focus away from a link or button.
+        .modifier(AvatarTabStop(isOn: isTabStop))
         .focused($isFocused)
+        // A press hides the pointer's tooltip, as core's does.
+        .simultaneousGesture(TapGesture().onEnded {
+          pending?.cancel()
+          isShown = false
+        })
         .onHover { inside in
           isHovering = inside
           update()
@@ -463,6 +480,19 @@ struct AvatarTapTooltip: ViewModifier {
     #else
     content
     #endif
+  }
+}
+
+/// Makes a view a keyboard tab stop, or leaves it as it is.
+private struct AvatarTabStop: ViewModifier {
+  let isOn: Bool
+
+  func body(content: Content) -> some View {
+    if isOn {
+      content.focusable()
+    } else {
+      content
+    }
   }
 }
 

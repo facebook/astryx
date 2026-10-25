@@ -164,6 +164,14 @@ import Testing
   #expect(Avatar(src: "https://example.com/a.png").tooltipText == nil)
 }
 
+@Test func aStaticAvatarWithANameTooltipIsATabStop() {
+  #expect(Avatar.isTooltipTabStop(tap: .none, hasNameTooltip: true))
+  #expect(!Avatar.isTooltipTabStop(tap: .none, hasNameTooltip: false))
+  // A link or button is a tab stop already.
+  #expect(!Avatar.isTooltipTabStop(tap: .button, hasNameTooltip: true))
+  #expect(!Avatar.isTooltipTabStop(tap: .link, hasNameTooltip: true))
+}
+
 @MainActor
 @Test func onTouchATapOpensAStaticAvatarsTooltipAndLeavesControlsTheirTap() {
   // A static avatar opens its tooltip on a tap, with the name or given words.
