@@ -55,11 +55,11 @@ public struct Avatar: View {
   public var body: some View {
     if props.base.isHidden != true {
       control
-        // One tooltip path for every tooltip value (FR8): a bubble on a
-        // resting pointer, keyboard focus, and a tap on touch screens.
-        .modifier(AvatarTooltipPresenter(text: tooltipText, isTabStop: Avatar.isTooltipTabStop(tap: tap, hasTooltip: tooltipText != nil)))
-        .modifier(AvatarTapTooltip(text: Avatar.opensTooltipOnTap(tap) ? tooltipText : nil))
-        .modifier(AvatarHint(text: tooltipHint))
+        // The Astryx tooltip (library/tooltip.md), as core's Avatar uses
+        // core's tooltip: a static avatar is a tab stop and opens on a tap;
+        // a link or button keeps its focus and its tap.
+        .astryxTooltip(
+          tooltipText, hint: tooltipHint, focus: Avatar.tooltipFocus(tap), touch: Avatar.tooltipTouch(tap))
         .modifier(AvatarIdentifier(id: props.base.id))
         .onAppear(perform: checkInDevelopment)
     }
@@ -128,16 +128,14 @@ public struct Avatar: View {
   /// with `onClick`, else none.
   enum Tap: Equatable { case link, button, none }
 
-  /// Whether a tap on a touch screen opens the tooltip: only for a static
-  /// avatar; a link or button keeps the tap for its action, as core's does.
-  nonisolated static func opensTooltipOnTap(_ tap: Tap) -> Bool { tap == .none }
+  /// How keyboard focus reaches the tooltip: a static avatar is made a tab
+  /// stop, as core gives it one; a link or button takes focus already.
+  nonisolated static func tooltipFocus(_ tap: Tap) -> TooltipFocus { tap == .none ? .tabStop : .control }
 
-  /// Whether a static avatar takes keyboard focus: while it has a tooltip,
-  /// as core gives it a tab stop, so a keyboard user can read it. A link or
-  /// button is a tab stop already.
-  nonisolated static func isTooltipTabStop(tap: Tap, hasTooltip: Bool) -> Bool {
-    tap == .none && hasTooltip
-  }
+  /// What a direct tap does: a static avatar opens its tooltip; a link or
+  /// button keeps the tap for its action, as core's does.
+  nonisolated static func tooltipTouch(_ tap: Tap) -> TooltipTouch { tap == .none ? .tap : .none }
+
 
   var tap: Tap {
     if linkURL != nil { return .link }
@@ -368,147 +366,6 @@ private struct AvatarTarget: ViewModifier {
   func body(content: Content) -> some View {
     let outset = max(0, (44 - side) / 2)
     content.contentShape(.interaction, Rectangle().inset(by: -outset))
-  }
-}
-
-/// The tooltip where there is a pointer or a keyboard: when the pointer
-/// rests on the avatar, or the avatar has keyboard focus, for core's 200 ms,
-/// a bubble below it shows the tooltip's words in core's tooltip colors; a
-/// press hides it. The bubble is hidden from VoiceOver.
-struct AvatarTooltipPresenter: ViewModifier {
-  /// The tooltip's words: the name or given words.
-  let text: String?
-  /// Makes a static avatar focusable, so keyboard focus can show its tooltip.
-  let isTabStop: Bool
-  @State private var isShown = false
-  @State private var isHovering = false
-  @State private var pending: Task<Void, Never>?
-  @FocusState private var isFocused: Bool
-
-  /// Core's tooltip delay before showing.
-  nonisolated static var delay: Duration { .milliseconds(200) }
-
-  func body(content: Content) -> some View {
-    if let text {
-      content
-        // Only a static avatar is made focusable; `focusable(false)` would
-        // take focus away from a link or button.
-        .modifier(AvatarTabStop(isOn: isTabStop))
-        .focused($isFocused)
-        // A press hides the tooltip, as core's does.
-        .simultaneousGesture(TapGesture().onEnded {
-          pending?.cancel()
-          isShown = false
-        })
-        .onHover { inside in
-          isHovering = inside
-          update()
-        }
-        .onChange(of: isFocused) { update() }
-        .overlay(alignment: .bottom) {
-          if isShown {
-            AvatarTooltipBubble(text: text)
-              // The bubble's top sits 4 points below the avatar.
-              .alignmentGuide(.bottom) { d in d[.top] - 4 }
-          }
-        }
-        .zIndex(isShown ? 1 : 0)
-    } else {
-      content
-    }
-  }
-
-  /// Shows the bubble after the delay while hovered or focused; hides it at once otherwise.
-  private func update() {
-    pending?.cancel()
-    guard isHovering || isFocused else {
-      isShown = false
-      return
-    }
-    pending = Task { @MainActor in
-      try? await Task.sleep(for: Self.delay)
-      if !Task.isCancelled { isShown = true }
-    }
-  }
-}
-
-/// The tooltip on a touch screen, as core's `touchTrigger`: a tap on a static
-/// avatar opens a bubble with the tooltip's words, and the next tap, on the
-/// avatar or elsewhere, closes it. With VoiceOver running the tap is left
-/// alone, so VoiceOver reads the avatar as before.
-struct AvatarTapTooltip: ViewModifier {
-  let text: String?
-  @Environment(\.astryx) private var astryx
-  @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
-  @State private var isShown = false
-
-  func body(content: Content) -> some View {
-    #if os(iOS)
-    if let text, !voiceOver {
-      content
-        // Shared with an enclosing row's button or link, which still runs:
-        // core's touch trigger never takes the tap from its container.
-        .simultaneousGesture(TapGesture().onEnded { isShown.toggle() })
-        // A popover closes on the next tap anywhere, as core's tooltip does.
-        .popover(isPresented: $isShown, arrowEdge: .bottom) {
-          AvatarTooltipBubble(text: text)
-            .presentationCompactAdaptation(.popover)
-            .presentationBackground(astryx.tokens.color.textPrimary)
-        }
-    } else {
-      content
-    }
-    #else
-    content
-    #endif
-  }
-}
-
-/// Given tooltip words as the VoiceOver hint, or no hint.
-private struct AvatarHint: ViewModifier {
-  let text: String?
-
-  func body(content: Content) -> some View {
-    if let text {
-      content.accessibilityHint(SwiftUI.Text(text))
-    } else {
-      content
-    }
-  }
-}
-
-/// Makes a view a keyboard tab stop, or leaves it as it is.
-private struct AvatarTabStop: ViewModifier {
-  let isOn: Bool
-
-  func body(content: Content) -> some View {
-    if isOn {
-      content.focusable()
-    } else {
-      content
-    }
-  }
-}
-
-/// Core's tooltip surface: the primary text color behind surface-colored
-/// body text, padded `space.s1` by `space.s2`, with the container radius.
-struct AvatarTooltipBubble: View {
-  let text: String
-  @Environment(\.astryx) private var astryx
-
-  var body: some View {
-    SwiftUI.Text(text)
-      .font(astryx.font(size: "text-body-size", 14, weight: "text-body-weight"))
-      .foregroundStyle(astryx.tokens.color.backgroundSurface)
-      .padding(.vertical, astryx.tokens.space.s1)
-      .padding(.horizontal, astryx.tokens.space.s2)
-      .background(
-        RoundedRectangle(cornerRadius: astryx.tokens.radius.container, style: .continuous)
-          .fill(astryx.tokens.color.textPrimary)
-      )
-      .fixedSize()
-      .allowsHitTesting(false)
-      .accessibilityHidden(true)
   }
 }
 
