@@ -54,7 +54,30 @@ function rect(left: number, top: number, width: number, height: number) {
 let clock = 0;
 let reduceMotion = false;
 
+/**
+ * The person's settings, through `matchMedia` as the animator reads them (no
+ * option overrides them): Reduce Motion as `reduceMotion` says at each read,
+ * and a coarse primary pointer or not.
+ */
+function stubMedia(coarse: boolean): void {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: query.includes('prefers-reduced-motion')
+      ? reduceMotion
+      : query.includes('pointer: coarse')
+        ? coarse
+        : false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  }));
+}
+
 function setup(selected: string, {coarse = true}: {coarse?: boolean} = {}) {
+  stubMedia(coarse);
   const track = document.createElement('div');
   track.getBoundingClientRect = () =>
     rect(TRACK.left, TRACK.top, TRACK.width, TRACK.height);
@@ -80,14 +103,10 @@ function setup(selected: string, {coarse = true}: {coarse?: boolean} = {}) {
   // A finger by default: Reduced Motion fades (design:reduced-motion DR2).
   const animator: Animator = createAnimator(null, {
     now: () => clock,
-    prefersReducedMotion: () => reduceMotion,
-    isCoarsePointer: () => coarse,
     pseudoElement: '::before',
   });
   const leavingAnimator: Animator = createAnimator(null, {
     now: () => clock,
-    prefersReducedMotion: () => reduceMotion,
-    isCoarsePointer: () => coarse,
     pseudoElement: '::after',
   });
   const motion = new SegmentedSelectionMotion(animator, {
@@ -158,6 +177,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   vi.useRealTimers();
   document.body.innerHTML = '';
   document.head.innerHTML = '';
