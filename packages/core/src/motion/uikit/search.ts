@@ -2,12 +2,13 @@
 
 /**
  * @file search.ts
- * @input Nothing; data only
+ * @input registerMotionTable (motion/roles.ts)
  * @output Exports `search`: UISearchController's activation and cancel clock,
  *   the stacked search field's geometry and its close button's entrance, the
  *   clear button, the navigation bar's fades over an activation, the field
  *   that scrolls away with the content, and the bottom placement's rest above
- *   the keyboard
+ *   the keyboard; and registerSearchTable, which makes its clock, curve and
+ *   snap motion roles (SearchField's touch layer calls it)
  * @position The search domain of the UIKit constants table (motion/uikit);
  *   read by lab's SearchField, and by the navigation stack's bar and the tab
  *   bar's search tab that host it. The keyboard's own spring is
@@ -31,6 +32,8 @@
  * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md and
  * run `pnpm generate:motion-roles`
  */
+
+import {registerMotionTable} from '../roles';
 
 /**
  * UISearchController's search bar: activation, cancel, geometry and
@@ -191,7 +194,15 @@ export const search = {
   },
 } as const;
 
-// Each duration and curve above is a motion role a theme may retune
-// (motion/roles.ts); registerTables.ts registers them. The thresholds
-// (`scrollAway.hysteresisPt`, `scrollAway.collapseThresholdPt`) and the
-// geometry are not durations, springs or curves, so they never become roles.
+/**
+ * Makes each duration and curve above a motion role a theme may retune
+ * (motion/roles.ts). The thresholds (`scrollAway.hysteresisPt`,
+ * `scrollAway.collapseThresholdPt`) and the geometry are not durations,
+ * springs or curves, so they never become roles. Nothing registers on
+ * import: SearchField's touch layer calls it once before its first motion
+ * (it is idempotent), so a page that never shows it ships no registry.
+ * @experimental
+ */
+export function registerSearchTable(): void {
+  registerMotionTable('search', search);
+}

@@ -13,11 +13,10 @@
  */
 
 import {describe, expect, it, vi} from 'vitest';
-import {search, timing} from '.';
+import {registerSearchTable, search, timing} from '.';
 import {listMotionRoles} from '../roles';
-import {registerSharedTables} from './registerTables';
 
-registerSharedTables();
+registerSearchTable();
 
 describe('UIKit search table', () => {
   it('activates on UIKit’s ease-in-ease-out over 383 ms', () => {
@@ -54,10 +53,10 @@ describe('UIKit search table', () => {
     ).toBe(1);
   });
 
-  it('registers nothing when the table is read; the shared registration registers its roles', async () => {
+  it('registers nothing when the table is read; registerSearchTable registers its roles, once', async () => {
     vi.resetModules();
     const roles = await import('../roles');
-    await import('./search');
+    const table = await import('./search');
     const searchRoles = () =>
       roles
         .listMotionRoles()
@@ -65,8 +64,8 @@ describe('UIKit search table', () => {
         .filter(id => id.startsWith('search.'))
         .sort();
     expect(searchRoles()).toEqual([]);
-    const shared = await import('./registerTables');
-    shared.registerSharedTables();
+    table.registerSearchTable();
+    table.registerSearchTable();
     expect(searchRoles()).toEqual([
       'search.activationCurve',
       'search.activationMs',
