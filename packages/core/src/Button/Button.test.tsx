@@ -64,6 +64,8 @@ describe('Button', () => {
 
     const addon = screen.getByRole('button', {name: 'Save'});
     expect(addon.className).toContain('groupStyles.buttonAddon');
+    // The group's edge rules name members by this marker, not by `*`.
+    expect(addon).toHaveAttribute('data-astryx-input-group-item');
 
     // jsdom cannot resolve this compound StyleX focus selector. Keep the
     // direct-child keyboard stacking rule explicit at its definition instead.
@@ -72,7 +74,10 @@ describe('Button', () => {
       'utf8',
     );
     expect(groupStylesSource).toContain(
-      "':where(.astryx-input-group > *):focus-visible'",
+      '`:where(.astryx-input-group > ${MEMBER})`',
+    );
+    expect(groupStylesSource).toContain(
+      '`${DIRECT_INPUT_GROUP_ADDON}:focus-visible`',
     );
     expect(groupStylesSource).toMatch(
       /zIndex:\s*\{\s*default: null,\s*\[DIRECT_INPUT_GROUP_ADDON_FOCUS_VISIBLE\]: 2,/,
@@ -81,6 +86,7 @@ describe('Button', () => {
     rerender(<Button label="Save" />);
     const standalone = screen.getByRole('button', {name: 'Save'});
     expect(standalone.className).not.toContain('groupStyles.buttonAddon');
+    expect(standalone).not.toHaveAttribute('data-astryx-input-group-item');
   });
 
   it('renders children instead of label when provided', () => {

@@ -204,7 +204,7 @@ const sizeStyles = stylex.create({
 
 export type NumberInputSize = keyof typeof sizeStyles;
 
-import {groupStyles} from '../InputGroup/groupStyles';
+import {groupStyles, inputGroupItemProps} from '../InputGroup/groupStyles';
 
 // Re-export shared types for convenience
 
@@ -922,6 +922,7 @@ export function NumberInput({
       }}
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
+      {...(inputGroup ? inputGroupItemProps : undefined)}
       {...mergeProps(
         themeProps('number-input', {
           size,
