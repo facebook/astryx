@@ -198,9 +198,10 @@
         "movement-principles",
         "respecting-user-preferences",
         "usage",
+        "touch-motion",
         "best-practices"
       ],
-      "skeleton": "e648d618f9141bbd7f15bf970ba9e0d41b59ff9ae89e0cbbb2042e98bd5f0109",
+      "skeleton": "d2f0fea1e87d53e70f4e7f542844d17c6fecf13c25300df0ed1d0cac71aa4023",
       "mentions": []
     },
     "principles": {
