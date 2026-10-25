@@ -73,7 +73,6 @@ import {
   PanGestureRecognizer,
   type PanGestureRecognizerOptions,
 } from '../gestures/PanGestureRecognizer';
-import {ScrollViewPanGestureRecognizer} from '../gestures/ScrollViewPanGestureRecognizer';
 import type {
   GestureEventContext,
   GestureTouch,
@@ -204,8 +203,8 @@ export interface PagerEnvironment {
 const PAGER_CLAIM_DISTANCE = 5;
 
 /**
- * The pager's pan: a scroll view's (ScrollViewPanGestureRecognizer), so its
- * release velocity is the one UIScrollView hands `scrollViewWillEndDragging`
+ * The pager's pan: its release is a pan's `scrollVelocity()`, the one
+ * UIScrollView hands `scrollViewWillEndDragging`
  * (but after a silent hold; spec:AST-100 FR2).
  * Inside a scroll view it takes UIKit's rule: a drag is the
  * pager's when its dominant axis is horizontal (`paging.nestedPanAxisRatio`,
@@ -216,7 +215,7 @@ const PAGER_CLAIM_DISTANCE = 5;
  * sheet's rule (`axisRatio`, `paging.panAxisRatio`): neither moves between
  * atan(1 ÷ that) and 45°.
  */
-class PagerPanGestureRecognizer extends ScrollViewPanGestureRecognizer {
+class PagerPanGestureRecognizer extends PanGestureRecognizer {
   /**
    * The kind of pointer the pan follows. Under Reduce Motion a touch's
    * release cross-fades (design:reduced-motion DR2); a mouse's or a pen's
@@ -644,11 +643,12 @@ export function createPager(
         suppressCancelSettle = false;
         return;
       }
-      // The release velocity of a scroll view's pan (spec:AST-100's one
-      // filter, read as UIScrollView reads it). A finger still for more than
-      // 40 ms before the lift releases at 0 (FR2), where UIScrollView keeps
-      // the speed. The content moves against the finger in LTR (sign()).
-      const velocity = state === 'ended' ? sign() * recognizer.velocity().x : 0;
+      // The pan's `scrollVelocity()`: spec:AST-100's one filter, read as
+      // UIScrollView reads it. A finger still for more than 40 ms before the
+      // lift releases at 0 (FR2), where UIScrollView keeps the speed. The
+      // content moves against the finger in LTR (sign()).
+      const velocity =
+        state === 'ended' ? sign() * recognizer.scrollVelocity().x : 0;
       const next = selectPage({
         position: dragPosition,
         velocity,

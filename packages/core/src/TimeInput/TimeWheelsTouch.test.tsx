@@ -176,6 +176,83 @@ describe('TimeInput sheet wheels under a finger and a mouse', () => {
   });
 });
 
+describe('opening a bounded sheet never changes an untouched value', () => {
+  it.each([
+    ['an iPhone', IOS],
+    ['an Android', ANDROID],
+  ])(
+    'TimeInput under %s finger: 8:00 under a 9:00 minimum stays 8:00, and an empty field stays empty',
+    (_, device) => {
+      stubDevice(device);
+      const onChange = vi.fn();
+      const {unmount} = render(
+        <TimeInput
+          label="Alarm"
+          presentation="bottom-sheet"
+          value={'08:00' as ISOTimeString}
+          min={'09:00' as ISOTimeString}
+          max={'17:00' as ISOTimeString}
+          onChange={onChange}
+        />,
+      );
+      const {hour} = openTimeSheet();
+      expect(
+        document.getElementById(hour.getAttribute('aria-activedescendant')!)
+          ?.textContent,
+      ).toBe('8');
+      expect(onChange).not.toHaveBeenCalled();
+      unmount();
+
+      render(
+        <TimeInput
+          label="Alarm"
+          presentation="bottom-sheet"
+          min={'09:00' as ISOTimeString}
+          max={'17:00' as ISOTimeString}
+          onChange={onChange}
+        />,
+      );
+      openTimeSheet();
+      expect(onChange).not.toHaveBeenCalled();
+      expect(screen.getByRole('combobox', {name: 'Alarm'})).toHaveValue('');
+    },
+  );
+
+  it('DateTimeInput: a time before the minimum stays, and an empty field stays empty', () => {
+    stubDevice(ANDROID);
+    const onChange = vi.fn();
+    const {unmount} = render(
+      <DateTimeInput
+        label="Meeting"
+        presentation="bottom-sheet"
+        value={'2026-03-15T08:00' as ISODateTimeString}
+        min={'2026-03-15T09:00' as ISODateTimeString}
+        max={'2026-03-15T17:00' as ISODateTimeString}
+        onChange={onChange}
+      />,
+    );
+    const hour = openTimePanel();
+    expect(
+      document.getElementById(hour.getAttribute('aria-activedescendant')!)
+        ?.textContent,
+    ).toBe('8');
+    expect(onChange).not.toHaveBeenCalled();
+    unmount();
+
+    render(
+      <DateTimeInput
+        label="Meeting"
+        presentation="bottom-sheet"
+        min={'2026-03-15T09:00' as ISODateTimeString}
+        max={'2026-03-15T17:00' as ISODateTimeString}
+        onChange={onChange}
+      />,
+    );
+    openTimePanel();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
 function ControlledDateTime({
   initial = '2026-03-15T11:58' as ISODateTimeString,
   timeIncrement,

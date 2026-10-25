@@ -21,8 +21,8 @@
  * What UIKit does, as measured (picker.ts has the numbers and sources):
  *
  * - The release velocity is a scroll view's, read at lift: its pan
- *   recognizer's last two velocities, blended (the gesture system's
- *   ScrollViewPanGestureRecognizer); the wheel adds no estimator of its own.
+ *   recognizer's last two velocities, blended (a pan's `scrollVelocity()`);
+ *   the wheel adds no estimator of its own.
  * - Inside the rows, a release slower than `release.minimumSpeed` carries no
  *   velocity. Past an end, the velocity is kept.
  * - The scroll view projects the coast to offset + (v − stopSpeed) × r ÷
