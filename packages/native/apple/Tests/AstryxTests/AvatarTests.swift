@@ -172,7 +172,7 @@ import Testing
   #expect(Avatar("Ada Lovelace", tooltip: true).pointerTooltipText == "Ada Lovelace")
   #expect(Avatar("Ada Lovelace", tooltip: "Ada Lovelace, Mathematician").pointerTooltipText == nil)
   #expect(Avatar("Ada Lovelace", tooltip: false).pointerTooltipText == nil)
-  #expect(AvatarPointerTooltip.delay == .milliseconds(500))
+  #expect(AvatarPointerTooltip.delay == .milliseconds(200))
   // The bubble draws the name in core's inverted tooltip colors.
   let bubble = Pixels(AvatarTooltipBubble(text: "Ada Lovelace"))
   #expect(bubble.width > 40)
