@@ -6,11 +6,12 @@
  * @file scrollLockTouchGuard.ts
  * @input The node under a finger and the pan's direction, while a scroll lock
  *   holds the page
- * @output isPanAbsorbedBeforePage, the scroll lock's decision for the gesture
- *   host's page-scroll hold
+ * @output isPanAbsorbedBeforePage, the scroll lock's decision for the page
+ *   hold
  * @position Internal hook utility; used by useScrollLock, through
- *   gestures/pageHold's holdPageScroll on the gesture host (the host owns
- *   the touch listeners).
+ *   gestures/pageHold's holdPageScroll, which owns the touch listeners (its
+ *   own, on the document, only while a lock holds) and asks the document's
+ *   gesture host only whether a recognizer owns the touch.
  *
  * `overflow: hidden` on the root stops wheel, keyboard and scrollbar scrolling,
  * but iOS Safari before 26.4 still scrolls such a page under a finger: on iOS
