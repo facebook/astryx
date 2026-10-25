@@ -47,7 +47,7 @@ describe('native TypeScript checks', () => {
     expect(rootScripts.typecheck).not.toContain('@astryxdesign/native');
   });
 
-  it("check the package, its build, and the emitted types, in that order", () => {
+  it('check the package, its build, and the emitted types, in that order', () => {
     expect(native.scripts.typecheck).toBe(
       'tsc --project tsconfig.json --noEmit && pnpm build && pnpm typecheck:types',
     );

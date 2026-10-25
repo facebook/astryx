@@ -190,7 +190,11 @@ describe('Node-tooling CI routing', () => {
     ]);
     const testJoin = step(ci.jobs.test, 'Require expected test-owner outcomes');
     expect(testJoin.run).toBe('node .github/scripts/ci-test-join.mjs');
-    expect(ci.jobs.test.permissions).toEqual({contents: 'read'});
+    // `actions: read` lets the join report job durations.
+    expect(ci.jobs.test.permissions).toEqual({
+      contents: 'read',
+      actions: 'read',
+    });
     expect(testJoin.env).toMatchObject({
       CHECK_SCOPE_RESULT: '${{ needs.check-scope.result }}',
       DOCSITE_ONLY: '${{ needs.check-scope.outputs.docsite_only }}',
