@@ -640,37 +640,6 @@ test('a drag that reaches the composer dismisses the keyboard and the dock rides
   await waitForAnimation(chat.dock);
 });
 
-test('onDrag dismisses the keyboard as soon as the transcript scrolls', async ({
-  page,
-}) => {
-  const {drivesNativeGestures} = await touchDriver(page);
-  test.skip(
-    !drivesNativeGestures,
-    'injected WebKit touches do not scroll natively (README: engine limits), so the browser never takes the touch',
-  );
-  const chat = await openChat(page, {args: {keyboardDismissMode: 'onDrag'}});
-  const rows = await keyboardUp(page, chat);
-  const driver = await touchDriver(page);
-  await driver.play(
-    drag({x: rows.x, y: 120}, {x: rows.x, y: 200}, {durationMs: 200}),
-  );
-  await expect(chat.editable).not.toBeFocused();
-});
-
-test('none leaves the keyboard up through any drag', async ({page}) => {
-  const chat = await openChat(page, {args: {keyboardDismissMode: 'none'}});
-  const rows = await keyboardUp(page, chat);
-  const driver = await touchDriver(page);
-  await driver.play(
-    drag(
-      {x: rows.x, y: 120},
-      {x: rows.x, y: rows.inComposer},
-      {durationMs: 300},
-    ),
-  );
-  await expect(chat.editable).toBeFocused();
-});
-
 test('the rise keeps advancing every frame while the main thread is blocked', async ({
   page,
   browserName,

@@ -190,16 +190,9 @@ const SEED_MESSAGES: Message[] = [
 // =============================================================================
 
 /** Full AI chat with streaming, tool calls, triggers, attachments, and frosted glass composer dock */
-export const FullAIChat: StoryObj<typeof ChatLayout> = {
+export const FullAIChat: StoryObj = {
   name: 'Full AI Chat',
-  args: {keyboardDismissMode: 'interactive'},
-  argTypes: {
-    keyboardDismissMode: {
-      control: 'inline-radio',
-      options: ['none', 'onDrag', 'interactive'],
-    },
-  },
-  render: ({keyboardDismissMode}) => {
+  render: () => {
     const [messages, setMessages] = useState<Message[]>(SEED_MESSAGES);
     const [files, setFiles] = useState<string[]>([]);
     const [isStreaming, setIsStreaming] = useState(false);
@@ -495,9 +488,7 @@ export const FullAIChat: StoryObj<typeof ChatLayout> = {
 
     return (
       <div style={{height: '100vh', display: 'flex', flexDirection: 'column'}}>
-        <ChatLayout
-          composer={composerEl}
-          keyboardDismissMode={keyboardDismissMode}>
+        <ChatLayout composer={composerEl}>
           <ChatMessageList>
             {messages.map(msg => {
               if (msg.role === 'system') {

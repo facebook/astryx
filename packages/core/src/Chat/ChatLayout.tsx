@@ -24,9 +24,9 @@
  * a spacer after the messages lets the newest message scroll above it, both
  * laid out from the keyboard height (functional styles), with the keyboard's
  * own spring riding on top; a tap on the composer's text focuses it without
- * Safari scrolling the page, and a drag on the transcript dismisses the
- * keyboard as `keyboardDismissMode` says (default `interactive`: when the
- * finger reaches the composer).
+ * Safari scrolling the page, and a finger dragging the transcript down to the
+ * composer dismisses the keyboard, as in Messages (touch-only behavior with
+ * no caller option; ChatLayout.spec.md FR10).
  *
  * Density (compact/balanced/spacious) is controlled via a prop with
  * 'balanced' as the default. No JS measurement or ResizeObserver needed.
@@ -106,17 +106,6 @@ export interface ChatLayoutProps extends BaseProps<HTMLDivElement> {
    * @default 'balanced'
    */
   density?: Density;
-
-  /**
-   * How a drag on the transcript dismisses the software keyboard, as a
-   * UIKit scroll view's `keyboardDismissMode`: `'interactive'` dismisses it
-   * when the finger reaches the composer (Messages' behavior; the keyboard
-   * leaves on its own rather than following the finger), `'onDrag'` as soon
-   * as the transcript starts to scroll, `'none'` leaves it up.
-   *
-   * @default 'interactive'
-   */
-  keyboardDismissMode?: 'none' | 'onDrag' | 'interactive';
 }
 
 // =============================================================================
@@ -325,7 +314,6 @@ export function ChatLayout({
   composer,
   density = 'balanced',
   emptyState,
-  keyboardDismissMode = 'interactive',
   scrollButton,
   scrollRef: externalScrollRef,
   xstyle,
@@ -353,7 +341,6 @@ export function ChatLayout({
     rootRef,
     scrollRef: scrollContainerRef,
     isSelfScrolling,
-    keyboardDismissMode,
   });
 
   const defaultScrollButton = (

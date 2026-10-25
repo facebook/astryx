@@ -127,9 +127,9 @@ which starts it at the blur.
 - ChatLayout (`Chat/useChatKeyboard.ts`): the dock and the spacer after the
   messages are laid out from `useKeyboardHeight`; the guide's ride moves the
   dock, and a transcript at its newest message, with the keyboard; a tap on the
-  composer's text focuses it without Safari's reveal; and a drag on the
-  transcript dismisses the keyboard (`keyboardDismissMode`, default
-  `interactive` with the composer as the bar on the keyboard).
+  composer's text focuses it without Safari's reveal; and a finger dragging
+  the transcript down to the composer dismisses the keyboard (`interactive`,
+  with the composer as the bar on the keyboard; no caller option).
 
 ## Files
 

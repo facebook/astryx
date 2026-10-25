@@ -6,18 +6,21 @@ export const docs = {
   name: 'ChatLayout',
   subComponentOf: 'Chat',
   displayName: 'Chat Layout',
-  description: 'Layout shell for full chat interfaces. Messages flow in normal page flow, composer is fixed to the bottom with a frosted glass dock. Set density (compact/balanced/spacious) to control spacing, message max-width, and blur layer sizing. Includes built-in auto-scroll, a "New messages" scroll-to-bottom button, and a frosted glass blur layer behind the composer. By default the layout root is the scroll container; pass scrollRef to delegate scrolling to a parent element or the document body. On a phone the composer rides on top of the software keyboard, in step with it, and a conversation at its newest message stays there; tapping the composer\u2019s text focuses it without scrolling the page, and dragging the conversation down to the composer dismisses the keyboard (keyboardDismissMode).',
+  description:
+    'Layout shell for full chat interfaces. Messages flow in normal page flow, composer is fixed to the bottom with a frosted glass dock. Set density (compact/balanced/spacious) to control spacing, message max-width, and blur layer sizing. Includes built-in auto-scroll, a "New messages" scroll-to-bottom button, and a frosted glass blur layer behind the composer. By default the layout root is the scroll container; pass scrollRef to delegate scrolling to a parent element or the document body. On a phone the composer rides on top of the software keyboard, in step with it, and a conversation at its newest message stays there; tapping the composer\u2019s text focuses it without scrolling the page, and dragging the conversation down to the composer dismisses the keyboard. On Android, Chrome reports no keyboard height to the page: to keep the composer above the keyboard there, add interactive-widget=resizes-content to your viewport meta tag (<meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">) so the browser resizes the layout for the keyboard.',
   props: [
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'Message content: typically ChatMessageList. Flows naturally in the page and scrolls with the container.',
+      description:
+        'Message content: typically ChatMessageList. Flows naturally in the page and scrolls with the container.',
       required: true,
     },
     {
       name: 'composer',
       type: 'ReactNode',
-      description: 'Composer element: typically ChatComposer. Fixed to the bottom with a frosted glass dock.',
+      description:
+        'Composer element: typically ChatComposer. Fixed to the bottom with a frosted glass dock.',
       required: true,
       slotElements: [
         {
@@ -32,7 +35,8 @@ export const docs = {
     {
       name: 'emptyState',
       type: 'ReactNode',
-      description: 'Content shown when children is empty. Centered vertically in the message area.',
+      description:
+        'Content shown when children is empty. Centered vertically in the message area.',
       slotElements: [
         {
           __element: 'EmptyState',
@@ -46,75 +50,83 @@ export const docs = {
     {
       name: 'scrollButton',
       type: 'ReactNode | null',
-      description: 'Scroll-to-bottom button rendered above the composer. Defaults to ChatLayoutScrollButton with auto-scroll integration. Pass null to hide.',
+      description:
+        'Scroll-to-bottom button rendered above the composer. Defaults to ChatLayoutScrollButton with auto-scroll integration. Pass null to hide.',
     },
     {
       name: 'scrollRef',
       type: 'React.RefObject<HTMLElement | null>',
-      description: 'External scroll container ref. When provided, auto-scroll and scroll-to-bottom target this element instead of the layout root. Use when the chat is embedded in a page where a parent element or the document body scrolls.',
+      description:
+        'External scroll container ref. When provided, auto-scroll and scroll-to-bottom target this element instead of the layout root. Use when the chat is embedded in a page where a parent element or the document body scrolls.',
     },
     {
       name: 'density',
       type: "'compact' | 'balanced' | 'spacious'",
-      description: 'Visual density: controls dock padding, message-area max-width and inline padding, and the height of the frosted glass blur layer.',
+      description:
+        'Visual density: controls dock padding, message-area max-width and inline padding, and the height of the frosted glass blur layer.',
       default: "'balanced'",
-    },
-    {
-      name: 'keyboardDismissMode',
-      type: "'none' | 'onDrag' | 'interactive'",
-      description: "How a drag on the transcript dismisses the software keyboard: 'interactive' when the finger reaches the composer (as in Messages; the keyboard leaves on its own rather than following the finger), 'onDrag' as soon as the transcript starts to scroll, 'none' leaves it up. Only while a software keyboard is up.",
-      default: "'interactive'",
     },
   ],
   usage: {
-    description: 'ChatLayout is the layout shell for full-page chat interfaces. It renders messages in normal page flow and docks the composer to the bottom with a frosted glass blur layer. Set the density prop to control spacing; it defaults to balanced. Use it to wrap ChatMessageList and ChatComposer for a complete chat experience with built-in auto-scroll and a scroll-to-bottom button.',
+    description:
+      'ChatLayout is the layout shell for full-page chat interfaces. It renders messages in normal page flow and docks the composer to the bottom with a frosted glass blur layer. Set the density prop to control spacing; it defaults to balanced. Use it to wrap ChatMessageList and ChatComposer for a complete chat experience with built-in auto-scroll and a scroll-to-bottom button.',
     bestPractices: [
       {
         guidance: true,
-        description: 'Pass ChatMessageList as children and ChatComposer as the composer prop for a complete chat interface.',
+        description:
+          'Pass ChatMessageList as children and ChatComposer as the composer prop for a complete chat interface.',
       },
       {
         guidance: true,
-        description: 'Provide an emptyState so new conversations show a prompt instead of a blank screen.',
+        description:
+          'Provide an emptyState so new conversations show a prompt instead of a blank screen.',
       },
       {
         guidance: true,
-        description: 'Use scrollRef when the chat is embedded in a page where a parent element handles scrolling.',
+        description:
+          'Use scrollRef when the chat is embedded in a page where a parent element handles scrolling.',
       },
       {
         guidance: false,
-        description: "Don't apply a fixed height on the layout; let it fill its container with flex: 1.",
+        description:
+          "Don't apply a fixed height on the layout; let it fill its container with flex: 1.",
       },
       {
         guidance: false,
-        description: "Don't render multiple ChatLayout instances in the same scroll container; each expects to own its scroll context.",
+        description:
+          "Don't render multiple ChatLayout instances in the same scroll container; each expects to own its scroll context.",
       },
     ],
     anatomy: [
       {
         name: 'Message area',
         required: true,
-        description: 'Scrollable region for messages. Renders children (typically ChatMessageList) in a flex column that pushes content to the bottom when the list is short.',
+        description:
+          'Scrollable region for messages. Renders children (typically ChatMessageList) in a flex column that pushes content to the bottom when the list is short.',
       },
       {
         name: 'Frosted glass dock',
         required: true,
-        description: 'Sticky or fixed container at the bottom with a backdrop-blur layer. Houses the scroll button and composer. While a software keyboard is up it rises with the keyboard, and the message area gets room to scroll above it.',
+        description:
+          'Sticky or fixed container at the bottom with a backdrop-blur layer. Houses the scroll button and composer. While a software keyboard is up it rises with the keyboard, and the message area gets room to scroll above it.',
       },
       {
         name: 'Scroll-to-bottom button',
         required: false,
-        description: 'Appears when the user scrolls up or new messages arrive. Defaults to ChatLayoutScrollButton; pass null to hide or a custom element to override.',
+        description:
+          'Appears when the user scrolls up or new messages arrive. Defaults to ChatLayoutScrollButton; pass null to hide or a custom element to override.',
       },
       {
         name: 'Composer',
         required: true,
-        description: 'The input area for sending messages, typically ChatComposer. Docked at the bottom inside the frosted glass layer.',
+        description:
+          'The input area for sending messages, typically ChatComposer. Docked at the bottom inside the frosted glass layer.',
       },
       {
         name: 'Empty state',
         required: false,
-        description: 'Centered placeholder shown when no messages exist. Use EmptyState for a consistent look.',
+        description:
+          'Centered placeholder shown when no messages exist. Use EmptyState for a consistent look.',
       },
     ],
   },
@@ -123,38 +135,63 @@ export const docs = {
 export const docsZh = {
   name: 'ChatLayout',
   displayName: 'Chat Layout',
-  description: '完整聊天界面的布局外壳。消息在页面中自然流动，编写器固定在底部，带有毛玻璃效果。通过 density 属性控制密度。在手机上，编写器随软键盘同步上移并停在键盘上方，停留在最新消息的对话保持在最新消息；轻点编写器的文本会聚焦它而不滚动页面，把对话向下拖到编写器会收起键盘（keyboardDismissMode，默认 interactive）。',
+  description:
+    '完整聊天界面的布局外壳。消息在页面中自然流动，编写器固定在底部，带有毛玻璃效果。通过 density 属性控制密度。在手机上，编写器随软键盘同步上移并停在键盘上方，停留在最新消息的对话保持在最新消息；轻点编写器的文本会聚焦它而不滚动页面，把对话向下拖到编写器会收起键盘。在 Android 上，Chrome 不向页面报告键盘高度：要让编写器停在键盘上方，请在 viewport meta 标签中加入 interactive-widget=resizes-content，让浏览器为键盘调整布局大小。',
   propDescriptions: {
     children: '消息内容，通常是 ChatMessageList。在页面中自然流动。',
     composer: '编写器元素，通常是 ChatComposer。固定在底部，带有毛玻璃底座。',
     emptyState: '子元素为空时显示的内容。',
-    scrollButton: '编写器上方的滚动到底部按钮。默认使用 ChatLayoutScrollButton。传入 null 隐藏。',
-    scrollRef: '外部滚动容器引用。提供时，自动滚动和滚动到底部将目标指向此元素。',
+    scrollButton:
+      '编写器上方的滚动到底部按钮。默认使用 ChatLayoutScrollButton。传入 null 隐藏。',
+    scrollRef:
+      '外部滚动容器引用。提供时，自动滚动和滚动到底部将目标指向此元素。',
     density: '视觉密度：控制底座内边距、消息区最大宽度和毛玻璃层高度。',
-    keyboardDismissMode:
-      "在对话上拖动如何收起软键盘：'interactive'（默认）在手指到达编写器时收起（如 Messages；键盘自行离开，而不是跟随手指），'onDrag' 在对话开始滚动时即收起，'none' 保持键盘。只在软键盘弹出时生效。",
   },
 };
 
 export const docsDense = {
   name: 'ChatLayout',
   displayName: 'Chat Layout',
-  description: 'layout shell for full chat; msgs in page flow, composer fixed bottom w/ frosted glass dock; density prop (default balanced); scrollRef delegates to parent/body; on phones the composer rides the software keyboard, transcript stays at newest msg, tap focuses w/o page scroll, drag to composer dismisses keyboard (keyboardDismissMode)',
+  description:
+    'layout shell for full chat; msgs in page flow, composer fixed bottom w/ frosted glass dock; density prop (default balanced); scrollRef delegates to parent/body; on phones the composer rides the software keyboard, transcript stays at newest msg, tap focuses w/o page scroll, drag to composer dismisses keyboard (touch, no option); Android Chrome needs viewport meta interactive-widget=resizes-content to keep the composer above the keyboard',
   usage: {
     bestPractices: [
-      {guidance: true, description: 'Pass ChatMessageList as children and ChatComposer as composer prop for complete chat.'},
-      {guidance: true, description: 'Provide emptyState so new conversations show a prompt, not blank screen.'},
-      {guidance: true, description: 'Use scrollRef when chat is embedded in a page where a parent element handles scrolling.'},
-      {guidance: false, description: 'Apply fixed height on layout; let it fill container with flex: 1.'},
-      {guidance: false, description: 'Render multiple ChatLayout instances in same scroll container; each expects to own its scroll context.'},
+      {
+        guidance: true,
+        description:
+          'Pass ChatMessageList as children and ChatComposer as composer prop for complete chat.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide emptyState so new conversations show a prompt, not blank screen.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use scrollRef when chat is embedded in a page where a parent element handles scrolling.',
+      },
+      {
+        guidance: false,
+        description:
+          'Apply fixed height on layout; let it fill container with flex: 1.',
+      },
+      {
+        guidance: false,
+        description:
+          'Render multiple ChatLayout instances in same scroll container; each expects to own its scroll context.',
+      },
     ],
   },
   propDescriptions: {
     children: 'msg content; typically ChatMessageList',
-    composer: 'composer element; typically ChatComposer; fixed bottom w/ frosted glass',
+    composer:
+      'composer element; typically ChatComposer; fixed bottom w/ frosted glass',
     emptyState: 'content when children empty',
-    scrollButton: 'scroll-to-bottom btn; defaults to ChatLayoutScrollButton; pass null to hide',
-    scrollRef: 'external scroll container ref; targets parent/body instead of layout root',
+    scrollButton:
+      'scroll-to-bottom btn; defaults to ChatLayoutScrollButton; pass null to hide',
+    scrollRef:
+      'external scroll container ref; targets parent/body instead of layout root',
     density: 'visual density; dock padding, message max-width, blur height',
   },
 };

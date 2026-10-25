@@ -34,10 +34,11 @@
  *   end of the messages inside the scrollport until the scroll caught up,
  *   which Safari puts off while the finger is down, and the sticky dock
  *   would leave the bottom to sit at that end.
- * - A drag on the transcript dismisses the keyboard as `keyboardDismissMode`
- *   says (keyboard/keyboardDismiss.ts). `interactive`, Messages' mode, is
- *   triggered where the finger reaches the composer: the composer is the
- *   bar on the keyboard, so its height is the dismiss padding.
+ * - A finger dragging the transcript down to the composer dismisses the
+ *   keyboard, Messages' `interactive` mode (keyboard/keyboardDismiss.ts): the
+ *   composer is the bar on the keyboard, so its height is the dismiss
+ *   padding. Touch-only behavior with no caller option (ChatLayout.spec.md
+ *   FR10).
  * - A tap on the composer's text while it is not focused focuses it without
  *   Safari's reveal (`preventScroll`), which would otherwise scroll the
  *   whole page up to show a field that the keyboard is about to cover, and
@@ -61,7 +62,6 @@ import {
   getMobileKeyboardHeight,
   observeKeyboardDismiss,
   useKeyboardHeight,
-  type KeyboardDismissMode,
   type KeyboardTransition,
 } from '../keyboard';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
@@ -76,8 +76,6 @@ export interface UseChatKeyboardOptions {
    * than an outer scroller (a fixed dock at the layout viewport's bottom).
    */
   isSelfScrolling: boolean;
-  /** How a drag on the transcript dismisses the keyboard. */
-  keyboardDismissMode: KeyboardDismissMode;
 }
 
 export interface UseChatKeyboardResult {
@@ -186,7 +184,6 @@ function focusAtPoint(editable: HTMLElement, x: number, y: number) {
  *   rootRef,
  *   scrollRef,
  *   isSelfScrolling,
- *   keyboardDismissMode: 'interactive',
  * });
  * <div ref={keyboard.messagesRef}>…</div>
  * <div ref={keyboard.spacerRef} aria-hidden {...stylex.props(styles.spacer(keyboard.lift))} />
@@ -199,7 +196,6 @@ export function useChatKeyboard({
   rootRef,
   scrollRef,
   isSelfScrolling,
-  keyboardDismissMode,
 }: UseChatKeyboardOptions): UseChatKeyboardResult {
   const dock = useAnimator();
   const messages = useAnimator();
@@ -445,7 +441,7 @@ export function useChatKeyboard({
       return undefined;
     }
     return observeKeyboardDismiss(root, {
-      mode: keyboardDismissMode,
+      mode: 'interactive',
       // From the keyboard's top edge up to the composer's.
       dismissPadding: () => {
         const composer = composerRef.current;
@@ -456,7 +452,7 @@ export function useChatKeyboard({
               composer.getBoundingClientRect().top;
       },
     });
-  }, [rootRef, keyboardDismissMode]);
+  }, [rootRef]);
 
   // A tap on the composer's text that would bring up the keyboard is the
   // keyboard module's tap route (spec:AST-099 FR4): focused here without
