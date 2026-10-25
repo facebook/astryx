@@ -3,10 +3,10 @@
 /**
  * @file sheetRelease.test.ts
  * @input vitest, resolveSheetRelease and the UIKit constants table
- * @output Holds the release rule to UIKit's own releases: 134 drags of a
+ * @output Holds the release rule to UIKit's own releases: 164 drags of a
  *   UISheetPresentationController `[.medium(), .large()]` sheet read from
  *   UIKit (offset and velocity of the sheet interaction's last drag update
- *   before the lift, the detent it settled on, and for the 55 whose spring
+ *   before the lift, the detent it settled on, and for the 79 whose spring
  *   was read the damping of the spring it attached); plus the rule's own
  *   edges
  * @position Testing; pure, no DOM
@@ -185,6 +185,48 @@ const UIKIT_FLICK_RELEASES: ReadonlyArray<
   ['d180.v1400', 600.99, 1424.8, 'dismissed', null],
 ];
 
+/**
+ * The third capture, back-outs (iOS 26.2 simulator, Oct 25 2026): from the
+ * medium detent, a drag past the midpoint toward large (to about 174 pt),
+ * or 90 % of the way to gone, then 40 pt back toward medium at a constant
+ * speed, lifting while moving. Below 250 pt/s none returns to medium: it
+ * settles where it is nearest (`sheet.release.minProjectionSpeed`).
+ */
+const UIKIT_BACKOUT_RELEASES: ReadonlyArray<
+  readonly [string, number, number, 'large' | 'medium' | 'dismissed', 1 | null]
+> = [
+  ['back.large.v100.r1', 229.32, 140.0, 'large', 1],
+  ['back.large.v250.r1', 224.32, 161.4, 'large', 1],
+  ['back.gone.v100.r1', 778.32, -96.3, 'dismissed', null],
+  ['back.gone.v250.r1', 781.65, -239.1, 'dismissed', null],
+  ['back.large.v100.r2', 223.65, 60.2, 'large', 1],
+  ['back.large.v250.r2', 224.32, 200.9, 'large', 1],
+  ['back.gone.v100.r2', 778.32, -95.9, 'dismissed', null],
+  ['back.gone.v250.r2', 779.32, -263.8, 'dismissed', null],
+  ['back.large.v100.r3', 224.32, 91.9, 'large', 1],
+  ['back.large.v250.r3', 222.32, 242.4, 'large', 1],
+  ['back.gone.v100.r3', 777.32, -105.4, 'dismissed', null],
+  ['back.gone.v250.r3', 777.32, -246.1, 'dismissed', null],
+  ['back.large224.v300', 224.32, 300.6, 'medium', 1],
+  ['back.large224.v400', 220.99, 403.9, 'medium', 1],
+  ['back.large224.v500', 224.32, 451.7, 'medium', 1],
+  ['back.large224.v650', 224.32, 634.4, 'medium', 1],
+  ['back.large224.v800', 217.65, 970.0, 'medium', 1],
+  ['back.large204.v300', 204.32, 327.3, 'medium', 1],
+  ['back.large204.v500', 196.32, 566.5, 'medium', 1],
+  ['back.large204.v800', 204.32, 963.1, 'medium', 1],
+  ['back.large244.v300', 239.32, 296.4, 'medium', 1],
+  ['back.large244.v500', 244.32, 501.7, 'medium', 1],
+  ['back.large224.v250.r1', 224.32, 243.6, 'large', 1],
+  ['back.large224.v262.r1', 224.32, 254.4, 'medium', 1],
+  ['back.large224.v275.r1', 224.32, 269.8, 'medium', 1],
+  ['back.large224.v288.r1', 224.32, 282.8, 'medium', 1],
+  ['back.large224.v250.r2', 222.32, 250.6, 'medium', 1],
+  ['back.large224.v262.r2', 221.99, 264.7, 'medium', 1],
+  ['back.large224.v275.r2', 224.32, 272.4, 'medium', 1],
+  ['back.large224.v288.r2', 222.32, 287.2, 'medium', 1],
+];
+
 const LARGE = 62;
 const MEDIUM = 404.32;
 const GONE = 874;
@@ -193,6 +235,7 @@ describe('resolveSheetRelease against UIKit', () => {
   for (const [name, offset, velocity, outcome, zeta] of [
     ...UIKIT_RELEASES,
     ...UIKIT_FLICK_RELEASES,
+    ...UIKIT_BACKOUT_RELEASES,
   ]) {
     it(`${name}: ${velocity} pt/s from ${offset} pt → ${outcome}`, () => {
       const release = resolveSheetRelease({
@@ -297,6 +340,31 @@ describe('resolveSheetRelease', () => {
       velocity: -200,
     });
     expect(release).toMatchObject({kind: 'detent', index: 1, offset: 300});
+  });
+
+  it('projects nothing below sheet.release.minProjectionSpeed', () => {
+    // Past the midpoint toward the tallest detent and let go moving back
+    // toward the shorter one just under the speed: it stays with the
+    // tallest, where it is nearest; just over it, the projection takes it
+    // back.
+    const slow = sheet.release.minProjectionSpeed - 1;
+    const fast = sheet.release.minProjectionSpeed + 1;
+    expect(
+      resolveSheetRelease({
+        detents: [0, 300],
+        dismissedOffset: 640,
+        position: 140,
+        velocity: slow,
+      }),
+    ).toMatchObject({kind: 'detent', index: 0, projected: 140});
+    expect(
+      resolveSheetRelease({
+        detents: [0, 300],
+        dismissedOffset: 640,
+        position: 140,
+        velocity: fast,
+      }),
+    ).toMatchObject({kind: 'detent', index: 1});
   });
 
   it('never dismisses a sheet a drag may not dismiss', () => {
