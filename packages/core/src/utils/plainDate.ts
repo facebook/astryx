@@ -374,10 +374,20 @@ export function plainDateFormat(
   options: Intl.DateTimeFormatOptions,
   locale: Locale = 'en',
 ): string {
-  return dateTimeFormatFor(locale, {
-    ...options,
-    calendar: options.calendar ?? 'gregory',
-  }).format(plainDateToDate(pd));
+  const calendar = options.calendar ?? 'gregory';
+  if (options.timeZone == null) {
+    // A PlainDate has no zone. Formatted as UTC midnight in UTC, neither the
+    // cached formatter nor the date depends on the host's zone, which can
+    // change while a page is open.
+    return dateTimeFormatFor(locale, {
+      ...options,
+      calendar,
+      timeZone: 'UTC',
+    }).format(utcTime(pd.year, pd.month - 1, pd.day));
+  }
+  return dateTimeFormatFor(locale, {...options, calendar}).format(
+    plainDateToDate(pd),
+  );
 }
 
 /**

@@ -774,6 +774,40 @@ describe('plainDateFormat', () => {
     );
   });
 
+  it('formats the same date after the host zone moves', () => {
+    // The page stays open while the device travels east: a formatter cached
+    // in the first zone must not move the date.
+    const zone = process.env.TZ;
+    try {
+      process.env.TZ = 'America/Los_Angeles';
+      expect(
+        plainDateFormat(
+          {year: 2026, month: 2, day: 1},
+          DATE_FORMAT_MONTH_YEAR,
+          'en-IE',
+        ),
+      ).toBe('February 2026');
+      process.env.TZ = 'America/New_York';
+      expect(
+        plainDateFormat(
+          {year: 2026, month: 2, day: 1},
+          DATE_FORMAT_MONTH_YEAR,
+          'en-IE',
+        ),
+      ).toBe('February 2026');
+      process.env.TZ = 'Pacific/Kiritimati';
+      expect(
+        plainDateFormat(
+          {year: 2026, month: 2, day: 1},
+          DATE_FORMAT_WITH_WEEKDAY,
+          'en-IE',
+        ),
+      ).toBe('Sunday 1 February 2026');
+    } finally {
+      process.env.TZ = zone;
+    }
+  });
+
   it('returns a human-readable date string with weekday', () => {
     const result = plainDateFormat(
       {year: 2026, month: 1, day: 25},
