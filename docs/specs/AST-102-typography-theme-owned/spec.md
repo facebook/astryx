@@ -30,8 +30,8 @@ affects_consumer_docs: []
 
 ## Intent
 
-People see the typography their theme chose in every Astryx component, on
-every platform: no component swaps in a platform font or its own text size.
+People see the typography their theme chose in the text of every Core and Lab
+web component: no component swaps in a platform font or its own text size.
 Where a shipped Astryx theme has no brand typeface for body text, it can use
 the platform's own body font, so text reads like the rest of the person's
 device.
@@ -50,7 +50,8 @@ device.
 
 - **FR1 — Components never override typography.** No Core or Lab web
   component sets the font family, font size, or line height of text it renders
-  except through the theme's typography tokens. That includes platform font keywords such as `-apple-system-body`
+  except through the theme's typography tokens; a value inherited from the
+  surrounding text conforms. That includes platform font keywords such as `-apple-system-body`
   and system font stacks: a component never applies one directly, on any
   pointer. A font size that sizes an icon, such as a `1em` icon at a
   `spec:AST-087` FR10 size, is not text typography. Native components follow
@@ -85,10 +86,10 @@ device.
 
 ## Verification
 
-| Contract | Verification                                                      | Representative states                                                                                                              | Mutation or failure expectation                                                                                                |
-| -------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| FR1      | Source check over Core and Lab component styles plus token review | font family, size, and line height in component styles; coarse and fine pointer; a platform font keyword; the iOS text-entry floor | A component sets a font family, size, or line height outside typography tokens, or applies a platform font keyword directly    |
-| FR2      | Theme token review plus Safari on iOS, top-level document         | an unbranded shipped theme using the system body font family; a branded theme; the default theme                                   | A branded theme's body font replaced by the system font, or a system body font applied by a component instead of a theme token |
+| Contract | Verification                                                      | Representative states                                                                                                                                                                 | Mutation or failure expectation                                                                                                                                                                                                       |
+| -------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1      | Source check over Core and Lab component styles plus token review | family, size, and line height of rendered text in component styles; an inherited value; a `1em` icon size; coarse and fine pointer; a platform font keyword; the iOS text-entry floor | A Core or Lab web component sets the family, size, or line height of text it renders outside typography tokens and not by inheritance, or applies a platform font keyword directly; icon sizing and the family floor are not failures |
+| FR2      | Theme token review plus Safari on iOS, top-level document         | an unbranded shipped theme using the system body font family; a branded theme; the default theme                                                                                      | A branded theme's body font replaced by the system font, or a system body font applied by a component instead of a theme token                                                                                                        |
 
 ## Decision log
 
@@ -99,8 +100,8 @@ device.
 
 A component that swaps in a platform font or its own text size breaks the
 theme's typography for that one surface, and a product cannot see or tune it.
-Keeping every family, size, and line height in theme tokens means the theme
-decides, everywhere. Where a shipped theme has no brand typeface, the system
+Keeping the family, size, and line height of component text in theme tokens
+means the theme decides for that text. Where a shipped theme has no brand typeface, the system
 body font is the most familiar choice for the person reading, so those themes
 may use it through their own token; a brand keeps its typeface.
 
