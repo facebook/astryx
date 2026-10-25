@@ -1881,12 +1881,13 @@ describe('useSheetGestures', () => {
     });
   });
 
-  describe('body touch handoff mid-gesture', () => {
-    // The finger lands mid-content, swipes up, REACHES the end of the content,
-    // and keeps pulling in the same continuous gesture. By then the browser
-    // owns the gesture (every remaining touchmove is uncancelable), and the
-    // body's upward pan follows it (`scrollHandoff`): the travel past the
-    // point where the content ran out drives the sheet.
+  describe("a drag that begins in the content stays the content's (spec:AST-094 FR14)", () => {
+    // The finger lands mid-content and swipes up, so the content scrolls and
+    // the browser owns the gesture (every remaining touchmove is
+    // uncancelable). Who gets a drag is decided when it begins: when the
+    // content reaches its end mid-gesture it keeps the drag and rubber-bands
+    // (the browser's), and the sheet holds its detent. The sheet grows only
+    // from a drag that begins with the content at its end.
     function midDetentScroller(hook: Hook, scrollTop: number) {
       const el = makeScroller({
         scrollTop,
@@ -1903,7 +1904,7 @@ describe('useSheetGestures', () => {
     // A move the browser sends while it scrolls with the finger.
     const scrolling = {cancelable: false};
 
-    it('hands off when the content runs out under a moving finger', () => {
+    it('keeps a scroll that runs out of content mid-gesture: the sheet holds its detent', () => {
       const {hook} = setup({snapHeights: () => [200]});
       const el = midDetentScroller(hook, 300); // finger lands mid-content
       const touch = fingers();
@@ -1913,16 +1914,18 @@ describe('useSheetGestures', () => {
         touch(el, 'touchmove', 350, scrolling);
         el.scrollTop = 600; // ...until it runs out at the bottom
         touch(el, 'touchmove', 200, scrolling); // the content ended here
-        touch(el, 'touchmove', 150, scrolling); // 50px BEYOND the end
+        touch(el, 'touchmove', 150, scrolling); // 50px beyond: the rubber band
+        touch(el, 'touchmove', 100, scrolling);
       });
-      expect(hook.result.current.isDragging).toBe(true);
-      // Only the travel past the end moves the sheet: from where the content
-      // ran out, not from the touch-down (350px further down).
-      expect(liveOffset(hook)).toBeGreaterThanOrEqual(150);
-      expect(liveOffset(hook)).toBeLessThan(200);
+      expect(hook.result.current.isDragging).toBe(false);
+      expect(liveOffset(hook)).toBe(200);
+      act(() => {
+        touch(el, 'touchend', 100);
+      });
+      expect(hook.result.current.settledOffset).toBe(200);
     });
 
-    it('gives the content back while the finger returns past the content end', () => {
+    it('never moves the sheet while the finger goes back and forth past the content end', () => {
       const {hook} = setup({snapHeights: () => [200]});
       const el = midDetentScroller(hook, 300);
       const touch = fingers();
@@ -1930,33 +1933,38 @@ describe('useSheetGestures', () => {
         touch(el, 'touchstart', 500);
         el.scrollTop = 450; // the swipe scrolls the content...
         touch(el, 'touchmove', 350, scrolling);
-        el.scrollTop = 600; // ...until it runs out
-        touch(el, 'touchmove', 200, scrolling); // the content ended here
-        touch(el, 'touchmove', 150, scrolling);
-      });
-      const pulled = liveOffset(hook);
-      expect(pulled).toBeLessThan(200);
-
-      act(() => {
-        el.scrollTop = 590; // the content scrolls again ...
-        touch(el, 'touchmove', 210, scrolling); // ... as the finger comes back
-      });
-      // The pan's translation clamps at zero while the content scrolls: the
-      // sheet is back at its detent, not driven by two things at once.
-      expect(liveOffset(hook)).toBe(200);
-
-      act(() => {
-        el.scrollTop = 600; // scrolled back to the end
-        touch(el, 'touchmove', 190, scrolling); // and pulls past it again
+        el.scrollTop = 600; // ...to its end
+        touch(el, 'touchmove', 200, scrolling);
+        touch(el, 'touchmove', 150, scrolling); // past it: the rubber band
+        el.scrollTop = 590; // the finger comes back and the content scrolls...
+        touch(el, 'touchmove', 210, scrolling);
+        el.scrollTop = 600; // ...to its end again, and the finger pulls past
         touch(el, 'touchmove', 140, scrolling);
       });
-      expect(hook.result.current.isDragging).toBe(true);
-      expect(liveOffset(hook)).toBeLessThan(200);
+      expect(hook.result.current.isDragging).toBe(false);
+      expect(liveOffset(hook)).toBe(200);
     });
 
-    it('does not hand off on reaching the end without travelling past it', () => {
+    it('grows the sheet from a drag that begins with the content at its end', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = midDetentScroller(hook, 600); // the content is at its end
+      const touch = fingers();
+      act(() => {
+        touch(el, 'touchstart', 500);
+        touch(el, 'touchmove', 490);
+        touch(el, 'touchmove', 470);
+        touch(el, 'touchmove', 450);
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+      expect(liveOffset(hook)).toBe(200 - (50 - PAN_THRESHOLD));
+      act(() => {
+        touch(el, 'touchend', 450);
+      });
+    });
+
+    it('leaves the momentum after the lift to the content', () => {
       // Landing on the last pixel is not a pull, and the momentum tail after
-      // the finger lifts fires no touchmove at all, so it can never promote.
+      // the finger lifts fires no touchmove at all.
       const {hook} = setup({snapHeights: () => [200]});
       const el = midDetentScroller(hook, 300);
       const touch = fingers();
@@ -1966,7 +1974,7 @@ describe('useSheetGestures', () => {
         touch(el, 'touchmove', 350, scrolling);
         el.scrollTop = 600;
         touch(el, 'touchmove', 200, scrolling);
-        touch(el, 'touchmove', 199, scrolling); // jitter, not a pull
+        touch(el, 'touchmove', 199, scrolling);
         touch(el, 'touchend', 199);
         el.scrollTop = 600; // momentum carries on with no finger down
       });
@@ -1974,9 +1982,8 @@ describe('useSheetGestures', () => {
       expect(hook.result.current.settledOffset).toBe(200);
     });
 
-    it('leaves the mid-gesture pull to the content at the tallest detent', () => {
-      // With no taller detent there is nothing to expand into, so the scroller
-      // keeps the gesture.
+    it('leaves a pull at the tallest detent to the content', () => {
+      // With no taller detent there is nothing to grow into.
       const {hook} = setup({snapHeights: () => [200]});
       const el = makeScroller({
         scrollTop: 300,
@@ -1995,21 +2002,6 @@ describe('useSheetGestures', () => {
       });
       expect(hook.result.current.isDragging).toBe(false);
       expect(hook.result.current.dragOffset).toBe(0);
-    });
-
-    it('does not hand off while the content can still scroll', () => {
-      const {hook} = setup({snapHeights: () => [200]});
-      const el = midDetentScroller(hook, 0);
-      const touch = fingers();
-      act(() => {
-        touch(el, 'touchstart', 500);
-        el.scrollTop = 200;
-        touch(el, 'touchmove', 300, scrolling);
-        el.scrollTop = 400;
-        touch(el, 'touchmove', 100, scrolling); // 400px of pull, all of it scrolling
-      });
-      expect(hook.result.current.isDragging).toBe(false);
-      expect(hook.result.current.settledOffset).toBe(200);
     });
   });
 

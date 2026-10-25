@@ -59,10 +59,11 @@
  * spec:AST-100). A vertical pan on the handle; on the scrolling body, a
  * downward pan that begins only when nothing under the finger can scroll up
  * (`scrollEdge`, the scrollers nested in the body included), and an upward
- * one that does so at the bottom while a taller detent exists, which also
- * takes over a scroll that runs out of content mid-gesture
- * (`scrollHandoff`: the travel past the content's end drives the sheet).
- * The host derives each surface's `touch-action`.
+ * one that does so at the bottom while a taller detent exists. Who gets a
+ * drag is decided once, when it begins (spec:AST-094 FR14): content scrolled
+ * to its end mid-gesture keeps the drag and rubber-bands, and the sheet grows
+ * only from a drag that begins at the edge. The host derives each surface's
+ * `touch-action`.
  *
  * A drag begins on one finger. With a second finger down before it begins,
  * wherever that one landed, the fingers are a pinch, and pinch-zoom belongs
@@ -2027,8 +2028,8 @@ export function useSheetGestures({
   // The body, pulled up where nothing under the finger can scroll down, while
   // a taller detent exists: at the tallest, an upward pull is the content's
   // (promoting it would trade the scroll for a pull the release throws
-  // back). A finger that scrolls the content into its end mid-gesture hands
-  // the travel past that point to the sheet.
+  // back). A finger that scrolls the content into its end mid-gesture keeps
+  // it: who gets the drag is decided when it begins (spec:AST-094 FR14).
   useGestureRecognizer(
     bodyNodeRef,
     () =>
@@ -2038,7 +2039,6 @@ export function useSheetGestures({
         maximumNumberOfTouches: 1,
         allowedPointerTypes: ['touch', 'pen'],
         scrollEdge: true,
-        scrollHandoff: true,
         claimDistance: 'early',
         shouldBegin: () => canBegin() && activeOffsetRef.current > 0,
         shouldReceiveTouch: notePointer,
