@@ -29,7 +29,7 @@ export {
   type SourcedGestureConstant,
 } from './gestures';
 export {keyboard} from './keyboard';
-export {navigation} from './navigation';
-export {scroll} from './scroll';
-export {springs} from './springs';
-export {timing} from './timing';
+export {navigation, registerNavigationTable} from './navigation';
+export {registerScrollTable, scroll} from './scroll';
+export {registerSpringsTable, springs} from './springs';
+export {registerTimingTable, timing} from './timing';

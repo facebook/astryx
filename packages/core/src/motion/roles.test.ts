@@ -9,7 +9,9 @@
  * @position Testing for /packages/core/src/motion/roles.ts
  */
 
+import {resolve} from 'node:path';
 import {describe, expect, it} from 'vitest';
+import {MOTION_ROLE_KINDS} from './roleKinds.generated';
 import {
   formatMotionRoleValue,
   isMotionRoleId,
@@ -23,6 +25,25 @@ import {
 } from './roles';
 import {dampingRatioOf, naturalFrequency, toSpring} from './spring';
 import {navigation, scroll, springs, timing} from './uikit';
+import {
+  motionTableFiles,
+  REGISTER_EXPORT,
+} from '../../../../scripts/motion-table-files.mjs';
+
+// Every table the role list is generated from, registered the way the
+// generator does: through each module's register<Name>Table.
+for (const file of motionTableFiles(resolve(__dirname, '..'))) {
+  const module = (await import(file)) as Record<string, unknown>;
+  for (const [name, value] of Object.entries(module)) {
+    if (REGISTER_EXPORT.test(name) && typeof value === 'function') {
+      (value as () => void)();
+    }
+  }
+}
+// The tables that discovery registered, before any test adds a fixture.
+const DISCOVERED = new Set(
+  listMotionRoles().map(role => role.id.split('.')[0]),
+);
 
 describe('motion roles', () => {
   it('names a role by its table path, and its CSS variable in kebab case', () => {
@@ -93,6 +114,16 @@ describe('motion roles', () => {
     // Every role has its own CSS variable.
     const variables = listMotionRoles().map(role => role.variable);
     expect(new Set(variables).size).toBe(variables.length);
+  });
+
+  it('lists every registered role, and its kind, in the generated role kinds', () => {
+    // Every table discovery registered (other tests here add fixtures).
+    const discovered = listMotionRoles().filter(role =>
+      DISCOVERED.has(role.id.split('.')[0]),
+    );
+    expect(
+      Object.fromEntries(discovered.map(role => [role.id, role.kind])),
+    ).toEqual(MOTION_ROLE_KINDS);
   });
 
   it('writes every table value in CSS form and reads back the same motion', () => {

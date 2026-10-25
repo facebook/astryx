@@ -11,7 +11,7 @@
  *
  * Every leaf carries one or more `@source` (apple-docs | wwdc | webkit |
  * measured | GUESS); webkit and GUESS values also carry the `@measure` task
- * that will confirm or replace them (motion/README.md). sources.test.ts
+ * that will confirm or replace them (MEASUREMENTS.md). uikit.test.ts
  * enforces both.
  *
  * Durations are in ms (the unit of pointer-event timestamps, which these
@@ -30,6 +30,7 @@ import {registerMotionTable} from '../roles';
  * UIKit's press clocks, named curves and fixed durations.
  * @experimental
  */
+
 export const timing = {
   press: {
     /**
@@ -150,10 +151,18 @@ export const timing = {
   reducedMotionCrossFadeMs: 200,
 } as const;
 
-// Each spring, duration and curve above is a motion role a theme may retune
-// (motion/roles.ts).
-registerMotionTable('timing', timing, {
-  // Arbitration: who gets the touch, not how anything moves; and the Reduced
-  // Motion fade, which no theme may lengthen (design:reduced-motion DR4).
-  exclude: ['press.scrollBrakeMs', 'reducedMotionCrossFadeMs'],
-});
+/**
+ * Makes each spring, duration and curve above a motion role a theme may
+ * retune (motion/roles.ts). Nothing registers on import: the touch code that
+ * animates with this table calls it once (it is idempotent), so a page that
+ * never does ships no registry.
+ * @experimental
+ */
+export function registerTimingTable(): void {
+  registerMotionTable('timing', timing, {
+    // Arbitration: who gets the touch, not how anything moves; and the
+    // Reduced Motion fade, which no theme may lengthen
+    // (design:reduced-motion DR4).
+    exclude: ['press.scrollBrakeMs', 'reducedMotionCrossFadeMs'],
+  });
+}
