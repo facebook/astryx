@@ -567,19 +567,6 @@ function cssLength(percent: number, px: number): string {
   return `calc(${round(percent)}% ${px < 0 ? '-' : '+'} ${Math.abs(round(px))}px)`;
 }
 
-// =============================================================================
-// Component
-// =============================================================================
-
-/**
- * A slider component for selecting numeric values or ranges.
- *
- * @example
- * ```
- * <Slider label="Volume" value={50} onChange={setValue} />
- * <Slider label="Price range" value={[20, 80]} onChange={setRange} />
- * ```
- */
 /**
  * A thumb's value tooltip: hover and focus on the thumb, position from a
  * thumb-sized anchor that layout places at the value (styles.valueAnchor).
@@ -625,6 +612,19 @@ function SliderValueTooltip({
   );
 }
 
+// =============================================================================
+// Component
+// =============================================================================
+
+/**
+ * A slider component for selecting numeric values or ranges.
+ *
+ * @example
+ * ```
+ * <Slider label="Volume" value={50} onChange={setValue} />
+ * <Slider label="Price range" value={[20, 80]} onChange={setRange} />
+ * ```
+ */
 export function Slider({ref, ...props}: SliderProps) {
   const {
     label,
