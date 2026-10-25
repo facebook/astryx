@@ -275,6 +275,32 @@ Rejected: importing the complete palette at runtime, maintaining a second manual
 selection manifest, or treating token-mapping assertions as proof that copied
 hex values still match the approved palette.
 
+### DEC-6 — Paint status through the portable roles, with no other local tokens
+
+**Reference:** `theme:neutral/DEC-6`
+
+**Decider:** `cixzhang`, `2026-10-25`
+
+Neutral paints status, tinted surfaces, and the pale destructive Button through
+the portable `--color-*` roles. It defines no local token for them other than
+the deprecated `--astryx-theme-neutral-color-status-fill-accent` of DEC-1.
+
+This is the `spec:AST-006` FR10 exception for nine local names that earlier
+Neutral releases emitted: `--astryx-theme-neutral-color-status-fill-success`,
+`-status-fill-warning`, `-status-fill-error`, `-status-muted-accent`,
+`-on-tint-neutral`, `-on-tint-overlay-hover`, `-on-tint-overlay-pressed`,
+`-destructive-overlay-hover`, and `-destructive-overlay-pressed`. None of them
+was a Neutral-family contract: this record listed the first three and the
+on-tint names as proposed roles that must not be treated as an approved public
+contract, and never documented the others. They therefore carry no alias. Their
+replacements are `--color-success`, `--color-warning`, and `--color-error` for
+the status fills, `--color-info-muted` for the pale accent surface,
+`--color-neutral` for on-tint content, and `--color-overlay-hover` and
+`--color-overlay-pressed` for the overlays.
+
+Rejected: keeping the nine as deprecated aliases, which would preserve names
+that were never promised and that Neutral no longer reads.
+
 ## Open questions
 
 None.

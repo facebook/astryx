@@ -12,7 +12,7 @@
  * a surface gets the roles it leaves unset, computed against its own colours:
  * - `--color-on-<status>`: the theme's light or dark content colour
  *   (`--color-on-dark` or `--color-on-light`), whichever contrasts more with
- *   the fill;
+ *   the fill, or pure white or black when neither reaches 4.5:1;
  * - `--color-text-<status>`: the fill's hue at 4.5:1 on surface and card;
  * - `--color-on-<status>-muted`: the fill's hue at 4.5:1 on the pale fill over
  *   the surface.
@@ -204,10 +204,20 @@ function deriveForMode(
 
   const lightInk = opaqueOver(onDark, fill);
   const darkInk = opaqueOver(onLight, fill);
-  roles.on =
+  const themeInk =
     contrastRatio(lightInk, fill) >= contrastRatio(darkInk, fill)
       ? lightInk
       : darkInk;
+  // A theme's off-white and off-black content can both miss the floor on a
+  // mid-tone fill; pure white or black always reaches it.
+  const white = {r: 255, g: 255, b: 255, a: 1};
+  const black = {r: 0, g: 0, b: 0, a: 1};
+  roles.on =
+    contrastRatio(themeInk, fill) >= TEXT_RATIO
+      ? themeInk
+      : contrastRatio(white, fill) >= contrastRatio(black, fill)
+        ? white
+        : black;
 
   const text = solveLightness(hue, [opaqueSurface, card], SOLVE_RATIO);
   if (text !== null) {

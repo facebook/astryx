@@ -143,8 +143,9 @@ then have contradictory winners.
   `--color-track`, and `--color-tint-hover` keep their names. A new name adds
   no group segment (such as `status`), no other property word (such as
   `foreground`), and no property suffix (such as `-text`). Tailwind keys are a
-  projection: a key may alias a token under a shorter name, and it never adds a
-  CSS variable.
+  projection outside this grammar: a key may alias a token under a shorter or
+  utility-specific name, such as `text-status-<status>` for
+  `--color-text-<status>`, and it never adds a CSS variable.
 
 - **INV11 — Semantic status roles are surface-specific.** Each status (`info`,
   `success`, `warning`, `error`) has these roles on three surfaces, named under INV10:

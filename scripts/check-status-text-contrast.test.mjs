@@ -285,6 +285,24 @@ describe('theme generation derives a complete status set (INV17)', () => {
     }
   });
 
+  it('falls back to white or black when the theme content colours miss 4.5:1', () => {
+    const theme = defineTheme({
+      name: 'status-soft-ink',
+      tokens: {
+        '--color-success': '#2E9E5B',
+        '--color-on-dark': '#E6E6E6',
+        '--color-on-light': '#3A3A3A',
+      },
+    });
+    for (const mode of MODES) {
+      const t = effectiveTokens(theme, mode);
+      const fill = opaque(color(t, '--color-success'), WHITE);
+      expect(
+        contrastRatio(opaque(color(t, '--color-on-success'), fill), fill),
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
   it("falls back to Core's hue for text when a fill is grey", () => {
     const grey = defineTheme({
       name: 'status-grey-success',

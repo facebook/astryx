@@ -208,7 +208,8 @@ Platform-specific details stay inside that compiler.
   colours:
   - `--color-on-<status>` is the theme's light or dark content colour
     (`--color-on-dark` or `--color-on-light`), whichever contrasts more with
-    the theme's `--color-<status>`.
+    the theme's `--color-<status>`; when neither reaches 4.5:1 on it, it is
+    pure white or black, whichever contrasts more.
   - `--color-text-<status>` is the fill's hue at the lightness that reaches
     4.5:1 against the theme's default page and card surfaces in each colour
     mode.
