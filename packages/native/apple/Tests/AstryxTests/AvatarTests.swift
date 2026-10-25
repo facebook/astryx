@@ -165,6 +165,17 @@ import Testing
 }
 
 @MainActor
+@Test func onTouchATapOpensAStaticAvatarsTooltipAndLeavesControlsTheirTap() {
+  // A static avatar opens its tooltip on a tap, with the name or given words.
+  #expect(Avatar.opensTooltipOnTap(Avatar("Ada Lovelace").tap))
+  #expect(Avatar("Ada Lovelace").tooltipText == "Ada Lovelace")
+  #expect(Avatar("Ada Lovelace", tooltip: "Ada Lovelace, Mathematician").tooltipText == "Ada Lovelace, Mathematician")
+  // A link or button keeps the tap for its action.
+  #expect(!Avatar.opensTooltipOnTap(Avatar("Ada Lovelace", onClick: {}).tap))
+  #expect(!Avatar.opensTooltipOnTap(Avatar("Ada Lovelace", href: "https://example.com").tap))
+}
+
+@MainActor
 @Test func theDefaultNameTooltipShowsToPointersInABubbleVoiceOverSkips() {
   // The name is the pointer tooltip and never the hint.
   #expect(Avatar("Ada Lovelace").pointerTooltipText == "Ada Lovelace")
