@@ -264,7 +264,9 @@ the app reaches every layer instead of the components that happen to read it.
   the runtime learns of the move from an intersection observer on the anchor,
   which reports after paint, so on that one path at most one painted frame
   shows the layer over its anchor before the next frame corrects it. The
-  runtime polls nothing. When a declared inset changes while a layer is open,
+  runtime does not poll, except a bounded retry: when a scrolled container
+  clips the anchor, the observer rechecks at most three times, one second
+  apart. When a declared inset changes while a layer is open,
   the layer
   and the declaration
   change in the same frame.

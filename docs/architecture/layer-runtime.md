@@ -433,8 +433,9 @@ layers use Layer rendering without joining Escape/platform dismissal.
   layout or by a scroll, which only an intersection observer reports, after
   paint: at most one painted frame shows the layer over its anchor before the
   correction. Otherwise a layer never paints at a geometry it is about to
-  correct,
-  and the runtime polls nothing.
+  correct, and the runtime does not poll, except a bounded retry: when a
+  scrolled container clips the anchor, the move observer rechecks at most
+  three times, one second apart.
 
 This record does not make future eligible-owner, branch-association, global-host,
 or browser-support requirements current. It does not own component focus entry or
