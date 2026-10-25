@@ -71,7 +71,7 @@ const WORKFLOWS = {
     // other and so ride one lane of their own.
     lanes: ['test-ui', 'test-node', 'typecheck'],
     scopeConditional: false,
-    sharded: false,
+    sharded: true,
   },
 };
 
@@ -157,18 +157,6 @@ describe.each(Object.entries(WORKFLOWS))(
         expect(suite['continue-on-error']).not.toBe(true);
       }
 
-      if (!sharded) {
-        // One conditional step preserves the existing scope gate for both
-        // runs. Exact foreground commands also reject backgrounding or
-        // ignored exits.
-        expect(suites).toHaveLength(1);
-        expect(suites[0].run.trim().split('\n')).toEqual([
-          'pnpm test:ui',
-          'pnpm test:ui:isolated',
-        ]);
-        return;
-      }
-
       // Sharded: every leg runs its share without FR23, and exactly one leg
       // runs FR23 in a later step on the same runner, after its share exited.
       expect(suites).toHaveLength(2);
@@ -178,12 +166,18 @@ describe.each(Object.entries(WORKFLOWS))(
       expect(job.steps.indexOf(isolated)).toBeGreaterThan(
         job.steps.indexOf(share),
       );
-      expect(isolated.if).toBe(`matrix.shard == 1 && ${share.if}`);
+      expect(isolated.if).toBe(
+        share.if ? `matrix.shard == 1 && ${share.if}` : 'matrix.shard == 1',
+      );
     });
 
     if (sharded) {
       it('splits each Vitest lane across legs that together run every file', () => {
-        for (const lane of lanes) {
+        const vitestLanes = lanes.filter(lane =>
+          /--project \w+/.test(runLines(workflow.jobs[lane])),
+        );
+        expect(vitestLanes).toEqual(['test-ui', 'test-node']);
+        for (const lane of vitestLanes) {
           const job = workflow.jobs[lane];
           const legs = job.strategy?.matrix?.shard;
           expect(Array.isArray(legs), `${lane} has no shard matrix`).toBe(true);
