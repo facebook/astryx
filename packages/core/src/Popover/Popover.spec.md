@@ -124,7 +124,7 @@ surface, not the Layer entry point. There is no installable
 | Popup semantics              | Dialog or neutral wrapper                                    | Exposes dialog semantics or lets child menu/listbox semantics own the popup                                                | Popover and hook          | Dialog                                                                       | `component:Popover`                                                                 | Current public behavior        | A dialog without a label warns in development. Neutral mode omits dialog role and modal semantics.                                                         |
 | Focus entry                  | Automatic or caller-preserved                                | Focuses genuine caller content, falls back to the labeled dialog surface when none exists, or preserves current focus      | Popover and hook          | Automatic                                                                    | `component:Popover`                                                                 | Current public behavior        | The injected fallback close control is excluded from initial-focus candidates and reveals only when reached sequentially.                                  |
 | Dismissal                    | Outside/Escape enabled or disabled within native constraints | Controls light dismiss and explicit Escape participation                                                                   | Popover and hook          | Both enabled                                                                 | `component:Popover`; `family:overlay-dismissal` owns Escape/platform-close ordering | Current public behavior        | Disabling Escape alone cannot override the native Escape behavior of an auto popover; explicit-dismiss behavior requires light dismiss to be disabled too. |
-| Presentation                 | `popover`, `bottom-sheet`, or `adaptive`                     | Chooses the surface that holds the content: anchored, a BottomSheet, or a BottomSheet on a compact touch screen            | Popover                   | `popover`                                                                    | `component:Popover`; `component:BottomSheet` owns the sheet                         | Decided (DEC-6)                | In a sheet, placement, alignment and width do not apply; the surface is chosen when it opens and stays until it closes.                                    |
+| Presentation                 | `popover`, `bottom-sheet`, or `adaptive`                     | Chooses the surface that holds the content: anchored, a BottomSheet, or a BottomSheet on a compact touch screen            | Popover                   | `popover`                                                                    | `component:Popover`; `component:BottomSheet` owns the sheet                         | Decided (DEC-6)                | —                                                                                                                                                          |
 | Surface treatment            | Default surface or caller-owned treatment                    | Applies the shared painted surface and optional consumer styling                                                           | Popover and hook          | Default surface                                                              | `component:Popover`                                                                 | Current public behavior        | Custom styling does not change lifecycle, focus, or dismissal semantics.                                                                                   |
 | Surface padding              | A spacing-scale step, `0` through `10`                       | Sets the inset the painted surface keeps around caller content; `0` is a flush surface for content that owns its own edges | Popover and hook          | Popover: step 3; hook: none                                                  | `component:Popover`                                                                 | Pending owner review (DEC-4)   | The rung lands on the painted surface, so a theme's `padding` on the `popover` target replaces it rather than nesting; consumer `xstyle` merges after it.  |
 | Surface target ownership     | Shared baseline or component-specific refinement             | Assigns `popover` as the broad surface owner and lets a composed component add its own target on that same element         | Popover and hook          | `popover` baseline; no component-specific refinement                         | `component:Popover`; the composed component owns its refinement target              | Current compatibility contract | `popover-surface` is compatibility output, not a new target for consumers or a second anatomy owner.                                                       |
@@ -403,26 +403,12 @@ placement and bypasses the shared focus-indication owner.
 **Reference:** `component:Popover/DEC-6`
 **Decider:** `cixzhang`, `2026-10-25`
 
-Popover takes `presentation` with the vocabulary DropdownMenu, ContextMenu,
-MoreMenu, Selector, and MultiSelector already use (`popover | bottom-sheet |
-adaptive`). `popover`, the default and the released behavior, anchors the
-surface to the trigger. `bottom-sheet` presents the content in a modal
-BottomSheet labeled by Popover's `label`, at the sheet's tall height and inset
-by Popover's `padding`. `adaptive` chooses exactly as the menus do: the sheet
-under `spec:AST-094` FR13's touch rule, a coarse primary pointer and the
-`spec:AST-012` FR9 compact definition (`architecture:public-component-api`
-INV17), and the anchored popover elsewhere.
-
-The sheet is the same Popover: FR1's one visibility lifecycle, FR2's focus
-entry, and the trigger's expanded state and controlled element follow
-whichever surface is open. In a sheet, `placement`, `alignment`, and `width`
-do not apply; dismissal maps to the sheet's purpose, `info` with light
-dismiss, `form` without it (Escape still closes), and `required` with neither.
-The sheet paints BottomSheet's `bottom-sheet` target; DEC-2's `popover` target
-covers the anchored surface. The surface is chosen when the popover opens and
-stays until it closes, and the sheet loads on demand.
-
-Rejected: a Popover-specific rule for when `adaptive` picks the sheet.
+Popover takes `presentation` with the vocabulary the menus already use:
+`popover`, `bottom-sheet`, or `adaptive`. `popover` is the default and the
+released anchored surface. `bottom-sheet` presents the content in a
+BottomSheet. `adaptive` chooses exactly as the menus do: the sheet under
+`spec:AST-094` FR13's touch rule, with compact governed by `spec:AST-012` FR9,
+and the anchored popover elsewhere.
 
 ## Verification gaps
 
