@@ -114,14 +114,19 @@ public struct TextInput: View {
         Text(description, type: .supporting, color: .secondary)
       }
       SwiftUI.VStack(alignment: .leading, spacing: 0) {
-        fieldRow
+        // Base `isHidden` targets the control, as `id` does: the control and
+        // its buttons leave layout and focus, while the label, description,
+        // and status stay (AST-082 FR7).
+        if !hidesControl {
+          fieldRow
+        }
         statusMessage
       }
     }
     .onAppear {
       guard !hasAppeared else { return }
       hasAppeared = true
-      if props.hasAutoFocus == true { isFocused = true }
+      if props.hasAutoFocus == true, !hidesControl { isFocused = true }
       // A field that appears busy says so, as core announces a busy start.
       if props.isLoading == true { AccessibilityNotification.Announcement(AstryxStrings.spinnerLoading).post() }
       // A status message already present when the field appears is
@@ -235,11 +240,6 @@ public struct TextInput: View {
         .accessibilityLabel(SwiftUI.Text(accessibilityLabelText))
         .accessibilityHint(SwiftUI.Text(accessibilityDescription))
         .astryxIdentifier(props.base.id)
-        // Base `isHidden` targets the control, as `id` does: the control hides
-        // while the label, description, and status stay (AST-082 FR7).
-        .opacity(hidesControl ? 0 : 1)
-        .accessibilityHidden(hidesControl)
-        .allowsHitTesting(!hidesControl)
       if props.isLoading == true {
         ProgressView().controlSize(.small).accessibilityHidden(true)
       }

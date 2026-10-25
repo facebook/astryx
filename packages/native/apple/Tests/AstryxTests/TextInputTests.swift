@@ -204,7 +204,18 @@ import Testing
 @Test func isHiddenHidesTheControlAndKeepsTheLabel() {
   let hidden = Astryx.TextInput(label: "Email", value: "", base: AstryxBaseProps(isHidden: true))
   #expect(hidden.hidesControl)
-  // The label still draws, so the field is not empty.
-  #expect(Pixels(hidden.frame(width: 240)).height > 0)
-  #expect(!Astryx.TextInput(label: "Email", value: "").hidesControl)
+  // The control leaves layout: the view is shorter than with the control, and
+  // the label still draws.
+  let shown = Astryx.TextInput(label: "Email", value: "")
+  let hiddenHeight = Pixels(hidden.frame(width: 240)).height
+  #expect(hiddenHeight > 0)
+  #expect(hiddenHeight < Pixels(shown.frame(width: 240)).height)
+  #expect(!shown.hidesControl)
+}
+
+@MainActor
+@Test func baseIdBelongsToTheControl() {
+  let field = Astryx.TextInput(label: "Email", value: "", base: AstryxBaseProps(id: "email"))
+  #expect(field.props.base.id == "email")
+  #expect(TextInputProps.baseTarget == .control)
 }
