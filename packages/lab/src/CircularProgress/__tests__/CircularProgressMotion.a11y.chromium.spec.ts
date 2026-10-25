@@ -1049,7 +1049,8 @@ test('the indeterminate arc lays out and paints nothing per frame', async ({
       e => e.name === name && mainThreads.has(`${e.pid}:${e.tid}`),
     ).length;
   // The stroke-dash animation repainted every frame.
-  expect(running).toBe(6);
+  // The spin, the start, the two halves and the leading cap.
+  expect(running).toBe(5);
   expect(count('Layout')).toBe(0);
   expect(count('Paint')).toBe(0);
 });
@@ -1092,7 +1093,8 @@ for (const [reducedMotion, pointer] of [
         };
       }),
     );
-    expect(animations).toHaveLength(6);
+    // The spin, the arc's start, the two halves and the leading cap.
+    expect(animations).toHaveLength(5);
     const allowed = [
       'offset',
       'computedOffset',
@@ -1114,6 +1116,58 @@ for (const [reducedMotion, pointer] of [
     expect(durations).toEqual(
       reducedMotion === 'reduce' ? [3000, 4000] : [1500, 2000],
     );
+    await context.close();
+  });
+}
+
+for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+  test(`with no script at all the indeterminate ring turns on its CSS clocks (${reducedMotion} motion)`, async ({
+    page,
+    browser,
+  }) => {
+    // The ring's server markup and the page's styles, then a page that runs
+    // no script: what shows before hydration.
+    await openIndeterminate(page);
+    const {html, css} = await page.evaluate(() => {
+      const ring = (
+        document.querySelector('[role="progressbar"]') as Element
+      ).closest('div')?.parentElement as Element;
+      const rules: string[] = [];
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          for (const rule of Array.from(sheet.cssRules)) {
+            rules.push(rule.cssText);
+          }
+        } catch {
+          // A cross-origin sheet; the ring's styles are all local.
+        }
+      }
+      return {html: ring.outerHTML, css: rules.join('\n')};
+    });
+    const context = await browser.newContext({
+      javaScriptEnabled: false,
+      reducedMotion,
+    });
+    const bare = await context.newPage();
+    await bare.setContent(
+      `<!doctype html><html><head><style>${css}</style></head><body>${html}</body></html>`,
+    );
+    await bare.waitForTimeout(300);
+    const state = await bare.evaluate(() => ({
+      scripts: document.scripts.length,
+      animations: document.getAnimations().map(animation => ({
+        running: animation.playState === 'running',
+        duration: Number(animation.effect?.getTiming().duration),
+      })),
+    }));
+    expect(state.scripts).toBe(0);
+    // The five layers turn by themselves, on the clocks CSS gives them:
+    // 2 s and 1.5 s, doubled under reduced motion.
+    expect(state.animations).toHaveLength(5);
+    expect(state.animations.every(a => a.running)).toBe(true);
+    expect(
+      [...new Set(state.animations.map(a => a.duration))].sort((a, b) => a - b),
+    ).toEqual(reducedMotion === 'reduce' ? [3000, 4000] : [1500, 2000]);
     await context.close();
   });
 }

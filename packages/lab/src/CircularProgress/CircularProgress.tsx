@@ -28,7 +28,6 @@ import {
   typeScaleVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps} from '@astryxdesign/core/utils';
-import {useMediaQuery} from '@astryxdesign/core/hooks';
 import type {BaseProps} from '@astryxdesign/core';
 import {themeProps} from '@astryxdesign/core/utils';
 
@@ -150,7 +149,76 @@ export interface CircularProgressProps extends BaseProps<HTMLDivElement> {
  * pattern over the second, each half eased in and out. Here a unit is a
  * 302nd of a turn, so every cycle ends exactly where it started.
  */
-const INDETERMINATE = {pattern: 302, shortest: 2, longest: 175, midway: 68};
+// Exported for its unit test (the barrel exports the component alone).
+export const INDETERMINATE = {
+  pattern: 302,
+  shortest: 2,
+  longest: 175,
+  midway: 68,
+};
+
+// The cycle as static keyframes, so the ring turns before hydration and
+// without script. Each half of the cycle eases in and out, and the arc's
+// start and length are affine in that eased progress, so every layer's turn
+// is exact with a few keyframes: the halves' segments are pieces of the same
+// curve, split where the arc crosses half a turn (37.0564% rising, 62.9436%
+// falling), and the left half shows only past that crossing (two keyframes a
+// hundredth of a percent apart, since WebKit runs no `steps()` animation on
+// the compositor). Unit tests rebuild them from INDETERMINATE.
+const indeterminateSpinFrames = stylex.keyframes({
+  '0%': {transform: 'rotate(0deg)'},
+  '100%': {transform: 'rotate(360deg)'},
+});
+const indeterminateTailFrames = stylex.keyframes({
+  '0%': {
+    transform: 'rotate(0deg)',
+    animationTimingFunction: 'cubic-bezier(0.42, 0, 0.58, 1)',
+  },
+  '50%': {
+    transform: 'rotate(81.0596deg)',
+    animationTimingFunction: 'cubic-bezier(0.42, 0, 0.58, 1)',
+  },
+  '100%': {transform: 'rotate(360deg)'},
+});
+const indeterminateCapFrames = stylex.keyframes({
+  '0%': {
+    transform: 'rotate(2.3841deg)',
+    animationTimingFunction: 'cubic-bezier(0.42, 0, 0.58, 1)',
+  },
+  '50%': {
+    transform: 'rotate(208.6093deg)',
+    animationTimingFunction: 'cubic-bezier(0.42, 0, 0.58, 1)',
+  },
+  '100%': {transform: 'rotate(2.3841deg)'},
+});
+const indeterminateRightFrames = stylex.keyframes({
+  '0%': {
+    transform: 'rotate(2.3841deg)',
+    animationTimingFunction: 'cubic-bezier(0.434, 0, 0.6623, 0.6811)',
+  },
+  '37.0564%': {transform: 'rotate(180deg)'},
+  '62.9436%': {
+    transform: 'rotate(180deg)',
+    animationTimingFunction: 'cubic-bezier(0.3377, 0.3189, 0.566, 1)',
+  },
+  '100%': {transform: 'rotate(2.3841deg)'},
+});
+const indeterminateLeftFrames = stylex.keyframes({
+  '0%': {transform: 'rotate(180deg)', opacity: 0},
+  '37.0564%': {
+    transform: 'rotate(180deg)',
+    opacity: 0,
+    animationTimingFunction: 'cubic-bezier(0.2955, 0.605, 0.6202, 1)',
+  },
+  '37.0664%': {opacity: 1},
+  '50%': {
+    transform: 'rotate(208.6093deg)',
+    animationTimingFunction: 'cubic-bezier(0.3798, 0, 0.7045, 0.395)',
+  },
+  '62.9436%': {transform: 'rotate(180deg)', opacity: 1},
+  '62.9536%': {opacity: 0},
+  '100%': {transform: 'rotate(180deg)', opacity: 0},
+});
 
 // =============================================================================
 // Styles
@@ -268,13 +336,16 @@ const styles = stylex.create({
     fill: 'none',
     strokeLinecap: 'round',
   },
-  // The indeterminate arc turns with Web Animations on the compositor: the
+  // The indeterminate arc turns with CSS animations on the compositor: the
   // whole arc spins once per `animationDuration` here...
   // Under reduced motion both clocks run at half speed on every pointer: a
   // continuous indicator sits outside design:reduced-motion's scope, so this
   // keeps the ring's slower reduced-motion clocks, keyed on the two shared
   // reduced-motion queries, a fine pointer's and a coarse pointer's.
   indeterminateSpin: {
+    animationName: indeterminateSpinFrames,
+    animationIterationCount: 'infinite',
+    animationTimingFunction: 'linear',
     animationDuration: {
       default: '2s',
       '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
@@ -282,9 +353,12 @@ const styles = stylex.create({
       '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': '4s',
     },
   },
-  // ...while its start and end run one breathing cycle per
-  // `animationDuration` here (read back when the animation starts).
+  // ...while its start (this layer) and the halves and leading cap inside it
+  // run one breathing cycle per `animationDuration` here. Each keyframe sets
+  // its own segment's easing; between them the clock is linear.
   indeterminateCycle: {
+    animationIterationCount: 'infinite',
+    animationTimingFunction: 'linear',
     animationDuration: {
       default: '1.5s',
       '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
@@ -292,6 +366,10 @@ const styles = stylex.create({
       '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': '3s',
     },
   },
+  indeterminateTail: {animationName: indeterminateTailFrames},
+  indeterminateRight: {animationName: indeterminateRightFrames},
+  indeterminateLeft: {animationName: indeterminateLeftFrames},
+  indeterminateCap: {animationName: indeterminateCapFrames},
   children: {
     position: 'absolute',
     inset: 0,
@@ -507,88 +585,6 @@ function fillKeyframes(
 }
 
 /**
- * Where the indeterminate arc's start (`tail`) and its length (`arc`) are, in
- * degrees, at `t` (0–1) of a cycle.
- */
-function indeterminateAt(t: number, ease: (t: number) => number) {
-  const {pattern, shortest, longest, midway} = INDETERMINATE;
-  const first = t < 0.5;
-  const e = ease(first ? t / 0.5 : (t - 0.5) / 0.5);
-  const dash = first
-    ? shortest + (longest - shortest) * e
-    : longest + (shortest - longest) * e;
-  const start = first ? midway * e : midway + (pattern - midway) * e;
-  return {tail: (360 * start) / pattern, arc: (360 * dash) / pattern};
-}
-
-/**
- * Keyframes for one indeterminate cycle of `duration` ms, sampled once a
- * frame, plus a sample exactly where the arc crosses half a turn (and one
- * just after), so the left half shows and hides on time.
- */
-function indeterminateKeyframes(duration: number, ease: (t: number) => number) {
-  const count = Math.max(8, Math.ceil(duration / (1000 / 60)));
-  const grid = Array.from({length: count + 1}, (_, i) => i / count);
-  const over = (t: number) => indeterminateAt(t, ease).arc - 180;
-  const crossings: number[] = [];
-  for (let i = 0; i < count; i++) {
-    let low = grid[i];
-    let high = grid[i + 1];
-    if (over(low) * over(high) >= 0) {
-      continue;
-    }
-    for (let k = 0; k < 24; k++) {
-      const mid = (low + high) / 2;
-      if (over(low) * over(mid) <= 0) {
-        high = mid;
-      } else {
-        low = mid;
-      }
-    }
-    crossings.push((low + high) / 2);
-  }
-  const times = [
-    ...new Set([
-      ...grid,
-      ...crossings,
-      ...crossings.map(c => c + 1e-4).filter(t => t < 1),
-    ]),
-  ].sort((x, y) => x - y);
-  const frames = times.map(t => {
-    const {tail, arc} = indeterminateAt(t, ease);
-    return {t, tail, ...fillTurns(arc / 360)};
-  });
-  // As for a value change: the sample on half keeps the side the arc is
-  // leaving, so the left half steps at once as the arc shrinks through half
-  // rather than fading while it still draws part of the arc.
-  const onHalf = new Set(crossings);
-  for (let i = 1; i < frames.length; i += 1) {
-    if (onHalf.has(frames[i].t)) {
-      frames[i].leftShown = frames[i - 1].leftShown;
-    }
-  }
-  return {
-    tail: frames.map(f => ({offset: f.t, transform: `rotate(${f.tail}deg)`})),
-    right: frames.map(f => ({
-      offset: f.t,
-      transform: `rotate(${f.right}deg)`,
-      opacity: f.rightShown,
-    })),
-    left: frames.map(f => ({
-      offset: f.t,
-      transform: `rotate(${f.left}deg)`,
-      opacity: f.leftShown,
-    })),
-    cap: frames.map(f => ({
-      offset: f.t,
-      transform: `rotate(${f.cap}deg)`,
-      opacity: f.caps,
-    })),
-    start: frames.map(f => ({offset: f.t, opacity: f.caps})),
-  };
-}
-
-/**
  * A circular/radial progress indicator that shows completion as a ring.
  *
  * In determinate mode, displays a known value as an arc fill.
@@ -725,68 +721,11 @@ export function CircularProgress({
       }
     };
   }, [percentage, isIndeterminate]);
-  // Indeterminate: the same layers, turned by endless Web Animations on the
-  // compositor (a stroke-dash animation repaints on the main thread and stops
-  // while a script runs), with the whole arc spinning in its own layer and
-  // the arc's start in another. Without script it rests as a quarter turn.
-  const spinRef = useRef<HTMLSpanElement | null>(null);
-  const tailRef = useRef<HTMLSpanElement | null>(null);
-  // The loops read their durations when they start, and reduced motion
-  // changes those durations: a change of the preference while the ring is
-  // shown restarts them on the new clocks. Both shared reduced-motion queries
-  // set the same clocks, so the preference alone decides.
-  const isReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
-  useLayoutEffect(() => {
-    if (!isIndeterminate) {
-      return;
-    }
-    const layers = [
-      spinRef.current,
-      tailRef.current,
-      rightRef.current,
-      leftRef.current,
-      capRef.current,
-      startRef.current,
-    ];
-    if (layers.some(layer => typeof layer?.animate !== 'function')) {
-      return;
-    }
-    const [spin, tail, right, left, cap, start] = layers as [
-      HTMLElement,
-      HTMLElement,
-      HTMLElement,
-      HTMLElement,
-      HTMLElement,
-      SVGElement,
-    ];
-    const spinMs = parseTime(getComputedStyle(spin).animationDuration);
-    const cycleMs = parseTime(getComputedStyle(tail).animationDuration);
-    if (spinMs <= 0 || cycleMs <= 0) {
-      return;
-    }
-    const frames = indeterminateKeyframes(cycleMs, easingOf('ease-in-out'));
-    const cycle: KeyframeAnimationOptions = {
-      duration: cycleMs,
-      iterations: Infinity,
-      easing: 'linear',
-    };
-    const animations = [
-      spin.animate(
-        [{transform: 'rotate(0deg)'}, {transform: 'rotate(360deg)'}],
-        {duration: spinMs, iterations: Infinity, easing: 'linear'},
-      ),
-      tail.animate(frames.tail, cycle),
-      right.animate(frames.right, cycle),
-      left.animate(frames.left, cycle),
-      cap.animate(frames.cap, cycle),
-      start.animate(frames.start, cycle),
-    ];
-    return () => {
-      for (const animation of animations) {
-        animation.cancel();
-      }
-    };
-  }, [isIndeterminate, isReducedMotion]);
+  // Indeterminate: the same layers, turned by endless CSS animations on the
+  // compositor (`styles.indeterminateSpin`, `indeterminateCycle`), so the ring
+  // turns before hydration; a stroke-dash animation would repaint on the main
+  // thread and stop while a script runs. The reduced-motion clocks come from
+  // CSS too. Without its animations it rests as a quarter turn.
   const turns = fillTurns(isIndeterminate ? 0.25 : percentage);
   // One half of the ring's stroke, from 6 o'clock clockwise to 12 (the left
   // half) before its layer turns; butt ends, the caps are drawn apart.
@@ -814,7 +753,12 @@ export function CircularProgress({
       <span {...stylex.props(styles.fillHalf, styles.fillHalfRight)}>
         <span
           ref={rightRef}
-          {...stylex.props(styles.fillTurn, styles.fillTurnRight)}
+          {...stylex.props(
+            styles.fillTurn,
+            styles.fillTurnRight,
+            isIndeterminate && styles.indeterminateCycle,
+            isIndeterminate && styles.indeterminateRight,
+          )}
           style={{
             transform: `rotate(${turns.right}deg)`,
             opacity: turns.rightShown,
@@ -834,6 +778,8 @@ export function CircularProgress({
             styles.fillTurn,
             styles.fillTurnLeft,
             isIndeterminate && styles.fillTurnLeftJoint,
+            isIndeterminate && styles.indeterminateCycle,
+            isIndeterminate && styles.indeterminateLeft,
           )}
           style={{
             transform: `rotate(${turns.left}deg)`,
@@ -856,7 +802,11 @@ export function CircularProgress({
       </svg>
       <span
         ref={capRef}
-        {...stylex.props(styles.fillCap)}
+        {...stylex.props(
+          styles.fillCap,
+          isIndeterminate && styles.indeterminateCycle,
+          isIndeterminate && styles.indeterminateCap,
+        )}
         style={{
           transform: `rotate(${turns.cap}deg)`,
           opacity: turns.caps,
@@ -929,12 +879,13 @@ export function CircularProgress({
             stylex.props(styles.fill, variantStyles[fillVariant]),
           )}>
           {isIndeterminate ? (
-            <span
-              ref={spinRef}
-              {...stylex.props(styles.fillCap, styles.indeterminateSpin)}>
+            <span {...stylex.props(styles.fillCap, styles.indeterminateSpin)}>
               <span
-                ref={tailRef}
-                {...stylex.props(styles.fillCap, styles.indeterminateCycle)}>
+                {...stylex.props(
+                  styles.fillCap,
+                  styles.indeterminateCycle,
+                  styles.indeterminateTail,
+                )}>
                 {arc}
               </span>
             </span>

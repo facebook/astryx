@@ -1,10 +1,153 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
-import {act, render, screen} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import {readFileSync} from 'node:fs';
 import path from 'node:path';
-import {CircularProgress} from './CircularProgress';
+import {CircularProgress, INDETERMINATE} from './CircularProgress';
+
+/** A CSS cubic-bezier timing function: output progress for an input time. */
+function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
+  const at = (a: number, b: number, u: number) =>
+    3 * (1 - u) * (1 - u) * u * a + 3 * (1 - u) * u * u * b + u * u * u;
+  return (t: number) => {
+    let low = 0;
+    let high = 1;
+    for (let i = 0; i < 50; i += 1) {
+      const mid = (low + high) / 2;
+      if (at(x1, x2, mid) < t) {
+        low = mid;
+      } else {
+        high = mid;
+      }
+    }
+    return at(y1, y2, (low + high) / 2);
+  };
+}
+
+/** The values an element's own class rules set outside any at-rule. */
+function topLevelValues(element: Element, property: string): string[] {
+  const out: string[] = [];
+  for (const sheet of Array.from(document.styleSheets)) {
+    for (const rule of Array.from(sheet.cssRules)) {
+      if (
+        rule instanceof CSSStyleRule &&
+        Array.from(element.classList).some(c =>
+          rule.selectorText.includes(`.${c}`),
+        )
+      ) {
+        const value = rule.style.getPropertyValue(property);
+        if (value !== '') {
+          out.push(value);
+        }
+      }
+    }
+  }
+  return out;
+}
+
+interface Frame {
+  offset: number;
+  transform?: number;
+  opacity?: number;
+  easing?: (t: number) => number;
+}
+
+/** A named @keyframes rule's frames, in order. */
+function keyframesOf(name: string): Frame[] {
+  for (const sheet of Array.from(document.styleSheets)) {
+    for (const rule of Array.from(sheet.cssRules)) {
+      // A CSSKeyframesRule (jsdom names no such global; type 7 is its own).
+      // jsdom lowercases an animation-name it parses, not the rule's name.
+      const keyframes = rule as CSSRule & {
+        name?: string;
+        cssRules?: CSSRuleList;
+      };
+      if (
+        keyframes.type === 7 &&
+        keyframes.name?.toLowerCase() === name.toLowerCase() &&
+        keyframes.cssRules
+      ) {
+        return Array.from(keyframes.cssRules)
+          .map(r => {
+            const frame = r as CSSKeyframeRule;
+            const offset =
+              frame.keyText === 'from'
+                ? 0
+                : frame.keyText === 'to'
+                  ? 1
+                  : Number.parseFloat(frame.keyText) / 100;
+            const transform = frame.style.getPropertyValue('transform');
+            const opacity = frame.style.getPropertyValue('opacity');
+            const easing = frame.style.getPropertyValue(
+              'animation-timing-function',
+            );
+            const bezier = /cubic-bezier\(([^)]*)\)/.exec(easing);
+            return {
+              offset,
+              transform:
+                transform === ''
+                  ? undefined
+                  : Number(/rotate\(([-\d.]+)deg\)/.exec(transform)?.[1]),
+              opacity: opacity === '' ? undefined : Number(opacity),
+              easing:
+                bezier == null
+                  ? undefined
+                  : cubicBezier(
+                      ...(bezier[1].split(',').map(Number) as [
+                        number,
+                        number,
+                        number,
+                        number,
+                      ]),
+                    ),
+            };
+          })
+          .sort((a, b) => a.offset - b.offset);
+      }
+    }
+  }
+  throw new Error(`no @keyframes ${name}`);
+}
+
+/** A property's value at `t` through the frames that set it, as CSS plays it. */
+function valueAt(
+  frames: Frame[],
+  property: 'transform' | 'opacity',
+  t: number,
+): number {
+  const set = frames.filter(f => f[property] !== undefined);
+  for (let i = 0; i < set.length - 1; i += 1) {
+    const from = set[i];
+    const to = set[i + 1];
+    if (t >= from.offset && t <= to.offset) {
+      const local =
+        to.offset === from.offset
+          ? 1
+          : (t - from.offset) / (to.offset - from.offset);
+      const progress = from.easing ? from.easing(local) : local;
+      const a = from[property] as number;
+      const b = to[property] as number;
+      return a + (b - a) * progress;
+    }
+  }
+  throw new Error(`no ${property} segment at ${t}`);
+}
+
+/** The indeterminate ring's animated layers, from its markup. */
+function indeterminateLayers(progressbar: Element) {
+  const fill = progressbar.nextElementSibling as Element;
+  const spin = fill.firstElementChild as Element;
+  const tail = spin.firstElementChild as Element;
+  const [rightHalf, leftHalf, , cap] = Array.from(tail.children);
+  return {
+    spin,
+    tail,
+    right: rightHalf.firstElementChild as Element,
+    left: leftHalf.firstElementChild as Element,
+    cap,
+  };
+}
 
 describe('CircularProgress', () => {
   it('renders with default props', () => {
@@ -633,116 +776,122 @@ describe('CircularProgress', () => {
   });
 
   describe('indeterminate mode', () => {
-    it('restarts its loops on the new clocks when reduced motion changes while shown', () => {
+    it('turns with CSS keyframes, so no script starts its loops', () => {
       let started = 0;
-      let cancelled = 0;
-      let reduce = false;
-      const listeners = new Set<() => void>();
       const original = Element.prototype.animate;
-      const originalStyle = window.getComputedStyle;
-      const originalMatchMedia = window.matchMedia;
-      Element.prototype.animate = function () {
+      Element.prototype.animate = function (
+        this: Element,
+        ...args: Parameters<typeof original>
+      ) {
         started += 1;
-        return {
-          cancel() {
-            cancelled += 1;
-          },
-          playState: 'running',
-          effect: {getComputedTiming: () => ({progress: 0})},
-          onfinish: null,
-        } as unknown as Animation;
+        return original.apply(this, args);
       } as typeof Element.prototype.animate;
-      window.getComputedStyle = ((element: Element) => {
-        const real = originalStyle(element);
-        return {
-          ...real,
-          animationDuration: reduce ? '3s' : '1.5s',
-        } as CSSStyleDeclaration;
-      }) as typeof window.getComputedStyle;
-      window.matchMedia = ((query: string) => ({
-        get matches() {
-          return query.includes('prefers-reduced-motion') && reduce;
-        },
-        media: query,
-        onchange: null,
-        addListener: () => {},
-        removeListener: () => {},
-        addEventListener: (_: string, listener: () => void) => {
-          listeners.add(listener);
-        },
-        removeEventListener: (_: string, listener: () => void) => {
-          listeners.delete(listener);
-        },
-        dispatchEvent: () => false,
-      })) as unknown as typeof window.matchMedia;
       try {
-        render(<CircularProgress isIndeterminate size="md" label="Loading" />);
-        // spin, tail, right, left, cap, start
-        expect(started).toBe(6);
-        act(() => {
-          reduce = true;
-          for (const listener of listeners) {
-            listener();
-          }
-        });
-        // The six loops stop and start again, reading the new durations.
-        expect(cancelled).toBe(6);
-        expect(started).toBe(12);
+        const {getByRole} = render(
+          <CircularProgress isIndeterminate size="md" label="Loading" />,
+        );
+        expect(started).toBe(0);
+        const layers = indeterminateLayers(getByRole('progressbar'));
+        for (const [name, layer] of Object.entries(layers)) {
+          expect(topLevelValues(layer, 'animation-name'), name).toHaveLength(1);
+          expect(
+            topLevelValues(layer, 'animation-iteration-count'),
+            name,
+          ).toEqual(['infinite']);
+        }
       } finally {
         Element.prototype.animate = original;
-        window.getComputedStyle = originalStyle;
-        window.matchMedia = originalMatchMedia;
       }
     });
 
-    it('steps the left half at once each time the breathing arc crosses half', () => {
-      const calls: {target: Element; keyframes: Keyframe[]}[] = [];
-      const original = Element.prototype.animate;
-      const originalStyle = window.getComputedStyle;
-      Element.prototype.animate = function (
-        this: Element,
-        keyframes: Keyframe[],
-      ) {
-        calls.push({target: this, keyframes});
+    it('its keyframes play the breathing cycle exactly, with the left half stepping at half', () => {
+      const {getByRole} = render(
+        <CircularProgress isIndeterminate size="md" label="Loading" />,
+      );
+      const layers = indeterminateLayers(getByRole('progressbar'));
+      const frames = Object.fromEntries(
+        Object.entries(layers).map(([name, layer]) => [
+          name,
+          keyframesOf(topLevelValues(layer, 'animation-name')[0]),
+        ]),
+      ) as Record<keyof typeof layers, Frame[]>;
+      const {pattern, shortest, longest, midway} = INDETERMINATE;
+      const easeInOut = cubicBezier(0.42, 0, 0.58, 1);
+      // The cycle as the stroked circle drew it: each half eased in and out.
+      const cycle = (t: number) => {
+        const first = t < 0.5;
+        const e = easeInOut(first ? t / 0.5 : (t - 0.5) / 0.5);
+        const dash = first
+          ? shortest + (longest - shortest) * e
+          : longest + (shortest - longest) * e;
+        const start = first ? midway * e : midway + (pattern - midway) * e;
+        const arc = (360 * dash) / pattern;
         return {
-          cancel() {},
-          playState: 'running',
-          effect: {getComputedTiming: () => ({progress: 0})},
-          onfinish: null,
-        } as unknown as Animation;
-      } as typeof Element.prototype.animate;
-      // The spin's and the cycle's durations, as the styles would give them.
-      window.getComputedStyle = ((element: Element) => {
-        const real = originalStyle(element);
-        return {...real, animationDuration: '1.5s'} as CSSStyleDeclaration;
-      }) as typeof window.getComputedStyle;
-      try {
-        render(<CircularProgress isIndeterminate size="md" label="Loading" />);
-        // spin, tail, right, left, cap, start
-        expect(calls.length).toBe(6);
-        const left = calls[3].keyframes;
-        const angle = (frame: Keyframe) =>
-          Number(/rotate\(([-\d.]+)deg\)/.exec(String(frame.transform))?.[1]);
-        // The arc grows past half and shrinks back each cycle.
-        expect(left.some(f => angle(f) > 180)).toBe(true);
-        expect(left.some(f => f.opacity === 0)).toBe(true);
-        // Fully shown wherever the left half draws part of the arc, and
-        // its visibility never fades across a sample interval.
-        for (const frame of left) {
-          if (angle(frame) > 180) {
-            expect(frame.opacity, `at ${frame.offset}`).toBe(1);
+          spin: 360 * t,
+          tail: (360 * start) / pattern,
+          cap: arc,
+          right: Math.min(Math.max(arc, 0), 180),
+          left: Math.min(Math.max(arc, 180), 360),
+          leftShown: arc > 180 ? 1 : 0,
+        };
+      };
+      // Where the arc crosses half a turn, rising and falling.
+      const crossingsOf = () => {
+        const out: number[] = [];
+        for (let i = 0; i < 4000; i += 1) {
+          let low = i / 4000;
+          let high = (i + 1) / 4000;
+          const over = (t: number) => cycle(t).cap - 180;
+          if (over(low) * over(high) >= 0) {
+            continue;
           }
-        }
-        for (let i = 1; i < left.length; i += 1) {
-          if (left[i].opacity !== left[i - 1].opacity) {
-            expect(
-              Number(left[i].offset) - Number(left[i - 1].offset),
-            ).toBeLessThanOrEqual(1e-4);
+          for (let k = 0; k < 40; k += 1) {
+            const mid = (low + high) / 2;
+            if (over(low) * over(mid) <= 0) {
+              high = mid;
+            } else {
+              low = mid;
+            }
           }
+          out.push((low + high) / 2);
         }
-      } finally {
-        Element.prototype.animate = original;
-        window.getComputedStyle = originalStyle;
+        return out;
+      };
+      const halfway = crossingsOf();
+      expect(halfway).toHaveLength(2);
+      let worst = 0;
+      let crossings = 0;
+      for (let i = 0; i <= 2000; i += 1) {
+        const t = i / 2000;
+        const expected = cycle(t);
+        for (const name of ['spin', 'tail', 'cap', 'right', 'left'] as const) {
+          worst = Math.max(
+            worst,
+            Math.abs(valueAt(frames[name], 'transform', t) - expected[name]),
+          );
+        }
+        // The step itself sits within 0.02% after each crossing.
+        if (halfway.some(c => t >= c - 1e-6 && t <= c + 2e-4)) {
+          continue;
+        }
+        const shown = valueAt(frames.left, 'opacity', t);
+        if (shown !== 0 && shown !== 1) {
+          crossings += 1;
+        } else {
+          expect(shown, `left at ${t}`).toBe(expected.leftShown);
+        }
+      }
+      // Every turn within a hundredth of a degree of the cycle…
+      expect(worst).toBeLessThan(0.01);
+      // …and the left half never fades: it steps within 0.01% of the cycle.
+      expect(crossings).toBe(0);
+      const steps = frames.left.filter(f => f.opacity !== undefined);
+      for (let i = 1; i < steps.length; i += 1) {
+        if (steps[i].opacity !== steps[i - 1].opacity) {
+          expect(steps[i].offset - steps[i - 1].offset).toBeLessThanOrEqual(
+            1e-4 + 1e-9,
+          );
+        }
       }
     });
 
