@@ -463,7 +463,8 @@ layers use Layer rendering without joining Escape/platform dismissal.
   surface stays `useLayer` and `LayerProvider`.
 - **INV15 — One lift-from-trigger module, opt-in per surface.** Lift-from-trigger presentation lives in one
   internal module separate from the layer runtime: the lift from the trigger,
-  using the real trigger or a clone, whichever meets the performance outcomes;
+  using the real trigger or a clone, whichever keeps the motion on the
+  compositor (`spec:AST-094` FR5);
   the grow from the trigger's rectangle through the shared rectangle morph
   (one Core animation from one rectangle to another); and
   the exit, played through the runtime's exit copy (INV14). A clone of the
@@ -494,10 +495,6 @@ Current gaps are observable facts, not current target behavior:
 - Toast's root and fallback hosts remain behind the other native modals:
   Lightbox, MobileNav, and a scrim BottomSheetSwitcher.
 - The reduced browser fallback is not documented as non-equivalent.
-- INV14 and INV15 are not met yet: no shared presentation hold, exit copy,
-  runtime backdrop tint, or lift module exists, and Dialog, Drawer,
-  BottomSheet, Lightbox, MobileNav, ToastViewport, and Selector each build
-  their own top-layer mounting, exit, or backdrop.
 - Existing tests simulate Popover `toggle` and DOM nesting; they do not prove
   native pointer light dismissal, top-layer/modal ordering, real anchor geometry,
   SSR parser repair, or nested portal behavior in supported browsers.
@@ -505,6 +502,11 @@ Current gaps are observable facts, not current target behavior:
 `spec:AST-003` is the accepted, unimplemented change that owns requirements,
 migration, verification, and completion criteria for these gaps. This record must
 be updated only as that work ships.
+
+INV14 and INV15 are not met yet, and `spec:AST-003` does not cover them: no
+shared presentation hold, exit copy, runtime backdrop tint, or lift module
+exists, and Dialog, Drawer, BottomSheet, Lightbox, MobileNav, ToastViewport,
+and Selector each build their own top-layer mounting, exit, or backdrop.
 
 ## Change coupling
 
