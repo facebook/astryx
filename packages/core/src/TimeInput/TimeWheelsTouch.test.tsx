@@ -176,6 +176,53 @@ describe('TimeInput sheet wheels under a finger and a mouse', () => {
   });
 });
 
+describe('TimeInput sheet wheels: a short minute list loops like the full list', () => {
+  /** The minute column's drum rows (one per position on the cylinder). */
+  function drumLabels(minute: HTMLElement): string[] {
+    const column = minute.closest('[data-wheel]') ?? minute;
+    return [
+      ...column.querySelectorAll<HTMLElement>(
+        '[data-wheel-drum] > [data-label]',
+      ),
+    ].map(row => row.dataset.label!);
+  }
+
+  it.each([
+    [15, '10:45', '10:00', ['00', '15', '30', '45']],
+    [30, '10:30', '10:00', ['00', '30']],
+  ] as const)(
+    'under a finger, a minute column stepped by %i wraps both ways without carrying the hour, its copies filling the cylinder',
+    (increment, initial, next, options) => {
+      stubDevice(IOS);
+      const onChange = vi.fn();
+      render(
+        <ControlledTime
+          initial={initial as ISOTimeString}
+          increment={increment}
+          onChange={onChange}
+        />,
+      );
+      const {minute} = openTimeSheet();
+      // One option per step for assistive technology; copies on the drum.
+      expect(
+        within(minute)
+          .getAllByRole('option')
+          .map(option => option.textContent),
+      ).toEqual(options);
+      expect(
+        drumLabels(minute).filter(label => label === '00').length,
+      ).toBeGreaterThan(1);
+      // UIDatePicker: 10:45 + 1 row is 10:00, and back.
+      fireEvent.keyDown(minute, {key: 'ArrowDown'});
+      expect(onChange).toHaveBeenLastCalledWith(next);
+      fireEvent.keyDown(screen.getByRole('listbox', {name: 'Minute'}), {
+        key: 'ArrowUp',
+      });
+      expect(onChange).toHaveBeenLastCalledWith(initial);
+    },
+  );
+});
+
 function ControlledDateTime({
   initial = '2026-03-15T11:58' as ISODateTimeString,
   timeIncrement,
@@ -216,6 +263,27 @@ describe('DateTimeInput sheet wheels under a finger and a mouse', () => {
     render(<ControlledDateTime onChange={onChange} />);
     fireEvent.keyDown(openTimePanel(), {key: 'ArrowDown'});
     expect(onChange).toHaveBeenLastCalledWith('2026-03-15T12:58');
+  });
+
+  it('under a finger, wraps a minute column stepped by 15 at 11:45 PM onto 11:00 PM the same evening, and back', () => {
+    stubDevice(ANDROID);
+    const onChange = vi.fn();
+    render(
+      <ControlledDateTime
+        initial={'2026-03-15T23:45' as ISODateTimeString}
+        timeIncrement={15}
+        onChange={onChange}
+      />,
+    );
+    openTimePanel();
+    fireEvent.keyDown(screen.getByRole('listbox', {name: 'Minute'}), {
+      key: 'ArrowDown',
+    });
+    expect(onChange).toHaveBeenLastCalledWith('2026-03-15T23:00');
+    fireEvent.keyDown(screen.getByRole('listbox', {name: 'Minute'}), {
+      key: 'ArrowUp',
+    });
+    expect(onChange).toHaveBeenLastCalledWith('2026-03-15T23:45');
   });
 
   it('keeps a stepped minute wheel on the same evening at 11:58 PM', () => {
