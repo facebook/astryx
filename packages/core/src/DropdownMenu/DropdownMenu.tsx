@@ -100,6 +100,7 @@ import {usePresentation} from '../utils/presentation';
 import {useTouchPresentation} from '../utils/touchPresentation';
 import {
   COVER_TRIGGER_STYLE,
+  createMenuDrillInMotion,
   createMenuSurfaceMotion,
   placeOverTrigger,
   type MenuSurfaceMotion,
@@ -117,6 +118,7 @@ import {
   radiusVars,
   durationVars,
   easeVars,
+  shadowVars,
 } from '../theme/tokens.stylex';
 import {isRenderable, mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
@@ -133,6 +135,15 @@ import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 const MENU_BLOCK_CAP = '300px';
 const MENU_MAX_BLOCK_SIZE = `min(${MENU_BLOCK_CAP}, ${layerViewportInset.maxBlockSize})`;
 const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(${MENU_BLOCK_CAP}, ${layerViewportInset.maxBlockSizeFallback})`;
+// While the menu's box grows or shrinks around a sub-menu's card
+// (menuDrillInMotion.ts sets the attribute to the edge that stays).
+const BOX_MOTION = ':is([data-astryx-menu-box-motion])';
+const BOX_KEEPS_TOP = ':is([data-astryx-menu-box-motion="top"])';
+const BOX_KEEPS_BOTTOM = ':is([data-astryx-menu-box-motion="bottom"])';
+const BOX_CAP = 'var(--_menu-box-radius, 0px)';
+/** How far a moving part of the box may cast its shadow, px. */
+const BOX_SHADOW_REACH = '200px';
+
 const MENU_TRIGGER_OPEN_BACKGROUND = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
 
 // A sub-menu's drilled-in view with a header or footer renders in the surface
@@ -193,6 +204,75 @@ const styles = stylex.create({
     overflowY: 'auto',
     overflowX: 'hidden',
     overscrollBehavior: 'contain',
+  },
+  // A sub-menu's card shares one cell with the parent's rows it lies over
+  // (useMenuDrillIn), so the menu's box grows to hold it.
+  cardStack: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr)',
+    alignContent: 'start',
+    position: 'relative',
+  },
+  // A card going back plays out over the rows, positioned in the menu.
+  cardLeaving: {
+    position: 'relative',
+  },
+  // The menu's box while it grows or shrinks around a sub-menu's card
+  // (menuDrillInMotion.ts): its paint steps aside for its own pseudo-elements,
+  // so nothing is added to draw it. Its background stays only on the corner
+  // cap at the edge that stays; ::after is the middle, which scales, and
+  // ::before the cap at the moving edge, which travels; each casts the box's
+  // shadow on its outer sides only.
+  boxMotion: {
+    isolation: 'isolate',
+    backgroundColor: {default: null, [BOX_MOTION]: 'transparent'},
+    boxShadow: {default: null, [BOX_MOTION]: 'none'},
+    backgroundImage: {
+      default: null,
+      [BOX_KEEPS_TOP]: `linear-gradient(to bottom, ${colorVars['--color-background-popover']} ${BOX_CAP}, transparent ${BOX_CAP})`,
+      [BOX_KEEPS_BOTTOM]: `linear-gradient(to top, ${colorVars['--color-background-popover']} ${BOX_CAP}, transparent ${BOX_CAP})`,
+    },
+    '::before': {
+      content: '""',
+      display: {default: 'none', [BOX_MOTION]: 'block'},
+      position: 'absolute',
+      insetInline: 0,
+      height: BOX_CAP,
+      top: {default: null, [BOX_KEEPS_BOTTOM]: 0},
+      bottom: {default: null, [BOX_KEEPS_TOP]: 0},
+      backgroundColor: colorVars['--color-background-popover'],
+      boxShadow: shadowVars['--shadow-low'],
+      borderRadius: {
+        default: null,
+        [BOX_KEEPS_TOP]: `0 0 ${BOX_CAP} ${BOX_CAP}`,
+        [BOX_KEEPS_BOTTOM]: `${BOX_CAP} ${BOX_CAP} 0 0`,
+      },
+      clipPath: {
+        default: null,
+        [BOX_KEEPS_TOP]: `inset(0 -${BOX_SHADOW_REACH} -${BOX_SHADOW_REACH})`,
+        [BOX_KEEPS_BOTTOM]: `inset(-${BOX_SHADOW_REACH} -${BOX_SHADOW_REACH} 0)`,
+      },
+      zIndex: -1,
+      pointerEvents: 'none',
+    },
+    '::after': {
+      content: '""',
+      display: {default: 'none', [BOX_MOTION]: 'block'},
+      position: 'absolute',
+      insetInline: 0,
+      top: BOX_CAP,
+      bottom: BOX_CAP,
+      backgroundColor: colorVars['--color-background-popover'],
+      boxShadow: shadowVars['--shadow-low'],
+      clipPath: `inset(0 -${BOX_SHADOW_REACH})`,
+      transformOrigin: {
+        default: null,
+        [BOX_KEEPS_TOP]: '50% 0%',
+        [BOX_KEEPS_BOTTOM]: '50% 100%',
+      },
+      zIndex: -1,
+      pointerEvents: 'none',
+    },
   },
   // With a header or footer, the regions and the menu share one column under
   // the menu's block cap: the regions keep their height and the menu shrinks
@@ -1293,6 +1373,9 @@ function DropdownMenuPopover({
     dialogLabel: hasRegions
       ? (menuLabel ?? t(DEFAULT_BUTTON_I18N_KEY))
       : undefined,
+    // The box's own pseudo-elements draw it while it grows around a
+    // sub-menu's card (menuDrillInMotion.ts).
+    className: stylex.props(styles.boxMotion).className,
   });
 
   const closeMenu = useCallback(() => {
@@ -1742,7 +1825,37 @@ function DropdownMenuPopover({
     : styles.popoverMatchTrigger;
 
   // The drill-in view stack for sub-menus on a phone.
-  const {drillIn, wrapContent} = useMenuDrillIn(isOpen);
+  // UIMenu's in-place sub-menu: the box grows to the drilled-in view, the
+  // parent stays behind as a card, and back reverses it (touch only; the
+  // drill-in itself happens only on a compact touch display).
+  const [drillInMotion] = useState(() =>
+    createMenuDrillInMotion(() => ({
+      surface: contentRef.current,
+      list: listRef.current,
+    })),
+  );
+  useEffect(() => () => drillInMotion.dispose(), [drillInMotion]);
+  // Only a touch presentation plays it; a drill-in under a mouse (an explicit
+  // `presentation="drill-in"`) swaps the view as before.
+  const drillInTransition = useMemo(
+    () => ({
+      capture: (kind: 'push' | 'pop', row: HTMLElement | null) => {
+        if (isTouchPresentationRef.current) {
+          drillInMotion.capture(kind, row);
+        }
+      },
+      play: (done?: () => void) => drillInMotion.play(done),
+      reset: () => drillInMotion.reset(),
+    }),
+    [drillInMotion],
+  );
+  // On a phone a sub-menu opens as UIMenu's does, a card over the parent's
+  // rows (useMenuDrillIn).
+  const {drillIn, isCardShown, isCardLeaving, wrapContent} = useMenuDrillIn(
+    isOpen,
+    drillInTransition,
+    {isCard: true},
+  );
   // The surface host is owned through a ref. State keeps only a key that
   // changes whenever a host element attaches, the host included when it
   // moves (a header or footer coming or going), so sub-menus re-render into
@@ -1950,6 +2063,8 @@ function DropdownMenuPopover({
                 hasOverflow ? styles.touchPanYPinchZoom : styles.touchPinchZoom,
                 hasOverflow && styles.scrollable,
                 hasRegions && styles.menuInFrame,
+                isCardShown && styles.cardStack,
+                isCardLeaving && styles.cardLeaving,
                 // Between a header and a footer the menu is a Tab stop, so
                 // keyboard focus on it must be visible (the base style removes
                 // the ring for the pointer-open focus target).

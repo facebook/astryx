@@ -256,6 +256,40 @@ export const springs = {
    */
   menuClose: {...MENU_CLOSE_SPRING},
   /**
+   * A sub-menu opening in place (its row tapped on a phone): a card laid over
+   * the parent's rows from the tapped row grows down to fit the sub-menu, the
+   * menu's box with it, and the parent's rows recede, on this spring.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, a pull-down button at y 150 whose menu opens downward
+   *   (Alpha, Beta, Sort By ▸ (Name, Date, Size), Delete), every menu label,
+   *   image and view read per 60 Hz tick, Oct 24 2026 (t from the tap-down;
+   *   the lift at 60 ms): the menu's box kept its top and grew 188 →
+   *   190.9 (106 ms), 198.1 (123), 218.1 (156), 238.5 (189), 255.6 (223),
+   *   268.2 (256), 276.7 (289), 282.1 (324), 285.2 (359), 286.8 (389),
+   *   287.6 (424), settling at 287.2; the parent rows' opacity followed it
+   *   (1 → 0.5 by 389 ms). The spring is the least-squares fit of one spring
+   *   and its start (90 ms) to the box's eleven frames (rms 0.001 of the
+   *   travel; the opacity's rms 0.005)
+   */
+  subMenuOpen: {dampingRatio: 0.86, response: 0.395},
+  /**
+   * Back out of a sub-menu (its header tapped): the card shrinks back up into
+   * the row, the menu's box with it, and the parent's rows come back, on this
+   * spring.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, a pull-down button at y 150 whose menu opens downward
+   *   (Alpha, Beta, Sort By ▸ (Name, Date, Size), Delete), every menu label,
+   *   image and view read per 60 Hz tick, Oct 24 2026 (t from the tap-down;
+   *   the lift at 60 ms): the box 287.2 → 284.3 (128 ms), 268.7 (160),
+   *   249.9 (195), 233 (228), 219.6 (260), 209.6 (296), 202.5 (329), 197.6
+   *   (361), 194.3 (395), 192.1 (428), 189.7 (494), 188 (628); the parent
+   *   rows' opacity 0.5 → 0.59 (160), 0.69 (195), 0.77 (228), 0.84 (260),
+   *   0.89 (296), 0.93 (329), 0.95 (361), 0.97 (395), 0.99 (461), 1 (527).
+   *   The spring is the least-squares fit of one spring and its start
+   *   (110 ms) to both (rms 0.004)
+   */
+  subMenuBack: {dampingRatio: 0.98, response: 0.41},
+  /**
    * Context menu (UIContextMenuInteraction): the preview lifting once the
    * long press commits.
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,

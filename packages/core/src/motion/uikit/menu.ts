@@ -4,7 +4,9 @@
  * @file menu.ts
  * @input Nothing; data only
  * @output Exports `menu`: the shape the menu grows out of and collapses
- *   into, where it sits over its button on a phone, and UIMenu's haptics
+ *   into, where it sits over its button on a phone, UIMenu's haptics, and
+ *   how a sub-menu opens in place (the box's springs, the parent list's scale
+ *   and drop behind it)
  * @position The menu domain of the UIKit constants table (motion/uikit); its
  *   springs are `springs.menuOpen`, `springs.menuClose` and, under Reduce
  *   Motion, `springs.menuReducedMotion`
@@ -74,6 +76,56 @@ export const menu = {
    *   userInteractionEnded at the lift
    */
   scrubHaptic: 'selection',
+  /**
+   * The sub-menu's header as it opens: its title cross-fades from the row's
+   * regular weight to semibold, and its chevron turns from ahead to down, on
+   * this quicker spring.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, a pull-down button at y 150 whose menu opens downward
+   *   (Alpha, Beta, Sort By ▸ (Name, Date, Size), Delete), every menu label,
+   *   image and view read per 60 Hz tick, Oct 24 2026 (t from the tap-down;
+   *   the lift at 60 ms): the semibold title's opacity 0.1 (106 ms),
+   *   0.28 (123), 0.62 (156), 0.82 (189), 0.92 (223), 0.97 (256), 0.99 (289),
+   *   1 (359), the regular one's the complement; the chevron 9° (106 ms), 25°
+   *   (123), 54° (156), 73° (189), 83° (223), 87° (256), 88.5° (289), 90°
+   *   (360). The spring is the least-squares fit of one spring and its start
+   *   (89 ms) to both (rms 0.0045)
+   */
+  submenuHeaderSpring: {dampingRatio: 0.99, response: 0.205},
+  /**
+   * The header as the sub-menu goes back: its title cross-fades back to the
+   * regular weight and its chevron turns back ahead, slower than they came.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, a pull-down button at y 150 whose menu opens downward
+   *   (Alpha, Beta, Sort By ▸ (Name, Date, Size), Delete), every menu label,
+   *   image and view read per 60 Hz tick, Oct 24 2026 (t from the tap-down;
+   *   the lift at 60 ms): the semibold title's opacity 0.87 (160 ms),
+   *   0.57 (228), 0.33 (296), 0.18 (361), 0.09 (428), 0.01 (628); the
+   *   chevron back to 0° over about 0.6 s. The spring is the least-squares
+   *   fit of one spring and its start (109 ms) to the title (rms 0.0014)
+   */
+  submenuHeaderBackSpring: {dampingRatio: 0.97, response: 0.52},
+  /**
+   * While a sub-menu shows, the parent's rows stay under its card at this
+   * opacity…
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, a pull-down button at y 150 whose menu opens downward
+   *   (Alpha, Beta, Sort By ▸ (Name, Date, Size), Delete), every menu label,
+   *   image and view read per 60 Hz tick, Oct 24 2026 (t from the tap-down;
+   *   the lift at 60 ms): every parent row's own opacity 1 → 0.5,
+   *   never 0; the rows the card covers stay under it
+   */
+  submenuParentOpacity: 0.5,
+  /**
+   * …and this scale, about the parent list's center.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, a pull-down button at y 150 whose menu opens downward
+   *   (Alpha, Beta, Sort By ▸ (Name, Date, Size), Delete), every menu label,
+   *   image and view read per 60 Hz tick, Oct 24 2026 (t from the tap-down;
+   *   the lift at 60 ms): the parent list 1 → 0.97 (Beta's center y
+   *   212.7 → 210.8, toward the list's center)
+   */
+  submenuParentScale: 0.97,
 } as const;
 
 /**

@@ -12,6 +12,8 @@
 import type {MotionRoleKind} from './roles';
 
 export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
+  'menu.submenuHeaderBackSpring': 'spring',
+  'menu.submenuHeaderSpring': 'spring',
   'navigation.transitionMs': 'duration',
   'scroll.bounce': 'spring',
   'scroll.paging.snap': 'spring',
@@ -40,6 +42,8 @@ export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
   'springs.sheetReleaseFast': 'spring',
   'springs.smooth': 'spring',
   'springs.snappy': 'spring',
+  'springs.subMenuBack': 'spring',
+  'springs.subMenuOpen': 'spring',
   'springs.swiftUIDefault': 'spring',
   'springs.swiftUISpring': 'spring',
   'springs.switchThumbMove': 'spring',
