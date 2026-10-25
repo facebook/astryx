@@ -74,6 +74,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 - Read-only multi-line code presentation, built-in and custom token rendering, line numbers and emphasis, header/title/language presentation, copy behavior and feedback, optional wrapping and bounded scrolling, optional collapse behavior, syntax-theme composition, root prop/ref composition, and the documented CodeBlock theme targets.
 
+- The language value: what a `CodeLanguage` carries, the per-language modules under `@astryxdesign/core/CodeBlock/languages/`, `createCodeLanguage`, and how each Astryx surface that colours code with CodeBlock's tokenizer accepts one, including Lab `DiffViewer`'s `language` and `codeLanguages` (FR13).
+
 **Does not own / non-goals**
 
 - Inline code inside prose — owned by `component:Code`.

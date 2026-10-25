@@ -162,9 +162,8 @@ corner cluster that `component:CodeBlock` FR11 places.
 RichText code blocks colour with `component:CodeBlock`'s tokenizer, and
 `RichTextEditor` and `RichTextView` take the same `codeLanguages` list of
 `component:CodeBlock` language modules (FR13) as `Markdown` (`component:Markdown`
-FR30), label a fence matched in it with the value's `name`, and take the diff
-layer over the value for a `diff-<identifier>` fence, as `Markdown` does, so read
-and edit paint and label the same languages, except a fence whose first word runs
+FR30), label a fence matched in it with the value's `name`, as `Markdown`
+does, so read and edit paint and label the same languages, except a fence whose first word runs
 past letters, digits, and underscores, such as `c++`, `c#`, `objective-c`,
 `rust,ignore`, or `diff-ts`: `Markdown` reads a fence by its leading word
 characters (`component:Markdown` FR29), while RichText keeps the whole first word.
