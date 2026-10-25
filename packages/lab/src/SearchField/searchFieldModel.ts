@@ -2,8 +2,8 @@
 
 /**
  * @file searchFieldModel.ts
- * @input The UIKit search table (`uikit.search` from
- *   `@astryxdesign/core/motion/experimental`), core's cubic-bézier curves and
+ * @input The UIKit search table (`search` from
+ *   `@astryxdesign/core/motion/uikit`), core's cubic-bézier curves and
  *   `resolveMotion` (a theme's retuned clock and curve)
  * @output Pure math for SearchField: the active field's width, the targets
  *   of every animated part at rest and while active, and the timed curves
@@ -25,14 +25,10 @@
  * SYNC: When modified, update searchFieldModel.test.ts and SearchField.tsx.
  */
 
-import {
-  cubicBezier,
-  resolveMotion,
-  uikit,
-  type MotionCurve,
-} from '@astryxdesign/core/motion/experimental';
-
-const {search} = uikit;
+import {type MotionCurve} from '@astryxdesign/core/motion/animator';
+import {cubicBezier} from '@astryxdesign/core/motion/bezier';
+import {resolveMotion} from '@astryxdesign/core/motion/resolveMotion';
+import {search} from '@astryxdesign/core/motion/uikit';
 
 /** The UIKit activation curve as a function of the clock's fraction. */
 export const activationEase = cubicBezier(search.activationCurve);

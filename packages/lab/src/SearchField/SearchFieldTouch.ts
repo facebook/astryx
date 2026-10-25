@@ -4,9 +4,10 @@
 
 /**
  * @file SearchFieldTouch.ts
- * @input The animator, `uikit.search` and its roles' registration
- *   (`@astryxdesign/core/motion/experimental`), the touch resolver and
- *   searchFieldModel.ts
+ * @input The animator (`@astryxdesign/core/motion/useAnimator`), the
+ *   search table and its roles' registration
+ *   (`@astryxdesign/core/motion/uikit`), the touch resolver
+ *   (`@astryxdesign/core/utils/touchPresentation`) and searchFieldModel.ts
  * @output useSearchFieldMotion: SearchField's touch layer. It places the
  *   field's parts (the lift, the narrowing middle, the trailing end, the close
  *   button) and, under a finger, plays UIKit's activation and cancel on one
@@ -21,16 +22,7 @@
  */
 
 import {useCallback, useLayoutEffect, useRef, type RefObject} from 'react';
-import {useTouchPresentation} from '@astryxdesign/core/gestures/experimental';
 import {isRtlElement} from '@astryxdesign/core/hooks';
-import {
-  uikit,
-  useAnimator,
-  type AnimateOptions,
-  type Animator,
-  type MotionCurve,
-  type MotionHandle,
-} from '@astryxdesign/core/motion/experimental';
 import {
   activationTiming,
   easedCurve,
@@ -39,8 +31,15 @@ import {
   type SearchFieldGeometry,
   type SearchFieldPose,
 } from './searchFieldModel';
-
-const {search} = uikit;
+import {
+  type AnimateOptions,
+  type Animator,
+  type MotionCurve,
+  type MotionHandle,
+} from '@astryxdesign/core/motion/animator';
+import {registerSearchTable, search} from '@astryxdesign/core/motion/uikit';
+import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
+import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
 
 /** The refs SearchField puts on the parts the touch layer moves. */
 export interface SearchFieldMotion {
@@ -135,7 +134,7 @@ export function useSearchFieldMotion({
     const current = presented();
     // The clock and curve under the field's theme, read as the move starts
     // (the search table's roles, registered once before the first move).
-    uikit.registerSearchTable();
+    registerSearchTable();
     const timing = activationTiming(rootAnimator.animator.element);
     const duration = timing.seconds;
     // From rest the move waits for the frame that presents the parts at rest

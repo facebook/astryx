@@ -5,7 +5,7 @@
 /**
  * @file SearchField.tsx
  * @input React, StyleX, core's theme tokens, Icon, the UIKit search table
- *   (`@astryxdesign/core/motion/experimental`) and its touch layer,
+ *   (`@astryxdesign/core/motion/uikit`) and its touch layer,
  *   SearchFieldTouch.ts (the animator, the touch resolver and
  *   searchFieldModel.ts's math)
  * @output Exports SearchField (the phone search field of iOS 26's
@@ -77,7 +77,6 @@ import type {BaseProps} from '@astryxdesign/core';
 import {Icon} from '@astryxdesign/core/Icon';
 import {useMergedRefs} from '@astryxdesign/core/hooks';
 import {useTranslator} from '@astryxdesign/core/i18n';
-import {uikit} from '@astryxdesign/core/motion/experimental';
 import {
   colorVars,
   radiusVars,
@@ -86,8 +85,7 @@ import {
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps, themeProps} from '@astryxdesign/core/utils';
 import {useSearchFieldMotion} from './SearchFieldTouch';
-
-const {search} = uikit;
+import {search} from '@astryxdesign/core/motion/uikit';
 
 // =============================================================================
 // Types

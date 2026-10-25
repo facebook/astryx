@@ -18,8 +18,9 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, fireEvent, render, screen} from '@testing-library/react';
-import {uikit} from '@astryxdesign/core/motion/experimental';
-import type * as Motion from '@astryxdesign/core/motion/experimental';
+import {registerSearchTable, search} from '@astryxdesign/core/motion/uikit';
+import type * as UIKitTables from '@astryxdesign/core/motion/uikit';
+import type * as UseAnimator from '@astryxdesign/core/motion/useAnimator';
 import {SearchField} from './SearchField';
 import {activationTiming} from './searchFieldModel';
 
@@ -29,20 +30,25 @@ const playedOptions = vi.hoisted(() => [] as Array<Record<string, unknown>>);
 /** The search table's registration and each play, in order. */
 const events = vi.hoisted(() => [] as Array<'register' | 'play'>);
 
+// Records the search table's registration; it still registers.
+vi.mock('@astryxdesign/core/motion/uikit', async importOriginal => {
+  const actual = await importOriginal<typeof UIKitTables>();
+  return {
+    ...actual,
+    registerSearchTable: () => {
+      events.push('register');
+      actual.registerSearchTable();
+    },
+  };
+});
+
 // Records the length of every curve the field plays; the animator still
 // plays them.
-vi.mock('@astryxdesign/core/motion/experimental', async importOriginal => {
-  const actual = await importOriginal<typeof Motion>();
+vi.mock('@astryxdesign/core/motion/useAnimator', async importOriginal => {
+  const actual = await importOriginal<typeof UseAnimator>();
   const wrapped = new WeakSet<object>();
   return {
     ...actual,
-    uikit: {
-      ...actual.uikit,
-      registerSearchTable: () => {
-        events.push('register');
-        actual.uikit.registerSearchTable();
-      },
-    },
     useAnimator: (...args: Parameters<typeof actual.useAnimator>) => {
       const result = actual.useAnimator(...args);
       const {animator} = result;
@@ -146,7 +152,7 @@ function themed(values: Record<string, string>) {
 describe('SearchField motion roles', () => {
   it('reads the clock and curve from the field’s theme, or the table’s', () => {
     // As the touch layer does before its first move.
-    uikit.registerSearchTable();
+    registerSearchTable();
     const scope = themed({
       '--motion-search-activation-ms': '600ms',
       '--motion-search-activation-curve': 'cubic-bezier(0, 0, 1, 1)',
@@ -161,7 +167,7 @@ describe('SearchField motion roles', () => {
     const unthemed = document.createElement('div');
     document.body.append(unthemed);
     const table = activationTiming(unthemed);
-    expect(table.seconds).toBeCloseTo(uikit.search.activationMs / 1000, 6);
+    expect(table.seconds).toBeCloseTo(search.activationMs / 1000, 6);
     // UIKit's ease-in-ease-out, slow at the start.
     expect(table.ease(0.25)).toBeLessThan(0.2);
   });
@@ -200,7 +206,7 @@ describe('SearchField motion roles', () => {
     }
     for (const curves of played.slice(activation)) {
       for (const duration of Object.values(curves)) {
-        expect(duration).toBeCloseTo(uikit.search.activationMs / 1000, 6);
+        expect(duration).toBeCloseTo(search.activationMs / 1000, 6);
       }
     }
   });
@@ -221,7 +227,7 @@ describe('SearchField motion roles', () => {
     expect(played.length).toBeGreaterThan(0);
     for (const curves of played) {
       for (const duration of Object.values(curves)) {
-        expect(duration).toBeCloseTo(uikit.search.activationMs / 1000, 6);
+        expect(duration).toBeCloseTo(search.activationMs / 1000, 6);
       }
     }
   });

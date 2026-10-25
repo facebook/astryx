@@ -21,12 +21,12 @@ import {flushSync} from 'react-dom';
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import {InternationalizationProvider} from '@astryxdesign/core/i18n';
 import {renderToString} from 'react-dom/server';
-import {uikit} from '@astryxdesign/core/motion/experimental';
 import {
   SearchField,
   type SearchFieldHandle,
   type SearchFieldProps,
 } from './SearchField';
+import {search} from '@astryxdesign/core/motion/uikit';
 
 function Field(props: Partial<SearchFieldProps>) {
   return <SearchField label="Search" {...props} />;
@@ -113,7 +113,7 @@ describe('SearchField', () => {
       ) as HTMLElement;
       // The trailing end moved in, and the middle short, by the close button
       // and its gap.
-      const {closeGap, closeSize} = uikit.search.stacked;
+      const {closeGap, closeSize} = search.stacked;
       expect(closeGap + closeSize).toBe(55);
       expect(getComputedStyle(end).marginInlineEnd).toBe('55px');
       expect(getComputedStyle(middle).marginInlineEnd).toBe('55px');
@@ -154,7 +154,7 @@ describe('SearchField', () => {
       expect(getComputedStyle(button).opacity).toBe('0');
       expect(getComputedStyle(button).pointerEvents).toBe('none');
       // The CSS offset is the table's close travel.
-      expect(uikit.search.stacked.closeTravel).toBe(44);
+      expect(search.stacked.closeTravel).toBe(44);
     } finally {
       host.remove();
     }
