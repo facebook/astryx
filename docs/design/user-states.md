@@ -58,8 +58,8 @@ surface.
   remain inoperable and MUST NOT gain a pressed visual treatment.
 - **DR3 — Persistent selection wins.** A selected SegmentedControl item MUST
   keep its raised selected surface during pointer hold; only an unselected item
-  receives the pressed overlay. Under a finger, `spec:AST-094` FR11 governs the
-  held surface.
+  receives the pressed overlay. Under a finger the item keeps that surface, and its press timing follows
+  `spec:AST-094` FR11.
 
 ## Anatomy and hierarchy
 
