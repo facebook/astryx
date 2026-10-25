@@ -217,20 +217,20 @@ export function scaledFontSizeEntries(
   return steps
     .filter(name => tokens[name] !== undefined)
     .map(name => {
-      const value = tokens[name];
+      const [value, important] = splitImportant(tokens[name]);
       const scaled = `calc(${value} * var(${dynamicTypeScaleProperty(FONT_SIZE_STEP_STYLES[name])}, 1))`;
       const next = steps[steps.indexOf(name) + 1];
       if (next === undefined) {
-        return [name, scaled];
+        return [name, scaled + important];
       }
       const own = lengthInPx(value);
-      const nextOwn = lengthInPx(tokens[next]);
+      const nextOwn = lengthInPx(splitImportant(tokens[next] ?? '')[0]);
       const inOrder = own !== null && nextOwn !== null && own <= nextOwn;
       return [
         name,
-        inOrder
+        (inOrder
           ? `min(${scaled}, var(${next}))`
-          : `min(${scaled}, max(var(${next}), ${value}))`,
+          : `min(${scaled}, max(var(${next}), ${value}))`) + important,
       ];
     });
 }
@@ -270,7 +270,7 @@ function isFixedSize(value: string): boolean {
  * relative to its parent (`em`, `%`) follows the parent, so neither scales
  * twice; a fixed size is not capped, since the theme that fixes it also fixes
  * its place in the hierarchy. A step the block does not write keeps the value
- * it inherits, already scaled.
+ * it inherits, already scaled. A value written `!important` stays important.
  */
 export function readerTextSizeTokens(
   tokens: Record<string, string>,
@@ -280,13 +280,23 @@ export function readerTextSizeTokens(
     out[name] = value;
   }
   for (const [name, step] of TEXT_SIZE_STEPS) {
-    const value = tokens[name];
-    if (value !== undefined && isFixedSize(value)) {
+    const [value, important] = splitImportant(tokens[name] ?? '');
+    if (isFixedSize(value)) {
       out[name] =
-        `calc(${value} * var(${dynamicTypeScaleProperty(FONT_SIZE_STEP_STYLES[step])}, 1))`;
+        `calc(${value} * var(${dynamicTypeScaleProperty(FONT_SIZE_STEP_STYLES[step])}, 1))${important}`;
     }
   }
   return out;
+}
+
+/**
+ * A value and its trailing `!important`, apart: the scale wraps only the
+ * value, since `!important` inside `calc()` makes it invalid where it is used,
+ * and the importance goes back after the whole expression.
+ */
+function splitImportant(value: string): [string, string] {
+  const match = /\s*!\s*important\s*$/i.exec(value);
+  return match ? [value.slice(0, match.index), ' !important'] : [value, ''];
 }
 
 /** A `px` or `rem` length in px (16px to the rem); null for anything else. */

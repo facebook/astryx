@@ -507,6 +507,52 @@ describe('every theme follows the reader text size', () => {
     );
   });
 
+  it('keeps !important outside the scaling expression, on a fixed size and on a step', () => {
+    // `!important` inside calc() makes the value invalid where it is used, so
+    // the text would fall back to its parent's size in every browser.
+    const css = generateThemeCSS(
+      defineTheme({
+        name: 'dt-important',
+        tokens: {
+          '--text-supporting-size': '12px !important',
+          '--font-size-base': '1rem !important',
+        },
+      }),
+    ).component;
+    expect(winning(css, '--text-supporting-size', nowhere)).toBe(
+      'calc(12px * var(--_dynamic-type-footnote, 1)) !important',
+    );
+    const [[, plain]] = scaledFontSizeEntries({'--font-size-base': '1rem'});
+    expect(winning(css, '--font-size-base', nowhere)).toBe(
+      `${plain} !important`,
+    );
+    // The importance does not hide a length from the order check.
+    expect(
+      scaledFontSizeEntries({
+        '--font-size-sm': '0.75rem',
+        '--font-size-base': '0.875rem !important',
+      }),
+    ).toEqual([
+      [
+        '--font-size-sm',
+        'min(calc(0.75rem * var(--_dynamic-type-footnote, 1)), var(--font-size-base))',
+      ],
+      [
+        '--font-size-base',
+        'min(calc(0.875rem * var(--_dynamic-type-body, 1)), max(var(--font-size-lg), 0.875rem)) !important',
+      ],
+    ]);
+    for (const [name, value] of [
+      [
+        '--text-supporting-size',
+        winning(css, '--text-supporting-size', nowhere),
+      ],
+      ['--font-size-base', winning(css, '--font-size-base', nowhere)],
+    ]) {
+      expect(value, name).not.toMatch(/!important.*\)/);
+    }
+  });
+
   it('scales only fixed sizes: a size that reads a variable or its parent is never scaled twice', () => {
     const tokens = {
       '--text-supporting-size': '0.75rem',
