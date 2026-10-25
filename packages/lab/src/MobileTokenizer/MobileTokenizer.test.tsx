@@ -56,7 +56,14 @@ function Harness({
   );
 }
 
-function CreateHarness({spy}: {spy: ReturnType<typeof vi.fn>}) {
+function CreateHarness({
+  spy,
+}: {
+  spy: (
+    items: SearchableItem[],
+    change: MobileTokenizerChange<SearchableItem>,
+  ) => void;
+}) {
   const [value, setValue] = useState<SearchableItem[]>([]);
   return (
     <MobileTokenizer
@@ -105,8 +112,10 @@ beforeEach(() => {
   window.scrollTo = vi.fn();
   vi.stubGlobal(
     'requestAnimationFrame',
+    // Next microtask, not synchronously: a real frame never runs before
+    // requestAnimationFrame returns, and callers may rely on its id.
     vi.fn((cb: FrameRequestCallback) => {
-      cb(0);
+      queueMicrotask(() => cb(0));
       return 1;
     }),
   );
@@ -302,7 +311,7 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     const title = await screen.findByRole('heading', {
       name: 'No results found',
     });
-    const emptyState = title.closest('[role="status"]');
+    const emptyState = title.closest('.astryx-empty-state');
     expect(emptyState).toHaveTextContent('Try a different search.');
     expect(emptyState?.querySelector('.astryx-icon')).toHaveAttribute(
       'data-size',
@@ -338,6 +347,33 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
       [],
       expect.objectContaining({type: 'remove'}),
     );
+  });
+
+  it('hides the visible label on request while the trigger and the sheet keep it as their name, and renders rows through renderItem', async () => {
+    render(
+      <MobileTokenizer
+        label="Tags"
+        isLabelHidden
+        searchSource={source}
+        value={[]}
+        debounceMs={0}
+        onChange={() => {}}
+        renderItem={item => <em data-testid="custom-row">{item.label}!</em>}
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Tags'});
+    // The Field's label is clipped out of the layout (sr-only), as Core
+    // Tokenizer's is, while the trigger keeps it as its name.
+    const label = screen.getByText('Tags', {selector: 'label'});
+    expect(getComputedStyle(label).position).toBe('absolute');
+    expect(getComputedStyle(label).clip).toMatch(
+      /^rect\(0(px)?, 0(px)?, 0(px)?, 0(px)?\)$/,
+    );
+    expect(trigger).toHaveAccessibleName('Tags');
+    fireEvent.click(trigger);
+    expect(await screen.findByRole('dialog')).toHaveAccessibleName('Tags');
+    const row = await screen.findByRole('checkbox', {name: 'Design'});
+    expect(within(row).getByTestId('custom-row')).toHaveTextContent('Design!');
   });
 
   it('keeps a disabled trigger focusable without opening the sheet (AST-085 FR1, FR2)', () => {

@@ -13,8 +13,8 @@
  * @position Lab (canary) stack layer 1: validates the design before the
  *   Core promotion (Tokenizer presentation="bottom-sheet").
  *
- * API mirrors Core Tokenizer (label/searchSource/value/onChange/change,
- * hasCreate, maxEntries) so graduation is an import swap. Differences from
+ * API mirrors Core Tokenizer (label/isLabelHidden/searchSource/value/onChange/
+ * change, renderItem, hasCreate, maxEntries) so graduation is an import swap. Differences from
  * Core are the Lab deltas: the filter is a bordered TextInput (Core's
  * PanelSearchInput is not exported), strings are literals (no i18n keys),
  * and there is no theming/spec contract yet.
@@ -26,6 +26,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
   type SVGProps,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -60,9 +61,19 @@ export interface MobileTokenizerProps<T extends SearchableItem> extends Omit<
   'onChange'
 > {
   label: string;
+  /**
+   * Hide the visible field label; the trigger and the sheet keep `label` as
+   * their accessible name. Mirrors Core Tokenizer.
+   */
+  isLabelHidden?: boolean;
   searchSource: SearchSource<T>;
   value: T[];
   onChange: (items: T[], change: MobileTokenizerChange<T>) => void;
+  /**
+   * Render function for a result row's content, shown beside the row's
+   * checkbox. Default: the item's label. Mirrors Core Tokenizer.
+   */
+  renderItem?: (item: T) => ReactNode;
   placeholder?: string;
   description?: string;
   isOptional?: boolean;
@@ -250,9 +261,11 @@ const styles = stylex.create({
 
 export function MobileTokenizer<T extends SearchableItem>({
   label,
+  isLabelHidden,
   searchSource,
   value,
   onChange,
+  renderItem,
   placeholder,
   description,
   isOptional,
@@ -407,6 +420,7 @@ export function MobileTokenizer<T extends SearchableItem>({
   return (
     <Field
       label={label}
+      isLabelHidden={isLabelHidden}
       description={description}
       isOptional={isOptional}
       isDisabled={isDisabled}
@@ -570,11 +584,15 @@ export function MobileTokenizer<T extends SearchableItem>({
                           rowDisabled && styles.rowDisabled,
                         )}>
                         <span {...stylex.props(styles.rowLabel)}>
-                          <Text
-                            type="body"
-                            color={rowDisabled ? 'inherit' : undefined}>
-                            {item.label}
-                          </Text>
+                          {renderItem ? (
+                            renderItem(item)
+                          ) : (
+                            <Text
+                              type="body"
+                              color={rowDisabled ? 'inherit' : undefined}>
+                              {item.label}
+                            </Text>
+                          )}
                         </span>
                         <CheckboxIndicator
                           state={isSelected ? 'checked' : 'unchecked'}

@@ -14,6 +14,7 @@ import {
   generateTypeScript,
 } from './index.js';
 import type {ComponentContract} from './types.js';
+import {BUILTIN_ICON_NAMES} from '../icons/defaults.js';
 
 const PACKAGE_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -49,6 +50,76 @@ describe('native contracts', () => {
       'native platforms use their own control',
     );
     expect(selector!.core).not.toHaveProperty('controlXstyle');
+  });
+
+  it('keeps value callbacks, typed text slots, and number sets in the core', async () => {
+    const {contracts} = await buildContracts(loadCoreDoc);
+    const byName = new Map(
+      contracts.map(contract => [contract.name, contract]),
+    );
+    expect(byName.get('Switch')!.core.onChange?.type).toEqual({
+      kind: 'fn',
+      args: [{kind: 'boolean'}],
+    });
+    expect(byName.get('TextInput')!.core.onChange?.type).toEqual({
+      kind: 'fn',
+      args: [{kind: 'string'}],
+    });
+    expect(byName.get('Button')!.core.onClick?.type).toEqual({
+      kind: 'fn',
+      args: [],
+    });
+    // AST-082 FR4: Button `width` projects the web's size value to the two
+    // values every platform supports; other widths stay on the web.
+    expect(byName.get('Button')!.core.width?.type).toEqual({
+      kind: 'enum',
+      values: ['content', 'fill'],
+    });
+    expect(byName.get('Button')!.projections?.width).toEqual({
+      content: 'auto',
+      fill: '100%',
+    });
+    expect(byName.get('Heading')!.core.children?.type).toEqual({
+      kind: 'string',
+    });
+    expect(byName.get('Heading')!.core.level?.type).toEqual({
+      kind: 'numberEnum',
+      values: [1, 2, 3, 4, 5, 6],
+    });
+    expect(byName.get('Text')!.core).not.toHaveProperty('id');
+    expect(byName.get('Badge')!.core.label).toMatchObject({
+      type: {kind: 'string'},
+      optional: false,
+    });
+    expect(byName.get('Badge')!.webOnly.map(prop => prop.name)).toContain(
+      'icon',
+    );
+  });
+
+  it('gives Icon a typed icon slot drawn from the shared icon names', async () => {
+    const {contracts} = await buildContracts(loadCoreDoc);
+    const icon = contracts.find(contract => contract.name === 'Icon');
+    expect(icon).toBeDefined();
+    expect(icon!.core.icon).toMatchObject({type: {kind: 'icon'}});
+    expect(icon!.core.icon.optional).toBe(false);
+    expect(Object.keys(icon!.core)).toEqual(['icon', 'color', 'size', 'label']);
+    expect(icon!.webOnly.map(prop => prop.name)).toEqual(['xstyle']);
+
+    const swift = generateSwift(contracts);
+    expect(swift['Icon.swift']).toContain('public var icon: IconName');
+    const iconName = swift['IconName.swift'];
+    for (const name of BUILTIN_ICON_NAMES) {
+      expect(iconName).toContain(
+        `public static let ${name}: IconName = "${name}"`,
+      );
+    }
+    expect(iconName).toContain('ExpressibleByStringLiteral');
+
+    const types = generateTypeScript(contracts);
+    expect(types['core.d.ts']).toContain(
+      "export type IconName = 'close' | 'chevronDown'",
+    );
+    expect(types['core.d.ts']).toContain('icon: IconName;');
   });
 
   it('reports naming and portability errors', () => {
@@ -146,5 +217,29 @@ describe('native contracts', () => {
     expect(errorsFor(null, usage('pullDown')).join('\n')).toContain(
       'menuStyle',
     );
+
+    const wire = (node: string, action: string) =>
+      "import type {AstryxAction, AstryxNode} from '@astryxdesign/native/components';\n" +
+      `export const node: AstryxNode = ${node};\n` +
+      `export const action: AstryxAction = ${action};\n`;
+    const tree =
+      "{component: 'VStack', key: 'root', props: {gap: 2, children: [" +
+      "{component: 'Switch', key: 'wifi', props: {label: 'Wi-Fi', value: true}, events: ['onChange']}," +
+      "{component: 'Selector', key: 'ship', props: {label: 'Shipping', options: [], menuStyle: 'pullDown'}}]}}";
+    const toggled =
+      "{key: 'wifi', component: 'Switch', event: 'onChange', args: [false]}";
+    expect(errorsFor('ios', wire(tree, toggled))).toEqual([]);
+    expect(errorsFor('android', wire(tree, toggled)).join('\n')).toContain(
+      'pullDown',
+    );
+    expect(
+      errorsFor(
+        'ios',
+        wire(
+          tree,
+          "{key: 'wifi', component: 'Switch', event: 'onChange', args: ['off']}",
+        ),
+      ).length,
+    ).toBeGreaterThan(0);
   });
 });

@@ -23,6 +23,7 @@ import React, {
   useRef,
   useState,
   type ReactNode,
+  type RefObject,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -37,6 +38,7 @@ import {
   useFieldInputStyling,
 } from '../Field/fieldParts';
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import type {SizeValue} from '../utils/types';
 import {BaseTypeahead} from '../Typeahead/BaseTypeahead';
 import {useSize} from '../SizeContext/SizeContext';
@@ -270,11 +272,8 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
 // because the input's reserve is derived from the same value.
 const END_LANE_INSET = spacingVars['--spacing-2'];
 const TOKEN_ROW_INSET = `calc(${spacingVars['--spacing-1']} - 1px)`;
-// InputClearButton grows 2px past its visible box under `(pointer: coarse)`.
-// Keep this maximum reserve in sync with Field/InputClearButton.tsx.
-const INPUT_CLEAR_COARSE_POINTER_OUTSET = '2px';
-// Kept in sync with useEndLaneReserve: inputCompact reads the custom property
-// directly so its empty-query pseudo-class can suppress the inner reserve.
+// Kept in sync with useEndLaneReserve: wrapperWithTokens reads the custom
+// property directly, to keep token rows and the input short of the lane.
 const END_LANE_RESERVE_VAR = '--_tokenizer-end-lane-reserve';
 
 const styles = stylex.create({
@@ -295,6 +294,10 @@ const styles = stylex.create({
     // = 8 - 4 - 1 = 3px.
     paddingBlock: TOKEN_ROW_INSET,
     paddingInline: TOKEN_ROW_INSET,
+    // The end lane is out of flow, so tokens would wrap under it. Every row
+    // stops short of the measured lane instead; with no lane up the variable
+    // is absent and this is the ordinary inset.
+    paddingInlineEnd: `calc(${TOKEN_ROW_INSET} + var(${END_LANE_RESERVE_VAR}, 0px))`,
     // Row gap must match paddingBlock so wrapped rows look evenly spaced.
     rowGap: TOKEN_ROW_INSET,
   },
@@ -308,6 +311,9 @@ const styles = stylex.create({
   token: {
     display: 'flex',
     flexShrink: 0,
+    // A renderToken wrapper sizes to its content; cap it at the row so the
+    // pill inside truncates instead of running past the field.
+    maxWidth: '100%',
     position: 'relative',
     zIndex: 1,
   },
@@ -323,6 +329,14 @@ const styles = stylex.create({
     flexShrink: 0,
     zIndex: 1,
   },
+  idleSpinner: {
+    // Hides the Spinner's own box too, which a theme may paint, and covers
+    // engines without content-visibility. Both keep the box's size.
+    visibility: 'hidden',
+    // Skips the ring's rendering, and with it the infinite arc animation,
+    // while the root keeps its own explicit, themed width and height.
+    contentVisibility: 'hidden',
+  },
   inputAtMax: {
     width: 0,
     minWidth: 0,
@@ -332,46 +346,36 @@ const styles = stylex.create({
     position: 'absolute',
   },
   inputCompact: {
-    position: {
-      default: 'relative',
-      ':placeholder-shown': 'absolute',
-    },
+    position: 'relative',
     boxSizing: 'border-box',
-    insetInlineStart: {
-      default: 'auto',
-      ':placeholder-shown': TOKEN_ROW_INSET,
-    },
     zIndex: 0,
+    // The input follows the last token in flow, so a focused empty input's
+    // caret sits where typed text will start. Empty, it asks only for that
+    // inset, and only while focused and editable: blurred or read-only (a
+    // disabled field with a disabledMessage stays focusable), it claims no
+    // room at all, not even the column gap, so it never grows the field a
+    // blank row. Typing restores the full editing width, which may wrap.
     minWidth: {
       default: '40px',
-      ':placeholder-shown': '1px',
+      ':placeholder-shown': 0,
     },
     flex: {
       default: '1 1 40px',
-      ':placeholder-shown': '0 0 auto',
+      ':placeholder-shown': '1 1 0px',
     },
-    width: {
+    width: 0,
+    marginInlineStart: {
       default: 0,
-      ':placeholder-shown': `calc(100% - ${TOKEN_ROW_INSET} - var(${END_LANE_RESERVE_VAR}, ${TOKEN_ROW_INSET}) - ${INPUT_CLEAR_COARSE_POINTER_OUTSET} - 1px)`,
+      ':placeholder-shown:is(:not(:focus), :read-only)': `calc(-1 * ${spacingVars['--spacing-1']})`,
     },
-    // The empty input is a first-row background hit surface. Taking it out of
-    // flex layout means it can neither become a blank final row nor compete
-    // with the pills for width. Logical insets stop it before the measured end
-    // lane plus InputClearButton's maximum invisible pointer outset; tokens and
-    // controls sit above it, leaving only genuine whitespace clickable as
-    // search. Typing restores the ordinary in-flow input.
+    // Restore normal text inset when input follows tokens, since the
+    // wrapper padding is reduced for border concentricity.
     paddingInlineStart: {
       default: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,
-      ':placeholder-shown': 0,
+      ':placeholder-shown:is(:not(:focus), :read-only)': 0,
     },
-    paddingInlineEnd: {
-      default: `var(${END_LANE_RESERVE_VAR}, 0px)`,
-      ':placeholder-shown': spacingVars['--spacing-1'],
-    },
-    textAlign: {
-      default: 'start',
-      ':placeholder-shown': 'end',
-    },
+    // wrapperWithTokens already keeps the in-flow input short of the lane.
+    paddingInlineEnd: 0,
   },
   truncatedWrapper: {
     flexWrap: 'nowrap',
@@ -410,39 +414,6 @@ const endSectionSizeStyles = stylex.create({
   lg: {
     top: `calc(${sizeVars['--size-element-lg']} / 2 - 1px)`,
     transform: 'translateY(-50%)',
-  },
-});
-
-const compactInputSizeStyles = stylex.create({
-  sm: {
-    insetBlockStart: {
-      default: 'auto',
-      ':placeholder-shown': `calc(${sizeVars['--size-element-sm']} / 2 - 1px)`,
-    },
-    transform: {
-      default: 'none',
-      ':placeholder-shown': 'translateY(-50%)',
-    },
-  },
-  md: {
-    insetBlockStart: {
-      default: 'auto',
-      ':placeholder-shown': `calc(${sizeVars['--size-element-md']} / 2 - 1px)`,
-    },
-    transform: {
-      default: 'none',
-      ':placeholder-shown': 'translateY(-50%)',
-    },
-  },
-  lg: {
-    insetBlockStart: {
-      default: 'auto',
-      ':placeholder-shown': `calc(${sizeVars['--size-element-lg']} / 2 - 1px)`,
-    },
-    transform: {
-      default: 'none',
-      ':placeholder-shown': 'translateY(-50%)',
-    },
   },
 });
 
@@ -515,29 +486,55 @@ const CREATABLE_ID_PREFIX = '__xds_create__';
  *
  * Renders nothing when the lane would be empty, so `useEndLaneReserve` sees no
  * element, publishes no width, and the input keeps its full content box.
+ *
+ * With `hasBusySlot` the Spinner stays mounted while idle, unrendered, not
+ * animating and out of the accessibility tree, so its box keeps the themed
+ * Spinner's own size.
+ * Token rows reserve the lane's measured width, so a Spinner that came and
+ * went with the search would re-wrap them, and widen a content-sized field,
+ * on every search.
  */
 function EndLane({
   lane,
   laneRef,
   laneXStyle,
   loadingLabel,
+  anchorRef,
   hasStaticContent,
+  hasBusySlot,
   children,
 }: {
   lane: BusyIndicatorLane;
   laneRef: (node: HTMLElement | null) => void;
   laneXStyle: stylex.StyleXStyles[];
   loadingLabel: string;
+  anchorRef: RefObject<Element | null>;
   hasStaticContent: boolean;
+  hasBusySlot: boolean;
   children: ReactNode;
 }) {
   const isBusy = useIsBusy(lane);
-  if (!isBusy && !hasStaticContent) {
+  // The search Spinner stays named (family:input-fields FR7) but is not a
+  // live region; the field announces each search's busy start instead
+  // (spec:AST-086 FR8).
+  useBusyAnnouncement(isBusy, loadingLabel, anchorRef);
+  if (!isBusy && !hasStaticContent && !hasBusySlot) {
     return null;
   }
   return (
     <div ref={laneRef} {...stylex.props(laneXStyle)}>
-      {isBusy && <Spinner size="sm" aria-label={loadingLabel} />}
+      {(isBusy || hasBusySlot) && (
+        <Spinner
+          // Remounts when a search starts, so the ring syncs its phase on
+          // mount exactly as a newly shown Spinner did before.
+          key={isBusy ? 'busy' : 'idle'}
+          size="sm"
+          aria-label={loadingLabel}
+          role="img"
+          aria-hidden={isBusy ? undefined : true}
+          xstyle={isBusy ? undefined : styles.idleSpinner}
+        />
+      )}
       {children}
     </div>
   );
@@ -1057,11 +1054,11 @@ export function Tokenizer<T extends SearchableItem>({
               isAtMax || isTruncated
                 ? styles.inputAtMax
                 : value.length > 0
-                  ? [styles.inputCompact, compactInputSizeStyles[size]]
+                  ? styles.inputCompact
                   : undefined,
-              // The compact-token style owns the same reserve with an empty-query
-              // exception. This standalone rule is only for an empty Tokenizer;
-              // it still resolves to zero until the lane publishes a width.
+              // With tokens, wrapperWithTokens reserves the lane for every row.
+              // This rule is only for an empty Tokenizer; it still resolves to
+              // zero until the lane publishes a width.
               !(isAtMax || isTruncated || value.length > 0) && laneReserve,
             ]}
           />
@@ -1084,7 +1081,12 @@ export function Tokenizer<T extends SearchableItem>({
         laneRef={laneRef}
         laneXStyle={[styles.endSection, endSectionSizeStyles[size]]}
         loadingLabel={t('@astryx.typeahead.loading')}
-        hasStaticContent={hasStaticEndLane}>
+        anchorRef={wrapperRef}
+        hasStaticContent={hasStaticEndLane}
+        // Wherever a search can run beside tokens: enabled and below
+        // maxEntries. A collapsed overflow row keeps it too, since a search
+        // started while focused can settle after focus leaves.
+        hasBusySlot={value.length > 0 && !isDisabled && !isAtMax}>
         {endContent}
         {hasClearButton && (
           <InputClearButton

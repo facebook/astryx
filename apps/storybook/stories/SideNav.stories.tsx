@@ -513,6 +513,25 @@ export const HeaderEndContent: Story = {
   ),
 };
 
+export const HeaderEndContentAction: Story = {
+  name: 'Header End Content: Action Beside A Heading Link',
+  render: () => (
+    <SideNav
+      header={
+        <SideNavHeading
+          icon={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
+          heading="My App"
+          headingHref="/"
+          headerEndContent={<Button label="Create" variant="ghost" size="sm" />}
+        />
+      }>
+      <SideNavSection title="Main">
+        <SideNavItem label="Dashboard" icon={HomeIcon} isSelected />
+      </SideNavSection>
+    </SideNav>
+  ),
+};
+
 // =============================================================================
 // Header End Content + Menu
 // =============================================================================

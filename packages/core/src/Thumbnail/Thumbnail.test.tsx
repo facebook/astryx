@@ -4,7 +4,12 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Thumbnail} from './Thumbnail';
-import {hasReleaseFade, readsPressStrength} from '../__tests__/pressState';
+import {
+  afterPaintsPress,
+  hasReleaseFade,
+  pressArmsShadowedByDefault,
+  readsPressStrength,
+} from '../__tests__/pressState';
 
 describe('Thumbnail', () => {
   it('renders an image when src is provided', () => {
@@ -38,7 +43,12 @@ describe('Thumbnail', () => {
     );
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('src', '/local.jpg');
-    expect(screen.getByRole('status')).toBeInTheDocument();
+    // The upload Spinner is decorative; the thumbnail announces its busy
+    // start instead (spec:AST-086 FR8).
+    expect(document.querySelector('.astryx-spinner')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
   });
 
   it('exposes the label as an accessible name via a valid group role', () => {
@@ -257,6 +267,11 @@ describe('Thumbnail pressed state (touch)', () => {
     expect(hasReleaseFade(surface)).toBe(true);
     expect(readsPressStrength(surface, '[data-astryx-press="on"]')).toBe(true);
     expect(readsPressStrength(surface)).toBe(true);
+    expect(afterPaintsPress(surface, '[data-astryx-press="on"]')).toBe(true);
+    expect(afterPaintsPress(surface)).toBe(true);
+    // In a layered stylesheet a press arm on a custom property the container
+    // also declares without it never applies.
+    expect(pressArmsShadowedByDefault(surface)).toEqual([]);
   });
 
   it('carries none of it when not interactive', () => {

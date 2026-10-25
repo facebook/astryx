@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-07
+approved_at: 2026-10-24
 owners: [cixzhang]
 applies_to: [packages/core/src/, packages/lab/src/]
 verified_by:
@@ -15,7 +15,7 @@ verified_by:
     packages/core/src/Layer/useLayer.test.tsx,
     packages/core/src/utils/sharedResizeObserver.test.ts,
   ]
-deciding_specs: []
+deciding_specs: [spec:AST-086/DEC-2, spec:AST-099/DEC-1]
 ---
 
 # React component runtime architecture
@@ -26,7 +26,17 @@ deciding_specs: []
 {
   "scope": "global",
   "triggers": {
-    "react-runtime": ["INV1", "INV2", "INV3", "INV4", "INV5", "INV6", "INV8"]
+    "react-runtime": [
+      "INV1",
+      "INV2",
+      "INV3",
+      "INV4",
+      "INV5",
+      "INV6",
+      "INV8",
+      "INV10",
+      "INV11"
+    ]
   }
 }
 ```
@@ -119,6 +129,36 @@ those contracts.
   hook-result identity remains owned by `architecture:public-component-api` and
   the hook's current contract. Ordinary local objects and callbacks have no shared
   identity promise.
+- **INV10 — Own-content announcements live in one module.** In
+  `@astryxdesign/core`, announcing a component's own rendered content
+  (`spec:AST-086` FR11) is done by one shared internal module, which is not
+  exported; making it public needs `spec:AST-002` admission. Packages outside
+  core cannot import it and keep one well-behaved Effect per adopter. Core
+  adopting components hold no Effect, observer, timer, or
+  listener of their own to detect page load, read rendered text, or write that
+  announcement. The module follows INV3 and INV5.
+- **INV11 — The on-screen keyboard has one owner.** In `@astryxdesign/core`,
+  one shared internal hook in the keyboard module (`packages/core/src/keyboard/`)
+  measures the on-screen keyboard, keeps the page
+  from panning on focus, and dismisses the keyboard when a surface moves
+  (`spec:AST-099`); it is not exported. The keyboard height and each keyboard
+  change's transition (start time, resting value, curve) reach styles only as
+  the hook's value and live only in the hook: each consumer applies them
+  through a StyleX functional style on its own element, and no CSS custom
+  property on the document root or a shared ancestor carries them. No Core
+  component keeps its own visual-viewport listener for the keyboard. The hook
+  publishes each keyboard change as one transition: a start time, a resting
+  value, and a curve. Every Core consumer that rides the keyboard rides that
+  transition with compositor animations, a translate to the resting value,
+  never JavaScript per frame, and the hook makes at most one layout read per
+  keyboard change. A component outside Core does not ride; it commits the
+  resting value once. Packages outside Core cannot import the hook; a
+  component there that responds to the keyboard keeps one listener that
+  measures as `spec:AST-099` FR2 defines, or takes the browser's keyboard report
+  where FR8 applies, keeps focus from panning as FR4
+  does, blurs as FR5 does, applies the height through a functional style on
+  its own elements, and follows INV3 and INV5. The hook follows INV3 and
+  INV5.
 
 ## Authoring guidance
 
@@ -236,8 +276,13 @@ contracts.
 
 ## Deciding specs
 
-None. Component, family, API, accessibility, layer, interaction, and style records
-remain authoritative for the user-facing outcomes delegated above.
+- `spec:AST-086/DEC-2` — own-content announcements behave the same in every
+  component that announces its own rendered content (INV10).
+- `spec:AST-099/DEC-1` — one keyboard height for every component, kept
+  internal and applied through functional styles (INV11).
+
+Component, family, API, accessibility, layer, interaction, and style records
+remain authoritative for the other user-facing outcomes delegated above.
 
 ## Verification
 
@@ -248,11 +293,13 @@ observable-behavior predicates require review or runtime evidence. Likewise, a
 focused test proves only its named behavior and mutation expectation; a green
 component suite is not blanket conformance with every invariant.
 
-| Invariant        | Evidence                                                                                                       | Failure signal                                                                                                                              |
-| ---------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| INV1–INV2        | Initial-render and interaction tests                                                                           | Output flashes a known-wrong state, or one action is delayed or repeated through an Effect                                                  |
-| INV3, INV5       | StrictMode setup/cleanup and dependency-change tests                                                           | Duplicate callback, leaked work, stale subscription, or missing resynchronization                                                           |
-| INV1, INV4, INV6 | Ref attach/null/replacement, DOM-in-state rejection, and old-node cleanup-before-new-attach mutations          | A DOM node or collection enters state, old node remains active, cleanup misses replacement, or ref mutation changes semantics silently      |
-| INV7             | Real-browser geometry plus N-consumer observer-instance/subscription mutations                                 | Geometry is invalid, observer instances grow with repeated consumers, one unsubscribe silences peers, or cleanup removes another subscriber |
-| INV8             | Owner-observable behavior across documented composition replacement; optional focused internal mechanism tests | Behavior disappears or changes owner when a documented subpart is replaced                                                                  |
-| INV9             | Provider/external-store identity and render-count tests                                                        | Unchanged semantic payload changes identity, or snapshot identity creates a render loop                                                     |
+| Invariant        | Evidence                                                                                                       | Failure signal                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| INV1–INV2        | Initial-render and interaction tests                                                                           | Output flashes a known-wrong state, or one action is delayed or repeated through an Effect                                                                                                                                                                                                                                                                                                                                                       |
+| INV3, INV5       | StrictMode setup/cleanup and dependency-change tests                                                           | Duplicate callback, leaked work, stale subscription, or missing resynchronization                                                                                                                                                                                                                                                                                                                                                                |
+| INV1, INV4, INV6 | Ref attach/null/replacement, DOM-in-state rejection, and old-node cleanup-before-new-attach mutations          | A DOM node or collection enters state, old node remains active, cleanup misses replacement, or ref mutation changes semantics silently                                                                                                                                                                                                                                                                                                           |
+| INV7             | Real-browser geometry plus N-consumer observer-instance/subscription mutations                                 | Geometry is invalid, observer instances grow with repeated consumers, one unsubscribe silences peers, or cleanup removes another subscriber                                                                                                                                                                                                                                                                                                      |
+| INV8             | Owner-observable behavior across documented composition replacement; optional focused internal mechanism tests | Behavior disappears or changes owner when a documented subpart is replaced                                                                                                                                                                                                                                                                                                                                                                       |
+| INV9             | Provider/external-store identity and render-count tests                                                        | Unchanged semantic payload changes identity, or snapshot identity creates a render loop                                                                                                                                                                                                                                                                                                                                                          |
+| INV10            | Shared test over every adopter of the announcement module                                                      | An adopter holding its own Effect, observer, timer, or listener for its own-content announcement                                                                                                                                                                                                                                                                                                                                                 |
+| INV11            | Source boundary check plus hook tests across StrictMode replay and unmount                                     | A second keyboard listener or measurement in Core; a consumer reading a CSS custom property on the root or a shared ancestor for the height; an export of the hook; a component outside Core measuring by a rule other than AST-099 FR2 or, where it applies, FR8, or riding the keyboard; a listener left after unmount; a Core rider driven by JavaScript per frame or by its own transition; or more than one layout read per keyboard change |

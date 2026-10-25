@@ -90,6 +90,9 @@ import {toResult, searchedComponentsOf} from './_result.mjs';
  *   Core's package for its components, hooks, and templates, the integration's
  *   for what it contributed, and for a doc part the package that wrote it.
  * @property {string} [_displayName]
+ * @property {string} [_family] - The family whose doc lists a component as a
+ *   member; a query naming the family lists its first members.
+ * @property {number} [_familyIndex] - The member's place in that doc's list.
  * @property {'page'|'block'} [_kind]
  * @property {string} [_resultName]
  * @property {string} [_commandName]

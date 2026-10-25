@@ -9,6 +9,32 @@
  */
 
 import type {NativeAdditions} from '../contract/fromComponentDoc.js';
+import {badge} from './Badge.js';
+import {button} from './Button.js';
+import {card} from './Card.js';
+import {divider} from './Divider.js';
+import {heading} from './Heading.js';
+import {hStack} from './HStack.js';
+import {icon} from './Icon.js';
+import {progressBar} from './ProgressBar.js';
 import {selector} from './Selector.js';
+import {switchControl} from './Switch.js';
+import {text} from './Text.js';
+import {textInput} from './TextInput.js';
+import {vStack} from './VStack.js';
 
-export const NATIVE_COMPONENTS: readonly NativeAdditions[] = [selector];
+export const NATIVE_COMPONENTS: readonly NativeAdditions[] = [
+  badge,
+  button,
+  card,
+  divider,
+  heading,
+  hStack,
+  icon,
+  progressBar,
+  selector,
+  switchControl,
+  text,
+  textInput,
+  vStack,
+];
