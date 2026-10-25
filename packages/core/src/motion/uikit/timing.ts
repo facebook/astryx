@@ -121,7 +121,7 @@ export const timing = {
   /**
    * The duration the keyboard notifications report
    * (UIKeyboardAnimationDurationUserInfoKey, with curve 7), show and hide
-   * alike, in ms. The frame follows `springs.keyboard`, cut at this time.
+   * alike, in ms. The frame follows `keyboard.spring`, cut at this time.
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
    *   iPhone 17 Pro, UIKeyboardWillShow / WillHide / WillChangeFrame read,
    *   Oct 23 2026

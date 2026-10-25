@@ -65,7 +65,7 @@ const guide = getKeyboardLayoutGuide(window);
 const unsubscribe = guide.subscribe(t => {
   animator.animate(
     {y: layoutLift - lift(t.to)},
-    {spring: springs.keyboard},
+    {spring: keyboard.spring},
     {at: t.start},
   );
 });
@@ -75,7 +75,7 @@ Each transition is `{kind, from, to, start, velocity, animated, predicted}`:
 heights in CSS px, `start` on the document timeline (in the past for a show
 Safari reported late, slightly ahead for a hide that starts after a blur).
 Move your own elements on the compositor with the animator, from `start`, on
-`springs.keyboard`, and hand the translate back to the layout once the ride
+`keyboard.spring`, and hand the translate back to the layout once the ride
 ends (ChatLayout does). Under Reduce Motion nothing travels with the keyboard
 (design:reduced-motion): the animator's default cross-fades on a touch screen
 and moves at once otherwise. `presentation(time)` gives the height presented
@@ -123,4 +123,4 @@ at any time, for something that appears while the keyboard moves.
 | `index.ts`               | Entry point.                                                                               |
 
 The timing constants live in `../motion/uikit/keyboard.ts`, the spring in
-`springs.keyboard`, the duration in `timing.keyboardNotificationMs`.
+`keyboard.spring`, the duration in `timing.keyboardNotificationMs`.

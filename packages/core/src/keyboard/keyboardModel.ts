@@ -2,8 +2,8 @@
 
 /**
  * @file keyboardModel.ts
- * @input `springs.keyboard`, `timing.keyboardNotificationMs` and `keyboard`
- *   from the UIKit table
+ * @input `keyboard` (its spring and report timings) and
+ *   `timing.keyboardNotificationMs` from the UIKit table
  * @output Exports createKeyboardModel (the keyboard layout guide's clock-free
  *   core) and the KeyboardTransition / KeyboardModel types
  * @position The state of the keyboard layout guide (keyboardLayoutGuide.ts):
@@ -37,7 +37,6 @@
  */
 
 import {keyboard} from '../motion/uikit/keyboard';
-import {springs} from '../motion/uikit/springs';
 import {timing} from '../motion/uikit/timing';
 import {solveSpring, toSpring, type SpringCurve} from '../motion/spring';
 
@@ -131,7 +130,7 @@ export function createKeyboardModel(
     durationMs = timing.keyboardNotificationMs,
   }: KeyboardModelOptions = {},
 ): KeyboardModel {
-  const spring = toSpring(springs.keyboard);
+  const spring = toSpring(keyboard.spring);
   let transition: KeyboardTransition = {
     kind: 'change',
     from: initialInset,

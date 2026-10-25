@@ -12,10 +12,10 @@
 
 import {describe, expect, it} from 'vitest';
 import {createKeyboardModel} from './keyboardModel';
-import {keyboard, springs, timing} from '../motion/uikit';
+import {keyboard, timing} from '../motion/uikit';
 import {naturalFrequency, toSpring} from '../motion/spring';
 
-const OMEGA = naturalFrequency(toSpring(springs.keyboard));
+const OMEGA = naturalFrequency(toSpring(keyboard.spring));
 // Fraction of the travel left `ms` into the critically damped keyboard spring.
 const remaining = (ms: number) =>
   (1 + (OMEGA * ms) / 1000) * Math.exp((-OMEGA * ms) / 1000);

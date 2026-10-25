@@ -24,7 +24,6 @@ export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
   'springs.contextMenuDismiss': 'spring',
   'springs.contextMenuLift': 'spring',
   'springs.interactive': 'spring',
-  'springs.keyboard': 'spring',
   'springs.menuClose': 'spring',
   'springs.menuOpen': 'spring',
   'springs.menuReducedMotion': 'spring',
