@@ -65,10 +65,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Current-state impact
 
-- **Overflow button target (AR4).** The clickable indicator takes the group's
-  negative overlap, so it overlaps the preceding avatar and lacks the spacing
-  exception of WCAG 2.2 2.5.8; in a 16px group it is also 20px tall, below 24
-  by 24 CSS pixels.
+- **Overflow button target (AR4).** In a 16px group the clickable indicator is
+  20px tall, below the 24 by 24 CSS pixels of WCAG 2.2 2.5.8.
 
 ## Ownership boundary
 
@@ -139,8 +137,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Performance and resources
 
-- **PR1 — No local resources.** The indicator holds no state, effect, listener,
-  observer, or timer; the button form uses the shared press controller.
+- **PR1 — No local resources.** The indicator holds no state, listener,
+  observer, or timer of its own. Both forms install the shared document-level
+  press controller on mount; only the button carries its press marker.
 
 ## Accessibility contract
 
@@ -152,9 +151,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **AR3 — Group participation.** Only the clickable form joins AvatarGroup's
   roving set.
 - **AR4 — Target size.** A clickable indicator's target is at least 24 by 24
-  CSS pixels or has the spacing WCAG 2.2 2.5.8 allows. Implementation gap: in
-  a group sized 16px the button is 20px tall, and every clickable indicator
-  overlaps the avatar before it.
+  CSS pixels or has the spacing WCAG 2.2 2.5.8 allows. From `xsm` up the
+  button is at least 24 by 24 and paints above the avatar it overlaps.
+  Implementation gap: in a group sized 16px the button is 20px tall.
 
 ## Design relationships
 
@@ -188,7 +187,7 @@ block is declared.
 | Right-to-left      | `apps/storybook/rtl-audit/targets.json` entry                                                                 | Grouped overflow in both directions                                              | An unmirrored avatar-to-overflow order fails RTL coverage.                                                                                                                   | `audit:AvatarGroupOverflow/i18n-rtl`      |
 | PR1                | Source review                                                                                                 | Both forms                                                                       | Gap: no automated check fails if the indicator adds state, an effect, or a listener.                                                                                         | `audit:AvatarGroupOverflow/behavior`      |
 | AR1, AR2           | Accessibility-tree evidence (`spec:AST-009` FR3)                                                              | Static and clickable forms                                                       | Gap: no accessibility-tree check proves the image or button role and the count name; the unit tests query the DOM.                                                           | `audit:AvatarGroupOverflow/accessibility` |
-| AR4                | `AvatarGroupOverflow.stories.tsx` in a browser                                                                | Clickable indicator in a group                                                   | Gap: no automated target-size check; the overlap is the recorded gap.                                                                                                        | `audit:AvatarGroupOverflow/accessibility` |
+| AR4                | `AvatarGroupOverflow.stories.tsx` in a browser                                                                | Clickable indicator in a group                                                   | Gap: no automated target-size check; the 16px group is the recorded gap.                                                                                                     | `audit:AvatarGroupOverflow/accessibility` |
 
 ## Decision log
 

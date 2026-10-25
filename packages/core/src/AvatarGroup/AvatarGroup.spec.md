@@ -96,7 +96,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | FR3 | Every member takes the negative overlap as its inline-start margin, including the first; the group pads its inline start by the same amount so the first member stays inside it, and an empty group has no start padding. The overlap holds when members are wrapped in a HoverCard or Tooltip.                                                                                                                                              | Current source and tests |
 | FR4 | Elements carrying `data-avatar-item` — link and button avatars and a clickable overflow indicator — form one horizontal roving set with a single tab stop: arrow keys move between them following the rendered direction and wrap at the ends, and Home and End jump to the first and last. Other focusable content in a member, such as a button in a status slot, is not in the set.                                                       | Current source and tests |
 | FR5 | While any member carries the item marker, a visually hidden translated hint ("Use arrow keys to move between avatars") renders inside the group and is appended to `aria-describedby` after any caller value; a purely static group has no tab stop and no hint.                                                                                                                                                                             | Current source and tests |
-| FR6 | `ref` reaches the root. Supported DOM, ARIA, data, and event props reach the root; the component's role, name, description, and `data-testid` apply after them; caller `onKeyDown` and `onFocus` run before the roving handlers; `xstyle`, `className`, and `style` merge in that order after component styles.                                                                                                                              | Current source and tests |
+| FR6 | `ref` reaches the root. Supported DOM, ARIA, data, and event props reach the root; the component's role, name, description, and `data-testid` apply after them; caller `onKeyDown` and `onFocus` run before the roving handlers, and one that calls `preventDefault()` skips the roving handler for that event (`architecture:public-component-api` INV7); `xstyle`, `className`, and `style` merge in that order after component styles.    | Current source and tests |
 
 ### Allowed variation
 
@@ -119,13 +119,15 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **ORD1 — Member size and shape.** Group value → member's own prop (ignored
   inside a group).
 - **ORD2 — Description.** Caller `aria-describedby` → keyboard hint id.
-- **ORD3 — Key handling.** Caller `onKeyDown` → roving handler.
+- **ORD3 — Key and focus handling.** Caller `onKeyDown` or `onFocus` → roving
+  handler; a caller handler that calls `preventDefault()` skips the roving
+  handler for that event.
 
 ### Performance and resources
 
-- **PR1 — Member detection.** Detecting interactive members adds no observer,
-  listener, or extra render; the tab stop and hint follow the members present
-  after each render.
+- **PR1 — Member detection.** Detecting interactive members adds no observer or
+  listener; the group re-reads its members after each commit, and a change in
+  whether any member is interactive re-renders the group once before paint.
 
 ## Accessibility contract
 
