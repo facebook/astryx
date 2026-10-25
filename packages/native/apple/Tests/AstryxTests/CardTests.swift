@@ -125,7 +125,8 @@ import Testing
   theme.light.color.border = Color(astryxRGBA: 0xFF00FFFF)
   let magenta = [255, 0, 255, 255]
   for variant in CardVariant.allCases {
-    let card = Astryx.Card(variant: variant) { Color.clear.frame(width: 40, height: 40) }
+    // Visible content, so a see-through variant still draws an image.
+    let card = Astryx.Card(variant: variant) { Color.black.frame(width: 40, height: 40) }
       .frame(width: 80)
     let hasBorder = Pixels(card, theme: theme).contains { close($0, magenta, within: 4) }
     #expect(hasBorder == (variant == .default), "\(variant.rawValue)")
