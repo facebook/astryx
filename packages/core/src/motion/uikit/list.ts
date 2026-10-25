@@ -43,6 +43,6 @@ export const list = {
      *   the cell's deselect is to be read
      * @measure M-LI01
      */
-    releaseCurve: [0, 0, 0.2, 1],
+    releaseCurve: timing.press.highlightOutCurve,
   },
 } as const;

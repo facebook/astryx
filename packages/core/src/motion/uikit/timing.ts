@@ -58,6 +58,17 @@ export const timing = {
      */
     highlightOutMs: 200,
     /**
+     * The highlight fade's curve: an ease-out that spends the whole clock
+     * fading (strength ≈ 0.2 at the midpoint), the curve the touch press
+     * model shipped with.
+     * @source GUESS — the curve the touch press model shipped with
+     *   (utils/interactionOverlay.stylex.ts), chosen to read as a deselect
+     *   cross-fade, not read from UIKit; the curve Core Animation attaches to
+     *   the cell's deselect is to be read
+     * @measure M-LI01
+     */
+    highlightOutCurve: [0, 0, 0.2, 1],
+    /**
      * A touch on a scroller that moved this recently brakes it instead of
      * pressing.
      * @source measured: Settings and Contacts, iOS 26.2, simulator driven

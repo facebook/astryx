@@ -2,8 +2,9 @@
 
 /**
  * @file pressFeedback.ts
- * @input The press state machine (pressGesture.ts) and the document's pointer,
- *   scroll and visibility events
+ * @input The press state machine (pressGesture.ts), the document's pointer,
+ *   scroll and visibility events, and the release clock's theme motion role
+ *   (motion/resolveMotion.ts)
  * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, pressableProps and
  *   installPressFeedback
  * @position The DOM half of the touch press model: one delegated controller
@@ -32,6 +33,8 @@
  * utils/interactionOverlay.stylex.ts and pressFeedback.test.ts.
  */
 
+import {resolveMotion} from '../motion/resolveMotion';
+import {registerTimingTable, timing} from '../motion/uikit/timing';
 import type {PressGesture, PressPaint, PressStep} from './pressGesture';
 import {
   idlePressGesture,
@@ -101,6 +104,24 @@ const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
   onset: PRESS_ONSET_MS,
 };
 
+/**
+ * How long a timer runs on `element`. The release's clock is the theme motion
+ * role `timing.press.highlightOutMs` (`spec:AST-094` FR4), read when the
+ * release starts, the role the stylesheet's release plays
+ * (interactionOverlay.stylex.ts), so a theme that retunes it moves both and
+ * the attribute never leaves before the fade ends.
+ */
+function timerMs(
+  kind: NonNullable<PressStep['timer']>,
+  element: Element,
+): number {
+  if (kind !== 'fade') {
+    return TIMER_MS[kind];
+  }
+  registerTimingTable();
+  return resolveMotion(element, timing.press, 'highlightOutMs');
+}
+
 const TIMER_EVENT = {
   fade: 'fadeEnd',
   flash: 'flashEnd',
@@ -161,16 +182,19 @@ function apply(step: PressStep): void {
     // A TIMER, never `requestAnimationFrame`: iOS throttles frame callbacks
     // while a scroll runs, so a frame-based delay would fire late, after the
     // scroll, and paint a control nobody is pressing any more.
-    live.timer = setTimeout(() => {
-      if (live != null) {
-        live.timer = null;
-      }
-      apply(
-        pressGestureStep(live?.gesture ?? idlePressGesture(), {
-          kind: TIMER_EVENT[kind],
-        }),
-      );
-    }, TIMER_MS[kind]);
+    live.timer = setTimeout(
+      () => {
+        if (live != null) {
+          live.timer = null;
+        }
+        apply(
+          pressGestureStep(live?.gesture ?? idlePressGesture(), {
+            kind: TIMER_EVENT[kind],
+          }),
+        );
+      },
+      timerMs(kind, live.element),
+    );
   }
 }
 

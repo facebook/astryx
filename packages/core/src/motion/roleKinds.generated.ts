@@ -56,5 +56,6 @@ export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
   'timing.press.buttonReleaseMs': 'duration',
   'timing.press.flashMs': 'duration',
   'timing.press.highlightInMs': 'duration',
+  'timing.press.highlightOutCurve': 'curve',
   'timing.press.highlightOutMs': 'duration',
 };

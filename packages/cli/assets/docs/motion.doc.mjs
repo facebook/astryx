@@ -434,6 +434,12 @@ const calmTheme = defineTheme({
               '0ms',
             ],
             [
+              'timing.press.highlightOutCurve',
+              '--motion-timing-press-highlight-out-curve',
+              'curve',
+              'cubic-bezier(0, 0, 0.2, 1)',
+            ],
+            [
               'timing.press.highlightOutMs',
               '--motion-timing-press-highlight-out-ms',
               'duration',

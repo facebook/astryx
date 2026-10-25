@@ -179,7 +179,12 @@ export function declaresPressPaint(el: Element): boolean {
 
 /** `.2s`, `200ms`, `0.2s` → 200. */
 export function durationToMs(value: string): number {
-  const match = value.trim().match(/^([\d.]+)(ms|s)$/);
+  // A theme motion role, `var(--motion-…, 200ms)`, reads as the table's
+  // value it falls back to.
+  const role = value.trim().match(/^var\(\s*--[\w-]+\s*,\s*(.+)\)$/);
+  const match = (role == null ? value : role[1])
+    .trim()
+    .match(/^([\d.]+)(ms|s)$/);
   if (match == null) {
     return Number.NaN;
   }
