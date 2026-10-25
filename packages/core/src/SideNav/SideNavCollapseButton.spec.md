@@ -29,7 +29,7 @@ system_specs: []
 
 | Area                    | Contract                                                                                                                                                                                                                  |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | `SideNavCollapseButton` with `collapsible` (`{isCollapsed, onCollapsedChange}`), `handleRef`, `label`, `size`, and `children` (replacement icon).                                                                         |
+| Public contract         | `SideNavCollapseButton` with `collapsible` (`{isCollapsed, onCollapsedChange}`), `handleRef` (deprecated), `label`, `size`, and `children` (replacement icon).                                                            |
 | Behavior                | An icon-only ghost Button that toggles the SideNav rail between expanded and collapsed, inside SideNav or anywhere else on the page. It renders nothing when collapse is unavailable or AppShell is in its mobile layout. |
 | End-user impact         | Users collapse and expand the side rail with one named button whose chevron points the right way in either writing direction.                                                                                             |
 | Builder impact          | None.                                                                                                                                                                                                                     |
@@ -49,8 +49,8 @@ Consumer usage lives in `SideNavCollapseButton.doc.mjs`.
 
 - Released default preserved: `yes`
 - Compatibility class: records shipped behavior; no public change
-- Controlled/uncontrolled behavior: reads state from `collapsible`, else
-  `handleRef`, else the enclosing SideNav (FR1)
+- Controlled/uncontrolled behavior: reads state from `collapsible`, else the
+  deprecated `handleRef`, else the enclosing SideNav (FR1)
 - Migration decision: none
 
 Consumer migration instructions belong in consumer docs and release notes.
@@ -68,18 +68,18 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-| Concept      | Closed values or states                       | Meaning                                   | Availability by variant/orientation/state | Default           | Owner                             | Stability | Invalid-value behavior |
-| ------------ | --------------------------------------------- | ----------------------------------------- | ----------------------------------------- | ----------------- | --------------------------------- | --------- | ---------------------- |
-| State source | `collapsible`, `handleRef`, enclosing SideNav | Where collapse state is read and toggled. | Everywhere.                               | Enclosing SideNav | `component:SideNavCollapseButton` | Stable    | Not applicable.        |
+| Concept      | Closed values or states                                    | Meaning                                   | Availability by variant/orientation/state | Default           | Owner                             | Stability                      | Invalid-value behavior |
+| ------------ | ---------------------------------------------------------- | ----------------------------------------- | ----------------------------------------- | ----------------- | --------------------------------- | ------------------------------ | ---------------------- |
+| State source | `collapsible`, `handleRef` (deprecated), enclosing SideNav | Where collapse state is read and toggled. | Everywhere.                               | Enclosing SideNav | `component:SideNavCollapseButton` | Stable; `handleRef` deprecated | Not applicable.        |
 
 ## Behavioral and layout contract
 
 | ID  | Invariant                                                                                                                                                                                                                                                                                        | Basis                    |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------ |
-| FR1 | State comes from `collapsible` when given (always collapsible; toggling calls `onCollapsedChange` with the opposite of `isCollapsed`), else from the SideNav that `handleRef` points at, else from the enclosing SideNav.                                                                        | Current source and tests |
+| FR1 | State comes from `collapsible` when given (always collapsible; toggling calls `onCollapsedChange` with the opposite of `isCollapsed`), else from the SideNav that the deprecated `handleRef` points at, else from the enclosing SideNav.                                                         | Current source and tests |
 | FR2 | It renders nothing when the state source is not collapsible or AppShell reports its mobile layout.                                                                                                                                                                                               | Current source and tests |
 | FR3 | It renders an icon-only ghost Button named by `label`, else by the translated `@astryx.sideNavCollapseButton.collapseSidebar` or `.expandSidebar` for the current state, at `size`, with the forwarded `ref` and other props.                                                                    | Current source and tests |
-| FR4 | A caller `onClick` runs, then the toggle.                                                                                                                                                                                                                                                        | Current source and tests |
+| FR4 | A caller `onClick` runs, then the toggle; a caller `onClick` that calls `preventDefault()` cancels the toggle for that click.                                                                                                                                                                    | Current source and tests |
 | FR5 | The default icon is a chevron pointing toward the inline start while expanded and turned while collapsed; it mirrors in right-to-left; its rotation animates only without a reduced-motion preference and changes at once under reduced motion (`design:reduced-motion`). `children` replace it. | Current source           |
 
 ### Allowed variation
@@ -138,7 +138,8 @@ Read from source, with no focused test yet:
   is in its mobile layout.
 - FR3: the ghost variant, the `label` override, the translated default names,
   and the forwarded `ref`.
-- FR4: that the caller `onClick` runs before the toggle.
+- FR4: that the caller `onClick` runs before the toggle, and its
+  `preventDefault()` cancellation.
 - FR5.
 
 ## Decision log
