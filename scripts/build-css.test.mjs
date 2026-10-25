@@ -22,6 +22,26 @@ import {ensureCoreBuilt} from '../packages/cli/clients/cli/commands/ensure-core-
  * time) and the controller (at run time) take it from. The module itself
  * cannot be imported here, since a StyleX source file only runs compiled.
  */
+/**
+ * The Reduce Motion fade's duration, off its one source:
+ * `reducedMotionFadeConsts.duration` in motion/reducedMotion.stylex.ts.
+ */
+async function readReducedMotionFadeMs() {
+  const source = await fs.readFile(
+    path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      '../packages/core/src/motion/reducedMotion.stylex.ts',
+    ),
+    'utf8',
+  );
+  const block = source.slice(source.indexOf('reducedMotionFadeConsts'));
+  const match = block.match(/duration:\s*'(\d+)ms'/);
+  if (match == null) {
+    throw new Error('reducedMotionFadeConsts.duration not found');
+  }
+  return Number(match[1]);
+}
+
 async function readReleaseMs() {
   const source = await fs.readFile(
     path.join(
@@ -272,12 +292,22 @@ describe('build-css astryx.css', () => {
       expect(
         fading.some(line => line.includes(`animation-name:${keyframes[1]}`)),
       ).toBe(true);
-      const durations = fading
-        .map(line => line.match(/animation-duration:\s*([^;}]+)/))
-        .filter(Boolean)
-        .map(match => toMs(match[1]));
-      // One clock, the one the controller removes the attribute on.
-      expect(durations).toEqual([await readReleaseMs()]);
+      const durationsOf = rules =>
+        rules
+          .map(line => line.match(/animation-duration:\s*([^;}]+)/))
+          .filter(Boolean)
+          .map(match => toMs(match[1]));
+      // One clock, the one the controller removes the attribute on. Under
+      // Reduce Motion the fading arm follows design:reduced-motion instead
+      // (DR2's fade, utils/pressPaintReducedMotion.test.ts), in its own
+      // media blocks.
+      const reduced = line => line.includes('prefers-reduced-motion');
+      expect(durationsOf(fading.filter(line => !reduced(line)))).toEqual([
+        await readReleaseMs(),
+      ]);
+      expect(durationsOf(fading.filter(reduced))).toEqual([
+        await readReducedMotionFadeMs(),
+      ]);
       // The onset is instant: nothing animates on the on arm.
       const on = lines().filter(line =>
         line.includes('[data-astryx-press="on"]'),
