@@ -118,21 +118,19 @@ in `BottomSheet.doc.mjs`.
 
 - Element jobs (`architecture:component-style-authoring` INV7; proposed
   allowance in `spec:AST-017` FR60, DEC-29). An open sheet's frame has 8
-  elements, where an anchored layer has 5:
-  - the dialog carries modality and the top layer;
+  elements:
+  - the dialog carries the sheet's dialog role, and modality and the top
+    layer when the sheet is modal;
   - the positioner holds the panel at the block end;
   - the panel paints the `bottom-sheet` target;
   - the grabber bar is the drag handle, and its pill draws the handle;
   - the body is the scroll area;
   - the content box carries the padding and is the observed content box (FR3);
   - the edge tint gives iOS Safari's toolbar tint the sheet's color.
-- A presentation that shows a component's content in this sheet renders 3
-  more elements open than its anchored layer: 181 against 178 on Popover's
-  Adaptive Presentation story with both dismissals off, coarse pointer at 390
-  px against mouse at 1280 px, and 177 against 178 with either dismissal on.
-  Elements beyond this frame are the presenting component's own to justify.
-- The pill is decoration, which INV7 gives to a pseudo-element; drawing it on
-  the grabber bar's pseudo-element is an open conformance gap.
+- Elements a presenting component adds beyond this frame are its own to
+  justify.
+- The pill and the edge tint are decoration, which INV7 gives to
+  pseudo-elements; carrying them on pseudo-elements is an open conformance gap.
 
 ## Accessibility contract
 
