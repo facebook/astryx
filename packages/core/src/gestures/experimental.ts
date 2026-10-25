@@ -69,11 +69,10 @@ export {RotationGestureRecognizer} from './RotationGestureRecognizer';
 export type {RotationGestureRecognizerOptions} from './RotationGestureRecognizer';
 export {HoverGestureRecognizer} from './HoverGestureRecognizer';
 
-export {useGestureRecognizer, usePressTracker} from './useGestureRecognizer';
-export type {
-  UseGestureRecognizerOptions,
-  UsePressTrackerOptions,
-} from './useGestureRecognizer';
+export {useGestureRecognizer} from './useGestureRecognizer';
+export type {UseGestureRecognizerOptions} from './useGestureRecognizer';
+export {usePressTracker} from './usePressTracker';
+export type {UsePressTrackerOptions} from './usePressTracker';
 export {PRESS_PROFILES, PressTracker} from './PressTracker';
 export type {
   ControlEvent,
