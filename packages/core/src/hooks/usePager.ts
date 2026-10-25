@@ -182,11 +182,8 @@ export interface PagerEnvironment {
   /** Timers for the catch delay; the window's by default. */
   setTimeout?: (callback: () => void, ms: number) => unknown;
   clearTimeout?: (handle: unknown) => void;
-  /**
-   * The next animation frame, called with the frame's time on the document
-   * timeline; `requestAnimationFrame` by default.
-   */
-  requestFrame?: (callback: (time: number) => void) => void;
+  /** The next animation frame; `requestAnimationFrame` by default. */
+  requestFrame?: (callback: () => void) => void;
 }
 
 /**
@@ -200,17 +197,6 @@ export interface PagerEnvironment {
  * claim, PanGestureRecognizer `claimDistance`).
  */
 const PAGER_CLAIM_DISTANCE = 5;
-
-/**
- * How far past a motion's start its own frame can be stamped. In the start
- * frame, `document.timeline.currentTime` (equal to the frame's callback
- * time in every frame measured) is not the animation's `startTime`: WebKit
- * reads 0–2 ms later (start 453 / frame 454, 455 / 455, 461 / 463; its
- * clocks are coarsened to 1 ms), Chromium within 0.05 ms (890.45 / 890.5).
- * Frames are at least 4.2 ms apart (240 Hz), so 4 ms tells the start frame
- * from the next.
- */
-const START_FRAME_MS = 4;
 
 /**
  * The pager's pan: a scroll view's (ScrollViewPanGestureRecognizer), so its
@@ -286,12 +272,11 @@ export function createPager(
       clearTimeout(handle as ReturnType<typeof setTimeout>));
   const requestFrame =
     environment.requestFrame ??
-    ((callback: (time: number) => void) => {
+    ((callback: () => void) => {
       if (typeof requestAnimationFrame === 'function') {
-        requestAnimationFrame(callback);
+        requestAnimationFrame(() => callback());
       } else {
-        // No frames: every tick counts as one past any start.
-        setTimer(() => callback(Number.POSITIVE_INFINITY), 16);
+        setTimer(callback, 16);
       }
     });
   let options: PagerOptions = {...initial};
@@ -435,27 +420,31 @@ export function createPager(
 
   /**
    * Runs `callback` in the `frames`-th animation frame after the frame a
-   * motion started in (`since`, on the document timeline). WebKit resolves
-   * an animation's start before that same frame's animation-frame
-   * callbacks, so the start's own frame must not count: a frame counts once
-   * its time is more than `START_FRAME_MS` past `since`. A frame without a
-   * time (an environment that passes none) counts.
+   * motion started in; called when its start resolves. WebKit resolves an
+   * animation's start inside that frame's rendering update, before the
+   * frame's animation-frame callbacks, and no task runs inside a rendering
+   * update: a first frame that runs before a task queued at the resolution
+   * is the start's own frame, and does not count. (Timestamps cannot tell:
+   * WebKit stamps that frame's callbacks 0–4 ms after the animation's start
+   * time, measured, as far apart as two frames at 240 Hz.) Where the start
+   * resolves after its frame, as in Chromium, the task runs before the next
+   * frame, or the report comes a frame later, never earlier.
    */
-  function afterFramesSince(
-    since: number,
-    frames: number,
-    callback: () => void,
-  ): void {
-    requestFrame(time => {
-      const isStartFrame =
-        typeof time === 'number' && time - since <= START_FRAME_MS;
-      const left = isStartFrame ? frames : frames - 1;
-      if (left <= 0) {
+  function afterFramesPastStart(frames: number, callback: () => void): void {
+    let isPastStartFrame = false;
+    setTimer(() => {
+      isPastStartFrame = true;
+    }, 0);
+    const onFrame = (left: number) => {
+      const remaining = isPastStartFrame ? left - 1 : left;
+      isPastStartFrame = true;
+      if (remaining <= 0) {
         callback();
         return;
       }
-      afterFramesSince(since, left, callback);
-    });
+      requestFrame(() => onFrame(remaining));
+    };
+    requestFrame(() => onFrame(frames));
   }
 
   function rest(): void {
@@ -505,8 +494,8 @@ export function createPager(
     settleHandle = handle;
     if (pendingReport != null) {
       const reportAt = reportToken;
-      void handle.started.then(startedAt =>
-        afterFramesSince(startedAt, 2, () => {
+      void handle.started.then(() =>
+        afterFramesPastStart(2, () => {
           if (reportAt === reportToken) {
             flushReport();
           }
