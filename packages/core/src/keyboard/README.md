@@ -119,6 +119,9 @@ at any time, for something that appears while the keyboard moves.
   then scrolls the dialog's top back into view; a field it cannot bring up
   keeps the browser's reveal. Every later reveal lands at once in the
   report's frame. A browser that never pans keeps the smooth reveal.
+
+## Consumers
+
 - BottomSheet (`BottomSheet/BottomSheetPanel.tsx`): `useMobileKeyboard`, whose
   inset the content box's `keyboardInset` functional style lays out as the
   content's last box (after its own children, so it adds scroll range in
