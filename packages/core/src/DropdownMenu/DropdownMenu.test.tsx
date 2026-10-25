@@ -28,7 +28,7 @@ import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuDivider} from './DropdownMenuDivider';
 import {DropdownMenuGroup} from './DropdownMenuGroup';
 import {warmMenuBottomSheet} from './__tests__/warmMenuBottomSheet';
-import {finger, placeRows, rowCenter} from './__tests__/fingerTouch';
+import {finger, place, placeRows, rowCenter} from './__tests__/fingerTouch';
 import {DropdownMenuSubMenu} from './DropdownMenuSubMenu';
 import {Divider} from '../Divider';
 import {rtlStyles} from '../utils';
@@ -3042,6 +3042,20 @@ describe('DropdownMenu press model', () => {
     }
   });
 
+  /**
+   * Lay the open menu out: its rows stacked from y = 0 (placeRows) inside the
+   * menu's box. A finger the trigger hands to the menu is resolved against
+   * these rects, read once (the shared action-group tracker).
+   */
+  function layOutMenu() {
+    placeRows([item('Edit'), item('Duplicate'), item('Delete')]);
+    const menu = item('Edit').closest('[data-astryx-menu-press]');
+    if (menu == null) {
+      throw new Error('no menu root');
+    }
+    place(menu, {left: 0, top: 0, width: 200, height: 140});
+  }
+
   it('a finger that lands on one row and lifts on another acts on the second, once', async () => {
     stubCoarsePointer();
     const onPick = vi.fn();
@@ -3369,20 +3383,21 @@ describe('DropdownMenu press model', () => {
       // spec:AST-094 FR29: a trigger in no scroll view opens on the press.
       fireEvent.pointerDown(trigger, {...touch, clientX: 0, clientY: 0});
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      layOutMenu();
       // UIMenu's handoff: the finger picks once it travels from the first
-      // sample the menu saw.
-      fireEvent.pointerMove(item('Delete'), {...touch, clientX: 0, clientY: 3});
+      // sample the menu saw. Its rows are the tracker's (rects read once).
+      fireEvent.pointerMove(trigger, {...touch, clientX: 100, clientY: 105});
       expect(item('Delete')).not.toHaveFocus();
-      fireEvent.pointerMove(item('Delete'), {
+      fireEvent.pointerMove(trigger, {
         ...touch,
-        clientX: 0,
-        clientY: 3 + UIKIT_GESTURES.menuPress.handoff.value,
+        clientX: 100,
+        clientY: 105 + UIKIT_GESTURES.menuPress.handoff.value,
       });
       expect(item('Delete')).toHaveFocus();
-      fireEvent.pointerUp(item('Delete'), {
+      fireEvent.pointerUp(trigger, {
         ...touch,
-        clientX: 0,
-        clientY: 3 + UIKIT_GESTURES.menuPress.handoff.value,
+        clientX: 100,
+        clientY: 105 + UIKIT_GESTURES.menuPress.handoff.value,
       });
       expect(onPick).toHaveBeenCalledWith('Delete');
       // The click the browser aims at the trigger for this gesture is spent.
@@ -3430,6 +3445,85 @@ describe('DropdownMenu press model', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  describe('the finger a trigger hands to the menu (the shared tracker)', () => {
+    /** Press the trigger: the menu opens under the finger (FR29). */
+    function holdOpen(trigger: HTMLElement) {
+      fireEvent.pointerDown(trigger, {...touch, clientX: 100, clientY: -30});
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    }
+
+    beforeEach(() => {
+      stubCoarsePointer();
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('reads the rows\u2019 rects once and never hit-tests the page per move', () => {
+      const onPick = vi.fn();
+      const trigger = renderMenu(onPick);
+      holdOpen(trigger);
+      layOutMenu();
+      const reads = [item('Edit'), item('Duplicate'), item('Delete')].map(row =>
+        vi.spyOn(row, 'getBoundingClientRect'),
+      );
+      const elementFromPoint = vi.fn(() => null);
+      Object.assign(document, {elementFromPoint});
+      try {
+        fireEvent.pointerMove(trigger, {...touch, clientX: 100, clientY: 5});
+        for (const y of [20, 30, 60, 70, 110, 120, 125]) {
+          fireEvent.pointerMove(trigger, {...touch, clientX: 100, clientY: y});
+        }
+        expect(item('Delete')).toHaveFocus();
+        fireEvent.pointerUp(trigger, {...touch, clientX: 100, clientY: 125});
+        expect(onPick).toHaveBeenCalledWith('Delete');
+        expect(reads.map(read => read.mock.calls.length)).toEqual([1, 1, 1]);
+        expect(elementFromPoint).not.toHaveBeenCalled();
+      } finally {
+        delete (document as {elementFromPoint?: unknown}).elementFromPoint;
+      }
+    });
+
+    it('reads them again while the menu\u2019s surface still moves, and once it rests no more', () => {
+      const trigger = renderMenu();
+      holdOpen(trigger);
+      layOutMenu();
+      const surface = item('Edit').closest('[popover]') as HTMLElement;
+      let isMoving = true;
+      surface.getAnimations = () =>
+        (isMoving ? [{playState: 'running'}] : []) as unknown as Animation[];
+      const read = vi.spyOn(item('Edit'), 'getBoundingClientRect');
+      fireEvent.pointerMove(trigger, {...touch, clientX: 100, clientY: 5});
+      fireEvent.pointerMove(trigger, {...touch, clientX: 100, clientY: 20});
+      expect(read).toHaveBeenCalledTimes(2);
+      isMoving = false;
+      fireEvent.pointerMove(trigger, {...touch, clientX: 100, clientY: 25});
+      fireEvent.pointerMove(trigger, {...touch, clientX: 100, clientY: 30});
+      expect(read).toHaveBeenCalledTimes(3);
+      expect(item('Edit')).toHaveFocus();
+    });
+
+    it('a row outside the menu\u2019s box (scrolled out of it) is not under the finger', () => {
+      const onPick = vi.fn();
+      const trigger = renderMenu(onPick);
+      holdOpen(trigger);
+      layOutMenu();
+      // The menu shows only its first two rows: Delete sits below its box.
+      place(item('Delete').closest('[data-astryx-menu-press]')!, {
+        left: 0,
+        top: 0,
+        width: 200,
+        height: 90,
+      });
+      fireEvent.pointerMove(trigger, {...touch, clientX: 100, clientY: 60});
+      fireEvent.pointerMove(trigger, {...touch, clientX: 100, clientY: 120});
+      expect(item('Delete')).not.toHaveFocus();
+      fireEvent.pointerUp(trigger, {...touch, clientX: 100, clientY: 120});
+      expect(onPick).not.toHaveBeenCalled();
+    });
   });
 
   it('a menu a held finger opens keeps its trigger as the invoker until the finger lifts', () => {

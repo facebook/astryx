@@ -520,6 +520,10 @@ describe('useMenuPress — the trigger', () => {
     render(
       <Harness
         touchModel="uikit"
+        // The row under the finger by an injected hit test: the machine's
+        // handoff decides when it may light (the rect tracker is the
+        // DropdownMenu suite's).
+        hitTest={() => row('C')}
         onSelect={onSelect}
         onOpenChange={onOpenChange}
       />,
@@ -551,6 +555,10 @@ describe('useMenuPress — the trigger', () => {
     render(
       <Harness
         touchModel="uikit"
+        // The row under the finger by an injected hit test: the machine's
+        // handoff decides when it may light (the rect tracker is the
+        // DropdownMenu suite's).
+        hitTest={() => row('C')}
         onSelect={onSelect}
         onOpenChange={onOpenChange}
       />,

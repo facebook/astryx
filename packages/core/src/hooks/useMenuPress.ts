@@ -44,8 +44,11 @@
  *   is tracked as UIMenu's list tracks it instead (menuSelectionRecognizer.ts on the
  *   gesture system, driving the shared action-group tracker): its row lights
  *   after UIKit's content-touch delay, a tap acts at the lift, and in a menu
- *   that scrolls a travelling finger scrolls it, on every touch device. A
- *   mouse keeps the pointer model.
+ *   that scrolls a travelling finger scrolls it, on every touch device. The
+ *   finger that opened the menu (a held trigger) is handed to the same
+ *   tracker once the menu shows under it: its rows' rects are read once and
+ *   hit-tested, while the machine still decides when it may pick (UIMenu's
+ *   handoff). A mouse keeps the pointer model and the browser's hit test.
  *
  * The menu root is marked `data-astryx-menu-press` so a nested flyout (a DOM
  * descendant of its parent menu) can tell which level owns a press, and so a
@@ -83,6 +86,7 @@ import {getGestureHost} from '../gestures/GestureHost';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 import {
   createActionGroupTracker,
+  type ActionGroupTarget,
   type ActionGroupTracker,
 } from './actionGroupTracker';
 import {MenuSelectionGestureRecognizer} from './menuSelectionRecognizer';
@@ -444,6 +448,84 @@ interface ResolvedPoint {
   isOnTrigger: boolean;
 }
 
+/** A menu root of the tree a handed-off finger is in, as last measured. */
+interface HandoffRoot {
+  element: HTMLElement;
+  /** Its box: rows count only inside it (a scrolled-out row does not). */
+  rect: DOMRect;
+  /** How deep it nests: where flyouts overlap, the innermost one is on top. */
+  depth: number;
+  /** The popover that carries it, whose motion moves its rows. */
+  surface: Element | null;
+}
+
+/** What the handed-off finger's rows are resolved against. */
+interface HandoffState {
+  roots: HandoffRoot[];
+  trigger: DOMRect | null;
+  /**
+   * The rows must be read again: the menu's contents changed (a flyout, a
+   * view), or the last read caught a surface mid-motion.
+   */
+  isStale: boolean;
+  observer: MutationObserver | null;
+}
+
+const contains = (rect: DOMRect, x: number, y: number): boolean =>
+  x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+
+/** How many menu roots `root` is nested in. */
+function menuDepth(root: HTMLElement): number {
+  let depth = 0;
+  for (let current = root; ; depth += 1) {
+    const parent =
+      current.parentElement?.closest<HTMLElement>(MENU_PRESS_ROOT_SELECTOR) ??
+      getSurfaceOwner(current);
+    if (parent == null || parent === current) {
+      return depth;
+    }
+    current = parent;
+  }
+}
+
+/**
+ * The row under (x, y) among the rows measured for a handed-off finger: a
+ * row counts inside the box of the menu root that holds it, and where
+ * flyouts overlap the innermost menu's row wins.
+ */
+function handoffRowAt(
+  x: number,
+  y: number,
+  targets: ReadonlyArray<ActionGroupTarget>,
+  roots: ReadonlyArray<HandoffRoot>,
+): HTMLElement | null {
+  let row: HTMLElement | null = null;
+  let rowDepth = -1;
+  for (const target of targets) {
+    if (
+      x < target.left ||
+      x > target.right ||
+      y < target.top ||
+      y > target.bottom
+    ) {
+      continue;
+    }
+    const owner = target.element.closest<HTMLElement>(MENU_PRESS_ROOT_SELECTOR);
+    const root = roots.find(entry => entry.element === owner);
+    if (root != null && contains(root.rect, x, y) && root.depth > rowDepth) {
+      row = target.element;
+      rowDepth = root.depth;
+    }
+  }
+  return row;
+}
+
+/** Whether a menu surface is still moving (its open motion, say). */
+const isMoving = (surface: Element | null): boolean =>
+  surface
+    ?.getAnimations?.()
+    .some(animation => animation.playState === 'running') === true;
+
 // =============================================================================
 // Hook
 // =============================================================================
@@ -554,6 +636,12 @@ export function useDropdownMenuPress(
           autoscrollRef.current = null;
           return 0;
         }
+        // A handed-off finger’s rows moved with the content: read them again
+        // (once per step, only while the menu autoscrolls). Summing the steps
+        // drifted from the rows' real positions in iOS Safari.
+        if (handoffRef.current != null) {
+          handoffRef.current.isStale = true;
+        }
         running.reread();
         return moved;
       },
@@ -612,6 +700,125 @@ export function useDropdownMenuPress(
     [getDocument],
   );
 
+  // --- The finger a trigger hands to the menu ('uikit') ---------------------
+  //
+  // With `touchModel: 'uikit'` the finger that opened the menu (a press on
+  // the trigger, or its content-touch delay in a scroll view) is UIMenu's
+  // handoff: once the menu
+  // shows under it, its rows come from the shared action-group tracker, as
+  // for a finger that lands in the menu: their rects are read once and
+  // hit-tested, never per move. They are read again while a menu surface
+  // still moves (its open motion), after the menu's contents change, and
+  // after each autoscroll step. The machine still decides when that
+  // finger may pick (its handoff distance). A mouse, and a finger in a menu
+  // tracked as pointer input, keep the browser's hit test (resolvePoint).
+  const handoffRef = useRef<HandoffState | null>(null);
+  const [handoffTracker] = useState(() =>
+    createActionGroupTracker(() => ({
+      roots: () => handoffRef.current?.roots.map(root => root.element) ?? [],
+      itemSelector: optionsRef.current.itemSelector,
+      highlightExpansion: 0,
+      paintsHighlight: false,
+      resolveTarget: (x, y, targets) =>
+        handoffRowAt(x, y, targets, handoffRef.current?.roots ?? []),
+    })),
+  );
+
+  const endHandoff = useCallback(() => {
+    handoffRef.current?.observer?.disconnect();
+    handoffRef.current = null;
+    handoffTracker.cancel();
+  }, [handoffTracker]);
+
+  const measureHandoff = useCallback(
+    (state: HandoffState, x: number, y: number) => {
+      const {menuRef, triggerRef} = optionsRef.current;
+      const menu = menuRef.current;
+      const elements: HTMLElement[] = [];
+      if (menu != null) {
+        const root = getOutermostRoot(menu);
+        for (const tree of root.contains(menu) ? [root] : [root, menu]) {
+          elements.push(
+            tree,
+            ...tree.querySelectorAll<HTMLElement>(MENU_PRESS_ROOT_SELECTOR),
+          );
+        }
+      }
+      state.roots = elements.map(element => ({
+        element,
+        rect: element.getBoundingClientRect(),
+        depth: menuDepth(element),
+        surface: element.closest('[popover]'),
+      }));
+      state.trigger = triggerRef?.current?.getBoundingClientRect() ?? null;
+      state.isStale = false;
+      handoffTracker.begin(x, y);
+    },
+    [handoffTracker],
+  );
+
+  const resolveHandoff = useCallback(
+    (event: PointerEvent): ResolvedPoint => {
+      let state = handoffRef.current;
+      if (state == null) {
+        const next: HandoffState = {
+          roots: [],
+          trigger: null,
+          isStale: true,
+          observer: null,
+        };
+        const menu = optionsRef.current.menuRef.current;
+        if (menu != null && typeof MutationObserver === 'function') {
+          // A flyout that opens or a view that changes moves the rows.
+          next.observer = new MutationObserver(() => {
+            next.isStale = true;
+          });
+          next.observer.observe(getOutermostRoot(menu), {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: ['hidden', 'aria-hidden'],
+          });
+        }
+        handoffRef.current = next;
+        state = next;
+      }
+      const x = event.clientX;
+      const y = event.clientY;
+      const moving = state.roots.some(root => isMoving(root.surface));
+      if (state.isStale || moving) {
+        measureHandoff(state, x, y);
+        // Read while it moves: read once more when it rests.
+        state.isStale = moving;
+      } else {
+        handoffTracker.move(x, y);
+      }
+      const isInMenu = state.roots.some(root => contains(root.rect, x, y));
+      return {
+        row: isInMenu ? handoffTracker.highlighted : null,
+        isInMenu,
+        isOnTrigger:
+          !isInMenu && state.trigger != null && contains(state.trigger, x, y),
+      };
+    },
+    [handoffTracker, measureHandoff],
+  );
+
+  /** Where a pointer of the gesture in flight is: see resolveHandoff. */
+  const resolveFor = useCallback(
+    (event: PointerEvent): ResolvedPoint => {
+      const {touchModel, hitTest} = optionsRef.current;
+      const {phase} = gestureRef.current;
+      const isHandedOff =
+        touchModel === 'uikit' &&
+        hitTest == null &&
+        event.pointerType !== 'mouse' &&
+        (phase === 'open' || phase === 'tracking');
+      return isHandedOff ? resolveHandoff(event) : resolvePoint(event);
+    },
+    [resolveHandoff, resolvePoint],
+  );
+
   const stopAutoscroll = useCallback(() => {
     autoscroll.stop();
     autoscrollRef.current = null;
@@ -622,12 +829,13 @@ export function useDropdownMenuPress(
     touchMovePreventerRef.current?.();
     touchMovePreventerRef.current = null;
     stopAutoscroll();
+    endHandoff();
     detachRef.current?.();
     detachRef.current = null;
     pointerIdRef.current = null;
     lastPointerEventRef.current = null;
     gestureRef.current = IDLE_MENU_PRESS;
-  }, [stopAutoscroll]);
+  }, [endHandoff, stopAutoscroll]);
 
   const highlight = useCallback(
     (row: HTMLElement | null) => {
@@ -808,7 +1016,7 @@ export function useDropdownMenuPress(
         reread: () => {
           const last = lastPointerEventRef.current;
           if (last != null) {
-            const point = resolvePoint(last);
+            const point = resolveFor(last);
             stepRef.current(
               {
                 type: 'move',
@@ -823,7 +1031,7 @@ export function useDropdownMenuPress(
       };
       autoscroll.update();
     },
-    [autoscroll, getScroller, resolvePoint, stopAutoscroll],
+    [autoscroll, getScroller, resolveFor, stopAutoscroll],
   );
 
   // --- Document-level tracking ----------------------------------------------
@@ -853,7 +1061,7 @@ export function useDropdownMenuPress(
           }
           return;
         }
-        const point = resolvePoint(event);
+        const point = resolveFor(event);
         stepRef.current(
           {
             type: 'move',
@@ -870,7 +1078,7 @@ export function useDropdownMenuPress(
         if (event.pointerId !== pointerIdRef.current) {
           return;
         }
-        const point = resolvePoint(event);
+        const point = resolveFor(event);
         stepRef.current(
           {
             type: 'up',
@@ -914,7 +1122,7 @@ export function useDropdownMenuPress(
         view?.removeEventListener('blur', onBlur);
       };
     },
-    [getDocument, resolvePoint, updateAutoscroll],
+    [getDocument, resolveFor, updateAutoscroll],
   );
 
   // --- The held finger on the trigger ----------------------------
