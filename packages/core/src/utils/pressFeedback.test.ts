@@ -86,6 +86,26 @@ afterEach(() => {
 });
 
 describe('the press reaches the surface the finger landed on', () => {
+  it('locks text selection on the row and its switch input while a finger is held, on any coarse pointer', () => {
+    const row = pressable('label');
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.setAttribute('role', 'switch');
+    row.appendChild(input);
+    document.body.appendChild(row);
+    press(input, 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(600);
+    expect(row.style.getPropertyValue('user-select')).toBe('none');
+    expect(input.style.getPropertyValue('user-select')).toBe('none');
+    press(input, 'pointerup', 10, 10);
+    expect(row.style.getPropertyValue('user-select')).toBe('');
+    expect(input.style.getPropertyValue('user-select')).toBe('');
+    // A mouse never locks anything.
+    press(input, 'pointerdown', 10, 10, 'mouse');
+    expect(row.style.getPropertyValue('user-select')).toBe('');
+    press(input, 'pointerup', 10, 10, 'mouse');
+  });
+
   it('paints the row after the delay, not before', () => {
     const label = rows[1].firstElementChild;
     if (label == null) {
@@ -306,6 +326,23 @@ describe('the release', () => {
     expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
     vi.advanceTimersByTime(PRESS_FADE_MS);
     expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+  });
+
+  it('leaves a state it did not write alone: a selection hold outlives the release', () => {
+    press(rows[0], 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    press(rows[0], 'pointerup', 10, 10);
+    expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+    // The activation pushes, and the row is held selected (selectionHold.ts).
+    rows[0].setAttribute(PRESSED_ATTRIBUTE, 'held');
+    vi.advanceTimersByTime(PRESS_FADE_MS);
+    expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('held');
+    // A new press on the held row neither repaints nor clears it.
+    press(rows[0], 'pointerdown', 10, 10);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('held');
+    press(rows[0], 'pointercancel', 10, 10);
+    expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('held');
   });
 });
 

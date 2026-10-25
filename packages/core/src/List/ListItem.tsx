@@ -5,11 +5,17 @@
 /**
  * @file ListItem.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, the List row edge
- *   treatment, CheckboxInput, and the marker or task checkbox a
- *   ListMarkerScope sets (Markdown's nested lists and the task items of mixed
- *   lists)
+ *   treatment, the press layer (dividers beside a touch-pressed or held row
+ *   hide and the layer reaches over the row's own), the touch row heights
+ *   (listRow.stylex.ts), the travelling marker of an update's slide
+ *   (utils/useListUpdateMotion.ts), CheckboxInput, and the marker or task
+ *   checkbox a ListMarkerScope sets (Markdown's nested lists and the task
+ *   items of mixed lists)
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
+ *
+ * In a List with `onReorder` (List/useListReorder.ts), each row ends with a
+ * ListReorderHandle, or keeps its place with `isReorderDisabled`.
  *
  * Composes Item for the shared start content + label + description + end content layout
  * and the invisible button/anchor interactive pattern.
@@ -22,7 +28,7 @@
  * - /packages/cli/assets/templates/blocks/components/List/ (showcase blocks)
  */
 
-import {use, type ReactNode} from 'react';
+import {use, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -34,10 +40,16 @@ import {
 import type {BaseProps} from '../BaseProps';
 import {ListContext, type ListMarker} from './ListContext';
 import {CheckboxInput} from '../CheckboxInput';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import {Item} from '../Item';
 import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {listRowStyles} from './listRow.stylex';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {useMergedRefs} from '../hooks/useMergedRefs';
+import {ListReorderHandle, ListReorderSlot} from './ListReorderHandle';
+import {FIXED_ROW_ATTRIBUTE, ListReorderContext} from './useListReorder';
 
 // =============================================================================
 // Types
@@ -129,6 +141,21 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
   isSelected?: boolean;
 
   /**
+   * In a List with `onReorder`, this row has no reorder handle and keeps its
+   * place: other rows cannot be dragged or moved past it, so it splits the
+   * list into groups that each reorder on their own. No effect elsewhere.
+   * @default false
+   */
+  isReorderDisabled?: boolean;
+
+  /**
+   * In a List with `onReorder`, the text this row's reorder handle is named
+   * after ("Reorder {reorderLabel}"), for a row whose `label` is not plain
+   * text. Without it such a handle is named after the row's place.
+   */
+  reorderLabel?: string;
+
+  /**
    * Swipe actions for touch, passed through to `Item` unchanged: the verbs a
    * sideways drag uncovers on each side. See `Item.swipeActions`; `List`
    * clips the rows in the inline axis for them.
@@ -150,6 +177,31 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
 const styles = stylex.create({
   withCounter: {
     counterIncrement: 'astryx-list',
+  },
+  // A row an update slides across rows moving the other way rides above them
+  // with the surface behind it, for the length of its slide (the attribute
+  // utils/useListUpdateMotion.ts writes): a UIKit cell passes its neighbours
+  // opaque and on top, and rows here have no background of their own. The
+  // layer covers the padding box, under the press layer, so the row's divider
+  // and its press stay visible; a selected row keeps its own fill.
+  travelling: {
+    zIndex: {
+      default: null,
+      '[data-astryx-travelling]': 1,
+    },
+    '::after': {
+      content: {
+        default: null,
+        '[data-astryx-travelling]:not([aria-selected="true"],[aria-current="true"])':
+          '""',
+      },
+      position: 'absolute',
+      inset: 0,
+      zIndex: -2,
+      borderRadius: 'inherit',
+      pointerEvents: 'none',
+      backgroundColor: colorVars['--color-background-surface'],
+    },
   },
   // List's edge treatments. Each reads --_item-inset-inline, the variable
   // Item derives its paddingInline from, on the row itself (custom properties
@@ -186,13 +238,51 @@ const styles = stylex.create({
   withDivider: {
     borderBlockEndWidth: borderVars['--border-width'],
     borderBlockEndStyle: 'solid',
-    borderBlockEndColor: colorVars['--color-border'],
+    // Under a finger (a coarse primary pointer, TOUCH_QUERY in
+    // utils/touchPresentation.ts), a touch press hides this row's divider
+    // and the one above it, in the frame the press is believed, with no
+    // transition, as a highlighted UIKit cell hides its separators; both
+    // come back in the first frame of the release, while the press is still
+    // fading. A selection hold (the row kept selected through a navigation
+    // push) hides them the same way until its deselect begins, and again
+    // after a cancel. With a mouse the dividers stay drawn.
+    borderBlockEndColor: {
+      default: colorVars['--color-border'],
+      '@media (pointer: coarse)': {
+        default: null,
+        '[data-astryx-press="on"]': 'transparent',
+        '[data-astryx-press="held"]:not([data-astryx-deselecting])':
+          'transparent',
+        ':has(+ [data-astryx-press="on"])': 'transparent',
+        ':has(+ [data-astryx-press="held"]:not([data-astryx-deselecting]))':
+          'transparent',
+      },
+    },
     // A longhand, not the `borderBlockEnd` shorthand: StyleX's default
     // property-specificity mode drops border shorthands silently, so the
     // shorthand never reached the shipped CSS and the last item kept its
     // divider.
     ':last-child': {
       borderBlockEndWidth: 0,
+    },
+    // While its divider is hidden, the press layer (the `cell` style of
+    // utils/interactionOverlay.stylex.ts) reaches over it, so the whole row
+    // is pressed. The last row has no divider to cover.
+    '::before': {
+      insetBlockEnd: {
+        default: null,
+        '@media (pointer: coarse)': {
+          default: null,
+          '[data-astryx-press="on"]': {
+            default: `calc(-1 * ${borderVars['--border-width']})`,
+            ':last-child': 0,
+          },
+          '[data-astryx-press="held"]:not([data-astryx-deselecting])': {
+            default: `calc(-1 * ${borderVars['--border-width']})`,
+            ':last-child': 0,
+          },
+        },
+      },
     },
   },
 });
@@ -319,6 +409,8 @@ export function ListItem({
   rel,
   isDisabled = false,
   isSelected = false,
+  isReorderDisabled = false,
+  reorderLabel,
   align,
   xstyle,
   className,
@@ -327,6 +419,30 @@ export function ListItem({
   ...restProps
 }: ListItemProps) {
   const ctx = use(ListContext);
+  const rowRef = useRef<HTMLLIElement | null>(null);
+  const mergedRef = useMergedRefs(ref, rowRef);
+  const keepRowPresentation = ctx?.keepRowPresentation;
+  const keepRowPresentationRef = useRef(keepRowPresentation);
+  useIsomorphicLayoutEffect(() => {
+    keepRowPresentationRef.current = keepRowPresentation;
+  });
+  // External system (`architecture:react-component-runtime` INV3): the Web
+  // Animations running on the row's parts (a swipe's travel, on the
+  // compositor), which a detached row loses. Leaving a list that animates
+  // its changes, the row writes what they present inline while it is still
+  // in the document (a parent's layout cleanup runs before React removes the
+  // row), so the removal's collapse shows it as it was on screen.
+  useIsomorphicLayoutEffect(() => {
+    const row = rowRef.current;
+    return () => {
+      if (row != null) {
+        keepRowPresentationRef.current?.(row);
+      }
+    };
+  }, []);
+  // In a List with `onReorder`: a trailing handle, or a row that stays put.
+  const isReorderable = use(ListReorderContext) != null;
+  const hasReorderHandle = isReorderable && !isReorderDisabled;
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
   const edge = ctx?.edge ?? 'padded';
@@ -371,12 +487,30 @@ export function ListItem({
   return (
     <Item
       as="li"
-      ref={ref}
+      ref={mergedRef}
       marker={marker}
       startContent={startContent}
       label={label}
       description={description}
-      endContent={endContent}
+      endContent={
+        hasReorderHandle ? (
+          <>
+            {endContent}
+            <ListReorderHandle
+              label={reorderLabel ?? label}
+              isDisabled={isDisabled}
+            />
+          </>
+        ) : isReorderable && isRenderable(endContent) ? (
+          // A fixed row keeps its end content in the movable rows' column.
+          <>
+            {endContent}
+            <ListReorderSlot />
+          </>
+        ) : (
+          endContent
+        )
+      }
       onClick={onClick}
       interactiveRef={interactiveRef}
       href={href}
@@ -389,15 +523,31 @@ export function ListItem({
       xstyle={
         [
           hasMarkers && styles.withCounter,
+          styles.travelling,
           hasDividers && styles.withDivider,
           hasDividers && embeddedStyles.noRadius,
+          // A list with markers is running text (bullets, numbers, a
+          // Markdown list), not a table: its rows keep their own height, and
+          // each marker stays on its text's first line.
+          !hasMarkers &&
+            (density === 'compact'
+              ? listRowStyles.touchCompact
+              : isRenderable(description)
+                ? listRowStyles.touchTwoLine
+                : listRowStyles.touchOneLine),
           edge === 'flush' && styles.edgeFlush,
           edge === 'outset' && styles.edgeOutset,
           edge === 'bleed' && styles.edgeBleed,
+          // A focused handle rings itself; the row's focus-within ring stays
+          // off for it (two rings, and the list clips the row's sides).
+          hasReorderHandle && focusOutlineStyles.focusWithinExceptOwnRing,
           xstyle,
         ] as StyleXStyles
       }
       {...mergeProps(themeProps('list-item'), {className, style})}
+      {...(isReorderable && isReorderDisabled
+        ? {[FIXED_ROW_ATTRIBUTE]: ''}
+        : null)}
       {...restProps}
     />
   );

@@ -4,7 +4,8 @@
  * @file pressFeedback.ts
  * @input The press state machine (pressGesture.ts) and the document's pointer,
  *   scroll and visibility events
- * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, pressableProps and
+ * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, pressableProps, the
+ *   list row's press profile (CELL_PRESS_PROFILE, cellPressableProps) and
  *   installPressFeedback
  * @position The DOM half of the touch press model: one delegated controller
  *   per document that writes `data-astryx-press` on the nearest pressable surface.
@@ -28,8 +29,13 @@
  * (`@media (pointer: coarse)`) and this writes `data-astryx-press="on"` when the
  * press is believed and `data-astryx-press="fading"` for the release's exit.
  *
+ * While a finger or a pen is down on a surface, its text selection and the
+ * touch callout are off (gestures/selectionLock.ts, shared with the gesture
+ * host), as on UIKit's controls and cells; a mouse never takes the lock.
+ *
  * SYNC: When modified, update pressGesture.ts, hooks/usePressFeedback.ts,
- * utils/interactionOverlay.stylex.ts and pressFeedback.test.ts.
+ * utils/interactionOverlay.stylex.ts, gestures/selectionLock.ts and
+ * pressFeedback.test.ts.
  */
 
 import type {PressGesture, PressPaint, PressStep} from './pressGesture';
@@ -41,6 +47,7 @@ import {
   PRESS_SCROLL_BRAKE_MS,
   pressGestureStep,
 } from './pressGesture';
+import {lockSelection} from '../gestures/selectionLock';
 
 /**
  * The marker the controller finds with `closest()`. Every Astryx component
@@ -60,6 +67,21 @@ export const pressableProps: {readonly [PRESSABLE_ATTRIBUTE]: ''} = {
 };
 
 /**
+ * The press profile a list row carries in its {@link PRESSABLE_ATTRIBUTE}
+ * marker: rows paint the press on the cell layer (interactionOverlay.stylex.ts
+ * `cell`) and release on the cell's clock; a selection hold finds rows by it.
+ */
+export const CELL_PRESS_PROFILE = 'cell';
+
+/**
+ * Spread on a list row's pressable element after the press feedback hook's
+ * props: the marker carries the cell profile.
+ */
+export const cellPressableProps: {
+  readonly [PRESSABLE_ATTRIBUTE]: typeof CELL_PRESS_PROFILE;
+} = {[PRESSABLE_ATTRIBUTE]: CELL_PRESS_PROFILE};
+
+/**
  * How long after a touch a scroll can still be that finger's momentum.
  *
  * iOS momentum runs for a second or two after the lift; past this window a
@@ -76,6 +98,8 @@ interface LiveGesture {
   /** The pointer this gesture belongs to; a second finger is ignored. */
   pointerId: number | null;
   timer: ReturnType<typeof setTimeout> | null;
+  /** Releases the selection lock the finger holds while it is down. */
+  unlock: (() => void) | null;
 }
 
 let live: LiveGesture | null = null;
@@ -107,7 +131,20 @@ const TIMER_EVENT = {
   onset: 'onset',
 } as const;
 
+/**
+ * A press state the controller did not write is its owner's: a selection
+ * hold's `held` (selectionHold.ts) keeps a row selected through a navigation
+ * push, so neither a new press nor a release's end overwrites or clears it.
+ */
+function ownedElsewhere(element: HTMLElement): boolean {
+  const value = element.getAttribute(PRESSED_ATTRIBUTE);
+  return value != null && value !== 'on' && value !== 'fading';
+}
+
 function paintElement(element: HTMLElement, paint: PressPaint): void {
+  if (ownedElsewhere(element)) {
+    return;
+  }
   if (paint === 'none') {
     element.removeAttribute(PRESSED_ATTRIBUTE);
     return;
@@ -231,7 +268,16 @@ function scrollerIsBraking(element: HTMLElement): boolean {
 function releaseIfDead(): void {
   if (live?.gesture.phase === 'dead') {
     clearTimer();
+    unlockLive();
     live = null;
+  }
+}
+
+/** The finger is up or gone: text selection comes back. */
+function unlockLive(): void {
+  live?.unlock?.();
+  if (live != null) {
+    live.unlock = null;
   }
 }
 
@@ -241,7 +287,10 @@ function finish(): void {
     return;
   }
   clearTimer();
-  live.element.removeAttribute(PRESSED_ATTRIBUTE);
+  unlockLive();
+  if (!ownedElsewhere(live.element)) {
+    live.element.removeAttribute(PRESSED_ATTRIBUTE);
+  }
   live = null;
 }
 
@@ -283,6 +332,9 @@ function onPointerDown(event: PointerEvent): void {
     gesture: idlePressGesture(),
     pointerId: event.pointerId,
     timer: null,
+    // A held finger never starts text selection on the surface (UIKit's
+    // controls and cells never do), on any coarse pointer.
+    unlock: lockSelection([element], event.target),
   };
   apply(
     pressGestureStep(live.gesture, {
@@ -329,6 +381,7 @@ function onPointerUp(event: PointerEvent): void {
   ) {
     return;
   }
+  unlockLive();
   apply(pressGestureStep(live.gesture, {kind: 'up'}));
   releaseIfDead();
 }
@@ -345,6 +398,7 @@ function onCancel(): void {
   if (live == null) {
     return;
   }
+  unlockLive();
   apply(pressGestureStep(live.gesture, {kind: 'cancel'}));
   // The pointer is gone: a scroll-claimed gesture sends no further pointer
   // events, so nothing else would ever free the slot.
@@ -433,6 +487,14 @@ function removeListeners(): void {
  *   are reset with them, so a later install never inherits a gesture that
  *   never happened.
  */
+/**
+ * Whether the touch press controller is installed: the delegated press of
+ * gestures/delegatedPress.ts stays off the same attribute while it is.
+ */
+export function isPressFeedbackInstalled(): boolean {
+  return holders > 0;
+}
+
 export function installPressFeedback(): () => void {
   if (typeof window === 'undefined') {
     return () => undefined;
