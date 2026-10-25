@@ -8,7 +8,7 @@ import XCTest
 @MainActor
 final class ComponentScreensUITests: XCTestCase {
   /// Every component screen the host app offers, in its order.
-  static let screens = ["Banner", "Button", "Card", "Heading", "Icon", "Text", "TextInput"]
+  static let screens = ["Avatar", "Banner", "Button", "Card", "Heading", "Icon", "Text", "TextInput"]
 
   static let loadingLabel =
     "A loading button keeps its label at zero opacity under the spinner so its width holds; the audit measures that hidden label."

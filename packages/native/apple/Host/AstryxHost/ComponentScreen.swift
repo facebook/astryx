@@ -5,12 +5,13 @@ import Astryx
 /// Every Swift component's screen. A new component adds a case and its
 /// states here, and the UI tests audit it.
 enum ComponentScreen: String, CaseIterable, Identifiable {
-  case Banner, Button, Card, Heading, Icon, Text, TextInput
+  case Avatar, Banner, Button, Card, Heading, Icon, Text, TextInput
 
   var id: String { rawValue }
 
   @MainActor @ViewBuilder var content: some View {
     switch self {
+    case .Avatar: AvatarScreen()
     case .Banner: BannerScreen()
     case .Button: ButtonScreen()
     case .Card: CardScreen()
@@ -18,6 +19,25 @@ enum ComponentScreen: String, CaseIterable, Identifiable {
     case .Icon: IconScreen()
     case .Text: TextScreen()
     case .TextInput: TextInputScreen()
+    }
+  }
+}
+
+struct AvatarScreen: View {
+  @State private var taps = 0
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 24) {
+      // Room above the first avatar, so its tooltip has space to open.
+      SwiftUI.Text("Team").padding(.top, 48)
+      HStack(spacing: 16) {
+        Astryx.Avatar("Ada Lovelace")
+        Astryx.Avatar("Alan Turing", tooltip: "Online now")
+        Astryx.Avatar("Grace Hopper", onClick: { taps += 1 })
+        Astryx.Avatar("Linus Torvalds", href: "https://example.com")
+        Astryx.Avatar(tooltip: false)
+      }
+      SwiftUI.Text("Avatar taps: \(taps)").accessibilityIdentifier("avatar.taps")
     }
   }
 }
