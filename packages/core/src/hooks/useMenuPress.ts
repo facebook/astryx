@@ -322,12 +322,14 @@ export interface DropdownMenuPressReturn extends UseMenuPressReturn {
   /**
    * Continue a pointer that went down elsewhere (a context menu's long press,
    * a trigger this hook does not own) into the menu that just opened under
-   * it. The pointer is tracked from here as the opening press: a finger picks
-   * only after UIMenu's handoff distance from the first position the menu
-   * sees after it opened (as a trigger's opening finger does), whatever the
-   * touch model, and its lift before that acts on nothing and leaves the menu
-   * open; a mouse follows the settle rule. Ignored while another gesture is
-   * live or the hook is disabled.
+   * it. The pointer is tracked from here as the opening press
+   * (`module:DropdownMenu/useMenuPress` FR11). With the `'uikit'` touch model
+   * (the primary pointer is coarse) a finger picks only after UIMenu's handoff
+   * distance from the first position the menu sees after it opened, as a
+   * trigger's opening finger does, and its lift before that acts on nothing and
+   * leaves the menu open; otherwise, and for a mouse, the opening press follows
+   * the settle rule. Ignored while another gesture is live or the hook is
+   * disabled.
    */
   continueGesture: (pointer: MenuPressContinuation) => void;
 }
@@ -342,9 +344,9 @@ function normalizePointerType(type: string): MenuPressPointerType | null {
 
 /**
  * Where a pointer is, for a finger's handoff distance: given with
- * `touchModel: 'uikit'` and for a continued pointer
- * ({@link DropdownMenuPressReturn.continueGesture}). Without it the machine
- * keeps the settle rule.
+ * `touchModel: 'uikit'`, the primary pointer being coarse, for the trigger's
+ * opening finger and a continued one alike (`spec:AST-094` FR29, FR33). Without
+ * it the machine keeps the settle rule.
  */
 function handoffPosition(
   event: PointerEvent,
@@ -512,9 +514,6 @@ export function useDropdownMenuPress(
 
   const gestureRef = useRef<MenuPressGesture<HTMLElement>>(IDLE_MENU_PRESS);
   const pointerIdRef = useRef<number | null>(null);
-  // Whether the live gesture was handed in by continueGesture: its finger
-  // hands off by distance whatever the touch model.
-  const isContinuedRef = useRef(false);
   const detachRef = useRef<(() => void) | null>(null);
   // The held finger is detected by `useLongPress`, the same hook ContextMenu
   // uses, so the hold duration and the movement tolerance have one home. The
@@ -622,7 +621,6 @@ export function useDropdownMenuPress(
     detachRef.current = null;
     pointerIdRef.current = null;
     lastPointerEventRef.current = null;
-    isContinuedRef.current = false;
     gestureRef.current = IDLE_MENU_PRESS;
   }, [stopAutoscroll]);
 
@@ -859,8 +857,7 @@ export function useDropdownMenuPress(
             time: Date.now(),
             ...handoffPosition(
               event,
-              optionsRef.current.touchModel === 'uikit' ||
-                isContinuedRef.current,
+              optionsRef.current.touchModel === 'uikit',
             ),
           },
           event,
@@ -881,8 +878,7 @@ export function useDropdownMenuPress(
             time: Date.now(),
             ...handoffPosition(
               event,
-              optionsRef.current.touchModel === 'uikit' ||
-                isContinuedRef.current,
+              optionsRef.current.touchModel === 'uikit',
             ),
           },
           event,
@@ -1125,9 +1121,9 @@ export function useDropdownMenuPress(
       }
       attach(pointer.pointerId);
       // The menu opened under this pointer: the gesture is the opening press.
-      // A finger's handoff counts from the first position the menu sees
-      // after it opened, as the trigger's opening finger's does.
-      isContinuedRef.current = true;
+      // Where the primary pointer is coarse a finger's handoff counts from the
+      // first position the menu sees after it opened, as the trigger's opening
+      // finger's does; elsewhere the settle rule decides its release.
       gestureRef.current = {
         phase: 'open',
         pointerType: pointer.pointerType,

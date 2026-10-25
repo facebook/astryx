@@ -605,35 +605,42 @@ describe('useMenuPress — the trigger', () => {
     };
     const finger = {pointerType: 'touch', pointerId: 7};
 
-    it('a finger picks only after the handoff distance from the first position the menu sees, under either touch model', () => {
-      for (const touchModel of ['pointer', 'uikit'] as const) {
-        const onSelect = vi.fn();
-        const press: {current: DropdownMenuPressReturn | null} = {
-          current: null,
-        };
-        const {unmount} = render(
-          <Harness
-            touchModel={touchModel}
-            onSelect={onSelect}
-            pressRef={press}
-          />,
-        );
-        continueAt(press, 'touch');
-        fireEvent.pointerMove(row('B'), {...finger, clientX: 0, clientY: 4});
-        expect(row('B')).not.toHaveFocus();
-        fireEvent.pointerMove(row('B'), {...finger, clientX: 0, clientY: 20});
-        expect(row('B')).toHaveFocus();
-        fireEvent.pointerUp(row('B'), {...finger, clientX: 0, clientY: 20});
-        expect(onSelect).toHaveBeenCalledTimes(1);
-        expect(onSelect).toHaveBeenCalledWith('B');
-        unmount();
-        __resetMenuPressForTest();
-      }
+    it('where the primary pointer is coarse, a finger picks only after the handoff distance from the first position the menu sees', () => {
+      const onSelect = vi.fn();
+      const press: {current: DropdownMenuPressReturn | null} = {current: null};
+      render(
+        <Harness touchModel="uikit" onSelect={onSelect} pressRef={press} />,
+      );
+      continueAt(press, 'touch');
+      fireEvent.pointerMove(row('B'), {...finger, clientX: 0, clientY: 4});
+      expect(row('B')).not.toHaveFocus();
+      fireEvent.pointerMove(row('B'), {...finger, clientX: 0, clientY: 20});
+      expect(row('B')).toHaveFocus();
+      fireEvent.pointerUp(row('B'), {...finger, clientX: 0, clientY: 20});
+      expect(onSelect).toHaveBeenCalledTimes(1);
+      expect(onSelect).toHaveBeenCalledWith('B');
+    });
+
+    it('where the primary pointer is fine, a handed-off finger is the opening press under the settle rule: no handoff distance', () => {
+      const onSelect = vi.fn();
+      const press: {current: DropdownMenuPressReturn | null} = {current: null};
+      render(<Harness onSelect={onSelect} pressRef={press} />);
+      // Released at once, it acts on nothing and the menu stays.
+      continueAt(press, 'touch');
+      fireEvent.pointerUp(row('A'), {...finger, clientX: 0, clientY: 0});
+      expect(onSelect).not.toHaveBeenCalled();
+      // Moved onto a row, however little, it lights it and its lift picks it.
+      continueAt(press, 'touch');
+      fireEvent.pointerMove(row('B'), {...finger, clientX: 0, clientY: 4});
+      expect(row('B')).toHaveFocus();
+      fireEvent.pointerUp(row('B'), {...finger, clientX: 0, clientY: 4});
+      expect(onSelect).toHaveBeenCalledTimes(1);
+      expect(onSelect).toHaveBeenCalledWith('B');
     });
 
     it('the distance counts from the first position the menu sees, not from where the finger was as it opened', () => {
       const press: {current: DropdownMenuPressReturn | null} = {current: null};
-      render(<Harness pressRef={press} />);
+      render(<Harness touchModel="uikit" pressRef={press} />);
       continueAt(press, 'touch');
       const handoff = UIKIT_GESTURES.menuPress.handoff.value;
       // However far it went before the menu saw it, the first sample only
@@ -657,7 +664,9 @@ describe('useMenuPress — the trigger', () => {
     it('a finger lifted before the handoff acts on nothing, and its click is spent', () => {
       const onSelect = vi.fn();
       const press: {current: DropdownMenuPressReturn | null} = {current: null};
-      render(<Harness onSelect={onSelect} pressRef={press} />);
+      render(
+        <Harness touchModel="uikit" onSelect={onSelect} pressRef={press} />,
+      );
       continueAt(press, 'touch');
       fireEvent.pointerMove(row('B'), {...finger, clientX: 0, clientY: 3});
       fireEvent.pointerUp(row('B'), {...finger, clientX: 0, clientY: 3});
