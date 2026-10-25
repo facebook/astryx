@@ -36,7 +36,9 @@
  * SYNC: When modified, update /packages/core/src/keyboard/README.md
  */
 
-import {keyboard, springs, timing} from '../motion/uikit';
+import {keyboard} from '../motion/uikit/keyboard';
+import {springs} from '../motion/uikit/springs';
+import {timing} from '../motion/uikit/timing';
 import {solveSpring, toSpring, type SpringCurve} from '../motion/spring';
 
 /** How the keyboard's cover changes. */

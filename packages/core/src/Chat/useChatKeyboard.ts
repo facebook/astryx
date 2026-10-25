@@ -44,7 +44,7 @@
 
 import {useRef, useState, useSyncExternalStore, type RefObject} from 'react';
 import {useAnimator} from '../motion/useAnimator';
-import {registerSpringsTable, springs} from '../motion/uikit';
+import {registerSpringsTable, springs} from '../motion/uikit/springs';
 import {
   bringsUpKeyboard,
   claimTapFocus,

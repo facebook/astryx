@@ -23,7 +23,7 @@
  * SYNC: When modified, update /packages/core/src/keyboard/README.md
  */
 
-import {timing} from '../motion/uikit';
+import {timing} from '../motion/uikit/timing';
 import {
   getMobileKeyboardHeight,
   subscribeMobileKeyboard,
