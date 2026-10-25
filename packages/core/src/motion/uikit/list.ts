@@ -129,6 +129,29 @@ export const list = {
      *   `setEditing(_:animated:)` (batch 75), Oct 24 2026
      */
     editingControlTravel: 44,
+    /**
+     * The delete control's disc (UITableViewCellEditControl, `.delete`
+     * style): 21.6 pt across, centred where the selection circle centres,
+     * in the system red, with a white bar 10.6 by 1.67 pt across it.
+     * @source measured: UIKit lab, iOS 26.2 sim iPhone 17 Pro, the edit
+     *   control's layers in a plain UITableView in edit mode (batch 75),
+     *   Oct 24 2026
+     */
+    deleteControlDiameter: 21.6,
+    /**
+     * The delete control's bar: its width, in pt.
+     * @source measured: UIKit lab, iOS 26.2 sim iPhone 17 Pro, the edit
+     *   control's layers in a plain UITableView in edit mode (batch 75),
+     *   Oct 24 2026
+     */
+    deleteControlBarWidth: 10.6,
+    /**
+     * The delete control's bar: its thickness, in pt.
+     * @source measured: UIKit lab, iOS 26.2 sim iPhone 17 Pro, the edit
+     *   control's layers in a plain UITableView in edit mode (batch 75),
+     *   Oct 24 2026
+     */
+    deleteControlBarHeight: 1.67,
   },
   update: {
     /**

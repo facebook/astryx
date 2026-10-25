@@ -345,6 +345,61 @@ export const EditingSelection: Story = {
   },
 };
 
+function EditingDeleteDemo() {
+  const [isEditing, setIsEditing] = useState(false);
+  const [rows, setRows] = useState(['Inbox', 'Sent', 'Drafts', 'Archive']);
+  return (
+    <VStack gap={2}>
+      <div>
+        <Button
+          label={isEditing ? 'Done' : 'Edit'}
+          onClick={() => setIsEditing(!isEditing)}
+        />
+      </div>
+      <List
+        isEditing={isEditing}
+        editingControl="delete"
+        hasAnimatedChanges
+        hasDividers>
+        {rows.map(label => (
+          <ListItem
+            key={label}
+            label={label}
+            onClick={() => {}}
+            endContent={<Icon icon={ChevronRightIcon} />}
+            swipeActions={{
+              trailing: [
+                {
+                  label: 'Delete',
+                  variant: 'destructive',
+                  hasRemoval: true,
+                  onActivate: () =>
+                    setRows(current => current.filter(row => row !== label)),
+                },
+              ],
+            }}
+          />
+        ))}
+      </List>
+    </VStack>
+  );
+}
+
+export const EditingDelete: Story = {
+  render: () => <EditingDeleteDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'With `editingControl="delete"`, under a finger, edit mode shows ' +
+          'UIKit’s delete control on each row with trailing swipe actions; ' +
+          'tapping it opens them as a swipe does, and tapping it again ' +
+          'closes them. With a mouse there is no delete control.',
+      },
+    },
+  },
+};
+
 export const Links: Story = {
   render: args => (
     <List {...args}>

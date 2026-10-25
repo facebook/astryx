@@ -649,6 +649,15 @@ describe('List', () => {
     expect(listRowConsts.editingControlCenter).toBe(
       `${list.metrics.editingControlCenter}px`,
     );
+    expect(listRowConsts.deleteControlDiameter).toBe(
+      `${list.metrics.deleteControlDiameter}px`,
+    );
+    expect(listRowConsts.deleteControlBarWidth).toBe(
+      `${list.metrics.deleteControlBarWidth}px`,
+    );
+    expect(listRowConsts.deleteControlBarHeight).toBe(
+      `${list.metrics.deleteControlBarHeight}px`,
+    );
   });
 
   it('gives rows UIKit’s table heights under a finger only, on every touch platform', () => {

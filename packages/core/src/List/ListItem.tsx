@@ -25,11 +25,12 @@
  * - /packages/cli/assets/templates/blocks/components/List/ (showcase blocks)
  */
 
-import {use, useRef, type ReactNode} from 'react';
+import {use, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
+  radiusVars,
   spacingVars,
   typeScaleVars,
   borderVars,
@@ -42,6 +43,9 @@ import {
   type ListMarker,
 } from './ListContext';
 import {useIndicator} from '../Indicator';
+import {useTouchPresentation} from '../utils/touchPresentation';
+import {pressableProps} from '../utils/pressFeedback';
+import {useItemSwipeReveal} from '../Item/ItemSwipeRevealContext';
 import {CheckboxInput} from '../CheckboxInput';
 import {isRenderable, mergeProps} from '../utils';
 import {Item} from '../Item';
@@ -382,6 +386,98 @@ const editingStyles = stylex.create({
   },
 });
 
+/** Marks the delete control's disc. */
+const DELETE_CONTROL_ATTRIBUTE = 'data-astryx-delete-control';
+
+const deleteControlStyles = stylex.create({
+  // UIKit's delete control: a disc in the theme's error colour (the swipe's
+  // destructive action shares it) with a bar across it, its `::before` (no
+  // element of its own). Composed after the editing control's placement; a
+  // tap is its own, so it takes the pointer back.
+  disc: {
+    boxSizing: 'border-box',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: listRowConsts.deleteControlDiameter,
+    height: listRowConsts.deleteControlDiameter,
+    borderRadius: radiusVars['--radius-full'],
+    backgroundColor: colorVars['--color-error'],
+    pointerEvents: 'auto',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+    // Forced colours draw no backgrounds: keep the disc's shape.
+    outlineStyle: {default: 'none', '@media (forced-colors: active)': 'solid'},
+    outlineWidth: {default: 0, '@media (forced-colors: active)': '1px'},
+    outlineColor: {
+      default: null,
+      '@media (forced-colors: active)': 'CanvasText',
+    },
+    '::before': {
+      content: '""',
+      width: listRowConsts.deleteControlBarWidth,
+      height: listRowConsts.deleteControlBarHeight,
+      borderRadius: radiusVars['--radius-full'],
+      backgroundColor: {
+        default: colorVars['--color-on-error'],
+        '@media (forced-colors: active)': 'CanvasText',
+      },
+    },
+  },
+});
+
+/**
+ * UIKit's delete control. Rendered inside the row's Item, it reaches the
+ * row's own swipe: a tap opens the trailing actions as a swipe does, and a
+ * tap on an open row closes them. A touch on it while the row is open is
+ * the row's dismissing tap (the swipe closes and makes no click). It takes
+ * the press itself, so the row does not light, and keeps its click from
+ * reaching the row's action.
+ */
+function ListDeleteControl({
+  isEditing,
+  xstyle,
+}: {
+  isEditing: boolean;
+  /** The editing control's placement in the row (ListItem's). */
+  xstyle: StyleXStyles;
+}) {
+  const reveal = useItemSwipeReveal();
+  // External system (`architecture:react-component-runtime` INV3): the
+  // row's swipe. Ending edit mode closes the actions this control opened,
+  // in the same commit, as UIKit's `setEditing(false)` does.
+  const wasEditingRef = useRef(isEditing);
+  useEffect(() => {
+    if (wasEditingRef.current && !isEditing && reveal?.side != null) {
+      reveal.close();
+    }
+    wasEditingRef.current = isEditing;
+  }, [isEditing, reveal]);
+  return (
+    <span
+      aria-hidden="true"
+      {...pressableProps}
+      data-pressable-container=""
+      {...{[EDITING_CONTROL_ATTRIBUTE]: '', [DELETE_CONTROL_ATTRIBUTE]: ''}}
+      {...stylex.props(xstyle, deleteControlStyles.disc)}
+      onClick={event => {
+        // Its own tap, never the row's action.
+        event.stopPropagation();
+        if (reveal == null) {
+          return;
+        }
+        if (reveal.side === 'trailing') {
+          reveal.close();
+        } else {
+          reveal.reveal('trailing');
+        }
+      }}
+    />
+  );
+}
+
 const taskMarkerStyles = stylex.create({
   // A task item's checkbox stands where the marker would, centered on the
   // item's first line, as a task list's checkboxes are.
@@ -511,27 +607,39 @@ export function ListItem({
   // has faded (List/useListEditingMotion.ts).
   const isEditing = ctx?.isEditing ?? false;
   const showsTrailing = ctx?.showsTrailing ?? true;
-  // Edit mode's control: the theme's checkbox indicator, decorative (the row
-  // keeps its selected semantics and its one tab stop), placed itself in the
-  // room the row's padding makes (no wrapper), shown in edit mode and while
-  // it slides out after.
+  // Edit mode's control, placed itself in the room the row's padding makes
+  // (no wrapper), shown in edit mode and while it slides out after.
+  // 'select': the theme's checkbox indicator, decorative (the row keeps its
+  // selected semantics and its one tab stop). 'delete': UIKit's delete
+  // control, which opens the row's trailing swipe actions; they exist under
+  // a finger only, so with a mouse there is none (desktop unchanged), and a
+  // row with nothing to reveal keeps the indent alone.
   const CheckboxControl = useIndicator('checkbox');
+  const isTouch = useTouchPresentation().isTouch;
+  const controlKind =
+    ctx?.editingControl === 'delete'
+      ? isTouch && (restProps.swipeActions?.trailing?.length ?? 0) > 0
+        ? 'delete'
+        : null
+      : (ctx?.editingControl ?? null);
   const showsControl =
-    ctx?.editingControl === 'select' &&
-    (isEditing || (ctx?.showsEditingControl ?? false));
-  const editingControl = showsControl ? (
+    controlKind != null && (isEditing || (ctx?.showsEditingControl ?? false));
+  const controlStyles = [
+    editingStyles.control,
+    edge === 'bleed' && editingStyles.controlBleed,
+  ];
+  const editingControl = !showsControl ? null : controlKind === 'delete' ? (
+    <ListDeleteControl isEditing={isEditing} xstyle={controlStyles} />
+  ) : (
     <CheckboxControl
       aria-hidden="true"
       {...{[EDITING_CONTROL_ATTRIBUTE]: ''}}
       state={isSelected ? 'checked' : 'unchecked'}
       size="md"
       isDisabled={isDisabled}
-      xstyle={[
-        editingStyles.control,
-        edge === 'bleed' && editingStyles.controlBleed,
-      ]}
+      xstyle={controlStyles}
     />
-  ) : null;
+  );
 
   return (
     <Item

@@ -76,7 +76,8 @@ export interface ListContextValue {
   /**
    * The control edit mode puts in each row's leading column
    * (`editingControl`); internal. `'select'`: the theme's checkbox
-   * indicator, checked when the row is selected.
+   * indicator, checked when the row is selected. `'delete'`: UIKit's delete
+   * control, under a finger, on rows with trailing swipe actions.
    */
   editingControl?: ListEditingControl;
   /**
@@ -93,7 +94,7 @@ export interface ListContextValue {
 export const EDITING_ATTRIBUTE = 'data-astryx-editing';
 
 /** The control edit mode shows in each row's leading column. */
-export type ListEditingControl = 'select';
+export type ListEditingControl = 'select' | 'delete';
 
 /**
  * Marks a row's editing control: the control itself, placed in the room its

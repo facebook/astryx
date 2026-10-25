@@ -32,6 +32,12 @@ export const listRowConsts = stylex.defineConsts({
   editingIndent: '40px',
   /** `list.metrics.editingControlCenter`: an editing control's centre. */
   editingControlCenter: '12px',
+  /** `list.metrics.deleteControlDiameter`: the delete control's disc. */
+  deleteControlDiameter: '21.6px',
+  /** `list.metrics.deleteControlBarWidth`: the bar across the disc. */
+  deleteControlBarWidth: '10.6px',
+  /** `list.metrics.deleteControlBarHeight`: the bar's thickness. */
+  deleteControlBarHeight: '1.67px',
 });
 
 /**

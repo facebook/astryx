@@ -108,9 +108,13 @@ export interface ListProps extends BaseProps<
    * indicator (a theme can map it to a circle), checked when the row is
    * `isSelected`. It is decorative: the row keeps its selected semantics
    * and its one tab stop, and activating the row calls its `onClick` as
-   * before, for the app to toggle the row's selection. Under a finger it
-   * slides in with the rows and fades in, and slides out on leaving.
-   * Proposed public API, pending owner review.
+   * before, for the app to toggle the row's selection. `'delete'`: UIKit's
+   * delete control, under a finger, on each row with trailing swipe
+   * actions; tapping it opens them as a swipe does and tapping it again
+   * closes them. With a mouse there is no delete control (swipe actions are
+   * touch-only), only the indent. Under a finger each control slides in
+   * with the rows and fades in, and slides out on leaving. Proposed public
+   * API, pending owner review.
    */
   editingControl?: ListEditingControl;
 
