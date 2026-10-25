@@ -141,7 +141,8 @@ those contracts.
   one shared internal hook measures the on-screen keyboard, keeps the page
   from panning on focus, and dismisses the keyboard when a surface moves
   (`spec:AST-099`); it is not exported. Its height reaches styles only as the
-  hook's value, which lives only in the hook: each consumer applies it
+  hook's value, the height and each keyboard change's transition (start
+  time, resting value, curve), which live only in the hook: each consumer applies it
   through a StyleX functional style on its own element, and no CSS custom
   property on the document root or a shared ancestor carries it. No Core component keeps its own visual-viewport
   listener for the keyboard. Packages outside Core cannot import the hook; a
