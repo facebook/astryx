@@ -642,7 +642,13 @@ export function useSheetGestures({
     baseOffset: number;
     baseLayoutOffset: number;
     renderedOffset: number;
+    // The layout split the drag asks the host for (setDragOffset) ...
     layoutOffset: number;
+    // ... and the one the host has rendered: the travel is always written
+    // against what is on screen, so a split that changes mid-drag (crossing
+    // above the base restores the full height) lands in the same commit as
+    // the travel that pairs with it, never a frame before it.
+    committedLayoutOffset: number;
     naturalEndGap: number;
     hasTraveled: boolean;
   } | null>(null);
@@ -1052,12 +1058,16 @@ export function useSheetGestures({
         state.baseOffset,
         state.baseLayoutOffset,
         state.renderedOffset,
-        state.layoutOffset,
+        state.committedLayoutOffset,
         state.naturalEndGap,
         releaseAnimates(),
       );
       if (settlingLayoutOffsetRef.current != null) {
-        springTravel(state.baseOffset, state.layoutOffset, springs.sheetDetent);
+        springTravel(
+          state.baseOffset,
+          state.committedLayoutOffset,
+          springs.sheetDetent,
+        );
       }
 
       // An interrupted drag returns to its previous resting detent. Restore
@@ -1311,6 +1321,7 @@ export function useSheetGestures({
         baseLayoutOffset,
         renderedOffset: baseOffset,
         layoutOffset: baseLayoutOffset,
+        committedLayoutOffset: baseLayoutOffset,
         naturalEndGap,
         hasTraveled: false,
       };
@@ -1430,10 +1441,11 @@ export function useSheetGestures({
       state.renderedOffset = next;
       state.layoutOffset = layoutOffset;
       activeOffsetRef.current = next;
-      writeLiveTransform(next, layoutOffset);
+      writeLiveTransform(next, state.committedLayoutOffset);
       if (hasLayoutChanged) {
         // The layout split moved: the host renders the new height, reading
-        // the offset it has to pair with it from state.
+        // the offset it has to pair with it from state; the travel follows
+        // in that commit (see the layout effect below).
         setDragOffset(next);
       }
       if (!state.hasTraveled && next !== state.baseOffset) {
@@ -1468,6 +1480,27 @@ export function useSheetGestures({
     },
     [resolveDetents, updateScrollPreservationInset, writeLiveTransform],
   );
+
+  // The host rendered a drag's new layout split (the panel derives it from
+  // these, as here): in the same commit, before it paints, the travel moves
+  // to the value that pairs with it, so the sheet stays under the finger.
+  useLayoutEffect(() => {
+    const state = dragStateRef.current;
+    if (!isDragging || state == null) {
+      return;
+    }
+    const committed = dragOffset < settledOffset ? 0 : settledLayoutOffset;
+    if (committed !== state.committedLayoutOffset) {
+      state.committedLayoutOffset = committed;
+      writeLiveTransform(state.renderedOffset, committed);
+    }
+  }, [
+    dragOffset,
+    isDragging,
+    settledLayoutOffset,
+    settledOffset,
+    writeLiveTransform,
+  ]);
 
   const endDrag = useCallback(
     (event: ReactPointerEvent) => {
@@ -1517,7 +1550,7 @@ export function useSheetGestures({
         state.baseOffset,
         state.baseLayoutOffset,
         state.renderedOffset,
-        state.layoutOffset,
+        state.committedLayoutOffset,
         state.naturalEndGap,
       );
     },

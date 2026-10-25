@@ -826,6 +826,28 @@ describe('useSheetGestures', () => {
     expect(renders - rendersAtDown).toBeLessThanOrEqual(1);
   });
 
+  it('keeps the sheet under the finger until the host renders the height a drag above its base restores', async () => {
+    const {hook} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    // Rest at the 200px working detent: the sheet gives 200px up as layout,
+    // and the host's transform holds the rest of the detent (0 here).
+    down(hook, 0, 0, t);
+    move(hook, 200, 400, t);
+    up(hook, 200, 800, t);
+    expect(hook.result.current.settledLayoutOffset).toBe(200);
+    // A move 50px above the base, handled before React renders the restored
+    // height: the travel is written against the height still on screen
+    // (200px less layout), so the sheet is drawn where the finger is ...
+    down(hook, 200, 1000, t);
+    hook.result.current.handleProps.onPointerMove(pointerEvent(150, 1100, t));
+    expect(liveOffset(hook)).toBe(150);
+    expect(travel(t)).toBe(150 - 200);
+    // ... and the commit that restores the full height moves the travel
+    // with it, before anything paints.
+    await act(async () => {});
+    expect(travel(t)).toBe(150);
+  });
+
   it('restores the full layout height when a drag crosses above its base', () => {
     const onSnap = vi.fn();
     const {hook} = setup({snapHeights: () => [200], onSnap});
