@@ -8,7 +8,8 @@
  *   integrator that carries a release onto its page, the rule that picks the
  *   page, the catch, and `setContentOffset(_:animated:)`
  * @position The paging domain of the UIKit constants table (motion/uikit);
- *   read by motion/paging.ts and the pager components
+ *   read inside core only (motion/paging.ts and the pager), so the `uikit`
+ *   namespace does not re-export it
  *
  * One model drives every motion of a paging scroll view after the finger
  * lifts: the settle onto the chosen page AND the return from a rubber-banded
