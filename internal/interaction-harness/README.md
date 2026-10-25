@@ -35,6 +35,16 @@ node internal/interaction-harness/scripts/webkit-container.mjs [playwright test 
 | `scripts.ts` | Touch scripts as data: `tap`, `drag` (hold, rest), `flick` (exact release velocity, velocity profiles), `holdThenDrag`, `pinch`, `rotate`, `path`, `merge` (a second finger mid-gesture), `releaseVelocity`, `toTouchEvents`. |
 | `touch.ts`   | `touchDriver(page).play(script)`: the script as real engine input. `installInputLog` / `readInputLog`: what the page received.                                                                                                |
 | `story.ts`   | `phone`, `withStorybook`, `openStory`, `frames`.                                                                                                                                                                              |
+| `pointer.ts` | `newFinePointerPage(browser)`: a page under a mouse that really reads `(pointer: fine)`. `assertFinePointer` / `assertCoarsePointer`: fail before a case's checks when the page reads the other pointer.                      |
+
+## A fine pointer
+
+Every interaction project is the touch phone, and a context a test makes with
+`browser.newContext()` inherits it: it reads `(pointer: coarse)` unless it
+passes `hasTouch: false`. A case that shows touch work costs nothing under a
+mouse opens its page with `newFinePointerPage(browser)`, which turns touch and
+mobile off and checks the pointer first. A case that builds its own context
+calls `assertFinePointer(page)` before its checks.
 
 ## Real touch
 
