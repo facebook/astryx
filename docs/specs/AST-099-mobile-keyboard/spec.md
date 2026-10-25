@@ -59,7 +59,8 @@ a chat composer, or a search field.
 
 - **FR1 — One keyboard height for every component.** Every Core and Lab
   component that positions, sizes, or dismisses relative to the on-screen
-  keyboard responds to the same FR2 height at the same moment, including
+  keyboard responds to the same keyboard height at the same moment (FR2, or
+  FR8 where it applies), including
   BottomSheet, the chat composer, a search field placed at the bottom, tab bar
   search, drag to dismiss, and any keyboard layout guide, so no two components disagree about where the
   keyboard is. `architecture:react-component-runtime` INV11 owns the single
@@ -78,7 +79,7 @@ a chat composer, or a search field.
   it. How the value reaches styles is
   `architecture:react-component-runtime` INV11. Riding the keyboard's motion
   layers on top of that layout, so layout never depends on it; FR8 requires it
-  in Chrome on Android. When surfaces ride it, such as
+  where it applies. When surfaces ride it, such as
   a composer, a scroll view, and a header, they all move in sync along the same
   motion to the resting value with no per-frame layout work, and each commits
   the resting value once to layout, as an offset, a padding, or a spacer, so
@@ -133,14 +134,14 @@ a chat composer, or a search field.
 
 - Supported feature/engine floor: the package's supported browsers
   (`spec:AST-013` FR3). FR2–FR5 apply to Safari on iOS, in the browser and as a
-  home-screen app, and to Firefox for Android; FR8's ride applies to Chrome on
-  Android.
+  home-screen app, and to Firefox for Android; FR8's ride applies wherever the
+  browser reports the keyboard itself, such as Chrome on Android.
 - Unsupported behavior: with no on-screen keyboard, or no visual-viewport
   support, the keyboard height is 0 and nothing changes. During server render it
   renders nothing and reads no viewport.
 - Browser evidence: Safari on iOS, in the iOS Simulator or on a device and in a
-  top-level document, proves the iOS claims of FR2–FR5, and Chrome on Android,
-  and Firefox for Android, in an emulator or on a device, prove FR8
+  top-level document, proves the iOS claims of FR2–FR5, and Chrome on Android, in an emulator or on a device, proves FR8, with
+  Firefox for Android proving FR2–FR5 there
   (`spec:AST-013` FR10); DOM and visual-viewport tests prove the rest of
   FR1–FR7. Simulator and emulator evidence in a top-level document gates
   merge, with Gboard on the Android emulator; a pass on a physical iPhone and a
@@ -179,7 +180,7 @@ a chat composer, or a search field.
 
 | Contract     | Verification                                                                                           | Representative states                                                                                                                                                                                         | Mutation or failure expectation                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| FR1          | Source boundary check over Core and Lab plus a shared test that drives one keyboard change             | each listed consumer; a new keyboard-aware component                                                                                                                                                          | Two components reading different heights for one keyboard, or a component measuring by a rule other than FR2 or, in Chrome on Android, FR8                                                                                                                                                                                                                                                                                                       |
+| FR1          | Source boundary check over Core and Lab plus a shared test that drives one keyboard change             | each listed consumer; a new keyboard-aware component                                                                                                                                                          | Two components reading different heights for one keyboard, or a component measuring by a rule other than FR2 or, where it applies, FR8                                                                                                                                                                                                                                                                                                           |
 | FR2          | Module tests driving visual-viewport resize and scroll events                                          | keyboard shown; hidden; page panned with the keyboard shown; offset without a keyboard; page pinch-zoomed with and without the keyboard                                                                       | A pan that lowers the reported height, or a height when no keyboard is shown                                                                                                                                                                                                                                                                                                                                                                     |
 | FR3          | Consumer tests of computed layout, plus a public-surface check                                         | keyboard shown and hidden; composer, bottom search field, tab bar search, Tall sheet; no animation running; a ride animation running with the composer, a scroll view, and a header together                  | A consumer whose layout ignores the height, layout that is only correct after an animation, riding surfaces out of sync on one keyboard change, per-frame layout work during a ride, content hidden or unscrollable at the resting value, or a public CSS custom property, export, or prop for the height                                                                                                                                        |
 | FR4          | Focus-route tests with document scroll spies                                                           | tap, previous and next buttons, Tab, programmatic focus, Done then tap, app resume while scroll-locked                                                                                                        | A route that scrolls the document, or a slipped scroll left in place                                                                                                                                                                                                                                                                                                                                                                             |
