@@ -62,9 +62,22 @@ beforeAll(() => {
   });
 });
 
+// The touch column draws only where the primary pointer is coarse, and only
+// there does the gesture host take input (spec:AST-094 FR19): every case runs
+// under a coarse primary pointer, as on a phone or a tablet.
+beforeEach(() => {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: query === '(pointer: coarse)',
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+});
+
 afterEach(() => {
   // Let every motion and gesture timer of the test run out.
   vi.advanceTimersByTime(10_000);
+  vi.unstubAllGlobals();
 });
 
 afterAll(() => {
@@ -449,7 +462,9 @@ describe('PickerWheel — a mouse', () => {
   }
 
   it('turns with a primary-button drag and commits where it rests', () => {
-    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    // A mouse on a touch device (a tablet's trackpad): the primary pointer
+    // stays coarse.
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(true);
     const {column, onChange} = renderWheel();
     // 10 px of hysteresis + 40 px: 1.25 rows.
     mouseDrag(column, 50);
@@ -459,7 +474,9 @@ describe('PickerWheel — a mouse', () => {
   });
 
   it('does nothing for a secondary-button drag', () => {
-    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    // A mouse on a touch device (a tablet's trackpad): the primary pointer
+    // stays coarse.
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(true);
     const {column, onChange} = renderWheel();
     mouseDrag(column, 50, 2);
     advance(2000);
