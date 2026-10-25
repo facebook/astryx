@@ -145,11 +145,29 @@ export function editableToClaim(target: unknown): HTMLElement | null {
   return active === editable || editable.contains(active) ? null : editable;
 }
 
-/** Focuses without Safari's reveal and puts the caret under the finger. */
-function focusAtPoint(editable: HTMLElement, x: number, y: number) {
+/**
+ * The collapsed caret at (x, y): the standard `caretPositionFromPoint`
+ * (Firefox has only this one), or WebKit's `caretRangeFromPoint`.
+ */
+function caretRangeAt(doc: Document, x: number, y: number): Range | null {
+  const position = doc.caretPositionFromPoint?.(x, y);
+  if (position != null) {
+    const range = doc.createRange();
+    range.setStart(position.offsetNode, position.offset);
+    range.collapse(true);
+    return range;
+  }
+  return doc.caretRangeFromPoint?.(x, y) ?? null;
+}
+
+/**
+ * Focuses without Safari's reveal and puts the caret under the finger.
+ * Exported for its tests.
+ */
+export function focusAtPoint(editable: HTMLElement, x: number, y: number) {
   editable.focus({preventScroll: true});
   const doc = editable.ownerDocument;
-  const range = doc.caretRangeFromPoint?.(x, y);
+  const range = caretRangeAt(doc, x, y);
   if (
     range != null &&
     editable.isContentEditable &&
