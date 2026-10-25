@@ -737,6 +737,55 @@ export function useSheetGestures({
     },
     [animator, recordSheetHeight],
   );
+  // While a finger drags the sheet, or holds it after catching it mid-settle,
+  // its text is not selectable and the touch callout is off: a finger held
+  // still on a caught sheet would otherwise start iOS's text selection and
+  // its loupe under the drag. Set at the catch (the touch-down), before the
+  // long press would select; the sheet's own values come back at the lift.
+  const selectionLockRef = useRef<{
+    element: HTMLElement;
+    saved: ReadonlyArray<readonly [string, string, string]>;
+  } | null>(null);
+  const lockSelection = useCallback(() => {
+    const element = sheetElRef.current;
+    if (element == null || selectionLockRef.current != null) {
+      return;
+    }
+    const names = [
+      '-webkit-user-select',
+      'user-select',
+      '-webkit-touch-callout',
+    ];
+    selectionLockRef.current = {
+      element,
+      saved: names.map(
+        name =>
+          [
+            name,
+            element.style.getPropertyValue(name),
+            element.style.getPropertyPriority(name),
+          ] as const,
+      ),
+    };
+    for (const name of names) {
+      element.style.setProperty(name, 'none');
+    }
+  }, []);
+  const unlockSelection = useCallback(() => {
+    const lock = selectionLockRef.current;
+    if (lock == null) {
+      return;
+    }
+    selectionLockRef.current = null;
+    for (const [name, value, priority] of lock.saved) {
+      if (value === '') {
+        lock.element.style.removeProperty(name);
+      } else {
+        lock.element.style.setProperty(name, value, priority);
+      }
+    }
+  }, []);
+
   // Unmount: the size observer, and the sheet's animator. Stopping it settles
   // any travel still running as unfinished and clears its completion timer,
   // so nothing completes on an unmounted sheet.
@@ -744,8 +793,9 @@ export function useSheetGestures({
     () => () => {
       observerRef.current?.disconnect();
       animator.stop();
+      unlockSelection();
     },
-    [animator],
+    [animator, unlockSelection],
   );
 
   // Reset to the tallest detent each time the sheet re-opens.
@@ -1047,6 +1097,7 @@ export function useSheetGestures({
       // Clear first: releasePointerCapture() may synchronously dispatch
       // lostpointercapture, which must observe that this drag is already done.
       dragStateRef.current = null;
+      unlockSelection();
       if (target?.hasPointerCapture?.(state.pointerId)) {
         target.releasePointerCapture(state.pointerId);
       }
@@ -1094,7 +1145,13 @@ export function useSheetGestures({
         ),
       );
     },
-    [prepareScrollAreaSettle, releaseAnimates, resolveDetents, springTravel],
+    [
+      prepareScrollAreaSettle,
+      releaseAnimates,
+      resolveDetents,
+      springTravel,
+      unlockSelection,
+    ],
   );
 
   useEffect(() => {
@@ -1267,6 +1324,9 @@ export function useSheetGestures({
       const target = event.currentTarget as HTMLElement;
       const syntheticTouch = isSyntheticTouch(event);
       dragTouchRef.current = syntheticTouch || event.pointerType === 'touch';
+      if (dragTouchRef.current) {
+        lockSelection();
+      }
       // Never capture for a touch drag. The id came from `Touch.identifier`,
       // which on iOS names a live pointer: the capture succeeds, WebKit takes
       // it straight back for its own gesture handling, and the
@@ -1339,6 +1399,7 @@ export function useSheetGestures({
     },
     [
       animator,
+      lockSelection,
       recordSettledLayoutOffset,
       settledOffset,
       updateScrollPreservationInset,
@@ -1537,6 +1598,7 @@ export function useSheetGestures({
             : 0,
       };
       dragStateRef.current = null;
+      unlockSelection();
       if (!state.syntheticTouch) {
         target.releasePointerCapture?.(event.pointerId);
       }
@@ -1554,7 +1616,7 @@ export function useSheetGestures({
         state.naturalEndGap,
       );
     },
-    [settleFromDrag],
+    [settleFromDrag, unlockSelection],
   );
 
   // Pointer path for the body at-top pull-down (desktop / mouse). Touch uses

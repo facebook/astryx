@@ -2112,6 +2112,40 @@ describe('useSheetGestures: the release on the compositor', () => {
     expect(liveOffset(hook)).toBeCloseTo(onScreen - 20, 0);
   });
 
+  it('turns text selection off on the sheet while a finger holds or drags it, and back on at the lift', () => {
+    const {hook} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    t.style.setProperty('user-select', 'text');
+    const touch = (y: number, time: number) =>
+      ({
+        ...pointerEvent(y, time, t),
+        pointerType: 'touch',
+      }) as unknown as React.PointerEvent;
+    act(() => hook.result.current.sheetRef(t));
+    act(() => hook.result.current.handleProps.onPointerDown(touch(0, 0)));
+    expect(t.style.getPropertyValue('user-select')).toBe('none');
+    for (const [y, time] of [
+      [20, 33],
+      [40, 66],
+      [60, 100],
+    ]) {
+      act(() => hook.result.current.handleProps.onPointerMove(touch(y, time)));
+    }
+    act(() => hook.result.current.handleProps.onPointerUp(touch(60, 102)));
+    expect(t.style.getPropertyValue('user-select')).toBe('text');
+    act(() => {
+      vi.advanceTimersByTime(80);
+    });
+    // A finger catches it mid-settle and holds still: off at the touch-down,
+    // before a long press would select, ...
+    act(() => hook.result.current.handleProps.onPointerDown(touch(500, 1000)));
+    expect(hook.result.current.isDragging).toBe(true);
+    expect(t.style.getPropertyValue('user-select')).toBe('none');
+    // ... and the sheet's own value is back when it lets go.
+    act(() => hook.result.current.handleProps.onPointerUp(touch(500, 1600)));
+    expect(t.style.getPropertyValue('user-select')).toBe('text');
+  });
+
   it('carries a drag-dismissed sheet off screen on the release spring, for the host to wait on', async () => {
     // A host that closes when asked.
     const onDismiss = vi.fn();
