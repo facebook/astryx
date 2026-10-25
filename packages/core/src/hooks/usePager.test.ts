@@ -93,8 +93,30 @@ beforeEach(() => {
 afterEach(() => {
   Reflect.deleteProperty(HTMLElement.prototype, 'animate');
   vi.useRealTimers();
+  vi.unstubAllGlobals();
   document.body.innerHTML = '';
 });
+
+/**
+ * The person's settings, through `matchMedia` as the animator reads them: no
+ * option overrides them (design:reduced-motion DR4).
+ */
+function stubMedia(reduced: boolean, coarse: boolean) {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: query.includes('prefers-reduced-motion')
+      ? reduced
+      : query.includes('pointer: coarse')
+        ? coarse
+        : false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  }));
+}
 
 /** Commits a frame, then moves both clocks forward by `ms`. */
 async function advance(ms: number, clock?: ManualClock) {
@@ -223,7 +245,6 @@ function setup(options: Partial<PagerOptions> = {}, rtl = false): Fixture {
   });
   const animator = createAnimator(track, {
     now: () => now,
-    prefersReducedMotion: () => false,
     requestFrame: callback => {
       frameQueue.push(callback);
     },
@@ -770,10 +791,9 @@ describe('createPager', () => {
   // (DR2) and lands at once on any other (DR3). The drag itself follows the
   // finger (out of scope).
   function reducedPager(f: Fixture, defaultIndex: number, coarse: boolean) {
+    stubMedia(true, coarse);
     const reduced = createAnimator(f.track, {
       now: () => now,
-      prefersReducedMotion: () => true,
-      isCoarsePointer: () => coarse,
       requestFrame: callback => {
         frameQueue.push(callback);
       },
