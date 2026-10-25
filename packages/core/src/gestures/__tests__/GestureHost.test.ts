@@ -15,6 +15,7 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {UIKIT_GESTURES} from '../../motion/uikit/gestures';
+import {isFingerScroll, watchFingerScrolls} from '../fingerScroll';
 import {GestureHost} from '../GestureHost';
 import {HoverGestureRecognizer} from '../HoverGestureRecognizer';
 import {LongPressGestureRecognizer} from '../LongPressGestureRecognizer';
@@ -22,6 +23,7 @@ import {PanGestureRecognizer} from '../PanGestureRecognizer';
 import {VelocityTracker} from '../VelocityTracker';
 import {TapGestureRecognizer} from '../TapGestureRecognizer';
 import {createNativeScrollProbe} from '../nativeScroll';
+import {holdPageScroll} from '../pageHold';
 import {ManualClock, RecordingConsumer} from './harness';
 
 interface Contact {
@@ -212,7 +214,7 @@ describe('GestureHost', () => {
     expect(end.defaultPrevented).toBe(false);
   });
 
-  it('gives a claimed one-finger pan up when a second finger lands, so the pinch is the browser’s', () => {
+  it('keeps a claimed one-finger drag when a second finger lands on it (AST-094 FR10)', () => {
     const {box} = mount('<div id="box"></div>');
     const pan = new PanGestureRecognizer({maximumNumberOfTouches: 1});
     detachers.push(host.attach(box, pan));
@@ -220,17 +222,16 @@ describe('GestureHost', () => {
     touch('touchstart', box, [first], [first], 0);
     const moved = {...first, x: 40};
     touch('touchmove', box, [moved], [moved], 16);
+    expect(pan.state).toBe('began');
+    const before = pan.translation().x;
     const second = {id: 2, x: 200, y: 200};
     touch('touchstart', box, [second], [moved, second], 20);
-    const pinchLike = touch(
-      'touchmove',
-      box,
-      [{...second, x: 260}],
-      [moved, {...second, x: 260}],
-      32,
-    );
-    expect(pinchLike.defaultPrevented).toBe(false);
-    expect(pan.state).not.toBe('began');
+    // The first finger keeps driving it, and its moves stay the pan's.
+    const next = {...first, x: 70};
+    const drag = touch('touchmove', box, [next], [next, second], 32);
+    expect(pan.state).toBe('changed');
+    expect(pan.translation().x).toBe(before + 30);
+    expect(drag.defaultPrevented).toBe(true);
   });
 
   it('reads pointercancel on a finger as the browser taking it', () => {
@@ -963,79 +964,79 @@ describe('GestureHost', () => {
   describe('finger scrolls', () => {
     it('reads a scroll while a finger that landed inside is down as the finger’s, until the scroller’s scrollend', () => {
       const {list, row} = mount('<div id="list"><div id="row"></div></div>');
-      detachers.push(host.watchFingerScrolls(list));
+      detachers.push(watchFingerScrolls(host, list));
       const finger = {id: 1, x: 10, y: 10};
       touch('touchstart', row, [finger], [finger], 0);
       list.dispatchEvent(new Event('scroll'));
-      expect(host.isFingerScroll(list)).toBe(true);
+      expect(isFingerScroll(host, list)).toBe(true);
       // The lift starts the momentum: still the finger's scroll.
       touch('touchend', row, [finger], [], 120);
       list.dispatchEvent(new Event('scroll'));
-      expect(host.isFingerScroll(list)).toBe(true);
+      expect(isFingerScroll(host, list)).toBe(true);
       list.dispatchEvent(new Event('scrollend'));
-      expect(host.isFingerScroll(list)).toBe(false);
+      expect(isFingerScroll(host, list)).toBe(false);
     });
 
     it('reads a scroll with no finger down as the program’s, even right after a tap', () => {
       const {list, row} = mount('<div id="list"><div id="row"></div></div>');
-      detachers.push(host.watchFingerScrolls(list));
+      detachers.push(watchFingerScrolls(host, list));
       list.dispatchEvent(new Event('scroll'));
-      expect(host.isFingerScroll(list)).toBe(false);
+      expect(isFingerScroll(host, list)).toBe(false);
       // A tap whose click scrolls the list (a scrollTo after the lift).
       const finger = {id: 1, x: 10, y: 10};
       touch('touchstart', row, [finger], [finger], 0);
       touch('touchend', row, [finger], [], 80);
       list.dispatchEvent(new Event('scroll'));
-      expect(host.isFingerScroll(list)).toBe(false);
+      expect(isFingerScroll(host, list)).toBe(false);
     });
 
     it('reads the page’s own scroll on the document', () => {
       const {row} = mount('<div id="row"></div>');
-      detachers.push(host.watchFingerScrolls(document));
+      detachers.push(watchFingerScrolls(host, document));
       const finger = {id: 1, x: 10, y: 10};
       touch('touchstart', row, [finger], [finger], 0);
       document.dispatchEvent(new Event('scroll'));
-      expect(host.isFingerScroll(document)).toBe(true);
+      expect(isFingerScroll(host, document)).toBe(true);
       touch('touchend', row, [finger], [], 120);
       document.dispatchEvent(new Event('scrollend'));
-      expect(host.isFingerScroll(document)).toBe(false);
+      expect(isFingerScroll(host, document)).toBe(false);
     });
 
     it('does not count a finger down outside the scroller', () => {
       const {list, other} = mount(
         '<div id="list"><div id="row"></div></div><div id="other"></div>',
       );
-      detachers.push(host.watchFingerScrolls(list));
+      detachers.push(watchFingerScrolls(host, list));
       const finger = {id: 1, x: 10, y: 10};
       touch('touchstart', other, [finger], [finger], 0);
       list.dispatchEvent(new Event('scroll'));
-      expect(host.isFingerScroll(list)).toBe(false);
+      expect(isFingerScroll(host, list)).toBe(false);
     });
 
     it('keeps a scroll that ends while the finger still rests the finger’s until the lift', () => {
       const {list, row} = mount('<div id="list"><div id="row"></div></div>');
-      detachers.push(host.watchFingerScrolls(list));
+      detachers.push(watchFingerScrolls(host, list));
       const finger = {id: 1, x: 10, y: 10};
       touch('touchstart', row, [finger], [finger], 0);
       list.dispatchEvent(new Event('scroll'));
       list.dispatchEvent(new Event('scrollend'));
-      expect(host.isFingerScroll(list)).toBe(true);
+      expect(isFingerScroll(host, list)).toBe(true);
       // Lifting without moving the list again ends it.
       touch('touchend', row, [finger], [], 300);
-      expect(host.isFingerScroll(list)).toBe(false);
+      expect(isFingerScroll(host, list)).toBe(false);
     });
 
     it('forgets a scroller once nobody watches it', () => {
       const {list, row} = mount('<div id="list"><div id="row"></div></div>');
-      const stop = host.watchFingerScrolls(list);
+      const stop = watchFingerScrolls(host, list);
       const finger = {id: 1, x: 10, y: 10};
       touch('touchstart', row, [finger], [finger], 0);
       list.dispatchEvent(new Event('scroll'));
-      expect(host.isFingerScroll(list)).toBe(true);
+      expect(isFingerScroll(host, list)).toBe(true);
       stop();
-      expect(host.isFingerScroll(list)).toBe(false);
+      expect(isFingerScroll(host, list)).toBe(false);
       list.dispatchEvent(new Event('scroll'));
-      expect(host.isFingerScroll(list)).toBe(false);
+      expect(isFingerScroll(host, list)).toBe(false);
     });
   });
 
@@ -1398,7 +1399,7 @@ describe('holdPageScroll', () => {
   it('cancels a one-finger pan the decision says would scroll the page, for the rest of its touch', () => {
     const {scrim} = mount('<div id="scrim"></div>');
     const decide = vi.fn(() => true);
-    detachers.push(host.holdPageScroll(decide));
+    detachers.push(holdPageScroll(host, decide));
 
     touch('touchstart', scrim, at(1, 100, 300), at(1, 100, 300), 0);
     const first = touch(
@@ -1425,7 +1426,7 @@ describe('holdPageScroll', () => {
   it('judges a pan once it clears the slop, so a first wobble does not fix its axis', () => {
     const {strip} = mount('<div id="strip"></div>');
     const decide = vi.fn((_origin: EventTarget | null, dx: number) => dx === 0);
-    detachers.push(host.holdPageScroll(decide));
+    detachers.push(holdPageScroll(host, decide));
 
     touch('touchstart', strip, at(1, 100, 300), at(1, 100, 300), 0);
     const wobble = touch(
@@ -1451,7 +1452,7 @@ describe('holdPageScroll', () => {
 
   it('lets a pan through when the decision says something under the finger takes it', () => {
     const {list} = mount('<div id="list"></div>');
-    detachers.push(host.holdPageScroll(() => false));
+    detachers.push(holdPageScroll(host, () => false));
 
     touch('touchstart', list, at(1, 100, 300), at(1, 100, 300), 0);
     expect(
@@ -1463,7 +1464,7 @@ describe('holdPageScroll', () => {
   it('never cancels a two-finger gesture, so pinch-zoom keeps working', () => {
     const {scrim} = mount('<div id="scrim"></div>');
     const decide = vi.fn(() => true);
-    detachers.push(host.holdPageScroll(decide));
+    detachers.push(holdPageScroll(host, decide));
     const both = [
       {id: 1, x: 100, y: 300},
       {id: 2, x: 200, y: 300},
@@ -1485,7 +1486,7 @@ describe('holdPageScroll', () => {
     const inner = document.createElement('div');
     outer.attachShadow({mode: 'open'}).append(inner);
     const decide = vi.fn(() => false);
-    detachers.push(host.holdPageScroll(decide));
+    detachers.push(holdPageScroll(host, decide));
 
     touch('touchstart', inner, at(1, 100, 300), at(1, 100, 300), 0);
     touch('touchmove', inner, at(1, 100, 250), at(1, 100, 250), 16);
@@ -1495,8 +1496,8 @@ describe('holdPageScroll', () => {
 
   it('stacks holds and stops judging pans once the last one is released', () => {
     const {scrim} = mount('<div id="scrim"></div>');
-    const releaseFirst = host.holdPageScroll(() => true);
-    const releaseSecond = host.holdPageScroll(() => true);
+    const releaseFirst = holdPageScroll(host, () => true);
+    const releaseSecond = holdPageScroll(host, () => true);
     const pan = (time: number) => {
       touch('touchstart', scrim, at(1, 100, 300), at(1, 100, 300), time);
       return touch(
@@ -1534,7 +1535,35 @@ describe('touch gates and a second finger', () => {
     touch('touchend', button, [finger], [], 140);
   });
 
-  it('gives a one-finger pan up when a second finger lands anywhere, so the browser can pinch', () => {
+  it('fails a one-finger pan that has not claimed when a second finger lands anywhere, so the browser can pinch', () => {
+    const {row, text} = mount('<div id="row"></div><p id="text">plain</p>');
+    const swipe = new PanGestureRecognizer({
+      name: 'swipe',
+      direction: 'horizontal',
+      maximumNumberOfTouches: 1,
+    });
+    const states: string[] = [];
+    swipe.addListener(r => states.push(r.state));
+    detachers.push(host.attach(row, swipe));
+    const first = {id: 1, x: 10, y: 10};
+    touch('touchstart', row, [first], [first], 0);
+    // Under the hysteresis: still possible, nothing claimed.
+    touch('touchmove', row, [{...first, x: 15}], [{...first, x: 15}], 16);
+    const second = {id: 2, x: 200, y: 300};
+    touch('touchstart', text, [second], [{...first, x: 15}, second], 32);
+    // The pan can no longer claim the pair midway: the pinch is the browser's.
+    const pinch = touch(
+      'touchmove',
+      row,
+      [{...first, x: 60}],
+      [{...first, x: 60}, second],
+      48,
+    );
+    expect(pinch.defaultPrevented).toBe(false);
+    expect(states).toEqual([]);
+  });
+
+  it('keeps a claimed one-finger drag when a second finger lands anywhere (AST-094 FR10)', () => {
     const {row, text} = mount('<div id="row"></div><p id="text">plain</p>');
     const swipe = new PanGestureRecognizer({
       name: 'swipe',
@@ -1548,7 +1577,49 @@ describe('touch gates and a second finger', () => {
     expect(swipe.state).toBe('began');
     const second = {id: 2, x: 200, y: 300};
     touch('touchstart', text, [second], [{...first, x: 40}, second], 32);
-    expect(['cancelled', 'failed', 'possible']).toContain(swipe.state);
+    const drag = touch(
+      'touchmove',
+      row,
+      [{...first, x: 80}],
+      [{...first, x: 80}, second],
+      48,
+    );
+    expect(swipe.state).toBe('changed');
+    expect(drag.defaultPrevented).toBe(true);
+  });
+
+  it('keeps a claim a still-possible pan committed early when a second finger lands', () => {
+    const {row, text} = mount('<div id="row"></div><p id="text">plain</p>');
+    // A one-way pan committing its claim at 5 px, before it begins.
+    const banner = new PanGestureRecognizer({
+      name: 'banner',
+      direction: 'up',
+      maximumNumberOfTouches: 1,
+      claimDistance: 5,
+    });
+    detachers.push(host.attach(row, banner));
+    const first = {id: 1, x: 100, y: 100};
+    touch('touchstart', row, [first], [first], 0);
+    const claimed = touch(
+      'touchmove',
+      row,
+      [{...first, y: 94}],
+      [{...first, y: 94}],
+      16,
+    );
+    expect(claimed.defaultPrevented).toBe(true);
+    expect(banner.state).toBe('possible');
+    const second = {id: 2, x: 200, y: 300};
+    touch('touchstart', text, [second], [{...first, y: 94}, second], 32);
+    // The claim stands: its moves are still not the browser's.
+    const next = touch(
+      'touchmove',
+      row,
+      [{...first, y: 88}],
+      [{...first, y: 88}, second],
+      48,
+    );
+    expect(next.defaultPrevented).toBe(true);
   });
 });
 
@@ -1588,6 +1659,48 @@ describe('a delivered press keeps its touch', () => {
       false,
     );
     touch('touchend', row, [{...finger, y: 54}], [], 260);
+  });
+});
+
+describe('detaching a keepsTouch press tracker', () => {
+  it('removes its blocking touchmove listener while the element keeps its recognizers', () => {
+    const {row} = mount('<div id="row"></div>');
+    const active = new Set<EventListenerOrEventListenerObject>();
+    const add = row.addEventListener.bind(row);
+    const remove = row.removeEventListener.bind(row);
+    vi.spyOn(row, 'addEventListener').mockImplementation(
+      (type, listener, options) => {
+        if (
+          type === 'touchmove' &&
+          listener != null &&
+          typeof options === 'object' &&
+          options.passive === false
+        ) {
+          active.add(listener);
+        }
+        add(type, listener, options);
+      },
+    );
+    vi.spyOn(row, 'removeEventListener').mockImplementation(
+      (type, listener, options) => {
+        if (type === 'touchmove' && listener != null) {
+          active.delete(listener);
+        }
+        remove(type, listener, options);
+      },
+    );
+    // A tap decides at the lift: on its own it needs no blocking listener.
+    detachers.push(host.attach(row, new TapGestureRecognizer({name: 'tap'})));
+    expect(active.size).toBe(0);
+    class Keeper extends RecordingConsumer {
+      keepsTouch(): boolean {
+        return true;
+      }
+    }
+    const detach = host.attachConsumer(row, new Keeper());
+    expect(active.size).toBe(1);
+    detach();
+    expect(active.size).toBe(0);
   });
 });
 

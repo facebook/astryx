@@ -2,10 +2,8 @@
 
 A gesture recognizer system with UIKit's semantics, for the touch
 presentations of Astryx core components. Components import it from
-`../gestures`. `@astryxdesign/core/gestures/experimental` exports the hooks,
-recognizers and helpers its file lists, outside the stable compatibility
-promise (`spec:AST-017` FR21); nothing here is exported from the package
-entry.
+`../gestures`, and Lab through internal workspace imports; nothing here is
+exported from the package.
 
 UIKit is the reference throughout: the same recognizer states, the same
 conflict rules, the same thresholds (from `../motion/uikit/gestures.ts`, each
@@ -48,8 +46,10 @@ function Sheet() {
   is set before the browser can see a finger. It follows the element behind
   the ref: a node rendered after mount, or swapped behind the same ref (a
   trigger rendered `as` another element), is attached at that commit.
-- `isEnabled: false` mid-gesture cancels it, and the listener hears
-  `cancelled`, as UIKit sends `.cancelled` when `isEnabled` turns off. After
+- `isEnabled: false` mid-gesture ends the gesture without calling the
+  listener, since the handler that turned it off owns that end (no consumer
+  callback from an Effect). A handler that wants UIKit's `.cancelled` calls
+  `recognizer.setEnabled(false)` itself, which reports it at once. After
   unmount the listener hears nothing, not even the cancellation of a
   gesture the unmount ended.
 - `usePressTracker(ref, options)` gives an element `UIControl` touch tracking
@@ -62,13 +62,16 @@ function Sheet() {
   reader, `true` while the scroller's scroll is a finger's: from a scroll
   while a finger that landed inside it is down, until its `scrollend` (the
   momentum is still the finger's). Pass a ref, or the document for the
-  page. No timers.
+  page. No timers. Outside React, `watchFingerScrolls(host, scroller)` and
+  `isFingerScroll(host, scroller)` from `fingerScroll.ts` do the same; that
+  module adds passive scroll listeners only while something is watched.
 
 Outside React, `getGestureHost(document).attach(element, recognizer)` does
 the same and returns a detach function. `getGestureHost(document).fingersDown()`
 is how many fingers are on the screen (the last touch event's `touches`,
-wherever they landed): a recognizer that claims only a lone finger checks it
-in `shouldBegin`, so two fingers stay the browser's pinch.
+wherever they landed): a recognizer that must not begin under a second
+finger checks it in `shouldBegin`, so two fingers stay the browser's pinch.
+Once a drag has claimed its finger, a second finger never breaks it.
 
 ## Recognizers
 
@@ -345,10 +348,11 @@ shadow-tree scroller scrolls with it, as the hit path does).
 
 ### Holding the page still
 
-A scroll lock (`useScrollLock`) holds the page through the host:
-`getGestureHost(document).holdPageScroll(decide)` returns the release. While
-any hold is active, the host listens to the document with a non-passive
-`touchmove`. Once per one-finger touch that no recognizer owns, after the
+A scroll lock (`useScrollLock`) holds the page with
+`holdPageScroll(getGestureHost(document), decide)` from `pageHold.ts`, which
+returns the release. It lives in its own module, so a page without a scroll
+lock never ships it. While any hold is active, there is a non-passive
+`touchmove` listener on the document. Once per one-finger touch that no recognizer owns, after the
 finger clears a 5 px slop (under WebKit's 10–11 px scroll claim), it asks
 `decide(origin, dx, dy)` whether that pan would scroll the page, `origin`
 being the innermost node under the finger (the composed path's first node),
@@ -358,11 +362,12 @@ gone and every touch scrolls as without the system.
 
 ### Multiple fingers
 
-A second finger landing anywhere (often on a plain row no recognizer is on)
-gives up a pan limited to one finger, even one already moving, so the two
-fingers zoom the page (WCAG 1.4.4) instead of the row sliding until the
-browser cancels it. A second finger that lands before any recognizer has
-claimed fails the one-finger recognizers too.
+A drag a recognizer has claimed keeps its finger: a second finger never
+cancels or redirects it (`spec:AST-094` FR10), as in UIKit, where a pan
+ignores touches beyond its maximum. Before any claim, a second finger landing
+anywhere (often on a plain row no recognizer is on) fails a pan limited to
+one finger, so the two fingers zoom the page (WCAG 1.4.4) instead of the pan
+claiming them midway.
 
 ## Time
 
@@ -464,8 +469,9 @@ way:
    (`claimsTouches: false`) and `useFingerScroll`.
 5. A scroll lock holds the page with `holdPageScroll`; no `preventDefault`
    of its own.
-6. A drag limited to one finger checks `fingersDown()`; a second finger
-   already gives such a pan up.
+6. A drag limited to one finger sets `maximumNumberOfTouches: 1`. Before
+   it claims, a second finger fails it; once claimed, it keeps its finger
+   (`spec:AST-094` FR10). Delete a local pinch yield.
 7. The release hands `velocity()` (px/s, event time) to the animator.
    Delete local estimators, sample buffers and time windows; a flick, fling
    or commit threshold stays in the component, compared against it.
