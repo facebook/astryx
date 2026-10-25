@@ -27,11 +27,11 @@
  * - /packages/core/src/hooks/scrollbarGutter.ts
  * - /packages/core/src/hooks/rootScrollStyles.ts
  * - /packages/core/src/gestures/pageHold.ts (holdPageScroll)
+ * - /packages/core/src/hooks/useScrollLockImports.test.ts
  */
 
 import {useEffect} from 'react';
 import {claimRootScrollStyle, reportScrollLock} from './rootScrollStyles';
-import {getGestureHost} from '../gestures/GestureHost';
 import {holdPageScroll} from '../gestures/pageHold';
 import {isPanAbsorbedBeforePage} from './scrollLockTouchGuard';
 import {holdScrollbarGutter, type ScrollbarGutterHold} from './scrollbarGutter';
@@ -78,8 +78,10 @@ export function useScrollLock(isLocked: boolean): void {
         overflow: 'hidden',
         overscrollBehaviorY: 'none',
       });
+      // The hold asks the gesture host only if one exists, so the lock does
+      // not bring the host into every overlay's import.
       const releasePageHold = holdPageScroll(
-        getGestureHost(document),
+        document,
         (origin, dx, dy) => !isPanAbsorbedBeforePage(origin, dx, dy),
       );
       gutter.settle();
