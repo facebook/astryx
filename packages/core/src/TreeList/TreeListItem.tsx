@@ -4,7 +4,8 @@
 
 /**
  * @file TreeListItem.tsx
- * @input Uses React, StyleX, theme tokens, TreeListBranches
+ * @input Uses React, StyleX, theme tokens, TreeListBranches, the shared press
+ *   overlays and the compositor press layer
  * @output Exports TreeListItem component (internal, not publicly exported)
  * @position Internal implementation; consumed by TreeList.tsx
  *
@@ -26,7 +27,9 @@ import {
 } from '../theme/tokens.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {cellPressableProps} from '../utils/pressFeedback';
 import {usePressFeedback} from '../hooks/usePressFeedback';
+import {useInteractionModalityTracking} from '../utils/interactionModality';
 import {
   hasInteractiveAncestor,
   useClickableContainer,
@@ -406,6 +409,9 @@ export function TreeListItem({
   isTabbable,
 }: TreeListItemInternalProps) {
   const pressable = usePressFeedback();
+  // A selection hold returns focus to this row after a pop; its ring follows
+  // how the user last interacted (List/selectionHold.ts).
+  useInteractionModalityTracking();
   const t = useTranslator();
   const labelId = useId();
   const descriptionId = useId();
@@ -664,7 +670,7 @@ export function TreeListItem({
       <div {...stylex.props(styles.rowWrapper)}>
         <div
           {...(isInteractive || (hasChildren && onClick == null)
-            ? pressable
+            ? {...pressable, ...cellPressableProps}
             : undefined)}
           {...mergeProps(
             themeProps('tree-list-item', {
@@ -679,6 +685,10 @@ export function TreeListItem({
                   densityStyles[density],
                   styles.interactive,
                   interactionOverlayStyles.backgroundImage,
+                  // The touch press on a compositor layer (after the
+                  // overlay, whose own touch paint it turns off).
+                  interactionOverlayStyles.cell,
+                  interactionOverlayStyles.cellOnImage,
                   isDisabled && styles.disabled,
                   isSelected && styles.selected,
                   xstyle,
