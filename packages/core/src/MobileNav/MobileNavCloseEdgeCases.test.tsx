@@ -256,7 +256,7 @@ describe('MobileNav close path edge cases', () => {
     try {
       const {rerender} = render(<Drawer isOpen />);
       const dialog = screen.getByTestId('mobile-nav');
-      expect(document.documentElement.style.overflow).toBe('clip');
+      expect(document.documentElement.style.overflow).toBe('hidden');
 
       // Two acts on purpose: the close timer is armed by the effect that runs
       // when the first act flushes, so advancing inside that same act would
@@ -281,11 +281,37 @@ describe('MobileNav close path edge cases', () => {
 
   it('restores documentElement overflow when unmounted while open', () => {
     const {unmount} = render(<Drawer isOpen />);
-    expect(document.documentElement.style.overflow).toBe('clip');
+    expect(document.documentElement.style.overflow).toBe('hidden');
 
     unmount();
 
     expect(document.documentElement.style.overflow).toBe('');
+  });
+
+  it('releases the page when the dialog closed natively before isOpen turned false', () => {
+    vi.useFakeTimers();
+    try {
+      const {rerender} = render(<Drawer isOpen />);
+      const dialog = screen.getByTestId<HTMLDialogElement>('mobile-nav');
+      expect(document.documentElement.style.overflow).toBe('hidden');
+
+      // A `<form method="dialog">` submit or a close() through a ref closes
+      // the dialog before the app's state follows.
+      act(() => {
+        dialog.close();
+      });
+      act(() => {
+        rerender(<Drawer isOpen={false} />);
+      });
+      act(() => {
+        vi.advanceTimersByTime(2000);
+      });
+
+      expect(document.documentElement.style.overflow).toBe('');
+      expect(document.documentElement.style.scrollbarGutter).toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('leaves no pending close timer behind after unmount', () => {

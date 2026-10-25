@@ -15,7 +15,8 @@ import {useRef} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {PanGestureRecognizer} from '../PanGestureRecognizer';
 import type {ControlEvent} from '../PressTracker';
-import {useGestureRecognizer, usePressTracker} from '../useGestureRecognizer';
+import {useGestureRecognizer} from '../useGestureRecognizer';
+import {usePressTracker} from '../usePressTracker';
 
 function touch(
   type: string,

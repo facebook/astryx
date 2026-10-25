@@ -15,12 +15,15 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {UIKIT_GESTURES} from '../../motion/uikit/gestures';
+import {isFingerScroll, watchFingerScrolls} from '../fingerScroll';
 import {GestureHost} from '../GestureHost';
 import {HoverGestureRecognizer} from '../HoverGestureRecognizer';
 import {LongPressGestureRecognizer} from '../LongPressGestureRecognizer';
 import {PanGestureRecognizer} from '../PanGestureRecognizer';
+import {VelocityTracker} from '../VelocityTracker';
 import {TapGestureRecognizer} from '../TapGestureRecognizer';
 import {createNativeScrollProbe} from '../nativeScroll';
+import {holdPageScroll} from '../pageHold';
 import {ManualClock, RecordingConsumer} from './harness';
 
 interface Contact {
@@ -321,6 +324,182 @@ describe('GestureHost', () => {
     expect(host.arena.getTouch(1)?.takenByBrowser).toBe(true);
   });
 
+  it.each([
+    ['WebKit, the touch copy 1 ms later', 1],
+    ['Chromium, both copies at one time', 0],
+  ])('samples a finger from its pointer events alone: %s', (_, offset) => {
+    const {box} = mount('<div id="box"></div>');
+    const pan = new PanGestureRecognizer({name: 'pan'});
+    let released = Number.NaN;
+    pan.addListener(r => {
+      if (r.state === 'ended') {
+        released = pan.velocity().x;
+      }
+    });
+    detachers.push(host.attach(box, pan));
+    pointer('pointerdown', box, {
+      id: 21,
+      pointerType: 'touch',
+      x: 10,
+      y: 10,
+      buttons: 1,
+      time: 0,
+    });
+    const finger = {id: 0, x: 10, y: 10};
+    touch('touchstart', box, [finger], [finger], 0);
+    let x = 10;
+    for (let step = 1; step <= 10; step++) {
+      x += 10;
+      const time = step * 16;
+      pointer('pointermove', box, {
+        id: 21,
+        pointerType: 'touch',
+        x,
+        y: 10,
+        buttons: 1,
+        time,
+      });
+      touch(
+        'touchmove',
+        box,
+        [{...finger, x}],
+        [{...finger, x}],
+        time + offset,
+      );
+    }
+    pointer('pointerup', box, {
+      id: 21,
+      pointerType: 'touch',
+      x,
+      y: 10,
+      time: 168,
+    });
+    touch('touchend', box, [{...finger, x}], [], 168);
+    // 10 px every 16 ms: 625 px/s, the steady drag's own speed.
+    expect(released).toBeCloseTo(625, 6);
+  });
+
+  it.each([35, 45])(
+    'honours an explicit claim distance on an axis pan: a %i° drag in a vertical scroller is cancelled from the claim',
+    degrees => {
+      const {box} = mount('<div id="box"></div>');
+      // A pager that takes drags up to a little past 45° (axisRatio below
+      // 1), as UIKit gives a drag with |dx| ≥ |dy| to the pager.
+      const pager = new PanGestureRecognizer({
+        name: 'pager',
+        direction: 'horizontal',
+        axisRatio: 0.9,
+        claimDistance: 5,
+      });
+      detachers.push(host.attach(box, pager));
+      const start = {id: 1, x: 100, y: 100};
+      touch('touchstart', box, [start], [start], 0);
+      // 4 px steps along the drag's angle.
+      const radians = (degrees * Math.PI) / 180;
+      const at = (step: number) => ({
+        ...start,
+        x: 100 + 4 * Math.cos(radians) * step,
+        y: 100 + 4 * Math.sin(radians) * step,
+      });
+      const first = touch('touchmove', box, [at(1)], [at(1)], 16);
+      const second = touch('touchmove', box, [at(2)], [at(2)], 32);
+      // The second move puts the finger past 5 px: from it on, the pager's.
+      expect(first.defaultPrevented).toBe(false);
+      expect(second.defaultPrevented).toBe(true);
+    },
+  );
+
+  it('samples a finger from its touch events once the browser cancels its pointer', () => {
+    const {box} = mount('<div id="box"></div>');
+    const pan = new PanGestureRecognizer({
+      name: 'pan',
+      scrollHandoff: true,
+      direction: 'down',
+    });
+    detachers.push(host.attach(box, pan));
+    pointer('pointerdown', box, {
+      id: 21,
+      pointerType: 'touch',
+      x: 10,
+      y: 10,
+      buttons: 1,
+      time: 0,
+    });
+    const finger = {id: 0, x: 10, y: 10};
+    touch('touchstart', box, [finger], [finger], 0);
+    pointer('pointermove', box, {
+      id: 21,
+      pointerType: 'touch',
+      x: 10,
+      y: 14,
+      buttons: 1,
+      time: 16,
+    });
+    expect(host.arena.getTouch(1)?.y).toBe(14);
+    // The browser takes the touch to scroll: the pointer channel ends, the
+    // finger keeps moving, and only touch events report it now.
+    pointer('pointercancel', box, {
+      id: 21,
+      pointerType: 'touch',
+      x: 10,
+      y: 14,
+      time: 20,
+    });
+    touch('touchmove', box, [{...finger, y: 60}], [{...finger, y: 60}], 32);
+    expect(host.arena.getTouch(1)?.y).toBe(60);
+  });
+
+  it('keeps every report of a 120 Hz finger', () => {
+    const {box} = mount('<div id="box"></div>');
+    const pan = new PanGestureRecognizer({name: 'pan'});
+    let released = Number.NaN;
+    pan.addListener(r => {
+      if (r.state === 'ended') {
+        released = pan.velocity().x;
+      }
+    });
+    detachers.push(host.attach(box, pan));
+    pointer('pointerdown', box, {
+      id: 21,
+      pointerType: 'touch',
+      x: 10,
+      y: 10,
+      buttons: 1,
+      time: 0,
+    });
+    const finger = {id: 0, x: 10, y: 10};
+    touch('touchstart', box, [finger], [finger], 0);
+    // An accelerating drag reported every 8 ms on both channels.
+    const expected = new VelocityTracker();
+    expected.add(10, 10, 0);
+    let last = {x: 10, time: 0};
+    for (let step = 1; step <= 12; step++) {
+      const x = 10 + 3 * step * step;
+      const time = step * 8;
+      pointer('pointermove', box, {
+        id: 21,
+        pointerType: 'touch',
+        x,
+        y: 10,
+        buttons: 1,
+        time,
+      });
+      touch('touchmove', box, [{...finger, x}], [{...finger, x}], time);
+      expected.add(x, 10, time);
+      last = {x, time};
+    }
+    pointer('pointerup', box, {
+      id: 21,
+      pointerType: 'touch',
+      x: last.x,
+      y: 10,
+      time: last.time,
+    });
+    touch('touchend', box, [{...finger, x: last.x}], [], last.time);
+    // Every report counted once: the blend of the last two intervals.
+    expect(released).toBeCloseTo(expected.velocity().x, 6);
+  });
+
   it('gives the blocking touchmove listener only to elements whose recognizers claim while moving', () => {
     const {taps, pan, press, both, row} = mount(
       '<div id="taps"></div><div id="pan"></div><div id="press"></div><div id="both"></div><div id="row"></div>',
@@ -376,7 +555,11 @@ describe('GestureHost', () => {
 
   it("cancels a one-way pan's moves from its claim distance, before it begins, and keeps the touch through a reversal", () => {
     const {card} = mount('<div id="card"></div>');
-    const pan = new PanGestureRecognizer({name: 'pan', direction: 'up'});
+    const pan = new PanGestureRecognizer({
+      name: 'pan',
+      direction: 'up',
+      claimDistance: 'early',
+    });
     detachers.push(host.attach(card, pan));
     const finger = {id: 1, x: 50, y: 100};
     touch('touchstart', card, [finger], [finger], 0);
@@ -718,82 +901,142 @@ describe('GestureHost', () => {
     restore();
   });
 
+  it('releases the same velocity for one stroke from a finger, a pen and a mouse (spec:AST-100 FR1, FR4)', () => {
+    const velocities: number[] = [];
+    for (const kind of ['touch', 'pen', 'mouse'] as const) {
+      const {box} = mount('<div id="box"></div>');
+      const pan = new PanGestureRecognizer({name: kind});
+      let released = 0;
+      pan.addListener(r => {
+        if (r.state === 'ended') {
+          released = r.velocity().x;
+        }
+      });
+      const detach = host.attach(box, pan);
+      const at = (x: number, time: number, type: 'down' | 'move' | 'up') => {
+        if (kind === 'touch') {
+          const finger = {id: 1, x, y: 0};
+          touch(
+            type === 'down'
+              ? 'touchstart'
+              : type === 'move'
+                ? 'touchmove'
+                : 'touchend',
+            box,
+            [finger],
+            type === 'up' ? [] : [finger],
+            time,
+          );
+        } else {
+          pointer(
+            type === 'down'
+              ? 'pointerdown'
+              : type === 'move'
+                ? 'pointermove'
+                : 'pointerup',
+            box,
+            {
+              id: 5,
+              pointerType: kind,
+              x,
+              y: 0,
+              buttons: type === 'up' ? 0 : 1,
+              time,
+            },
+          );
+        }
+      };
+      // Each stroke later than the last: the arena's clock never goes back.
+      const start = 1000 * (velocities.length + 1);
+      at(0, start, 'down');
+      for (let step = 1; step <= 10; step++) {
+        at(step * 12, start + step * 8, 'move');
+      }
+      at(120, start + 80, 'up');
+      velocities.push(released);
+      detach();
+    }
+    expect(velocities[0]).toBeGreaterThan(0);
+    expect(velocities[1]).toBeCloseTo(velocities[0], 6);
+    expect(velocities[2]).toBeCloseTo(velocities[0], 6);
+  });
+
   describe('finger scrolls', () => {
     it('reads a scroll while a finger that landed inside is down as the finger’s, until the scroller’s scrollend', () => {
       const {list, row} = mount('<div id="list"><div id="row"></div></div>');
-      detachers.push(host.watchFingerScrolls(list));
+      detachers.push(watchFingerScrolls(host, list));
       const finger = {id: 1, x: 10, y: 10};
       touch('touchstart', row, [finger], [finger], 0);
       list.dispatchEvent(new Event('scroll'));
-      expect(host.isFingerScroll(list)).toBe(true);
+      expect(isFingerScroll(host, list)).toBe(true);
       // The lift starts the momentum: still the finger's scroll.
       touch('touchend', row, [finger], [], 120);
       list.dispatchEvent(new Event('scroll'));
-      expect(host.isFingerScroll(list)).toBe(true);
+      expect(isFingerScroll(host, list)).toBe(true);
       list.dispatchEvent(new Event('scrollend'));
-      expect(host.isFingerScroll(list)).toBe(false);
+      expect(isFingerScroll(host, list)).toBe(false);
     });
 
     it('reads a scroll with no finger down as the program’s, even right after a tap', () => {
       const {list, row} = mount('<div id="list"><div id="row"></div></div>');
-      detachers.push(host.watchFingerScrolls(list));
+      detachers.push(watchFingerScrolls(host, list));
       list.dispatchEvent(new Event('scroll'));
-      expect(host.isFingerScroll(list)).toBe(false);
+      expect(isFingerScroll(host, list)).toBe(false);
       // A tap whose click scrolls the list (a scrollTo after the lift).
       const finger = {id: 1, x: 10, y: 10};
       touch('touchstart', row, [finger], [finger], 0);
       touch('touchend', row, [finger], [], 80);
       list.dispatchEvent(new Event('scroll'));
-      expect(host.isFingerScroll(list)).toBe(false);
+      expect(isFingerScroll(host, list)).toBe(false);
     });
 
     it('reads the page’s own scroll on the document', () => {
       const {row} = mount('<div id="row"></div>');
-      detachers.push(host.watchFingerScrolls(document));
+      detachers.push(watchFingerScrolls(host, document));
       const finger = {id: 1, x: 10, y: 10};
       touch('touchstart', row, [finger], [finger], 0);
       document.dispatchEvent(new Event('scroll'));
-      expect(host.isFingerScroll(document)).toBe(true);
+      expect(isFingerScroll(host, document)).toBe(true);
       touch('touchend', row, [finger], [], 120);
       document.dispatchEvent(new Event('scrollend'));
-      expect(host.isFingerScroll(document)).toBe(false);
+      expect(isFingerScroll(host, document)).toBe(false);
     });
 
     it('does not count a finger down outside the scroller', () => {
       const {list, other} = mount(
         '<div id="list"><div id="row"></div></div><div id="other"></div>',
       );
-      detachers.push(host.watchFingerScrolls(list));
+      detachers.push(watchFingerScrolls(host, list));
       const finger = {id: 1, x: 10, y: 10};
       touch('touchstart', other, [finger], [finger], 0);
       list.dispatchEvent(new Event('scroll'));
-      expect(host.isFingerScroll(list)).toBe(false);
+      expect(isFingerScroll(host, list)).toBe(false);
     });
 
     it('keeps a scroll that ends while the finger still rests the finger’s until the lift', () => {
       const {list, row} = mount('<div id="list"><div id="row"></div></div>');
-      detachers.push(host.watchFingerScrolls(list));
+      detachers.push(watchFingerScrolls(host, list));
       const finger = {id: 1, x: 10, y: 10};
       touch('touchstart', row, [finger], [finger], 0);
       list.dispatchEvent(new Event('scroll'));
       list.dispatchEvent(new Event('scrollend'));
-      expect(host.isFingerScroll(list)).toBe(true);
+      expect(isFingerScroll(host, list)).toBe(true);
       // Lifting without moving the list again ends it.
       touch('touchend', row, [finger], [], 300);
-      expect(host.isFingerScroll(list)).toBe(false);
+      expect(isFingerScroll(host, list)).toBe(false);
     });
 
     it('forgets a scroller once nobody watches it', () => {
       const {list, row} = mount('<div id="list"><div id="row"></div></div>');
-      const stop = host.watchFingerScrolls(list);
+      const stop = watchFingerScrolls(host, list);
       const finger = {id: 1, x: 10, y: 10};
       touch('touchstart', row, [finger], [finger], 0);
       list.dispatchEvent(new Event('scroll'));
-      expect(host.isFingerScroll(list)).toBe(true);
+      expect(isFingerScroll(host, list)).toBe(true);
       stop();
-      expect(host.isFingerScroll(list)).toBe(false);
+      expect(isFingerScroll(host, list)).toBe(false);
       list.dispatchEvent(new Event('scroll'));
-      expect(host.isFingerScroll(list)).toBe(false);
+      expect(isFingerScroll(host, list)).toBe(false);
     });
   });
 
@@ -1156,7 +1399,7 @@ describe('holdPageScroll', () => {
   it('cancels a one-finger pan the decision says would scroll the page, for the rest of its touch', () => {
     const {scrim} = mount('<div id="scrim"></div>');
     const decide = vi.fn(() => true);
-    detachers.push(host.holdPageScroll(decide));
+    detachers.push(holdPageScroll(host, decide));
 
     touch('touchstart', scrim, at(1, 100, 300), at(1, 100, 300), 0);
     const first = touch(
@@ -1183,7 +1426,7 @@ describe('holdPageScroll', () => {
   it('judges a pan once it clears the slop, so a first wobble does not fix its axis', () => {
     const {strip} = mount('<div id="strip"></div>');
     const decide = vi.fn((_origin: EventTarget | null, dx: number) => dx === 0);
-    detachers.push(host.holdPageScroll(decide));
+    detachers.push(holdPageScroll(host, decide));
 
     touch('touchstart', strip, at(1, 100, 300), at(1, 100, 300), 0);
     const wobble = touch(
@@ -1209,7 +1452,7 @@ describe('holdPageScroll', () => {
 
   it('lets a pan through when the decision says something under the finger takes it', () => {
     const {list} = mount('<div id="list"></div>');
-    detachers.push(host.holdPageScroll(() => false));
+    detachers.push(holdPageScroll(host, () => false));
 
     touch('touchstart', list, at(1, 100, 300), at(1, 100, 300), 0);
     expect(
@@ -1221,7 +1464,7 @@ describe('holdPageScroll', () => {
   it('never cancels a two-finger gesture, so pinch-zoom keeps working', () => {
     const {scrim} = mount('<div id="scrim"></div>');
     const decide = vi.fn(() => true);
-    detachers.push(host.holdPageScroll(decide));
+    detachers.push(holdPageScroll(host, decide));
     const both = [
       {id: 1, x: 100, y: 300},
       {id: 2, x: 200, y: 300},
@@ -1243,7 +1486,7 @@ describe('holdPageScroll', () => {
     const inner = document.createElement('div');
     outer.attachShadow({mode: 'open'}).append(inner);
     const decide = vi.fn(() => false);
-    detachers.push(host.holdPageScroll(decide));
+    detachers.push(holdPageScroll(host, decide));
 
     touch('touchstart', inner, at(1, 100, 300), at(1, 100, 300), 0);
     touch('touchmove', inner, at(1, 100, 250), at(1, 100, 250), 16);
@@ -1253,8 +1496,8 @@ describe('holdPageScroll', () => {
 
   it('stacks holds and stops judging pans once the last one is released', () => {
     const {scrim} = mount('<div id="scrim"></div>');
-    const releaseFirst = host.holdPageScroll(() => true);
-    const releaseSecond = host.holdPageScroll(() => true);
+    const releaseFirst = holdPageScroll(host, () => true);
+    const releaseSecond = holdPageScroll(host, () => true);
     const pan = (time: number) => {
       touch('touchstart', scrim, at(1, 100, 300), at(1, 100, 300), time);
       return touch(

@@ -4,7 +4,8 @@
 
 /**
  * @file MobileNav.tsx
- * @input Uses React, useEffect, useRef, useCallback, ReactNode, StyleX
+ * @input Uses React, useEffect, useRef, useCallback, ReactNode, StyleX,
+ *   useScrollLock (the shared page scroll lock)
  * @output Exports MobileNav component and MobileNavProps
  * @position Core implementation; consumed by index.ts
  *
@@ -36,7 +37,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/MobileNav/index.ts (exports if types change)
  * - /packages/core/src/Layer/useLayerDismissal.ts (dismissal stack)
- * - /packages/core/src/hooks/scrollbarGutter.ts (shared scroll-lock gutter)
+ * - /packages/core/src/hooks/useScrollLock.ts (the shared page scroll lock)
  * - /packages/cli/assets/templates/blocks/components/MobileNav/ (showcase blocks)
  */
 
@@ -62,10 +63,7 @@ import {Button} from '../Button';
 import {Icon} from '../Icon';
 import {Heading} from '../Heading/Heading';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
-import {
-  holdScrollbarGutter,
-  type ScrollbarGutterHold,
-} from '../hooks/scrollbarGutter';
+import {useScrollLock} from '../hooks/useScrollLock';
 import {mergeProps, composeEventHandlers} from '../utils';
 import {layerTextReset} from '../Layer/layerTextReset.stylex';
 import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
@@ -514,15 +512,13 @@ export function MobileNav({
     setWasOpen(isOpen);
     setIsCloseHeld(!isOpen);
   }
-  const gutterRef = useRef<ScrollbarGutterHold | null>(null);
-
-  // Gives back the gutter held open in place of the hidden scrollbar.
-  const releaseGutter = useCallback(() => {
-    if (gutterRef.current) {
-      gutterRef.current.release();
-      gutterRef.current = null;
-    }
-  }, []);
+  // The page stays locked while the drawer is open, through the shared scroll
+  // lock: the root's overflow, the scrollbar gutter held open in place of the
+  // hidden scrollbar, and on touch screens a guard that keeps a drag on the
+  // drawer from scrolling the page behind it (iOS ignores a root overflow
+  // lock for touch). Declared before the open/close effect, so the gutter is
+  // measured before showModal() can hide the scrollbar.
+  useScrollLock(isOpen);
   // Resolved side — computed from trigger position when side='auto'
   const [resolvedSide, setResolvedSide] = useState<'start' | 'end'>(
     side === 'auto' ? 'end' : side,
@@ -565,10 +561,6 @@ export function MobileNav({
     }
 
     if (isOpen) {
-      // Taken first: every mutation below is one that can hide the scrollbar,
-      // and the gutter has to be measured while it is still there.
-      gutterRef.current ??= holdScrollbarGutter(document.documentElement);
-
       if (!dialog.open) {
         // Capture the opener before showModal() pulls focus into the top
         // layer. Only on the transition into open: a reopen while the delayed
@@ -578,15 +570,7 @@ export function MobileNav({
           document.activeElement as HTMLElement | null;
         dialog.showModal();
       }
-      // Prevent background scrolling and iOS pull-to-refresh.
-      // overflow: clip avoids creating a scroll container (unlike hidden),
-      // so there's no scroll bounce and no need to save/restore scroll position.
-      document.documentElement.style.overflow = 'clip';
-      gutterRef.current.settle();
     } else if (dialog.open) {
-      document.documentElement.style.overflow = '';
-      releaseGutter();
-
       closeTimeoutRef.current = setTimeout(() => {
         closeAndRestoreFocus(dialog, triggerElementRef);
         setIsCloseHeld(false);
@@ -602,10 +586,8 @@ export function MobileNav({
         clearTimeout(closeTimeoutRef.current);
         closeTimeoutRef.current = null;
       }
-      document.documentElement.style.overflow = '';
-      releaseGutter();
     };
-  }, [isOpen, releaseGutter]);
+  }, [isOpen]);
 
   // Close the native dialog on unmount if it's still open. Inside AppShell the
   // drawer is mounted in an <Activity> that switches to mode="hidden" when the
