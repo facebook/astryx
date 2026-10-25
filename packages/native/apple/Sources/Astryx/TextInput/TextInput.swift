@@ -8,13 +8,6 @@ public struct TextInput: View {
   public let props: TextInputProps
   @Environment(\.astryx) private var astryx
   @FocusState private var isFocused: Bool
-  @State private var shownTip: Tip?
-
-  /// A tip a tap opens on a touch screen, where there is no hover.
-  enum Tip: Identifiable {
-    case label, status, disabled
-    var id: Self { self }
-  }
 
   public init(_ props: TextInputProps) {
     self.props = props
@@ -184,7 +177,7 @@ public struct TextInput: View {
           .accessibilityHidden(true)
       }
       if let tip = props.labelTooltip {
-        tipButton(tip, icon: "info", label: tip, opens: .label)
+        tipIcon(tip, icon: "info", label: tip)
           .foregroundStyle(astryx.tokens.color.textSecondary)
       }
     }
@@ -253,12 +246,8 @@ public struct TextInput: View {
           }
           .buttonStyle(.plain)
           .foregroundStyle(astryx.tokens.color.textSecondary)
-          .help(AstryxStrings.clearTooltip)
+          .astryxTooltip(AstryxStrings.clearTooltip, focus: .control)
           .accessibilityLabel(SwiftUI.Text(AstryxStrings.clearLabel(props.label)))
-        }
-        if isDisabled, let reason = props.disabledMessage {
-          tipButton(reason, icon: "info", label: reason, opens: .disabled, inField: true)
-            .foregroundStyle(astryx.tokens.color.textSecondary)
         }
         statusIcon
           .frame(minWidth: hasTrailingButtons ? 44 : nil)
@@ -271,14 +260,15 @@ public struct TextInput: View {
       shape.strokeBorder(borderColor, lineWidth: astryx.tokens.size.borderWidth)
     )
     .opacity(isDisabled ? 0.5 : 1)
-    .help(isDisabled ? props.disabledMessage ?? "" : "")
+    // A disabled field shows its reason in the shared tooltip on hover, on
+    // keyboard focus, and on a tap; VoiceOver reads the reason on the field.
+    .astryxTooltip(isDisabled ? props.disabledMessage : nil, focus: keepsFocusWhileDisabled ? .control : .none, touch: .tap)
   }
 
   /// Whether the field row ends in buttons, whose 44-point targets reach its
   /// edge in place of the trailing padding.
   var hasTrailingButtons: Bool {
-    showsClear || (isDisabled && props.disabledMessage != nil)
-      || (statusVariant == .tooltip && props.status?.message != nil)
+    showsClear || (statusVariant == .tooltip && props.status?.message != nil)
   }
 
   /// A disabled field with a reason keeps its focus stop, as core's disabled
@@ -373,7 +363,7 @@ public struct TextInput: View {
   @ViewBuilder private var statusIcon: some View {
     if let status = props.status, statusVariant != .detached {
       if statusVariant == .tooltip, let message = status.message {
-        tipButton(message, icon: status.type.rawValue, label: AstryxStrings.statusButton(status.type), opens: .status, inField: true)
+        tipIcon(message, icon: status.type.rawValue, label: AstryxStrings.statusButton(status.type), inField: true)
           .foregroundStyle(statusColor(status.type))
       } else {
         icon(status.type.rawValue)
@@ -444,38 +434,19 @@ public struct TextInput: View {
 
   // MARK: Tips
 
-  /// An icon that shows `text` in a tip: on hover with a pointer, and in a
-  /// popover on a tap, as core opens a tip on touch.
-  /// In the field row the button lays out across its whole 44-point target;
+  /// An icon that shows `text` in the shared Astryx tooltip: on hover with a
+  /// pointer, on keyboard focus (it is a tab stop), and on a direct tap, as
+  /// core's tooltip icon does. VoiceOver reads it as `label` with `text` as
+  /// the hint. In the field row it lays out across its whole 44-point target;
   /// beside the label it reaches 44 points without growing the row.
-  private func tipButton(_ text: String, icon name: String, label: String, opens tip: Tip, inField: Bool = false) -> some View {
-    SwiftUI.Button {
-      shownTip = tip
-    } label: {
-      icon(name)
-        .frame(minWidth: inField ? 44 : nil, minHeight: inField ? 44 : nil)
-        .contentShape(Rectangle())
-    }
-    .buttonStyle(.plain)
-    .astryxMinimumHitArea(inField ? 44 : iconSide)
-    .help(text)
-    .accessibilityLabel(SwiftUI.Text(label))
-    .accessibilityHint(SwiftUI.Text(text))
-    .popover(item: tipBinding(tip)) { _ in tipText(text) }
-  }
-
-  private func tipBinding(_ tip: Tip) -> Binding<Tip?> {
-    Binding(
-      get: { shownTip == tip ? tip : nil },
-      set: { shownTip = $0 }
-    )
-  }
-
-  private func tipText(_ text: String) -> some View {
-    SwiftUI.Text(text)
-      .font(astryx.font(TypeStyle(astryx.tokens.font.supporting, families: astryx.tokens.font.family.body)))
-      .padding(astryx.tokens.space.s3)
-      .presentationCompactAdaptation(.popover)
+  private func tipIcon(_ text: String, icon name: String, label: String, inField: Bool = false) -> some View {
+    icon(name)
+      .frame(minWidth: inField ? 44 : nil, minHeight: inField ? 44 : nil)
+      .contentShape(Rectangle())
+      .astryxMinimumHitArea(inField ? 44 : iconSide)
+      .accessibilityElement()
+      .accessibilityLabel(SwiftUI.Text(label))
+      .astryxTooltip(text, hint: text, focus: .tabStop, touch: .tap)
   }
 
   /// A shared icon at the supporting text size: the theme's SF Symbol or app
