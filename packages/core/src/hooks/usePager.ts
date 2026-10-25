@@ -37,15 +37,18 @@
  * - `goTo` runs `setContentOffset(_:animated:)`'s curve and cancels a drag
  *   in progress.
  * - Reduce Motion (design:reduced-motion): the drag still follows the
- *   finger; after the lift nothing travels. A release's settle is a touch
- *   release (a 200 ms cross-fade on any pointer); `goTo` cross-fades on a
- *   coarse pointer and lands at once on any other.
+ *   finger; after the lift nothing travels. A touch's release cross-fades in
+ *   200 ms on any pointer (a touch release, DR2); `goTo`, and a mouse's or a
+ *   pen's release, cross-fade on a coarse pointer and land at once on any
+ *   other (DR3).
  * - Callbacks: `onIndexChange` when the target page changes: for a release,
  *   once its settle runs on the compositor (two frames after the frame it
  *   started in, so
  *   the owner's render cannot freeze the hand-off in Mobile Safari); for
- *   `goTo`, at once; never for a controlled change (the owner's own).
- *   `onSettle` when the track rests.
+ *   `goTo`, at once; never for a controlled change (the owner's own). A
+ *   release's report still waiting when the pager detaches, or when a
+ *   controlled move replaces its page, is dropped: no callback runs from an
+ *   unmount or from the owner's own update. `onSettle` when the track rests.
  *
  * Positions are content offsets in px, 0 at page 0 and growing toward later
  * pages; the track is translated by −position, or +position when the
@@ -452,6 +455,16 @@ export function createPager(
   }
 
   /**
+   * Forgets a release's report still waiting: the pager is detaching, or the
+   * owner's own (controlled) move replaces the page it chose. The page last
+   * reported stays as it was.
+   */
+  function dropReport(): void {
+    pendingReport = null;
+    reportToken += 1;
+  }
+
+  /**
    * A release reports its page once the settle has reached the compositor
    * (two frames after the frame it started in): in Mobile Safari a
    * main-thread block that
@@ -774,6 +787,9 @@ export function createPager(
       pan.cancel();
     }
     const from = presentation();
+    if (reason === 'controlled') {
+      dropReport();
+    }
     stopSettle();
     setTarget(next, reason);
     const to = next * stride();
@@ -843,6 +859,7 @@ export function createPager(
       detachPan();
       removeCatchListener();
       removePanListener();
+      dropReport();
       stopSettle();
       holdSelection(false);
       isDragging = false;
