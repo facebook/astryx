@@ -14,9 +14,9 @@ final class ComponentScreensUITests: XCTestCase {
   /// its cause. Any other issue fails, and so does a listed issue that no
   /// longer occurs, so the list only shrinks.
   static let knownAuditIssues: [String: String] = [
-    "Button 'Sending': Contrast failed":
+    "Button 'Sending', default text: Contrast failed":
       "A loading button keeps its label at zero opacity under the spinner so its width holds; the audit measures that hidden label.",
-    "TextInput 'Email': Text clipped":
+    "TextInput 'Email', default text: Text clipped":
       "A single-line field scrolls a value wider than itself; the audit reports the value as clipped.",
   ]
 
@@ -24,9 +24,18 @@ final class ComponentScreensUITests: XCTestCase {
     continueAfterFailure = true
   }
 
-  private func launch(_ screen: String) -> XCUIApplication {
+  /// Text sizes the audit runs at: the default and the largest.
+  static let textSizes: [(name: String, category: String?)] = [
+    ("default text", nil),
+    ("largest text", "UICTContentSizeCategoryAccessibilityXXXL"),
+  ]
+
+  private func launch(_ screen: String, textSize: String? = nil) -> XCUIApplication {
     let app = XCUIApplication()
     app.launchArguments = ["-component", screen]
+    if let textSize {
+      app.launchArguments += ["-UIPreferredContentSizeCategoryName", textSize]
+    }
     app.launch()
     XCTAssertTrue(
       app.descendants(matching: .any)["screen.\(screen)"].waitForExistence(timeout: 10),
@@ -54,19 +63,22 @@ final class ComponentScreensUITests: XCTestCase {
   }
 
   /// The system accessibility audit (contrast, element detection, hit
-  /// regions, Dynamic Type, traits, clipped text) on every screen. Each issue
+  /// regions, Dynamic Type, traits, clipped text) on every screen, at the
+  /// default and the largest text size. An issue not in knownAuditIssues
   /// fails the test with the element and the audit's own words.
   func testEveryScreenPassesTheAccessibilityAudit() throws {
     var issues: [String] = []
-    for screen in Self.screens {
-      let app = launch(screen)
-      attachScreenshot(app, named: screen)
-      try app.performAccessibilityAudit { issue in
-        let element = issue.element.map { "'\($0.label)'" } ?? "the screen"
-        issues.append("\(screen) \(element): \(issue.compactDescription)")
-        return true
+    for (sizeName, category) in Self.textSizes {
+      for screen in Self.screens {
+        let app = launch(screen, textSize: category)
+        attachScreenshot(app, named: "\(screen), \(sizeName)")
+        try app.performAccessibilityAudit { issue in
+          let element = issue.element.map { "'\($0.label)'" } ?? "the screen"
+          issues.append("\(screen) \(element), \(sizeName): \(issue.compactDescription)")
+          return true
+        }
+        app.terminate()
       }
-      app.terminate()
     }
     // One failure each for new and for fixed issues, listing them all.
     let new = issues.filter { Self.knownAuditIssues[$0] == nil }
