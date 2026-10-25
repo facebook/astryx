@@ -220,7 +220,7 @@ export const doc = {
       text:
         'Some changes a codemod can find but not make. upgrade lists them in the result, so a script can keep the rest of the run and act on each. ' +
         'Code a codemod can identify but cannot migrate safely is a manual migration: upgrade lists each file with its line, ' +
-        'the codemod and what to change, finishes the run, and exits 0. With --json they are in `declinedCandidates` (`reason` starts with `manual migration needed`), and `complete` stays true. ' +
+        'the codemod and what to change, finishes the run, and exits 0. With --json they are in `declinedCandidates`, one row per file (`reason` starts with `manual migration needed` and lists every finding in the file), and `complete` stays true. ' +
         'A generated file that must be rebuilt is listed in `regenerate` with the command that rebuilds it, such as `astryx theme build`: a protected generated file a codemod still needs to change ' +
         '(also in `protectedFiles`), or a generated output a codemod found out of date (also in `protectedFiles`, with the rule that protects it, when the project marks it generated). With --apply, upgrade runs your `hooks.postCodemod` commands and checks again. ' +
         'If a protected file still needs rebuilding, the run is incomplete exactly as for any protected file: it exits 1 and the result says `complete: false` and `errorCode: "ERR_CODEMOD_PROTECTED"`. ' +

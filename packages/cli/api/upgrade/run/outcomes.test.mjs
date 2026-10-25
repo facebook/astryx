@@ -174,6 +174,35 @@ describe('manual migrations in the upgrade receipt', () => {
   });
 });
 
+describe('several manual migrations in one file', () => {
+  it('are folded into its one declined row, each with its codemod and line, and all counted', async () => {
+    write('src/chart.ts', "const a = 1;\nconst b = 'RAW';\nLEGACY();\n");
+    logger.setSilent(false);
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const out = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const result = await upgrade(APPLY, {cwd: dir});
+
+    expect(result.data.complete).toBe(true);
+    expect(result.data.declinedCandidates).toEqual([
+      {
+        file: 'src/chart.ts',
+        location: '2',
+        reason:
+          'manual migration needed (core:report-raw, line 2): Read it through dataVars.; ' +
+          'manual migration needed (core:report-legacy, line 3): Call the new API.',
+      },
+    ]);
+    const stderr = err.mock.calls.map(c => c.join(' ')).join('\n');
+    const stdout = out.mock.calls.map(c => c.join(' ')).join('\n');
+    expect(stderr).toContain('1 file needs a manual migration');
+    expect(stderr).toContain('Call the new API.');
+    expect(stdout).toContain(
+      'Upgrade complete; 2 manual migrations listed above',
+    );
+  });
+});
+
 describe('manual migrations beside other declined candidates', () => {
   it('leave out a file the run reports as protected, as every declined candidate does', async () => {
     write('src/chart.ts', "// @generated\nconst a = 1;\nconst b = 'RAW';\n");

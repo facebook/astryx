@@ -125,24 +125,74 @@ const MANUAL_MIGRATION_REASON = 'manual migration needed';
  * (`ManualMigrationRequired`), in the per-codemod row shape the runners use.
  * A person makes the change; like every declined candidate, it never fails
  * the run or makes it incomplete (spec:AST-040 FR7).
+ *
+ * Declined candidates are one row per file, so every finding for a file is
+ * folded into its row: `location` is the first known line, and `reason` lists
+ * each finding as `manual migration needed (<codemod>): <change>`, joined by
+ * `; `. With more than one finding, each names its own line as
+ * `(<codemod>, line <n>)` when known.
  * @param {import('../_adapter.mjs').CodemodOutcomeRecord[]} outcomes
  * @returns {Array<{file: string, codemod: string, location?: string, reason: string}>}
  */
 function manualDeclinedRows(outcomes) {
-  /** @type {Array<{file: string, codemod: string, location?: string, reason: string}>} */
-  const rows = [];
+  /** @type {Map<string, Array<{codemod: string, line?: number, message: string}>>} */
+  const byFile = new Map();
+  const seen = new Set();
   for (const outcome of outcomes) {
     if (outcome.kind !== 'manual') continue;
-    rows.push({
-      file: outcome.file,
+    const key = JSON.stringify([
+      outcome.file,
+      outcome.codemod,
+      outcome.line ?? null,
+      outcome.message,
+    ]);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const findings = byFile.get(outcome.file) ?? [];
+    findings.push({
       codemod: outcome.codemod,
-      ...(typeof outcome.line === 'number'
-        ? {location: String(outcome.line)}
-        : {}),
-      reason: `${MANUAL_MIGRATION_REASON} (${outcome.codemod}): ${outcome.message}`,
+      ...(typeof outcome.line === 'number' ? {line: outcome.line} : {}),
+      message: outcome.message,
+    });
+    byFile.set(outcome.file, findings);
+  }
+  /** @type {Array<{file: string, codemod: string, location?: string, reason: string}>} */
+  const rows = [];
+  for (const [file, findings] of byFile) {
+    findings.sort(
+      (a, b) =>
+        (a.line ?? Infinity) - (b.line ?? Infinity) ||
+        a.codemod.localeCompare(b.codemod),
+    );
+    const first = findings.find(f => f.line !== undefined);
+    const many = findings.length > 1;
+    rows.push({
+      file,
+      codemod: findings[0].codemod,
+      ...(first ? {location: String(first.line)} : {}),
+      reason: findings
+        .map(
+          f =>
+            `${MANUAL_MIGRATION_REASON} (${f.codemod}${many && f.line !== undefined ? `, line ${f.line}` : ''}): ${f.message}`,
+        )
+        .join('; '),
     });
   }
   return rows;
+}
+
+/**
+ * How many manual migrations the declined rows carry: every finding, not every
+ * file (a folded row lists several).
+ * @param {Array<{reason: string}>} declined
+ */
+function countManualMigrations(declined) {
+  let count = 0;
+  for (const {reason} of declined) {
+    if (!reason.startsWith(MANUAL_MIGRATION_REASON)) continue;
+    count += reason.split(`; ${MANUAL_MIGRATION_REASON} (`).length;
+  }
+  return count;
 }
 
 /**
@@ -1212,9 +1262,7 @@ export async function run(options = {}, {cwd = process.cwd(), origin} = {}) {
     : apply
       ? 'Upgrade complete'
       : 'Dry run complete';
-  const manualCount = declinedCandidates.filter(row =>
-    row.reason.startsWith(MANUAL_MIGRATION_REASON),
-  ).length;
+  const manualCount = countManualMigrations(declinedCandidates);
   const manualNote =
     manualCount > 0
       ? `; ${manualCount} manual migration${manualCount === 1 ? '' : 's'} listed above`
