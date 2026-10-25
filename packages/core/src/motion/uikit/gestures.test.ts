@@ -3,16 +3,17 @@
 /**
  * @file gestures.test.ts
  * @input The gesture constants table
- * @output Every value is sourced or is a guess that names its measurement;
- *   the documented UIKit defaults keep their documented values
+ * @output Every constant ships only its value and unit (its sources are
+ *   JSDoc, checked by uikit.test.ts); the documented UIKit defaults keep
+ *   their documented values
  * @position Unit test of packages/core/src/motion/uikit/gestures.ts
  */
 
 import {describe, expect, it} from 'vitest';
+import {PRESS_SLOP_PX} from '../../utils/pressGesture';
 import {
   HAPTIC_FEEDBACK_KINDS,
   HAPTIC_VIBRATION_PATTERNS,
-  isGuess,
   UIKIT_GESTURES,
   type GestureConstant,
 } from './gestures';
@@ -31,20 +32,17 @@ function entries(): [string, GestureConstant<unknown>][] {
 }
 
 describe('UIKIT_GESTURES', () => {
-  it.each(entries())(
-    '%s carries a source or a measurement task',
-    (_, constant) => {
-      if (isGuess(constant)) {
-        expect(constant.guess.length).toBeGreaterThan(10);
-        expect(constant.measure).toMatch(/^M-G\d\d: .{10,}/);
-        expect('source' in constant).toBe(false);
-      } else {
-        expect(constant.source).toMatch(
-          /^(apple-docs https:\/\/developer\.apple\.com\/|wwdc \d{4}-\d+ |measured: )/,
-        );
-      }
-    },
-  );
+  it.each(entries())('%s ships only its value and unit', (_, constant) => {
+    // Its sources are JSDoc (uikit.test.ts): a source in the value would ship
+    // in every bundle that reads it.
+    expect(Object.keys(constant).sort()).toEqual(['unit', 'value']);
+    const values = Array.isArray(constant.value)
+      ? constant.value
+      : [constant.value];
+    for (const value of values) {
+      expect(Number.isFinite(value)).toBe(true);
+    }
+  });
 
   it('keeps the documented and measured UIKit values', () => {
     expect(UIKIT_GESTURES.longPress.minimumPressDuration.value).toBe(500);
@@ -55,6 +53,14 @@ describe('UIKIT_GESTURES', () => {
     expect(UIKIT_GESTURES.pinch.hysteresis.value).toBe(8);
     expect(UIKIT_GESTURES.control.trackingExpansion.value).toBe(70);
     expect(UIKIT_GESTURES.velocity.currentWeight.value).toBe(0.2);
+  });
+
+  it('holds the press entries to the press model, one value per use', () => {
+    // The touch press model (utils/pressGesture.ts) and the table name the
+    // same slop: they cannot drift apart. The press feedback brakes on a
+    // fling until its own scrollend, with no time window, so the momentum
+    // memory is the gesture host's alone.
+    expect(UIKIT_GESTURES.press.slop.value).toBe(PRESS_SLOP_PX);
   });
 
   it('keeps the pan decision within the distance WebKit claims a scroll at', () => {
