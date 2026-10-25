@@ -43,7 +43,7 @@ interface Recorded {
 
 let now = 1000;
 let recorded: Recorded[] = [];
-let frameQueue: ((time: number) => void)[] = [];
+let frameQueue: (() => void)[] = [];
 
 beforeEach(() => {
   now = 1000;
@@ -106,7 +106,7 @@ async function advance(ms: number, clock?: ManualClock) {
   const frames = frameQueue;
   frameQueue = [];
   for (const callback of frames) {
-    callback(now);
+    callback();
   }
   await Promise.resolve();
   await Promise.resolve();
@@ -119,11 +119,11 @@ async function advance(ms: number, clock?: ManualClock) {
 
 /**
  * A frame in WebKit's order: the browser starts new animations and resolves
- * their start before this frame's animation-frame callbacks run (`advance`
- * runs the callbacks first), and stamps those callbacks `skew` ms after the
- * start (0 to 2 ms, measured).
+ * their start inside the frame's rendering update, before this frame's
+ * animation-frame callbacks run (`advance` runs the callbacks first), with
+ * no task (timer) in between.
  */
-async function advanceInWebKitOrder(ms: number, clock?: ManualClock, skew = 0) {
+async function advanceInWebKitOrder(ms: number, clock?: ManualClock) {
   for (const animation of recorded) {
     if (animation.startTime == null && !animation.cancelled) {
       animation.commit(now);
@@ -135,7 +135,7 @@ async function advanceInWebKitOrder(ms: number, clock?: ManualClock, skew = 0) {
   const frames = frameQueue;
   frameQueue = [];
   for (const callback of frames) {
-    callback(now + skew);
+    callback();
   }
   await Promise.resolve();
   await Promise.resolve();
@@ -398,27 +398,22 @@ describe('createPager', () => {
     expect(f.calls).toEqual(['index:2:drag']);
   });
 
-  // WebKit resolves an animation's start in the frame's animation update,
-  // before that same frame's animation-frame callbacks, and stamps those
-  // callbacks 0 to 2 ms after the start; counting that frame reported the
-  // page one frame into the settle.
-  for (const skew of [0, 2]) {
-    it(`in WebKit's frame order the settle's start frame does not count (its callbacks stamped ${skew} ms after the start): the page is still reported two frames after it`, async () => {
-      const f = setup({defaultIndex: 1});
-      await drag(f, {from: 300, dx: -250, step: 4, dt: 8, hold: 100});
-      expect(f.calls).toEqual([]);
-      // The frame that starts the settle, then one more: not yet.
-      await advanceInWebKitOrder(16, f.clock, skew);
-      expect(recorded.some(a => a.startTime != null && !a.cancelled)).toBe(
-        true,
-      );
-      await advanceInWebKitOrder(16, f.clock, skew);
-      expect(f.calls).toEqual([]);
-      // The second frame after the start.
-      await advanceInWebKitOrder(16, f.clock, skew);
-      expect(f.calls).toEqual(['index:2:drag']);
-    });
-  }
+  // WebKit resolves an animation's start in the frame's rendering update,
+  // before that same frame's animation-frame callbacks; counting that frame
+  // reported the page one frame into the settle.
+  it("in WebKit's frame order the settle's start frame does not count: the page is still reported two frames after it", async () => {
+    const f = setup({defaultIndex: 1});
+    await drag(f, {from: 300, dx: -250, step: 4, dt: 8, hold: 100});
+    expect(f.calls).toEqual([]);
+    // The frame that starts the settle, then one more: not yet.
+    await advanceInWebKitOrder(16, f.clock);
+    expect(recorded.some(a => a.startTime != null && !a.cancelled)).toBe(true);
+    await advanceInWebKitOrder(16, f.clock);
+    expect(f.calls).toEqual([]);
+    // The second frame after the start.
+    await advanceInWebKitOrder(16, f.clock);
+    expect(f.calls).toEqual(['index:2:drag']);
+  });
 
   it('a drag that catches the settle before the report still reports the page', async () => {
     const f = setup({defaultIndex: 1});
