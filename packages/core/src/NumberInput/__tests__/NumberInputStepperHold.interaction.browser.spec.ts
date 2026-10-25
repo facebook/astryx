@@ -567,6 +567,10 @@ test('under a finger each half takes at least the theme touch target square, and
   );
   await page.waitForTimeout(500);
   expectOneCommitAtRelease(await readLog(page), 3);
+  // A tap in the reach focuses nothing (no on-screen keyboard comes up).
+  expect(await page.evaluate(() => document.activeElement?.tagName)).toBe(
+    'BODY',
+  );
   // The reach moves no layout: with it taken away, every box is where it was
   // (and the point above the column no longer reaches it).
   const boxes = async () =>

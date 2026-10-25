@@ -972,10 +972,9 @@ export function NumberInput({
   // The kind of pointer that pressed a stepper, read when its click lands.
   const stepperPointerTypeRef = useRef<string | null>(null);
 
-  const handleStepperPointerDown = (
-    event: React.PointerEvent<HTMLButtonElement>,
-  ) => {
-    // The stepper never takes focus: an editing field stays focused.
+  const handleStepperPointerDown = (event: React.PointerEvent<HTMLElement>) => {
+    // The steppers never take focus, on a half or in the column's reach past
+    // them: an editing field stays focused.
     event.preventDefault();
     stepperPointerTypeRef.current = event.pointerType;
   };
@@ -1008,6 +1007,24 @@ export function NumberInput({
       return;
     }
     stepValue(direction);
+  };
+
+  // A click on the column itself, not on a half (the touch target's reach
+  // past the halves, or the column's border), belongs to the press the
+  // tracker already stepped. It never reaches the field's click-to-focus, so a
+  // finger brings up no keyboard there either; a mouse focuses the field, as
+  // on a half.
+  const handleColumnClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+    event.stopPropagation();
+    const pointerType = stepperPointerTypeRef.current;
+    stepperPointerTypeRef.current = null;
+    if (pointerType === 'mouse' && event.detail > 0) {
+      inputRef.current?.focus();
+    }
+    stepperTouch.takeTrackedClick(event.nativeEvent);
   };
 
   // A press on the steppers by any pointer is tracked by the press layer
@@ -1167,7 +1184,11 @@ export function NumberInput({
       )}
       {statusIcon}
       {hasNumberSteppers && (
-        <div ref={stepperColumnRef} {...stylex.props(styles.numberSteppers)}>
+        <div
+          ref={stepperColumnRef}
+          onPointerDown={handleStepperPointerDown}
+          onClick={handleColumnClick}
+          {...stylex.props(styles.numberSteppers)}>
           <button
             ref={incrementRef}
             type="button"
@@ -1176,7 +1197,6 @@ export function NumberInput({
               isDisabled || isReadOnly || !canIncrement || undefined
             }
             aria-label={t('@astryx.numberInput.incrementLabel', {label})}
-            onPointerDown={handleStepperPointerDown}
             onClick={event => pressStepper(1, event)}
             {...stylex.props(
               styles.numberStepperButton,
@@ -1200,7 +1220,6 @@ export function NumberInput({
               isDisabled || isReadOnly || !canDecrement || undefined
             }
             aria-label={t('@astryx.numberInput.decrementLabel', {label})}
-            onPointerDown={handleStepperPointerDown}
             onClick={event => pressStepper(-1, event)}
             {...stylex.props(
               styles.numberStepperButton,
