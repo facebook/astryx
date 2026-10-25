@@ -437,8 +437,9 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
    * would arm the next ArrowUp to replace it. Landing after the text is
    * also what a click on the composer's trailing space means.
    */
-  // Inside ChatLayout's keyboard-aware region every route into the text
-  // refuses the browser's reveal (spec:AST-099 FR4).
+  // Inside ChatLayout's keyboard-aware region, under a finger, every route
+  // into the text refuses the browser's reveal (spec:AST-099 FR4); under a
+  // mouse the browser's own focus applies (spec:AST-017 FR59).
   const isKeyboardSurface = use(KeyboardSurfaceContext);
 
   /**

@@ -417,8 +417,9 @@ export function ChatComposer(props: ChatComposerProps) {
   // drive it without knowing its DOM shape. Stable ref — safe in the memoized
   // context value.
   const inputControlRef = useRef<ChatComposerInputControl | null>(null);
-  // Inside ChatLayout's keyboard-aware region, focus refuses the browser's
-  // reveal (spec:AST-099 FR4); elsewhere it is the browser's own.
+  // Inside ChatLayout's keyboard-aware region, under a finger, focus refuses
+  // the browser's reveal (spec:AST-099 FR4); elsewhere, and under a mouse
+  // (spec:AST-017 FR59), it is the browser's own.
   const isKeyboardSurface = use(KeyboardSurfaceContext);
 
   const handleBodyClick = useCallback(

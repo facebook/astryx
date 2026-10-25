@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {beforeEach, describe, it, expect, vi} from 'vitest';
+import {afterEach, beforeEach, describe, it, expect, vi} from 'vitest';
 import {act, render, fireEvent, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {StrictMode, useEffect, useRef, type ReactNode} from 'react';
@@ -271,11 +271,31 @@ describe('ChatComposer input composition contract', () => {
 });
 
 describe('ChatComposer focus inside a keyboard-aware surface (spec:AST-099 FR4)', () => {
-  // Every route into the text refuses the browser's reveal there, which
-  // scrolls the whole page on iOS; elsewhere the browser's focus applies.
+  // Every route into the text refuses the browser's reveal there under a
+  // finger, which scrolls the whole page on iOS; elsewhere, and under a
+  // mouse, the browser's focus applies.
   const inSurface = (node: ReactNode) => (
     <KeyboardSurfaceContext value={true}>{node}</KeyboardSurfaceContext>
   );
+
+  // The primary pointer `matchMedia` reports: a touch screen's coarse finger,
+  // or a desktop's fine mouse.
+  function primaryPointer(pointer: 'coarse' | 'fine') {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === `(pointer: ${pointer})`,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+  }
+
+  beforeEach(() => {
+    primaryPointer('coarse');
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
   it('focuses the default input on an empty-space tap without the reveal', () => {
     const {container} = render(inSurface(<ChatComposer onSubmit={() => {}} />));
@@ -319,6 +339,34 @@ describe('ChatComposer focus inside a keyboard-aware surface (spec:AST-099 FR4)'
     const focus = vi.spyOn(editable, 'focus');
     act(() => handle!.focus());
     expect(focus).toHaveBeenCalledWith({preventScroll: true});
+  });
+
+  it('keeps the browser\u2019s focus under a mouse (spec:AST-017 FR59)', () => {
+    primaryPointer('fine');
+    let handle: ChatComposerInputHandle | null = null;
+    const {container} = render(
+      inSurface(
+        <ChatComposer
+          onSubmit={() => {}}
+          input={
+            <ChatComposerInput
+              handleRef={h => {
+                handle = h;
+              }}
+            />
+          }
+        />,
+      ),
+    );
+    const editable = container.querySelector<HTMLElement>(
+      '[contenteditable="true"]',
+    )!;
+    const focus = vi.spyOn(editable, 'focus');
+    act(() => handle!.focus());
+    expect(focus).toHaveBeenCalledWith();
+    expect(focus).not.toHaveBeenCalledWith({preventScroll: true});
+    fireEvent.click(editable.parentElement!);
+    expect(focus).not.toHaveBeenCalledWith({preventScroll: true});
   });
 
   it('keeps the browser\u2019s focus for a composer outside one', () => {
