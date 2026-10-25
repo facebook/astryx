@@ -117,7 +117,7 @@ export const datePicker = {
        * second tap reverses it. Each is a 0.25 s opacity animation from
        * `UIView.animate(withDuration: 0.25, options: .beginFromCurrentState)`
        * (no curve option: UIKit's default ease-in-ease-out,
-       * `timing.curves.easeInOut`).
+       * `timing.curves.move`).
        * @source measured: UIKit lab, iOS 26.2 simulator, `.date` `.inline`,
        *   title taps opening and closing the wheels: five CABasicAnimation
        *   opacity 0.25 s (`_UICalendarMonthYearSelector`, the
