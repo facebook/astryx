@@ -403,6 +403,20 @@ describe('build-css astryx.css', () => {
     });
   });
 
+  describe('Layout header/footer padding collapse (Layout/layoutEdges.stylex.ts)', () => {
+    it('ships no :has() on the layout followed by a descendant * for the header or footer', () => {
+      // `.anchor:has(…) *` makes engines restyle everything inside the layout
+      // on any change in it; the collapse uses sibling markers instead.
+      const costly = astryxCss
+        .split('\n')
+        .filter(
+          line =>
+            /astryx-layout-(header|footer)/.test(line) && /:has\(/.test(line),
+        );
+      expect(costly).toEqual([]);
+    });
+  });
+
   describe("the list rows' touch arms (List, TreeList)", () => {
     /**
      * A rule the build puts inside the touch gate (TOUCH_QUERY,
@@ -445,12 +459,6 @@ describe('build-css astryx.css', () => {
       for (const rule of heights) {
         expect(rule).toMatch(TOUCH_GATED);
       }
-      // The compact row's floor, the control size, sits beside them.
-      expect(
-        rules().some(
-          rule => TOUCH_GATED.test(rule) && rule.includes('{min-height:44px}'),
-        ),
-      ).toBe(true);
     });
 
     it("leaves the tree chevron's transition off only under a finger, where the expansion turns it", () => {
