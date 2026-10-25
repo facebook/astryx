@@ -118,8 +118,36 @@ import Testing
 @MainActor
 @Test func hrefMakesALinkAndAnUnusableHrefDoesNot() {
   #expect(Avatar("Ada", href: "https://example.com/ada").linkURL == URL(string: "https://example.com/ada"))
+  #expect(Avatar("Ada", href: "mailto:ada@example.com").linkURL != nil)
   #expect(Avatar("Ada", href: "").linkURL == nil)
+  #expect(Avatar("Ada", href: "not a url").linkURL == nil)
+  #expect(Avatar("Ada", href: "/people/ada").linkURL == nil)
   #expect(Avatar("Ada").linkURL == nil)
+}
+
+@MainActor
+@Test func avatarsReadTheirTapAndTraits() {
+  #expect(Avatar("Ada").tap == .none)
+  #expect(Avatar("Ada", onClick: {}).tap == .button)
+  #expect(Avatar("Ada", href: "https://example.com", onClick: {}).tap == .link)
+  #expect(Avatar("Ada", href: "not a url", onClick: {}).tap == .button)
+  #expect(Avatar.addedTraits(tap: .none, isNamed: true) == .isImage)
+  #expect(Avatar.addedTraits(tap: .link, isNamed: true) == [])
+  #expect(Avatar.addedTraits(tap: .button, isNamed: true) == [])
+}
+
+@Test func aLinkOrButtonAvatarWithoutANameIsWarnedAbout() {
+  #expect(Avatar.needsNameWarning(tap: .button, isNamed: false))
+  #expect(Avatar.needsNameWarning(tap: .link, isNamed: false))
+  #expect(!Avatar.needsNameWarning(tap: .button, isNamed: true))
+  #expect(!Avatar.needsNameWarning(tap: .none, isNamed: false))
+}
+
+@MainActor
+@Test func avatarsKeepTheirSizeAtTheLargestTextSize() {
+  let large = Pixels(Avatar("Ada Lovelace", size: .lg).fixedSize())
+  let largest = Pixels(Avatar("Ada Lovelace", size: .lg).fixedSize(), typeSize: .accessibility5)
+  #expect(largest.width == large.width && largest.height == large.height)
 }
 
 @MainActor

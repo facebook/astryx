@@ -2,6 +2,7 @@
 
 import AstryxNative
 import SwiftUI
+import os
 
 /// A person's or an entity's picture: the image at `src`, else `fallbackSrc`,
 /// else initials from `name`, else a person symbol (core `Avatar`).
@@ -53,7 +54,17 @@ public struct Avatar: View {
     if props.base.isHidden != true {
       control
         .modifier(AvatarIdentifier(id: props.base.id))
+        .onAppear(perform: warnIfUnnamed)
     }
+  }
+
+  private func warnIfUnnamed() {
+    #if DEBUG
+    if Avatar.needsNameWarning(tap: tap, isNamed: accessibilityLabel != nil) {
+      Logger(subsystem: "Astryx", category: "Avatar").warning(
+        "An Avatar with href or onClick has no alt or name, so VoiceOver reads it without a name.")
+    }
+    #endif
   }
 
   /// The picture as a link with `href`, a button with only `onClick`, or a
@@ -62,11 +73,7 @@ public struct Avatar: View {
     if let url = linkURL {
       SwiftUI.Link(destination: url) { picture }
         .buttonStyle(.plain)
-        // `onClick` runs as the link opens, as core's does.
-        .environment(\.openURL, OpenURLAction { url in
-          props.onClick?()
-          return .systemAction(url)
-        })
+        .modifier(AvatarRunsBeforeOpening(onClick: props.onClick))
         .modifier(AvatarTarget(side: side))
         .modifier(AvatarName(label: accessibilityLabel, isInteractive: true))
     } else if let onClick = props.onClick {
@@ -80,9 +87,35 @@ public struct Avatar: View {
     }
   }
 
+  /// How the avatar takes a tap: a link with a usable `href`, else a button
+  /// with `onClick`, else none.
+  enum Tap: Equatable { case link, button, none }
+
+  var tap: Tap {
+    if linkURL != nil { return .link }
+    if props.onClick != nil { return .button }
+    return .none
+  }
+
+  /// The traits the avatar adds: a named static avatar is an image; a link or
+  /// button keeps its own trait and adds none (Swift accessibility, X1).
+  nonisolated static func addedTraits(tap: Tap, isNamed: Bool) -> AccessibilityTraits {
+    tap == .none && isNamed ? .isImage : []
+  }
+
+  /// A link or button avatar needs a name, as core warns in development.
+  nonisolated static func needsNameWarning(tap: Tap, isNamed: Bool) -> Bool {
+    tap != .none && !isNamed
+  }
+
+  /// The photo; the fallback photo only after it fails or when there is
+  /// none, as core does; initials or the symbol while either loads and
+  /// after both fail.
   private var picture: some View {
     AvatarImage(url: url(props.src)) {
-      AvatarImage(url: url(props.fallbackSrc)) { plate }
+      plate
+    } failure: {
+      AvatarImage(url: url(props.fallbackSrc)) { plate } failure: { plate }
     }
     .frame(width: side, height: side)
     .clipShape(AvatarShapeOutline(shape: resolvedShape, radius: cornerRadius))
@@ -140,7 +173,12 @@ public struct Avatar: View {
   }
 
   /// The URL the avatar opens, or `nil` when it has no usable `href`.
-  var linkURL: URL? { url(props.href) }
+  var linkURL: URL? {
+    // Only an absolute URL the system can open; a malformed or relative
+    // `href` leaves the avatar static or a button.
+    guard let url = url(props.href), url.scheme != nil else { return nil }
+    return url
+  }
 
   private func url(_ string: String?) -> URL? {
     guard let string, !string.isEmpty else { return nil }
@@ -185,23 +223,46 @@ public struct Avatar: View {
   }
 }
 
-/// Draws the image at a URL, and `fallback` while it loads, when it fails, or
-/// when there is no URL.
-private struct AvatarImage<Fallback: View>: View {
+/// Draws the image at a URL: `loading` while it loads, `failure` when it
+/// fails or there is no URL.
+private struct AvatarImage<Loading: View, Failure: View>: View {
   let url: URL?
-  @ViewBuilder let fallback: () -> Fallback
+  @ViewBuilder let loading: () -> Loading
+  @ViewBuilder let failure: () -> Failure
 
   var body: some View {
     if let url {
       AsyncImage(url: url) { phase in
         if let image = phase.image {
           image.resizable().scaledToFill()
+        } else if phase.error != nil {
+          failure()
         } else {
-          fallback()
+          loading()
         }
       }
     } else {
-      fallback()
+      failure()
+    }
+  }
+}
+
+/// Runs `onClick` as a link opens, then hands the URL to whatever opens URLs
+/// above the avatar, so an app's own handler still applies. Without
+/// `onClick` it changes nothing.
+private struct AvatarRunsBeforeOpening: ViewModifier {
+  let onClick: (() -> Void)?
+  @Environment(\.openURL) private var inheritedOpenURL
+
+  func body(content: Content) -> some View {
+    if let onClick {
+      content.environment(\.openURL, OpenURLAction { url in
+        onClick()
+        inheritedOpenURL(url)
+        return .handled
+      })
+    } else {
+      content
     }
   }
 }
@@ -231,7 +292,8 @@ private struct AvatarName: ViewModifier {
       if isInteractive {
         content.accessibilityElement(children: .ignore).accessibilityLabel(label)
       } else {
-        content.accessibilityElement(children: .ignore).accessibilityLabel(label).accessibilityAddTraits(.isImage)
+        content.accessibilityElement(children: .ignore).accessibilityLabel(label)
+          .accessibilityAddTraits(Avatar.addedTraits(tap: .none, isNamed: true))
       }
     } else if isInteractive {
       content
