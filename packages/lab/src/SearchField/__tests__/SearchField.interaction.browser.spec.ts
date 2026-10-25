@@ -638,6 +638,55 @@ test('the waiting close button does not widen the page: nothing scrolls sideways
   );
 });
 
+test('the CSS form of the active pose, painted before hydration, matches the placed pose', async ({
+  page,
+}) => {
+  const {driver, field} = await openField(page);
+  await driver.tap(await centerOf(field));
+  await expect(root(page)).toHaveAttribute('data-search-field-active', 'true');
+  await waitForRest(end(page));
+  await waitForRest(middle(page));
+  const rects = () =>
+    page.evaluate(() => {
+      const read = (selector: string) => {
+        const rect = (
+          document.querySelector(selector) as HTMLElement
+        ).getBoundingClientRect();
+        return {left: rect.left, right: rect.right};
+      };
+      return {
+        end: read('[data-search-field-end]'),
+        middle: read('[data-search-field-middle]'),
+      };
+    });
+  const placed = await rects();
+  // As a server render paints it: no placement yet, no held values.
+  await page.evaluate(() => {
+    const searchRoot = document.querySelector('[role="search"]') as HTMLElement;
+    searchRoot.removeAttribute('data-search-field-placed');
+    for (const selector of [
+      '[data-search-field-end]',
+      '[data-search-field-middle]',
+    ]) {
+      const element = document.querySelector(selector) as HTMLElement;
+      for (const animation of element.getAnimations()) {
+        animation.cancel();
+      }
+      element.style.removeProperty('translate');
+      element.style.removeProperty('scale');
+    }
+  });
+  const css = await rects();
+  for (const part of ['end', 'middle'] as const) {
+    expect(Math.abs(css[part].right - placed[part].right), part).toBeLessThan(
+      0.5,
+    );
+    expect(Math.abs(css[part].left - placed[part].left), part).toBeLessThan(
+      0.5,
+    );
+  }
+});
+
 test('under a finger the close button is glass', async ({page}) => {
   await openField(page);
   const style = await close(page).evaluate(element => {

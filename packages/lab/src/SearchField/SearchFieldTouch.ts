@@ -114,6 +114,12 @@ export function useSearchFieldMotion({
       // First layout, or a mouse or trackpad: take the places at once.
       settledRef.current = target;
       place(poseFor(target, geometry()));
+      // The parts now hold their places: the CSS form of the active pose
+      // (for a server render) steps aside in the same task.
+      rootAnimator.animator.element?.setAttribute(
+        'data-search-field-placed',
+        '',
+      );
       return;
     }
     if (settledRef.current === target && !isAnimating.current) {

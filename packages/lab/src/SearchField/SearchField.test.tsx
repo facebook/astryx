@@ -99,6 +99,36 @@ describe('SearchField', () => {
     expect(box()).not.toHaveFocus();
   });
 
+  it('server-renders an active field narrowed, and steps the CSS pose aside once the parts are placed', () => {
+    // No effects run: the markup and CSS a server-rendered page paints first.
+    const host = document.createElement('div');
+    host.innerHTML = renderToString(
+      <SearchField label="Search" defaultIsActive />,
+    );
+    document.body.appendChild(host);
+    try {
+      const end = host.querySelector('[data-search-field-end]') as HTMLElement;
+      const middle = host.querySelector(
+        '[data-search-field-middle]',
+      ) as HTMLElement;
+      // The trailing end moved in, and the middle short, by the close button
+      // and its gap.
+      const {closeGap, closeSize} = uikit.search.stacked;
+      expect(closeGap + closeSize).toBe(55);
+      expect(getComputedStyle(end).marginInlineEnd).toBe('55px');
+      expect(getComputedStyle(middle).marginInlineEnd).toBe('55px');
+    } finally {
+      host.remove();
+    }
+    // A client render places the parts and marks the root, so the CSS pose
+    // no longer applies.
+    render(<SearchField label="Search" defaultIsActive />);
+    const root = screen.getByRole('search');
+    expect(root).toHaveAttribute('data-search-field-placed');
+    const end = root.querySelector('[data-search-field-end]') as HTMLElement;
+    expect(getComputedStyle(end).marginInlineEnd).not.toBe('55px');
+  });
+
   it('draws its magnifier as the icon itself, with no wrapper element', () => {
     render(<Field />);
     const input = box();

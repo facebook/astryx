@@ -305,6 +305,18 @@ const styles = stylex.create({
   }),
   // Inactive, the close button is transparent (the animator holds its
   // opacity at 0) and takes no taps.
+  // The active pose before the touch layer places the parts (a server
+  // render, or the first paint before hydration): the trailing end already
+  // moved in by the close button and its gap, and the middle short by the
+  // same 55 px (`search.stacked.closeGap + closeSize`, kept equal by a test).
+  // The touch layer marks the root placed in its first layout, in the same
+  // task as it sets the parts' held values, which then take over.
+  beforePlacement: {
+    marginInlineEnd: {
+      default: null,
+      ':is([data-search-field-active]:not([data-search-field-placed]) *)': 55,
+    },
+  },
   // The resting (inactive) close button, in CSS so a server-rendered page
   // paints it transparent and out of place before the animator's held
   // values take over: 44 px toward the trailing end
@@ -507,7 +519,11 @@ export function SearchField({
           ref={motion.middleRef}
           aria-hidden
           data-search-field-middle=""
-          {...stylex.props(styles.piece, styles.middle(cap))}
+          {...stylex.props(
+            styles.piece,
+            styles.middle(cap),
+            styles.beforePlacement,
+          )}
         />
         <Icon
           icon="search"
@@ -538,7 +554,7 @@ export function SearchField({
         <div
           ref={motion.endRef}
           data-search-field-end=""
-          {...stylex.props(styles.end)}>
+          {...stylex.props(styles.end, styles.beforePlacement)}>
           <span aria-hidden {...stylex.props(styles.endCap(cap))} />
           {showsClear ? (
             <button
