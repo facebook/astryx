@@ -461,42 +461,62 @@ test('an ordinary change keeps the theme\u2019s duration and easing', async ({
   }
 });
 
-test('under reduced motion a new value lands at once', async ({page}) => {
-  await page.emulateMedia({reducedMotion: 'reduce'});
-  await open(page, 20);
-  // Read the fill in the same task React commits the new value: a running
-  // transition shows up there, before any frame could finish it.
-  const state = await page.evaluate(
-    async ({storyId}) =>
-      new Promise<{running: number; edge: number}>(resolve => {
-        const track = document.querySelector('[role="progressbar"]') as Element;
-        const fill = track.firstElementChild as HTMLElement;
-        const observer = new MutationObserver(() => {
-          observer.disconnect();
-          const t = track.getBoundingClientRect();
-          resolve({
-            running: fill.getAnimations().length,
-            edge: (fill.getBoundingClientRect().right - t.left) / t.width,
-          });
-        });
-        observer.observe(fill, {attributes: true, attributeFilter: ['style']});
-        (
-          window as unknown as {
-            __STORYBOOK_ADDONS_CHANNEL__: {
-              emit: (event: string, payload: unknown) => void;
-            };
-          }
-        ).__STORYBOOK_ADDONS_CHANNEL__.emit('updateStoryArgs', {
-          storyId,
-          updatedArgs: {value: 80},
-        });
-      }),
-    {storyId: STORY},
-  );
-  // No transition, and the fill is already at its new value: nothing travels.
-  expect(state.running).toBe(0);
-  expect(state.edge).toBeCloseTo(0.8, 2);
-});
+for (const pointer of ['a mouse', 'a finger'] as const) {
+  test.describe(`with ${pointer}`, () => {
+    test.use(
+      pointer === 'a finger'
+        ? {hasTouch: true, isMobile: true}
+        : {hasTouch: false, isMobile: false},
+    );
+
+    test('under reduced motion a new value lands at once', async ({page}) => {
+      // Both shared reduced-motion queries, a fine pointer's and a coarse
+      // pointer's, set the fill's duration to 0 s.
+      await page.emulateMedia({reducedMotion: 'reduce'});
+      await open(page, 20);
+      expect(
+        await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+      ).toBe(pointer === 'a finger');
+      // Read the fill in the same task React commits the new value: a running
+      // transition shows up there, before any frame could finish it.
+      const state = await page.evaluate(
+        async ({storyId}) =>
+          new Promise<{running: number; edge: number}>(resolve => {
+            const track = document.querySelector(
+              '[role="progressbar"]',
+            ) as Element;
+            const fill = track.firstElementChild as HTMLElement;
+            const observer = new MutationObserver(() => {
+              observer.disconnect();
+              const t = track.getBoundingClientRect();
+              resolve({
+                running: fill.getAnimations().length,
+                edge: (fill.getBoundingClientRect().right - t.left) / t.width,
+              });
+            });
+            observer.observe(fill, {
+              attributes: true,
+              attributeFilter: ['style'],
+            });
+            (
+              window as unknown as {
+                __STORYBOOK_ADDONS_CHANNEL__: {
+                  emit: (event: string, payload: unknown) => void;
+                };
+              }
+            ).__STORYBOOK_ADDONS_CHANNEL__.emit('updateStoryArgs', {
+              storyId,
+              updatedArgs: {value: 80},
+            });
+          }),
+        {storyId: STORY},
+      );
+      // No transition, and the fill is already at its new value: nothing travels.
+      expect(state.running).toBe(0);
+      expect(state.edge).toBeCloseTo(0.8, 2);
+    });
+  });
+}
 
 test('below one track height of fill, the leading end follows the track\u2019s curve', async ({
   page,

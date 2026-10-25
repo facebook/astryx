@@ -257,9 +257,13 @@ const styles = stylex.create({
     // Under reduced motion a new value lands at once, on every pointer:
     // progress indicators sit outside design:reduced-motion's scope, and a
     // fill that never travels is the choice that cannot conflict with it.
+    // The keys are the shared reduced-motion queries, a fine pointer's and a
+    // coarse pointer's, spelled as the record's other transitions spell them.
     transitionDuration: {
       default: durationVars['--duration-medium'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        '0s',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
