@@ -566,7 +566,9 @@ describe('useSheetGestures', () => {
     const {hook, onDismiss} = setup({snapHeights: () => [200]});
     const t = makeTarget();
     down(hook, 0, 0, t);
-    // 60px in 20ms = 3px/ms, and 60px > the flick distance floor.
+    // 60px in 20ms = 3px/ms, and 60px > the flick distance floor (two
+    // moves: the release filter needs two moved samples, spec:AST-100 FR2).
+    move(hook, 30, 10, t);
     move(hook, 60, 20, t);
     up(hook, 60, 22, t);
     expect(onDismiss).toHaveBeenCalledTimes(1);
@@ -583,6 +585,7 @@ describe('useSheetGestures', () => {
     });
     const t = makeTarget();
     down(hook, 0, 0, t);
+    move(hook, 30, 10, t);
     move(hook, 60, 20, t);
     up(hook, 60, 22, t);
 
@@ -605,6 +608,7 @@ describe('useSheetGestures', () => {
     onSnap.mockClear();
     // Now flick up fast: 60px in 20ms = 3px/ms, over the distance floor.
     down(hook, 200, 1000, t);
+    move(hook, 170, 1010, t);
     move(hook, 140, 1020, t);
     up(hook, 140, 1022, t);
     expect(onDismiss).not.toHaveBeenCalled();
@@ -684,7 +688,7 @@ describe('useSheetGestures', () => {
       const {hook, onDismiss} = setup({snapHeights: () => [200]});
       const t = makeTarget();
       down(hook, 0, 0, t);
-      stream(hook, t, {from: 0, to: 60, t0: 0, t1: 20}); // 3000 px/s ...
+      stream(hook, t, {from: 0, to: 60, t0: 0, t1: 20, step: 10}); // 3000 px/s ...
       up(hook, 60, 55, t); // ... then 35 ms still, then the lift
       // Projected 60 + 3000 × 0.1 = 360, nearest gone (400).
       expect(onDismiss).toHaveBeenCalledTimes(1);
@@ -775,7 +779,8 @@ describe('useSheetGestures', () => {
       const t = makeTarget();
       down(hook, 0, 0, t);
       move(hook, 0, 250, t); // a still hold on the handle
-      move(hook, 30, 275, t); // then 60px in 50ms
+      move(hook, 20, 270, t); // then 60px in 50ms, the last 40 in 30
+      move(hook, 40, 285, t);
       move(hook, 60, 300, t);
       up(hook, 60, 302, t);
       expect(onDismiss).toHaveBeenCalledTimes(1);
@@ -783,17 +788,16 @@ describe('useSheetGestures', () => {
 
     it('reads a move after a hold through the release filter, as a finger\u2019s is read', () => {
       // One sample 300 ms after the press: the release filter (one for every
-      // pointer, spec:AST-100 FR1) reads the speed between its samples, so
-      // this release projects a short coast and lands on the next detent. The
-      // window of the last 100 ms it replaces read it as a 600 px/s throw and
-      // dismissed.
+      // pointer, spec:AST-100 FR1) reads no velocity from a single move
+      // (FR2), so the sheet settles where it is nearest. The window of the
+      // last 100 ms it replaces read it as a 600 px/s throw and dismissed.
       const {hook, onDismiss} = setup({snapHeights: () => [200]});
       const t = makeTarget();
       down(hook, 0, 0, t);
       move(hook, 60, 300, t); // one sample, 300ms after touch-down
       up(hook, 60, 302, t);
       expect(onDismiss).not.toHaveBeenCalled();
-      expect(hook.result.current.settledOffset).toBe(200);
+      expect(hook.result.current.settledOffset).toBe(0);
     });
 
     it('releases no throw from a finger that rested before lifting', () => {
@@ -1308,6 +1312,10 @@ describe('useSheetGestures', () => {
   });
 
   describe('pinch', () => {
+    // Fingers: a coarse primary pointer before the sheet mounts (the gesture
+    // host attaches its recognizers only there, spec:AST-094 FR19).
+    beforeEach(() => stubCoarsePointer());
+
     // A second finger is a pinch, and pinch-zoom belongs to the browser: it
     // gives the sheet's one-finger pans up, wherever it lands.
     it('declares pinch-zoom on the sliding surface, and leaves the handle to its pan', () => {
@@ -1565,10 +1573,17 @@ describe('useSheetGestures', () => {
   });
 
   describe('body touch handoff', () => {
+    // Fingers: a coarse primary pointer before the sheet mounts (the gesture
+    // host attaches its recognizers only there, spec:AST-094 FR19).
+    beforeEach(() => stubCoarsePointer());
+
     // A finger on the scrolling body, through the body's pans: down where
     // nothing under it can scroll up, up where nothing can scroll down while
     // a taller detent exists (`scrollEdge`).
     it('promotes a top pull-down (touch) into a sheet drag', () => {
+      // A finger: a coarse primary pointer before the sheet mounts (the gesture
+      // host attaches its recognizers only there, spec:AST-094 FR19).
+      stubCoarsePointer();
       const {hook} = setup({snapHeights: () => [200]});
       const el = makeScroller({
         scrollTop: 0,
@@ -1797,6 +1812,10 @@ describe('useSheetGestures', () => {
   });
 
   describe('body touch handoff from a nested scroller', () => {
+    // Fingers: a coarse primary pointer before the sheet mounts (the gesture
+    // host attaches its recognizers only there, spec:AST-094 FR19).
+    beforeEach(() => stubCoarsePointer());
+
     // A host that scrolls content in a box of its own inside the body (a
     // pinned header and footer around a scrolling middle, a grid) never moves
     // the body's scrollTop. The edge that decides the handoff is the edge of
@@ -1926,6 +1945,10 @@ describe('useSheetGestures', () => {
   });
 
   describe("a drag that begins in the content stays the content's (spec:AST-094 FR14)", () => {
+    // Fingers: a coarse primary pointer before the sheet mounts (the gesture
+    // host attaches its recognizers only there, spec:AST-094 FR19).
+    beforeEach(() => stubCoarsePointer());
+
     // The finger lands mid-content and swipes up, so the content scrolls and
     // the browser owns the gesture (every remaining touchmove is
     // uncancelable). Who gets a drag is decided when it begins: when the
@@ -3956,6 +3979,9 @@ describe("useSheetGestures: the handle's pan", () => {
 
 describe("useSheetGestures: the body's pull at the content's edge", () => {
   it('claims a slow pull from 5 px, before WebKit would take it for the overscroll', () => {
+    // A finger: a coarse primary pointer before the sheet mounts (the gesture
+    // host attaches its recognizers only there, spec:AST-094 FR19).
+    stubCoarsePointer();
     const {hook} = setup({snapHeights: () => [200]});
     const body = makeScroller({
       scrollTop: 0,
