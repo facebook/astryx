@@ -73,10 +73,16 @@ const EXTENSIONS = ['.tsx', '.ts', '.mjs', '.js', '.jsx'];
 
 /**
  * `'use client'` modules a server-safe component may render as a client
- * island: each does nothing on the server, so the component's server output
- * is unchanged. The walk stops at them.
+ * island: on the server each renders nothing, or exactly the markup the
+ * component would render statically, so the component's server output is
+ * unchanged; the island only adds behavior after hydration, and only when the
+ * props that need it are passed. The walk stops at them.
  */
-const CLIENT_ISLANDS = new Set(['hooks/AnnounceRenderedText.tsx']);
+const CLIENT_ISLANDS = new Set([
+  'hooks/AnnounceRenderedText.tsx',
+  'Kbd/PlatformKbd.tsx',
+  'Text/TruncatedText.tsx',
+]);
 
 const isSourceFile = (name: string) =>
   /\.[jt]sx?$/.test(name) &&

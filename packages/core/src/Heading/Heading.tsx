@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * @file Heading.tsx
  * @input Uses React, HTMLAttributes, ReactNode
  * @output Exports Heading component, HeadingProps, HeadingLevel types
- * @position Core implementation; lives in own Heading/ dir, re-exported by Text/
+ * @position Core implementation; lives in own Heading/ dir, re-exported by Text/.
+ *   Server-safe: renders on the server with no client JS. Truncation with a
+ *   tooltip (`maxLines` > 0) renders the TruncatedText client part.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Text/Text.doc.mjs (props table, features, implementation notes)
@@ -17,7 +17,7 @@
  * - /packages/cli/assets/templates/blocks/components/Text/ (showcase blocks)
  */
 
-import {lazy, Suspense, useRef, type ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {
   TextColor,
@@ -40,20 +40,14 @@ import {
   textWrapStyles,
   capsizeStyles,
   decorationStyles,
-  truncationTooltipStyles,
 } from '../Text/text.stylex';
-import {useTruncation} from '../Text/useTruncation';
+import {TruncatedText} from '../Text/TruncatedText';
 import {resolveStyleColor} from '../Text/Text';
 import type {LayerPlacement} from '../Layer';
 import {mergeProps} from '../utils';
-import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import type {HeadingTypeMap} from './index';
-
-const LazyXDSTooltip = lazy(async () =>
-  import('../Tooltip/Tooltip').then(mod => ({default: mod.Tooltip})),
-);
 
 /**
  * Heading level (1-6). Determines both visual styling and semantic HTML element.
@@ -253,86 +247,70 @@ export function Heading({
   // the closed built-in StyleX maps with an unknown name.
   const builtinType = type && isBuiltinHeadingType(type) ? type : undefined;
 
-  // Truncation detection. Only the tooltip reads the measured overflow, so
-  // with the tooltip off the text is clipped by CSS alone and nothing is
-  // measured or observed.
-  const truncation = useTruncation({
-    maxLines: hasTruncateTooltip === false ? 0 : maxLines,
-  });
-
-  // Tooltip for truncated text
-  const tooltipPlacement: LayerPlacement =
-    typeof hasTruncateTooltip === 'string' ? hasTruncateTooltip : 'above';
-  const tooltipEnabled =
-    maxLines > 0 && hasTruncateTooltip !== false && truncation.isTruncated;
-
-  // Ref for the heading element (used as tooltip anchor)
-  const headingRef = useRef<HTMLHeadingElement>(null);
-
-  // Keep the merged ref stable across rerenders.
-  const mergedRef = useMergedRefs(ref, truncation.ref, headingRef);
-
   // Build inline style for -webkit-line-clamp (dynamic value)
   const inlineStyle = maxLines > 1 ? {WebkitLineClamp: maxLines} : undefined;
 
-  return (
-    <>
-      <Component
-        ref={mergedRef}
-        {...mergeProps(
-          themeProps('heading', {
-            level,
-            color,
-            type,
-            weight,
-          }),
-          stylex.props(
-            colorStyles[resolveStyleColor(color)],
-            builtinType
-              ? sizeByTypeStyles[builtinType]
-              : sizeByLevelStyles[level],
-            builtinType && defaultWeightByTypeStyles[builtinType],
-            weight && weightStyles[weight],
-            // Display: use truncation styles when maxLines > 0
-            maxLines === 1
-              ? truncationStyles.singleLine
-              : maxLines > 1
-                ? truncationStyles.multiLine
-                : displayStyles[resolvedDisplay],
-            // Word break when truncating
-            maxLines > 0 && wordBreakStyles[resolvedWordBreak],
-            // Text wrap
-            textWrap && textWrapStyles[textWrap],
-            // Justify (text alignment)
-            justify !== 'start' && justifyStyles[justify],
-            // Capsize
-            hasCapsize && capsizeStyles.enabled,
-            // Decorations
-            hasStrikethrough && decorationStyles.strikethrough,
-            // User xstyle
-            xstyle,
-          ),
-          className,
-          {...style, ...inlineStyle},
-        )}
-        {...ariaProps}
-        {...props}>
+  const elementProps = {
+    ...mergeProps(
+      themeProps('heading', {
+        level,
+        color,
+        type,
+        weight,
+      }),
+      stylex.props(
+        colorStyles[resolveStyleColor(color)],
+        builtinType ? sizeByTypeStyles[builtinType] : sizeByLevelStyles[level],
+        builtinType && defaultWeightByTypeStyles[builtinType],
+        weight && weightStyles[weight],
+        // Display: use truncation styles when maxLines > 0
+        maxLines === 1
+          ? truncationStyles.singleLine
+          : maxLines > 1
+            ? truncationStyles.multiLine
+            : displayStyles[resolvedDisplay],
+        // Word break when truncating
+        maxLines > 0 && wordBreakStyles[resolvedWordBreak],
+        // Text wrap
+        textWrap && textWrapStyles[textWrap],
+        // Justify (text alignment)
+        justify !== 'start' && justifyStyles[justify],
+        // Capsize
+        hasCapsize && capsizeStyles.enabled,
+        // Decorations
+        hasStrikethrough && decorationStyles.strikethrough,
+        // User xstyle
+        xstyle,
+      ),
+      className,
+      {...style, ...inlineStyle},
+    ),
+    ...ariaProps,
+    ...props,
+  };
+
+  // Truncation with the tooltip measures overflow on the client. Without it the
+  // heading is clipped by CSS alone and nothing is measured, so it renders on
+  // the server as is.
+  if (maxLines > 0 && hasTruncateTooltip !== false) {
+    const tooltipPlacement: LayerPlacement =
+      typeof hasTruncateTooltip === 'string' ? hasTruncateTooltip : 'above';
+    return (
+      <TruncatedText
+        as={Component}
+        elementProps={elementProps}
+        maxLines={maxLines}
+        ref={ref}
+        tooltipPlacement={tooltipPlacement}>
         {children}
-      </Component>
-      {tooltipEnabled && (
-        <Suspense fallback={null}>
-          <LazyXDSTooltip
-            anchorRef={headingRef}
-            content={
-              <span {...stylex.props(truncationTooltipStyles.content)}>
-                {truncation.fullText}
-              </span>
-            }
-            placement={tooltipPlacement}
-          />
-        </Suspense>
-      )}
-    </>
+      </TruncatedText>
+    );
+  }
+
+  return (
+    <Component ref={ref} {...elementProps}>
+      {children}
+    </Component>
   );
 }
 
