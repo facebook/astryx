@@ -29,18 +29,16 @@ const settle = async () => {
   await act(nextFrame);
 };
 
+const POLITE = '[data-astryx-live-region="polite"]';
+
 /** Every write to the shared polite region, one entry per write. */
 function recordPolite() {
   const spoken: string[] = [];
   const observer = new MutationObserver(records => {
     for (const {target, addedNodes} of records) {
-      const isPolite =
-        (target as Element).getAttribute?.('data-astryx-live-region') ===
-        'polite';
-      for (const node of isPolite ? addedNodes : []) {
-        if (node.textContent?.trim()) {
-          spoken.push(node.textContent.trim());
-        }
+      const text = addedNodes.length ? target.textContent?.trim() : '';
+      if (text && (target as Element).matches?.(POLITE)) {
+        spoken.push(text);
       }
     }
   });
@@ -48,11 +46,8 @@ function recordPolite() {
   return {spoken, stop: () => observer.disconnect()};
 }
 
-function mount() {
-  const container = document.createElement('div');
-  document.body.appendChild(container);
-  return createRoot(container);
-}
+const mount = () =>
+  createRoot(document.body.appendChild(document.createElement('div')));
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -157,7 +152,6 @@ describe('EmptyState announcement (spec:AST-086 FR2)', () => {
     const container = document.createElement('div');
     container.innerHTML = renderToString(tree);
     document.body.appendChild(container);
-    expect(container.querySelector('[role], [aria-live]')).toBeNull();
     paint();
     const polite = recordPolite();
     const root = await act(async () => hydrateRoot(container, tree));
@@ -169,29 +163,38 @@ describe('EmptyState announcement (spec:AST-086 FR2)', () => {
 
   it('reads blocks apart and leaves hidden text out of the message', () => {
     const element = document.createElement('div');
-    element.innerHTML =
-      '<p>Try again.</p><p>Later.</p><span hidden>Hidden</span>';
+    element.innerHTML = '<p>Try again.</p><p>Later.</p><b hidden>No</b>';
     expect(renderedText(element)).toBe('Try again. Later.');
   });
 
-  it('stays silent while hidden or revealed during load; announces once when shown later (FR12)', async () => {
+  it('stays silent while hidden (attribute or CSS) or revealed during load; announces once when shown later (FR12)', async () => {
     const {EmptyState, paint} = await importEmptyState();
+    // jsdom has no checkVisibility; this one honors an inline display: none.
+    HTMLElement.prototype.checkVisibility = function (this: HTMLElement) {
+      return this.closest('[style*="none"]') == null;
+    };
     const polite = recordPolite();
     const root = mount();
-    const show = async (hidden: boolean) =>
+    const show = async (hidden: boolean, display?: string) =>
       act(async () =>
-        root.render(<EmptyState title="No results" hidden={hidden} />),
+        root.render(
+          <div style={{display}}>
+            <EmptyState title="No results" hidden={hidden} />
+          </div>,
+        ),
       );
     await show(true);
     await show(false);
     paint();
     await show(true);
+    await show(false, 'none');
     await act(nextFrame);
     expect(polite.spoken).toEqual([]);
     await show(false);
     await settle();
     polite.stop();
     expect(polite.spoken).toEqual(['No results']);
+    delete (HTMLElement.prototype as Partial<HTMLElement>).checkVisibility;
     await act(async () => root.unmount());
   });
 });

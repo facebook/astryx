@@ -82,8 +82,7 @@ import type {
   CommentUser,
 } from './types';
 
-// The page's shared live regions (an empty state that appears announces
-// through them) are not the component's error Banner.
+// The page's shared live regions are not the component's error Banner.
 const errorBanner = () =>
   screen
     .queryAllByRole('alert')

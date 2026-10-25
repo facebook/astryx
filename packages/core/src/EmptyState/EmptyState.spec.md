@@ -138,11 +138,10 @@ intentional decision. A `current` contract contains no unresolved rows.
   role or `aria-live` to the root and does not move focus. Rendered or changed
   before the document finished loading (or while hydrating), it announces
   nothing. When it appears, or its message changes, later, it announces its
-  message once
-  through the shared polite channel (`spec:AST-086` FR2, FR11). The message is
-  the title and description, without content hidden from assistive technology;
-  action labels are not part of it. Action controls keep their own names,
-  roles, and behavior.
+  message once through the shared polite channel (`spec:AST-086` FR2, FR11).
+  The message is the title and description, without content hidden from
+  assistive technology; action labels are not part of it. Action controls keep
+  their own names, roles, and behavior.
 
 ## Design relationships
 

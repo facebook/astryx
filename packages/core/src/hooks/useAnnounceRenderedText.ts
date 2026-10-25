@@ -63,11 +63,10 @@ function blockText(element: HTMLElement): string {
 
 export interface AnnounceRenderedTextOptions {
   /**
-   * Text present or changed before the document finished loading (or while
-   * hydrating) is not announced; text that appears or changes later is, once
-   * (`spec:AST-086` FR11). Content inside a mounted live container is left to
-   * that container (FR4). Each child element is read as its own block. A
-   * script reveal outside React is read on the next render (FR13, INV5, INV10).
+   * Text present or changed while the document loads or hydrates is silent;
+   * text that appears or changes later is announced once (`spec:AST-086`
+   * FR11). A mounted live container speaks its own content (FR4); each child is
+   * a block; a reveal without a re-render is read on the next render (FR13).
    */
   skipFirstRender?: boolean;
 }
@@ -127,7 +126,11 @@ export function useAnnounceRenderedText(
     const isFirstRun = isFirstRunRef.current;
     isFirstRunRef.current = false;
     const element = ref.current;
-    if (!isShown || element?.closest('[hidden], [aria-hidden="true"]')) {
+    if (
+      !isShown ||
+      element?.closest(HIDDEN) ||
+      element?.checkVisibility?.() === false
+    ) {
       spokenRef.current = null;
       return;
     }
