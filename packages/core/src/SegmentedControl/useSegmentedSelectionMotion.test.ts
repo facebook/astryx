@@ -5,11 +5,11 @@
  * @input vitest, jsdom, SegmentedSelectionMotion with an animator on a
  *   scripted clock, stubbed segment geometry and a recording `animate`
  * @output The touch presentation's selection motion as a state machine: the
- *   proxy copies the selected surface and springs from the old segment's box
- *   to the new one's on the UIKit spring, hides the segment's own surface
- *   meanwhile and hands it back on landing; a change mid-flight keeps the
- *   presented position and velocity; resize, a cleared selection and Reduced
- *   Motion; the title cross-fade's twin, clock, curve and interruption swap.
+ *   lens (the radiogroup's ::before) is painted from the selected surface and
+ *   springs from the old segment's box to the new one's on the UIKit spring,
+ *   the segment's own surface hidden meanwhile and handed back on landing; a
+ *   change mid-flight keeps the presented position and velocity; resize, a
+ *   cleared selection and Reduced Motion (the ::after fading out where it is).
  * @position Unit tests for useSegmentedSelectionMotion.ts. The browser proofs
  *   (real touch, seeked curves, busy main thread, Layout / Paint, pixels) are
  *   __tests__/SegmentedControl.interaction.browser.spec.ts.
@@ -19,8 +19,8 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {createAnimator, type Animator} from '../motion/animator';
 import {
   SegmentedSelectionMotion,
-  TITLE_SELECTOR,
-  TITLE_TWIN_SELECTOR,
+  layerVariable,
+  type Layer,
 } from './useSegmentedSelectionMotion';
 
 interface Geometry {
@@ -58,9 +58,10 @@ function setup(selected: string, {coarse = true}: {coarse?: boolean} = {}) {
   const track = document.createElement('div');
   track.getBoundingClientRect = () =>
     rect(TRACK.left, TRACK.top, TRACK.width, TRACK.height);
-  Object.defineProperty(track, 'offsetWidth', {value: TRACK.width});
-  const proxy = document.createElement('span');
-  track.append(proxy);
+  Object.defineProperty(track, 'offsetWidth', {
+    value: TRACK.width,
+    configurable: true,
+  });
   const segments: Record<string, HTMLElement> = {};
   for (const [value, geometry] of Object.entries(SEGMENTS)) {
     const segment = document.createElement('button');
@@ -68,13 +69,7 @@ function setup(selected: string, {coarse = true}: {coarse?: boolean} = {}) {
     segment.dataset.value = value;
     segment.getBoundingClientRect = () =>
       rect(geometry.left, TRACK.top + 2, geometry.width, 27);
-    const title = document.createElement('span');
-    title.dataset.segmentTitle = 'text';
-    title.textContent = value;
-    const twin = document.createElement('span');
-    twin.dataset.segmentTitle = 'twin';
-    twin.textContent = value;
-    segment.append(title, twin);
+    segment.textContent = value;
     track.append(segment);
     segments[value] = segment;
   }
@@ -87,41 +82,37 @@ function setup(selected: string, {coarse = true}: {coarse?: boolean} = {}) {
     now: () => clock,
     prefersReducedMotion: () => reduceMotion,
     isCoarsePointer: () => coarse,
+    pseudoElement: '::before',
   });
   const leavingAnimator: Animator = createAnimator(null, {
     now: () => clock,
     prefersReducedMotion: () => reduceMotion,
     isCoarsePointer: () => coarse,
+    pseudoElement: '::after',
   });
   const motion = new SegmentedSelectionMotion(animator, {
     now: () => clock,
     leavingAnimator,
   });
-  motion.attachProxy(proxy);
+  motion.attachTrack(track);
   paint(segments, selected);
-  motion.rememberTitles(track);
-  return {track, proxy, segments, animator, leavingAnimator, motion};
+  /** A custom property of one of the radiogroup's pseudo-element layers. */
+  const layer = (name: Layer, property: string) =>
+    track.style.getPropertyValue(layerVariable(name, property));
+  return {track, segments, animator, leavingAnimator, motion, layer};
 }
 
 /**
  * The component's styles, as a stylesheet: the selected segment paints the
- * raised surface, and each title's rendering follows its segment's state.
- * (A stylesheet and not inline styles: the controller hides and restores the
- * surface inline, exactly as it does over the real component's classes.)
+ * raised surface. (A stylesheet and not inline styles: the controller hides
+ * and restores the surface inline, exactly as it does over the real
+ * component's classes.)
  */
 const STYLES = `
   [role="radio"] { border-top-left-radius: 6px; }
   [role="radio"][aria-checked="true"] {
     background-color: rgb(255, 255, 255);
     box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 2px;
-  }
-  [role="radio"][aria-checked="false"] [data-segment-title="text"] {
-    color: rgb(110, 110, 110);
-    font-weight: 500;
-  }
-  [role="radio"][aria-checked="true"] [data-segment-title="text"] {
-    color: rgb(10, 10, 10);
-    font-weight: 600;
   }
 `;
 
@@ -139,7 +130,7 @@ function select(ctx: ReturnType<typeof setup>, from: string, to: string): void {
 
 const xOf = (value: string) => SEGMENTS[value].left - TRACK.left;
 
-/** The proxy carries this segment's surface: hidden on the segment, inline. */
+/** The lens carries this segment's surface: hidden on the segment, inline. */
 function expectHidden(segment: HTMLElement): void {
   expect(segment.style.getPropertyValue('background-color')).toBe(
     'transparent',
@@ -178,14 +169,16 @@ async function advance(ms: number): Promise<void> {
 }
 
 describe('the selection slide', () => {
-  it('copies the selected surface onto the proxy and hides it on the segment', () => {
+  it('paints the lens (the radiogroup’s ::before) with the selected surface and hides it on the segment: no element is added', () => {
     const ctx = setup('grid');
+    const elements = ctx.track.querySelectorAll('*').length;
     select(ctx, 'grid', 'table');
-    const {proxy, segments} = ctx;
-    expect(proxy.style.visibility).toBe('visible');
-    expect(proxy.style.backgroundColor).toBe('rgb(255, 255, 255)');
-    expect(proxy.style.boxShadow).toBe('rgba(0, 0, 0, 0.1) 0px 1px 2px');
-    expect(proxy.style.borderTopLeftRadius).toBe('6px');
+    const {layer, segments} = ctx;
+    expect(ctx.track.querySelectorAll('*').length).toBe(elements);
+    expect(layer('lens', 'visibility')).toBe('visible');
+    expect(layer('lens', 'background-color')).toBe('rgb(255, 255, 255)');
+    expect(layer('lens', 'box-shadow')).toBe('rgba(0, 0, 0, 0.1) 0px 1px 2px');
+    expect(layer('lens', 'border-top-left-radius')).toBe('6px');
     // Inline and with priority, so a theme's rule cannot paint a second one.
     expect(segments.table.style.getPropertyValue('background-color')).toBe(
       'transparent',
@@ -194,10 +187,10 @@ describe('the selection slide', () => {
       'important',
     );
     expect(segments.table.style.getPropertyValue('box-shadow')).toBe('none');
-    // The proxy is laid out at the destination's size, at its offset.
-    expect(proxy.style.width).toBe('106px');
-    expect(proxy.style.height).toBe('27px');
-    expect(proxy.style.top).toBe('2px');
+    // The lens is laid out at the destination's size, at its offset.
+    expect(layer('lens', 'width')).toBe('106px');
+    expect(layer('lens', 'height')).toBe('27px');
+    expect(layer('lens', 'top')).toBe('2px');
   });
 
   it('hands the surface back to the segment when it lands', async () => {
@@ -208,7 +201,9 @@ describe('the selection slide', () => {
     expect(ctx.motion.isSliding).toBe(true);
     await advance(2000);
     expect(ctx.motion.isSliding).toBe(false);
-    expect(ctx.proxy.style.visibility).toBe('hidden');
+    // Hidden again, its custom properties gone.
+    expect(ctx.layer('lens', 'visibility')).toBe('');
+    expect(ctx.layer('lens', 'background-color')).toBe('');
     expectOwnSurface(ctx.segments.table);
   });
 
@@ -225,10 +220,10 @@ describe('the selection slide', () => {
     expect(ctx.animator.get('x')).toBeCloseTo(xBefore, 6);
     expect(ctx.animator.getVelocity('x')).toBeCloseTo(vBefore, 3);
     expect(ctx.animator.get('scaleX') * 100).toBeCloseTo(widthBefore, 6);
-    // The proxy now carries the new destination's surface and size. The
+    // The lens now carries the new destination's surface and size. The
     // abandoned destination paints nothing of its own until the lens lands:
     // its tap may still be fading, and that paint would cover the lens.
-    expect(ctx.proxy.style.width).toBe('100px');
+    expect(ctx.layer('lens', 'width')).toBe('100px');
     expect(ctx.segments.table.style.getPropertyValue('background-color')).toBe(
       'transparent',
     );
@@ -255,10 +250,27 @@ describe('the selection slide', () => {
     expect(ctx.segments.table.style.getPropertyValue('background-color')).toBe(
       'transparent',
     );
+    // Its paint is read with its surface shown, not the hidden one.
+    expect(ctx.layer('lens', 'background-color')).toBe('rgb(255, 255, 255)');
     await advance(3000);
     expect(ctx.animator.get('x')).toBe(xOf('table'));
     expectOwnSurface(ctx.segments.table);
     expectNoOverride(ctx.segments.list);
+  });
+
+  it('a resize the change itself made (a title’s new weight) keeps the slide; any other resize hands the surface back', () => {
+    const ctx = setup('grid');
+    let width = TRACK.width;
+    Object.defineProperty(ctx.track, 'offsetWidth', {get: () => width});
+    select(ctx, 'grid', 'table');
+    // The observer reports the size the boxes were measured at.
+    ctx.motion.resized(ctx.track);
+    expect(ctx.motion.isSliding).toBe(true);
+    // The control resizes under the slide.
+    width += 40;
+    ctx.motion.resized(ctx.track);
+    expect(ctx.motion.isSliding).toBe(false);
+    expectOwnSurface(ctx.segments.table);
   });
 
   it('settle() hands the surface back at once (resize, unmount, presentation change)', () => {
@@ -266,29 +278,28 @@ describe('the selection slide', () => {
     select(ctx, 'grid', 'list');
     ctx.motion.settle();
     expect(ctx.motion.isSliding).toBe(false);
-    expect(ctx.proxy.style.visibility).toBe('hidden');
+    expect(ctx.layer('lens', 'visibility')).toBe('');
     expectOwnSurface(ctx.segments.list);
   });
 
-  it('stop() ends a slide and its fades, and leaves the controller usable (StrictMode remounts)', () => {
+  it('stop() ends a slide and leaves the controller usable (StrictMode remounts)', () => {
     const ctx = setup('grid');
     select(ctx, 'grid', 'table');
     ctx.motion.stop();
     expect(ctx.motion.isSliding).toBe(false);
     expectOwnSurface(ctx.segments.table);
-    // The next change still slides, on the same proxy.
+    // The next change still slides, on the same lens.
     select(ctx, 'table', 'list');
     expect(ctx.motion.isSliding).toBe(true);
-    expect(ctx.proxy.style.visibility).toBe('visible');
+    expect(ctx.layer('lens', 'visibility')).toBe('visible');
     expect(ctx.animator.get('x', clock)).toBe(xOf('table'));
-    expect(ctx.proxy.style.translate).not.toBe('');
   });
 
   it('does not slide when nothing was selected, and settles when the selection clears', () => {
     const ctx = setup('none');
     select(ctx, 'none', 'list');
     expect(ctx.motion.isSliding).toBe(false);
-    expect(ctx.proxy.style.visibility).toBe('');
+    expect(ctx.layer('lens', 'visibility')).toBe('');
     select(ctx, 'list', 'grid');
     expect(ctx.motion.isSliding).toBe(true);
     select(ctx, 'grid', 'none');
@@ -321,7 +332,7 @@ describe('the selection slide', () => {
         );
     }
     select(ctx, 'grid', 'table');
-    expect(ctx.proxy.style.width).toBe('106px');
+    expect(ctx.layer('lens', 'width')).toBe('106px');
     expect(ctx.animator.get('x', 5000)).toBeCloseTo(xOf('table'), 6);
   });
 
@@ -336,15 +347,15 @@ describe('the selection slide', () => {
     select(ctx, 'table', 'list');
     expect(ctx.animator.get('opacity')).toBe(1);
     expect(ctx.animator.get('scaleY')).toBe(1);
-    expect(ctx.proxy.style.transformOrigin).toBe('');
     await advance(3000);
     expect(ctx.animator.get('x')).toBe(xOf('list'));
   });
 });
 
 describe('Reduced Motion (design:reduced-motion)', () => {
-  const leavingIn = (track: HTMLElement) =>
-    track.querySelector<HTMLElement>('[data-selection-leaving]');
+  /** The ::after layer shows the surface that fades out where it is. */
+  const isLeaving = (ctx: ReturnType<typeof setup>) =>
+    ctx.layer('leaving', 'visibility') === 'visible';
 
   /** design:reduced-motion DR2: a cross-fade, opacity only, 200 ms or less. */
   const MAX_FADE_MS = 200;
@@ -367,7 +378,7 @@ describe('Reduced Motion (design:reduced-motion)', () => {
     select(ctx, 'grid', 'table');
     // The new surface: at Table, full size, from the first frame; it only
     // fades in.
-    expect(ctx.proxy.style.width).toBe('106px');
+    expect(ctx.layer('lens', 'width')).toBe('106px');
     expectHidden(ctx.segments.table);
     const entering = (t: number) => ctx.animator.get('opacity', t);
     const fadeIn = endOf(entering, start);
@@ -380,14 +391,13 @@ describe('Reduced Motion (design:reduced-motion)', () => {
       expect(ctx.animator.get('scaleX', start + t)).toBe(1);
       expect(ctx.animator.get('scaleY', start + t)).toBe(1);
     }
-    // The old surface: a copy of the selected surface at Grid, not announced,
-    // catching no input, that fades out where it is on the same clock.
-    const leaving = leavingIn(ctx.track);
-    expect(leaving).not.toBeNull();
-    expect(leaving?.getAttribute('aria-hidden')).toBe('true');
-    expect(leaving?.hasAttribute('data-selection-proxy')).toBe(false);
-    expect(leaving?.style.width).toBe(`${SEGMENTS.grid.width}px`);
-    expect(leaving?.style.backgroundColor).toBe('rgb(255, 255, 255)');
+    // The old surface: the radiogroup's ::after, painted with the selected
+    // surface at Grid, fading out where it is on the same clock. No element
+    // is added for it.
+    expect(isLeaving(ctx)).toBe(true);
+    expect(ctx.layer('leaving', 'width')).toBe(`${SEGMENTS.grid.width}px`);
+    expect(ctx.layer('leaving', 'background-color')).toBe('rgb(255, 255, 255)');
+    expect(ctx.track.querySelectorAll('*').length).toBe(3);
     const leavingOpacity = (t: number) => ctx.leavingAnimator.get('opacity', t);
     expect(leavingOpacity(start)).toBeCloseTo(1, 6);
     expect(endOf(leavingOpacity, start)).toBe(fadeIn);
@@ -398,9 +408,10 @@ describe('Reduced Motion (design:reduced-motion)', () => {
       expect(entering(start + t) + leavingOpacity(start + t)).toBeCloseTo(1, 6);
     }
     await advance(1000);
-    expect(leavingIn(ctx.track)).toBeNull();
+    expect(isLeaving(ctx)).toBe(false);
+    expect(ctx.layer('leaving', 'background-color')).toBe('');
     expect(ctx.motion.isSliding).toBe(false);
-    expect(ctx.proxy.style.visibility).toBe('hidden');
+    expect(ctx.layer('lens', 'visibility')).toBe('');
     expectOwnSurface(ctx.segments.table);
   });
 
@@ -415,205 +426,38 @@ describe('Reduced Motion (design:reduced-motion)', () => {
     expect(opacity).toBeGreaterThan(0.05);
     expect(opacity).toBeLessThan(0.95);
     select(ctx, 'table', 'list');
-    // One leaving copy at a time, at Table, from what was on screen.
-    expect(ctx.track.querySelectorAll('[data-selection-leaving]')).toHaveLength(
-      1,
-    );
+    // The ::after now shows what was on screen, at Table, in the lens's
+    // paint.
+    expect(isLeaving(ctx)).toBe(true);
+    expect(ctx.layer('leaving', 'background-color')).toBe('rgb(255, 255, 255)');
     expect(ctx.leavingAnimator.get('x')).toBe(xOf('table'));
     expect(ctx.leavingAnimator.get('opacity')).toBeCloseTo(opacity, 2);
     expect(ctx.animator.get('x')).toBe(xOf('list'));
   });
 
-  it('the hand-back removes a leaving copy still on screen', () => {
+  it('the hand-back hides a leaving surface still on screen', () => {
     reduceMotion = true;
     const ctx = setup('grid');
     select(ctx, 'grid', 'table');
-    expect(leavingIn(ctx.track)).not.toBeNull();
+    expect(isLeaving(ctx)).toBe(true);
     ctx.motion.settle();
-    expect(leavingIn(ctx.track)).toBeNull();
+    expect(isLeaving(ctx)).toBe(false);
   });
 
-  it('with any other pointer the change completes at once: no fade, no leaving copy (DR3)', () => {
+  it('with any other pointer the change completes at once: no fade, no leaving surface (DR3)', () => {
     reduceMotion = true;
     const ctx = setup('grid', {coarse: false});
     select(ctx, 'grid', 'table');
-    expect(leavingIn(ctx.track)).toBeNull();
+    expect(isLeaving(ctx)).toBe(false);
     expect(ctx.animator.get('x')).toBe(xOf('table'));
     expect(ctx.animator.get('opacity')).toBe(1);
     expect(ctx.animator.get('scaleX')).toBe(1);
   });
 
-  it('without Reduce Motion there is no leaving copy: the surface slides', () => {
+  it('without Reduce Motion there is no leaving surface: the lens slides', () => {
     const ctx = setup('grid');
     select(ctx, 'grid', 'table');
-    expect(leavingIn(ctx.track)).toBeNull();
+    expect(isLeaving(ctx)).toBe(false);
     expect(ctx.animator.get('opacity')).toBe(1);
-  });
-});
-
-describe('the title cross-fade', () => {
-  interface Recorded {
-    element: HTMLElement;
-    keyframes: Keyframe[];
-    options: KeyframeAnimationOptions;
-    cancel: ReturnType<typeof vi.fn>;
-    finish: () => void;
-  }
-  let recorded: Recorded[] = [];
-  const realAnimate = HTMLElement.prototype.animate;
-
-  beforeEach(() => {
-    recorded = [];
-    HTMLElement.prototype.animate = function (
-      this: HTMLElement,
-      keyframes: Keyframe[] | PropertyIndexedKeyframes | null,
-      options?: number | KeyframeAnimationOptions,
-    ) {
-      let resolve: () => void = () => {};
-      let reject: (error: Error) => void = () => {};
-      const finished = new Promise<void>((res, rej) => {
-        resolve = res;
-        reject = rej;
-      });
-      // The cancel rejection is the interrupting change's business; keep it
-      // from surfacing as an unhandled rejection in the test run.
-      finished.catch(() => {});
-      const cancel = vi.fn(() => reject(new Error('AbortError')));
-      if (this.dataset.segmentTitle == null) {
-        // The animator's own compositor animations on the proxy.
-        return {finished, cancel, startTime: null} as unknown as Animation;
-      }
-      recorded.push({
-        element: this,
-        keyframes: keyframes as Keyframe[],
-        options: options as KeyframeAnimationOptions,
-        cancel,
-        finish: resolve,
-      });
-      return {finished, cancel} as unknown as Animation;
-    };
-  });
-
-  afterEach(() => {
-    HTMLElement.prototype.animate = realAnimate;
-  });
-
-  it('the titles cross-fade on the same Reduce Motion clock, whatever the title cross-fade role says (DR2, DR4)', () => {
-    reduceMotion = true;
-    const ctx = setup('grid');
-    const start = clock;
-    select(ctx, 'grid', 'table');
-    // The Reduce Motion fade's clock, as the animator plays it on the proxy.
-    let fadeIn = 0;
-    while (fadeIn < 5000 && ctx.animator.get('opacity', start + fadeIn) < 1) {
-      fadeIn += 1;
-    }
-    expect(fadeIn).toBeGreaterThan(0);
-    expect(fadeIn).toBeLessThanOrEqual(200);
-    const titleFades = recorded.filter(
-      r => r.element.dataset.segmentTitle != null,
-    );
-    expect(titleFades.length).toBe(4);
-    for (const r of titleFades) {
-      expect(r.options.duration).toBe(fadeIn);
-      expect(Object.keys(r.keyframes[0])).toEqual(['opacity']);
-    }
-  });
-
-  const layers = (segment: HTMLElement) => ({
-    title: segment.querySelector<HTMLElement>(TITLE_SELECTOR)!,
-    twin: segment.querySelector<HTMLElement>(TITLE_TWIN_SELECTOR)!,
-  });
-
-  it('the twin shows the outgoing rendering and fades out as the title fades in, 200 ms on CSS ease', () => {
-    const ctx = setup('grid');
-    select(ctx, 'grid', 'table');
-    const grid = layers(ctx.segments.grid);
-    const table = layers(ctx.segments.table);
-    // The old selection fades out its selected rendering...
-    expect(grid.twin.style.visibility).toBe('visible');
-    expect(grid.twin.style.color).toBe('rgb(10, 10, 10)');
-    expect(grid.twin.style.fontWeight).toBe('600');
-    // ...and the new one its unselected rendering.
-    expect(table.twin.style.color).toBe('rgb(110, 110, 110)');
-    expect(table.twin.style.fontWeight).toBe('500');
-    const of = (element: HTMLElement) =>
-      recorded.find(r => r.element === element)!;
-    for (const layer of [grid, table]) {
-      expect(of(layer.twin).keyframes).toEqual([{opacity: 1}, {opacity: 0}]);
-      expect(of(layer.twin).options.fill).toBe('forwards');
-      expect(of(layer.title).keyframes).toEqual([{opacity: 0}, {opacity: 1}]);
-      expect(of(layer.title).options.fill).toBe('forwards');
-      for (const element of [layer.twin, layer.title]) {
-        expect(of(element).options.duration).toBe(200);
-        expect(of(element).options.easing).toBe(
-          'cubic-bezier(0.25, 0.1, 0.25, 1)',
-        );
-      }
-    }
-  });
-
-  it('mid-slide, a finished fade keeps its invisible twin until the hand-back', async () => {
-    const ctx = setup('grid');
-    select(ctx, 'grid', 'table');
-    for (const r of recorded) {
-      r.finish();
-    }
-    await vi.advanceTimersByTimeAsync(0);
-    // The slide is still travelling: no restyle yet (the twin holds opacity 0).
-    expect(ctx.motion.isSliding).toBe(true);
-    expect(layers(ctx.segments.table).twin.style.visibility).toBe('visible');
-    ctx.motion.settle();
-    for (const segment of [ctx.segments.grid, ctx.segments.table]) {
-      const {twin} = layers(segment);
-      expect(twin.style.visibility).toBe('');
-      expect(twin.style.color).toBe('');
-      expect(twin.style.fontWeight).toBe('');
-    }
-  });
-
-  it('with no slide running, the twin is hidden again as soon as the fade ends', async () => {
-    const ctx = setup('grid');
-    select(ctx, 'grid', 'table');
-    // The surface handed back before the titles finish (a resize, say).
-    ctx.motion.settle();
-    expect(ctx.motion.isSliding).toBe(false);
-    for (const r of recorded) {
-      r.finish();
-    }
-    await vi.advanceTimersByTimeAsync(0);
-    for (const segment of [ctx.segments.grid, ctx.segments.table]) {
-      const {twin} = layers(segment);
-      expect(twin.style.visibility).toBe('');
-      expect(twin.style.fontWeight).toBe('');
-    }
-  });
-
-  it('an interrupted fade swaps the layers and continues from the opacities on screen', () => {
-    const ctx = setup('grid');
-    select(ctx, 'grid', 'table');
-    const table = layers(ctx.segments.table);
-    // 40% of the way: the title (selected) at 0.4, the twin (unselected) at 0.6.
-    table.title.style.opacity = '0.4';
-    table.twin.style.opacity = '0.6';
-    recorded = [];
-    select(ctx, 'table', 'grid');
-    const of = (element: HTMLElement) =>
-      recorded.find(r => r.element === element)!;
-    // The twin now shows the selected rendering it was fading in, from 0.4...
-    expect(table.twin.style.color).toBe('rgb(10, 10, 10)');
-    expect(of(table.twin).keyframes).toEqual([{opacity: 0.4}, {opacity: 0}]);
-    // ...and the title, now unselected, comes back from 0.6.
-    expect(of(table.title).keyframes).toEqual([{opacity: 0.6}, {opacity: 1}]);
-  });
-
-  it('a segment without a title (icon only) is left alone', () => {
-    const ctx = setup('grid');
-    ctx.segments.table.querySelector(TITLE_SELECTOR)?.remove();
-    select(ctx, 'grid', 'table');
-    expect(recorded.map(r => r.element.parentElement)).toEqual([
-      ctx.segments.grid,
-      ctx.segments.grid,
-    ]);
   });
 });

@@ -5,21 +5,18 @@
  * @input vitest, the segmented-control domain of the UIKit constants table,
  *   the spring solver, and samples of UIKit's own selection slide
  * @output Holds `segmentedControl.selectionSpring` to UISegmentedControl's
- *   measured slide (position per frame, iOS 26.2 simulator), and checks the
- *   title cross-fade's clock and curve
+ *   measured slide (position per frame, iOS 26.2 simulator), its only role
  * @position Testing; parity of the segmented-control constants (law P4,
  *   unit layer). The browser layer is
  *   SegmentedControl/__tests__/SegmentedControl.interaction.browser.spec.ts.
  */
 
 import {describe, expect, it} from 'vitest';
-import {cubicBezier} from '../bezier';
 import {dampingRatioOf, responseOf, solveSpring, toSpring} from '../spring';
 import {motionRoleIn, motionRoleOf} from '../roles';
 import {resolveMotion} from '../resolveMotion';
 import {segmentedControl} from './segmented';
 import {springs} from './springs';
-import {timing} from './timing';
 
 /**
  * The selection lens's presented position (pt, in the control) per frame,
@@ -129,34 +126,14 @@ describe('segmentedControl.selectionSpring reproduces UIKit’s slide', () => {
   });
 });
 
-describe('the title cross-fade', () => {
-  it('runs 200 ms on Core Animation’s default curve (CSS ease)', () => {
-    expect(segmentedControl.labelCrossFadeMs).toBe(200);
-    expect(segmentedControl.labelCrossFadeCurve).toEqual(
-      timing.curves.caDefault,
-    );
-    // CSS `ease` is (0.25, 0.1, 0.25, 1): the same function.
-    const ease = cubicBezier(segmentedControl.labelCrossFadeCurve);
-    expect(ease(0.5)).toBeCloseTo(0.8024, 3);
-  });
-});
-
 describe('motion roles', () => {
-  it('every spring, clock and curve is a role a theme can retune', () => {
+  it('the slide spring is a role a theme can retune, and the only one: the titles switch at once', () => {
     expect(motionRoleOf(segmentedControl.selectionSpring)).toMatchObject({
       id: 'segmentedControl.selectionSpring',
       kind: 'spring',
       variable: '--motion-segmented-control-selection-spring',
     });
-    expect(motionRoleOf(segmentedControl.labelCrossFadeCurve)).toMatchObject({
-      id: 'segmentedControl.labelCrossFadeCurve',
-      kind: 'curve',
-    });
-    expect(motionRoleIn(segmentedControl, 'labelCrossFadeMs')).toMatchObject({
-      id: 'segmentedControl.labelCrossFadeMs',
-      kind: 'duration',
-      variable: '--motion-segmented-control-label-cross-fade-ms',
-    });
+    expect(Object.keys(segmentedControl)).toEqual(['selectionSpring']);
   });
 
   it('with no theme setting them, resolves to UIKit’s measured values', () => {
@@ -165,9 +142,6 @@ describe('motion roles', () => {
     try {
       expect(resolveMotion(element, segmentedControl.selectionSpring)).toEqual(
         segmentedControl.selectionSpring,
-      );
-      expect(resolveMotion(element, segmentedControl, 'labelCrossFadeMs')).toBe(
-        200,
       );
     } finally {
       element.remove();

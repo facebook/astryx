@@ -4,7 +4,7 @@
  * @file segmented.ts
  * @input Nothing; data only
  * @output Exports `segmentedControl`: UISegmentedControl's selection slide
- *   spring and its label cross-fade clock and curve
+ *   spring
  * @position The segmented-control domain of the UIKit constants table
  *   (motion/uikit); read by SegmentedControl's touch presentation
  *
@@ -15,7 +15,11 @@
  * value with its velocity: a tap, a programmatic `selectedSegmentIndex`
  * change and the same change inside `UIView.animate` all follow the same
  * spring. Only a finger also lifts and stretches the lens; those clocks
- * belong to the press and are not in this file yet. Under Reduce Motion
+ * belong to the press and are not in this file yet. UIKit also cross-fades
+ * the two titles that change (0.2 s on Core Animation's default curve; UIKit
+ * lab, Oct 23 2026); Astryx switches them at once, because a cross-fade needs
+ * a second copy of each title (`architecture:component-style-authoring`
+ * INV7). Under Reduce Motion
  * UIKit's lens fades and scales in at the new segment (0.2 s, CSS `ease`,
  * from a scale of 0.88; UIKit lab, iOS 26.2 simulator, Oct 24 2026). Astryx
  * follows `design:reduced-motion` instead, which allows no scaling: the
@@ -55,26 +59,8 @@ export const segmentedControl = {
    *   Oct 23 2026
    */
   selectionSpring: {response: 0.4, dampingRatio: 0.85},
-  /**
-   * How long the segment titles take to cross-fade between their unselected
-   * and selected renderings (weight and color), in ms. UIKit animates the
-   * label's contents, opacity, position and size in one
-   * `UIView.animate(withDuration: 0.2)` block when the selection changes.
-   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, CAAnimation read (UISegmentLabel contents and opacity,
-   *   0.2 s), Oct 23 2026
-   */
-  labelCrossFadeMs: 200,
-  /**
-   * The title cross-fade's curve: the block's private curve 5, Core
-   * Animation's default timing function (CSS `ease`).
-   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, UIView.animate options (curve 5) and the
-   *   CAMediaTimingFunction it resolves to, Oct 23 2026
-   */
-  labelCrossFadeCurve: [0.25, 0.1, 0.25, 1],
 } as const;
 
-// Each spring, duration and curve above is a motion role a theme may retune
+// The spring above is a motion role a theme may retune
 // (motion/roles.ts).
 registerMotionTable('segmentedControl', segmentedControl);

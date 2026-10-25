@@ -14,7 +14,13 @@
 
 import {StrictMode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {
+  cleanup,
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {hasPressedArm} from '../__tests__/pressState';
 import {SegmentedControl} from './SegmentedControl';
@@ -884,11 +890,13 @@ describe('selection motion', () => {
     );
   }
 
-  it('keeps the pointer presentation as it was: no proxy, the theme’s transitions', () => {
+  it('keeps the pointer presentation as it was: no lens, the theme’s transitions', () => {
     renderControl();
     expect(
-      screen.getByRole('radiogroup').querySelector('[data-selection-proxy]'),
-    ).toBeNull();
+      screen
+        .getByRole('radiogroup')
+        .style.getPropertyValue('--_segmented-lens-visibility'),
+    ).toBe('');
     expect(
       getComputedStyle(screen.getByRole('radio', {name: 'List'}))
         .transitionProperty,
@@ -900,9 +908,8 @@ describe('selection motion', () => {
     try {
       const onChange = vi.fn();
       renderControl(onChange);
-      expect(
-        screen.getByRole('radiogroup').querySelector('[data-selection-proxy]'),
-      ).not.toBeNull();
+      // The lens is the radiogroup's own pseudo-elements, so the touch
+      // presentation shows as its styles: no CSS transition on the segments.
       expect(
         getComputedStyle(screen.getByRole('radio', {name: 'List'}))
           .transitionProperty,
@@ -914,15 +921,14 @@ describe('selection motion', () => {
     }
   });
 
-  it('touch presentation: an aria-hidden proxy behind the segments; selection unchanged', async () => {
+  it('touch presentation: as many elements as under a mouse; selection unchanged', async () => {
+    const mouse = renderControl().container.querySelectorAll('*').length;
+    cleanup();
     const spy = mockCoarsePointer();
     try {
       const onChange = vi.fn();
-      renderControl(onChange);
-      const group = screen.getByRole('radiogroup');
-      const proxy = group.querySelector('[data-selection-proxy]');
-      expect(group.firstElementChild).toBe(proxy);
-      expect(proxy).toHaveAttribute('aria-hidden', 'true');
+      const {container} = renderControl(onChange);
+      expect(container.querySelectorAll('*').length).toBe(mouse);
       await userEvent.setup().click(screen.getByRole('radio', {name: 'List'}));
       expect(onChange).toHaveBeenCalledWith('list');
     } finally {
@@ -966,15 +972,16 @@ describe('selection motion', () => {
       );
       const {rerender} = render(ui('grid'));
       rerender(ui('list'));
-      const proxy = screen
-        .getByRole('radiogroup')
-        .querySelector<HTMLElement>('[data-selection-proxy]')!;
-      // After StrictMode's extra unmount and remount, the proxy still takes
-      // the destination's box and its animator still drives it (jsdom has no
-      // Web Animations, so the animator writes the landing value inline).
-      expect(proxy.style.visibility).toBe('visible');
-      expect(proxy.style.width).toBe('96px');
-      expect(proxy.style.translate).toMatch(/^102px/);
+      const group = screen.getByRole('radiogroup');
+      // After StrictMode's extra unmount and remount, the lens (the
+      // radiogroup's ::before) still takes the destination's box, painted
+      // from the selected surface.
+      expect(group.style.getPropertyValue('--_segmented-lens-visibility')).toBe(
+        'visible',
+      );
+      expect(group.style.getPropertyValue('--_segmented-lens-width')).toBe(
+        '96px',
+      );
     } finally {
       rects.mockRestore();
       spy.mockRestore();

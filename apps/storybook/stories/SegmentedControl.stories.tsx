@@ -367,10 +367,8 @@ const PERIODS = [
 
 /**
  * On a touch screen the selection slides from one segment to the next on
- * UIKit's spring and the titles cross-fade, whether a finger, a key or the app
- * changed the value. Segments keep their width when the selection moves: each
- * reserves its title's selected width. With a mouse the selection changes in
- * place, as before.
+ * UIKit's spring, whether a finger, a key or the app changed the value. With a
+ * mouse the selection changes in place, as before.
  */
 export const SelectionMotion: Story = {
   name: 'Selection motion',
@@ -378,7 +376,7 @@ export const SelectionMotion: Story = {
     docs: {
       description: {
         story:
-          'Under a finger the selection slides between segments on UIKit’s spring and the titles cross-fade, for taps, arrow keys and programmatic changes alike (the button changes the value from outside). Under Reduce Motion nothing travels: the old selection fades out as the new one fades in; with a mouse the color fade stays. Segments never change width when the selection moves.',
+          'Under a finger the selection slides between segments on UIKit’s spring, for taps, arrow keys and programmatic changes alike (the button changes the value from outside). Under Reduce Motion nothing travels: the old selection fades out as the new one fades in; with a mouse the color fade stays.',
       },
     },
   },

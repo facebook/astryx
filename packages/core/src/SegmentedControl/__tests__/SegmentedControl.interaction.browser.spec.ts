@@ -8,9 +8,9 @@
  * @output Interaction and animation proofs for the touch presentation's
  *   selection motion: a tap, an arrow key and a programmatic change slide the
  *   selected surface on UIKit's spring (sampled curve vs the spring), the
- *   surface lands where the segment paints it (pixels), the titles
- *   cross-fade on UIKit's clock and curve, a change
- *   mid-flight keeps position and velocity, Reduce Motion drops the travel,
+ *   surface lands where the segment paints it (pixels), the titles switch at
+ *   once with no second copy, a change mid-flight keeps position and
+ *   velocity, Reduce Motion drops the travel,
  *   RTL, the slide keeps moving through a blocked main thread, no Layout or
  *   Paint per frame, assistive technology sees no extra node, and storyboards.
  * @position Browser layer of the SegmentedControl selection motion
@@ -25,7 +25,6 @@
  */
 
 import {expect, test, type Locator, type Page} from '@playwright/test';
-import pixelmatch from 'pixelmatch';
 // @ts-expect-error -- pngjs ships no declarations; runtime support is pinned.
 import {PNG} from 'pngjs';
 import {
@@ -35,16 +34,13 @@ import {
   castStoryboard,
   compareCurve,
   countBetween,
-  cubicBezier,
   freezeTimers,
-  holdAnimations,
   installLongTaskLog,
   installTimerGate,
-  markElement,
+  MARKER_RGB,
   openStory,
   readLongTasks,
   releaseAnimations,
-  seekAnimations,
   springStep,
   startScreencast,
   thawTimers,
@@ -62,9 +58,6 @@ const storybook = withStorybook(test);
 
 /** UIKit's slide, from the constants table (motion/uikit/segmented.ts). */
 const SLIDE = {response: 0.4, dampingFraction: 0.85} as const;
-/** UIKit's title cross-fade. */
-const TITLE_FADE_MS = 200;
-const TITLE_EASE = cubicBezier(0.25, 0.1, 0.25, 1);
 /** design:reduced-motion DR2: a cross-fade, opacity only, 200 ms or less. */
 const RM_MAX_FADE_MS = 200;
 
@@ -78,8 +71,11 @@ interface SegmentBox {
 
 interface Control {
   driver: TouchDriver;
+  /**
+   * The radiogroup. Its ::before is the lens; under Reduced Motion its
+   * ::after is the surface that fades out.
+   */
   group: Locator;
-  proxy: Locator;
   segment: (value: string) => Locator;
   boxes: () => Promise<SegmentBox[]>;
   tapSegment: (value: string) => Promise<void>;
@@ -114,9 +110,8 @@ async function openControl(
   const driver = await touchDriver(page);
   const group = page.getByRole('radiogroup', {name: groupName, exact: true});
   await expect(group).toBeVisible();
-  const proxy = group.locator('[data-selection-proxy]');
   const segment = (value: string) => group.locator(`[data-value="${value}"]`);
-  // Boxes in the track's padding-box coordinates, the proxy's own space.
+  // Boxes in the track's padding-box coordinates, the lens's own space.
   const boxes = async () =>
     group.evaluate(track => {
       const trackRect = track.getBoundingClientRect();
@@ -140,24 +135,150 @@ async function openControl(
     }
     await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
   };
-  return {driver, group, proxy, segment, boxes, tapSegment};
+  return {driver, group, segment, boxes, tapSegment};
 }
 
-/** The proxy's presented position and width at each held time. */
-async function sampleProxy(
-  proxy: Locator,
+/** One of the radiogroup's two layers: the lens or the leaving surface. */
+type Layer = '::before' | '::after';
+
+/** A layer as computed now: shown, and where and how big it is presented. */
+async function readLayer(
+  group: Locator,
+  layer: Layer = '::before',
+): Promise<{
+  visible: boolean;
+  opacity: number;
+  x: number;
+  width: number;
+  sx: number;
+  sy: number;
+}> {
+  return group.evaluate((element, pseudo) => {
+    const style = getComputedStyle(element, pseudo);
+    const [sx, sy = sx] =
+      style.scale === 'none' ? [1, 1] : style.scale.split(' ').map(Number);
+    return {
+      visible: style.visibility === 'visible',
+      opacity: Number(style.opacity),
+      x:
+        (parseFloat(style.left) || 0) +
+        (style.translate === 'none' ? 0 : parseFloat(style.translate)),
+      width: parseFloat(style.width) * sx,
+      sx,
+      sy,
+    };
+  }, layer);
+}
+
+/** Resolves once the lens is hidden again: the surface handed back. */
+async function expectLensHidden(
+  control: Control,
+  timeout = 3000,
+): Promise<void> {
+  await expect
+    .poll(async () => (await readLayer(control.group)).visible, {timeout})
+    .toBe(false);
+}
+
+/**
+ * The lens's running animations (the radiogroup's ::before), described as
+ * the harness's `waitForAnimation` describes an element's.
+ */
+async function waitForLens(
+  control: Control,
+  {
+    minProgressMs = 1,
+    timeout = 5000,
+  }: {minProgressMs?: number; timeout?: number} = {},
+): Promise<{from: number; to: number; durationMs: number; easing: string}[]> {
+  // Installs the harness's curve-end reader and waits for the control to move.
+  await waitForAnimation(control.group, {minProgressMs, timeout});
+  const deadline = Date.now() + timeout;
+  for (;;) {
+    const found = await control.group.evaluate((group, minProgress) => {
+      const curveEnd = (
+        window as unknown as {__harnessCurveEnd: (a: Animation) => number}
+      ).__harnessCurveEnd;
+      return group
+        .getAnimations({subtree: true})
+        .filter(a => {
+          const effect = a.effect as KeyframeEffect | null;
+          return (
+            effect?.target === group &&
+            effect.pseudoElement === '::before' &&
+            a.playState === 'running' &&
+            a.startTime != null &&
+            Number(a.currentTime ?? 0) >= minProgress
+          );
+        })
+        .map(a => {
+          const effect = a.effect as KeyframeEffect;
+          const timing = effect.getComputedTiming();
+          const startedAt = performance.timeOrigin + Number(a.startTime);
+          return {
+            from: startedAt + (timing.delay ?? 0),
+            to: startedAt + curveEnd(a),
+            durationMs: Number(timing.duration ?? 0),
+            easing: effect.getTiming().easing ?? 'linear',
+          };
+        });
+    }, minProgressMs);
+    if (found.length > 0) {
+      return found;
+    }
+    if (Date.now() > deadline) {
+      throw new Error('waitForLens: no lens animation started');
+    }
+    await new Promise(resolve => setTimeout(resolve, 4));
+  }
+}
+
+/**
+ * Pauses the lens's animations (both of the radiogroup's pseudo-elements)
+ * into the harness's held set, so `releaseAnimations`
+ * move exactly them.
+ */
+async function holdLens(
+  control: Control,
+): Promise<{easing: string; durationMs: number}[]> {
+  return control.group.evaluate(group => {
+    // The running ones: a pseudo-element has no inline style, so the
+    // animator holds each value it sets with a finished, filling animation,
+    // which every running one overrides.
+    const held = group.getAnimations({subtree: true}).filter(a => {
+      const effect = a.effect as KeyframeEffect | null;
+      return (
+        effect?.target === group &&
+        effect.pseudoElement != null &&
+        a.playState !== 'finished'
+      );
+    });
+    for (const animation of held) {
+      animation.pause();
+    }
+    (window as unknown as {__harnessHeld: Animation[]}).__harnessHeld = held;
+    return held.map(a => ({
+      easing: String((a.effect as KeyframeEffect).getTiming().easing),
+      durationMs: Number(a.effect?.getComputedTiming().duration ?? 0),
+    }));
+  });
+}
+
+/** The lens's presented position and width at each held time. */
+async function sampleLens(
+  group: Locator,
   times: ReadonlyArray<number>,
 ): Promise<{t: number; x: number; width: number; visible: boolean}[]> {
-  return proxy.evaluate((element, ts) => {
+  return group.evaluate((element, ts) => {
     const held =
       (window as unknown as {__harnessHeld?: Animation[]}).__harnessHeld ?? [];
-    const baseWidth = parseFloat(getComputedStyle(element).width);
+    const baseWidth = parseFloat(getComputedStyle(element, '::before').width);
     return ts.map(t => {
       for (const animation of held) {
         const end = Number(animation.effect?.getComputedTiming().endTime ?? 0);
         animation.currentTime = Math.min(t, end - 0.5);
       }
-      const style = getComputedStyle(element);
+      const style = getComputedStyle(element, '::before');
       const translate =
         style.translate === 'none' ? 0 : parseFloat(style.translate);
       const scaleX = style.scale === 'none' ? 1 : parseFloat(style.scale);
@@ -172,7 +293,7 @@ async function sampleProxy(
 }
 
 /**
- * Records, on the page's clock (epoch ms), each moment a selection proxy
+ * Records, on the page's clock (epoch ms), each moment a control's lens
  * hands its surface back (it is hidden again). The animator's keyframes hold
  * the end state for a few seconds past the curve, so an animation's end time
  * is not when the slide is over; the hand-back is.
@@ -181,17 +302,20 @@ async function recordHandBacks(page: Page): Promise<() => Promise<number[]>> {
   await page.evaluate(() => {
     const times: number[] = [];
     (window as unknown as {__handBacks: number[]}).__handBacks = times;
-    for (const proxy of document.querySelectorAll<HTMLElement>(
-      '[data-selection-proxy]',
+    const shown = (group: HTMLElement) =>
+      group.style.getPropertyValue('--_segmented-lens-visibility') ===
+      'visible';
+    for (const group of document.querySelectorAll<HTMLElement>(
+      '[role="radiogroup"]',
     )) {
-      let visible = proxy.style.visibility === 'visible';
+      let visible = shown(group);
       new MutationObserver(() => {
-        const now = proxy.style.visibility === 'visible';
+        const now = shown(group);
         if (visible && !now) {
           times.push(performance.timeOrigin + performance.now());
         }
         visible = now;
-      }).observe(proxy, {attributes: true, attributeFilter: ['style']});
+      }).observe(group, {attributes: true, attributeFilter: ['style']});
     }
   });
   return async () =>
@@ -221,20 +345,22 @@ test('a tap slides the selected surface to the new segment on UIKit’s spring',
       'none',
     );
   }
-  const before = await control.boxes();
-  const from = boxOf(before, 'grid');
-  const to = boxOf(before, 'table');
   await control.tapSegment('table');
   // The value commits at the lift, as UISegmentedControl's valueChanged does.
   await expect(control.segment('table')).toHaveAttribute(
     'aria-checked',
     'true',
   );
-  await waitForAnimation(control.proxy);
-  const held = await holdAnimations(page, control.proxy);
+  // The segments' boxes once the titles have their new weights: what the
+  // slide measured.
+  const after = await control.boxes();
+  const from = boxOf(after, 'grid');
+  const to = boxOf(after, 'table');
+  await waitForLens(control);
+  const held = await holdLens(control);
   expect(held.map(a => a.easing)).toEqual(['linear', 'linear']);
   const times = timeline(700);
-  const samples = await sampleProxy(control.proxy, times);
+  const samples = await sampleLens(control.group, times);
   await releaseAnimations(page);
   expect(samples.every(s => s.visible)).toBe(true);
   const expectedX = (t: number) =>
@@ -278,21 +404,18 @@ test('the surface lands exactly where the segment paints it', async ({
   // must wait while the landed frame is photographed.
   await installTimerGate(page);
   await control.tapSegment('list');
-  await waitForAnimation(control.proxy);
+  await waitForLens(control);
   await freezeTimers(page);
-  // Every animation in the control, the title cross-fades included, at its
-  // last presented frame.
-  await holdAnimations(page, control.group);
-  await seekAnimations(page, Infinity);
-  // The last frame of the slide: the proxy carries the surface, the segment's
-  // own is hidden.
+  // The slide runs its course on the compositor (about 0.6 s); with the
+  // timers held the hand-back waits, so this is the last frame of the slide:
+  // the lens carries the surface, the segment's own is hidden.
+  await page.waitForTimeout(1200);
   const landed = await control.group.screenshot({animations: 'allow'});
   expect(
     await control.segment('list').evaluate(el => el.style.backgroundColor),
   ).toBe('transparent');
-  await releaseAnimations(page, {finish: true});
   await thawTimers(page);
-  await expect(control.proxy).toHaveCSS('visibility', 'hidden');
+  await expectLensHidden(control);
   expect(
     await control.segment('list').evaluate(el => el.getAttribute('style')),
   ).toBeFalsy();
@@ -300,46 +423,76 @@ test('the surface lands exactly where the segment paints it', async ({
   const a = PNG.sync.read(landed);
   const b = PNG.sync.read(rest);
   expect([a.width, a.height]).toEqual([b.width, b.height]);
-  const differing = pixelmatch(a.data, b.data, undefined, a.width, a.height, {
-    threshold: 0.05,
+  // The hand-back is invisible: the same pixels before and after it, but for
+  // the surface's edges, which each engine snaps to device pixels its own way
+  // for a composited layer and for a segment's own background (at most one
+  // device pixel each side).
+  const edges = await control.group.evaluate(group => {
+    const ratio = window.devicePixelRatio || 1;
+    const host = group.getBoundingClientRect();
+    const segment = group.querySelector('[data-value="list"]');
+    if (segment == null) {
+      throw new Error('no List segment');
+    }
+    const box = segment.getBoundingClientRect();
+    const radius = parseFloat(getComputedStyle(segment).borderTopLeftRadius);
+    return {
+      left: (box.left - host.left) * ratio,
+      right: (box.right - host.left) * ratio,
+      top: (box.top - host.top) * ratio,
+      bottom: (box.bottom - host.top) * ratio,
+      radius: (Number.isFinite(radius) ? radius : 0) * ratio,
+    };
   });
-  // The hand-back is invisible: the same pixels before and after it.
-  expect(differing).toBeLessThanOrEqual(Math.ceil(a.width * a.height * 0.001));
+  /** Within two device pixels of the surface's rounded outline. */
+  const nearEdge = (x: number, y: number) => {
+    const halfWidth = (edges.right - edges.left) / 2;
+    const halfHeight = (edges.bottom - edges.top) / 2;
+    const r = Math.min(edges.radius, halfWidth, halfHeight);
+    const qx = Math.abs(x - (edges.left + halfWidth)) - (halfWidth - r);
+    const qy = Math.abs(y - (edges.top + halfHeight)) - (halfHeight - r);
+    const distance =
+      Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) +
+      Math.min(Math.max(qx, qy), 0) -
+      r;
+    return Math.abs(distance) < 2;
+  };
+  let differing = 0;
+  for (let y = 0; y < a.height; y++) {
+    for (let x = 0; x < a.width; x++) {
+      const i = (y * a.width + x) * 4;
+      const delta = Math.max(
+        Math.abs(a.data[i] - b.data[i]),
+        Math.abs(a.data[i + 1] - b.data[i + 1]),
+        Math.abs(a.data[i + 2] - b.data[i + 2]),
+      );
+      if (delta > 10 && !nearEdge(x + 0.5, y + 0.5)) {
+        differing++;
+      }
+    }
+  }
+  expect(differing).toBe(0);
 });
 
-test('the titles cross-fade over 200 ms on Core Animation’s default curve', async ({
+test('the titles switch at once with the selection: no second copy of a title is ever mounted', async ({
   page,
 }) => {
   const control = await openControl(page);
+  const elements = await control.group.evaluate(
+    group => group.querySelectorAll('*').length,
+  );
   await control.tapSegment('table');
-  const title = control.segment('table').locator('[data-segment-title="text"]');
-  const twin = control.segment('table').locator('[data-segment-title="twin"]');
-  await waitForAnimation(title);
-  const held = await holdAnimations(page, control.group);
-  // The two titles that change rendering, each with its twin (the slide's
-  // own animations are on translate and scale).
-  const fades = held.filter(a => a.keyframes.some(k => 'opacity' in k));
-  expect(fades.length).toBe(4);
-  for (const fade of fades) {
-    expect(fade.durationMs).toBe(TITLE_FADE_MS);
-    // CSS defines `ease` as exactly this curve; WebKit serializes it by name.
-    expect(['cubic-bezier(0.25, 0.1, 0.25, 1)', 'ease']).toContain(fade.easing);
-  }
-  const read = async () =>
-    Promise.all([
-      title.evaluate(el => Number(getComputedStyle(el).opacity)),
-      twin.evaluate(el => Number(getComputedStyle(el).opacity)),
-    ]);
-  for (const t of [0, 40, 100, 160, 199]) {
-    await seekAnimations(page, t);
-    const [titleOpacity, twinOpacity] = await read();
-    const p = TITLE_EASE(t / TITLE_FADE_MS);
-    expect(titleOpacity).toBeCloseTo(p, 2);
-    expect(twinOpacity).toBeCloseTo(1 - p, 2);
-  }
-  await releaseAnimations(page, {finish: true});
-  // After the fade the twin is a hidden sizer again.
-  await expect(twin).toHaveCSS('visibility', 'hidden');
+  await waitForLens(control);
+  // Mid-slide, as many elements as at rest, and no animation on Table's
+  // title: it already shows its selected rendering.
+  expect(
+    await control.group.evaluate(group => group.querySelectorAll('*').length),
+  ).toBe(elements);
+  expect(
+    await control
+      .segment('table')
+      .evaluate(element => element.getAnimations({subtree: true}).length),
+  ).toBe(0);
 });
 
 test('a second tap mid-flight retargets from what is on screen, keeping its velocity', async ({
@@ -347,12 +500,16 @@ test('a second tap mid-flight retargets from what is on screen, keeping its velo
 }) => {
   const control = await openControl(page);
   await control.tapSegment('table');
-  await waitForAnimation(control.proxy, {minProgressMs: 60});
+  await waitForLens(control, {minProgressMs: 60});
   const describe = async () =>
-    control.proxy.evaluate(async element => {
-      const animations = element.getAnimations().filter(a => {
-        const keyframes = (a.effect as KeyframeEffect).getKeyframes();
-        return 'translate' in (keyframes[0] ?? {});
+    control.group.evaluate(async group => {
+      const animations = group.getAnimations({subtree: true}).filter(a => {
+        const effect = a.effect as KeyframeEffect;
+        return (
+          effect.target === group &&
+          effect.pseudoElement === '::before' &&
+          'translate' in (effect.getKeyframes()[0] ?? {})
+        );
       });
       // A call starts when the browser commits it: wait for its start time.
       await Promise.all(animations.map(async a => a.ready));
@@ -424,10 +581,6 @@ test('a change mid-flight paints no press over the lens on the segment it leaves
       }
       return element;
     };
-    const proxy = group.querySelector<HTMLElement>('[data-selection-proxy]');
-    if (proxy == null) {
-      throw new Error('no selection proxy');
-    }
     segment('list').click();
     // The layout effect that retargets has run once the frame is drawn.
     await new Promise(resolve => requestAnimationFrame(resolve));
@@ -437,7 +590,7 @@ test('a change mid-flight paints no press over the lens on the segment it leaves
       press: table.getAttribute('data-astryx-press'),
       image: style.backgroundImage,
       color: style.backgroundColor,
-      lensVisible: getComputedStyle(proxy).visibility === 'visible',
+      lensVisible: getComputedStyle(group, '::before').visibility === 'visible',
     };
   });
   await expect(control.segment('list')).toHaveAttribute('aria-checked', 'true');
@@ -448,9 +601,7 @@ test('a change mid-flight paints no press over the lens on the segment it leaves
   expect(paint.image).toBe('none');
   expect(paint.color).toBe('rgba(0, 0, 0, 0)');
   // Once the lens lands, Table gets its own styles back.
-  await expect(control.proxy).toHaveCSS('visibility', 'hidden', {
-    timeout: 3000,
-  });
+  await expectLensHidden(control);
   await expect
     .poll(async () =>
       control.segment('table').evaluate(element => element.style.cssText),
@@ -470,7 +621,7 @@ test('an arrow key and a programmatic change slide the selection too', async ({
   await control.segment('day').focus();
   await page.keyboard.press('ArrowRight');
   await expect(control.segment('week')).toHaveAttribute('aria-checked', 'true');
-  const [keyed] = await waitForAnimation(control.proxy);
+  const [keyed] = await waitForLens(control);
   expect(keyed.easing).toBe('linear');
   await releaseAnimations(page, {finish: true});
   // A change made by the app (the button sets the value from outside).
@@ -487,29 +638,25 @@ test('an arrow key and a programmatic change slide the selection too', async ({
     'aria-checked',
     'true',
   );
-  const animations = await waitForAnimation(control.proxy);
+  const animations = await waitForLens(control);
   expect(animations.length).toBeGreaterThan(0);
 });
 
-test('Reduce Motion (design:reduced-motion): no travel or scale; the old surface fades out where it is as the new one fades in, opacity only, in 200 ms or less; the titles cross-fade on the same clock', async ({
+test('Reduce Motion (design:reduced-motion): no travel or scale; the old surface fades out where it is as the new one fades in, opacity only, in 200 ms or less', async ({
   page,
 }) => {
   await page.emulateMedia({reducedMotion: 'reduce'});
   const control = await openControl(page);
-  const boxes = await control.boxes();
   const {samples, titleFades} = await sampleReducedMotionChange(page, control);
+  const boxes = await control.boxes();
   const grid = boxOf(boxes, 'grid');
   const table = boxOf(boxes, 'table');
-  // Over in 200 ms or less (DR2), and the titles fade on that clock.
+  // Over in 200 ms or less (DR2); the titles switch at once.
   const fadeEnd = fadeEndOf(samples);
   expect(fadeEnd).toBeGreaterThan(0);
   expect(fadeEnd).toBeLessThanOrEqual(RM_MAX_FADE_MS);
   expect(samples[samples.length - 1].entering?.opacity).toBe(1);
-  expect(titleFades.length).toBeGreaterThan(0);
-  for (const duration of titleFades) {
-    expect(duration).toBeGreaterThan(0);
-    expect(duration).toBeLessThanOrEqual(RM_MAX_FADE_MS);
-  }
+  expect(titleFades).toEqual([]);
   for (const {t, entering, leaving} of samples) {
     const label = JSON.stringify({t, entering, leaving});
     expect(entering, label).not.toBeNull();
@@ -535,27 +682,23 @@ test('Reduce Motion (design:reduced-motion): no travel or scale; the old surface
   }
   expect(samples[0].leaving?.opacity ?? 0).toBeGreaterThan(0.9);
   expect(samples[0].entering?.opacity ?? 1).toBeLessThan(0.1);
-  // Then the segment paints its own surface again, and the copy is gone.
-  await expect(control.proxy).toHaveCSS('visibility', 'hidden', {
-    timeout: 3000,
-  });
-  await expect(control.group.locator('[data-selection-leaving]')).toHaveCount(
-    0,
-  );
+  // Then the segment paints its own surface again, and the leaving surface
+  // is gone.
+  await expectLensHidden(control);
+  expect((await readLayer(control.group, '::after')).visible).toBe(false);
   await expect(control.segment('table')).not.toHaveCSS(
     'background-color',
     'rgba(0, 0, 0, 0)',
   );
 });
 
-test('Reduce Motion: a theme cannot lengthen the fade, the title cross-fade or bring back travel (design:reduced-motion DR4)', async ({
+test('Reduce Motion: a theme cannot lengthen the fade or bring back travel (design:reduced-motion DR4)', async ({
   page,
 }) => {
   await page.emulateMedia({reducedMotion: 'reduce'});
   const control = await openControl(page);
   await page.evaluate(() => {
     const root = document.documentElement.style;
-    root.setProperty('--motion-segmented-control-label-cross-fade-ms', '600ms');
     root.setProperty('--motion-segmented-control-selection-spring', '1.2s 0.4');
   });
   const {samples, titleFades} = await sampleReducedMotionChange(page, control);
@@ -574,10 +717,7 @@ test('Reduce Motion: a theme cannot lengthen the fade, the title cross-fade or b
       expect(leaving.sx, label).toBe(1);
     }
   }
-  expect(titleFades.length).toBeGreaterThan(0);
-  for (const duration of titleFades) {
-    expect(duration).toBeLessThanOrEqual(RM_MAX_FADE_MS);
-  }
+  expect(titleFades).toEqual([]);
 });
 
 interface SurfaceSample {
@@ -590,7 +730,7 @@ interface SurfaceSample {
 
 /**
  * Taps Table under Reduced Motion with the lens's animations held from
- * their birth, and reads both surfaces (the proxy fading in, the copy fading
+ * their birth, and reads both surfaces (the lens fading in, the ::after fading
  * out) every 8 ms of their animations, and the title fades' durations.
  */
 async function sampleReducedMotionChange(
@@ -623,19 +763,20 @@ async function sampleReducedMotionChange(
   const samples = await control.group.evaluate(group => {
     const held = (window as unknown as {__harnessHeld: Animation[]})
       .__harnessHeld;
-    const read = (selector: string) => {
-      const element = group.querySelector<HTMLElement>(selector);
-      if (element == null) {
+    const read = (pseudo: '::before' | '::after') => {
+      const style = getComputedStyle(group, pseudo);
+      if (style.visibility !== 'visible') {
         return null;
       }
-      const style = getComputedStyle(element);
       const [sx, sy = sx] =
         style.scale === 'none' ? [1, 1] : style.scale.split(' ').map(Number);
       return {
-        opacity: style.visibility === 'visible' ? Number(style.opacity) : 0,
+        opacity: Number(style.opacity),
         sx,
         sy,
-        x: style.translate === 'none' ? 0 : parseFloat(style.translate),
+        x:
+          (parseFloat(style.left) || 0) +
+          (style.translate === 'none' ? 0 : parseFloat(style.translate)),
         width: parseFloat(style.width),
       };
     };
@@ -649,8 +790,8 @@ async function sampleReducedMotionChange(
       }
       out.push({
         t,
-        entering: read('[data-selection-proxy]'),
-        leaving: read('[data-selection-leaving]'),
+        entering: read('::before'),
+        leaving: read('::after'),
       });
     }
     return out;
@@ -691,7 +832,7 @@ function fadeEndOf(
 }
 
 /**
- * Pauses every animation started on the lens (the proxy and anything inside
+ * Pauses every animation started on the lens (the radiogroup's pseudo-elements
  * it) the moment it is created, into the harness's held set;
  * `__restoreAnimate` puts `Element.animate` back.
  */
@@ -712,8 +853,11 @@ async function holdLensAnimationsAtBirth(page: Page): Promise<void> {
       ...args: Parameters<Element['animate']>
     ): Animation {
       const animation = original.apply(this, args);
+      const [, options] = args;
       if (
-        this.closest('[data-selection-proxy], [data-selection-leaving]') != null
+        this.getAttribute('role') === 'radiogroup' &&
+        typeof options === 'object' &&
+        options?.pseudoElement != null
       ) {
         animation.pause();
         held.push(animation);
@@ -723,7 +867,7 @@ async function holdLensAnimationsAtBirth(page: Page): Promise<void> {
   });
 }
 
-test('with a mouse nothing changes: no proxy, the theme’s color transition, and a click selects (touch work costs nothing under a fine pointer)', async ({
+test('with a mouse nothing changes: no lens, the theme’s color transition, and a click selects (touch work costs nothing under a fine pointer)', async ({
   browser,
 }) => {
   const context = await browser.newContext({
@@ -739,8 +883,14 @@ test('with a mouse nothing changes: no proxy, the theme’s color transition, an
       exact: true,
     });
     await expect(group).toBeVisible();
-    const proxy = group.locator('[data-selection-proxy]');
-    await expect(proxy).toHaveCount(0);
+    // No lens style on the radiogroup, no custom property written on it.
+    const noLens = async () =>
+      group.evaluate(
+        element =>
+          getComputedStyle(element, '::before').content !== '""' &&
+          !element.getAttribute('style')?.includes('--_segmented'),
+      );
+    expect(await noLens()).toBe(true);
     await expect(group.locator('[data-value="list"]')).toHaveCSS(
       'transition-property',
       'color, background-color, box-shadow',
@@ -750,7 +900,7 @@ test('with a mouse nothing changes: no proxy, the theme’s color transition, an
       'aria-checked',
       'true',
     );
-    await expect(proxy).toHaveCount(0);
+    expect(await noLens()).toBe(true);
   } finally {
     await context.close();
   }
@@ -766,13 +916,13 @@ test('a theme retunes the slide through its motion role', async ({page}) => {
       '0.25s 0',
     );
   });
-  const before = await control.boxes();
-  const from = boxOf(before, 'grid');
-  const to = boxOf(before, 'table');
   await control.tapSegment('table');
-  await waitForAnimation(control.proxy);
-  await holdAnimations(page, control.proxy);
-  const samples = await sampleProxy(control.proxy, timeline(400));
+  await waitForLens(control);
+  await holdLens(control);
+  const samples = await sampleLens(control.group, timeline(400));
+  const after = await control.boxes();
+  const from = boxOf(after, 'grid');
+  const to = boxOf(after, 'table');
   await releaseAnimations(page);
   const retuned = {response: 0.25, dampingFraction: 1} as const;
   const fit = compareCurve(
@@ -797,29 +947,41 @@ test('RTL: the surface slides toward the tapped segment', async ({page}) => {
     'View mode',
     {direction: 'rtl'},
   );
+  await control.tapSegment('table');
+  await waitForLens(control);
+  await holdLens(control);
+  const [start, end] = await sampleLens(control.group, [0, 2000]);
   const boxes = await control.boxes();
   const grid = boxOf(boxes, 'grid');
   const table = boxOf(boxes, 'table');
   // The first segment is on the right in RTL.
   expect(grid.x).toBeGreaterThan(table.x);
-  await control.tapSegment('table');
-  await waitForAnimation(control.proxy);
-  await holdAnimations(page, control.proxy);
-  const [start, end] = await sampleProxy(control.proxy, [0, 2000]);
   expect(start.x).toBeCloseTo(grid.x, 1);
   expect(end.x).toBeCloseTo(table.x, 1);
-  // On screen, not only in the numbers: held at its last frame, the proxy
-  // covers the tapped segment exactly.
-  const [proxyBox, tableBox] = await Promise.all([
-    control.proxy.boundingBox(),
+  // On screen, not only in the numbers: held at its last frame, the lens
+  // covers the tapped segment exactly (its box in viewport pixels).
+  const [lensBox, tableBox] = await Promise.all([
+    control.group.evaluate(group => {
+      const style = getComputedStyle(group, '::before');
+      const host = group.getBoundingClientRect();
+      const translate =
+        style.translate === 'none' ? 0 : parseFloat(style.translate);
+      const scaleX = style.scale === 'none' ? 1 : parseFloat(style.scale);
+      return {
+        x: host.left + group.clientLeft + parseFloat(style.left) + translate,
+        y: host.top + group.clientTop + parseFloat(style.top),
+        width: parseFloat(style.width) * scaleX,
+        height: parseFloat(style.height),
+      };
+    }),
     control.segment('table').boundingBox(),
   ]);
   await releaseAnimations(page);
-  expect(proxyBox).not.toBeNull();
   expect(tableBox).not.toBeNull();
   for (const key of ['x', 'y', 'width', 'height'] as const) {
     expect(
-      Math.abs((proxyBox?.[key] ?? NaN) - (tableBox?.[key] ?? NaN)),
+      Math.abs(lensBox[key] - (tableBox?.[key] ?? NaN)),
+      `${key}: ${JSON.stringify({lensBox, tableBox})}`,
     ).toBeLessThan(0.5);
   }
 });
@@ -833,11 +995,25 @@ test('the slide keeps advancing every frame while the main thread is blocked', a
     'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
   );
   const control = await openControl(page);
-  await markElement(control.proxy);
   const cast = await startScreencast(page);
   await control.tapSegment('table');
   // Running and composited before the block.
-  const [slide] = await waitForAnimation(control.proxy, {minProgressMs: 16});
+  const [slide] = await waitForLens(control, {minProgressMs: 16});
+  // The lens has no element to carry the harness's marker chip: paint the
+  // lens itself in the marker colour for the frames to find it.
+  await control.group.evaluate((group, rgb) => {
+    group.style.setProperty(
+      '--_segmented-lens-background-color',
+      `rgb(${rgb.join(', ')})`,
+    );
+    group.style.setProperty('--_segmented-lens-background-image', 'none');
+  }, MARKER_RGB);
+  await control.group.evaluate(
+    async () =>
+      new Promise(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
   const block = await blockMainThread(page, 500);
   await page.waitForTimeout(250);
   const castFrames = await cast.stop();
@@ -893,15 +1069,15 @@ test('the slide does no Layout or Paint per frame', async ({
   const next = page.getByRole('button', {name: 'Next period'});
   // The story's two controls share the value, so both slide; each lands (and
   // hands its surface back) on its own clock.
-  const proxies = page.locator('[data-selection-proxy]');
-  await expect(proxies).toHaveCount(2);
+  const groups = page.getByRole('radiogroup');
+  await expect(groups).toHaveCount(2);
   const handBacks = await recordHandBacks(page);
   let start = 0;
   const started = Date.now();
   const trace = await traceRendering(page, async () => {
     await next.evaluate(button => (button as HTMLButtonElement).click());
     const slides = await Promise.all(
-      [0, 1].map(async i => (await waitForAnimation(proxies.nth(i)))[0]),
+      [0, 1].map(async i => (await waitForAnimation(groups.nth(i)))[0]),
     );
     start = Math.max(...slides.map(slide => slide.from));
     // Wait in the test runner, not in the page: polling the page would force
@@ -922,7 +1098,7 @@ test('the slide does no Layout or Paint per frame', async ({
   );
 });
 
-test('assistive technology sees the same radios: the proxy and title twins are hidden', async ({
+test('assistive technology sees the same radios: the lens is decoration with no element', async ({
   page,
 }) => {
   const control = await openControl(page);
@@ -933,7 +1109,6 @@ test('assistive technology sees the same radios: the proxy and title twins are h
       - radio "List" [checked]
       - radio "Table"
   `);
-  await expect(control.proxy).toHaveAttribute('aria-hidden', 'true');
 });
 
 test(
@@ -943,8 +1118,8 @@ test(
     const control = await openControl(page);
     await installTimerGate(page);
     const measure = async () => {
-      const [sample] = await control.proxy.evaluate(element => {
-        const style = getComputedStyle(element);
+      const [sample] = await control.group.evaluate(element => {
+        const style = getComputedStyle(element, '::before');
         return [
           {
             x: style.translate === 'none' ? 0 : parseFloat(style.translate),
@@ -956,7 +1131,7 @@ test(
       return sample;
     };
     await control.tapSegment('table');
-    await waitForAnimation(control.proxy);
+    await waitForLens(control);
     await freezeTimers(page);
     const {storyboard: slideBoard} = await animationStoryboard(page, {
       name: 'segmented-tap-slide',
@@ -980,9 +1155,9 @@ test(
 
     // A second tap 80 ms into a slide back to the first segment.
     await control.tapSegment('grid');
-    await waitForAnimation(control.proxy, {minProgressMs: 80});
+    await waitForLens(control, {minProgressMs: 80});
     await control.tapSegment('list');
-    await waitForAnimation(control.proxy);
+    await waitForLens(control);
     await freezeTimers(page);
     const {storyboard: retargetBoard} = await animationStoryboard(page, {
       name: 'segmented-retarget',
@@ -997,7 +1172,8 @@ test(
     await thawTimers(page);
     await retargetBoard.write(testInfo);
     const retargetXs = retargetBoard.frames.map(f => f.data.x as number);
-    const list = boxOf(boxes, 'list');
+    // Where List is now: the titles' weights changed with the selection.
+    const list = boxOf(await control.boxes(), 'list');
     expect(retargetXs.at(-1)).toBeCloseTo(list.x, 0);
     // Continuous: no frame-to-frame jump larger than the fastest frame of a
     // fresh slide would make.

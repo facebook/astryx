@@ -12,7 +12,7 @@
  *   instead.
  *
  * SYNC: When modified, update:
- * - /packages/core/src/SegmentedControl/useSegmentedSelectionMotion.ts (title layers)
+ * - /packages/core/src/SegmentedControl/useSegmentedSelectionMotion.ts
  * - /packages/core/src/SegmentedControl/SegmentedControl.doc.mjs
  * - /packages/core/src/SegmentedControl/index.ts
  * - /packages/core/src/SegmentedControl/SegmentedControl.test.tsx

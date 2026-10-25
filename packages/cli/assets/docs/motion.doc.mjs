@@ -198,18 +198,6 @@ const calmTheme = defineTheme({
               '0.5s 0',
             ],
             [
-              'segmentedControl.labelCrossFadeCurve',
-              '--motion-segmented-control-label-cross-fade-curve',
-              'curve',
-              'cubic-bezier(0.25, 0.1, 0.25, 1)',
-            ],
-            [
-              'segmentedControl.labelCrossFadeMs',
-              '--motion-segmented-control-label-cross-fade-ms',
-              'duration',
-              '200ms',
-            ],
-            [
               'segmentedControl.selectionSpring',
               '--motion-segmented-control-selection-spring',
               'spring',
