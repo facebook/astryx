@@ -144,8 +144,9 @@ import {cubicBezier} from './bezier';
 import {solveDecay} from './decay';
 import {solveSpring, toSpring, type SpringDescription} from './spring';
 import {resolveMotion} from './resolveMotion';
-import {scroll} from './uikit/scroll';
-import {timing} from './uikit/timing';
+import {registerScrollTable, scroll} from './uikit/scroll';
+import {registerTimingTable, timing} from './uikit/timing';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
 
 /**
  * A value the animator can drive.
@@ -477,8 +478,12 @@ const IDENTITY: Record<MotionProperty, number> = {
   opacity: 1,
 };
 
-/** Within this of its target a curve is over (in the property's own unit). */
-const SETTLE_THRESHOLD: Record<MotionProperty, number> = {
+/**
+ * Within this of its target a curve is over (in the property's own unit). A
+ * curve built outside the animator (a progress curve) settles where a call
+ * would with this as its epsilon.
+ */
+export const SETTLE_THRESHOLD: Record<MotionProperty, number> = {
   x: 0.05,
   y: 0.05,
   rotate: 0.01,
@@ -680,12 +685,12 @@ export function defaultPrefersReducedMotion(): boolean {
   );
 }
 
-/** Whether the primary pointer is coarse: `(pointer: coarse)`. */
+/** Whether the primary pointer is coarse (TOUCH_QUERY). */
 export function defaultIsCoarsePointer(): boolean {
   return (
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
-    window.matchMedia('(pointer: coarse)').matches
+    window.matchMedia(TOUCH_QUERY).matches
   );
 }
 
@@ -781,10 +786,15 @@ export function createAnimator(
     return segment.at(Math.max(0, time - segment.start));
   };
 
-  /** The value on screen at `time`. */
+  /**
+   * The value on screen at `time`. A curve the browser has not started is at
+   * its start up to now; a later time reads the curve from its provisional
+   * start, the model's best guess until the browser's start moves it (a
+   * companion that samples a curve ahead follows its shape).
+   */
   const valueAt = (property: MotionProperty, time: number): number => {
     const segment = segments.get(property);
-    if (segment != null && isHeld(segment)) {
+    if (segment != null && isHeld(segment) && time <= now()) {
       // Nothing has moved on screen until the browser starts the call.
       return segment.at(0);
     }
@@ -1547,6 +1557,7 @@ export function createAnimator(
     stops: ReadonlyArray<{at: number; value: number}>,
     jumps: ReadonlyArray<number> = [],
   ): Segment => {
+    registerTimingTable();
     const ease = cubicBezier(resolveMotion(target, timing.curves.easeInOut));
     const duration = stops[stops.length - 1].at;
     const at = (t: number) => {
@@ -1784,8 +1795,11 @@ export function createAnimator(
         Math.abs((targets[property] as number) - valueAt(property, time)) >
           1e-9,
     );
-    let entering = opacityTo > opacityNow + 1e-6;
-    let leaving = opacityTo < opacityNow - 1e-6;
+    // Only the call's own opacity (or its role) makes it an entrance or an
+    // exit: a fade it does not name, such as a dip still running, does not.
+    const named = targets.opacity != null;
+    let entering = named && opacityTo > opacityNow + 1e-6;
+    let leaving = named && opacityTo < opacityNow - 1e-6;
     let fadeFrom = opacityNow;
     let fadeTo = opacityTo;
     let restore: number | null = null;
@@ -2094,6 +2108,7 @@ export function createAnimator(
       const velocities = expand(velocity);
       const {owner, finished} = newOwner();
       const rate = decayOptions.rate ?? scroll.decelerationRate.normal;
+      registerScrollTable();
       const bounce = toSpring(
         resolveMotion(target, decayOptions.bounce ?? scroll.bounce),
       );

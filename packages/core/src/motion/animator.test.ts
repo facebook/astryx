@@ -399,14 +399,33 @@ describe('a call from rest starts at the commit, as Core Animation does', () => 
   it('holds its start until the browser starts it', async () => {
     const {animator} = setup();
     animator.animate({x: 300}, {spring: springs.smooth});
-    // Nothing has moved on screen yet, whatever the clock says, but the model
-    // is moving: a retarget carries this velocity.
-    expect(animator.get('x', 1100)).toBe(0);
+    // Nothing has moved on screen yet, whatever the clock says; a time ahead
+    // reads the curve from the call's time, and the model is moving: a
+    // retarget carries this velocity.
+    expect(animator.get('x')).toBe(0);
+    expect(animator.get('x', 1100)).toBeCloseTo(curve.value(0.1), 9);
+    clock = 1100;
+    expect(animator.get('x')).toBe(0);
     expect(animator.getVelocity('x', 1100)).toBeCloseTo(curve.velocity(0.1), 9);
     clock = 1250;
     await commitFrame(1250);
     expect(animator.get('x', 1350)).toBeCloseTo(curve.value(0.1), 9);
     expect(live('translate')[0].startTime).toBe(1250);
+  });
+
+  it('a companion sampling a waiting curve ahead follows its shape', async () => {
+    // A tab bar's counter-moving copy, sampled from the body's curve.
+    const {animator} = setup();
+    animator.animate({x: 300}, {spring: springs.smooth});
+    const at = clock;
+    const samples = [0, 50, 100, 200].map(t => animator.get('x', at + t));
+    expect(samples[0]).toBe(0);
+    expect(samples.slice(1).map((v, i) => v > samples[i])).toEqual([
+      true,
+      true,
+      true,
+    ]);
+    expect(samples[2]).toBeCloseTo(curve.value(0.1), 9);
   });
 
   it('finishes and drops the animation on the committed clock', async () => {
@@ -1057,6 +1076,59 @@ describe('Reduced Motion (design:reduced-motion)', () => {
     expect(element.style.translate).toBe('');
     expect(settled).toEqual([true, true]);
     expect(opacityOnly()).toBe(true);
+  });
+
+  it('a move during a dip\u2019s fade out dips once more and ends visible', async () => {
+    const {animator} = reduced();
+    animator.animate({y: 100}, {spring: springs.sheetPresent});
+    await commitFrame(clock);
+    // Half-way down the first dip's fade out, a frame or more later.
+    await advance(fade / 4);
+    animator.animate({y: 120}, {spring: springs.sheetPresent});
+    await commitFrame(clock);
+    await advance(fade / 2);
+    await advance(fade);
+    expect(animator.get('y')).toBe(120);
+    expect(animator.get('opacity')).toBe(1);
+  });
+
+  it('a drop, its reorder\u2019s rebase and the move to the new slot in one task dip once', async () => {
+    // A list row's drop under Reduce Motion: the drop from where the finger
+    // left it, then the reorder's commit (the layout moved the row by 56 px)
+    // and the move to its new slot, in one task on one clock.
+    const {animator} = reduced();
+    animator.set({y: 30});
+    const at = clock;
+    animator.animate(
+      {y: 0},
+      {spring: springs.smooth, velocity: {y: 0}},
+      {at, touchRelease: true},
+    );
+    // The commit comes a few ms later, once the first fade has begun.
+    clock += 8;
+    const at2 = clock;
+    animator.rebase({y: 56}, {at: at2});
+    animator.animate(
+      {y: 0},
+      {spring: springs.smooth},
+      {at: at2, touchRelease: true},
+    );
+    await commitFrame(clock);
+    // It never moves while visible, and fades all the way out once.
+    let lowest = 1;
+    for (let t = 0; t <= fade / 2; t += 10) {
+      const opacity = animator.get('opacity', at2 + t);
+      lowest = Math.min(lowest, opacity);
+      if (opacity > 0.01) {
+        expect(animator.get('y', at2 + t)).toBe(86);
+      }
+    }
+    expect(lowest).toBeLessThanOrEqual(0.1);
+    await advance(fade / 2);
+    expect(animator.get('y')).toBe(0);
+    await advance(fade);
+    expect(animator.get('y')).toBe(0);
+    expect(animator.get('opacity')).toBe(1);
   });
 
   it('a later opacity change lands a waiting move instead of dropping it', async () => {
