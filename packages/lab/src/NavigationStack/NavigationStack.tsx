@@ -82,7 +82,12 @@ import {
   toSpring,
   type SpringDescription,
 } from '@astryxdesign/core/motion/spring';
-import {navigation, springs} from '@astryxdesign/core/motion/uikit';
+import {
+  navigation,
+  registerNavigationTable,
+  registerSpringsTable,
+  springs,
+} from '@astryxdesign/core/motion/uikit';
 import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
 import {isRtlElement} from '@astryxdesign/core/hooks';
 import {useTranslator} from '@astryxdesign/core/i18n';
@@ -561,6 +566,21 @@ function writingDirection(element: HTMLElement | null): 'ltr' | 'rtl' {
  * A push/pop navigator: UINavigationController's transitions, back button
  * and back swipes, on the compositor.
  */
+/**
+ * Registers the motion roles the stack animates with (the navigation and
+ * spring tables), so a theme can retune them. Once per page, before the
+ * first animation; nothing registers on import.
+ */
+let isStackMotionRegistered = false;
+function registerStackMotion(): void {
+  if (isStackMotionRegistered) {
+    return;
+  }
+  isStackMotionRegistered = true;
+  registerNavigationTable();
+  registerSpringsTable();
+}
+
 export function NavigationStack<T>({
   root,
   path,
@@ -571,6 +591,7 @@ export function NavigationStack<T>({
   label,
   'data-testid': testId,
 }: NavigationStackProps<T>) {
+  registerStackMotion();
   const t = useTranslator();
   const containerRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
