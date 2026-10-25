@@ -84,7 +84,8 @@ in the UIKit lab:
   across that exceeds the movement along it fails the pan; in between it
   waits.
 - `velocity()` is UIKit's own filter (see Velocity). The lift updates
-  neither number.
+  neither number; a finger that rested past the stillness interval releases
+  at 0.
 
 ### States
 
@@ -294,23 +295,27 @@ timestamps and no real time.
 
 ## Velocity
 
-`VelocityTracker` reports px per second, UIKit's unit. Strategies:
+`VelocityTracker` reports px per second, UIKit's unit, and is the one
+velocity tracker every continuous recognizer uses
+(`architecture:interaction-modality` INV10, `spec:AST-100` FR1, FR2; no
+alternative estimators). One filter, iOS's measured blend, updated on each
+moved sample (a sample at the newest position is not motion):
 
-- `uikit` (default): `UIPanGestureRecognizer.velocity(in:)` itself, measured.
-  Each event's instantaneous velocity is the position change over the
-  timestamp change since the previous event (the touch-down counts as the
-  first), and the velocity is 0.2 times the newest one plus 0.8 times the
-  one before. It reproduces every value UIKit reported on six recorded touch
-  streams. Like UIKit's, it reacts a frame late to an acceleration, includes
-  a hold before the first move, and never decays: a finger at rest sends no
-  events, so a release after a pause reports the last moving value. Feed it
-  one sample per event.
-- `lsq2`: least-squares quadratic fit over the last 100 ms (at most 20
-  samples), as Android's and Flutter's trackers do. Smoother; not UIKit.
-- `iosFling`: Flutter's approximation of what an iOS scroll view hands its
-  deceleration (weights 0.6 / 0.35 / 0.05 on the last three pair
-  velocities).
-- `window`: the two-point average over 100 ms that BottomSheet used.
+- A pan's velocity is 0.2 times the newest interval's velocity plus 0.8 times
+  the previous interval's (an interval runs from one moved sample to the
+  next; the touch-down counts as the first). With one interval so far it is
+  that interval, as UIKit reports it. It reproduces every value UIKit
+  reported on six recorded touch streams, and like UIKit's it reacts a frame
+  late to an acceleration.
+- A scrolling surface's release (paging, a wheel) is 0.25 times the newest
+  pan value plus 0.75 times the previous one: a pan's `scrollVelocity()`.
+  Everything else reads `velocity()`.
+
+A release reads 0 when the finger stayed still for longer than the stillness
+interval (`UIKIT_GESTURES.velocity.stillness`) before lifting, the one
+difference from iOS, whose filter never decays and so flings after a rest;
+and 0 with fewer than two moved samples. The pan passes its lift's event time
+to the tracker.
 
 ## Haptics
 
