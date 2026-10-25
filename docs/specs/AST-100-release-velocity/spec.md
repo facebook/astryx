@@ -60,13 +60,15 @@ means for them.
   dismiss, reports the same velocity, in CSS pixels per second on each physical
   axis, for the same contact motion. `architecture:interaction-modality` INV10
   owns the source in Core and how a Lab component matches it.
-- **FR2 — A still finger never flicks.** The velocity a component reads when
-  the contact lifts reflects only the motion just before the lift: it is 0
-  when the contact stayed still for longer than a fixed stillness interval
-  before lifting, and motion older than a fixed window before the lift does not
-  change it. Every component reads the same release velocity and none reads
-  another estimate. The window and the stillness interval are internal tuning
-  values.
+- **FR2 — A moving finger reads as on iOS; a still finger never flicks.** The
+  velocity a component reads when the contact lifts is the velocity iOS
+  reports for the same motion: a pan's velocity for a dragged surface, and a
+  scroll view's release velocity for a scrolling surface. It is 0 when the
+  contact stayed still for longer than a fixed stillness interval before
+  lifting, the one case where it differs from iOS. Every component reads the
+  same release velocity and none reads another estimate. The stillness
+  interval is an internal tuning value; how the velocity is computed is
+  `architecture:interaction-modality` INV10.
 - **FR3 — Thresholds sit on top of the one velocity.** A component's flick,
   fling, or commit threshold compares the FR2 velocity, possibly with travel
   or projection the component owns. Thresholds are per-component tuning that
@@ -94,8 +96,8 @@ means for them.
 ## Current-state impact
 
 - No velocity source exists in Core on `main`. Its first landing meets FR1–FR5
-  and `architecture:interaction-modality` INV10: one release filter with the
-  FR2 stillness reset, with no selectable alternative filters. A Lab gesture
+  and `architecture:interaction-modality` INV10: iOS's blend with the FR2
+  stillness reset, and no selectable alternative filters. A Lab gesture
   matches it as INV10 describes.
 - BottomSheet's drag estimates velocity from a two-point window over its
   recent samples with event timestamps. Under FR1 and FR2 it reads the tracker.
@@ -110,17 +112,17 @@ means for them.
 
 ## Verification
 
-| Contract | Verification                                                                        | Representative states                                                                                                                  | Mutation or failure expectation                                                                            |
-| -------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| FR1      | One recorded sample stream read through two different components, plus a unit check | a sheet drag and a row swipe fed the same stream; a Lab gesture and a Core gesture fed the same stream; steady motion in x and y       | Two components reporting different velocities for the same stream, or a unit other than pixels per second  |
-| FR2      | Release velocity tests through a component                                          | steady flick; acceleration before lift; a pause longer than the stillness interval before lift; one sample; samples outside the window | A non-zero release after a still pause, or motion outside the window changing the result                   |
-| FR3      | Component tests at each threshold                                                   | a flick just under and just over a component's threshold; the same velocity across two components                                      | Two components acting on different velocities for the same flick, or a threshold reachable from public API |
-| FR4      | Unit tests with handler delay and per-pointer streams                               | delayed handlers with fixed event timestamps; touch, pen, and mouse streams                                                            | Velocity that changes with handler delay or pointer type                                                   |
-| FR5      | Component tests in both directions                                                  | a flick toward the inline end in left-to-right and right-to-left                                                                       | A flick toward the inline end treated as the opposite action in right-to-left                              |
+| Contract | Verification                                                                        | Representative states                                                                                                               | Mutation or failure expectation                                                                                      |
+| -------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| FR1      | One recorded sample stream read through two different components, plus a unit check | a sheet drag and a row swipe fed the same stream; a Lab gesture and a Core gesture fed the same stream; steady motion in x and y    | Two components reporting different velocities for the same stream, or a unit other than pixels per second            |
+| FR2      | Release velocity tests through a component over recorded iOS streams                | recorded pan and scroll-view releases; acceleration before lift; a pause longer than the stillness interval before lift; one sample | A release that differs from the velocity iOS recorded for the same stream, or a non-zero release after a still pause |
+| FR3      | Component tests at each threshold                                                   | a flick just under and just over a component's threshold; the same velocity across two components                                   | Two components acting on different velocities for the same flick, or a threshold reachable from public API           |
+| FR4      | Unit tests with handler delay and per-pointer streams                               | delayed handlers with fixed event timestamps; touch, pen, and mouse streams                                                         | Velocity that changes with handler delay or pointer type                                                             |
+| FR5      | Component tests in both directions                                                  | a flick toward the inline end in left-to-right and right-to-left                                                                    | A flick toward the inline end treated as the opposite action in right-to-left                                        |
 
 ## Decision log
 
-### DEC-1 — One release filter for every gesture; thresholds stay per component
+### DEC-1 — One release filter that reads as iOS does, with a stillness reset; thresholds stay per component
 
 **Reference:** `spec:AST-100/DEC-1`
 **Decider:** `cixzhang`, `2026-10-24`
@@ -129,13 +131,14 @@ Each component estimating velocity its own way makes the same flick dismiss a
 toast but not a sheet, and a finger that paused before lifting count as a
 flick in one place and not another. One release filter, with one source in
 Core and the same filter in Lab, gives every
-component the same speed for the same motion, and the stillness reset
-stops a resting finger from flinging. What a speed means stays with each
-component as internal tuning, so components keep their feel without a second
-estimator.
+component the same speed for the same motion. Reading a moving finger the way
+iOS does keeps flicks, paging, and dismissal near their thresholds where an
+iPhone puts them, and the stillness reset stops a resting finger from flinging,
+which is the one place the filter departs from iOS. What a speed means stays
+with each component as internal tuning, so components keep their feel without
+a second estimator.
 
-Rejected: several selectable estimators or per-component release filters,
-which reintroduce the disagreement this record removes.
+Rejected: a fixed time window, which reads quick flicks much faster than iOS; iOS's blend with no stillness reset, which flings after a rest; and several selectable estimators or per-component filters, which reintroduce the disagreement this record removes.
 
 ## Open questions
 
