@@ -14,11 +14,13 @@
  * positions.
  * - Below `sheet.release.fastSpeed`, to the position nearest its release
  *   offset projected `sheet.release.projectionSeconds` ahead at the release
- *   velocity. A slow release projects onto itself, so it lands on whatever
- *   is nearest; at rest the sheet dismisses once it is more than halfway
- *   from its shortest detent to gone. Nothing restricts the direction: a
- *   sheet released just above a detent while moving up, but slowly, falls
- *   back to it.
+ *   velocity. Below `sheet.release.minProjectionSpeed` nothing is
+ *   projected: it lands on whatever is nearest where it was let go; at
+ *   rest the sheet dismisses once it is more than halfway from its
+ *   shortest detent to gone. Nothing restricts the direction: a sheet
+ *   released just above a detent while moving up, but slowly, falls back
+ *   to it, and one turned back toward where it started and let go slowly
+ *   stays with the position it is nearest.
  * - From that speed on, a flick: at least to the next position beyond where
  *   it is, in its direction (on a position within
  *   `sheet.release.detentTolerance`, the one after it), or to the
@@ -97,9 +99,12 @@ export function resolveSheetRelease({
   }
   const positions =
     dismissedOffset == null ? [...detents] : [...detents, dismissedOffset];
+  // Below the slowest projected speed the release is where it was let go.
+  const projectedVelocity =
+    Math.abs(velocity) < sheet.release.minProjectionSpeed ? 0 : velocity;
   const choice = selectSnapPoint(positions, {
     position,
-    velocity,
+    velocity: projectedVelocity,
     rate: PROJECTION_RATE,
   });
   const isFast = Math.abs(velocity) >= sheet.release.fastSpeed;

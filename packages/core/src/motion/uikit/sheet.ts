@@ -12,9 +12,9 @@
  *
  * Read from UIKit with a `[.medium(), .large()]` sheet in an injected host
  * app on the iOS 26.2 simulator: the release velocity UIKit computed, the
- * offset it released at and the detent it settled on, for 134 releases, and
- * the `CASpringAnimation` it attached for the 55 of them whose spring was
- * read. Speeds are in pt/s (CSS px/s); times in seconds.
+ * offset it released at and the detent it settled on, for 164 releases, and
+ * the `CASpringAnimation` it attached for the 55 of the first 134 whose
+ * spring was read. Speeds are in pt/s (CSS px/s); times in seconds.
  *
  * Every leaf carries one or more `@source`; webkit and GUESS values also carry
  * the `@measure` task that will confirm or replace them. uikit.test.ts
@@ -26,21 +26,39 @@
 export const sheet = {
   release: {
     /**
-     * How far ahead a slow release is projected, as seconds of its velocity:
-     * below `fastSpeed` the sheet settles on the position nearest
-     * `offset + velocity × this`, the dismissed position (fully off screen)
-     * counting as one of them. At rest, the nearest position.
+     * How far ahead a release is projected, as seconds of its velocity: from
+     * `minProjectionSpeed` to `fastSpeed` the sheet settles on the position
+     * nearest `offset + velocity × this`, the dismissed position (fully off
+     * screen) counting as one of them. Slower, and at rest, the nearest
+     * position.
      * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-     *   iPhone 17 Pro, 134 drag releases of a [.medium(), .large()] sheet
+     *   iPhone 17 Pro, 164 drag releases of a [.medium(), .large()] sheet
      *   between 0 and 4000 pt/s (offset and velocity of the sheet
      *   interaction's last drag update before the lift, outcome from the
      *   detent it settled on), 47 on Oct 23 and 87 on Oct 24 2026 placed to
-     *   separate the candidate laws: with `fastSpeed`'s flick branch, every
-     *   release fits for any value from 0.092 to 0.104 s. A single linear
-     *   projection fits at most 122 of them (at 0.103 s), and a quadratic
-     *   one (offset + k·v·|v|) at most 126
+     *   separate the candidate laws, and 30 back-outs on Oct 25 2026 (see
+     *   `minProjectionSpeed`): with `fastSpeed`'s flick branch and
+     *   `minProjectionSpeed`, every release fits for any value from 0.092 to
+     *   0.104 s. Of the first 134, a single linear projection fits at most
+     *   122 (at 0.103 s), and a quadratic one (offset + k·v·|v|) at most 126
      */
     projectionSeconds: 0.1,
+    /**
+     * Release speed (pt/s, in either direction) below which a release is not
+     * projected: the sheet settles on the position nearest where it was let
+     * go, whichever way it was moving. A sheet turned back toward where it
+     * started and let go slowly stays with the position it is nearest.
+     * Inside the measured bracket.
+     * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+     *   iPhone 17 Pro, 30 releases on Oct 25 2026 of drags from the medium
+     *   detent that went past the midpoint toward large, or 90 % of the way
+     *   to gone, then turned back toward medium: let go at 60 to 244 pt/s,
+     *   they settled on large (7 of 7) or dismissed (6 of 6), the position
+     *   nearest where they were let go; from 250.6 pt/s on, the projection
+     *   decided (back to medium near the midpoint), so the speed lies in
+     *   (243.6, 250.6]
+     */
+    minProjectionSpeed: 250,
     /**
      * Release speed (pt/s, in either direction) from which a release is a
      * flick: it goes at least to the next position beyond where it is in
