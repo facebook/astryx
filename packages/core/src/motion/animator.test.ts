@@ -353,7 +353,7 @@ describe('animate: keyframes on the compositor', () => {
     // be judged against the stylesheet once the animation is gone.
     stylesheet.opacity = '0';
     animator.set({opacity: 0});
-    animator.animate({opacity: 1}, {spring: springs.snappy});
+    animator.animate({opacity: 1}, {spring: springs.quickChange});
     await advance(5000);
     expect(live('opacity')).toHaveLength(0);
     expect(element.style.opacity).toBe('1');
@@ -747,21 +747,21 @@ describe('review fixes', () => {
 });
 
 describe('additive: a retarget adds to the curve on screen', () => {
-  const old = solveSpring(toSpring(springs.smooth), {from: 0, to: 300});
+  const old = solveSpring(toSpring(springs.settle), {from: 0, to: 300});
   const oldEnd = old.settleTime(0.05);
   const oldAt = (t: number) => (t >= oldEnd ? 300 : old.value(t));
 
   it('starts from the old curve\u2019s value and velocity, and reads as their sum', async () => {
     const {animator} = setup();
-    animator.animate({x: 300}, {spring: springs.smooth});
+    animator.animate({x: 300}, {spring: springs.settle});
     await commitFrame(1000);
     clock = 1150;
     const x = animator.get('x');
     const v = animator.getVelocity('x');
-    animator.animate({x: 100}, {spring: springs.smooth}, {additive: true});
+    animator.animate({x: 100}, {spring: springs.settle}, {additive: true});
     expect(animator.get('x')).toBeCloseTo(x, 9);
     expect(animator.getVelocity('x')).toBeCloseTo(v, 6);
-    const delta = solveSpring(toSpring(springs.smooth), {from: 0, to: -200});
+    const delta = solveSpring(toSpring(springs.settle), {from: 0, to: -200});
     for (const t of [0.02, 0.1, 0.4]) {
       expect(animator.get('x', 1150 + t * 1000)).toBeCloseTo(
         oldAt(0.15 + t) + delta.value(t),
@@ -775,7 +775,7 @@ describe('additive: a retarget adds to the curve on screen', () => {
   it('a played reversal keeps the old velocity: a late first frame shows only the reversal\u2019s own start', async () => {
     // An ease-in-out reversal starts at rest; replacing a curve that moves
     // at v puts the old curve v·d ahead of it by a first frame d ms late.
-    const ease = cubicBezier(timing.curves.easeInOut);
+    const ease = cubicBezier(timing.curves.move);
     const reversal = (from: number, to: number) => ({
       duration: 0.35,
       at: (t: number) => from + (to - from) * ease(Math.min(1, t / 0.35)),
@@ -787,7 +787,7 @@ describe('additive: a retarget adds to the curve on screen', () => {
     });
     const steps = async (additive: boolean) => {
       const {animator} = setup();
-      animator.animate({x: 300}, {spring: springs.smooth}, {at: 1000});
+      animator.animate({x: 300}, {spring: springs.settle}, {at: 1000});
       clock = 1120;
       const from = animator.get('x');
       animator.play({x: reversal(from, 0)}, {at: 1120, additive});
@@ -806,18 +806,18 @@ describe('additive: a retarget adds to the curve on screen', () => {
 
   it('nests: a second retarget adds to the first', async () => {
     const {animator} = setup();
-    animator.animate({x: 300}, {spring: springs.smooth});
+    animator.animate({x: 300}, {spring: springs.settle});
     await commitFrame(1000);
     clock = 1100;
-    animator.animate({x: 100}, {spring: springs.smooth}, {additive: true});
+    animator.animate({x: 100}, {spring: springs.settle}, {additive: true});
     clock = 1200;
     const x = animator.get('x');
     const v = animator.getVelocity('x');
-    animator.animate({x: 250}, {spring: springs.smooth}, {additive: true});
+    animator.animate({x: 250}, {spring: springs.settle}, {additive: true});
     expect(animator.get('x')).toBeCloseTo(x, 9);
     expect(animator.getVelocity('x')).toBeCloseTo(v, 6);
-    const first = solveSpring(toSpring(springs.smooth), {from: 0, to: -200});
-    const second = solveSpring(toSpring(springs.smooth), {from: 0, to: 150});
+    const first = solveSpring(toSpring(springs.settle), {from: 0, to: -200});
+    const second = solveSpring(toSpring(springs.settle), {from: 0, to: 150});
     expect(animator.get('x', 1300)).toBeCloseTo(
       oldAt(0.3) + first.value(0.2) + second.value(0.1),
       6,
@@ -828,18 +828,18 @@ describe('additive: a retarget adds to the curve on screen', () => {
 
   it('replaces as before for a property at rest or given a velocity', async () => {
     const {animator} = setup();
-    animator.animate({x: 300}, {spring: springs.smooth}, {additive: true});
+    animator.animate({x: 300}, {spring: springs.settle}, {additive: true});
     await commitFrame(1000);
-    const fromRest = solveSpring(toSpring(springs.smooth), {from: 0, to: 300});
+    const fromRest = solveSpring(toSpring(springs.settle), {from: 0, to: 300});
     expect(animator.get('x', 1100)).toBeCloseTo(fromRest.value(0.1), 9);
     clock = 1100;
     const x = animator.get('x');
     animator.animate(
       {x: 0},
-      {spring: springs.smooth, velocity: {x: 0}},
+      {spring: springs.settle, velocity: {x: 0}},
       {additive: true},
     );
-    const back = solveSpring(toSpring(springs.smooth), {from: x, to: 0});
+    const back = solveSpring(toSpring(springs.settle), {from: x, to: 0});
     expect(animator.get('x', 1200)).toBeCloseTo(back.value(0.1), 9);
   });
 });
@@ -853,7 +853,7 @@ describe('start: when a call\u2019s animations start', () => {
     expect(element.style.willChange).toBe('');
     const handle = animator.animate(
       {x: 100},
-      {spring: springs.smooth},
+      {spring: springs.settle},
       {start: 'presented'},
     );
     // At rest, with no layer yet: the next frame commits it where it is.
@@ -873,7 +873,7 @@ describe('start: when a call\u2019s animations start', () => {
     clock = 1050;
     await commitFrame(1050);
     await expect(handle.started).resolves.toBe(1050);
-    const curve = solveSpring(toSpring(springs.smooth), {from: 20, to: 100});
+    const curve = solveSpring(toSpring(springs.settle), {from: 20, to: 100});
     expect(animator.get('x', 1150)).toBeCloseTo(curve.value(0.1), 9);
     expect(sampleAt(live('translate')[0], 'translate', 1150)[0]).toBeCloseTo(
       curve.value(0.1),
@@ -883,24 +883,24 @@ describe('start: when a call\u2019s animations start', () => {
 
   it('presented: another change before then creates the animations first', async () => {
     const {animator} = setup();
-    animator.animate({x: 100}, {spring: springs.smooth}, {start: 'presented'});
-    animator.animate({y: 50}, {spring: springs.smooth});
+    animator.animate({x: 100}, {spring: springs.settle}, {start: 'presented'});
+    animator.animate({y: 50}, {spring: springs.settle});
     expect(live('translate').length).toBeGreaterThan(0);
     await commitFrame(clock);
-    const x = solveSpring(toSpring(springs.smooth), {from: 0, to: 100});
+    const x = solveSpring(toSpring(springs.settle), {from: 0, to: 100});
     expect(animator.get('x', clock + 100)).toBeCloseTo(x.value(0.1), 9);
   });
 
   it('commit: a retarget is dated by the browser\u2019s commit, from the value on screen', async () => {
     const {animator} = setup();
-    animator.animate({x: 300}, {spring: springs.smooth});
+    animator.animate({x: 300}, {spring: springs.settle});
     await commitFrame(1000);
     clock = 1100;
     const from = animator.get('x');
     const velocity = animator.getVelocity('x');
     const handle = animator.animate(
       {x: 0},
-      {spring: springs.smooth},
+      {spring: springs.settle},
       {start: 'commit'},
     );
     const [animation] = live('translate');
@@ -910,7 +910,7 @@ describe('start: when a call\u2019s animations start', () => {
     clock = 1130;
     await commitFrame(1130);
     await expect(handle.started).resolves.toBe(1130);
-    const back = solveSpring(toSpring(springs.smooth), {
+    const back = solveSpring(toSpring(springs.settle), {
       from,
       to: 0,
       velocity,

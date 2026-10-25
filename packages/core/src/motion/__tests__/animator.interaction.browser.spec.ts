@@ -218,7 +218,7 @@ test('a frame painted before the compositor has the curve shows the element wher
         Number.parseFloat(getComputedStyle(element).translate.split(' ')[0]) ||
         0;
       const present = fresh();
-      present.animator.animate({x: travel}, {spring: Motion.springs.smooth});
+      present.animator.animate({x: travel}, {spring: Motion.springs.settle});
       for (const animation of present.element.getAnimations()) {
         animation.cancel();
       }
@@ -227,11 +227,11 @@ test('a frame painted before the compositor has the curve shows the element wher
       const retarget = fresh();
       await retarget.animator.animate(
         {x: travel},
-        {spring: Motion.springs.smooth},
+        {spring: Motion.springs.settle},
       ).started;
       await new Promise(resolve => setTimeout(resolve, 150));
       const onScreen = retarget.animator.get('x');
-      retarget.animator.animate({x: 0}, {spring: Motion.springs.smooth});
+      retarget.animator.animate({x: 0}, {spring: Motion.springs.settle});
       for (const animation of retarget.element.getAnimations()) {
         animation.cancel();
       }
