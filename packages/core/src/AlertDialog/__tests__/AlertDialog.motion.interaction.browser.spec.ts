@@ -15,8 +15,10 @@
  *   viewport (UIKit's 320 pt width); closed mid-presentation it fades from
  *   where it is: from the presented value at the close, with its velocity,
  *   never above that fade; both run on the
- *   compositor (frames keep coming through a blocked main thread, no Layout or
- *   Paint per frame); a tap during either transition reaches nothing; under
+ *   compositor (frames keep coming through a blocked main thread, judged
+ *   with the backdrop blur off because this rig composites in software; no
+ *   Layout or Paint per frame); a tap during either transition reaches
+ *   nothing; under
  *   reduced motion the alert and the dimming cross-fade in and out, opacity
  *   only, settled within 200 ms (design:reduced-motion DR1, DR2); a finger in
  *   Chrome's engine gets the same presentation; a mouse keeps the theme's
@@ -796,6 +798,16 @@ test.describe('under a finger', () => {
       'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
     );
     const {driver, trigger, dialog} = await openPage(page);
+    // This rig composites in software (no GPU), where Dialog's backdrop blur
+    // alone takes most of every frame: Chromium's DrawFrame costs 9.0 ms with
+    // it and 1.3 ms without, on an idle core. On a busy runner that drops
+    // frames inside the block and around it alike (3 CPU hogs on the test's 4
+    // cores: 18 of 20 runs at about 30 fps with the blur, 0 of 20 without),
+    // while what this proves, which thread runs the motion, does not depend
+    // on it. The blur stays in every other proof and in the storyboard.
+    await page.addStyleTag({
+      content: 'dialog::backdrop { backdrop-filter: none !important; }',
+    });
     const proofs: Record<string, ReturnType<typeof cadence>> = {};
     for (const phase of ['present', 'dismiss'] as const) {
       const cast = await startScreencast(page, {format: 'jpeg', quality: 40});
@@ -817,6 +829,11 @@ test.describe('under a finger', () => {
         {from: block.from + 20, to: Math.min(block.to, curveEnd) - 20},
       );
       if (phase === 'present') {
+        expect(
+          await dialog.evaluate(
+            el => getComputedStyle(el, '::backdrop').backdropFilter,
+          ),
+        ).toBe('none');
         await waitForRest(dialog);
         await page.waitForTimeout(100);
       } else {
