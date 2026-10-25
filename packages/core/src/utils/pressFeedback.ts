@@ -4,8 +4,8 @@
  * @file pressFeedback.ts
  * @input The press state machine (pressGesture.ts) and the document's pointer,
  *   scroll and visibility events
- * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, pressableProps and
- *   installPressFeedback
+ * @output Exports installPressFeedback, and re-exports PRESSABLE_ATTRIBUTE,
+ *   PRESSED_ATTRIBUTE and pressableProps from pressable.ts
  * @position The DOM half of the touch press model: one delegated controller
  *   per document that writes `data-astryx-press` on the nearest pressable surface.
  *   Installed by usePressFeedback (hooks/usePressFeedback.ts) on first mount;
@@ -28,11 +28,12 @@
  * (`@media (pointer: coarse)`) and this writes `data-astryx-press="on"` when the
  * press is believed and `data-astryx-press="fading"` for the release's exit.
  *
- * SYNC: When modified, update pressGesture.ts, hooks/usePressFeedback.ts,
+ * SYNC: When modified, update pressable.ts, pressGesture.ts, hooks/usePressFeedback.ts,
  * utils/interactionOverlay.stylex.ts and pressFeedback.test.ts.
  */
 
 import type {PressGesture, PressPaint, PressStep} from './pressGesture';
+import {PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE} from './pressable';
 import {
   idlePressGesture,
   PRESS_FADE_MS,
@@ -42,22 +43,14 @@ import {
   pressGestureStep,
 } from './pressGesture';
 
-/**
- * The marker the controller finds with `closest()`. Every Astryx component
- * that paints a press carries it on the element that paints; a local
- * component can opt in by spreading {@link pressableProps} (or calling
- * `usePressFeedback`) on its own pressable element and reading
- * {@link PRESSED_ATTRIBUTE} in its styles.
- */
-export const PRESSABLE_ATTRIBUTE = 'data-astryx-pressable';
-
-/** `on` while the press is believed and the finger is down; `fading` for the release's exit. */
-export const PRESSED_ATTRIBUTE = 'data-astryx-press';
-
-/** Spread onto the element that paints the press. */
-export const pressableProps: {readonly [PRESSABLE_ATTRIBUTE]: ''} = {
-  [PRESSABLE_ATTRIBUTE]: '',
-};
+// The attribute names and the spreadable marker live in pressable.ts, which
+// holds no state, so a server-rendered surface can carry the marker without
+// importing this controller.
+export {
+  PRESSABLE_ATTRIBUTE,
+  PRESSED_ATTRIBUTE,
+  pressableProps,
+} from './pressable';
 
 /**
  * How long after a touch a scroll can still be that finger's momentum.

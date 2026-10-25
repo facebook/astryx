@@ -16,7 +16,9 @@
  *
  *  - A file paints a press when its StyleX carries an `':active` key, a
  *    `[data-astryx-press` arm, or composes `interactionOverlayStyles`.
- *  - A file is marked when it calls `usePressFeedback(`.
+ *  - A file is marked when it calls `usePressFeedback(`, or when it is a
+ *    server shell: it spreads `pressableProps` on the element it renders and
+ *    renders a marked client part (its gate), which installs the controller.
  *  - A file whose press arms are read off an ancestor scope marker
  *    (`stylex.when.ancestor(':active', someScope)`, the way an indicator
  *    reads its owner row) is covered when every file that applies that scope
@@ -67,8 +69,47 @@ const PRESS_ARM = /':active|'\[data-astryx-press=|interactionOverlayStyles\./;
 const ANCESTOR_ARM =
   /stylex\.when\.ancestor\(\s*'(?::active|\[data-astryx-press=[^)]*)',\s*(\w+)\s*\)/g;
 
-function isMarked(file: string): boolean {
+function callsUsePressFeedback(file: string): boolean {
   return (source.get(file) ?? '').includes('usePressFeedback(');
+}
+
+/** Files the module at `file` imports, by relative specifier. */
+function imports(file: string): string[] {
+  const text = source.get(file) ?? '';
+  const dir = path.dirname(file);
+  return [...text.matchAll(/from\s+'(\.[^']+)'/g)].flatMap(m => {
+    const stem = path.normalize(path.join(dir, m[1]));
+    return [`${stem}.ts`, `${stem}.tsx`].filter(rel => source.has(rel));
+  });
+}
+
+/** Whether a module paints a press itself or composes a styles module that does. */
+function paintsPress(file: string): boolean {
+  return (
+    PRESS_ARM.test(source.get(file) ?? '') ||
+    imports(file).some(
+      rel =>
+        rel.endsWith('.stylex.ts') && PRESS_ARM.test(source.get(rel) ?? ''),
+    )
+  );
+}
+
+/**
+ * A server shell cannot call a hook. It carries the marker statically
+ * (`pressableProps`) and renders its gate: a client part that paints nothing
+ * itself and calls `usePressFeedback()`, so the controller is installed
+ * wherever the shell renders. The client component the shell also imports
+ * does not count: it renders only for interactive props.
+ */
+function isServerShellMarked(file: string): boolean {
+  return (
+    /\.\.\.pressableProps\b/.test(source.get(file) ?? '') &&
+    imports(file).some(rel => callsUsePressFeedback(rel) && !paintsPress(rel))
+  );
+}
+
+function isMarked(file: string): boolean {
+  return callsUsePressFeedback(file) || isServerShellMarked(file);
 }
 
 /** Files (other than `except`) that apply the scope marker `name` to an element. */
@@ -167,8 +208,9 @@ describe('every surface that paints a press is reachable by the touch press cont
 
   it('marks nothing that does not paint a press', () => {
     // The converse: a marker with no arm would ask the controller to write an
-    // attribute nothing reads. Every marked file must paint a press itself or
-    // apply a scope an indicator reads.
+    // attribute nothing reads. Every marked file must paint a press itself,
+    // compose a styles module that does, apply a scope an indicator reads, or
+    // be the gate of a server shell that paints one.
     const marked = [...source.entries()]
       .filter(([, text]) => text.includes('usePressFeedback('))
       .map(([file]) => file)
@@ -178,9 +220,19 @@ describe('every surface that paints a press is reachable by the touch press cont
         [...text.matchAll(ANCESTOR_ARM)].map(m => m[1]),
       ),
     );
+    const shells = [...source.keys()].filter(isServerShellMarked);
     const unexplained = marked.filter(file => {
       const text = source.get(file) ?? '';
       if (PRESS_ARM.test(text)) {
+        return false;
+      }
+      // Its press arms live in a styles-only module it composes.
+      if (paintsPress(file)) {
+        return false;
+      }
+      // A server shell's gate: it installs the controller for the marked,
+      // pressable element the shell renders into it.
+      if (shells.some(shell => imports(shell).includes(file))) {
         return false;
       }
       return ![...scopeNames].some(scope =>
