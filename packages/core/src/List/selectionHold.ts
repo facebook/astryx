@@ -61,13 +61,26 @@ import {list, registerListTable} from '../motion/uikit/list';
 import {focusForLastInput} from '../utils/focusReturn';
 import {
   CELL_PRESS_PROFILE,
+  paintPress,
   PRESSABLE_ATTRIBUTE,
-  PRESSED_ATTRIBUTE,
+  type PressPaint,
 } from '../utils/pressFeedback';
 import {TOUCH_QUERY} from '../utils/touchPresentation';
 
 /** The press state a hold writes; owned by the hold, never by the controller. */
 export const HELD_PRESS_STATE = 'held';
+
+/**
+ * What a hold replaces, through the one writer of the press attribute
+ * (pressFeedback.ts `paintPress`): the press it continues, or an earlier
+ * hold on the row.
+ */
+const HOLD_REPLACES: ReadonlyArray<PressPaint> = [
+  'none',
+  'on',
+  'fading',
+  HELD_PRESS_STATE,
+];
 
 /**
  * Written on a held row once its deselect has begun (a pop's animation or an
@@ -380,17 +393,15 @@ export function holdSelection(
         if (holds.get(row) === retire) {
           holds.delete(row);
         }
-        if (row.getAttribute(PRESSED_ATTRIBUTE) === HELD_PRESS_STATE) {
-          row.removeAttribute(PRESSED_ATTRIBUTE);
-        }
+        paintPress(row, 'none', {onlyFrom: [HELD_PRESS_STATE]});
       } else {
         // Selected again at once; the hold stays for the next pop.
-        row.setAttribute(PRESSED_ATTRIBUTE, HELD_PRESS_STATE);
+        paintPress(row, HELD_PRESS_STATE, {onlyFrom: HOLD_REPLACES});
       }
     },
   };
 
-  row.setAttribute(PRESSED_ATTRIBUTE, HELD_PRESS_STATE);
+  paintPress(row, HELD_PRESS_STATE, {onlyFrom: HOLD_REPLACES});
   holds.set(row, retire);
   return hold;
 }

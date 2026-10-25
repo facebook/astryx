@@ -29,10 +29,12 @@ import {
 import {
   cellPressableProps,
   installPressFeedback,
+  paintPress,
   PRESS_PROFILES,
   PRESSABLE_ATTRIBUTE,
   pressableProps,
   PRESSED_ATTRIBUTE,
+  readPressPaint,
   subscribePressPaint,
 } from './pressFeedback';
 import {
@@ -1273,6 +1275,72 @@ describe('a control is tracked like UIControl', () => {
   it('marks a control with an empty marker and a cell with `cell`', () => {
     expect(pressableProps[PRESSABLE_ATTRIBUTE]).toBe('');
     expect(cellPressableProps[PRESSABLE_ATTRIBUTE]).toBe('cell');
+  });
+});
+
+describe('the one writer of the press attribute', () => {
+  // Every painter of a press goes through paintPress (selection holds, and
+  // the controller itself), so the fade timer and the attribute never drift
+  // apart, and a write lands only on a value it may replace.
+  it('paints on, then fades on the release clock and clears', () => {
+    const row = document.createElement('div');
+    expect(paintPress(row, 'on')).toBe(true);
+    expect(row.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
+    paintPress(row, 'fading', {releaseMs: 250});
+    vi.advanceTimersByTime(249);
+    expect(row.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+    vi.advanceTimersByTime(1);
+    expect(row.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    expect(readPressPaint(row)).toBe('none');
+  });
+
+  it('uses the press fade by default, and a new paint cancels a pending fade', () => {
+    const row = document.createElement('div');
+    paintPress(row, 'on');
+    paintPress(row, 'fading');
+    paintPress(row, 'on');
+    vi.advanceTimersByTime(PRESS_FADE_MS);
+    expect(row.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
+  });
+
+  it('keeps a held row through presses until its owner releases it', () => {
+    const row = document.createElement('div');
+    expect(paintPress(row, 'held')).toBe(true);
+    expect(paintPress(row, 'on')).toBe(false);
+    expect(paintPress(row, 'fading')).toBe(false);
+    expect(paintPress(row, 'none')).toBe(false);
+    expect(row.getAttribute(PRESSED_ATTRIBUTE)).toBe('held');
+    expect(paintPress(row, 'fading', {onlyFrom: ['held']})).toBe(true);
+    vi.advanceTimersByTime(PRESS_FADE_MS);
+    expect(row.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+  });
+
+  it('leaves a value no painter wrote alone', () => {
+    const row = document.createElement('div');
+    row.setAttribute(PRESSED_ATTRIBUTE, 'custom');
+    expect(readPressPaint(row)).toBeNull();
+    expect(paintPress(row, 'on')).toBe(false);
+    expect(row.getAttribute(PRESSED_ATTRIBUTE)).toBe('custom');
+  });
+
+  it("another painter's fade never cuts the controller's own release short", () => {
+    // Two writers kept two clocks: a fade another painter left running on
+    // the surface removed the attribute in the middle of the controller's
+    // release. With one writer, any write ends a pending fade.
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    const control = pressable('button');
+    document.body.appendChild(control);
+    paintPress(control, 'fading', {releaseMs: 150});
+    press(control, 'pointerdown', 10, 10);
+    expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
+    vi.advanceTimersByTime(50);
+    press(control, 'pointerup', 10, 10);
+    expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+    // The other painter's clock ran out here: the release is still running.
+    vi.advanceTimersByTime(100);
+    expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+    vi.advanceTimersByTime(PRESS_FADE_MS - 100);
+    expect(control.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
   });
 });
 
