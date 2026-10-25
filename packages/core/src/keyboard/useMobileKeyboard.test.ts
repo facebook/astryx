@@ -192,7 +192,7 @@ describe('where the keyboard is measured (FR6, FR7)', () => {
     expect(measureKeyboardHeight(window)).toBe(0);
   });
 
-  it('measures Chrome on Android from its visual viewport, under a finger (FR8, proposed)', () => {
+  it('measures Chrome on Android from its visual viewport, under a finger (FR8, DEC-4)', () => {
     Object.defineProperty(window.navigator, 'virtualKeyboard', {
       configurable: true,
       value: {overlaysContent: false},

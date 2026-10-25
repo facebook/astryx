@@ -265,7 +265,7 @@ describe('createKeyboardModel on Chrome', () => {
   const ease = cubicBezier(androidKeyboard.hideCurve);
   const chrome = () => createKeyboardModel(0, {profile: 'chromium'});
 
-  it('rides a keyboard coming up from its report, dated back to Gboard’s start, on Gboard’s slide (FR8, proposed)', () => {
+  it('rides a keyboard coming up from its report, dated back to Gboard’s start, on Gboard’s slide (FR8)', () => {
     const model = chrome();
     const show = model.report(312, 1000);
     const start = 1000 - androidKeyboard.showReportLagMs;

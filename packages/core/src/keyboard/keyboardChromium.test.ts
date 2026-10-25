@@ -4,7 +4,7 @@
  * @file keyboardChromium.test.ts
  * @input vitest, jsdom, getKeyboardLayoutGuide, a stand-in visual viewport in
  *   Chrome's profile and a stand-in navigator.virtualKeyboard
- * @output Tests the guide on Chrome (spec:AST-099 FR8, proposed): a keyboard
+ * @output Tests the guide on Chrome (spec:AST-099 FR8): a keyboard
  *   coming up rides from its report, dated back to Gboard's start, on
  *   Gboard's slide (the accessory bar's report rides to the last keyboard's
  *   height), a hide rides down from the blur or from its report, focus moving
@@ -25,6 +25,10 @@ let b: HTMLInputElement;
 let button: HTMLButtonElement;
 const seen: KeyboardTransition[] = [];
 let unsubscribe: () => void = () => {};
+const innerHeightDescriptor = Object.getOwnPropertyDescriptor(
+  window,
+  'innerHeight',
+) as PropertyDescriptor;
 
 const report = (cover: number) => {
   view.height = window.innerHeight - cover;
@@ -72,6 +76,7 @@ describe('the keyboard layout guide on Chrome', () => {
     unsubscribe();
     (document.activeElement as HTMLElement | null)?.blur();
     document.body.innerHTML = '';
+    Object.defineProperty(window, 'innerHeight', innerHeightDescriptor);
     Reflect.deleteProperty(window, 'visualViewport');
     Reflect.deleteProperty(window.navigator, 'virtualKeyboard');
     vi.unstubAllGlobals();
@@ -187,6 +192,33 @@ describe('the keyboard layout guide on Chrome', () => {
     vi.advanceTimersByTime(500);
     expect(seen.map(t => t.kind)).toEqual(['show', 'hide', 'show']);
     expect(getKeyboardLayoutGuide(window).inset).toBe(360);
+  });
+
+  it('rides nothing where the app sets interactive-widget=resizes-content, since Chrome shrinks the layout viewport with the keyboard (FR8)', () => {
+    const full = window.innerHeight;
+    // Chrome lays the page out again in the room above the keyboard: the
+    // layout viewport shrinks with the visual viewport, so FR2 reads 0.
+    const resizeContent = (cover: number) => {
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: full - cover,
+      });
+      view.height = full - cover;
+      window.dispatchEvent(new Event('resize'));
+      view.dispatchEvent(new Event('resize'));
+    };
+    a.focus();
+    resizeContent(312);
+    vi.advanceTimersByTime(1000);
+    a.blur();
+    resizeContent(0);
+    vi.advanceTimersByTime(1000);
+    b.focus();
+    resizeContent(312);
+    vi.advanceTimersByTime(1000);
+
+    expect(seen.filter(t => t.to > 0 || t.from > 0)).toEqual([]);
+    expect(getKeyboardLayoutGuide(window).transition.to).toBe(0);
   });
 
   it('never touches the page’s VirtualKeyboard', () => {

@@ -176,9 +176,10 @@ function mockPrimaryPointer(pointer: 'coarse' | 'fine') {
   );
 }
 
-// Desktop Chrome and Android Chrome: the platform's own keyboard geometry API
-// (navigator.virtualKeyboard), where the sheet neither measures nor claims
-// focus (spec:AST-099 FR6).
+// A browser with its own keyboard geometry API (navigator.virtualKeyboard)
+// under a mouse, as desktop Chrome: the sheet neither measures nor claims
+// focus (spec:AST-099 FR6). Under a finger, Chrome on Android is measured
+// like every other browser (DEC-4).
 function mockKeyboardGeometryApi() {
   const navigatorMock = Object.create(window.navigator);
   Object.defineProperty(navigatorMock, 'virtualKeyboard', {

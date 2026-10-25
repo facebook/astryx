@@ -863,7 +863,7 @@ test.describe('under a finger', () => {
   });
 });
 
-test.describe('Chrome on Android (spec:AST-099 FR8, proposed)', () => {
+test.describe('Chrome on Android (spec:AST-099 FR8)', () => {
   test.use({hasTouch: true, isMobile: true});
   test.skip(
     ({browserName}) => browserName !== 'chromium',

@@ -86,12 +86,13 @@ const NON_TEXT_INPUT_TYPES = new Set([
  * Whether this window measures the keyboard: a top-level document (FR7) with
  * a visual viewport (FR6). Decided from capabilities, never from the user
  * agent. A browser with its own keyboard geometry API (the VirtualKeyboard
- * API) is measured the same way under a finger, which is Chrome on Android:
- * its visual viewport shrinks for the keyboard while the layout viewport
- * keeps its height, and that report comes earlier and more reliably than the
- * API's geometry with `overlaysContent` (FR8, proposed; pending owner review
- * on #8304). Under a mouse such a browser shows no on-screen keyboard and is
- * left alone.
+ * API) is measured the same way under a finger, which is Chrome on Android
+ * (`spec:AST-099` FR6, FR8, DEC-4): its visual viewport shrinks for the
+ * keyboard while the layout viewport keeps its height, as everywhere else.
+ * Where the app sets `interactive-widget=resizes-content`, Chrome shrinks the
+ * layout viewport with it, so the height is 0 and nothing rides: the browser
+ * has made the room itself. Under a mouse such a browser shows no on-screen
+ * keyboard and is left alone.
  */
 export function isKeyboardMeasurable(win: Window): boolean {
   return (
