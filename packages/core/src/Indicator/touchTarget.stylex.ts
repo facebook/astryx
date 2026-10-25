@@ -2,51 +2,40 @@
 
 /**
  * @file touchTarget.stylex.ts
- * @input Uses StyleX
- * @output Exports `touchTargetConsts` (the build-time mirror of the control
- *   size in motion/uikit/list.ts, `list.metrics.controlSize`) and
- *   `touchTargetStyles` (a selection control's target under the touch media
- *   query: a row at least that tall, a native control at least that square)
+ * @input Uses StyleX and the theme's touch target size
+ *   (`--size-touch-target`, theme/tokens.stylex.ts)
+ * @output Exports `touchTargetStyles`: a selection control's target under a
+ *   coarse primary pointer (a row at least that tall, a native control at
+ *   least that square)
  * @position Internal styling utility; CheckboxInput and RadioListItem compose
  *   `touchTargetStyles`
  *
  * On a touch screen (primary pointer coarse) a checkbox or a radio option is
- * as easy to hit as an iOS control: the Human Interface Guidelines put iOS
- * controls at 44 × 44 pt. StyleX evaluates a style at build time and cannot
- * read the constants table, so this is the table's `list.metrics.controlSize`
- * as a CSS length, and touchTarget.test.tsx fails if they drift. The styles
- * live beside the constant on purpose (as in List/listRow.stylex.ts): StyleX
- * inlines a `defineConsts` value it reads in the same file. Mouse and
- * trackpad layouts are unchanged.
- *
- * SYNC: When modified, update motion/uikit/list.ts and touchTarget.test.tsx.
+ * as easy to hit as an iOS control: the size is the theme's touch target,
+ * whose default is the platform's control size (44 × 44 pt in Apple's Human
+ * Interface Guidelines), so a dense theme can tune it. The visible box, circle and label keep their
+ * size: only the target grows. Mouse and trackpad layouts are unchanged.
  */
 
 import * as stylex from '@stylexjs/stylex';
 
-export const touchTargetConsts = stylex.defineConsts({
-  /** `list.metrics.controlSize`: the platform's control size. */
-  controlSize: '44px',
-});
+import {sizeVars} from '../theme/tokens.stylex';
 
-/**
- * The touch presentation's query, written out: StyleX needs a literal media
- * key.
- */
 const TOUCH = '@media (pointer: coarse)';
+const TARGET = sizeVars['--size-touch-target'];
 
 export const touchTargetStyles = stylex.create({
-  /** A row that is the option's target: at least the control size tall. */
+  /** A row that is the option's target: at least the touch target tall. */
   row: {
-    minHeight: {default: null, [TOUCH]: touchTargetConsts.controlSize},
+    minHeight: {default: null, [TOUCH]: TARGET},
   },
   /**
    * A native control drawn smaller than its target (a checkbox's input over
-   * its 20 or 24 px box): at least the control size each way, centred on the
+   * its 20 or 24 px box): at least the touch target each way, centred on the
    * visual by its own positioning.
    */
   control: {
-    minInlineSize: {default: null, [TOUCH]: touchTargetConsts.controlSize},
-    minBlockSize: {default: null, [TOUCH]: touchTargetConsts.controlSize},
+    minInlineSize: {default: null, [TOUCH]: TARGET},
+    minBlockSize: {default: null, [TOUCH]: TARGET},
   },
 });

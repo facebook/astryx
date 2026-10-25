@@ -2,14 +2,14 @@
 
 /**
  * @file touchTarget.test.tsx
- * @input vitest, the UIKit constants table (motion/uikit/list.ts), the
- *   build-time mirror and the controls that compose it (CheckboxInput,
- *   RadioList)
- * @output Holds the mirror to the table, and asserts what each control
- *   ships under a coarse pointer: a CheckboxInput row and a RadioList row at
- *   least the control size tall, the checkbox's native input at least the
- *   control size each way, and no gap between radio rows; nothing for a
- *   mouse
+ * @input vitest, the theme's touch target size (`--size-touch-target`) and
+ *   the controls that read it (CheckboxInput, RadioList)
+ * @output Holds the token's default to the platform's control size, and
+ *   asserts what each
+ *   control ships under a coarse pointer: a CheckboxInput row and a RadioList
+ *   row at least the touch target tall, the checkbox's native input at least
+ *   that each way, and a vertical list's gap turned into its rows' padding;
+ *   nothing for a mouse
  * @position Unit test beside Indicator/touchTarget.stylex.ts; the
  *   real-engine geometry and taps are
  *   Indicator/__tests__/TouchTargets.interaction.browser.spec.ts
@@ -18,10 +18,10 @@
 import * as stylex from '@stylexjs/stylex';
 import {render, screen} from '@testing-library/react';
 import {describe, expect, it} from 'vitest';
-import {list} from '../motion/uikit/list';
 import {CheckboxInput} from '../CheckboxInput';
 import {RadioList, RadioListItem} from '../RadioList';
-import {touchTargetConsts, touchTargetStyles} from './touchTarget.stylex';
+import {sizeDefaults} from '../theme/tokens.stylex';
+import {touchTargetStyles} from './touchTarget.stylex';
 
 interface Declared {
   media: string | null;
@@ -74,11 +74,13 @@ function valueOf(
 }
 
 const TOUCH = '(pointer: coarse)';
-const SIZE = `${list.metrics.controlSize}px`;
+const TARGET = 'var(--size-touch-target)';
 
 describe('touch target size', () => {
-  it('is the constants table’s control size, mirrored for the stylesheet', () => {
-    expect(touchTargetConsts.controlSize).toBe(SIZE);
+  it('is a theme metric whose default is the platform’s control size', () => {
+    // Apple's Human Interface Guidelines: iOS controls take a hit target of
+    // at least 44 × 44 pt.
+    expect(sizeDefaults['--size-touch-target']).toBe('44px');
   });
 });
 
@@ -92,7 +94,7 @@ describe('CheckboxInput under a finger', () => {
     if (row == null) {
       throw new Error('the checkbox has no row');
     }
-    expect(valueOf(row, 'min-height', TOUCH)).toBe(SIZE);
+    expect(valueOf(row, 'min-height', TOUCH)).toBe(TARGET);
     // jsdom drops logical sizes from its style objects, so the input is
     // checked for the control target's classes; the engines measure it.
     const control = (stylex.props(touchTargetStyles.control).className ?? '')
@@ -108,7 +110,7 @@ describe('CheckboxInput under a finger', () => {
 });
 
 describe('RadioList under a finger', () => {
-  it('makes each row at least the control size tall, with no gap between rows', () => {
+  it('makes each row at least the touch target tall, sharing the list’s gap as padding', () => {
     render(
       <RadioList label="Plan" value="a" onChange={() => {}}>
         <RadioListItem label="Option A" value="a" />
@@ -121,13 +123,55 @@ describe('RadioList under a finger', () => {
     if (row == null) {
       throw new Error('the radio has no row');
     }
-    expect(valueOf(row, 'min-height', TOUCH)).toBe(SIZE);
+    expect(valueOf(row, 'min-height', TOUCH)).toBe(TARGET);
     expect(valueOf(row, 'min-height', null)).toBeUndefined();
+    // The gap becomes the rows' own: half of it above and below each row.
     // StyleX keeps the gap's arms exclusive.
     const gaps = declaredFor(group).filter(rule =>
       /(?:^|;\s*)(?:row-)?gap:/.test(rule.text),
     );
     const touchGap = gaps.find(rule => rule.media?.startsWith(TOUCH));
     expect(touchGap?.text).toMatch(/gap:\s*0(px)?\b/);
+    const halfGap = 'calc(var(--spacing-2) / 2)';
+    expect(paddingBlockOf(row, TOUCH)).toEqual([halfGap, halfGap]);
+    // A mouse keeps the bare row.
+    expect(paddingBlockOf(row, null)).toEqual(['0', '0']);
+  });
+
+  it('keeps a horizontal option’s row floor without the gap padding', () => {
+    render(
+      <RadioList
+        label="Plan"
+        value="a"
+        orientation="horizontal"
+        onChange={() => {}}>
+        <RadioListItem label="Option A" value="a" />
+        <RadioListItem label="Option B" value="b" />
+      </RadioList>,
+    );
+    const row = screen
+      .getByRole('radio', {name: 'Option B'})
+      .closest('.astryx-item');
+    if (row == null) {
+      throw new Error('the radio has no row');
+    }
+    expect(valueOf(row, 'min-height', TOUCH)).toBe(TARGET);
+    expect(paddingBlockOf(row, TOUCH)).toEqual([]);
   });
 });
+
+/** The block padding `el` declares under `media`, as [start, end]. */
+function paddingBlockOf(el: Element, media: string | null): string[] {
+  const both = valueOf(el, 'padding-block', media);
+  if (both != null) {
+    const [start, end = start] = both.split(/\s+(?![^(]*\))/);
+    return [start, end];
+  }
+  const start =
+    valueOf(el, 'padding-top', media) ??
+    valueOf(el, 'padding-block-start', media);
+  const end =
+    valueOf(el, 'padding-bottom', media) ??
+    valueOf(el, 'padding-block-end', media);
+  return start == null && end == null ? [] : [start ?? '', end ?? ''];
+}

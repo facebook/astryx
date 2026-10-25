@@ -33,7 +33,7 @@ export const docs = {
     ],
   },
   description:
-    'Radio group container with field integration for label, description, and status. Under a coarse pointer each option row is at least 44 px tall and the rows touch, so the whole column is target.',
+    'Radio group container with field integration for label, description, and status. Under a coarse pointer each option row is at least the theme’s touch target tall (`--size-touch-target`, 44 px by default). In a vertical list each row takes half the gap above and below as its own target, so the rows touch and a row grows only by what the gap does not already give it.',
   props: [
     {
       name: 'label',

@@ -17,14 +17,14 @@ export const docs = {
     "order": 50
   },
   "category": "foundations",
-  "description": "Control heights for consistent sizing across buttons, inputs, and selectors.",
+  "description": "Control heights for consistent sizing across buttons, inputs, and selectors, and the touch target: the smallest target a control keeps under a coarse primary pointer.",
   "sections": [
     {
       "title": "Size Tokens",
       "content": [
         {
           "type": "prose",
-          "text": "Control heights for consistent sizing across buttons, inputs, and selectors."
+          "text": "Control heights for consistent sizing across buttons, inputs, and selectors, and the touch target: the smallest target a control keeps under a coarse primary pointer."
         },
         {
           "type": "table",
@@ -44,6 +44,10 @@ export const docs = {
             [
               "--size-element-lg",
               "36px"
+            ],
+            [
+              "--size-touch-target",
+              "44px"
             ]
           ]
         }

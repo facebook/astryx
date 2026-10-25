@@ -109,7 +109,7 @@ export const docs = {
       name: 'size',
       type: "'sm' | 'md'",
       description:
-        'The size of the checkbox: a 20 px box for sm (compact layouts), 24 px for md (default). Under a coarse pointer a labelled checkbox’s row is at least 44 px tall and its target at least 44 × 44 px; a label-hidden checkbox (a marker in another component’s row) keeps its size.',
+        'The size of the checkbox: a 20 px box for sm (compact layouts), 24 px for md (default). Under a coarse pointer a labelled checkbox’s row is at least the theme’s touch target tall (`--size-touch-target`, 44 px by default) and its target at least that square; a label-hidden checkbox (a marker in another component’s row) keeps its size.',
       default: "'md'",
     },
     {
@@ -353,7 +353,7 @@ export const docsZh = {
       name: 'size',
       type: "'sm' | 'md'",
       description:
-        '复选框尺寸：sm 为 20 px 的方框（紧凑布局），md 为 24 px（默认）。在粗指针（触摸）下，带可见标签的复选框行高至少 44 px，点击区域至少 44 × 44 px；隐藏标签的复选框（其他组件行内的标记）保持原尺寸。',
+        '复选框尺寸：sm 为 20 px 的方框（紧凑布局），md 为 24 px（默认）。在粗指针（触摸）下，带可见标签的复选框行高至少为主题的触摸目标尺寸（`--size-touch-target`，默认 44 px），点击区域至少为该尺寸的正方形；隐藏标签的复选框（其他组件行内的标记）保持原尺寸。',
       default: "'md'",
     },
     {

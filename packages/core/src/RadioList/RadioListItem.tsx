@@ -32,6 +32,7 @@ import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useIndicator} from '../Indicator';
 import {Item, type ItemAlign} from '../Item';
 import {touchTargetStyles} from '../Indicator/touchTarget.stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 import {themeProps} from '../utils/themeProps';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
@@ -130,6 +131,17 @@ const wrapperSizeStyles = stylex.create({
 });
 
 const rowStyles = stylex.create({
+  // A vertical list's row under a finger: half the list's gap above and
+  // below is padding, inside the row's target (RadioList drops the gap).
+  // Restates root's padding for every other
+  // case, since a later style replaces the whole property.
+  // SYNC: RadioList.tsx styles.vertical
+  stackedTouch: {
+    paddingBlock: {
+      default: 0,
+      '@media (pointer: coarse)': `calc(${spacingVars['--spacing-2']} / 2)`,
+    },
+  },
   // The row's default appearance is a bare surface: no density padding, no
   // radius, and no full-row background — only the indicator tints on hover
   // (via `indicatorScope`). Item paints padding/radius/hover as an interactive
@@ -412,10 +424,13 @@ export function RadioListItem({
           // still overrides it from the higher `astryx-theme` layer.
           rowStyles.root,
           !isDisabled && rowStyles.press,
-          // Under a finger each option's row is at least as tall as an iOS
-          // control, and the rows touch (RadioList drops its gap), so the
-          // whole column is target.
+          // Under a finger each option's row is at least the theme's touch
+          // target tall. In a vertical list the row also takes half the
+          // list's gap above and below as its own (RadioList drops the gap),
+          // so the rows touch, the whole column is target, and a row grows
+          // only by what the gap does not already give it.
           touchTargetStyles.row,
+          context.orientation !== 'horizontal' && rowStyles.stackedTouch,
           xstyle,
         ] as StyleXStyles
       }

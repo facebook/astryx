@@ -60,6 +60,11 @@ export interface RadioListContextValue {
   isRequired: boolean;
   size: RadioListSize;
   status?: InputStatus;
+  /**
+   * The options' layout: a vertical list's rows share its gap as target
+   * under a coarse pointer. Absent means vertical, RadioList's default.
+   */
+  orientation?: 'vertical' | 'horizontal';
 }
 
 export const RadioListContext = createContext<RadioListContextValue | null>(
@@ -73,8 +78,11 @@ const styles = stylex.create({
   },
   vertical: {
     flexDirection: 'column',
-    // Under a finger the rows are the targets (44 px each, touchTarget
-    // .stylex.ts), so they touch: no dead strip between two options.
+    // Under a finger the gap becomes the rows' own: each row takes half of it
+    // above and below as padding (RadioListItem), so two targets meet in the
+    // middle of the gap with no dead strip and no overlap, and every target
+    // stays inside the list.
+    // SYNC: RadioListItem.tsx rowStyles.stackedTouch
     gap: {default: spacingVars['--spacing-2'], '@media (pointer: coarse)': 0},
   },
   horizontal: {
@@ -269,6 +277,7 @@ export function RadioList({
       isRequired,
       size,
       status,
+      orientation,
     }),
     [
       name,
@@ -279,6 +288,7 @@ export function RadioList({
       isRequired,
       size,
       status,
+      orientation,
     ],
   );
 

@@ -215,6 +215,7 @@ export const myTheme = defineTheme({
   //                    {background,border,icon,text}
   //   --spacing-*      0 · 0-5 · 1 … 12
   //   --size-element-* sm · md · lg (control heights)
+  //   --size-touch-target smallest target under a coarse pointer (44px)
   //   --focus-outline-* width · style · color · offset
   //   --border-width   hairline thickness shared by bordered surfaces
   //   --radius-*       none · inner · element · container · page · chat · full
