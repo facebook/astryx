@@ -347,13 +347,13 @@ const calmTheme = defineTheme({
               'springs.subMenuBack',
               '--motion-springs-sub-menu-back',
               'spring',
-              '0.41s 0.02',
+              '0.4s 0',
             ],
             [
               'springs.subMenuOpen',
               '--motion-springs-sub-menu-open',
               'spring',
-              '0.395s 0.14',
+              '0.4s 0.15',
             ],
             [
               'springs.swiftUIDefault',

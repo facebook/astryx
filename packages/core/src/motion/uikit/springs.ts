@@ -267,11 +267,13 @@ export const springs = {
    *   190.9 (106 ms), 198.1 (123), 218.1 (156), 238.5 (189), 255.6 (223),
    *   268.2 (256), 276.7 (289), 282.1 (324), 285.2 (359), 286.8 (389),
    *   287.6 (424), settling at 287.2; the parent rows' opacity followed it
-   *   (1 → 0.5 by 389 ms). The spring is the least-squares fit of one spring
-   *   and its start (90 ms) to the box's eleven frames (rms 0.001 of the
-   *   travel; the opacity's rms 0.005)
+   *   (1 → 0.5 by 389 ms). UIKit's own spring for it, logged as the
+   *   `UIViewSpringAnimationBehavior` it starts a few ms after the lift on
+   *   every sub-menu row (four captures): damping ratio 0.85, response 0.4 s.
+   *   It fits the box's eleven frames to 0.12 pt rms of the 99 pt travel
+   *   (start 89.5 ms), as a free single-spring fit does (0.86, 0.395)
    */
-  subMenuOpen: {dampingRatio: 0.86, response: 0.395},
+  subMenuOpen: {dampingRatio: 0.85, response: 0.4},
   /**
    * Back out of a sub-menu (its header tapped): the card shrinks back up into
    * the row, the menu's box with it, and the parent's rows come back, on this
@@ -285,10 +287,12 @@ export const springs = {
    *   (361), 194.3 (395), 192.1 (428), 189.7 (494), 188 (628); the parent
    *   rows' opacity 0.5 → 0.59 (160), 0.69 (195), 0.77 (228), 0.84 (260),
    *   0.89 (296), 0.93 (329), 0.95 (361), 0.97 (395), 0.99 (461), 1 (527).
-   *   The spring is the least-squares fit of one spring and its start
-   *   (110 ms) to both (rms 0.004)
+   *   UIKit's own spring for it, logged as the `UIViewSpringAnimationBehavior`
+   *   it starts on every header back (three captures): damping ratio 1,
+   *   response 0.4 s. It fits the box's twelve frames to 0.28 pt rms of the
+   *   99 pt travel (start 111 ms), the opacity to 0.0055 rms
    */
-  subMenuBack: {dampingRatio: 0.98, response: 0.41},
+  subMenuBack: {dampingRatio: 1, response: 0.4},
   /**
    * Context menu (UIContextMenuInteraction): the preview lifting once the
    * long press commits.
