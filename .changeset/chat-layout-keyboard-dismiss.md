@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] ChatLayout: under a finger, dragging the conversation down to the composer now dismisses the software keyboard, as in Messages. A web page cannot move the system keyboard, so the keyboard leaves on its own instead of following the finger. Touches that start in the composer never dismiss it, and a mouse is unchanged. On Android, Chrome reports no keyboard height to the page; to keep the composer above the keyboard there, add `interactive-widget=resizes-content` to the viewport meta tag.
+[feat] ChatLayout: under a finger, dragging the conversation down to the composer now dismisses the software keyboard, as in Messages, wherever ChatLayout keeps its composer on the keyboard (Safari on iOS, Firefox for Android). A web page cannot move the system keyboard, so the keyboard leaves on its own instead of following the finger. Touches that start in the composer never dismiss it, and dismissing moves focus nowhere. Drag-to-dismiss is part of ChatLayout's touch behavior, with no caller control: touch-only behavior ChatLayout's own record defines, under `architecture:public-component-api` INV16's carve-out for it. A mouse and the keyboard are unchanged.
 
 @vjeux

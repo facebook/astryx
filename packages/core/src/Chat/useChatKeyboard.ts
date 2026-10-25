@@ -41,8 +41,10 @@
  * - A finger dragging the transcript down to the composer dismisses the
  *   keyboard, Messages' `interactive` mode (keyboard/keyboardDismiss.ts): the
  *   composer is the bar on the keyboard, so its height is the dismiss
- *   padding. Touch-only behavior with no caller option (ChatLayout.spec.md
- *   FR10).
+ *   padding. It is part of ChatLayout's touch behavior with no caller
+ *   control (ChatLayout.spec.md FR10), and the dismissal only blurs the
+ *   composer: focus moves nowhere else, not to the composer region the
+ *   keyboard's Done parks it on.
  * - A tap on the composer's text while it is not focused focuses it without
  *   Safari's reveal (`preventScroll`), which would otherwise scroll the
  *   whole page up to show a field that the keyboard is about to cover, and
