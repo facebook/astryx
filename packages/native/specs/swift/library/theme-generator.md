@@ -35,7 +35,7 @@ re-implements theme logic.
   a native build script, each listed in the boundary check; once the portable
   entry ships, it reads core only through that entry.
 - **G3 — One shared token type, one file per theme.**
-  - `swift-ios-1/core/Theme/Generated/Tokens.swift` declares the typed
+  - `apple/Sources/Astryx/Theme/Generated/Tokens.swift` declares the typed
     token surface: `Tokens` with one member per group (`color`, `space`,
     `radius`, `size`, `font`), each a struct with one typed member per token.
     It is generated from core's resolved token names, which are the same for
@@ -43,7 +43,7 @@ re-implements theme logic.
   - Type names follow the Swift component API spec: unprefixed, in the
     `Astryx` module, so `Astryx.Theme.neutral` and `Theme.neutral` name the
     same value.
-  - Each theme becomes `swift-ios-1/core/Theme/Generated/<SwiftName>Theme.swift`,
+  - Each theme becomes `apple/Sources/Astryx/Theme/Generated/<SwiftName>Theme.swift`,
     which declares `Theme.<swiftName>` with a `Tokens` value for
     light and one for dark.
   - `<swiftName>` is the theme's `name` with a leading `astryx-` removed, in
@@ -193,11 +193,11 @@ re-implements theme logic.
 
 ## Current state
 
-- `packages/native/` has generated contract types for Apple platforms
-  (`apple/`) and no Swift theme types or theme generator.
-- The SwiftUI view package (`swift-ios-1/`) is added separately with a
-  generator for core's default theme only, written as string-keyed token
-  dictionaries; this spec describes the generator it grows into.
+- `packages/native/apple/` is one Swift package with the `AstryxNative`
+  product (generated contract types) and the `Astryx` product (SwiftUI views).
+- The generator writes the typed `Tokens.swift` and one theme file for core's
+  defaults and each published theme package (`Theme.default`, `Theme.neutral`,
+  and so on), under `apple/Sources/Astryx/Theme/Generated/`.
 - Core's `resolveThemeTokens` returns shared tokens per mode and no local
   tokens; neutral declares local tokens, stored as `light-dark(…)` strings.
 - Published theme packages: butter, chocolate, gothic, matcha, neutral, stone,
