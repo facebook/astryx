@@ -541,6 +541,20 @@ describe('solveAnimatedPageScroll: setContentOffset(_:animated:)', () => {
     }
   });
 
+  // spec:AST-094 FR6: a new target keeps the current velocity (UIKit's
+  // setContentOffset drops it).
+  it('a retarget starts at the velocity it was handed and still ends on the target, at rest, on time', () => {
+    for (const velocity of [900, -900, 0]) {
+      const curve = solveAnimatedPageScroll({from: 100, to: 804, velocity});
+      expect(curve.at(0)).toBe(100);
+      expect(curve.velocity(0)).toBe(velocity);
+      expect(curve.velocity(1e-4)).toBeCloseTo(velocity, -1);
+      expect(curve.at(0.3)).toBe(804);
+      expect(curve.velocity(0.3)).toBe(0);
+      expect(curve.velocity(0.2999)).toBeCloseTo(0, -1);
+    }
+  });
+
   it('peaks at π/2 times the average speed halfway (the sinusoid, to 0.2 %)', () => {
     const curve = solveAnimatedPageScroll({from: 0, to: 402});
     expect(curve.velocity(0.15) / ((Math.PI / 2) * (402 / 0.3))).toBeCloseTo(

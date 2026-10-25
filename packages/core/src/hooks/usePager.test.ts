@@ -1233,6 +1233,44 @@ describe("the drag's axis: UIKit's rule for a pager inside a scroll view", () =>
 });
 
 describe('review fixes', () => {
+  // spec:AST-094 FR6.
+  it('a goTo that retargets a running move keeps its velocity, read from the curve', async () => {
+    const f = setup({defaultIndex: 0});
+    f.pager.goTo(2);
+    await advance(16, f.clock);
+    await advance(16, f.clock);
+    await advance(16, f.clock);
+    const before = f.animator.getVelocity('x', now);
+    expect(Math.abs(before)).toBeGreaterThan(1000);
+    f.pager.goTo(3);
+    expect(f.animator.getVelocity('x', now)).toBeCloseTo(before, -1);
+    await settle(f);
+    expect(f.x()).toBe(-3 * WIDTH);
+  });
+
+  // spec:AST-094 FR37.
+  it('a release moving back toward the start page settles there, whatever the travel', async () => {
+    const f = setup({defaultIndex: 1});
+    // One touch: 70 % of the way to page 2, then back 20 px at 125 px/s,
+    // lifted while moving back.
+    let x = 350;
+    touch('touchstart', f.page, x, 100, now);
+    for (let i = 0; i < 70; i++) {
+      await advance(8, f.clock);
+      x -= 4;
+      touch('touchmove', f.page, x, 100, now);
+    }
+    for (let i = 0; i < 10; i++) {
+      await advance(16, f.clock);
+      x += 2;
+      touch('touchmove', f.page, x, 100, now);
+    }
+    touch('touchend', f.page, x, 100, now);
+    await settle(f);
+    expect(f.pager.index).toBe(1);
+    expect(f.x()).toBe(-WIDTH);
+  });
+
   // react-component-runtime INV2: setOptions and a controlled goTo run from
   // the owner's Effect, so nothing they cause may call back from inside it.
   it('a gap change before a release reports keeps the report and delivers it, and the settle, from a frame callback', async () => {

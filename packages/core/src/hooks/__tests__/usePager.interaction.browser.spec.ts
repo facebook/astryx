@@ -28,6 +28,7 @@ import {
   flick,
   holdAnimations,
   markElement,
+  path,
   releaseAnimations,
   sampleCurve,
   startScreencast,
@@ -434,6 +435,85 @@ test('past the first page the track rubber-bands with d = the page width, then r
   await waitForRest(track);
   expect(await trackX(track)).toBeCloseTo(0, 0);
   expect(await log(page)).toEqual(['settle:0:0']);
+});
+
+// spec:AST-094 FR37: a release whose velocity points back toward the start
+// cancels, whatever the travel (UIKit takes the nearest page).
+test('a drag 70 % of the way to the next page that turns back and lifts while moving back settles on its start page', async ({
+  page,
+}) => {
+  const {track, driver} = await open(page);
+  const x0 = 320;
+  // Forward 70 % of a page, then back 30 px in the last 180 ms, lifted
+  // while moving back.
+  await driver.play(
+    path(
+      p =>
+        p <= 0.85
+          ? {x: x0 - (0.7 * PAGE * p) / 0.85, y: 200}
+          : {x: x0 - 0.7 * PAGE + (30 * (p - 0.85)) / 0.15, y: 200},
+      {durationMs: 1200, restMs: 0},
+    ),
+  );
+  await releaseAnimations(page);
+  await waitForRest(track);
+  expect(await page.evaluate(() => window.pager.index)).toBe(1);
+  expect(await trackX(track)).toBeCloseTo(-PAGE, 0);
+  expect(await log(page)).toEqual(['settle:1:1']);
+});
+
+// spec:AST-094 FR6: a new target keeps the current velocity.
+test('a goTo that retargets a running goTo keeps its velocity: the new curve starts at the speed the old one had', async ({
+  page,
+}) => {
+  const {track} = await open(page, {startIndex: 0});
+  await page.evaluate(() => window.pager.goTo(3));
+  await waitForAnimation(track);
+  const {before, after} = await page.evaluate(async () => {
+    const el = document.getElementById('track') as HTMLElement;
+    // The keyframes' slope at `time` (ms into the animation), px/s: the
+    // animator plays a curve as linear segments between samples.
+    const slope = (animation: Animation, time: number) => {
+      const effect = animation.effect as KeyframeEffect;
+      const frames = effect.getKeyframes();
+      const duration = Number(effect.getComputedTiming().duration);
+      const at = Math.min(Math.max(time / duration, 0), 1);
+      for (let i = 1; i < frames.length; i++) {
+        const a = frames[i - 1];
+        const b = frames[i];
+        if (at <= b.computedOffset || i === frames.length - 1) {
+          const span = (b.computedOffset - a.computedOffset) * duration;
+          return span > 0
+            ? ((parseFloat(String(b.translate)) -
+                parseFloat(String(a.translate))) /
+                span) *
+                1000
+            : 0;
+        }
+      }
+      return 0;
+    };
+    const running = el.getAnimations()[0];
+    await new Promise<void>(resolve => {
+      const tick = () => {
+        if (Number(running.currentTime) > 90) {
+          resolve();
+        } else {
+          requestAnimationFrame(tick);
+        }
+      };
+      requestAnimationFrame(tick);
+    });
+    const speed = slope(running, Number(running.currentTime));
+    window.pager.goTo(4);
+    const next = el.getAnimations().find(a => a !== running);
+    return {before: speed, after: next ? slope(next, 0) : Number.NaN};
+  });
+  expect(Math.abs(before)).toBeGreaterThan(1000);
+  expect(after / before).toBeGreaterThan(0.85);
+  expect(after / before).toBeLessThan(1.15);
+  await waitForRest(track);
+  expect(await trackX(track)).toBeCloseTo(-4 * PAGE, 0);
 });
 
 test('goTo plays setContentOffset(animated:): 0.3 s on a sinusoidal ease', async ({

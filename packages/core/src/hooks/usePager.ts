@@ -991,6 +991,12 @@ export function createPager(
       pan.cancel();
     }
     const from = presentation();
+    // A move this one retargets hands on its velocity, from its curve
+    // (spec:AST-094 FR6).
+    const velocity =
+      settleHandle != null && animator != null
+        ? sign() * animator.getVelocity('x')
+        : undefined;
     if (reason === 'controlled') {
       dropReport();
     }
@@ -1012,6 +1018,7 @@ export function createPager(
           'durationMs',
         ),
         curve: resolveMotion(viewport, paging.animatedScroll, 'curve'),
+        velocity,
       }),
     );
   }
