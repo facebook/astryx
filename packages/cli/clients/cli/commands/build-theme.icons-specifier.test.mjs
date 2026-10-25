@@ -319,12 +319,22 @@ describe('theme build --icons-specifier (spawned processes)', () => {
         `  icons: testIcons,\n` +
         `  tokens: {'--color-bg': '#0a0b0c'},\n` +
         `};\n`;
-      fs.writeFileSync(themeFile, touched);
-      // The rebuilt module as read when the new token showed up. The
-      // assertion below reads this snapshot, not the file again: a re-touch
-      // in this loop can queue one more rebuild, and a second read can land
-      // inside that rewrite (writeFileSync truncates first) and see an empty
-      // module.
+      // Each touch is atomic: staged in a sibling file and renamed over the
+      // theme, as an editor's atomic save does (the watcher follows renames).
+      // A rebuild reads the theme twice, loading the module and then scanning
+      // its source for the icon import, and an in-place write truncates
+      // first: a re-touch landing between those two reads gives a rebuild
+      // that exits 0 with the new token and no import line.
+      const touch = () => {
+        const staged = `${themeFile}.tmp`;
+        fs.writeFileSync(staged, touched);
+        fs.renameSync(staged, themeFile);
+      };
+      touch();
+      // The rebuilt module as read when the new token showed up. `theme
+      // build` renames its outputs into place, so every read sees a whole
+      // module; the assertion reads this snapshot, the module the poll
+      // accepted, since a re-touch can queue one more rebuild after it.
       let rebuiltModule = '';
       const rebuilt = await waitFor(() => {
         try {
@@ -334,10 +344,10 @@ describe('theme build --icons-specifier (spawned processes)', () => {
             return true;
           }
         } catch {
-          // JavaScript module mid-write; fall through to re-touch.
+          // Not readable yet; fall through to re-touch.
         }
         try {
-          fs.writeFileSync(themeFile, touched);
+          touch();
         } catch {
           // Retried on the next poll.
         }
