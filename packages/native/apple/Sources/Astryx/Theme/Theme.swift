@@ -234,9 +234,9 @@ func astryxTokens(_ theme: Theme, scheme: ColorScheme, contrast: ColorSchemeCont
 
 extension View {
   /// Paints this subtree with a theme. Components follow the color scheme and
-  /// the person's text size either way. The theme also sets SwiftUI's own
-  /// tint and foreground styles, so stock controls and plain text in the
-  /// subtree carry the brand (theme environment spec, E2).
+  /// the person's text size either way. The theme also sets SwiftUI's tint
+  /// where it stays legible, so stock controls in the subtree carry the brand
+  /// (theme environment spec, E2).
   public func astryxTheme(_ theme: Theme = .default) -> some View {
     modifier(AstryxThemeModifier(theme: theme))
   }
@@ -251,8 +251,9 @@ private struct AstryxThemeModifier: ViewModifier {
 
   func body(content: Content) -> some View {
     content
+      // Only the tint: an inherited foreground style would override stock
+      // controls' own label colors (a link's tint, a prominent button's white).
       .tint(AstryxThemeColor(theme: theme, role: .tint))
-      .foregroundStyle(AstryxThemeColor(theme: theme, role: .textPrimary))
       .environment(\.astryxTheme, theme)
       // A single-mode theme sets its subtree's color scheme, so stock controls
       // inside draw the appearance its grounds belong to. Written without a
@@ -282,7 +283,7 @@ extension Theme {
 /// drawn.
 struct AstryxThemeColor: ShapeStyle {
   enum Role: Sendable {
-    case tint, textPrimary
+    case tint
   }
 
   let theme: Theme
@@ -292,7 +293,6 @@ struct AstryxThemeColor: ShapeStyle {
     let color = (environment.colorScheme == .dark ? theme.dark : theme.light).color
     switch role {
     case .tint: return astryxStockTint(color.accent)
-    case .textPrimary: return color.textPrimary
     }
   }
 }
