@@ -100,8 +100,10 @@ size.
 Components read every color, size, and font from the `astryx` environment
 value, never from a constant of their own. `astryx.tokens` holds the theme's
 tokens in the current mode as typed members (`tokens.color.textPrimary`,
-`tokens.space.s4`, `tokens.font.bodySize`), so a misspelled token fails to
-compile. Text sizes grow with Dynamic Type. The components still read some
+`tokens.space.s4`, `tokens.font.body.size`), so a misspelled token fails to
+compile. Font tokens come grouped: each type style (`tokens.font.body`,
+`tokens.font.heading1`) holds its `size`, `weight`, and `leading`, and
+`tokens.font.family`, `.size`, and `.weight` hold the scales. Text sizes grow with Dynamic Type. The components still read some
 tokens by core's name (`astryx.color("color-accent")`); moving them onto the
 typed members comes next.
 

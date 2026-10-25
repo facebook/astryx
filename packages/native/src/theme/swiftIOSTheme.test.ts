@@ -17,6 +17,7 @@ import {
   toFamilies,
   toHexColor,
   toPoints,
+  renderTokenTypes,
   tokenSurface,
   valueForMode,
 } from '../../scripts/swift-ios-theme.mjs';
@@ -35,11 +36,13 @@ describe('swift theme generator: names (G6)', () => {
       '--radius-element': 'radius.element',
       '--size-element-md': 'size.elementMd',
       '--border-width': 'size.borderWidth',
-      '--font-size-2xl': 'font.size2xl',
-      '--font-weight-semibold': 'font.weightSemibold',
-      '--font-family-body': 'font.familyBody',
-      '--text-body-size': 'font.bodySize',
-      '--text-heading-1-weight': 'font.heading1Weight',
+      '--font-size-2xl': 'font.size.s2xl',
+      '--font-size-base': 'font.size.base',
+      '--font-weight-semibold': 'font.weight.semibold',
+      '--font-family-body': 'font.family.body',
+      '--text-body-size': 'font.body.size',
+      '--text-heading-1-weight': 'font.heading1.weight',
+      '--text-display-1-leading': 'font.display1.leading',
     };
     for (const [token, expected] of Object.entries(cases)) {
       const mapped = swiftMember(token);
@@ -56,6 +59,36 @@ describe('swift theme generator: names (G6)', () => {
         '--color-a1': {group: 'color', member: 'a1'},
       }),
     ).toThrow(/--color-a-1 and --color-a1 both become color.a1/);
+  });
+
+  it('groups font tokens by type style and scale', () => {
+    const swift = renderTokenTypes(
+      tokenSurface({
+        '--text-body-size': {group: 'font', member: 'body.size'},
+        '--text-body-weight': {group: 'font', member: 'body.weight'},
+        '--text-body-leading': {group: 'font', member: 'body.leading'},
+        '--font-family-body': {group: 'font', member: 'family.body'},
+        '--font-size-2xl': {group: 'font', member: 'size.s2xl'},
+        '--font-weight-bold': {group: 'font', member: 'weight.bold'},
+      }),
+    );
+    expect(swift).toContain('public var body: TypeStyleTokens');
+    expect(swift).toContain('public var family: FontFamilyTokens');
+    expect(swift).toContain('public struct TypeStyleTokens');
+    expect(swift).toContain('public var s2xl: CGFloat');
+    expect(swift).toContain('case "text-body-size": body.size');
+    expect(swift).toContain('case "font-family-body": family.body');
+  });
+
+  it('fails a type style that is missing a part, naming the style', () => {
+    expect(() =>
+      renderTokenTypes(
+        tokenSurface({
+          '--text-body-size': {group: 'font', member: 'body.size'},
+          '--text-body-weight': {group: 'font', member: 'body.weight'},
+        }),
+      ),
+    ).toThrow(/type style body needs a size, weight and leading/);
   });
 
   it('names themes as the spec says', () => {

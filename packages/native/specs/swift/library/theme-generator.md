@@ -37,7 +37,10 @@ re-implements theme logic.
 - **G3 — One shared token type, one file per theme.**
   - `apple/Sources/Astryx/Theme/Generated/Tokens.swift` declares the typed
     token surface: `Tokens` with one member per group (`color`, `space`,
-    `radius`, `size`, `font`), each a struct with one typed member per token.
+    `radius`, `size`, `font`), each a struct with one typed member per token,
+    except `font`, whose members are the sub-groups G6 names: a
+    `TypeStyleTokens` per type style and `FontFamilyTokens`, `FontSizeTokens`,
+    and `FontWeightTokens` for the scales.
     It is generated from core's resolved token names, which are the same for
     every theme (G5), so it does not depend on any one theme.
   - Type names follow the Swift component API spec: unprefixed, in the
@@ -72,17 +75,21 @@ re-implements theme logic.
   is its group and the rest of its name in lower camel case, with each `-`
   between two digits written `_`:
 
-  | Token                                                          | Member                                                                                                                                |
-  | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-  | `color-<rest>`                                                 | `color.<rest>`: `color-text-primary` → `color.textPrimary`, `color-data-blue-1` → `color.dataBlue1`                                   |
-  | `spacing-<n>`                                                  | `space.s<n>`: `spacing-4` → `space.s4`, `spacing-0-5` → `space.s0_5`                                                                  |
-  | `radius-<rest>`                                                | `radius.<rest>`: `radius-element` → `radius.element`                                                                                  |
-  | `size-element-<rest>`, `border-width`                          | `size.element<Rest>`: `size-element-md` → `size.elementMd`; `size.borderWidth`                                                        |
-  | `font-size-<rest>`, `font-weight-<rest>`, `font-family-<rest>` | `font.size<Rest>`, `font.weight<Rest>`, `font.family<Rest>`: `font-size-2xl` → `font.size2xl`, `font-family-body` → `font.familyBody` |
-  | `text-<style>-<part>`                                          | `font.<style><Part>`: `text-body-size` → `font.bodySize`, `text-heading-1-weight` → `font.heading1Weight`                             |
+  | Token                                    | Member                                                                                                                                                                                                      |
+  | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `color-<rest>`                           | `color.<rest>`: `color-text-primary` → `color.textPrimary`, `color-data-blue-1` → `color.dataBlue1`                                                                                                         |
+  | `spacing-<n>`                            | `space.s<n>`: `spacing-4` → `space.s4`, `spacing-0-5` → `space.s0_5`                                                                                                                                        |
+  | `radius-<rest>`                          | `radius.<rest>`: `radius-element` → `radius.element`                                                                                                                                                        |
+  | `size-element-<rest>`, `border-width`    | `size.element<Rest>`: `size-element-md` → `size.elementMd`; `size.borderWidth`                                                                                                                              |
+  | `text-<style>-<part>`                    | `font.<style>.<part>`, one `TypeStyleTokens` per style with `size`, `weight`, and `leading`: `text-body-size` → `font.body.size`, `text-heading-1-weight` → `font.heading1.weight`                          |
+  | `font-family-<rest>`                     | `font.family.<rest>`: `font-family-body` → `font.family.body`                                                                                                                                               |
+  | `font-size-<rest>`, `font-weight-<rest>` | `font.size.<rest>`, `font.weight.<rest>`, with a name that starts with a digit taking `s`: `font-size-2xl` → `font.size.s2xl`, `font-size-base` → `font.size.base`, `font-weight-bold` → `font.weight.bold` |
 
-  Two tokens that map to the same member, or a member that is a Swift keyword
-  or does not start with a letter, fail the run with both token names.
+  Font tokens group by kind because each type style is several tokens a
+  view reads together: a view takes `font.body` whole, and a style missing its
+  size, weight, or leading fails the run naming the style. Two tokens that map
+  to the same member, or a member part that is a Swift keyword or does not
+  start with a letter, fail the run with both token names.
 
 - **G7 — Values are typed and exact, or the run fails.**
   - Colors are `Color` values in sRGB, from `#RGB`, `#RGBA`, `#RRGGBB`,
@@ -149,7 +156,7 @@ re-implements theme logic.
 | G3          | `swiftc -typecheck` compiles `Tokens.swift` and every theme file together; each theme file declares one `Theme` static named as G3 says; two themes with the same name fail the run.                                                                                                                                                                                               |
 | G4          | Generating twice, and on two CI machines, gives byte-identical output.                                                                                                                                                                                                                                                                                                             |
 | G5          | Every theme's light and dark values fill every member of `Tokens`, equal to core's resolved names filtered by the G5 groups.                                                                                                                                                                                                                                                       |
-| G6          | Unit tests map every row of the G6 table; two tokens that collide fail with both names. A Swift fixture referencing `theme.color.textPrimray` fails to compile.                                                                                                                                                                                                                    |
+| G6          | Unit tests map every row of the G6 table; two tokens that collide fail with both names; a type style without its leading fails naming the style; `Tokens.swift` declares one `TypeStyleTokens` and every theme fills `font.body`, `font.display1`, and `font.heading1` as one. A Swift fixture referencing `theme.color.textPrimray` fails to compile.                             |
 | G7          | A token written as `light-dark(#000, #fff)` generates black in light and white in dark. `hsl(210 100% 50%)` generates the same color as `#0080FF`. Unit tests convert every listed form; `oklch(0 0 0 / 5%)` in a kept group fails with theme, mode, token, and value in the message; `"Figtree", -apple-system, sans-serif` becomes `["Figtree", "-apple-system", "sans-serif"]`. |
 | G8          | Neutral's local tokens generate nothing today and each is reported; a fixture whose local tokens come back per mode generates its values keyed by their exact custom-property names in that theme's `local` maps, none in `Tokens`.                                                                                                                                                |
 | G9          | A source check finds no token lookup by string in any component.                                                                                                                                                                                                                                                                                                                   |
@@ -200,7 +207,10 @@ re-implements theme logic.
   product (generated contract types) and the `Astryx` product (SwiftUI views).
 - The generator writes the typed `Tokens.swift` and one theme file for core's
   defaults and each published theme package (`Theme.default`, `Theme.neutral`,
-  and so on), under `apple/Sources/Astryx/Theme/Generated/`.
+  and so on), under `apple/Sources/Astryx/Theme/Generated/`. Font tokens are
+  grouped by type style (`font.body`, `font.code`, `font.display1`–`3`,
+  `font.heading1`–`6`, `font.label`, `font.large`, `font.supporting`) and by
+  scale (`font.family`, `font.size`, `font.weight`).
 - Core's `resolveThemeTokens` returns shared tokens per mode and no local
   tokens; neutral declares local tokens, stored as `light-dark(…)` strings.
 - Published theme packages: butter, chocolate, gothic, matcha, neutral, stone,

@@ -43,7 +43,7 @@ import Testing
   #expect(largest.width > large.width * 2)
 
   var theme = Theme.default
-  theme.light.font.heading2Size = 48
+  theme.light.font.heading2.size = 48
   theme.light.color.textPrimary = Color(astryxRGBA: 0xFF0000FF)
   let themed = Pixels(Astryx.Heading("Settings", level: .v2).fixedSize(), theme: theme)
   #expect(themed.width > large.width)

@@ -91,11 +91,17 @@ export function swiftMember(token) {
     return {group: 'size', member: camel(['element', ...m[1].split('-')])};
   }
   if (name === 'border-width') return {group: 'size', member: 'borderWidth'};
+  // Font tokens group by kind (G6): a type style's size, weight and leading
+  // under the style, and the family, size and weight scales under their own.
   if ((m = /^font-(size|weight|family)-(.+)$/.exec(name))) {
-    return {group: 'font', member: camel([m[1], ...m[2].split('-')])};
+    const leaf = camel(m[2].split('-'));
+    return {
+      group: 'font',
+      member: `${m[1]}.${/^\d/.test(leaf) ? `s${leaf}` : leaf}`,
+    };
   }
   if ((m = /^text-(.+)-(size|weight|leading)$/.exec(name))) {
-    return {group: 'font', member: camel([...m[1].split('-'), m[2]])};
+    return {group: 'font', member: `${camel(m[1].split('-'))}.${m[2]}`};
   }
   return null;
 }
@@ -340,7 +346,11 @@ export function tokenSurface(resolved) {
         `${seen.get(key)} and ${token} both become ${key} in Swift`,
       );
     }
-    if (!/^[a-z][A-Za-z0-9_]*$/.test(member) || SWIFT_KEYWORDS.has(member)) {
+    if (
+      !member
+        .split('.')
+        .every(p => /^[a-z][A-Za-z0-9_]*$/.test(p) && !SWIFT_KEYWORDS.has(p))
+    ) {
       throw new Error(`${token} becomes ${key}, which Swift cannot name`);
     }
     seen.set(key, token);
@@ -357,9 +367,137 @@ export function tokenSurface(resolved) {
 
 const GENERATED_NOTE = `// Do not edit. Run \`${REGENERATE}\` after a theme or core token change.`;
 
+// Font sub-groups (G6): the family, size and weight scales each have their own
+// struct; every other sub-group is a type style with a size, weight and leading.
+const FONT_SCALES = {
+  family: 'FontFamilyTokens',
+  size: 'FontSizeTokens',
+  weight: 'FontWeightTokens',
+};
+const TYPE_STYLE_PARTS = ['size', 'weight', 'leading'];
+
+/** Font members by sub-group: `[[name, [{token, leaf, type}]]]`, sorted. */
+function fontGroups(members) {
+  const groups = new Map();
+  for (const m of members) {
+    const [name, leaf] = m.member.split('.');
+    if (!groups.has(name)) groups.set(name, []);
+    groups.get(name).push({...m, leaf});
+  }
+  for (const [name, parts] of groups) {
+    if (name in FONT_SCALES) {
+      parts.sort((a, b) => a.leaf.localeCompare(b.leaf, 'en'));
+      continue;
+    }
+    const leaves = parts.map(p => p.leaf).sort();
+    if (leaves.join() !== [...TYPE_STYLE_PARTS].sort().join()) {
+      throw new Error(
+        `type style ${name} needs a size, weight and leading token, got ${leaves.join(', ')}`,
+      );
+    }
+    parts.sort(
+      (a, b) =>
+        TYPE_STYLE_PARTS.indexOf(a.leaf) - TYPE_STYLE_PARTS.indexOf(b.leaf),
+    );
+  }
+  return [...groups].sort(([a], [b]) => a.localeCompare(b, 'en'));
+}
+
+const fontStructName = name => FONT_SCALES[name] ?? 'TypeStyleTokens';
+
+function renderStruct(name, doc, members) {
+  return `${doc}
+public struct ${name}: Equatable, Sendable {
+${members.map(m => `${m.doc ? `  /// ${m.doc}\n` : ''}  public var ${m.name}: ${m.type}`).join('\n')}
+
+  public init(
+${members.map(m => `    ${m.name}: ${m.type}`).join(',\n')}
+  ) {
+${members.map(m => `    self.${m.name} = ${m.name}`).join('\n')}
+  }
+}`;
+}
+
+/** FontTokens and its sub-group structs, for the font members of a surface. */
+function renderFontTypes(members) {
+  const groups = fontGroups(members);
+  const cssName = t => t.replace(/^--/, '');
+  const lookup = type =>
+    members
+      .filter(m => m.type === type)
+      .map(m => `    case "${cssName(m.token)}": ${m.member}`)
+      .join('\n');
+  const font = renderStruct(
+    'FontTokens',
+    "/// The theme's `font` tokens, grouped by kind: each type style's size,\n/// weight and leading, and the family, size and weight scales.",
+    groups.map(([name, parts]) => ({
+      name,
+      type: fontStructName(name),
+      doc:
+        name in FONT_SCALES
+          ? `\`--font-${name}-*\``
+          : `\`--text-${cssName(parts[0].token)
+              .replace(/^text-/, '')
+              .replace(/-(size|weight|leading)$/, '')}-*\``,
+    })),
+  ).replace(
+    /\n}$/,
+    `
+
+  /// A size, weight, or line-height token by its CSS name, for code that
+  /// only has the name. Components read the typed members instead.
+  func number(named token: String) -> CGFloat? {
+    switch token {
+${lookup('CGFloat')}
+    default: nil
+    }
+  }
+
+  /// A font family token by its CSS name, for code that only has the name.
+  func families(named token: String) -> [String]? {
+    switch token {
+${lookup('[String]')}
+    default: nil
+    }
+  }
+}`,
+  );
+  const typeStyle = renderStruct(
+    'TypeStyleTokens',
+    '/// One type style: its font size, numeric weight, and line height.',
+    TYPE_STYLE_PARTS.map(name => ({name, type: 'CGFloat'})),
+  );
+  const scales = Object.entries(FONT_SCALES)
+    .map(([name, struct]) => {
+      const parts = groups.find(([n]) => n === name)?.[1] ?? [];
+      return renderStruct(
+        struct,
+        `/// The theme's \`font-${name}\` tokens.`,
+        parts.map(p => ({name: p.leaf, type: p.type, doc: `\`${p.token}\``})),
+      );
+    })
+    .join('\n\n');
+  return `${font}\n\n${typeStyle}\n\n${scales}`;
+}
+
+/** The Swift initializer of FontTokens for one mode. */
+function renderFontValue(members, resolved, pad) {
+  const groups = fontGroups(members);
+  const args = groups
+    .map(([name, parts]) => {
+      const inner = parts
+        .map(p => `${p.leaf}: ${swiftValue(p.type, resolved[p.token].value)}`)
+        .join(', ');
+      return `${pad}    ${name}: ${fontStructName(name)}(${inner})`;
+    })
+    .join(',\n');
+  return `${pad}  font: FontTokens(\n${args}\n${pad}  )`;
+}
+
 /** The generated Tokens.swift for a token surface. */
 export function renderTokenTypes(surface) {
   const structs = GROUPS.map(group => {
+    if (group === 'font') return renderFontTypes(surface.font);
     const members = surface[group];
     const props = members
       .map(
@@ -449,6 +587,7 @@ function swiftValue(type, value) {
 function renderMode(surface, resolved, indent) {
   const pad = ' '.repeat(indent);
   const groups = GROUPS.map(group => {
+    if (group === 'font') return renderFontValue(surface.font, resolved, pad);
     const args = surface[group]
       .map(
         m =>

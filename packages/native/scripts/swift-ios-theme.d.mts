@@ -32,6 +32,9 @@ export declare function localTokensLeftOut(theme: DefinedTheme): string[];
 export declare function tokenSurface(
   resolved: Record<string, SwiftMember>,
 ): Record<TokenGroup, {token: string; member: string; type: string}[]>;
+export declare function renderTokenTypes(
+  surface: Record<TokenGroup, {token: string; member: string; type: string}[]>,
+): string;
 export declare function defaultTheme(): Promise<DefinedTheme>;
 export declare function defineTheme(input: {
   name: string;
