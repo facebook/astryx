@@ -3162,6 +3162,7 @@ describe('useSheetGestures: present and dismiss under a finger', () => {
         removeEventListener: vi.fn(),
       })),
     );
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
     const {hook, sheetAnimations, onScrimTracking} = presentedSheet();
     act(() => {
       expect(hook.result.current.present()).toBe(false);

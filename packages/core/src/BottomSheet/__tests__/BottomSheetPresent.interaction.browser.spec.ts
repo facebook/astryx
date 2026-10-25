@@ -486,6 +486,9 @@ test.describe('with a mouse', () => {
   }) => {
     await page.emulateMedia({reducedMotion: 'reduce'});
     await openStory(page, storybook(), 'core-bottomsheet--snap-points');
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(false);
     const dialog = page.locator('dialog[aria-label="Nearby places"]');
     const sheet = dialog.locator('.astryx-bottom-sheet').first();
     await page.getByRole('button', {name: 'Open nearby places'}).click();

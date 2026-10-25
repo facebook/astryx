@@ -753,6 +753,7 @@ describe('BottomSheet', () => {
 
   describe('under a mouse', () => {
     it('opens and closes on the stylesheet transitions, not the sheet spring', async () => {
+      expect(matchMedia('(pointer: coarse)').matches).toBe(false);
       const played: Keyframe[][] = [];
       // jsdom has no Web Animations: record what the animator would play.
       Object.defineProperty(Element.prototype, 'animate', {
