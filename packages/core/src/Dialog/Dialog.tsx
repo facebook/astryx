@@ -179,30 +179,21 @@ const styles = stylex.create({
     position: 'fixed',
     margin: 'auto',
     padding: 0,
-    // Under a finger the backdrop drops its blur (see backdrop); in forced
-    // colors, where the backdrop's colour is overridden, a 1px border keeps
-    // the modal separate from the page. A border, not an outline: the focus
-    // ring (focusOutlineProps) owns the outline longhands on this element.
+    // The backdrop does not blur the page (see backdrop); in forced colors,
+    // where the backdrop's colour is overridden, a 1px border keeps the modal
+    // separate from the page. A border, not an outline: the focus ring
+    // (focusOutlineProps) owns the outline longhands on this element.
     borderWidth: {
       default: 0,
-      '@media (pointer: coarse)': {
-        default: 0,
-        '@media (forced-colors: active)': 1,
-      },
+      '@media (forced-colors: active)': 1,
     },
     borderStyle: {
       default: 'none',
-      '@media (pointer: coarse)': {
-        default: 'none',
-        '@media (forced-colors: active)': 'solid',
-      },
+      '@media (forced-colors: active)': 'solid',
     },
     borderColor: {
       default: null,
-      '@media (pointer: coarse)': {
-        default: null,
-        '@media (forced-colors: active)': 'CanvasText',
-      },
+      '@media (forced-colors: active)': 'CanvasText',
     },
     backgroundColor: colorVars['--color-background-surface'],
     '--_dialog-radius': radiusVars['--radius-container'],
@@ -245,16 +236,12 @@ const styles = stylex.create({
         'none',
     },
   },
-  // Backdrop using ::backdrop pseudo-element. Under a finger (every coarse
-  // pointer) it does not blur the page: a full-viewport backdrop-filter is
-  // costly to repaint there. The dim stays the theme's overlay colour.
+  // Backdrop using ::backdrop pseudo-element. It does not blur the page: a
+  // full-viewport backdrop-filter is costly to repaint. The dim is the
+  // theme's overlay colour.
   backdrop: {
     '::backdrop': {
       backgroundColor: colorVars['--color-overlay'],
-      backdropFilter: {
-        default: 'blur(2px)',
-        '@media (pointer: coarse)': 'none',
-      },
     },
   },
   fullscreen: {

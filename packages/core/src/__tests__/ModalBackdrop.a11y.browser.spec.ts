@@ -7,14 +7,14 @@
  *   viewport, in light and dark mode, with the base tokens and with the
  *   neutral theme, in Chromium and WebKit, under a finger (a coarse pointer)
  *   and with a mouse, and in forced colors
- * @output Browser evidence for the modal backdrop: under a finger (every
- *   coarse pointer) Dialog, AlertDialog, Drawer and MobileNav no longer blur
- *   the page behind them, while every modal `::backdrop` keeps the theme's
- *   `--color-overlay` (the base tokens' and a bundled theme's own); with a
- *   mouse they keep the 2px blur; BottomSheet never blurred; in forced
- *   colors, under a finger, each has one 1px edge (Dialog's border, the side
- *   panels' anchored-side border) and the outline stays the focus ring's;
- *   screenshots of an open Dialog per mode for the pull request
+ * @output Browser evidence for the modal backdrop: under a finger and with a
+ *   mouse, Dialog, AlertDialog, Drawer and MobileNav no longer blur the page
+ *   behind them, while every modal `::backdrop` keeps the theme's
+ *   `--color-overlay` (the base tokens' and a bundled theme's own);
+ *   BottomSheet never blurred; in forced colors, under either pointer, each
+ *   has one 1px edge (Dialog's border, the side panels' anchored-side
+ *   border) and the outline stays the focus ring's; screenshots of an open
+ *   Dialog per mode for the pull request
  * @position Cross-browser proof for the shared modal backdrop; jsdom drops
  *   `backdrop-filter` and paints nothing, so __tests__/modalBackdrop.test.tsx
  *   can only pin the declarations. WebKit here is desktop WebKit under
@@ -178,16 +178,16 @@ test.describe('with a mouse', () => {
   test.use({hasTouch: false, isMobile: false});
 
   for (const modal of MODALS.filter(m => m.name !== 'MobileNav')) {
-    test(`${modal.name} keeps today’s blurred dim`, async ({page}) => {
+    test(`${modal.name} keeps the overlay colour, unblurred`, async ({
+      page,
+    }) => {
       await openModal(page, modal, 'dark', 'none');
       expect(
         await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
       ).toBe(false);
       const backdrop = await readBackdrop(page);
       expect(backdrop.color).toBe(OVERLAY_DIM.dark);
-      expect(backdrop.filter).toBe(
-        modal.name === 'BottomSheet' ? 'none' : 'blur(2px)',
-      );
+      expect(backdrop.filter).toBe('none');
     });
   }
 });
@@ -196,7 +196,7 @@ test.describe('forced colors', () => {
   test.use({colorScheme: 'light'});
 
   for (const modal of MODALS.filter(m => m.name !== 'BottomSheet')) {
-    test(`${modal.name} has one 1px edge under a finger, where the blur is gone`, async ({
+    test(`${modal.name} has one 1px edge under a finger, where no blur sets it apart`, async ({
       page,
       browserName,
     }) => {
@@ -223,6 +223,38 @@ test.describe('forced colors', () => {
       }
     });
   }
+
+  test.describe('with a mouse', () => {
+    test.use({hasTouch: false, isMobile: false});
+
+    for (const modal of MODALS.filter(
+      m => m.name === 'Dialog' || m.name === 'Drawer',
+    )) {
+      test(`${modal.name} has the same one 1px edge`, async ({
+        page,
+        browserName,
+      }) => {
+        test.skip(
+          browserName !== 'chromium',
+          'forced-colors emulation is Chromium-only in Playwright',
+        );
+        await page.emulateMedia({forcedColors: 'active'});
+        await openModal(page, modal, 'light', 'none');
+        expect(
+          await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+        ).toBe(false);
+        const edge = await readSurfaceEdge(page, modal.name);
+        expect(edge, JSON.stringify(edge)).toEqual(
+          modal.name === 'Drawer'
+            ? {
+                outline: expect.stringMatching(/^none /),
+                sides: [expect.stringMatching(/ 1px$/)],
+              }
+            : {outline: 'none 0px', sides: ['left 1px', 'right 1px']},
+        );
+      });
+    }
+  });
 });
 
 test('the media scrim keeps --color-overlay', async ({page}) => {

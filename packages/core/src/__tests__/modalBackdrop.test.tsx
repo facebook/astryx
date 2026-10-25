@@ -5,16 +5,14 @@
  * @input Dialog, Drawer, MobileNav and BottomSheet rendered open; the StyleX
  *   rules vitest injects into the document (`runtimeInjection`)
  * @output The modal backdrop contract: every modal `::backdrop` paints the
- *   theme's `--color-overlay` under every pointer; under a finger (every
- *   coarse pointer) Dialog, Drawer and MobileNav drop its 2px blur; in forced
- *   colors Dialog draws an edge instead, and Drawer and MobileNav keep their
- *   anchored-side border as theirs; with a mouse the blur stays; BottomSheet
- *   never blurred
+ *   theme's `--color-overlay` and none blurs the page behind it, under any
+ *   pointer; in forced colors Dialog draws an edge instead, and Drawer and
+ *   MobileNav keep their anchored-side border as theirs; BottomSheet never
+ *   blurred
  * @position Cross-component regression test for the shared modal backdrop
  *
- * Dropping the blur under a finger is a performance fix: a full-viewport
- * backdrop-filter is costly to repaint there. The dim's colour stays the
- * theme's.
+ * Dropping the blur is a performance fix: a full-viewport backdrop-filter is
+ * costly to repaint. The dim's colour stays the theme's.
  *
  * jsdom has no top layer and paints nothing, so this pins the declarations the
  * dim rests on, as StyleX hands them to the style sheet (jsdom's own parser
@@ -75,13 +73,13 @@ const rawRules: string[] = [];
 /**
  * The declarations the element's StyleX classes make on its `::backdrop` (or
  * on the element itself with `pseudo: ''`), by property: outside any at-rule,
- * inside `@media (pointer: coarse)` alone, or inside it and
- * `@media (forced-colors: active)`. StyleX minifies values: they are compared
- * without spaces.
+ * inside `@media (pointer: coarse)` alone, or inside
+ * `@media (forced-colors: active)` alone. StyleX minifies values: they are
+ * compared without spaces.
  */
 function backdropDeclarations(
   el: Element,
-  where: 'default' | 'touch' | 'touchForcedColors',
+  where: 'default' | 'touch' | 'forcedColors',
   pseudo = '::backdrop',
 ): Map<string, string> {
   const declarations = new Map<string, string>();
@@ -95,16 +93,14 @@ function backdropDeclarations(
       }
       const isTouch =
         atRules.length === 1 && atRules[0] === '@media (pointer: coarse)';
-      const isTouchForcedColors =
-        atRules.length === 2 &&
-        atRules.includes('@media (pointer: coarse)') &&
-        atRules.includes('@media (forced-colors: active)');
+      const isForcedColors =
+        atRules.length === 1 && atRules[0] === '@media (forced-colors: active)';
       const matchesWhere =
         where === 'default'
           ? atRules.length === 0
           : where === 'touch'
             ? isTouch
-            : isTouchForcedColors;
+            : isForcedColors;
       if (!matchesWhere) {
         continue;
       }
@@ -192,37 +188,33 @@ describe('modal backdrop', () => {
   );
 
   it.each(modals)(
-    '%s does not blur the page under a finger; a mouse keeps the 2px blur',
-    (name, element) => {
+    '%s does not blur the page under any pointer',
+    (_name, element) => {
       render(element());
       const dialog = document.querySelector('dialog');
       expect(dialog).not.toBeNull();
-      const mouse = backdropDeclarations(dialog!, 'default');
-      const touch = backdropDeclarations(dialog!, 'touch');
-      if (name === 'BottomSheet') {
-        // BottomSheet never blurred its dim.
-        expect(mouse.has('backdrop-filter')).toBe(false);
-        expect(touch.has('backdrop-filter')).toBe(false);
-        return;
-      }
-      expect(mouse.get('backdrop-filter')).toBe('blur(2px)');
-      expect(touch.get('backdrop-filter')).toBe('none');
+      expect(
+        backdropDeclarations(dialog!, 'default').has('backdrop-filter'),
+      ).toBe(false);
+      expect(
+        backdropDeclarations(dialog!, 'touch').has('backdrop-filter'),
+      ).toBe(false);
     },
   );
 
-  it('Dialog draws a border in forced colors under a finger, where the blur is gone', () => {
+  it('Dialog draws a border in forced colors, where no blur sets it apart', () => {
     const [, element] = modals.find(([name]) => name === 'Dialog')!;
     render(element());
     const dialog = document.querySelector('dialog');
     expect(dialog).not.toBeNull();
-    const edge = backdropDeclarations(dialog!, 'touchForcedColors', '');
+    const edge = backdropDeclarations(dialog!, 'forcedColors', '');
     expect(edge.get('border-width')).toBe('1px');
     expect(edge.get('border-style')).toBe('solid');
     expect(edge.get('border-color')).toBe('CanvasText');
     // Not an outline: the focus ring owns the outline longhands, and an
     // `outline` shorthand would lose to them in the prebuilt stylesheet (or
     // erase the ring where StyleX resolves styles in application order).
-    for (const where of ['default', 'touch', 'touchForcedColors'] as const) {
+    for (const where of ['default', 'touch', 'forcedColors'] as const) {
       expect(backdropDeclarations(dialog!, where, '').has('outline')).toBe(
         false,
       );
@@ -250,7 +242,7 @@ describe('modal backdrop', () => {
         JSON.stringify(declarations),
       ).toBe(true);
       expect(
-        backdropDeclarations(surface, 'touchForcedColors', '').has('outline'),
+        backdropDeclarations(surface, 'forcedColors', '').has('outline'),
       ).toBe(false);
     },
   );
