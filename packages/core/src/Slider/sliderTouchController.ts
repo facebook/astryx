@@ -11,11 +11,11 @@
  *   `SliderTouchModel` and `SliderTouchParts` types
  * @position Internal to Slider: its touch presentation (a finger, or a pen
  *   on a thumb, under a coarse primary pointer: one touch model on every
- *   touch device, spec:AST-094), loaded by useSliderTouch only once that
- *   presentation applies. A mouse or a trackpad keeps Slider's own pointer
- *   handlers. The coast
- *   spring is the `slider.releaseSpring` motion role, resolved under the
- *   thumb's theme.
+ *   touch device, spec:AST-094 FR13), attached by useSliderTouch once that
+ *   presentation applies; useSliderTouch is its one import site, so a desktop
+ *   build can swap the module. A mouse or a trackpad keeps Slider's own
+ *   pointer handlers. The coast spring is the `slider.releaseSpring` motion
+ *   role (spec:AST-094 FR4), resolved under the thumb's theme.
  *
  * WHAT A FINGER DOES (UISlider, iOS 26.2; values and sources in
  * motion/uikit/slider.ts)

@@ -741,7 +741,7 @@ export function Slider({ref, ...props}: SliderProps) {
 
   // Under a finger the thumbs track touches as UISlider does
   // (useSliderTouch): one touch model on every touch device, a coarse
-  // primary pointer whatever the platform (spec:AST-094). A mouse or a
+  // primary pointer whatever the platform (spec:AST-094 FR13). A mouse or a
   // trackpad keeps the pointer handlers below.
   const isTouchPresentation = useTouchPresentation().isTouch;
   const hasTouchTargets = isTouchPresentation && !isDisabled;
