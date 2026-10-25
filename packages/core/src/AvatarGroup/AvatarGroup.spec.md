@@ -39,7 +39,7 @@ system_specs: [spec:AST-009, spec:AST-038]
 | Behavior                | Members overlap by a quarter of the avatar size; interactive members share one tab stop with arrow-key roving and a translated keyboard hint.                  |
 | End-user impact         | Screen-reader users hear a named group; keyboard users Tab into the group once and move between interactive avatars with arrow keys.                           |
 | Builder impact          | None; the record describes shipped behavior.                                                                                                                   |
-| Compatibility/readiness | Released behavior recorded as current; no API, default, or output changes.                                                                                     |
+| Compatibility/readiness | Released behavior recorded as current; no API, default, or output changes. One implementation gap is listed under Current-state impact.                        |
 | Review checks           | Reject a member whose own size or shape wins inside the group, more than one tab stop over interactive members, or a keyboard hint with no interactive member. |
 | Governing rules         | `architecture:public-component-api/INV5,INV6,INV7,INV8`; `architecture:component-theming-surface/INV2,INV6`; `architecture:internationalization/INV1a`.        |
 
@@ -60,6 +60,13 @@ geometry, and keyboard movement between interactive members.
 - Migration decision: none
 
 Consumer migration instructions belong in consumer docs and release notes.
+
+## Current-state impact
+
+- **Stale keyboard hint (FR5, AR3).** When a member becomes a link or button,
+  or turns static, through its own state while the group does not render, the
+  group keeps its previous hint and tab stop: new interactive members get no
+  hint, and a group left with no interactive members keeps a stale one.
 
 ## Ownership boundary
 
@@ -89,14 +96,14 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Behavioral and layout contract
 
-| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                    | Basis                    |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| FR1 | The root is an inline-flex, vertically centered `div` with `role="group"`, named by the caller's `aria-label` or the translated "Avatars". It carries the `avatar-group` target reflecting `size` and `shape`, and renders children in order.                                                                                                                                                                                                | Current source and tests |
-| FR2 | The group supplies its `size`, `shape`, numeric size, and an overlap of a quarter of the numeric size, rounded, to every Avatar and AvatarGroupOverflow below it in the same layer (`spec:AST-038` FR7, FR8; a member in a hover card, popover, or other layer keeps its own size and shape, though a marked member there stays in the FR4 roving set); a member's own size and shape never win, including when the group uses its defaults. | Current source and tests |
-| FR3 | Every member takes the negative overlap as its inline-start margin, including the first; the group pads its inline start by the same amount so the first member stays inside it, and an empty group has no start padding. The overlap holds when members are wrapped in a HoverCard or Tooltip.                                                                                                                                              | Current source and tests |
-| FR4 | Elements carrying `data-avatar-item` — link and button avatars and a clickable overflow indicator — form one horizontal roving set with a single tab stop: arrow keys move between them following the rendered direction and wrap at the ends, and Home and End jump to the first and last. Other focusable content in a member, such as a button in a status slot, is not in the set.                                                       | Current source and tests |
-| FR5 | While any member carries the item marker, a visually hidden translated hint ("Use arrow keys to move between avatars") renders inside the group and is appended to `aria-describedby` after any caller value; a purely static group has no tab stop and no hint.                                                                                                                                                                             | Current source and tests |
-| FR6 | `ref` reaches the root. Supported DOM, ARIA, data, and event props reach the root; the component's role, name, description, and `data-testid` apply after them; caller `onKeyDown` and `onFocus` run before the roving handlers, and one that calls `preventDefault()` skips the roving handler for that event (`architecture:public-component-api` INV7); `xstyle`, `className`, and `style` merge in that order after component styles.    | Current source and tests |
+| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Basis                    |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| FR1 | The root is an inline-flex, vertically centered `div` with `role="group"`, named by the caller's `aria-label` or the translated "Avatars". It carries the `avatar-group` target reflecting `size` and `shape`, and renders children in order.                                                                                                                                                                                                                                                                                     | Current source and tests |
+| FR2 | The group supplies its `size`, `shape`, numeric size, and an overlap of a quarter of the numeric size, rounded, to every Avatar and AvatarGroupOverflow below it in the same layer (`spec:AST-038` FR7, FR8; a member in a hover card, popover, or other layer keeps its own size and shape, though a marked member there stays in the FR4 roving set); a member's own size and shape never win, including when the group uses its defaults.                                                                                      | Current source and tests |
+| FR3 | Every member takes the negative overlap as its inline-start margin, including the first; the group pads its inline start by the same amount so the first member stays inside it, and an empty group has no start padding. The overlap holds when members are wrapped in a HoverCard or Tooltip.                                                                                                                                                                                                                                   | Current source and tests |
+| FR4 | Elements carrying `data-avatar-item` — link and button avatars and a clickable overflow indicator — form one horizontal roving set with a single tab stop: arrow keys move between them following the rendered direction and wrap at the ends, and Home and End jump to the first and last. Other focusable content in a member, such as a button in a status slot, is not in the set.                                                                                                                                            | Current source and tests |
+| FR5 | The hint and tab stop follow whether any member carries the item marker as read at the group's own last render: while one does, a visually hidden translated hint ("Use arrow keys to move between avatars") renders inside the group and is appended to `aria-describedby` after any caller value; a purely static group has no tab stop and no hint. Implementation gap: a member that gains or loses the marker through its own state, without the group rendering, leaves the hint and tab stop stale (Current-state impact). | Current source and tests |
+| FR6 | `ref` reaches the root. Supported DOM, ARIA, data, and event props reach the root; the component's role, name, description, and `data-testid` apply after them; caller `onKeyDown` and `onFocus` run before the roving handlers, and one that calls `preventDefault()` skips the roving handler for that event (`architecture:public-component-api` INV7); `xstyle`, `className`, and `style` merge in that order after component styles.                                                                                         | Current source and tests |
 
 ### Allowed variation
 
@@ -126,7 +133,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 ### Performance and resources
 
 - **PR1 — Member detection.** Detecting interactive members adds no observer or
-  listener; the group re-reads its members after each commit, and a change in
+  listener; the group re-reads its members after each of its own renders, and a change in
   whether any member is interactive re-renders the group before paint.
 
 ## Accessibility contract
@@ -136,7 +143,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **AR2 — One tab stop.** Interactive members share a single tab stop and are
   reached with arrow keys, Home, and End, in visual order in both directions.
 - **AR3 — Keyboard hint.** The hint describes the group only while roving
-  applies.
+  applies, as read at the group's own last render (FR5 gap for member-local
+  changes).
 - **AR4 — Static members.** Static avatars are not roving items and have no tab
   stop inside a group; `component:Avatar` records the effect on their tooltips.
 
@@ -169,7 +177,7 @@ anatomy-theming block is declared.
 | FR2           | `AvatarGroup.test.tsx` size-cascade suite               | Group size, default size, outside a group           | A member's own size winning inside the group fails.                                                                                                                                      | `audit:AvatarGroup/behavior` |
 | FR3           | `AvatarGroup.test.tsx` overlap suite                    | Plain, wrapped members, empty group                 | A missing margin or start padding fails declaration assertions.                                                                                                                          | `audit:AvatarGroup/layout`   |
 | FR4, AR2      | `AvatarGroup.test.tsx` roving-focus suite               | Interactive avatars, overflow button, status button | More than one tab stop, lost ArrowRight/ArrowLeft movement, or a status button in the set fails. Gap: wrapping, Home and End, and right-to-left arrow direction have no automated check. | `audit:AvatarGroup/a11y`     |
-| FR5, AR3      | `AvatarGroup.test.tsx` hint tests                       | Interactive and static groups                       | A hint on a static group or a missing hint on an interactive one fails.                                                                                                                  | `audit:AvatarGroup/a11y`     |
+| FR5, AR3      | `AvatarGroup.test.tsx` hint tests                       | Interactive and static groups                       | A hint on a static group or a missing hint on an interactive one fails. Gap: no test covers a member changing interactivity through its own state.                                       | `audit:AvatarGroup/a11y`     |
 | FR3 (layout)  | `AvatarGroup.stories.tsx` in a browser                  | Sizes and shapes, LTR and RTL                       | Gap: no automated check; a clipped first member or unmirrored overlap is visible only in the rendered fixture.                                                                           | `audit:AvatarGroup/layout`   |
 | AR4           | `AvatarGroup.test.tsx` static-group test                | Purely static group                                 | A tab stop on a static group fails.                                                                                                                                                      | `audit:AvatarGroup/a11y`     |
 | PR1           | Source review                                           | Interactive and static groups                       | Gap: no automated check fails if marker detection adds an observer or listener.                                                                                                          | `audit:AvatarGroup/behavior` |
