@@ -586,6 +586,13 @@ function sizeTargets(changedFiles) {
   return targets;
 }
 
+// Targets from either tree, once each by key.
+function unionTargets(first, second) {
+  const byKey = new Map(first.map((target) => [target.key, target]));
+  for (const target of second) if (!byKey.has(target.key)) byKey.set(target.key, target);
+  return [...byKey.values()];
+}
+
 // What each target's import costs in the current tree: the gzip JavaScript it
 // loads eagerly, and the gzip CSS of the package stylesheet rules referenced by
 // its own package's modules it can load, import() targets included (spec:AST-080 FR8,
@@ -774,8 +781,10 @@ function analyze() {
   // and package lists stay the head's; only the stats are read in the base tree.
   let baseComponentStats = null;
   let baseBundlePackages = null;
-  const targets = sizeTargets(changedFiles);
-  const componentSizes = baseOnly ? null : measureSizes(targets);
+  // Components a change can affect, by reach in the head build and, when the
+  // merge base is built, in the base build too: CI's size-base job builds only
+  // the base, and a module change can add or remove reach.
+  let targets = sizeTargets(changedFiles);
   let baseComponentSizes = null;
   if (baseRoot) {
     const headDir = process.cwd();
@@ -789,11 +798,13 @@ function analyze() {
       baseBundlePackages = PACKAGES.filter((p) => changedPackages.has(p.name)).map((p) =>
         getPackageBundleStats(p),
       );
+      targets = unionTargets(targets, sizeTargets(changedFiles));
       baseComponentSizes = measureSizes(targets);
     } finally {
       process.chdir(headDir);
     }
   }
+  const componentSizes = baseOnly ? null : measureSizes(targets);
 
   if (baseOnly) {
     const baseResult = {

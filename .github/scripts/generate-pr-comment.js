@@ -186,7 +186,12 @@ if (analysis.modifiedComponents && analysis.modifiedComponents.length > 0) {
 let sizeSection = '';
 const componentSizes = analysis.componentSizes || {};
 const baseComponentSizes = analysis.baseComponentSizes || {};
-const sizeKeys = Object.keys(componentSizes).sort();
+const sizeKeys = [
+  ...new Set([
+    ...Object.keys(componentSizes),
+    ...Object.keys(baseComponentSizes),
+  ]),
+].sort();
 if (sizeKeys.length > 0) {
   sizeSection += '### Component Size\n\n';
   sizeSection +=
