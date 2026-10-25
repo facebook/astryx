@@ -116,8 +116,8 @@ describe('slider under Reduce Motion', () => {
   });
 });
 
-describe('slider on the experimental surface', () => {
-  it('carries the experimental marker, as every table `uikit` re-exports does (AST-017 FR21)', () => {
+describe('slider table marker', () => {
+  it('carries the experimental marker, as the foundation tables do (AST-017 FR21)', () => {
     const source = fs.readFileSync(
       path.resolve(__dirname, 'slider.ts'),
       'utf8',
