@@ -93,6 +93,9 @@ const padBlockEnd = `var(--astryx-number-input-padding-block-end, ${padBlockAll}
 // priority than its literal, which reorders the cascade; NumberInput.test.tsx
 // keeps it equal to TOUCH_QUERY.
 const TOUCH = '@media (pointer: coarse)';
+// The theme's touch target (44 px by default): under a finger, each stepper
+// half takes at least this square.
+const TOUCH_TARGET = sizeVars['--size-touch-target'];
 
 const styles = stylex.create({
   wrapper: {
@@ -168,21 +171,22 @@ const styles = stylex.create({
     position: {default: 'static', [TOUCH]: 'relative'},
     borderStartEndRadius: 'var(--_field-radius)',
     borderEndEndRadius: 'var(--_field-radius)',
-    // Under a finger each half takes at least a 24 x 24 target (WCAG 2.5.8)
+    // Under a finger each half takes at least the theme's touch target square
     // with no change to the layout: the ::before reaches past the column, and
     // a press there is the column's (the half above or below its split).
     '::before': {
       content: {default: 'none', [TOUCH]: '""'},
       position: 'absolute',
-      insetBlockStart: 'min(0px, calc(50% - 24px))',
-      insetBlockEnd: 'min(0px, calc(50% - 24px))',
-      insetInlineStart: 'min(0px, calc(50% - 12px))',
-      insetInlineEnd: 'min(0px, calc(50% - 12px))',
+      insetBlockStart: `min(0px, calc(50% - ${TOUCH_TARGET}))`,
+      insetBlockEnd: `min(0px, calc(50% - ${TOUCH_TARGET}))`,
+      insetInlineStart: `min(0px, calc(50% - ${TOUCH_TARGET} / 2))`,
+      insetInlineEnd: `min(0px, calc(50% - ${TOUCH_TARGET} / 2))`,
     },
     // `manipulation` keeps rapid taps from double-tap zooming the page while
     // pans and pinch-zoom stay the browser's. A held finger selects nothing:
-    // the gesture host turns text selection and the touch callout off on the
-    // press-tracked column for as long as a finger or a pen is down.
+    // the gesture host turns text selection and the touch callout off for as
+    // long as a finger or a pen is down, the held stepper's lock
+    // (`keepsTouch`; `spec:AST-094` FR41, proposed in #8454).
     touchAction: 'manipulation',
   },
   numberStepperButton: {

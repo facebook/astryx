@@ -499,7 +499,7 @@ test('leaving the column pauses the repeat, and coming back resumes it with no s
   expectOneCommitAtRelease(log, 5);
 });
 
-test('under a finger each half takes at least a 24 x 24 target, and the layout does not move', async ({
+test('under a finger each half takes at least the theme touch target square, and the layout does not move', async ({
   page,
 }) => {
   const {driver} = await openStepper(page);
@@ -515,9 +515,21 @@ test('under a finger each half takes at least a 24 x 24 target, and the layout d
       return {left, right, top, bottom};
     });
   const column = await columnBox(page);
-  // Each half's reach past the column: up to 24 px tall and 24 px wide.
-  const block = Math.max(0, 24 - (column.bottom - column.top) / 2);
-  const inline = Math.max(0, (24 - (column.right - column.left)) / 2);
+  // The theme's touch target, as the column reads it (44 px by default).
+  const target = await page.evaluate(() => {
+    const column = document.querySelector(
+      '[aria-label^="Increment"]',
+    )?.parentElement;
+    return column == null
+      ? 0
+      : parseFloat(
+          getComputedStyle(column).getPropertyValue('--size-touch-target'),
+        );
+  });
+  expect(target).toBe(44);
+  // Each half's reach past the column: one target square per half.
+  const block = Math.max(0, target - (column.bottom - column.top) / 2);
+  const inline = Math.max(0, (target - (column.right - column.left)) / 2);
   expect(block).toBeGreaterThan(0);
   const hits = await page.evaluate(
     ({box, block, inline}) => {

@@ -7,7 +7,8 @@
  * on content that allows selection: on a stepper that is the field's label,
  * with the edit menu over the field, and the tap that would have stepped is
  * lost. The gesture host turns selection and the touch callout off on the
- * press-tracked stepper column while a finger is down, and the column takes
+ * stepper column while a finger is down, the held stepper's lock
+ * (`keepsTouch`; `spec:AST-094` FR41, proposed in #8454), and the column takes
  * `touch-action: manipulation`, which keeps panning and pinch-zoom the
  * browser's: a scroll that starts on a stepper still scrolls the page and
  * steps nothing. (Chromium's touch emulation does not select on a long press,
@@ -51,8 +52,9 @@ test('a held finger turns text selection off on the stepper column, which keeps 
   const plus = page.getByRole('button', {name: 'Increment Quantity'});
   const column = plus.locator('..');
   await expect(column).toHaveCSS('touch-action', 'manipulation');
-  // The gesture host locks selection on the press-tracked column while a
-  // finger is down (an inline style), and restores it at the lift.
+  // The gesture host locks selection on the column while a finger is down
+  // (an inline style), and restores it at the lift: the held stepper's lock
+  // (`keepsTouch`; `spec:AST-094` FR41, proposed in #8454).
   const lock = async () =>
     column.evaluate(el =>
       (el as HTMLElement).style.getPropertyValue('user-select'),

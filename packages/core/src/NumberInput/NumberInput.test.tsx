@@ -2709,9 +2709,10 @@ describe('NumberInput stepper padding coupling', () => {
 
 describe('NumberInput stepper column under a held finger', () => {
   it('leaves selection to the press tracker and keeps touch-action manipulation', () => {
-    // The gesture host turns selection and the touch callout off on a
-    // press-tracked element while a finger is down, prefixes included, on
-    // every engine; the column itself declares only touch-action.
+    // The gesture host turns selection and the touch callout off while a
+    // finger is down, prefixes included, on every engine: the held stepper's
+    // lock (`keepsTouch`; `spec:AST-094` FR41, proposed in #8454). The column
+    // itself declares only touch-action.
     const source = readFileSync(
       'packages/core/src/NumberInput/NumberInput.tsx',
       'utf8',

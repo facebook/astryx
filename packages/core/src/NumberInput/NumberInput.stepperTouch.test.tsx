@@ -21,8 +21,9 @@
  */
 
 import {act, fireEvent, render, screen} from '@testing-library/react';
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {usePressTracker} from '../gestures';
 import {NumberInput} from './NumberInput';
 
 // The column sits at x 200–224; + is its top half (y 0–16), − the bottom.
@@ -563,6 +564,64 @@ describe('NumberInput steppers under a pen and a mouse', () => {
     expect(committed(onChange)).toEqual([9]);
     expect(press(increment)).toBeNull();
     expect(input).toHaveFocus();
+  });
+});
+
+/** A bare press tracker, opted into reading each event's pointer or not. */
+function Tracker({
+  label,
+  perEventPointer,
+  onEvent,
+}: {
+  label: string;
+  perEventPointer?: boolean;
+  onEvent: (event: string) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  usePressTracker(ref, {perEventPointer, onControlEvent: onEvent});
+  return <div ref={ref} aria-label={label} />;
+}
+
+describe('NumberInput steppers where the primary pointer is fine', () => {
+  it('the stepper alone attaches, with no warning, while a plain press tracker beside it stays inactive', () => {
+    // A fine pointer: this test's context has no coarse pointer.
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const onChange = vi.fn<(value: number | null) => void>();
+    const {unmount} = render(<Controlled onChange={onChange} />);
+    // The stepper reads each event's pointer: nothing to warn about.
+    expect(warn).not.toHaveBeenCalled();
+    const increment = screen.getByRole('button', {name: 'Increment Quantity'});
+    const pointer = {pointerType: 'mouse', pointerId: 1, isPrimary: true};
+    fireEvent.pointerDown(increment, {...pointer, clientX: 212, clientY: 8});
+    expect(press(increment)).toBe('on');
+    fireEvent.pointerUp(increment, {...pointer, clientX: 212, clientY: 8});
+    expect(committed(onChange)).toEqual([6]);
+    unmount();
+    // A plain tracker gets nothing here; one that opted in, the same press.
+    const plain: string[] = [];
+    const optedIn: string[] = [];
+    render(
+      <>
+        <Tracker label="Plain" onEvent={event => plain.push(event)} />
+        <Tracker
+          label="Opted in"
+          perEventPointer
+          onEvent={event => optedIn.push(event)}
+        />
+      </>,
+    );
+    for (const label of ['Plain', 'Opted in']) {
+      const element = screen.getByLabelText(label);
+      const mouse = {pointerType: 'mouse', pointerId: 3, isPrimary: true};
+      fireEvent.pointerDown(element, mouse);
+      fireEvent.pointerUp(element, mouse);
+    }
+    expect(plain).toEqual([]);
+    expect(
+      screen.getByLabelText('Plain').style.getPropertyValue('touch-action'),
+    ).toBe('');
+    expect(optedIn[0]).toBe('touchDown');
   });
 });
 

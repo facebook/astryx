@@ -22,7 +22,8 @@
  * scroll view a finger waits for the content-touch delay, and a scroll that
  * takes the touch before then cancels it; once delivered, the press keeps
  * its touch from the page's pan. While a finger is down, the gesture host
- * keeps text selection and the touch callout off the press-tracked column.
+ * keeps text selection and the touch callout off the column: the held
+ * stepper's lock (`keepsTouch`; `spec:AST-094` FR41, proposed in #8454).
  *
  * While a press steps, the field shows the stepping value and `onChange` is
  * not called; at the release it is called once, with the final value, and
@@ -207,6 +208,11 @@ export function useStepperTouch(
     // half is not the page's pan. (A scroll that starts on the column waits
     // on the main thread for it.)
     keepsTouch: true,
+    // A mouse holds a stepper the way a finger does, so the tracker attaches
+    // where the primary pointer is fine too and reads each event's pointer:
+    // the host's per-event-pointer exception (spec:AST-094 FR19), the kind
+    // spec:AST-057 grants the row swipe.
+    perEventPointer: true,
     isEnabled: () =>
       !latestRef.current.isDisabled && !latestRef.current.isReadOnly,
     onControlEvent: (event, touch) => {
