@@ -343,6 +343,7 @@ describe("resolveDefaultRelease (under a mouse: today's rule)", () => {
   };
 
   it('dismisses a downward release projected past 40 % of the shortest detent', () => {
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
     // 420 + 0.6 × 499 = 719 > 300 + 0.4 × 340 = 436.
     expect(
       resolveDefaultRelease({
@@ -375,6 +376,7 @@ describe("resolveDefaultRelease (under a mouse: today's rule)", () => {
   });
 
   it('holds the shortest detent instead when a drag may not dismiss', () => {
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
     expect(
       resolveDefaultRelease({
         ...base,
@@ -388,6 +390,7 @@ describe("resolveDefaultRelease (under a mouse: today's rule)", () => {
   });
 
   it('projects nothing for a gesture under 48 px', () => {
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
     // A fast 20 px nudge up from 300: no projection, back to 300.
     expect(
       resolveDefaultRelease({
@@ -401,6 +404,7 @@ describe("resolveDefaultRelease (under a mouse: today's rule)", () => {
   });
 
   it('never settles past the detent a drag started from, against its direction', () => {
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
     // Up 50 px net from 300, then thrown down at the lift: projected
     // 250 + 0.6 × 499 = 549 would land on 500, but an upward drag stops at
     // its start.

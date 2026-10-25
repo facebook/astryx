@@ -2212,6 +2212,7 @@ describe('useSheetGestures: the release on the compositor', () => {
 
   it('keeps the theme timing under a mouse, without the velocity hand-off', () => {
     stubPointer({coarse: false});
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
     const {hook} = setup({snapHeights: () => [200]});
     const t = makeTarget();
     // What the panel's stylesheet gives the sheet's transform.
@@ -2329,6 +2330,7 @@ describe('useSheetGestures: the release on the compositor', () => {
         removeEventListener: vi.fn(),
       })),
     );
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
     const {hook} = setup({snapHeights: () => [200]});
     const t = makeTarget();
     t.style.transitionProperty = 'transform';
@@ -2414,6 +2416,7 @@ describe('useSheetGestures: the release on the compositor', () => {
 
   it('leaves a drag-dismissed sheet to the host exit under a mouse, from where it was', () => {
     stubPointer({coarse: false});
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
     const {hook, onDismiss} = setup({snapHeights: () => [200]});
     const t = makeTarget();
     t.style.transitionProperty = 'transform';

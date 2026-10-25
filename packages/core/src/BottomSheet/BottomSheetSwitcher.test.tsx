@@ -1081,8 +1081,10 @@ describe('BottomSheetSwitcher', () => {
 
     expect(fireEvent.contextMenu(handle)).toBe(false);
 
-    // Back to the detent on the detent spring (jsdom: its end at once).
-    expect(panel.style.translate).toBe('0px 0px');
+    // Back to the detent on the detent spring (jsdom: its end at once). At
+    // rest an identity leaves the element (the animator writes no inline
+    // `translate: 0px 0px`, which would make the panel a containing block).
+    expect(panel.style.translate).toBe('');
     expect(panel.style.transform).toBe('');
     expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
     expect(onActiveSheetChange).not.toHaveBeenCalled();

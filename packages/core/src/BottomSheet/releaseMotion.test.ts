@@ -57,10 +57,12 @@ describe('readReleaseMotion', () => {
 
   it("keeps the theme timing under a mouse, in WebKit on iOS's engine too", () => {
     pointer(false, {ios: true});
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
     expect(readReleaseMotion(sheet(THEME))).toMatchObject({kind: 'theme'});
   });
 
   it('reads the transform transition under a mouse, from a list', () => {
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false);
     const motion = readReleaseMotion(
       sheet({
         transitionProperty: 'opacity, transform',
