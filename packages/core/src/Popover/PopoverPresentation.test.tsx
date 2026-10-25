@@ -103,11 +103,13 @@ function Filters({
   onOpenChange,
   hasLightDismiss,
   hasEscapeDismiss,
+  hasCloseButton,
 }: {
   presentation?: PopoverPresentation;
   onOpenChange?: (isOpen: boolean) => void;
   hasLightDismiss?: boolean;
   hasEscapeDismiss?: boolean;
+  hasCloseButton?: boolean;
 }) {
   return (
     <Popover
@@ -116,6 +118,7 @@ function Filters({
       onOpenChange={onOpenChange}
       hasLightDismiss={hasLightDismiss}
       hasEscapeDismiss={hasEscapeDismiss}
+      hasCloseButton={hasCloseButton}
       content={<button type="button">Apply</button>}>
       <Button label="Filter">Filter</Button>
     </Popover>
@@ -386,36 +389,78 @@ describe('Popover presentation', () => {
     expect(sheetDialog()!.contains(applies[0])).toBe(true);
   });
 
-  it('a sheet with neither dismissal keeps the fallback close control', async () => {
+  it.each([
+    ['without light dismiss', {hasLightDismiss: false}],
+    [
+      'with neither dismissal',
+      {hasLightDismiss: false, hasEscapeDismiss: false},
+    ],
+  ])(
+    'a sheet %s shows a Close button a finger can reach',
+    async (_name, dismissal) => {
+      isCompactTouch = true;
+      const onOpenChange = vi.fn();
+      render(
+        <Filters
+          presentation="adaptive"
+          {...dismissal}
+          onOpenChange={onOpenChange}
+        />,
+      );
+      await tapTrigger();
+      const close = await vi.waitFor(() => {
+        const element = sheetDialog()?.querySelector<HTMLElement>(
+          'button[data-astryx-popover-fallback-close]',
+        );
+        expect(element).not.toBeNull();
+        return element!;
+      });
+      expect(close).toHaveTextContent('Close popover');
+      // Visible at rest: none of the anchored surface's hidden-until-focused
+      // clipping, and no wrapper element
+      // (architecture:component-style-authoring INV7).
+      expect(getComputedStyle(close).clipPath).not.toBe('inset(50%)');
+      expect(getComputedStyle(close).position).not.toBe('absolute');
+      expect(
+        close.parentElement?.closest('[data-astryx-popover-fallback-close]'),
+      ).toBeNull();
+      act(() => {
+        fireEvent.click(close);
+      });
+      expect(onOpenChange).toHaveBeenLastCalledWith(false);
+      expect(trigger()).toHaveAttribute('aria-expanded', 'false');
+    },
+  );
+
+  it('a sheet with light dismiss, or hasCloseButton={false}, adds no Close button', async () => {
     isCompactTouch = true;
-    const onOpenChange = vi.fn();
+    const {unmount} = render(<Filters presentation="adaptive" />);
+    await tapTrigger();
+    await vi.waitFor(() => {
+      expect(sheetDialog()).toHaveAttribute('open');
+    });
+    expect(
+      sheetDialog()!.querySelector(
+        'button[data-astryx-popover-fallback-close]',
+      ),
+    ).toBeNull();
+    unmount();
     render(
       <Filters
         presentation="adaptive"
         hasLightDismiss={false}
-        hasEscapeDismiss={false}
-        onOpenChange={onOpenChange}
+        hasCloseButton={false}
       />,
     );
     await tapTrigger();
-    const close = await vi.waitFor(() => {
-      const element = sheetDialog()?.querySelector<HTMLElement>(
-        'button[data-astryx-popover-fallback-close]',
-      );
-      expect(element).not.toBeNull();
-      return element!;
+    await vi.waitFor(() => {
+      expect(sheetDialog()).toHaveAttribute('open');
     });
-    expect(close).toHaveTextContent('Close popover');
-    // The Button itself carries the hidden-until-focused styles: no wrapper
-    // element (architecture:component-style-authoring INV7).
     expect(
-      close.parentElement?.closest('[data-astryx-popover-fallback-close]'),
+      sheetDialog()!.querySelector(
+        'button[data-astryx-popover-fallback-close]',
+      ),
     ).toBeNull();
-    act(() => {
-      fireEvent.click(close);
-    });
-    expect(onOpenChange).toHaveBeenLastCalledWith(false);
-    expect(trigger()).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('controlled: a phone turned past the compact width keeps its sheet until it closes', async () => {
@@ -607,7 +652,7 @@ describe('Popover presentation', () => {
     expect(trigger()).toHaveAttribute('aria-haspopup', 'dialog');
   });
 
-  it("a sheet with neither dismissal differs from the anchored popover only by BottomSheet's frame (DEC-7)", async () => {
+  it("a sheet with neither dismissal differs from the anchored popover only by BottomSheet's frame", async () => {
     const Required = () => (
       <Popover
         label="Filters"

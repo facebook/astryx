@@ -346,7 +346,7 @@ consumers that need distinct theme reachability provide and document an owned
 | FR5                          | `Popover.test.tsx` scheduling and observer-lifecycle suites                                                                                               | Closed, opened, repeated signals, cleanup                                                                          | Constructing observers while closed or measuring more than once per pending frame fails lifecycle assertions.                                       | `audit:Popover/resources`     |
 | FR6, FR7 and theming anatomy | `Popover.test.tsx`, `Popover.doc.mjs`, `usePopover.doc.mjs`, `astryx theme targets Popover --json`, and `scripts/check-knowledge.mjs`                     | One real surface with canonical `popover` plus composed-component refinements                                      | A fake anatomy part, missing canonical output, or an active target without a real owner fails review or validation.                                 | `audit:Popover/theming`       |
 | AR5                          | `Popover.stories.tsx` manual-AT fixture and PR #5373 test record                                                                                          | Read-only dialog manual-AT fixture; no recorded NVDA/VoiceOver announcement result                                 | A fixture without recorded AT/browser observations cannot be cited as announcement proof.                                                           | `audit:Popover/at-evidence`   |
-| Presentation (DEC-6–DEC-8)   | `PopoverPresentation.test.tsx`                                                                                                                            | Default on a phone, adaptive on a phone and a desktop, forced sheet, close, controlled, dismissal mapping          | A sheet on a default phone popover, an anchored popover where the sheet is asked for, or a trigger state that ignores the sheet fails.              | `audit:Popover/api`           |
+| Presentation (DEC-6, DEC-8)  | `PopoverPresentation.test.tsx`                                                                                                                            | Default on a phone, adaptive on a phone and a desktop, forced sheet, close, controlled, dismissal mapping          | A sheet on a default phone popover, an anchored popover where the sheet is asked for, or a trigger state that ignores the sheet fails.              | `audit:Popover/api`           |
 
 ## Decision log
 
@@ -420,33 +420,6 @@ BottomSheet. `adaptive` chooses exactly as the menus do: the sheet under
 `spec:AST-094` FR13's touch rule, with compact governed by `spec:AST-012` FR9,
 and the anchored popover elsewhere.
 
-### DEC-7 — A sheet with neither dismissal keeps BottomSheet's frame
-
-**Reference:** `component:Popover/DEC-7`
-
-**Decider:** pending owner review
-
-With both dismissals off, the sheet presentation (DEC-6) renders three more
-elements on a compact touch screen than the anchored popover renders under a
-fine pointer, an exception to the open-layer budget of
-`architecture:component-style-authoring` INV7. The three are BottomSheet's
-frame: eight elements, where the anchored layer has five (the sentinel, the
-layer, the surface, the content box and the fallback close control's wrapper).
-Each is a part BottomSheet needs: the dialog carries modality and the top
-layer, the positioner holds the panel at the block end, the panel paints the
-`bottom-sheet` target, the grabber bar and its pill are the drag handle, the
-body is the scroll area, the content box carries the padding, and the edge tint
-gives iOS Safari's toolbar tint the sheet's colour. Popover adds nothing of its
-own to the sheet: the content renders in the sheet's content box, and the
-fallback close control is the Button itself, out of flow and clipped until it
-takes focus. In Chromium, `document.body.querySelectorAll('*').length` on the
-Adaptive Presentation story's popover with both dismissals off reads 178 under
-a mouse at 1280 px and 181 for the open sheet under a coarse pointer at
-390 px. With either dismissal on, the sheet has no fallback close control and
-renders fewer elements than the anchored popover (177 against 178 on that
-story), so the exception covers only a sheet with neither dismissal. Removing
-elements from that frame is BottomSheet's decision.
-
 ### DEC-8 — The sheet Popover presents: label, size, dismissal and loading
 
 **Reference:** `component:Popover/DEC-8`
@@ -457,11 +430,12 @@ The sheet of DEC-6 is a modal BottomSheet labeled by Popover's `label`, at the
 sheet's tall height and inset by Popover's `padding`; `xstyle`, `className`
 and `style` style its panel, and `placement`, `alignment` and `width` do not
 apply. Dismissal maps to the sheet's purpose: `info` with light dismiss,
-`form` without it (Escape still closes), and `required` with neither, which
-keeps the fallback close control. The surface is chosen when the popover opens
-and stays until it closes, and the trigger's expanded state and controlled
-element follow whichever surface is open. The sheet loads on demand, so pages
-whose popovers stay anchored do not load it.
+`form` without it (Escape still closes), and `required` with neither. A sheet
+without light dismiss shows the fallback close control as a visible Close
+button below the content, since a finger has no Escape. The surface is chosen
+when the popover opens and stays until it closes, and the trigger's expanded
+state and controlled element follow whichever surface is open. The sheet loads
+on demand, so pages whose popovers stay anchored do not load it.
 
 ## Verification gaps
 

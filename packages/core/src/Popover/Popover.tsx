@@ -287,13 +287,15 @@ export interface PopoverProps extends Pick<
 
   /**
    * Whether to include a hidden close button for accessibility.
-   * The button appears when keyboard users tab past the last element.
+   * The button appears when keyboard users tab past the last element. In a
+   * sheet without light dismiss (`presentation`), it is a visible Close
+   * button instead.
    * @default true
    */
   hasCloseButton?: boolean;
 
   /**
-   * Label for the hidden close button.
+   * Label for the hidden close button (the sheet's Close button).
    * @default "Close popover"
    */
   closeButtonLabel?: string;
@@ -342,8 +344,8 @@ export interface PopoverProps extends Pick<
    * panel, as they style the anchored surface; `padding` insets the
    * sheet's content; dismissal follows `hasLightDismiss` and
    * `hasEscapeDismiss` (a sheet without light dismiss keeps Escape unless
-   * that is off too, and one with neither keeps the hidden fallback close
-   * control of `hasCloseButton` and `closeButtonLabel`). The surface is
+   * that is off too, and shows a Close button, `hasCloseButton` and
+   * `closeButtonLabel`, since a finger has no Escape). The surface is
    * chosen when the popover opens and kept until it closes.
    * @default 'popover'
    */
@@ -368,24 +370,13 @@ const styles = stylex.create({
   anchorWrapper: {
     display: 'inline-flex',
   },
-  // The sheet's fallback close control when it has no other way out: hidden
-  // until it is reached, as the anchored surface's is, on the Button itself
-  // rather than a wrapper (architecture:component-style-authoring INV7).
-  // Taken out of flow and clipped at rest, it rejoins the flow when focused,
-  // set below the content with room for its focus ring.
-  sheetFallbackClose: {
-    position: {
-      default: 'absolute',
-      ':focus': 'relative',
-    },
-    clipPath: {
-      default: 'inset(50%)',
-      ':focus': 'none',
-    },
-    marginBlockStart: {
-      default: 0,
-      ':focus': spacingVars['--spacing-3'],
-    },
+  // The sheet's Close button when it has no light dismiss: visible, set below
+  // the content. A finger has no Escape key, and such a sheet takes no swipe
+  // or scrim tap, so a hidden control would leave a touch user no way out.
+  // It sits on the Button itself, with no wrapper
+  // (architecture:component-style-authoring INV7).
+  sheetClose: {
+    marginBlockStart: spacingVars['--spacing-3'],
   },
   // The painted surface is capped to the viewport with the layer runtime's
   // one definition (spec:AST-059 FR2, FR3): the layer box above it caps the
@@ -884,8 +875,8 @@ export function Popover({
       ? 'form'
       : 'required';
   // The sheet renders while it is the open surface and through its exit. A
-  // sheet with no dismissal keeps the anchored surface's fallback close
-  // control, so it can always be closed.
+  // sheet without light dismiss shows a Close button, so a finger can always
+  // close it (`hasCloseButton={false}` leaves that to the content).
   const sheet = isSheetMounted ? (
     <PopoverBottomSheet
       ref={sheetPanelRef}
@@ -902,14 +893,14 @@ export function Popover({
       data-testid={isContentInSheet ? testId : undefined}>
       {isContentInSheet ? content : null}
       {isContentInSheet &&
-      sheetPurpose === 'required' &&
+      sheetPurpose !== 'info' &&
       hasCloseButton !== false ? (
         <Button
           data-astryx-popover-fallback-close=""
           variant="secondary"
           label={closeButtonLabel ?? t('@astryx.popover.close')}
           onClick={() => setSheetOpen(false)}
-          xstyle={styles.sheetFallbackClose}
+          xstyle={styles.sheetClose}
         />
       ) : null}
     </PopoverBottomSheet>

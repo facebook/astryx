@@ -119,7 +119,7 @@ export const docs = {
           name: 'hasCloseButton',
           type: 'boolean',
           description:
-            'Whether to include a hidden close button for accessibility.',
+            'Whether to include a hidden close button for accessibility. In a sheet without light dismiss, it is a visible Close button.',
           default: 'true',
         },
         {
@@ -153,7 +153,7 @@ export const docs = {
           name: 'presentation',
           type: "'popover' | 'bottom-sheet' | 'adaptive'",
           description:
-            "The surface that holds the content. 'popover' anchors it to the trigger, 'bottom-sheet' presents it in a modal BottomSheet labeled by label, and 'adaptive' uses the BottomSheet on a compact touch screen (a coarse pointer on a screen the theme counts as compact: narrower than its md width point or shorter than 500 px, so a phone in either orientation) and the anchored popover elsewhere. In a sheet, placement, alignment, width, role, isModal and hasAutoFocus do not apply, and xstyle, className and style style the sheet's panel; a sheet with neither light nor Escape dismissal keeps the hidden fallback close control. The surface is chosen as it opens and kept until it closes.",
+            "The surface that holds the content. 'popover' anchors it to the trigger, 'bottom-sheet' presents it in a modal BottomSheet labeled by label, and 'adaptive' uses the BottomSheet on a compact touch screen (a coarse pointer on a screen the theme counts as compact: narrower than its md width point or shorter than 500 px, so a phone in either orientation) and the anchored popover elsewhere. In a sheet, placement, alignment, width, role, isModal and hasAutoFocus do not apply, and xstyle, className and style style the sheet's panel; a sheet without light dismiss shows a Close button (hasCloseButton, closeButtonLabel), since a finger has no Escape. The surface is chosen as it opens and kept until it closes.",
           default: "'popover'",
         },
         {
@@ -380,7 +380,8 @@ export const docsZh = {
         {
           name: 'hasCloseButton',
           type: 'boolean',
-          description: '是否包含用于无障碍访问的隐藏关闭按钮。',
+          description:
+            '是否包含用于无障碍访问的隐藏关闭按钮。在没有轻触关闭的底部面板中，它是一个可见的关闭按钮。',
           default: 'true',
         },
         {
@@ -414,7 +415,7 @@ export const docsZh = {
           name: 'presentation',
           type: "'popover' | 'bottom-sheet' | 'adaptive'",
           description:
-            "承载内容的界面。'popover' 锚定在触发器上，'bottom-sheet' 以模态 BottomSheet 呈现（由 label 命名），'adaptive' 在紧凑触屏（粗指针，且屏幕按主题定义为紧凑：宽度小于其 md 断点或高度小于 500 px，即任意方向的手机）上使用 BottomSheet，在其他设备上使用锚定的弹出框。在底部面板中，placement、alignment、width、role、isModal 和 hasAutoFocus 不生效，xstyle、className 和 style 作用于面板；既无轻触关闭也无 Escape 关闭的面板保留隐藏的后备关闭按钮。界面在打开时选定，并保持到关闭。",
+            "承载内容的界面。'popover' 锚定在触发器上，'bottom-sheet' 以模态 BottomSheet 呈现（由 label 命名），'adaptive' 在紧凑触屏（粗指针，且屏幕按主题定义为紧凑：宽度小于其 md 断点或高度小于 500 px，即任意方向的手机）上使用 BottomSheet，在其他设备上使用锚定的弹出框。在底部面板中，placement、alignment、width、role、isModal 和 hasAutoFocus 不生效，xstyle、className 和 style 作用于面板；没有轻触关闭的面板显示一个可见的关闭按钮（hasCloseButton、closeButtonLabel），因为手指无法按 Escape。界面在打开时选定，并保持到关闭。",
           default: "'popover'",
         },
       ],
