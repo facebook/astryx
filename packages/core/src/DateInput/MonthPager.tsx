@@ -244,7 +244,8 @@ const styles = stylex.create({
    *
    * It needs no special handling for the roving tab order: `tabbableISO` is
    * resolved per pane and only ever names a date in THAT pane's own month,
-   * so an outside cell can never match it. Which is the property that keeps
+   * so an outside cell can never match it, and only the pane the pager shows
+   * takes a tab stop at all (`isCurrent`). Which is the property that keeps
    * a date from having two tab stops — the pane that owns it, and the
    * neighbour that merely shows it.
    */
@@ -674,6 +675,7 @@ function MonthPagerComponent({
               onSelect={onSelect}
               onDayKeyDown={handleKeyDown}
               onDayFocus={handleDayFocus}
+              isCurrent={row === centerRow}
             />
           ))}
       </div>
@@ -703,6 +705,12 @@ interface MonthPaneProps {
   onSelect: (value: ISODateString) => void;
   onDayKeyDown: (event: React.KeyboardEvent, date: PlainDate) => void;
   onDayFocus: (date: PlainDate) => void;
+  /**
+   * Whether this is the month the pager shows. Only its day takes a tab stop:
+   * a neighbour is mounted off-screen, and Tab into it would scroll the
+   * clipped viewport under the pager's track.
+   */
+  isCurrent: boolean;
 }
 
 /**
@@ -724,6 +732,7 @@ const MonthPane = memo(function MonthPane({
   onSelect,
   onDayKeyDown,
   onDayFocus,
+  isCurrent,
 }: MonthPaneProps) {
   const locale = useLocale();
   const {year, month} = fromMonthIndex(monthIndex);
@@ -797,7 +806,7 @@ const MonthPane = memo(function MonthPane({
                   type="button"
                   data-date={day.iso}
                   data-outside={day.isOutside ? '' : undefined}
-                  tabIndex={day.iso === tabbableISO ? 0 : -1}
+                  tabIndex={isCurrent && day.iso === tabbableISO ? 0 : -1}
                   aria-label={plainDateFormat(
                     day.date,
                     DATE_FORMAT_WITH_WEEKDAY,

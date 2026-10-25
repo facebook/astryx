@@ -675,6 +675,10 @@ export function MonthScroller({
       setFocusedDate(next);
       if (nextIndex !== monthIndexOf(from)) {
         scrollToMonth(nextIndex, 'smooth');
+        // Report the month here: the scroll handler drops every report while
+        // a steered scroll runs, its arrival included, so without this the
+        // title and the arrows stayed on the old month (as MonthPager does).
+        onVisibleMonthChangeRef.current(nextIndex);
       }
     },
     [minMonthIndex, maxMonthIndex, scrollToMonth],
