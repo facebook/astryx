@@ -333,7 +333,7 @@ describe('focus moves into the composer (spec:AST-099 FR4)', () => {
   it('moves focus to the named composer region when the keyboard\u2019s Done ends entry', () => {
     primaryPointer('coarse');
     const {message} = renderWithSearch('textarea');
-    const region = screen.getByRole('region', {name: 'Message composer'});
+    const region = screen.getByRole('group', {name: 'Message composer'});
     act(() => message.focus());
     const focus = vi.spyOn(region, 'focus');
     // Done blurs the composer's text, and focus goes to nothing.
@@ -342,10 +342,28 @@ describe('focus moves into the composer (spec:AST-099 FR4)', () => {
     expect(focus).toHaveBeenCalledWith({preventScroll: true});
   });
 
+  it('names the composer region without a landmark, so two layouts on a page repeat none', () => {
+    primaryPointer('coarse');
+    render(
+      <>
+        <ChatLayout composer={<textarea aria-label="First" />}>
+          <p>One</p>
+        </ChatLayout>
+        <ChatLayout composer={<textarea aria-label="Second" />}>
+          <p>Two</p>
+        </ChatLayout>
+      </>,
+    );
+    expect(screen.queryAllByRole('region')).toHaveLength(0);
+    expect(
+      screen.getAllByRole('group', {name: 'Message composer'}),
+    ).toHaveLength(2);
+  });
+
   it('adds no tab stop for the composer region', () => {
     primaryPointer('coarse');
     renderWithSearch('textarea');
-    const region = screen.getByRole('region', {name: 'Message composer'});
+    const region = screen.getByRole('group', {name: 'Message composer'});
     expect(region.tabIndex).toBe(-1);
   });
 

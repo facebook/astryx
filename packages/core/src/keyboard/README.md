@@ -128,7 +128,7 @@ at any time, for something that appears while the keyboard moves.
   dock, and a transcript at its newest message, with the keyboard; a tap on
   the composer's text is the tap route, and every other move into it the
   focus takeover (`refuseFocusReveal`), so none scrolls the page; the
-  keyboard's Done parks focus on the composer region, a named region that is
+  keyboard's Done parks focus on the composer region, a named group that is
   no tab stop. The composer's own focus routes pass `preventScroll` under a
   finger in that region (`Chat/keyboardSurface.ts`).
 

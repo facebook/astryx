@@ -425,7 +425,7 @@ export function useChatKeyboard({
   // desktop browser keeps its own focus (spec:AST-017 FR59): the pointer is
   // read on every blur, so a tablet that docks a mouse follows it. When the
   // keyboard's Done ends entry, focus leaves the composer's text for nothing
-  // and moves to the composer region (FR4), a named region that is no tab
+  // and moves to the composer region (FR4), a named group that is no tab
   // stop, so the next tap or Tab starts from the composer.
   useIsomorphicLayoutEffect(() => {
     const composer = composerRef.current;

@@ -1189,7 +1189,7 @@
   },
   "@astryx.chatLayout.composerRegion": {
     "defaultMessage": "Message composer",
-    "description": "Screen-reader name of the region at the bottom of a chat viewport that holds the box for typing a message. Focus rests on this region after the on-screen keyboard's Done button ends typing."
+    "description": "Screen-reader name of the area at the bottom of a chat viewport that holds the box for typing a message. Focus rests on this area after the on-screen keyboard's Done button ends typing."
   },
   "@astryx.chatLayout.newMessages": {
     "defaultMessage": "New messages",

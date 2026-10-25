@@ -438,12 +438,13 @@ export function ChatLayout({
           <div {...stylex.props(styles.blurLayer, currentDensity.blurLayer)} />
 
           {/* Composer, in the keyboard-aware region (spec:AST-099 FR4). Focus
-              rests on the named region after the keyboard's Done, and it is
-              no tab stop. */}
+              rests on this named group after the keyboard's Done; it is no
+              tab stop, and no landmark, so several layouts on one page do not
+              repeat one. */}
           <KeyboardSurfaceContext value={true}>
             <div
               ref={keyboard.composerRef}
-              role="region"
+              role="group"
               aria-label={t('@astryx.chatLayout.composerRegion')}
               tabIndex={-1}
               {...stylex.props(styles.dock, currentDensity.dock)}>

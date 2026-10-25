@@ -108,7 +108,7 @@ export const docs = {
         name: 'Frosted glass dock',
         required: true,
         description:
-          'Sticky or fixed container at the bottom with a backdrop-blur layer. Houses the scroll button and composer, as a region named "Message composer". While a software keyboard is up it rises with the keyboard, and the message area gets room to scroll above it. When the keyboard\u2019s Done ends typing, focus rests on this region (it is no tab stop), so the next tap or Tab starts from the composer.',
+          'Sticky or fixed container at the bottom with a backdrop-blur layer. Houses the scroll button and composer, as a group named "Message composer". While a software keyboard is up it rises with the keyboard, and the message area gets room to scroll above it. When the keyboard\u2019s Done ends typing, focus rests on this region (it is no tab stop), so the next tap or Tab starts from the composer.',
       },
       {
         name: 'Scroll-to-bottom button',
@@ -153,7 +153,7 @@ export const docsDense = {
   name: 'ChatLayout',
   displayName: 'Chat Layout',
   description:
-    'layout shell for full chat; msgs in page flow, composer fixed bottom w/ frosted glass dock; density prop (default balanced); scrollRef delegates to parent/body; on phones the composer rides the software keyboard, transcript stays at newest msg, every focus route (tap, prev/next, Tab, focus()) w/o page scroll; Done rests focus on the named composer region (no tab stop)',
+    'layout shell for full chat; msgs in page flow, composer fixed bottom w/ frosted glass dock; density prop (default balanced); scrollRef delegates to parent/body; on phones the composer rides the software keyboard, transcript stays at newest msg, every focus route (tap, prev/next, Tab, focus()) w/o page scroll; Done rests focus on the named composer group (no tab stop)',
   usage: {
     bestPractices: [
       {
