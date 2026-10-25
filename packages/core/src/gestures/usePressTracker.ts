@@ -10,9 +10,11 @@
  *   own module so a component that only recognizes gestures never imports
  *   the press tracker
  *
- * The callbacks are read through a ref, like a recognizer's listener. A
- * profile change after mount takes effect from the next touch. After unmount
- * the tracker calls nothing back.
+ * The callbacks are read through a ref, like a recognizer's listener. An
+ * option change after mount (`trackingExpansion`, `cancelTravel`,
+ * `keepsTouch`) takes effect from the next touch. After unmount the tracker
+ * calls nothing back. It paints nothing: the press feedback paints the
+ * element (utils/pressFeedback.ts).
  *
  * SYNC: When modified, update useGestureRecognizer.test.tsx and README.md.
  */
@@ -57,13 +59,11 @@ export function usePressTracker(
   const isUnmountedRef = useIsUnmountedRef();
   const {
     trackingExpansion,
-    highlightDelay,
     cancelTravel,
-    quickTapFlash,
     keepsTouch,
     perEventPointer = false,
   } = options;
-  // A profile change after mount takes effect from the next touch: the
+  // An option change after mount takes effect from the next touch: the
   // tracker is rebuilt with the new values.
   const tracker = useMemo(
     () =>
@@ -82,15 +82,8 @@ export function usePressTracker(
             optionsRef.current.onControlEvent?.(event, touch);
           }
         },
-        onHighlightChange: isHighlighted => {
-          if (!isReleasingRef.current && !isUnmountedRef.current) {
-            optionsRef.current.onHighlightChange?.(isHighlighted);
-          }
-        },
         trackingExpansion,
-        highlightDelay,
         cancelTravel,
-        quickTapFlash,
         keepsTouch,
         vetoesAncestorRecognizer: recognizer =>
           optionsRef.current.vetoesAncestorRecognizer?.(recognizer) ??
@@ -110,20 +103,12 @@ export function usePressTracker(
           );
         },
       }),
-    [
-      ref,
-      isUnmountedRef,
-      trackingExpansion,
-      highlightDelay,
-      cancelTravel,
-      quickTapFlash,
-      keepsTouch,
-    ],
+    [ref, isUnmountedRef, trackingExpansion, cancelTravel, keepsTouch],
   );
 
   // Synchronizes the document's gesture host with the element behind `ref`
   // (see useGestureRecognizer); a tracker replaced by an option change is
-  // disposed, which un-highlights a control it was holding, and a changed
+  // disposed, which ends a press it was tracking, and a changed
   // perEventPointer re-attaches it.
   const attachment = useMemo(
     () => ({tracker, perEventPointer}),

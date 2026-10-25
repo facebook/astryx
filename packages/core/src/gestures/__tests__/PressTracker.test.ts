@@ -3,32 +3,31 @@
 /**
  * @file PressTracker.test.ts
  * @input A PressTracker fed through a GestureArena by synthetic touches
- * @output UIControl semantics: events, the expanded tracking bounds, the
- *   highlight timing inside and outside scrollers, cancellation
+ * @output UIControl semantics: events, the expanded tracking bounds,
+ *   cancellation, and a keepsTouch control's delivery inside and outside
+ *   scrollers
  * @position Unit tests of packages/core/src/gestures/PressTracker.ts
  */
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {UIKIT_GESTURES} from '../../motion/uikit/gestures';
 import {PanGestureRecognizer} from '../PanGestureRecognizer';
-import {PRESS_PROFILES, PressTracker, type ControlEvent} from '../PressTracker';
+import {PressTracker, type ControlEvent} from '../PressTracker';
 import {TapGestureRecognizer} from '../TapGestureRecognizer';
 import {createHarness, scrollProbe} from './harness';
 
 const BOUNDS = {left: 100, top: 100, right: 200, bottom: 140};
 const EXPANSION = UIKIT_GESTURES.control.trackingExpansion.value;
 const DELAY = UIKIT_GESTURES.press.contentTouchDelay.value;
-const FLASH = UIKIT_GESTURES.press.quickTapFlash.value;
 
-function setup() {
+function setup(options: {keepsTouch?: boolean; cancelTravel?: number} = {}) {
   const events: ControlEvent[] = [];
-  const highlights: boolean[] = [];
   const tracker = new PressTracker({
     getBounds: () => BOUNDS,
     onControlEvent: event => events.push(event),
-    onHighlightChange: value => highlights.push(value),
+    ...options,
   });
-  return {events, highlights, tracker, h: createHarness()};
+  return {events, tracker, h: createHarness()};
 }
 
 describe('PressTracker', () => {
@@ -39,18 +38,18 @@ describe('PressTracker', () => {
     vi.useRealTimers();
   });
 
-  it('highlights in the same frame outside a scroller and acts on touch up inside', () => {
-    const {events, highlights, tracker, h} = setup();
+  it('reports touch down and touch up inside', () => {
+    const {events, tracker, h} = setup();
     h.finger(1).down(150, 120, 0, {recognizers: [], consumer: tracker});
-    expect(highlights).toEqual([true]);
+    expect(tracker.isTracking).toBe(true);
     h.finger(1).move(152, 121, 16);
     h.finger(1).up(80);
     expect(events).toEqual(['touchDown', 'touchDragInside', 'touchUpInside']);
-    expect(highlights).toEqual([true, false]);
+    expect(tracker.isTracking).toBe(false);
   });
 
   it('keeps tracking inside the expanded bounds and exits past them', () => {
-    const {events, highlights, tracker, h} = setup();
+    const {events, tracker, h} = setup();
     const finger = h.finger(1).down(150, 120, 0, {
       recognizers: [],
       consumer: tracker,
@@ -70,57 +69,14 @@ describe('PressTracker', () => {
       'touchDragInside',
       'touchUpOutside',
     ]);
-    expect(highlights).toEqual([true, false, true, false]);
   });
 
-  it('waits the content-touch delay inside a scroller, and flashes a quicker tap', () => {
-    const {highlights, tracker, h} = setup();
-    const probe = scrollProbe(() => true, true);
-    h.finger(1).down(150, 120, 0, {
-      recognizers: [],
-      consumer: tracker,
-      scroll: probe,
-    });
-    expect(highlights).toEqual([]);
-    vi.advanceTimersByTime(DELAY - 1);
-    expect(highlights).toEqual([]);
-    vi.advanceTimersByTime(1);
-    expect(highlights).toEqual([true]);
-    h.finger(1).up(400);
-    expect(highlights).toEqual([true, false]);
-
-    const quick = setup();
-    quick.h.finger(1).down(150, 120, 0, {
-      recognizers: [],
-      consumer: quick.tracker,
-      scroll: probe,
-    });
-    quick.h.finger(1).up(60);
-    expect(quick.highlights).toEqual([true]);
-    vi.advanceTimersByTime(FLASH);
-    expect(quick.highlights).toEqual([true, false]);
-  });
-
-  it('never paints a pending press whose finger travelled (a flick)', () => {
-    const {highlights, tracker, h} = setup();
-    const probe = scrollProbe(() => true, true);
-    h.finger(1).down(150, 120, 0, {
-      recognizers: [],
-      consumer: tracker,
-      scroll: probe,
-    });
-    h.finger(1).move(150, 140, 20);
-    vi.advanceTimersByTime(DELAY * 2);
-    expect(highlights).toEqual([]);
-  });
-
-  it('is cancelled, with no release, when a recognizer takes the touch', () => {
-    const {events, highlights, tracker, h} = setup();
+  it('is cancelled when a recognizer takes the touch', () => {
+    const {events, tracker, h} = setup();
     const pan = new PanGestureRecognizer({name: 'pan'});
     h.finger(1).down(150, 120, 0, {recognizers: [pan], consumer: tracker});
     h.finger(1).move(175, 120, 16);
     expect(events).toEqual(['touchDown', 'touchCancel']);
-    expect(highlights).toEqual([true, false]);
   });
 
   it('is cancelled when the browser takes the touch to scroll', () => {
@@ -131,6 +87,23 @@ describe('PressTracker', () => {
     expect(tracker.isTracking).toBe(false);
   });
 
+  it('is cancelled for good once the finger travels past cancelTravel', () => {
+    const limit = UIKIT_GESTURES.pan.hysteresis.value;
+    const {events, tracker, h} = setup({cancelTravel: limit});
+    const finger = h.finger(1).down(150, 120, 0, {
+      recognizers: [],
+      consumer: tracker,
+    });
+    finger.move(150, 120 + limit, 16);
+    expect(tracker.isTracking).toBe(true);
+    finger.move(150, 120 + limit + 1, 32);
+    expect(tracker.isTracking).toBe(false);
+    // Back inside: the lift does nothing.
+    finger.move(150, 120, 48);
+    finger.up(64);
+    expect(events).toEqual(['touchDown', 'touchDragInside', 'touchCancel']);
+  });
+
   it('tracks one finger at a time', () => {
     const {events, tracker, h} = setup();
     h.finger(1).down(150, 120, 0, {recognizers: [], consumer: tracker});
@@ -139,9 +112,21 @@ describe('PressTracker', () => {
     h.finger(1).up(30);
     expect(events).toEqual(['touchDown', 'touchUpInside']);
   });
+
+  it('sets no timer and keeps no touch without keepsTouch', () => {
+    const {tracker, h} = setup();
+    h.finger(1).down(150, 120, 0, {
+      recognizers: [],
+      consumer: tracker,
+      scroll: scrollProbe(() => true, true),
+    });
+    expect(tracker.keepsTouch).toBeUndefined();
+    expect(vi.getTimerCount()).toBe(0);
+    h.finger(1).up(400);
+  });
 });
 
-describe('PressTracker cell profile', () => {
+describe('PressTracker keepsTouch', () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -149,61 +134,44 @@ describe('PressTracker cell profile', () => {
     vi.useRealTimers();
   });
 
-  function cell() {
-    const events: ControlEvent[] = [];
-    const highlights: boolean[] = [];
-    const tracker = new PressTracker({
-      getBounds: () => BOUNDS,
-      ...PRESS_PROFILES.cell,
-      onControlEvent: event => events.push(event),
-      onHighlightChange: value => highlights.push(value),
-    });
-    return {events, highlights, tracker, h: createHarness()};
-  }
-
-  it('waits the content-touch delay even outside a scroller', () => {
-    const {highlights, tracker, h} = cell();
+  it('keeps the touch at once outside a scroller, until the lift', () => {
+    const {tracker, h} = setup({keepsTouch: true});
     h.finger(1).down(150, 120, 0, {recognizers: [], consumer: tracker});
-    expect(highlights).toEqual([]);
-    vi.advanceTimersByTime(DELAY);
-    expect(highlights).toEqual([true]);
-    h.finger(1).up(DELAY + 40);
-    expect(highlights).toEqual([true, false]);
+    expect(tracker.keepsTouch?.()).toBe(true);
+    // Slid off the control, the delivered press keeps its touch.
+    h.finger(1).move(200 + EXPANSION + 20, 120, 16);
+    expect(tracker.keepsTouch?.()).toBe(true);
+    h.finger(1).up(80);
+    expect(tracker.keepsTouch?.()).toBe(false);
   });
 
-  it('is cancelled for good once the finger travels past the pan hysteresis', () => {
-    const {events, highlights, tracker, h} = cell();
-    const finger = h.finger(1).down(150, 120, 0, {
+  it("inside a scroller, keeps it after UIScrollView's content-touch delay", () => {
+    const {tracker, h} = setup({keepsTouch: true});
+    h.finger(1).down(150, 120, 0, {
       recognizers: [],
       consumer: tracker,
+      scroll: scrollProbe(() => true, true),
     });
-    vi.advanceTimersByTime(DELAY);
-    const limit = UIKIT_GESTURES.pan.hysteresis.value;
-    finger.move(150, 120 + limit, DELAY + 16);
-    expect(tracker.isTracking).toBe(true);
-    finger.move(150, 120 + limit + 1, DELAY + 32);
-    expect(tracker.isTracking).toBe(false);
-    // Back inside: no re-highlight, and the lift does nothing.
-    finger.move(150, 120, DELAY + 48);
-    finger.up(DELAY + 64);
-    expect(events).toEqual(['touchDown', 'touchDragInside', 'touchCancel']);
-    expect(highlights).toEqual([true, false]);
+    expect(tracker.keepsTouch?.()).toBe(false);
+    vi.advanceTimersByTime(DELAY - 1);
+    expect(tracker.keepsTouch?.()).toBe(false);
+    vi.advanceTimersByTime(1);
+    expect(tracker.keepsTouch?.()).toBe(true);
+    h.finger(1).up(400);
+    expect(tracker.keepsTouch?.()).toBe(false);
   });
 
-  it('shows a quicker tap at the lift straight into the release, with no flash', () => {
-    const {events, highlights, tracker, h} = cell();
-    h.finger(1).down(150, 120, 0, {recognizers: [], consumer: tracker});
-    h.finger(1).up(60);
-    expect(events).toEqual(['touchDown', 'touchUpInside']);
-    expect(highlights).toEqual([true, false]);
-  });
-
-  it('keeps the control profile on today defaults, with the button release clock', () => {
-    expect(PRESS_PROFILES.control.highlightDelay).toBe('inScrollers');
-    expect(PRESS_PROFILES.control.quickTapFlash).toBe(FLASH);
-    expect(PRESS_PROFILES.cell.cancelTravel).toBe(
-      UIKIT_GESTURES.pan.hysteresis.value,
-    );
+  it('never keeps a touch whose finger scrolled before the delay ran out', () => {
+    const {tracker, h} = setup({keepsTouch: true});
+    h.finger(1).down(150, 120, 0, {
+      recognizers: [],
+      consumer: tracker,
+      scroll: scrollProbe(() => true, true),
+    });
+    h.finger(1).move(150, 135, 20);
+    vi.advanceTimersByTime(DELAY * 2);
+    expect(tracker.keepsTouch?.()).toBe(false);
+    h.finger(1).up(400);
   });
 });
 

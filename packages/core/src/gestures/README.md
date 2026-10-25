@@ -55,9 +55,9 @@ function Sheet() {
 - `usePressTracker(ref, options)` gives an element `UIControl` touch tracking
   (see below). It follows its element the same way, takes `isBraking` (by
   default the host's: a touch that stops a flick presses nothing), and
-  rebuilds its tracker when `trackingExpansion`, `highlightDelay`,
-  `cancelTravel` or `quickTapFlash` change, from the next touch. Unmounting
-  calls neither `onHighlightChange` nor `onControlEvent`.
+  rebuilds its tracker when `trackingExpansion`, `cancelTravel` or
+  `keepsTouch` change, from the next touch. Unmounting calls no
+  `onControlEvent`.
 - `useFingerScroll(scroller)` (proposed; pending owner review) returns a
   reader, `true` while the scroller's scroll is a finger's: from a scroll
   while a finger that landed inside it is down, until its `scrollend` (the
@@ -165,18 +165,21 @@ innerPan.requireToFail(edgePan);
 ## Touches in the view: `PressTracker`
 
 A pressable control's view-level touch handling, with `UIControl`
-semantics:
+semantics. It reports control events and paints nothing: the press feedback
+paints the pressed highlight on every pressable surface, a press-tracked
+control included.
 
 - `touchDown`, `touchDragInside` / `touchDragOutside`, `touchDragEnter` /
   `touchDragExit`, `touchUpInside` / `touchUpOutside`, `touchCancel`.
 - "Inside" is the control's bounds expanded by `trackingExpansion`, so a
   fingertip that slides a little off a button is still on it.
-- The highlight comes on in the same frame. Inside a scroller it waits
-  `contentTouchDelay` (`UIScrollView.delaysContentTouches`), so a flick
-  paints nothing. A tap quicker than that delay shows the highlight at the
-  lift for `quickTapFlash`.
-- A recognizer that takes the touch (`cancelsTouchesInView`), or the browser
-  taking it to scroll, cancels the press with no release.
+- A recognizer that takes the touch (`cancelsTouchesInView`), the browser
+  taking it to scroll, or travel past `cancelTravel` (a cell whose scroll
+  view took the touch) cancels the press.
+- `keepsTouch: true` (a held stepper only) keeps the touch from the browser's
+  pan once the press is delivered: at once, or inside a scroller after
+  `contentTouchDelay` (`UIScrollView.delaysContentTouches`) unless the finger
+  scrolled first.
 - `UIControl`'s iOS 6 rule applies: an ancestor's single-finger single tap
   does not beat the control's own action for a touch on it.
   `vetoesAncestorRecognizer` replaces that rule (a slider vetoes a pan along
@@ -184,19 +187,6 @@ semantics:
 
 The browser's click stays the control's activation, so keyboard and
 assistive-technology activation keep working.
-
-### Press profiles
-
-`PRESS_PROFILES` holds the two ways UIKit tracks a press:
-
-- `control` (a button, a switch): the highlight comes on in the same frame
-  outside a scroller, the finger is tracked 70 pt beyond the bounds, and
-  the release takes UIButton's 0.25 s;
-- `cell` (a table or collection row, always in a scroll view in UIKit): the
-  highlight always waits the content-touch delay, travel past the pan
-  hysteresis cancels the press for good, a quicker tap highlights at the
-  lift straight into the release, and the release takes the list's
-  deselect clock.
 
 A press's paint is the document press controller's
 (`utils/pressFeedback.ts`, installed by `usePressFeedback`): one delegated

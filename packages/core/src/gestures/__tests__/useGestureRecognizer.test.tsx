@@ -270,13 +270,11 @@ describe('usePressTracker', () => {
   });
 
   it('ends a held press on unmount without calling back from the effect', () => {
-    const highlights: boolean[] = [];
     const events: ControlEvent[] = [];
     function HeldButton() {
       const ref = useRef<HTMLButtonElement>(null);
       usePressTracker(ref, {
         onControlEvent: event => events.push(event),
-        onHighlightChange: isHighlighted => highlights.push(isHighlighted),
       });
       return (
         <button data-testid="held" ref={ref} type="button">
@@ -286,10 +284,8 @@ describe('usePressTracker', () => {
     }
     const {getByTestId, unmount} = render(<HeldButton />);
     touch('touchstart', getByTestId('held'), {id: 9, x: 1, y: 1}, 0);
-    const seenHighlights = [...highlights];
     const seenEvents = [...events];
     unmount();
-    expect(highlights).toEqual(seenHighlights);
     expect(events).toEqual(seenEvents);
   });
 
@@ -459,22 +455,19 @@ describe('useGestureRecognizer follows the element behind its ref', () => {
 function LaterButton({
   isShown,
   onEvent,
-  onHighlight,
   isBraking,
-  highlightDelay,
+  cancelTravel,
 }: {
   isShown: boolean;
   onEvent?: (event: ControlEvent) => void;
-  onHighlight?: (isOn: boolean) => void;
   isBraking?: () => boolean;
-  highlightDelay?: 'inScrollers' | 'always' | 'never';
+  cancelTravel?: number;
 }) {
   const ref = useRef<HTMLButtonElement>(null);
   usePressTracker(ref, {
     onControlEvent: event => onEvent?.(event),
-    onHighlightChange: isOn => onHighlight?.(isOn),
     isBraking,
-    highlightDelay,
+    cancelTravel,
   });
   return isShown ? (
     <button data-testid="stepper" ref={ref} type="button">
@@ -512,45 +505,35 @@ describe('usePressTracker follows its element and its options', () => {
     expect(events).not.toContain('touchUpInside');
   });
 
-  it('takes a highlight delay changed after mount from the next touch', () => {
-    vi.useFakeTimers();
-    const highlights: boolean[] = [];
+  it('takes a cancel travel changed after mount from the next touch', () => {
+    const events: ControlEvent[] = [];
     const {getByTestId, rerender} = render(
-      <LaterButton
-        isShown
-        highlightDelay="never"
-        onHighlight={isOn => highlights.push(isOn)}
-      />,
+      <LaterButton isShown onEvent={event => events.push(event)} />,
     );
     rerender(
       <LaterButton
         isShown
-        highlightDelay="always"
-        onHighlight={isOn => highlights.push(isOn)}
+        cancelTravel={5}
+        onEvent={event => events.push(event)}
       />,
     );
     const stepper = getByTestId('stepper');
     touch('touchstart', stepper, {id: 1, x: 2, y: 2}, 0);
-    // 'always' waits the content-touch delay before highlighting.
-    expect(highlights).toEqual([]);
-    touch('touchend', stepper, {id: 1, x: 2, y: 2}, 400, true);
-    vi.useRealTimers();
+    touch('touchmove', stepper, {id: 1, x: 2, y: 12}, 16);
+    expect(events).toEqual(['touchDown', 'touchCancel']);
+    touch('touchend', stepper, {id: 1, x: 2, y: 12}, 60, true);
   });
 
-  it('calls no callback from cleanup when it unmounts while highlighted', () => {
-    const highlights: boolean[] = [];
+  it('calls no callback from cleanup when it unmounts mid-press', () => {
+    const events: ControlEvent[] = [];
     const {getByTestId, unmount} = render(
-      <LaterButton
-        isShown
-        highlightDelay="never"
-        onHighlight={isOn => highlights.push(isOn)}
-      />,
+      <LaterButton isShown onEvent={event => events.push(event)} />,
     );
     const stepper = getByTestId('stepper');
     touch('touchstart', stepper, {id: 1, x: 2, y: 2}, 0);
-    expect(highlights).toEqual([true]);
+    expect(events).toEqual(['touchDown']);
     unmount();
-    expect(highlights).toEqual([true]);
+    expect(events).toEqual(['touchDown']);
   });
 });
 
