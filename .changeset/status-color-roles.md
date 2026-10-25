@@ -11,7 +11,7 @@
 '@astryxdesign/theme-y2k': patch
 ---
 
-[feat] Status colours now have a role for each surface. `--color-text-<status>` is readable status text on the page and cards, and `--color-icon-<status>` and `--color-border-<status>` (status icons and borders) default to it. `--color-<status>-emphasized` is the strong fill, with `--color-on-<status>` content. `--color-<status>-muted` is the pale fill, with `--color-on-<status>-muted` content. `<status>` is info, success, warning, or error, and Tailwind gains `bg-success-emphasized` (and the warning and error forms) and `text-status-<status>`.
+[feat] Status colours now have a role for each surface. `--color-text-<status>` is readable status text on the page and cards, and `--color-icon-<status>` and `--color-border-<status>` (status icons and borders) default to it. `--color-<status>-emphasized` is the strong fill, with `--color-on-<status>` content. `--color-<status>-muted` is the pale fill, with `--color-on-<status>-muted` content. `<status>` is info, success, warning, or error, and Tailwind gains `bg-<status>-emphasized`, `bg-info-muted`, `text-on-info`, `text-on-<status>-muted`, and `text-status-<status>` (the status text role).
 
 The released `--color-success`, `--color-warning`, and `--color-error`, and `bg-success`/`text-success`/`border-success` with their warning and error forms, keep their values and meaning in every theme. No app code needs to change.
 
