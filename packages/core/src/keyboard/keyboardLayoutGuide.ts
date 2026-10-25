@@ -3,7 +3,8 @@
 /**
  * @file keyboardLayoutGuide.ts
  * @input The keyboard module's reports (useMobileKeyboard.ts:
- *   subscribeMobileKeyboard), createKeyboardModel
+ *   subscribeMobileKeyboard), createKeyboardModel, the keyboard's
+ *   notification duration (motion/uikit/keyboard.ts)
  * @output Exports getKeyboardLayoutGuide (a window's one guide),
  *   bringsUpKeyboard and the KeyboardLayoutGuide type
  * @position The web's UIKeyboardLayoutGuide: where the software keyboard
@@ -34,7 +35,7 @@
  * SYNC: When modified, update /packages/core/src/keyboard/README.md
  */
 
-import {timing} from '../motion/uikit/timing';
+import {keyboard} from '../motion/uikit/keyboard';
 import {
   getMobileKeyboardHeight,
   subscribeMobileKeyboard,
@@ -204,8 +205,7 @@ function createGuide(win: Window): KeyboardLayoutGuide {
     if (verifyTimer != null) {
       clearTimeout(verifyTimer);
     }
-    const due =
-      transition.start + timing.keyboardNotificationMs + VERIFY_SLACK_MS;
+    const due = transition.start + keyboard.notificationMs + VERIFY_SLACK_MS;
     verifyTimer = setTimeout(
       () => {
         verifyTimer = null;

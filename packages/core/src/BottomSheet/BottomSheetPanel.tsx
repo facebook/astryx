@@ -263,6 +263,17 @@ const styles = stylex.create({
   },
   tallKeyboardBody: {
     scrollPaddingBlockEnd: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
+  },
+  // The room the keyboard takes at the end of a Tall sheet's content
+  // (useMobileKeyboard), so its last control can scroll above the keyboard.
+  // It is the content box's last in-flow box, after the content's own
+  // children, not a box after the content: Firefox resolves the content's
+  // `min-height: min-content` as `auto` in the block axis, so the content box
+  // keeps the body's height while its children overflow it, and a room after
+  // that box sat inside the overflow and added no scroll range (measured in
+  // Firefox for Android: the body's scrollHeight 1491 with and without a 357
+  // px room).
+  tallKeyboardContent: {
     '::after': {
       content: '""',
       display: 'block',
@@ -270,8 +281,6 @@ const styles = stylex.create({
       pointerEvents: 'none',
     },
   },
-  // The room the keyboard takes at the end of a Tall sheet's body
-  // (useMobileKeyboard), so its last control can scroll above the keyboard.
   keyboardInset: (inset: number) => ({
     '::after': {
       blockSize: inset,
@@ -754,9 +763,6 @@ export function BottomSheetPanel({
               focusOutlineStyles.focusVisible,
               styles.body,
               height === 'tall' && styles.tallKeyboardBody,
-              height === 'tall' &&
-                keyboardInset > 0 &&
-                styles.keyboardInset(keyboardInset),
             ),
             scrollPreservationInset > 0
               ? {style: {paddingBlockEnd: `${scrollPreservationInset}px`}}
@@ -767,6 +773,10 @@ export function BottomSheetPanel({
           {...getContentProps<HTMLDivElement>(
             stylex.props(
               styles.content,
+              height === 'tall' && styles.tallKeyboardContent,
+              height === 'tall' &&
+                keyboardInset > 0 &&
+                styles.keyboardInset(keyboardInset),
               ...container(
                 usesThemePadding
                   ? {useThemeDefault: 'bottom-sheet'}

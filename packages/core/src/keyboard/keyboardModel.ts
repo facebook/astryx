@@ -2,8 +2,8 @@
 
 /**
  * @file keyboardModel.ts
- * @input `keyboard` (its spring and report timings) and
- *   `timing.keyboardNotificationMs` from the UIKit table
+ * @input `keyboard` (its spring, notification duration and report timings)
+ *   from the UIKit table
  * @output Exports createKeyboardModel (the keyboard layout guide's clock-free
  *   core) and the KeyboardTransition / KeyboardModel types
  * @position The state of the keyboard layout guide (keyboardLayoutGuide.ts):
@@ -54,10 +54,14 @@
  */
 
 import {keyboard} from '../motion/uikit/keyboard';
-import {timing} from '../motion/uikit/timing';
 import {keyboard as androidKeyboard} from '../motion/android/keyboard';
 import {cubicBezier} from '../motion/bezier';
-import {solveSpring, toSpring} from '../motion/spring';
+import {
+  solveSpring,
+  toSpring,
+  type SpringCurve,
+  type SpringDescription,
+} from '../motion/spring';
 
 /** Which browser's keyboard reports the model reads. */
 export type KeyboardProfile = 'webkit' | 'chromium';
@@ -96,10 +100,17 @@ export interface KeyboardTransition {
   /** True until the visual viewport confirms a transition the guide inferred. */
   readonly predicted: boolean;
   /**
-   * The eased curve the keyboard slides on (Android), or null when it moves
-   * on UIKit's keyboard spring (`keyboard.spring`).
+   * The eased slide the keyboard moves on where it slides on one (Gboard in
+   * Chrome on Android), or null where it moves on `spring`.
    */
   readonly curve: KeyboardCurve | null;
+  /**
+   * The spring the keyboard moves on where `curve` is null (UIKit's keyboard
+   * spring: the system's own, never a theme's). A surface riding the keyboard
+   * plays `curve` when it is set and this spring otherwise, from `start`
+   * (architecture:react-component-runtime INV11; rideKeyboard does).
+   */
+  readonly spring: SpringDescription;
 }
 
 /** Timing of the keyboard as the page sees it; the UIKit table's by default. */
@@ -173,7 +184,7 @@ export function createKeyboardModel(
     showReportLagMaxMs = keyboard.showReportLagMaxMs,
     focusToShowMs = keyboard.focusToShowMs,
     hideAfterBlurMs = keyboard.hideAfterBlurMs,
-    durationMs = timing.keyboardNotificationMs,
+    durationMs = keyboard.notificationMs,
     profile = 'webkit',
   }: KeyboardModelOptions = {},
 ): KeyboardModel {
@@ -188,6 +199,7 @@ export function createKeyboardModel(
     animated: false,
     predicted: false,
     curve: null,
+    spring: keyboard.spring,
   };
   // The inset over seconds since the transition's start.
   let curve: InsetCurve | null = null;
@@ -274,6 +286,7 @@ export function createKeyboardModel(
       animated,
       predicted,
       curve: slide,
+      spring: keyboard.spring,
     };
     curve =
       animated && Math.abs(to - from) + Math.abs(v) > 0

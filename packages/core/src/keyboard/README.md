@@ -11,6 +11,11 @@ exported from the package entry.
 - **The height (FR2):** `measureKeyboardHeight(window)` is the layout
   viewport's height minus the visual viewport's height times its scale, in CSS
   px. A page pan is not a smaller keyboard, and a pinch zoom is not a keyboard.
+  The layout viewport's height is `layoutViewportHeight(window)`
+  (`../utils/layoutViewport.ts`), in layout px in every engine: WebKit reports
+  `innerHeight` and `innerWidth` in the zoomed visual viewport's px, which
+  `innerWidth` matching the visual viewport's width tells apart. BottomSheet's
+  obstruction and ChatLayout's lift read it too.
 - **Where it measures (FR6, FR7):** `isKeyboardMeasurable(window)` is true for
   a top-level document with a visual viewport and no keyboard geometry API of
   its own. It is decided from capabilities, never from the user agent.
@@ -67,15 +72,17 @@ const unsubscribe = guide.subscribe(t => {
 });
 ```
 
-Each transition is `{kind, from, to, start, velocity, animated, predicted,
-curve}`: heights in CSS px, `start` on the document timeline (in the past for
-a show reported after the keyboard started, slightly ahead for a hide that
-starts after a blur), and `curve` Gboard's slide in Chrome on Android (null
-for UIKit's spring). `rideKeyboard` moves your element on the compositor from
-`start` on the keyboard's own motion: `keyboard.spring` on iOS, the Android
-table's show or hide curve (`../motion/android/keyboard.ts`) in Chrome, values
-no theme retunes, or at once when the transition is not animated. Hand the
-translate back to the layout once the ride ends (ChatLayout does). Under Reduce Motion nothing travels with the keyboard
+Each transition is
+`{kind, from, to, start, velocity, animated, predicted, curve, spring}`:
+heights in CSS px, `start` on the document timeline (in the past for a show
+reported after the keyboard started, slightly ahead for a hide that starts
+after a blur), and the curve the keyboard moves on: `curve`, Gboard's slide in
+Chrome on Android, or else `spring`, UIKit's keyboard spring
+(`keyboard.spring`), values no theme retunes
+(architecture:react-component-runtime INV11). `rideKeyboard` moves your
+element on the compositor from `start` on that curve, or at once when the
+transition is not animated. Hand the translate back to the layout once the
+ride ends (ChatLayout does). Under Reduce Motion nothing travels with the keyboard
 (design:reduced-motion): the animator's default cross-fades on a touch screen
 and moves at once otherwise. `presentation(time)` gives the height presented
 at any time, for something that appears while the keyboard moves.
@@ -102,6 +109,15 @@ at any time, for something that appears while the keyboard moves.
 - Safari reveals a focused field by scrolling the whole page, so a layout that
   keeps its own content above the keyboard focuses its field with
   `preventScroll` (a claimed tap, or `refuseFocusReveal`).
+- Firefox for Android reports the keyboard once it is up, and 34 to 104 ms
+  later pans the visual viewport to a focused field the keyboard still
+  covers. So BottomSheet reveals in the report's own event, and where a
+  browser has panned to the field after a report (the visual viewport moved
+  down with no touch, document scroll or zoom since), it lands the field with
+  its own scroller, leaving a smooth reveal under way to land it, and only
+  then scrolls the dialog's top back into view; a field it cannot bring up
+  keeps the browser's reveal. Every later reveal lands at once in the
+  report's frame. A browser that never pans keeps the smooth reveal.
 
 ## What the page sees (Chromium 158 with Gboard, Android 15)
 
@@ -109,8 +125,8 @@ Measured frame by frame on the emulator, with a marker the page paints on each
 report and Gboard's top read from every recorded frame (`../motion/android/
 keyboard.ts` has the numbers and their sources). The guide reads these reports
 in a browser with the VirtualKeyboard API (`keyboardProfileOf`), and the
-keyboard module measures them from the visual viewport under a finger (FR8,
-proposed; pending owner review on #8304).
+keyboard module measures them from the visual viewport under a finger
+(`spec:AST-099` FR8, DEC-4).
 
 - Show: Gboard slides up over the page in about 267 ms. Chrome's one `resize`
   of the visual viewport comes just after the slide starts: its first painted
@@ -137,11 +153,18 @@ proposed; pending owner review on #8304).
 ## Consumers
 
 - BottomSheet (`BottomSheet/BottomSheetPanel.tsx`): `useMobileKeyboard`, whose
-  inset the body's `keyboardInset` functional style lays out.
-- ChatLayout (`Chat/useChatKeyboard.ts`): the dock and the spacer after the
-  messages are laid out from `useKeyboardHeight`; the guide's ride moves the
-  dock, and a transcript at its newest message, with the keyboard; a tap on the
-  composer's text focuses it without Safari's reveal.
+  inset the content box's `keyboardInset` functional style lays out as the
+  content's last box (after its own children, so it adds scroll range in
+  Firefox too, which keeps the content box at the body's height); it reveals the
+  focused field in the keyboard report's own event.
+- ChatLayout (`Chat/useChatKeyboard.ts`): the dock and the message area's end
+  padding are laid out from `useKeyboardHeight`; the guide's ride moves the
+  dock, and a transcript at its newest message, with the keyboard; a tap on
+  the composer's text is the tap route, and every other move into it the
+  focus takeover (`refuseFocusReveal`), so none scrolls the page; the
+  keyboard's Done parks focus on the composer region, a named group that is
+  no tab stop. The composer's own focus routes pass `preventScroll` under a
+  finger in that region (`Chat/keyboardSurface.ts`).
 
 ## Files
 
@@ -155,4 +178,4 @@ proposed; pending owner review on #8304).
 
 The timing constants live in `../motion/uikit/keyboard.ts` (iOS) and
 `../motion/android/keyboard.ts` (Chrome with Gboard), the spring in
-`keyboard.spring`, the duration in `timing.keyboardNotificationMs`.
+`keyboard.spring`, the duration in `keyboard.notificationMs`.

@@ -5,7 +5,8 @@
 /**
  * @file useMobileKeyboard.ts
  * @input The window's visual viewport, focus events, React effects and refs,
- *   the motion module's Reduce Motion queries, the touch query
+ *   the motion module's Reduce Motion queries, the touch query, the layout
+ *   viewport's height (utils/layoutViewport.ts)
  * @output Exports the on-screen keyboard module: measureKeyboardHeight,
  *   isKeyboardMeasurable, subscribeMobileKeyboard, getMobileKeyboardHeight,
  *   useKeyboardHeight, isTextEntryControl, findTextEntryControl,
@@ -18,11 +19,13 @@
  *
  * The keyboard height (AST-099 FR2) is the layout viewport's height minus the
  * visual viewport's height times its scale, in CSS px: a page pan is not a
- * smaller keyboard, and a pinch zoom is not a keyboard. Chrome on Android is
- * measured the same way (FR8, proposed; `isKeyboardMeasurable`). It is 0
- * without a visual viewport, under a mouse in a browser with its own keyboard
- * geometry API, and inside an iframe, whose visual viewport never shrinks for
- * the keyboard (FR7). One set of
+ * smaller keyboard, and a pinch zoom is not a keyboard. The layout viewport's
+ * height is read in layout px in every engine (utils/layoutViewport.ts):
+ * WebKit reports `innerHeight` in the zoomed visual viewport's px. Chrome on
+ * Android is measured the same way (`spec:AST-099` DEC-4;
+ * `isKeyboardMeasurable`). It is 0 without a visual viewport, under a mouse in
+ * a browser with its own keyboard geometry API, and inside an iframe, whose
+ * visual viewport never shrinks for the keyboard (FR7). One set of
  * listeners per window reads it (the visual viewport's resize and scroll, the
  * window's resize, and focus moves), however many components subscribe.
  *
@@ -62,6 +65,7 @@ import {
   type RefObject,
 } from 'react';
 import {flushSync} from 'react-dom';
+import {layoutViewportHeight} from '../utils/layoutViewport';
 
 // A shortfall smaller than this is rounding, not a keyboard.
 const KEYBOARD_EPSILON = 1;
@@ -108,7 +112,8 @@ export function measureKeyboardHeight(win: Window): number {
   if (viewport == null || !isKeyboardMeasurable(win)) {
     return 0;
   }
-  const height = win.innerHeight - viewport.height * (viewport.scale ?? 1);
+  const height =
+    layoutViewportHeight(win) - viewport.height * (viewport.scale ?? 1);
   return height > KEYBOARD_EPSILON ? Math.round(height * 100) / 100 : 0;
 }
 
@@ -508,7 +513,19 @@ interface KeyboardGeometry {
 
 // Where the keyboard's top is in the layout viewport.
 function getObstructionTop(): number {
-  return window.innerHeight - getMobileKeyboardHeight(window);
+  return layoutViewportHeight(window) - getMobileKeyboardHeight(window);
+}
+
+// Windows whose browser revealed a focused field itself right after the
+// keyboard's report, by panning the visual viewport to it (measured in Firefox
+// for Android: 34 to 39 ms after the report, whenever the field was still under
+// the keyboard). Recorded from the behavior, never from the user agent; a sheet
+// there reveals its field at once in the report's own frame from then on.
+let revealsAtReport = new WeakSet<Window>();
+
+/** Forgets every window's recorded reveal, for tests. */
+export function __resetRevealsAtReportForTest(): void {
+  revealsAtReport = new WeakSet<Window>();
 }
 
 // How far the body runs under the keyboard's top, CSS px. The keyboard's top
@@ -600,6 +617,8 @@ export function useMobileKeyboard({
     }
 
     let keyboardGeometry: KeyboardGeometry | null = null;
+    // Where a smooth reveal under way is taking the body's scrollTop.
+    let smoothTarget: number | null = null;
     let documentScrollAtKeyboard: {x: number; y: number} | null = null;
     // FR6: where this window measures the keyboard, never by user agent.
     const ownsFocusTransitions = isKeyboardMeasurable(window);
@@ -627,6 +646,7 @@ export function useMobileKeyboard({
     };
 
     const scrollBodyBy = (distance: number, smoothly: boolean) => {
+      smoothTarget = null;
       if (typeof body.scrollBy !== 'function') {
         body.scrollTop += distance;
         return;
@@ -638,13 +658,32 @@ export function useMobileKeyboard({
         [REDUCED_MOTION_FADE_QUERY, REDUCED_MOTION_INSTANT_QUERY].some(
           query => window.matchMedia(query).matches,
         );
+      const behavior = smoothly && !reduceMotion ? 'smooth' : 'instant';
+      if (behavior === 'smooth') {
+        smoothTarget = body.scrollTop + distance;
+      }
       body.scrollBy({
         top: distance,
         // Not 'auto': that defers to the element's computed `scroll-behavior`,
         // so a consumer's `scroll-behavior: smooth` would animate a scroll this
         // hook needs to land in the same frame.
-        behavior: smoothly && !reduceMotion ? 'smooth' : 'instant',
+        behavior,
       });
+    };
+
+    // The distance a smooth reveal under way has still to scroll, as far as
+    // the body can scroll; 0 once it has landed, or with none under way.
+    const smoothDistanceLeft = () => {
+      if (smoothTarget == null) {
+        return 0;
+      }
+      const maxScroll = Math.max(
+        body.scrollTop,
+        body.scrollHeight - body.clientHeight,
+      );
+      const target = Math.min(smoothTarget, maxScroll);
+      const left = target - body.scrollTop;
+      return Math.abs(left) < 1 ? 0 : left;
     };
 
     // Scroll `control` into the part of the body the keyboard leaves visible,
@@ -667,10 +706,16 @@ export function useMobileKeyboard({
         return;
       }
 
-      if (measuredControlRect.bottom > safeBottom) {
-        scrollBodyBy(measuredControlRect.bottom - safeBottom, smoothly);
-      } else if (measuredControlRect.top < safeTop) {
-        scrollBodyBy(measuredControlRect.top - safeTop, smoothly);
+      // Where the control will be once a smooth reveal under way lands: if
+      // it lands the control, scrolling again would overshoot in Firefox,
+      // which keeps adding a smooth scrollBy's distance after another scroll.
+      const pending = smoothDistanceLeft();
+      const controlBottom = measuredControlRect.bottom - pending;
+      const controlTop = measuredControlRect.top - pending;
+      if (controlBottom > safeBottom) {
+        scrollBodyBy(controlBottom - safeBottom, smoothly);
+      } else if (controlTop < safeTop) {
+        scrollBodyBy(controlTop - safeTop, smoothly);
       }
     };
 
@@ -768,7 +813,10 @@ export function useMobileKeyboard({
           : 0;
       writeInset(inset);
 
-      scrollControlIntoSafeArea(activeElement, overlap > 0);
+      scrollControlIntoSafeArea(
+        activeElement,
+        overlap > 0 && !revealsAtReport.has(window),
+      );
     };
 
     let animationFrame = 0;
@@ -815,8 +863,10 @@ export function useMobileKeyboard({
       resizeObserver.disconnect();
 
       // Body/sheet box changes include public height and xstyle updates. The
-      // generated inset pseudo-element changes only scroll overflow, so these
-      // observations do not feed the keyboard inset back into sheet geometry.
+      // inset pseudo-element is the content box's last box: where the content
+      // grows with it, the observation re-runs the reveal, which computes the
+      // same inset from the body's unchanged box, so nothing feeds back into
+      // sheet geometry.
       const targets = new Set<Element>([body]);
       if (sheet) {
         targets.add(sheet);
@@ -876,12 +926,100 @@ export function useMobileKeyboard({
     };
 
     const stopClaiming = ownsFocusTransitions ? claimFocusTransitions() : null;
+    // A keyboard report is revealed in its own frame, not the next: a browser
+    // that reveals a focused field itself pans the visual viewport to it a few
+    // frames after the report if the keyboard still covers it (spec:AST-099
+    // FR4). Such a pan (the visual viewport moved down within the layout
+    // viewport after the report, with no touch since, no document scroll and
+    // no zoom) is put back by scrolling the full-viewport dialog's top into
+    // view once the sheet lands the field itself, and the field lands at once
+    // on every later report.
+    let lastHeight = getMobileKeyboardHeight(window);
+    let atReport: {x: number; y: number; top: number; scale: number} | null =
+      null;
+    let touchedSinceReport = false;
+    const handleTouchStart = () => {
+      touchedSinceReport = true;
+      // The reader's own scroll may stop a smooth reveal short: forget where
+      // it was going.
+      smoothTarget = null;
+    };
+    const isBrowserReveal = (height: number) => {
+      const viewport = window.visualViewport;
+      const activeElement = document.activeElement;
+      return (
+        viewport != null &&
+        atReport != null &&
+        !touchedSinceReport &&
+        height > 0 &&
+        hasKeyboardLayoutRef.current &&
+        viewport.offsetTop > atReport.top &&
+        viewport.scale === atReport.scale &&
+        window.scrollX === atReport.x &&
+        window.scrollY === atReport.y &&
+        activeElement instanceof HTMLElement &&
+        body.contains(activeElement) &&
+        isTextEntryControl(activeElement)
+      );
+    };
     // Every keyboard report reaches the reveal through the keyboard module's
     // one set of listeners.
     const unsubscribe = subscribeMobileKeyboard(window, event => {
-      if (event.type === 'viewport') {
-        scheduleReveal();
+      if (event.type !== 'viewport') {
+        return;
       }
+      if (event.height !== lastHeight) {
+        lastHeight = event.height;
+        const viewport = window.visualViewport;
+        atReport =
+          viewport == null
+            ? null
+            : {
+                x: window.scrollX,
+                y: window.scrollY,
+                top: viewport.offsetTop,
+                scale: viewport.scale,
+              };
+        touchedSinceReport = false;
+        cancelAnimationFrame(animationFrame);
+        revealFocusedControl();
+        return;
+      }
+      if (isBrowserReveal(event.height)) {
+        revealsAtReport.add(window);
+        cancelAnimationFrame(animationFrame);
+        // A smooth reveal still under way lands the field where it is going.
+        // Another scroll on top of it would overshoot in Firefox, which keeps
+        // adding a smooth scrollBy's distance after an instant scroll (the
+        // field ended 244 px too high); with none under way the field lands at
+        // once.
+        const distanceLeft = smoothDistanceLeft();
+        if (distanceLeft === 0) {
+          revealFocusedControl();
+        }
+        // The pan is put back only if the sheet holds the field above the
+        // keyboard with its own scroller (rects are layout-viewport
+        // coordinates, which the pan does not move); a field the sheet cannot
+        // bring up keeps the browser's reveal.
+        const activeElement = document.activeElement;
+        if (
+          activeElement instanceof HTMLElement &&
+          activeElement.getBoundingClientRect().bottom - distanceLeft <=
+            getObstructionTop()
+        ) {
+          sheet?.closest('dialog')?.scrollIntoView({
+            block: 'start',
+            inline: 'nearest',
+            behavior: 'instant',
+          });
+        }
+        return;
+      }
+      scheduleReveal();
+    });
+    document.addEventListener('touchstart', handleTouchStart, {
+      capture: true,
+      passive: true,
     });
     body.addEventListener('focusin', handleFocusIn);
     body.addEventListener('focusout', handleFocusOut);
@@ -902,6 +1040,7 @@ export function useMobileKeyboard({
       cancelAnimationFrame(animationFrame);
       stopClaiming?.();
       unsubscribe();
+      document.removeEventListener('touchstart', handleTouchStart, true);
       body.removeEventListener('focusin', handleFocusIn);
       body.removeEventListener('focusout', handleFocusOut);
       sheet?.removeEventListener('transitionend', handleSheetTransitionEnd);

@@ -13,9 +13,10 @@
 
 import {describe, expect, it} from 'vitest';
 import {createKeyboardModel} from './keyboardModel';
-import {keyboard, timing} from '../motion/uikit';
+import {keyboard} from '../motion/uikit';
 import {keyboard as androidKeyboard} from '../motion/android';
 import {cubicBezier} from '../motion/bezier';
+import {MOTION_ROLE_KINDS} from '../motion/roleKinds.generated';
 import {naturalFrequency, toSpring} from '../motion/spring';
 
 const OMEGA = naturalFrequency(toSpring(keyboard.spring));
@@ -24,7 +25,7 @@ const remaining = (ms: number) =>
   (1 + (OMEGA * ms) / 1000) * Math.exp((-OMEGA * ms) / 1000);
 const INSET = 337;
 const LAG = keyboard.showReportLagMs;
-const DURATION = timing.keyboardNotificationMs;
+const DURATION = keyboard.notificationMs;
 
 describe('createKeyboardModel', () => {
   it('starts at rest at the initial inset', () => {
@@ -57,6 +58,12 @@ describe('createKeyboardModel', () => {
       INSET - 1,
     );
     expect(model.velocity(1000)).toBeGreaterThan(0);
+  });
+
+  it('publishes the curve each transition moves on: the keyboard\u2019s own spring (INV11)', () => {
+    const model = createKeyboardModel(0);
+    expect(model.transition.spring).toBe(keyboard.spring);
+    expect(model.report(INSET, 1000)?.spring).toBe(keyboard.spring);
   });
 
   it('dates a show back to the last frame before a report a busy main thread held back', () => {
@@ -343,5 +350,17 @@ describe('createKeyboardModel on Chrome', () => {
     const model = createKeyboardModel(0);
     expect(model.report(INSET, 1000)?.curve).toBeNull();
     expect(model.transition.animated).toBe(true);
+  });
+});
+
+describe('the keyboard\u2019s own timing (spec:AST-099 FR3)', () => {
+  it('cuts the spring at the notification duration, which no theme retunes', () => {
+    // The system moves the keyboard on its own spring and duration whatever
+    // the theme says, so neither is a motion role.
+    expect(keyboard.notificationMs).toBe(383.3);
+    expect(MOTION_ROLE_KINDS).not.toHaveProperty(
+      'timing.keyboardNotificationMs',
+    );
+    expect(MOTION_ROLE_KINDS).not.toHaveProperty('springs.keyboard');
   });
 });

@@ -148,7 +148,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "On a phone, the components that respond to the on-screen keyboard, a fully expanded `height='tall'` BottomSheet and ChatLayout's composer, measure it the same way: the layout viewport's height minus the visual viewport's height times its scale. Where the visual viewport shrinks for the keyboard, as in Safari on iOS in the browser and as a home-screen app, they keep the focused field and the surface around it above the keyboard, and focusing a field never pans the page.",
+          text: "On a phone, the components that respond to the on-screen keyboard, a fully expanded `height='tall'` BottomSheet and ChatLayout's composer, measure it the same way: the layout viewport's height minus the visual viewport's height times its scale. Where the visual viewport shrinks for the keyboard, as in Safari on iOS in the browser and as a home-screen app and in Firefox for Android, they keep the focused field and the surface around it above the keyboard, and focusing a field never pans the page.",
         },
         {
           type: 'prose',
