@@ -136,7 +136,13 @@ const styles = stylex.create({
   backdrop: {
     '::backdrop': {
       backgroundColor: colorVars['--color-overlay'],
-      backdropFilter: 'blur(2px)',
+      // Under a finger (every coarse pointer) the page behind is not
+      // blurred: a full-viewport backdrop-filter is costly to repaint there.
+      // The dim stays the theme's overlay colour.
+      backdropFilter: {
+        default: 'blur(2px)',
+        '@media (pointer: coarse)': 'none',
+      },
       opacity: 0,
       transitionProperty: 'opacity',
       transitionDuration: durationVars['--duration-medium'],
@@ -172,7 +178,16 @@ const styles = stylex.create({
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-medium'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    outline: 'none',
+    // Under a finger the backdrop drops its blur (see backdrop); in forced
+    // colors, where the backdrop's colour is overridden, this edge keeps the
+    // drawer separate from the page.
+    outline: {
+      default: 'none',
+      '@media (pointer: coarse)': {
+        default: 'none',
+        '@media (forced-colors: active)': '1px solid CanvasText',
+      },
+    },
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0.01s',
     },

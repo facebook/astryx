@@ -1590,6 +1590,19 @@ jobs:
       - name: Run modal close visibility guard
         run: node .github/scripts/modal-close-visibility.js --storybook-dir apps/storybook/dist
 
+      # Under a finger (every coarse pointer) Dialog, AlertDialog, Drawer and
+      # MobileNav drop the 2px backdrop blur (a performance fix) and keep the
+      # theme's --color-overlay, with an edge in forced colors; a mouse keeps
+      # the blur. jsdom computes no ::backdrop and drops backdrop-filter, so
+      # only a real engine shows it. Its own --output directory, as the
+      # contracts below.
+      - name: Run modal backdrop contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/__tests__/ModalBackdrop.a11y.browser.spec.ts \
+            --project chromium \
+            --output modal-backdrop-output
+
       # A public component var can be documented, read, and emitted into the
       # theme CSS and still be unreachable — an inline write or an unlayered
       # declaration outranks `@layer astryx-theme` (#4530). jsdom resolves no

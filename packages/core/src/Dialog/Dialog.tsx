@@ -185,6 +185,16 @@ const styles = stylex.create({
     '--_dialog-radius': radiusVars['--radius-container'],
     borderRadius: 'var(--_dialog-radius)',
     boxShadow: shadowVars['--shadow-high'],
+    // Under a finger the backdrop drops its blur (see backdrop); in forced
+    // colors, where the backdrop's colour is overridden, this edge keeps the
+    // modal separate from the page.
+    outline: {
+      default: null,
+      '@media (pointer: coarse)': {
+        default: null,
+        '@media (forced-colors: active)': '1px solid CanvasText',
+      },
+    },
     display: 'none',
     flexDirection: 'column',
     height: 'fit-content',
@@ -222,11 +232,16 @@ const styles = stylex.create({
         'none',
     },
   },
-  // Backdrop using ::backdrop pseudo-element
+  // Backdrop using ::backdrop pseudo-element. Under a finger (every coarse
+  // pointer) it does not blur the page: a full-viewport backdrop-filter is
+  // costly to repaint there. The dim stays the theme's overlay colour.
   backdrop: {
     '::backdrop': {
       backgroundColor: colorVars['--color-overlay'],
-      backdropFilter: 'blur(2px)',
+      backdropFilter: {
+        default: 'blur(2px)',
+        '@media (pointer: coarse)': 'none',
+      },
     },
   },
   fullscreen: {
