@@ -120,13 +120,13 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Representative states
 
-| State                             | Required invariant                          | Allowed variation   |
-| --------------------------------- | ------------------------------------------- | ------------------- |
-| Heading and items, no center      | Flex row; end content at the inline end.    | Gaps and padding.   |
-| Center content present            | Three-column grid; center stays centered.   | Column content.     |
-| Mobile bar with a long heading    | Toggle and end content stay inside the bar. | Heading truncation. |
-| Mobile bar with no drawer content | No toggle.                                  | —                   |
-| Drawer with items and side nav    | Items, divider, side nav content.           | Item modes.         |
+| State                             | Required invariant                                                       | Allowed variation   |
+| --------------------------------- | ------------------------------------------------------------------------ | ------------------- |
+| Heading and items, no center      | Flex row; end content at the inline end.                                 | Gaps and padding.   |
+| Center content present            | Three-column grid; center centered while each side fits its share (FR4). | Column content.     |
+| Mobile bar with a long heading    | Toggle and end content stay inside the bar.                              | Heading truncation. |
+| Mobile bar with no drawer content | No toggle.                                                               | —                   |
+| Drawer with items and side nav    | Items, divider, side nav content.                                        | Item modes.         |
 
 ### Transformation and precedence order
 

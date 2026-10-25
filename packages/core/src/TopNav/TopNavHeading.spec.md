@@ -155,11 +155,11 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Design relationships
 
-| Anatomy or state | Design requirement                                | Representation authority       | Hierarchy role | Component contract |
-| ---------------- | ------------------------------------------------- | ------------------------------ | -------------- | ------------------ |
-| Logo             | Leading product mark.                             | Current source and public docs | Prominent      | FR1, FR2           |
-| Heading lines    | Superheading, heading, subheading; one line each. | Current source and public docs | Prominent      | FR1                |
-| Menu popover     | Overlaps the block; repeats it as its first row.  | Current source                 | Supporting     | FR7                |
+| Anatomy or state | Design requirement                                                     | Representation authority       | Hierarchy role | Component contract |
+| ---------------- | ---------------------------------------------------------------------- | ------------------------------ | -------------- | ------------------ |
+| Logo             | Leading product mark.                                                  | Current source and public docs | Prominent      | FR1, FR2           |
+| Heading lines    | Superheading, heading, subheading; plain lines stay on one line (FR1). | Current source and public docs | Prominent      | FR1                |
+| Menu popover     | Overlaps the block; repeats it as its first row.                       | Current source                 | Supporting     | FR7                |
 
 `TopNavHeading.doc.mjs` declares no anatomy of its own, so no anatomy-theming map
 is recorded.
