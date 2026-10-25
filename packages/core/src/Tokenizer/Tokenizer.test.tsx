@@ -319,6 +319,14 @@ describe('Tokenizer', () => {
       __resetInteractionModalityForTest();
     });
 
+    // A mouse case runs under a fine primary pointer (no pointer media at
+    // all counts as fine), asserted in the test's own context.
+    function expectFinePrimaryPointer() {
+      expect(window.matchMedia?.('(pointer: coarse)').matches ?? false).toBe(
+        false,
+      );
+    }
+
     function renderPair(onChange = vi.fn()) {
       render(
         <Tokenizer
@@ -417,6 +425,7 @@ describe('Tokenizer', () => {
     });
 
     it('still lets a mouse press, and a tap while typing, focus as before', () => {
+      expectFinePrimaryPointer();
       const {input, remove} = renderPair();
       fireEvent.pointerDown(remove, {pointerType: 'mouse'});
       expect(fireEvent.mouseDown(remove)).toBe(true);
@@ -446,6 +455,7 @@ describe('Tokenizer', () => {
     });
 
     it('focuses the input after a mouse removes a token', () => {
+      expectFinePrimaryPointer();
       const {input, remove} = renderPair();
       fireEvent.pointerDown(remove, {pointerType: 'mouse'});
       fireEvent.click(remove);
