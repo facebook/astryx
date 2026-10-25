@@ -695,6 +695,20 @@ describe('createPager', () => {
     expect(f.pager.virtualIndex).toBe(4);
   });
 
+  it("with two pages, a loop's step forward goes forward: of two copies equally near, the one asked for", () => {
+    const f = setup({count: 2, loop: true});
+    f.pager.goTo(f.pager.virtualIndex + 1, {animated: false});
+    expect(f.pager.virtualIndex).toBe(1);
+    f.pager.goTo(f.pager.virtualIndex + 1, {animated: false});
+    expect(f.pager.virtualIndex).toBe(2);
+    expect(f.x()).toBe(-2 * WIDTH);
+    f.pager.goTo(f.pager.virtualIndex - 1, {animated: false});
+    expect(f.pager.virtualIndex).toBe(1);
+    // A page index takes its nearest copy as before.
+    f.pager.goTo(0, {animated: false});
+    expect(f.pager.virtualIndex).toBe(0);
+  });
+
   it('clamps goTo to the pages when not looping', () => {
     const f = setup({defaultIndex: 0});
     f.pager.goTo(9, {animated: false});

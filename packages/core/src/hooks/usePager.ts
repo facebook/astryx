@@ -163,6 +163,27 @@ export interface Pager {
   dispose(): void;
 }
 
+/**
+ * The copy of page `index` nearest virtual page `from` in a loop of `count`
+ * pages; of two copies equally near (two pages, or half an even count away),
+ * `index` itself when it is one of them, so a step to `from + 1` always goes
+ * forward.
+ */
+export function nearestLoopCopy(
+  index: number,
+  from: number,
+  count: number,
+): number {
+  if (Math.abs(index - from) * 2 <= count) {
+    return index;
+  }
+  return Math.round(
+    from +
+      (((mod(index, count) - mod(from, count) + count + count / 2) % count) -
+        count / 2),
+  );
+}
+
 function mod(value: number, count: number): number {
   return ((value % count) + count) % count;
 }
@@ -743,11 +764,7 @@ export function createPager(
     const {animated = true, reason = 'goTo'} = goToOptions;
     let next = Math.round(index);
     if (options.loop === true) {
-      // The copy of `index` nearest the current target.
-      const n = count();
-      next =
-        target + (((mod(next, n) - mod(target, n) + n + n / 2) % n) - n / 2);
-      next = Math.round(next);
+      next = nearestLoopCopy(next, target, count());
     } else {
       next = clampIndex(next);
     }
