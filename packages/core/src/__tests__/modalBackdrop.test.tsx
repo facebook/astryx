@@ -6,9 +6,10 @@
  *   rules vitest injects into the document (`runtimeInjection`)
  * @output The modal backdrop contract: every modal `::backdrop` paints the
  *   theme's `--color-overlay` under every pointer; under a finger (every
- *   coarse pointer) Dialog, Drawer and MobileNav drop its 2px blur, and in
- *   forced colors their modal surface draws an edge instead; with a mouse the
- *   blur stays; BottomSheet never blurred
+ *   coarse pointer) Dialog, Drawer and MobileNav drop its 2px blur; in forced
+ *   colors Dialog draws an edge instead, and Drawer and MobileNav keep their
+ *   anchored-side border as theirs; with a mouse the blur stays; BottomSheet
+ *   never blurred
  * @position Cross-component regression test for the shared modal backdrop
  *
  * Dropping the blur under a finger is a performance fix: a full-viewport
@@ -209,16 +210,39 @@ describe('modal backdrop', () => {
     },
   );
 
-  it.each(modals.filter(([name]) => name !== 'BottomSheet'))(
-    '%s draws an edge in forced colors under a finger, where the blur is gone',
+  it('Dialog draws an edge in forced colors under a finger, where the blur is gone', () => {
+    const [, element] = modals.find(([name]) => name === 'Dialog')!;
+    render(element());
+    const dialog = document.querySelector('dialog');
+    expect(dialog).not.toBeNull();
+    expect(
+      backdropDeclarations(dialog!, 'touchForcedColors', '').get('outline'),
+    ).toBe('1pxsolidCanvasText');
+  });
+
+  it.each(modals.filter(([name]) => name === 'Drawer' || name === 'MobileNav'))(
+    '%s keeps its anchored-side border as the forced-colors edge, with no outline added',
     (name, element) => {
       render(element());
       const dialog = document.querySelector('dialog');
       expect(dialog).not.toBeNull();
       const surface = surfaceOf(name, dialog!);
+      // The panel's side facing the page has a solid border, which forced
+      // colors paint CanvasText: one 1px edge already, so no outline.
+      const declarations = [
+        ...backdropDeclarations(surface, 'default', '').entries(),
+      ];
       expect(
-        backdropDeclarations(surface, 'touchForcedColors', '').get('outline'),
-      ).toBe('1pxsolidCanvasText');
+        declarations.some(
+          ([property, value]) =>
+            /^border-inline-(start|end)-style$/.test(property) &&
+            value === 'solid',
+        ),
+        JSON.stringify(declarations),
+      ).toBe(true);
+      expect(
+        backdropDeclarations(surface, 'touchForcedColors', '').has('outline'),
+      ).toBe(false);
     },
   );
 });

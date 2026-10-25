@@ -122,16 +122,7 @@ const styles = stylex.create({
     boxShadow: shadowVars['--shadow-high'],
     overflow: 'hidden',
     overscrollBehavior: 'contain',
-    // Under a finger the backdrop drops its blur (see backdrop); in forced
-    // colors, where the backdrop's colour is overridden, this edge keeps the
-    // modal separate from the page.
-    outline: {
-      default: 'none',
-      '@media (pointer: coarse)': {
-        default: 'none',
-        '@media (forced-colors: active)': '1px solid CanvasText',
-      },
-    },
+    outline: 'none',
     // Full-height side panel, pinned across the block axis.
     insetBlockStart: 0,
     insetBlockEnd: 0,

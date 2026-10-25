@@ -178,16 +178,7 @@ const styles = stylex.create({
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-medium'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    // Under a finger the backdrop drops its blur (see backdrop); in forced
-    // colors, where the backdrop's colour is overridden, this edge keeps the
-    // drawer separate from the page.
-    outline: {
-      default: 'none',
-      '@media (pointer: coarse)': {
-        default: 'none',
-        '@media (forced-colors: active)': '1px solid CanvasText',
-      },
-    },
+    outline: 'none',
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0.01s',
     },

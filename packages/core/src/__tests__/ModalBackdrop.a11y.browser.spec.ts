@@ -12,8 +12,9 @@
  *   the page behind them, while every modal `::backdrop` keeps the theme's
  *   `--color-overlay` (the base tokens' and a bundled theme's own); with a
  *   mouse they keep the 2px blur; BottomSheet never blurred; in forced
- *   colors, under a finger, the modal surface draws an edge; screenshots of
- *   an open Dialog per mode for the pull request
+ *   colors, under a finger, each has one 1px edge (Dialog's outline, the side
+ *   panels' anchored-side border); screenshots of an open Dialog per mode for
+ *   the pull request
  * @position Cross-browser proof for the shared modal backdrop; jsdom drops
  *   `backdrop-filter` and paints nothing, so __tests__/modalBackdrop.test.tsx
  *   can only pin the declarations. WebKit here is desktop WebKit under
@@ -111,11 +112,15 @@ async function readBackdrop(
     });
 }
 
-/** The open modal's visible surface: the dialog, or MobileNav's drawer. */
-async function readSurfaceOutline(
+/**
+ * The open modal's visible surface (the dialog, or MobileNav's drawer): its
+ * outline, and its drawn side borders (solid and wider than 0), as
+ * `side width`.
+ */
+async function readSurfaceEdge(
   page: Page,
   name: string,
-): Promise<{style: string; width: string}> {
+): Promise<{outline: string; sides: string[]}> {
   return page
     .locator('dialog[open]')
     .last()
@@ -126,7 +131,20 @@ async function readSurfaceOutline(
         ? (dialog.querySelector('[tabindex="-1"]') ?? dialog)
         : dialog;
       const style = getComputedStyle(surface);
-      return {style: style.outlineStyle, width: style.outlineWidth};
+      return {
+        outline: `${style.outlineStyle} ${style.outlineWidth}`,
+        sides: (['left', 'right'] as const)
+          .filter(
+            side =>
+              style.getPropertyValue(`border-${side}-style`) === 'solid' &&
+              Number.parseFloat(
+                style.getPropertyValue(`border-${side}-width`),
+              ) > 0,
+          )
+          .map(
+            side => `${side} ${style.getPropertyValue(`border-${side}-width`)}`,
+          ),
+      };
     }, name === 'MobileNav');
 }
 
@@ -178,7 +196,7 @@ test.describe('forced colors', () => {
   test.use({colorScheme: 'light'});
 
   for (const modal of MODALS.filter(m => m.name !== 'BottomSheet')) {
-    test(`${modal.name} draws an edge under a finger, where the blur is gone`, async ({
+    test(`${modal.name} has one 1px edge under a finger, where the blur is gone`, async ({
       page,
       browserName,
     }) => {
@@ -188,10 +206,19 @@ test.describe('forced colors', () => {
       );
       await page.emulateMedia({forcedColors: 'active'});
       await openModal(page, modal, 'light', 'none');
-      expect(await readSurfaceOutline(page, modal.name)).toEqual({
-        style: 'solid',
-        width: '1px',
-      });
+      const edge = await readSurfaceEdge(page, modal.name);
+      if (modal.name === 'Drawer' || modal.name === 'MobileNav') {
+        // The side panel's border facing the page is its edge; no outline
+        // doubles it.
+        expect(edge.outline, JSON.stringify(edge)).toMatch(/^none /);
+        expect(edge.sides, JSON.stringify(edge)).toHaveLength(1);
+        expect(edge.sides[0], JSON.stringify(edge)).toMatch(/ 1px$/);
+      } else {
+        expect(edge, JSON.stringify(edge)).toEqual({
+          outline: 'solid 1px',
+          sides: [],
+        });
+      }
     });
   }
 });
