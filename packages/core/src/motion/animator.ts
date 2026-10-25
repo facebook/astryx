@@ -110,7 +110,9 @@
  *   - otherwise: dips (fades out, lands, fades back in);
  *   travel lands with a plain style write while the element is transparent,
  *   never as an animated transform; a busy main thread only keeps it
- *   transparent longer, and a dip fades back in from the landing;
+ *   transparent longer, and a dip fades back in from the landing; a later
+ *   call that lands too carries a landing still waiting (two calls in one
+ *   frame land together), and a later opacity change lands it at once;
  * - on any other primary pointer (DR3) it completes at once.
  * No call option and no theme value lengthens the fade or keeps travel (DR4):
  * the fade's length is not a theme role. Decays keep their motion: they
@@ -142,8 +144,9 @@ import {cubicBezier} from './bezier';
 import {solveDecay} from './decay';
 import {solveSpring, toSpring, type SpringDescription} from './spring';
 import {resolveMotion} from './resolveMotion';
-import {scroll} from './uikit/scroll';
-import {timing} from './uikit/timing';
+import {registerScrollTable, scroll} from './uikit/scroll';
+import {registerTimingTable, timing} from './uikit/timing';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
 
 /**
  * A value the animator can drive.
@@ -412,8 +415,16 @@ interface StartGroup {
   readonly animations: Animation[];
   readonly channels: Set<Channel>;
   resolved: boolean;
+  /** A later call in the same task that took over its curves. */
+  adoptedBy?: StartGroup;
   readonly resolve: (start: number) => void;
   readonly started: Promise<number>;
+}
+
+/** An atRest() call waiting for its curves to end. */
+interface RestWait {
+  timer: ReturnType<typeof setTimeout> | null;
+  settle: () => void;
 }
 
 interface HandleState {
@@ -436,6 +447,8 @@ interface Landing {
   fadeIn: {readonly to: number; readonly ms: number} | null;
   /** The opacity written with the landing (an exit by role). */
   restore: number | null;
+  /** Earlier calls whose landings this one carries: they land with it. */
+  readonly carried: HandleState[];
   timer: ReturnType<typeof setTimeout> | null;
 }
 
@@ -444,7 +457,7 @@ interface ReducedPlan {
   readonly next: Partial<Record<MotionProperty, Segment | null>>;
   /** Values that stay where they are until the landing writes them. */
   readonly holds: Partial<Record<MotionProperty, number>>;
-  readonly landing: Omit<Landing, 'owner' | 'timer'> | null;
+  readonly landing: Omit<Landing, 'owner' | 'timer' | 'carried'> | null;
 }
 
 const PROPERTIES: ReadonlyArray<MotionProperty> = [
@@ -465,8 +478,12 @@ const IDENTITY: Record<MotionProperty, number> = {
   opacity: 1,
 };
 
-/** Within this of its target a curve is over (in the property's own unit). */
-const SETTLE_THRESHOLD: Record<MotionProperty, number> = {
+/**
+ * Within this of its target a curve is over (in the property's own unit). A
+ * curve built outside the animator (a progress curve) settles where a call
+ * would with this as its epsilon.
+ */
+export const SETTLE_THRESHOLD: Record<MotionProperty, number> = {
   x: 0.05,
   y: 0.05,
   rotate: 0.01,
@@ -580,6 +597,57 @@ export function animatorFor(
   return animator;
 }
 
+/**
+ * The inline text for a channel: `format`, except that an identity transform
+ * is written `none`. Any other value, `translate: 0px 0px` included, makes
+ * the element the containing block of its `position: fixed` descendants and
+ * a stacking context, so a motion back to identity would leave a fixed child
+ * moved with its parent; Mobile Safari also lets no finger scroll a list
+ * inside an element left at `scale: 1`. At rest the identity leaves the
+ * element entirely when its stylesheet agrees (`releaseIdentity`).
+ */
+function inlineText(
+  channel: Channel,
+  value: (property: MotionProperty) => number,
+): string {
+  const at = (property: MotionProperty, identity: number, digits: number) =>
+    round(value(property), digits) === identity;
+  switch (channel) {
+    case 'translate':
+      return at('x', 0, 3) && at('y', 0, 3) ? 'none' : format(channel, value);
+    case 'rotate':
+      return at('rotate', 0, 4) ? 'none' : format(channel, value);
+    case 'scale':
+      return at('scaleX', 1, 5) && at('scaleY', 1, 5)
+        ? 'none'
+        : format(channel, value);
+    case 'opacity':
+      return format(channel, value);
+  }
+}
+
+/** What `inlineText` writes for each channel at identity. */
+const IDENTITY_TEXT: Record<Channel, string> = {
+  translate: 'none',
+  rotate: 'none',
+  scale: 'none',
+  opacity: '1',
+};
+
+/** Whether a computed value (or an unset one) is the channel's identity. */
+function isIdentityText(channel: Channel, text: string): boolean {
+  const value = text.trim();
+  if (value === '' || value === 'none') {
+    return true;
+  }
+  const numbers = value.split(/\s+/).map(part => Number.parseFloat(part));
+  if (numbers.some(number => !Number.isFinite(number))) {
+    return false;
+  }
+  const identity = channel === 'scale' || channel === 'opacity' ? 1 : 0;
+  return numbers.every(number => Math.abs(number - identity) < 1e-6);
+}
+
 function expand(values: MotionValues): Partial<Record<MotionProperty, number>> {
   const out: Partial<Record<MotionProperty, number>> = {};
   for (const [key, value] of Object.entries(values)) {
@@ -617,12 +685,12 @@ export function defaultPrefersReducedMotion(): boolean {
   );
 }
 
-/** Whether the primary pointer is coarse: `(pointer: coarse)`. */
+/** Whether the primary pointer is coarse (TOUCH_QUERY). */
 export function defaultIsCoarsePointer(): boolean {
   return (
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
-    window.matchMedia('(pointer: coarse)').matches
+    window.matchMedia(TOUCH_QUERY).matches
   );
 }
 
@@ -668,6 +736,8 @@ export function createAnimator(
   let target: HTMLElement | null = null;
   /** Calls from rest whose start still waits for the browser's commit. */
   const pendingGroups = new Set<StartGroup>();
+  /** atRest() calls still waiting; dispose settles them. */
+  const restWaits = new Set<RestWait>();
   /** The call being committed, when it starts from rest. */
   let callGroup: StartGroup | null = null;
   /** Channels promoted to the element's compositing layer (will-change). */
@@ -697,7 +767,15 @@ export function createAnimator(
     return segment;
   };
 
-  const valueAt = (property: MotionProperty, time: number): number => {
+  /**
+   * A curve whose call the browser has not started yet: still at its start
+   * on screen (valueAt), already moving in the model (velocityAt).
+   */
+  const isHeld = (segment: Segment) =>
+    segment.group != null && !segment.group.resolved;
+
+  /** The curve itself at `time`: what the keyframes play. */
+  const curveAt = (property: MotionProperty, time: number): number => {
     const segment = segments.get(property);
     if (segment == null) {
       return resting[property];
@@ -708,7 +786,29 @@ export function createAnimator(
     return segment.at(Math.max(0, time - segment.start));
   };
 
+  /**
+   * The value on screen at `time`. A curve the browser has not started is at
+   * its start up to now; a later time reads the curve from its provisional
+   * start, the model's best guess until the browser's start moves it (a
+   * companion that samples a curve ahead follows its shape).
+   */
+  const valueAt = (property: MotionProperty, time: number): number => {
+    const segment = segments.get(property);
+    if (segment != null && isHeld(segment) && time <= now()) {
+      // Nothing has moved on screen until the browser starts the call.
+      return segment.at(0);
+    }
+    return curveAt(property, time);
+  };
+
   const velocityAt = (property: MotionProperty, time: number): number => {
+    const held = segments.get(property);
+    if (held != null && isHeld(held)) {
+      // Still at its start on screen, but moving in the model: a retarget
+      // carries the velocity the curve has reached by now, so a flick whose
+      // moves all land before the browser starts any keeps its speed.
+      return held.speed(Math.max(0, time - held.start));
+    }
     const segment = segmentAt(property, time);
     if (segment == null || time < segment.start) {
       return 0;
@@ -716,9 +816,9 @@ export function createAnimator(
     return segment.speed(time - segment.start);
   };
 
-  // A value just before a jump at absolute time `time`.
+  // The curve just before a jump at absolute time `time`.
   const valueBefore = (property: MotionProperty, time: number): number =>
-    valueAt(property, time - 1e-6);
+    curveAt(property, time - 1e-6);
 
   // -- writing --------------------------------------------------------------
 
@@ -733,7 +833,14 @@ export function createAnimator(
       return;
     }
     touched.add(channel);
-    target.style.setProperty(channel, format(channel, value));
+    const text = inlineText(channel, value);
+    if (text === IDENTITY_TEXT[channel]) {
+      // Identity leaves the element when nothing else would move it.
+      target.style.setProperty(channel, text);
+      releaseIdentity(channel);
+    } else {
+      target.style.setProperty(channel, text);
+    }
   };
 
   const sampleTimes = (
@@ -752,7 +859,7 @@ export function createAnimator(
       return [];
     }
     const times: number[] = [begin];
-    const value = (t: number) => valueAt(property, t);
+    const value = (t: number) => curveAt(property, t);
     const breaks = segment.jumps
       .map(j => segment.start + j)
       .filter(t => t > begin && t < end);
@@ -855,6 +962,15 @@ export function createAnimator(
       previous?.cancel();
       return;
     }
+    // A channel rebuilt by an explicit call (set, rebase, a retarget of
+    // another axis) while one of its curves still waits for the browser's
+    // start keeps that start: no explicit start for this animation.
+    const waiting =
+      callGroup ??
+      moving
+        .map(p => (segments.get(p) as Segment).group)
+        .find(group => group != null && !group.resolved) ??
+      null;
     if (callGroup != null) {
       // A curve of an earlier call still waiting for its first frame is
       // rebaked here: it starts with this call's commit.
@@ -862,7 +978,11 @@ export function createAnimator(
         const segment = segments.get(property) as Segment;
         const group = segment.group;
         if (group != null && group !== callGroup && !group.resolved) {
-          group.segments.splice(group.segments.indexOf(segment), 1);
+          const index = group.segments.indexOf(segment);
+          if (index >= 0) {
+            group.segments.splice(index, 1);
+          }
+          group.adoptedBy = callGroup;
           segment.group = callGroup;
           callGroup.segments.push(segment);
         }
@@ -915,7 +1035,7 @@ export function createAnimator(
       keyframes.push({
         offset,
         [channel]: format(channel, p =>
-          t >= end ? finalValue(p) : valueAt(p, t),
+          t >= end ? finalValue(p) : curveAt(p, t),
         ),
       });
     }
@@ -931,12 +1051,14 @@ export function createAnimator(
       easing: 'linear',
       ...(pseudoElement != null ? {pseudoElement} : {}),
     });
-    if (callGroup != null) {
+    if (waiting != null) {
       // From rest: no start time, so the browser starts the animation when
       // it commits it (StartGroup); the keyframes are sampled from `time`,
       // the call's own start.
-      callGroup.animations.push(animation);
-      callGroup.channels.add(channel);
+      waiting.animations.push(animation);
+      waiting.channels.add(channel);
+      // A cancel before the first frame rejects its ready promise.
+      (animation as Partial<Animation>).ready?.catch(() => {});
     } else {
       // One clock: the keyframes were sampled from `time`.
       animation.startTime = time;
@@ -981,8 +1103,31 @@ export function createAnimator(
         hold(channel, now());
       }
       animation.cancel();
+      releaseIdentity(channel);
     };
     retireTimers.set(channel, setTimeout(retire, Math.max(0, end - now())));
+  };
+
+  /**
+   * A channel at identity with no animation of its own leaves the element:
+   * its inline value is removed, unless the stylesheet would then move the
+   * element, in which case the identity stays inline. Runs when such a value
+   * is written and again when a motion ends.
+   */
+  const releaseIdentity = (channel: Channel) => {
+    if (target == null || pseudoElement != null || running.has(channel)) {
+      return;
+    }
+    const text = target.style.getPropertyValue(channel);
+    if (text !== IDENTITY_TEXT[channel]) {
+      return;
+    }
+    target.style.removeProperty(channel);
+    const view = target.ownerDocument.defaultView;
+    const resting = view?.getComputedStyle(target).getPropertyValue(channel);
+    if (resting != null && !isIdentityText(channel, resting)) {
+      target.style.setProperty(channel, text);
+    }
   };
 
   /**
@@ -1093,12 +1238,27 @@ export function createAnimator(
     properties: Iterable<MotionProperty>,
     at: number | undefined,
   ): StartGroup | null => {
-    if (at != null || target == null || typeof target.animate !== 'function') {
+    if (target == null || typeof target.animate !== 'function') {
       return null;
     }
     const channels = new Set<Channel>();
     for (const property of properties) {
       channels.add(CHANNEL_OF[property]);
+    }
+    if (at != null) {
+      // An explicit clock is the caller's, except the clock of a call from
+      // rest on these channels still waiting for the browser's start (a drop
+      // and the reorder that rebases it in the same task): the new call joins
+      // that call, and the browser's start moves both.
+      for (const channel of channels) {
+        for (const property of CHANNELS[channel]) {
+          const group = segments.get(property)?.group;
+          if (group != null && !group.resolved && at >= group.provisional - 1) {
+            return group;
+          }
+        }
+      }
+      return null;
     }
     for (const channel of channels) {
       for (const property of CHANNELS[channel]) {
@@ -1173,8 +1333,28 @@ export function createAnimator(
     requestFrame?.(() => syncGroup(group));
     ready.then(
       () => syncGroup(group),
-      () => resolveGroup(group, group.provisional), // cancelled: never started
+      () => settleCancelled(group),
     );
+  };
+
+  /**
+   * A call whose first animation was cancelled before its first frame: if a
+   * later call in the same task took over its curves, it starts with that
+   * call; otherwise it never started.
+   */
+  const settleCancelled = (group: StartGroup) => {
+    if (group.resolved) {
+      return;
+    }
+    let adopter = group.adoptedBy;
+    while (adopter?.adoptedBy != null) {
+      adopter = adopter.adoptedBy;
+    }
+    if (adopter != null && adopter !== group) {
+      void adopter.started.then(start => resolveGroup(group, start));
+      return;
+    }
+    resolveGroup(group, group.provisional);
   };
 
   const syncGroup = (group: StartGroup) => {
@@ -1258,7 +1438,10 @@ export function createAnimator(
     if (segment == null) {
       return;
     }
-    if (time < segment.start + segment.duration) {
+    if (
+      time < segment.start + segment.duration &&
+      !carriedOwners.has(segment.owner)
+    ) {
       settle(segment.owner, false);
     }
   };
@@ -1374,6 +1557,7 @@ export function createAnimator(
     stops: ReadonlyArray<{at: number; value: number}>,
     jumps: ReadonlyArray<number> = [],
   ): Segment => {
+    registerTimingTable();
     const ease = cubicBezier(resolveMotion(target, timing.curves.easeInOut));
     const duration = stops[stops.length - 1].at;
     const at = (t: number) => {
@@ -1417,16 +1601,80 @@ export function createAnimator(
 
   /** Reduced Motion landings still waiting for the element to be transparent. */
   const landings = new Set<Landing>();
+  /** Calls a later call's landing carries: an interrupt does not settle them. */
+  const carriedOwners = new Set<HandleState>();
 
-  /** A later write to `property` takes it from any landing; opacity ends it. */
+  /**
+   * A later write to `property` takes it from any landing. A write to opacity
+   * decides what shows, so a landing still waiting writes its travel at once
+   * rather than never, and its calls settle as interrupted.
+   */
   const cancelLanding = (property: MotionProperty) => {
-    for (const landing of landings) {
+    for (const landing of [...landings]) {
       if (property === 'opacity') {
         endLanding(landing);
+        landNow(landing);
       } else {
         landing.values.delete(property);
       }
     }
+  };
+
+  const landNow = (landing: Landing) => {
+    const changed: MotionProperty[] = [];
+    for (const [property, value] of landing.values) {
+      segments.delete(property);
+      resting[property] = value;
+      changed.push(property);
+    }
+    if (changed.length > 0) {
+      commit(changed, now());
+    }
+    for (const owner of [landing.owner, ...landing.carried]) {
+      carriedOwners.delete(owner);
+      if (!owner.settled) {
+        settle(owner, false);
+      }
+    }
+  };
+
+  /**
+   * A later Reduced Motion call that lands too carries the landings still
+   * waiting: their travel lands with its own, which wins where both move a
+   * property, and their calls settle when it lands. So two calls in one
+   * frame (a drag cancel's position and scale) both land.
+   */
+  const adoptLandings = (
+    plan: NonNullable<ReducedPlan['landing']>,
+    properties: ReadonlyArray<MotionProperty>,
+  ): HandleState[] => {
+    const carried: HandleState[] = [];
+    for (const landing of [...landings]) {
+      for (const [property, value] of landing.values) {
+        if (!properties.includes(property) && !plan.values.has(property)) {
+          plan.values.set(property, value);
+        }
+      }
+      carried.push(landing.owner, ...landing.carried);
+      endLanding(landing);
+    }
+    for (const owner of carried) {
+      carriedOwners.add(owner);
+    }
+    return carried;
+  };
+
+  /** Where opacity is heading: past a waiting landing's fade back in. */
+  const opacityHeading = (): number => {
+    let to = finalValue('opacity');
+    for (const landing of landings) {
+      if (landing.fadeIn != null) {
+        to = landing.fadeIn.to;
+      } else if (landing.restore != null) {
+        to = landing.restore;
+      }
+    }
+    return to;
   };
 
   const endLanding = (landing: Landing) => {
@@ -1441,8 +1689,9 @@ export function createAnimator(
     owner: HandleState,
     started: Promise<number>,
     plan: NonNullable<ReducedPlan['landing']>,
+    carried: HandleState[],
   ) => {
-    const landing: Landing = {...plan, owner, timer: null};
+    const landing: Landing = {...plan, owner, carried, timer: null};
     landings.add(landing);
     // The handle settles when the landing (and its fade back in) is done.
     if (owner.timer != null) {
@@ -1492,6 +1741,13 @@ export function createAnimator(
       changed.push('opacity');
     }
     commit(changed, time);
+    // The calls it carries are done: their travel has landed.
+    for (const carried of landing.carried) {
+      carriedOwners.delete(carried);
+      if (!carried.settled) {
+        settle(carried, true);
+      }
+    }
     const {owner} = landing;
     if (owner.settled) {
       return;
@@ -1532,15 +1788,18 @@ export function createAnimator(
     }
     const opacityNow = valueAt('opacity', time);
     // A fade the call does not name keeps going where it was heading.
-    const opacityTo = targets.opacity ?? finalValue('opacity');
+    const opacityTo = targets.opacity ?? opacityHeading();
     const travel = properties.filter(
       property =>
         TRAVEL.includes(property) &&
         Math.abs((targets[property] as number) - valueAt(property, time)) >
           1e-9,
     );
-    let entering = opacityTo > opacityNow + 1e-6;
-    let leaving = opacityTo < opacityNow - 1e-6;
+    // Only the call's own opacity (or its role) makes it an entrance or an
+    // exit: a fade it does not name, such as a dip still running, does not.
+    const named = targets.opacity != null;
+    let entering = named && opacityTo > opacityNow + 1e-6;
+    let leaving = named && opacityTo < opacityNow - 1e-6;
     let fadeFrom = opacityNow;
     let fadeTo = opacityTo;
     let restore: number | null = null;
@@ -1718,6 +1977,10 @@ export function createAnimator(
         Object.keys(next) as MotionProperty[],
         animateOptions.at,
       );
+      const carried =
+        plan?.landing != null
+          ? adoptLandings(plan.landing, Object.keys(next) as MotionProperty[])
+          : [];
       const changed: MotionProperty[] = [];
       for (const [property, segment] of Object.entries(next) as [
         MotionProperty,
@@ -1740,7 +2003,7 @@ export function createAnimator(
       commitCall(group, owner, changed, time);
       const handle = makeHandle(owner, changed, finished, time, group);
       if (plan?.landing != null) {
-        scheduleLanding(owner, handle.started, plan.landing);
+        scheduleLanding(owner, handle.started, plan.landing, carried);
       }
       return handle;
     },
@@ -1808,6 +2071,10 @@ export function createAnimator(
         Object.keys(next) as MotionProperty[],
         playOptions.at,
       );
+      const carried =
+        plan?.landing != null
+          ? adoptLandings(plan.landing, Object.keys(next) as MotionProperty[])
+          : [];
       const changed: MotionProperty[] = [];
       for (const [property, segment] of Object.entries(next) as [
         MotionProperty,
@@ -1830,7 +2097,7 @@ export function createAnimator(
       commitCall(group, owner, changed, time);
       const handle = makeHandle(owner, changed, finished, time, group);
       if (plan?.landing != null) {
-        scheduleLanding(owner, handle.started, plan.landing);
+        scheduleLanding(owner, handle.started, plan.landing, carried);
       }
       return handle;
     },
@@ -1841,6 +2108,7 @@ export function createAnimator(
       const velocities = expand(velocity);
       const {owner, finished} = newOwner();
       const rate = decayOptions.rate ?? scroll.decelerationRate.normal;
+      registerScrollTable();
       const bounce = toSpring(
         resolveMotion(target, decayOptions.bounce ?? scroll.bounce),
       );
@@ -1975,6 +2243,23 @@ export function createAnimator(
           continue;
         }
         owners.add(segment.owner);
+        // A curve still waiting for the browser's start stays in its call:
+        // it starts with that call's commit.
+        const group =
+          segment.group != null && !segment.group.resolved
+            ? segment.group
+            : undefined;
+        const replace = (next: Segment) => {
+          if (group != null) {
+            const index = group.segments.indexOf(segment);
+            if (index >= 0) {
+              group.segments[index] = next;
+            } else {
+              group.segments.push(next);
+            }
+          }
+          segments.set(property, next);
+        };
         if (segment.spring != null) {
           const from = valueAt(property, time) + delta;
           const velocity = velocityAt(property, time);
@@ -1983,8 +2268,9 @@ export function createAnimator(
             to: segment.target,
             velocity,
           });
-          segments.set(property, {
-            start: time,
+          replace({
+            start: group?.provisional ?? time,
+            ...(group != null ? {group} : {}),
             duration: Math.min(
               MAX_DURATION_MS,
               curve.settleTime(SETTLE_THRESHOLD[property]) * 1000,
@@ -1997,7 +2283,7 @@ export function createAnimator(
             spring: segment.spring,
           });
         } else {
-          segments.set(property, {
+          replace({
             ...segment,
             target: segment.target + delta,
             at: t => segment.at(t) + delta,
@@ -2030,7 +2316,18 @@ export function createAnimator(
     async atRest(properties) {
       const list = properties == null ? PROPERTIES : expandList(properties);
       return new Promise<void>(resolve => {
+        const wait: RestWait = {timer: null, settle: () => {}};
+        const done = () => {
+          if (wait.timer != null) {
+            clearTimeout(wait.timer);
+          }
+          restWaits.delete(wait);
+          resolve();
+        };
+        wait.settle = done;
+        restWaits.add(wait);
         const check = () => {
+          wait.timer = null;
           syncPending();
           const time = now();
           let end = time;
@@ -2042,12 +2339,12 @@ export function createAnimator(
           }
           if (landings.size > 0) {
             // A Reduced Motion landing is still to come.
-            setTimeout(check, 16);
+            wait.timer = setTimeout(check, 16);
           } else if (end <= time) {
-            resolve();
+            done();
           } else {
             // A retarget or a later start moves the end: look again then.
-            setTimeout(check, end - time);
+            wait.timer = setTimeout(check, end - time);
           }
         };
         check();
@@ -2057,6 +2354,10 @@ export function createAnimator(
     dispose() {
       for (const landing of [...landings]) {
         endLanding(landing);
+      }
+      // Nothing moves any more: every atRest() wait settles.
+      for (const wait of [...restWaits]) {
+        wait.settle();
       }
       const time = now();
       for (const property of PROPERTIES) {

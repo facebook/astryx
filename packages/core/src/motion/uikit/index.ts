@@ -29,8 +29,8 @@ export {
   type HapticFeedbackKind,
   type SourcedGestureConstant,
 } from './gestures';
-export {navigation} from './navigation';
-export {scroll} from './scroll';
+export {navigation, registerNavigationTable} from './navigation';
+export {registerScrollTable, scroll} from './scroll';
 export {slider} from './slider';
-export {springs} from './springs';
-export {timing} from './timing';
+export {registerSpringsTable, springs} from './springs';
+export {registerTimingTable, timing} from './timing';

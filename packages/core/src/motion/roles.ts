@@ -13,7 +13,7 @@
  * A motion role is one value of a motion table that a theme may retune: a
  * spring, a duration (a key ending in `Ms`, in milliseconds) or a curve (four
  * cubic-bézier control points). It is named by its table path, for example
- * `springs.sheetDetent`, `timing.curves.easeInOut` or `sheet.present`, and
+ * `springs.sheetDetent`, `timing.curves.easeInOut` or `scroll.bounce`, and
  * carried by one CSS custom property, `--motion-` followed by the path in
  * kebab case (`--motion-springs-sheet-detent`). A theme writes that property
  * only for the roles it sets; an empty property means the table's value, so
@@ -29,20 +29,18 @@
  */
 
 import {
-  durationBounceOf,
-  toSpring,
-  type DurationBounce,
-  type SpringDescription,
-} from './spring';
+  formatMotionRoleValue,
+  isCurve,
+  isMotionRoleId,
+  isSpring,
+  motionRoleVariable,
+  type MotionCurvePoints,
+  type MotionRoleKind,
+} from './roleValue';
+import type {DurationBounce, SpringDescription} from './spring';
 
-/** The three kinds of value a role can hold. */
-export type MotionRoleKind = 'spring' | 'duration' | 'curve';
-
-/**
- * Cubic-bézier control points `[x1, y1, x2, y2]`.
- * @experimental
- */
-export type MotionCurvePoints = readonly [number, number, number, number];
+export {formatMotionRoleValue, isMotionRoleId, motionRoleVariable};
+export type {MotionCurvePoints, MotionRoleKind};
 
 /** One registered role. */
 export interface MotionRole {
@@ -55,50 +53,13 @@ export interface MotionRole {
   readonly value: SpringDescription | number | MotionCurvePoints;
 }
 
-const ROLE_ID = /^[a-z][A-Za-z0-9]*(\.[a-z][A-Za-z0-9]*)+$/;
-
 const rolesById = new Map<string, MotionRole>();
+/** A table id → the table registered under it. */
+const tablesById = new Map<string, object>();
 /** A spring or curve leaf → its role. */
 const roleOfLeaf = new WeakMap<object, MotionRole>();
 /** A table or one of its groups → its path. */
 const pathOfGroup = new WeakMap<object, string>();
-
-/** Whether `id` is a well-formed role name (a dotted table path). */
-export function isMotionRoleId(id: string): boolean {
-  return ROLE_ID.test(id);
-}
-
-/** The CSS custom property for a role: `--motion-` + the path in kebab case. */
-export function motionRoleVariable(id: string): string {
-  if (!isMotionRoleId(id)) {
-    throw new Error(
-      `motion role "${id}" must be a dotted table path such as "sheet.present"`,
-    );
-  }
-  return `--motion-${id
-    .split('.')
-    .map(part => part.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`))
-    .join('-')}`;
-}
-
-function isSpring(value: unknown): value is SpringDescription {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-    return false;
-  }
-  return (
-    ('response' in value && 'dampingRatio' in value) ||
-    ('duration' in value && 'bounce' in value) ||
-    ('stiffness' in value && 'damping' in value)
-  );
-}
-
-function isCurve(value: unknown): value is MotionCurvePoints {
-  return (
-    Array.isArray(value) &&
-    value.length === 4 &&
-    value.every(n => typeof n === 'number')
-  );
-}
 
 /**
  * Registers a motion table: each spring, `…Ms` duration and curve leaf becomes
@@ -106,6 +67,7 @@ function isCurve(value: unknown): value is MotionCurvePoints {
  * two keys is replaced in the table by an equal copy, so each role has its own
  * object (an animator resolves a role from the object it is handed).
  * `exclude` lists paths, relative to the table, that are not motion.
+ * Registering the same table under the same id again does nothing.
  */
 export function registerMotionTable(
   id: string,
@@ -115,6 +77,12 @@ export function registerMotionTable(
   if (!/^[a-z][A-Za-z0-9]*$/.test(id)) {
     throw new Error(`motion table id "${id}" must be one camelCase word`);
   }
+  // Registering the same table again changes nothing: each table's
+  // register function may run from every touch module that uses it.
+  if (tablesById.get(id) === table) {
+    return;
+  }
+  tablesById.set(id, table);
   const skip = new Set(exclude.map(path => `${id}.${path}`));
   const walk = (group: Record<string, unknown>, prefix: string) => {
     pathOfGroup.set(group, prefix);
@@ -192,47 +160,6 @@ export function motionRole(id: string): MotionRole | undefined {
 /** Every registered role, by id. */
 export function listMotionRoles(): MotionRole[] {
   return [...rolesById.values()].sort((a, b) => (a.id < b.id ? -1 : 1));
-}
-
-/** Six significant digits: enough for any motion, free of float noise. */
-function short(n: number): string {
-  return String(Number(n.toPrecision(6)));
-}
-
-/**
- * A role value as its CSS custom property holds it:
- * - spring: SwiftUI's duration and bounce, `0.5s 0.15` (exact for every
- *   spring: mass folds into the duration, overdamping into a negative bounce);
- * - duration: `250ms`;
- * - curve: `cubic-bezier(0.42, 0, 0.58, 1)`, usable as is in CSS.
- * Throws on a value that is not a valid value of its kind.
- */
-export function formatMotionRoleValue(
-  kind: MotionRoleKind,
-  value: unknown,
-): string {
-  if (kind === 'spring') {
-    if (!isSpring(value)) {
-      throw new TypeError(
-        'a spring is {response, dampingRatio}, {duration, bounce} or {mass?, stiffness, damping}',
-      );
-    }
-    const {duration, bounce} = durationBounceOf(toSpring(value));
-    return `${short(duration)}s ${short(bounce)}`;
-  }
-  if (kind === 'duration') {
-    if (!(typeof value === 'number' && Number.isFinite(value) && value >= 0)) {
-      throw new TypeError('a duration is a finite number of milliseconds ≥ 0');
-    }
-    return `${short(value)}ms`;
-  }
-  if (!isCurve(value) || !value.every(Number.isFinite)) {
-    throw new TypeError('a curve is four finite numbers [x1, y1, x2, y2]');
-  }
-  if (value[0] < 0 || value[0] > 1 || value[2] < 0 || value[2] > 1) {
-    throw new RangeError("a curve's x1 and x2 must lie in [0, 1]");
-  }
-  return `cubic-bezier(${value.map(short).join(', ')})`;
 }
 
 const NUMBER = '(-?(?:\\d+\\.?\\d*|\\.\\d+)(?:e-?\\d+)?)';
