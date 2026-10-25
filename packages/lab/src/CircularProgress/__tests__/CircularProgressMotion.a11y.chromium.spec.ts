@@ -682,6 +682,64 @@ test("the arc stays one piece as it crosses 6 o'clock", async ({page}) => {
   expect(reaches.some(r => r > 170 && r < 190)).toBe(true);
 });
 
+/**
+ * Sets a value and returns how many Web Animations the page started in the
+ * half second after it (counted as `animate()` calls, so a short animation
+ * that has already finished still counts).
+ */
+async function animationsStartedBy(page: Page, value: number) {
+  return page.evaluate(
+    async ({storyId, updatedArgs}) =>
+      new Promise<number>(resolve => {
+        let started = 0;
+        const native = Element.prototype.animate;
+        Element.prototype.animate = function (...args) {
+          started += 1;
+          return native.apply(this, args);
+        };
+        (
+          window as unknown as {
+            __STORYBOOK_ADDONS_CHANNEL__: {
+              emit: (event: string, payload: unknown) => void;
+            };
+          }
+        ).__STORYBOOK_ADDONS_CHANNEL__.emit('updateStoryArgs', {
+          storyId,
+          updatedArgs,
+        });
+        setTimeout(() => {
+          Element.prototype.animate = native;
+          resolve(started);
+        }, 500);
+      }),
+    {storyId: STORY, updatedArgs: {value}},
+  );
+}
+
+for (const pointer of ['a mouse', 'a finger'] as const) {
+  test.describe(`under reduced motion, with ${pointer}`, () => {
+    test.use(
+      pointer === 'a finger'
+        ? {hasTouch: true, isMobile: true}
+        : {hasTouch: false, isMobile: false},
+    );
+
+    test('a new value shows at once', async ({page}) => {
+      // Progress indicators sit outside design:reduced-motion's scope; the
+      // fill lands at once under both shared reduced-motion queries.
+      await page.emulateMedia({reducedMotion: 'reduce'});
+      await open(page, 10);
+      expect(
+        await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+      ).toBe(pointer === 'a finger');
+      expect(await animationsStartedBy(page, 90)).toBe(0);
+      // Without reduced motion the same change animates its four layers.
+      await page.emulateMedia({reducedMotion: 'no-preference'});
+      expect(await animationsStartedBy(page, 30)).toBe(4);
+    });
+  });
+}
+
 test('a change keeps the theme\u2019s duration and easing', async ({page}) => {
   await open(page, 20);
   const palette = await colors(page);

@@ -196,9 +196,15 @@ const styles = stylex.create({
     overflow: 'hidden',
     pointerEvents: 'none',
     transitionProperty: 'none',
+    // Under reduced motion a new value shows at once, on every pointer
+    // (progress indicators sit outside design:reduced-motion's scope); the
+    // keys are the shared reduced-motion queries, a fine pointer's and a
+    // coarse pointer's.
     transitionDuration: {
       default: durationVars['--duration-medium'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        '0s',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
   },

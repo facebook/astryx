@@ -2,6 +2,8 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {act, render, screen} from '@testing-library/react';
+import {readFileSync} from 'node:fs';
+import path from 'node:path';
 import {CircularProgress} from './CircularProgress';
 
 describe('CircularProgress', () => {
@@ -540,45 +542,31 @@ describe('CircularProgress', () => {
   });
 
   it('shows a new value at once under reduced motion', () => {
-    render(<CircularProgress value={30} size="md" label="Progress" />);
-    const fill = document.querySelector(
-      '.astryx-circular-progress-fill',
-    ) as HTMLElement;
-    const durations: string[] = [];
-    const inReducedMotion = (rule: CSSRule) => {
-      for (let r = rule.parentRule; r != null; r = r.parentRule) {
-        if (
-          r instanceof CSSMediaRule &&
-          (r.conditionText ?? r.media.mediaText).includes(
-            'prefers-reduced-motion: reduce',
-          )
-        ) {
-          return true;
-        }
-      }
-      return false;
-    };
-    const visit = (rules: CSSRuleList) => {
-      for (const rule of Array.from(rules)) {
-        if (rule instanceof CSSMediaRule || rule instanceof CSSSupportsRule) {
-          visit(rule.cssRules);
-        } else if (
-          rule instanceof CSSStyleRule &&
-          Array.from(fill.classList).some(c =>
-            rule.selectorText.includes(`.${c}`),
-          ) &&
-          inReducedMotion(rule) &&
-          rule.style.getPropertyValue('transition-duration') !== ''
-        ) {
-          durations.push(rule.style.getPropertyValue('transition-duration'));
-        }
-      }
-    };
-    for (const sheet of Array.from(document.styleSheets)) {
-      visit(sheet.cssRules);
+    // The fill's transition-duration is 0 s under both shared reduced-motion
+    // queries, a fine pointer's and a coarse pointer's, so a change reads back
+    // 0 s and nothing animates. Read from the source: the jsdom StyleX runtime
+    // leaves out some of the negated conditions it writes for these keys, and
+    // the Chromium test checks what a browser does.
+    const source = readFileSync(
+      path.resolve(__dirname, 'CircularProgress.tsx'),
+      'utf8',
+    );
+    const block = source.slice(source.indexOf("transitionProperty: 'none',"));
+    const duration = block.slice(
+      block.indexOf('transitionDuration: {'),
+      block.indexOf('},'),
+    );
+    for (const query of [
+      '(prefers-reduced-motion: reduce) and (not (pointer: coarse))',
+      '(prefers-reduced-motion: reduce) and (pointer: coarse)',
+    ]) {
+      const at = duration.indexOf(`'@media ${query}':`);
+      expect(at, query).toBeGreaterThanOrEqual(0);
+      expect(duration.slice(at).split(',')[0].trim()).toMatch(/'0s'$/);
     }
-    // The duration a change reads back is 0 s, so nothing animates.
-    expect(durations).toEqual(['0s']);
+    expect(duration).not.toContain(
+      "'@media (prefers-reduced-motion: reduce)':",
+    );
   });
 
   it('handles zero max gracefully', () => {
