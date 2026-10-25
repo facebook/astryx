@@ -31,6 +31,10 @@ const styles = stylex.create({
     width: 160,
     flexShrink: 0,
   },
+  pagingCard: {
+    width: 200,
+    flexShrink: 0,
+  },
   cardInner: {
     padding: spacingVars['--spacing-3'],
   },
@@ -59,8 +63,14 @@ const styles = stylex.create({
     marginBottom: spacingVars['--spacing-2'],
     fontFamily: typographyVars['--font-family-body'],
   },
+  // One page per item: the pages are as wide as their inline-size container.
+  pages: {
+    maxWidth: 400,
+    containerType: 'inline-size',
+  },
   page: {
-    width: '100%',
+    width: '100cqw',
+    boxSizing: 'border-box',
     height: 220,
     display: 'flex',
     flexDirection: 'column',
@@ -155,11 +165,8 @@ const meta: Meta<typeof Carousel> = {
     },
     hasSnap: {
       control: 'boolean',
-      description: 'Enable scroll-snap',
-    },
-    hasPaging: {
-      control: 'boolean',
-      description: 'One full-width page at a time',
+      description:
+        'Enable scroll-snap; under a finger, with the buttons, one child per swipe',
     },
   },
   decorators: [
@@ -384,14 +391,14 @@ export const Loop: Story = {
 };
 
 export const Paging: Story = {
-  name: 'Paging',
+  name: 'Paging (Snap, Full-Width Pages)',
   render: () => (
-    <div {...stylex.props(styles.constrainedWidth)}>
+    <div {...stylex.props(styles.pages)}>
       <p {...stylex.props(styles.label)}>
-        One page at a time: swipe or flick (under a finger the pages move like
-        an iOS paging scroll view), arrow keys, or the buttons
+        Under a finger each swipe moves one page and settles like an iOS paging
+        scroll view; a mouse, a trackpad and the keyboard snap natively
       </p>
-      <Carousel hasPaging gap={2} aria-label="Trip planner">
+      <Carousel hasSnap gap={2} aria-label="Trip planner">
         {PAGES.map(page => (
           <PagePanel key={page.title} {...page} />
         ))}
@@ -403,11 +410,12 @@ export const Paging: Story = {
 export const PagingLoop: Story = {
   name: 'Paging (Loop)',
   render: () => (
-    <div {...stylex.props(styles.constrainedWidth)}>
+    <div {...stylex.props(styles.pages)}>
       <p {...stylex.props(styles.label)}>
-        Past the last page the next one is the first, in both directions
+        Next on the last page returns to the first; Prev on the first goes to
+        the last
       </p>
-      <Carousel hasPaging hasLoop gap={2} aria-label="Trip planner, looping">
+      <Carousel hasSnap hasLoop gap={2} aria-label="Trip planner, looping">
         {PAGES.map(page => (
           <PagePanel key={page.title} {...page} />
         ))}
@@ -419,17 +427,39 @@ export const PagingLoop: Story = {
 export const PagingInLongPage: Story = {
   name: 'Paging (In a Long Page)',
   render: () => (
-    <div {...stylex.props(styles.constrainedWidth)}>
+    <div {...stylex.props(styles.pages)}>
       <p {...stylex.props(styles.label)}>
         A vertical drag on the pages scrolls the page; a horizontal one pages
       </p>
       <div {...stylex.props(styles.longPageSpacer)} />
-      <Carousel hasPaging gap={2} aria-label="Trip planner in a long page">
+      <Carousel hasSnap gap={2} aria-label="Trip planner in a long page">
         {PAGES.map(page => (
           <PagePanel key={page.title} {...page} />
         ))}
       </Carousel>
       <div {...stylex.props(styles.longPageTail)} />
+    </div>
+  ),
+};
+
+export const PagingCards: Story = {
+  name: 'Paging (Cards)',
+  render: () => (
+    <div {...stylex.props(styles.constrainedWidth)}>
+      <p {...stylex.props(styles.label)}>
+        Under a finger each swipe moves one card; the last cards rest where the
+        row ends
+      </p>
+      <Carousel hasSnap gap={2} aria-label="Feature cards, paging">
+        {PAGES.map(page => (
+          <Card key={page.title} xstyle={styles.pagingCard}>
+            <div {...stylex.props(styles.cardInner)}>
+              <p {...stylex.props(styles.cardTitle)}>{page.title}</p>
+              <p {...stylex.props(styles.cardDesc)}>{page.body}</p>
+            </div>
+          </Card>
+        ))}
+      </Carousel>
     </div>
   ),
 };

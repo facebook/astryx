@@ -11,10 +11,10 @@
  *   visual bleed allowance for child selection indicators, and Shift + wheel
  *   mapping so mouse users can scroll horizontally. Supports optional
  *   wrap-around looping and an imperative handle (handleRef) for programmatic
- *   scroll control. With hasPaging every child is a page: under a finger (any
- *   touch device) the pages move like an iOS paging scroll view
- *   (useCarouselPaging, the touch layer, on the shared pager); with a mouse or
- *   a trackpad the scroller snaps natively one page at a time. Exposes APG
+ *   scroll control. With hasSnap, under a finger (any touch device) and with
+ *   its buttons, a swipe moves one child and settles like an iOS paging
+ *   scroll view (useCarouselPaging, the touch layer, on the shared pager);
+ *   otherwise the scroller snaps natively. Exposes APG
  *   carousel semantics: the root is a labelled region with
  *   aria-roledescription="carousel" and each item wrapper is a group with
  *   aria-roledescription="slide" named "Slide N of M".
@@ -132,20 +132,12 @@ export interface CarouselProps extends BaseProps<HTMLDivElement> {
   hasLoop?: boolean;
   /**
    * Enable scroll-snap on items. Each direct child snaps to the start edge.
+   * Under a finger, with the buttons shown, a swipe moves one child and
+   * settles like an iOS paging scroll view; a mouse, a trackpad, the
+   * keyboard, and a finger without the buttons snap natively.
    * @default false
    */
   hasSnap?: boolean;
-  /**
-   * Show one child at a time: each child fills the carousel's width and a
-   * swipe, a flick, an arrow key or a button moves exactly one page. Under a
-   * finger the pages follow it and settle like an iOS paging scroll view
-   * (with `hasLoop`, swiping past the last page continues to the first); with
-   * a mouse or a trackpad, and under a finger with `hasButtons={false}`, the
-   * carousel snaps natively one page at a time.
-   * `hasSnap`, `hasEdgeFade` and `padding` do not apply.
-   * @default false
-   */
-  hasPaging?: boolean;
   /**
    * Inline padding on the scroll container. Applied as padding-inline
    * so the gutter is inside the scrollable area — items can scroll fully
@@ -252,34 +244,22 @@ const styles = stylex.create({
     display: 'flex',
     flexShrink: 0,
   },
-  // Paging: one row of pages, each the scroller's width.
-  pagingTrack: {
+  // A snapping carousel with buttons holds its items in one row the touch
+  // pager can move (it renders on every pointer, so hydration never moves
+  // the items).
+  track: {
     display: 'flex',
-    alignItems: 'stretch',
-    width: '100%',
+    alignItems: 'center',
     flexShrink: 0,
-  },
-  pagingItem: {
-    display: 'flex',
-    flexShrink: 0,
-    flexBasis: '100%',
-    minWidth: 0,
-  },
-  // Native paging (pointer): one snap point per page, never skipped.
-  pagingSnapItem: {
-    scrollSnapAlign: 'start',
-    scrollSnapStop: 'always',
-  },
-  // Paging: the scroller is exactly the carousel's width (pages size to it).
-  pagingScroller: {
-    flexGrow: 1,
-    minWidth: 0,
   },
   // Touch paging: the pager moves the track; nothing scrolls natively, not
-  // even to bring a focused element into view (the pager does that).
+  // even to bring a focused element into view (the pager does that). A
+  // clipping box is not a scroll container, so its automatic minimum width
+  // is its content's: it needs a zero one to stay the carousel's width.
   pagingTouchScroller: {
     overflowX: 'clip',
     overflowY: 'clip',
+    minWidth: 0,
   },
   // Overlay on top layer — covers the carousel anchor area
   buttonOverlay: {
@@ -380,13 +360,6 @@ const paddingStyles = stylex.create({
   },
 });
 
-/** The gap between pages, px: the track's column gap. */
-function pageGap(track: HTMLElement | null): number {
-  return track == null
-    ? 0
-    : Number.parseFloat(getComputedStyle(track).columnGap) || 0;
-}
-
 // =============================================================================
 // Component
 // =============================================================================
@@ -418,7 +391,6 @@ export function Carousel({
   hasEdgeFade = true,
   hasLoop = false,
   hasSnap = false,
-  hasPaging = false,
   padding,
   'aria-label': ariaLabelFromProps,
   xstyle,
@@ -445,22 +417,24 @@ export function Carousel({
   // renders even when some children are conditionally omitted.
   const slides = Children.toArray(children);
 
-  // Paging: under a finger (a coarse primary pointer, on every touch device)
-  // the shared pager moves the track like a UIKit paging scroll view; with a
-  // mouse or a trackpad the scroller snaps natively one page at a time, on
-  // the platform's own scroll physics. Without the buttons it snaps natively
-  // under a finger too: the edge buttons are the single-pointer alternative
-  // to the pager's swipe (WCAG 2.5.1), and native scrolling needs none.
+  // Snapping under a finger (a coarse primary pointer, on every touch
+  // device): the shared pager moves the track like a UIKit paging scroll
+  // view whose pages are the children, one child per swipe; a mouse, a
+  // trackpad and the keyboard keep native snapping, on the platform's own
+  // scroll physics. Without the buttons a finger snaps natively too: the
+  // edge buttons are the single-pointer alternative to the pager's swipe
+  // (WCAG 2.5.1), and native scrolling needs none.
   const trackRef = useRef<HTMLDivElement>(null);
   const {isTouch} = useTouchPresentation();
-  const isTouchPaging = hasPaging && isTouch && hasButtons;
+  const hasTrack = hasSnap && hasButtons;
+  const isTouchPaging = hasTrack && isTouch;
   const paging = useCarouselPaging({
     isEnabled: isTouchPaging,
     scrollElRef,
     trackRef,
     count: slides.length,
     loop: hasLoop,
-    gap,
+    layout: `${gap}:${padding ?? ''}`,
   });
 
   const layer = useLayer({
@@ -542,17 +516,10 @@ export function Carousel({
         }
       }
 
-      if (hasPaging) {
-        // One page per press: the next snap point in that direction.
-        const pageWidth = el.clientWidth + pageGap(trackRef.current);
-        presentScroll(el, behavior =>
-          el.scrollBy({left: rtlSign * direction * pageWidth, behavior}),
-        );
-        return;
-      }
-
-      const firstChild = el.firstElementChild as HTMLElement | null;
-      const itemWidth = firstChild ? firstChild.offsetWidth : 0;
+      const firstChild = (
+        hasTrack ? trackRef.current?.firstElementChild : el.firstElementChild
+      ) as HTMLElement | null | undefined;
+      const itemWidth = firstChild?.offsetWidth ?? 0;
       const amount = el.clientWidth - itemWidth * 0.5;
       presentScroll(el, behavior =>
         el.scrollBy({
@@ -566,7 +533,7 @@ export function Carousel({
     [
       isTouchPaging,
       paging,
-      hasPaging,
+      hasTrack,
       hasLoop,
       hasOverflow,
       overflowStart,
@@ -581,7 +548,7 @@ export function Carousel({
         return;
       }
       const el = scrollElRef.current;
-      const items = hasPaging ? trackRef.current?.children : el?.children;
+      const items = hasTrack ? trackRef.current?.children : el?.children;
       if (!el || !items || items.length === 0) {
         return;
       }
@@ -599,7 +566,7 @@ export function Carousel({
         : itemRect.left - containerRect.left;
       presentScroll(el, behavior => el.scrollBy({left: delta, behavior}));
     },
-    [isTouchPaging, paging, hasPaging],
+    [isTouchPaging, paging, hasTrack],
   );
 
   useImperativeHandle(
@@ -711,16 +678,21 @@ export function Carousel({
     receiver.focus({preventScroll: true});
   }, [canScrollStart, canScrollEnd]);
 
-  const fadeStyle =
-    hasEdgeFade && !hasPaging
-      ? (hasLoop && hasOverflow) || (overflowStart && overflowEnd)
-        ? styles.fadeBoth
-        : overflowStart
-          ? styles.fadeStart
-          : overflowEnd
-            ? styles.fadeEnd
-            : null
-      : null;
+  // Under the touch pager nothing scrolls natively: the fade follows its page.
+  const fadesStart = isTouchPaging ? paging.page > 0 : overflowStart;
+  const fadesEnd = isTouchPaging
+    ? paging.page < paging.pageCount - 1
+    : overflowEnd;
+  const overflows = isTouchPaging ? paging.pageCount > 1 : hasOverflow;
+  const fadeStyle = hasEdgeFade
+    ? (hasLoop && overflows) || (fadesStart && fadesEnd)
+      ? styles.fadeBoth
+      : fadesStart
+        ? styles.fadeStart
+        : fadesEnd
+          ? styles.fadeEnd
+          : null
+    : null;
 
   // Self-authored position styles (positioning: 'custom' below): a cover
   // centered on the anchor, sized to it — direction-neutral by construction.
@@ -745,10 +717,7 @@ export function Carousel({
           current: index + 1,
           total: slides.length,
         })}
-        {...stylex.props(
-          hasPaging ? styles.pagingItem : styles.item,
-          hasPaging && !isTouchPaging && styles.pagingSnapItem,
-        )}>
+        {...stylex.props(styles.item)}>
         {child}
       </div>
     ));
@@ -776,26 +745,21 @@ export function Carousel({
         {...mergeProps(
           themeProps('carousel-scroller', {
             gap,
-            padding: hasPaging ? null : padding,
-            snap: hasSnap && !hasPaging ? 'snap' : null,
-            paging: hasPaging ? 'paging' : null,
-            edgeFade: hasEdgeFade && !hasPaging ? 'edge-fade' : null,
+            padding,
+            snap: hasSnap ? 'snap' : null,
+            edgeFade: hasEdgeFade ? 'edge-fade' : null,
           }),
           stylex.props(
             styles.scroller,
-            !hasPaging && gapStyles[gap],
-            !hasPaging && padding != null && paddingStyles[padding],
-            ((hasSnap && !hasPaging) || (hasPaging && !isTouchPaging)) &&
-              styles.snap,
-            hasPaging && styles.pagingScroller,
+            !hasTrack && gapStyles[gap],
+            padding != null && paddingStyles[padding],
+            hasSnap && !isTouchPaging && styles.snap,
             isTouchPaging && styles.pagingTouchScroller,
             fadeStyle,
           ),
         )}>
-        {hasPaging ? (
-          <div
-            ref={trackRef}
-            {...stylex.props(styles.pagingTrack, gapStyles[gap])}>
+        {hasTrack ? (
+          <div ref={trackRef} {...stylex.props(styles.track, gapStyles[gap])}>
             {renderSlides()}
           </div>
         ) : (

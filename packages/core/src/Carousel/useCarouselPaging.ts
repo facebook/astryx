@@ -5,58 +5,65 @@
 /**
  * @file useCarouselPaging.ts
  * @input The carousel's scroller (the pager's viewport) and track elements,
- *   the slide count, whether it loops and whether the touch presentation is
- *   active; the shared pager
- * @output Exports `useCarouselPaging`: Carousel's paging touch presentation
- *   (the page on screen, page moves for the buttons, the handle and the
- *   keyboard, focus following, slide placement for looping)
- * @position Internal to Carousel (`hasPaging`)
+ *   whether the touch presentation is active, the slide count and whether it
+ *   loops; the shared pager
+ * @output Exports `useCarouselPaging`: a snapping Carousel's touch
+ *   presentation (the page on screen, the buttons' and the handle's moves,
+ *   the keyboard, focus following)
+ * @position Internal to Carousel (`hasSnap`, under a finger, with the
+ *   buttons)
  *
- * On a touch screen a paging carousel is a UIKit paging scroll view: the
- * shared pager moves its track (hooks/usePager.ts). The pager attaches only
- * while the touch presentation is active; otherwise the carousel scrolls
- * natively with one snap point per page.
+ * Under a finger a snapping carousel is a UIKit paging scroll view whose
+ * pages are its children: the shared pager (hooks/usePager.ts, `pages:
+ * 'children'`) moves the track one child per swipe, each child resting at
+ * its start edge where the native snap would place it (the last ones where
+ * the content ends). The pager attaches only while the touch presentation is
+ * active; otherwise the carousel scrolls natively and snaps.
  *
- * Looping places each slide at the copy of its index nearest the page on
- * screen (one `translate` per slide, written when a drag begins, before a
- * button or key moves the track, and at rest), so the next page is always
- * the next slide, forward or back. The current page and its neighbours get
- * their own layers so they are painted before they move in (in Mobile
- * Safari a busy main thread cannot paint them while the track moves).
+ * The buttons and the handle keep the step they take natively, about a
+ * viewport, landing on a child; with `hasLoop` a step past either end goes to
+ * the other one, as it does natively. An arrow key moves one child. The
+ * children within a viewport of the content on screen get their own layers,
+ * so they are painted before they move in (in Mobile Safari a busy main
+ * thread cannot paint them while the track moves).
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Carousel/Carousel.tsx
- * - /packages/core/src/Carousel/Carousel.test.tsx
+ * - /packages/core/src/Carousel/CarouselPaging.test.tsx
  */
 
-import {useRef, useState, useSyncExternalStore, type RefObject} from 'react';
-import {createPager, nearestLoopCopy, type Pager} from '../hooks/usePager';
+import {useState, useSyncExternalStore, type RefObject} from 'react';
+import {createPager, type Pager} from '../hooks/usePager';
 import {isRtlElement} from '../hooks/isRtlElement';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 
 export interface CarouselPagingOptions {
-  /** The pager runs (paging carousel, touch presentation). */
+  /** The pager runs (a snapping carousel with its buttons, under a finger). */
   isEnabled: boolean;
   scrollElRef: RefObject<HTMLElement | null>;
   trackRef: RefObject<HTMLElement | null>;
+  /** How many slides render. */
   count: number;
+  /** `hasLoop`: a step past either end goes to the other one. */
   loop: boolean;
-  /** The carousel's `gap` prop: when it changes, the pager re-reads the track's gap. */
-  gap?: unknown;
+  /** The layout props the pages depend on (`gap`, `padding`): a change re-measures them. */
+  layout?: unknown;
 }
 
 export interface CarouselPaging {
-  /** The page on screen or heading there, in [0, count). */
+  /** The page on screen or heading there, in [0, pageCount). */
   page: number;
-  /** Move one page toward the end (+1) or the start (−1). */
+  /** How many pages the children make (the last ones can share one). */
+  pageCount: number;
+  /** The buttons' and the handle's step toward the end (+1) or the start (−1). */
   goBy(direction: -1 | 1): void;
-  /** Move to a page. */
+  /** Bring slide `index` to the start edge, as far as the content allows. */
   goTo(index: number): void;
   canGoBack: boolean;
   canGoForward: boolean;
   /** Arrow keys, Home and End on the scroller. */
   onKeyDown(event: React.KeyboardEvent<HTMLElement>): void;
-  /** Focus entering another slide brings that slide on screen. */
+  /** Focus entering a slide that is not wholly on screen brings it there. */
   onFocus(event: React.FocusEvent<HTMLElement>): void;
 }
 
@@ -77,10 +84,10 @@ export function useCarouselPaging({
   trackRef,
   count,
   loop,
-  gap: gapProp,
+  layout,
 }: CarouselPagingOptions): CarouselPaging {
-  // The page is the pager's: rendered through an external store that the
-  // pager's reports (and the take-over below) notify.
+  // The page and the page count are the pager's: rendered through an
+  // external store that its reports (and the take-over below) notify.
   const [pageStore] = useState(() => {
     const listeners = new Set<() => void>();
     return {
@@ -97,108 +104,55 @@ export function useCarouselPaging({
       },
     };
   });
-  const loops = loop && count > 1;
-  const latestRef = useRef({count, loops});
-  latestRef.current = {count, loops};
 
   const [pager] = useState<Pager>(() =>
     createPager({
       count: Math.max(1, count),
-      loop: loops,
+      pages: 'children',
       onIndexChange: () => pageStore.notify(),
-      onSettle: () => place(),
-      shouldBeginPan: direction => {
-        place(direction);
+      onPagesChange: () => pageStore.notify(),
+      onSettle: () => promote(),
+      shouldBeginPan: () => {
+        promote();
         return true;
       },
     }),
   );
 
-  // Where each slide sits for looping, and which slides have layers.
-  function geometry(): {stride: number; sign: number} | null {
+  /**
+   * Gives the children within a viewport of the content on screen their own
+   * layers, and takes them from the rest.
+   */
+  function promote(): void {
     const viewport = scrollElRef.current;
     const track = trackRef.current;
     if (viewport == null || track == null) {
-      return null;
-    }
-    const gap = Number.parseFloat(getComputedStyle(track).columnGap) || 0;
-    return {
-      stride: viewport.clientWidth + gap,
-      sign: isRtlElement(viewport) ? -1 : 1,
-    };
-  }
-
-  /**
-   * Places the slides around the page on screen (or the one a move heads
-   * for): slide i at the copy of i nearest it, toward `direction` when there
-   * are too few slides to fill both sides, and promotes the page on screen
-   * and its neighbours.
-   */
-  function place(direction?: 'left' | 'right', center?: number): void {
-    const track = trackRef.current;
-    const g = geometry();
-    if (track == null || g == null) {
       return;
     }
-    const n = track.children.length;
-    const {loops: isLooping} = latestRef.current;
-    const position = center ?? Math.round(pager.presentation() / g.stride);
-    // A finger moving left (in LTR) brings the next page in.
-    const forward =
-      direction == null ? true : (direction === 'left') === (g.sign === 1);
-    const before = forward ? Math.floor((n - 1) / 2) : Math.ceil((n - 1) / 2);
-    for (let i = 0; i < n; i++) {
-      const slide = track.children[i] as HTMLElement;
-      let virtual = i;
-      if (isLooping) {
-        const copy = Math.floor((position - before - i + n - 1) / n);
-        virtual = i + copy * n;
-        const offset = (virtual - i) * g.stride * g.sign;
-        slide.style.setProperty(
-          'translate',
-          offset === 0 ? '' : `${offset}px 0`,
-        );
-      }
-      slide.style.setProperty(
+    const box = track.getBoundingClientRect();
+    const rtl = isRtlElement(viewport);
+    const width = viewport.clientWidth;
+    const at = pager.presentation();
+    for (const child of Array.from(track.children)) {
+      const rect = child.getBoundingClientRect();
+      const start = rtl ? box.right - rect.right : rect.left - box.left;
+      const isNear = start + rect.width > at - width && start < at + 2 * width;
+      (child as HTMLElement).style.setProperty(
         'will-change',
-        Math.abs(virtual - position) <= 1 ? 'transform' : '',
+        isNear ? 'transform' : '',
       );
     }
   }
 
-  function clearPlacement(): void {
-    const track = trackRef.current;
-    if (track == null) {
-      return;
-    }
-    for (const child of Array.from(track.children)) {
-      const slide = child as HTMLElement;
-      slide.style.removeProperty('translate');
-      slide.style.removeProperty('will-change');
-    }
-  }
-
-  // Synchronizes the pager (the track's animation) with the slide count and
-  // looping. A clamp it makes is not reported; the page shown is derived from
-  // the pager during render (`page` below).
+  // Synchronizes the pager with the slides and the layout they sit in: it
+  // measures the children again. A clamp it makes is not reported; the page
+  // shown is derived from the pager during render (`page` below).
   useIsomorphicLayoutEffect(() => {
-    pager.setOptions({count: Math.max(1, count), loop: loops});
+    pager.setOptions({count: Math.max(1, count)});
     if (isEnabled) {
-      place();
+      promote();
     }
-  }, [pager, count, loops, isEnabled]);
-
-  // Synchronizes the pager's stride with the track's gap when `gap` changes.
-  useIsomorphicLayoutEffect(() => {
-    const track = trackRef.current;
-    if (!isEnabled || track == null) {
-      return;
-    }
-    pager.setOptions({
-      gap: Number.parseFloat(getComputedStyle(track).columnGap) || 0,
-    });
-    place();
-  }, [pager, isEnabled, gapProp]);
+  }, [pager, count, isEnabled, layout]);
 
   useIsomorphicLayoutEffect(() => {
     const viewport = scrollElRef.current;
@@ -206,71 +160,76 @@ export function useCarouselPaging({
     if (!isEnabled || viewport == null || track == null) {
       return undefined;
     }
-    const gap = Number.parseFloat(getComputedStyle(track).columnGap) || 0;
-    pager.setOptions({gap});
-    // Take over from native scrolling on the page it showed.
-    const start = Math.round(
-      Math.abs(viewport.scrollLeft) / Math.max(1, viewport.clientWidth + gap),
-    );
+    // Take over from native scrolling on the child it showed.
+    const nativeOffset = Math.abs(viewport.scrollLeft);
     viewport.scrollTo({left: 0, behavior: 'instant'});
     const detach = pager.attach(viewport, track);
-    pager.goTo(start, {animated: false, reason: 'controlled'});
-    place();
+    pager.goTo(pager.nearestPage(nativeOffset), {
+      animated: false,
+      reason: 'controlled',
+    });
+    promote();
     // The page shown is the pager's: render it.
     pageStore.notify();
     return () => {
-      const index = pager.index;
+      const offset = pager.pageOffset(pager.index);
       detach();
       track.style.removeProperty('translate');
-      clearPlacement();
-      // Hand the page back to native scrolling.
+      for (const child of Array.from(track.children)) {
+        (child as HTMLElement).style.removeProperty('will-change');
+      }
+      // Hand the child back to native scrolling.
       viewport.scrollTo({
-        left:
-          (isRtlElement(viewport) ? -1 : 1) *
-          index *
-          (viewport.clientWidth + gap),
+        left: (isRtlElement(viewport) ? -1 : 1) * offset,
         behavior: 'instant',
       });
     };
   }, [pager, isEnabled, scrollElRef, trackRef]);
 
   function goTo(index: number): void {
-    const {loops: isLooping, count: n} = latestRef.current;
-    if (isLooping) {
-      // The copy of the page nearest the one on screen, by the pager's own
-      // rule, so the slides wait where it goes; slides between here and there
-      // sit on the way before the move.
-      const from = pager.virtualIndex;
-      const to = nearestLoopCopy(index, from, n);
-      place(undefined, (from + to) / 2);
-      pager.goTo(to);
-      return;
-    }
-    pager.goTo(Math.max(0, Math.min(n - 1, index)));
+    pager.goTo(index);
   }
 
   function goBy(direction: -1 | 1): void {
-    if (latestRef.current.loops) {
-      place(undefined, pager.virtualIndex + direction / 2);
-      pager.goTo(pager.virtualIndex + direction);
-      return;
+    const last = pager.pageCount - 1;
+    const from = pager.index;
+    if (loop && last > 0) {
+      if (direction === 1 && from >= last) {
+        pager.goTo(0);
+        return;
+      }
+      if (direction === -1 && from <= 0) {
+        pager.goTo(last);
+        return;
+      }
     }
-    goTo(pager.index + direction);
+    // The native step: a viewport less half a child, at least a child.
+    const viewport = scrollElRef.current;
+    const first = trackRef.current?.firstElementChild as HTMLElement | null;
+    const itemWidth = first?.offsetWidth ?? 0;
+    const step = Math.max(
+      (viewport?.clientWidth ?? 0) - itemWidth * 0.5,
+      itemWidth,
+    );
+    const near = pager.nearestPage(pager.pageOffset(from) + direction * step);
+    pager.goTo(
+      direction === 1 ? Math.max(near, from + 1) : Math.min(near, from - 1),
+    );
   }
 
-  // The pager's page, clamped or wrapped to this render's count (the pager
-  // takes the new count in the layout effect above).
-  const pagerIndex = useSyncExternalStore(
+  const page = useSyncExternalStore(
     pageStore.subscribe,
     () => pager.index,
     () => pager.index,
   );
-  const n = Math.max(1, count);
-  const page = loops
-    ? ((pagerIndex % n) + n) % n
-    : Math.min(Math.max(0, pagerIndex), n - 1);
-  const canGoBack = loops || page > 0;
-  const canGoForward = loops || page < count - 1;
+  const pageCount = useSyncExternalStore(
+    pageStore.subscribe,
+    () => pager.pageCount,
+    () => pager.pageCount,
+  );
+  const canLoop = loop && pageCount > 1;
+  const canGoBack = canLoop || page > 0;
+  const canGoForward = canLoop || page < pageCount - 1;
 
   function onKeyDown(event: React.KeyboardEvent<HTMLElement>): void {
     if (event.target !== event.currentTarget) {
@@ -279,16 +238,16 @@ export function useCarouselPaging({
     const rtl = isRtlElement(event.currentTarget);
     switch (event.key) {
       case 'ArrowRight':
-        goBy(rtl ? -1 : 1);
+        pager.goTo(pager.index + (rtl ? -1 : 1));
         break;
       case 'ArrowLeft':
-        goBy(rtl ? 1 : -1);
+        pager.goTo(pager.index + (rtl ? 1 : -1));
         break;
       case 'Home':
-        goTo(0);
+        pager.goTo(0);
         break;
       case 'End':
-        goTo(latestRef.current.count - 1);
+        pager.goTo(pager.pageCount - 1);
         break;
       default:
         return;
@@ -297,21 +256,31 @@ export function useCarouselPaging({
   }
 
   function onFocus(event: React.FocusEvent<HTMLElement>): void {
+    const viewport = scrollElRef.current;
     const track = trackRef.current;
-    if (track == null || !track.contains(event.target)) {
+    if (viewport == null || track == null || !track.contains(event.target)) {
       return;
     }
     const index = slideIndexOf(track, event.target);
-    if (index >= 0 && index !== pager.index) {
-      goTo(
-        latestRef.current.loops
-          ? pager.virtualIndex +
-              ((((index - pager.index) % count) + count + count / 2) % count) -
-              count / 2
-          : index,
-      );
+    if (index < 0) {
+      return;
     }
+    const slide = track.children[index].getBoundingClientRect();
+    const view = viewport.getBoundingClientRect();
+    if (slide.left >= view.left - 0.5 && slide.right <= view.right + 0.5) {
+      return;
+    }
+    pager.goTo(index);
   }
 
-  return {page, goBy, goTo, canGoBack, canGoForward, onKeyDown, onFocus};
+  return {
+    page,
+    pageCount,
+    goBy,
+    goTo,
+    canGoBack,
+    canGoForward,
+    onKeyDown,
+    onFocus,
+  };
 }

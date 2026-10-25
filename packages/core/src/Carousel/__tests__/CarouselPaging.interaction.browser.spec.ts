@@ -2,19 +2,22 @@
 
 /**
  * @file CarouselPaging.interaction.browser.spec.ts
- * @input The built "Paging" and "Paging (Loop)" Carousel stories, real touch
- *   input (Chromium CDP / WebKit's input command) and the interaction harness
- * @output Proof that a paging Carousel on a touch screen pages like a UIKit
- *   paging scroll view: the pager owns horizontal pans (touch-action), a slow
- *   drag past half a page and a fast flick each move exactly one page, a
- *   vertical drag leaves the pages alone, the Next button plays
- *   setContentOffset(animated:)'s curve, under Reduce Motion the settle and
- *   Next cross-fade without travel, looping keeps going forward, a
- *   settle keeps advancing through a blocked main thread, a drag changes only
- *   the track's style (no React render), and storyboards of a swipe and of
- *   the loop's wrap
- * @position Browser proof for Carousel `hasPaging` (useCarouselPaging +
- *   hooks/usePager.ts), run by `pnpm test:interaction`
+ * @input The built "Paging" Carousel stories (`hasSnap`: full-width pages,
+ *   loop, cards, a long page) and "With Padding", real touch input (Chromium
+ *   CDP / WebKit's input command) and the interaction harness
+ * @output Proof that a snapping Carousel with its buttons on a touch screen
+ *   pages like a UIKit paging scroll view whose pages are its children: the
+ *   pager owns horizontal pans (touch-action), a slow drag past half a page
+ *   and a fast flick each move exactly one child, cards page one by one and
+ *   the last ones rest where the row ends, padding keeps its inset, the edge
+ *   fade follows the page, a vertical drag leaves the pages alone, the Next
+ *   button plays setContentOffset(animated:)'s curve, under Reduce Motion
+ *   the settle and Next cross-fade without travel, with hasLoop Next on the
+ *   last page returns to the first, a settle keeps advancing through a
+ *   blocked main thread, a drag changes only styles (no React render), and
+ *   storyboards of a swipe and of a card flick
+ * @position Browser proof for Carousel `hasSnap` under a finger
+ *   (useCarouselPaging + hooks/usePager.ts), run by `pnpm test:interaction`
  */
 
 import {expect, test, type Locator, type Page} from '@playwright/test';
@@ -181,31 +184,130 @@ test("the Next button plays setContentOffset(animated:)'s curve", async ({
   await releaseAnimations(page);
 });
 
-test('with hasLoop, swiping past the last page keeps going forward', async ({
+test('with hasLoop, a swipe past the last page rubber-bands back, and Next there returns to the first', async ({
   page,
 }) => {
-  const {driver, scroller, track, width, grab} = await openPaging(
+  const {driver, scroller, track, grab} = await openPaging(
     page,
     'core-carousel--paging-loop',
   );
   const titles: (string | null | undefined)[] = [];
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 5; i++) {
     await driver.play(
       flick(grab, {velocity: {x: -1500, y: 0}, durationMs: 100, hz: 120}),
     );
     await waitForRest(track);
     titles.push(await pageOnScreen(scroller));
   }
-  expect(titles).toEqual(['Pack', 'Go', 'Share', 'Remember', 'Plan', 'Pack']);
-  // And back across the seam the other way.
+  // A paging scroll view does not loop: the fifth flick returns to the last.
+  expect(titles).toEqual(['Pack', 'Go', 'Share', 'Remember', 'Remember']);
+  const next = page.getByRole('button', {name: 'Scroll right'});
+  const box = await next.boundingBox();
+  if (box == null) {
+    throw new Error('no Next button');
+  }
+  await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+  await waitForRest(track);
+  expect(await pageOnScreen(scroller)).toBe('Plan');
+});
+
+/** Each slide's start edge from the track's, and where the track can go. */
+const slideGeometry = async (scroller: Locator) =>
+  scroller.evaluate(el => {
+    const trackEl = el.firstElementChild as HTMLElement;
+    const box = trackEl.getBoundingClientRect();
+    const style = getComputedStyle(el);
+    const inner =
+      el.clientWidth -
+      parseFloat(style.paddingLeft) -
+      parseFloat(style.paddingRight);
+    const slides = Array.from(trackEl.children).map(child => {
+      const rect = child.getBoundingClientRect();
+      return {start: rect.left - box.left, end: rect.right - box.left};
+    });
+    const extent = Math.max(...slides.map(slide => slide.end));
+    return {
+      starts: slides.map(slide => slide.start),
+      end: extent - inner,
+      viewLeft: el.getBoundingClientRect().left,
+      padding: parseFloat(style.paddingLeft),
+    };
+  });
+
+test('cards: a flick moves one card, and the last cards rest where the row ends', async ({
+  page,
+}) => {
+  const {driver, scroller, track, grab} = await openPaging(
+    page,
+    'core-carousel--paging-cards',
+  );
+  const {starts, end} = await slideGeometry(scroller);
+  expect(end).toBeGreaterThan(starts[1]);
+  await driver.play(
+    flick(grab, {velocity: {x: -1500, y: 0}, durationMs: 100, hz: 120}),
+  );
+  await waitForRest(track);
+  expect(await trackX(track)).toBeCloseTo(-starts[1], 0);
+  for (let i = 0; i < starts.length; i++) {
+    await driver.play(
+      flick(grab, {velocity: {x: -1500, y: 0}, durationMs: 100, hz: 120}),
+    );
+    await waitForRest(track);
+  }
+  expect(await trackX(track)).toBeCloseTo(-end, 0);
+  await expect(page.getByRole('button', {name: 'Scroll right'})).toBeDisabled();
+});
+
+test('padding keeps its inset: a flick lands the next child at the padded start edge', async ({
+  page,
+}) => {
+  await openStory(page, storybook(), 'core-carousel--with-padding');
+  const driver = await touchDriver(page);
+  const scroller = page.getByRole('region').first().locator('> div').first();
+  const track = scroller.locator('> div').first();
+  const {starts, viewLeft, padding} = await slideGeometry(scroller);
+  expect(padding).toBeGreaterThan(0);
+  const box = await scroller.boundingBox();
+  if (box == null) {
+    throw new Error('no scroller');
+  }
   await driver.play(
     flick(
-      {x: grab.x - width * 0.6, y: grab.y},
-      {velocity: {x: 1500, y: 0}, durationMs: 100, hz: 120},
+      {x: box.x + box.width * 0.8, y: box.y + box.height / 2},
+      {velocity: {x: -1500, y: 0}, durationMs: 100, hz: 120},
     ),
   );
   await waitForRest(track);
-  expect(await pageOnScreen(scroller)).toBe('Plan');
+  expect(await trackX(track)).toBeCloseTo(-starts[1], 0);
+  const second = await page
+    .locator('[aria-roledescription="slide"]')
+    .nth(1)
+    .boundingBox();
+  expect(second?.x).toBeCloseTo(viewLeft + padding, 0);
+});
+
+test('the edge fade follows the page: toward the end on the first page, toward the start on the last', async ({
+  page,
+}) => {
+  const {driver, scroller, track, grab} = await openPaging(page);
+  const mask = async () =>
+    scroller.evaluate(el => {
+      const style = getComputedStyle(el) as CSSStyleDeclaration & {
+        webkitMaskImage?: string;
+      };
+      return style.maskImage !== '' && style.maskImage !== 'none'
+        ? style.maskImage
+        : (style.webkitMaskImage ?? '');
+    });
+  expect(await mask()).toContain('to left');
+  for (let i = 0; i < 4; i++) {
+    await driver.play(
+      flick(grab, {velocity: {x: -1500, y: 0}, durationMs: 100, hz: 120}),
+    );
+    await waitForRest(track);
+  }
+  expect(await mask()).toContain('to right');
+  expect(await mask()).not.toContain('calc(100%');
 });
 
 test('in a scrolling page: a vertical drag scrolls the page, a horizontal one pages, and a diagonal one goes to its dominant axis (35° pages, 50° scrolls)', async ({
@@ -423,8 +525,8 @@ test('a drag writes only styles: no render, no layout change in the tree', async
   const mutations = await page.evaluate(
     () => (window as unknown as {mutations: string[]}).mutations,
   );
-  // The track's translate (per move) and the slides' layers and placement
-  // (at the drag's start and at rest); nothing else.
+  // The track's translate (per move) and the slides' layers (at the drag's
+  // start and at rest); nothing else.
   expect(mutations.length).toBeGreaterThan(10);
   for (const m of mutations) {
     expect(m).toMatch(/^attributes:style:(track|slide)$/);
@@ -493,7 +595,7 @@ test('a settle keeps advancing every frame through a blocked main thread', async
 
 for (const [name, story, velocity] of [
   ['swipe', 'core-carousel--paging', -1200],
-  ['loop-wrap', 'core-carousel--paging-loop', 1200],
+  ['cards', 'core-carousel--paging-cards', -1200],
 ] as const) {
   test(`storyboard: ${name} @storyboard`, async ({page}) => {
     const {driver, scroller, track, grab, width} = await openPaging(
