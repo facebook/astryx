@@ -41,7 +41,7 @@ system_specs: [spec:AST-038, spec:AST-085]
 | Builder impact          | None.                                                                                                                                                                                                                                    |
 | Compatibility/readiness | Records shipped behavior; no API, default, or DOM change. Disabled members use native `disabled`, the Tab stop leaves disabled and busy members, and wrapped members lose connected geometry; all are listed under Current-state impact. |
 | Review checks           | Reject a group without a name, gaps between members, rounded inner corners, a shadow on a member, more than one Tab stop, arrows that land on a disabled member, or arrows that steal keys from a member's open menu.                    |
-| Governing rules         | `family:buttons` FR3, FR8, FR10–FR12, AV5; `architecture:component-size-cascade` INV3–INV8; `spec:AST-085` FR1, FR7.                                                                                                                     |
+| Governing rules         | `family:buttons` FR3, FR8, FR10–FR12, AV5; `architecture:component-size-cascade` INV3–INV8; `spec:AST-085` FR1, FR7; `spec:AST-038` FR7.                                                                                                 |
 
 This table is a review projection; the body below is authoritative.
 
