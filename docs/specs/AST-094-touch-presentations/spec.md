@@ -84,16 +84,13 @@ a measured, sourced difference exists.
   rest point by projecting its velocity the way its UIKit counterpart does:
   with a deceleration rate, or with a measured projection time.
 - **FR4 — Touch motion is themeable.** Every spring, duration and curve a
-  touch presentation plays MUST be a theme motion role, named by its table path
-  (`sheet.present`, `timing.curves.easeInOut`). The role's default value is
-  its table value, and a theme MAY override it through `motion`, at its root or
+  touch presentation plays MUST be one of the theme motion roles below. The role's default value is
+  its measured value (FR1, FR2), and a theme MAY override it through `motion`, at its root or
   in an adaptation rule. A component MUST read touch motion through these roles
   and MUST NOT play a literal. A theme value MUST reach the motion at its
-  start, without changing how the motion runs (FR5, FR6). Gesture thresholds,
-  the velocity filter, the timings that decide who gets a touch (the
+  start, without changing how the motion runs (FR5, FR6). Gesture thresholds, the timings that decide who gets a touch (the
   content-touch delay, the scroll brake, momentum memory) and haptics are not
-  motion: they stay internal constants from the table and are not public
-  concepts (`spec:AST-002` FR3). This adds touch motion roles to the motion
+  motion: they stay internal measured values and are not public concepts (`spec:AST-002` FR3). This adds touch motion roles to the motion
   configuration of `architecture:theme-authoring-contract` and to
   `architecture:theme-tokens` beside the existing duration and easing tokens, whose rules are unchanged. It
   amends `spec:AST-057` for touch presentations: Item's swipe springs and
@@ -102,6 +99,12 @@ a measured, sourced difference exists.
   property on the root (its FR2). It departs from the draft `design:motion` DR3
   wherever the native motion settles with an overshoot or stretches with a
   rubber band.
+
+  | Kind     | Roles                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+  | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | Spring   | `springs.sheetPresent`, `springs.sheetDismiss`, `springs.sheetDismissSwipe`, `springs.sheetDetent`, `springs.sheetReleaseFast`, `springs.actionSheetPresent`, `springs.actionSheetDismiss`, `springs.alertPresent`, `springs.alertDismiss`, `springs.contextMenuLift`, `springs.contextMenuDismiss`, `springs.menuOpen`, `springs.menuClose`, `springs.banner`, `springs.keyboard`, `springs.navigationPush`, `springs.navigationPop`, `springs.navigationInteractivePopFinish`, `springs.navigationBarElements`, `springs.segmentedThumb`, `springs.switchThumbMove`, `springs.switchThumbStretch`, `springs.interactive`, `springs.bouncy`, `springs.smooth`, `springs.snappy`, `springs.uikitDefault`, `springs.uikitSpringDuration`, `springs.swiftUIDefault`, `springs.swiftUISpring`, `scroll.bounce`, `scroll.paging.snap` |
+  | Duration | `timing.press.highlightInMs`, `timing.press.highlightOutMs`, `timing.press.buttonReleaseMs`, `timing.press.flashMs`, `timing.implicitAnimationMs`, `timing.keyboardNotificationMs`, `timing.navigationBarHideShowMs`, `timing.reducedMotionCrossFadeMs`, `navigation.transitionMs`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+  | Curve    | `timing.curves.caDefault`, `timing.curves.easeIn`, `timing.curves.easeOut`, `timing.curves.easeInOut`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
 ### Motion
 
@@ -120,23 +123,11 @@ a measured, sourced difference exists.
   follows.
 - **FR7 — Exits animate as the native counterpart's do.** A touch
   presentation MUST play the exit its UIKit counterpart plays, on every touch
-  platform. A rule that turns exits off by default does not apply to touch presentations;
-  FR8 governs their reduced-motion form. Each overlay's own record states its
+  platform. FR8 governs their reduced-motion form. Each overlay's own record states its
   exit, since members own their animation (`family:overlay-dismissal` AV6).
-- **FR8 — Reduce Motion cross-fades.** When the person asks for reduced
-  motion (`prefers-reduced-motion: reduce`), a touch presentation MUST reach
-  each change of state by a cross-fade: it animates `opacity` only, with no
-  travel, no scale and no spring, over at most 200 ms
-  (`design:reduced-motion`). An entrance lands in place and fades in, an exit
-  fades out in place, and any other move fades through. A drag still follows
-  the finger while it is down; after the lift the presentation reaches its
-  committed state by the cross-fade. A core component MUST NOT keep its motion
-  under reduced motion (no `reducedMotion: 'keep'`). The cross-fade's duration
-  is a theme motion role whose default is at most 200 ms (FR4); a theme MAY
-  shorten it. This is iOS's Reduce Motion with Prefer Cross-Fade Transitions
-  on. `design:reduced-motion` owns the rule for every presentation, including
-  the pointer presentations this record leaves out, which change state at
-  once.
+- **FR8 — Reduce Motion.** Under reduced motion, touch presentations follow
+  `design:reduced-motion` DR2 and DR4. The cross-fade's duration is the theme
+  motion role `timing.reducedMotionCrossFadeMs` (FR4).
 
 ### Gestures
 
@@ -168,27 +159,22 @@ a measured, sourced difference exists.
   keeps it: Slider's overlay stays on the dragged thumb (`design:user-states`
   DR4). On every touch platform this amends
   `design:user-states` DR1 (the pressed overlay during a hold) and DR3 (the
-  selected SegmentedControl item's held surface) for touch presentations, the
-  press treatment of `family:buttons`, and `module:DropdownMenu/useMenuPress`
-  FR6, whose rule that menu rows show no pressed paint under a finger gives way
-  to the cell profile for menu rows.
+  selected SegmentedControl item's held surface) for touch presentations, the press treatment of `family:buttons`, and the last sentence of
+  `module:DropdownMenu/useMenuPress` FR6 (menu rows paint `:active` only under
+  `(hover: hover)`): under a finger, menu rows take the cell profile. FR6's
+  rule that at most one row of a menu is lit still holds, so a finger that
+  slides from one row to another lights only the row under it.
 - **FR12 — Long press and rubber band are per use.** A long press MUST use the
   thresholds its UIKit counterpart uses: 0.5 s and 10 pt for a plain long
   press, the measured values for context menus and menus. A rubber band MUST
   use the coefficient its use measures.
-- **FR13 — One rule for the touch presentation.** Whether a component shows
-  its touch presentation MUST follow the same conditions in every component.
-  Touch behaviors key on a coarse primary pointer and are on by default there; layout keys on the available size through the one compact definition the
-  theme exports, the same on every platform (`spec:AST-012` FR9,
-  `architecture:public-component-api` INV14), and a component never restates
-  its values or keeps a parallel breakpoint table. A presentation asks for
-  exactly the conditions its own record names: one that depends on both (a
-  sheet instead of a popover) asks for both, and the date and time sheet, whose
-  record asks for a coarse pointer with no size condition (`spec:AST-043` FR1),
-  asks for the pointer only. No component answers these conditions differently
-  from another. A server render and the hydrating render produce the pointer
-  presentation, and the touch presentation applies after hydration
-  (`spec:AST-013` FR9).
+- **FR13 — One rule for the touch presentation.** A touch presentation
+  applies under a coarse primary pointer, and only after hydration: a server
+  render and the hydrating render produce the pointer presentation
+  (`spec:AST-013` FR9). Where a presentation also depends on size, compact is
+  governed by `spec:AST-012` FR9 and `architecture:public-component-api`
+  INV17. A presentation asks for exactly the conditions its own record names
+  (the date and time sheet asks for the pointer only, `spec:AST-043` FR1).
 - **FR14 — Nested scrolling follows the native rule.** Who gets a drag that
   starts inside a scroll area MUST be decided once, when the drag begins. If
   the area sits at its edge and the drag moves toward that edge, the
@@ -206,11 +192,10 @@ a measured, sourced difference exists.
   input events' timestamps. Durations (a long press, the interval between
   taps) MUST be deadlines on that clock, so a blocked main thread delays the
   report and never the moment reported.
-- **FR17 — Native readings.** A recognizer's thresholds and readings MUST
-  follow UIKit's and come from the table. A pan begins at 10 pt of travel on
-  either axis, and its translation excludes that travel; its velocity is
-  UIKit's estimate, 0.2 × the newest event's instantaneous velocity + 0.8 ×
-  the previous event's, never decayed through a rest.
+- **FR17 — Native readings.** A recognizer's thresholds MUST follow UIKit's
+  measured values (FR1, FR2). A pan begins at 10 pt of travel on either axis,
+  and its translation excludes that travel. Release velocity is governed by
+  `spec:AST-100`.
 - **FR18 — `touch-action` leaves the browser the rest.** An element with touch
   recognizers MUST get a `touch-action` that leaves the browser exactly what
   its recognizers do not use: the other axis for an axis-limited pan or swipe,
@@ -265,16 +250,12 @@ a measured, sourced difference exists.
   repeated row or cell adds no touch observer of its own, and nothing
   touch-related remains after the last instance unmounts
   (`architecture:react-component-runtime` INV5, INV7).
-- **FR25 — A moved default keeps a way back.** Turning a touch presentation on
-  by default MUST NOT silently change a released default. Where it moves one,
-  such as Selector's `adaptive` presentation policy, the caller's
-  `presentation` choice restores the released surface and input mode
-  (`architecture:public-component-api` INV16, `spec:AST-017/DEC-23`), and the
-  change ships as a documented behavior change that names that prop
-  (`spec:AST-017` FR3). Thresholds and tuning values inside a touch mode, such
-  as a long press's delay, stay internal (`spec:AST-002` FR3); no prop exposes
-  them. This replaces `component:Selector` DEC-1's width-and-pointer query with
-  the FR13 rule for `adaptive`.
+- **FR25 — A moved default keeps a way back.** Where a touch presentation
+  moves a released default, such as Selector's `adaptive` presentation policy,
+  the way back and its release note are governed by
+  `architecture:public-component-api` INV16 and `spec:AST-017` DEC-23 and FR3.
+  This replaces `component:Selector` DEC-1's width-and-pointer query with the
+  FR13 rule for `adaptive`.
 
 ### Platform support
 
@@ -313,8 +294,9 @@ a measured, sourced difference exists.
 - `component:Selector` DEC-1: `adaptive` resolves through the FR13 touch rule
   (a coarse pointer and the `spec:AST-012` FR9 compact definition) instead of
   its own width-and-pointer query, with `presentation` as the way back (FR25).
-- `module:DropdownMenu/useMenuPress` FR6: menu rows take the cell press
-  profile under a finger (FR11).
+- `module:DropdownMenu/useMenuPress` FR6: its last sentence gives way to the
+  cell press profile under a finger; its one-lit-row rule holds (FR11).
+- `spec:AST-100` owns release velocity, which FR17 reads.
 - `design:user-states` DR1 and DR3, `spec:AST-025` FR14 and `spec:AST-013` FR3
   each carry an amendment for touch presentations (FR11, FR14, Platform
   support); `design:motion` DR3 and DR5 (draft) are departed from or met as
@@ -383,15 +365,11 @@ release runs as a compositor animation of the measured curve (FR5, FR9).
 - **OQ2 — Rotation threshold.** What rotation starts a rotation gesture? No
   stored threshold is readable, and the simulator cannot script two-finger
   rotation. (`checkable`)
-- **OQ3 — Platform-matched look and feel.** Should touch presentations match
-  each platform's visual conventions (glass or material surfaces, glyphs,
-  chrome)? This waits on an exploration of how iOS and Android differ; until
-  then this record sets no platform-split visual rule. (`owner decision`)
-- **OQ4 — Module-level experimental subpaths.** May the shared motion and
-  gesture modules publish experimental API through their own module-level
-  `/experimental` subpaths? `spec:AST-017` FR21 gives an experimental subpath
-  only to an owning component, and `spec:AST-002` FR18 asks a public primitive
-  for a current owning record. Options: (a) amend `spec:AST-017` FR21 to admit
-  module-level experimental subpaths with a current owning record; (b) expose
-  the modules only through an owning component's `/experimental` subpath.
+- **OQ3 — Platform-matched look and feel.** Governed by the owner's pending
+  look-and-feel decision; this record sets no platform-split visual rule.
   (`owner decision`)
+- **OQ4 — Module-level experimental subpaths.** Whether the shared motion and
+  gesture modules may publish experimental API through module-level
+  `/experimental` subpaths is governed by `spec:AST-017` FR21, which today
+  gives an experimental subpath only to an owning component. (`owner
+decision`)
