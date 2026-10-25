@@ -21,17 +21,43 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useRef, useState, type ReactNode} from 'react';
-import {afterEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   COMBOBOX_PATTERN,
   expectAccessibilitySpec,
   type ComboboxStateFacts,
 } from '@astryxdesign/a11y-spec';
-import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {type AnnounceFn, __resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {resetLayerStackForTests} from '../Layer/layerStack';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {useCombobox} from './hooks';
+
+// Every call the hook makes to the shared announcer. The channel exposes an
+// identical message written twice in one frame once (spec:AST-086 FR9), so
+// counting what it exposes cannot see the hook announcing twice. The mock
+// wraps the real useAnnounce, so the live regions still fill as before.
+const {announceSpy} = vi.hoisted(() => ({announceSpy: vi.fn<AnnounceFn>()}));
+vi.mock('../hooks/useAnnounce', async importActual => {
+  const actual = await importActual<{
+    useAnnounce: () => AnnounceFn;
+    __resetLiveRegionsForTest: () => void;
+  }>();
+  const {useCallback} = await import('react');
+  return {
+    ...actual,
+    useAnnounce: (): AnnounceFn => {
+      const realAnnounce = actual.useAnnounce();
+      return useCallback<AnnounceFn>(
+        (message, politeness) => {
+          announceSpy(message, politeness);
+          realAnnounce(message, politeness);
+        },
+        [realAnnounce],
+      );
+    },
+  };
+});
 
 type Person = {value: string; label: string; disabled?: boolean};
 type Field = 'input' | 'textarea' | 'contenteditable';
@@ -574,6 +600,15 @@ describe('useCombobox field props — pointer (FR6)', () => {
 });
 
 describe('useCombobox field props — result count (FR7)', () => {
+  beforeEach(() => {
+    announceSpy.mockClear();
+  });
+
+  /** The messages the hook handed the announcer, one entry per call. */
+  function announced(): string[] {
+    return announceSpy.mock.calls.map(([message]) => message);
+  }
+
   function politeText(): string {
     return (
       document.querySelector('[data-astryx-live-region="polite"]')
@@ -629,6 +664,7 @@ describe('useCombobox field props — result count (FR7)', () => {
     await waitFor(() => expect(politeText()).toBe('No results found'));
     await nextFrames();
     expect(writes).toEqual(['3 results', '1 result', 'No results found']);
+    expect(announced()).toEqual(['3 results', '1 result', 'No results found']);
 
     // Every live region on the page is the shared announcer's; the field
     // renders none of its own.
@@ -656,6 +692,7 @@ describe('useCombobox field props — result count (FR7)', () => {
     await nextFrames();
     expect(politeText()).toBe('3 results');
     expect(writes).toEqual(['3 results']);
+    expect(announced()).toEqual(['3 results']);
   });
 
   it('announces nothing while the list is hidden, and the count once it shows', async () => {
@@ -673,5 +710,6 @@ describe('useCombobox field props — result count (FR7)', () => {
     await waitFor(() => expect(politeText()).toBe('3 results'));
     await nextFrames();
     expect(writes).toEqual(['3 results']);
+    expect(announced()).toEqual(['3 results']);
   });
 });
