@@ -156,6 +156,29 @@ describe('edgeAutoscroll', () => {
     expect(state.steps).toEqual([2, 4, 4, 2]);
   });
 
+  it('catches up on the same clock when it also ticked at once', () => {
+    let clock = 0;
+    const {state, apply} = scroller();
+    const autoscroll = edgeAutoscroll({
+      intervalMs: 20,
+      immediate: true,
+      catchUp: true,
+      now: () => clock,
+      step: () => 2,
+      apply,
+    });
+    autoscroll.update();
+    // The tick at once is not one of the interval's ticks.
+    expect(state.steps).toEqual([2]);
+    clock = 20;
+    vi.advanceTimersByTime(20);
+    expect(state.steps).toEqual([2, 2]);
+    // The next fire comes 25 ms late: two ticks were due by then.
+    clock = 65;
+    vi.advanceTimersByTime(20);
+    expect(state.steps).toEqual([2, 2, 4]);
+  });
+
   it('stops on stop()', () => {
     const {state, apply} = scroller();
     const autoscroll = edgeAutoscroll({intervalMs: 20, step: () => 1, apply});

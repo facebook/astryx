@@ -68,14 +68,16 @@ export function edgeAutoscroll(options: EdgeAutoscrollOptions): EdgeAutoscroll {
     }
   };
 
-  const tick = () => {
+  // `onClock` is false for the tick `immediate` adds as the timer starts: it
+  // is not one of the interval's ticks, so it leaves the catch-up count alone.
+  const tick = (onClock: boolean) => {
     const step = options.step();
     if (step === 0) {
       stop();
       return;
     }
     let count = 1;
-    if (catchUp) {
+    if (catchUp && onClock) {
       const due = Math.floor((now() - base) / intervalMs);
       count = Math.max(1, Math.min(2, due - ticks));
       ticks = Math.max(ticks + count, due);
@@ -96,9 +98,9 @@ export function edgeAutoscroll(options: EdgeAutoscrollOptions): EdgeAutoscroll {
       }
       base = now();
       ticks = 0;
-      timer = setInterval(tick, intervalMs);
+      timer = setInterval(() => tick(true), intervalMs);
       if (immediate) {
-        tick();
+        tick(false);
       }
     },
     stop,
