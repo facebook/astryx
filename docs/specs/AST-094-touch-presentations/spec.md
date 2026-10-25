@@ -96,8 +96,10 @@ a measured, sourced difference exists.
   with a deceleration rate, or with a measured projection time.
 - **FR4 — Touch motion is themeable.** Every spring, duration and curve a
   touch presentation plays MUST be a theme motion role named for its use
-  (`architecture:theme-tokens` INV3); the generated motion role table
-  (`astryx docs motion`) lists every role with its kind and default. The role's default value is
+  (`architecture:theme-tokens` INV3). The roles this record names are listed
+  below with their defaults and sources; proposed (DEC-5), further roles a
+  component's own record measures join through the generated motion role
+  table. The role's default value is
   its measured value (FR1, FR2), and a theme MAY override it through `motion`, at its root or
   in an adaptation rule. A component MUST read touch motion through these roles
   and MUST NOT play a literal. A theme value MUST reach the motion at its
@@ -116,15 +118,25 @@ a measured, sourced difference exists.
   it publishes no public API and no module-level `/experimental` subpath
   (`spec:AST-017` FR21).
 
-  A measured platform preset takes a use name: `springs.fingerTracking`
-  (SwiftUI's interactive spring), `springs.emphasis` (`.bouncy`),
-  `springs.settle` (`.smooth`), `springs.quickChange` (`.snappy`),
-  `springs.viewChange` (UIKit's default spring), `springs.timedChange`
-  (UIKit's duration-and-bounce spring), `springs.stateChange` (SwiftUI's
-  default animation), `springs.directChange` (SwiftUI's response spring),
-  `timing.stateChangeMs` (Core Animation's implicit transaction), and the
-  curves `timing.curves.viewChange` (Core Animation's default), `exit`
-  (ease-in), `entrance` (ease-out) and `move` (ease-in-out).
+  | Role                       | Default                              | Source                                                                                         |
+  | -------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------- |
+  | `springs.fingerTracking`   | response 0.15 s, damping ratio 0.86  | Apple: SwiftUI `interactiveSpring()`                                                           |
+  | `springs.emphasis`         | duration 0.5 s, bounce 0.3           | Apple: SwiftUI `.bouncy`                                                                       |
+  | `springs.settle`           | duration 0.5 s, bounce 0             | Apple: SwiftUI `.smooth`                                                                       |
+  | `springs.quickChange`      | duration 0.5 s, bounce 0.15          | Apple: SwiftUI `.snappy`                                                                       |
+  | `springs.viewChange`       | mass 3, stiffness 1000, damping 500  | measured: UIKit `UISpringTimingParameters()`, iOS 26.2 simulator, 2026-10-23                   |
+  | `springs.timedChange`      | duration 0.5 s, bounce 0             | Apple: UIKit `UIView.animate(springDuration:bounce:)`                                          |
+  | `springs.stateChange`      | response 0.55 s, damping ratio 1     | Apple: SwiftUI `Animation.default`                                                             |
+  | `springs.directChange`     | response 0.5 s, damping ratio 0.825  | Apple: SwiftUI `.spring(response:dampingFraction:)`                                            |
+  | `springs.menuOpen`         | damping ratio 0.8, response 0.32 s   | measured: UIMenu opening, iOS 26.2 simulator, 2026-10-23                                       |
+  | `springs.menuClose`        | damping ratio 0.85, response 0.35 s  | measured: UIMenu closing, iOS 26.2 simulator, 2026-10-23                                       |
+  | `springs.subMenuOpen`      | damping ratio 0.84, response 0.415 s | measured: a single-spring fit to UIMenu's sub-menu opening, iOS 26.2 simulator, 2026-10-23     |
+  | `springs.subMenuBack`      | damping ratio 1, response 0.385 s    | measured: a single-spring fit to UIMenu's sub-menu header back, iOS 26.2 simulator, 2026-10-23 |
+  | `timing.stateChangeMs`     | 250 ms                               | measured: Core Animation's implicit transaction, iOS 26.2 simulator, 2026-10-23                |
+  | `timing.curves.viewChange` | cubic-bezier(0.25, 0.1, 0.25, 1)     | Apple: `CAMediaTimingFunctionName.default`                                                     |
+  | `timing.curves.exit`       | cubic-bezier(0.42, 0, 1, 1)          | measured: UIKit's ease-in, iOS 26.2 simulator, 2026-10-23                                      |
+  | `timing.curves.entrance`   | cubic-bezier(0, 0, 0.58, 1)          | measured: UIKit's ease-out, iOS 26.2 simulator, 2026-10-23                                     |
+  | `timing.curves.move`       | cubic-bezier(0.42, 0, 0.58, 1)       | measured: UIKit's ease-in-out, iOS 26.2 simulator, 2026-10-23                                  |
 
 ### Motion
 
@@ -197,6 +209,8 @@ a measured, sourced difference exists.
   governed by `spec:AST-012` FR9 and `architecture:public-component-api`
   INV17. A presentation asks for exactly the conditions its own record names
   (the date and time sheet asks for the pointer only, `spec:AST-043` FR1).
+  Proposed (DEC-6): a style keyed on the literal touch media query conforms,
+  since the server and hydrating markup are identical.
 - **FR14 — Nested scrolling follows the native rule.** Who gets a drag that
   starts inside a scroll area MUST be decided once, when the drag begins. If
   the area sits at its edge and the drag moves toward that edge, the
@@ -248,9 +262,8 @@ a measured, sourced difference exists.
 - **FR20 — The browser can take a touch.** `pointercancel`, an uncancelable
   `touchmove`, or a native scroll under the touch MUST count as the browser
   taking the touch: possible recognizers that share it fail, active ones are
-  cancelled, and the view's press is cancelled without a release. A recognizer that
-  never claims (a watcher) registers only passive listeners
-  (`architecture:react-component-runtime` INV3, INV5).
+  cancelled, and the view's press is cancelled without a release. Proposed (DEC-7): a recognizer that never claims (a watcher) registers
+  only passive listeners (`architecture:react-component-runtime` INV3, INV5).
 - **FR21 — Clicks follow the gesture.** When a gesture takes a touch, its
   `touchend` MUST be cancelled, and no click or compatibility mouse event
   reaches the page. A click held for a recognizer that may still recognize (a
@@ -322,8 +335,10 @@ menus and to Popover under a finger. A mouse keeps today's behavior.
   finger opens on a block trigger MUST lift the trigger above the page and
   show the menu beside it, with no row lit. A tap outside closes the menu and
   reaches nothing beneath it, and closing returns the trigger to its place.
-  Under reduced motion FR8 applies. An inline trigger keeps today's menu, and
-  a menu presented as a bottom sheet follows the sheet.
+  Under reduced motion FR8 applies. An inline trigger keeps today's menu, a menu presented as a
+  bottom sheet follows the sheet, and `presentation="popover"` keeps the
+  released menu without the lift (`architecture:public-component-api`
+  INV16).
 - **FR34 — A sub-menu drills in under a finger.** Under a finger on a
   compact touch screen, an `adaptive` sub-menu row MUST drill in: the
   sub-menu's rows and a leading "Back to <parent>" row replace the menu's rows
@@ -377,9 +392,15 @@ menus and to Popover under a finger. A mouse keeps today's behavior.
   touch-related remains after the last instance unmounts
   (`architecture:react-component-runtime` INV5, INV7).
 - **FR25 — A moved default keeps a way back.** Where a touch presentation
-  moves a released default, such as Selector's `adaptive` presentation policy,
-  the way back and its release note are governed by
+  moves a released default, the way back and its release note are governed by
   `architecture:public-component-api` INV16 and `spec:AST-017` DEC-23 and FR3.
+  This record moves four: Selector's `adaptive` presentation policy;
+  DropdownMenu's omitted `presentation`, released as `'popover'`, which
+  `presentation="popover"` keeps (FR29); ContextMenu's omitted
+  `presentation`, released as `'popover'`, which `presentation="popover"`
+  keeps without the lift (FR33); and `module:DropdownMenu/useMenuPress`'s
+  released 500 ms `longPressDelayMs`, which a caller keeps by passing it
+  (FR29).
   This replaces `component:Selector` DEC-1's width-and-pointer query with the
   FR13 rule for `adaptive`.
 
@@ -420,6 +441,11 @@ menus and to Popover under a finger. A mouse keeps today's behavior.
 - `component:Selector` DEC-1: `adaptive` resolves through the FR13 touch rule
   (a coarse pointer and the `spec:AST-012` FR9 compact definition) instead of
   its own width-and-pointer query, with `presentation` as the way back (FR25).
+- `component:DropdownMenu` and `component:ContextMenu`: an omitted
+  `presentation`, released as `'popover'`, follows FR29 and FR33 under a
+  finger; `presentation="popover"` keeps the released behavior (FR25).
+- `module:DropdownMenu/useMenuPress`: the released 500 ms `longPressDelayMs`
+  default gives way to FR29's timing; a caller that passes it keeps it (FR25).
 - `module:DropdownMenu/useMenuPress`: its finger rules (FR1–FR3, FR6, FR7
   and FR9 under a finger) are stated here (FR26–FR30); FR6's last sentence
   gives way to the cell press profile (FR11); its mouse rules (FR8 and the
@@ -515,28 +541,29 @@ delay so a scroll can still claim the touch (FR29). A caller's `presentation`
 choice keeps today's open on a tap (`architecture:public-component-api`
 INV16).
 
-### DEC-5 — FR4 cites the generated motion role table
+### DEC-5 (proposed) — Further component roles join through the generated motion role table
 
 **Reference:** `spec:AST-094/DEC-5`
-**Decider:** pending owner ruling
+**Decider:** proposed by `vjeux`, `2026-10-25`; pending owner review
 
-FR4 names its roles by use and cites the generated motion role table instead
-of copying it, so a new component table cannot drift from the record.
+FR4 lists the roles this record names. Roles a component's own record
+measures join through the generated motion role table, built from every
+registered table, so a new component table cannot drift from the record.
 
-### DEC-6 — CSS keyed on the touch media query counts as after hydration
+### DEC-6 (proposed) — CSS keyed on the touch media query counts as after hydration
 
 **Reference:** `spec:AST-094/DEC-6`
-**Decider:** pending owner ruling
+**Decider:** proposed by `vjeux`, `2026-10-25`; pending owner review
 
 FR13's "only after hydration" governs a presentation decided in script. A
 style keyed on the literal touch media query conforms: the server and
 hydrating markup are identical, and the browser applies the style at first
 paint.
 
-### DEC-7 — A watcher recognizer is passive only
+### DEC-7 (proposed) — A watcher recognizer is passive only
 
 **Reference:** `spec:AST-094/DEC-7`
-**Decider:** pending owner ruling
+**Decider:** proposed by `vjeux`, `2026-10-25`; pending owner review
 
 A recognizer that never claims registers only passive listeners (FR20), so
 watching a touch never delays the browser's scroll.

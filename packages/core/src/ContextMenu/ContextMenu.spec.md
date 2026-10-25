@@ -43,7 +43,9 @@ theming reachability.
 
 ## Compatibility and migration
 
-- Released default: `popover`
+- Released default: `popover`. Under a finger, `spec:AST-094` FR33's lift
+  becomes the default, and `presentation="popover"` keeps the released menu
+  (`spec:AST-094` FR25).
 - Compatibility class: compatible behavior correction; public API, defaults,
   DOM shape, styling, and targets are preserved
 - Controlled/uncontrolled behavior: internally managed open state
