@@ -578,6 +578,16 @@ const styles = stylex.create({
   blockIndent: {
     marginInline: `calc(-1 * ${spacingVars['--spacing-2']})`,
   },
+  // A numbered list reaches a marker gutter further toward its start, so a
+  // wide counter can hang there (ListMarkerScope's hasMarkerGutter) as
+  // RichText's native markers hang into their list's padding: `100.` keeps
+  // the text where `9.` puts it on both surfaces (spec:AST-061 FR11). The
+  // list pads back in by the same amount, so its rows stay where they were,
+  // and its inline clip never cuts a counter.
+  markerGutter: {
+    marginInlineStart: `calc(-1 * (${spacingVars['--spacing-2']} + ${spacingVars['--spacing-4']}))`,
+    paddingInlineStart: spacingVars['--spacing-4'],
+  },
   // HR
   hr: {
     borderWidth: 0,
@@ -1783,7 +1793,7 @@ function renderBlock(
             listStyle={node.ordered ? 'decimal' : 'disc'}
             density="compact"
             start={node.ordered ? node.start : undefined}
-            xstyle={styles.blockIndent}>
+            xstyle={[styles.blockIndent, node.ordered && styles.markerGutter]}>
             {node.children.map((item, i) => {
               const firstChild = item.children[0];
               const isInline =
@@ -1867,7 +1877,8 @@ function renderBlock(
                       listDepth % 3
                     ]
                   }
-                  task={task}>
+                  task={task}
+                  hasMarkerGutter={node.ordered}>
                   <ListItem
                     label={label}
                     {...(recordsSourceLines

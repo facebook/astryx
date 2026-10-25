@@ -8,7 +8,10 @@
  *   treatment, CheckboxInput, and the marker or task checkbox a
  *   ListMarkerScope sets (Markdown's nested lists and the task items of mixed
  *   lists). Number markers stay on one line in the List's shared column,
- *   keeping every sibling's text and nested list on the same start line.
+ *   keeping every sibling's text and nested list on the same start line;
+ *   they end on one line too, right-aligned with tabular figures, and hang
+ *   into the row's inline inset (and a marker gutter, where the List has one)
+ *   before they widen that column.
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
  *
@@ -213,6 +216,16 @@ const styles = stylex.create({
 
 const MARKER_DOT_SIZE = 6;
 
+/**
+ * How far a counter wider than its marker reaches toward the row's edge: the
+ * row's whole inline inset, the way a native outside marker hangs into its
+ * list's padding. Up to that width the item's text keeps its usual start; a
+ * wider counter widens the List's shared column instead. It is never
+ * clipped: the inset is inside the row, and the row inside the List's inline
+ * clip. A List with a marker gutter lets it hang further (`gutterHang`).
+ */
+const COUNTER_HANG = 'calc(-1 * var(--_item-inset-inline))';
+
 const markerStyles = stylex.create({
   container: {
     alignSelf: 'baseline',
@@ -246,12 +259,19 @@ const markerStyles = stylex.create({
   },
   number: {
     alignSelf: 'baseline',
+    // The counter ends where the marker ends, so every period in a list lines
+    // up, as a native outside marker's does. Tabular figures give each digit
+    // the same width down the list.
+    display: 'flex',
+    justifyContent: 'flex-end',
     flexShrink: 0,
     color: colorVars['--color-text-primary'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
-    // Short counters retain their inset; longer counters size the List's
-    // shared grid column rather than pushing this item's text alone.
+    fontVariantNumeric: 'tabular-nums',
+    // Short counters retain their inset. A longer counter first reaches into
+    // the row's inline inset (COUNTER_HANG) and only then sizes the List's
+    // shared grid column, so no single number moves its item's text.
     minWidth: spacingVars['--spacing-4'],
     width: 'auto',
     whiteSpace: 'nowrap',
@@ -261,16 +281,29 @@ const markerStyles = stylex.create({
   decimal: {
     '::before': {
       content: 'counter(astryx-list) "."',
+      marginInlineStart: COUNTER_HANG,
     },
   },
   lowerAlpha: {
     '::before': {
       content: 'counter(astryx-list, lower-alpha) "."',
+      marginInlineStart: COUNTER_HANG,
     },
   },
   lowerRoman: {
     '::before': {
       content: 'counter(astryx-list, lower-roman) "."',
+      marginInlineStart: COUNTER_HANG,
+    },
+  },
+  // In a List with a marker gutter (ListMarkerScope's hasMarkerGutter), a
+  // wide counter also hangs into the gutter, which the List reaches out by
+  // past its rows' inline start, as RichText's native markers hang into their
+  // list's padding. Markdown's numbered lists keep their text where
+  // RichText's start through `999.` at 16px (spec:AST-061 FR11).
+  gutterHang: {
+    '::before': {
+      marginInlineStart: `calc(-1 * (var(--_item-inset-inline) + ${spacingVars['--spacing-4']}))`,
     },
   },
 });
@@ -378,7 +411,13 @@ export function ListItem({
         />
       </span>
     ) : markerKind != null ? (
-      <span {...stylex.props(markerStyles.number, NUMBER_STYLES[markerKind])} />
+      <span
+        {...stylex.props(
+          markerStyles.number,
+          NUMBER_STYLES[markerKind],
+          ctx?.hasMarkerGutter === true && markerStyles.gutterHang,
+        )}
+      />
     ) : null;
 
   return (
