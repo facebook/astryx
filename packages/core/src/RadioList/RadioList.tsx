@@ -4,7 +4,8 @@
 
 /**
  * @file RadioList.tsx
- * @input Uses React useId, useCallback, useRef, layer-scoped context, ReactNode, Field, InputStatus
+ * @input Uses React useId, useCallback, useRef, layer-scoped context, ReactNode, Field, InputStatus;
+ *   the touch row floor (Indicator/touchTarget.stylex.ts)
  * @output Exports RadioList component, RadioListProps, RadioListContext
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
@@ -59,6 +60,11 @@ export interface RadioListContextValue {
   isRequired: boolean;
   size: RadioListSize;
   status?: InputStatus;
+  /**
+   * The options' layout: a vertical list's rows share its gap as target
+   * under a coarse pointer. Absent means vertical, RadioList's default.
+   */
+  orientation?: 'vertical' | 'horizontal';
 }
 
 export const RadioListContext = createContext<RadioListContextValue | null>(
@@ -72,7 +78,12 @@ const styles = stylex.create({
   },
   vertical: {
     flexDirection: 'column',
-    gap: spacingVars['--spacing-2'],
+    // Under a finger the gap becomes the rows' own: each row takes half of it
+    // above and below as padding (RadioListItem), so two targets meet in the
+    // middle of the gap with no dead strip and no overlap, and every target
+    // stays inside the list.
+    // SYNC: RadioListItem.tsx rowStyles.stackedTouch
+    gap: {default: spacingVars['--spacing-2'], '@media (pointer: coarse)': 0},
   },
   horizontal: {
     flexDirection: 'row',
@@ -266,6 +277,7 @@ export function RadioList({
       isRequired,
       size,
       status,
+      orientation,
     }),
     [
       name,
@@ -276,6 +288,7 @@ export function RadioList({
       isRequired,
       size,
       status,
+      orientation,
     ],
   );
 

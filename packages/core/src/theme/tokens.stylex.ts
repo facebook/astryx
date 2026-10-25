@@ -182,6 +182,11 @@ export const sizeDefaults = {
   '--size-element-sm': '28px',
   '--size-element-md': '32px',
   '--size-element-lg': '36px',
+  // The smallest target a control keeps under a coarse primary pointer: a
+  // labelled checkbox's row and target, a radio option's row. The platform's
+  // control size by default: Apple's Human Interface Guidelines give iOS
+  // controls a hit target of at least 44 × 44 pt. A dense theme can lower it.
+  '--size-touch-target': '44px',
 } as const;
 
 export const sizeVars = stylex.defineVars(sizeDefaults);

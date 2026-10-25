@@ -4,7 +4,8 @@
 
 /**
  * @file RadioListItem.tsx
- * @input Uses React use, useId, useRef, RadioListContext, Item
+ * @input Uses React use, useId, useRef, RadioListContext, Item, the touch
+ *   target floor (Indicator/touchTarget.stylex.ts)
  * @output Exports RadioListItem component, RadioListItemProps
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
@@ -30,7 +31,10 @@ import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useIndicator} from '../Indicator';
 import {Item, type ItemAlign} from '../Item';
+import {touchTargetStyles} from '../Indicator/touchTarget.stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 import {themeProps} from '../utils/themeProps';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
 // The touch press's paint, declared by the shared overlay styles on the
 // element the controller writes to (`pressedAlpha`) at the press's strength,
@@ -127,6 +131,17 @@ const wrapperSizeStyles = stylex.create({
 });
 
 const rowStyles = stylex.create({
+  // A vertical list's row under a finger: half the list's gap above and
+  // below is padding, inside the row's target (RadioList drops the gap).
+  // Restates root's padding for every other
+  // case, since a later style replaces the whole property.
+  // SYNC: RadioList.tsx styles.vertical
+  stackedTouch: {
+    paddingBlock: {
+      default: 0,
+      '@media (pointer: coarse)': `calc(${spacingVars['--spacing-2']} / 2)`,
+    },
+  },
   // The row's default appearance is a bare surface: no density padding, no
   // radius, and no full-row background — only the indicator tints on hover
   // (via `indicatorScope`). Item paints padding/radius/hover as an interactive
@@ -148,6 +163,10 @@ const rowStyles = stylex.create({
     // strength still lands on the row, which is where the layer over the
     // circle reads it.
     backgroundImage: 'none',
+    // ...and the row's touch press layer (Item's `cell`): no box.
+    '::before': {
+      content: 'none',
+    },
   },
   // The mouse press (a finger's lives on `data-astryx-press`): the row is
   // pressed, but not through a nested link or button, which keep their own
@@ -395,12 +414,23 @@ export function RadioListItem({
           // the painting row element (Item), the same element that carries the
           // theme target, so a theme's hover styling stays in step with the tint.
           !isDisabled && indicatorScope,
+          // The row owns the strength the circle's layer reads, and its
+          // release (Item's touch layer drops the row's own under a finger:
+          // this row has no layer of its own, so it keeps the release).
+          !isDisabled && interactionOverlayStyles.pressedAlpha,
           // Restore the bare default look: zero Item's padding/radius and its
           // interactive hover/press background. Applied after Item's own base
           // styles so it wins within the base layer; a `radio-list-item` theme
           // still overrides it from the higher `astryx-theme` layer.
           rowStyles.root,
           !isDisabled && rowStyles.press,
+          // Under a finger each option's row is at least the theme's touch
+          // target tall. In a vertical list the row also takes half the
+          // list's gap above and below as its own (RadioList drops the gap),
+          // so the rows touch, the whole column is target, and a row grows
+          // only by what the gap does not already give it.
+          touchTargetStyles.row,
+          context.orientation !== 'horizontal' && rowStyles.stackedTouch,
           xstyle,
         ] as StyleXStyles
       }

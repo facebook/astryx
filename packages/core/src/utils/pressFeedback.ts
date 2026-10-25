@@ -4,7 +4,8 @@
  * @file pressFeedback.ts
  * @input The press state machine (pressGesture.ts) and the document's pointer,
  *   scroll and visibility events
- * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, pressableProps,
+ * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, pressableProps, the
+ *   list row's press profile (CELL_PRESS_PROFILE, cellPressableProps),
  *   installPressFeedback and subscribePressPaint
  * @position The DOM half of the touch press model: one delegated controller
  *   per document that writes `data-astryx-press` on the nearest pressable surface.
@@ -69,6 +70,21 @@ export const PRESSED_ATTRIBUTE = 'data-astryx-press';
 export const pressableProps: {readonly [PRESSABLE_ATTRIBUTE]: ''} = {
   [PRESSABLE_ATTRIBUTE]: '',
 };
+
+/**
+ * The press profile a list row carries in its {@link PRESSABLE_ATTRIBUTE}
+ * marker: rows paint the press on the cell layer (interactionOverlay.stylex.ts
+ * `cell`) and release on the cell's clock; a selection hold finds rows by it.
+ */
+export const CELL_PRESS_PROFILE = 'cell';
+
+/**
+ * Spread on a list row's pressable element after the press feedback hook's
+ * props: the marker carries the cell profile.
+ */
+export const cellPressableProps: {
+  readonly [PRESSABLE_ATTRIBUTE]: typeof CELL_PRESS_PROFILE;
+} = {[PRESSABLE_ATTRIBUTE]: CELL_PRESS_PROFILE};
 
 /**
  * How long after a touch a scroll can still be that finger's momentum.
@@ -166,7 +182,20 @@ function reportPaint(element: Element, paint: PressPaint): void {
   }
 }
 
+/**
+ * A press state the controller did not write is its owner's: a selection
+ * hold's `held` (selectionHold.ts) keeps a row selected through a navigation
+ * push, so neither a new press nor a release's end overwrites or clears it.
+ */
+function ownedElsewhere(element: HTMLElement): boolean {
+  const value = element.getAttribute(PRESSED_ATTRIBUTE);
+  return value != null && value !== 'on' && value !== 'fading';
+}
+
 function paintElement(element: HTMLElement, paint: PressPaint): void {
+  if (ownedElsewhere(element)) {
+    return;
+  }
   const previous = element.getAttribute(PRESSED_ATTRIBUTE) ?? 'none';
   if (paint === 'none') {
     element.removeAttribute(PRESSED_ATTRIBUTE);
@@ -315,8 +344,12 @@ function finish(): void {
   clearTimer();
   unlockLive();
   const {element} = live;
-  const wasPainted = element.hasAttribute(PRESSED_ATTRIBUTE);
-  element.removeAttribute(PRESSED_ATTRIBUTE);
+  // A state another owner wrote stays, and its subscribers hear nothing.
+  const wasPainted =
+    !ownedElsewhere(element) && element.hasAttribute(PRESSED_ATTRIBUTE);
+  if (wasPainted) {
+    element.removeAttribute(PRESSED_ATTRIBUTE);
+  }
   live = null;
   if (wasPainted) {
     reportPaint(element, 'none');
