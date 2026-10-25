@@ -65,6 +65,7 @@ import {
   waitForRest,
   writeEvidence,
   type InputRecord,
+  type PlayedEvent,
   type TimedValue,
   type TouchDriver,
 } from '@astryxdesign/interaction-harness';
@@ -216,6 +217,50 @@ function uikitReleaseVelocity(records: ReadonlyArray<InputRecord>): number {
   );
 }
 
+/** Chromium's clamp on an event's time as a page reads it, ms. */
+const PAGE_CLOCK_CLAMP_MS = 0.1;
+
+/**
+ * Checks that the samples UIKit's filter reads (the last three touch samples)
+ * are the script's: each at a scripted move's time and position. Chromium's
+ * input carries the script's timestamps and sub-pixel positions, but a page
+ * reads each event's time clamped to 0.1 ms with a jittered threshold
+ * (Chromium's time clamping without cross-origin isolation), so a sample sits
+ * up to two clamps off the script's time relative to the touch-down: a
+ * scripted 8.33 ms interval reads 8.2 to 8.5 ms, which alone moves the
+ * two-sample filter up to 2 % off a steady speed. What the filter reads is
+ * what the curve below is checked against, so the speed itself is not
+ * compared.
+ */
+function expectSamplesOnScript(
+  records: ReadonlyArray<InputRecord>,
+  played: ReadonlyArray<PlayedEvent>,
+): void {
+  const touch = records.filter(
+    r =>
+      r.pointerType === 'touch' &&
+      (r.type === 'pointerdown' || r.type === 'pointermove') &&
+      r.y != null,
+  );
+  const down = touch.map(r => r.type).lastIndexOf('pointerdown');
+  const start = played.find(e => e.type === 'touchStart');
+  expect(down).toBeGreaterThanOrEqual(0);
+  expect(start).toBeDefined();
+  const offset = touch[down].timeStamp - (start as PlayedEvent).t;
+  const moves = played.filter(e => e.type === 'touchMove');
+  for (const sample of touch.slice(down + 1).slice(-3)) {
+    const t = sample.timeStamp - offset;
+    const step = moves.find(
+      e => Math.abs(e.t - t) <= 2 * PAGE_CLOCK_CLAMP_MS + 1e-6,
+    );
+    expect(step, `a scripted move at ${t.toFixed(2)} ms`).toBeDefined();
+    expect(sample.y as number).toBeCloseTo(
+      (step as PlayedEvent).fingers[0].y,
+      2,
+    );
+  }
+}
+
 /**
  * UIKit's release spring for a settle from `from` to `to` (px) that starts at
  * `velocity` px/s, from the harness's own spring math (independent of the
@@ -334,18 +379,21 @@ test('the settle is the UIKit release spring, sampled frame by frame', async ({
 }, testInfo) => {
   const {driver, sheet, tallTop, halfTop, handle} = await openSheet(page);
   const dy = Math.round((halfTop - tallTop) * 0.66);
+  const script = slowDragTo(handle, dy);
+  expect(releaseVelocity(script).y).toBeCloseTo(slowDragSpeed(dy), -1);
   await readInputLog(page, {clear: true});
-  await driver.play(slowDragTo(handle, dy));
+  const played = await driver.play(script);
   // The critically damped detent spring from where the finger left the
   // sheet, handed the drag's speed, which survives the frame's rest before
   // the lift.
-  // In Chromium the page measures the drag's speed: its input carries the
-  // script's timestamps. WebKit's carries real dispatch times in whole
-  // milliseconds, so what it measures varies with the box; the curve below
-  // is checked against that measurement either way.
-  const velocity = uikitReleaseVelocity(await readInputLog(page));
+  // In Chromium the page measures the script (expectSamplesOnScript).
+  // WebKit's input carries real dispatch times in whole milliseconds, so what
+  // it measures varies with the box; the curve below is checked against that
+  // measurement either way.
+  const records = await readInputLog(page);
+  const velocity = uikitReleaseVelocity(records);
   if (driver.scriptedTimestamps) {
-    expect(Math.abs(velocity / slowDragSpeed(dy) - 1)).toBeLessThan(0.01);
+    expectSamplesOnScript(records, played);
   }
   const {result, samples, to} = await compareRelease(page, sheet, velocity);
   await writeEvidence(
@@ -391,17 +439,18 @@ for (const {name, speed, travel} of [
     );
     expect(releaseVelocity(script).y).toBeCloseTo(speed, -1);
     await readInputLog(page, {clear: true});
-    await driver.play(script);
-    // What the page measured: `speed` in Chromium, whose input carries the
-    // script's timestamps and sub-pixel positions. WebKit's carries real
-    // dispatch times in whole milliseconds and whole pixels: at 120 Hz one
+    const played = await driver.play(script);
+    // What the page measured: the script in Chromium, to within its clock's
+    // clamp (expectSamplesOnScript). WebKit's input carries real dispatch
+    // times in whole milliseconds and whole pixels: at 120 Hz one
     // millisecond is 12 % of an interval, and UIKit's two-sample filter
     // reads 1333–1625 px/s of a steady 1500 from that rounding alone, more
     // when a dispatch runs late. The curve and the hand-off below are
     // checked against what the page measured, in both engines.
-    const velocity = uikitReleaseVelocity(await readInputLog(page));
+    const records = await readInputLog(page);
+    const velocity = uikitReleaseVelocity(records);
     if (driver.scriptedTimestamps) {
-      expect(Math.abs(velocity - speed) / speed).toBeLessThan(0.01);
+      expectSamplesOnScript(records, played);
     }
     const {result, samples, from, to} = await compareRelease(
       page,
