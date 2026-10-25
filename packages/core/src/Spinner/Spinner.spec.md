@@ -71,9 +71,11 @@ Consumer migration instructions belong in consumer docs and release notes.
   announce through the channel and not mount a live role holding its text. A
   conditionally rendered Spinner is therefore often silent.
 
-- **Empty name (AR1).** `aria-label=""` is used as the name, and `label=""`
-  renders an empty visible Text and names the status from it; either leaves the
-  status with an empty accessible name (WCAG 2.2 4.1.2).
+- **Empty or lost name (AR1).** `aria-label=""` is used as the name, and
+  `label=""` renders an empty visible Text and names the status from it; either
+  leaves the status with an empty accessible name (WCAG 2.2 4.1.2). With a
+  `label`, a caller `aria-labelledby` reaches the role-less wrapper instead of
+  the status.
 
 ## Ownership boundary
 
@@ -137,10 +139,12 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Transformation and precedence order
 
-- **ORD1 — Accessible name.** Non-empty caller `aria-label` → non-empty
-  string `label` (by `aria-labelledby` when no `aria-label` is set) →
-  translated `@astryx.spinner.loading` ("Loading"). An empty `aria-label` or
-  empty string `label` is the AR1 gap.
+- **ORD1 — Accessible name.** Without a `label`, a caller `aria-labelledby`
+  reaches the status element and names it from the referenced element. Then:
+  non-empty caller `aria-label` → non-empty string `label` (by
+  `aria-labelledby` when no `aria-label` is set) → translated
+  `@astryx.spinner.loading` ("Loading"). An empty `aria-label` or `label`, and
+  a caller `aria-labelledby` beside a `label`, are AR1 gaps.
 - **ORD2 — Variable values.** Theme rule on a `size:` or `shade:` variant →
   theme rule on the base target → the component's per-size and per-shade
   defaults.
@@ -159,14 +163,15 @@ Consumer migration instructions belong in consumer docs and release notes.
 ## Accessibility contract
 
 - **AR1 — Announced, named indicator.** A standalone Spinner that appears after
-  page load announces through the shared channel and does not mount a live role
-  already holding its text (`spec:AST-086` FR2, FR11); a Spinner inside a busy
+  page load announces through the shared channel, and its element carries no
+  live role or `aria-live` (`spec:AST-086` FR2, FR11); a Spinner inside a busy
   owner is silent (`spec:AST-086` FR8). The indicator has an accessible name by
   ORD1, and a visible string label is never repeated as `aria-label`. OQ1 holds
   the role and name it exposes without a live role. Implementation gaps: the
   element is `role="status"`, mounted already holding its name, and writes
-  nothing to the shared channel; and `aria-label=""` or `label=""` leaves it
-  with an empty name.
+  nothing to the shared channel; `aria-label=""` or `label=""` leaves it with an
+  empty name; and with a `label`, a caller `aria-labelledby` lands on the
+  role-less wrapper and names nothing.
 
 - **AR2 — Decorative ring.** The SVG is `aria-hidden`.
 - **AR3 — Translated default.** The default name comes from the translation
@@ -197,17 +202,17 @@ consumer anatomy names no parts, so no anatomy-theming block is declared.
 
 ## Verification map
 
-| Contract      | Verification                                                              | Representative states                              | Mutation or failure expectation                                                                                                                                                                                                                                                                           | Audit section            |
-| ------------- | ------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| FR1, FR7, FR8 | `Spinner.test.tsx` render, label, and data-testid tests                   | Unlabelled, string label, rich label               | A lost label or test id fails. Gap: no test asserts which element carries the ref, target, and styling inputs in the labelled form.                                                                                                                                                                       | `audit:Spinner/behavior` |
-| FR2           | `Spinner.test.tsx` box-sizing suite; `Spinner.stories.tsx` NarrowFlexHost | Every size; caller `style` width; narrow flex host | A caller width winning, or a lost fallback frame, fails. Gap: no automated check fails if the box shrinks in a flex host; it is visible in the story.                                                                                                                                                     | `audit:Spinner/layout`   |
-| FR3, FR4, PR2 | `Spinner.test.tsx` ring suite                                             | SVG structure, dash pattern, frame scheduling      | A lost circle, a changed dash pattern, an extra frame, or unbatched pinning fails. Gap: the start-angle test checks only for no SVG `transform` attribute, so removing the CSS start rotation passes; the cycle duration, the 3-second reduced-motion rate, and the arc fraction have no automated check. | `audit:Spinner/motion`   |
-| FR5, FR6      | `Spinner.test.tsx` theme-variable suite                                   | Size-, shade-, and base-scoped overrides           | A themed variable emitted on the wrong selector fails. Gap: no test fails if the component declares its defaults on the inner span of a labelled Spinner, and the shade tests assert presence and reflection only, so the default colors and track opacities have no automated check.                     | `audit:Spinner/theming`  |
-| PR1           | `Spinner.test.tsx` registration suite                                     | Import, repeated evaluation, no DOM                | Doing the work on mount, throwing on a second evaluation, or touching the DOM on the server fails.                                                                                                                                                                                                        | `audit:Spinner/behavior` |
-| AR1, AR3      | `Spinner.test.tsx` naming and localization tests                          | Default, explicit, string, and rich labels         | A missing name, a string label repeated as `aria-label`, or an untranslated default fails. Gap: no test covers an empty `aria-label` or `label`.                                                                                                                                                          | `audit:Spinner/a11y`     |
-| AR4           | `Spinner.stories.tsx` with reduced motion emulated in a browser           | Reduced motion                                     | Gap: no automated check; a stopped ring is visible only in a rendered fixture.                                                                                                                                                                                                                            | `audit:Spinner/motion`   |
-| AR2           | Source review                                                             | Every state                                        | Gap: no automated check fails if the ring SVG loses `aria-hidden`.                                                                                                                                                                                                                                        | `audit:Spinner/a11y`     |
-| AR1, AR2      | `StatusMessage.a11y.chromium.spec.ts` Spinner states                      | Default label and visible string label, mounted    | A changed role or name fails the accessibility-tree assertions. Gap: rich labels, empty names, the hidden ring, and channel delivery have no accessibility-tree check.                                                                                                                                    | `audit:Spinner/a11y`     |
+| Contract      | Verification                                                              | Representative states                                          | Mutation or failure expectation                                                                                                                                                                                                                                                                                                                                                      | Audit section            |
+| ------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------ |
+| FR1, FR7, FR8 | `Spinner.test.tsx` render, label, and data-testid tests                   | Unlabelled, string label, rich label                           | A lost label or test id fails. Gap: in both forms no test asserts which element carries the ref, `xstyle`, and `className`, or where the target lands in the labelled form.                                                                                                                                                                                                          | `audit:Spinner/behavior` |
+| FR2           | `Spinner.test.tsx` box-sizing suite; `Spinner.stories.tsx` NarrowFlexHost | Every size; caller `style` width; narrow flex host             | A caller width winning, or a lost fallback frame, fails. Gap: no automated check fails if the box shrinks in a flex host; it is visible in the story.                                                                                                                                                                                                                                | `audit:Spinner/layout`   |
+| FR3, FR4, PR2 | `Spinner.test.tsx` ring suite, including the 135-degree sweep test        | SVG structure, default dash and arc fraction, frame scheduling | A lost circle, a changed default dash or arc fraction, an extra frame, or unbatched pinning fails. Gap: the start-angle test checks only for no SVG `transform` attribute, so removing the CSS start rotation passes; the cycle duration, the 3-second reduced-motion rate, the themed arc fraction, and dropping an unmounted ring from pending phase work have no automated check. | `audit:Spinner/motion`   |
+| FR5, FR6      | `Spinner.test.tsx` theme-variable suite                                   | Size-, shade-, and base-scoped overrides                       | A themed variable emitted on the wrong selector fails. Gap: no test fails if the component declares its defaults on the inner span of a labelled Spinner, and the shade tests assert presence and reflection only, so the default colors and track opacities have no automated check.                                                                                                | `audit:Spinner/theming`  |
+| PR1           | `Spinner.test.tsx` registration suite                                     | Import, repeated evaluation                                    | Doing the work on mount or throwing on a second evaluation fails. Gap: the suite runs only with a DOM, so server-side safety has no automated check.                                                                                                                                                                                                                                 | `audit:Spinner/behavior` |
+| AR1, AR3      | `Spinner.test.tsx` naming and localization tests                          | Default, explicit, string, and rich labels                     | A missing name, a string label repeated as `aria-label`, or an untranslated default fails. Gap: no test covers an empty `aria-label` or `label`, or a caller `aria-labelledby`.                                                                                                                                                                                                      | `audit:Spinner/a11y`     |
+| AR4           | `Spinner.stories.tsx` with reduced motion emulated in a browser           | Reduced motion                                                 | Gap: no automated check; a stopped ring is visible only in a rendered fixture.                                                                                                                                                                                                                                                                                                       | `audit:Spinner/motion`   |
+| AR2           | Source review                                                             | Every state                                                    | Gap: no automated check fails if the ring SVG loses `aria-hidden`.                                                                                                                                                                                                                                                                                                                   | `audit:Spinner/a11y`     |
+| AR1, AR2      | `StatusMessage.a11y.chromium.spec.ts` Spinner states                      | Default label and visible string label, mounted                | A changed role or name fails the accessibility-tree assertions. Gap: rich labels, empty names, the hidden ring, and channel delivery have no accessibility-tree check.                                                                                                                                                                                                               | `audit:Spinner/a11y`     |
 
 ## Decision log
 
