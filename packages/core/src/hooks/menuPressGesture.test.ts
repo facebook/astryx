@@ -124,6 +124,11 @@ describe('menuPressStep — inside the menu', () => {
     });
   });
 
+  it('Tracking → Idle: a cancelled MOUSE press keeps its lit row', () => {
+    const {last} = run([downInMenu('A', 'mouse'), move('B'), {type: 'cancel'}]);
+    expect(last).toEqual({type: 'settle', stray: false, dismiss: false});
+  });
+
   it('Tracking → Idle: a cancel with nothing lit has nothing to clear', () => {
     const {last} = run([downInMenu('A'), move(null), {type: 'cancel'}]);
     expect(last).toEqual({type: 'settle', stray: false, dismiss: false});
