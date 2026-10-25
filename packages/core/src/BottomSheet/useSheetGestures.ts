@@ -186,14 +186,16 @@ function scrimClearOffset(
     ? dismissedOffsetFor(maxOffset, shortestDetentHeight)
     : maxOffset + shortestDetentHeight * DEFAULT_DISMISS_OVERSHOOT_RATIO;
 }
-// A mouse or pen drag keeps the sheet's pointer behavior (spec:AST-017 FR59):
-// within this many px of a detent the live drag eases toward it, so it
-// "clicks" into place instead of hovering just off the mark. A finger tracks
-// 1:1, as UIKit's sheet does.
+// Today's drag (a mouse anywhere, and anything where the primary pointer is
+// fine) keeps the sheet's pointer behavior (spec:AST-017 FR59): within this
+// many px of a detent the live drag eases toward it, so it "clicks" into place
+// instead of hovering just off the mark. Under UIKit's presentation the sheet
+// tracks 1:1, as UIKit's does.
 const MAGNET_RANGE = 40;
-// Rubber-band factor for a mouse or pen dragging up past fully open, capped
-// at OVERSCROLL_MAX (the sheet reserves that much bottom padding for the lift
-// to reveal). A finger holds at the tallest detent, as UIKit's sheet does.
+// Rubber-band factor for today's drag up past fully open, capped at
+// OVERSCROLL_MAX (the sheet reserves that much bottom padding for the lift to
+// reveal). Under UIKit's presentation it holds at the tallest detent, as
+// UIKit's sheet does.
 const OVERSCROLL_RESISTANCE = 0.35;
 // SYNC: must match OVERSCROLL_PADDING in BottomSheetPanel.tsx (the reserved
 // bottom padding the lift reveals).
@@ -1878,7 +1880,10 @@ export function useSheetGestures({
       activeOffsetRef.current = baseOffset;
       beginScrimTracking();
       // Read before this drag turns transitions off (releaseMotion.ts).
-      releaseMotionRef.current = readReleaseMotion(sheetElRef.current);
+      releaseMotionRef.current = readReleaseMotion(
+        sheetElRef.current,
+        syntheticTouch ? 'touch' : event.pointerType,
+      );
       const tracker = new VelocityTracker();
       tracker.add(0, event.clientY, event.timeStamp);
       dragStateRef.current = {
@@ -1976,13 +1981,16 @@ export function useSheetGestures({
       const {offsets, peekOffset} = resolveDetents(state.height);
 
       const raw = state.baseOffset + delta;
-      // A finger: 1:1 between detents and into the dismiss zone, as UIKit's
-      // sheet tracks (the release, not the drag, picks the detent), and held
-      // at fully open, since UIKit's sheet doesn't stretch beyond its largest
-      // detent. A mouse or pen keeps the pointer behavior (spec:AST-017 FR59).
-      const next = dragTouchRef.current
-        ? Math.max(0, raw)
-        : pointerDragOffset(raw, offsets);
+      // Under UIKit's presentation (a finger or a pen where the primary
+      // pointer is coarse, the same answer as the release's): 1:1 between
+      // detents and into the dismiss zone, as UIKit's sheet tracks (the
+      // release, not the drag, picks the detent), and held at fully open,
+      // since UIKit's sheet doesn't stretch beyond its largest detent.
+      // Otherwise today's pointer behavior (spec:AST-017 FR59).
+      const next =
+        releaseMotionRef.current.kind === 'uikit'
+          ? Math.max(0, raw)
+          : pointerDragOffset(raw, offsets);
       // Dragging above the base restores the full layout height below the
       // viewport; otherwise keep whatever layout the base detent settled with
       // (0 at a peek, so a peek drag stays transform-only).

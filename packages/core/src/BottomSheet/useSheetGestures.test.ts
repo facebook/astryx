@@ -92,6 +92,10 @@ function pointerEvent(
     clientY,
     timeStamp,
     currentTarget: target,
+    // A finger where a test stubs a coarse primary pointer, a mouse
+    // otherwise: the sheet takes UIKit's presentation only for a finger or
+    // a pen there (spec:AST-094 FR13).
+    pointerType: matchMedia('(pointer: coarse)').matches ? 'touch' : 'mouse',
     preventDefault: vi.fn(),
   } as unknown as React.PointerEvent;
 }
@@ -826,6 +830,8 @@ describe('useSheetGestures', () => {
   });
 
   it('tracks the finger 1:1 between detents and into the dismiss zone', () => {
+    // UIKit's presentation: a finger where the primary pointer is coarse.
+    stubIosIdiom();
     // UIKit's sheet follows the finger exactly (interaction offset = detent
     // offset + translation, no magnet); the release picks the detent. Offsets
     // for a 400px sheet with snaps 300 and 200: [0, 100, 200], gone at 400.
@@ -852,6 +858,42 @@ describe('useSheetGestures', () => {
     // Past the shortest detent, in the dismiss zone, it tracks 1:1.
     move(hook, 320, 200, t);
     expect(liveOffset(hook)).toBe(320);
+  });
+
+  describe('one answer for the tracking and the release (spec:AST-094 FR13)', () => {
+    // Offsets [0, 100, 200] for a 400px sheet with snaps 300 and 200: 10 px
+    // short of the 100 detent, today's drag eases toward it; UIKit's tracks
+    // 1:1. The release reads the same answer (releaseMotion.test.ts).
+    function dragTo90(pointerType: 'touch' | 'pen' | 'mouse'): number {
+      const {hook} = setup({snapHeights: () => [200, 300]});
+      const t = makeTarget();
+      act(() => hook.result.current.sheetRef(t));
+      const as = (y: number, ms: number) =>
+        ({...pointerEvent(y, ms, t), pointerType}) as React.PointerEvent;
+      act(() => hook.result.current.handleProps.onPointerDown(as(0, 0)));
+      act(() => hook.result.current.handleProps.onPointerMove(as(90, 100)));
+      return liveOffset(hook);
+    }
+
+    it("keeps a finger on today's drag where the primary pointer is fine", () => {
+      const offset = dragTo90('touch');
+      expect(offset).toBeGreaterThan(90);
+      expect(offset).toBeLessThanOrEqual(100);
+    });
+
+    it("keeps a mouse on today's drag where the primary pointer is coarse", () => {
+      stubIosIdiom();
+      expect(matchMedia('(pointer: coarse)').matches).toBe(true);
+      const offset = dragTo90('mouse');
+      expect(offset).toBeGreaterThan(90);
+      expect(offset).toBeLessThanOrEqual(100);
+    });
+
+    it('tracks a finger or a pen 1:1 where the primary pointer is coarse', () => {
+      stubIosIdiom();
+      expect(dragTo90('touch')).toBe(90);
+      expect(dragTo90('pen')).toBe(90);
+    });
   });
 
   it('translates the surface live during a drag', () => {
@@ -1076,6 +1118,8 @@ describe('useSheetGestures', () => {
   });
 
   it('holds at the fully-open position when dragged further up', () => {
+    // UIKit's presentation: a finger where the primary pointer is coarse.
+    stubIosIdiom();
     // UIKit's sheet stops dead at its largest detent (measured on iOS 26.2:
     // no stretch from a grabber or a content touch, or from medium past it).
     const {hook} = setup({snapHeights: () => [200]});
