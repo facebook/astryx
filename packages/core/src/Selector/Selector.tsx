@@ -105,6 +105,7 @@ import type {AdaptivePresentation} from '../hooks/useAdaptivePresentation';
 import {SelectorBottomSheet} from './SelectorBottomSheet';
 import {useSelectorPresentation} from './useSelectorPresentation';
 import {holdInvokerThroughPress} from '../Layer/holdInvokerThroughPress';
+import {focusForLastInput} from '../utils/focusReturn';
 import {selectorPresentationStyles} from './selectorPresentation.stylex';
 
 const styles = stylex.create({
@@ -607,8 +608,8 @@ interface SelectorPropsBase<
    * Click handler on the trigger button. It runs before the selector toggles
    * its surface (the press then reaches the control box), and calling
    * `preventDefault()` does not keep the surface closed. When a mouse press
-   * on the trigger opens the list, it runs once, with that press's event,
-   * before the list opens; the gesture's own click does not reach it.
+   * on the trigger opens or closes the list, it runs once, with that press's
+   * event, before the list does; the gesture's own click does not reach it.
    */
   onClick?: React.MouseEventHandler<HTMLElement>;
 
@@ -1446,8 +1447,16 @@ export function Selector<T extends SelectorOptionType>(
         return false;
       }
       pressActedRef.current = true;
+      // A caller's `onClick` runs before the selector toggles its surface.
+      // This press is that toggle, opening or closing, and the gesture's own
+      // click is spent (the trigger skips it), so the press is what the
+      // caller hears.
+      const press = openingPressRef.current;
       if (surface.isOpen) {
         openingPressRef.current = null;
+        if (press != null) {
+          onClickProp?.(press.event);
+        }
         // Close as a click does (`closeAndReset`): a searchable list sets no
         // highlight on open, so a kept one would come back with the next
         // open and Enter would commit it.
@@ -1458,12 +1467,12 @@ export function Selector<T extends SelectorOptionType>(
       // The press opens the list before the browser's own mousedown has
       // focused the trigger, so the popover would remember whatever was
       // focused BEFORE the press as the element to hand focus back to.
-      // Focusing the trigger first gives it the state a click-open has.
-      triggerRef.current?.focus({preventScroll: true});
-      // A caller's `onClick` runs before the selector toggles its surface.
-      // This press is that toggle, and the gesture's own click is spent (the
-      // press model swallows it), so the press is what the caller hears.
-      const press = openingPressRef.current;
+      // Focusing the trigger first gives it the state a click-open has,
+      // without the keyboard ring a pointer press never shows
+      // (`architecture:interaction-modality` INV1).
+      if (triggerRef.current != null) {
+        focusForLastInput(triggerRef.current, {preventScroll: true});
+      }
       if (press != null) {
         onClickProp?.(press.event);
       }
@@ -1491,8 +1500,20 @@ export function Selector<T extends SelectorOptionType>(
       // The listbox is `popover="auto"`: the browser's light dismiss would
       // read the release of this very press, on the trigger outside the
       // popover, as a dismissal. The trigger stays the popover's invoker
-      // through the press.
+      // through the press, and holds the pointer, so the release lands on the
+      // invoker wherever the mouse lets go (the field's padding, the
+      // chevron): the press model's settle rule, not light dismiss, decides
+      // whether the list stays open. The model finds rows by hit-testing the
+      // pointer, which capture leaves alone.
       holdInvokerThroughPress(triggerRef.current, popover.id);
+      if (press != null) {
+        try {
+          triggerRef.current?.setPointerCapture(press.event.pointerId);
+        } catch {
+          // The pointer is already gone, or the document has no pointer
+          // capture (jsdom): the release decides as before.
+        }
+      }
       return true;
     },
     [
@@ -1630,6 +1651,10 @@ export function Selector<T extends SelectorOptionType>(
     },
     onDismiss: surface.hide,
   });
+  // Synchronizes with the press model's gesture tracking (its document
+  // pointer listeners and gesture counter): the callbacks handed to
+  // useMenuPress above are written before it returns, so they read its
+  // gesture identity through this ref when its events call them.
   useIsomorphicLayoutEffect(() => {
     isTriggerGestureRef.current = listboxPress.isTriggerClickFromPress;
   }, [listboxPress]);
@@ -2140,7 +2165,13 @@ export function Selector<T extends SelectorOptionType>(
           event.preventDefault();
           event.stopPropagation();
         }
-      : rest.onClick,
+      : event => {
+          // A mouse press that opened or closed the list already ran it.
+          if (pressActedRef.current && listboxPress.isTriggerClickFromPress()) {
+            return;
+          }
+          onClickProp?.(event);
+        },
     id: triggerId,
     // A caller's description is kept alongside the field's own.
     'aria-describedby':

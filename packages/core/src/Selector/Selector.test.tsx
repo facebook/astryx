@@ -5202,6 +5202,63 @@ describe('Selector press model', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 
+  it("a mouse press that closes the list calls a caller's onClick once, with the press, before the list closes", () => {
+    const expandedAtClick: string[] = [];
+    const onClick = vi.fn((event: React.MouseEvent<HTMLElement>) => {
+      expandedAtClick.push(
+        `${event.type}:${screen.getByRole('combobox').getAttribute('aria-expanded')}`,
+      );
+    });
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        onClick={onClick}
+      />,
+    );
+    const trigger = screen.getByRole('combobox');
+    fireEvent.pointerDown(trigger, mouse);
+    fireEvent.pointerUp(trigger, mouse);
+    fireEvent.click(trigger, {detail: 1});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(expandedAtClick).toEqual(['pointerdown:false']);
+    // The press on the open list's trigger closes it; the caller hears the
+    // press first, and the gesture's click does not reach it again.
+    fireEvent.pointerDown(trigger, mouse);
+    fireEvent.pointerUp(trigger, mouse);
+    fireEvent.click(trigger, {detail: 1});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(expandedAtClick).toEqual(['pointerdown:false', 'pointerdown:true']);
+  });
+
+  it('a mouse press focuses the trigger without the keyboard indicator, and holds the pointer on it', () => {
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+    const proto = HTMLElement.prototype as HTMLElement & {
+      setPointerCapture: (pointerId: number) => void;
+    };
+    const original = proto.setPointerCapture;
+    const setPointerCapture = vi.fn();
+    proto.setPointerCapture = setPointerCapture;
+    try {
+      render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+      const trigger = screen.getByRole('combobox');
+      fireEvent.pointerDown(trigger, mouse);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      const triggerFocus = focus.mock.calls.filter(
+        (_call, index) => focus.mock.contexts[index] === trigger,
+      );
+      expect(triggerFocus[0]?.[0]).toEqual(
+        expect.objectContaining({preventScroll: true, focusVisible: false}),
+      );
+      expect(setPointerCapture).toHaveBeenCalledWith(mouse.pointerId);
+      expect(setPointerCapture.mock.contexts[0]).toBe(trigger);
+    } finally {
+      proto.setPointerCapture = original;
+      focus.mockRestore();
+    }
+  });
+
   it('a press that closes a searchable list clears its highlight, as a click does', () => {
     vi.useFakeTimers();
     try {
