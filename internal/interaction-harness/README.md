@@ -20,19 +20,11 @@ pnpm test:interaction --project chromium  # everything, Chromium
 pnpm test:interaction <spec file>         # one spec, both engines
 ```
 
-On Linux distributions whose system libraries are older than Playwright's
-WebKit build needs, run the WebKit project inside the official Playwright
-image (podman or docker; the repository is mounted at the same path):
-
-```sh
-node internal/interaction-harness/scripts/webkit-container.mjs [playwright test args…]
-```
-
 ## Instruments
 
 | Module       | What it gives a spec                                                                                                                                                                                                          |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scripts.ts` | Touch scripts as data: `tap`, `drag` (hold, rest), `flick` (exact release velocity, velocity profiles), `holdThenDrag`, `pinch`, `rotate`, `path`, `merge` (a second finger mid-gesture), `releaseVelocity`, `toTouchEvents`. |
+| `scripts.ts` | Touch scripts as data: `tap`, `drag` (hold, rest), `flick` (exact final-move speed, velocity profiles), `holdThenDrag`, `pinch`, `rotate`, `path`, `merge` (a second finger mid-gesture), `releaseVelocity`, `toTouchEvents`. |
 | `touch.ts`   | `touchDriver(page).play(script)`: the script as real engine input. `installInputLog` / `readInputLog`: what the page received.                                                                                                |
 | `story.ts`   | `phone`, `withStorybook`, `openStory`, `frames`.                                                                                                                                                                              |
 | `pointer.ts` | `newFinePointerPage(browser)`: a page under a mouse that really reads `(pointer: fine)`. `assertFinePointer` / `assertCoarsePointer`: fail before a case's checks when the page reads the other pointer.                      |

@@ -6,7 +6,7 @@ import Testing
 
 @MainActor
 @Test func aTextFieldIsAtLeast44PointsTallAtEveryTextSize() {
-  let field = AstryxTextInput(label: "Email", value: .constant(""), size: .sm).frame(width: 240)
+  let field = Astryx.TextInput(label: "Email", value: .constant(""), size: .sm).frame(width: 240)
   for typeSize in [DynamicTypeSize.xSmall, .large, .accessibility5] {
     let pixels = Pixels(field, typeSize: typeSize)
     // The label sits above a field at least 44 tall.
@@ -17,13 +17,13 @@ import Testing
 @MainActor
 @Test func aFieldLabelUsesTheSecondaryTextColor() {
   var theme = Theme.default
-  theme.light.color.textSecondary = Color(astryxRGBA: 0xFF0000FF)
-  let pixels = Pixels(AstryxTextInput(label: "Email", value: .constant("")).frame(width: 240), theme: theme)
+  theme.light.color.textSecondary = Color(.sRGB, red: 1, green: 0, blue: 0, opacity: 1)
+  let pixels = Pixels(Astryx.TextInput(label: "Email", value: .constant("")).frame(width: 240), theme: theme)
   #expect(pixels.contains { $0[0] > 200 && $0[1] < 60 && $0[2] < 60 && $0[3] > 200 })
 }
 
 @MainActor
 @Test func aTextFieldIsNamedByItsLabel() {
-  let field = AstryxTextInput(label: "Email", value: .constant(""))
+  let field = Astryx.TextInput(label: "Email", value: .constant(""))
   #expect(field.accessibilityText == "Email")
 }

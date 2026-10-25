@@ -9,7 +9,7 @@ import Testing
 
 @MainActor
 @Test func withoutAThemeComponentsFollowDarkMode() {
-  let card = AstryxCard { Color.clear.frame(width: 80, height: 40) }.frame(width: 120)
+  let card = Astryx.Card { Color.clear.frame(width: 80, height: 40) }.frame(width: 120)
   let light = Pixels(card, scheme: .light)
   let dark = Pixels(card, scheme: .dark)
   #expect(close(light.at(60, light.height / 2), rgba(Theme.default.light.color.backgroundCard)))
@@ -18,8 +18,8 @@ import Testing
 
 @MainActor
 @Test func withoutAThemeTextFollowsDynamicType() {
-  let large = Pixels(AstryxText("Hello").fixedSize())
-  let larger = Pixels(AstryxText("Hello").fixedSize(), typeSize: .xxxLarge)
+  let large = Pixels(Astryx.Text("Hello").fixedSize())
+  let larger = Pixels(Astryx.Text("Hello").fixedSize(), typeSize: .xxxLarge)
   #expect(larger.width > large.width)
 }
 
@@ -31,8 +31,8 @@ import Testing
 }
 
 @Test func theDefaultThemeCarriesCoresFontFamilies() {
-  #expect(Theme.default.light.font.familyBody.first == "-apple-system")
-  #expect(Theme.default.light.font.familyHeading.isEmpty == false)
+  #expect(Theme.default.light.font.family.body.first == "-apple-system")
+  #expect(Theme.default.light.font.family.heading.isEmpty == false)
 }
 
 // Theme environment spec, E1: with Bold Text on, a custom face from the
