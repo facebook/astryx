@@ -361,14 +361,17 @@ function stepTracking<T>(
       return release(gesture.pointerType, event);
     case 'cancel':
       // The browser took the gesture (a scroll, a second finger): nothing
-      // acts, the menu stays, and no click follows a cancelled pointer. The
-      // row the press lit loses its highlight, as UIKit clears it when the
-      // list starts scrolling.
+      // acts, the menu stays, and no click follows a cancelled pointer. A
+      // row a finger lit loses its highlight, as UIKit clears it when the
+      // list starts scrolling; a mouse's highlight stays where it was
+      // (spec:AST-017 FR59).
       return idle({
         type: 'settle',
         stray: false,
         dismiss: false,
-        ...(gesture.row != null ? {clear: true as const} : {}),
+        ...(gesture.row != null && isFinger(gesture.pointerType)
+          ? {clear: true as const}
+          : {}),
       });
     case 'down':
     case 'opened':
