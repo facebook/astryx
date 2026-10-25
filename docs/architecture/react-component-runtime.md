@@ -138,7 +138,8 @@ those contracts.
   listener of their own to detect page load, read rendered text, or write that
   announcement. The module follows INV3 and INV5.
 - **INV11 — The on-screen keyboard has one owner.** In `@astryxdesign/core`,
-  one shared internal hook measures the on-screen keyboard, keeps the page
+  one shared internal hook in the keyboard module (`packages/core/src/keyboard/`)
+  measures the on-screen keyboard, keeps the page
   from panning on focus, and dismisses the keyboard when a surface moves
   (`spec:AST-099`); it is not exported. The keyboard height and each keyboard
   change's transition (start time, resting value, curve) reach styles only as

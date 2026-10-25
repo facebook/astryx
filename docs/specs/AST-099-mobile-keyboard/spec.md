@@ -129,9 +129,10 @@ a chat composer, or a search field.
 - Browser evidence: Safari on iOS, in the iOS Simulator or on a device and in a
   top-level document, proves the iOS claims of FR2–FR5, and Chrome on Android,
   and Firefox for Android, in an emulator or on a device, prove FR8
-  (`spec:AST-013` FR10); DOM and
-  visual-viewport tests prove the rest of FR1–FR7. A pass on a physical
-  iPhone and a physical Android phone is recommended follow-up evidence (OQ1).
+  (`spec:AST-013` FR10); DOM and visual-viewport tests prove the rest of
+  FR1–FR7. Simulator and emulator evidence in a top-level document gates
+  merge; a pass on a physical iPhone and a physical Android phone is required
+  before the keyboard module ships in a release (DEC-3).
 
 ## Current-state impact
 
@@ -139,7 +140,8 @@ a chat composer, or a search field.
   fully expanded Tall sheet on iOS, detects iOS from the user agent, and writes
   a private inset on the sheet body as the custom property
   `--_sheet-keyboard-inset`, which retires: the sheet applies the height
-  through a functional style on its own element. It becomes the single source
+  through a functional style on its own element. It moves into Core's
+  keyboard module, `packages/core/src/keyboard/`, the single source
   `architecture:react-component-runtime` INV11 names: FR6 replaces the
   user-agent check, FR3 keeps the height internal, and BottomSheet consumes the
   shared source (`component:BottomSheet`).
@@ -173,7 +175,7 @@ a chat composer, or a search field.
 | FR8          | Consumer documentation check plus Chrome on Android, emulator or device, with and without the viewport setting | the documented viewport setting and its effect                                                                                                                                               | Astryx setting the viewport meta, the setting missing from the docs, or, in Chrome on Android with the setting, a focused field ending under the keyboard or a non-zero keyboard height                                                                                                                   |
 | FR8          | Firefox for Android, emulator or device, top-level document                                                    | focus routes with the keyboard shown and hidden                                                                                                                                              | The page lurches or the field ends under the keyboard                                                                                                                                                                                                                                                     |
 | FR2–FR5      | Safari on iOS in the iOS Simulator or on a device, top-level document                                          | focus routes, keyboard shown and hidden, page panned and pinch-zoomed, a sheet moved, in Safari and as a home-screen app                                                                     | The page lurches, the field ends under the keyboard, or the height is wrong after a pan or zoom                                                                                                                                                                                                           |
-| FR2–FR5, FR8 | Recommended follow-up: physical devices in a top-level document (OQ1)                                          | iPhone Safari with the toolbar expanded and collapsed; iPhone home-screen app; Firefox for Android (FR2–FR5); Android Chrome with `interactive-widget=resizes-content` (FR8)                 | The page lurches, the field ends under the keyboard, or the surface does not follow the keyboard                                                                                                                                                                                                          |
+| FR2–FR5, FR8 | Release gate: physical devices in a top-level document (DEC-3)                                                 | iPhone Safari with the toolbar expanded and collapsed; iPhone home-screen app; Firefox for Android (FR2–FR5); Android Chrome with `interactive-widget=resizes-content` (FR8)                 | The page lurches, the field ends under the keyboard, or the surface does not follow the keyboard                                                                                                                                                                                                          |
 
 ## Decision log
 
@@ -195,11 +197,34 @@ Animation stays optional polish on top.
 
 Rejected: each component measuring the keyboard by its own rule and predicting its motion, which pans with any unclaimed focus route and diverges; a public CSS custom property for the height, which a hook-derived value does not need.
 
+### DEC-2 — Chrome on Android follows the app's viewport setting
+
+**Reference:** `spec:AST-099/DEC-2`
+**Decider:** `cixzhang`, `2026-10-24`
+
+Chrome on Android exposes its own keyboard geometry, and its documented path is
+the app's `interactive-widget=resizes-content` viewport setting, under which
+layout itself resizes above the keyboard. Measuring there as well would fight
+the browser. The one cost is that a fully expanded Tall sheet stops adding its
+own keyboard inset in Chrome on Android; that change is accepted as breaking
+under `spec:AST-017` FR1, and the viewport setting is its migration.
+
+Rejected: keeping a Chrome-for-Android inset alongside the browser's own keyboard handling.
+
+### DEC-3 — Simulators gate merge; physical phones gate release
+
+**Reference:** `spec:AST-099/DEC-3`
+**Decider:** `cixzhang`, `2026-10-24`
+
+Simulator and emulator evidence in a top-level document is enough to merge
+keyboard work, so it is not blocked on hardware, while a pass on a physical
+iPhone and a physical Android phone is required before the keyboard module
+ships in a release, because keyboard timing and viewport behavior differ on
+real devices. This narrowly clarifies `spec:AST-009` for this record: physical
+devices are a release requirement here, not optional follow-up.
+
+Rejected: physical devices as a merge gate, which blocks work on hardware; and physical devices as optional follow-up, which can ship untested keyboard behavior.
+
 ## Open questions
 
-- **OQ1 — Do physical-device passes gate merge?** (`human-design`) Safari on
-  iOS, Chrome on Android, and Firefox for Android evidence gate (`spec:AST-013`
-  FR10), and a physical iPhone and Android phone pass is recommended follow-up.
-  Options: accept the iOS Simulator and an Android emulator as the gate; or require a
-  physical iPhone and a physical Android phone pass in a top-level document
-  before this record's implementation merges.
+None.
