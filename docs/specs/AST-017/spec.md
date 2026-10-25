@@ -762,6 +762,16 @@ one removal merged ahead of the decision to allow it.
   or merging undocumented elements to meet it is compatible (FR3); an element a
   current theme target or documented anatomy names stays. A component exceeds a
   budget only through an owner exception recorded with its element counts.
+  **Proposed; pending owner decision (DEC-29, OQ1):** a component's touch
+  presentation renders no more elements than its fine-pointer presentation,
+  except that a layer, a surface mounted only while open (a sheet, popover,
+  menu, context menu, dialog, toast, or lightbox), may render up to 5 more
+  elements while open when each added element has a named job in the
+  component's record. While closed, a layer and its trigger render no more
+  elements than under a fine pointer. Repeated components, such as rows, list
+  items, and controls like Button, Switch, and CheckboxInput, keep the strict
+  budget, at rest and pressed. Anything beyond this needs an owner exception
+  with before and after counts.
 
 ### Platform support
 
@@ -1420,6 +1430,24 @@ DEC-27 requires.
 
 Rejected: an `experimental_` name prefix.
 
+### DEC-29 — An open layer may render up to 5 more elements under touch
+
+**Reference:** `spec:AST-017/DEC-29`
+**Decider:** pending owner review
+
+Pages render few layers at once, so a handful of extra elements in an open
+layer costs little, while the same handful in every row or control multiplies
+across the page. Letting an open layer add up to 5 elements, each with a job
+its record names, covers a touch sheet's frame without a separate exception,
+and keeps the strict budget where repetition makes it matter. A closed layer
+and its trigger stay at the fine-pointer count.
+
+Rejected: strict parity for layers, with an owner exception for every sheet frame.
+
 ## Open questions
 
-None.
+- **OQ1 — May an open layer render a few more elements under touch?**
+  (`human-design`) FR60's proposed clause and DEC-29 allow up to 5 more
+  elements while open, each with a named job in the component's record.
+  Options: adopt the allowance; or keep strict parity, with an owner
+  exception per component.

@@ -146,7 +146,9 @@ not evidence of conformance or violation.
   - **Layers while open** — Popover, BottomSheet, DropdownMenu, ContextMenu,
     Lightbox, and Dialog: one presentation mounted, no content mounted twice
     outside the transient copy above, and the open layer under a coarse
-    pointer has at most as many elements as under a fine pointer.
+    pointer has at most as many elements as under a fine pointer (proposed:
+    up to 5 more while open, each with a named job in the component's record;
+    `spec:AST-017` FR60, DEC-29).
 
   Good: when a segmented control's selected label gets heavier, CSS on that
   one label element keeps the segment's width; Popover mounts its surface once
