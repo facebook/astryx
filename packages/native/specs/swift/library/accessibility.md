@@ -73,7 +73,7 @@ Differentiate Without Color get components that honor each setting.
   tests in the host app run `performAccessibilityAudit()` on every component's
   screen at the default and largest text sizes (X4, X5, X7). Two issues are
   recorded as known: a loading Button fails contrast, and a filled TextInput
-  is reported as clipped text.
+  cuts off a value wider than the field until it is focused.
 
 ## Open questions
 

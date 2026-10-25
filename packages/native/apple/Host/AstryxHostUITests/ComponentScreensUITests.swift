@@ -13,7 +13,7 @@ final class ComponentScreensUITests: XCTestCase {
   static let loadingLabel =
     "A loading button keeps its label at zero opacity under the spinner so its width holds; the audit measures that hidden label."
   static let scrolledValue =
-    "A single-line field scrolls a value wider than itself; the audit reports the value as clipped."
+    "An unfocused single-line field shows a value wider than itself cut off with an ellipsis, as system text fields do; at the largest text size the email is cut off."
 
   /// Audit issues found when the audit first ran, each with what is known of
   /// its cause. Any other issue fails, and so does a listed issue that no
