@@ -32,21 +32,22 @@ system_specs: [spec:AST-082, spec:AST-093]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                                                                                  |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | `Icon(_ icon: IconName, color: IconColor? = nil, size: IconSize? = nil, label: String? = nil)` and `Icon(_ props: IconProps)`, a SwiftUI `View` in module `Astryx`. `IconName` is a string-backed name with every built-in name as a static member (`.search`, `.close`). |
-| Behavior                | Draws the SF Symbol the theme or the platform maps the name to, in a square box at core's icon size grown with Dynamic Type, in core's icon color token or the surrounding foreground. A name nothing maps draws nothing.                                                 |
-| End-user impact         | A person sees the platform's own symbol for each shared icon, sized and colored as on the web, and VoiceOver reads only icons that carry a label.                                                                                                                         |
-| Builder impact          | An app passes a shared name (`.search`) or a name it maps in its theme (`"acme:rocket"`). An SVG component, which the web also accepts, has no Swift form.                                                                                                                |
-| Compatibility/readiness | Additive: a new view and a new generated `IconName` type. Draft; built and tested on macOS and the iOS Simulator; device captures are attached to the change.                                                                                                             |
-| Review checks           | Reject a substitute symbol for an unknown name, an image or attributed-text form of the icon slot, a visual parameter beyond the contract, an unlabeled icon that VoiceOver reads, or an owner's size winning over an explicit `size`.                                    |
-| Governing rules         | `spec:AST-082` FR4, FR7, FR17; `spec:AST-093` FR1–FR5; the Swift component API, styles, slots, theme environment, and accessibility records under `packages/native/specs/swift/library/`.                                                                                 |
+| Area                    | Contract                                                                                                                                                                                                                                                                                            |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | `Icon(_ icon: IconName, color: IconColor? = nil, size: IconSize? = nil, label: String? = nil)` and `Icon(_ props: IconProps)`, a SwiftUI `View` in module `Astryx`. `IconName` is a string-backed name with every built-in name as a static member (`.search`, `.close`).                           |
+| Behavior                | Draws the image the theme or the platform maps the name to (an SF Symbol, or an asset the app ships), in a square box at core's icon size grown with Dynamic Type, in core's icon color token or the surrounding foreground. A name nothing maps, or an asset the app does not ship, draws nothing. |
+| End-user impact         | A person sees the platform's own symbol for each shared icon, or the app's own artwork where its theme maps one, sized and colored as on the web, and VoiceOver reads only icons that carry a label.                                                                                                |
+| Builder impact          | An app passes a shared name (`.search`) or a name it maps in its theme (`"acme:rocket"`). An SVG component, which the web also accepts, has no Swift form.                                                                                                                                          |
+| Compatibility/readiness | Additive: a new view and a new generated `IconName` type. Draft; built and tested on macOS and the iOS Simulator; device captures are attached to the change.                                                                                                                                       |
+| Review checks           | Reject a substitute symbol for an unknown name, an image or attributed-text form of the icon slot, a visual parameter beyond the contract, an unlabeled icon that VoiceOver reads, or an owner's size winning over an explicit `size`.                                                              |
+| Governing rules         | `spec:AST-082` FR4, FR7, FR17; `spec:AST-093` FR1–FR5; the Swift component API, styles, slots, theme environment, and accessibility records under `packages/native/specs/swift/library/`.                                                                                                           |
 
 This table is a review projection; the body below is authoritative.
 
 ## Intent
 
-Icon on Apple platforms draws Astryx's shared icon names as SF Symbols, so an
+Icon on Apple platforms draws Astryx's shared icon names as SF Symbols, or as
+images the app ships where its theme maps them, so an
 icon beside system controls looks like the platform's own while its size, color,
 and accessibility follow the core `Icon` contract.
 
@@ -63,10 +64,12 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 **Owns**
 
-- Resolving a shared icon name to an SF Symbol: the theme's mapping, else the
-  platform default.
-- Drawing the symbol in a square box at core's icon size, grown with Dynamic
-  Type, in core's icon color token.
+- Resolving a shared icon name to an image: the theme's mapping (an SF Symbol
+  or an app asset), else the platform's default SF Symbol.
+- Drawing the image in a square box at core's icon size, grown with Dynamic
+  Type, in core's icon color token. An asset takes the color token when its
+  asset catalog renders it as a template image, and keeps its own colors when
+  it renders as an original image.
 - The icon's VoiceOver exposure.
 
 **Does not own / non-goals**
@@ -99,8 +102,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Allowed variation
 
-- **AV1 — Glyph shape.** The symbol is the platform's SF Symbol, not the web's
-  SVG; a theme may map any name to another SF Symbol.
+- **AV1 — Glyph shape.** The glyph is the platform's SF Symbol, not the web's
+  SVG; a theme may map any name to another SF Symbol or to an image the app
+  ships (`spec:AST-082` FR17).
 
 ### Representative states
 
@@ -114,14 +118,16 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Transformation and precedence order
 
-- **ORD1 — Symbol.** Theme mapping → platform default → nothing.
+- **ORD1 — Image.** Theme mapping (SF Symbol or app asset) → platform default
+  SF Symbol → nothing.
 - **ORD2 — Size.** Explicit `size` → owner's icon size → `md`, then × Dynamic
   Type scale.
 
 ### Performance and resources
 
-- **PR1 — No image loading.** The view draws a system symbol by name and holds
-  no image data of its own.
+- **PR1 — No image data of its own.** The view draws a system symbol by name,
+  or an asset from the app's main bundle by name; it holds no image data and
+  loads nothing from the network.
 
 ## Accessibility contract
 
@@ -134,14 +140,14 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Design relationships
 
-| Anatomy or state | Design requirement                            | Representation authority   | Hierarchy role | Component contract |
-| ---------------- | --------------------------------------------- | -------------------------- | -------------- | ------------------ |
-| Glyph            | SF Symbols (Apple Human Interface Guidelines) | prescribed by the platform | supporting     | FR1, FR2           |
+| Anatomy or state | Design requirement                                             | Representation authority   | Hierarchy role | Component contract |
+| ---------------- | -------------------------------------------------------------- | -------------------------- | -------------- | ------------------ |
+| Glyph            | SF Symbols (Apple Human Interface Guidelines), or an app asset | prescribed by the platform | supporting     | FR1, FR2           |
 
 The component implements design requirements without copying their rationale.
 
-Platform control: SwiftUI `Image(systemName:)`. It is the platform's own icon
-view and satisfies the contract, so no custom drawing is needed (`spec:AST-093`
+Platform control: SwiftUI `Image(systemName:)`, or `Image(_:bundle:)` for an
+app asset. It is the platform's own icon view and satisfies the contract, so no custom drawing is needed (`spec:AST-093`
 FR2). Guideline pages: SF Symbols and Accessibility in the Apple Human
 Interface Guidelines.
 
@@ -158,13 +164,13 @@ Theme values read: `color.iconPrimary`, `color.iconSecondary`,
 
 ## Verification map
 
-| Contract | Verification                                                      | Representative states                           | Mutation or failure expectation                                           | Audit section              |
-| -------- | ----------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------- | -------------------------- |
-| FR1      | `IconTests.swift` symbol tests; `contracts.test.ts` IconName test | every built-in; theme replacement; library name | a missing default, a symbol absent on the platform, or a substitute fails | `audit:swift/Icon/symbols` |
-| FR2, FR3 | `IconTests.swift` size and Dynamic Type renders                   | each size; owner size; explicit size; AX5       | a wrong side or an owner size beating an explicit size fails              | `audit:swift/Icon/size`    |
-| FR4      | `IconTests.swift` color map and two-theme render                  | every color; neutral and butter                 | a wrong token or a color of the view's own fails                          | `audit:swift/Icon/color`   |
-| FR5      | `IconTests.swift` initializer and hidden tests                    | both initializers; `isHidden`                   | differing props or a drawn hidden icon fails                              | `audit:swift/Icon/api`     |
-| AR1      | `IconTests.swift` accessibility assertions                        | labeled, unlabeled, empty label                 | an unlabeled icon with a label, or a labeled one without, fails           | `audit:swift/Icon/a11y`    |
+| Contract | Verification                                                                                                        | Representative states                                                                                                                   | Mutation or failure expectation                                                                                          | Audit section              |
+| -------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------- |
+| FR1      | `IconTests.swift` symbol and asset tests (a test bundle stands in for the app's); `contracts.test.ts` IconName test | every built-in; theme replacement; library name; a shipped asset; a missing asset drawing nothing and reported (the release-build path) | a missing default, a symbol absent on the platform, a missing asset that draws or goes unreported, or a substitute fails | `audit:swift/Icon/symbols` |
+| FR2, FR3 | `IconTests.swift` size and Dynamic Type renders                                                                     | each size; owner size; explicit size; AX5                                                                                               | a wrong side or an owner size beating an explicit size fails                                                             | `audit:swift/Icon/size`    |
+| FR4      | `IconTests.swift` color map and two-theme render                                                                    | every color; neutral and butter                                                                                                         | a wrong token or a color of the view's own fails                                                                         | `audit:swift/Icon/color`   |
+| FR5      | `IconTests.swift` initializer and hidden tests                                                                      | both initializers; `isHidden`                                                                                                           | differing props or a drawn hidden icon fails                                                                             | `audit:swift/Icon/api`     |
+| AR1      | `IconTests.swift` accessibility assertions                                                                          | labeled, unlabeled, empty label                                                                                                         | an unlabeled icon with a label, or a labeled one without, fails                                                          | `audit:swift/Icon/a11y`    |
 
 ## Decision log
 

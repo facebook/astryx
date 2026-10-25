@@ -53,10 +53,33 @@ import AppKit
   #expect(IconImage.systemName("xmark").image != nil)
 }
 
-@Test func anAssetTheAppDoesNotShipIsDetected() {
-  // IconImage.image stops a development build for a missing asset, so the test
-  // checks the lookup it relies on instead of drawing.
-  #expect(astryxAppShipsAsset("astryx.test.no-such-asset") == false)
+@Test func aShippedAssetIsFoundAndAMissingOneIsNot() {
+  // The test bundle stands in for the app's main bundle. IconImage.image stops
+  // a development build for a missing asset, so a missing asset is checked
+  // through the lookup it relies on instead of by drawing.
+  #expect(astryxAppShipsAsset("astryx-test-icon", in: .module))
+  #expect(IconImage.assetName("astryx-test-icon").image(in: .module) != nil)
+  #expect(astryxAppShipsAsset("astryx.test.no-such-asset", in: .module) == false)
+}
+
+@Test func aMissingAssetDrawsNothingAndIsReported() {
+  // As a release build sees it: the report does not stop the run, and the
+  // image is nil, so the icon draws nothing. A development build's report is
+  // assertionFailure, which stops it with the asset's name.
+  var reported: [String] = []
+  let image = IconImage.assetName("astryx.test.no-such-asset").image(in: .module) { reported.append($0) }
+  #expect(image == nil)
+  #expect(reported == ["astryx.test.no-such-asset"])
+}
+
+@MainActor
+@Test func anAssetIconTakesTheTextRelativeSizeASymbolGets() {
+  let asset = IconImage.assetName("astryx-test-icon")
+  let small = Pixels(asset.sized(14, in: .module).fixedSize())
+  let large = Pixels(asset.sized(28, in: .module).fixedSize())
+  #expect(small.width > 0)
+  #expect(large.width == small.width * 2)
+  #expect(large.height == large.width)
 }
 
 @Test func iconNamesAreStringsOnTheWire() throws {
