@@ -8,20 +8,24 @@
  *   roles under the field's theme: a theme's `--motion-search-activation-ms`
  *   and `--motion-search-activation-curve` time the activation the field
  *   plays, and without a theme it keeps UIKit's 383 ms ease-in-ease-out; the
- *   activation waits for a presented frame; a mouse plays none (any finger,
- *   iOS or Android, plays it)
+ *   activation from rest starts on the frame that presents the parts at rest
+ *   (`start: 'presented'`), and a change of mind adds to the curves on screen
+ *   (`additive`) on the whole clock; a mouse plays none (any finger, iOS or
+ *   Android, plays it)
  * @position Testing; validates SearchField.tsx and searchFieldModel.ts with a
  *   stubbed computed style (as core's resolveMotion.test.ts does)
  */
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {act, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen} from '@testing-library/react';
 import {uikit} from '@astryxdesign/core/motion/experimental';
 import type * as Motion from '@astryxdesign/core/motion/experimental';
 import {SearchField} from './SearchField';
 import {activationTiming} from './searchFieldModel';
 
 const played = vi.hoisted(() => [] as Array<Record<string, number>>);
+/** The options of each play, in order. */
+const playedOptions = vi.hoisted(() => [] as Array<Record<string, unknown>>);
 /** The search table's registration and each play, in order. */
 const events = vi.hoisted(() => [] as Array<'register' | 'play'>);
 
@@ -47,6 +51,7 @@ vi.mock('@astryxdesign/core/motion/experimental', async importOriginal => {
         const play = animator.play.bind(animator);
         animator.play = (curves, options) => {
           events.push('play');
+          playedOptions.push({...options});
           played.push(
             Object.fromEntries(
               Object.entries(curves).map(([key, curve]) => [
@@ -84,6 +89,7 @@ function deliverFrames(count: number) {
 
 beforeEach(() => {
   played.length = 0;
+  playedOptions.length = 0;
   events.length = 0;
   variables = new Map();
   frameCallbacks = new Map();
@@ -165,13 +171,36 @@ describe('SearchField motion roles', () => {
     render(<SearchField label="Search" />, {container: scope});
     const input = screen.getByRole('searchbox');
     act(() => input.focus());
-    // Nothing plays until the page has presented a frame (two at cadence).
-    expect(played).toEqual([]);
-    deliverFrames(2);
     expect(played.length).toBeGreaterThan(0);
     for (const curves of played) {
       for (const duration of Object.values(curves)) {
         expect(duration).toBeCloseTo(0.6, 6);
+      }
+    }
+  });
+
+  it('starts from rest on the frame that presents the parts at rest, and adds a change of mind to the curves on screen, on the whole clock', () => {
+    render(<SearchField label="Search" />);
+    const input = screen.getByRole('searchbox');
+    act(() => input.focus());
+    expect(playedOptions.length).toBeGreaterThan(0);
+    for (const options of playedOptions) {
+      expect(options).toEqual({start: 'presented'});
+    }
+    const activation = playedOptions.length;
+    deliverFrames(4);
+    // A cancel while the activation still plays.
+    fireEvent.click(
+      document.querySelector('[data-search-field-close]') as HTMLElement,
+    );
+    const turn = playedOptions.slice(activation);
+    expect(turn.length).toBeGreaterThan(0);
+    for (const options of turn) {
+      expect(options).toEqual({additive: true});
+    }
+    for (const curves of played.slice(activation)) {
+      for (const duration of Object.values(curves)) {
+        expect(duration).toBeCloseTo(uikit.search.activationMs / 1000, 6);
       }
     }
   });

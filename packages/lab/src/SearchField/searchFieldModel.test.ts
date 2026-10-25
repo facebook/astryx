@@ -5,8 +5,7 @@
  * @input vitest, searchFieldModel.ts and the UIKit search table
  * @output The model's geometry and clock: the active width on an iPhone 17
  *   Pro, every part's pose at rest and active (both directions), the eased
- *   curve's ends, symmetry and velocities, and the share of the clock a
- *   change of mind takes
+ *   curve's ends, symmetry and velocities
  * @position Testing; validates searchFieldModel.ts without a DOM
  */
 
@@ -19,7 +18,6 @@ import {
   easedCurve,
   heldCurve,
   poseFor,
-  remainingFraction,
 } from './searchFieldModel';
 
 const IPHONE = {restWidth: 370, height: 44, lift: 99, isRtl: false};
@@ -76,14 +74,5 @@ describe('searchFieldModel', () => {
     expect(curve.at(ACTIVATION_S - 0.001)).toBe(0.6);
     expect(curve.at(ACTIVATION_S)).toBe(0);
     expect(curve.velocity(0.1)).toBe(0);
-  });
-
-  it('takes the share of the clock that the remaining travel is of the whole', () => {
-    const rest = poseFor(false, IPHONE);
-    const active = poseFor(true, IPHONE);
-    expect(remainingFraction(rest, rest, active)).toBe(1);
-    expect(remainingFraction(active, rest, active)).toBe(0);
-    const halfway = {...rest, y: -49.5, endX: -27.5, closeX: 22};
-    expect(remainingFraction(halfway, active, rest)).toBeCloseTo(0.5, 9);
   });
 });

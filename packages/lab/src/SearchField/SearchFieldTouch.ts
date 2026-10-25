@@ -5,13 +5,14 @@
 /**
  * @file SearchFieldTouch.ts
  * @input The animator, `uikit.search` and its roles' registration
- *   (`@astryxdesign/core/motion/experimental`), the touch resolver,
- *   onPresentedFrame and searchFieldModel.ts
+ *   (`@astryxdesign/core/motion/experimental`), the touch resolver and
+ *   searchFieldModel.ts
  * @output useSearchFieldMotion: SearchField's touch layer. It places the
  *   field's parts (the lift, the narrowing middle, the trailing end, the close
  *   button) and, under a finger, plays UIKit's activation and cancel on one
- *   clock from the first presented frame; under a mouse or a trackpad the
- *   parts take their places at once
+ *   clock from the frame that presents them at rest, a change of mind adding
+ *   to the curves on screen; under a mouse or a trackpad the parts take their
+ *   places at once
  * @position SearchField's one touch-layer module, imported only by
  *   SearchField.tsx, so a desktop build can swap it and the size report can
  *   measure it
@@ -25,17 +26,16 @@ import {isRtlElement} from '@astryxdesign/core/hooks';
 import {
   uikit,
   useAnimator,
+  type AnimateOptions,
   type Animator,
   type MotionCurve,
   type MotionHandle,
 } from '@astryxdesign/core/motion/experimental';
-import {onPresentedFrame} from '../presentedFrame';
 import {
   activationTiming,
   easedCurve,
   heldCurve,
   poseFor,
-  remainingFraction,
   type SearchFieldGeometry,
   type SearchFieldPose,
 } from './searchFieldModel';
@@ -127,87 +127,82 @@ export function useSearchFieldMotion({
       return;
     }
     settledRef.current = target;
+    const continuesMotion = isAnimating.current;
     isAnimating.current = true;
     let cancelled = false;
-    const run = () => {
-      const shape = geometry();
-      const to = poseFor(target, shape);
-      const from = poseFor(!target, shape);
-      const current = presented();
-      // The clock and curve under the field's theme, read as the move starts
-      // (the search table's roles, registered once before the first move).
-      uikit.registerSearchTable();
-      const timing = activationTiming(rootAnimator.animator.element);
-      const duration = timing.seconds * remainingFraction(current, from, to);
-      // Under reduced motion the animator plays its cross-fade for these.
-      const options = {};
-      const handles = [
-        play(
-          rootAnimator.animator,
-          {y: easedCurve(current.y, to.y, duration, timing.ease)},
-          options,
-        ),
-        play(
-          middleAnimator.animator,
-          {
-            scaleX: easedCurve(
-              current.middleScale,
-              to.middleScale,
-              duration,
-              timing.ease,
-            ),
-          },
-          options,
-        ),
-        play(
-          endAnimator.animator,
-          {x: easedCurve(current.endX, to.endX, duration, timing.ease)},
-          options,
-        ),
-        play(
-          closeAnimator.animator,
-          {
-            x: easedCurve(current.closeX, to.closeX, duration, timing.ease),
-            // Cancel slides the close button out at the opacity it has and
-            // removes it at the end, as UIKit does.
-            opacity: target
-              ? easedCurve(
-                  current.closeOpacity,
-                  to.closeOpacity,
-                  duration,
-                  timing.ease,
-                )
-              : heldCurve(current.closeOpacity, to.closeOpacity, duration),
-          },
-          options,
-        ),
-      ];
-      const playing = handles.filter(
-        (handle): handle is MotionHandle => handle != null,
-      );
-      void Promise.all(playing.map(handle => handle.finished)).then(results => {
-        if (cancelled || !results.every(Boolean)) {
-          return;
-        }
-        isAnimating.current = false;
-      });
-    };
-    // The move starts on the first frame the page presents after this
-    // commit, fresh (onPresentedFrame): Mobile Safari brings the keyboard up
-    // with no frame for ~150 ms after the focus, and a motion created before
-    // that stall would jump a third of the way when frames resume. A host
-    // that moves with the field (a navigation bar) starts through the same
-    // helper, so both start on the same frame.
-    const win = rootAnimator.animator.element?.ownerDocument.defaultView;
-    let cancelStart = () => {};
-    if (win == null) {
-      run();
-    } else {
-      cancelStart = onPresentedFrame(win, run);
-    }
+    const shape = geometry();
+    const to = poseFor(target, shape);
+    const current = presented();
+    // The clock and curve under the field's theme, read as the move starts
+    // (the search table's roles, registered once before the first move).
+    uikit.registerSearchTable();
+    const timing = activationTiming(rootAnimator.animator.element);
+    const duration = timing.seconds;
+    // From rest the move waits for the frame that presents the parts at rest
+    // (`start: 'presented'`): Mobile Safari brings the keyboard up with no
+    // frame for ~150 ms after the focus, and a motion created before that
+    // stall would jump a third of the way when frames resume. A host that
+    // moves with the field (a navigation bar) starts the same way, in the
+    // same task, so both start together. A change of mind mid-move adds the
+    // turn to the curve on screen (`additive`), as UIKit's animations do: the
+    // old curve carries the rest of its travel, the added one runs the whole
+    // clock, and the turn keeps its velocity however late WebKit applies it.
+    // Under reduced motion the animator plays its cross-fade for these.
+    const options = continuesMotion
+      ? {additive: true}
+      : {start: 'presented' as const};
+    const handles = [
+      play(
+        rootAnimator.animator,
+        {y: easedCurve(current.y, to.y, duration, timing.ease)},
+        options,
+      ),
+      play(
+        middleAnimator.animator,
+        {
+          scaleX: easedCurve(
+            current.middleScale,
+            to.middleScale,
+            duration,
+            timing.ease,
+          ),
+        },
+        options,
+      ),
+      play(
+        endAnimator.animator,
+        {x: easedCurve(current.endX, to.endX, duration, timing.ease)},
+        options,
+      ),
+      play(
+        closeAnimator.animator,
+        {
+          x: easedCurve(current.closeX, to.closeX, duration, timing.ease),
+          // Cancel slides the close button out at the opacity it has and
+          // removes it at the end, as UIKit does.
+          opacity: target
+            ? easedCurve(
+                current.closeOpacity,
+                to.closeOpacity,
+                duration,
+                timing.ease,
+              )
+            : heldCurve(current.closeOpacity, to.closeOpacity, duration),
+        },
+        options,
+      ),
+    ];
+    const playing = handles.filter(
+      (handle): handle is MotionHandle => handle != null,
+    );
+    void Promise.all(playing.map(handle => handle.finished)).then(results => {
+      if (cancelled || !results.every(Boolean)) {
+        return;
+      }
+      isAnimating.current = false;
+    });
     return () => {
       cancelled = true;
-      cancelStart();
     };
     // `geometry` changes with `lift`; a lift change while settled re-places
     // the field through the same path.
@@ -258,7 +253,7 @@ export function useSearchFieldMotion({
 function play(
   animator: Animator,
   curves: Partial<Record<'x' | 'y' | 'scaleX' | 'opacity', MotionCurve>>,
-  options: {at?: number},
+  options: AnimateOptions,
 ): MotionHandle | null {
   const moving: typeof curves = {};
   for (const [key, curve] of Object.entries(curves) as [

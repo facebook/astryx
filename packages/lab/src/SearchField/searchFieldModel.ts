@@ -16,8 +16,8 @@
  * narrows to make room for the glass close button, which slides in from 44
  * pt past its place while it fades in. Cancel runs the same clock back to
  * rest, the close button sliding out at the opacity it has. A change of
- * mind mid-flight starts from the presented values and takes the share of
- * the clock that the remaining travel is of the whole, so nothing jumps.
+ * mind mid-flight adds the turn to the curves on screen, on the whole clock,
+ * as UIKit's animations do (the animator's `additive`).
  * The clock and the curve are motion roles (`search.activationMs`,
  * `search.activationCurve`): a theme may retune them, and each activation
  * reads them for the field's theme when it starts.
@@ -174,32 +174,4 @@ export function heldCurve(
     at: t => (t >= duration ? to : from),
     velocity: () => 0,
   };
-}
-
-/**
- * The share of the activation clock a move takes: all of it from rest or
- * from the other end, less when a change of mind leaves only part of the
- * travel (measured on the part that travels furthest, the trailing end or
- * the rise).
- */
-export function remainingFraction(
-  current: SearchFieldPose,
-  from: SearchFieldPose,
-  to: SearchFieldPose,
-): number {
-  const spans: [number, number, number][] = [
-    [current.endX, from.endX, to.endX],
-    [current.y, from.y, to.y],
-    [current.closeX, from.closeX, to.closeX],
-  ];
-  let best = 0;
-  let fraction = 1;
-  for (const [now, start, end] of spans) {
-    const total = Math.abs(end - start);
-    if (total > best) {
-      best = total;
-      fraction = Math.min(1, Math.max(0, Math.abs(end - now) / total));
-    }
-  }
-  return fraction;
 }

@@ -406,6 +406,39 @@ test('the close button cancels on the same clock, sliding out at full opacity', 
   ).toEqual({opacity: '0', pointerEvents: 'none', hidden: 'true'});
 });
 
+/** The largest step between neighbouring samples, px. */
+const largestStep = (xs: number[]) =>
+  Math.max(...xs.slice(1).map((x, i) => Math.abs(x - xs[i])));
+
+/** The activation's own fastest step of the trailing end per frame, px. */
+const PEAK_STEP =
+  Math.max(
+    ...Array.from(
+      {length: 200},
+      (_, i) => (ease((i + 1) / 200) - ease(i / 200)) * 200,
+    ),
+  ) *
+  NARROWING *
+  (16.667 / ACTIVATION_MS);
+
+/** How many times the samples change direction (steps under 0.01 px skipped). */
+function turnsOf(xs: number[]) {
+  let turns = 0;
+  let direction = 0;
+  for (let i = 1; i < xs.length; i++) {
+    const step = xs[i] - xs[i - 1];
+    if (Math.abs(step) < 0.01) {
+      continue;
+    }
+    const next = Math.sign(step);
+    if (direction !== 0 && next !== direction) {
+      turns++;
+    }
+    direction = next;
+  }
+  return turns;
+}
+
 test('a cancel mid-activation turns around from where the parts are, without a jump', async ({
   page,
 }) => {
@@ -422,15 +455,18 @@ test('a cancel mid-activation turns around from where the parts are, without a j
   const samples = await sampleCurve(end(page), times);
   await releaseAnimations(page, {finish: true});
   const xs = samples.map(sample => sample.transform.translateX);
-  // It starts between rest and the narrowed end (not back at either), at
-  // least as far along as before the second tap, and widens back to rest on
-  // a shorter share of the clock.
-  expect(xs[0]).toBeLessThanOrEqual(before + 0.5);
-  expect(xs[0]).toBeGreaterThan(-NARROWING);
-  for (let i = 1; i < xs.length; i++) {
-    expect(xs[i]).toBeGreaterThanOrEqual(xs[i - 1] - 0.01);
-  }
-  expect(reverse.to - reverse.from).toBeLessThan(ACTIVATION_MS);
+  // It starts where the activation had brought it (between rest and the
+  // narrowed end, at least as far along as before the second tap) and keeps
+  // its velocity through the turn, as UIKit's added animations do: it narrows
+  // on a little, turns once and widens back to rest, in small steps, on the
+  // whole clock.
+  const detail = JSON.stringify({before, xs});
+  expect(xs[0], detail).toBeLessThanOrEqual(before + 0.5);
+  expect(xs[0], detail).toBeGreaterThan(-NARROWING);
+  expect(xs[1], detail).toBeLessThan(xs[0]);
+  expect(turnsOf(xs), detail).toBe(1);
+  expect(largestStep(xs), detail).toBeLessThan(PEAK_STEP + 0.5);
+  expect(reverse.to - reverse.from).toBeGreaterThanOrEqual(ACTIVATION_MS - 1);
   await waitForRest(end(page));
   expect(Math.abs(await translateX(end(page)))).toBeLessThan(0.5);
 });
@@ -455,14 +491,16 @@ test('a tap on the field during the cancel re-activates from where the parts are
   await releaseAnimations(page, {finish: true});
   await expect(root(page)).toHaveAttribute('data-search-field-active', 'true');
   const xs = samples.map(sample => sample.transform.translateX);
-  // From where the cancel had brought it, narrowing again, monotonically,
-  // on the remaining share of the clock.
-  expect(xs[0]).toBeGreaterThanOrEqual(before - 0.5);
-  expect(xs[0]).toBeLessThan(0);
-  for (let i = 1; i < xs.length; i++) {
-    expect(xs[i]).toBeLessThanOrEqual(xs[i - 1] + 0.01);
-  }
-  expect(again.to - again.from).toBeLessThan(ACTIVATION_MS);
+  // From where the cancel had brought it, keeping its velocity through the
+  // turn: it widens on a little, turns once and narrows again, in small
+  // steps, on the whole clock.
+  const detail = JSON.stringify({before, xs});
+  expect(xs[0], detail).toBeGreaterThanOrEqual(before - 0.5);
+  expect(xs[0], detail).toBeLessThan(0);
+  expect(xs[1], detail).toBeGreaterThan(xs[0]);
+  expect(turnsOf(xs), detail).toBe(1);
+  expect(largestStep(xs), detail).toBeLessThan(PEAK_STEP + 0.5);
+  expect(again.to - again.from).toBeGreaterThanOrEqual(ACTIVATION_MS - 1);
   await waitForRest(end(page));
   expect(await translateX(end(page))).toBeCloseTo(-NARROWING, 1);
   // The close button is back, past the time the cancel would have ended.
@@ -959,7 +997,8 @@ test(
         width: box.x * 2 + box.width,
         height: box.height + 24,
       },
-      times: Array.from({length: 19}, (_, i) => i * 16.667),
+      // The whole clock: the turn adds to the curves on screen.
+      times: Array.from({length: 25}, (_, i) => i * 16.667),
       measure: async () => ({
         endX: await translateX(end(page)),
         closeX: await translateX(close(page)),
