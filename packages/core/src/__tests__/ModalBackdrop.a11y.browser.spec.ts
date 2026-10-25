@@ -1,4 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
+// @pr-a11y scope ^(packages/core/src/(Dialog|AlertDialog|Drawer|MobileNav|BottomSheet)/|apps/storybook/stories/(Dialog|AlertDialog|Drawer|MobileNav|BottomSheet)\.stories)
 
 /**
  * @file ModalBackdrop.a11y.browser.spec.ts
