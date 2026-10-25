@@ -114,8 +114,7 @@ a measured, sourced difference exists.
   durations become theme motion roles instead of constants in source. It departs from the draft `design:motion` DR3
   wherever the native motion settles with an overshoot or stretches with a
   rubber band. The motion and gesture machinery behind these roles is internal:
-  it publishes no public API and no module-level `/experimental` subpath
-  (`spec:AST-017` FR21).
+  it publishes no public API.
 
   | Role                       | Default                             | Source                                                                                         |
   | -------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -229,8 +228,7 @@ a measured, sourced difference exists.
   report and never the moment reported.
 - **FR17 — Native readings.** A recognizer's thresholds MUST follow UIKit's
   measured values (FR1, FR2). A pan begins at 10 pt of travel on either axis,
-  and its translation excludes that travel. Release velocity is governed by `spec:AST-100`: a Lab gesture reads release velocity only through Core's recognizers
-  (`spec:AST-100` FR1, `architecture:interaction-modality` INV10).
+  and its translation excludes that travel. Release velocity is governed by `spec:AST-100`.
 - **FR18 — `touch-action` leaves the browser the rest.** An element with touch
   recognizers MUST get a `touch-action` that leaves the browser exactly what
   its recognizers do not use: the other axis for an axis-limited pan or swipe,
@@ -461,8 +459,6 @@ FR31–FR33 and FR35 apply to anchored menus and to Popover under a finger. A mo
 - BottomSheet, Toast, Lightbox, NavigationStack, row swipes and keyboard
   dismissal: a drag that commits follows FR36–FR40.
 - `spec:AST-100` owns release velocity, which FR17 reads.
-- `architecture:interaction-modality` INV10: Lab reads release velocity only
-  through Core's recognizers and keeps no tracker of its own.
 - `design:user-states` DR1 and DR3, `spec:AST-025` FR14 and `spec:AST-013` FR3
   each carry an amendment for touch presentations (FR11, FR14, Platform
   support); `design:motion` DR3 and DR5 (draft) are departed from or met as
