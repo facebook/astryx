@@ -54,6 +54,14 @@ export interface ListContextValue {
    * `'none'`.
    */
   task?: ListTaskMarker;
+  /**
+   * Set while the list animates its changes (`hasAnimatedChanges`);
+   * internal. A row leaving the list calls it as it unmounts, while it is
+   * still in the document, so the removal's collapse shows it as it was on
+   * screen (List/useListUpdateMotion.ts `keepPresentation`, the list's
+   * touch layer, reached only through the list).
+   */
+  keepRowPresentation?: (row: HTMLElement) => void;
 }
 
 export const ListContext = createContext<ListContextValue | null>(null);
