@@ -29,15 +29,15 @@ system_specs: [spec:AST-085]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                        |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | None changes. IconButton takes Button's props without `isIconOnly`, `children`, and `endContent`, and requires `icon`.                                                                          |
-| Behavior                | IconButton always renders Button's icon-only mode: a square button named by `label` through `aria-label`, with no visible text. Every other behavior is Button's.                               |
-| End-user impact         | People see a compact square action with the same feedback as any Button. Screen-reader users hear `label`. Sighted users get a visible hint only when the caller adds one.                      |
-| Builder impact          | None.                                                                                                                                                                                           |
-| Compatibility/readiness | Records shipped behavior; no API, default, or DOM change. Button's disabled-focusability and reduced-motion gaps apply unchanged; both are listed under Current-state impact.                   |
-| Review checks           | Reject an IconButton that renders visible label text or end content, is not square, loses its `aria-label`, or behaves differently from Button's icon-only mode.                                |
-| Governing rules         | `family:buttons` FR1, FR7, AV2, AV6; `component:Button`; `spec:AST-085` FR1, FR4; `design:reduced-motion` DR1, DR3; `architecture:component-size-cascade`; `architecture:public-component-api`. |
+| Area                    | Contract                                                                                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | None changes. IconButton takes Button's props without `isIconOnly`, `children`, and `endContent`, and requires `icon`.                                                                                  |
+| Behavior                | IconButton always renders Button's icon-only mode: a button, square by default, named by `label` through `aria-label`, with no visible text. Every other behavior is Button's.                          |
+| End-user impact         | People see a compact, square-by-default action with the same feedback as any Button. Screen-reader users hear `label`. Sighted users get a visible hint only when the caller adds one.                  |
+| Builder impact          | None.                                                                                                                                                                                                   |
+| Compatibility/readiness | Records shipped behavior; no API, default, or DOM change. Button's disabled-focusability, reduced-motion, and self-colored-content gaps apply unchanged; both are listed under Current-state impact.    |
+| Review checks           | Reject an IconButton that renders visible label text or end content, is not square with the default aspect and no `width`, loses its `aria-label`, or behaves differently from Button's icon-only mode. |
+| Governing rules         | `family:buttons` FR1, FR7, AV2, AV6; `component:Button`; `spec:AST-085` FR1, FR4; `design:reduced-motion` DR1, DR3; `architecture:component-size-cascade`; `architecture:public-component-api`.         |
 
 This table is a review projection; the body below is authoritative.
 
@@ -68,7 +68,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 **Does not own / non-goals**
 
-- Every rendered behavior: element, naming rules, size, square geometry,
+- Every rendered behavior: element, naming rules, size, default square geometry,
   click and `clickAction` handling, pending, disabled, link mode, tooltip,
   elevation, feedback, and the `button` theme target — owned by
   `component:Button`.
@@ -78,10 +78,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-| Concept        | Closed values or states | Meaning                               | Availability by variant/orientation/state             | Default  | Owner                  | Stability | Invalid-value behavior                                         |
-| -------------- | ----------------------- | ------------------------------------- | ----------------------------------------------------- | -------- | ---------------------- | --------- | -------------------------------------------------------------- |
-| Icon-only mode | always on               | The icon is the only visible content. | Every variant, size, and state.                       | on       | `component:IconButton` | Stable    | TypeScript rejects `isIconOnly`, `children`, and `endContent`. |
-| Icon           | caller node             | The visible glyph; required.          | Every state; hidden behind the Spinner while pending. | required | `component:IconButton` | Stable    | TypeScript rejects a missing `icon`.                           |
+| Concept        | Closed values or states | Meaning                               | Availability by variant/orientation/state                                                                           | Default  | Owner                  | Stability | Invalid-value behavior                                         |
+| -------------- | ----------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------- | --------- | -------------------------------------------------------------- |
+| Icon-only mode | always on               | The icon is the only visible content. | Every variant, size, and state.                                                                                     | on       | `component:IconButton` | Stable    | TypeScript rejects `isIconOnly`, `children`, and `endContent`. |
+| Icon           | caller node             | The visible glyph; required.          | Every state; hidden behind the Spinner while pending, unless it paints its own colors (`component:Button` FR8 gap). | required | `component:IconButton` | Stable    | TypeScript rejects a missing `icon`.                           |
 
 Every other concept (variant, size, elevation, pending, availability, link
 mode, width, tooltip) is Button's, with Button's defaults.
@@ -92,7 +92,7 @@ mode, width, tooltip) is Button's, with Button's defaults.
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
 | FR1 | IconButton renders exactly one Button in icon-only mode with the caller's `icon` and every other supplied prop, including `ref`. It adds no element, state, or behavior of its own.                                                                                                                                                                                                                                            | `family:buttons` AV2; current source                       |
 | FR2 | The accessible name is `label` through `aria-label` whenever `label` is non-empty; no label text is rendered visibly.                                                                                                                                                                                                                                                                                                          | `family:buttons` FR1; current source and tests             |
-| FR3 | The control is square at the resolved size with no padding. An Astryx Icon without an explicit size renders `sm` in `sm` and `md` IconButtons and `md` in `lg` ones; an explicit Icon size wins.                                                                                                                                                                                                                               | `family:buttons` FR7; current tests                        |
+| FR3 | With the default icon-only aspect and no caller `width`, the control is square at the resolved size with no padding. An Astryx Icon without an explicit size renders `sm` in `sm` and `md` IconButtons and `md` in `lg` ones; an explicit Icon size wins.                                                                                                                                                                      | `family:buttons` FR7; current tests                        |
 | FR4 | Variant, size, elevation, `onClick`, `clickAction`, loading, disabled, and press feedback follow `component:Button`, including its implementation gaps: disabled follows `component:Button` FR10, loading follows FR8, whose Spinner MUST appear at once under reduced motion with a fine pointer (`design:reduced-motion` DR3), and press feedback follows FR15, whose press scale MUST NOT apply under reduced motion (DR1). | `component:Button`; `design:reduced-motion`; current tests |
 
 ### Allowed variation
@@ -104,8 +104,8 @@ mode, width, tooltip) is Button's, with Button's defaults.
 
 | State                | Required invariant                                             | Allowed variation           |
 | -------------------- | -------------------------------------------------------------- | --------------------------- |
-| At rest              | Square button named by `label`; icon only.                     | Variant, size, theme paint. |
-| Floating (elevation) | Shadow for the chosen tier on the square surface.              | Tier.                       |
+| At rest              | Square by default, named by `label`; icon only.                | Variant, size, theme paint. |
+| Floating (elevation) | Shadow for the chosen tier on the surface.                     | Tier.                       |
 | Loading              | Button's pending state: Spinner, `aria-busy`, still focusable. | Spinner delay.              |
 | Disabled             | Button's disabled state (`component:Button` FR10).             | Tooltip present or not.     |
 
@@ -134,10 +134,10 @@ mode, width, tooltip) is Button's, with Button's defaults.
 
 ## Design relationships
 
-| Anatomy or state | Design requirement                               | Representation authority | Hierarchy role | Component contract |
-| ---------------- | ------------------------------------------------ | ------------------------ | -------------- | ------------------ |
-| Square surface   | Button's surface at a 1 / 1 aspect ratio.        | Current source           | Prominent      | FR3                |
-| Icon             | The only visible content, sized from the button. | Current source and tests | Prominent      | FR3                |
+| Anatomy or state | Design requirement                                                                                      | Representation authority | Hierarchy role | Component contract |
+| ---------------- | ------------------------------------------------------------------------------------------------------- | ------------------------ | -------------- | ------------------ |
+| Square surface   | Button's surface at the default 1 / 1 aspect ratio, unless a caller `width` or theme aspect changes it. | Current source           | Prominent      | FR3                |
+| Icon             | The only visible content, sized from the button.                                                        | Current source and tests | Prominent      | FR3                |
 
 `design:reduced-motion` governs the press scale IconButton inherits (FR4). No
 other design record governs IconButton. IconButton has no theme target of its own;
@@ -156,7 +156,7 @@ it renders Button's `button` target.
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
 | FR1, FR2             | `IconButton.test.tsx` label, visible-text, ref, and displayName cases                                                                            | At rest                                              | Visible label text, a lost `aria-label`, or a dropped ref fails.                                                                                             | `audit:IconButton/anatomy`       |
 | FR3                  | `IconButton.test.tsx` icon size cases                                                                                                            | `sm`, `md`, `lg`; explicit Icon size                 | A wrong default Icon size or an overridden explicit size fails.                                                                                              | `audit:IconButton/layout`        |
-| FR3 (square)         | Evidence gap: no IconButton test asserts the square shape or zero padding                                                                        | `sm`, `md`, `lg`                                     | —                                                                                                                                                            | `audit:IconButton/layout`        |
+| FR3 (square)         | Evidence gap: no IconButton test asserts the default square shape or zero padding                                                                | `sm`, `md`, `lg`                                     | —                                                                                                                                                            | `audit:IconButton/layout`        |
 | FR4                  | `IconButton.test.tsx` click, disabled, loading, and elevation cases                                                                              | Click; disabled; loading; `none` and `med` elevation | A click that does not reach `onClick`, a disabled click that does, a busy IconButton without `aria-disabled`, or identical classes for two elevations fails. | `audit:IconButton/behavior`      |
 | FR4 (variant, size)  | Evidence gap: the variant and size cases assert only that a button renders                                                                       | `destructive`; `sm`                                  | —                                                                                                                                                            | `audit:IconButton/behavior`      |
 | FR4 (reduced motion) | Evidence gap: no test presses or loads an IconButton under `prefers-reduced-motion: reduce`; the shipped scale and Spinner fade fail this clause | Mouse and touch press; loading with a fine pointer   | A computed transform other than `none` or `scale(1)` during the press, or a Spinner opacity below 1 after loading starts.                                    | `audit:IconButton/behavior`      |
@@ -173,6 +173,9 @@ it renders Button's `button` target.
   and its Spinner fades in, when the person prefers reduced motion, as
   `component:Button` FR8 and FR15 record, against `design:reduced-motion` DR1
   and DR3.
+- **Self-colored icon while loading (FR4).** An icon that paints its own
+  colors, such as an image or a multicolor SVG, stays visible beside the
+  Spinner, as `component:Button` FR8 records.
 
 ## Decision log
 
