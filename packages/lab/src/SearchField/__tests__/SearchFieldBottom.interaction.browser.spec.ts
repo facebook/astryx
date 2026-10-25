@@ -200,6 +200,16 @@ const overlaysContent = async (page: Page) =>
         .virtualKeyboard.overlaysContent,
   );
 
+/** The field's computed `touch-action` (the gesture host writes it). */
+const touchActionOf = async (page: Page) =>
+  page
+    .locator('[data-search-field-start]')
+    .evaluate(element =>
+      element.parentElement == null
+        ? null
+        : getComputedStyle(element.parentElement).touchAction,
+    );
+
 /** How many animations the root itself runs. */
 const rootAnimations = async (page: Page) =>
   root(page).evaluate(element => element.getAnimations().length);
@@ -511,6 +521,86 @@ test('a tap focuses the field without Safari’s reveal', async ({page}) => {
   // view (Mobile Safari would pan the page instead of letting the bar ride).
   expect(calls).toEqual([{role: 'searchbox', options: {preventScroll: true}}]);
   expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
+});
+
+test('the tap claim attaches only where it claims taps', async ({page}) => {
+  // Where the keyboard covers the page (Mobile Safari), the bottom field
+  // claims a tap, so the gesture host owns its touch-action.
+  await openBottom(page);
+  expect(await touchActionOf(page)).not.toBe('auto');
+  // A stacked field never claims a tap: it keeps the browser's own.
+  await openStory(page, storybook(), 'lab-searchfield--default');
+  await expect(page.getByRole('searchbox').first()).toBeVisible();
+  expect(await touchActionOf(page)).toBe('auto');
+});
+
+/**
+ * Records every focus call on the search field and every document scroll,
+ * from here on.
+ */
+async function spyFocusAndScroll(page: Page) {
+  await page.evaluate(() => {
+    const spy = {focus: [] as unknown[], scrolls: 0, scrollY: window.scrollY};
+    (window as unknown as {__spy: typeof spy}).__spy = spy;
+    const focus = HTMLElement.prototype.focus;
+    HTMLElement.prototype.focus = function (options?: FocusOptions) {
+      if (this.getAttribute('role') === 'searchbox') {
+        spy.focus.push(options ?? null);
+      }
+      focus.call(this, options);
+    };
+    window.addEventListener('scroll', () => {
+      spy.scrolls++;
+    });
+  });
+  return async () =>
+    page.evaluate(() => {
+      const spy = (
+        window as unknown as {
+          __spy: {focus: unknown[]; scrolls: number; scrollY: number};
+        }
+      ).__spy;
+      return {...spy, scrolled: window.scrollY - spy.scrollY};
+    });
+}
+
+test('focus moved from another control (Tab, as the keyboard’s next button moves it) reaches the field without a reveal', async ({
+  page,
+}) => {
+  const {field} = await openBottom(page);
+  // Another text field, before the bar in the document.
+  await page.evaluate(() => {
+    const other = document.createElement('input');
+    other.setAttribute('aria-label', 'Name');
+    document.body.prepend(other);
+  });
+  await page.getByRole('textbox', {name: 'Name'}).focus();
+  const read = await spyFocusAndScroll(page);
+  await page.keyboard.press('Tab');
+  await expect(field).toBeFocused();
+  // The field took the move over with preventScroll (spec:AST-099 FR4), and
+  // the document did not move.
+  const spy = await read();
+  expect(spy.focus).toEqual([{preventScroll: true}]);
+  expect(spy.scrolls).toBe(0);
+  expect(spy.scrolled).toBe(0);
+});
+
+test('after the keyboard’s Done, the next tap focuses the field without a reveal', async ({
+  page,
+}) => {
+  const {driver, field} = await openBottom(page);
+  await driver.tap(await centerOf(field));
+  await expect(field).toBeFocused();
+  // Done ends editing: focus leaves the field for nothing.
+  await field.evaluate(element => (element as HTMLElement).blur());
+  const read = await spyFocusAndScroll(page);
+  await driver.tap(await centerOf(field));
+  await expect(field).toBeFocused();
+  const spy = await read();
+  expect(spy.focus).toEqual([{preventScroll: true}]);
+  expect(spy.scrolls).toBe(0);
+  expect(spy.scrolled).toBe(0);
 });
 
 test('a tap into an existing query puts the caret where the finger lifted', async ({
@@ -889,6 +979,8 @@ test.describe('where the browser reports the keyboard itself (Chrome on Android)
   }) => {
     const {driver, field} = await openBottom(page, {virtualKeyboardApi: true});
     expect(await overlaysContent(page)).toBe(false);
+    // No tap claim attached: the field keeps the browser's touch-action.
+    expect(await touchActionOf(page)).toBe('auto');
     // The tap stays the browser's: only Chrome's own tap brings its keyboard
     // up, so no focus comes from script.
     await page.evaluate(() => {

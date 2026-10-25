@@ -26,7 +26,8 @@
  * field's frame every frame with no animation object, so its swell and
  * narrowing are the measured frames themselves (`search.bottom.*Frames`),
  * played back as curves. Above the software keyboard it is placed by layout
- * (`bottomLift`), and the change rides the keyboard's own spring.
+ * (`bottomLift`), committed at once on each keyboard report: a Lab surface
+ * never rides the keyboard (spec:AST-099 FR8).
  *
  * SYNC: When modified, update searchFieldModel.test.ts and SearchField.tsx.
  */

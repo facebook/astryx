@@ -483,11 +483,14 @@ export function useSearchFieldMotion({
   // the keyboard up (a focus from script inside the tap does not, measured
   // on the Android emulator), and as the keyboard overlays the page from
   // the focus on, that focus pans nothing, so the tap stays the browser's.
-  const claimsTapRef = useRef(false);
+  // The recognizer attaches only where it claims (react-component-runtime
+  // INV5): any other field keeps the browser's own touch-action and tap.
+  const [claimsTap, setClaimsTap] = useState(false);
   useLayoutEffect(() => {
     const win = rootAnimator.animator.element?.ownerDocument.defaultView;
-    claimsTapRef.current = !isStacked && win != null && keyboardCoversPage(win);
+    setClaimsTap(!isStacked && win != null && keyboardCoversPage(win));
   }, [isStacked, rootAnimator]);
+  const noClaimTarget = useRef<HTMLElement | null>(null);
   // A tap held a while still gets its mouse events a few ms after its
   // cancelled touchend, aimed at whatever is under the finger by then (the
   // field has moved): the claimed tap swallows them, from its touchend until
@@ -529,7 +532,7 @@ export function useSearchFieldMotion({
   }, []);
   useEffect(() => () => disarmRef.current?.(), []);
   useGestureRecognizer(
-    fieldRef,
+    claimsTap ? fieldRef : noClaimTarget,
     () =>
       new TapGestureRecognizer({
         name: 'search-field-bottom-focus',
@@ -538,7 +541,6 @@ export function useSearchFieldMotion({
           const input = inputRef.current;
           const target = touch.target as Element | null;
           return (
-            claimsTapRef.current &&
             input != null &&
             input.ownerDocument.activeElement !== input &&
             !(target?.closest?.('button') != null)
@@ -561,6 +563,29 @@ export function useSearchFieldMotion({
       }
     },
   );
+
+  // Focus navigation into the field (the keyboard's previous and next
+  // buttons, Tab) moves focus from another control, and the browser reveals
+  // the field in its own focus step. That move's blur, dispatched in the
+  // capture phase ahead of the step, names the field in `relatedTarget`:
+  // focusing it there with preventScroll leaves the step nothing to reveal
+  // (spec:AST-099 FR4), the rule core's keyboard module follows to refuse a
+  // reveal (#8176). A host's own focus goes through the handle, which passes
+  // preventScroll. Where the tap is claimed.
+  useEffect(() => {
+    const input = inputRef.current;
+    const doc = input?.ownerDocument;
+    if (!claimsTap || input == null || doc == null) {
+      return;
+    }
+    const onBlur = (event: FocusEvent) => {
+      if (event.relatedTarget === input && doc.activeElement !== input) {
+        input.focus({preventScroll: true});
+      }
+    };
+    doc.addEventListener('blur', onBlur, true);
+    return () => doc.removeEventListener('blur', onBlur, true);
+  }, [claimsTap, inputRef]);
 
   // A resize while settled (the window turning, a host relaying out) moves
   // the narrowed end to the new width at once.

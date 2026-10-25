@@ -10,7 +10,8 @@
  *   report, measured as spec:AST-099 FR2 and FR8 define it; also
  *   keyboardCoversPage and keyboardInsetOf
  * @position Lab-internal, not exported from `@astryxdesign/lab`: lab's one
- *   keyboard listener (spec:AST-099 INV11 keeps lab on its own), shared by
+ *   keyboard listener (architecture:react-component-runtime INV11 keeps lab
+ *   on its own), shared by
  *   SearchField's bottom placement and the tab bar's search field. A lab
  *   surface lays out from the height, committed at once on each report, and
  *   never rides the keyboard (FR8)
