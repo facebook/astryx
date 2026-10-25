@@ -59,9 +59,10 @@ export function parseRouting(source) {
   const routing = {mode: 'scoped', scope: [], audits: []};
   const modes = new Set();
   for (const line of source.split('\n')) {
-    const match = /^\s*(?:\/\/|\/?\*+)\s*@pr-a11y\s+([a-z-]+)\s*(.*?)\s*(?:\*\/)?\s*$/.exec(
-      line,
-    );
+    const match =
+      /^\s*(?:\/\/|\/?\*+)\s*@pr-a11y\s+([a-z-]+)\s*(.*?)\s*(?:\*\/)?\s*$/.exec(
+        line,
+      );
     if (!match) continue;
     const [, key, value] = match;
     if (key === 'scope') {
@@ -109,7 +110,9 @@ export function specOwners(file) {
   const pkg = /^packages\/([^/]+)\/src\/([^/]+)\//.exec(file);
   if (pkg) {
     const [, packageName, top] = pkg;
-    const folder = /^[A-Z]/.test(top) ? `packages/${packageName}/src/${top}/` : null;
+    const folder = /^[A-Z]/.test(top)
+      ? `packages/${packageName}/src/${top}/`
+      : null;
     const components = new Set();
     if (folder) components.add(`${packageName}/${top}`);
     if (/^[A-Z]/.test(named)) components.add(`${packageName}/${named}`);
@@ -172,8 +175,26 @@ export function auditPlan(name, config) {
     env: entry.env ?? {},
     reportFile: `${EVIDENCE_DIR}/${report}-a11y-report.json`,
     evidence:
-      entry.evidence === undefined ? `${report}-audit-evidence` : entry.evidence,
+      entry.evidence === undefined
+        ? `${report}-audit-evidence`
+        : entry.evidence,
   };
+}
+
+/**
+ * The audit plan for a "[Component Audit] <Name>:" title, or null when no
+ * spec names the audit and the config has no entry for it: such a name may
+ * have no owned Storybook route, and axe must not be handed it.
+ * @param {string | undefined} name
+ * @param {{routing: {audits: string[]}}[]} specs
+ * @param {Record<string, object>} config
+ */
+export function planFor(name, specs, config) {
+  if (!name) return null;
+  const configured =
+    Object.hasOwn(config, name) ||
+    specs.some(({routing}) => routing.audits.includes(name));
+  return configured ? auditPlan(name, config) : null;
 }
 
 /** The `accessibility-audit.js` arguments for an audit plan. */
@@ -288,7 +309,8 @@ export function changedSinceMergeBase(base) {
         mergeBase = git(['merge-base', base, head]);
         break;
       } catch {
-        if (git(['rev-parse', '--is-shallow-repository']) !== 'true') return null;
+        if (git(['rev-parse', '--is-shallow-repository']) !== 'true')
+          return null;
         fetch(['--deepen=200']);
       }
     }
@@ -333,7 +355,12 @@ function readAuditConfig(root, file, policySha) {
 
 function readComponents(root) {
   const analysis = path.join(root, 'analysis.json');
-  if (!fs.existsSync(analysis)) return [];
+  if (!fs.existsSync(analysis)) {
+    console.log(
+      'No analysis.json: component scope is not evaluated, so specs selected only by a component token are left out. CI downloads it.',
+    );
+    return [];
+  }
   const out = execFileSync(
     process.execPath,
     [path.join(root, '.github/scripts/a11y-pr-scope.mjs'), analysis],
@@ -371,7 +398,8 @@ function main() {
     ? process.env.GITHUB_EVENT_NAME === 'pull_request'
     : true;
   const base =
-    process.env.BASE_SHA || process.argv.slice(2).find(arg => !arg.startsWith('-'));
+    process.env.BASE_SHA ||
+    process.argv.slice(2).find(arg => !arg.startsWith('-'));
   const policySha = process.env.WORKFLOW_SHA;
   const specs = listSpecs(root).map(file => ({
     file,
@@ -389,9 +417,16 @@ function main() {
   });
   const [audited] = auditedComponents(title);
   const auditConfigFile = '.github/a11y-audit-axe.json';
-  const plan = audited
-    ? auditPlan(audited, readAuditConfig(root, auditConfigFile, policySha))
-    : null;
+  const plan = planFor(
+    audited,
+    specs,
+    readAuditConfig(root, auditConfigFile, policySha),
+  );
+  if (audited && !plan) {
+    console.log(
+      `No audit spec or ${auditConfigFile} entry names ${audited}; its own axe pass does not run (the scoped axe audit still covers changed components).`,
+    );
+  }
 
   fs.mkdirSync(EVIDENCE_DIR, {recursive: true});
   fs.writeFileSync(

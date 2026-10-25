@@ -14,6 +14,7 @@ import {
   auditedComponents,
   auditPlan,
   kebab,
+  planFor,
   parseRouting,
   selectSpecs,
   specOwners,
@@ -36,7 +37,8 @@ const pr = (specs, overrides = {}) =>
     ...overrides,
   }).map(({file}) => file);
 
-const BINDING = 'packages/core/src/Chat/__tests__/ChatSendButton.a11y.chromium.spec.ts';
+const BINDING =
+  'packages/core/src/Chat/__tests__/ChatSendButton.a11y.chromium.spec.ts';
 
 describe('parseRouting', () => {
   it('defaults to scoped with no tokens', () => {
@@ -49,7 +51,9 @@ describe('parseRouting', () => {
 
   it('reads line and block comment forms', () => {
     expect(parseRouting('// @pr-a11y always\n').mode).toBe('always');
-    expect(parseRouting(' * @pr-a11y release-only\n').mode).toBe('release-only');
+    expect(parseRouting(' * @pr-a11y release-only\n').mode).toBe(
+      'release-only',
+    );
     expect(
       parseRouting('// @pr-a11y audit CheckboxList, CheckboxListItem\n'),
     ).toEqual({
@@ -58,7 +62,8 @@ describe('parseRouting', () => {
       audits: ['CheckboxList', 'CheckboxListItem'],
     });
     expect(
-      parseRouting('// @pr-a11y scope core/Selector richtext/* ^apps/x\n').scope,
+      parseRouting('// @pr-a11y scope core/Selector richtext/* ^apps/x\n')
+        .scope,
     ).toEqual(['core/Selector', 'richtext/*', '^apps/x']);
   });
 
@@ -99,18 +104,23 @@ describe('specOwners', () => {
 
   it('owns an a11y-spec pattern by its own stem', () => {
     expect(
-      specOwners('internal/a11y-spec/src/patterns/toggle-button.chromium.spec.ts')
-        .prefixes,
+      specOwners(
+        'internal/a11y-spec/src/patterns/toggle-button.chromium.spec.ts',
+      ).prefixes,
     ).toEqual(['internal/a11y-spec/src/patterns/toggle-button.']);
   });
 
   it("does not let one pattern's stem claim another's files", () => {
     const menu = spec('internal/a11y-spec/src/patterns/menu.chromium.spec.ts');
     expect(
-      pr([menu], {changedPaths: ['internal/a11y-spec/src/patterns/menu-button.ts']}),
+      pr([menu], {
+        changedPaths: ['internal/a11y-spec/src/patterns/menu-button.ts'],
+      }),
     ).toEqual([]);
     expect(
-      pr([menu], {changedPaths: ['internal/a11y-spec/src/patterns/menu.fixtures.ts']}),
+      pr([menu], {
+        changedPaths: ['internal/a11y-spec/src/patterns/menu.fixtures.ts'],
+      }),
     ).toEqual([menu.file]);
   });
 });
@@ -130,7 +140,9 @@ describe('selectSpecs', () => {
   );
   const tokens = spec(
     'internal/a11y-spec/src/patterns/combobox.chromium.spec.ts',
-    ['// @pr-a11y scope core/Selector richtext/* ^apps/storybook/stories/Combo'],
+    [
+      '// @pr-a11y scope core/Selector richtext/* ^apps/storybook/stories/Combo',
+    ],
   );
   const all = [always, scoped, audit, releaseOnly, tokens];
 
@@ -140,21 +152,24 @@ describe('selectSpecs', () => {
 
   it('runs only always-on specs outside a pull request', () => {
     expect(
-      pr(all, {isPullRequest: false, changedPaths: null, title: '[Component Audit] ChatMessageList: x'}),
+      pr(all, {
+        isPullRequest: false,
+        changedPaths: null,
+        title: '[Component Audit] ChatMessageList: x',
+      }),
     ).toEqual([always.file]);
   });
 
   it('runs a scoped spec when its folder changes', () => {
-    expect(pr(all, {changedPaths: ['packages/core/src/Chat/ChatLayout.tsx']})).toEqual([
-      always.file,
-      scoped.file,
-    ]);
+    expect(
+      pr(all, {changedPaths: ['packages/core/src/Chat/ChatLayout.tsx']}),
+    ).toEqual([always.file, scoped.file]);
   });
 
   it('does not run a scoped spec for a sibling folder sharing its prefix', () => {
-    expect(pr(all, {changedPaths: ['packages/core/src/ChatFoo/x.tsx']})).toEqual([
-      always.file,
-    ]);
+    expect(
+      pr(all, {changedPaths: ['packages/core/src/ChatFoo/x.tsx']}),
+    ).toEqual([always.file]);
   });
 
   it('runs a scoped spec when it changes itself', () => {
@@ -169,7 +184,9 @@ describe('selectSpecs', () => {
   });
 
   it('honours component, wildcard, and path scope tokens', () => {
-    expect(pr([tokens], {components: ['core/Selector']})).toEqual([tokens.file]);
+    expect(pr([tokens], {components: ['core/Selector']})).toEqual([
+      tokens.file,
+    ]);
     expect(pr([tokens], {components: ['richtext/RichTextEditor']})).toEqual([
       tokens.file,
     ]);
@@ -192,17 +209,20 @@ describe('selectSpecs', () => {
 
   it('runs an audit spec only for its audit title', () => {
     expect(
-      pr([audit], {changedPaths: [audit.file], components: ['core/ChatMessageList']}),
+      pr([audit], {
+        changedPaths: [audit.file],
+        components: ['core/ChatMessageList'],
+      }),
     ).toEqual([]);
-    expect(pr([audit], {title: '[Component Audit] ChatMessageList: fix'})).toEqual([
-      audit.file,
-    ]);
-    expect(pr([audit], {title: '[Component Audit] ChatMessageLists: fix'})).toEqual(
-      [],
-    );
-    expect(pr([audit], {title: 'fix: [Component Audit] ChatMessageList:'})).toEqual(
-      [],
-    );
+    expect(
+      pr([audit], {title: '[Component Audit] ChatMessageList: fix'}),
+    ).toEqual([audit.file]);
+    expect(
+      pr([audit], {title: '[Component Audit] ChatMessageLists: fix'}),
+    ).toEqual([]);
+    expect(
+      pr([audit], {title: 'fix: [Component Audit] ChatMessageList:'}),
+    ).toEqual([]);
   });
 
   it('never runs a release-only spec on a pull request', () => {
@@ -228,9 +248,9 @@ describe('selectSpecs', () => {
 
 describe('auditedComponents', () => {
   it('reads the audited component from a component-audit title', () => {
-    expect(auditedComponents('[Component Audit] DateInput: busy fields')).toEqual([
-      'DateInput',
-    ]);
+    expect(
+      auditedComponents('[Component Audit] DateInput: busy fields'),
+    ).toEqual(['DateInput']);
     expect(auditedComponents('fix(DateInput): busy')).toEqual([]);
   });
 });
@@ -277,13 +297,16 @@ describe('component audit axe pass', () => {
     ['DropdownMenuGroup', '[role="menu"]', []],
     ['DropdownMenuDivider', '[role="menu"]', []],
     ['DropdownMenuItem', '[role="menu"]', []],
-  ])('holds the %s audit until its open state is ready', (name, ready, stories) => {
-    const args = auditArgs(auditPlan(name, config));
-    expect(args[args.indexOf('--ready-selector') + 1]).toBe(ready);
-    if (stories.length) {
-      expect(args[args.indexOf('--stories') + 1]).toBe(stories.join(','));
-    }
-  });
+  ])(
+    'holds the %s audit until its open state is ready',
+    (name, ready, stories) => {
+      const args = auditArgs(auditPlan(name, config));
+      expect(args[args.indexOf('--ready-selector') + 1]).toBe(ready);
+      if (stories.length) {
+        expect(args[args.indexOf('--stories') + 1]).toBe(stories.join(','));
+      }
+    },
+  );
 
   it('keeps the audits that differ from the default', () => {
     expect(auditPlan('CheckboxListItem', config).components).toEqual([
@@ -297,6 +320,23 @@ describe('component audit axe pass', () => {
       'dropdown-menu-submenu-audit-evidence',
     );
     expect(auditPlan('ContextMenuItem', config).evidence).toBeNull();
+  });
+
+  it('plans an axe pass only for a configured or spec-named audit', () => {
+    const named = [
+      spec(
+        'packages/core/src/Drawer/__tests__/DrawerAudit.a11y.chromium.spec.ts',
+        ['// @pr-a11y audit Drawer'],
+      ),
+    ];
+    expect(planFor('Drawer', named, {})?.components).toEqual(['Drawer']);
+    expect(planFor('ContextMenuItem', [], config)?.readySelector).toBe(
+      '[role="menu"]',
+    );
+    // A name with no audit spec and no entry may have no owned Storybook
+    // route; axe would refuse it and fail the job.
+    expect(planFor('DialogHeader', named, config)).toBeNull();
+    expect(planFor(undefined, named, config)).toBeNull();
   });
 
   it('rejects an unknown key', () => {
@@ -315,26 +355,35 @@ describe('repository specs', () => {
   // Every file the playwright.config.ts globs match, found by walking the
   // same roots (git pathspec `**` misses files directly under src/).
   const walk = dir =>
-    fs.readdirSync(path.join(root, dir), {withFileTypes: true}).flatMap(entry => {
-      const relative = `${dir}/${entry.name}`;
-      if (entry.isDirectory()) {
-        return ['node_modules', 'dist'].includes(entry.name) ? [] : walk(relative);
-      }
-      return [relative];
-    });
+    fs
+      .readdirSync(path.join(root, dir), {withFileTypes: true})
+      .flatMap(entry => {
+        const relative = `${dir}/${entry.name}`;
+        if (entry.isDirectory()) {
+          return ['node_modules', 'dist'].includes(entry.name)
+            ? []
+            : walk(relative);
+        }
+        return [relative];
+      });
   const packageRoots = fs
     .readdirSync(path.join(root, 'packages'))
     .map(name => `packages/${name}/src`)
     .filter(dir => fs.existsSync(path.join(root, dir)));
   const files = [
-    ...walk('internal/a11y-spec/src').filter(f => f.endsWith('.chromium.spec.ts')),
+    ...walk('internal/a11y-spec/src').filter(f =>
+      f.endsWith('.chromium.spec.ts'),
+    ),
     ...packageRoots
       .flatMap(walk)
       .filter(f => /\.a11y\.(chromium|browser)\.spec\.ts$/.test(f)),
   ];
 
   it('matches the globs playwright.config.ts collects', () => {
-    const config = fs.readFileSync(path.join(root, 'playwright.config.ts'), 'utf8');
+    const config = fs.readFileSync(
+      path.join(root, 'playwright.config.ts'),
+      'utf8',
+    );
     for (const glob of [
       'internal/a11y-spec/src/**/*.chromium.spec.ts',
       'packages/*/src/**/*.a11y.chromium.spec.ts',

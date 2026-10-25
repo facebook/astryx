@@ -530,12 +530,14 @@ change that, and the runner rejects any other value:
 ```
 
 `pnpm test:a11y-contract:pr origin/main --dry-run` prints what a pull request
-from your branch would run. A spec writes its receipts under
+from your branch would run (component tokens need CI's `analysis.json`; without
+it the runner says so and leaves those specs out). A spec writes its receipts under
 `test-results/<name>/` or, for a component audit, a top-level
 `<name>-audit-evidence/` folder; CI uploads them, with the selection and the
 reports, in one `pr-a11y-evidence-<sha>` artifact. A component-audit pull
-request also runs that component's own axe pass; an audit that must wait for an
-open dialog or menu, or that grades a different component set, has an entry in
+request whose component has an audit spec also runs that component's own axe
+pass; an audit that must wait for an open dialog or menu, grades a different
+component set, or has no audit spec has an entry in
 `.github/a11y-audit-axe.json`.
 
 ### Accessibility audits
