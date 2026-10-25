@@ -105,7 +105,10 @@ import {
 import {reducedMotionFade} from '../motion/reducedMotion';
 import {resolveMotion} from '../motion/resolveMotion';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
-import {registerSegmentedControlTable, segmentedControl} from '../motion/uikit';
+import {
+  registerSegmentedControlTable,
+  segmentedControl,
+} from '../motion/uikit/segmented';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {useSegmentedTouchTracking} from './useSegmentedTouchTracking';
