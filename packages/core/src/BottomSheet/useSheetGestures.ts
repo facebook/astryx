@@ -703,15 +703,16 @@ export function useSheetGestures({
   // Set while a drag-dismissed sheet is carried off screen by its release
   // spring (see SheetGestureExit).
   const gestureExitRef = useRef<SheetGestureExit | null>(null);
-  // The mounted sheet, as state: the dialog-level touch listeners (see
-  // `drawnSheetRect`) attach once it is in the DOM.
-  const [sheetNode, setSheetNode] = useState<HTMLElement | null>(null);
+  // Counts the sheet's mounts: the dialog-level touch listeners (see
+  // `drawnSheetRect`) attach once it is in the DOM. The node itself stays in
+  // `sheetElRef`, out of React state.
+  const [sheetMounts, setSheetMounts] = useState(0);
   const sheetRef = useCallback(
     (node: HTMLElement | null) => {
       observerRef.current?.disconnect();
       observerRef.current = null;
       sheetElRef.current = node;
-      setSheetNode(node);
+      setSheetMounts(mounts => mounts + 1);
       animator.attach(node);
       if (!node || typeof ResizeObserver === 'undefined') {
         if (node) {
@@ -1787,8 +1788,9 @@ export function useSheetGestures({
   const caughtTouchRef = useRef<number | null>(null);
   const suppressClickUntilRef = useRef(-Infinity);
   useEffect(() => {
+    const sheetNode = sheetElRef.current;
     const dialog = sheetNode?.closest('dialog');
-    if (!isOpen || dialog == null) {
+    if (!isOpen || sheetNode == null || dialog == null) {
       return;
     }
     const asPointer = (touch: Touch, timeStamp: number) =>
@@ -1916,7 +1918,7 @@ export function useSheetGestures({
       dialog.removeEventListener('click', onClick, true);
       caughtTouchRef.current = null;
     };
-  }, [drawnSheetRect, isOpen, sheetNode]);
+  }, [drawnSheetRect, isOpen, sheetMounts]);
 
   const bodyRef = useCallback((node: HTMLElement | null) => {
     // `timeStamp` is the touch event's own: when the finger was there, on the
