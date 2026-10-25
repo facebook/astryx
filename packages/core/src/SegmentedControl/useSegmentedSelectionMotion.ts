@@ -1588,23 +1588,14 @@ export class SegmentedSelectionMotion {
 
   /**
    * The Reduce Motion fade for a fade this controller plays itself (a dim),
-   * as the animator decides it for this pointer: null when motion is not
-   * reduced, duration 0 when it changes at once.
+   * from the person's settings as the animator reads them: null when motion
+   * is not reduced, duration 0 when it changes at once.
    */
   private reducedFade(
     element: HTMLElement,
     touchRelease: boolean,
   ): {duration: number; easing: string} | null {
-    const reduced = this.animator.reducedMotion({touchRelease});
-    if (reduced === 'off') {
-      return null;
-    }
-    return (
-      reducedMotionFade(element, {
-        prefersReducedMotion: () => true,
-        isCoarsePointer: () => reduced === 'crossfade',
-      }) ?? {duration: 0, easing: 'linear'}
-    );
+    return reducedMotionFade(element, {touchRelease});
   }
 }
 
