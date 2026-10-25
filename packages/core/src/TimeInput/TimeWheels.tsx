@@ -23,9 +23,14 @@
  *   interval shows rounded to it.
  * - In 12-hour time the AM/PM column follows the hour: an hour that comes to
  *   rest across 11 ↔ 12 turns the AM/PM column onto the other half.
- * - A time past the bounds commits as the bound, and every column whose row
- *   changes turns onto it (a column's own disabled rows are turned away from
- *   by the Wheel itself before it commits).
+ * - A column that comes to rest past the bounds moves the time on to the
+ *   nearest time inside them that has a row (the bound, or the nearest step
+ *   inside it when the bound is off the minute interval) and commits it
+ *   there, every column whose row changes turning onto it. A column's own
+ *   disabled rows are left by the Wheel itself, for the nearest enabled row
+ *   (a tie toward the committed one), before it commits.
+ * - An untouched time outside the bounds is shown as it is: opening the
+ *   sheet moves and commits nothing.
  * - Minutes do not carry into the hour.
  *
  * Each turn is the Wheel's spin (`spinTo`) on UIDatePicker's own turn
@@ -58,10 +63,10 @@ import {datePicker, registerDatePickerTable} from '../motion/uikit/datePicker';
 import {WheelGroup} from '../DateInput/WheelGroup';
 import {parseISOTime, type ISOTimeString} from '../utils';
 import {
-  clampToBounds,
   columnValue,
   columnsToTurn,
   displayedTime,
+  restingTime,
   hourRows,
   meridiemOf,
   meridiemRows,
@@ -195,6 +200,7 @@ export function TimeWheels({
     bounds,
     hourFormat,
     hasSeconds,
+    minuteInterval,
     onCommit,
     rows,
   });
@@ -202,14 +208,26 @@ export function TimeWheels({
   // them from the gesture system's and the animator's events, outside
   // render, so they read the latest time, bounds and rows through this ref.
   useIsomorphicLayoutEffect(() => {
-    latestRef.current = {shown, bounds, hourFormat, hasSeconds, onCommit, rows};
+    latestRef.current = {
+      shown,
+      bounds,
+      hourFormat,
+      hasSeconds,
+      minuteInterval,
+      onCommit,
+      rows,
+    };
   });
 
   const restOn = (column: TimeColumn) => (value: number) => {
     const current = latestRef.current;
     const from = current.shown;
-    const next = clampToBounds(
+    // What commits is the row the wheels come to rest on: past a bound, the
+    // nearest time inside it that has a row (datePicker.wheels.restPastBound).
+    const next = restingTime(
       turnColumn(from, column, value, current.hourFormat),
+      current.minuteInterval,
+      current.hasSeconds,
       current.bounds,
     );
     const handles: Record<TimeColumn, WheelHandle | null> = {

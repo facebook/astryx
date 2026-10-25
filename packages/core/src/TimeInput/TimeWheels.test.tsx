@@ -241,20 +241,63 @@ describe('TimeWheels — bounds', () => {
     expect(restingLabel('AM/PM')).toBe('PM');
   });
 
-  it('rest on a step inside the bounds when the bound is off the interval', () => {
+  it('commit the nearest step inside the bounds when the bound is off the interval', () => {
     const {onCommit} = renderWheels({
       initial: at(11, 30),
       increment: 15,
       max: '16:55' as ISOTimeString,
     });
     fireEvent.keyDown(column('AM/PM'), {key: 'ArrowDown'});
-    expect(onCommit).toHaveBeenLastCalledWith(at(16, 55));
+    // 5:30 PM is past the maximum: the time goes on to the nearest time
+    // inside it that has a row, 4:45 PM, and commits it there, so what
+    // commits is what the wheels show (as UIDatePicker's date always rounds
+    // to the interval).
+    expect(onCommit).toHaveBeenLastCalledWith(at(16, 45));
     advance(550);
-    // 5:00 PM would be past the maximum: the wheels rest on 4:45 PM, rows
-    // that can commit, not on disabled ones.
     expect(restingLabel('Hour')).toBe('4');
     expect(restingLabel('Minute')).toBe('45');
     expect(restingLabel('AM/PM')).toBe('PM');
+  });
+
+  it('commit the nearest step inside a minimum that is off the interval', () => {
+    const {onCommit} = renderWheels({
+      initial: at(10, 15),
+      increment: 15,
+      min: '09:20' as ISOTimeString,
+    });
+    fireEvent.keyDown(column('Hour'), {key: 'ArrowUp'});
+    // 9:15 is before the minimum: on to 9:30, the nearest step inside it.
+    expect(onCommit).toHaveBeenLastCalledWith(at(9, 30));
+    advance(400);
+    expect(restingLabel('Hour')).toBe('9');
+    expect(restingLabel('Minute')).toBe('30');
+  });
+
+  it('show an untouched time outside the bounds as it is, and commit nothing', () => {
+    // Opening the sheet never changes the value: an 8:00 under a 9:00
+    // minimum stays 8:00 on the wheels, on its disabled rows.
+    const {onCommit} = renderWheels({
+      initial: at(8, 0),
+      min: '09:00' as ISOTimeString,
+    });
+    advance(600);
+    expect(restingLabel('Hour')).toBe('8');
+    expect(restingLabel('Minute')).toBe('00');
+    expect(restingLabel('AM/PM')).toBe('AM');
+    expect(onCommit).not.toHaveBeenCalled();
+  });
+
+  it('show an untouched time outside the bounds on its own nearest step, not moved inside them', () => {
+    const {onCommit} = renderWheels({
+      initial: at(8, 50),
+      increment: 15,
+      min: '09:00' as ISOTimeString,
+    });
+    advance(600);
+    // 8:45, its nearest step, not 9:00: the bound would move the time.
+    expect(restingLabel('Hour')).toBe('8');
+    expect(restingLabel('Minute')).toBe('45');
+    expect(onCommit).not.toHaveBeenCalled();
   });
 });
 

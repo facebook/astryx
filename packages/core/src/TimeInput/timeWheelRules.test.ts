@@ -15,6 +15,7 @@ import {
   clampToBounds,
   columnsToTurn,
   displayedTime,
+  restingTime,
   hourAfterTurn,
   hourRows,
   minuteIntervalOf,
@@ -68,6 +69,16 @@ describe('displayedTime (roundsToMinuteInterval)', () => {
     // 9:05 would round to 9:00, before the minimum: 9:15 instead.
     expect(displayedTime(at(9, 5), 15, false, bounds)).toEqual(at(9, 15));
     expect(displayedTime(at(12, 7), 15, false, bounds)).toEqual(at(12, 0));
+  });
+
+  it('shows a time outside the bounds on its own nearest step: opening never moves it', () => {
+    // 9:00 would be inside the minimum, but the untouched value is 8:50.
+    expect(
+      displayedTime(at(8, 50), 15, false, {min: 9 * 3600, max: null}),
+    ).toEqual(at(8, 45));
+    expect(
+      displayedTime(at(17, 10), 15, false, {min: null, max: 17 * 3600}),
+    ).toEqual(at(17, 15));
   });
 
   it('shows a time on the interval as it is, and drops seconds it cannot show', () => {
@@ -171,6 +182,32 @@ describe('clampToBounds (restPastBound)', () => {
     expect(clampToBounds(at(7, 0), NINE_TO_FIVE)).toEqual(at(9, 0));
     expect(clampToBounds(at(18, 15), NINE_TO_FIVE)).toEqual(at(17, 0));
     expect(clampToBounds(at(12, 0), NINE_TO_FIVE)).toEqual(at(12, 0));
+  });
+});
+
+describe('restingTime (restPastBound, roundsToMinuteInterval)', () => {
+  it('keeps a time inside the bounds', () => {
+    expect(restingTime(at(12, 30), 15, false, NINE_TO_FIVE)).toEqual(
+      at(12, 30),
+    );
+  });
+
+  it('goes on past a bound to the bound', () => {
+    expect(restingTime(at(7, 0), 1, false, NINE_TO_FIVE)).toEqual(at(9, 0));
+    expect(restingTime(at(18, 15), 15, false, NINE_TO_FIVE)).toEqual(at(17, 0));
+  });
+
+  it('goes on to the nearest step inside a bound that is off the interval', () => {
+    const max = {min: null, max: 16 * 3600 + 55 * 60};
+    expect(restingTime(at(17, 30), 15, false, max)).toEqual(at(16, 45));
+    const min = {min: 9 * 3600 + 20 * 60, max: null};
+    expect(restingTime(at(9, 15), 15, false, min)).toEqual(at(9, 30));
+  });
+
+  it('keeps a bound with seconds when the picker shows seconds, and the next whole minute when it does not', () => {
+    const min = {min: 9 * 3600 + 30, max: null};
+    expect(restingTime(at(8, 0), 1, true, min)).toEqual(at(9, 0, 30));
+    expect(restingTime(at(8, 0), 1, false, min)).toEqual(at(9, 1));
   });
 });
 
