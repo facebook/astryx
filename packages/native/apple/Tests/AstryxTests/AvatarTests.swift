@@ -253,3 +253,10 @@ private func onWhite(_ color: Color) -> [Int] {
   let direct = Pixels(Avatar("Ada Lovelace", size: .lg).fixedSize())
   #expect(wired.width == direct.width && wired.height == direct.height)
 }
+
+@Test func theTooltipShowsTrimmedWordsAsCoreDoes() {
+  #expect(Avatar("  Ada Lovelace  ").tooltipText == "Ada Lovelace")
+  #expect(Avatar("Ada Lovelace", tooltip: .text("  Mathematician \n")).tooltipText == "Mathematician")
+  #expect(Avatar("Ada Lovelace", tooltip: .text("  Mathematician ")).tooltipHint == "Mathematician")
+}
+

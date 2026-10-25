@@ -85,9 +85,9 @@ public struct Avatar: View {
   /// none for `false` or blank words, as core resolves it.
   var tooltipText: String? {
     switch props.tooltip ?? .on {
-    case .on: Avatar.meaningful(props.name)
+    case .on: Avatar.meaningful(props.name).map(Avatar.trimmed)
     case .off: nil
-    case .text(let words): Avatar.meaningful(words)
+    case .text(let words): Avatar.meaningful(words).map(Avatar.trimmed)
     }
   }
 
@@ -276,6 +276,12 @@ public struct Avatar: View {
   }
 
   /// The string when it carries something, `nil` when it is absent or blank.
+  /// Words without their leading and trailing space, as core trims the
+  /// tooltip it shows.
+  nonisolated static func trimmed(_ value: String) -> String {
+    value.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+
   nonisolated static func meaningful(_ value: String?) -> String? {
     guard let value, !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
     return value
