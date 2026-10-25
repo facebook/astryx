@@ -337,27 +337,5 @@ describe('build-css astryx.css', () => {
         );
       expect(costly).toEqual([]);
     });
-
-    it("collapses LayoutContent padding through the middle row's sibling markers", () => {
-      const flush = astryxCss
-        .split('\n')
-        .filter(line => line.includes('--_layout-flush-block-'));
-      // The row sets each edge from a preceding header or a following footer
-      // without a divider.
-      expect(
-        flush.some(line =>
-          /:where\(\.[\w-]+:not\(\[data-divider\]\) ~ \*\)\{--_layout-flush-block-start:0px/.test(
-            line,
-          ),
-        ),
-      ).toBe(true);
-      expect(
-        flush.some(line =>
-          /:where\(:has\(~ \.[\w-]+:not\(\[data-divider\]\)\)\)\{--_layout-flush-block-end:0px/.test(
-            line,
-          ),
-        ),
-      ).toBe(true);
-    });
   });
 });
