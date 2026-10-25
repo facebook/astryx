@@ -55,7 +55,7 @@ divide by 16 for rem. Above the pin, roles shrink; below it, they grow
 ## State representation
 
 Outside the mobile condition, retain desktop sizes.
-When `B >= 16`, the mobile profile retains the desktop base and ratio.
+When `B >= 16` and no text size is set, the mobile profile retains the desktop base and ratio.
 
 ## Responsive and input behavior
 

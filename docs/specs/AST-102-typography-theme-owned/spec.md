@@ -106,8 +106,10 @@ the person's device.
   Sankey labels using `system-ui` directly and several Core and Lab components
   setting their own sizes or line heights; under FR1 those are conformance
   gaps.
-- `architecture:theme-tokens`: size tokens stay rem; Butter, Stone, and Y2K's
-  12 px supporting-size token is the token-level gap below.
+- `architecture:theme-tokens`: text size tokens stay rem; Butter, Stone, and
+  Y2K's 12 px supporting-size token is the token-level gap below. Spacing and
+  element size tokens keep their values when a size is set; a control grows
+  with its text under FR4.
 - Defects under FR3 and FR4:
   - On iOS and iPadOS, text ignores Dynamic Type in every theme.
   - Butter, Stone, and Y2K fix supporting text at 12 px, so it does not follow

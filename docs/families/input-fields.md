@@ -98,7 +98,8 @@ another implementation helper.
   owns the group label and supporting text.
 - `FormLayout` owns outer arrangement, spacing, direction, and form-level
   optionality. It does not redefine a member's internal control geometry.
-- `InputGroup` owns the fixed row height, connected outer surface, edge alignment,
+- `InputGroup` owns the row height (fixed today; it grows with a set text size
+  under `spec:AST-102` FR4, and the fixed height is a gap), connected outer surface, edge alignment,
   and group-level focus presentation for admitted children. Admission follows the
   capability contract in FR3, not a permanent component allowlist; input-family
   membership alone does not imply support.
