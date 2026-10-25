@@ -1487,12 +1487,13 @@ export function useSheetGestures({
       // The finger's velocity at the lift, in px/s, as UIKit reports it: from
       // the positions on the timestamps their events carried, so a busy main
       // thread handing them over late does not change it. A lift where the
-      // finger last was adds nothing, and a rest before the lift does not
-      // decay it (a still finger sends no events; VelocityTracker).
+      // finger last was adds nothing; one after the finger held still for
+      // longer than the stillness interval reads 0 (spec:AST-100 FR2: a still
+      // finger never flicks), read at the lift's own time.
       if (state.tracker.lastSample?.y !== event.clientY) {
         state.tracker.add(0, event.clientY, event.timeStamp);
       }
-      const velocity = state.tracker.velocity().y;
+      const velocity = state.tracker.velocity(event.timeStamp).y;
       // Today's inputs, for a release under a mouse.
       const today = {
         direction: delta === 0 ? 0 : delta > 0 ? 1 : -1,

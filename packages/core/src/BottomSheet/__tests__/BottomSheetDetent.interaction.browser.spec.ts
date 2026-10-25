@@ -132,15 +132,16 @@ const sheetTop = async (sheet: Locator) =>
 const SLOW_DRAG_MS = 400;
 
 /**
- * A slow drag that rests 150 ms before the lift. UIKit's velocity filter
- * keeps the last moving speed through a rest (a still finger sends no
- * events), so the release carries `dy / 0.4 s` (`slowDragSpeed`).
+ * A slow drag that rests one frame before the lift. A still finger sends no
+ * events, and a lift within the release filter's stillness interval (40 ms)
+ * keeps the last moving speed, so the release carries `dy / 0.4 s`
+ * (`slowDragSpeed`); a longer rest would read 0 (spec:AST-100 FR2).
  */
 function slowDragTo(from: {x: number; y: number}, dy: number) {
   return drag(
     from,
     {x: from.x, y: from.y + dy},
-    {durationMs: SLOW_DRAG_MS, hz: 60, restMs: 150},
+    {durationMs: SLOW_DRAG_MS, hz: 60, restMs: 16},
   );
 }
 const slowDragSpeed = (dy: number) => (dy * 1000) / SLOW_DRAG_MS;
@@ -336,7 +337,8 @@ test('the settle is the UIKit release spring, sampled frame by frame', async ({
   await readInputLog(page, {clear: true});
   await driver.play(slowDragTo(handle, dy));
   // The critically damped detent spring from where the finger left the
-  // sheet, handed the drag's speed, which survives the rest before the lift.
+  // sheet, handed the drag's speed, which survives the frame's rest before
+  // the lift.
   const velocity = uikitReleaseVelocity(await readInputLog(page));
   expect(Math.abs(velocity / slowDragSpeed(dy) - 1)).toBeLessThan(
     driver.scriptedTimestamps ? 0.01 : 0.1,

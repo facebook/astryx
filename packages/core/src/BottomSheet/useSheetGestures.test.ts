@@ -367,16 +367,29 @@ describe('useSheetGestures', () => {
       expect(onDismiss).toHaveBeenCalledTimes(1);
     });
 
-    it('keeps the throw through a rest before the lift, as UIKit does', () => {
-      // UIKit reports the last moving velocity at the lift however long the
-      // finger rested: a still finger sends no events to lower it.
+    it('keeps the throw through a still finger lifted within 40 ms, as UIKit does', () => {
+      // A still finger sends no events to lower the speed: UIKit reports
+      // the last moving velocity at the lift (spec:AST-100 FR2).
       const {hook, onDismiss} = setup({snapHeights: () => [200]});
       const t = makeTarget();
       down(hook, 0, 0, t);
       stream(hook, t, {from: 0, to: 60, t0: 0, t1: 20}); // 3000 px/s ...
-      up(hook, 60, 400, t); // ... then 380ms of rest, then the lift
+      up(hook, 60, 55, t); // ... then 35 ms still, then the lift
       // Projected 60 + 3000 × 0.1 = 360, nearest gone (400).
       expect(onDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('releases no throw from a finger held still for longer than 40 ms before the lift', () => {
+      // UIKit would keep the last motion through a silent rest; the release
+      // filter reads 0 after its stillness interval, as Android's does, so a
+      // finger that stopped never flicks (spec:AST-100 FR2).
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      stream(hook, t, {from: 0, to: 60, t0: 0, t1: 20}); // 3000 px/s ...
+      up(hook, 60, 400, t); // ... then 380 ms still, then the lift
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(hook.result.current.settledOffset).toBe(0);
     });
 
     it('releases no throw from a finger that came to rest before lifting', () => {
