@@ -38,7 +38,6 @@ import {registerMotionTable} from '../roles';
 /**
  * UISearchController's search bar: activation, cancel, geometry and
  * placements.
- * @experimental
  */
 export const search = {
   /**
@@ -287,7 +286,6 @@ export const search = {
  * springs or curves, so they never become roles. Nothing registers on
  * import: SearchField's touch layer calls it once before its first motion
  * (it is idempotent), so a page that never shows it ships no registry.
- * @experimental
  */
 export function registerSearchTable(): void {
   registerMotionTable('search', search);
