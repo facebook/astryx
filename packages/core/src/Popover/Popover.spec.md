@@ -430,7 +430,7 @@ and the anchored popover elsewhere.
 
 **Reference:** `component:Popover/DEC-8`
 
-**Decider:** pending owner review
+**Decider:** `cixzhang`, `2026-10-25`
 
 In a sheet, Popover's content is labeled by its `label`, or by the trigger's
 text when it has none, so the dialog always has a name. The sheet always
