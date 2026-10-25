@@ -1797,6 +1797,19 @@ jobs:
             --project chromium \
             --output token-remove-target-output
 
+      # Under a finger the drawer dismisses as an iOS sheet does: the dialog
+      # stays modal while the drawer slides out and the scrim fades, no tap
+      # lands until it ends, then focus returns to the opener; under a mouse
+      # nothing is held. Inside AppShell the slide-out plays to its end.
+      # Top-layer modality, inertness and real taps only exist in a real
+      # engine.
+      - name: Run MobileNav touch presentation contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/MobileNav/__tests__/MobileNavTouchPresentation.a11y.chromium.spec.ts \
+            --project chromium \
+            --output mobile-nav-touch-presentation-output
+
       # On a phone narrower than the drawer, the drawer must still leave a
       # strip of the page to tap to close it (it is capped at 85vw). Viewport
       # units, the backdrop's hit testing and a real tap only exist in a real
