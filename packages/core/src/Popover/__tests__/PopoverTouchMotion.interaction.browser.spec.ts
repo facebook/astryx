@@ -507,7 +507,7 @@ test('Reduce Motion: the popover cross-fades in at its size and out where it sta
   const unit = {x: 0, y: 0, width: 100, height: 100};
   // design:reduced-motion DR2: opacity only, 200 ms or less, here on
   // UIKit's cross-fade curve.
-  const ease = cubicBezier(timing.curves.easeInOut);
+  const ease = cubicBezier(timing.curves.move);
   const fade = (t: number) =>
     ease(Math.min(1, Math.max(0, t / timing.reducedMotionCrossFadeMs)));
   const samples = await sampleBoxes(story.layer, unit, timeline(300));
