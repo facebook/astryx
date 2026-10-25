@@ -21,10 +21,13 @@ export const inputGroupItemProps = {
 } as const;
 const MEMBER = '[data-astryx-input-group-item]';
 
-// The trailing edge is the last member; context-layer infrastructure that may
-// follow a control (popovers, inert markers, native dialog surfaces) is never
-// a member, so it never takes the trailing edge.
-const IS_LAST_ITEM = `:not(:has(~ ${MEMBER}))`;
+// Anything a caller places after a member (a wrapped Button, a custom element)
+// still counts as following it, so the trailing edge keeps today's rule over
+// any sibling; only context-layer infrastructure (popovers, inert markers,
+// native dialog surfaces) is skipped. Followers are not always members, so
+// this rule cannot name them by the marker.
+const FOLLOWED = ':has(~ *:not([popover]):not(template):not(dialog))';
+const IS_LAST_ITEM = `:not(${FOLLOWED})`;
 
 // Button consumes InputGroup context anywhere below the group, including buttons
 // inside an input's own implementation. Keep the visual adaptation on direct
@@ -32,7 +35,7 @@ const IS_LAST_ITEM = `:not(:has(~ ${MEMBER}))`;
 const DIRECT_INPUT_GROUP_ADDON = `:where(.astryx-input-group > ${MEMBER})`;
 const DIRECT_INPUT_GROUP_ADDON_FOCUS_VISIBLE = `${DIRECT_INPUT_GROUP_ADDON}:focus-visible`;
 const DIRECT_INPUT_GROUP_ADDON_NOT_FIRST = `${DIRECT_INPUT_GROUP_ADDON}:not(:first-child)`;
-const DIRECT_INPUT_GROUP_ADDON_WITH_MEMBER_AFTER = `${DIRECT_INPUT_GROUP_ADDON}:has(~ ${MEMBER})`;
+const DIRECT_INPUT_GROUP_ADDON_WITH_MEMBER_AFTER = `${DIRECT_INPUT_GROUP_ADDON}${FOLLOWED}`;
 
 export const groupStyles = stylex.create({
   buttonAddon: {
