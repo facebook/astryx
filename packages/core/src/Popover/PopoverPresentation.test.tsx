@@ -400,12 +400,17 @@ describe('Popover presentation', () => {
     await tapTrigger();
     const close = await vi.waitFor(() => {
       const element = sheetDialog()?.querySelector<HTMLElement>(
-        '[data-astryx-popover-fallback-close] button',
+        'button[data-astryx-popover-fallback-close]',
       );
       expect(element).not.toBeNull();
       return element!;
     });
     expect(close).toHaveTextContent('Close popover');
+    // The Button itself carries the hidden-until-focused styles: no wrapper
+    // element (architecture:component-style-authoring INV7).
+    expect(
+      close.parentElement?.closest('[data-astryx-popover-fallback-close]'),
+    ).toBeNull();
     act(() => {
       fireEvent.click(close);
     });

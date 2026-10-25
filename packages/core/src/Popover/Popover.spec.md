@@ -267,12 +267,13 @@ table owns their semantic effect.
 
 ## Design relationships
 
-| Anatomy or state       | Design requirement                                                                                                 | Representation authority       | Hierarchy role | Component contract    |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------ | -------------- | --------------------- |
-| Trigger element        | Supplies or references the control and anchor without becoming Popover-owned presentation.                         | Caller content                 | Supporting     | FR6, AR1              |
-| Popover surface        | Paints the component surface, owns the canonical `popover` target, and carries scroll, focus, and dialog behavior. | Current source and owner DEC-2 | Prominent      | FR2, FR4–FR7, AR2–AR4 |
-| Popover content        | Renders caller-supplied interaction or information inside the surface.                                             | Caller content                 | Prominent      | FR2, FR6              |
-| Fallback close control | Provides an end-of-trap close affordance without becoming the initial focus destination.                           | `component:Button`             | Supporting     | FR2, AR3              |
+| Anatomy or state       | Design requirement                                                                                                                         | Representation authority       | Hierarchy role | Component contract    |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ | -------------- | --------------------- |
+| Trigger element        | Supplies or references the control and anchor without becoming Popover-owned presentation.                                                 | Caller content                 | Supporting     | FR6, AR1              |
+| Popover surface        | Paints the component surface, owns the canonical `popover` target, and carries scroll, focus, and dialog behavior.                         | Current source and owner DEC-2 | Prominent      | FR2, FR4–FR7, AR2–AR4 |
+| Touch sheet            | Holds the same content in place of the surface when `presentation` resolves to `bottom-sheet`; paints BottomSheet's `bottom-sheet` target. | `component:BottomSheet`        | Prominent      | DEC-6, AR1, AR4       |
+| Popover content        | Renders caller-supplied interaction or information inside the surface.                                                                     | Caller content                 | Prominent      | FR2, FR6              |
+| Fallback close control | Provides an end-of-trap close affordance without becoming the initial focus destination.                                                   | `component:Button`             | Supporting     | FR2, AR3              |
 
 ### Theming anatomy
 
@@ -286,6 +287,9 @@ table owns their semantic effect.
     }
   },
   "Popover surface": {"target": "popover"},
+  "Touch sheet": {
+    "delegatesTo": {"owner": "component:BottomSheet", "target": "bottom-sheet"}
+  },
   "Popover content": {
     "none": {
       "reason": "intentional: Caller-supplied content is caller-owned; normal CSS may inherit from the surface, but Popover provides no content target."
@@ -296,6 +300,9 @@ table owns their semantic effect.
   }
 }
 ```
+
+`Popover surface` and `Touch sheet` are alternative presentations of the same
+content, not simultaneous anatomy.
 
 Every public `usePopover` painted surface belongs to the broad `popover` target.
 A composed component may add its own authoritative refinement target, such as

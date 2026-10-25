@@ -267,6 +267,12 @@ export const docs = {
           'Painted surface owned and themed by Popover through the canonical popover target.',
       },
       {
+        name: 'Touch sheet',
+        required: false,
+        description:
+          'BottomSheet surface that holds the same content in place of the popover surface for presentation="bottom-sheet", or "adaptive" on a compact touch screen; themed through the bottom-sheet target.',
+      },
+      {
         name: 'Popover content',
         required: true,
         description: 'Caller-supplied content rendered inside the surface.',
@@ -478,6 +484,12 @@ export const docsZh = {
           'Painted surface owned and themed by Popover through the canonical popover target.',
       },
       {
+        name: 'Touch sheet',
+        required: false,
+        description:
+          'BottomSheet surface that holds the same content in place of the popover surface for presentation="bottom-sheet", or "adaptive" on a compact touch screen; themed through the bottom-sheet target.',
+      },
+      {
         name: 'Popover content',
         required: true,
         description: 'Caller-supplied content rendered inside the surface.',
@@ -543,6 +555,12 @@ export const docsDense = {
         required: true,
         description:
           'Painted surface owned and themed by Popover through the canonical popover target.',
+      },
+      {
+        name: 'Touch sheet',
+        required: false,
+        description:
+          'BottomSheet surface that holds the same content in place of the popover surface for presentation="bottom-sheet", or "adaptive" on a compact touch screen; themed through the bottom-sheet target.',
       },
       {
         name: 'Popover content',

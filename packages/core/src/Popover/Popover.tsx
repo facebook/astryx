@@ -369,19 +369,17 @@ const styles = stylex.create({
     display: 'inline-flex',
   },
   // The sheet's fallback close control when it has no other way out: hidden
-  // until it is reached, as the anchored surface's is.
+  // until it is reached, as the anchored surface's is, on the Button itself
+  // rather than a wrapper (architecture:component-style-authoring INV7).
+  // Taken out of flow and clipped at rest, it rejoins the flow when focused.
   sheetFallbackClose: {
-    width: {
-      default: 1,
-      ':focus-within': 'auto',
+    position: {
+      default: 'absolute',
+      ':focus': 'relative',
     },
-    height: {
-      default: 1,
-      ':focus-within': 'auto',
-    },
-    overflow: {
-      default: 'hidden',
-      ':focus-within': 'visible',
+    clipPath: {
+      default: 'inset(50%)',
+      ':focus': 'none',
     },
   },
   // The painted surface is capped to the viewport with the layer runtime's
@@ -901,15 +899,13 @@ export function Popover({
       {isContentInSheet &&
       sheetPurpose === 'required' &&
       hasCloseButton !== false ? (
-        <div
+        <Button
           data-astryx-popover-fallback-close=""
-          {...stylex.props(styles.sheetFallbackClose)}>
-          <Button
-            variant="secondary"
-            label={closeButtonLabel ?? t('@astryx.popover.close')}
-            onClick={() => setSheetOpen(false)}
-          />
-        </div>
+          variant="secondary"
+          label={closeButtonLabel ?? t('@astryx.popover.close')}
+          onClick={() => setSheetOpen(false)}
+          xstyle={styles.sheetFallbackClose}
+        />
       ) : null}
     </PopoverBottomSheet>
   ) : null;
