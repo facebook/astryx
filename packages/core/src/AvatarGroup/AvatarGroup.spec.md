@@ -127,7 +127,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 - **PR1 — Member detection.** Detecting interactive members adds no observer or
   listener; the group re-reads its members after each commit, and a change in
-  whether any member is interactive re-renders the group once before paint.
+  whether any member is interactive re-renders the group before paint.
 
 ## Accessibility contract
 
