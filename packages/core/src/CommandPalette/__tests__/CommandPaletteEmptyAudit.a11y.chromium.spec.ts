@@ -14,6 +14,7 @@ import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {inflateSync} from 'node:zlib';
 import {expect, test, type Locator, type Page} from '@playwright/test';
 import {holdMotionStill} from '@astryxdesign/a11y-spec/chromium';
 import {
@@ -206,6 +207,124 @@ async function waitFor<T>(
   return value;
 }
 
+/**
+ * Whether a PNG paints more than one color, read from its decoded pixels so a
+ * blank or single-color frame cannot pass as evidence.
+ */
+function isNonBlank(png: Buffer): boolean {
+  let offset = 8;
+  let width = 0;
+  let height = 0;
+  let channels = 0;
+  const chunks: Buffer[] = [];
+  while (offset < png.length) {
+    const length = png.readUInt32BE(offset);
+    const type = png.toString('ascii', offset + 4, offset + 8);
+    const data = png.subarray(offset + 8, offset + 8 + length);
+    if (type === 'IHDR') {
+      width = data.readUInt32BE(0);
+      height = data.readUInt32BE(4);
+      channels = data[9] === 6 ? 4 : data[9] === 2 ? 3 : 0;
+    } else if (type === 'IDAT') {
+      chunks.push(data);
+    }
+    offset += 12 + length;
+  }
+  if (channels === 0 || width === 0 || height === 0) {
+    return false;
+  }
+  const raw = inflateSync(Buffer.concat(chunks));
+  const stride = width * channels;
+  let previous = Buffer.alloc(stride);
+  let first: string | null = null;
+  for (let y = 0; y < height; y++) {
+    const filter = raw[y * (stride + 1)];
+    const line = Buffer.from(
+      raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1)),
+    );
+    for (let x = 0; x < stride; x++) {
+      const left = x >= channels ? line[x - channels] : 0;
+      const up = previous[x];
+      const upLeft = x >= channels ? previous[x - channels] : 0;
+      let predictor = 0;
+      if (filter === 1) {
+        predictor = left;
+      } else if (filter === 2) {
+        predictor = up;
+      } else if (filter === 3) {
+        predictor = Math.floor((left + up) / 2);
+      } else if (filter === 4) {
+        const estimate = left + up - upLeft;
+        const toLeft = Math.abs(estimate - left);
+        const toUp = Math.abs(estimate - up);
+        const toUpLeft = Math.abs(estimate - upLeft);
+        predictor =
+          toLeft <= toUp && toLeft <= toUpLeft
+            ? left
+            : toUp <= toUpLeft
+              ? up
+              : upLeft;
+      }
+      line[x] = (line[x] + predictor) & 255;
+    }
+    for (let x = 0; x < stride; x += channels) {
+      const pixel = line.subarray(x, x + channels).toString('hex');
+      if (first == null) {
+        first = pixel;
+      } else if (pixel !== first) {
+        return true;
+      }
+    }
+    previous = line;
+  }
+  return false;
+}
+
+/**
+ * Settled-render readback taken just before capture: running animations under
+ * the subject, and the subject plus every empty root measured twice, two
+ * animation frames and 100 ms apart.
+ */
+async function readSettledRender(page: Page, subject: Locator) {
+  const sample = async () =>
+    subject.evaluate(root =>
+      [root, ...root.querySelectorAll('.astryx-command-palette-empty')].map(
+        node => {
+          const box = node.getBoundingClientRect();
+          return [box.x, box.y, box.width, box.height].map(
+            value => Math.round(value * 100) / 100,
+          );
+        },
+      ),
+    );
+  const first = await sample();
+  await page.evaluate(
+    async () =>
+      new Promise<void>(resolve => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
+  await page.waitForTimeout(100);
+  const second = await sample();
+  const animations = await subject.evaluate(root => {
+    const running = document
+      .getAnimations()
+      .filter(animation => animation.playState === 'running');
+    return {
+      document: running.length,
+      subject: running.filter(animation => {
+        const target = (animation.effect as KeyframeEffect | null)?.target;
+        return target != null && root.contains(target);
+      }).length,
+    };
+  });
+  return {
+    runningAnimations: animations,
+    geometry: {first, second},
+    geometryStable: JSON.stringify(first) === JSON.stringify(second),
+  };
+}
+
 test.beforeAll(async () => {
   fs.rmSync(OUTPUT, {recursive: true, force: true});
   fs.mkdirSync(OUTPUT, {recursive: true});
@@ -241,6 +360,7 @@ for (const item of cases) {
   test(item.key, async ({browser}) => {
     const context = await browser.newContext({
       viewport: item.viewport,
+      deviceScaleFactor: 1,
       colorScheme: item.mode,
       reducedMotion: 'reduce',
       hasTouch: item.pointer === 'coarse',
@@ -296,12 +416,16 @@ for (const item of cases) {
         .querySelector('[data-astryx-theme]')
         ?.getAttribute('data-astryx-theme'),
       mode: document.documentElement.getAttribute('data-theme'),
+      colorScheme: getComputedStyle(document.documentElement).colorScheme,
       viewport: {width: innerWidth, height: innerHeight},
+      dpr: devicePixelRatio,
+      hover: matchMedia('(hover: hover)').matches,
       reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
       coarsePointer: matchMedia('(pointer: coarse)').matches,
       forcedColors: matchMedia('(forced-colors: active)').matches,
       horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
       fonts: document.fonts.status,
+      storybookError: document.body.classList.contains('sb-show-errordisplay'),
     }));
 
     const empties = await subject
@@ -460,6 +584,7 @@ for (const item of cases) {
       );
     }
 
+    const settled = await readSettledRender(page, subject);
     const png =
       item.story === 'content'
         ? await page.screenshot({animations: 'disabled', fullPage: true})
@@ -467,7 +592,7 @@ for (const item of cases) {
 
     const image = `${item.key}.png`;
     const receipt = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       expected: {
         build: checkoutSha,
         storyId: storyId(item),
@@ -478,6 +603,10 @@ for (const item of cases) {
         pointer: item.pointer,
         forcedColors: item.forcedColors,
         viewport: item.viewport,
+        dpr: 1,
+        colorScheme: item.mode,
+        runningAnimationsInSubject: 0,
+        geometryStable: true,
         texts: wantTexts,
         announcement: wantAnnouncement,
         listboxes: 0,
@@ -491,6 +620,7 @@ for (const item of cases) {
         pendingIndicators,
         comboboxStates,
         announcement,
+        settled,
         pageErrors,
       },
       image: {
@@ -498,6 +628,7 @@ for (const item of cases) {
         sha256: createHash('sha256').update(png).digest('hex'),
         width: png.readUInt32BE(16),
         height: png.readUInt32BE(20),
+        nonBlank: isNonBlank(png),
       },
       checks: {
         semanticsPass,
@@ -512,8 +643,14 @@ for (const item of cases) {
       passed:
         storybookSha === checkoutSha &&
         pageErrors.length === 0 &&
+        !observed.storybookError &&
         observed.theme === item.theme &&
         observed.mode === item.mode &&
+        observed.colorScheme === item.mode &&
+        observed.dpr === 1 &&
+        settled.runningAnimations.subject === 0 &&
+        settled.geometryStable &&
+        isNonBlank(png) &&
         empties.every(empty => empty.direction === item.direction) &&
         observed.viewport.width === item.viewport.width &&
         observed.viewport.height === item.viewport.height &&
@@ -547,7 +684,7 @@ test('manifest is complete', async () => {
       ) as AuditReceipt,
   );
   const manifest = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     component: 'core/CommandPaletteEmpty',
     build: checkoutSha,
     frames: cases.map(item => ({
