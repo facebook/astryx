@@ -101,6 +101,12 @@ const styles = stylex.create({
   },
 });
 
+/**
+ * How AlertDialog presents under a finger: `'adaptive'` follows the device,
+ * `'dialog'` keeps the dialog a mouse gets on every device.
+ */
+export type AlertDialogPresentation = 'adaptive' | 'dialog';
+
 export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
   ref?: React.Ref<HTMLDialogElement>;
   /**
@@ -164,10 +170,21 @@ export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
   /**
    * The width of the dialog.
    * Numbers are treated as pixels, strings are used as-is. By default 400,
-   * and under a finger UIKit's alert width, 320.
+   * and under a finger with `presentation="adaptive"` UIKit's alert width,
+   * 320.
    * @default 400
    */
   width?: number | string;
+  /**
+   * How the alert presents under a finger. `'adaptive'` gives a touch screen
+   * the native alert: it appears and leaves the way an iOS alert does, 320
+   * wide, and a finger is tracked across both actions as one group and runs
+   * the action it lifts on. `'dialog'` keeps the dialog a mouse gets on every
+   * device: the theme's motion, 400 wide, and each button's own press and
+   * click.
+   * @default 'adaptive'
+   */
+  presentation?: AlertDialogPresentation;
 }
 
 /**
@@ -209,6 +226,7 @@ export function AlertDialog({
   isActionLoading,
   onAction,
   width: widthProp,
+  presentation = 'adaptive',
   xstyle,
   className,
   style,
@@ -237,11 +255,14 @@ export function AlertDialog({
   // it fades out, and touches during either transition are taken and dropped.
   // Only under a touch presentation (a coarse primary pointer, after
   // hydration): where the primary pointer is fine nothing attaches, and a
-  // finger keeps the browser's click (`spec:AST-094` FR13, FR19).
-  const {isTouch, isCompact} = useTouchPresentation();
+  // finger keeps the browser's click (`spec:AST-094` FR13, FR19). A caller's
+  // `presentation="dialog"` keeps the fine-pointer dialog on every device
+  // (`architecture:public-component-api` INV16).
+  const touch = useTouchPresentation();
+  const isTouch = presentation !== 'dialog' && touch.isTouch;
   // UIKit's action layout needs both a finger and a compact viewport (the
   // active theme's compact definition).
-  const isCompactTouch = isTouch && isCompact;
+  const isCompactTouch = isTouch && touch.isCompact;
   // UIKit's alert width under a finger (alertController.width), so the
   // presentation's 1.2 start stays on screen; with a mouse Dialog's 400.
   const width = widthProp ?? (isTouch ? alertController.width : 400);

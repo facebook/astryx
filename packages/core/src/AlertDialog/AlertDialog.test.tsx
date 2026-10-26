@@ -549,7 +549,13 @@ describe('AlertDialog touch tracking', () => {
    * motion runs, and touches wait for the presentation), or with a mouse with
    * `touch: false` (the theme's motion).
    */
-  function renderOpen(props: {isInline?: boolean; touch?: boolean} = {}) {
+  function renderOpen(
+    props: {
+      isInline?: boolean;
+      touch?: boolean;
+      presentation?: 'adaptive' | 'dialog';
+    } = {},
+  ) {
     const isTouch = props.touch ?? true;
     stubAlertDialogMedia({
       smallScreen: true,
@@ -562,6 +568,7 @@ describe('AlertDialog touch tracking', () => {
       <AlertDialog
         isOpen={isOpen}
         isInline={props.isInline}
+        presentation={props.presentation}
         onOpenChange={onOpenChange}
         title="Delete item?"
         description="This cannot be undone."
@@ -668,6 +675,20 @@ describe('AlertDialog touch tracking', () => {
     expect(dialog).not.toHaveAttribute('open');
   });
 
+  it('with presentation="dialog" under a finger keeps the theme motion and Dialog\'s 400: a click acts at once and a close is immediate', () => {
+    const {onOpenChange, cancel, close} = renderOpen({presentation: 'dialog'});
+    // A coarse pointer, before anything is checked.
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(true);
+    const dialog = screen.getByRole('alertdialog');
+    expect(dialog.getAttribute('style')).toContain('--x-width: 400px');
+    // No presentation to wait for: the click acts as it lands.
+    fireEvent.click(cancel);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    // No fade to wait for either: the dialog closes with the caller.
+    close();
+    expect(dialog).not.toHaveAttribute('open');
+  });
+
   it("takes UIKit's alert width under a finger and Dialog's 400 with a mouse, unless the caller sets one", () => {
     const widthOf = () => screen.getByRole('alertdialog').getAttribute('style');
     renderOpen();
@@ -729,6 +750,23 @@ describe('AlertDialog touch tracking', () => {
     expect(cancel).toHaveAttribute('data-astryx-press', 'on');
     touch('touchend', cancel, {x: 60, y: 156}, id);
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('keeps each button its own press under a finger with presentation="dialog": no group, and a slide from the action to Cancel cancels nothing', () => {
+    const {onOpenChange, onAction, cancel, action} = renderOpen({
+      presentation: 'dialog',
+    });
+    // The document press controller keeps each button, as with a mouse.
+    for (const button of [cancel, action]) {
+      expect(button).toHaveAttribute('data-astryx-pressable');
+    }
+    const id = touchId++;
+    touch('touchstart', action, {x: 60, y: 116}, id);
+    touch('touchmove', action, {x: 60, y: 156}, id);
+    expect(cancel).not.toHaveAttribute('data-astryx-press');
+    touch('touchend', action, {x: 60, y: 156}, id);
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(onAction).not.toHaveBeenCalled();
   });
 
   it('does not track a touch that starts on the backdrop', async () => {
