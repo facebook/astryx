@@ -174,8 +174,9 @@ those contracts.
   and an app element registers with `useDisclosureParticipant(elementRef)`. A disclosing element (a TreeList group, Collapsible) reports its
   change to its nearest registered ancestor boundary, which moves only the
   participants after it, each by translating an element it already renders,
-  so the module adds no elements (`architecture:component-style-authoring`
-  INV7). Anything else inside the boundary, fixed or sticky elements, and
+  so the module adds no elements: the boundary is the existing container passed
+  by ref, and participants register elements they already render, under
+  either OQ2 option (`architecture:component-style-authoring` INV7). Anything else inside the boundary, fixed or sticky elements, and
   content outside it take their final place at once; a nested boundary moves
   as one participant of the boundary around it. Under Reduce Motion, following
   content changes as `design:reduced-motion` DR1–DR3 require: a cross-fade
@@ -366,13 +367,11 @@ component suite is not blanket conformance with every invariant.
   flow, by a walk bounded by the container that skips fixed, sticky, and
   absolutely positioned descendants and moves a nested boundary as one unit,
   with no app API, but it walks the DOM and measures every element it finds;
-  (ii, recommended) Astryx components register themselves and an app element
+  or (ii, recommended) Astryx components register themselves and an app element
   opts in with `useDisclosureParticipant(elementRef)`, so only registered
   content moves, unregistered app content takes its final place at once, and
-  the cost grows with the number of participants; or (iii) the app wraps the
-  following content in one element passed by ref and translated as a block,
-  which needs one measurement but cannot separate a disclosure from content
-  inside the same wrapper.
+  the cost grows with the number of participants. A wrapper around the following content, translated as a block, is
+  rejected: it adds tree layers with several disclosures and does not compose.
 - **OQ3 — Which pointers get the travel.** (`human-design`) Options: (a,
   recommended) every pointer, because a disclosure's following content jumps
   the same way under a mouse; or (b) only a coarse primary pointer, with an
