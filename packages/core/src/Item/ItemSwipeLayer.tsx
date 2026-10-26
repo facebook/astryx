@@ -288,7 +288,7 @@ export default function ItemSwipeLayer({
   // The root forwards its key events, and a control in the row its reveal,
   // into what this publishes. The first Effect keeps the gesture's latest
   // handlers for the bridge to call; the second installs the bridge on Item,
-  // which lives outside this lazily loaded layer, once when the layer mounts,
+  // which lives outside this layer, once when the layer mounts,
   // and releases it when the layer leaves. React flushes effects before it
   // delivers a discrete event, so a call never meets a stale handler.
   const swipeRef = useRef(swipe);

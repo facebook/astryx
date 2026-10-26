@@ -755,7 +755,7 @@ test('a control in the row opens its trailing actions on the swipe’s own settl
   const row = page.locator('.astryx-item').first();
   const panel = row.locator('[data-swipe-panel="trailing"]');
   const control = row.getByRole('button', {name: 'Delete control'});
-  // The control renders once the lazily loaded swipe layer has mounted.
+  // The control renders once the swipe layer has mounted.
   await expect(control).toBeVisible();
   await expect(panel).toBeAttached();
   // The entries are the track's children.
