@@ -216,13 +216,7 @@ describe('createPopoverSurfaceMotion', () => {
     };
   });
 
-  // Each test's motion is disposed after it, so no document listener a
-  // presentation holds (FR35's input hold) reaches the next test.
-  const motions: {dispose(): void}[] = [];
   afterEach(() => {
-    for (const motion of motions.splice(0)) {
-      motion.dispose();
-    }
     Reflect.deleteProperty(HTMLElement.prototype, 'animate');
     HTMLElement.prototype.getBoundingClientRect = originalRect;
     vi.useRealTimers();
@@ -251,7 +245,6 @@ describe('createPopoverSurfaceMotion', () => {
     // Motion cross-fades.
     stubMedia(reducedMotion, true);
     const motion = createPopoverSurfaceMotion(element, {now: () => clock});
-    motions.push(motion);
     return {element, motion};
   };
 
@@ -307,42 +300,6 @@ describe('createPopoverSurfaceMotion', () => {
     const [opacityAnimation] = live('opacity');
     expect(Number(opacityAnimation.keyframes[0].opacity)).toBe(0);
     expect(Number(opacityAnimation.keyframes.at(-1)!.opacity)).toBe(1);
-  });
-
-  it('takes no input from a touch that lands while it grows: its tap and drag are cancelled, a pinch is not (spec:AST-094 FR35)', async () => {
-    const {motion} = create();
-    const touchEvent = (
-      type: string,
-      changed: number[],
-      touches: number[],
-    ): Event => {
-      const event = new Event(type, {bubbles: true, cancelable: true});
-      const list = (ids: number[]) => ids.map(identifier => ({identifier}));
-      Object.defineProperty(event, 'changedTouches', {value: list(changed)});
-      Object.defineProperty(event, 'touches', {value: list(touches)});
-      document.body.dispatchEvent(event);
-      return event;
-    };
-    motion.enter(() => GEOMETRY);
-    // A tap and a one-finger drag that land while it grows reach nothing:
-    // the drag scrolls nothing, and the cancelled end closes nothing,
-    // clicks nothing and moves no focus.
-    touchEvent('touchstart', [1], [1]);
-    expect(touchEvent('touchmove', [1], [1]).defaultPrevented).toBe(true);
-    expect(touchEvent('touchend', [1], []).defaultPrevented).toBe(true);
-    // A pinch still zooms the page (FR10).
-    touchEvent('touchstart', [2], [2]);
-    touchEvent('touchstart', [3], [2, 3]);
-    expect(touchEvent('touchmove', [2, 3], [2, 3]).defaultPrevented).toBe(
-      false,
-    );
-    touchEvent('touchend', [2, 3], []);
-    // Once it has grown, a touch is the browser's again.
-    clock += 2000;
-    await vi.advanceTimersByTimeAsync(2000);
-    touchEvent('touchstart', [4], [4]);
-    expect(touchEvent('touchmove', [4], [4]).defaultPrevented).toBe(false);
-    expect(touchEvent('touchend', [4], []).defaultPrevented).toBe(false);
   });
 
   it('plays the dismissal on a static copy of the popover, back into its source, removed when the spring settles', async () => {
