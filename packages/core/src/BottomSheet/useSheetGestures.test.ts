@@ -82,6 +82,10 @@ function pointerEvent(
     clientY,
     timeStamp,
     currentTarget: target,
+    // A finger where a test stubs a coarse primary pointer, a mouse
+    // otherwise: the sheet takes UIKit's presentation only for a finger or
+    // a pen there (spec:AST-094 FR13).
+    pointerType: matchMedia('(pointer: coarse)').matches ? 'touch' : 'mouse',
     preventDefault: vi.fn(),
   } as unknown as React.PointerEvent;
 }
@@ -127,6 +131,22 @@ afterEach(() => {
  * device takes UIKit's rule and springs (one touch model, AST-094); a mouse
  * keeps today's (releaseMotion.ts, sheetRelease.ts).
  */
+/**
+ * A coarse primary pointer, where the sheet's touch listeners exist
+ * (spec:AST-094 FR24); every other query stays unmatched.
+ */
+function stubCoarsePointer() {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches: query.includes('pointer: coarse'),
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  );
+}
+
 function stubIosIdiom({reducedMotion = false}: {reducedMotion?: boolean} = {}) {
   vi.stubGlobal(
     'matchMedia',
@@ -837,6 +857,8 @@ describe('useSheetGestures', () => {
   });
 
   it('tracks the finger 1:1 between detents and into the dismiss zone', () => {
+    // UIKit's presentation: a finger where the primary pointer is coarse.
+    stubIosIdiom();
     // UIKit's sheet follows the finger exactly (interaction offset = detent
     // offset + translation, no magnet); the release picks the detent. Offsets
     // for a 400px sheet with snaps 300 and 200: [0, 100, 200], gone at 400.
@@ -862,6 +884,42 @@ describe('useSheetGestures', () => {
     expect(liveOffset(hook)).toBe(150);
     move(hook, 320, 200, t);
     expect(liveOffset(hook)).toBe(320);
+  });
+
+  describe('one answer for the tracking and the release (spec:AST-094 FR13)', () => {
+    // Offsets [0, 100, 200] for a 400px sheet with snaps 300 and 200: 10 px
+    // short of the 100 detent, today's drag eases toward it; UIKit's tracks
+    // 1:1. The release reads the same answer (releaseMotion.test.ts).
+    function dragTo90(pointerType: 'touch' | 'pen' | 'mouse'): number {
+      const {hook} = setup({snapHeights: () => [200, 300]});
+      const t = makeTarget();
+      act(() => hook.result.current.sheetRef(t));
+      const as = (y: number, ms: number) =>
+        ({...pointerEvent(y, ms, t), pointerType}) as React.PointerEvent;
+      act(() => hook.result.current.handleProps.onPointerDown(as(0, 0)));
+      act(() => hook.result.current.handleProps.onPointerMove(as(90, 100)));
+      return liveOffset(hook);
+    }
+
+    it("keeps a finger on today's drag where the primary pointer is fine", () => {
+      const offset = dragTo90('touch');
+      expect(offset).toBeGreaterThan(90);
+      expect(offset).toBeLessThanOrEqual(100);
+    });
+
+    it("keeps a mouse on today's drag where the primary pointer is coarse", () => {
+      stubIosIdiom();
+      expect(matchMedia('(pointer: coarse)').matches).toBe(true);
+      const offset = dragTo90('mouse');
+      expect(offset).toBeGreaterThan(90);
+      expect(offset).toBeLessThanOrEqual(100);
+    });
+
+    it('tracks a finger or a pen 1:1 where the primary pointer is coarse', () => {
+      stubIosIdiom();
+      expect(dragTo90('touch')).toBe(90);
+      expect(dragTo90('pen')).toBe(90);
+    });
   });
 
   it('translates the surface live during a drag', () => {
@@ -1086,6 +1144,8 @@ describe('useSheetGestures', () => {
   });
 
   it('stretches a finger dragged up past the fully-open position by the rubber band, within the reserve (spec:AST-094 FR3)', () => {
+    // UIKit's presentation: a finger where the primary pointer is coarse.
+    stubIosIdiom();
     // (1 - 1 / (x * 0.55 / d + 1)) * d past the tallest detent, d the sheet's
     // 400 px height, no farther than the 48 px the sheet reserves below.
     const band = (x: number) =>
@@ -1207,6 +1267,9 @@ describe('useSheetGestures', () => {
   });
 
   describe('body touch handoff', () => {
+    // Touch listeners exist only where the primary pointer is coarse.
+    beforeEach(() => stubCoarsePointer());
+
     // Attach a real DOM node via the body ref, then dispatch touch events. The
     // hook's non-passive touchmove listener is how the handoff works on touch
     // devices (pointer events get cancelled once native panning starts).
@@ -1498,6 +1561,9 @@ describe('useSheetGestures', () => {
   });
 
   describe('body touch handoff from a nested scroller', () => {
+    // Touch listeners exist only where the primary pointer is coarse.
+    beforeEach(() => stubCoarsePointer());
+
     // A host that scrolls content in a box of its own inside the body (a
     // pinned header and footer around a scrolling middle, a grid) never moves
     // the body's scrollTop. The edge that decides the handoff is the edge of
@@ -1659,6 +1725,9 @@ describe('useSheetGestures', () => {
   });
 
   describe('body touch handoff mid-gesture', () => {
+    // Touch listeners exist only where the primary pointer is coarse.
+    beforeEach(() => stubCoarsePointer());
+
     // The reported bug: the finger lands mid-content, swipes up, REACHES the
     // end of the content, and keeps pulling in the same continuous gesture.
     // Arming decided at touchstart can never see that, and by the time the
@@ -2568,7 +2637,7 @@ describe('useSheetGestures: the release on the compositor', () => {
     }
   });
 
-  it('fades a touch release under reduced motion with a fine primary pointer too (DR2)', () => {
+  it('fades a finger release under reduced motion with a fine primary pointer too (DR2)', () => {
     vi.stubGlobal(
       'matchMedia',
       vi.fn((query: string) => ({
@@ -2578,49 +2647,39 @@ describe('useSheetGestures: the release on the compositor', () => {
       })),
     );
     const {hook} = setup({snapHeights: () => [200]});
-    // A finger on the sheet's scroller, scrolled to the top: its pull-down
-    // drags the sheet, through the touch path.
+    // A finger on a touchscreen whose primary pointer is fine drags the
+    // handle through its pointer events (the touch listeners stay off
+    // there, spec:AST-094 FR24).
     const el = makeTarget();
-    Object.defineProperty(el, 'scrollTop', {value: 0, writable: true});
-    Object.defineProperty(el, 'clientHeight', {value: 200});
-    Object.defineProperty(el, 'scrollHeight', {value: 800});
     document.body.appendChild(el);
     act(() => hook.result.current.sheetRef(el));
-    act(() => hook.result.current.bodyProps.ref(el));
     el.style.transitionProperty = 'transform';
     el.style.transitionDuration = '410ms';
     el.style.transitionTimingFunction = 'ease';
     const played = recordAnimations(el);
-    const fire = (type: string, y: number, timeStamp: number) => {
-      const event = new Event(type, {bubbles: true, cancelable: true});
-      Object.defineProperty(event, 'timeStamp', {value: timeStamp});
-      // jsdom lacks TouchEvent; attach the fields the handler reads.
-      Object.defineProperty(event, 'changedTouches', {
-        value: [{identifier: 1, clientX: 0, clientY: y}],
-      });
-      Object.defineProperty(event, 'touches', {
-        value:
-          type === 'touchend' ? [] : [{identifier: 1, clientX: 0, clientY: y}],
-      });
-      el.dispatchEvent(event);
-    };
     // 150 px down, then still before the lift (on the page clock): it
     // settles on the 200 px detent.
     const t0 = performance.now();
-    act(() => fire('touchstart', 0, t0));
+    act(() =>
+      hook.result.current.handleProps.onPointerDown(fingerEvent(0, t0, el)),
+    );
     for (const [y, dt] of [
       [75, 100],
       [150, 200],
     ]) {
       act(() => {
         vi.advanceTimersByTime(100);
-        fire('touchmove', y, t0 + dt);
+        hook.result.current.handleProps.onPointerMove(
+          fingerEvent(y, t0 + dt, el),
+        );
       });
     }
     expect(hook.result.current.isDragging).toBe(true);
     act(() => {
       vi.advanceTimersByTime(150);
-      fire('touchend', 150, t0 + 350);
+      hook.result.current.handleProps.onPointerUp(
+        fingerEvent(150, t0 + 350, el),
+      );
     });
     expect(hook.result.current.settledOffset).toBe(200);
     // The release fades, though the primary pointer is fine: a finger
@@ -2630,6 +2689,47 @@ describe('useSheetGestures: the release on the compositor', () => {
     );
     for (const animation of played) {
       expect(settledMs(animation)).toBeLessThanOrEqual(200.5);
+    }
+  });
+
+  it('registers no touch listener where the primary pointer is fine, and its own where it is coarse (spec:AST-094 FR24)', () => {
+    const touchTypes = (spy: {mock: {calls: unknown[][]}}): string[] =>
+      spy.mock.calls
+        .map((call: unknown[]) => String(call[0]))
+        .filter((type: string) => type.startsWith('touch'));
+    for (const coarse of [false, true]) {
+      if (coarse) {
+        stubCoarsePointer();
+      } else {
+        vi.stubGlobal(
+          'matchMedia',
+          vi.fn((query: string) => ({
+            matches: false,
+            media: query,
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+          })),
+        );
+      }
+      const {hook} = setup({snapHeights: () => [200]});
+      const dialog = document.createElement('dialog');
+      document.body.append(dialog);
+      const sheet = makeTarget();
+      const body = document.createElement('div');
+      sheet.append(body);
+      dialog.append(sheet);
+      const onBody = vi.spyOn(body, 'addEventListener');
+      const onDialog = vi.spyOn(dialog, 'addEventListener');
+      act(() => hook.result.current.sheetRef(sheet));
+      act(() => hook.result.current.bodyProps.ref(body));
+      if (coarse) {
+        expect(touchTypes(onBody)).toContain('touchmove');
+        expect(touchTypes(onDialog)).toContain('touchstart');
+      } else {
+        expect(touchTypes(onBody)).toEqual([]);
+        expect(touchTypes(onDialog)).toEqual([]);
+      }
+      hook.unmount();
     }
   });
 
