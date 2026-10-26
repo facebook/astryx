@@ -937,11 +937,12 @@ export function useSheetGestures({
     },
     [animator, recordSheetHeight],
   );
-  // While a finger drags the sheet, or holds it after catching it mid-settle,
-  // its text is not selectable and the touch callout is off: a finger held
-  // still on a caught sheet would otherwise start iOS's text selection and
-  // its loupe under the drag. Set at the catch (the touch-down), before the
-  // long press would select; the sheet's own values come back at the lift.
+  // While a finger drags the sheet under UIKit's presentation, or holds it
+  // after catching it mid-settle, its text is not selectable and the touch
+  // callout is off: a finger held still on a caught sheet would otherwise
+  // start iOS's text selection and its loupe under the drag. Set at the catch
+  // (the touch-down), before the long press would select; the sheet's own
+  // values come back at the lift.
   const selectionLockRef = useRef<{
     element: HTMLElement;
     saved: ReadonlyArray<readonly [string, string, string]>;
@@ -1866,9 +1867,6 @@ export function useSheetGestures({
       const target = event.currentTarget as HTMLElement;
       const syntheticTouch = isSyntheticTouch(event);
       dragTouchRef.current = syntheticTouch || event.pointerType === 'touch';
-      if (dragTouchRef.current) {
-        lockSelection();
-      }
       // Never capture for a touch drag. The id came from `Touch.identifier`,
       // which on iOS names a live pointer: the capture succeeds, WebKit takes
       // it straight back for its own gesture handling, and the
@@ -1912,6 +1910,12 @@ export function useSheetGestures({
         sheetElRef.current,
         syntheticTouch ? 'touch' : event.pointerType,
       );
+      // Selection and the callout go off with UIKit's presentation, the same
+      // answer as the tracking and the release: a finger where the primary
+      // pointer is fine keeps the browser's (spec:AST-094 FR19).
+      if (releaseMotionRef.current.kind === 'uikit') {
+        lockSelection();
+      }
       const tracker = new VelocityTracker();
       tracker.add(0, event.clientY, event.timeStamp);
       dragStateRef.current = {
