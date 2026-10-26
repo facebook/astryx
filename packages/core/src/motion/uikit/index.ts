@@ -27,6 +27,7 @@ export {
 } from './gestures';
 export {navigation, registerNavigationTable} from './navigation';
 export {registerScrollTable, scroll} from './scroll';
+export {registerSearchTable, search} from './search';
 export {registerSpringsTable, springs} from './springs';
 export {registerTabBarTable, tabBar} from './tabBar';
 export {registerTimingTable, timing} from './timing';

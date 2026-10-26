@@ -333,6 +333,14 @@ export {
   type MobilePowerSearchProps,
 } from './MobilePowerSearch';
 
+// SearchField — the phone search field of iOS 26's UISearchController: it
+// activates into its host's bar with a glass close button, on UIKit's clock
+// (core's experimental motion subpath).
+export {
+  SearchField,
+  type SearchFieldHandle,
+  type SearchFieldProps,
+} from './SearchField';
 // TabBar — the iOS 26 floating tab bar: a capsule of tabs with a selection
 // lens on UIKit's springs (core's motion modules), badges and a
 // reselect signal.

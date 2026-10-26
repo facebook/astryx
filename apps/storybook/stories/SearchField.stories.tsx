@@ -1,0 +1,444 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+import {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import type {Meta, StoryObj} from '@storybook/react';
+import {SearchField, type SearchFieldHandle} from '@astryxdesign/lab';
+import {type MotionCurve} from '@astryxdesign/core/motion/animator';
+import {cubicBezier} from '@astryxdesign/core/motion/bezier';
+import {resolveMotion} from '@astryxdesign/core/motion/resolveMotion';
+import {registerSearchTable, search} from '@astryxdesign/core/motion/uikit';
+import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
+import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
+
+// =============================================================================
+// Meta
+// =============================================================================
+
+const meta: Meta<typeof SearchField> = {
+  title: 'Lab/SearchField',
+  component: SearchField,
+  parameters: {
+    layout: 'fullscreen',
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof SearchField>;
+
+// =============================================================================
+// A screen like the one UIKit's captures were taken on: a large title, the
+// field under it, results below
+// =============================================================================
+
+const FRUITS = [
+  'Apple',
+  'Apricot',
+  'Banana',
+  'Blueberry',
+  'Cherry',
+  'Grapefruit',
+  'Mango',
+  'Orange',
+  'Peach',
+  'Pear',
+  'Plum',
+  'Raspberry',
+  'Strawberry',
+  'Watermelon',
+];
+
+const page: React.CSSProperties = {
+  minHeight: '100vh',
+  boxSizing: 'border-box',
+  paddingTop: 8,
+  fontFamily: 'system-ui, sans-serif',
+};
+const largeTitle: React.CSSProperties = {
+  margin: 0,
+  padding: '4px 16px 8px',
+  fontSize: 34,
+  fontWeight: 700,
+  lineHeight: '41px',
+};
+const list: React.CSSProperties = {
+  listStyle: 'none',
+  margin: '8px 0 0',
+  padding: 0,
+};
+const row: React.CSSProperties = {
+  padding: '12px 16px',
+  borderBottom: '1px solid rgba(127, 127, 127, 0.2)',
+  fontSize: 17,
+};
+
+/** A curve the animator plays: `value(progress(t))` over `duration` s. */
+function curve(
+  duration: number,
+  value: (p: number) => number,
+  progress: (t: number) => number,
+): MotionCurve {
+  const at = (t: number) => value(progress(t));
+  return {
+    duration,
+    at,
+    velocity: t => {
+      if (duration <= 0 || t >= duration) {
+        return 0;
+      }
+      const a = Math.max(0, t - 0.001);
+      const b = Math.min(duration, t + 0.001);
+      return (at(b) - at(a)) / (b - a);
+    },
+  };
+}
+
+/**
+ * The host's half of a lift, as a navigation bar does it (NavigationStack
+ * runs the real one): the content rises with the field by `lift` on the
+ * field's clock, and the large title fades as UIKit's does (opacity
+ * (1 − p / 0.35)² on activation; on cancel it comes back from p = 0.65).
+ * Placed at once under a mouse, as the field is.
+ */
+function useLiftedHost(isActive: boolean, lift: number) {
+  const content = useAnimator();
+  const title = useAnimator();
+  const {isTouch} = useTouchPresentation();
+  const settled = useRef<boolean | null>(null);
+  const moving = useRef(false);
+  useLayoutEffect(() => {
+    const target = isActive && lift > 0;
+    const y = target ? -lift : 0;
+    if (settled.current === null || !isTouch || lift === 0) {
+      settled.current = target;
+      content.animator.set({y});
+      title.animator.set({opacity: target ? 0 : 1});
+      return;
+    }
+    if (settled.current === target) {
+      return;
+    }
+    settled.current = target;
+    const element = content.animator.element;
+    if (element == null) {
+      return;
+    }
+    registerSearchTable();
+    const seconds = resolveMotion(element, search, 'activationMs') / 1000;
+    const ease = cubicBezier(resolveMotion(element, search.activationCurve));
+    const progress = (t: number) =>
+      ease(seconds > 0 ? Math.min(1, Math.max(0, t / seconds)) : 1);
+    // `p` is the activation's progress (1 = active), whichever way it runs.
+    const activation = (p: number) => (target ? p : 1 - p);
+    // As the field does: from rest on the frame that presents the page at
+    // rest (in the same task as the field's, so both start together), and a
+    // change of mind added to the curves on screen, on the whole clock.
+    const options = moving.current
+      ? {additive: true}
+      : {start: 'presented' as const};
+    const fromY = content.animator.get('y');
+    moving.current = true;
+    const handles = [
+      content.animator.play(
+        {y: curve(seconds, p => fromY + (y - fromY) * p, progress)},
+        options,
+      ),
+      title.animator.play(
+        {
+          opacity: curve(
+            seconds,
+            p => {
+              const a = activation(p);
+              return target
+                ? Math.max(0, 1 - a / 0.35) ** 2
+                : Math.min(1, Math.max(0, (1 - a - 0.65) / 0.35));
+            },
+            progress,
+          ),
+        },
+        options,
+      ),
+    ];
+    let cancelled = false;
+    void Promise.all(handles.map(handle => handle.finished)).then(results => {
+      if (!cancelled && results.every(Boolean)) {
+        moving.current = false;
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isActive, lift, isTouch, content, title]);
+  return {contentRef: content.ref, titleRef: title.ref};
+}
+
+function Screen({
+  lift = 0,
+  initialQuery = '',
+  initiallyActive = false,
+  dir,
+}: {
+  lift?: number;
+  initialQuery?: string;
+  initiallyActive?: boolean;
+  dir?: 'rtl';
+}) {
+  const [query, setQuery] = useState(initialQuery);
+  const [isActive, setIsActive] = useState(initiallyActive);
+  const [submitted, setSubmitted] = useState<string | null>(null);
+  const results = FRUITS.filter(fruit =>
+    fruit.toLowerCase().includes(query.trim().toLowerCase()),
+  );
+  const {contentRef, titleRef} = useLiftedHost(isActive, lift);
+  return (
+    <div style={page} dir={dir}>
+      <h1 ref={titleRef} style={largeTitle}>
+        Search
+      </h1>
+      <SearchField
+        label="Search"
+        placeholder="Fruits"
+        value={query}
+        onChange={setQuery}
+        isActive={isActive}
+        onActiveChange={setIsActive}
+        onSubmit={setSubmitted}
+        lift={lift}
+      />
+      <div ref={contentRef} data-search-story-content="">
+        <ul style={list} aria-label="Results">
+          {results.map(fruit => (
+            <li key={fruit} style={row}>
+              {fruit}
+            </li>
+          ))}
+        </ul>
+        <p
+          data-testid="search-state"
+          style={{padding: '0 16px', fontSize: 13, opacity: 0.6}}>
+          {isActive ? 'active' : 'inactive'}
+          {submitted != null ? ` · submitted "${submitted}"` : ''}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The stacked field under a large title. A tap activates it: the field
+ * narrows and the glass close button slides in, on UIKit's 383 ms curve.
+ */
+export const Default: Story = {
+  render: () => <Screen />,
+};
+
+/**
+ * Active from the start, with a query: the clear button inside the field and
+ * the close button beside it.
+ */
+export const ActiveWithQuery: Story = {
+  render: () => <Screen initiallyActive initialQuery="ap" />,
+};
+
+/**
+ * Lifted as a navigation bar lifts it: the active field rises over the large
+ * title (its 53 px here; 99 px from under the title to the bar's row on an
+ * iPhone 17 Pro) and the results rise with it, while the title fades. The
+ * screen stands in for the bar here (NavigationStack runs the real one), on
+ * the field's clock and UIKit's measured title fade.
+ */
+export const Lifted: Story = {
+  render: () => <Screen lift={53} />,
+};
+
+/** Right to left: the field narrows from the left; the close button slides in from there. */
+export const RightToLeft: Story = {
+  render: () => <Screen dir="rtl" />,
+};
+
+// The bottom placement's bar: kept at the bottom of the viewport, the field's
+// bottom 33 px above it, as iOS 26's toolbar holds its search field.
+const bottomBar: React.CSSProperties = {
+  position: 'fixed',
+  insetInline: 0,
+  bottom: 33,
+};
+
+function BottomScreen({dir}: {dir?: 'rtl'}) {
+  const [query, setQuery] = useState('');
+  const [isActive, setIsActive] = useState(false);
+  const results = FRUITS.filter(fruit =>
+    fruit.toLowerCase().includes(query.trim().toLowerCase()),
+  );
+  return (
+    <div style={{...page, paddingBottom: 104}} dir={dir}>
+      <h1 style={largeTitle}>Search</h1>
+      <ul style={list} aria-label="Results">
+        {results.map(fruit => (
+          <li key={fruit} style={row}>
+            {fruit}
+          </li>
+        ))}
+      </ul>
+      <p
+        data-testid="search-state"
+        style={{padding: '0 16px', fontSize: 13, opacity: 0.6}}>
+        {isActive ? 'active' : 'inactive'}
+      </p>
+      <div style={bottomBar}>
+        <SearchField
+          label="Search"
+          placeholder="Fruits"
+          placement="bottom"
+          value={query}
+          onChange={setQuery}
+          isActive={isActive}
+          onActiveChange={setIsActive}
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * iOS 26's toolbar field at the bottom of the screen. A tap activates it: it
+ * keeps above the keyboard (its centre 36 px above the keyboard's top),
+ * swells, narrows past its place and grows a 38 px glass close button in
+ * beside it; cancelling springs it back out to rest as the keyboard goes
+ * down.
+ */
+export const Bottom: Story = {
+  render: () => <BottomScreen />,
+};
+
+/** The bottom field right to left: it narrows from the left. */
+export const BottomRightToLeft: Story = {
+  render: () => <BottomScreen dir="rtl" />,
+};
+
+// A tab bar's search tab draws the field's glass and its cancel button (its
+// search circle) and moves them above the keyboard; here a plain box and
+// button stand in for them, in a bar kept at the bottom of the viewport.
+const TAB_BAR_BOTTOM = 33;
+const tabBar: React.CSSProperties = {
+  position: 'fixed',
+  insetInline: 0,
+  height: 48,
+};
+const tabGlass: React.CSSProperties = {
+  position: 'absolute',
+  insetInlineStart: 8,
+  top: 0,
+  width: 330,
+  height: 48,
+  borderRadius: 24,
+  background: 'rgba(127, 127, 127, 0.14)',
+};
+const tabCircle: React.CSSProperties = {
+  position: 'absolute',
+  insetInlineEnd: 8,
+  top: 0,
+  width: 48,
+  height: 48,
+  borderRadius: 24,
+  border: 0,
+  background: 'rgba(127, 127, 127, 0.14)',
+  fontSize: 20,
+};
+
+/**
+ * The stand-in bar keeps above the software keyboard as a tab bar keeps its
+ * search field: by layout, its centre 36 px above the keyboard's top while
+ * the keyboard is up (the keyboard's height as spec:AST-099 FR2 defines it:
+ * Mobile Safari's cover; 0 where the page has the VirtualKeyboard API),
+ * committed on each report with no ride, as a Lab surface does (FR8).
+ */
+function useStandInTabBarLift() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [lift, setLift] = useState(0);
+  const shown = useRef(0);
+  useLayoutEffect(() => {
+    shown.current = lift;
+  }, [lift]);
+  useEffect(() => {
+    const element = ref.current;
+    const win = element?.ownerDocument.defaultView;
+    if (element == null || win == null) {
+      return undefined;
+    }
+    const read = () => {
+      const viewport = win.visualViewport;
+      const inset =
+        viewport == null ||
+        'virtualKeyboard' in win.navigator ||
+        win !== win.top
+          ? 0
+          : Math.max(
+              0,
+              win.innerHeight - viewport.height * (viewport.scale ?? 1),
+            );
+      const rect = element.getBoundingClientRect();
+      // Where layout puts the bar without the lift.
+      const restGap =
+        win.innerHeight - (rect.top + shown.current + rect.height / 2);
+      setLift(inset > 0 ? Math.max(0, inset + 36 - restGap) : 0);
+    };
+    read();
+    win.visualViewport?.addEventListener('resize', read);
+    win.addEventListener('resize', read);
+    return () => {
+      win.visualViewport?.removeEventListener('resize', read);
+      win.removeEventListener('resize', read);
+    };
+  }, []);
+  return {ref, lift};
+}
+
+function TabScreen() {
+  const handle = useRef<SearchFieldHandle>(null);
+  const [query, setQuery] = useState('');
+  const [isActive, setIsActive] = useState(false);
+  const bar = useStandInTabBarLift();
+  return (
+    <div style={{...page, paddingBottom: 104}}>
+      <h1 style={largeTitle}>Search</h1>
+      <p
+        data-testid="search-state"
+        style={{padding: '0 16px', fontSize: 13, opacity: 0.6}}>
+        {isActive ? 'active' : 'inactive'}
+      </p>
+      <div
+        ref={bar.ref}
+        style={{...tabBar, bottom: TAB_BAR_BOTTOM + bar.lift}}
+        data-search-story-tab-bar="">
+        <div style={tabGlass}>
+          <SearchField
+            label="Search"
+            placeholder="Fruits"
+            placement="tab"
+            handleRef={handle}
+            value={query}
+            onChange={setQuery}
+            isActive={isActive}
+            onActiveChange={setIsActive}
+          />
+        </div>
+        <button
+          type="button"
+          aria-label="Cancel"
+          style={tabCircle}
+          onClick={() => handle.current?.cancel()}>
+          ×
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The field as a tab bar's search tab holds it: content only, in the box the
+ * tab bar gives it; the tab bar's own cancel button calls `cancel()`, and the
+ * stand-in bar keeps above the keyboard as a tab bar does.
+ */
+export const InTabBar: Story = {
+  render: () => <TabScreen />,
+};
