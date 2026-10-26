@@ -331,9 +331,11 @@ test('a finger resting at a scrolling menu\u2019s edge autoscrolls it, and the p
   });
   const before = await menu.evaluate(el => el.scrollTop);
   // Inside the bottom edge zone of the part of the menu on screen, held
-  // still past the delay, then lifted.
+  // still past the delay, then lifted: over the last row once the list stops
+  // at its end, not in the menu's 4 px bottom padding, where no row is under
+  // the finger at the lift.
   const bottom = Math.min(box.y + box.height, viewport.height);
-  const edge = {x: box.x + box.width / 2, y: bottom - 4};
+  const edge = {x: box.x + box.width / 2, y: bottom - 12};
   const at = (t: number, dy: number) => ({
     t,
     fingers: [{id: 0, x: edge.x, y: edge.y + dy}],
