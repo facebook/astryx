@@ -218,7 +218,8 @@ without an identity of its own takes `getKey(item)`. `itemKey` is a new name bec
 carries item identity today: `value` on option-like rows is the selected value
 a form reads, a different job. A collection whose items already carry an
 identity, such as TreeList's `id` or Table's `idKey`, uses it rather than a
-second one.
+second one, since no new API shares a job with an existing one
+(`architecture:public-component-api` INV21).
 
 Rejected: reading each direct child's React `key`.
 
