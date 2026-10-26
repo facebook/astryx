@@ -11,10 +11,14 @@
  * SYNC: When useScrollLock.ts changes, update tests to match new behavior
  */
 
-import {afterEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {cleanup, renderHook} from '@testing-library/react';
 import {useScrollLock} from './useScrollLock';
 import {isScrollLockActive, subscribeScrollLock} from './rootScrollStyles';
+import {
+  coarsePrimaryPointer,
+  pointerQuery,
+} from '../gestures/__tests__/pointerQuery';
 
 /** A one-finger (or `fingers`-finger) touch event at (x, y) on `target`. */
 function touch(
@@ -24,6 +28,19 @@ function touch(
   y: number,
   fingers = 1,
 ): Event {
+  if (type === 'touchstart') {
+    // A browser sends a contact's pointerdown before its touchstart; the page
+    // hold reads the primary pointer at a hold's first touch contact.
+    const down = new Event('pointerdown', {bubbles: true, composed: true});
+    Object.assign(down, {
+      pointerType: 'touch',
+      pointerId: 1,
+      isPrimary: true,
+      clientX: x,
+      clientY: y,
+    });
+    target.dispatchEvent(down);
+  }
   // Touch events are composed: they leave shadow roots, retargeted to the host.
   const event = new Event(type, {
     bubbles: true,
@@ -159,6 +176,16 @@ describe('useScrollLock', () => {
   });
 
   describe('touch guard', () => {
+    // A phone or tablet: the page hold listens only where the primary pointer
+    // is coarse (`spec:AST-094` FR19), and jsdom models a desktop.
+    let restorePointer: () => void = () => {};
+    beforeEach(() => {
+      restorePointer = coarsePrimaryPointer();
+    });
+    afterEach(() => {
+      restorePointer();
+    });
+
     it('cancels a one-finger pan that no scroller under the finger can take', () => {
       const scrim = document.createElement('div');
       document.body.append(scrim);
@@ -197,6 +224,58 @@ describe('useScrollLock', () => {
       renderHook(() => useScrollLock(true));
 
       expect(pan(list, 200, 300)).toBe(false);
+    });
+
+    describe('an overlay rendered inside a scrolling container', () => {
+      /** An open modal dialog: jsdom has no top layer, so `:modal` is stubbed. */
+      function modalDialog(parent: HTMLElement): HTMLDialogElement {
+        const dialog = document.createElement('dialog');
+        dialog.setAttribute('open', '');
+        const matches = Element.prototype.matches;
+        vi.spyOn(dialog, 'matches').mockImplementation(
+          selector => selector === ':modal' || matches.call(dialog, selector),
+        );
+        parent.append(dialog);
+        return dialog;
+      }
+
+      it("cancels a scrim drag: a modal dialog's untaken pans go to the page, not to the container", () => {
+        const container = scroller(400, 100);
+        const dialog = modalDialog(container);
+        renderHook(() => useScrollLock(true));
+
+        expect(pan(dialog, 300, 200)).toBe(true);
+        expect(pan(dialog, 200, 300)).toBe(true);
+      });
+
+      it('cancels a drag on a fixed-position overlay inside the container', () => {
+        const container = scroller(400, 100);
+        const overlay = document.createElement('div');
+        overlay.style.position = 'fixed';
+        container.append(overlay);
+        renderHook(() => useScrollLock(true));
+
+        expect(pan(overlay, 300, 200)).toBe(true);
+      });
+
+      it('still lets a pan through to a scroller inside the dialog, or the dialog itself', () => {
+        const container = scroller(400, 100);
+        const dialog = modalDialog(container);
+        const list = scroller(400, 100);
+        const row = document.createElement('div');
+        list.append(row);
+        dialog.append(list);
+        renderHook(() => useScrollLock(true));
+
+        expect(pan(row, 300, 200)).toBe(false);
+
+        const scrolling = modalDialog(container);
+        scrolling.style.overflowY = 'auto';
+        Object.defineProperty(scrolling, 'clientHeight', {value: 200});
+        Object.defineProperty(scrolling, 'scrollHeight', {value: 600});
+        scrolling.scrollTop = 100;
+        expect(pan(scrolling, 300, 200)).toBe(false);
+      });
     });
 
     it('lets a pan through when the scroller under the finger is inside a shadow root', () => {
@@ -277,6 +356,23 @@ describe('useScrollLock', () => {
 
       second.unmount();
       expect(pan(scrim, 300, 200)).toBe(false);
+    });
+
+    it('holds no touch where the primary pointer is fine, and starts once it turns coarse', () => {
+      restorePointer();
+      const pointer = pointerQuery(false);
+      restorePointer = pointer.restore;
+      const scrim = document.createElement('div');
+      document.body.append(scrim);
+      renderHook(() => useScrollLock(true));
+
+      // A touchscreen whose primary pointer is fine keeps the browser's own
+      // touch behavior; `overflow: hidden` still stops wheel and keyboard.
+      expect(pan(scrim, 300, 200)).toBe(false);
+      expect(document.documentElement.style.overflow).toBe('hidden');
+
+      pointer.set(true);
+      expect(pan(scrim, 300, 200)).toBe(true);
     });
   });
 

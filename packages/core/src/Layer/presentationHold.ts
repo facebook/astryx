@@ -7,8 +7,9 @@
  * @input A layer's root element, what ends the hold (a promise, or an
  *   animator handle's `finished`), and its scope; the gesture host's touch
  *   gates
- * @output holdPresentation, usePresentationHold and isInHeldLayer: input
- *   held away from a layer while its presentation runs
+ * @output holdPresentation, usePresentationHold, isInHeldLayer and
+ *   isPresentationShield: input held away from a layer while its
+ *   presentation runs
  * @position The Layer module's one presentation hold, for every component
  *   whose layer presents or dismisses under a finger
  *
@@ -21,8 +22,10 @@
  * - `scope: 'viewport'` (a presentation): a touch, a pointer press or a
  *   click anywhere reaches nothing. A transparent shield inside the layer
  *   covers the viewport from the top layer, so a tap on it lands inside the
- *   layer (a light-dismissing layer stays open) and starts no pan or zoom
- *   (iOS drops that input too while it presents); the gesture host holds
+ *   layer (a light-dismissing layer stays open) and starts no pan (iOS
+ *   drops that input too while it presents), while a pinch on it still
+ *   zooms the page, which stays the browser's (spec:AST-094 FR10, FR18,
+ *   FR35; WCAG 1.4.4); the gesture host holds
  *   the layer's touches away from every recognizer. Keys and assistive
  *   technology stay live, as on iOS.
  * - `scope: 'layer'` (a dismissal, an inert bar): the same shield, and the
@@ -37,7 +40,13 @@
  *
  * The shield sets its own `pointer-events` and `visibility`, so a layer root
  * that takes no hits itself (its content or a backdrop child opts back in)
- * is held all the same.
+ * is held all the same. A hit test that must see past held input (a press
+ * the finger that opened the layer continues, captured before the hold
+ * began) skips shields and nothing else: the first element of
+ * `elementsFromPoint` for which `isPresentationShield` is false, so an
+ * overlay really above the layer still wins. The shield is a manual
+ * popover, so its `toggle` events reach a document listener that logs
+ * every popover's: such a log keeps to its own popovers.
  *
  * One hold per layer: holds on a held layer stack, and the layer comes back
  * when the last one ends (when what ends it settles, resolved or rejected;
@@ -80,6 +89,15 @@ interface HeldLayer {
 
 const held = new WeakMap<Element, HeldLayer>();
 const gatedDocuments = new WeakSet<Document>();
+const liveShields = new WeakSet<Node>();
+
+/**
+ * Whether `node` is the shield of a live hold. A hit test that must see past
+ * held input takes the first element of `elementsFromPoint` that is not one.
+ */
+export function isPresentationShield(node: Node | null): boolean {
+  return node != null && liveShields.has(node);
+}
 
 /**
  * Whether `target` is inside a held layer, walking the flat tree as the
@@ -120,7 +138,11 @@ const SWALLOWED = [
 ] as const;
 
 const swallow = (event: Event) => {
-  if (event.cancelable) {
+  // A touch's start stays uncancelled: cancelling it would cancel the page's
+  // pinch-zoom too. The shield's `touch-action: pinch-zoom` keeps a finger
+  // from panning, and a tap's mouse events and click land on the shield,
+  // which swallows them.
+  if (event.cancelable && event.type !== 'touchstart') {
     event.preventDefault();
   }
   event.stopPropagation();
@@ -143,7 +165,7 @@ function addShield(layer: Element): HTMLElement {
     border: '0',
     background: 'transparent',
     overflow: 'hidden',
-    touchAction: 'none',
+    touchAction: 'pinch-zoom',
     // The two inherited properties that decide hit-testing, set here so the
     // shield takes hits whatever its layer root opts out of (a full-viewport
     // layer that is `pointer-events: none` and lets a backdrop child take the
@@ -155,6 +177,7 @@ function addShield(layer: Element): HTMLElement {
     shield.addEventListener(type, swallow, {capture: true, passive: false});
   }
   layer.append(shield);
+  liveShields.add(shield);
   if (typeof shield.showPopover === 'function') {
     try {
       shield.showPopover();
@@ -211,7 +234,10 @@ export function holdPresentation(
       }
     }
     if (current.viewport === 0 && current.layer === 0) {
-      current.shield?.remove();
+      if (current.shield != null) {
+        liveShields.delete(current.shield);
+        current.shield.remove();
+      }
       held.delete(layer);
     }
   };

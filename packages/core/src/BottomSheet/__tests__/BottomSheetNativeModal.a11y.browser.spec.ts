@@ -1,4 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
+// @pr-a11y release-only
 
 /**
  * @file BottomSheetNativeModal.a11y.browser.spec.ts
@@ -248,6 +249,93 @@ test('the lock keeps the page where it is on a page whose body sets its own over
   await expect(page.locator('dialog[open]')).toHaveCount(0);
   await page.waitForTimeout(300);
   expect(await position()).toEqual(before);
+});
+
+/**
+ * A finger drag down the backdrop as trusted touch events, one move per frame;
+ * Chromium only (CDP). `Input.synthesizeScrollGesture` delivers the touch's
+ * start but none of its moves to the page, so it cannot show a cancelled move.
+ */
+async function touchDragDown(page: Page) {
+  const session = await page.context().newCDPSession(page);
+  await session.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{x: 195, y: 120}],
+  });
+  for (let step = 1; step <= 12; step += 1) {
+    await session.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{x: 195, y: 120 + step * 20}],
+    });
+    await page.waitForTimeout(16);
+  }
+  await session.send('Input.dispatchTouchEvent', {
+    type: 'touchEnd',
+    touchPoints: [],
+  });
+  await session.detach();
+  await page.waitForTimeout(250);
+}
+
+test('the lock holds a backdrop drag when the flow renders inside a scrolling container', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'touch input needs CDP');
+  await mountScrollable(page);
+  // The sheets render their dialogs in place, so moving the story root into a
+  // scroller puts the open flow inside it. A modal dialog's pans still go to
+  // the viewport (the top layer's containing block), never to that scroller,
+  // so the lock must cancel them as it does elsewhere; iOS Safari before 26.4
+  // scrolls the `overflow: hidden` page under a move it lets through.
+  // Chromium never does, so here the cancelled moves are the evidence.
+  await page.evaluate(() => {
+    const root = document.getElementById('storybook-root');
+    const container = document.createElement('div');
+    container.id = 'container';
+    container.style.cssText = 'height: 400px; overflow-y: auto;';
+    root?.before(container);
+    if (root != null) {
+      container.append(root);
+    }
+    const filler = document.createElement('div');
+    filler.style.height = '2000px';
+    container.append(filler);
+    container.scrollTop = 100;
+    // After every listener: whether each move past the hold's 5 px slop was
+    // cancelled.
+    const moves = {judged: 0, cancelled: 0, startX: 0, startY: 0};
+    (window as {__moves?: typeof moves}).__moves = moves;
+    window.addEventListener('touchstart', event => {
+      moves.startX = event.touches[0]?.clientX ?? 0;
+      moves.startY = event.touches[0]?.clientY ?? 0;
+    });
+    window.addEventListener('touchmove', event => {
+      const touch = event.touches[0];
+      if (touch == null) {
+        return;
+      }
+      const distance = Math.max(
+        Math.abs(touch.clientX - moves.startX),
+        Math.abs(touch.clientY - moves.startY),
+      );
+      if (distance >= 5) {
+        moves.judged += 1;
+        moves.cancelled += event.defaultPrevented ? 1 : 0;
+      }
+    });
+  });
+  // Moving the story root changes the page's height, so read the offset now.
+  const scrollY = await page.evaluate(() => window.scrollY);
+  await openFlow(page);
+  await touchDragDown(page);
+
+  const moves = await page.evaluate(
+    () => (window as {__moves?: {judged: number; cancelled: number}}).__moves,
+  );
+  expect(moves?.judged ?? 0).toBeGreaterThan(0);
+  expect(moves?.cancelled).toBe(moves?.judged);
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
 });
 
 async function handoffStep(

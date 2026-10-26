@@ -13,7 +13,12 @@
  *   same; keys still act while a presentation holds; a dismissal's
  *   hold makes the content inert and moves focus out of it, so no key acts
  *   on it either (a focused button that turns inert still takes Enter and
- *   Space in both engines); each release gives input back
+ *   Space in both engines); each release gives input back; a hit test
+ *   that skips shields (isPresentationShield) finds what lies beneath, and
+ *   a layer above the held one still wins; a one-finger
+ *   pan on the shield scrolls nothing while a pinch on it still zooms the
+ *   page (spec:AST-094 FR10, FR18, FR35; Chromium, which pinch-zooms from
+ *   injected touches)
  * @position Browser tests of packages/core/src/Layer/presentationHold.ts, run
  *   by the interaction project (`pnpm test:interaction presentationHold`)
  */
@@ -22,7 +27,12 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {build} from 'esbuild';
 import {expect, test, type Page} from '@playwright/test';
-import {touchDriver, type TouchDriver} from '@astryxdesign/interaction-harness';
+import {
+  drag,
+  pinch,
+  touchDriver,
+  type TouchDriver,
+} from '@astryxdesign/interaction-harness';
 
 type Point = {x: number; y: number};
 type Scope = 'viewport' | 'layer';
@@ -34,6 +44,7 @@ interface HoldApi {
   hold: (id: LayerId, scope: Scope) => void;
   release: () => void;
   hitAt: (x: number, y: number) => string;
+  hitPast: (x: number, y: number) => string;
 }
 
 let bundle = '';
@@ -86,6 +97,11 @@ const release = async (page: Page) =>
 const hitAt = async (page: Page, point: Point) =>
   page.evaluate(
     at => (window as unknown as HoldWindow).__hold.hitAt(at.x, at.y),
+    point,
+  );
+const hitPast = async (page: Page, point: Point) =>
+  page.evaluate(
+    at => (window as unknown as HoldWindow).__hold.hitPast(at.x, at.y),
     point,
   );
 const readLog = async (page: Page) =>
@@ -204,6 +220,35 @@ test('a light-dismissing popover stays open when a hold takes a tap outside it; 
     .toEqual(['pop:open', 'pop:closed']);
 });
 
+test('a hit test that skips shields sees past a hold: under a held modal dialog’s shield, its own action', async ({
+  page,
+}) => {
+  await load(page);
+  await open(page, 'dialog');
+  const action = await centre(page, 'action');
+  await hold(page, 'dialog', 'viewport');
+  // The opening finger's press resolves its row past the shield.
+  expect(await hitAt(page, action)).toBe('shield:dialog');
+  expect(await hitPast(page, action)).toBe('action');
+  await release(page);
+  expect(await hitAt(page, action)).toBe('action');
+});
+
+test('a layer opened above a held one is what that hit test finds, and past the shield the held layer’s content', async ({
+  page,
+}) => {
+  await load(page);
+  await open(page, 'lift');
+  const liftAction = await centre(page, 'liftAction');
+  await hold(page, 'lift', 'viewport');
+  expect(await hitAt(page, liftAction)).toBe('shield:lift');
+  expect(await hitPast(page, liftAction)).toBe('liftAction');
+  await open(page, 'pop');
+  const popAction = await centre(page, 'popAction');
+  expect(await hitAt(page, popAction)).toBe('popAction');
+  expect(await hitPast(page, popAction)).toBe('popAction');
+});
+
 // A full-viewport layer whose root takes no hits itself and lets its tint
 // and content take them (ContextMenu's lift layer is pointer-events: none):
 // the shield, inside that root, must not inherit that.
@@ -233,5 +278,71 @@ for (const rootStyle of ['pointer-events: none', 'visibility: hidden']) {
     expect((await readLog(page)).clicks).toEqual([]);
     await release(page);
     expect(await hitAt(page, action)).toBe('liftAction');
+  });
+}
+
+// Page zoom stays the browser's while a layer is held (spec:AST-094 FR10,
+// FR18 and FR35; WCAG 1.4.4): the shield starts no pan, but a pinch on it
+// still zooms the page.
+for (const [id, scope] of [
+  ['pop', 'viewport'],
+  ['dialog', 'layer'],
+] as const) {
+  test(`while a ${scope === 'viewport' ? 'presentation' : 'dismissal'} holds ${id === 'pop' ? 'a popover' : 'a modal dialog'}, a one-finger pan scrolls nothing and a pinch still zooms the page; neither reaches the layer or the page`, async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName === 'webkit',
+      'needs native scrolling and pinch-zoom from injected touches (Mobile Safari on the simulator)',
+    );
+    const driver = await load(page);
+    const viewport = page.viewportSize();
+    if (viewport == null) {
+      throw new Error('no viewport');
+    }
+    const middle = {x: viewport.width / 2, y: viewport.height / 2};
+    const panUp = drag(
+      {x: middle.x, y: middle.y + 150},
+      {x: middle.x, y: middle.y - 150},
+      // A rest before the lift: no fling outlives the pan.
+      {durationMs: 200, restMs: 150},
+    );
+    // A page that scrolls under the layer: unheld, the same pan scrolls it.
+    await page.evaluate(() => {
+      const spacer = document.createElement('div');
+      spacer.style.height = '300vh';
+      document.body.append(spacer);
+    });
+    await driver.play(panUp);
+    await expect
+      .poll(async () => page.evaluate(() => window.scrollY))
+      .toBeGreaterThan(0);
+    await settle(page);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await settle(page);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    await open(page, id);
+    await hold(page, id, scope);
+    expect(await hitAt(page, middle)).toBe(`shield:${id}`);
+    await driver.play(panUp);
+    await settle(page);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    await driver.play(
+      pinch({
+        center: middle,
+        fromDistance: 60,
+        toDistance: 220,
+        durationMs: 200,
+      }),
+    );
+    await expect
+      .poll(async () => page.evaluate(() => window.visualViewport?.scale ?? 1))
+      .toBeGreaterThan(1.2);
+    expect(await readLog(page)).toEqual({
+      clicks: [],
+      taps: 0,
+      toggles: id === 'pop' ? ['pop:open'] : [],
+    });
   });
 }

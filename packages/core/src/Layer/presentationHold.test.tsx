@@ -7,6 +7,7 @@ import {GestureHost} from '../gestures/GestureHost';
 import {
   holdPresentation,
   isInHeldLayer,
+  isPresentationShield,
   usePresentationHold,
 } from './presentationHold';
 
@@ -50,7 +51,8 @@ describe('holdPresentation', () => {
     expect(shield).not.toBe(child);
     expect(shield.getAttribute('popover')).toBe('manual');
     expect(shield.style.position).toBe('fixed');
-    expect(shield.style.touchAction).toBe('none');
+    // No pan, and a pinch still zooms the page (spec:AST-094 FR10).
+    expect(shield.style.touchAction).toBe('pinch-zoom');
     // Its own hit-testing, whatever the layer root's (the browser proof holds
     // a root that is pointer-events: none).
     expect(shield.style.pointerEvents).toBe('auto');
@@ -66,7 +68,7 @@ describe('holdPresentation', () => {
     expect(isInHeldLayer(child)).toBe(false);
   });
 
-  it('swallows a press and a click on the shield before they reach the page', () => {
+  it('swallows a press and a click on the shield before they reach the page, and leaves a touch its start so a pinch can still zoom', () => {
     const {layer} = mountLayer();
     holdPresentation(layer, {until: new Promise(() => {}), scope: 'viewport'});
     const shield = layer.lastElementChild as HTMLElement;
@@ -74,10 +76,17 @@ describe('holdPresentation', () => {
     for (const type of ['pointerdown', 'click', 'touchstart']) {
       document.addEventListener(type, () => seen.push(type));
     }
-    shield.dispatchEvent(new Event('pointerdown', {bubbles: true}));
-    shield.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-    shield.dispatchEvent(new Event('touchstart', {bubbles: true}));
+    const press = new Event('pointerdown', {bubbles: true, cancelable: true});
+    const click = new MouseEvent('click', {bubbles: true, cancelable: true});
+    const touch = new Event('touchstart', {bubbles: true, cancelable: true});
+    shield.dispatchEvent(press);
+    shield.dispatchEvent(click);
+    shield.dispatchEvent(touch);
     expect(seen).toEqual([]);
+    expect(press.defaultPrevented).toBe(true);
+    expect(click.defaultPrevented).toBe(true);
+    // Cancelling a touch's start would cancel the page's pinch-zoom too.
+    expect(touch.defaultPrevented).toBe(false);
   });
 
   it("holds a dismissing layer: its content inert, the layer itself live under the shield, each element's inert given back", async () => {
@@ -106,6 +115,24 @@ describe('holdPresentation', () => {
     expect(already.hasAttribute('inert')).toBe(true);
     expect(shield.isConnected).toBe(false);
     expect(isInHeldLayer(child)).toBe(false);
+  });
+
+  it('names a live hold’s shield, and only it, so a hit test can skip it', () => {
+    const {layer, child} = mountLayer();
+    const popover = document.createElement('div');
+    popover.setAttribute('popover', 'manual');
+    document.body.append(popover);
+    const release = holdPresentation(layer, {
+      until: new Promise(() => {}),
+      scope: 'viewport',
+    });
+    const shield = layer.lastElementChild as HTMLElement;
+    expect(isPresentationShield(shield)).toBe(true);
+    for (const other of [layer, child, popover, null]) {
+      expect(isPresentationShield(other)).toBe(false);
+    }
+    release();
+    expect(isPresentationShield(shield)).toBe(false);
   });
 
   it('sees slotted content as held: the flat tree, a slotted node to its slot', () => {
