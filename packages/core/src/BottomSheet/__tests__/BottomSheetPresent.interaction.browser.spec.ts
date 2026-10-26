@@ -42,6 +42,7 @@ import {
   openStory,
   releaseAnimations,
   springStep,
+  startCompositorTrace,
   startScreencast,
   thawTimers,
   timeline,
@@ -273,12 +274,16 @@ test('the entrance keeps advancing every frame while the main thread is blocked'
   );
   const {sheet, tapTrigger} = await story(page);
   const cast = await startScreencast(page);
+  // What the compositor presented: frames the screencast skips under load
+  // while the compositor draws them are not stalls.
+  const compositor = await startCompositorTrace(page);
   await tapTrigger();
   await markElement(sheet);
   const [entrance] = await waitForAnimation(sheet, {minProgressMs: 16});
   const block = await blockMainThread(page, 700);
   await page.waitForTimeout(150);
   const castFrames = await cast.stop();
+  const presented = await compositor.stop();
   const tracked = await trackMarker(page, castFrames);
   // Judge while the sheet still moves more than a screencast frame resolves
   // per frame. This spring (ω 18.3/s) moves about 0.3 × the remaining
@@ -287,7 +292,7 @@ test('the entrance keeps advancing every frame while the main thread is blocked'
   const proof = busyWindowProof(
     tracked,
     {from: block.from, to: Math.min(block.to, entrance.to)},
-    {settledWithin: browserName === 'webkit' ? 10 : 4},
+    {settledWithin: browserName === 'webkit' ? 10 : 4, presented},
   );
   await writeEvidence(
     'busy-main-thread/bottomsheet-present',
