@@ -34,7 +34,6 @@ import {registerMotionTable} from '../roles';
 
 /**
  * UITabBar on iOS 26 (floating, Liquid Glass).
- * @experimental
  */
 export const tabBar = {
   /**
@@ -179,7 +178,6 @@ export const tabBar = {
  * Makes each spring above a motion role a theme may retune (motion/roles.ts).
  * Nothing registers on import: TabBar's touch layer calls it once before its
  * first animation (registering again does nothing).
- * @experimental
  */
 export function registerTabBarTable(): void {
   registerMotionTable('tabBar', tabBar);
