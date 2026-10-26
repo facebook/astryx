@@ -54,6 +54,7 @@ import {
   releaseVelocity,
   seekAnimations,
   springStep,
+  startCompositorTrace,
   startScreencast,
   thawTimers,
   timeline,
@@ -593,6 +594,10 @@ test('the dim keeps its lockstep with the release while the main thread is block
   const dy = Math.round(halfTop - tallTop + (viewport.height - halfTop) * 0.3);
   await markElement(sheet);
   const cast = await startScreencast(page);
+  // What the compositor presented: frames the screencast skips under load
+  // while the compositor draws them are not stalls (WebKit: none, so the
+  // screencast alone is judged).
+  const compositor = await startCompositorTrace(page);
   await driver.play(
     drag(
       handle,
@@ -604,6 +609,7 @@ test('the dim keeps its lockstep with the release while the main thread is block
   const block = await blockMainThread(page, 700);
   await page.waitForTimeout(150);
   const castFrames = await cast.stop();
+  const presented = await compositor.stop();
   // A point of the backdrop above the sheet at every stop.
   const lum = await luminanceAt(page, castFrames, {
     x: viewport.width - 24,
@@ -630,7 +636,7 @@ test('the dim keeps its lockstep with the release while the main thread is block
       pixels: 1,
     })),
     {from: block.from, to: Math.min(block.to, settle.to)},
-    {settledWithin: 3, settledAt: resting, minMovedFraction: 0},
+    {settledWithin: 3, settledAt: resting, minMovedFraction: 0, presented},
   );
   await writeEvidence(
     'busy-main-thread/bottomsheet-dim',
