@@ -5,12 +5,10 @@
  * @input Nothing: plain data
  * @output Exports `alertController`: how UIAlertController (`.alert`)
  *   appears and leaves, lays out its actions, and tracks a finger across
- *   them. None of it is a motion role: the alert's motion is its springs,
- *   and its timings decide when a touch acts, which stays internal
- *   (`spec:AST-094` FR4, DEC-3)
+ *   them. None of it is a motion role: its timings decide when a touch acts,
+ *   which stays internal (`spec:AST-094` FR4, DEC-3)
  * @position The alert domain of the UIKit constants table (motion/uikit);
- *   its springs are `springs.alertPresent` and `springs.alertDismiss`, the
- *   motion roles a theme retunes
+ *   its springs are `springs.alertPresent` and `springs.alertDismiss`
  *
  * Every value was read from UIKit on the iOS 26.2 simulator: a UIKit host
  * app presenting `UIAlertController(.alert)` with [Cancel, Delete] side by
@@ -56,9 +54,9 @@ export const alertController = {
      * Core Animation spring of `springs.alertPresent` (cut there, 0.1 % from
      * rest), which is that spring's settling duration. Touches come back
      * this long after the start, plus the frame or two UIKit takes to
-     * complete it (`ignoresTouchesForMs`). AlertDialog times that window
-     * from the spring it plays, so a theme that retunes `springs.alertPresent`
-     * moves it; this value is the measurement, not a role.
+     * complete it (`ignoresTouchesForMs`). AlertDialog derives that window
+     * from the spring's length, so it follows the spring; this value is the
+     * measurement, not a role.
      * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
      *   iPhone 17 Pro, `UIView.animate(withDuration:usingSpringWithDamping:…)`
      *   hooked and CASpringAnimation dumped (duration 0.404), Oct 23 2026
@@ -83,8 +81,7 @@ export const alertController = {
      * `springs.alertDismiss`. No touch is delivered until it ends, to the
      * alert or to the content behind it. A dialog whose fade never reports
      * its end closes this long after it started (and a frame budget),
-     * timed from the spring it plays, so a theme that retunes
-     * `springs.alertDismiss` moves it too; this value is the measurement
+     * derived from the spring's length; this value is the measurement
      * (`springs.alertDismiss`'s settling duration), not a role.
      * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
      *   iPhone 17 Pro, CAAnimation dump of the alert and dimming views on a
