@@ -2067,7 +2067,7 @@ export function useSheetGestures({
         direction: 'vertical',
         maximumNumberOfTouches: 1,
         allowedPointerTypes: ['touch', 'pen'],
-        preventsTextSelection: true,
+        selectionLock: lockElementSelection,
         shouldBegin: canBegin,
         shouldReceiveTouch: notePointer,
       }),
