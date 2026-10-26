@@ -69,7 +69,8 @@ A component runtime has four distinct roles:
 Component and family contracts continue to own public state semantics, controlled
 and optimistic behavior, focus, announcements, gestures, and other user-facing
 outcomes. This record owns the shared React lifecycle boundary used to fulfill
-those contracts and, for now, INV12's caller-visible hook and prop (OQ7).
+those contracts and INV12's caller-visible hook and prop; each adopting component's record
+documents its `animatedLayout` prop.
 
 ## Boundaries and invariants
 
@@ -193,8 +194,8 @@ those contracts and, for now, INV12's caller-visible hook and prop (OQ7).
   the setup cost is bounded by what the person can see. Which elements move is
   listed under Size-change coverage below. The changed element plays its own
   animation, entering, exiting, or resizing, and the module moves only the
-  content after it. Both read the same theme motion role (OQ6;
-  `architecture:theme-tokens` INV3), so the timing is governed centrally and
+  content after it. Both read the same theme motion role, `springs.settle`
+  (`spec:AST-094` FR4), until the motion scheme names a public layout role, so the timing is governed centrally and
   is themeable there, never per component; both start on the same frame, and
   Reduce Motion reaches both through that role, as `design:reduced-motion`
   DR1–DR3 require: a cross-fade under a coarse primary pointer, an immediate
@@ -412,16 +413,5 @@ component suite is not blanket conformance with every invariant.
 | INV11               | Source boundary check plus hook tests across StrictMode replay and unmount                                                                                                                                                                                                                                                                                                                                                                                | A second keyboard listener or measurement in Core; a consumer reading a CSS custom property on the root or a shared ancestor for the height; an export of the hook; a component outside Core measuring by a rule other than AST-099 FR2, or riding the keyboard; a listener left after unmount; a Core rider driven by JavaScript per frame or by its own transition; or more than one layout read per keyboard change |
 | INV12               | Real-browser tests on a throttled phone profile plus a source boundary check, with and without a handle, over a disclosure and an inserted item nested several levels inside a parent with following siblings at each level, mixed Astryx and plain elements, a fixed element, an unstuck sticky header, a nested boundary, content outside the boundary, two disclosures toggled in one frame, a 10-level by 50-sibling tree for cost, and Reduce Motion | A per-frame height or layout, a walk past the boundary, a moved out-of-flow element, a visible following sibling at any level that jumps, an element moved twice for one frame, an added element, or travel under Reduce Motion fails                                                                                                                                                                                  |
 | INV12 coverage      | Real-browser tests, one per Size-change coverage row                                                                                                                                                                                                                                                                                                                                                                                                      | Any case behaving other than its row says fails                                                                                                                                                                                                                                                                                                                                                                        |
-| INV12 timing        | Real-browser frame capture of a changed element and its visible followers under a coarse and a fine pointer, with and without Reduce Motion, and with a theme overriding the motion role                                                                                                                                                                                                                                                                  | The element and its visible followers starting on different frames or reading different motion, a component-specific timing, Reduce Motion applied to one and not the other, or a fine-pointer Reduce Motion change that is not immediate, fails                                                                                                                                                                       |
+| INV12 timing        | Real-browser frame capture of a changed element and its visible followers under a coarse and a fine pointer, with and without Reduce Motion, with a theme overriding the motion role, and with the area scrolled mid-list                                                                                                                                                                                                                                 | The element and its visible followers starting on different frames or reading different motion, a component-specific timing, Reduce Motion applied to one and not the other, a fine-pointer Reduce Motion change that is not immediate, or a change in the area's scroll position, fails                                                                                                                               |
 | INV12 pointer scope | Fine-pointer before-and-after evidence on each adopting pull request (`spec:AST-017` FR59), from the demo or a story                                                                                                                                                                                                                                                                                                                                      | A glide missing under a mouse, or an adopting pull request without fine-pointer evidence, fails                                                                                                                                                                                                                                                                                                                        |
-
-## Open questions
-
-- **OQ6 — The motion role INV12 reads.** (`human-design`) No layout role
-  exists yet; the motion scheme will name one. Options until then: (a,
-  recommended) `springs.settle` (`spec:AST-094` FR4), a spring with no bounce
-  that suits a layout settle; or (b) hold INV12 until the scheme lands.
-- **OQ7 — Where `useAnimatedLayout` and `animatedLayout` are owned.**
-  (`human-design`) Options: (a, recommended) this record, beside the module,
-  with each adopting component's record documenting its `animatedLayout` prop;
-  or (b) a system spec that this record's module serves.
