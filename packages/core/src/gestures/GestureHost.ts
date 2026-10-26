@@ -27,11 +27,12 @@
  *   channel (a pointer event's preventDefault cannot stop a scroll or a
  *   click), they keep arriving after the browser takes a pan (which a scroll
  *   handoff needs), and every event lists all the fingers at once. A
- *   finger's movement comes from BOTH its `touchmove`s and its
- *   `pointermove`s (paired at touchstart by target and position), the echo
- *   of one in the other dropped: Chromium sends no `touchmove` until a
- *   finger has travelled about 16 px, while a tap fails and a pan begins at
- *   10.
+ *   finger's movement is sampled from ONE channel: its `pointermove`s, once
+ *   its pointerdown has paired with its touchstart (by target and
+ *   position), since Chromium sends no `touchmove` until a finger has
+ *   travelled about 16 px while a tap fails and a pan begins at 10; touch
+ *   events sample only a finger no pointer event reported. The other
+ *   channel keeps its control duties but feeds no sample.
  * - A finger's events go to the element it landed on even after that
  *   element leaves the document, and then never reach the document. Each
  *   tracked finger's target therefore gets its own listeners, and a finger
@@ -90,11 +91,6 @@
  *   (`detail === 0`) always pass.
  * - A `contextmenu` while a recognizer owns a touch is cancelled, so a long
  *   press never also opens the browser's menu.
- *
- * DELEGATED CONSUMERS. A consumer type registered with an attribute (a
- * pressable row) is found at touch-down by walking up from the touch target,
- * and an instance is created for that one touch: a list of a thousand rows
- * costs nothing until a finger lands on one.
  *
  * SSR-safe: nothing touches `window` or `document` until something attaches.
  *
@@ -301,9 +297,9 @@ export class GestureHost {
   /**
    * A finger's pointerId → its arena id, once its pointerdown and its
    * touchstart are paired. Chromium sends no `touchmove` until a finger has
-   * travelled its slop (about 16 px), but sends every `pointermove`, so the
-   * finger's movement comes from both channels; and its `pointercancel` is
-   * the browser's claim of exactly that finger.
+   * travelled its slop (about 16 px), but sends every `pointermove`, so a
+   * paired finger is sampled from its pointer events (`pointerFed`); and its
+   * `pointercancel` is the browser's claim of exactly that finger.
    */
   private readonly fingerPointers = new Map<number, number>();
   /** Finger pointerdowns still waiting for their touchstart. */
@@ -489,6 +485,10 @@ export class GestureHost {
    * recognizers' options or its consumer's enabled state changed.
    */
   update(element: Element): void {
+    if (!this.followsPointer) {
+      // A read passed in (a test's) is not followed: an update reads it again.
+      this.isCoarse = this.isPrimaryPointerCoarse();
+    }
     const registration = this.registry.get(element);
     if (registration != null) {
       this.refresh(element, registration);
@@ -650,8 +650,9 @@ export class GestureHost {
   private applyStyle(element: HTMLElement, registration: Registration): void {
     // Where the primary pointer is fine, the browser's own styles, but a
     // perEventPointer recognizer's (FR19).
-    const active = registration.recognizers.filter(recognizer =>
-      this.isActive(recognizer),
+    // A disabled recognizer leaves the browser everything (FR24).
+    const active = registration.recognizers.filter(
+      recognizer => recognizer.isEnabled && this.isActive(recognizer),
     );
     let style: GestureHostStyle =
       active.length > 0 ? gestureHostStyle(active) : {};
@@ -1198,7 +1199,8 @@ export class GestureHost {
       if (
         id != null &&
         (this.arena.isClaimed(id) ||
-          (this.isCoarse && this.arena.consumerOf(id)?.keepsTouch?.() === true))
+          (this.isCoarse &&
+            this.arena.consumerOf(id)?.keepsTouch?.(id) === true))
       ) {
         event.preventDefault();
         return;
