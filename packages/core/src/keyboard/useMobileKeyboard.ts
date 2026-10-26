@@ -215,11 +215,17 @@ export function subscribeMobileKeyboard(
 }
 
 /**
- * `win`'s keyboard height now. Read live, so a reader between two reports
- * (a layout effect, a timer) never sees a stale value.
+ * `win`'s keyboard height. While the module listens, it is the height
+ * measured at the last report: every reader of a keyboard change (the
+ * layout guide, each component's hook, a rider committing its layout)
+ * shares that one layout read (architecture:react-component-runtime INV11).
+ * Every change of the visual viewport or the window is a report, so a reader
+ * between two reports sees the current height. With nothing listening yet,
+ * the height is measured now.
  */
 export function getMobileKeyboardHeight(win: Window): number {
-  return measureKeyboardHeight(win);
+  const store = stores.get(win);
+  return store?.detach != null ? store.height : measureKeyboardHeight(win);
 }
 
 /**
