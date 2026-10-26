@@ -353,7 +353,7 @@ export default function MotionSpringsPage() {
         }
       />
 
-      <Grid columns={{minWidth: 420}} gap={4}>
+      <Grid columns={{minWidth: 420, max: 2}} gap={4}>
         {SPRINGS.map(spec => (
           <SpringCard
             key={spec.name}

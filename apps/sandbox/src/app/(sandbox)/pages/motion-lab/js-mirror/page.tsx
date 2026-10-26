@@ -468,7 +468,7 @@ export default function MotionJsMirrorPage() {
         />
       </VStack>
 
-      <Grid columns={{minWidth: 460}} gap={4}>
+      <Grid columns={{minWidth: 460, max: 2}} gap={4}>
         <DemoCard
           title="Why the defaults are not hardcoded in JS"
           question="Because a theme retunes the whole scale, and a constants file would quietly stop agreeing with the stylesheet.">
