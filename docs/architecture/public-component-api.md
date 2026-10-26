@@ -291,5 +291,9 @@ Known verification gaps:
   delta across supporting types, context members, hook returns, utility signatures,
   defaults, CLI schemas, and observable behavior for both the branch and synthetic
   merge. Reviews must build that inventory explicitly until enforcement exists.
+- INV18: PowerSearch's `startIcon` and `endContent`, SideNav's `topContent`,
+  `footer`, and `footerIcons`, and the picker option's `action` render content
+  slots their anatomy does not name yet; each conforms by naming the part,
+  with no API change.
 
 These gaps are named here rather than treating partial checks as complete proof.
