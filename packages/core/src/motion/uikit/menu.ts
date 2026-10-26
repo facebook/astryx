@@ -4,7 +4,7 @@
  * @file menu.ts
  * @input Nothing; data only
  * @output Exports `menu`: the shape the menu grows out of and collapses
- *   into, and UIMenu's haptics
+ *   into
  * @position The menu domain of the UIKit constants table (motion/uikit); its
  *   springs are `springs.menuOpen`, `springs.menuClose` and, under Reduce
  *   Motion, `springs.menuReducedMotion`
@@ -42,16 +42,6 @@ export const menu = {
    * @measure M-MN3
    */
   collapsedSize: 22,
-  /**
-   * Haptics: a selection tick each time a scrubbing finger moves the
-   * highlight to another row; nothing at the open or at the pick.
-   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, feedback-generator hooks, Oct 23 2026: a scrub across
-   *   five rows logged one selectionChangedAtLocation: per row change (four),
-   *   between userInteractionStarted at the scrub's start and
-   *   userInteractionEnded at the lift
-   */
-  scrubHaptic: 'selection',
 } as const;
 
 /**
