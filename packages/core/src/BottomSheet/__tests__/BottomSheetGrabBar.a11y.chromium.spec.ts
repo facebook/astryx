@@ -107,9 +107,11 @@ async function read(page: Page): Promise<Reading> {
     let depth = 0;
     let start = 0;
     for (let i = 0; i < inner.length; i++) {
-      if (inner[i] === '(') {depth++;}
-      else if (inner[i] === ')') {depth--;}
-      else if (inner[i] === ',' && depth === 0) {
+      if (inner[i] === '(') {
+        depth++;
+      } else if (inner[i] === ')') {
+        depth--;
+      } else if (inner[i] === ',' && depth === 0) {
         stops.push(inner.slice(start, i).trim());
         start = i + 1;
       }
@@ -120,7 +122,9 @@ async function read(page: Page): Promise<Reading> {
     );
     const at = (stop: string, fallback: number) => {
       const match = stop.match(/(-?[\d.]+)(px|%|rem)$/);
-      if (match == null) {return fallback;}
+      if (match == null) {
+        return fallback;
+      }
       const value = Number(match[1]);
       return match[2] === '%'
         ? (barBox.height * value) / 100
@@ -166,10 +170,12 @@ for (const story of ['showcase', 'tall-sheet']) {
   });
 }
 
+// Sheets whose height follows their content. A detent-sized sheet (Snap
+// Points With Peek) is not one of them: its height is the detent's, so
+// whether its content fits depends on the machine's font metrics.
 for (const story of [
   'text-only-fitting',
   'showcase',
-  'snap-points-with-peek',
   'hug-height',
   'nested-popover',
 ]) {
