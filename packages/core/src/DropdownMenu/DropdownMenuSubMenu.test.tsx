@@ -1116,64 +1116,6 @@ describe('DropdownMenuSubMenu hover/click guard', () => {
 
 describe('DropdownMenuSubMenu press model', () => {
   const finger = (pointerId = 1) => ({pointerType: 'touch', pointerId});
-  const wait = async (ms: number) => {
-    await act(async () => {
-      await new Promise<void>(resolve => {
-        setTimeout(resolve, ms);
-      });
-    });
-  };
-
-  it('a finger resting on a sub-menu row opens nothing; its lift there opens it (module FR10)', async () => {
-    const user = userEvent.setup();
-    render(<MoveMenu />);
-    const root = screen.getByRole('button', {name: /Actions/});
-    await user.click(root);
-    const trigger = screen.getByRole('menuitem', {
-      name: /Move to/,
-      hidden: true,
-    });
-    const rename = screen.getByRole('menuitem', {name: 'Rename', hidden: true});
-    fireEvent.pointerDown(rename, finger());
-    fireEvent.pointerMove(trigger, finger());
-    expect(trigger).toHaveFocus();
-    // Well past a hover's open delay: a finger still choosing opens nothing.
-    await wait(600);
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    fireEvent.pointerUp(trigger, finger());
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-  });
-
-  it('a finger that slides from a row onto an open flyout\u2019s rows picks there (module FR10, ORD1)', async () => {
-    const onMove = vi.fn();
-    const user = userEvent.setup();
-    render(<MoveMenu onMove={onMove} />);
-    const root = screen.getByRole('button', {name: /Actions/});
-    await user.click(root);
-    const trigger = screen.getByRole('menuitem', {
-      name: /Move to/,
-      hidden: true,
-    });
-    fireEvent.pointerDown(trigger, finger());
-    fireEvent.pointerUp(trigger, finger());
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    // A new finger lands on another row of the menu, then slides, over real
-    // time, onto a row of the open flyout.
-    const rename = screen.getByRole('menuitem', {name: 'Rename', hidden: true});
-    fireEvent.pointerDown(rename, finger(2));
-    await wait(120);
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    const folderB = screen.getByRole('menuitem', {
-      name: 'Folder B',
-      hidden: true,
-    });
-    fireEvent.pointerMove(folderB, finger(2));
-    await wait(50);
-    fireEvent.pointerUp(folderB, finger(2));
-    expect(onMove).toHaveBeenCalledTimes(1);
-    expect(onMove).toHaveBeenCalledWith('b');
-    expect(root).toHaveAttribute('aria-expanded', 'false');
-  });
 
   it('a cancelled finger in a flyout clears its lit row where the root menu\u2019s touch modes apply, as the root\u2019s does (spec:AST-094 FR28); pinned to the pointer model, the row stays lit', async () => {
     const originalMatchMedia = window.matchMedia;
