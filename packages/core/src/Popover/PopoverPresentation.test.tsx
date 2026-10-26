@@ -378,7 +378,7 @@ describe('Popover presentation', () => {
     });
   });
 
-  it('a sheet with read-only content focuses the labelled dialog (FR2)', async () => {
+  it('a sheet with read-only content focuses its labelled surface (FR2)', async () => {
     isCompactTouch = true;
     render(
       <Popover
@@ -391,7 +391,36 @@ describe('Popover presentation', () => {
     await tapTrigger();
     await vi.waitFor(() => {
       expect(document.activeElement).toBe(
-        screen.getByRole('dialog', {name: 'About this filter'}),
+        screen.getByRole('group', {name: 'About this filter'}),
+      );
+    });
+  });
+
+  it('an overflowing sheet still focuses its first content control, not its scroll area (FR2)', async () => {
+    isCompactTouch = true;
+    render(
+      <Popover
+        label="Filters"
+        presentation="adaptive"
+        content={<button type="button">Apply</button>}>
+        <Button label="Filter">Filter</Button>
+      </Popover>,
+    );
+    // The closed sheet is mounted at rest. BottomSheet's scroll area becomes a
+    // tab stop when its content overflows: make it one before opening.
+    const panel = await vi.waitFor(() => {
+      const element =
+        sheetDialog()?.querySelector<HTMLElement>('[tabindex="-1"]');
+      expect(element).toBeTruthy();
+      return element!;
+    });
+    for (const child of Array.from(panel.children)) {
+      (child as HTMLElement).tabIndex = 0;
+    }
+    await tapTrigger();
+    await vi.waitFor(() => {
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', {name: 'Apply'}),
       );
     });
   });

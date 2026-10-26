@@ -594,21 +594,26 @@ export function Popover({
     hasSheetBeenOpen ||
     (resolvedPresentation === 'bottom-sheet' && !popover.isOpen);
   const sheetPanelRef = useRef<HTMLDivElement | null>(null);
-  const [sheetPanel, setSheetPanel] = useState<HTMLDivElement | null>(null);
+  const [isSheetPanelAttached, setSheetPanelAttached] = useState(false);
   const attachSheetPanel = useCallback((panel: HTMLDivElement | null) => {
     sheetPanelRef.current = panel;
-    setSheetPanel(panel);
+    setSheetPanelAttached(panel != null);
   }, []);
   // Focus enters the sheet at each opening as it enters the anchored popover
   // (FR2): a caller's `[data-autofocus]`, else the first genuine content
-  // control (never the injected fallback close), else the labelled dialog.
-  // It runs a frame after BottomSheet presents the dialog, whose own focus
-  // (the unnamed panel in Chromium) it replaces; BottomSheet is unchanged.
+  // control (never the injected fallback close, never BottomSheet's own
+  // scroll area), else that scroll area: the sheet's labelled surface, which
+  // paints the shared focus ring under the keyboard. It runs a frame after
+  // BottomSheet presents the dialog; BottomSheet is unchanged.
   useEffect(() => {
-    if (!isSheetOpen || sheetPanel == null) {
+    if (!isSheetOpen || !isSheetPanelAttached) {
       return;
     }
     const frame = requestAnimationFrame(() => {
+      const sheetPanel = sheetPanelRef.current;
+      if (sheetPanel == null) {
+        return;
+      }
       const dialog = sheetPanel.closest('dialog');
       if (dialog == null || !dialog.open) {
         return;
@@ -628,19 +633,32 @@ export function Popover({
           sheetPanel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
         ).find(
           element =>
+            // BottomSheet's scroll area is the panel's own child; content
+            // sits inside it.
+            element.parentElement !== sheetPanel &&
             element.closest('[data-astryx-popover-fallback-close]') == null,
         );
       if (target != null) {
         target.focus({preventScroll: true});
         return;
       }
-      if (!dialog.hasAttribute('tabindex')) {
-        dialog.tabIndex = -1;
+      // The scroll area is a tab stop only while its content overflows; it is
+      // focusable from script either way.
+      const surface = Array.from(sheetPanel.children).find(
+        (child): child is HTMLElement =>
+          child instanceof HTMLElement &&
+          child.getAttribute('role') === 'group',
+      );
+      if (surface == null) {
+        return;
       }
-      dialog.focus({preventScroll: true});
+      if (!surface.hasAttribute('tabindex')) {
+        surface.tabIndex = -1;
+      }
+      surface.focus({preventScroll: true});
     });
     return () => cancelAnimationFrame(frame);
-  }, [isSheetOpen, sheetPanel]);
+  }, [isSheetOpen, isSheetPanelAttached]);
   useEffect(() => {
     if (isSheetOpen || !hasSheetBeenOpen) {
       return;
