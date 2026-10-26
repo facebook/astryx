@@ -45,6 +45,10 @@ async function serverRenderThenHydrate(): Promise<unknown[]> {
     root.unmount();
   });
   container.remove();
+  // The menu preloads its sheet at rest: let those loads finish, so the file
+  // never ends (and tears its environment down) with an import in flight.
+  await import('./MenuBottomSheetActionList');
+  await import('./MenuBottomSheet');
   return recoverableErrors;
 }
 

@@ -15,6 +15,9 @@
  * of pages whose dropdowns only open as anchored popovers. Each wrapper keeps
  * the wrapped component's props and renders nothing until its module loads.
  *
+ * The action list preloads at rest; a failed load is not kept, so the next
+ * preload or open loads it again.
+ *
  * Neither wrapper renders on the server or in the render that hydrates server
  * HTML (spec:AST-013 FR9): a lazy component that has not loaded yet would
  * leave server markup incomplete and abort hydration. The closed sheet has no
@@ -47,16 +50,28 @@ const LazyMenuBottomSheet = lazy(async () =>
 let actionListModule: typeof ActionListModule | null = null;
 let actionListLoad: Promise<typeof ActionListModule> | null = null;
 async function loadActionList(): Promise<typeof ActionListModule> {
-  actionListLoad ??= import('./MenuBottomSheetActionList').then(module => {
-    actionListModule = module;
-    return module;
-  });
+  actionListLoad ??= import('./MenuBottomSheetActionList').then(
+    module => {
+      actionListModule = module;
+      return module;
+    },
+    (error: unknown) => {
+      // A failed load (a dropped connection) is not kept: the next caller
+      // loads it again.
+      actionListLoad = null;
+      throw error;
+    },
+  );
   return actionListLoad;
 }
 
-/** Starts loading the action list; a sheet menu calls it at rest. */
+/**
+ * Starts loading the action list; a sheet menu calls it at rest. A preload
+ * that fails is dropped, never an unhandled rejection: the first open loads
+ * the list again.
+ */
 export function preloadMenuBottomSheetActionList(): void {
-  void loadActionList();
+  loadActionList().catch(() => {});
 }
 
 const LazyMenuBottomSheetActionList = lazy(async () =>
