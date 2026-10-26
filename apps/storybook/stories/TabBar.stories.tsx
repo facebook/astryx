@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
+import {flushSync} from 'react-dom';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
   BookOpenIcon as BookOpenOutline,
@@ -107,10 +108,16 @@ function Bar({
   sections = SECTIONS,
   initial = 'home',
   badges = {library: 3},
+  keeps = [],
+  onChange,
 }: {
   sections?: Section[];
   initial?: string;
   badges?: Record<string, string | number>;
+  /** Tabs the app declines to switch to (it keeps the selection). */
+  keeps?: string[];
+  /** Also told of every choice. */
+  onChange?: (value: string) => void;
 }) {
   const [value, setValue] = useState(initial);
   const [reselects, setReselects] = useState(0);
@@ -120,7 +127,12 @@ function Bar({
       <Screen title={title} reselects={reselects} />
       <TabBar
         value={value}
-        onChange={setValue}
+        onChange={next => {
+          onChange?.(next);
+          if (!keeps.includes(next)) {
+            setValue(next);
+          }
+        }}
         onReselect={() => setReselects(n => n + 1)}
         label="Sections"
         data-testid="tab-bar">
@@ -186,6 +198,50 @@ function TabBarHost({badges}: {badges: Record<string, string | number>}) {
     </TabBar>
   );
 }
+
+/**
+ * The app keeps the selection when Profile is chosen (say it needs a
+ * sign-in first): the lens settles back onto the selected tab.
+ */
+export const KeepsSelection: Story = {
+  render: () => <Bar keeps={['profile']} />,
+};
+
+/** No tab selected (the value matches none): a tap chooses one. */
+export const NoSelection: Story = {
+  render: () => <Bar initial="none" />,
+};
+
+/**
+ * The app removes the bar as a finger lifts: the lift reports nothing (each
+ * choice would be listed on `window.__tabBarChanges`).
+ */
+function RemovedOnLiftDemo() {
+  const [isShown, setIsShown] = useState(true);
+  useEffect(() => {
+    const hide = () => {
+      const log = window as unknown as {__tabBarChanges?: string[]};
+      log.__tabBarChanges = [...(log.__tabBarChanges ?? []), '(removed)'];
+      flushSync(() => setIsShown(false));
+    };
+    window.addEventListener('touchend', hide);
+    return () => window.removeEventListener('touchend', hide);
+  }, []);
+  return isShown ? (
+    <Bar
+      onChange={value => {
+        const log = window as unknown as {__tabBarChanges?: string[]};
+        log.__tabBarChanges = [...(log.__tabBarChanges ?? []), value];
+      }}
+    />
+  ) : (
+    <p style={{padding: 16}}>Removed</p>
+  );
+}
+
+export const RemovedOnLift: Story = {
+  render: () => <RemovedOnLiftDemo />,
+};
 
 export const Badges: Story = {
   render: () => <BadgesDemo />,

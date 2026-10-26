@@ -4,34 +4,123 @@
 
 /**
  * @file useTabBarLens.ts
- * @input The TabBar's capsule element, its item count, the selected index
- *   and whether a finger drives the bar; core's compositor animator
- *   (`@astryxdesign/core/motion`), the UIKit tab-bar table and
+ * @input The TabBar's capsule element, its item count, the selected index,
+ *   whether a finger drives the bar and what to do on a lift; core's
+ *   compositor animator and long-press recognizer
+ *   (`@astryxdesign/core/motion`,
+ *   `@astryxdesign/core/gestures`), the UIKit tab-bar table and
  *   tabBarModel.ts
- * @output Exports useTabBarLens: under a finger, the lens's slide on UIKit's
- *   spring, the refs TabBar puts on the lens's body and its copy of the
- *   items, and whether that copy is drawn (only while the lens travels)
+ * @output Exports useTabBarLens: the selection lens's touch presentation
+ *   (the slide on a selection change and UITabBar's press tracking), the
+ *   refs TabBar puts on the capsule and the lens's layers, and whether the
+ *   lens's copy of the items is drawn (only while the lens moves)
  * @position Part of TabBar's touch layer (TabBarTouch.ts)
  *
- * Under a finger the lens's resting place is CSS (it jumps to the new item
- * in this frame); the body inside it starts where the lens was on screen and
- * springs to rest (`tabBar.lensTravel`), moving as it was. While it travels,
- * the selected look rides inside it: a copy of the items, counter-moving so
- * it stays over them, so an item half under the lens is half tinted. Once
- * the lens rests, the copy goes and the selected tab draws its own look
- * again. Under a mouse this hook writes nothing and the copy never mounts:
- * TabBar's CSS slides the lens. Under Reduce Motion the animator cross-fades
- * the move (design:reduced-motion) and nothing travels, so no copy mounts.
+ * WHAT MOVES (uikit/tabBar.ts, all measured on iOS 26.2)
  *
- * SYNC: When modified, update TabBar.tsx and
+ * The lens is a CSS resting place over the selected item (TabBar.tsx) with
+ * a body inside it that this hook moves: `x` is its offset from the resting
+ * place, `scaleX` / `scaleY` its lift, and its `::before` the shadow that
+ * fades in as it lifts. Inside the body, a clip (its background the opaque
+ * fill, its `::before` the glass that fades in as it lifts) holds, while the
+ * lens moves, the selected copy of the items; the copy is counter-transformed
+ * (tabBarModel's `copyTransform`, played as curves derived from the body's)
+ * so the items stay put while the lens moves over them, and each copied item
+ * grows by the lift's magnification about its own centre. The copy mounts
+ * when a finger lands or a slide starts and goes once everything rests; at
+ * rest the selected tab draws its own look (TabBar.tsx).
+ *
+ * Under a finger, iOS and Android alike (a
+ * long press with no delay, so it begins on the touch, as UIKit's selection
+ * tracker does):
+ * - landing: the lens travels toward the finger (`lensTravel`) and lifts
+ *   (`lift`: outset, glass, magnification), and the capsule flexes
+ *   (`flexPress`);
+ * - dragging (past the long press's allowable movement): the lens chases
+ *   the finger (`lensTrack`), rubber-banded past the first and last items;
+ * - lifting: the item nearest the finger is chosen, the lens settles onto it
+ *   (`lensSettle`), the lift and the flex relax (`lift`, `flexRelease`). A
+ *   cancelled touch settles back onto the selected item.
+ * The choice reaches the app (`onLift`) from the lift itself, right after
+ * the settle has started in the same task (architecture:react-component-
+ * runtime INV2): the settle's first frame waits for the browser's commit, so
+ * the app rendering the new tab delays its start rather than freezing it
+ * midway. The report renders synchronously, and if the app keeps the old
+ * selection the lens settles back onto it.
+ * The finger is read in the capsule's own coordinates, before its flex
+ * scale, as UIKit reads it: under the flex the lens drifts slightly away
+ * from the finger toward the ends, as on iOS.
+ *
+ * A selection change slides the body from where the lens was on screen to
+ * its new resting place: on `lensTravel` from rest (a key, the app), or
+ * continuing the settle a lift started. Every animation runs on the
+ * compositor; a finger's moves retarget them, so the lens keeps moving
+ * through a busy main thread. Under Reduce Motion the animator cross-fades
+ * instead of moving and a press scales nothing (design:reduced-motion).
+ * Each spring is handed to the animator as a table entry, so it plays as the
+ * theme sets its motion role. Under a mouse this hook writes nothing:
+ * TabBar's CSS slides the lens and a click is a plain click.
+ *
+ * SYNC: When modified, update TabBar.tsx, tabBarModel.ts and
  * __tests__/TabBar.interaction.browser.spec.ts.
  */
 
-import {useLayoutEffect, useRef, useState, type RefObject} from 'react';
-import {isRtlElement} from '@astryxdesign/core/hooks';
-import {registerTabBarTable, tabBar} from '@astryxdesign/core/motion/uikit';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
+import {flushSync} from 'react-dom';
+import {
+  LongPressGestureRecognizer,
+  useGestureRecognizer,
+} from '@astryxdesign/core/gestures';
+import {
+  createAnimator,
+  type Animator,
+  type MotionCurve,
+} from '@astryxdesign/core/motion/animator';
+import {
+  registerTabBarTable,
+  tabBar,
+  UIKIT_GESTURES,
+} from '@astryxdesign/core/motion/uikit';
 import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
-import {itemCenters} from './tabBarModel';
+import {isRtlElement} from '@astryxdesign/core/hooks';
+import {
+  copyTransform,
+  itemCenters,
+  itemWidth,
+  lensTarget,
+  liftScale,
+  nearestIndex,
+} from './tabBarModel';
+
+/** A finger that has moved this far from where it landed is dragging. */
+const DRAG_SLOP = UIKIT_GESTURES.longPress.allowableMovement.value;
+
+/** How long the selected copy's curves run: past any lens spring's settle. */
+const COPY_HORIZON_S = 1.5;
+
+/** Seconds between the samples a derived curve's velocity is read from. */
+const VELOCITY_STEP_S = 0.001;
+
+interface Press {
+  /** The items' centres in the capsule, physical px, before the flex. */
+  readonly centers: number[];
+  /** The items' (and the resting lens's) width, px. */
+  readonly size: number;
+  /** The capsule's left edge in client px, before the flex. */
+  readonly left: number;
+  readonly startX: number;
+  lastX: number;
+  isDragging: boolean;
+  /** A tab was selected when the finger landed: the lens follows it. */
+  hasLens: boolean;
+}
 
 export interface UseTabBarLensOptions {
   readonly capsuleRef: RefObject<HTMLDivElement | null>;
@@ -39,18 +128,44 @@ export interface UseTabBarLensOptions {
   readonly selectedIndex: number;
   /** A finger drives the bar (the touch presentation: a coarse pointer). */
   readonly isTouch: boolean;
+  /** A finger lifted over the item at `index`. */
+  readonly onLift: (index: number) => void;
 }
 
-export interface TabBarLens {
-  /** The lens's body: its offset from the resting place. */
-  readonly body: (element: HTMLElement | null) => void;
-  /** The selected copy of the items inside it: counter-moves. */
-  readonly copy: (element: HTMLElement | null) => void;
+export interface TabBarLensRefs {
+  /** The capsule: the flex. */
+  readonly capsule: (element: HTMLElement | null) => void;
   /**
-   * The copy is drawn: the lens is travelling under a finger. At rest the
-   * selected tab draws its own look and the copy is not mounted.
+   * The lens body: its offset and lift, and its `::before`, the lifted lens's
+   * shadow (outside the clip).
+   */
+  readonly body: (element: HTMLElement | null) => void;
+  /** The lens's clip: its `::before` is the lifted lens's glass. */
+  readonly clip: (element: HTMLElement | null) => void;
+  /** The selected copy of the items. */
+  readonly copy: (element: HTMLElement | null) => void;
+  /** One copied item, by index: the magnification. */
+  readonly copyItem: (index: number) => (element: HTMLElement | null) => void;
+  /**
+   * The copy is drawn: the lens is lifted, or moving under a finger. At rest
+   * the selected tab draws its own look and the copy is not mounted.
    */
   readonly isCopyShown: boolean;
+}
+
+/** One animator per copied item, stable across renders. */
+function useAnimatorList(count: number) {
+  const listRef = useRef<{
+    animators: Animator[];
+    refs: Array<(element: HTMLElement | null) => void>;
+  }>({animators: [], refs: []});
+  const list = listRef.current;
+  while (list.animators.length < count) {
+    const animator = createAnimator(null);
+    list.animators.push(animator);
+    list.refs.push(element => animator.attach(element));
+  }
+  return list;
 }
 
 export function useTabBarLens({
@@ -58,17 +173,44 @@ export function useTabBarLens({
   count,
   selectedIndex,
   isTouch,
-}: UseTabBarLensOptions): TabBarLens {
+  onLift,
+}: UseTabBarLensOptions): TabBarLensRefs {
   // The table's springs become motion roles (a theme may retune them)
   // before this hook's first animation.
   if (isTouch) {
     registerTabBarTable();
   }
-  const {ref: bodyRef, animator: body} = useAnimator();
-  const {ref: copyRef, animator: copy} = useAnimator();
-  // A new selection under a finger starts a slide: the copy mounts in the
-  // same commit (adjusted during render, so the frame that moves the lens
-  // already draws it) and goes once the slide rests.
+  const capsule = useAnimator();
+  const body = useAnimator();
+  // The lifted look, the body's and the clip's `::before`, starts hidden (an
+  // animator's values start at identity).
+  const shadow = useAnimator({
+    pseudoElement: '::before',
+    initial: {opacity: 0},
+  });
+  const glass = useAnimator({pseudoElement: '::before', initial: {opacity: 0}});
+  const bodyRef = useCallback(
+    (element: HTMLElement | null) => {
+      body.ref(element);
+      shadow.ref(element);
+    },
+    [body, shadow],
+  );
+  const copy = useAnimator();
+  const copyItems = useAnimatorList(count);
+
+  const pressRef = useRef<Press | null>(null);
+  // The settle a lift started toward a newly chosen item, until the new
+  // selection renders (or the app keeps the old one).
+  const settleRef = useRef<number | null>(null);
+  const selectedRef = useRef(selectedIndex);
+  selectedRef.current = selectedIndex;
+  const onLiftRef = useRef(onLift);
+  onLiftRef.current = onLift;
+
+  // The copy is drawn from a finger landing, or a slide starting, until
+  // everything the lens moves rests. A new selection under a finger is
+  // seen during render, so the frame that starts the slide already draws it.
   const [isCopyShown, setIsCopyShown] = useState(false);
   const [seenIndex, setSeenIndex] = useState(selectedIndex);
   if (seenIndex !== selectedIndex) {
@@ -78,20 +220,276 @@ export function useTabBarLens({
       seenIndex >= 0 &&
       seenIndex < count &&
       selectedIndex >= 0 &&
-      body.reducedMotion({}) === 'off'
+      body.animator.reducedMotion({}) === 'off'
     ) {
       setIsCopyShown(true);
     }
   }
-  const slideRef = useRef(0);
+  const motionRef = useRef(0);
+  /** Drops the copy once this motion, or a later one, rests, with no finger down. */
+  const dropCopyAtRest = () => {
+    const motion = ++motionRef.current;
+    void Promise.all([
+      body.animator.atRest(),
+      glass.animator.atRest(),
+      shadow.animator.atRest(),
+      ...copyItems.animators.slice(0, count).map(item => item.atRest()),
+    ]).then(() => {
+      if (motionRef.current === motion && pressRef.current == null) {
+        setIsCopyShown(false);
+      }
+    });
+  };
+
+  /**
+   * Plays the selected copy's counter-transform from `at`, derived from the
+   * body's curves as they now stand. Called after every change to the body.
+   */
+  const playCopy = (at: number) => {
+    const sample = (t: number) => {
+      const time = at + t * 1000;
+      return copyTransform(
+        body.animator.get('x', time),
+        body.animator.get('scaleX', time),
+        body.animator.get('scaleY', time),
+      );
+    };
+    const curve = (key: 'x' | 'scaleX' | 'scaleY'): MotionCurve => ({
+      duration: COPY_HORIZON_S,
+      at: t => sample(t)[key],
+      velocity: t =>
+        (sample(t + VELOCITY_STEP_S)[key] -
+          sample(Math.max(0, t - VELOCITY_STEP_S))[key]) /
+        (t >= VELOCITY_STEP_S ? 2 * VELOCITY_STEP_S : VELOCITY_STEP_S),
+    });
+    copy.animator.play(
+      {x: curve('x'), scaleX: curve('scaleX'), scaleY: curve('scaleY')},
+      {at},
+    );
+  };
+
+  /**
+   * Lifts (true) or lowers (false) a lens `size` px wide and flexes the
+   * capsule. Under Reduce Motion a press scales nothing
+   * (design:reduced-motion): the glass and its shadow only fade.
+   */
+  const lift = (
+    isLifted: boolean,
+    at: number,
+    size: number,
+    touchRelease = false,
+  ) => {
+    const options = {at, touchRelease};
+    const spring = {spring: tabBar.lift};
+    shadow.animator.animate({opacity: isLifted ? 1 : 0}, spring, options);
+    glass.animator.animate({opacity: isLifted ? 1 : 0}, spring, options);
+    if (body.animator.reducedMotion({touchRelease}) !== 'off') {
+      return;
+    }
+    const lifted = liftScale(size);
+    body.animator.animate(
+      isLifted ? {scaleX: lifted.x, scaleY: lifted.y} : {scaleX: 1, scaleY: 1},
+      spring,
+      options,
+    );
+    for (const item of copyItems.animators.slice(0, count)) {
+      item.animate(
+        {scale: isLifted ? tabBar.liftMagnification : 1},
+        spring,
+        options,
+      );
+    }
+    capsule.animator.animate(
+      {scale: isLifted ? tabBar.flexScale : 1},
+      {spring: isLifted ? tabBar.flexPress : tabBar.flexRelease},
+      options,
+    );
+  };
+
+  const begin = (recognizer: LongPressGestureRecognizer) => {
+    const element = capsuleRef.current;
+    const selected = selectedRef.current;
+    const root = element?.parentElement;
+    if (element == null || root == null) {
+      return;
+    }
+    // Read before anything moves: the capsule's layout box (its flex is a
+    // transform, which layout ignores) placed by its unscaled parent.
+    const rootBox = root.getBoundingClientRect();
+    const left = rootBox.left + element.offsetLeft;
+    const isRtl = isRtlElement(element);
+    const centers = itemCenters(element.offsetWidth, count, isRtl);
+    const size = itemWidth(element.offsetWidth, count);
+    const x = recognizer.location().x - left;
+    pressRef.current = {
+      centers,
+      size,
+      left,
+      startX: x,
+      lastX: x,
+      isDragging: false,
+      hasLens: selected >= 0,
+    };
+    // No tab selected: there is no lens to move; the lift chooses the tab
+    // nearest the finger.
+    if (selected < 0) {
+      return;
+    }
+    // The lifted lens magnifies the selected look: its copy mounts now, in
+    // this event (its animators attach to it with their curves running).
+    // Under Reduce Motion nothing lifts or travels, so no copy mounts.
+    motionRef.current += 1;
+    if (body.animator.reducedMotion({}) === 'off') {
+      flushSync(() => setIsCopyShown(true));
+    }
+    const at = performance.now();
+    body.animator.animate(
+      {x: lensTarget(x, centers) - centers[selected]},
+      {spring: tabBar.lensTravel},
+      {at},
+    );
+    lift(true, at, size);
+    playCopy(at);
+  };
+
+  const move = (recognizer: LongPressGestureRecognizer) => {
+    const press = pressRef.current;
+    const selected = selectedRef.current;
+    if (press == null) {
+      return;
+    }
+    const x = recognizer.location().x - press.left;
+    press.lastX = x;
+    press.isDragging ||= Math.abs(x - press.startX) > DRAG_SLOP;
+    if (!press.hasLens || selected < 0) {
+      return;
+    }
+    const at = performance.now();
+    body.animator.animate(
+      {x: lensTarget(x, press.centers) - press.centers[selected]},
+      {spring: press.isDragging ? tabBar.lensTrack : tabBar.lensTravel},
+      {at},
+    );
+    playCopy(at);
+  };
+
+  const end = (isCancelled: boolean) => {
+    const press = pressRef.current;
+    pressRef.current = null;
+    const selected = selectedRef.current;
+    if (press == null) {
+      return;
+    }
+    // The app's answer to this lift, as rendered now: the tab the finger
+    // chose is the one under it at the lift, whatever renders after.
+    const deliver = onLiftRef.current;
+    if (!press.hasLens || selected < 0) {
+      // No lens moved: the nearest tab is chosen at once.
+      if (!isCancelled) {
+        const nearest = nearestIndex(press.lastX, press.centers);
+        flushSync(() => deliver(nearest));
+      }
+      return;
+    }
+    const chosen = isCancelled
+      ? selected
+      : nearestIndex(press.lastX, press.centers);
+    const at = performance.now();
+    body.animator.animate(
+      {x: press.centers[chosen] - press.centers[selected]},
+      {spring: tabBar.lensSettle},
+      {at, touchRelease: true},
+    );
+    lift(false, at, press.size, true);
+    playCopy(at);
+    dropCopyAtRest();
+    if (isCancelled) {
+      return;
+    }
+    if (chosen !== selected) {
+      settleRef.current = chosen;
+    }
+    // The lift reports its choice from this handler, the settle already
+    // started (INV2): its first frame waits for the browser's commit, so the
+    // app rendering the chosen tab delays it rather than freezing it midway.
+    // Rendered at once, so the selection reads the app's answer right after.
+    flushSync(() => deliver(chosen));
+    if (
+      chosen !== selected &&
+      settleRef.current === chosen &&
+      selectedRef.current === selected
+    ) {
+      // The app kept the old selection: the lens settles back.
+      settleRef.current = null;
+      const now = performance.now();
+      body.animator.animate(
+        {x: 0},
+        {spring: tabBar.lensSettle},
+        {at: now, touchRelease: true},
+      );
+      playCopy(now);
+      dropCopyAtRest();
+    }
+  };
+
+  useGestureRecognizer(
+    capsuleRef,
+    () =>
+      new LongPressGestureRecognizer({
+        name: 'tab-bar-selection',
+        minimumPressDuration: 0,
+        allowedPointerTypes: ['touch', 'pen'],
+      }),
+    recognizer => {
+      switch (recognizer.state) {
+        case 'began':
+          begin(recognizer);
+          break;
+        case 'changed':
+          move(recognizer);
+          break;
+        case 'ended':
+          end(false);
+          break;
+        case 'cancelled':
+        case 'failed':
+          end(true);
+          break;
+      }
+    },
+    {
+      isEnabled: isTouch,
+      // Under a mouse the host writes no touch styles: desktop selection
+      // is unchanged.
+      manageStyle: isTouch,
+    },
+  );
+
+  // The recognizer turned off (another input took over): a press it was
+  // tracking ends here, as a cancel, since a recognizer turned off reports
+  // nothing more. A cancel chooses nothing, so the app hears nothing.
+  const endRef = useRef(end);
+  endRef.current = end;
+  useEffect(() => {
+    if (!isTouch && pressRef.current != null) {
+      endRef.current(true);
+    }
+  }, [isTouch]);
+
+  // A new selection: the resting place jumped to the new item (CSS, this
+  // frame); the body starts where the lens was on screen. After a lift it
+  // continues the settle the lift started; otherwise it slides from rest.
+  // Under a finger only: under a mouse TabBar's CSS slides the lens.
   const previousIndexRef = useRef(selectedIndex);
   useLayoutEffect(() => {
     const from = previousIndexRef.current;
     previousIndexRef.current = selectedIndex;
-    const capsule = capsuleRef.current;
+    const element = capsuleRef.current;
+    const fromLift = settleRef.current === selectedIndex;
+    settleRef.current = null;
     if (
       !isTouch ||
-      capsule == null ||
+      element == null ||
       from === selectedIndex ||
       from < 0 ||
       selectedIndex < 0 ||
@@ -99,34 +497,60 @@ export function useTabBarLens({
     ) {
       return;
     }
-    const isRtl = isRtlElement(capsule);
-    const centers = itemCenters(capsule.offsetWidth, count, isRtl);
+    const isRtl = isRtlElement(element);
+    const centers = itemCenters(element.offsetWidth, count, isRtl);
     const now = performance.now();
-    const offset = body.get('x', now) + centers[from] - centers[selectedIndex];
-    const velocity = body.getVelocity('x', now);
-    body.set({x: offset});
-    copy.set({x: -offset});
-    // From rest, both curves start when the browser commits the frame (with
-    // the lens's jump to its new place); a lens already moving continues
-    // from now, on one clock for both.
-    const options = velocity === 0 ? {} : {at: now};
-    body.animate(
-      {x: 0},
-      {spring: tabBar.lensTravel, velocity: {x: velocity}},
-      options,
-    );
-    copy.animate(
-      {x: 0},
-      {spring: tabBar.lensTravel, velocity: {x: -velocity}},
-      options,
-    );
-    // The copy goes once this slide, or the one that interrupts it, rests.
-    const slide = ++slideRef.current;
-    void body.atRest(['x']).then(() => {
-      if (slideRef.current === slide) {
-        setIsCopyShown(false);
-      }
-    });
+    const shift = centers[from] - centers[selectedIndex];
+    const offset = body.animator.get('x', now) + shift;
+    const velocity = body.animator.getVelocity('x', now);
+    body.animator.set({x: offset});
+    const press = pressRef.current;
+    if (press != null) {
+      // A finger is down (the selection changed under it): the lens keeps
+      // heading for the finger, now measured from its new resting place.
+      body.animator.animate(
+        {
+          x:
+            lensTarget(press.lastX, press.centers) -
+            press.centers[selectedIndex],
+        },
+        {
+          spring: press.isDragging ? tabBar.lensTrack : tabBar.lensTravel,
+          velocity: {x: velocity},
+        },
+        {at: now},
+      );
+      playCopy(now);
+      return;
+    }
+    if (fromLift || velocity !== 0) {
+      // Motion on screen: continue it from now, the copy derived from it.
+      body.animator.animate(
+        {x: 0},
+        {
+          spring: fromLift ? tabBar.lensSettle : tabBar.lensTravel,
+          velocity: {x: velocity},
+        },
+        {at: now, touchRelease: fromLift},
+      );
+      playCopy(now);
+      dropCopyAtRest();
+      return;
+    }
+    // From rest (a key, the app): both curves start when the browser commits
+    // the frame, with the lens's jump to its new place.
+    copy.animator.set({x: -offset});
+    body.animator.animate({x: 0}, {spring: tabBar.lensTravel});
+    copy.animator.animate({x: 0}, {spring: tabBar.lensTravel});
+    dropCopyAtRest();
   }, [selectedIndex, count, isTouch, capsuleRef, body, copy]);
-  return {body: bodyRef, copy: copyRef, isCopyShown};
+
+  return {
+    capsule: capsule.ref,
+    body: bodyRef,
+    clip: glass.ref,
+    copy: copy.ref,
+    copyItem: index => copyItems.refs[index],
+    isCopyShown,
+  };
 }

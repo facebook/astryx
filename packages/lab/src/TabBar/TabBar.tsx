@@ -5,8 +5,9 @@
 /**
  * @file TabBar.tsx
  * @input React, StyleX, core's theme tokens, list focus and touch
- *   presentation hooks, the compositor animator and the UIKit tab-bar table
- *   (`@astryxdesign/core/motion`), tabBarModel.ts for the math
+ *   presentation hooks, the UIKit tab-bar table
+ *   (`@astryxdesign/core/motion`), useTabBarLens.ts for the
+ *   lens's touch motion and tabBarModel.ts for the geometry
  * @output Exports TabBar (an iOS 26 floating tab bar: a capsule of items
  *   with a selection lens, badges and a reselect signal) and TabBarItem (one
  *   tab: its value, label, icon and badge)
@@ -21,11 +22,13 @@
  * the capsule's width and the number of tabs, spread evenly inside it so
  * that neighbours overlap, and the selection lens: a pill under the selected
  * item, which draws its selected look (accent colour, semibold label) itself.
- * While the lens slides under a finger, the selected look rides inside it
- * instead, as on iOS: a copy of the items, counter-translated so it stays
- * over the buttons, so an item half under the lens is half tinted. That copy
- * is mounted only for the slide; at rest, and always under a mouse, every
- * item is drawn once.
+ * While the lens moves under a finger (it slides, or a press lifts it into
+ * glass), the selected look rides inside it instead, as on iOS: a copy of
+ * the items, counter-translated so it stays over the buttons, so an item
+ * half under the lens is half tinted. That copy is mounted only while the
+ * lens moves; at rest, and always under a mouse, every item is drawn once.
+ * The lens's moving fill, and the glass it lifts into, are opaque and hide
+ * the plain items beneath the copy.
  *
  * Layout is CSS: the capsule is a size container and every position is a
  * `calc()` of its width, so the bar is right before hydration and through a
@@ -35,18 +38,22 @@
  * HOW THE LENS MOVES
  *
  * Under a finger (a coarse primary pointer, iOS and Android alike: the
- * touch presentation), the lens slides on UIKit's spring
- * (`tabBar.lensTravel`, response 0.4 s, damping ratio 0.85, a motion role
- * a theme may retune) through core's animator, starting from where and how
- * fast it is moving, so a change during a slide turns it around without a
- * jump; that motion is TabBar's touch layer (TabBarTouch.ts), its one
- * import site. Under a mouse (a fine pointer) the lens slides on the theme's
- * duration and easing (a CSS transition on `translate`, run by the
- * compositor), the selected look moving to the new tab at once, and no
- * touch code runs. Under Reduce Motion
+ * touch presentation), useTabBarLens.ts moves it as UITabBar does: a
+ * finger landing lifts the lens (it grows into clear glass and magnifies
+ * the item under it) while the bar flexes, a dragging finger is chased
+ * across the items, and the lift chooses the item nearest the finger; a
+ * selection made with the keys slides it on UIKit's spring
+ * (`tabBar.lensTravel`). Everything runs on the compositor, keeps its speed
+ * when retargeted, and plays each spring as the theme sets its motion role.
+ * That motion is TabBar's touch layer (TabBarTouch.ts), its one import site.
+ * Under a mouse (a fine pointer) the lens slides on the theme's duration and
+ * easing (a CSS transition on `translate`, run by the compositor), the
+ * selected look moving to the new tab at once, and no touch code runs. Under
+ * Reduce Motion
  * nothing travels (design:reduced-motion, applied by the animator): on a
  * touch screen the lens cross-fades (it fades out where it was and in at the
- * new tab, in 200 ms); under a mouse it moves at once.
+ * new tab, in 200 ms) and a press scales nothing; under a mouse the lens
+ * moves at once.
  *
  * SELECTION AND RESELECT
  *
@@ -63,7 +70,8 @@
  * ("Library, 3"; `badgeLabel`, or the badge itself).
  *
  * SYNC: When modified, update TabBar.doc.mjs, TabBar.test.tsx,
- * tabBarModel.ts and __tests__/TabBar.interaction.browser.spec.ts.
+ * useTabBarLens.ts, tabBarModel.ts and
+ * __tests__/TabBar.interaction.browser.spec.ts.
  */
 
 import {
@@ -251,12 +259,7 @@ const styles = stylex.create({
     backdropFilter: 'blur(16px) saturate(180%)',
     boxShadow: shadowVars['--shadow-med'],
     touchAction: 'manipulation',
-    // A held finger never starts text selection or the callout (StyleX
-    // writes no vendor prefix, and iOS Safari reads the prefixed one).
-    WebkitUserSelect: 'none',
-    userSelect: 'none',
     WebkitTapHighlightColor: 'transparent',
-    WebkitTouchCallout: 'none',
   },
   capsuleSize: (height: string, maxWidth: string) => ({height, maxWidth}),
   item: {
@@ -353,10 +356,38 @@ const styles = stylex.create({
   lensBody: {
     position: 'absolute',
     inset: 0,
+    // The lifted lens's shadow, outside the clip: the animator fades it in.
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      borderRadius: radiusVars['--radius-full'],
+      boxShadow: shadowVars['--shadow-med'],
+      opacity: 0,
+      // The animator promotes it while it moves (core's animator.ts).
+      willChange: 'var(--astryx-motion-will-change-before, auto)',
+    },
+  },
+  lensClip: {
+    position: 'absolute',
+    inset: 0,
     overflow: 'hidden',
     borderRadius: radiusVars['--radius-full'],
     // Opaque: while it slides it hides the plain items under the copy.
     backgroundColor: `color-mix(in srgb, ${colorVars['--color-text-primary']} 9%, ${colorVars['--color-background-popover']})`,
+    // The lifted lens: the capsule's own surface with a light rim, opaque so
+    // the plain copy under it stays hidden; the animator fades it in.
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      borderRadius: radiusVars['--radius-full'],
+      backgroundColor: colorVars['--color-background-popover'],
+      boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${colorVars['--color-text-primary']} 10%, transparent)`,
+      opacity: 0,
+      // The animator promotes it while it moves (core's animator.ts).
+      willChange: 'var(--astryx-motion-will-change-before, auto)',
+    },
   },
   copyInner: {
     position: 'absolute',
@@ -516,14 +547,6 @@ export function TabBar({
     orientation: 'horizontal',
     hasRovingTabIndex: true,
   });
-  const mergedCapsuleRef = useMergedRefs(capsuleRef, listRef);
-  const lens = useTabBarLens({
-    capsuleRef,
-    count,
-    selectedIndex,
-    isTouch,
-  });
-
   const choose = useCallback(
     (item: TabBarItemProps) => {
       if (item.value === value) {
@@ -534,6 +557,14 @@ export function TabBar({
     },
     [value, onChange, onReselect],
   );
+  const lens = useTabBarLens({
+    capsuleRef,
+    count,
+    selectedIndex,
+    isTouch,
+    onLift: index => choose(items[index]),
+  });
+  const mergedCapsuleRef = useMergedRefs(capsuleRef, listRef, lens.capsule);
 
   const restIndex = Math.max(selectedIndex, 0);
   const capsuleInset = px(tabBar.itemInset);
@@ -628,38 +659,45 @@ export function TabBar({
               ref={lens.body}
               data-tab-bar-lens-body=""
               {...stylex.props(styles.lensBody)}>
-              {lens.isCopyShown ? (
-                <div
-                  ref={lens.copy}
-                  data-tab-bar-copy=""
-                  {...stylex.props(styles.copyInner)}>
+              <div
+                ref={lens.clip}
+                data-tab-bar-lens-clip=""
+                {...stylex.props(styles.lensClip)}>
+                {lens.isCopyShown ? (
                   <div
-                    {...stylex.props(
-                      styles.copyOuter,
-                      styles.copyOuterGeometry(
-                        capsuleInset,
-                        px(tabBar.barHeight),
-                      ),
-                      styles.copyRest(lensOffset(restIndex, count)),
-                    )}>
-                    {items.map((item, index) => (
-                      <span
-                        key={item.value}
-                        {...stylex.props(
-                          styles.copyItem,
-                          styles.box(
-                            `calc(${center(index, count)} - ${size(count)} / 2)`,
-                            ITEM_TOP,
-                            itemSize,
-                            ITEM_HEIGHT,
-                          ),
-                        )}>
-                        <ItemFace item={item} isSelectedLook isCopy />
-                      </span>
-                    ))}
+                    ref={lens.copy}
+                    data-tab-bar-copy=""
+                    {...stylex.props(styles.copyInner)}>
+                    <div
+                      {...stylex.props(
+                        styles.copyOuter,
+                        styles.copyOuterGeometry(
+                          capsuleInset,
+                          px(tabBar.barHeight),
+                        ),
+                        styles.copyRest(lensOffset(restIndex, count)),
+                      )}>
+                      {items.map((item, index) => (
+                        <span
+                          key={item.value}
+                          ref={lens.copyItem(index)}
+                          data-tab-bar-copy-item={item.value}
+                          {...stylex.props(
+                            styles.copyItem,
+                            styles.box(
+                              `calc(${center(index, count)} - ${size(count)} / 2)`,
+                              ITEM_TOP,
+                              itemSize,
+                              ITEM_HEIGHT,
+                            ),
+                          )}>
+                          <ItemFace item={item} isSelectedLook isCopy />
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ) : null}
+                ) : null}
+              </div>
             </div>
           </div>
         ) : null}

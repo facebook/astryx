@@ -379,11 +379,36 @@ const calmTheme = defineTheme({
               '0.344144s 0',
             ],
             [
+              'tabBar.flexPress',
+              '--motion-tab-bar-flex-press',
+              'spring',
+              '0.314s 0.375',
+            ],
+            [
+              'tabBar.flexRelease',
+              '--motion-tab-bar-flex-release',
+              'spring',
+              '0.36s 0.4',
+            ],
+            [
+              'tabBar.lensSettle',
+              '--motion-tab-bar-lens-settle',
+              'spring',
+              '0.5s 0',
+            ],
+            [
+              'tabBar.lensTrack',
+              '--motion-tab-bar-lens-track',
+              'spring',
+              '0.15s 0',
+            ],
+            [
               'tabBar.lensTravel',
               '--motion-tab-bar-lens-travel',
               'spring',
               '0.4s 0.15',
             ],
+            ['tabBar.lift', '--motion-tab-bar-lift', 'spring', '0.25s 0'],
             [
               'timing.curves.entrance',
               '--motion-timing-curves-entrance',

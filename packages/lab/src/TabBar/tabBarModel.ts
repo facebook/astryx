@@ -5,19 +5,26 @@
  * @input The UIKit tab-bar table (`tabBar` from
  *   `@astryxdesign/core/motion`)
  * @output Exports the TabBar's pure geometry: the items' shared width and
- *   their centres in the capsule, and the capsule's natural width
+ *   their centres in the capsule, the capsule's natural width, the item a
+ *   lift commits, the lens's target under a finger (rubber-banded past the
+ *   ends), the lifted lens's scale, and the counter-transform that keeps the
+ *   selected copy of the items still inside a moving lens
  * @position Math of the lab TabBar (TabBar.tsx); no DOM, no React
  *
- * Coordinates are the capsule's own, in px: x from the capsule's left edge
- * (physical, in both writing directions), items in logical order. TabBar.tsx
- * lays the same geometry out in CSS (`itemWidthCss` is the same formula);
- * these numbers start the lens's slide from where it was.
+ * Coordinates are the capsule's own, in px, before its flex scale: x from
+ * the capsule's left edge (physical, in both writing directions), items in
+ * logical order. TabBar.tsx lays the same geometry out in CSS
+ * (`itemWidthCss` is the same formula); useTabBarLens.ts moves the lens with
+ * these numbers. UIKit tracks the finger in these coordinates too, so under
+ * the flex the lens drifts slightly away from the finger towards the ends,
+ * as on iOS.
  *
  * SYNC: When modified, update tabBarModel.test.ts, TabBar.tsx (its CSS
  * spelling of the same geometry) and /packages/core/src/motion/uikit/tabBar.ts
  * (the values' sources).
  */
 
+import {rubberBand} from '@astryxdesign/core/motion/rubberBand';
 import {tabBar} from '@astryxdesign/core/motion/uikit';
 
 /** The widest a capsule of `count` tabs gets without a search tab, px. */
@@ -72,4 +79,69 @@ export function itemCenters(
           (_, i) => first + ((width - 2 * first) * i) / (count - 1),
         );
   return isRtl ? centers.map(center => width - center) : centers;
+}
+
+/**
+ * The item a finger lifted at `x` commits: the one whose centre is nearest,
+ * the earlier one on a tie. No projection: a flick commits where it lifts.
+ */
+export function nearestIndex(
+  x: number,
+  centers: ReadonlyArray<number>,
+): number {
+  let best = 0;
+  let bestDistance = Infinity;
+  centers.forEach((center, index) => {
+    const distance = Math.abs(x - center);
+    // Strictly nearer only: a tie keeps the earlier (leading) item.
+    if (distance < bestDistance - 1e-9) {
+      best = index;
+      bestDistance = distance;
+    }
+  });
+  return best;
+}
+
+/**
+ * Where the lens heads for a finger at `x`: the finger itself between the
+ * first and last centres, rubber-banded past them.
+ */
+export function lensTarget(x: number, centers: ReadonlyArray<number>): number {
+  if (centers.length === 0) {
+    return x;
+  }
+  const min = Math.min(...centers);
+  const max = Math.max(...centers);
+  if (x < min) {
+    return min + rubberBand(x - min, tabBar.lensEdgeDimension);
+  }
+  if (x > max) {
+    return max + rubberBand(x - max, tabBar.lensEdgeDimension);
+  }
+  return x;
+}
+
+/**
+ * The lifted lens's scale on each axis for items `width` px wide: the item
+ * grown by `liftOutset` on every side.
+ */
+export function liftScale(width: number): {x: number; y: number} {
+  return {
+    x: (width + 2 * tabBar.liftOutset) / width,
+    y: (tabBar.itemHeight + 2 * tabBar.liftOutset) / tabBar.itemHeight,
+  };
+}
+
+/**
+ * The selected copy of the items lives inside the lens, which moves by
+ * `x` and scales by (`scaleX`, `scaleY`) about its centre. Applied to the
+ * copy about the same point, this transform puts the copy back where the
+ * items are, so the lens shows the selected look of whatever is under it.
+ */
+export function copyTransform(
+  x: number,
+  scaleX: number,
+  scaleY: number,
+): {x: number; scaleX: number; scaleY: number} {
+  return {x: -x / scaleX, scaleX: 1 / scaleX, scaleY: 1 / scaleY};
 }
