@@ -177,7 +177,9 @@ describe('where the keyboard is measured (FR6, FR7)', () => {
     expect(isKeyboardMeasurable(window)).toBe(true);
   });
 
-  it('measures nothing under a mouse where the browser has its own keyboard geometry API', () => {
+  it('measures Chrome on Android from its visual viewport, which has its own keyboard geometry API (DEC-4)', () => {
+    // Gboard shrinks Chrome's visual viewport while the layout viewport keeps
+    // its height, as everywhere else; the VirtualKeyboard API is not read.
     Object.defineProperty(window.navigator, 'virtualKeyboard', {
       configurable: true,
       value: {overlaysContent: false},
@@ -188,26 +190,37 @@ describe('where the keyboard is measured (FR6, FR7)', () => {
         ({matches: false, media: query}) as unknown as MediaQueryList,
     );
     viewport.height = window.innerHeight - 300;
-    expect(isKeyboardMeasurable(window)).toBe(false);
-    expect(measureKeyboardHeight(window)).toBe(0);
+    expect(isKeyboardMeasurable(window)).toBe(true);
+    expect(measureKeyboardHeight(window)).toBe(300);
   });
 
-  it('measures Chrome on Android from its visual viewport, under a finger (FR8, DEC-4)', () => {
+  it('reads no keyboard where a desktop browser with the API shows none', () => {
     Object.defineProperty(window.navigator, 'virtualKeyboard', {
       configurable: true,
       value: {overlaysContent: false},
     });
-    vi.stubGlobal(
-      'matchMedia',
-      (query: string) =>
-        ({
-          matches: query === '(pointer: coarse)',
-          media: query,
-        }) as unknown as MediaQueryList,
-    );
-    viewport.height = window.innerHeight - 312;
-    expect(isKeyboardMeasurable(window)).toBe(true);
-    expect(measureKeyboardHeight(window)).toBe(312);
+    expect(measureKeyboardHeight(window)).toBe(0);
+  });
+
+  it('reads no keyboard under interactive-widget=resizes-content, where Chrome shrinks the layout viewport with it (FR8)', () => {
+    Object.defineProperty(window.navigator, 'virtualKeyboard', {
+      configurable: true,
+      value: {overlaysContent: false},
+    });
+    const full = window.innerHeight;
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: full - 300,
+    });
+    try {
+      viewport.height = full - 300;
+      expect(measureKeyboardHeight(window)).toBe(0);
+    } finally {
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: full,
+      });
+    }
   });
 
   it('measures nothing without a visual viewport', () => {

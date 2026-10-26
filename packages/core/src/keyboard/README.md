@@ -17,14 +17,15 @@ exported from the package entry.
   `innerWidth` matching the visual viewport's width tells apart. BottomSheet's
   obstruction and ChatLayout's lift read it too.
 - **Where it measures (FR6, FR7, DEC-4):** `isKeyboardMeasurable(window)` is
-  true for a top-level document with a visual viewport; in a browser with its
-  own keyboard geometry API (`navigator.virtualKeyboard`), only under a
-  finger, which is Chrome on Android, whose visual viewport shrinks for the
-  keyboard as everywhere else. It is decided from capabilities, never from the
-  user agent. Elsewhere the height is 0: such a browser under a mouse, and
-  inside an iframe. Where the app sets `interactive-widget=resizes-content`,
-  Chrome shrinks the layout viewport with the keyboard, so the height is 0
-  there too and nothing rides: the browser has made the room (FR8).
+  true for a top-level document with a visual viewport, a browser with its own
+  keyboard geometry API (`navigator.virtualKeyboard`, Chrome on Android)
+  included, whose visual viewport shrinks for the keyboard as everywhere
+  else. It is decided from capabilities, never from the user agent or the
+  pointer. A desktop browser's visual viewport never shrinks for a keyboard,
+  so it reads 0; inside an iframe the height is 0. Where the app sets
+  `interactive-widget=resizes-content`, Chrome shrinks the layout viewport
+  with the keyboard, so the height is 0 there too and nothing rides: the
+  browser has made the room (FR8).
 - **One set of listeners (FR1, INV11):** `subscribeMobileKeyboard(window, fn)`
   delivers every report (the visual viewport's resize and scroll, the window's
   resize, focus moves) from one set of listeners per window, however many
@@ -181,4 +182,5 @@ keyboard module measures them from the visual viewport under a finger
 
 The timing constants live in `../motion/uikit/keyboard.ts` (iOS) and
 `../motion/android/keyboard.ts` (Chrome with Gboard), the spring in
-`keyboard.spring`, the duration in `timing.keyboardNotificationMs`.
+`keyboard.spring`, the duration in `keyboardNotification` (composed into
+`timing` as `keyboardNotificationMs`).
