@@ -993,7 +993,10 @@ export function Lightbox({
             ? t('@astryx.lightbox.zoomedIn')
             : t('@astryx.lightbox.zoomedOut'),
         );
-        if (isTouchInput(lastInputRef.current)) {
+        // Photos hides the controls as a finger zooms. Where the primary
+        // pointer is fine no zoom hides them, a pen's or a finger's
+        // included, as before (spec:AST-017 FR59).
+        if (isTouch && isTouchInput(lastInputRef.current)) {
           setChrome({hidden: next, immersive: next});
         }
       }

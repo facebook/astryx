@@ -1056,6 +1056,16 @@ describe('Lightbox mouse and pen zoom where the primary pointer is fine', () => 
     });
     expect(stage).toHaveAttribute('aria-pressed', 'true');
   });
+
+  it("keeps the controls through a pen's zoom, as through a mouse's", () => {
+    // Photos hides them as a finger zooms; where the primary pointer is fine
+    // no zoom ever hid them (spec:AST-017 FR59).
+    const {stage} = renderPhoto();
+    doubleClick(stage, 'pen', 200, 300);
+    expect(stage).toHaveAttribute('aria-pressed', 'true');
+    const container = document.querySelector('dialog')!.firstElementChild!;
+    expect(container).not.toHaveAttribute('data-chrome-hidden');
+  });
 });
 
 describe('Lightbox double-click under the touch layer', () => {
