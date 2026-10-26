@@ -291,3 +291,16 @@ import Testing
   let wrapped = Pixels(Astryx.TextInput(label: "Notes", value: long, isReadOnly: true).frame(width: 240))
   #expect(wrapped.height == short.height)
 }
+
+@MainActor
+@Test func aDisabledReasonOpensOnFocusInsideTheRow() {
+  // The row is not itself focusable; its drawn field is, so the reason's
+  // tooltip follows focus inside the row (the drawn field's focus), not the
+  // row's own focus.
+  let field = Astryx.TextInput(label: "Plan", value: "Team", isDisabled: true, disabledMessage: "Managed by your admin")
+  guard case .inside = field.reasonTooltipFocus else {
+    Issue.record("expected focus inside the row to open the reason")
+    return
+  }
+  #expect(field.keepsFocusWhileDisabled)
+}

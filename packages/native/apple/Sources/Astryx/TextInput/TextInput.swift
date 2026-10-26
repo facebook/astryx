@@ -273,9 +273,15 @@ public struct TextInput: View {
     )
     .opacity(isDisabled ? 0.5 : 1)
     // A disabled field shows its reason in the shared tooltip on hover, on
-    // keyboard focus, and on a tap; VoiceOver reads the reason on the field.
-    .astryxTooltip(isDisabled ? props.disabledMessage : nil, focus: .control, touch: .tap)
+    // keyboard focus of its drawn field, and on a tap; VoiceOver reads the
+    // reason on the field.
+    .astryxTooltip(isDisabled ? props.disabledMessage : nil, focus: reasonTooltipFocus, touch: .tap)
   }
+
+  /// How keyboard focus opens the disabled reason: the row holds the drawn
+  /// field, which takes the focus, so focus inside the row opens it, as
+  /// Thumbnail's tooltip does for its parts.
+  var reasonTooltipFocus: TooltipFocus { .inside(focus == .drawn) }
 
   /// Whether the field row ends in buttons, whose 44-point targets reach its
   /// edge in place of the trailing padding.
