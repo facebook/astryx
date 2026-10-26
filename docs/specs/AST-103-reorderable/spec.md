@@ -97,9 +97,9 @@ announcements are those of FR3 and FR4, and the tree adds no option.
 ## Requirements
 
 - **FR1 — One factory makes the behavior.** `createReorderable(options)`
-  returns a reorderable object. `options` carries only the change callback,
-  `onReorder({ key, to })`, where `key` names the moved item by its key and
-  `to` is the index the item has after the move, counted in the
+  returns a reorderable object. `options` carries the change callback,
+  `onReorder({ key, to })`, and an optional `isReorderable(key)` predicate;
+  in the callback, `key` names the moved item by its key and `to` is the index the item has after the move, counted in the
   collection's full item order (every item it was given, mounted or not). In a
   tree, `to` is `{ parent, index }`: `parent` is the new parent's key (`null`
   at the root) and `index` is the item's position among that parent's children
@@ -135,7 +135,7 @@ announcements are those of FR3 and FR4, and the tree adds no option.
     for it; a cancelled drag calls nothing;
   - under Reduce Motion the dragged row still follows the finger or pointer,
     and the other rows and the drop take their places without travel
-    (`design:reduced-motion` DR2).
+    (`design:reduced-motion` DR1–DR3; a mouse drop follows DR3).
 - **FR4 — Reorder mode is the one path without a drag.** Each reorderable
   row's handle is a toggle button named "Reorder" and the row's label, with
   `aria-pressed`. Activating it, by click, Enter, or Space, enters reorder
@@ -173,7 +173,7 @@ announcements are those of FR3 and FR4, and the tree adds no option.
     the same announcement and focus on the handle, and Done leaves the mode
     as Escape does, so a pointer or a finger can reorder by tapping the
     handle, then the move buttons, then Done;
-  - the hint is a part named in each adopting collection's anatomy; it uses
+    \1 it is a\n layer that follows `family:overlay-dismissal`; it uses
     the layer, anchoring, and theme roles of Core's keyboard hint, whose
     public API is unchanged, and unlike that hint its buttons take taps and
     are exposed to assistive technology.
@@ -216,7 +216,7 @@ announcements are those of FR3 and FR4, and the tree adds no option.
 | Contract            | Verification                                                                                     | Representative states                                                                                                                                                                                                                                                              | Mutation or failure expectation                                                                                                                                                                                                                               |
 | ------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | FR1, FR6–FR8        | Public-API review, type tests, and descriptor checks                                             | the factory's options; a collection's `reorderable` type; the factory's and List's descriptors                                                                                                                                                                                     | an extra gesture, timing, or animation option, an experimental name or subpath, a missing descriptor, or a second public reorder API, fails                                                                                                                   |
-| FR2                 | Bundle and runtime check of a collection with and without the prop                               | without the prop; with the prop                                                                                                                                                                                                                                                    | reorder code in the bundle, a handle, or a listener without the prop fails; the measured cost is recorded in the pull request                                                                                                                                 |
+| FR2                 | Bundle and runtime check of a collection with and without the prop                               | without the prop; with the prop                                                                                                                                                                                                                                                    | reorder code in the bundle, a handle, or a reorder listener without the prop fails; the measured cost is recorded in the pull request                                                                                                                         |
 | FR3                 | Browser tests with real touch input and a mouse (`spec:AST-013` FR10)                            | a hold and drag; a flick; a drop; a cancelled drag; Reduce Motion                                                                                                                                                                                                                  | a drag that starts off the handle, a commit before the drop, two callbacks for one drag, a callback on cancel, or travel under Reduce Motion fails                                                                                                            |
 | FR4                 | Keyboard, mouse, and announcement-routing tests of reorder mode (`spec:AST-009` FR17)            | entering by click, Enter, and Space; arrows in vertical, horizontal, and grid collections; Up, Down, Left, and Right in a tree; each move's announcement at the top, middle, and end; a move past a rejected row; Escape and a second activation; focus and scroll after each move | a move that does not commit at once, an announcement missing, repeated, or before render, a move past a rejected row at either end, or a mid-list rejected row that blocks a move, focus leaving the handle, or moves undone on exit fails                    |
 | FR4 hint            | Browser tests with a mouse, a finger, and a keyboard                                             | the hint's axis in vertical, horizontal, and grid collections; each move button and Done; a tap-only reorder; the hint's theme roles                                                                                                                                               | a hint off the keyboard hint's layer, anchoring, or theme roles, buttons that ignore taps or are hidden from assistive technology, a button whose move or announcement differs from its key, focus leaving the handle, or a hint that outlives the mode fails |
