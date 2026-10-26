@@ -227,7 +227,7 @@ compiler: {define: {__ASTRYX_TOUCH__: 'false'}},`,
         },
         {
           type: 'prose',
-          text: 'Next.js builds the client bundles once per deployment and cannot choose between two per request. Two bundles there mean two builds of the app, each deployed on its own, with middleware rewriting each request to one of them. If that costs more than the smaller desktop bundle saves, ship the one bundle.',
+          text: 'Next.js builds the client bundles once per deployment and cannot choose between two per request. Two bundles there mean two builds of the app, each deployed on its own, with middleware rewriting each request to one of them. If that costs more than the smaller desktop bundle is worth, ship the one bundle.',
         },
       ],
     },
