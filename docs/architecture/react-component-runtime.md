@@ -15,7 +15,7 @@ verified_by:
     packages/core/src/Layer/useLayer.test.tsx,
     packages/core/src/utils/sharedResizeObserver.test.ts,
   ]
-deciding_specs: [spec:AST-086/DEC-2, spec:AST-099/DEC-1]
+deciding_specs: [spec:AST-086/DEC-2, spec:AST-099/DEC-1, spec:AST-105/DEC-1]
 ---
 
 # React component runtime architecture

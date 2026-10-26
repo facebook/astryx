@@ -13,7 +13,7 @@ owners: [cixzhang]
 affects_architecture: [architecture:react-component-runtime]
 affects_families: []
 affects_contributing: []
-affects_consumer_docs: []
+affects_consumer_docs: [useAnimatedLayout, TreeList, Collapsible]
 ---
 
 # Animated layout system spec
@@ -45,7 +45,7 @@ jumping. An app opts in once per area; without it, nothing changes.
 ```tsx
 const scrollRef = useRef(null);
 const animatedLayout = useAnimatedLayout({containerRef: scrollRef});
-<ScrollableArea ref={scrollRef}>
+<ScrollableArea ref={scrollRef} label="Project">
   <TreeList items={items} animatedLayout={animatedLayout} />
   <p>Notes</p>
 </ScrollableArea>;
@@ -95,27 +95,27 @@ const animatedLayout = useAnimatedLayout({containerRef: scrollRef});
   to pass to a component whose size changes, such as TreeList or Collapsible.
   When that component changes size, it and the content after it inside
   `containerRef` animate together on one shared motion role. Fixed and stuck
-  sticky elements stay put, the module never scrolls the area, and Reduce
+  sticky elements stay put, the glide never scrolls the area, and Reduce
   Motion is respected."
 
 ## Coverage
 
 What moves inside an area, each case with its test:
 
-| Case                                                                                        | Behavior                                                                                                               | Test                                                                 |
-| ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Normal-flow block siblings after the changed element, at each ancestor level up to the area | Moves when its rectangle changed                                                                                       | Nested changed element with block siblings at three levels           |
-| An element with `display: contents`                                                         | Has no box; its children are taken in its place                                                                        | A following `display: contents` wrapper with two children            |
-| Absolutely positioned or fixed elements                                                     | Skipped and take their final place; an absolute child of a moving element rides with it                                | One of each, plus an absolute badge on a moving row                  |
-| Sticky elements                                                                             | In flow while unstuck, so moves when its rectangle changed; a stuck element takes its final place                      | A sticky header above and below its stuck point                      |
-| Floats                                                                                      | Moves when its rectangle changed                                                                                       | A float after the changed element                                    |
-| Flex and grid items after the changed element, including wrap and row direction             | Moves when its rectangle changed                                                                                       | A wrapping flex row and a row-direction neighbor that does not shift |
-| Hidden, `display: none`, or zero-size elements                                              | Skipped                                                                                                                | One of each after the changed element                                |
-| Changed elements outside the area's visible part                                            | Take their final place without animation                                                                               | A long list with changed rows above and below the fold               |
-| Elements under a scaled or transformed ancestor                                             | Moves by its layout change, corrected for the ancestor's scale                                                         | A moving row inside a scaled panel                                   |
-| Portals and top-layer content                                                               | Never moved                                                                                                            | A popover open from a following row                                  |
-| Elements already moving                                                                     | Keep their running motion and add the new move to it                                                                   | Two changes 100 ms apart                                             |
-| Nested areas                                                                                | The walk stops at the area of the handle the changed component holds; an inner area moves as one unit of an outer walk | An area inside an area, changed in the inner one                     |
+| Case                                                                                        | Behavior                                                                                                                | Test                                                                 |
+| ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Normal-flow block siblings after the changed element, at each ancestor level up to the area | Moves when its rectangle changed                                                                                        | Nested changed element with block siblings at three levels           |
+| An element with `display: contents`                                                         | Has no box; its children are taken in its place                                                                         | A following `display: contents` wrapper with two children            |
+| Absolutely positioned or fixed elements                                                     | Skipped and take their final place; an absolute child of a moving element rides with it                                 | One of each, plus an absolute badge on a moving row                  |
+| Sticky elements                                                                             | In flow while unstuck, so moves when its rectangle changed; a stuck element takes its final place                       | A sticky header above and below its stuck point                      |
+| Floats                                                                                      | Moves when its rectangle changed                                                                                        | A float after the changed element                                    |
+| Flex and grid items after the changed element, including wrap and row direction             | Moves when its rectangle changed                                                                                        | A wrapping flex row and a row-direction neighbor that does not shift |
+| Hidden, `display: none`, or zero-size elements                                              | Skipped                                                                                                                 | One of each after the changed element                                |
+| Changed elements outside the area's visible part                                            | Take their final place without animation                                                                                | A long list with changed rows above and below the fold               |
+| Elements under a scaled or transformed ancestor                                             | Moves by its layout change, corrected for the ancestor's scale                                                          | A moving row inside a scaled panel                                   |
+| Portals and top-layer content                                                               | Never moved                                                                                                             | A popover open from a following row                                  |
+| Elements already moving                                                                     | Keep their running motion and add the new move to it                                                                    | Two changes 100 ms apart                                             |
+| Nested areas                                                                                | Motion stops at the area of the handle the changed component holds; an inner area moves as one unit within an outer one | An area inside an area, changed in the inner one                     |
 
 Out of coverage, each taking its final place at once:
 
@@ -123,7 +123,7 @@ Out of coverage, each taking its final place at once:
 - inline text and other non-replaced inline content, which cannot take a
   transform;
 - flex or grid items earlier in the DOM that `order` places after the change,
-  since the walk visits only following siblings;
+  since only content after the change in the DOM moves;
 - text reflowing inside a paragraph beside a float;
 - elements the app moves itself with its own transforms;
 - an anchored popover tied to a moving element, which layer anchoring keeps
@@ -132,7 +132,9 @@ Out of coverage, each taking its final place at once:
 ## Current-state impact
 
 - No Core component takes `animatedLayout` yet; TreeList and Collapsible are
-  the first adopters.
+  the first adopters, and their docs gain the `animatedLayout` prop.
+- Core gains the `useAnimatedLayout` export and its documentation (FR7).
+- `architecture:react-component-runtime` INV12 produces the glide.
 
 ## Verification
 
