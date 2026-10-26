@@ -39,9 +39,11 @@
  * Reopening it mid-exit fades it back from where it is; unmounting removes it
  * at once; if the exit never reports its end (animations disabled) the
  * dialog closes anyway once its duration and a frame budget have passed. The
- * springs and both durations are motion roles: the animator resolves the
- * springs under the dialog's theme, and the touch window and that backstop
- * resolve the durations (resolveMotion).
+ * springs are the motion roles: the animator resolves them under the
+ * dialog's theme, and the touch window and that backstop are timed from the
+ * spring it plays (resolveMotion), so a theme's spring retimes both. The
+ * timings themselves decide when a touch acts and are not roles
+ * (`spec:AST-094` FR4, DEC-3).
  *
  * When `isEnabled` is false (a mouse, the inline preview) nothing here
  * acts: the Dialog opens and closes with the theme's motion.
@@ -57,7 +59,11 @@ import {
   type Animator,
   type MotionHandle,
 } from '../motion/animator';
-import type {SpringDescription} from '../motion/spring';
+import {
+  settlingDuration,
+  toSpring,
+  type SpringDescription,
+} from '../motion/spring';
 import {holdPresentation, isInHeldLayer} from '../Layer/presentationHold';
 import {resolveMotion} from '../motion/resolveMotion';
 import {alertController} from '../motion/uikit/alert';
@@ -67,9 +73,17 @@ import {springs} from '../motion/uikit/springs';
 const EXIT_BACKSTOP_MS = 100;
 
 /**
- * How long touches stay out once the presentation has started: its duration
- * under the dialog's theme (`alertController.present.durationMs`), plus the
- * frame or two UIKit takes to complete it (435 of 404 ms, measured).
+ * How long a spring the alert plays runs, in whole ms: its settling duration
+ * (0.1 % from rest), the length UIKit gives the Core Animation spring.
+ */
+function springLengthMs(spring: SpringDescription): number {
+  return Math.round(settlingDuration(toSpring(spring)) * 1000);
+}
+
+/**
+ * How long touches stay out once the presentation has started: the length
+ * of the presentation spring the dialog's theme plays, plus the frame or two
+ * UIKit takes to complete it (435 of 404 ms, measured).
  */
 /**
  * UIKit's 1.2 start, never wider than the viewport: an alert wider than
@@ -109,11 +123,10 @@ function fadeFromHere(
 }
 
 function touchWindowMs(element: Element | null): number {
-  const {present} = alertController;
   return (
-    resolveMotion(element, present, 'durationMs') +
-    present.ignoresTouchesForMs -
-    present.durationMs
+    springLengthMs(resolveMotion(element, springs.alertPresent)) +
+    alertController.present.ignoresTouchesForMs -
+    springLengthMs(springs.alertPresent)
   );
 }
 
@@ -307,7 +320,7 @@ export function useAlertMotion({
         exitRef.current = null;
         setIsLeaving(false);
       },
-      resolveMotion(elementRef.current, alertController.dismiss, 'durationMs') +
+      springLengthMs(resolveMotion(elementRef.current, springs.alertDismiss)) +
         EXIT_BACKSTOP_MS,
     );
     return () => clearTimeout(backstop);

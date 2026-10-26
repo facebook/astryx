@@ -21,15 +21,17 @@
 import {act, render} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
-  alertController,
-  registerAlertControllerTable,
-} from '../motion/uikit/alert';
-import {springs} from '../motion/uikit/springs';
+  settlingDuration,
+  springFromDurationBounce,
+  toSpring,
+} from '../motion/spring';
+import {alertController} from '../motion/uikit/alert';
+import {registerSpringsTable, springs} from '../motion/uikit/springs';
 import {useAlertMotion, type AlertMotion} from './useAlertMotion';
 
-// AlertDialog's touch layer registers the table before the alert first
+// AlertDialog's touch layer registers the springs before the alert first
 // animates; this hook is tested on its own, so the test does.
-registerAlertControllerTable();
+registerSpringsTable();
 
 type RecordedCall =
   | {kind: 'attach'; target: unknown}
@@ -148,14 +150,22 @@ function Alert({isOpen, isEnabled}: {isOpen: boolean; isEnabled: boolean}) {
   );
 }
 
-/** The alert under a theme that retunes both of its durations. */
+/** The theme's slower springs, in their perceptual duration and bounce. */
+const SLOW_PRESENT = {duration: 0.4, bounce: 0};
+const SLOW_DISMISS = {duration: 0.55, bounce: 0};
+
+/** A spring's length in whole ms: its settling duration (0.1 % from rest). */
+const lengthMs = (spring: Parameters<typeof springFromDurationBounce>[0]) =>
+  Math.round(settlingDuration(springFromDurationBounce(spring)) * 1000);
+
+/** The alert under a theme that retunes both of its springs. */
 function ThemedAlert({isOpen}: {isOpen: boolean}) {
   return (
     <div
       data-astryx-theme="slow"
       style={{
-        ['--motion-alert-controller-present-duration-ms' as string]: '600ms',
-        ['--motion-alert-controller-dismiss-duration-ms' as string]: '800ms',
+        ['--motion-springs-alert-present' as string]: `${SLOW_PRESENT.duration}s ${SLOW_PRESENT.bounce}`,
+        ['--motion-springs-alert-dismiss' as string]: `${SLOW_DISMISS.duration}s ${SLOW_DISMISS.bounce}`,
       }}>
       <Alert isOpen={isOpen} isEnabled />
     </div>
@@ -477,7 +487,7 @@ describe('useAlertMotion', () => {
     expect(motion().acceptsTouches()).toBe(true);
   });
 
-  it('follows a theme that retunes the durations: the touch window and the exit backstop', async () => {
+  it('times the touch window and the exit backstop from the springs a theme plays', async () => {
     vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
     const view = render(<ThemedAlert isOpen />);
     const {panel} = animators();
@@ -489,8 +499,10 @@ describe('useAlertMotion', () => {
     const lag =
       alertController.present.ignoresTouchesForMs -
       alertController.present.durationMs;
+    const present = lengthMs(SLOW_PRESENT);
+    expect(present).toBeGreaterThan(alertController.present.durationMs + 100);
     await act(async () => {
-      vi.advanceTimersByTime(600 + lag - 1);
+      vi.advanceTimersByTime(present + lag - 1);
     });
     expect(motion().acceptsTouches()).toBe(false);
     await act(async () => {
@@ -499,13 +511,24 @@ describe('useAlertMotion', () => {
     expect(motion().acceptsTouches()).toBe(true);
     view.rerender(<ThemedAlert isOpen={false} />);
     act(() => {
-      vi.advanceTimersByTime(800 + 99);
+      vi.advanceTimersByTime(lengthMs(SLOW_DISMISS) + 99);
     });
     expect(motion().isPresented).toBe(true);
     act(() => {
       vi.advanceTimersByTime(1);
     });
     expect(motion().isPresented).toBe(false);
+  });
+
+  it("measures UIKit's durations as its springs' lengths, so the default theme keeps its 435 ms window", () => {
+    for (const [spring, measured] of [
+      [springs.alertPresent, alertController.present.durationMs],
+      [springs.alertDismiss, alertController.dismiss.durationMs],
+    ] as const) {
+      expect(Math.round(settlingDuration(toSpring(spring)) * 1000)).toBe(
+        measured,
+      );
+    }
   });
 
   it('keeps refusing touches when the presentation reports its start after the alert began to leave', async () => {
