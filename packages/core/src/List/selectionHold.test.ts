@@ -200,7 +200,7 @@ describe('presentation follows each timing’s curve', () => {
     const timings = [
       {},
       {spring: {response: 0.35, dampingRatio: 1}, velocity: 1},
-      {durationMs: 3000, curve: timing.curves.easeInOut},
+      {durationMs: 3000, curve: timing.curves.move},
     ] as const;
     for (const each of timings) {
       const {control} = listRow(`Row ${timings.indexOf(each)}`);
@@ -217,7 +217,7 @@ describe('presentation follows each timing’s curve', () => {
   it("a fixed duration on a Bézier curve (a navigation's own fade)", () => {
     const {control} = listRow();
     const hold = holdSelection(control, {now});
-    const curve = timing.curves.easeInOut;
+    const curve = timing.curves.move;
     void hold?.animate(1, {
       durationMs: timing.reducedMotionCrossFadeMs,
       curve,
