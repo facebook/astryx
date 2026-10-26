@@ -766,20 +766,37 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     return {during, after: await read()};
   }
 
-  test('P2 · while a finger holds the switch, the input under it selects no text, so a still hold opens no loupe', async ({
+  test('P2 · a long press on the label selects natively, a tap selects nothing, and no press leaves selection suppressed (spec:AST-094 FR41)', async ({
     page,
   }) => {
-    // The finger lands on the switch's own input, and the engine's form
-    // control styles give an input `-webkit-user-select: text` whatever its
-    // ancestors say: iOS Safari then opened its text loupe 0.65 s into a still
-    // hold (simulator, iOS 26.2). The gesture host locks a non-text input
-    // under a held finger on a touch control, and lets go after the lift.
-    const {driver, center} = await openSwitch(page);
-    const held = await hitDuringHold(page, driver, center);
-    expect(held.during?.role).toBe('switch');
-    expect(held.during?.userSelect).toBe('none');
-    expect(held.during?.locked).toBe(true);
-    expect(held.after?.locked).toBe(false);
+    // FR41 and DEC-9: the Switch defines no hold action, so like a checkbox
+    // row's label its label keeps the browser's long-press selection; a tap
+    // activates and never selects; any suppression lasts only for its press.
+    const {driver, input, center} = await openSwitch(page);
+    const label = page
+      .locator('#storybook-root')
+      .getByText('Enable notifications', {exact: true});
+    const box = await label.boundingBox();
+    if (box == null) {
+      throw new Error('no label');
+    }
+    const onLabel = {x: box.x + box.width / 2, y: box.y + box.height / 2};
+    const onText = await hitDuringHold(page, driver, onLabel);
+    expect(onText.during).not.toBeNull();
+    expect(onText.during?.userSelect).not.toBe('none');
+    expect(onText.during?.locked).toBe(false);
+    expect(onText.after?.locked).toBe(false);
+    // A hold on the switch suppresses nothing past its press.
+    const onSwitch = await hitDuringHold(page, driver, center);
+    expect(onSwitch.after?.locked).toBe(false);
+    // A tap activates and selects nothing.
+    await page.evaluate(() => window.getSelection()?.removeAllRanges());
+    const wasOn = await input.isChecked();
+    await driver.play(tap(center));
+    await expect(input).toBeChecked({checked: !wasOn});
+    expect(
+      await page.evaluate(() => window.getSelection()?.toString() ?? ''),
+    ).toBe('');
   });
 
   test('P3 · a drag flips once the finger is 26/63 of the track past where it landed, and the release commits it', async ({
