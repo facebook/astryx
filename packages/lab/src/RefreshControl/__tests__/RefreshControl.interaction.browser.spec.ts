@@ -1559,6 +1559,55 @@ test('the spin steps clockwise every eighth of a second while the main thread is
   }
 });
 
+test('the trigger\u2019s copy of the spokes leaves when its fade ends, mid-refresh', async ({
+  page,
+}) => {
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '8000',
+  });
+  const glyph = content.locator(':scope > div:last-child > div > span').first();
+  // The copy's arrival, its fade's length and its removal, on the page clock.
+  await glyph.evaluate(element => {
+    const log = {added: NaN, fadeMs: NaN, removed: NaN};
+    (window as unknown as {__copy: typeof log}).__copy = log;
+    new MutationObserver(records => {
+      for (const record of records) {
+        for (const node of Array.from(record.addedNodes)) {
+          log.added = performance.now();
+          const timing = (node as Element)
+            .getAnimations()[0]
+            ?.effect?.getComputedTiming();
+          log.fadeMs = Number(timing?.duration);
+        }
+        if (record.removedNodes.length > 0) {
+          log.removed = performance.now();
+        }
+      }
+    }).observe(element, {childList: true});
+  });
+  await driver.play(slowPull(start, 300, 200));
+  await expect.poll(() => isBusy(content)).toBe(true);
+  await expect
+    .poll(() => glyph.evaluate(element => element.children.length), {
+      timeout: 8000,
+    })
+    .toBe(8);
+  // Gone mid-refresh: its fade's own end removed it, not the refresh's end.
+  expect(await isBusy(content)).toBe(true);
+  const log = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          __copy: {added: number; fadeMs: number; removed: number};
+        }
+      ).__copy,
+  );
+  expect(log.fadeMs, JSON.stringify(log)).toBeGreaterThan(0);
+  const lifetime = log.removed - log.added;
+  expect(lifetime, JSON.stringify(log)).toBeGreaterThanOrEqual(log.fadeMs - 20);
+  expect(lifetime, JSON.stringify(log)).toBeLessThan(log.fadeMs + 250);
+});
+
 test('the cross-fade and the spin do no Layout or Paint per frame', async ({
   page,
   browserName,
