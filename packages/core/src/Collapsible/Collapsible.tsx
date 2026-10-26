@@ -29,6 +29,8 @@
 
 import {
   use,
+  useCallback,
+  useEffect,
   useId,
   useLayoutEffect,
   useMemo,
@@ -54,7 +56,10 @@ import {
   reportLayoutChange,
   type AnimatedLayout,
 } from '../motion/animatedLayout';
-import {CollapsibleGroupPresentationContext} from './CollapsibleGroupContext';
+import {
+  CollapsibleGroupContext,
+  CollapsibleGroupPresentationContext,
+} from './CollapsibleGroupContext';
 import type {CollapsibleChevronPosition} from './CollapsibleGroupContext';
 import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
@@ -355,44 +360,66 @@ export function Collapsible({
     value,
   });
 
-  // Activation is blocked by this guard rather than the native `disabled`
-  // attribute, so the trigger keeps `aria-disabled` semantics and stays
-  // discoverable. A native `disabled` button would silently swallow events
-  // (e.g. a wrapping tooltip's hover) — the system-wide disabled convention.
   // With an `animatedLayout` handle, the content's size change animates: the
   // content after this Collapsible, up to the handle's container, glides, and
   // the revealed content plays its own entrance on the same timing
   // (`architecture:react-component-runtime` INV12). Without one, nothing
   // changes.
   const contentRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const layoutChange = useMemo(
     () => reportLayoutChange(animatedLayout, contentRef),
     [animatedLayout],
   );
+  // Before a change commits: the chevron (the trigger's Icon, its `icon`
+  // theming target) turns on the glide's motion, and the content after this
+  // Collapsible is measured where it is now.
+  const measureChange = useCallback(() => {
+    applyLayoutChangeTransition(
+      animatedLayout,
+      triggerRef.current?.querySelector<HTMLElement>(':scope > .astryx-icon') ??
+        null,
+    );
+    layoutChange.measureBefore();
+  }, [animatedLayout, layoutChange]);
+  // In a group, a toggle can change other items too (opening one in single
+  // mode closes the open one): the group measures every item it changes, so
+  // the rows between glide with the rest.
+  const registerLayoutChange = use(
+    CollapsibleGroupContext,
+  )?.registerLayoutChange;
+  useEffect(() => {
+    if (
+      animatedLayout == null ||
+      value == null ||
+      registerLayoutChange == null
+    ) {
+      return undefined;
+    }
+    return registerLayoutChange(value, measureChange);
+  }, [animatedLayout, value, registerLayoutChange, measureChange]);
   const wasOpenRef = useRef(isOpen);
   useLayoutEffect(() => {
     if (wasOpenRef.current === isOpen) {
       return;
     }
     wasOpenRef.current = isOpen;
-    layoutChange.animate();
-    if (isOpen && contentRef.current != null) {
+    // A change nothing measured (an owner set `isOpen` directly) lands at
+    // once, entrance included, so the content and what follows stay in step.
+    if (layoutChange.animate() && isOpen && contentRef.current != null) {
       playLayoutChange(animatedLayout, contentRef.current);
     }
   }, [isOpen, layoutChange, animatedLayout]);
 
-  const handleToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
+  // Activation is blocked by this guard rather than the native `disabled`
+  // attribute, so the trigger keeps `aria-disabled` semantics and stays
+  // discoverable. A native `disabled` button would silently swallow events
+  // (e.g. a wrapping tooltip's hover) — the system-wide disabled convention.
+  const handleToggle = () => {
     if (isDisabled) {
       return;
     }
-    // Before the change commits: the chevron turns on the glide's motion,
-    // and the content after this Collapsible is measured where it is now.
-    // The chevron is the trigger's Icon (its `icon` theming target).
-    applyLayoutChangeTransition(
-      animatedLayout,
-      event.currentTarget.querySelector<HTMLElement>(':scope > .astryx-icon'),
-    );
-    layoutChange.measureBefore();
+    measureChange();
     toggle();
   };
 
@@ -449,6 +476,7 @@ export function Collapsible({
       )}
       {...props}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={handleToggle}
         aria-disabled={isDisabled || undefined}

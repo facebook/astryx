@@ -87,7 +87,7 @@ window.motionOf = selector => {
     const frames = effect.getKeyframes();
     const timing = effect.getTiming();
     return {
-      first: frames[0].transform ?? null,
+      first: frames[0].translate ?? frames[0].transform ?? null,
       opacity: frames[0].opacity == null ? null : String(frames[0].opacity),
       composite: effect.composite,
       duration: Number(timing.duration),
@@ -139,10 +139,11 @@ async function settle(page: Page) {
 
 /** The translate an animation starts from, in px. */
 function startOffset(first: string | null): {x: number; y: number} {
-  const match = /translate\(([-\d.e]+)px,\s*([-\d.e]+)px\)/.exec(first ?? '');
+  // The browser shortens `-80px 0px` to `-80px`.
+  const match = /^(-?[\d.e+-]+)px(?:\s+(-?[\d.e+-]+)px)?/.exec(first ?? '');
   return match == null
     ? {x: 0, y: 0}
-    : {x: Number(match[1]), y: Number(match[2])};
+    : {x: Number(match[1]), y: match[2] == null ? 0 : Number(match[2])};
 }
 
 test.describe('spec:AST-105 Coverage', () => {
@@ -168,7 +169,7 @@ test.describe('spec:AST-105 Coverage', () => {
       const [motion] = await page.evaluate(s => window.motionOf(s), id);
       expect(motion, id).toBeDefined();
       expect(startOffset(motion.first).y, id).toBeCloseTo(-80, 0);
-      expect(motion.composite, id).toBe('add');
+      expect(motion.composite, id).toBe('replace');
     }
     expect(await page.evaluate(() => window.motionOf('#outside'))).toEqual([]);
   });
@@ -356,7 +357,7 @@ test.describe('spec:AST-105 Coverage', () => {
     expect(await page.evaluate(() => window.motionOf('#pop'))).toEqual([]);
   });
 
-  test('an element already moving keeps its motion and adds the new move', async ({
+  test('an element already moving keeps its motion and adds the new move, retargeted from where it is on screen', async ({
     page,
   }) => {
     await open(
@@ -366,13 +367,36 @@ test.describe('spec:AST-105 Coverage', () => {
     );
     await change(page);
     await page.waitForTimeout(100);
-    await change(page, {
-      changed: '#second',
-      mutate: `document.querySelector('#second').classList.add('open')`,
-    });
+    // Where the row is on screen mid-glide, and where it is the frame after a
+    // second change: no jump, and one glide (the first is retargeted).
+    const onScreen = async () =>
+      page.evaluate(
+        () => document.querySelector('#after')?.getBoundingClientRect().top,
+      );
+    const [first] = await page.evaluate(() => window.motionOf('#after'));
+    const atChange = await page.evaluate(async mutate => {
+      const before = document
+        .querySelector('#after')
+        ?.getBoundingClientRect().top;
+      await window.change({changed: '#second', mutate});
+      const after = document
+        .querySelector('#after')
+        ?.getBoundingClientRect().top;
+      return {before, after};
+    }, `document.querySelector('#second').classList.add('open')`);
     const motions = await page.evaluate(() => window.motionOf('#after'));
-    expect(motions).toHaveLength(2);
-    expect(motions.every(m => m.composite === 'add')).toBe(true);
+    expect(motions).toHaveLength(1);
+    expect(motions[0].composite).toBe('replace');
+    expect(motions[0].startTime).not.toBe(first.startTime);
+    expect(atChange.after ?? 0).toBeCloseTo(atChange.before ?? 0, 0);
+    // It still lands where layout put it: 160 px below where it began.
+    await settle(page);
+    expect(await onScreen()).toBeCloseTo(
+      (await page.evaluate(
+        () => document.querySelector('#area')?.getBoundingClientRect().top ?? 0,
+      )) + 160,
+      0,
+    );
   });
 
   test('nested areas: motion stops at the inner area; an inner area moves as one unit', async ({
@@ -402,6 +426,80 @@ test.describe('spec:AST-105 Coverage', () => {
     expect(
       (await page.evaluate(() => window.motionOf('#innerAfter'))).length,
     ).toBe(0);
+  });
+});
+
+test.describe('architecture:react-component-runtime INV12', () => {
+  test('a 10-level by 50-sibling tree on a throttled phone: one move per follower, none inside a subtree, none past the area, no height', async ({
+    page,
+    browserName,
+  }) => {
+    if (browserName === 'chromium') {
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send('Emulation.setCPUThrottlingRate', {rate: 4});
+    }
+    // Level k holds the path to the changed element plus 49 rows, each with
+    // a child of its own (a subtree the walk must not enter).
+    const level = (depth: number): string => {
+      const rows = Array.from(
+        {length: 49},
+        () =>
+          `<div class="sib" data-depth="${depth}" style="height: 2px"><i class="inner" style="display: block; height: 1px"></i></div>`,
+      ).join('');
+      const inner =
+        depth === 9
+          ? '<div id="g1" class="grow"></div><div id="g2" class="grow"></div>'
+          : level(depth + 1);
+      return `<div class="lvl">${inner}</div>${rows}`;
+    };
+    await open(
+      page,
+      `<div id="area" class="area" style="height: 700px">${level(0)}</div>
+       <div id="outside" class="row"></div>`,
+    );
+    // Two changes in one frame.
+    await page.evaluate(async () => {
+      const area = document.querySelector('#area');
+      const layout = window.AnimatedLayout.createAnimatedLayout(() => area);
+      const one = window.AnimatedLayout.reportLayoutChange(layout, () =>
+        document.querySelector('#g1'),
+      );
+      const two = window.AnimatedLayout.reportLayoutChange(layout, () =>
+        document.querySelector('#g2'),
+      );
+      one.measureBefore();
+      two.measureBefore();
+      document.querySelector('#g1')?.classList.add('open');
+      document.querySelector('#g2')?.classList.add('open');
+      one.animate();
+      two.animate();
+      await new Promise<void>(resolve => {
+        queueMicrotask(resolve);
+      });
+    });
+    const report = await page.evaluate(() => {
+      const animations = document.getAnimations();
+      const targets = animations.map(
+        a => (a.effect as KeyframeEffect).target as Element,
+      );
+      return {
+        total: animations.length,
+        distinct: new Set(targets).size,
+        intoSubtree: targets.filter(t => t.classList.contains('inner')).length,
+        pastArea: targets.filter(t => t.id === 'outside').length,
+        animatesHeight: animations.some(a =>
+          (a.effect as KeyframeEffect)
+            .getKeyframes()
+            .some(f => 'height' in f || 'top' in f),
+        ),
+        followers: targets.filter(t => t.classList.contains('sib')).length,
+      };
+    });
+    expect(report.followers).toBeGreaterThan(0);
+    expect(report.distinct).toBe(report.total);
+    expect(report.intoSubtree).toBe(0);
+    expect(report.pastArea).toBe(0);
+    expect(report.animatesHeight).toBe(false);
   });
 });
 

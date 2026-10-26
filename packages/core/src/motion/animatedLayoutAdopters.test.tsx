@@ -19,6 +19,7 @@ import {render, renderHook, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useRef, type ReactNode} from 'react';
 import {Collapsible} from '../Collapsible/Collapsible';
+import {CollapsibleGroup} from '../Collapsible/CollapsibleGroup';
 import {TreeList} from '../TreeList/TreeList';
 import type {TreeListItemData} from '../TreeList/TreeListTypes';
 import {
@@ -33,7 +34,7 @@ beforeEach(() => {
   animated = [];
   Element.prototype.animate = function (this: Element) {
     animated.push(this);
-    return {} as Animation;
+    return {cancel() {}, addEventListener() {}} as unknown as Animation;
   };
 });
 
@@ -154,5 +155,88 @@ describe.each([
     expect(
       component.chevron()?.style.getPropertyValue('transition-duration'),
     ).toBe('');
+  });
+});
+
+describe('Collapsible changes another component made (spec:AST-105 FR3)', () => {
+  it('glides the items between when a single-mode group closes one item to open another', async () => {
+    const user = userEvent.setup();
+    render(
+      <Area withHandle>
+        {layout => (
+          <CollapsibleGroup type="single" defaultValue="shipping">
+            <Collapsible
+              value="shipping"
+              trigger="Shipping"
+              animatedLayout={layout}>
+              Shipping details
+            </Collapsible>
+            <Collapsible
+              value="payment"
+              trigger="Payment"
+              animatedLayout={layout}>
+              Payment details
+            </Collapsible>
+            <Collapsible
+              value="warranty"
+              trigger="Warranty"
+              animatedLayout={layout}>
+              Warranty details
+            </Collapsible>
+          </CollapsibleGroup>
+        )}
+      </Area>,
+    );
+    stubGeometry();
+    // The Payment item sits between the one that closes and the one that
+    // opens: it moves up when Shipping closes.
+    const payment = screen
+      .getByRole('button', {name: 'Payment'})
+      .closest<HTMLElement>('.astryx-collapsible');
+    expect(payment).not.toBeNull();
+    let reads = 0;
+    vi.spyOn(
+      payment as HTMLElement,
+      'getBoundingClientRect',
+    ).mockImplementation(() => {
+      reads += 1;
+      return new DOMRect(0, reads === 1 ? 140 : 40, 400, 40);
+    });
+    await user.click(screen.getByRole('button', {name: 'Warranty'}));
+    await flush();
+    expect(animated).toContain(payment);
+  });
+
+  it('lands an owner-set isOpen at once, entrance included', async () => {
+    const {rerender} = render(
+      <Area withHandle>
+        {layout => (
+          <Collapsible trigger="Details" isOpen={false} animatedLayout={layout}>
+            Hidden content
+          </Collapsible>
+        )}
+      </Area>,
+    );
+    stubGeometry();
+    // The content is in view, so an entrance would play if one ran.
+    const contentId = screen
+      .getByRole('button', {name: 'Details'})
+      .getAttribute('aria-controls');
+    const content = document.getElementById(contentId ?? '');
+    expect(content).not.toBeNull();
+    vi.spyOn(content as HTMLElement, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 40, 400, 40),
+    );
+    rerender(
+      <Area withHandle>
+        {layout => (
+          <Collapsible trigger="Details" isOpen animatedLayout={layout}>
+            Hidden content
+          </Collapsible>
+        )}
+      </Area>,
+    );
+    await flush();
+    expect(animated).toEqual([]);
   });
 });

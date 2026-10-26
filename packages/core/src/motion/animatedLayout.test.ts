@@ -24,6 +24,7 @@ interface Played {
   element: Element;
   keyframes: Keyframe[];
   options: KeyframeAnimationOptions;
+  cancel: ReturnType<typeof vi.fn>;
 }
 
 let played: Played[] = [];
@@ -39,12 +40,14 @@ beforeEach(() => {
     keyframes: Keyframe[] | PropertyIndexedKeyframes | null,
     options?: number | KeyframeAnimationOptions,
   ) {
+    const cancel = vi.fn();
     played.push({
       element: this,
       keyframes: keyframes as Keyframe[],
       options: options as KeyframeAnimationOptions,
+      cancel,
     });
-    return {} as Animation;
+    return {cancel, addEventListener() {}} as unknown as Animation;
   };
   window.matchMedia = (query: string) =>
     ({
@@ -99,8 +102,8 @@ function setUp(html: string) {
 }
 
 function translateOf(entry: Played): {x: number; y: number} {
-  const first = String(entry.keyframes[0].transform ?? '');
-  const match = /translate\(([-\d.e]+)px,\s*([-\d.e]+)px\)/.exec(first);
+  const first = String(entry.keyframes[0].translate ?? '');
+  const match = /^(-?[\d.e+-]+)px\s+(-?[\d.e+-]+)px/.exec(first);
   return match == null
     ? {x: 0, y: 0}
     : {x: Number(match[1]), y: Number(match[2])};
@@ -165,17 +168,16 @@ describe('the walk (spec:AST-105 FR3, Coverage)', () => {
       phase,
     );
     const moved = played
-      .filter(p => p.keyframes[0].transform != null)
+      .filter(p => p.keyframes[0].translate != null)
       .map(p => (p.element as HTMLElement).id);
     expect(moved.sort()).toEqual(['s0', 's1', 's2']);
-    for (const entry of played.filter(p => p.keyframes[0].transform != null)) {
+    for (const entry of played.filter(p => p.keyframes[0].translate != null)) {
       expect(translateOf(entry).y).toBeCloseTo(-80);
-      expect(entry.options.composite).toBe('add');
+      // One replace-composited translate, which the compositor runs.
+      expect(entry.options.composite).toBeUndefined();
       expect(entry.options.easing).toBe('linear');
       // Lands where layout put it.
-      expect(String(entry.keyframes.at(-1)?.transform)).toBe(
-        'translate(0px, 0px)',
-      );
+      expect(String(entry.keyframes.at(-1)?.translate)).toBe('0px 0px');
     }
   });
 
@@ -201,7 +203,7 @@ describe('the walk (spec:AST-105 FR3, Coverage)', () => {
       phase,
     );
     const moved = played
-      .filter(p => p.keyframes[0].transform != null)
+      .filter(p => p.keyframes[0].translate != null)
       .map(p => (p.element as HTMLElement).id);
     expect(moved.sort()).toEqual(['c1', 'c2']);
   });
@@ -225,7 +227,7 @@ describe('the walk (spec:AST-105 FR3, Coverage)', () => {
       changed,
       phase,
     );
-    expect(played.filter(p => p.keyframes[0].transform != null)).toEqual([]);
+    expect(played.filter(p => p.keyframes[0].translate != null)).toEqual([]);
   });
 
   it('moves each element once for two changes in one frame, by the total', async () => {
@@ -320,7 +322,7 @@ describe('one shared motion (spec:AST-105 FR4)', () => {
     await changeOnce();
     expect(played).toHaveLength(2);
     for (const entry of played) {
-      expect(entry.keyframes[0].transform).toBeUndefined();
+      expect(entry.keyframes[0].translate).toBeUndefined();
       expect(entry.keyframes[0].opacity).toBe(0);
       expect(Number(entry.options.duration)).toBeLessThanOrEqual(200);
     }
@@ -332,22 +334,83 @@ describe('one shared motion (spec:AST-105 FR4)', () => {
     expect(played).toEqual([]);
   });
 
-  it('falls back when an engine rejects composite', async () => {
-    const accept = Element.prototype.animate;
-    Element.prototype.animate = function (
-      this: Element,
-      keyframes: Keyframe[] | PropertyIndexedKeyframes | null,
-      options?: number | KeyframeAnimationOptions,
-    ) {
-      if (typeof options === 'object' && options.composite != null) {
-        throw new TypeError('composite unsupported');
-      }
-      return accept.call(this, keyframes, options);
-    };
-    await changeOnce();
-    const follower = played.find(p => (p.element as HTMLElement).id === 'a');
-    expect(follower).toBeDefined();
-    expect(follower?.options.composite).toBeUndefined();
+  it('retargets an element already gliding: one glide, started from where it is on screen', async () => {
+    const {area, changed, phase} = setUp(
+      '<div id="area"><div id="changed"></div><div id="a"></div></div>',
+    );
+    const a = document.getElementById('a') as HTMLElement;
+    let top = 0;
+    vi.spyOn(a, 'getBoundingClientRect').mockImplementation(
+      () => new DOMRect(0, top, 400, 40),
+    );
+    const layout = createAnimatedLayout(() => area);
+    // First change: the row's layout moves 0 -> 80.
+    let report = reportLayoutChange(layout, () => changed);
+    report.measureBefore();
+    top = 80;
+    report.animate();
+    await flushMicrotasks();
+    const first = played.find(p => p.element === a);
+    expect(translateOf(first as Played).y).toBeCloseTo(-80);
+    // Mid-glide it shows at 50 on screen; the second change moves its layout
+    // 80 -> 120.
+    played = [];
+    phase.current = 'before';
+    top = 50;
+    report = reportLayoutChange(layout, () => changed);
+    report.measureBefore();
+    top = 120;
+    report.animate();
+    await flushMicrotasks();
+    expect(first?.cancel).toHaveBeenCalledTimes(1);
+    const second = played.filter(p => p.element === a);
+    expect(second).toHaveLength(1);
+    // From 50 on screen to 120: it starts 70 px above its new place.
+    expect(translateOf(second[0]).y).toBeCloseTo(-70);
+  });
+
+  it('drops a measurement no commit claims by the next frame', async () => {
+    const {area, changed, phase} = setUp(
+      '<div id="area"><div id="changed"></div><div id="a"></div></div>',
+    );
+    const a = document.getElementById('a') as HTMLElement;
+    let top = 200;
+    vi.spyOn(a, 'getBoundingClientRect').mockImplementation(
+      () => new DOMRect(0, top, 400, 40),
+    );
+    const layout = createAnimatedLayout(() => area);
+    // A refused toggle: measured, never committed.
+    reportLayoutChange(layout, () => changed).measureBefore();
+    await new Promise(resolve => {
+      requestAnimationFrame(resolve);
+    });
+    await new Promise(resolve => {
+      requestAnimationFrame(resolve);
+    });
+    // The area scrolls 150 px; then a real change moves the row 80 px.
+    top = 50;
+    phase.current = 'before';
+    const report = reportLayoutChange(layout, () => changed);
+    report.measureBefore();
+    top = 130;
+    expect(report.animate()).toBe(true);
+    await flushMicrotasks();
+    const moves = played.filter(p => p.element === a);
+    expect(moves).toHaveLength(1);
+    expect(translateOf(moves[0]).y).toBeCloseTo(-80);
+  });
+
+  it('reports an unmeasured change, which moves nothing', async () => {
+    const {area, changed} = setUp(
+      '<div id="area"><div id="changed"></div><div id="a"></div></div>',
+    );
+    const report = reportLayoutChange(
+      createAnimatedLayout(() => area),
+      () => changed,
+    );
+    expect(report.animate()).toBe(false);
+    await flushMicrotasks();
+    expect(played).toEqual([]);
   });
 });
 

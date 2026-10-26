@@ -27,10 +27,12 @@
  *   visible part, before or after. Absolute, fixed, top-layer, hidden and
  *   zero-size elements are skipped (an absolute child rides with its moving
  *   parent); a stuck sticky element does not change rectangle, so it stays.
- * - The move is a compositor-only translate from the old place to the new
- *   one, sampled from `springs.settle` into linear keyframes and added to any
- *   motion already running (`composite: 'add'`), corrected for a scaled
- *   ancestor. Nothing animates height, and nothing scrolls the area.
+ * - The move is a compositor-only `translate` (replace composition) from the
+ *   old place to the new one, sampled from `springs.settle` into linear
+ *   keyframes and corrected for a scaled ancestor. An element already gliding
+ *   is retargeted: its glide stops and the new one starts from where it was
+ *   on screen. Nothing animates height, and nothing scrolls the area.
+ * - A measurement no commit claims by the next frame is dropped.
  * - The changed element plays its own entrance on the same spring, started in
  *   the same frame (`playLayoutChange`), and a disclosure's indicator turns
  *   on it too (`applyLayoutChangeTransition`).
@@ -160,15 +162,13 @@ function round(value: number): number {
 }
 
 // ---------------------------------------------------------------------------
-// Feature tests: each option is tried through `element.animate` itself, so an
-// engine that rejects one falls back for that call instead of throwing.
+// Playing
 // ---------------------------------------------------------------------------
 
-let supportsComposite: boolean | null = null;
-
 /**
- * Play `keyframes` on `element`, dropping `composite` and then the easing when
- * the engine rejects them. Returns null when Web Animations is missing.
+ * Play `keyframes` on `element`. Every option here (linear easing over sampled
+ * keyframes, replace composition) is one any Web Animations engine takes, so
+ * a failure means no Web Animations at all: the change then lands at once.
  */
 function safeAnimate(
   element: Element,
@@ -178,27 +178,29 @@ function safeAnimate(
   if (typeof (element as HTMLElement).animate !== 'function') {
     return null;
   }
-  const attempts: KeyframeAnimationOptions[] = [];
-  if (options.composite != null && supportsComposite !== false) {
-    attempts.push(options);
+  try {
+    return (element as HTMLElement).animate(keyframes, options);
+  } catch {
+    return null;
   }
-  const {composite: _composite, ...withoutComposite} = options;
-  attempts.push(withoutComposite);
-  attempts.push({...withoutComposite, easing: 'ease-out'});
-  for (const attempt of attempts) {
-    try {
-      const animation = (element as HTMLElement).animate(keyframes, attempt);
-      if (attempt.composite != null) {
-        supportsComposite = true;
-      }
-      return animation;
-    } catch {
-      if (attempt.composite != null) {
-        supportsComposite = false;
-      }
-    }
+}
+
+/** The glide each element is playing, so a new change can retarget it. */
+const glides = new WeakMap<Element, Animation>();
+
+/** A computed `translate` value in px (`none` is 0 0); null for other units. */
+function parseTranslate(value: string): {x: number; y: number} | null {
+  const text = value.trim();
+  if (text === '' || text === 'none') {
+    return {x: 0, y: 0};
   }
-  return null;
+  const match =
+    /^(-?[\d.e+-]+)px(?:\s+(-?[\d.e+-]+)px)?(?:\s+(-?[\d.e+-]+)px)?$/.exec(
+      text,
+    );
+  return match == null
+    ? null
+    : {x: Number(match[1]), y: match[2] == null ? 0 : Number(match[2])};
 }
 
 // ---------------------------------------------------------------------------
@@ -319,8 +321,28 @@ const batches = new Map<Element, Batch>();
 function batchFor(area: Element): Batch {
   let batch = batches.get(area);
   if (batch == null) {
-    batch = {area, changed: new Set(), before: new Map(), scheduled: false};
-    batches.set(area, batch);
+    const created: Batch = {
+      area,
+      changed: new Set(),
+      before: new Map(),
+      scheduled: false,
+    };
+    batches.set(area, created);
+    // A measurement no commit claims by the next frame (a controlled owner
+    // refused the change) is dropped, so it never moves rows later and holds
+    // no elements.
+    const view = area.ownerDocument.defaultView;
+    const drop = () => {
+      if (batches.get(area) === created && !created.scheduled) {
+        batches.delete(area);
+      }
+    };
+    if (typeof view?.requestAnimationFrame === 'function') {
+      view.requestAnimationFrame(drop);
+    } else {
+      setTimeout(drop, 16);
+    }
+    batch = created;
   }
   return batch;
 }
@@ -388,12 +410,18 @@ function flush(batch: Batch): void {
     return;
   }
   const visible = visibleRect(batch.area);
+  const view = batch.area.ownerDocument.defaultView;
   for (const element of followers) {
     const before = batch.before.get(element);
     if (before == null || batch.changed.has(element)) {
       // Added by the change, or itself a changed element: it plays its own.
       continue;
     }
+    // An element already gliding is retargeted: its running glide stops, so
+    // the rectangle below is its new layout place, and the new glide starts
+    // from where it was on screen when the change was measured (`before`).
+    glides.get(element)?.cancel();
+    glides.delete(element);
     const after = element.getBoundingClientRect();
     const dx = before.left - after.left;
     const dy = before.top - after.top;
@@ -411,20 +439,33 @@ function flush(batch: Batch): void {
       });
       continue;
     }
+    // The element's own `translate`, which the glide plays on top of; a
+    // value in other units cannot be offset in px, so it lands at once.
+    const own = parseTranslate(
+      view?.getComputedStyle(element).getPropertyValue('translate') ?? '',
+    );
+    if (own == null) {
+      continue;
+    }
     const scale = scaleOf(element, after);
     const x = dx / scale.x;
     const y = dy / scale.y;
-    safeAnimate(
+    // One replace-composited `translate`: the compositor runs it (INV12).
+    const glide = safeAnimate(
       element,
       sampleKeyframes(motion.progress, remaining => ({
-        transform: `translate(${x * remaining}px, ${y * remaining}px)`,
+        translate: `${own.x + x * remaining}px ${own.y + y * remaining}px`,
       })),
-      {
-        duration: motion.progress.durationMs,
-        easing: 'linear',
-        composite: 'add',
-      },
+      {duration: motion.progress.durationMs, easing: 'linear'},
     );
+    if (glide != null) {
+      glides.set(element, glide);
+      glide.addEventListener?.('finish', () => {
+        if (glides.get(element) === glide) {
+          glides.delete(element);
+        }
+      });
+    }
   }
 }
 
@@ -437,8 +478,12 @@ function resolve(target: Target): Element | null {
 export interface LayoutChange {
   /** Before the change commits (in the event handler that causes it). */
   measureBefore(): void;
-  /** After it commits (a layout effect); a no-op without `measureBefore`. */
-  animate(): void;
+  /**
+   * After it commits (a layout effect). Returns whether the change was
+   * measured: an unmeasured change (an owner set the state directly) moves
+   * nothing, and the component plays no entrance for it either.
+   */
+  animate(): boolean;
 }
 
 /**
@@ -473,16 +518,19 @@ export function reportLayoutChange(
     animate() {
       const element = resolve(target);
       if (element == null || handle == null) {
-        return;
+        return false;
       }
       const area = areaOf(handle, element);
       const batch = area == null ? undefined : batches.get(area);
-      if (batch == null || batch.scheduled) {
-        return;
+      if (batch == null || !batch.changed.has(element)) {
+        return false;
       }
-      batch.scheduled = true;
-      // After every layout effect of this commit, before paint.
-      queueMicrotask(() => flush(batch));
+      if (!batch.scheduled) {
+        batch.scheduled = true;
+        // After every layout effect of this commit, before paint.
+        queueMicrotask(() => flush(batch));
+      }
+      return true;
     },
   };
 }

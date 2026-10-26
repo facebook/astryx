@@ -311,7 +311,9 @@ export function TreeList({
       return;
     }
     pendingLayoutRef.current = null;
-    pending.change.animate();
+    if (!pending.change.animate()) {
+      return;
+    }
     const group = treeElementRef.current?.querySelector<HTMLElement>(
       `[data-tree-id="${CSS.escape(pending.id)}"] > [role="group"]`,
     );
