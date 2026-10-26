@@ -26,13 +26,7 @@ export {
   subscribeScrollLock,
 } from '../hooks/rootScrollStyles';
 export type {RootScrollStyle} from '../hooks/rootScrollStyles';
-export type {
-  AttachOptions,
-  DelegatedConsumerType,
-  GestureHostOptions,
-} from './GestureHost';
-export {installPressAttribute, usePressAttribute} from './delegatedPress';
-export type {PressAttributeOptions} from './delegatedPress';
+export type {AttachOptions, GestureHostOptions} from './GestureHost';
 export {
   GestureRecognizer,
   isActive,
@@ -62,8 +56,6 @@ export type {
 } from './PanGestureRecognizer';
 export {PinchGestureRecognizer} from './PinchGestureRecognizer';
 export type {PinchGestureRecognizerOptions} from './PinchGestureRecognizer';
-export {paintPress, readPressPaint} from './pressPaint';
-export type {PaintPressOptions, PressPaint} from './pressPaint';
 export {PRESS_PROFILES, PressTracker} from './PressTracker';
 export type {
   ControlEvent,
