@@ -78,9 +78,7 @@ window.change = async ({changed, mutate, area = '#area', handle = true}) => {
   new Function(mutate)();
   report.animate();
   AnimatedLayout.playLayoutChange(layout, target);
-  await new Promise<void>(resolve => {
-        queueMicrotask(resolve);
-      });
+  await new Promise(resolve => queueMicrotask(resolve));
 };
 window.motionOf = selector => {
   const element = document.querySelector(selector);
@@ -128,6 +126,15 @@ async function change(
     mutate: OPEN_GROW,
     ...options,
   });
+}
+
+/** Until every animation on the page has finished. */
+async function settle(page: Page) {
+  await expect
+    .poll(async () => page.evaluate(() => document.getAnimations().length), {
+      timeout: 5000,
+    })
+    .toBe(0);
 }
 
 /** The translate an animation starts from, in px. */
@@ -311,6 +318,7 @@ test.describe('spec:AST-105 Coverage', () => {
     // Far below the fold before and after.
     expect(await page.evaluate(() => window.motionOf('#r39'))).toEqual([]);
     // A change above the fold, out of sight: the changed element plays nothing.
+    await settle(page);
     await page.evaluate(() => {
       (document.querySelector('#area') as HTMLElement).scrollTop = 1200;
     });
@@ -383,7 +391,7 @@ test.describe('spec:AST-105 Coverage', () => {
     expect(await page.evaluate(() => window.motionOf('#outerAfter'))).toEqual(
       [],
     );
-    await page.waitForTimeout(700);
+    await settle(page);
     await change(page, {
       changed: '#outerGrow',
       mutate: `document.querySelector('#outerGrow').classList.add('open')`,
@@ -442,22 +450,33 @@ test.describe('spec:AST-105 FR2–FR4', () => {
   });
 
   test('the glide never scrolls the area (FR3)', async ({page}) => {
-    await open(page, PAGE);
-    await page.evaluate(() => {
-      (document.querySelector('#area') as HTMLElement).scrollTop = 40;
-    });
-    const scrolls = await page.evaluate(async (mutate: string) => {
-      const area = document.querySelector('#area') as HTMLElement;
-      const seen: number[] = [];
-      area.addEventListener('scroll', () => seen.push(area.scrollTop));
-      await window.change({changed: '#grow', mutate});
-      await new Promise(resolve => {
-        setTimeout(resolve, 700);
-      });
-      return {seen, top: area.scrollTop};
-    }, OPEN_GROW);
-    expect(scrolls.seen).toEqual([]);
-    expect(scrolls.top).toBe(40);
+    // The same change with and without a handle, from the same scroll
+    // position: the area's scroll (the browser's own scroll anchoring
+    // included) is identical, frame by frame, so the glide adds none.
+    const scrollsOf = async (handle: boolean) => {
+      await open(page, PAGE);
+      return page.evaluate(
+        async ({mutate, withHandle}) => {
+          const area = document.querySelector('#area') as HTMLElement;
+          area.scrollTop = 40;
+          const frame = async () =>
+            new Promise(resolve => requestAnimationFrame(resolve));
+          await frame();
+          await frame();
+          await window.change({changed: '#grow', mutate, handle: withHandle});
+          const tops: number[] = [];
+          for (let i = 0; i < 40; i++) {
+            tops.push(area.scrollTop);
+            await frame();
+          }
+          return tops;
+        },
+        {mutate: OPEN_GROW, withHandle: handle},
+      );
+    };
+    const without = await scrollsOf(false);
+    const withHandle = await scrollsOf(true);
+    expect(withHandle).toEqual(without);
   });
 
   test('the changed element and its followers start on one frame on springs.settle (FR4)', async ({
