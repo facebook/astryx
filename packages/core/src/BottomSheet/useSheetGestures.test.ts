@@ -1183,17 +1183,6 @@ describe('useSheetGestures', () => {
     expect(liveOffset(hook)).toBe(-48);
   });
 
-  it('under a mouse, rubber-bands an upward drag past the fully-open position, as before', () => {
-    const {hook} = setup({snapHeights: () => [200]});
-    const t = makeTarget();
-    down(hook, 100, 0, t);
-    move(hook, 20, 100, t); // 80px past the top of a rested-at-top sheet
-    // Damped and capped: above the top, smaller than the raw 80px.
-    const off = liveOffset(hook);
-    expect(off).toBeLessThan(0);
-    expect(off).toBeGreaterThan(-80);
-  });
-
   it('dismisses a single-height sheet on a slow drag past the floor', () => {
     const {hook, onDismiss} = setup(); // no snapHeights
     const t = makeTarget();

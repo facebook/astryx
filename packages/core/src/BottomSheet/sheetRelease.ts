@@ -358,7 +358,11 @@ export interface SheetReleaseContext {
    * UIKit's rule a release moving back toward it cancels (FR37).
    */
   readonly startOffset: number;
-  /** Today's estimator: the drag's direction, travel and last-100 ms speed. */
+  /**
+   * Today's inputs: the drag's direction and travel, and the velocity
+   * tracker's release velocity at the lift, the same estimate as
+   * `input.velocity` (`spec:AST-100` FR2: none reads another estimate).
+   */
   readonly today: {direction: number; travel: number; velocity: number};
 }
 
