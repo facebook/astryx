@@ -198,10 +198,22 @@ describe('stepFlip (UIKit, 1 pt steps)', () => {
 });
 
 describe('commitOnRelease (UIKit)', () => {
-  it('toggles when nothing flipped: a tap, a hold, a slide off, a 15 pt drag', () => {
+  it('toggles when nothing flipped and the finger lifts inside: a tap, a hold, a 15 pt drag', () => {
     expect(commitOnRelease(null, false)).toBe(true);
     expect(commitOnRelease(null, true)).toBe(false);
     expect(commitOnRelease(drag(false, [15]).at(-1)!, false)).toBe(true);
+  });
+
+  it('leaves the value alone for a press slid off and lifted outside, on or off (WCAG 2.5.2)', () => {
+    expect(commitOnRelease(null, false, false)).toBe(false);
+    expect(commitOnRelease(null, true, false)).toBe(true);
+    expect(commitOnRelease(drag(false, [15]).at(-1)!, false, false)).toBe(
+      false,
+    );
+    // A drag that flipped still commits its side, wherever it lifts.
+    expect(
+      commitOnRelease(drag(false, [26, 27, 30]).at(-1)!, false, false),
+    ).toBe(true);
   });
 
   it('commits the side a drag shows once it flipped: a 30 pt drag stays on', () => {

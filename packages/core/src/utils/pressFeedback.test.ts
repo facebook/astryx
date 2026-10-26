@@ -32,6 +32,7 @@ import {
   PRESS_PROFILES,
   PRESSABLE_ATTRIBUTE,
   PRESSED_ATTRIBUTE,
+  PRESS_HOLDS_DRAG_ATTRIBUTE,
   pressableProps,
   subscribePressPaint,
 } from './pressFeedback';
@@ -267,6 +268,20 @@ describe('the press reaches the surface the finger landed on', () => {
     expect(pressedRow()).toBe(-1);
     vi.advanceTimersByTime(1);
     expect(pressedRow()).toBe(1);
+  });
+
+  it('keeps the press painted through a drag on a surface that holds its drag, and still ends it on a cancel', () => {
+    const row = rows[0];
+    row.setAttribute(PRESS_HOLDS_DRAG_ATTRIBUTE, '');
+    press(row, 'pointerdown', 10, 10);
+    press(row, 'pointermove', 40, 10);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    expect(row.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
+    press(row, 'pointermove', 80, 10);
+    expect(row.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
+    press(row, 'pointercancel', 80, 10);
+    expect(row.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    row.removeAttribute(PRESS_HOLDS_DRAG_ATTRIBUTE);
   });
 
   it('paints the innermost surface when they nest', () => {
