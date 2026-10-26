@@ -107,7 +107,7 @@ function fingerScroll(target: Element) {
 function isPromoted(layer: Element | null): boolean {
   return (
     (layer as HTMLElement | null)?.style.getPropertyValue(
-      '--astryx-scroll-edge-will-change',
+      '--_scroll-edge-will-change',
     ) === 'opacity'
   );
 }
@@ -367,7 +367,7 @@ describe('AppShell scroll edge effect follows the constants table', () => {
 
   it('the layer’s will-change follows the hook’s promotion property', () => {
     expect(styleBlock('scrollEdge')).toContain(
-      "willChange: 'var(--astryx-scroll-edge-will-change, auto)',",
+      "willChange: 'var(--_scroll-edge-will-change, auto)',",
     );
   });
 

@@ -19,6 +19,7 @@
 import {act, render, screen} from '@testing-library/react';
 import {useRef} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {coarsePrimaryPointer} from '../gestures/__tests__/harness';
 import {bars, registerBarsTable} from '../motion/uikit/bars';
 import {useScrollEdgeEffect} from './useScrollEdgeEffect';
 
@@ -290,34 +291,63 @@ describe('useScrollEdgeEffect', () => {
     expect(animator.animate).not.toHaveBeenCalled();
   });
 
-  it('in a scroll container, a finger’s landing composites the layer until it lifts', () => {
-    host.isFinger = false;
-    const {getByTestId} = render(<Bar enabled inContainer />);
-    const layer = getByTestId('layer');
-    animator.element = layer;
-    const promotion = () =>
-      layer.style.getPropertyValue('--astryx-scroll-edge-will-change');
-    expect(promotion()).toBe('');
-    touch('touchstart', getByTestId('sentinel'));
-    expect(promotion()).toBe('opacity');
-    touch('touchend', getByTestId('sentinel'));
-    expect(promotion()).toBe('');
+  // The shared gesture host listens only where the primary pointer is
+  // coarse (spec:AST-094 FR19, FR24); jsdom has no matchMedia.
+  describe('under a coarse primary pointer', () => {
+    let restorePointer: () => void = () => {};
+    beforeEach(() => {
+      restorePointer = coarsePrimaryPointer();
+    });
+    afterEach(() => {
+      restorePointer();
+    });
+
+    it('in a scroll container, a finger’s landing composites the layer until it lifts', () => {
+      host.isFinger = false;
+      const {getByTestId} = render(<Bar enabled inContainer />);
+      const layer = getByTestId('layer');
+      animator.element = layer;
+      const promotion = () =>
+        layer.style.getPropertyValue('--_scroll-edge-will-change');
+      expect(promotion()).toBe('');
+      touch('touchstart', getByTestId('sentinel'));
+      expect(promotion()).toBe('opacity');
+      touch('touchend', getByTestId('sentinel'));
+      expect(promotion()).toBe('');
+    });
+
+    it('keeps the layer composited through the finger’s momentum, until its scroll ends', async () => {
+      const {getByTestId} = render(<Bar enabled inContainer />);
+      const layer = getByTestId('layer');
+      animator.element = layer;
+      const promotion = () =>
+        layer.style.getPropertyValue('--_scroll-edge-will-change');
+      touch('touchstart', getByTestId('sentinel'));
+      // Lifted while its scroll still moves (useFingerScroll still reads it).
+      touch('touchend', getByTestId('sentinel'));
+      expect(promotion()).toBe('opacity');
+      host.isFinger = false;
+      document.dispatchEvent(new Event('scrollend'));
+      await Promise.resolve();
+      expect(promotion()).toBe('');
+    });
   });
 
-  it('keeps the layer composited through the finger’s momentum, until its scroll ends', async () => {
-    const {getByTestId} = render(<Bar enabled inContainer />);
-    const layer = getByTestId('layer');
-    animator.element = layer;
-    const promotion = () =>
-      layer.style.getPropertyValue('--astryx-scroll-edge-will-change');
-    touch('touchstart', getByTestId('sentinel'));
-    // Lifted while its scroll still moves (useFingerScroll still reads it).
-    touch('touchend', getByTestId('sentinel'));
-    expect(promotion()).toBe('opacity');
-    host.isFinger = false;
-    document.dispatchEvent(new Event('scrollend'));
-    await Promise.resolve();
-    expect(promotion()).toBe('');
+  it('with a mouse a finger never composites the layer', () => {
+    pointer.isTouch = false;
+    const restorePointer = coarsePrimaryPointer();
+    try {
+      const {getByTestId} = render(<Bar enabled inContainer />);
+      const layer = getByTestId('layer');
+      animator.element = layer;
+      touch('touchstart', getByTestId('sentinel'));
+      expect(layer.style.getPropertyValue('--_scroll-edge-will-change')).toBe(
+        '',
+      );
+      touch('touchend', getByTestId('sentinel'));
+    } finally {
+      restorePointer();
+    }
   });
 
   it('moves the observer to a replacement sentinel node', () => {

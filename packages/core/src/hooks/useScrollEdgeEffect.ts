@@ -58,8 +58,9 @@
  * until the finger's scroll has ended; the program's switch is written
  * without promotion. The fade is opacity only; under Reduce Motion the
  * animator plays its own cross-fade (design:reduced-motion DR2). The springs
- * are motion roles (`bars.scrollEdgeEffect.appear` / `.disappear`): the
- * animator plays a theme's values for them.
+ * are the bars table's measured `bars.scrollEdgeEffect.appear` and
+ * `.disappear`, internal constants: touch motion stays internal until the
+ * public motion-token set is decided (`spec:AST-094` FR4, DEC-11).
  *
  * SYNC: When modified, update useScrollEdgeEffect.test.tsx and the AppShell
  * styles that size the sentinel (`switchPt`) and the layer (`softExtentPt`).
@@ -76,10 +77,11 @@ import {useTouchPresentation} from '../utils/touchPresentation';
 const NO_SCROLLER: RefObject<Element | null> = {current: null};
 
 /**
- * The custom property the layer's `will-change` reads: `opacity` while a
- * finger works the page (see the file header), unset otherwise.
+ * The private custom property the layer's `will-change` reads: `opacity`
+ * while a finger works the page (see the file header), unset otherwise. Set
+ * inline by this hook only; it is not theme data.
  */
-export const SCROLL_EDGE_LAYER_PROMOTION = '--astryx-scroll-edge-will-change';
+export const SCROLL_EDGE_LAYER_PROMOTION = '--_scroll-edge-will-change';
 
 const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
 
@@ -96,7 +98,7 @@ export interface UseScrollEdgeEffectOptions {
   readonly root?: RefObject<Element | null>;
   /**
    * The fades' springs: a bar's are `bars.scrollEdgeEffect.appear` and
-   * `.disappear`, motion roles of its component's table. The component that
+   * `.disappear`, measured constants of its component's table. The component that
    * animates with a table imports it (motion/uikit/tableImports.test.ts), so
    * the springs and their registration come from it.
    */
@@ -104,7 +106,7 @@ export interface UseScrollEdgeEffectOptions {
     readonly appear: SpringDescription;
     readonly disappear: SpringDescription;
   };
-  /** Registers the springs' motion roles; called before the first fade. */
+  /** Registers the springs' table; called before the first fade. */
   readonly registerSprings: () => void;
 }
 
@@ -173,7 +175,7 @@ export function useScrollEdgeEffect({
     if (!isOn || typeof IntersectionObserver === 'undefined') {
       return;
     }
-    // The springs are motion roles: registered before the first animation.
+    // The springs' table registers before the first animation.
     registerSprings();
     const sentinel = sentinelElementRef.current;
     const doc = sentinel?.ownerDocument ?? document;
