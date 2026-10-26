@@ -41,6 +41,7 @@ import {
   releaseAnimations,
   releaseVelocity,
   sampleCurve,
+  startCompositorTrace,
   startScreencast,
   tap,
   thawTimers,
@@ -272,6 +273,9 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
   test.skip(!driver.scriptedTimestamps, SCRIPTED_RELEASE_SKIP);
   const {script} = flickUp(start);
   const cast = await startScreencast(page);
+  // The compositor's own record of the frames it presents: a frame the
+  // screencast skips under load is not a stall (busyWindowProof).
+  const compositor = await startCompositorTrace(page);
   await driver.play(script);
   const coast = stripAnimationOf(
     await waitForAnimation(strip, {minProgressMs: 16}),
@@ -323,12 +327,13 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
   await page.waitForTimeout(Math.max(0, coast.from + blockFrom - Date.now()));
   const block = await blockMainThread(page, Math.round(blockTo - blockFrom));
   await page.waitForTimeout(150);
+  const presented = await compositor.stop();
   const castFrames = await cast.stop();
   const tracked = await trackMarker(page, castFrames);
   const proof = busyWindowProof(
     tracked,
     {from: block.from, to: Math.min(block.to, coast.to)},
-    {settledWithin: 1},
+    {settledWithin: 1, presented},
   );
   await writeEvidence(
     'busy-main-thread/wheel-coast',
@@ -362,6 +367,8 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
   // The harness's verdict: a new position on at least 90 % of the window's
   // frame intervals, no stall over three of them, a median interval of at
   // most 20 ms; a frozen coast shows one stall the length of the block.
+  // Frames the screencast skipped while the compositor presented them are
+  // recorder skips, not stalls (`presented`, startCompositorTrace).
   expect(
     proof.verdict.pass,
     `${proof.summary}; ${proof.verdict.failures.join('; ')}`,
