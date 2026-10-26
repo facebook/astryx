@@ -285,8 +285,9 @@ configuration) in a UIKit host app; Settings for the built-in check.
 ## Search (UISearchController)
 
 Done (iOS 26.2 simulator, Oct 24 2026; in the search table): the activation
-and cancel clock and curve, the stacked field and its close button, the large
-title's fade, the field scrolling away, the bottom placement's rest above the
+and cancel clock (its measured curve is `timing.curves.move`, in
+`uikit/timing.ts`), the stacked field and its close button, the large title's
+fade, the field scrolling away, the bottom placement's rest above the
 keyboard, the clear button.
 
 | ID    | What                       | App and gesture                                                                                                                | Extract                                                                             | Method | Feeds                                   |

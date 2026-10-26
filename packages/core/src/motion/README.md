@@ -19,7 +19,7 @@ so each keeps its measured value; no shipped component reads the roles yet.
 | `uikit/timing.ts`                                | Non-spring clocks and curves: press highlight, Core Animation's named curves, keyboard, Reduced Motion cross-fade.                                                   |
 | `uikit/navigation.ts`                            | UINavigationController: push velocity, parallax, dimming, transition clock, interactive pop finish rule.                                                             |
 | `uikit/list.ts`                                  | UITableView / UICollectionView list cells: the cell highlight's release clock and curve.                                                                             |
-| `uikit/search.ts`                                | UISearchController: activation clock and curve, the stacked field and close button, the bar's fades, scroll-away, the bottom placement.                              |
+| `uikit/search.ts`                                | UISearchController: activation clock (on `timing.curves.move`), the stacked field and close button, the bar's fades, scroll-away, the bottom placement.              |
 | `uikit/gestures.ts`                              | Gesture recognizer thresholds, the velocity filter and haptic stand-ins, as `{value, unit}` entries (sources in JSDoc).                                              |
 | `uikit/bars.ts`                                  | Bars: when the iOS 26 scroll edge effect under a navigation bar switches on and off, the springs it fades on, and how far its soft edge reaches.                     |
 | `roles.ts`                                       | Motion roles: each spring, duration and curve of a registered table, named by its path, and its CSS variable.                                                        |
@@ -138,9 +138,9 @@ await handle.finished; // true if it ran to the end, false if interrupted
   every `animate` and `play` is replaced and nothing moves, scales or
   springs. On a coarse primary pointer, or for a call started by a touch
   drag's release (`{touchRelease: true}`), it is an opacity-only cross-fade
-  of `timing.reducedMotionCrossFadeMs` (200 ms): an entrance lands and fades
-  in, an exit fades out then lands, an opacity change fades, any other move
-  dips (fade out, land, fade in). Travel lands with a plain style write while
+  of `timing.reducedMotionCrossFadeMs` (200 ms): an entrance from 0 lands and
+  fades in, an exit to 0 fades out then lands, an opacity change fades, any
+  other move dips (fade out, land, fade in). Travel lands with a plain style write while
   the element is transparent, never as an animated transform. On any other
   pointer it completes at once.
   `{crossfadeAs: 'entrance'}` or `'exit'` gives a slide that changes no
@@ -152,7 +152,8 @@ await handle.finished; // true if it ran to the end, false if interrupted
   continues a throw is direct movement (DR2, DEC-2). A curve marked
   `isTransition` (a coast's spring back from past an edge), like a spring a
   component starts on release toward a target it picks, plays through the
-  Reduce Motion policy: a cross-fade on a coarse pointer, at once elsewhere.
+  Reduce Motion policy: a cross-fade on a coarse pointer or after a touch
+  release (`decay(curves, {touchRelease: true})`), at once elsewhere.
 - `animatorFor(element)` returns the one animator for an element, so code
   that animates it from several places (a swipe on x, a removal on y)
   composes in one `translate` track.
