@@ -39,6 +39,7 @@ import {
 } from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {RadioListOrientationContext} from './RadioListOrientationContext';
 
 /**
  * Size of the radio controls, matching CheckboxInput sizes.
@@ -60,11 +61,6 @@ export interface RadioListContextValue {
   isRequired: boolean;
   size: RadioListSize;
   status?: InputStatus;
-  /**
-   * The options' layout: a vertical list's rows share its gap as target
-   * under a coarse pointer. Absent means vertical, RadioList's default.
-   */
-  orientation?: 'vertical' | 'horizontal';
 }
 
 export const RadioListContext = createContext<RadioListContextValue | null>(
@@ -277,7 +273,6 @@ export function RadioList({
       isRequired,
       size,
       status,
-      orientation,
     }),
     [
       name,
@@ -288,7 +283,6 @@ export function RadioList({
       isRequired,
       size,
       status,
-      orientation,
     ],
   );
 
@@ -439,7 +433,11 @@ export function RadioList({
           controlClassName,
           controlStyle,
         )}>
-        <RadioListContext value={contextValue}>{children}</RadioListContext>
+        <RadioListContext value={contextValue}>
+          <RadioListOrientationContext value={orientation}>
+            {children}
+          </RadioListOrientationContext>
+        </RadioListContext>
       </div>
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}

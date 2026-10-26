@@ -7,10 +7,12 @@
  * @output Proofs that on a touch screen a checkbox and a radio option are as
  *   easy to hit as an iOS control (the theme's `--size-touch-target`, 44 pt
  *   by default, Apple's control size): the checkbox's input is at least
- *   44 × 44 px and centred on its box, its row at least 44 px; each radio row
+ *   44 × 44 px and centred on its box, its row at least 44 px; a compact
+ *   CheckboxList's rows are at least 44 px; each radio row
  *   is at least 44 px and the rows touch; a tap at the edge of those targets
- *   picks the option; a theme's value tunes every target; a list whose gap
- *   already gives each option 44 px keeps its spacing; a composer's rows (a
+ *   picks the option; a theme's value tunes every target, and 24px keeps
+ *   the old touch layout; a list whose gap already gives each option 44 px
+ *   keeps its spacing; a composer's rows (a
  *   Markdown task list, a table's selection column, a MultiSelector option)
  *   keep their pitch; a mouse keeps the drawn sizes (the control)
  * @position Real-engine layer of Indicator/touchTarget.stylex.ts; the
@@ -87,6 +89,9 @@ test.describe('selection controls under a finger', () => {
     const {input, box, row} = await checkboxGeometry(page);
     expect(input.width).toBeGreaterThanOrEqual(SIZE);
     expect(input.height).toBeGreaterThanOrEqual(SIZE);
+    // Centred on the box, as the RTL audit's coarse-hit check (D7) holds in
+    // both directions: on the box's inline-start side the target reaches
+    // 10 px past the row (the decision's requirement 5, noted).
     expect(Math.abs(centre(input).x - centre(box).x)).toBeLessThanOrEqual(1);
     expect(Math.abs(centre(input).y - centre(box).y)).toBeLessThanOrEqual(1);
     expect(row.height).toBeGreaterThanOrEqual(SIZE);
@@ -240,6 +245,86 @@ test.describe('selection controls under a finger', () => {
       );
     for (const row of await radioRows(page)) {
       expect(row.height).toBeCloseTo(36, 0);
+    }
+  });
+
+  test('a compact CheckboxList’s rows are at least the touch target under a finger, and a mouse keeps them compact', async ({
+    page,
+    browser,
+  }) => {
+    // A standalone CheckboxList is a touch target whatever its density
+    // (requirement 2 of the target-size decision).
+    const rowHeights = async (target: Page) =>
+      target
+        .locator('#storybook-root li')
+        .evaluateAll(rows =>
+          rows.map(row => row.getBoundingClientRect().height),
+        );
+    await openStory(page, storybook(), 'core-checkboxlist--default', {
+      density: 'compact',
+    });
+    const finger = await rowHeights(page);
+    expect(finger.length).toBeGreaterThan(1);
+    for (const height of finger) {
+      expect(height).toBeGreaterThanOrEqual(SIZE - 0.5);
+    }
+    const context = await browser.newContext({
+      viewport: {width: 1024, height: 768},
+      hasTouch: false,
+      isMobile: false,
+    });
+    try {
+      const mousePage = await context.newPage();
+      await openStory(mousePage, storybook(), 'core-checkboxlist--default', {
+        density: 'compact',
+      });
+      expect(
+        await mousePage.evaluate(() => matchMedia('(pointer: coarse)').matches),
+      ).toBe(false);
+      for (const height of await rowHeights(mousePage)) {
+        expect(height).toBeLessThan(SIZE);
+      }
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('a theme that sets the touch target to 24px keeps the old touch layout', async ({
+    page,
+  }) => {
+    // The escape the changeset names (spec:AST-017 FR3): a labelled checkbox
+    // is back to a 24 px row and target with its box at the row's top, and
+    // a vertical RadioList keeps its 32 px pitch (24 px rows, 8 px gap).
+    const applyOldSize = async () =>
+      page.evaluate(() =>
+        document.documentElement.style.setProperty(
+          '--size-touch-target',
+          '24px',
+        ),
+      );
+    await openStory(page, storybook(), 'core-checkboxinput--default');
+    await applyOldSize();
+    const checkbox = await checkboxGeometry(page);
+    expect(checkbox.input.width).toBeCloseTo(24, 0);
+    expect(checkbox.input.height).toBeCloseTo(24, 0);
+    expect(checkbox.row.height).toBeCloseTo(24, 0);
+    await openStory(page, storybook(), 'core-radiolist--default');
+    await applyOldSize();
+    const centers = await page.getByRole('radio').evaluateAll(inputs =>
+      inputs.map(input => {
+        const circle = input.parentElement?.querySelector(
+          '.astryx-radio-indicator',
+        );
+        if (circle == null) {
+          throw new Error('no radio circle');
+        }
+        const r = circle.getBoundingClientRect();
+        return r.y + r.height / 2;
+      }),
+    );
+    expect(centers.length).toBeGreaterThan(2);
+    for (let i = 1; i < centers.length; i++) {
+      expect(centers[i] - centers[i - 1]).toBeCloseTo(32, 0);
     }
   });
 

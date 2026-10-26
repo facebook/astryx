@@ -19,6 +19,7 @@ import * as stylex from '@stylexjs/stylex';
 import {render, screen} from '@testing-library/react';
 import {describe, expect, it} from 'vitest';
 import {CheckboxInput} from '../CheckboxInput';
+import {CheckboxList, CheckboxListItem} from '../CheckboxList';
 import {RadioList, RadioListItem} from '../RadioList';
 import {sizeDefaults} from '../theme/tokens.stylex';
 import {touchTargetStyles} from './touchTarget.stylex';
@@ -106,6 +107,64 @@ describe('CheckboxInput under a finger', () => {
     }
     // A mouse keeps the drawn sizes.
     expect(valueOf(row, 'min-height', null)).toBeUndefined();
+  });
+});
+
+describe('CheckboxList under a finger', () => {
+  function rowOf(name: string): Element {
+    const row = screen.getByRole('checkbox', {name}).closest('li');
+    if (row == null) {
+      throw new Error(`no row for ${name}`);
+    }
+    return row;
+  }
+
+  it('makes a compact list’s rows that toggle at least the touch target tall', () => {
+    // A standalone CheckboxList is a touch target whatever its density
+    // (requirement 2 of the target-size decision).
+    render(
+      <CheckboxList
+        label="Notifications"
+        value={['email']}
+        onChange={() => {}}
+        density="compact">
+        <CheckboxListItem label="Email" value="email" />
+        <CheckboxListItem label="SMS" value="sms" isDisabled />
+      </CheckboxList>,
+    );
+    for (const name of ['Email', 'SMS']) {
+      expect(valueOf(rowOf(name), 'min-height', TOUCH)).toBe(TARGET);
+      expect(valueOf(rowOf(name), 'min-height', null)).toBeUndefined();
+    }
+  });
+
+  it('keeps a read-only compact list at its pitch, as Markdown’s task list', () => {
+    // A read-only row with no action of its own is not a target
+    // (requirement 3: Markdown's task items do not grow).
+    render(
+      <CheckboxList
+        label="Tasks"
+        isLabelHidden
+        value={['done']}
+        onChange={() => {}}
+        isReadOnly
+        density="compact">
+        <CheckboxListItem label="Done" value="done" />
+        <CheckboxListItem label="Open" value="open" />
+      </CheckboxList>,
+    );
+    expect(valueOf(rowOf('Open'), 'min-height', TOUCH)).toBeUndefined();
+  });
+
+  it('leaves balanced rows on the list’s taller touch row height', () => {
+    render(
+      <CheckboxList label="Notifications" value={[]} onChange={() => {}}>
+        <CheckboxListItem label="Email" value="email" />
+      </CheckboxList>,
+    );
+    const minHeight = valueOf(rowOf('Email'), 'min-height', TOUCH);
+    expect(minHeight).toBeDefined();
+    expect(minHeight).not.toBe(TARGET);
   });
 });
 
