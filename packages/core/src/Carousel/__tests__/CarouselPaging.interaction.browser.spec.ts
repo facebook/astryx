@@ -353,7 +353,11 @@ test('in a scrolling page: a vertical drag scrolls the page, a horizontal one pa
   expect(await scrollY()).toBeCloseTo(scrolled, 0);
   // UIKit (a pager inside a vertical scroll view): the drag's dominant axis
   // decides, once. 35° from horizontal is the pager's: past half a page it
-  // pages, and the page holds still.
+  // pages, and the page holds still. That holds here because Chromium holds
+  // back moves inside its touch slop, so the pan begins on its first move;
+  // Mobile Safari claims a slow drag for the page at about 10–11 px, before
+  // the pan's 10 pt start, so on the iOS 26.2 simulator a drag steeper than
+  // about 27° scrolls the page instead (25° pages, 30° and 35° scroll).
   const diagonal = (degrees: number, length: number) => {
     const angle = (degrees * Math.PI) / 180;
     return drag(
