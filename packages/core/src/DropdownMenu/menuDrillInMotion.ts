@@ -27,7 +27,7 @@
  * `menu.submenuHeaderSpring`; the title's text is drawn once (INV7), so its
  * weight changes at once where UIMenu cross-fades two labels. Back reverses
  * it on `springs.subMenuBack` and
- * `menu.submenuHeaderBackSpring`. The two box springs are theme motion roles
+ * `menu.submenuHeaderBackSpring`. The two box springs are internal motion roles
  * (`spec:AST-094` FR4, FR34).
  *
  * The parent's rows are the live ones (useMenuDrillIn keeps them, receded,
