@@ -20,7 +20,6 @@ import {
   __resetMenuPressForTest,
   useDropdownMenuPress,
   useMenuPress,
-  type DropdownMenuPressReturn,
 } from './useMenuPress';
 import {MENU_PRESS_SETTLE_MS} from './menuPressGesture';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
@@ -82,8 +81,6 @@ interface HarnessProps {
   onHighlight?: (row: HTMLElement | null) => void;
   touchModel?: 'pointer' | 'uikit';
   longPressDelayMs?: number;
-  /** Receives the hook's return, for calls the trigger does not make. */
-  pressRef?: {current: DropdownMenuPressReturn | null};
 }
 
 function Harness({
@@ -95,7 +92,6 @@ function Harness({
   onHighlight,
   touchModel,
   longPressDelayMs,
-  pressRef,
 }: HarnessProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -125,9 +121,6 @@ function Harness({
     touchModel,
     longPressDelayMs,
   });
-  if (pressRef != null) {
-    pressRef.current = press;
-  }
   return (
     <>
       <button
