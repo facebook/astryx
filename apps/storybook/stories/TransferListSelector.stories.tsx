@@ -160,7 +160,7 @@ const GROUPED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
     group: 'Planning',
     isReorderDisabled: true,
     disabledMessage:
-      'Status can be hidden but its current position is fixed while selected.',
+      'Status can be hidden, but has no reorder handle while selected.',
   },
   {
     value: 'priority',

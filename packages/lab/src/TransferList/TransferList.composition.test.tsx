@@ -272,12 +272,15 @@ describe('ComplexSelector + TransferList composition', () => {
       ...hidden,
     });
     reorder.focus();
+    // Picked up and moved a place: nothing changes until the drop.
     await user.keyboard('{Enter}{ArrowDown}');
     expect(screen.getByTestId('draft-value')).toHaveTextContent(
-      '["status","name"]',
+      '["name","status"]',
     );
+    expect(reorder.closest('ul')).toHaveAttribute('data-astryx-reordering');
 
     await user.keyboard('{Escape}');
+    expect(reorder.closest('ul')).not.toHaveAttribute('data-astryx-reordering');
 
     expect(screen.getByTestId('draft-value')).toHaveTextContent(
       '["name","status"]',

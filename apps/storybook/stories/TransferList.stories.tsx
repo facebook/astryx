@@ -221,7 +221,7 @@ const LOCKED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
     group: 'Planning',
     isReorderDisabled: true,
     disabledMessage:
-      'Status can be hidden but its current position is fixed while selected.',
+      'Status can be hidden, but has no reorder handle while selected.',
   },
   {
     value: 'priority',
@@ -262,7 +262,8 @@ function LockedExample() {
 /**
  * TransferList has no component-wide disabled state. Availability is decided
  * per option, and the two constraints are independent: `isTransferDisabled`
- * pins an option to its panel, `isReorderDisabled` pins it to its position.
+ * pins an option to its panel, `isReorderDisabled` takes away its reorder
+ * handle (at either end of the selected list it also bounds the others).
  */
 export const Locked: Story = {
   render: () => <LockedExample />,
