@@ -409,9 +409,10 @@ const styles = stylex.create({
     width: 280,
     padding: spacingVars['--spacing-3'],
   },
+  // Bounded inside the centered story frame's 32px padding on each side, so
+  // the 320px captures measure the component rather than a frame overflow.
   auditMatrix: {
-    width: '100%',
-    maxWidth: 720,
+    width: 'min(720px, calc(100vw - 64px))',
   },
   auditPopupContent: {
     width: 220,
