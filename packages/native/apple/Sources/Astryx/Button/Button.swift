@@ -88,10 +88,6 @@ public struct Button: View {
   public var body: some View {
     control
       .buttonStyle(style)
-      // A disabled Button keeps its focus stop, as core keeps it focusable,
-      // so keyboard users reach it and its tooltip; presses never land, and
-      // VoiceOver reads a dimmed button.
-      .modifier(DimmedButtonAccessibility(isActive: isDisabled, label: accessibilityText))
       // The shared Astryx tooltip on hover and keyboard focus, as core's
       // Button tooltip; its words are the VoiceOver hint.
       .astryxTooltip(props.tooltip, hint: props.tooltip, focus: .control)
@@ -114,8 +110,16 @@ public struct Button: View {
           return lands ? .systemAction : .handled
         })
     } else {
+      // A disabled Button keeps its focus stop, as core keeps it focusable, so
+      // keyboard users reach it and its tooltip; presses never land. VoiceOver
+      // reads the platform's button, dimmed when disabled, in both states, so
+      // a focused Button that becomes disabled keeps one view structure and
+      // its focus.
       SwiftUI.Button(action: activate) { content }
         .accessibilityAddTraits(Self.accessibilityTraits)
+        .accessibilityRepresentation {
+          SwiftUI.Button(accessibilityText, action: activate).disabled(isDisabled)
+        }
     }
   }
 
@@ -237,19 +241,3 @@ struct AstryxButtonStyle: ButtonStyle {
   }
 }
 
-/// For a disabled Button that keeps its focus stop: VoiceOver reads the
-/// platform's disabled button in its place.
-private struct DimmedButtonAccessibility: ViewModifier {
-  let isActive: Bool
-  let label: String
-
-  func body(content: Content) -> some View {
-    if isActive {
-      content.accessibilityRepresentation {
-        SwiftUI.Button(label) {}.disabled(true)
-      }
-    } else {
-      content
-    }
-  }
-}
