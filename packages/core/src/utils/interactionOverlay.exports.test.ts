@@ -6,9 +6,9 @@
  *   (interactionOverlay.stylex.ts) and the utils entry point (index.ts)
  * @output Asserts the list row's press layer stays internal: neither
  *   `@astryxdesign/core/utils` nor `@astryxdesign/core/utils/interactionOverlay.stylex`
- *   exposes the row layer's styles (`cell`, `cellOnImage`) or its clocks
- *   (`cellPressConsts`), and core's `exports` do not list the modules that
- *   hold them (`architecture:public-component-api` INV12)
+ *   exposes the row layer's styles (`cell`, `cellOnImage`), its clocks
+ *   (`cellPressConsts`),
+ *   and core's `exports` do not list the modules that hold them (`architecture:public-component-api` INV12)
  * @position Unit test beside utils/interactionOverlay.stylex.ts and
  *   utils/rowPressLayer.stylex.ts
  */

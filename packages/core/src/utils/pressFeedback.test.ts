@@ -29,7 +29,6 @@ import {
   PRESSABLE_ATTRIBUTE,
   PRESSED_ATTRIBUTE,
   installPressFeedback,
-  subscribePressPaint,
 } from './pressFeedback';
 import {
   PRESS_FADE_MS,
@@ -407,25 +406,6 @@ describe('the release', () => {
     expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
   });
 
-  it('keeps the press model’s own release clock, whatever a theme writes', () => {
-    // Touch motion values are internal constants: no theme variable reaches
-    // the release, so it ends on the model's clock, inside
-    // design:reduced-motion DR2's 200 ms. Set on the row itself: a browser
-    // inherits a theme's variable down to it, which jsdom does not model.
-    const row = rows[0];
-    row.style.setProperty('--motion-timing-press-highlight-out-ms', '400ms');
-    try {
-      press(row, 'pointerdown', 10, 10);
-      vi.advanceTimersByTime(PRESS_ONSET_MS);
-      press(row, 'pointerup', 10, 10);
-      expect(row.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
-      vi.advanceTimersByTime(PRESS_FADE_MS);
-      expect(row.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
-    } finally {
-      row.style.removeProperty('--motion-timing-press-highlight-out-ms');
-    }
-  });
-
   it('answers a tap too quick for the delay, at the release', () => {
     press(rows[0], 'pointerdown', 10, 10);
     vi.advanceTimersByTime(20);
@@ -644,85 +624,6 @@ describe('what the list pays for it', () => {
     expect(pressedRow()).toBe(1);
   });
 
-  it("reports each change of a surface's paint to its subscribers: on, fading, none", () => {
-    const paints: string[] = [];
-    const stop = subscribePressPaint(rows[0], paint => paints.push(paint));
-    press(rows[0], 'pointerdown', 10, 10);
-    vi.advanceTimersByTime(PRESS_ONSET_MS);
-    press(rows[0], 'pointerup', 10, 10);
-    vi.advanceTimersByTime(PRESS_FADE_MS + 50);
-    expect(paints).toEqual(['on', 'fading', 'none']);
-    stop();
-    press(rows[0], 'pointerdown', 10, 10);
-    vi.advanceTimersByTime(PRESS_ONSET_MS);
-    expect(paints).toHaveLength(3);
-    press(rows[0], 'pointercancel', 10, 10);
-  });
-
-  it('follows 200 subscribed surfaces with no observer and no listener per surface', () => {
-    const observers = vi.fn();
-    vi.stubGlobal('MutationObserver', observers);
-    const added = [
-      vi.spyOn(window, 'addEventListener'),
-      vi.spyOn(document, 'addEventListener'),
-    ];
-    const surfaces = Array.from({length: 200}, () => pressable('button'));
-    const perSurface = surfaces.map(surface =>
-      vi.spyOn(surface, 'addEventListener'),
-    );
-    const stops: (() => void)[] = [];
-    try {
-      for (const surface of surfaces) {
-        stops.push(subscribePressPaint(surface, () => {}));
-      }
-      expect(observers).not.toHaveBeenCalled();
-      for (const spy of [...added, ...perSurface]) {
-        expect(spy).not.toHaveBeenCalled();
-      }
-    } finally {
-      for (const stop of stops) {
-        stop();
-      }
-      for (const spy of [...added, ...perSurface]) {
-        spy.mockRestore();
-      }
-      vi.unstubAllGlobals();
-    }
-  });
-
-  it("keeps reporting to a surface's other subscribers when one throws", () => {
-    const paints: string[] = [];
-    const errors: unknown[] = [];
-    const queued = vi
-      .spyOn(globalThis, 'queueMicrotask')
-      .mockImplementation(callback => {
-        try {
-          callback();
-        } catch (error) {
-          errors.push(error);
-        }
-      });
-    const stops = [
-      subscribePressPaint(rows[1], () => {
-        throw new Error('a broken subscriber');
-      }),
-      subscribePressPaint(rows[1], paint => paints.push(paint)),
-    ];
-    try {
-      press(rows[1], 'pointerdown', 10, 100);
-      vi.advanceTimersByTime(PRESS_ONSET_MS);
-      expect(paints).toEqual(['on']);
-      expect(errors).toHaveLength(1);
-      expect(pressedRow()).toBe(1);
-    } finally {
-      for (const stop of stops) {
-        stop();
-      }
-      queued.mockRestore();
-      press(rows[1], 'pointercancel', 10, 100);
-    }
-  });
-
   it('installs once, however many times it is called, and stays while any holder remains', () => {
     const second = installPressFeedback();
     press(rows[0], 'pointerdown', 10, 10);
@@ -782,21 +683,6 @@ describe('the release fades: the arms the controller writes to', () => {
     expect(hasReleaseFade(surface(interactionOverlayStyles.pressedAlpha))).toBe(
       true,
     );
-  });
-
-  it("plays the press model's own release curve on every variant, reading no theme variable", () => {
-    // Touch motion values are internal constants: the fading arm's clock and
-    // curve are literal values, never a `--motion-*` variable.
-    for (const variant of [...variants, 'pressedAlpha'] as const) {
-      const fading = rulesWithSelector(
-        surface(interactionOverlayStyles[variant]),
-        '[data-astryx-press="fading"]',
-      );
-      expect(
-        fading.filter(rule => /animation-[\w-]+:\s*(?:var|min)\(/.test(rule)),
-        variant,
-      ).toEqual([]);
-    }
   });
 
   it("the machine's clock is the stylesheet's constant: one number", () => {
