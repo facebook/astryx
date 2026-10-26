@@ -281,8 +281,20 @@ test('the dock rises on the keyboard spring by the cover over it', async ({
 test('the lift is the part of the keyboard over the dock\u2019s resting bottom: a root ending below the viewport rises by more than the cover', async ({
   page,
 }) => {
-  const {dock, editable, lift} = await openChat(page);
-  // The story's root ends below the layout viewport (the preview's padding).
+  const {dock, editable} = await openChat(page);
+  // A root that ends below the layout viewport: the viewport's full height
+  // under the preview's 16 px gutter.
+  await dock.evaluate(el => {
+    const root = el.parentElement as HTMLElement;
+    (root.parentElement as HTMLElement).style.height = '100vh';
+  });
+  await page.waitForTimeout(200);
+  const lift = await dock.evaluate(
+    (el, cover) =>
+      (el.parentElement as HTMLElement).getBoundingClientRect().bottom -
+      (window.innerHeight - cover),
+    COVER,
+  );
   expect(lift).toBeGreaterThan(COVER);
   await editable.focus();
   await showKeyboard(page);

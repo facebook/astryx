@@ -502,10 +502,12 @@ export function useChatKeyboard({
 
   // A tap on the composer's text that would bring up the keyboard is the
   // keyboard module's tap route (spec:AST-099 FR4): focused here without
-  // Safari's reveal, with the caret where the finger lifted.
+  // Safari's reveal, with the caret where the finger lifted. Only where the
+  // keyboard is measured: inside an iframe nothing changes (FR7).
   useIsomorphicLayoutEffect(() => {
     const composer = composerRef.current;
-    if (composer == null) {
+    const win = composer?.ownerDocument.defaultView;
+    if (composer == null || win == null || !isKeyboardMeasurable(win)) {
       return undefined;
     }
     return claimTapFocus(composer, {
