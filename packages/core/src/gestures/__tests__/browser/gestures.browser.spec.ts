@@ -50,6 +50,8 @@ test.beforeAll(async () => {
       format: 'iife',
       platform: 'browser',
       target: 'es2022',
+      // A development build, as an app's bundler would make one.
+      define: {'process.env.NODE_ENV': '"development"'},
     });
     return result.outputFiles[0].text;
   };
@@ -238,18 +240,26 @@ async function openBare(page: Page, engine: string): Promise<Driver> {
   return engine === 'webkit' ? webkitDriver(page) : chromiumDriver(page);
 }
 
-/** An element's inline touch-action and the page's touch listeners now. */
+/**
+ * The touch-action the host gives an element (its mark, or an inline value
+ * it wrote) and the page's touch listeners, read after the next frame: the
+ * host reads an author's value there (FR18), so an absent value is absent
+ * for good, not merely not yet written.
+ */
 async function footprint(page: Page, id: string) {
-  return page.evaluate(
-    target => ({
+  return page.evaluate(async target => {
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => resolve());
+    });
+    const element = document.getElementById(target);
+    return {
       touchAction:
-        document
-          .getElementById(target)
-          ?.style.getPropertyValue('touch-action') ?? null,
+        element?.getAttribute('data-astryx-touch-action') ??
+        element?.style.getPropertyValue('touch-action') ??
+        null,
       pageTouchListeners: window.__pageTouch,
-    }),
-    id,
-  );
+    };
+  }, id);
 }
 
 /**
@@ -321,6 +331,14 @@ test('derives touch-action per element from its recognizers', async ({
   browserName,
 }) => {
   await open(page, browserName);
+  // The host reads each author's value and writes its own in the frame
+  // after the attach (FR18).
+  await page.evaluate(
+    async () =>
+      new Promise<void>(resolve => {
+        requestAnimationFrame(() => resolve());
+      }),
+  );
   const actions = await page.evaluate(() =>
     Object.fromEntries(
       ['hpan', 'tapper', 'presser', 'pinchable', 'sheetBody'].map(id => [
@@ -349,8 +367,9 @@ test('only elements whose recognizers claim a moving touch carry a blocking touc
       .filter(entry => entry.type === 'touchmove' && entry.passive === false)
       .map(entry => entry.id),
   );
-  // Pans (the cards' too), a long press, a pinch and the sheet's pan can take
-  // a moving touch; a tap-only element and a press consumer never wait.
+  // Pans (the cards', the switch's drag and a one-finger pan too), a long
+  // press, a pinch, the sheet's pan and a press that keeps its touch can take
+  // a moving touch; a tap-only element and a plain press consumer never wait.
   expect(new Set(blocking)).toEqual(
     new Set([
       'hpan',
@@ -358,8 +377,10 @@ test('only elements whose recognizers claim a moving touch carry a blocking touc
       'pinchable',
       'sheetBody',
       'slider',
-      'card',
       'switchRow',
+      'card',
+      'onePan',
+      'kept',
     ]),
   );
 });
@@ -505,6 +526,166 @@ test('a held finger on a checkbox inside an element whose hold does something tu
   expect(await heldSelection('check')).toEqual([false, false, false]);
 });
 
+test('a scroll the page makes under a still finger keeps the touch and its tap', async ({
+  page,
+  browserName,
+}) => {
+  const driver = await open(page, browserName);
+  await page.locator('#feed').scrollIntoViewIfNeeded();
+  const at = await center(page, 'feedRow');
+  await clearLog(page);
+  await driver.play([{t: 0, down: [{id: 1, ...at}]}]);
+  // The page scrolls the feed under the resting finger (scrollIntoView, a
+  // pinned transcript): the finger never travelled, so the touch stays.
+  await page.evaluate(() => {
+    const feed = document.getElementById('feed');
+    if (feed != null) {
+      feed.scrollTop += 6;
+    }
+  });
+  await page.evaluate(async () => {
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => resolve());
+    });
+  });
+  await driver.play([{t: 0, down: []}]);
+  expect(states(await log(page), 'feedTap')).toEqual(['ended', 'possible']);
+});
+
+test('a drag that scrolls the feed natively is the browser’s: no tap', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName === 'webkit',
+    'needs native scrolling from injected touches (Mobile Safari on the simulator)',
+  );
+  const driver = await open(page, browserName);
+  await page.locator('#feed').scrollIntoViewIfNeeded();
+  await page.evaluate(() => {
+    const feed = document.getElementById('feed');
+    if (feed != null) {
+      feed.scrollTop = 0;
+    }
+  });
+  const start = await center(page, 'feedRow');
+  await clearLog(page);
+  await driver.play(drag(start, {x: start.x, y: start.y - 60}, 30));
+  const scrolled = await page.evaluate(
+    () => document.getElementById('feed')?.scrollTop ?? 0,
+  );
+  expect(scrolled).toBeGreaterThan(20);
+  expect(states(await log(page), 'feedTap')).not.toContain('ended');
+});
+
+test('a second finger before any claim fails a one-finger pan and leaves the pinch to the page', async ({
+  page,
+  browserName,
+}) => {
+  const driver = await open(page, browserName);
+  await page.locator('#onePan').scrollIntoViewIfNeeded();
+  const at = await center(page, 'onePan');
+  await clearLog(page);
+  await logTouchMoves(page);
+  const pair = (spread: number) => [
+    {id: 1, x: at.x - spread, y: at.y},
+    {id: 2, x: at.x + spread, y: at.y},
+  ];
+  await driver.play([
+    {t: 0, down: [{id: 1, x: at.x - 10, y: at.y}]},
+    {t: 30, down: pair(10)},
+    {t: 60, down: pair(30)},
+    {t: 90, down: pair(50)},
+    {t: 120, down: pair(70)},
+    {t: 150, down: []},
+  ]);
+  const pan = states(await log(page), 'onePan');
+  expect(pan).toContain('failed');
+  expect(pan).not.toContain('began');
+  // No move of the pinch is cancelled: the page may zoom.
+  const moves = await readTouchMoves(page);
+  expect(moves.length).toBeGreaterThan(0);
+  expect(moves.some(Boolean)).toBe(false);
+});
+
+test('a page hold keeps the page still under a one-finger pan, and leaves a pinch alone', async ({
+  page,
+  browserName,
+}) => {
+  const driver = await open(page, browserName);
+  await page.locator('#plainArea').scrollIntoViewIfNeeded();
+  await page.evaluate(() => {
+    const own = window as unknown as {
+      __holdPage: () => () => void;
+      __releaseHold: () => void;
+    };
+    own.__releaseHold = own.__holdPage();
+  });
+  await logTouchMoves(page);
+  const start = await center(page, 'plainArea');
+  const before = await page.evaluate(() => window.scrollY);
+  await driver.play(drag(start, {x: start.x, y: start.y - 80}, 30));
+  expect((await readTouchMoves(page)).some(Boolean)).toBe(true);
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+  // A second finger is a pinch: never cancelled.
+  await logTouchMoves(page);
+  await driver.play([
+    {
+      t: 0,
+      down: [
+        {id: 1, x: start.x - 10, y: start.y},
+        {id: 2, x: start.x + 10, y: start.y},
+      ],
+    },
+    {
+      t: 30,
+      down: [
+        {id: 1, x: start.x - 40, y: start.y},
+        {id: 2, x: start.x + 40, y: start.y},
+      ],
+    },
+    {t: 60, down: []},
+  ]);
+  expect((await readTouchMoves(page)).some(Boolean)).toBe(false);
+  await page.evaluate(() =>
+    (window as unknown as {__releaseHold: () => void}).__releaseHold(),
+  );
+});
+
+test('a control that keeps its press through a drag holds the page still and stays pressed', async ({
+  page,
+  browserName,
+}) => {
+  const driver = await open(page, browserName);
+  await page.locator('#kept').scrollIntoViewIfNeeded();
+  await clearLog(page);
+  const start = await center(page, 'kept');
+  const before = await page.evaluate(() => window.scrollY);
+  // The finger rests until the press is delivered: a control in a scroller
+  // waits before it highlights, and a drag that starts sooner is a scroll.
+  await driver.play([{t: 0, down: [{id: 1, ...start}]}]);
+  await page.waitForFunction(() =>
+    window.__gestures.some(
+      entry => entry.name === 'kept' && entry.state === 'highlight',
+    ),
+  );
+  await logTouchMoves(page);
+  await driver.play(drag(start, {x: start.x, y: start.y - 40}, 20, false));
+  let kept = states(await log(page), 'kept');
+  expect(kept).toContain('touchDown');
+  expect(kept).not.toContain('touchCancel');
+  expect(kept).not.toContain('unhighlight');
+  // Its press was delivered, so every move is cancelled: the page stays.
+  const moves = await readTouchMoves(page);
+  expect(moves.length).toBeGreaterThan(0);
+  expect(moves.every(Boolean)).toBe(true);
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+  await driver.play([{t: 0, down: []}]);
+  kept = states(await log(page), 'kept');
+  expect(kept).toContain('touchUpInside');
+  expect(kept).not.toContain('touchCancel');
+});
+
 test('where the primary pointer is fine, the host writes no touch-action and registers no touch listener (spec:AST-094 FR19, FR24)', async ({
   browser,
 }) => {
@@ -541,6 +722,126 @@ test('where the primary pointer is fine, the host writes no touch-action and reg
   } finally {
     await context.close();
   }
+});
+
+test("the host's touch-action applies from the attach itself, an author rule outranks it from the first frame, and a shadow root gets it too (spec:AST-094 FR18, DEC-8)", async ({
+  page,
+  browserName,
+}) => {
+  await openBare(page, browserName);
+  const actions = await page.evaluate(() => {
+    const {host, PanGestureRecognizer, LongPressGestureRecognizer} =
+      window.__api;
+    const author = document.createElement('style');
+    author.textContent = '#authored { touch-action: none; }';
+    document.head.append(author);
+    document.body.innerHTML =
+      '<div id="plain" style="height: 60px"></div><div id="authored" style="height: 60px"></div><div id="shadowed" style="height: 60px"></div>';
+    const plain = document.getElementById('plain') as HTMLElement;
+    const authored = document.getElementById('authored') as HTMLElement;
+    const inner = document.createElement('div');
+    inner.style.height = '60px';
+    (document.getElementById('shadowed') as HTMLElement)
+      .attachShadow({mode: 'open'})
+      .append(inner);
+    host.attach(plain, new PanGestureRecognizer({direction: 'horizontal'}));
+    host.attach(authored, new LongPressGestureRecognizer());
+    host.attach(inner, new LongPressGestureRecognizer());
+    // Read in the attach's own task, before any frame.
+    return {
+      plain: getComputedStyle(plain).touchAction,
+      authored: getComputedStyle(authored).touchAction,
+      inner: getComputedStyle(inner).touchAction,
+    };
+  });
+  expect(actions).toEqual({
+    plain: 'pan-y pinch-zoom',
+    authored: 'none',
+    inner: 'manipulation',
+  });
+});
+
+test("an author rule in any cascade layer outranks the host's touch-action (spec:AST-094 FR18, DEC-8)", async ({
+  page,
+  browserName,
+}) => {
+  await openBare(page, browserName);
+  const actions = await page.evaluate(() => {
+    const {host, PanGestureRecognizer} = window.__api;
+    // The layer order a package stylesheet declares (spec:AST-080 FR3), and
+    // author rules in Astryx's base layer and in the product's layer.
+    const author = document.createElement('style');
+    author.textContent = `@layer reset, astryx-base, astryx-theme, product;
+      @layer astryx-base { #base { touch-action: none; } }
+      @layer product { #product { touch-action: pan-x; } }`;
+    document.head.append(author);
+    document.body.innerHTML =
+      '<div id="base" style="height: 60px"></div><div id="product" style="height: 60px"></div>';
+    const base = document.getElementById('base') as HTMLElement;
+    const product = document.getElementById('product') as HTMLElement;
+    host.attach(base, new PanGestureRecognizer({direction: 'horizontal'}));
+    host.attach(product, new PanGestureRecognizer({direction: 'horizontal'}));
+    return {
+      base: getComputedStyle(base).touchAction,
+      product: getComputedStyle(product).touchAction,
+    };
+  });
+  expect(actions).toEqual({base: 'none', product: 'pan-x'});
+});
+
+test('a subtree that mounts with a recognizer is styled once: the host adds no second recalc of it (spec:AST-094 FR18)', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'counts style recalcs in a Chromium trace',
+  );
+  await openBare(page, browserName);
+  const cdp = await page.context().newCDPSession(page);
+  const events: {name: string; args?: {elementCount?: number}}[] = [];
+  cdp.on('Tracing.dataCollected', ({value}) => {
+    events.push(...(value as unknown as typeof events));
+  });
+  const complete = new Promise(resolve => {
+    cdp.once('Tracing.tracingComplete', resolve);
+  });
+  await cdp.send('Tracing.start', {
+    transferMode: 'ReportEvents',
+    traceConfig: {
+      includedCategories: [
+        'devtools.timeline',
+        'disabled-by-default-devtools.timeline',
+      ],
+      excludedCategories: ['*'],
+    },
+  });
+  await page.evaluate(async () => {
+    const {host, PanGestureRecognizer} = window.__api;
+    const wheel = document.createElement('div');
+    for (let i = 0; i < 300; i += 1) {
+      const row = document.createElement('div');
+      row.textContent = `Row ${i}`;
+      wheel.append(row);
+    }
+    document.body.append(wheel);
+    host.attach(wheel, new PanGestureRecognizer({direction: 'vertical'}));
+    for (let i = 0; i < 4; i += 1) {
+      await new Promise(resolve => {
+        requestAnimationFrame(resolve);
+      });
+    }
+  });
+  await cdp.send('Tracing.end');
+  await complete;
+  // The subtree's first styling, and no recalc of it after: a touch-action
+  // written later would restyle every row (each one's effective value).
+  const subtreeRecalcs = events.filter(
+    event =>
+      event.name === 'UpdateLayoutTree' &&
+      (event.args?.elementCount ?? 0) >= 300,
+  );
+  expect(subtreeRecalcs).toHaveLength(1);
 });
 
 test('a recognizer registers no touch listener and writes no touch-action while it is disabled, and does once it is enabled (spec:AST-094 FR24)', async ({
@@ -635,6 +936,25 @@ test('a tap recognizer replaces the click: no ghost click, no compatibility mous
   expect(entries.filter(entry => entry.name === 'click:hbutton')).toHaveLength(
     1,
   );
+});
+
+test('a finger the window blur cancelled lifts on nothing: its lift gets no click, and a later tap there keeps its own (spec:AST-094 FR28)', async ({
+  page,
+  browserName,
+}) => {
+  const driver = await open(page, browserName);
+  const at = await center(page, 'hbutton');
+  await clearLog(page);
+  await driver.play([{t: 0, down: [{id: 1, ...at}]}]);
+  // A headless page keeps its focus, so the blur is dispatched to the window.
+  await page.evaluate(() => window.dispatchEvent(new FocusEvent('blur')));
+  await driver.play([{t: 0, down: []}]);
+  await page.waitForTimeout(100);
+  const clicks = async () =>
+    (await log(page)).filter(entry => entry.name === 'click:hbutton');
+  expect(await clicks()).toEqual([]);
+  await driver.tap(at);
+  expect(await clicks()).toHaveLength(1);
 });
 
 test('scroll edge: at the top the pull is the sheet’s at once', async ({
@@ -806,4 +1126,44 @@ test('a long press begins at touch-down + 500 ms on the event clock, even when t
   expect((began?.beganAt ?? 0) - (began?.startedAt ?? 0)).toBeCloseTo(500, 6);
   expect(states(entries, 'press')).toEqual(['began', 'ended', 'possible']);
   expect(entries.some(entry => entry.name.startsWith('click:'))).toBe(false);
+});
+
+test.describe('where the primary pointer is fine', () => {
+  test.use({hasTouch: false, isMobile: false});
+
+  test('the host registers no touch listener and writes no style, though the page attaches recognizers (spec:AST-094 FR19)', async ({
+    page,
+  }) => {
+    const warnings: string[] = [];
+    page.on('console', message => {
+      if (message.type() === 'warning') {
+        warnings.push(message.text());
+      }
+    });
+    await page.goto('about:blank');
+    await page.setContent(
+      '<!doctype html><meta name="viewport" content="width=device-width, initial-scale=1"><body></body>',
+    );
+    await page.addScriptTag({content: bundle});
+    const seen = await page.evaluate(() => ({
+      isCoarse: matchMedia('(pointer: coarse)').matches,
+      page: window.__pageTouchListenersAtLoad,
+      elements: window.__listeners.map(entry => entry.id),
+      // What the host would write: none of it, in any engine's spelling.
+      styles: ['hpan', 'presser', 'slider', 'card'].map(id => {
+        const style = document.getElementById(id)?.style;
+        return ['touch-action', '-webkit-user-select', '-webkit-touch-callout']
+          .map(property => style?.getPropertyValue(property) ?? 'missing')
+          .join('|');
+      }),
+    }));
+    expect(seen.isCoarse).toBe(false);
+    expect(seen.page).toEqual([]);
+    expect(seen.elements).toEqual([]);
+    expect(seen.styles).toEqual(['||', '||', '||', '||']);
+    // The page's attaches are named once, in development.
+    expect(
+      warnings.filter(text => text.includes('primary pointer is fine')),
+    ).toHaveLength(1);
+  });
 });
