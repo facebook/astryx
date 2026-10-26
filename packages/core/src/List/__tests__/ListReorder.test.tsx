@@ -265,16 +265,52 @@ describe('List reorderable', () => {
     ).toBeInTheDocument();
   });
 
-  it('names the handle of a row that shows no text and has no name after its place', async () => {
+  it('names the handle of a row that shows no text and has no name after its place, and warns in development', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     render(
       <List reorderable={createReorderable({onReorder: () => {}})}>
         <ListItem itemKey="inbox" label="Inbox" />
         <ListItem itemKey="dot" label={<svg aria-hidden="true" />} />
+        <ListItem itemKey="star" label={<svg aria-label="Starred" />} />
       </List>,
     );
     expect(
       await screen.findByRole('button', {name: 'Reorder item 2'}),
     ).toBeInTheDocument();
+    // Only the nameless row warns, once.
+    const nameless = warn.mock.calls.filter(([message]) =>
+      String(message).includes('A reorderable row has no accessible name'),
+    );
+    expect(nameless).toHaveLength(1);
+    warn.mockRestore();
+  });
+
+  it('does not warn about a nameless reorderable row in production', async () => {
+    vi.resetModules();
+    vi.stubEnv('NODE_ENV', 'production');
+    try {
+      const {List: ProdList} = await import('../List');
+      const {ListItem: ProdListItem} = await import('../ListItem');
+      const {createReorderable: prodCreate} =
+        await import('../../reorderable/createReorderable');
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      render(
+        <ProdList reorderable={prodCreate({onReorder: () => {}})}>
+          <ProdListItem itemKey="dot" label={<svg aria-hidden="true" />} />
+        </ProdList>,
+      );
+      expect(
+        await screen.findByRole('button', {name: 'Reorder item 1'}),
+      ).toBeInTheDocument();
+      expect(
+        warn.mock.calls.some(([message]) =>
+          String(message).includes('A reorderable row has no accessible name'),
+        ),
+      ).toBe(false);
+      warn.mockRestore();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it('adds one element to a row, the handle, whose lines are a pseudo-element', () => {
