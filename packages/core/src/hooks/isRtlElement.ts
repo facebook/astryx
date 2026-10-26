@@ -7,9 +7,10 @@
  * @input DOM element (nullable)
  * @output Exports isRtlElement helper resolving an element's computed text
  *   direction
- * @position Internal hook utility; used by useListFocus and useGridFocus to
- *   auto-detect RTL for arrow-key navigation (same getComputedStyle precedent
- *   as Resizable's ResizeHandle drag deltas).
+ * @position Internal to core, on no public entry: used by useListFocus and
+ *   useGridFocus to auto-detect RTL for arrow-key navigation, and by Carousel and swipe actions for drag
+ *   deltas (same getComputedStyle precedent as Resizable's ResizeHandle drag
+ *   deltas).
  */
 
 /**
