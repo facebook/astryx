@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] BottomSheet: at rest, a sheet's content starts below the grab bar whatever its `padding`, so the first line is no longer drawn through the bar's fade. Scrolled content still passes beneath the bar. A sheet at the default padding starts its content 8 px lower; one with `padding={0}` keeps its content clear of the bar.
+[feat] BottomSheet: at rest, a sheet's content starts below the grab bar whatever its `padding`, so the first line is no longer drawn through the bar's fade. The block-start inset is never less than the bar's height (`--spacing-6`), applied and published alike; scrolled content still passes beneath the bar. A sheet at the default padding starts its content 8 px lower, and one with `padding={0}` starts it below the bar. Core's own `padding={0}` sheets (the touch date and time pickers, DropdownMenu and ContextMenu sheets) no longer reserve that band themselves, so the pickers look the same and a menu's first row sits 8 px lower.
 
 @vjeux

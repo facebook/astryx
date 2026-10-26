@@ -56,7 +56,6 @@ import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
 import {
   containerPaddingBlockEndVarStyles,
-  containerPaddingBlockStartVarStyles,
   containerPaddingInlineVarStyles,
   overlayPaddingReset,
   paddingStyles,
@@ -117,6 +116,58 @@ function snapPointsKeyFor(
   }
   return key;
 }
+
+// At rest the content starts below the floating grab bar whatever the
+// padding, so the first row never sits under the bar's fade
+// (component:BottomSheet, Content area inset). The inset is the content box's
+// own padding, applied and published alike, so it scrolls away with the
+// content, which then passes under the bar.
+const clearsGrabBarStyles = stylex.create({
+  0: {
+    '--container-padding-block-start': `max(${spacingVars['--spacing-0']}, ${HANDLE_BAR_HEIGHT})`,
+    paddingBlockStart: `max(${spacingVars['--spacing-0']}, ${HANDLE_BAR_HEIGHT})`,
+  },
+  0.5: {
+    '--container-padding-block-start': `max(${spacingVars['--spacing-0-5']}, ${HANDLE_BAR_HEIGHT})`,
+    paddingBlockStart: `max(${spacingVars['--spacing-0-5']}, ${HANDLE_BAR_HEIGHT})`,
+  },
+  1: {
+    '--container-padding-block-start': `max(${spacingVars['--spacing-1']}, ${HANDLE_BAR_HEIGHT})`,
+    paddingBlockStart: `max(${spacingVars['--spacing-1']}, ${HANDLE_BAR_HEIGHT})`,
+  },
+  1.5: {
+    '--container-padding-block-start': `max(${spacingVars['--spacing-1-5']}, ${HANDLE_BAR_HEIGHT})`,
+    paddingBlockStart: `max(${spacingVars['--spacing-1-5']}, ${HANDLE_BAR_HEIGHT})`,
+  },
+  2: {
+    '--container-padding-block-start': `max(${spacingVars['--spacing-2']}, ${HANDLE_BAR_HEIGHT})`,
+    paddingBlockStart: `max(${spacingVars['--spacing-2']}, ${HANDLE_BAR_HEIGHT})`,
+  },
+  3: {
+    '--container-padding-block-start': `max(${spacingVars['--spacing-3']}, ${HANDLE_BAR_HEIGHT})`,
+    paddingBlockStart: `max(${spacingVars['--spacing-3']}, ${HANDLE_BAR_HEIGHT})`,
+  },
+  4: {
+    '--container-padding-block-start': `max(${spacingVars['--spacing-4']}, ${HANDLE_BAR_HEIGHT})`,
+    paddingBlockStart: `max(${spacingVars['--spacing-4']}, ${HANDLE_BAR_HEIGHT})`,
+  },
+  5: {
+    '--container-padding-block-start': `max(${spacingVars['--spacing-5']}, ${HANDLE_BAR_HEIGHT})`,
+    paddingBlockStart: `max(${spacingVars['--spacing-5']}, ${HANDLE_BAR_HEIGHT})`,
+  },
+  6: {
+    '--container-padding-block-start': `max(${spacingVars['--spacing-6']}, ${HANDLE_BAR_HEIGHT})`,
+    paddingBlockStart: `max(${spacingVars['--spacing-6']}, ${HANDLE_BAR_HEIGHT})`,
+  },
+  8: {
+    '--container-padding-block-start': `max(${spacingVars['--spacing-8']}, ${HANDLE_BAR_HEIGHT})`,
+    paddingBlockStart: `max(${spacingVars['--spacing-8']}, ${HANDLE_BAR_HEIGHT})`,
+  },
+  10: {
+    '--container-padding-block-start': `max(${spacingVars['--spacing-10']}, ${HANDLE_BAR_HEIGHT})`,
+    paddingBlockStart: `max(${spacingVars['--spacing-10']}, ${HANDLE_BAR_HEIGHT})`,
+  },
+});
 
 const styles = stylex.create({
   sheet: {
@@ -262,13 +313,6 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     height: '100%',
     minHeight: 'min-content',
-  },
-  // At rest the content starts below the grab bar whatever the padding, so
-  // the first row never sits under the bar's fade (component:BottomSheet's
-  // Content area inset). The inset is the content box's own padding, so it
-  // scrolls away with the content, which then passes under the bar.
-  clearsGrabBar: {
-    paddingBlockStart: `max(var(--container-padding-block-start, 0px), ${HANDLE_BAR_HEIGHT})`,
   },
   tallKeyboardBody: {
     scrollPaddingBlockEnd: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
@@ -809,13 +853,12 @@ export function BottomSheetPanel({
                 !usesThemePadding &&
                   effectivePadding !== 4 &&
                   containerPaddingInlineVarStyles[effectivePadding],
-                !usesThemePadding &&
-                  effectivePadding !== 4 &&
-                  containerPaddingBlockStartVarStyles[effectivePadding],
+                // An explicit padding's block-start inset, floored at the
+                // grab bar like the theme default's (Layout/container.stylex.ts).
+                !usesThemePadding && clearsGrabBarStyles[effectivePadding],
                 !usesThemePadding &&
                   effectivePadding !== 4 &&
                   containerPaddingBlockEndVarStyles[effectivePadding],
-                styles.clearsGrabBar,
               ),
             ),
           )}>

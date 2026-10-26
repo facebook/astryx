@@ -60,9 +60,13 @@ gap note.
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`; with no `padding` prop and no theme
-  padding, the Content area insets by `--spacing-4` on every logical edge, and
-  `padding={0}` keeps an unpadded Content area
+- Released default preserved: `yes`, except the block-start inset; with no
+  `padding` prop and no theme padding, the Content area insets by
+  `--spacing-4` on the other logical edges, and `padding={0}` keeps them
+  unpadded. The block-start inset is never less than the grab bar's height
+  (`--spacing-6`), so a default sheet's content starts 8px lower and a
+  `padding={0}` sheet's starts below the bar (`spec:AST-017/FR7`, a visible
+  layout change, tagged `[feat]`)
 - Compatibility class: no public prop, type, default, or export changes.
   Stacking, the replace handoff, and non-modal top-layer hosting are behavior
   of the existing component, tagged `[feat]` (`spec:AST-017/FR7`: a compatible
@@ -198,6 +202,8 @@ remain documented in `BottomSheet.doc.mjs`.
   on `bottom-sheet`, then `--spacing-4` on every logical edge. At rest the
   block-start inset is never less than the grab bar's height (`--spacing-6`),
   so the first row starts below the bar; scrolled content still passes under it.
+  The Content area applies and publishes the same inset, so a child that bleeds
+  into it escapes exactly what it sits in.
 - Stack order: open order, then tree order for sheets opening in one update
   (FR5). A sheet that closes and reopens takes a new place on top.
 - Native top-layer order is derived from the stack order, not trusted: where
