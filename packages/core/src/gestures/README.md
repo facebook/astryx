@@ -190,8 +190,10 @@ presses nothing.
 ## What the browser is told
 
 - **`touch-action`.** Each element gets the intersection of what its
-  recognizers leave the browser. It is set inline on attach and restored on
-  detach (opt out with `manageStyle: false`):
+  recognizers leave the browser, and never more than the element's own
+  value allows: a caller's explicit `touch-action` (a trigger's `none`)
+  stays in force, as the intersection of both. It is set inline on attach
+  and restored on detach (opt out with `manageStyle: false`):
 
   | Recognizers on the element                   | `touch-action`      |
   | -------------------------------------------- | ------------------- |
@@ -234,14 +236,30 @@ presses nothing.
   long press that then drags, a pinch, a rotation) has a non-passive
   `touchmove` listener that cancels the event only while one of its touches
   is owned. A touch nobody owns scrolls exactly as it would without the
-  system. Taps claim only at the lift, so an element with only taps, or only
-  a press consumer, gets no such listener (see the known limit below).
+  system. Taps claim only at the lift, and a recognizer that never claims
+  (`claimsTouches` false, such as a pull that only watches the scroll) never
+  owns a touch, so an element with only those, or only a press consumer,
+  gets no such listener (see the known limit below). The listener the host
+  adds to a finger's target at touch-down, for a target that leaves the
+  document mid-gesture, is passive too unless a recognizer on that touch can
+  claim while it moves.
 - **Claim at the begin.** A pan claims its touch only as it begins, at
   UIKit's 10 pt (`spec:AST-094` FR19), before WebKit commits a slow drag to
   a scroll at 10–11 px; a drag the browser took first stays the browser's
   (FR14).
+  Measured in Mobile Safari (iOS 26.2): `touchmove` arrives from the first
+  pixel; on a scrollable element WebKit commits to scrolling at 10 to 11 px
+  (the last cancelable `touchmove` at 10 px), and cancelling every
+  `touchmove` from 8 px keeps the page still for the whole gesture. Under
+  `pan-y` it scrolls only drags steeper than about 2:1 to 3:1, once the
+  vertical travel reaches about 10 px. A pan that competes with native
+  scrolling therefore decides at 10 px or less.
 - **The browser's claim.** `pointercancel` on a finger, or a scroll above
-  the touch, means the browser took the finger; so does its first `touchmove`
+  the touch once the finger has travelled the slop (the browser starts a pan
+  no earlier), means the browser took the finger; a scroll under a finger
+  that has not moved (scrollIntoView, a transcript pinned to its end, scroll
+  anchoring) is the page's own and leaves the press and its click alone. So
+  does its first `touchmove`
   that can no longer be cancelled, when the browser could pan along the
   finger's main axis. (Chromium also stops asking after one unconsumed
   `touchmove` when `touch-action` keeps it from panning that way, as for a
@@ -274,7 +292,8 @@ to the top, then rubber-bands), and never changes hands midway
 
 "Could scroll" follows the browser's own rules: `touch-action` between the
 touch and each scroller, scroll chaining stopped by `overscroll-behavior`,
-and RTL `scrollLeft` ranges.
+and RTL `scrollLeft` ranges, along the flat tree (content slotted into a
+shadow-tree scroller scrolls with it, as the hit path does).
 
 ### Multiple fingers
 
@@ -433,7 +452,9 @@ presentation above.
 - `__tests__/haptics.test.ts`: vibration patterns and the hidden switch.
 - `__tests__/browser/`: the browser proof on a phone-sized touch screen, in
   Chromium (CDP touches with timestamps) and WebKit (its own touch input).
-  Run it with
+  CI runs it in Chromium in the interaction lane
+  (`pnpm test:interaction --project chromium`, `playwright.interaction.config.ts`).
+  Run both engines with
   `pnpm exec playwright test --config packages/core/src/gestures/__tests__/browser/playwright.config.ts`;
   where WebKit cannot launch on the host, its project runs in the official
   Playwright image (see the config header). The same fixture passed in

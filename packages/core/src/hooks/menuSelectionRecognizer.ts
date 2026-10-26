@@ -13,8 +13,12 @@
  * finger that lands in a menu behaves as measured on the iOS 26.2 simulator
  * (a 3-row and a 30-row menu from a pull-down button):
  *
- * - held still, the row under it highlights after the content-touch delay
- *   (about 160 ms), in a short menu as in a long one;
+ * - held still in a menu that scrolls, the row under it highlights after
+ *   the content-touch delay (about 160 ms); in a menu that fits, where
+ *   there is no scroll to wait for, it highlights at once (spec:AST-094
+ *   FR11), through `onLand`, while the press itself still begins (and
+ *   claims the finger) after the delay, so a pinch that starts meanwhile
+ *   stays the page's;
  * - lifted before that (a tap), the row under it highlights and acts at the
  *   lift;
  * - travelling past the press slop before that: in a menu that scrolls, the
@@ -49,6 +53,11 @@ export interface MenuSelectionGestureRecognizerOptions extends GestureRecognizer
    * scrolls it, and the recognizer leaves the finger to the browser.
    */
   scrolls: () => boolean;
+  /**
+   * Called as a finger lands in a menu that cannot scroll, before the press
+   * begins: the owner lights the row under it at once (spec:AST-094 FR11).
+   */
+  onLand?: (recognizer: MenuSelectionGestureRecognizer) => void;
   /** @default the content-touch delay (UIKIT_GESTURES.press) */
   onsetMs?: number;
   /** @default the press slop (UIKIT_GESTURES.press) */
@@ -59,6 +68,8 @@ export class MenuSelectionGestureRecognizer extends GestureRecognizer {
   onsetMs: number;
   slop: number;
   private readonly scrolls: () => boolean;
+  private readonly onLand:
+    ((recognizer: MenuSelectionGestureRecognizer) => void) | undefined;
   private landing: Point | null = null;
   private secondTouch = false;
 
@@ -68,6 +79,7 @@ export class MenuSelectionGestureRecognizer extends GestureRecognizer {
       ...options,
     });
     this.scrolls = options.scrolls;
+    this.onLand = options.onLand;
     this.onsetMs =
       options.onsetMs ?? UIKIT_GESTURES.press.contentTouchDelay.value;
     this.slop = options.slop ?? UIKIT_GESTURES.press.slop.value;
@@ -130,6 +142,13 @@ export class MenuSelectionGestureRecognizer extends GestureRecognizer {
   ): void {
     const [touch] = touches;
     this.landing = {x: touch.startX, y: touch.startY};
+    // A menu that cannot scroll when the finger lands has no scroll to tell
+    // the press from, so its row lights at once (spec:AST-094 FR11). The
+    // press still begins, and claims the finger, after the content-touch
+    // delay, so a second finger meanwhile can still pinch-zoom the page.
+    if (!this.scrolls()) {
+      this.onLand?.(this);
+    }
     this.setTimer(event.time + this.onsetMs, () => {
       if (this.state === 'possible' && this.numberOfTouches === 1) {
         this.setState('began');

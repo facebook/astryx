@@ -98,6 +98,34 @@ describe('MenuSelectionGestureRecognizer', () => {
     expect(recognizer.state).toBe('began');
   });
 
+  it('tells its owner as a finger lands in a menu that fits, but not in one that scrolls, and still begins after the onset (spec:AST-094 FR11)', () => {
+    const landed: number[] = [];
+    const fits = new MenuSelectionGestureRecognizer({
+      name: 'select',
+      scrolls: () => false,
+      onLand: recognizer => landed.push(recognizer.landingLocation().y),
+    });
+    const h = createHarness();
+    h.finger(1).down(100, 120, 1000, {recognizers: [fits]});
+    expect(landed).toEqual([120]);
+    // The press, and its claim, wait for the onset, so a pinch that starts
+    // meanwhile stays the page's.
+    expect(fits.state).toBe('possible');
+    expect(h.claims).toEqual([]);
+    h.advance(1000 + ONSET);
+    expect(fits.state).toBe('began');
+
+    const scrollingLanded: number[] = [];
+    const scrolls = new MenuSelectionGestureRecognizer({
+      name: 'scrolls',
+      scrolls: () => true,
+      onLand: () => scrollingLanded.push(1),
+    });
+    const other = createHarness();
+    other.finger(1).down(100, 120, 1000, {recognizers: [scrolls]});
+    expect(scrollingLanded).toEqual([]);
+  });
+
   it('claims the finger only in a menu that fits', () => {
     expect(select(false).claimsTouches).toBe(true);
     expect(select(true).claimsTouches).toBe(false);

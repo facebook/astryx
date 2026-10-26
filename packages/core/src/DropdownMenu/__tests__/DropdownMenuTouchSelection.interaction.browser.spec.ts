@@ -6,12 +6,15 @@
  *   input (Chromium CDP / WebKit's input command), the interaction harness,
  *   and UIKit's content-touch delay from the constants table
  * @output Interaction proofs for a finger that lands in an open DropdownMenu,
- *   tracked as UIMenu's list tracks it (iOS 26.2): a resting finger lights
- *   its row only after the content-touch delay and its lift picks the row,
+ *   tracked as UIMenu's list tracks it (iOS 26.2): in a menu that fits a
+ *   finger lights its row at once, and in one that scrolls only after the
+ *   content-touch delay (spec:AST-094 FR11), and the lift picks the row,
  *   once; a tap picks at the lift; in a menu that fits a quick drag scrubs
  *   and picks the row it lifts on; in a menu that scrolls a quick drag
- *   scrolls it and picks nothing; a storyboard of the resting press. One
- *   touch model on every engine
+ *   scrolls it and picks nothing; a second finger that lands on the page
+ *   beside the menu ends the press with nothing picked; a finger resting at
+ *   a scrolling menu's edge autoscrolls it without cancelling its own press;
+ *   a storyboard of the resting press. One touch model on every engine
  * @position Evidence for useMenuPress's 'uikit' touch tracking
  *   (menuSelectionRecognizer.ts and the shared action-group tracker); the
  *   recognizer is unit-tested in menuSelectionRecognizer.test.ts
@@ -90,14 +93,19 @@ async function installSelectionLog(page: Page) {
       },
       true,
     );
-    // The story reports a pick by logging "<label> clicked"; the spec
-    // reads those lines through this page-side capture.
+    // The stories report a pick by logging "<label> clicked" (Default) or
+    // the label alone (With Sections); the spec reads those lines through
+    // this page-side capture.
     // eslint-disable-next-line no-console -- see above
     const original = console.log.bind(console);
     // eslint-disable-next-line no-console -- see above
     console.log = (...args: unknown[]) => {
-      if (typeof args[0] === 'string' && args[0].endsWith(' clicked')) {
-        log.picked.push(args[0].replace(' clicked', ''));
+      if (
+        typeof args[0] === 'string' &&
+        args.length === 1 &&
+        /^[A-Z][\w ]{0,30}$/.test(args[0])
+      ) {
+        log.picked.push(args[0].replace(/ clicked$/, ''));
       }
       original(...args);
     };
@@ -164,7 +172,20 @@ async function openMenu(
   return {driver};
 }
 
-test('a resting finger lights its row after UIKit\u2019s content-touch delay, and the lift picks it once', async ({
+/** Opens the With Sections menu in a viewport short enough that it scrolls. */
+async function openScrollingMenu(page: Page) {
+  await page.setViewportSize({width: 800, height: 220});
+  const opened = await openMenu(page, 'core-dropdownmenu--with-sections');
+  const menu = page.getByRole('menu');
+  await expect
+    .poll(async () =>
+      menu.evaluate(el => el.scrollHeight > el.clientHeight + 1),
+    )
+    .toBe(true);
+  return {...opened, menu};
+}
+
+test('in a menu that fits, a resting finger lights its row at once, and the lift picks it once (spec:AST-094 FR11)', async ({
   page,
 }) => {
   const {driver} = await openMenu(page, 'core-dropdownmenu--default');
@@ -176,6 +197,24 @@ test('a resting finger lights its row after UIKit\u2019s content-touch delay, an
   const log = await readLog(page);
   const lit = log.focus.find(entry => entry.row.startsWith('Duplicate'));
   expect(lit).toBeDefined();
+  // No scroll to tell the press from: it lights on the touch.
+  expect((lit?.at ?? 0) - log.down[0]).toBeLessThan(50);
+  await page.waitForTimeout(300);
+  expect((await readLog(page)).picked).toEqual(['Duplicate']);
+});
+
+test('in a menu that scrolls, a resting finger lights its row after UIKit\u2019s content-touch delay, and the lift picks it once', async ({
+  page,
+}) => {
+  const {driver} = await openScrollingMenu(page);
+  const row = await rowCenter(page, 'New File');
+  await driver.play(tap(row, {holdMs: 320}));
+  await expect
+    .poll(async () => (await readLog(page)).picked)
+    .toEqual(['New File']);
+  const log = await readLog(page);
+  const lit = log.focus.find(entry => entry.row.startsWith('New File'));
+  expect(lit).toBeDefined();
   const delay = (lit?.at ?? 0) - log.down[0];
   // Not on the touch: after the list's content-touch delay (a timer, then
   // the focus in the same task), well before the lift.
@@ -183,16 +222,18 @@ test('a resting finger lights its row after UIKit\u2019s content-touch delay, an
   expect(delay).toBeLessThan(ONSET_MS + 80);
   expect(lit?.at ?? 0).toBeLessThan(log.up[0]);
   await page.waitForTimeout(300);
-  expect((await readLog(page)).picked).toEqual(['Duplicate']);
+  expect((await readLog(page)).picked).toEqual(['New File']);
 });
 
-test('a tap picks the row at the lift', async ({page}) => {
-  const {driver} = await openMenu(page, 'core-dropdownmenu--default');
-  const row = await rowCenter(page, 'Duplicate');
+test('in a menu that scrolls, a tap picks the row at the lift', async ({
+  page,
+}) => {
+  const {driver} = await openScrollingMenu(page);
+  const row = await rowCenter(page, 'New File');
   await driver.play(tap(row, {holdMs: 60}));
   await expect
     .poll(async () => (await readLog(page)).picked)
-    .toEqual(['Duplicate']);
+    .toEqual(['New File']);
   const log = await readLog(page);
   // Nothing lit before the lift: the tap was shorter than the delay.
   expect(log.focus.filter(entry => entry.at < log.up[0])).toEqual([]);
@@ -223,14 +264,7 @@ test('in a menu that scrolls, a quick drag scrolls it and picks nothing', async 
     'needs native pans from scripted touches',
   );
   // A short viewport caps the menu below its content so it overflows.
-  await page.setViewportSize({width: 800, height: 220});
-  const {driver} = await openMenu(page, 'core-dropdownmenu--with-sections');
-  const menu = page.getByRole('menu');
-  await expect
-    .poll(async () =>
-      menu.evaluate(el => el.scrollHeight > el.clientHeight + 1),
-    )
-    .toBe(true);
+  const {driver, menu} = await openScrollingMenu(page);
   const first = await rowCenter(page, 'New File');
   const before = await menu.evaluate(el => el.scrollTop);
   await driver.play(
@@ -244,12 +278,90 @@ test('in a menu that scrolls, a quick drag scrolls it and picks nothing', async 
   await expect(menu).toBeVisible();
 });
 
+test('a second finger that lands on the page beside the menu ends the press, and nothing is picked (spec:AST-094 FR28)', async ({
+  page,
+}) => {
+  const {driver} = await openMenu(page, 'core-dropdownmenu--default');
+  const row = await rowCenter(page, 'Duplicate');
+  const popover = page.locator('[popover]:has([role="menu"])').first();
+  const box = await popover.boundingBox();
+  const viewport = page.viewportSize();
+  if (box == null || viewport == null) {
+    throw new Error('no menu');
+  }
+  // Plain page content, clear of the menu.
+  const beside = {
+    x: Math.min(viewport.width - 10, box.x + box.width + 60),
+    y: Math.min(viewport.height - 10, box.y + box.height + 60),
+  };
+  await driver.play([
+    {t: 0, fingers: [{id: 0, x: row.x, y: row.y}]},
+    {t: 80, fingers: [{id: 0, x: row.x, y: row.y + 0.5}]},
+    {
+      t: 120,
+      fingers: [
+        {id: 0, x: row.x, y: row.y},
+        {id: 1, x: beside.x, y: beside.y},
+      ],
+    },
+    {t: 180, fingers: [{id: 0, x: row.x, y: row.y + 0.5}]},
+    {t: 240, fingers: []},
+  ]);
+  await page.waitForTimeout(300);
+  expect((await readLog(page)).picked).toEqual([]);
+});
+
+test('a finger resting at a scrolling menu\u2019s edge autoscrolls it, and the press survives its own scroll (spec:AST-094 FR30)', async ({
+  page,
+}) => {
+  const {driver, menu} = await openScrollingMenu(page);
+  const box = await menu.boundingBox();
+  const viewport = page.viewportSize();
+  if (box == null || viewport == null) {
+    throw new Error('no menu');
+  }
+  // The furthest the menu scrolls while the finger rests, read page-side:
+  // a pick at the lift closes the menu.
+  await menu.evaluate(el => {
+    const record = window as unknown as {__menuScrollMax: number};
+    record.__menuScrollMax = el.scrollTop;
+    el.addEventListener('scroll', () => {
+      record.__menuScrollMax = Math.max(record.__menuScrollMax, el.scrollTop);
+    });
+  });
+  const before = await menu.evaluate(el => el.scrollTop);
+  // Inside the bottom edge zone of the part of the menu on screen, held
+  // still past the delay, then lifted: over the last row once the list stops
+  // at its end, not in the menu's 4 px bottom padding, where no row is under
+  // the finger at the lift.
+  const bottom = Math.min(box.y + box.height, viewport.height);
+  const edge = {x: box.x + box.width / 2, y: bottom - 12};
+  const at = (t: number, dy: number) => ({
+    t,
+    fingers: [{id: 0, x: edge.x, y: edge.y + dy}],
+  });
+  await driver.play([
+    at(0, 0),
+    at(ONSET_MS + 50, 0.5),
+    at(ONSET_MS + 300, 0),
+    at(ONSET_MS + 600, 0.5),
+    {t: ONSET_MS + 650, fingers: []},
+  ]);
+  await page.waitForTimeout(300);
+  const scrolledTo = await page.evaluate(
+    () => (window as unknown as {__menuScrollMax: number}).__menuScrollMax,
+  );
+  expect(scrolledTo).toBeGreaterThan(before);
+  // The menu's own scroll did not cancel the press: its lift picked a row.
+  expect((await readLog(page)).picked).toHaveLength(1);
+});
+
 test(
   'storyboard: a resting finger on a row',
   {tag: '@storyboard'},
   async ({page}, testInfo) => {
-    const {driver} = await openMenu(page, 'core-dropdownmenu--default');
-    const row = await rowCenter(page, 'Duplicate');
+    const {driver} = await openScrollingMenu(page);
+    const row = await rowCenter(page, 'New File');
     const popover = page.locator('[popover]:has([role="menu"])').first();
     const box = await popover.boundingBox();
     if (box == null) {
@@ -329,11 +441,11 @@ test(
         frame =>
           frame.sinceDown != null &&
           frame.sinceDown > ONSET_MS + 20 &&
-          frame.lit.startsWith('Duplicate'),
+          frame.lit.startsWith('New File'),
       ),
     ).toBe(true);
     await expect
       .poll(async () => (await readLog(page)).picked)
-      .toEqual(['Duplicate']);
+      .toEqual(['New File']);
   },
 );

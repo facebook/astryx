@@ -400,11 +400,10 @@ test.describe('DropdownMenu press model (Chromium)', () => {
     expect(activations).toEqual([]);
   });
 
-  // A coarse finger runs on the gesture host here, which forgets the fingers a
-  // blur cancels: a touch the browser keeps alive past the blur then lifts
-  // untracked, and its click runs the row. Waits for the host to drop the
-  // click of a finger it cancelled (spec:AST-094 FR28).
-  test.fixme('touch: the window losing focus ends the gesture: nothing acts, the lit row clears, and the lift acts on nothing (spec:AST-094 FR28)', async ({
+  // A coarse finger runs on the gesture host here: a finger a blur cancels
+  // stays the host's until the browser ends it, and its lift's click is
+  // swallowed (spec:AST-094 FR28).
+  test('touch: the window losing focus ends the gesture: nothing acts, the lit row clears, and the lift acts on nothing (spec:AST-094 FR28)', async ({
     page,
   }) => {
     const activations = collectActivations(page);

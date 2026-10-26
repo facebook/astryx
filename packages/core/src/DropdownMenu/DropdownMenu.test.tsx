@@ -3155,10 +3155,11 @@ describe('DropdownMenu press model', () => {
   });
 
   describe('a finger in the menu, tracked as UIMenu\u2019s list tracks it', () => {
-    // iOS 26.2: a row highlights about 160 ms after the finger lands (the
-    // list's content-touch delay), a tap picks at the lift, and a quick drag
-    // scrolls a long menu but scrubs a short one. One model on every touch
-    // device.
+    // iOS 26.2: in a menu that scrolls, a row highlights about 160 ms after
+    // the finger lands (the list's content-touch delay); in one that fits it
+    // highlights at once (spec:AST-094 FR11). A tap picks at the lift, and a
+    // quick drag scrolls a long menu but scrubs a short one. One model on
+    // every touch device.
     const stubFinger = () => {
       vi.stubGlobal(
         'matchMedia',
@@ -3199,9 +3200,24 @@ describe('DropdownMenu press model', () => {
     }
     const ONSET = 150;
 
-    it('a resting finger highlights its row only after the content-touch delay, and the lift picks it once', async () => {
+    it('in a menu that fits, a finger lights its row at once, and the lift picks it once (spec:AST-094 FR11)', async () => {
       const onPick = vi.fn();
       const {rows} = await openPlaced(onPick);
+      const contact = finger();
+      contact.down(rows[0], rowCenter(0));
+      expect(rows[0]).toHaveFocus();
+      contact.up(rows[0], rowCenter(0), 100);
+      fireEvent.click(rows[0], {detail: 1});
+      expect(onPick).toHaveBeenCalledTimes(1);
+      expect(onPick).toHaveBeenCalledWith('Edit');
+    });
+
+    it('in a menu that scrolls, a resting finger highlights its row only after the content-touch delay, and the lift picks it once', async () => {
+      const onPick = vi.fn();
+      const {rows} = await openPlaced(onPick);
+      const menu = screen.getByRole('menu', {hidden: true});
+      Object.defineProperty(menu, 'scrollHeight', {value: 600});
+      Object.defineProperty(menu, 'clientHeight', {value: 300});
       const contact = finger();
       contact.down(rows[0], rowCenter(0));
       contact.move(rows[0], {...rowCenter(0), y: rowCenter(0).y + 2}, 100);
@@ -3228,9 +3244,12 @@ describe('DropdownMenu press model', () => {
       expect(onPick).toHaveBeenCalledWith('Duplicate');
     });
 
-    it('a second finger that lands before the row lights ends the press with nothing acting (FR4)', async () => {
+    it('in a menu that scrolls, a second finger that lands before the row lights ends the press with nothing acting (FR4)', async () => {
       const onPick = vi.fn();
       const {rows} = await openPlaced(onPick);
+      const menu = screen.getByRole('menu', {hidden: true});
+      Object.defineProperty(menu, 'scrollHeight', {value: 600});
+      Object.defineProperty(menu, 'clientHeight', {value: 300});
       const first = finger();
       const second = finger();
       first.down(rows[0], rowCenter(0));
@@ -3239,6 +3258,21 @@ describe('DropdownMenu press model', () => {
       second.up(rows[2], rowCenter(2));
       expect(onPick).not.toHaveBeenCalled();
       expect(rows[0]).not.toHaveFocus();
+    });
+
+    it('in a menu that fits, a second finger that lands before the press begins puts out the lit row, and nothing acts (FR4)', async () => {
+      const onPick = vi.fn();
+      const {rows} = await openPlaced(onPick);
+      const first = finger();
+      const second = finger();
+      first.down(rows[0], rowCenter(0));
+      expect(rows[0]).toHaveFocus();
+      second.down(rows[2], rowCenter(2), {after: 40});
+      first.up(rows[0], rowCenter(0), 40);
+      second.up(rows[2], rowCenter(2));
+      expect(onPick).not.toHaveBeenCalled();
+      fireEvent.click(rows[0], {detail: 1});
+      expect(onPick).not.toHaveBeenCalled();
     });
 
     it('a second finger that lands once the row is lit ends the press with nothing acting (FR4)', async () => {
@@ -3333,9 +3367,12 @@ describe('DropdownMenu press model', () => {
     });
 
     describe('an Android finger (no iOS engine) is tracked the same way', () => {
-      it('its row lights only after the content-touch delay, and the lift picks it once', async () => {
+      it('in a menu that scrolls, its row lights only after the content-touch delay, and the lift picks it once', async () => {
         const onPick = vi.fn();
         const {rows} = await openPlaced(onPick);
+        const menu = screen.getByRole('menu', {hidden: true});
+        Object.defineProperty(menu, 'scrollHeight', {value: 600});
+        Object.defineProperty(menu, 'clientHeight', {value: 300});
         const contact = finger();
         contact.down(rows[0], rowCenter(0));
         contact.move(rows[0], {...rowCenter(0), y: rowCenter(0).y + 2}, 100);

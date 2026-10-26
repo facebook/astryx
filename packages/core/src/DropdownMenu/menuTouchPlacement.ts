@@ -42,21 +42,66 @@ export const COVER_TRIGGER_STYLE: React.CSSProperties = {
 };
 
 /**
+ * The inline `max-block-size` each box had before placeOverTrigger capped
+ * it, so clearing the cap gives back the caller's own value (a `style` on the
+ * menu) rather than removing it.
+ */
+const capsBefore = new WeakMap<HTMLElement, string>();
+
+/** Gives `box` back the inline `max-block-size` it had before the cap. */
+function clearCap(box: HTMLElement): void {
+  const before = capsBefore.get(box);
+  if (before === undefined) {
+    return;
+  }
+  capsBefore.delete(box);
+  if (before === '') {
+    box.style.removeProperty('max-block-size');
+  } else {
+    box.style.setProperty('max-block-size', before);
+  }
+}
+
+/** Caps `box` inline at `value`, keeping what it had before. */
+function setCap(box: HTMLElement, value: string): void {
+  if (!capsBefore.has(box)) {
+    capsBefore.set(box, box.style.getPropertyValue('max-block-size'));
+  }
+  box.style.setProperty('max-block-size', value);
+}
+
+/**
  * Pins the covering menu's vertical edge to its trigger as it opens: its top
  * to the trigger's top, or, when the trigger's center is in the lower part of
  * the viewport, its bottom to the trigger's bottom (UIMenu on iOS 26.2).
  * Anchored, so it follows the trigger while open. The menu stays on screen,
  * as UIMenu does: no taller than the room between that edge and the far one,
- * less the screen margin, and it scrolls past that. Clears all of it off a
- * menu that does not cover its trigger.
+ * less the screen margin, and it scrolls past that. The room caps the surface
+ * and every capped box from the surface down to `content` (the scrolling
+ * `role="menu"` element, and the column it shares with a header or footer),
+ * so the box that scrolls is the one held to the room, never a taller box
+ * inside a shorter surface. Clears only what it wrote off a menu that does
+ * not cover its trigger, giving each box back its own inline cap.
  */
 export function placeOverTrigger(
   surface: HTMLElement,
   trigger: HTMLElement,
   covers: boolean,
+  content: HTMLElement | null = null,
 ): void {
+  // The surface, then each box between it and the content, the content last.
+  const capped = [surface];
+  for (
+    let node = content;
+    node != null && node !== surface && surface.contains(node);
+    node = node.parentElement
+  ) {
+    capped.splice(1, 0, node);
+  }
+  for (const box of capped) {
+    clearCap(box);
+  }
   const {style} = surface;
-  style.removeProperty('max-block-size');
   if (!covers) {
     style.removeProperty('top');
     style.removeProperty('bottom');
@@ -76,12 +121,17 @@ export function placeOverTrigger(
   const room = upward
     ? `calc(${box.bottom}px - ${coverEdge('top', 'block-start')})`
     : `calc(${height - box.top}px - ${coverEdge('bottom', 'block-end')})`;
-  // The menu's own cap (menuMaxHeight, the layer's viewport cap) still holds.
-  const cap = Number.parseFloat(
-    view?.getComputedStyle(surface).maxBlockSize ?? '',
-  );
-  style.setProperty(
-    'max-block-size',
-    Number.isFinite(cap) ? `min(${cap}px, ${room})` : room,
-  );
+  for (const target of capped) {
+    // Each box's own cap (menuMaxHeight, the layer's viewport cap) still
+    // holds; a box with none takes the room only if it is the surface.
+    const computed = view?.getComputedStyle(target);
+    const cap = Number.parseFloat(
+      computed?.maxBlockSize || computed?.maxHeight || '',
+    );
+    if (Number.isFinite(cap)) {
+      setCap(target, `min(${cap}px, ${room})`);
+    } else if (target === surface) {
+      setCap(target, room);
+    }
+  }
 }

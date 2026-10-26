@@ -665,6 +665,10 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
           return 0;
         }
         const before = running.scroller.scrollTop;
+        // The menu's own scroll, not the browser taking the finger.
+        getGestureHost(running.scroller.ownerDocument).ownScroll(
+          running.scroller,
+        );
         running.scroller.scrollTop = before + delta;
         const moved = running.scroller.scrollTop - before;
         if (moved === 0) {
@@ -1360,6 +1364,15 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
       new MenuSelectionGestureRecognizer({
         name: 'MenuSelection',
         scrolls: () => getScrollerRef.current() != null,
+        // A menu that fits lights the row under a landing finger at once
+        // (spec:AST-094 FR11); the press joins it when it begins.
+        onLand: recognizer => {
+          const tracker = trackerRef.current;
+          if (tracker != null && !tracker.isTracking) {
+            const landing = recognizer.landingLocation();
+            tracker.begin(landing.x, landing.y);
+          }
+        },
         // The rows' own press tracking never sees the finger; the browser's
         // click for a recognized press is withheld (the row runs at the lift).
         delaysTouchesBegan: true,
@@ -1392,9 +1405,12 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
       }
       switch (recognizer.state) {
         case 'began': {
-          // The press begins where the finger landed, then follows it.
+          // The press begins where the finger landed (already lit there in
+          // a menu that fits), then follows it.
           const landing = recognizer.landingLocation();
-          tracker.begin(landing.x, landing.y);
+          if (!tracker.isTracking) {
+            tracker.begin(landing.x, landing.y);
+          }
           const {x, y} = recognizer.location();
           if (x !== landing.x || y !== landing.y) {
             tracker.move(x, y);
@@ -1444,6 +1460,24 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
   // Synchronizes with the selection recognizer (gesture system): its state
   // changes drive the action-group tracker.
   useEffect(() => selection.addListener(onSelection), [selection, onSelection]);
+  // Synchronizes with the selection recognizer's failures, which its action
+  // listeners do not hear: a row lit as the finger landed in a menu that
+  // fits goes dark when the press does not happen (a second finger before
+  // the onset, FR4).
+  useEffect(
+    () =>
+      selection.addTransitionListener((recognizer, _from, to) => {
+        const tracker = trackerRef.current;
+        if (to !== 'failed' || tracker == null || !tracker.isTracking) {
+          return;
+        }
+        tracker.cancel();
+        if (recognizer.endedByAnotherFinger) {
+          armStrayClick(getDocument());
+        }
+      }),
+    [selection, getDocument],
+  );
   const isSelectionEnabled =
     options.touchModel === 'uikit' && (options.isEnabled ?? true);
   // Synchronizes the selection recognizer's enabled flag. Turning it off
