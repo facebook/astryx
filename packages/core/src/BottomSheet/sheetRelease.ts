@@ -240,7 +240,11 @@ export function resolveDefaultRelease({
   /** Whether a drag may dismiss the sheet. */
   dismissible: boolean;
   position: number;
-  /** The finger's speed over its last 100 ms, px/s; 0 after a pause. */
+  /**
+   * The release velocity, px/s: the velocity tracker's at the lift, the one
+   * estimate every pointer reads (`spec:AST-100` FR2, FR4); 0 after a still
+   * pointer.
+   */
   velocity: number;
   /** How far the gesture traveled, px. */
   travel: number;
