@@ -26,7 +26,7 @@ import {
   vi,
 } from 'vitest';
 import {timing} from '../motion/uikit';
-import {fontWeightVars} from '../theme/tokens.stylex';
+import {colorVars, fontWeightVars} from '../theme/tokens.stylex';
 import {PickerWheel} from './PickerWheel';
 import type {WheelHandle, WheelOption, WheelProps} from './wheelOptions';
 import {WHEEL_ROW_PITCH, todayLook} from './wheelLook';
@@ -995,6 +995,47 @@ describe('PickerWheel — a short looping list', () => {
     for (const row of others) {
       expect(row.style.fontWeight).not.toBe(onBand.style.fontWeight);
     }
+  });
+
+  it('marks the band’s row when a short loop opens on its first row', () => {
+    // Offset 0: parking moves nothing, so no new row is reported.
+    const {column} = renderWheel({
+      options: QUARTERS,
+      value: 0,
+      label: 'Minute',
+      isLooping: true,
+    });
+    const onBand = stripRowsOf(column)[bandRow(column)];
+    expect(onBand.dataset.label).toBe('00');
+    expect(onBand.style.fontWeight).toBe(
+      fontWeightVars['--font-weight-semibold'],
+    );
+  });
+
+  it('keeps a disabled minute’s colour on a copy under the band', () => {
+    const options = QUARTERS.map(option =>
+      option.value === 30 ? {...option, isDisabled: true} : option,
+    );
+    const {column} = renderWheel({
+      options,
+      value: 45,
+      label: 'Minute',
+      isLooping: true,
+    });
+    // A finger holds the wheel a row back: the copy of 30 before the band's
+    // 45 (itself a copy) reaches the band.
+    touch('touchstart', column, CENTRE);
+    advance(16);
+    touch('touchmove', column, CENTRE + 20);
+    advance(16);
+    touch('touchmove', column, CENTRE + 20 + ROW);
+    const near = [...stripRowsOf(column)].sort(
+      (a, b) => Math.abs(distanceOf(a)) - Math.abs(distanceOf(b)),
+    )[0];
+    expect(near.dataset.label).toBe('30');
+    expect(near.hasAttribute('data-wheel-copy')).toBe(true);
+    expect(near.style.color).toBe(colorVars['--color-text-disabled']);
+    touch('touchend', column, CENTRE + 20 + ROW);
   });
 
   it('keeps a two-row list that does not loop to its two rows (AM/PM)', () => {

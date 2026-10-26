@@ -376,7 +376,9 @@ export function PickerWheel({
     if (active == null || position == null) {
       return;
     }
-    const index = wrapIndex(position, rows.length);
+    // A copy's option: the strip repeats the list, so the row's place in the
+    // list, not on the strip, names it.
+    const index = wrapIndex(position, currentOptions.length);
     active.style.color = currentOptions[index]?.isDisabled
       ? colorVars['--color-text-disabled']
       : colorVars['--color-text-accent'];
@@ -527,7 +529,13 @@ export function PickerWheel({
     if (Math.abs(motion.offset() - position * ROW_HEIGHT) > 0.01) {
       motion.setOffset(position * ROW_HEIGHT);
     }
-  }, [isActive, selectedIndex, layout, motion, rowCount]);
+    if (copies > 1) {
+      // A short loop's mark is painted, never rendered: a wheel parked where
+      // it already was (its first row, at offset 0) reports no new row, so
+      // the band's row is painted here.
+      paintRow(nearestIndex(motion.offset(), layout));
+    }
+  }, [isActive, selectedIndex, layout, motion, rowCount, copies, paintRow]);
 
   // A hidden wheel keeps no motion running and holds no drag. Hiding it
   // mid-drag ends the pan without calling its listener (the toggle's owner
