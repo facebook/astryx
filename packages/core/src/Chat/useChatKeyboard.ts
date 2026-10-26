@@ -393,18 +393,22 @@ export function useChatKeyboard({
         .catch(() => undefined);
     };
     const passive = {passive: true} as const;
-    // Fingers count only where they can hold the layout (FR19).
+    // Fingers count, and a finger's scroll is waited out, only where they
+    // can hold the layout: no touch-only listener under a fine pointer
+    // (spec:AST-094 FR19, FR24).
     const followsFingers = isTouch && isKeyboardMeasurable(win);
+    const scrollTarget: EventTarget | null = !followsFingers
+      ? null
+      : isSelfScrolling
+        ? root
+        : scrollRef.current === root.ownerDocument.documentElement
+          ? win
+          : scrollRef.current;
     if (followsFingers) {
       root.addEventListener('touchstart', onTouches, passive);
       root.addEventListener('touchend', onTouches, passive);
       root.addEventListener('touchcancel', onTouches, passive);
     }
-    const scrollTarget: EventTarget | null = isSelfScrolling
-      ? root
-      : scrollRef.current === root.ownerDocument.documentElement
-        ? win
-        : scrollRef.current;
     scrollTarget?.addEventListener('scroll', onScroll, passive);
     const guide = getKeyboardLayoutGuide(win);
     const unsubscribe = guide.subscribe(follow);

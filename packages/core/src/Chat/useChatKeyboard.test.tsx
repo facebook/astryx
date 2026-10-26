@@ -260,7 +260,7 @@ describe('ChatLayout and the software keyboard', () => {
     vi.unstubAllGlobals();
   });
 
-  it('keeps no room for a finger under a fine primary pointer, which registers no touch listener (FR19)', async () => {
+  it('keeps no room for a finger under a fine primary pointer, which registers no touch-only listener (FR19, FR24)', async () => {
     vi.stubGlobal('matchMedia', (query: string) => ({
       matches: query === '(pointer: fine)',
       media: query,
@@ -285,6 +285,9 @@ describe('ChatLayout and the software keyboard', () => {
       report(window.innerHeight - 300);
       await settle();
       expect(added.filter(type => type.startsWith('touch'))).toEqual([]);
+      // One scroll listener: the transcript's auto-follow, which a mouse
+      // wheel needs too; none waits for a finger's scroll to end.
+      expect(added.filter(type => type === 'scroll')).toHaveLength(1);
     } finally {
       vi.restoreAllMocks();
       vi.unstubAllGlobals();
