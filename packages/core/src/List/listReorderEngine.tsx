@@ -16,7 +16,7 @@
  *   the reorder session of a List, its Host and its handle. A drag from a
  *   handle moves the row with the finger, the rows it passes slide out of its
  *   way, the list autoscrolls near the scroll edges, and the drop springs the
- *   row into its slot and reports the move once. Activating a handle without
+ *   row into its position and reports the move once. Activating a handle without
  *   a drag (a click, Space or Enter) turns on reorder mode for its row: each
  *   arrow moves it a place at once (one report each), announced with its
  *   place and neighbours, and Escape or another activation ends the mode,
@@ -29,8 +29,8 @@
  * UIKit's edit-mode reorder (iOS 26.2, measured), which this follows: nothing
  * changes when the drag begins (no lift); the row follows the finger one to
  * one, its centre stopping at the scroll view's edges; the rows between its
- * place and its slot slide on the table spring, shorter while autoscrolling;
- * the drop springs it from rest into its slot, the spring's duration scaled
+ * place and its position slide on the table spring, shorter while autoscrolling;
+ * the drop springs it from rest into its position, the spring's duration scaled
  * by the distance left; autoscroll is a 20 ms timer whose step grows with how
  * far the row's edge is past the scroll edge. With a mouse (the theme's
  * presentation) the same model runs without motion: rows jump to their
@@ -39,7 +39,7 @@
  * HOW IT RUNS. Everything after the drag begins is imperative: no React
  * render and no layout read until the drop. The begin reads each row's
  * layout once; each move writes one `translate` on the dragged row (the
- * shared per-element animator's `set`), and a slot change starts one spring
+ * shared per-element animator's `set`), and a position change starts one spring
  * per displaced row on the compositor. The list root carries
  * `data-astryx-reordering` from the begin until the commit that applies the
  * drop, so the List's update motion (useListUpdateMotion) leaves that commit
@@ -117,10 +117,10 @@ import {
   autoscrollStep,
   clampTop,
   offsetsFor,
-  proposedSlot,
+  dropPosition,
   settleSpring,
   slideSpring,
-  slotTop,
+  positionTop,
   type ReorderGeometry,
 } from './reorderModel';
 
@@ -303,7 +303,7 @@ interface DragSession {
   readonly tops: ReadonlyArray<number>;
   readonly geometry: ReorderGeometry;
   readonly dragged: number;
-  slot: number;
+  position: number;
   /** The offset each row is moving to. */
   readonly offsets: number[];
   /** The list's layout origin in the viewport at the begin. */
@@ -959,7 +959,7 @@ export class ListReorderController implements ListReorderSession {
       tops,
       geometry,
       dragged,
-      slot: dragged,
+      position: dragged,
       offsets: rows.map((element, index) =>
         index === dragged ? 0 : shownY(element, at),
       ),
@@ -1018,21 +1018,25 @@ export class ListReorderController implements ListReorderSession {
     const origin = session.origin - session.scrolled;
     const top = this.draggedTop(session, y);
     animatorFor(session.rows[dragged]).set({y: top - (origin + row.top)});
-    const slot = proposedSlot(geometry, dragged, top + row.height / 2 - origin);
-    if (slot !== session.slot) {
-      this.moveTo(slot, false);
+    const position = dropPosition(
+      geometry,
+      dragged,
+      top + row.height / 2 - origin,
+    );
+    if (position !== session.position) {
+      this.moveTo(position, false);
     }
     this.autoscroll(top, row.height);
   }
 
-  /** Slides the rows the dragged row displaces at `slot` to their places. */
-  private moveTo(slot: number, force: boolean): void {
+  /** Slides the rows the dragged row displaces at `position` to their places. */
+  private moveTo(position: number, force: boolean): void {
     const session = this.session;
     if (session == null) {
       return;
     }
-    session.slot = slot;
-    const offsets = offsetsFor(session.geometry, session.dragged, slot);
+    session.position = position;
+    const offsets = offsetsFor(session.geometry, session.dragged, position);
     const at = motionNow();
     const spring =
       session.slide == null ? null : slideSpring(session.step, session.slide);
@@ -1055,7 +1059,7 @@ export class ListReorderController implements ListReorderSession {
       }
     }
     // A pointer drag announces its pick-up and its drop, not each place it
-    // passes: announcing each crossed slot is noisy, and a live region's
+    // passes: announcing each crossed position is noisy, and a live region's
     // text change is a layout while the drag runs on the compositor.
   }
 
@@ -1121,7 +1125,7 @@ export class ListReorderController implements ListReorderSession {
     session.step = 0;
   }
 
-  /** The drop: the row springs into its slot and the move is reported. */
+  /** The drop: the row springs into its position and the move is reported. */
   private drop(): void {
     const session = this.session;
     if (session == null) {
@@ -1129,10 +1133,10 @@ export class ListReorderController implements ListReorderSession {
     }
     this.session = null;
     this.stopAutoscroll(session);
-    const {geometry, dragged, slot, rows, list} = session;
+    const {geometry, dragged, position, rows, list} = session;
     const element = rows[dragged];
     const target =
-      slotTop(geometry, dragged, slot) - geometry.rows[dragged].top;
+      positionTop(geometry, dragged, position) - geometry.rows[dragged].top;
     const at = motionNow();
     if (this.animates) {
       const distance = target - shownY(element, at);
@@ -1145,11 +1149,11 @@ export class ListReorderController implements ListReorderSession {
     } else {
       animatorFor(element).set({y: target});
     }
-    const dropped = this.messages?.dropped(slot + 1, rows.length) ?? '';
+    const dropped = this.messages?.dropped(position + 1, rows.length) ?? '';
     const key = this.keyOf(element);
     const options = this.options;
-    if (slot === dragged || options == null || key == null) {
-      if (slot === dragged) {
+    if (position === dragged || options == null || key == null) {
+      if (position === dragged) {
         this.announce(dropped, 'polite');
         list.removeAttribute(REORDERING_ATTRIBUTE);
         this.restWhenDone(element, session.restore);
@@ -1160,7 +1164,7 @@ export class ListReorderController implements ListReorderSession {
     }
     this.announceWhenCommitted({
       row: element,
-      to: slot,
+      to: position,
       landed: dropped,
       kept: this.messages?.cancelled(dragged + 1, rows.length) ?? '',
       politeness: 'polite',
@@ -1172,7 +1176,7 @@ export class ListReorderController implements ListReorderSession {
       dragged,
       restore: session.restore,
     };
-    options.onReorder({key, to: slot});
+    options.onReorder({key, to: position});
     // A consumer that does not apply the move by the end of the task gets
     // its rows back where they were.
     this.fallback = setTimeout(() => {
@@ -1589,13 +1593,9 @@ export class ListReorderController implements ListReorderSession {
       }, 0);
       return;
     }
-    if (
-      handle != null &&
-      handle === this.modeHandle &&
-      (next != null || !this.isMovingByKey)
-    ) {
-      this.setMode(null);
-    }
+    // Focus leaving the handle does not end reorder mode: its exits are
+    // Escape, Done, the handle again and its row going (spec:AST-103 FR4,
+    // FR4a). Back on the handle, its arrows move the row again.
   }
 
   /**

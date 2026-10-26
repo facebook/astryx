@@ -30,7 +30,7 @@
  * - /packages/cli/assets/templates/blocks/components/List/ (showcase blocks)
  */
 
-import {use, useRef, type Key, type ReactNode} from 'react';
+import {use, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -140,12 +140,13 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
   isSelected?: boolean;
 
   /**
-   * The row's item key in a reorderable List (`List reorderable`): the key
-   * the reorderable object's `onReorder` reports and `isReorderable` is
-   * asked about. A row without one has no reorder handle. Separate from
-   * React's `key`, which stays React's own. No effect elsewhere.
+   * The row's item key in a reorderable List (`List reorderable`), a string
+   * from the data: the key the reorderable object's `onReorder` reports and
+   * `isReorderable` is asked about. A row without one has no reorder handle.
+   * Separate from React's `key`, which stays React's own. No effect
+   * elsewhere.
    */
-  itemKey?: Key;
+  itemKey?: string;
 
   /**
    * Swipe actions for touch, passed through to `Item` unchanged: the verbs a
@@ -441,6 +442,8 @@ export function ListItem({
         label={label}
         itemKey={itemKey}
         isDisabled={isDisabled}
+        rowLabel={restProps['aria-label']}
+        rowLabelledBy={restProps['aria-labelledby']}
       />
     ) : null;
   const density = ctx?.density ?? 'balanced';

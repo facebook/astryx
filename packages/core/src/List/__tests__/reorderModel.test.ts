@@ -5,8 +5,8 @@
  * @input reorderModel.ts and the UIKit reorder values (motion/uikit/reorder.ts)
  * @output Unit proofs of the reorder model against the UIKit lab measurements
  *   (iOS 26.2 simulator, a table of 44 pt rows with rows 6 and 9 at 88 pt):
- *   the proposed slots of a measured drag, the movable range, the displaced
- *   rows' offsets, the slot's place, the drop's spring durations, the slides'
+ *   the drop positions of a measured drag, the movable range, the displaced
+ *   rows' offsets, the position's place, the drop's spring durations, the slides'
  *   shortening while autoscrolling and the autoscroll steps
  * @position Tests for List/reorderModel.ts
  */
@@ -19,10 +19,10 @@ import {
   movableRange,
   moveIndex,
   offsetsFor,
-  proposedSlot,
+  dropPosition,
   settleSpring,
   slideSpring,
-  slotTop,
+  positionTop,
   type ReorderGeometry,
   type ReorderRow,
 } from '../reorderModel';
@@ -47,12 +47,12 @@ const MEASURED = table(
   ),
 );
 
-describe('proposedSlot', () => {
+describe('dropPosition', () => {
   it('reproduces the measured drag of row 3 down over the 88 pt row and back', () => {
     // Each proposal of the UIKit lab drag (table.proposed), with the dragged
-    // row's centre (list coordinates) on the frame before it. Down, the slot
+    // row's centre (list coordinates) on the frame before it. Down, the position
     // moves once the centre is past the boundary; up, once it is back on it.
-    const measured: ReadonlyArray<[center: number, slot: number]> = [
+    const measured: ReadonlyArray<[center: number, position: number]> = [
       [178, 4],
       [221, 5],
       [309, 6],
@@ -62,42 +62,44 @@ describe('proposedSlot', () => {
       [352, 6],
       [306.8, 5],
     ];
-    for (const [center, slot] of measured) {
-      expect(proposedSlot(MEASURED, 3, center), `centre ${center}`).toBe(slot);
+    for (const [center, position] of measured) {
+      expect(dropPosition(MEASURED, 3, center), `centre ${center}`).toBe(
+        position,
+      );
     }
   });
 
   it('swaps a 44 pt neighbour after half a row and the 88 pt row after its height', () => {
     // Row 3's centre starts at 3 × 44 + 22 = 154.
-    expect(proposedSlot(MEASURED, 3, 154)).toBe(3);
-    expect(proposedSlot(MEASURED, 3, 154 + 22)).toBe(3);
-    expect(proposedSlot(MEASURED, 3, 154 + 22.5)).toBe(4);
-    expect(proposedSlot(MEASURED, 3, 154 - 22)).toBe(2);
-    // From slot 5 (centre past 220) to slot 6 takes the 88 pt row's height.
-    expect(proposedSlot(MEASURED, 3, 221)).toBe(5);
-    expect(proposedSlot(MEASURED, 3, 307)).toBe(5);
-    expect(proposedSlot(MEASURED, 3, 309)).toBe(6);
+    expect(dropPosition(MEASURED, 3, 154)).toBe(3);
+    expect(dropPosition(MEASURED, 3, 154 + 22)).toBe(3);
+    expect(dropPosition(MEASURED, 3, 154 + 22.5)).toBe(4);
+    expect(dropPosition(MEASURED, 3, 154 - 22)).toBe(2);
+    // From position 5 (centre past 220) to position 6 takes the 88 pt row's height.
+    expect(dropPosition(MEASURED, 3, 221)).toBe(5);
+    expect(dropPosition(MEASURED, 3, 307)).toBe(5);
+    expect(dropPosition(MEASURED, 3, 309)).toBe(6);
   });
 
   it("moves a tall row past a short neighbour once its centre passes that row's near edge", () => {
     // Row 1 (88 pt) rests with its centre at 88; the 44 pt row below starts at
     // 132, so the centre travels half the tall row before they change places.
     const geometry = table([44, 88, 44, 44]);
-    expect(proposedSlot(geometry, 1, 88)).toBe(1);
-    expect(proposedSlot(geometry, 1, 89)).toBe(1);
-    expect(proposedSlot(geometry, 1, 132)).toBe(1);
-    expect(proposedSlot(geometry, 1, 132.5)).toBe(2);
+    expect(dropPosition(geometry, 1, 88)).toBe(1);
+    expect(dropPosition(geometry, 1, 89)).toBe(1);
+    expect(dropPosition(geometry, 1, 132)).toBe(1);
+    expect(dropPosition(geometry, 1, 132.5)).toBe(2);
     // Up: past the 44 pt row above once the centre passes its bottom (44).
-    expect(proposedSlot(geometry, 1, 44.5)).toBe(1);
-    expect(proposedSlot(geometry, 1, 44)).toBe(0);
+    expect(dropPosition(geometry, 1, 44.5)).toBe(1);
+    expect(dropPosition(geometry, 1, 44)).toBe(0);
   });
 
-  it('never proposes a new slot at rest, whatever the heights', () => {
+  it('never proposes a new position at rest, whatever the heights', () => {
     // More than twice the row below: a 100 pt row over 44 pt rows.
     const tall = table([44, 100, 44, 44]);
-    expect(proposedSlot(tall, 1, 44 + 50)).toBe(1);
-    expect(proposedSlot(tall, 1, 144)).toBe(1);
-    expect(proposedSlot(tall, 1, 144.5)).toBe(2);
+    expect(dropPosition(tall, 1, 44 + 50)).toBe(1);
+    expect(dropPosition(tall, 1, 144)).toBe(1);
+    expect(dropPosition(tall, 1, 144.5)).toBe(2);
     for (const heights of [
       [44, 100, 44, 44],
       [30, 120, 30, 30, 30],
@@ -107,7 +109,7 @@ describe('proposedSlot', () => {
       const geometry = table(heights, {gap: 4});
       for (const [index, row] of geometry.rows.entries()) {
         expect(
-          proposedSlot(geometry, index, row.top + row.height / 2),
+          dropPosition(geometry, index, row.top + row.height / 2),
           `${heights.join(',')} row ${index}`,
         ).toBe(index);
       }
@@ -118,22 +120,22 @@ describe('proposedSlot', () => {
     // The mirror of the measured drag over the 88 pt row: row 7 (44 pt) below
     // row 6 (88 pt, 264–352) changes places once its centre is above
     // 264 + 44 = 308, the tall row's height less half its own from rest (374).
-    expect(proposedSlot(MEASURED, 7, 374)).toBe(7);
-    expect(proposedSlot(MEASURED, 7, 309)).toBe(7);
-    expect(proposedSlot(MEASURED, 7, 308)).toBe(6);
+    expect(dropPosition(MEASURED, 7, 374)).toBe(7);
+    expect(dropPosition(MEASURED, 7, 309)).toBe(7);
+    expect(dropPosition(MEASURED, 7, 308)).toBe(6);
   });
 
   it('puts the boundary in the middle of the gap between rows', () => {
     const geometry = table([40, 40, 40], {gap: 4});
     // Without row 0, row 1 sits at 0..40; its boundary is at 42.
-    expect(proposedSlot(geometry, 0, 42)).toBe(0);
-    expect(proposedSlot(geometry, 0, 42.5)).toBe(1);
+    expect(dropPosition(geometry, 0, 42)).toBe(0);
+    expect(dropPosition(geometry, 0, 42.5)).toBe(1);
   });
 
   it('stops at a fixed row', () => {
     const geometry = table([44, 44, 44, 44, 44], {fixed: [3]});
-    expect(proposedSlot(geometry, 0, 1000)).toBe(2);
-    expect(proposedSlot(geometry, 4, -1000)).toBe(4);
+    expect(dropPosition(geometry, 0, 1000)).toBe(2);
+    expect(dropPosition(geometry, 4, -1000)).toBe(4);
   });
 });
 
@@ -150,8 +152,8 @@ describe('movableRange', () => {
   });
 });
 
-describe('offsetsFor and slotTop', () => {
-  it('moves the rows between the place and the slot by the dragged row', () => {
+describe('offsetsFor and positionTop', () => {
+  it('moves the rows between the place and the position by the dragged row', () => {
     expect(offsetsFor(MEASURED, 3, 5).slice(0, 8)).toEqual([
       0, 0, 0, 0, -44, -44, 0, 0,
     ]);
@@ -163,14 +165,14 @@ describe('offsetsFor and slotTop', () => {
   });
 
   it('places the dragged row where the displaced rows leave room', () => {
-    // Row 3 to slot 6 (past the 88 pt row): 3 × 44 + 44 + 88 … row 6's
+    // Row 3 to position 6 (past the 88 pt row): 3 × 44 + 44 + 88 … row 6's
     // bottom (352) minus its own 44.
-    expect(slotTop(MEASURED, 3, 6)).toBe(308);
-    expect(slotTop(MEASURED, 3, 1)).toBe(44);
-    expect(slotTop(MEASURED, 3, 3)).toBe(132);
+    expect(positionTop(MEASURED, 3, 6)).toBe(308);
+    expect(positionTop(MEASURED, 3, 1)).toBe(44);
+    expect(positionTop(MEASURED, 3, 3)).toBe(132);
     const gapped = table([40, 40, 40], {gap: 4});
-    expect(slotTop(gapped, 0, 2)).toBe(88);
-    expect(slotTop(gapped, 2, 0)).toBe(0);
+    expect(positionTop(gapped, 0, 2)).toBe(88);
+    expect(positionTop(gapped, 2, 0)).toBe(0);
   });
 
   it('orders the rows after a move', () => {
@@ -181,7 +183,7 @@ describe('offsetsFor and slotTop', () => {
 
 describe('settleSpring', () => {
   it('scales the measured drop durations by the distance up to half the row', () => {
-    // 44 pt row released 12 pt from its slot: 0.1636 s.
+    // 44 pt row released 12 pt from its position: 0.1636 s.
     expect(settleSpring(12, 44).duration).toBeCloseTo(0.1636, 4);
     // 88 pt row released 12 / 22 / 33 / 43 pt away.
     const measured: ReadonlyArray<[number, number]> = [
