@@ -6,9 +6,9 @@
  *   picker constants (motion/uikit/picker.ts)
  * @output Exports the curves a picker wheel moves on: the release plan (a
  *   coast onto a row, a snap, a coast into an end and its bounce, a return
- *   from past an end), the tap spin, the rubber band while dragging, the
- *   release velocity and the row crossings that tick
- * @position Pure math of the Wheel (Wheel.tsx); the drum (wheelDrum.ts)
+ *   from past an end), the tap spin, the rubber band while dragging, and the
+ *   row crossings that tick
+ * @position Pure math of the touch picker wheel; the drum (wheelDrum.ts)
  *   renders whatever curve this returns
  *
  * Units follow the motion foundation: positions in px, time in seconds,
@@ -40,7 +40,6 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/DateInput/wheelPhysics.test.ts
- * - /packages/core/src/DateInput/Wheel.tsx
  */
 
 import {cubicBezier} from '../motion/bezier';
