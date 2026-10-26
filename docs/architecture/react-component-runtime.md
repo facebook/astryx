@@ -162,9 +162,10 @@ those contracts.
 - **INV12 — Size changes inside a container have one module.** In
   `@astryxdesign/core`, one internal module produces the size-change glide
   `spec:AST-105` defines. It measures the layout before and after a reported
-  change and moves shifted content with a compositor-only translate played
-  through the shared rectangle morph (`architecture:layer-runtime` INV15;
-  `spec:AST-094` FR5); it never animates height. Its walk visits only the
+  change and moves shifted content with a compositor-only translate. The
+  glide plays through the shared rectangle morph (`architecture:layer-runtime`
+  INV15; `spec:AST-094` FR5) once it lands; until then it uses the module's
+  own compositor translate; it never animates height. Its walk visits only the
   following element siblings at each ancestor level up to the area, through
   `parentElement` and `nextElementSibling`, descending only into an element
   with `display: contents`, so its cost grows with depth plus following
