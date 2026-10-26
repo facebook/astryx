@@ -372,15 +372,17 @@ test('without scrollend (Safari 17, 18), a finger landing on a gliding list brak
   );
   // An engine without `scrollend`: the handler property is gone, and no
   // scrollend event reaches the page's listeners (window's capture runs
-  // first and stops it).
+  // first and stops it). Window, a global, carries its event handler
+  // properties on the window object itself, not on Window.prototype.
   await page.addInitScript(() => {
-    for (const proto of [
+    for (const target of [
+      window,
       Window.prototype,
       Document.prototype,
       Element.prototype,
       HTMLElement.prototype,
     ]) {
-      delete (proto as {onscrollend?: unknown}).onscrollend;
+      delete (target as {onscrollend?: unknown}).onscrollend;
     }
     window.addEventListener(
       'scrollend',
