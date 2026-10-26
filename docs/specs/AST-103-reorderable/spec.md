@@ -30,6 +30,11 @@ affects_consumer_docs: []
 
 ## Intent
 
+`createReorderable` applies to a whole collection: its object is passed as
+the collection's `reorderable` prop. Per-item control comes from each item's
+key (`itemKey`, or the collection's existing identity) and from
+`isReorderable(key)`.
+
 A person can change the order of items in a collection by dragging a row's
 handle, by keyboard, or with a screen reader, and every collection that allows
 it behaves the same way. A caller turns reordering on by passing one
@@ -59,13 +64,21 @@ const moveTo = (items, key, to) => {
   return [...rest.slice(0, to), moved, ...rest.slice(to)];
 };
 
-const reorderable = createReorderable({
-  onReorder: ({key, to}) => setItems(items => moveTo(items, key, to)),
-});
+const reorderable = useMemo(
+  () =>
+    createReorderable({
+      onReorder: ({key, to}) => setItems(items => moveTo(items, key, to)),
+    }),
+  [],
+);
 
 <List reorderable={reorderable}>
   {items.map(item => (
-    <ListItem key={item.id} itemKey={item.id} label={item.name} />
+    <ContextMenu
+      key={item.id}
+      items={[{label: 'Move', onActivate: () => reorderable.start(item.id)}]}>
+      <ListItem itemKey={item.id} label={item.name} />
+    </ContextMenu>
   ))}
 </List>;
 ```
@@ -104,10 +117,12 @@ announcements are those of FR3 and FR4, and the tree adds no option.
   or Table's `idKey`, uses it; and a data collection without one takes
   `getKey(item)` (DEC-4). A row without a key shows no handle and cannot be
   picked up. The
-  object may be created again on each render: the collection uses the latest
-  callbacks when a move commits, and a new object during a drag does not
-  cancel the drag. One object passed to two collections reorders each on its
-  own and moves nothing between them.
+  object is meant to be created once per collection, for example with
+  `useMemo`; one created again on each render still works, because the
+  collection uses the latest callbacks when a move commits and a new object
+  during a drag does not cancel the drag. One object passed to two
+  collections reorders each on its own and moves nothing between them; its
+  `start` targets the collection mounted last, with a development warning.
 - **FR2 — Present means enabled.** A collection that accepts reordering takes
   the object through one `reorderable` prop; there is no separate boolean.
   With the prop absent the collection renders no handle, registers no reorder
@@ -161,6 +176,15 @@ announcements are those of FR3 and FR4, and the tree adds no option.
   - the hint is the mode's one added part, inside the open-layer element
     allowance (`spec:AST-017` FR60), and it shares the keyboard hint's
     internal anchored-hint layer, whose public API is unchanged.
+- **FR4a — An app can start reorder mode.** The object exposes one method,
+  `start(key)`, which enters FR4's reorder mode for that item from the app's
+  own UI, such as a Move item in the row's context menu or a toolbar button.
+  Focus moves to that item's handle, which scrolls into view, the hint
+  appears, and the announcements and exits are FR4's. A key that is not
+  reorderable, not mounted, or not found does nothing and warns in
+  development. The mode ends through Escape, Done, the handle, or the item
+  unmounting, so there is no `stop`. Nothing else on the object is public;
+  `start` and the handle enter the same mode.
 - **FR5 — Reordering adds at most one element to a row.** The one added
   element is the handle, the interactive drag target, with its role. Its grip
   is decoration, drawn by a pseudo-element or a theme-role glyph, not by
@@ -195,6 +219,7 @@ announcements are those of FR3 and FR4, and the tree adds no option.
 | FR4                 | Keyboard, mouse, VoiceOver, and TalkBack tests of reorder mode                                   | entering by click, Enter, and Space; arrows in vertical, horizontal, and grid collections; Up, Down, Left, and Right in a tree; each move's announcement at the top, middle, and end; a move past a rejected row; Escape and a second activation; focus and scroll after each move | a move that does not commit at once, an announcement missing, repeated, or before render, a move past a rejected row, focus leaving the handle, or moves undone on exit fails                                                 |
 | FR4 hint            | Browser tests with a mouse, a finger, and a keyboard, plus element counts                        | the hint's axis in vertical, horizontal, and grid collections; each move button and Done; a tap-only reorder; the hint's theme roles; open-layer element count                                                                                                                     | a hint that differs from the keyboard hint's layer or theme roles, a button whose move or announcement differs from its key, focus leaving the handle, a hint that outlives the mode, or more elements than FR60 allows fails |
 | FR4 two-dimensional | Keyboard, VoiceOver, and TalkBack tests on a wrapping card grid, left-to-right and right-to-left | Left and Right across a row end; Up and Down between full rows and into a short last row; announcements with row and column; the hint's four buttons; a resize that changes the column count                                                                                       | a move off reading order, a mirrored direction wrong in right-to-left, a short-row move that is not clamped to its last position, a missing row or column, or a column count read from anything but layout fails              |
+| FR4a                | Keyboard, mouse, and screen-reader tests of `start(key)`                                         | `start` from a context-menu item and a toolbar button; a key that is not reorderable, not mounted, or unknown; an object re-created each render; one object on two collections                                                                                                     | `start` that does not focus and scroll to the handle, a hint or announcement that differs from the handle's mode, a missing-key call that throws or acts, or a two-collection call without a development warning fails        |
 | FR5                 | Element and listener counts of a list with and without the prop                                  | a row at rest; a row picked up                                                                                                                                                                                                                                                     | more than one added element per row, a grip drawn with elements, a per-row listener, or a copy of the moving row, fails                                                                                                       |
 
 ## Decision log
