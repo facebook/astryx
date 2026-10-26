@@ -129,14 +129,19 @@ await handle.finished; // true if it ran to the end, false if interrupted
   delays the motion instead of skipping into it (WebKit starts it at the
   frame before the block). Everything the call starts shares that start
   (`handle.started`); a retarget keeps an explicit one, and `{at}` puts
-  several animators on one clock.
+  several animators on one clock. `{start: 'commit'}` lets the browser date
+  a retarget too; `{start: 'presented'}` waits two frames, until the
+  element at rest has been presented. `handle.curve(property)` is the curve
+  a call plays, for a companion to follow. `{additive: true}` retargets the
+  way UIKit does: the old curve keeps going and the change is added on top,
+  in one animation.
 - Reduced Motion (`prefers-reduced-motion: reduce`, design:reduced-motion):
   every `animate` and `play` is replaced and nothing moves, scales or
   springs. On a coarse primary pointer, or for a call started by a touch
   drag's release (`{touchRelease: true}`), it is an opacity-only cross-fade
-  of `timing.reducedMotionCrossFadeMs` (200 ms): an entrance lands and fades
-  in, an exit fades out then lands, an opacity change fades, any other move
-  dips (fade out, land, fade in). Travel lands with a plain style write while
+  of `timing.reducedMotionCrossFadeMs` (200 ms): an entrance from 0 lands and
+  fades in, an exit to 0 fades out then lands, an opacity change fades, any
+  other move dips (fade out, land, fade in). Travel lands with a plain style write while
   the element is transparent, never as an animated transform. On any other
   pointer it completes at once.
   `{crossfadeAs: 'entrance'}` or `'exit'` gives a slide that changes no
@@ -148,7 +153,8 @@ await handle.finished; // true if it ran to the end, false if interrupted
   continues a throw is direct movement (DR2, DEC-2). A curve marked
   `isTransition` (a coast's spring back from past an edge), like a spring a
   component starts on release toward a target it picks, plays through the
-  Reduce Motion policy: a cross-fade on a coarse pointer, at once elsewhere.
+  Reduce Motion policy: a cross-fade on a coarse pointer or after a touch
+  release (`decay(curves, {touchRelease: true})`), at once elsewhere.
 - `animatorFor(element)` returns the one animator for an element, so code
   that animates it from several places (a swipe on x, a removal on y)
   composes in one `translate` track.
@@ -160,11 +166,14 @@ await handle.finished; // true if it ran to the end, false if interrupted
 
 ### How it stays on the compositor
 
-Each curve is baked into keyframes, sampled adaptively until linear
-interpolation is within 0.05 px, and played with `easing: linear` on one
-start time. The element's inline style already holds the end values,
-and the keyframes hold the end state for a few seconds past the curve's end;
-the main thread drops the animation as soon as it runs after that end. So the
+Each curve is baked into keyframes on a 30 Hz grid, refined until linear
+interpolation is within each channel's tolerance (`SAMPLE_TOLERANCE`, a
+quarter pixel for a move), and played with `easing: linear` on one start
+time. The element's inline style holds the
+value the curve starts from, where the element is, never where it is going;
+the keyframes hold the end state for a minute past the curve's end
+(`END_HOLD_MS`), and the main thread retires a finished animation as soon as
+it runs after that end, writing the end values inline in the same task. So the
 frame an animation ends needs no main thread and shows no flicker, even when
 the main thread is blocked as the curve ends (WebKit's compositor otherwise
 falls back to the last value its main thread committed, mid-flight).
@@ -209,8 +218,8 @@ Chromium and WebKit on the phone profile.
 - A spring that ends inside the block keeps showing its end state. Without the
   animator's end-state hold, WebKit falls back to a mid-flight value.
 - No Layout or Paint runs while it animates (Chromium trace).
-- Seeked to fixed times, the engine plays the analytic curve within 0.05 px,
-  with every channel on one start time.
+- Seeked to fixed times, the engine plays the analytic curve within the
+  sampling tolerance, with every channel on one start time.
 - A finished animation leaves the element within a frame or two of the curve's
   end.
 - A dialog's `::backdrop` follows the curve when seeked and holds its end
