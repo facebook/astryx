@@ -15,7 +15,8 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {cubicBezier} from '../motion/bezier';
-import {solveSpring, toSpring} from '../motion/spring';
+import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
+import {resolveMotion} from '../motion/resolveMotion';
 import {popover, springs, timing} from '../motion/uikit';
 import {
   createPopoverSurfaceMotion,
@@ -259,6 +260,66 @@ describe('createPopoverSurfaceMotion', () => {
     element.parentElement!.querySelector<HTMLElement>(
       `[${POPOVER_EXIT_COPY_ATTRIBUTE}]`,
     );
+
+  it("plays the theme's present and dismiss springs, not the table's (FR4)", () => {
+    // The two springs are registered motion roles, so a theme that writes
+    // their variables on its scope owns their values.
+    const themed: Record<string, string> = {
+      '--motion-springs-popover-present': '0.8s 0.3',
+      '--motion-springs-popover-dismiss': '0.9s 0.2',
+    };
+    const {element, motion} = create();
+    const scope = element.parentElement!;
+    scope.setAttribute('data-astryx-theme', 'brisk');
+    vi.spyOn(window, 'getComputedStyle').mockImplementation(
+      (node: Element) =>
+        ({
+          getPropertyValue: (name: string) =>
+            node === scope ? (themed[name] ?? '') : '',
+        }) as CSSStyleDeclaration,
+    );
+    const settle = (spring: SpringDescription) =>
+      solveSpring(toSpring(spring), {
+        from: 0,
+        to: 1,
+        velocity: 0,
+      }).settleTime(0.001) * 1000;
+
+    motion.enter(() => GEOMETRY);
+    const [presenting] = live('scale', element);
+    const presentMs = Number(presenting.options.duration);
+    motion.exit();
+    const copy = copyOf(element)!;
+    const [dismissing] = live('scale', copy);
+    const dismissMs = Number(dismissing.options.duration);
+    // The themed springs are what the motion played: each duration moved
+    // from the table's by exactly the difference between the two springs'
+    // settling times. Unthemed, the same play gives the table's.
+    const themedPresent = resolveMotion(element, springs.popoverPresent);
+    const themedDismiss = resolveMotion(copy, springs.popoverDismiss);
+    expect(themedPresent).not.toBe(springs.popoverPresent);
+    expect(themedDismiss).not.toBe(springs.popoverDismiss);
+
+    vi.restoreAllMocks();
+    const plain = create();
+    plain.motion.enter(() => GEOMETRY);
+    const [plainPresenting] = live('scale', plain.element);
+    const plainPresentMs = Number(plainPresenting.options.duration);
+    plain.motion.exit();
+    const [plainDismissing] = live('scale', copyOf(plain.element)!);
+    const plainDismissMs = Number(plainDismissing.options.duration);
+
+    expect(presentMs - plainPresentMs).toBeCloseTo(
+      settle(themedPresent) - settle(springs.popoverPresent),
+      6,
+    );
+    expect(dismissMs - plainDismissMs).toBeCloseTo(
+      settle(themedDismiss) - settle(springs.popoverDismiss),
+      6,
+    );
+    expect(presentMs).not.toBeCloseTo(plainPresentMs, 0);
+    expect(dismissMs).not.toBeCloseTo(plainDismissMs, 0);
+  });
 
   it('grows the popover out of its source on UIKit\u2019s present spring, without the layer\u2019s CSS entrance', () => {
     const {element, motion} = create();
