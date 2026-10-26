@@ -6,8 +6,8 @@
  * @file useListUpdateMotion.ts
  * @input A List's element, whether it animates its changes, the touch
  *   presentation (utils/touchPresentation.ts), the row moves of
- *   utils/rowMotion.ts and the table spring (motion/uikit/list.ts), resolved
- *   under the list's theme for the fades timed on it (resolveMotion)
+ *   utils/rowMotion.ts and the table spring (motion/uikit/list.ts, an
+ *   internal constant)
  * @output `useListUpdateMotion`: after every commit that inserts, removes or
  *   reorders rows, the rows that stay slide from where they were to where
  *   they are, and inserted rows fade in once the rows crossing them have
@@ -77,9 +77,8 @@ import {useRef, type RefObject} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {animatorFor, type MotionCurve} from '../motion/animator';
-import {resolveMotion} from '../motion/resolveMotion';
 import {solveSpring, toSpring, type SpringCurve} from '../motion/spring';
-import {list, registerListTable} from '../motion/uikit/list';
+import {list} from '../motion/uikit/list';
 import {
   animateRow,
   motionNow,
@@ -390,8 +389,6 @@ export function useListUpdateMotion(
     if (before == null || element.hasAttribute('data-astryx-reordering')) {
       return;
     }
-    // Its springs are the list table's roles, resolved under the theme.
-    registerListTable();
     const at = motionNow();
     const motions: Promise<unknown>[] = [];
     const slides: Slide[] = [];
@@ -435,9 +432,9 @@ export function useListUpdateMotion(
       motions.push(slid);
     }
     if (entering.length > 0) {
-      // The spring the slides run under this list's theme: new rows time
-      // their fade on its progress.
-      const progress = solveSpring(toSpring(resolveMotion(element, SPRING)), {
+      // The spring the slides run: new rows time their fade on its
+      // progress.
+      const progress = solveSpring(toSpring(SPRING), {
         from: 0,
         to: 1,
       });
