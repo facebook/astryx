@@ -11,6 +11,10 @@
  *   component's touch glue uses (architecture:react-component-runtime INV13).
  *   A layer over several elements reads useTouchSupport itself.
  *
+ * The ref must be on an element this component renders: the layer follows
+ * the element after each of this component's renders, so an element a child
+ * replaces through its own state needs the hook in that child.
+ *
  * `setup(touch, element)` runs in a layout effect once the module is installed
  * and the element is mounted, and its returned cleanup runs when the layer
  * detaches. It runs again only when the module or the element changes, never

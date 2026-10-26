@@ -246,4 +246,29 @@ describe('TouchSupport', () => {
     });
     expect(screen.getByTestId('probe').textContent).toBe('touch');
   });
+
+  it('forgets a fine-pointer install on resetTouchSupportForTests(), so a later coarse pointer registers nothing', async () => {
+    const {listeners, gainCoarsePointer} = stubPointers({coarse: false});
+    const {
+      TouchSupport,
+      subscribeTouchModule,
+      resetTouchSupportForTests,
+      Probe,
+    } = await freshPage();
+    render(<Probe />);
+    TouchSupport.install();
+    expect(listeners.size).toBe(1);
+    act(() => {
+      resetTouchSupportForTests();
+    });
+    expect(listeners.size).toBe(0);
+    const registered = vi.fn();
+    subscribeTouchModule(registered);
+    act(() => {
+      gainCoarsePointer();
+    });
+    expect(registered).not.toHaveBeenCalled();
+    expect(TouchSupport.isInstalled()).toBe(false);
+    expect(screen.getByTestId('probe').textContent).toBe('plain');
+  });
 });

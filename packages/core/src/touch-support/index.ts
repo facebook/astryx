@@ -16,15 +16,17 @@ import {
   installRan,
   installTouchModule,
   markInstallRan,
+  setPendingRegistration,
 } from './touchSupportRegistry';
 
 /** Whether some input is a coarse pointer, the condition for registering. */
 const ANY_COARSE_POINTER = '(any-pointer: coarse)';
 
 /**
- * Touch support for Astryx components: the gesture core, installed once for
- * the whole page. No component uses it yet; components take their touch
- * behavior from it in their own releases.
+ * Touch support for Astryx components: the gesture core and the motion
+ * functions touch layers use, installed once for the whole page. No component
+ * uses it yet; components take their touch behavior from it in their own
+ * releases.
  *
  * Call `install()` once in your client entry, before you render or hydrate:
  *
@@ -67,10 +69,12 @@ const TouchSupport = Object.freeze({
     const onChange = () => {
       if (query.matches) {
         query.removeEventListener('change', onChange);
+        setPendingRegistration(null);
         installTouchModule(touchModule);
       }
     };
     query.addEventListener('change', onChange);
+    setPendingRegistration(() => query.removeEventListener('change', onChange));
   },
   /** Whether `install()` has run on this page. */
   isInstalled(): boolean {
