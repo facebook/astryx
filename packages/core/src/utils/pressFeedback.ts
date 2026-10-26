@@ -6,7 +6,8 @@
  *   scroll and visibility events
  * @output Exports paintPress and readPressPaint (the one writer of the press
  *   attribute for every painter), PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE,
- *   pressableProps and installPressFeedback
+ *   pressableProps, the list row's press profile (CELL_PRESS_PROFILE,
+ *   cellPressableProps) and installPressFeedback
  * @position The DOM half of the touch press model: one delegated controller
  *   per document that writes `data-astryx-press` on the nearest pressable surface.
  *   Installed by usePressFeedback (hooks/usePressFeedback.ts) on first mount;
@@ -73,6 +74,21 @@ export const pressableProps: {readonly [PRESSABLE_ATTRIBUTE]: ''} = {
 };
 
 /**
+ * The press profile a list row carries in its {@link PRESSABLE_ATTRIBUTE}
+ * marker: rows paint the press on the cell layer (interactionOverlay.stylex.ts
+ * `cell`) and release on the cell's clock; a selection hold finds rows by it.
+ */
+export const CELL_PRESS_PROFILE = 'cell';
+
+/**
+ * Spread on a list row's pressable element after the press feedback hook's
+ * props: the marker carries the cell profile.
+ */
+export const cellPressableProps: {
+  readonly [PRESSABLE_ATTRIBUTE]: typeof CELL_PRESS_PROFILE;
+} = {[PRESSABLE_ATTRIBUTE]: CELL_PRESS_PROFILE};
+
+/**
  * How long after a touch a scroll can still be that finger's momentum.
  *
  * iOS momentum runs for a second or two after the lift; past this window a
@@ -113,6 +129,31 @@ const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
   flash: PRESS_FLASH_MS,
   onset: PRESS_ONSET_MS,
 };
+
+/**
+ * How long a timer runs on `element`. The release's clock is the table's
+ * (PRESS_FADE_MS, the value the stylesheet's release plays), capped under
+ * reduced motion as the stylesheet caps its fade (`design:reduced-motion`
+ * DR2: a touch transition finishes in 200 ms or less).
+ */
+function timerMs(
+  kind: NonNullable<PressStep['timer']>,
+  element: Element,
+): number {
+  if (kind !== 'fade') {
+    return TIMER_MS[kind];
+  }
+  const reduced =
+    element.ownerDocument.defaultView?.matchMedia?.(
+      '(prefers-reduced-motion: reduce)',
+    ).matches ?? false;
+  return reduced
+    ? Math.min(TIMER_MS.fade, REDUCED_MOTION_MAX_MS)
+    : TIMER_MS.fade;
+}
+
+/** The longest a touch transition runs under reduced motion (DR2). */
+const REDUCED_MOTION_MAX_MS = 200;
 
 const TIMER_EVENT = {
   fade: 'fadeEnd',
@@ -258,16 +299,19 @@ function apply(step: PressStep): void {
     // A TIMER, never `requestAnimationFrame`: iOS throttles frame callbacks
     // while a scroll runs, so a frame-based delay would fire late, after the
     // scroll, and paint a control nobody is pressing any more.
-    live.timer = setTimeout(() => {
-      if (live != null) {
-        live.timer = null;
-      }
-      apply(
-        pressGestureStep(live?.gesture ?? idlePressGesture(), {
-          kind: TIMER_EVENT[kind],
-        }),
-      );
-    }, TIMER_MS[kind]);
+    live.timer = setTimeout(
+      () => {
+        if (live != null) {
+          live.timer = null;
+        }
+        apply(
+          pressGestureStep(live?.gesture ?? idlePressGesture(), {
+            kind: TIMER_EVENT[kind],
+          }),
+        );
+      },
+      timerMs(kind, live.element),
+    );
   }
 }
 
