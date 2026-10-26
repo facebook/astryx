@@ -29,10 +29,11 @@
  *   end), baked per row and played on the compositor (wheelMotion.ts), so a
  *   busy main thread neither stops nor jumps it. A finger landing on a moving
  *   wheel stops it where it is on screen.
- * - A tap on a row turns the wheel onto it on the tap spin (0.3 s, the
- *   theme's `picker.tapSpin.durationMs` on `timing.curves.move`). A
- *   tap on the band's row does nothing. An end bounces on the theme's
- *   `scroll.bounce`. Each role is resolved when its motion starts.
+ * - A tap on a row turns the wheel onto it on the tap spin (0.3 s,
+ *   `picker.tapSpin.durationMs`, on `timing.curves.move`). A tap on the
+ *   band's row does nothing. An end bounces on `scroll.bounce`. The curve
+ *   and the bounce are resolved when their motion starts (internal roles,
+ *   motion/resolveMotion.ts).
  * - The value commits when the wheel comes to rest, as UIPickerView's
  *   didSelectRow does. A row `resolveRest` moves away from (by default, a
  *   disabled one: outside the bounds) is followed by a turn onto the row it
@@ -86,7 +87,7 @@ import {observeResize} from '../utils/sharedResizeObserver';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {rubberBandInverse} from '../motion/rubberBand';
 import {resolveMotion} from '../motion/resolveMotion';
-import {picker, registerPickerTable} from '../motion/uikit/picker';
+import {picker} from '../motion/uikit/picker';
 import {registerScrollTable, scroll} from '../motion/uikit/scroll';
 import {registerTimingTable, timing} from '../motion/uikit/timing';
 import {
@@ -207,21 +208,20 @@ const styles = stylex.create({
 });
 
 /**
- * The motion tables the wheel resolves theme roles from: the picker's tap
- * spin, the timing curve and the scroll bounce. Nothing registers on import
- * (motion/roles.ts) and each register is idempotent, so the wheel calls this
- * right before it resolves a role.
+ * The motion tables the wheel resolves internal roles from: the timing curve
+ * and the scroll bounce (the picker's own values are constants). Nothing
+ * registers on import (motion/roles.ts) and each register is idempotent, so
+ * the wheel calls this right before it resolves a role.
  */
 function registerWheelTables(): void {
-  registerPickerTable();
   registerTimingTable();
   registerScrollTable();
 }
 
 /**
  * A turn onto `to` on the tap spin: `spin`'s duration and curve, or the
- * theme's `picker.tapSpin.durationMs` and `timing.curves.move` under
- * `column`, resolved as the turn starts.
+ * picker's tap spin (`picker.tapSpin.durationMs`) on `timing.curves.move` as
+ * resolved under `column` when the turn starts.
  */
 function turnCurve(
   column: Element | null,
@@ -233,7 +233,7 @@ function turnCurve(
   return spinCurve(
     from,
     to,
-    spin.duration ?? resolveMotion(column, picker.tapSpin, 'durationMs') / 1000,
+    spin.duration ?? picker.tapSpin.durationMs / 1000,
     spin.curve ?? resolveMotion(column, timing.curves.move),
   );
 }
