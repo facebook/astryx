@@ -14,7 +14,7 @@
  */
 
 import {act, render} from '@testing-library/react';
-import {createElement, useRef} from 'react';
+import {createElement, useRef, useState} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {GestureHost} from '../gestures/GestureHost';
 import {PanGestureRecognizer} from '../gestures/PanGestureRecognizer';
@@ -938,6 +938,36 @@ describe('createPager', () => {
     });
   }
 
+  it('attached without its recognizers (a fine pointer, spec:AST-094 FR19), it takes no touch and still animates goTo', async () => {
+    const f = setup({defaultIndex: 0});
+    f.pager.dispose();
+    const pager = createPager(
+      {count: 5, defaultIndex: 0},
+      {host: f.host, animator: f.animator},
+    );
+    pager.attach(f.viewport, f.track, {touch: false});
+    // A finger's drag: nothing follows it.
+    touch('touchstart', f.page, 300, 100, now);
+    for (let i = 1; i <= 30; i++) {
+      await advance(8, f.clock);
+      touch('touchmove', f.page, 300 - 8 * i, 100, now);
+    }
+    touch('touchend', f.page, 60, 100, now);
+    await advance(16, f.clock);
+    expect(pager.index).toBe(0);
+    expect(f.x()).toBe(0);
+    // goTo still plays setContentOffset's curve to the page.
+    pager.goTo(2);
+    await advance(16, f.clock);
+    await advance(16, f.clock);
+    expect(pager.isSettling).toBe(true);
+    for (let i = 0; i < 60 && pager.isSettling; i++) {
+      await advance(16, f.clock);
+    }
+    expect(f.x()).toBe(-2 * WIDTH);
+    pager.dispose();
+  });
+
   it('on a fine primary pointer the pager takes no input (spec:AST-094 FR19): a mouse drag leaves the track and the page as they were', async () => {
     const f = setup({defaultIndex: 1});
     stubMedia(false, false);
@@ -1456,6 +1486,107 @@ describe('usePager (React)', () => {
     });
     expect(onIndexChange).not.toHaveBeenCalled();
     view.unmount();
+  });
+
+  // A controlled index wins, as a controlled input's value does: a page the
+  // pager reports (a swipe, or goTo) that the owner does not take returns the
+  // pager to the index, and is not reported again.
+  it('with a controlled index, a page the owner does not take returns the pager to the index', () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const runFrames = () => {
+      for (const callback of frames.splice(0)) {
+        callback(0);
+      }
+    };
+    const box: {pager: Pager | null} = {pager: null};
+    // The owner keeps page 2 whatever the pager reports.
+    const onIndexChange = vi.fn();
+    const view = render(
+      createElement(Paged, {
+        index: 2,
+        onIndexChange,
+        onPager: p => {
+          box.pager = p;
+        },
+      }),
+    );
+    act(() => {
+      box.pager?.goTo(3);
+    });
+    for (let i = 0; i < 4; i++) {
+      act(() => runFrames());
+    }
+    expect(onIndexChange).toHaveBeenCalledTimes(1);
+    expect(onIndexChange).toHaveBeenCalledWith(3, 'goTo');
+    expect(box.pager?.index).toBe(2);
+    view.unmount();
+  });
+
+  it('with a controlled index, a page the owner takes stays', () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const runFrames = () => {
+      for (const callback of frames.splice(0)) {
+        callback(0);
+      }
+    };
+    const box: {pager: Pager | null} = {pager: null};
+    function Owner() {
+      const [index, setIndex] = useState(2);
+      return createElement(Paged, {
+        index,
+        onIndexChange: setIndex,
+        onPager: p => {
+          box.pager = p;
+        },
+      });
+    }
+    const view = render(createElement(Owner));
+    act(() => {
+      box.pager?.goTo(3);
+    });
+    for (let i = 0; i < 4; i++) {
+      act(() => runFrames());
+    }
+    expect(box.pager?.index).toBe(3);
+    view.unmount();
+  });
+
+  // spec:AST-094 FR19: recognizers attach only where the primary pointer is
+  // coarse. On any other pointer the pager attaches none and adds no input
+  // listener, and goTo still moves it.
+  it('on a fine primary pointer attaches no recognizer and listens to no input, and goTo still moves the pager; under a finger it attaches the pan and the catch', () => {
+    stubMedia(false, false);
+    const attach = vi.spyOn(GestureHost.prototype, 'attach');
+    const listen = vi.spyOn(document, 'addEventListener');
+    const inputListeners = () =>
+      listen.mock.calls.filter(([type]) => /^(touch|pointer|mouse)/.test(type));
+    const box: {pager: Pager | null} = {pager: null};
+    const view = render(
+      createElement(Paged, {
+        onPager: p => {
+          box.pager = p;
+        },
+      }),
+    );
+    expect(attach).not.toHaveBeenCalled();
+    expect(inputListeners()).toEqual([]);
+    act(() => {
+      box.pager?.goTo(2);
+    });
+    expect(box.pager?.index).toBe(2);
+    view.unmount();
+    stubMedia(false, true);
+    const touchView = render(createElement(Paged, {}));
+    expect(attach).toHaveBeenCalledTimes(2);
+    touchView.unmount();
   });
 
   it('reads onPagesChange through the latest render, like the other callbacks', () => {

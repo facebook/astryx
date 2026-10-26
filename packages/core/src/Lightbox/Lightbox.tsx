@@ -121,9 +121,9 @@ export interface LightboxProps extends BaseProps<HTMLDialogElement> {
    */
   onIndexChange?: (index: number) => void;
   /**
-   * Enable zoom (images only): pinch, double-tap or double-click to zoom in
-   * at that point, or Enter/Space/`+`/`-` via keyboard. When zoomed, drag
-   * or use arrow keys to pan.
+   * Enable zoom (images only): on a touch screen, pinch or double-tap to
+   * zoom in at that point; a double-click or Enter/Space/`+`/`-` zooms 2×
+   * about the centre. When zoomed, drag or use arrow keys to pan.
    * @default false
    */
   hasZoom?: boolean;
@@ -203,14 +203,17 @@ const styles = stylex.create({
     userSelect: 'none',
     minHeight: 0,
   },
-  // The stage's own pinch, pan and double tap take every touch on it. Only
-  // the stage: the controls and caption leave pinch-zoom to the page. On a
-  // touch screen it fills the viewer (mediaGroupZoom, imageWrapperFill).
+  // Under the touch layer, the stage's own pinch, pan and double tap take
+  // every touch on it. Only the stage: the controls and caption leave
+  // pinch-zoom to the page. On a touch screen it fills the viewer
+  // (mediaGroupZoom, imageWrapperFill). Where the primary pointer is fine no
+  // recognizer runs, so the browser keeps the touches (spec:AST-094 FR19).
   imageWrapperZoomTarget: {
     touchAction: 'none',
   },
-  // In a gallery the stage's touches go to the track instead: the pager's
-  // pan manages the stage's own `touch-action`.
+  // In a gallery the stage's touches go to the track instead, under the
+  // touch layer only (as imageWrapperZoomTarget): the pager's pan manages
+  // the stage's own `touch-action`.
   trackZoomTarget: {
     touchAction: 'none',
   },
@@ -648,19 +651,6 @@ export function Lightbox({
     [handleClose, hasZoom, isGallery, isVideo],
   );
 
-  // Gallery navigation
-  const goToPrev = useCallback(() => {
-    if (canPrev) {
-      setIndex(index - 1);
-    }
-  }, [canPrev, index, setIndex]);
-
-  const goToNext = useCallback(() => {
-    if (canNext) {
-      setIndex(index + 1);
-    }
-  }, [canNext, index, setIndex]);
-
   // Zoom: pinch, double tap or double-click, Enter/Space on the image, or
   // +/- keys. Zoom changes are silent to assistive tech (only the transform
   // changes), so mirror them in the polite live region, including a hint that
@@ -718,6 +708,7 @@ export function Lightbox({
     stageRef: isGallery ? pageMediaRef : imageWrapperRef,
     surfaceRef: isGallery ? trackRef : imageWrapperRef,
     isEnabled: isOpen && isZoomTarget,
+    isTouch,
     itemKey: viewedItem,
     onZoomedChange: next => {
       setIsZoomed(next);
@@ -847,6 +838,34 @@ export function Lightbox({
       pager.goTo(index, {reason: 'controlled'});
     }
   });
+
+  // Gallery navigation. Under a finger the pager slides to the new page (a
+  // paging scroll view's setContentOffset). Where the primary pointer is
+  // fine, the buttons and the arrow keys show the new item at once, as they
+  // always have (spec:AST-017 FR59): the pager moves there first, so the
+  // controlled sync finds nothing to animate, and it returns to `index` if
+  // the owner refuses the change.
+  const showIndex = useCallback(
+    (next: number) => {
+      if (!isTouch) {
+        pager.goTo(next, {animated: false});
+      }
+      setIndex(next);
+    },
+    [isTouch, pager, setIndex],
+  );
+
+  const goToPrev = useCallback(() => {
+    if (canPrev) {
+      showIndex(index - 1);
+    }
+  }, [canPrev, index, showIndex]);
+
+  const goToNext = useCallback(() => {
+    if (canNext) {
+      showIndex(index + 1);
+    }
+  }, [canNext, index, showIndex]);
 
   // Keyboard navigation. While zoomed, arrows pan the image (matching common
   // lightbox conventions); when not zoomed they navigate the gallery.
@@ -1019,7 +1038,10 @@ export function Lightbox({
                 {...stylex.props(
                   styles.imageWrapper,
                   isGallery && styles.imageWrapperGallery,
-                  isZoomTarget && !isGallery && styles.imageWrapperZoomTarget,
+                  isZoomTarget &&
+                    !isGallery &&
+                    isTouch &&
+                    styles.imageWrapperZoomTarget,
                   isZoomTarget &&
                     !isGallery &&
                     isTouch &&
@@ -1042,7 +1064,7 @@ export function Lightbox({
                     ref={trackRef}
                     {...stylex.props(
                       styles.track,
-                      isZoomTarget && styles.trackZoomTarget,
+                      isZoomTarget && isTouch && styles.trackZoomTarget,
                       !isZoomTarget &&
                         !isVideo &&
                         styles.imageWrapperDismissTarget,

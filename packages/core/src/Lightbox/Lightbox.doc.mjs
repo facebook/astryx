@@ -99,7 +99,7 @@ export const docs = {
       name: 'hasZoom',
       type: 'boolean',
       description:
-        'Enable zoom (images only): pinch, or double-tap or double-click to zoom in at that point and back, or Enter/Space/+/- via keyboard. When zoomed, drag (with momentum) or use arrow keys to pan.',
+        'Enable zoom (images only): on a touch screen, pinch, or double-tap to zoom in at that point and back; a double-click or Enter/Space/+/- zooms 2× about the centre and back. When zoomed, drag (with momentum under a finger) or use arrow keys to pan.',
       default: 'false',
     },
     {
@@ -214,7 +214,7 @@ export const docsZh = {
       name: 'hasZoom',
       type: 'boolean',
       description:
-        '启用缩放（仅图片）：双指捏合，或双击/双点按在该处放大并还原，或使用 Enter/Space/+/- 键。缩放后可拖动（带惯性）或用方向键平移。',
+        '启用缩放（仅图片）：在触屏上，双指捏合或双点按在该处放大并还原；双击或使用 Enter/Space/+/- 键以中心放大 2 倍并还原。缩放后可拖动（手指拖动带惯性）或用方向键平移。',
       default: 'false',
     },
     {
