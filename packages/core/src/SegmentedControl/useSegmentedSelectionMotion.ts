@@ -23,8 +23,9 @@
  * UISegmentedControl slides one selection indicator from the old segment to
  * the new one on a spring (`segmentedControl.selectionSpring`), after a tap and
  * after a programmatic change alike. Every spring, clock and curve here is
- * UIKit's measured value, an internal constant of the table: no theme
- * retunes them.
+ * UIKit's measured value, played through its internal motion role
+ * (`segmented.*`, `spec:AST-094` FR4): no theme retunes them while the roles
+ * stay internal (DEC-11).
  *
  * The selected segment paints its own raised surface at rest, so themes keep
  * styling it as they always have. For the slide the lens takes over: the

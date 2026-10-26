@@ -17,7 +17,7 @@ import {cubicBezier} from '../bezier';
 import {dampingRatioOf, responseOf, solveSpring, toSpring} from '../spring';
 import {motionRoleIn, motionRoleOf} from '../roles';
 import {resolveMotion} from '../resolveMotion';
-import {segmentedControl} from './segmented';
+import {registerSegmentedTable, segmentedControl} from './segmented';
 import {registerSpringsTable, springs} from './springs';
 
 /**
@@ -143,13 +143,27 @@ describe('the drag chase', () => {
   });
 });
 
-describe('internal constants', () => {
-  it('no value is a motion role (spec:AST-094 FR4 names none for the segmented control); the titles switch at once, with no clock', () => {
-    expect(motionRoleOf(segmentedControl.selectionSpring)).toBeUndefined();
-    expect(motionRoleIn(segmentedControl, 'selectionSpring')).toBeUndefined();
-    expect(motionRoleOf(segmentedControl.liftSpring)).toBeUndefined();
-    expect(motionRoleIn(segmentedControl, 'tapLiftHangMs')).toBeUndefined();
+describe('motion roles and internal constants', () => {
+  it('its springs, durations and curves are internal motion roles once registered (spec:AST-094 FR4); the lift size and overshoot are not; the titles switch at once, with no clock', () => {
+    registerSegmentedTable();
+    const {pressedTitle} = segmentedControl;
+    expect(motionRoleOf(segmentedControl.selectionSpring)?.id).toBe(
+      'segmented.selectionSpring',
+    );
+    expect(motionRoleOf(segmentedControl.liftSpring)?.id).toBe(
+      'segmented.liftSpring',
+    );
+    expect(motionRoleIn(segmentedControl, 'tapLiftHangMs')?.id).toBe(
+      'segmented.tapLiftHangMs',
+    );
+    expect(motionRoleIn(pressedTitle, 'fadeMs')?.id).toBe(
+      'segmented.pressedTitle.fadeMs',
+    );
+    expect(motionRoleOf(pressedTitle.liftCurve)?.id).toBe(
+      'segmented.pressedTitle.liftCurve',
+    );
     expect(motionRoleIn(segmentedControl, 'dragOvershoot')).toBeUndefined();
+    expect(motionRoleIn(pressedTitle, 'opacity')).toBeUndefined();
     expect(Object.keys(segmentedControl)).not.toContain('labelCrossFadeMs');
   });
 
@@ -344,11 +358,20 @@ describe('the pressed title', () => {
     }
   });
 
-  it('is internal constants: its clocks, curves and opacity are no motion roles', () => {
-    expect(motionRoleIn(pressedTitle, 'fadeMs')).toBeUndefined();
-    expect(motionRoleIn(pressedTitle, 'liftMs')).toBeUndefined();
-    expect(motionRoleOf(pressedTitle.fadeCurve)).toBeUndefined();
-    expect(motionRoleOf(pressedTitle.liftCurve)).toBeUndefined();
+  it('plays its clocks and curves through internal motion roles once registered; its opacity is no role', () => {
+    registerSegmentedTable();
+    expect(motionRoleIn(pressedTitle, 'fadeMs')?.id).toBe(
+      'segmented.pressedTitle.fadeMs',
+    );
+    expect(motionRoleIn(pressedTitle, 'liftMs')?.id).toBe(
+      'segmented.pressedTitle.liftMs',
+    );
+    expect(motionRoleOf(pressedTitle.fadeCurve)?.id).toBe(
+      'segmented.pressedTitle.fadeCurve',
+    );
+    expect(motionRoleOf(pressedTitle.liftCurve)?.id).toBe(
+      'segmented.pressedTitle.liftCurve',
+    );
     expect(motionRoleIn(pressedTitle, 'opacity')).toBeUndefined();
   });
 });
