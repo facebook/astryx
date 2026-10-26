@@ -20,9 +20,9 @@
  * that will confirm or replace them (MEASUREMENTS.md lists them all).
  * uikit.test.ts enforces both. Only the value and its unit ship: where a
  * number comes from stays in its JSDoc, out of the bundle. The press clocks
- * are the same entries as `DELAYS_CONTENT_TOUCHES_MS` (`scroll.delaysContentTouchesMs`)
- * and `press` (`timing.press`), imported by name so reading one threshold
- * does not bundle the scroll and timing tables. Safari on iOS runs UIKit's own
+ * are the same values as `DELAYS_CONTENT_TOUCHES_MS` and timing's `press`,
+ * written as numbers so each group bundles alone; gestures.test.ts holds
+ * them equal. Safari on iOS runs UIKit's own
  * recognizers for tap-to-click, long press, double tap and the start of a
  * page scroll, so many guesses can be settled by measuring Safari itself.
  *
@@ -41,7 +41,6 @@
  */
 
 import {DELAYS_CONTENT_TOUCHES_MS} from './scroll';
-import {press as pressClocks} from './timing';
 
 export type GestureConstantUnit =
   'px' | 'ms' | 'px/s' | 'rad' | 'ratio' | 'count';
@@ -175,7 +174,8 @@ export const UIKIT_ROTATION = {
    *   device run (or an XCUITest rotate) logging the angle at .began.
    * @measure M-G10
    */
-  hysteresis: {value: (5 * Math.PI) / 180, unit: 'rad'},
+  // 5° in radians, written out so the group bundles alone.
+  hysteresis: {value: 0.08726646259971647, unit: 'rad'},
 } as const satisfies Record<string, GestureConstant>;
 
 export const UIKIT_SCREEN_EDGE_PAN = {
@@ -221,7 +221,7 @@ export const UIKIT_PRESS = {
    * @source measured: Settings and Contacts, iOS 26.2 simulator, HID touches
    *   filmed at 60 fps (utils/pressGesture.ts), Oct 6 2026
    */
-  quickTapFlash: {value: pressClocks.flashMs, unit: 'ms'},
+  quickTapFlash: {value: 100, unit: 'ms'},
   /**
    * Travel at which a press is a scroll, not a press.
    * @source measured: Mobile Safari 26.2, iOS 26.2 simulator, slow HID drag
@@ -236,7 +236,7 @@ export const UIKIT_PRESS = {
    * @source measured: Settings and Contacts, iOS 26.2 simulator, HID touches
    *   filmed at 60 fps (utils/pressGesture.ts), Oct 6 2026
    */
-  scrollBrake: {value: pressClocks.scrollBrakeMs, unit: 'ms'},
+  scrollBrake: {value: 150, unit: 'ms'},
   /**
    * How long after a finger was down a scroll can still be that finger's
    * momentum (the brake only counts scrolls a finger drove).

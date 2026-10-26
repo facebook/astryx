@@ -65,10 +65,23 @@ function leavesOf(file: string): Leaf[] {
     /^export const \w+ = \{$/.test(line) ? [index] : [],
   );
   expect(starts.length).toBeGreaterThan(0);
-  return starts.flatMap(start => leavesFrom(file, lines, start));
+  // The groups this file exports itself: a leaf that only names one of them
+  // is checked where that group is declared.
+  const exported = new Set(
+    lines.flatMap(line => {
+      const match = /^export const (\w+) = \{$/.exec(line);
+      return match == null ? [] : [match[1]];
+    }),
+  );
+  return starts.flatMap(start => leavesFrom(file, lines, start, exported));
 }
 
-function leavesFrom(file: string, lines: string[], start: number): Leaf[] {
+function leavesFrom(
+  file: string,
+  lines: string[],
+  start: number,
+  exported: ReadonlySet<string>,
+): Leaf[] {
   const leaves: Leaf[] = [];
   let doc = '';
   let inDoc = false;
@@ -105,7 +118,8 @@ function leavesFrom(file: string, lines: string[], start: number): Leaf[] {
     }
     // A group exported on its own and read back by name (`press,` or
     // `tap: UIKIT_TAP,`): its leaves are checked where it is declared.
-    if (/^\w+,$/.test(trimmed) || /^\w+: UIKIT_[A-Z_]+,$/.test(trimmed)) {
+    const reference = /^(?:\w+: )?(\w+),$/.exec(trimmed);
+    if (reference != null && exported.has(reference[1])) {
       doc = '';
       continue;
     }
