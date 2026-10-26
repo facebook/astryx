@@ -543,6 +543,94 @@ function expectReducedMotionCrossFade(
 const clientCenterOf = (value: string) =>
   SEGMENTS[value].left + SEGMENTS[value].width / 2;
 
+/** One step of the style traffic `recordStyleTraffic` records. */
+type StyleEvent =
+  | {kind: 'take'; style: CSSStyleDeclaration}
+  | {kind: 'read'; style: CSSStyleDeclaration}
+  | {kind: 'write'};
+
+describe('style reads at a change', () => {
+  /**
+   * Records, in order, each computed-style declaration taken, every value
+   * read from one, and every write to the track's inline style. A read from
+   * a declaration after a write to the track since it was taken makes the
+   * browser recompute style for it (a forced restyle).
+   */
+  function recordStyleTraffic(track: HTMLElement) {
+    const events: StyleEvent[] = [];
+    const realGetComputedStyle = window.getComputedStyle.bind(window);
+    vi.stubGlobal(
+      'getComputedStyle',
+      (
+        element: Element,
+        pseudoElement?: string | null,
+      ): CSSStyleDeclaration => {
+        const style = realGetComputedStyle(element, pseudoElement);
+        events.push({kind: 'take', style});
+        const readValue = (name: string): string => {
+          events.push({kind: 'read', style});
+          return style.getPropertyValue(name);
+        };
+        return new Proxy(style, {
+          // `getPropertyValue` and a property (`style.opacity`) both read.
+          get(target, key): string | ((name: string) => string) | undefined {
+            if (key === 'getPropertyValue') {
+              return readValue;
+            }
+            if (typeof key !== 'string') {
+              return undefined;
+            }
+            events.push({kind: 'read', style: target});
+            const value = Reflect.get(target, key, target) as unknown;
+            return typeof value === 'string' ? value : undefined;
+          },
+        });
+      },
+    );
+    const setProperty = track.style.setProperty.bind(track.style);
+    track.style.setProperty = (
+      name: string,
+      value: string | null,
+      priority?: string,
+    ) => {
+      events.push({kind: 'write'});
+      setProperty(name, value, priority);
+    };
+    /** Reads that follow a track write made after their declaration was taken. */
+    return () => {
+      const takenAt = new Map<CSSStyleDeclaration, number>();
+      let reads = 0;
+      let forced = 0;
+      events.forEach((event, index) => {
+        if (event.kind === 'take') {
+          takenAt.set(event.style, index);
+        } else if (event.kind === 'read') {
+          reads += 1;
+          const from = takenAt.get(event.style) ?? 0;
+          if (events.slice(from, index).some(e => e.kind === 'write')) {
+            forced += 1;
+          }
+        }
+      });
+      return {reads, forced};
+    };
+  }
+
+  it('reads a segment’s whole surface before writing any of it to the track: no read follows a write, so a change restyles once, not once per property', () => {
+    reduceMotion = true;
+    const ctx = setup('grid');
+    const traffic = recordStyleTraffic(ctx.track);
+    // Under Reduce Motion a change paints both layers: the lens and the
+    // surface leaving.
+    select(ctx, 'grid', 'table');
+    const {reads, forced} = traffic();
+    expect(reads).toBeGreaterThan(0);
+    expect(forced).toBe(0);
+    expect(ctx.layer('lens', 'background-color')).toBe('rgb(255, 255, 255)');
+    expect(ctx.layer('after', 'background-color')).toBe('rgb(255, 255, 255)');
+  });
+});
+
 describe('under a finger', () => {
   it('landing on the selected segment lifts the lens in place, by UIKit’s additive growth on the lift spring', () => {
     const ctx = setup('grid');

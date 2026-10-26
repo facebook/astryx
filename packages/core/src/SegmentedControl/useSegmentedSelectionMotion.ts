@@ -347,19 +347,24 @@ function showSurface(segment: HTMLElement): void {
   }
 }
 
-/** Paints `layer` with `segment`'s computed surface. */
+/**
+ * Paints `layer` with `segment`'s computed surface. Every value is read
+ * before any is written: a write to the track's style makes the next read
+ * from a computed style recompute it, so interleaving them restyled the
+ * control once per property.
+ */
 function paintLayer(
   track: HTMLElement,
   layer: Layer,
   segment: HTMLElement,
 ): void {
   const style = getComputedStyle(segment);
-  for (const property of SURFACE_PROPERTIES) {
-    track.style.setProperty(
-      layerVariable(layer, property),
-      style.getPropertyValue(property),
-    );
-  }
+  const values = SURFACE_PROPERTIES.map(property =>
+    style.getPropertyValue(property),
+  );
+  SURFACE_PROPERTIES.forEach((property, index) => {
+    track.style.setProperty(layerVariable(layer, property), values[index]);
+  });
 }
 
 /** Copies the lens's paint onto the ::after. */
