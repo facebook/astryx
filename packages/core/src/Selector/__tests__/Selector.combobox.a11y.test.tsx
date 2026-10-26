@@ -18,9 +18,8 @@ import {
 } from './Combobox.a11y.states';
 import {SELECTOR_COMBOBOX_KNOWN_FAILURES} from './Combobox.a11y.known-failures';
 
-// SelectorBottomSheet loads the sheet lazily, and its chunk carries the gesture
-// host. Load it here, untimed, so the sheet scenario's findByRole waits only
-// for the render, never for a cold import.
+// SelectorBottomSheet loads the sheet lazily. Load it here, untimed, so the sheet scenario's
+// findByRole waits only for the render, never for a cold import.
 beforeAll(async () => {
   await import('../../BottomSheet/BottomSheet');
 });

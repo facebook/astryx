@@ -49,9 +49,8 @@ import {selectorPresentationStyles} from './selectorPresentation.stylex';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
 
-// SelectorBottomSheet loads the sheet lazily, and its chunk carries the gesture
-// host. Load it here, untimed, so a bottom-sheet test's findByRole waits only
-// for the render, never for a cold import.
+// SelectorBottomSheet loads the sheet lazily. Load it here, untimed, so a bottom-sheet test's
+// findByRole waits only for the render, never for a cold import.
 beforeAll(async () => {
   await import('../BottomSheet/BottomSheet');
 });
