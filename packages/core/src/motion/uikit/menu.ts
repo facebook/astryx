@@ -17,10 +17,11 @@
  * `@measure` task that will confirm or replace them. uikit.test.ts enforces
  * both.
  *
- * Registered as the `menu` motion table: its springs and durations are roles
- * a theme may retune. When a finger's press opens the menu is
- * `spec:AST-094` FR29's (as it presses in a fixed bar; after the scroll
- * view's content-touch delay, `scroll.delaysContentTouchesMs`, inside one).
+ * Registered as the `menu` motion table: a spring, duration or curve it
+ * holds is a role a theme may retune; the haptic is not one. When a finger's
+ * press opens the menu is `spec:AST-094` FR29's (as it presses in a fixed
+ * bar; after the scroll view's content-touch delay,
+ * `scroll.delaysContentTouchesMs`, inside one).
  * The press values the shared menu press model reads (the drift allowance
  * and the handoff) are `UIKIT_GESTURES.menuPress` (gestures.ts).
  *
@@ -44,8 +45,9 @@ export const menu = {
 
 /**
  * Registers the menu table's motion roles with the theme (idempotent; nothing
- * runs on import). The menu's touch module calls it before its first
- * animation; the hold-open delay is a gesture threshold, not a role.
+ * runs on import), the register function every UIKit table has. While the
+ * table holds only the haptic it registers nothing; the hold-open delay is a
+ * gesture threshold, not a role.
  */
 export function registerMenuTable(): void {
   registerMotionTable('menu', menu);
