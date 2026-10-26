@@ -655,6 +655,27 @@ test('with a mouse, a held press repeats like a finger and commits once, at the 
   await context.close();
 });
 
+test('on a touch screen a mouse click steps once and a held mouse repeats: the press tracker is its one feeder', async ({
+  page,
+}) => {
+  const {plus} = await openStepper(page);
+  // A touch device with a mouse or trackpad: the primary pointer is coarse.
+  expect(
+    await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+  ).toBe(true);
+  const valueNow = async () =>
+    page
+      .getByRole('spinbutton', {name: 'Quantity'})
+      .getAttribute('aria-valuenow');
+  await page.mouse.click(plus.x, plus.y);
+  await expect.poll(valueNow).toBe('3');
+  await page.mouse.move(plus.x, plus.y);
+  await page.mouse.down();
+  await page.waitForTimeout(1230);
+  await page.mouse.up();
+  await expect.poll(valueNow).toBe('7');
+});
+
 test('after a scroll takes the touch, a click with no pointer still steps', async ({
   page,
 }) => {

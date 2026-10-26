@@ -681,6 +681,39 @@ describe('NumberInput steppers under a pen and a mouse', () => {
   });
 });
 
+describe('NumberInput steppers under a mouse where the primary pointer is coarse', () => {
+  beforeEach(() => {
+    coarsePrimaryPointer();
+  });
+
+  // A touch device with a mouse or trackpad: the gesture host serves every
+  // pointer there, so the press tracker is a mouse press's one feeder.
+  it('a mouse click steps once', () => {
+    const {onChange, increment} = setup();
+    const pointer = {pointerType: 'mouse', pointerId: 1, isPrimary: true};
+    fireEvent.pointerDown(increment, {...pointer, clientX: 212, clientY: 8});
+    fireEvent.pointerUp(increment, {...pointer, clientX: 212, clientY: 8});
+    act(() => {
+      increment.dispatchEvent(clickNaming('mouse', 1));
+    });
+    expect(committed(onChange)).toEqual([6]);
+  });
+
+  it('a held mouse repeats like a finger and commits once, at the release', () => {
+    const {onChange, input, increment} = setup();
+    const pointer = {pointerType: 'mouse', pointerId: 1, isPrimary: true};
+    fireEvent.pointerDown(increment, {...pointer, clientX: 212, clientY: 8});
+    wait(1200);
+    expect(shown(input)).toBe('9');
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.pointerUp(increment, {...pointer, clientX: 212, clientY: 8});
+    act(() => {
+      increment.dispatchEvent(clickNaming('mouse', 1));
+    });
+    expect(committed(onChange)).toEqual([9]);
+  });
+});
+
 describe('NumberInput steppers where the primary pointer is fine', () => {
   it('nothing touch-only attaches: no press tracker, no touch listener, no warning', () => {
     // A fine pointer: this test's context has no coarse pointer.

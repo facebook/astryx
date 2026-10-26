@@ -351,13 +351,13 @@ export function useStepperTouch(
   const isCoarse = useMediaQuery(COARSE_POINTER_QUERY);
   const noColumnRef = useRef<HTMLDivElement | null>(null);
 
-  // A mouse, and a pen where the primary pointer is fine, hold a stepper on
-  // the column's own pointer events: no touch-only work runs for them
-  // (FR24). Where the primary pointer is coarse a pen's touches reach the
-  // press tracker instead.
+  // Where the primary pointer is fine, a mouse or a pen holds a stepper on
+  // the column's own pointer events: no touch-only work runs (FR24). Where it
+  // is coarse the gesture host serves every pointer, so the press tracker
+  // takes a mouse's and a pen's presses too, and each press has one feeder.
   const pointerIdRef = useRef<number | null>(null);
   const isHeldHere = (event: ReactPointerEvent<HTMLElement>) =>
-    event.pointerType === 'mouse' || (event.pointerType === 'pen' && !isCoarse);
+    !isCoarse && (event.pointerType === 'mouse' || event.pointerType === 'pen');
   const halfUnder = (
     event: ReactPointerEvent<HTMLElement>,
   ): StepperHalf | null => {
