@@ -288,6 +288,31 @@ describe('BottomSheetPanel', () => {
     expect(handleBar![1]).toContain("colorVars['--color-background-surface']");
   });
 
+  // The content starts at the sheet's top edge, so the bar's fade must end
+  // before the first line does, or that line reads washed out at rest; and
+  // the opaque part must still cover the pill. Asserted on the style
+  // definition for the same reason as the test above.
+  it('ends the bar\u2019s fade where the content\u2019s default top padding ends', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const source = fs.readFileSync(
+      path.resolve(__dirname, './BottomSheetPanel.tsx'),
+      'utf-8',
+    );
+
+    expect(source).toContain(
+      "const HANDLE_BAR_FADE_END = spacingVars['--spacing-4'];",
+    );
+    const handleBar = source.match(/handleBar: \{([\s\S]*?)\n {2}\},/);
+    expect(handleBar).not.toBeNull();
+    // Opaque to the pill's lower edge, transparent by the padding's end.
+    expect(handleBar![1]).toContain(
+      'calc((${HANDLE_BAR_HEIGHT} + ${HANDLE_PILL_HEIGHT}) / 2)',
+    );
+    expect(handleBar![1]).toContain('transparent ${HANDLE_BAR_FADE_END}');
+    expect(handleBar![1]).toContain('height: HANDLE_PILL_HEIGHT');
+  });
+
   // In dark mode the surface fill and the scrim sit a few RGB steps apart and
   // the drop shadow is black on near-black, so the fill alone leaves the
   // sheet's left and right edges invisible against the scrim. A hairline on

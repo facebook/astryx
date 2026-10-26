@@ -89,6 +89,11 @@ const TRANSITION_BACKSTOP_BUFFER_MS = 50;
 // from the sheet's top edge, inside the space a content wrapper's own top
 // padding already provides.
 const HANDLE_BAR_HEIGHT = spacingVars['--spacing-6'];
+// The pill drawn on it, centered in the band.
+const HANDLE_PILL_HEIGHT = spacingVars['--spacing-1'];
+// Where a content wrapper's default top padding ends, and so where the first
+// line of a sheet's content starts at rest. The bar's fade ends here.
+const HANDLE_BAR_FADE_END = spacingVars['--spacing-4'];
 
 // Measure the same viewport the height budgets are written against. Those are
 // `dvh`, which the virtual keyboard does not shrink, so reading
@@ -209,10 +214,13 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: HANDLE_BAR_HEIGHT,
-    // Keeps the pill legible over whatever sits or scrolls under it: opaque
-    // surface behind the pill itself, fading out across the lower half so the
-    // content emerging below has no visible cut line.
-    backgroundImage: `linear-gradient(to bottom, ${colorVars['--color-background-surface']} 60%, transparent)`,
+    // Keeps the pill legible over whatever scrolls under it: opaque surface
+    // down to the pill's lower edge, then a fade, so content emerging below
+    // meets no cut line. The fade ends where a content wrapper's default top
+    // padding does: the content starts at the sheet's top edge (no reserve,
+    // see `body`), so a fade reaching further would sit over the first line
+    // at rest and wash it out.
+    backgroundImage: `linear-gradient(to bottom, ${colorVars['--color-background-surface']} calc((${HANDLE_BAR_HEIGHT} + ${HANDLE_PILL_HEIGHT}) / 2), transparent ${HANDLE_BAR_FADE_END})`,
     // Drags are the handle's; a pinch still zooms the page (WCAG 1.4.4).
     touchAction: 'pinch-zoom',
     cursor: {
@@ -224,7 +232,7 @@ const styles = stylex.create({
     '::before': {
       content: '""',
       width: sizeVars['--size-element-lg'],
-      height: spacingVars['--spacing-1'],
+      height: HANDLE_PILL_HEIGHT,
       borderRadius: radiusVars['--radius-full'],
       backgroundColor: colorVars['--color-border'],
     },
