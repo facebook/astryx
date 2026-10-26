@@ -73,6 +73,7 @@
 import {useEffect, useRef, useState, type RefObject} from 'react';
 import {getGestureHost, type GestureHost} from '../gestures/GestureHost';
 import {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer';
+import {lockSelection, locksSelectionFor} from '../gestures/selectionLock';
 import {
   PanGestureRecognizer,
   type PanGestureRecognizerOptions,
@@ -915,29 +916,24 @@ export function createPager(
 
   // While a finger holds a caught track, the browser's long-press text
   // selection and callout stay off: in UIKit the touch that stops a scroll
-  // view does not reach its content.
-  let savedSelection: [string, string, string] | null = null;
+  // view does not reach its content. The gesture system's shared lock,
+  // counted per element, so the gesture host's own lock for the same
+  // contact and this one release in either order.
+  let releaseSelection: (() => void) | null = null;
 
   function holdSelection(on: boolean): void {
-    const style = trackElement?.style;
-    if (style == null) {
-      return;
-    }
-    if (on && savedSelection == null) {
-      savedSelection = [
-        style.getPropertyValue('user-select'),
-        style.getPropertyValue('-webkit-user-select'),
-        style.getPropertyValue('-webkit-touch-callout'),
-      ];
-      style.setProperty('user-select', 'none');
-      style.setProperty('-webkit-user-select', 'none');
-      style.setProperty('-webkit-touch-callout', 'none');
-    } else if (!on && savedSelection != null) {
-      const [userSelect, webkitUserSelect, callout] = savedSelection;
-      style.setProperty('user-select', userSelect);
-      style.setProperty('-webkit-user-select', webkitUserSelect);
-      style.setProperty('-webkit-touch-callout', callout);
-      savedSelection = null;
+    if (on && releaseSelection == null && trackElement != null) {
+      if (
+        locksSelectionFor(
+          catcher.pointerType ?? 'touch',
+          trackElement.ownerDocument.defaultView,
+        )
+      ) {
+        releaseSelection = lockSelection([trackElement], null);
+      }
+    } else if (!on && releaseSelection != null) {
+      releaseSelection();
+      releaseSelection = null;
     }
   }
 
