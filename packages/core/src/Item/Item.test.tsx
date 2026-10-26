@@ -2242,6 +2242,31 @@ describe('swipeActions', () => {
       expect(latest).toBeNull();
     });
 
+    it('is null on a commit row, which rests nothing open (`spec:AST-057` FR5): its control cannot rest it open over a panel with no button', async () => {
+      const onClick = vi.fn();
+      render(
+        <Item
+          label="Conversation"
+          onClick={onClick}
+          data-testid="row"
+          marker={<DeleteControl />}
+          swipeBehavior="commit"
+          swipeActions={{
+            trailing: [
+              {label: 'Delete', onActivate: vi.fn(), variant: 'destructive'},
+            ],
+          }}
+        />,
+      );
+      const row = screen.getByTestId('row');
+      layOut(row);
+      expect(latest).toBeNull();
+      fireEvent.click(screen.getByRole('button', {name: 'Delete control'}));
+      await settled();
+      expect(xOf(row)).toBe(0);
+      expect(panelOf(row, 'trailing')).toHaveAttribute('inert');
+    });
+
     it('opens the row under a fine primary pointer too: a finger swipes on every device, so the row has a swipe to reveal there', async () => {
       vi.unstubAllGlobals();
       // A fine primary pointer in this context, before anything is checked.

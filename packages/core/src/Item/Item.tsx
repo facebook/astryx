@@ -664,17 +664,20 @@ export function Item({
   const isSwipeOpen = swipeOpenSide != null;
   // The row's swipe as a control rendered in the row reaches it (List's
   // edit-mode delete control, in the marker slot): `null` wherever there is
-  // none to reveal, and until the layer has mounted.
+  // none to reveal, and until the layer has mounted. A `commit` row rests
+  // nothing open (`spec:AST-057` FR5), so it has none: its panel has no
+  // button to show.
+  const canRevealSwipe = hasSwipe && swipeBehavior !== 'commit';
   const swipeReveal = useMemo<ItemSwipeReveal | null>(
     () =>
-      hasSwipe && hasSwipeBridge
+      canRevealSwipe && hasSwipeBridge
         ? {
             close: () => swipeBridgeRef.current?.close(),
             reveal: side => swipeBridgeRef.current?.reveal(side),
             side: swipeOpenSide,
           }
         : null,
-    [hasSwipe, hasSwipeBridge, swipeOpenSide],
+    [canRevealSwipe, hasSwipeBridge, swipeOpenSide],
   );
   const linkRootProps = isLinkRoot
     ? {
