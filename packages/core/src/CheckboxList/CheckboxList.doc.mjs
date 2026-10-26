@@ -131,7 +131,7 @@ export const docs = {
       name: 'density',
       type: "'compact' | 'balanced' | 'spacious'",
       description:
-        "Spacing density for list items. On a touch screen (a coarse primary pointer), a compact list's rows that toggle are at least the theme's touch target tall (`--size-touch-target`, 44 px by default); balanced and spacious rows already are.",
+        "Spacing density for list items. On a touch screen (a coarse primary pointer), a compact list's rows that toggle are at least the theme's touch target tall (`--size-touch-target`, 44 px by default). Balanced and spacious rows keep their own touch height, 52 px (62 px with a description), whatever the touch target.",
       default: "'balanced'",
     },
     {
