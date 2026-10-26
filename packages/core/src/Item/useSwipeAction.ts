@@ -4,88 +4,112 @@
 
 /**
  * @file useSwipeAction.ts
- * @input Pointer events on a row's root; the root element to translate
- * @output Exports useSwipeAction — the gesture behind Item's `swipeActions`
+ * @input Per side, the panel parts that move (callback refs; the row root
+ *   is their parent); the gesture foundation (PanGestureRecognizer) and the
+ *   compositor animator; the UIKit constants table and swipeRelease.ts
+ * @output Exports useSwipeAction — the gesture and the motion behind Item's
+ *   `swipeActions` — and swipeParts, where every moving part sits for a
+ *   travel (where a release lands is swipeRelease.ts)
  * @position Internal to Item, through ItemSwipeLayer (the only module that
- *   imports it, loaded on demand); tested through Item.test.tsx
+ *   imports it); tested through Item.test.tsx and useSwipeAction.test.ts
  *
- * A native-list swipe: drag a row sideways and the side's panel is uncovered.
- * Under `reveal` a release past half the panel leaves the row resting open
- * with every entry tappable, and a long drag or a fling fires the outermost
- * entry; under `commit` a release past the commit point slides the row out
- * and fires the outermost entry, and nothing rests. After an entry fires the
- * row springs back, or holds out when the entry has `hasRemoval`. A release
- * short of the threshold springs back under both.
+ * A UIKit list swipe: drag a row sideways and the side's panel is uncovered.
+ * Under `reveal` a fast release goes the way it moves and a slow one rests
+ * the row open past half the open width, with every entry tappable. A drag
+ * on past the confirm point confirms a full swipe: the row runs ahead to
+ * UIKit's confirmation offset and the outermost entry covers the space, and
+ * letting go there fires it; backing out undoes the look, and a swipe that
+ * backed out closes. Under `commit` only a confirmed full swipe fires, and
+ * nothing rests (swipeRelease.ts). The outermost entry fires once the row's
+ * content has left its box, at once when the release is already past that
+ * edge: UIKit calls the handler at the lift, and firing when the content is
+ * gone means a row its app removes at once never vanishes mid-slide. After
+ * an entry fires the row springs back, or holds out when the entry has
+ * `hasRemoval`.
  *
- * Touch only, by pointer type rather than by breakpoint: a mouse has the
- * row's own controls and a keyboard has the verb already; the gesture is an
- * accelerator for a verb the row exposes elsewhere, never the only way to
- * reach one.
+ * Touch only (the recognizer's pointer types), by pointer type rather than
+ * by breakpoint: a mouse has the row's own controls and a keyboard has the
+ * verb already; the gesture is an accelerator for a verb the row exposes
+ * elsewhere, never the only way to reach one.
  *
- * The axis is decided once, at 10 px of travel: a drag more vertical than
- * horizontal belongs to the scroller and is never claimed. The claim is told
- * to the browser: `touch-action: pan-y` is not enough on iOS Safari, whose
- * scroller takes any drag with a vertical component as a pan (a 4:1 drag got
- * `pointercancel` 40 px in; the same drag after a one-second hold, which
- * fails the native pan, ran to the end), so a non-passive `touchmove`
- * listener cancels the default while the row owns the drag, which is the one
- * signal WebKit honours. Before the axis is decided, and for a drag the
- * scroller got, nothing is cancelled.
+ * The pan is the gesture foundation's, published as `Item.swipe` so an app
+ * can relate its own recognizers to it. It claims the touch after 8 px of
+ * sideways travel (a drag more vertical than horizontal belongs to the
+ * scroller and fails it), toward a side with entries or on a row that is open
+ * or moving: a browser commits to scrolling a touch at about 10 px, so the
+ * row must claim before that. The swipe itself begins where UIKit's does,
+ * after 25 px, from 0, and in between the row carries on as it was. The pan
+ * reads each touch's pointer, as `spec:AST-057` says: a finger swipes the row
+ * whatever the primary pointer and a mouse never starts it, one rule on every
+ * device. The foundation tells the browser (`touch-action: pan-y
+ * pinch-zoom`, `touchmove` cancelled only while the pan owns the touch, the
+ * click the browser synthesizes swallowed) and leaves a pinch to the page: a
+ * second finger that lands before the claim fails the one-finger pan and
+ * leaves its touch to the browser's pinch, and once the row has claimed its
+ * finger a second finger leaves the swipe going (spec:AST-094 FR10).
  *
- * A pinch is the browser's: the root's `touch-action` keeps `pinch-zoom`, and
- * a second finger that lands anywhere before the axis is decided turns the
- * touch into a pinch, so the row lets it go and cancels nothing. A finger
- * that is not the first one down never starts a drag. Once the row owns a
- * drag, a second finger does not break it.
+ * An open row (resting, or settling to rest open: UIKit counts a row open
+ * from the release that opens it) closes on a pointer landing outside it, on
+ * a scroll of anything that holds it while focus is outside it, on Escape
+ * with focus inside it, and on a tap on its own content. That tap activates
+ * nothing on the row, as in UIKit: a foundation tap recognizer takes it at
+ * the lift, so the browser never clicks.
  *
- * The drag's travel is one custom property written on the root, coalesced to
- * one write per frame; the root's transform reads it and the panels'
- * transforms read its negation, so the row moves and the panel appears fixed
- * in the space the row vacates. Settling (the spring back, the slide out)
- * writes a duration the same elements read as their transition clock, so
- * everything derived from the travel moves together. A drag costs no React
- * render; the claim and the settle each cost one.
+ * Motion is UIKit's, on the compositor. Every move of the finger starts a
+ * spring toward the finger's offset from the row's presentation value and
+ * velocity, so the row trails a moving finger and catches up when it stops;
+ * the release starts the same spring toward where the row lands, still from
+ * the presentation velocity. A finger that lands on a moving row catches it
+ * where it is. The row's root translates; each side's panel is a window over
+ * the row's resting box (translated back by the travel, so it stays put and
+ * clips to that box), a track inside it that moves with the row (so it clips
+ * the entries to exactly the space the row vacates), and each entry inside
+ * the track, translated back again so the entries stay pinned at the outer
+ * edge; past the open width they ride the row and the outermost entry's
+ * colour, painted beside it, stretches it out to the outer edge. The entries
+ * move as one block with no wrapper around them (minimal DOM,
+ * `architecture:component-style-authoring` INV7): every entry plays the same
+ * pin, the outermost one adds its own slide to it, and the others fade each
+ * on its own opacity. The animators share one clock, and every curve is an
+ * affine image of the root's or one of the full swipe's (the outermost
+ * entry's slide and the others' fade, on the same spring): they cannot drift
+ * apart, nothing lays out, and they keep moving while the main thread is
+ * busy. A drag costs no React render; the
+ * claim, the confirming and the landing each cost one.
  *
- * Directions are logical: `leading` is a drag toward the inline end and
- * `trailing` a drag toward the inline start, read against the root's computed
- * `direction` at the touch and written beside the travel as a sign the
- * transforms multiply by, so under `dir="rtl"` the finger, the uncovered edge
- * and the panel's logical inset agree.
+ * The gesture reads each touch's pointer: a finger swipes the row on every
+ * device, whatever the primary pointer, and a mouse never does.
+ *
+ * Under Reduce Motion (`design:reduced-motion`) the finger's own drag is
+ * direct manipulation and follows it one for one, but nothing a release or
+ * a close starts travels or springs: the row lands at the bottom of an
+ * opacity dip (DR2).
+ *
+ * Directions are logical: `leading` is uncovered by a drag toward the inline
+ * end and sits at the inline start, `trailing` the reverse, read against the
+ * root's computed `direction` when the pan begins, so under `dir="rtl"` the
+ * finger, the uncovered edge and the panel agree.
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
-import type {
-  PointerEvent as ReactPointerEvent,
-  KeyboardEvent as ReactKeyboardEvent,
-  MouseEvent as ReactMouseEvent,
-} from 'react';
+import type {KeyboardEvent as ReactKeyboardEvent} from 'react';
+import {
+  PanGestureRecognizer,
+  TapGestureRecognizer,
+  useGestureRecognizer,
+} from '../gestures';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {isRtlElement} from '../hooks/isRtlElement';
-
-/** The travel, in physical px, written on the row root during a drag. */
-export const SWIPE_TRAVEL_PROPERTY = '--_item-swipe-travel';
-/** +1 when the inline end is to the right (LTR), -1 under RTL. */
-export const SWIPE_DIRECTION_PROPERTY = '--_item-swipe-dir';
-/** The clock a settle runs on; `0s` while the finger drives the row. */
-export const SWIPE_DURATION_PROPERTY = '--_item-swipe-duration';
-
-/** Travel before the axis is decided. */
-const AXIS_LOCK_PX = 10;
-/** The commit point: this far past the side's panel, or this fraction of the row, whichever is greater. */
-const COMMIT_PAST_PANEL_PX = 48;
-const COMMIT_FRACTION = 0.5;
-/** Under `reveal`, a release this far into the panel rests the row open. */
-const REST_FRACTION = 0.5;
-/** Travel past the commit point moves the row this much per pixel of finger. */
-const OVERSHOOT_RESISTANCE = 0.35;
-/** A release at this speed commits from FLING_MIN_PX, short of the commit point. */
-const FLING_VELOCITY_PX_PER_MS = 0.6;
-const FLING_MIN_PX = 44;
-/** How far past the row's edge a slide-out travels. */
-const SLIDE_OUT_OVERSHOOT_PX = 24;
-/** The slide-out after a commit, and the spring back after a release. */
-export const SWIPE_SETTLE_MS = 200;
-/** A click the browser synthesizes after a swipe is not a tap on the row. */
-const CLICK_SUPPRESS_MS = 400;
+import {
+  createAnimator,
+  type Animator,
+  type MotionCurve,
+  type MotionHandle,
+} from '../motion/animator';
+import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
+import {reducedMotionFade} from '../motion/reducedMotion';
+import {swipeActions as SWIPE} from '../motion/uikit/swipeActions';
+import {confirmedOffset, confirmPoint, resolveRelease} from './swipeRelease';
 
 export type SwipeSide = 'leading' | 'trailing';
 export type SwipeBehavior = 'reveal' | 'commit';
@@ -94,52 +118,83 @@ export type SwipePhase =
   | 'idle'
   /** The finger drives the row. */
   | 'dragging'
-  /** Springing back or sliding out, on the settle clock. */
+  /** Springing to where the release, a tap or a close sent it. */
   | 'settling'
   /** Resting open with the side's panel tappable (`reveal` only). */
   | 'resting'
-  /** Slid out after an entry with `hasRemoval` fired. */
+  /** Out, after an entry with `hasRemoval` fired. */
   | 'held';
 
 export interface SwipeState {
   phase: SwipePhase;
   /** The side whose panel is uncovered, or will be. */
   side: SwipeSide;
-  /** Past the commit point: letting go now fires the outermost entry. */
+  /** A confirmed full swipe: letting go now fires the outermost entry. */
   isArmed: boolean;
+  /** Where the settle in progress lands (`settling` only). */
+  landing?: 'idle' | 'resting' | 'held';
+}
+
+/**
+ * The row is open: resting, or settling to rest open. UIKit counts a row open
+ * from the release that opens it, not from when its spring comes to rest: an
+ * open row closes on a tap on its content, a pointer outside it, a scroll or
+ * Escape, and its root takes no press.
+ */
+export function isSwipeOpen(state: SwipeState): boolean {
+  return (
+    state.phase === 'resting' ||
+    (state.phase === 'settling' && state.landing === 'resting')
+  );
+}
+
+/** The side an open row is open on (see `isSwipeOpen`), or `null`. */
+function openSideOf(state: SwipeState): SwipeSide | null {
+  return isSwipeOpen(state) ? state.side : null;
+}
+
+/** Callback refs for the elements of one side's panel that move. */
+export interface SwipePanelRefs {
+  /** The window over the row's resting box. */
+  panel: (element: HTMLElement | null) => void;
+  /** The fill that moves with the row, clipped by the window. */
+  track: (element: HTMLElement | null) => void;
+  /**
+   * Each entry other than the outermost, pinned at the outer edge inside the
+   * track and fading on a confirmed full swipe: the ref for the entry with
+   * `key` (its React key), stable per key.
+   */
+  entry: (key: string) => (element: HTMLElement | null) => void;
+  /**
+   * The outermost entry, pinned with the others, which slides to the row's
+   * edge on a confirmed full swipe.
+   */
+  outer: (element: HTMLElement | null) => void;
 }
 
 export interface UseSwipeActionOptions {
-  /** Off: the handlers do nothing and no row moves. */
-  isEnabled: boolean;
   behavior: SwipeBehavior;
-  /** Which sides have entries. A drag toward a side without any is not claimed. */
+  /** Which sides have entries. A drag toward a side without any never begins. */
   sides: {leading: boolean; trailing: boolean};
-  /** The natural width of a side's panel, read when a drag begins. */
-  measurePanel: (side: SwipeSide) => number;
   /**
    * Fire the side's outermost entry. Returns whether the row holds out
    * afterwards (the entry's `hasRemoval`).
    */
   fireOutermost: (side: SwipeSide) => boolean;
-  /** Skip the slide and spring animations. */
-  isReducedMotion?: boolean;
-  /** The row root: the gesture's target and the element that translates. */
-  rootRef: React.RefObject<HTMLElement | null>;
-}
-
-export interface SwipeHandlers {
-  onPointerDown: (event: ReactPointerEvent) => void;
-  onPointerMove: (event: ReactPointerEvent) => void;
-  onPointerUp: (event: ReactPointerEvent) => void;
-  onPointerCancel: (event: ReactPointerEvent) => void;
-  onClickCapture: (event: ReactMouseEvent) => void;
-  onKeyDown: (event: ReactKeyboardEvent) => void;
+  /** Whether the side's outermost entry can fire: a disabled one never confirms a full swipe. */
+  canConfirm: (side: SwipeSide) => boolean;
+  /**
+   * Told the side the row opens on from the transition that opens it (open
+   * is `isSwipeOpen`), `null` from the one that closes it, and `null` if the
+   * row leaves while open.
+   */
+  onOpenChange?: (side: SwipeSide | null) => void;
 }
 
 export interface UseSwipeActionResult {
   state: SwipeState;
-  handlers: SwipeHandlers;
+  /** Attach each side's moving panel parts. */
+  panelRefs: Record<SwipeSide, SwipePanelRefs>;
   /**
    * A resting panel's entry was tapped: fire it, then hold the row out
    * (`hasRemoval`) or close.
@@ -147,39 +202,335 @@ export interface UseSwipeActionResult {
   activateEntry: (fire: () => boolean) => void;
   /** Close a resting row. */
   close: () => void;
-  /** Whether a click arriving now is the one the browser synthesized after a drag. */
-  shouldSuppressClick: () => boolean;
+  /**
+   * Open the row on `side` as a swipe opens it, from wherever it is: a row
+   * open on the other side closes first. Nothing while a finger holds the
+   * row, while it holds out after a fire, or toward a side without entries.
+   */
+  reveal: (side: SwipeSide) => void;
+  /** Escape closes a resting row with focus inside it. */
+  onKeyDown: (event: ReactKeyboardEvent) => void;
 }
 
-interface DragState {
-  pointerId: number;
-  startX: number;
-  startY: number;
-  /** The travel the row already had when the finger landed (a resting row). */
-  baseTravel: number;
-  /** null until the axis is decided; false once it went to the scroller. */
-  claimed: boolean | null;
+// =============================================================================
+// Geometry (pure)
+// =============================================================================
+
+export interface SwipeLayout {
   side: SwipeSide;
-  panelWidth: number;
-  commitPx: number;
-  lastX: number;
-  lastTime: number;
-  prevX: number;
-  prevTime: number;
-  /** Logical travel toward the side, before resistance. */
-  travel: number;
+  /** +1 when the inline end is to the right (LTR), −1 under RTL. */
   inlineSign: 1 | -1;
+  /** The side's entries at their natural widths together: how far the row opens. */
+  openWidth: number;
+  /** The outermost entry's width. */
+  outerWidth: number;
 }
+
+/** +1 when the side's panel is on the physical left, −1 on the right. */
+export function physicalSign(side: SwipeSide, inlineSign: 1 | -1): 1 | -1 {
+  return side === 'leading' ? inlineSign : inlineSign === 1 ? -1 : 1;
+}
+
+/**
+ * Where every moving part sits for a travel (logical px toward the side,
+ * ≥ 0), as a physical translation, and how far a full swipe has confirmed
+ * (`confirm`, 0 or 1). The root moves by the travel, the panel window
+ * cancels it (fixed over the resting box) and the track moves with the row.
+ * Up to the open width the entries cancel the track, pinned at the outer
+ * edge where the track's painted part uncovers them; past it they ride the
+ * row, and the track's colour (the outermost entry's) fills behind them out
+ * to the outer edge, so the outermost entry stretches. Confirmed, the
+ * outermost entry slides to the row's edge and the others fade (`fade`): its
+ * colour covers everything the row uncovered.
+ */
+export function swipeParts(
+  travel: number,
+  {side, inlineSign, openWidth, outerWidth}: SwipeLayout,
+  confirm = 0,
+): {
+  root: number;
+  panel: number;
+  track: number;
+  entries: number;
+  outer: number;
+  fade: number;
+} {
+  const sign = physicalSign(side, inlineSign);
+  const x = sign * travel;
+  return {
+    root: x,
+    panel: -x,
+    track: x,
+    entries: sign * (openWidth - Math.min(travel, openWidth)),
+    outer: sign * (openWidth - outerWidth) * confirm,
+    fade: 1 - confirm,
+  };
+}
+
+/** A curve's end, where the animator's own spring curves end (its settle threshold for x). */
+const SETTLE_PX = 0.05;
+
+/**
+ * The travel parts' curves for one spring of the row, from its presentation
+ * value and velocity (physical px, px/s) to `travel`. Every part is a
+ * function of the root's curve at every instant, so they cannot drift
+ * apart: the window and the track are affine images of it, and the entries
+ * follow the same piecewise rule as `swipeParts`, pinned up to the open
+ * width and riding the row past it, even when a spring crosses the open
+ * width mid-flight. The spring is the motion foundation's own solution,
+ * played by the shared animator.
+ */
+export function swipeCurves(
+  layout: SwipeLayout,
+  spring: SpringDescription,
+  from: number,
+  velocity: number,
+  travel: number,
+): {
+  root: MotionCurve;
+  panel: MotionCurve;
+  track: MotionCurve;
+  entries: MotionCurve;
+} {
+  const sign = physicalSign(layout.side, layout.inlineSign);
+  const curve = solveSpring(toSpring(spring), {
+    from,
+    to: sign * travel,
+    velocity,
+  });
+  const duration = curve.settleTime(SETTLE_PX);
+  // The end state is the target itself, as the animator's own springs end.
+  const x = (t: number) => (t >= duration ? sign * travel : curve.value(t));
+  const v = (t: number) => (t >= duration ? 0 : curve.velocity(t));
+  const root: MotionCurve = {duration, at: x, velocity: v};
+  const {openWidth} = layout;
+  return {
+    root,
+    panel: {duration, at: t => -x(t), velocity: t => -v(t)},
+    track: root,
+    entries: {
+      duration,
+      at: t => sign * (openWidth - Math.min(sign * x(t), openWidth)),
+      velocity: t => (sign * x(t) < openWidth ? -v(t) : 0),
+    },
+  };
+}
+
+/** The longest a slide-out takes to leave the row's box (ms): beyond it, never. */
+const SLIDE_OUT_HORIZON_MS = 3000;
+
+/**
+ * When `animator`, on the curve it now plays, first carries the row to
+ * `edge` (physical px) or past it, in ms after `start`: 0 when it is there
+ * already, null when it never gets there. The animator reads its own curve
+ * back analytically.
+ */
+function timeToPass(
+  animator: Animator,
+  start: number,
+  edge: number,
+): number | null {
+  const sign = Math.sign(edge) || 1;
+  const reached = (t: number) =>
+    animator.get('x', start + t) * sign >= Math.abs(edge);
+  if (reached(0)) {
+    return 0;
+  }
+  for (let t = 1; t <= SLIDE_OUT_HORIZON_MS; t += 1) {
+    if (reached(t)) {
+      return t;
+    }
+  }
+  return null;
+}
+
+/**
+ * What started a settle: a touch drag ending (its release, or the browser
+ * taking the touch), or anything else (Escape, a pointer outside, a tapped
+ * entry, a tap on the content, a scroll).
+ */
+type SettleCause = 'release' | 'other';
+
+// =============================================================================
+// The hook
+// =============================================================================
 
 const IDLE_STATE: SwipeState = {isArmed: false, phase: 'idle', side: 'leading'};
 
-/** The logical sign of a side: +1 toward the inline end, -1 toward the start. */
-function signOf(side: SwipeSide): number {
-  return side === 'trailing' ? -1 : 1;
+/** Below this the row is at rest, closed. */
+const AT_REST_PX = 0.5;
+
+interface SideAnimators {
+  panel: Animator;
+  track: Animator;
+  /**
+   * The track's confirm fill (its `::before`): the outermost entry's colour,
+   * which shows through the others as they fade on a confirmed full swipe.
+   */
+  fill: Animator;
+  /** The entries other than the outermost. */
+  entries: EntryAnimators;
+  outer: Animator;
 }
 
-function now(): number {
-  return typeof performance === 'undefined' ? Date.now() : performance.now();
+/**
+ * A side's entries, each its own moving element on the same motion, so they
+ * move as one block with no wrapper around them.
+ */
+interface EntryAnimators {
+  /** The callback ref for the entry with `key`, stable per key. */
+  ref: (key: string) => (element: HTMLElement | null) => void;
+  /** The entries' animators, in the order they mounted. */
+  members: () => Animator[];
+  /** Where the entries are (they share it); at rest before any has mounted. */
+  get: (property: 'x' | 'opacity', time?: number) => number;
+  set: Animator['set'];
+  animate: (...args: Parameters<Animator['animate']>) => void;
+  play: (...args: Parameters<Animator['play']>) => void;
+  /** Their natural widths together. */
+  width: () => number;
+}
+
+function createEntries(): EntryAnimators {
+  const byKey = new Map<string, Animator>();
+  const refs = new Map<string, (element: HTMLElement | null) => void>();
+  const any = (): Animator | undefined => byKey.values().next().value;
+  return {
+    ref: key => {
+      let ref = refs.get(key);
+      if (ref == null) {
+        ref = element => {
+          const current = byKey.get(key);
+          if (element == null) {
+            current?.dispose();
+            byKey.delete(key);
+          } else if (current != null) {
+            current.attach(element);
+          } else {
+            // A new entry joins the block where the others are.
+            const animator = createAnimator(null);
+            const other = any();
+            if (other != null) {
+              animator.set({x: other.get('x'), opacity: other.get('opacity')});
+            }
+            byKey.set(key, animator);
+            animator.attach(element);
+          }
+        };
+        refs.set(key, ref);
+      }
+      return ref;
+    },
+    members: () => [...byKey.values()],
+    get: (property, time) =>
+      any()?.get(property, time) ?? (property === 'opacity' ? 1 : 0),
+    set: values => {
+      for (const animator of byKey.values()) {
+        animator.set(values);
+      }
+    },
+    animate: (...args) => {
+      for (const animator of byKey.values()) {
+        animator.animate(...args);
+      }
+    },
+    play: (...args) => {
+      for (const animator of byKey.values()) {
+        animator.play(...args);
+      }
+    },
+    width: () => {
+      let width = 0;
+      for (const animator of byKey.values()) {
+        width += animator.element?.offsetWidth ?? 0;
+      }
+      return width;
+    },
+  };
+}
+
+/**
+ * The outermost entry's curve: the entries' pin plus its own slide toward
+ * `slide` (physical px) on `spring`, from the slide it has now (where it is,
+ * less the pin) and that slide's velocity. One translate, so one curve.
+ */
+function withSlide(
+  pin: MotionCurve,
+  outer: Animator,
+  slide: number,
+  spring: SpringDescription,
+): MotionCurve {
+  const curve = solveSpring(toSpring(spring), {
+    from: outer.get('x') - pin.at(0),
+    to: slide,
+    velocity: outer.getVelocity('x') - pin.velocity(0),
+  });
+  const settle = curve.settleTime(SETTLE_PX);
+  return {
+    duration: Math.max(pin.duration, settle),
+    at: t => pin.at(t) + (t >= settle ? slide : curve.value(t)),
+    velocity: t => pin.velocity(t) + (t >= settle ? 0 : curve.velocity(t)),
+  };
+}
+
+interface Animators {
+  root: Animator;
+  leading: SideAnimators;
+  trailing: SideAnimators;
+}
+
+interface Drag {
+  layout: SwipeLayout;
+  rowWidth: number;
+  /** The finger's swipe at which the full swipe confirms. */
+  confirmAt: number;
+  /** The side's outermost entry can fire (not disabled). */
+  canConfirm: boolean;
+  /** The state the row had when the touch was claimed, for a swipe that never began. */
+  previous: SwipeState;
+  /** Past UIKit's threshold: the row follows the finger. */
+  started: boolean;
+  /** Which way the finger crossed the threshold: +1 toward the side, -1 away. */
+  startSign: number;
+  /** The travel the row had when the swipe began (logical, ≥ 0). */
+  baseTravel: number;
+  /** The finger's travel along the side. */
+  raw: number;
+  /** Confirmed: the finger is past the confirm point. */
+  isArmed: boolean;
+  /** The full swipe confirmed at some point in this swipe. */
+  wasConfirmed: boolean;
+  /**
+   * Under Reduce Motion, when the cross-fade a confirm or a back-out started
+   * ends (performance.now() ms): until then the moves leave it alone.
+   */
+  dipUntil?: number;
+}
+
+function createSide(): SideAnimators {
+  return {
+    entries: createEntries(),
+    fill: createAnimator(null, {
+      initial: {opacity: 0},
+      pseudoElement: '::before',
+    }),
+    outer: createAnimator(null),
+    panel: createAnimator(null),
+    track: createAnimator(null),
+  };
+}
+
+function allOf(animators: Animators): Animator[] {
+  return [
+    animators.root,
+    ...[animators.leading, animators.trailing].flatMap(side => [
+      side.panel,
+      side.track,
+      side.fill,
+      side.outer,
+      ...side.entries.members(),
+    ]),
+  ];
 }
 
 /**
@@ -202,231 +553,476 @@ function focusRowContent(root: HTMLElement): void {
 }
 
 export function useSwipeAction({
-  isEnabled,
   behavior,
   sides,
-  measurePanel,
   fireOutermost,
-  isReducedMotion = false,
-  rootRef,
+  canConfirm,
+  onOpenChange,
 }: UseSwipeActionOptions): UseSwipeActionResult {
-  const dragRef = useRef<DragState | null>(null);
-  const travelRef = useRef(0);
-  const inlineSignRef = useRef<1 | -1>(1);
-  const suppressClickUntilRef = useRef(0);
-  const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const frameRef = useRef<number | null>(null);
-  const pendingRef = useRef<number | null>(null);
-  /** Removes the document listener that watches for a pinch's second finger. */
-  const stopPinchWatchRef = useRef<(() => void) | null>(null);
-  const [state, setState] = useState<SwipeState>(IDLE_STATE);
-  const stateRef = useRef(state);
-  stateRef.current = state;
-
-  // The latest callbacks, read by handlers and timers that outlive a render.
-  const measurePanelRef = useRef(measurePanel);
-  const fireOutermostRef = useRef(fireOutermost);
-  const sidesRef = useRef(sides);
-  const behaviorRef = useRef(behavior);
-  const reducedMotionRef = useRef(isReducedMotion);
-  useEffect(() => {
-    measurePanelRef.current = measurePanel;
-    fireOutermostRef.current = fireOutermost;
-    sidesRef.current = sides;
-    behaviorRef.current = behavior;
-    reducedMotionRef.current = isReducedMotion;
+  // The latest options, read by listeners and completions that outlive a render.
+  // Synchronizes the gesture system (recognizer callbacks, animation
+  // completions, the slide-out's fire timer) with the committed options.
+  const latestRef = useRef({
+    behavior,
+    canConfirm,
+    fireOutermost,
+    onOpenChange,
+    sides,
+  });
+  useIsomorphicLayoutEffect(() => {
+    latestRef.current = {
+      behavior,
+      canConfirm,
+      fireOutermost,
+      onOpenChange,
+      sides,
+    };
   });
 
+  const [state, setState] = useState<SwipeState>(IDLE_STATE);
+  const stateRef = useRef(state);
+  // Synchronizes the gesture system with the committed state: its recognizer
+  // callbacks and the document listeners run outside React and read it here.
+  // Idempotent: it rewrites the ref with the committed value.
+  useIsomorphicLayoutEffect(() => {
+    stateRef.current = state;
+  });
+  // Every transition goes through here, so the one that opens or closes the
+  // row reports it at once, from the handler that caused it.
+  const setSwipeState = useCallback((next: SwipeState) => {
+    const report = latestRef.current.onOpenChange;
+    const was = openSideOf(stateRef.current);
+    const now = openSideOf(next);
+    stateRef.current = next;
+    setState(next);
+    if (was !== now) {
+      report?.(now);
+    }
+  }, []);
+  // Releases the open report when the row leaves while open.
   useEffect(
     () => () => {
-      if (settleTimerRef.current != null) {
-        clearTimeout(settleTimerRef.current);
+      if (isSwipeOpen(stateRef.current)) {
+        latestRef.current.onOpenChange?.(null);
       }
-      if (frameRef.current != null) {
-        cancelAnimationFrame(frameRef.current);
-      }
-      stopPinchWatchRef.current?.();
-      stopPinchWatchRef.current = null;
     },
     [],
   );
 
-  const stopWatchingForPinch = useCallback(() => {
-    stopPinchWatchRef.current?.();
-    stopPinchWatchRef.current = null;
-  }, []);
-
+  const [animators] = useState<Animators>(() => ({
+    leading: createSide(),
+    root: createAnimator(null),
+    trailing: createSide(),
+  }));
+  /** The layout of the side that moved last: where the row is, and how to move it. */
+  const layoutRef = useRef<SwipeLayout | null>(null);
+  const dragRef = useRef<Drag | null>(null);
   /**
-   * Until the axis is decided, a second finger anywhere on the page makes
-   * the touch a pinch: the row gives it up and cancels nothing, so the
-   * browser zooms. The finger can land off the row, so the document listens.
+   * Counts the row's motions: a timer started for one motion acts only if
+   * no other motion has started since (a finger caught the row, a close).
    */
-  const watchForPinch = useCallback(
-    (drag: DragState) => {
-      stopWatchingForPinch();
-      const onAnyPointerDown = (event: PointerEvent) => {
-        if (
-          event.pointerType === 'touch' &&
-          event.pointerId !== drag.pointerId &&
-          drag.claimed === null
-        ) {
-          drag.claimed = false;
-          stopWatchingForPinch();
+  const motionRef = useRef(0);
+  /** The root's motion in progress, when a spring drives it. */
+  const rootMotionRef = useRef<MotionHandle | null>(null);
+  /** That motion once it has started on screen (its `started` resolved). */
+  const startedMotionRef = useRef<MotionHandle | null>(null);
+  const fireTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Releases the browser timer a slide-out set for its fire when the row
+  // leaves, and drops a fire still waiting for its slide-out to start.
+  useEffect(
+    () => () => {
+      motionRef.current += 1;
+      if (fireTimerRef.current != null) {
+        clearTimeout(fireTimerRef.current);
+      }
+    },
+    [],
+  );
+  /** The row is open (see `isSwipeOpen`), read by listeners and recognizers. */
+  const isOpen = useCallback(() => isSwipeOpen(stateRef.current), []);
+
+  // The row root: the gesture's target and the element that translates. A
+  // panel is its child, and a panel's ref is set before this hook's layout
+  // effects run, while a ref on the root itself is set after them.
+  const rootRef = useRef<HTMLElement | null>(null);
+  // The parts attach as they mount (a side's panel exists only while it has
+  // entries); attaching writes where the part is now.
+  const [panelRefs] = useState<Record<SwipeSide, SwipePanelRefs>>(() => {
+    const refsFor = (side: SideAnimators): SwipePanelRefs => ({
+      entry: key => side.entries.ref(key),
+      outer: element => side.outer.attach(element),
+      panel: element => {
+        if (element?.parentElement != null) {
+          rootRef.current = element.parentElement;
         }
-      };
-      document.addEventListener('pointerdown', onAnyPointerDown, {
-        capture: true,
-        passive: true,
-      });
-      stopPinchWatchRef.current = () => {
-        document.removeEventListener('pointerdown', onAnyPointerDown, {
-          capture: true,
-        });
-      };
-    },
-    [stopWatchingForPinch],
-  );
-
-  /** Write the travel (physical px) the transforms read. */
-  const writeTravel = useCallback(
-    (travel: number) => {
-      const root = rootRef.current;
-      if (!root) {
-        return;
-      }
-      travelRef.current = travel;
-      root.style.setProperty(SWIPE_TRAVEL_PROPERTY, `${travel}px`);
-    },
-    [rootRef],
-  );
-
-  const writeDuration = useCallback(
-    (ms: number) => {
-      const root = rootRef.current;
-      if (!root) {
-        return;
-      }
-      if (ms > 0) {
-        root.style.setProperty(SWIPE_DURATION_PROPERTY, `${ms}ms`);
-      } else {
-        root.style.setProperty(SWIPE_DURATION_PROPERTY, '0s');
-      }
-    },
-    [rootRef],
-  );
-
-  const clearInlineProperties = useCallback(() => {
+        side.panel.attach(element);
+      },
+      track: element => {
+        side.track.attach(element);
+        side.fill.attach(element);
+      },
+    });
+    return {
+      leading: refsFor(animators.leading),
+      trailing: refsFor(animators.trailing),
+    };
+  });
+  useIsomorphicLayoutEffect(() => {
     const root = rootRef.current;
-    if (!root) {
-      return;
-    }
-    root.style.removeProperty(SWIPE_TRAVEL_PROPERTY);
-    root.style.removeProperty(SWIPE_DIRECTION_PROPERTY);
-    root.style.removeProperty(SWIPE_DURATION_PROPERTY);
-    travelRef.current = 0;
-  }, [rootRef]);
-
-  const cancelPendingPaint = useCallback(() => {
-    if (frameRef.current != null) {
-      cancelAnimationFrame(frameRef.current);
-    }
-    frameRef.current = null;
-    pendingRef.current = null;
-  }, []);
-
-  /** One write per frame while the finger drives the row. */
-  const paintOnNextFrame = useCallback(
-    (travel: number) => {
-      pendingRef.current = travel;
-      if (frameRef.current != null) {
-        return;
+    animators.root.attach(root);
+    return () => {
+      for (const animator of allOf(animators)) {
+        animator.dispose();
       }
-      frameRef.current = requestAnimationFrame(() => {
-        frameRef.current = null;
-        const next = pendingRef.current;
-        pendingRef.current = null;
-        if (next != null) {
-          writeTravel(next);
-        }
-      });
-    },
-    [writeTravel],
+      // The root outlives the layer: give it back its own translation.
+      root?.style.removeProperty('translate');
+    };
+  }, [animators, rootRef]);
+
+  /** The row's travel on screen now, logical, on `layout`'s side. */
+  const travelNow = useCallback(
+    (layout: SwipeLayout): number =>
+      Math.max(
+        0,
+        animators.root.get('x') * physicalSign(layout.side, layout.inlineSign),
+      ),
+    [animators],
   );
 
   /**
-   * Move the row to `travel` on the settle clock, then land in `phase`. A
-   * zero clock (reduced motion) lands at once.
+   * Spring every part of the side to `travel` on one clock, from the
+   * presentation values and velocities. Resolves with the root's completion.
+   */
+  const springTo = useCallback(
+    async (
+      layout: SwipeLayout,
+      travel: number,
+      spring: SpringDescription,
+      confirm = 0,
+      // A settle a touch drag's release started: under Reduce Motion it
+      // cross-fades whatever the pointer (design:reduced-motion DR2).
+      touchRelease = false,
+    ): Promise<boolean> => {
+      layoutRef.current = layout;
+      motionRef.current += 1;
+      const parts = swipeParts(travel, layout, confirm);
+      const side = animators[layout.side];
+      // One clock for every part. From rest no start is pinned: every call
+      // from rest in this task starts when the browser commits it, together,
+      // so a frame held back (iOS during a smooth scroll) delays the settle
+      // instead of skipping into it. A call that continues motion on screen
+      // (the next move's spring, the release, a catch: the root's motion has
+      // started and not ended) starts at its own call time unless it is given
+      // one, and the parts would fall out of step by the time each call
+      // takes: they share one start (`at`).
+      const previous = rootMotionRef.current;
+      const isMoving =
+        previous != null &&
+        startedMotionRef.current === previous &&
+        (previous.velocity('x') !== 0 ||
+          previous.value('x') !== previous.value('x', Infinity));
+      const options = isMoving
+        ? {at: performance.now(), touchRelease}
+        : {touchRelease};
+      const curves = swipeCurves(
+        layout,
+        spring,
+        animators.root.get('x'),
+        animators.root.getVelocity('x'),
+        travel,
+      );
+      const handle = animators.root.play({x: curves.root}, options);
+      rootMotionRef.current = handle;
+      // On screen from its start: a call from rest waits for the browser's
+      // commit, so until then the next call is from rest too.
+      void handle.started.then(() => {
+        if (rootMotionRef.current === handle) {
+          startedMotionRef.current = handle;
+        }
+      });
+      side.panel.play({x: curves.panel}, options);
+      side.track.play({x: curves.track}, options);
+      side.entries.play({x: curves.entries}, options);
+      // UIKit sets the full swipe's look inside the same per-move animator:
+      // the outermost entry's slide rides its pin, the others fade.
+      side.outer.play(
+        {x: withSlide(curves.entries, side.outer, parts.outer, spring)},
+        options,
+      );
+      side.entries.animate({opacity: parts.fade}, {spring}, options);
+      side.fill.animate({opacity: 1 - parts.fade}, {spring}, options);
+      return handle.finished;
+    },
+    [animators],
+  );
+
+  /**
+   * Every part of the side at `travel` now: the row following the finger one
+   * for one under Reduce Motion.
+   */
+  const moveTo = useCallback(
+    (layout: SwipeLayout, travel: number, confirm = 0) => {
+      layoutRef.current = layout;
+      motionRef.current += 1;
+      rootMotionRef.current = null;
+      const parts = swipeParts(travel, layout, confirm);
+      const side = animators[layout.side];
+      animators.root.set({x: parts.root});
+      side.panel.set({x: parts.panel});
+      side.track.set({x: parts.track});
+      side.entries.set({x: parts.entries, opacity: parts.fade});
+      side.outer.set({x: parts.entries + parts.outer});
+      side.fill.set({opacity: 1 - parts.fade});
+    },
+    [animators],
+  );
+
+  /**
+   * Settle the row at `travel` and land in `phase`. The landing is skipped
+   * when something interrupts the settle (a finger catches the row, another
+   * settle starts).
    */
   const settle = useCallback(
     (
-      side: SwipeSide,
+      layout: SwipeLayout,
       travel: number,
       phase: 'idle' | 'resting' | 'held',
-      afterSlide?: () => boolean,
+      afterSettle?: () => boolean,
+      cause: SettleCause = 'other',
+      confirm = 0,
     ) => {
-      cancelPendingPaint();
-      const duration = reducedMotionRef.current ? 0 : SWIPE_SETTLE_MS;
-      setState({isArmed: false, phase: 'settling', side});
-      writeDuration(duration);
-      writeTravel(travel);
-      if (settleTimerRef.current != null) {
-        clearTimeout(settleTimerRef.current);
-      }
-      settleTimerRef.current = setTimeout(() => {
-        settleTimerRef.current = null;
-        writeDuration(0);
-        // A settle that fires an entry may start the spring back itself; the
-        // landing below is then that settle's to make.
-        if (afterSlide?.() === true) {
+      setSwipeState({
+        isArmed: false,
+        landing: phase,
+        phase: 'settling',
+        side: layout.side,
+      });
+      // Under Reduce Motion the animator cross-fades or lands at once
+      // (design:reduced-motion); what a release started always cross-fades.
+      const touchRelease = cause === 'release';
+      const motion = springTo(
+        layout,
+        travel,
+        SWIPE.settle,
+        confirm,
+        touchRelease,
+      );
+      void motion.then(finished => {
+        if (!finished) {
           return;
         }
-        if (phase === 'idle') {
-          clearInlineProperties();
+        // A settle that fires an entry may start the spring back itself; the
+        // landing below is then that settle's to make.
+        if (afterSettle?.() === true) {
+          return;
         }
-        setState(phase === 'idle' ? IDLE_STATE : {isArmed: false, phase, side});
-      }, duration);
+        setSwipeState(
+          phase === 'idle'
+            ? IDLE_STATE
+            : {isArmed: false, phase, side: layout.side},
+        );
+      });
     },
-    [cancelPendingPaint, clearInlineProperties, writeDuration, writeTravel],
+    [setSwipeState, springTo],
+  );
+
+  /** How far out a row goes when an entry fires and the row leaves. */
+  const outTravel = useCallback(
+    () => (rootRef.current?.clientWidth ?? 0) + SWIPE.slideOutOvershoot,
+    [rootRef],
   );
 
   /**
-   * The outermost entry fires. Under both models the row first travels to
-   * its slide-out, fires, then holds out (`hasRemoval`) or springs back.
+   * A confirmed full swipe: out with the outermost entry covering the row's
+   * place; the entry fires as the row leaves, then it holds out or springs
+   * back.
    */
   const slideOutAndFire = useCallback(
-    (side: SwipeSide, inlineSign: 1 | -1) => {
-      const root = rootRef.current;
-      const width = root?.clientWidth ?? 0;
-      const out = signOf(side) * inlineSign * (width + SLIDE_OUT_OVERSHOOT_PX);
-      settle(side, out, 'held', () => {
-        const holdsOut = fireOutermostRef.current(side);
+    (layout: SwipeLayout, cause: SettleCause) => {
+      const fire = () => {
+        const holdsOut = latestRef.current.fireOutermost(layout.side);
         if (holdsOut) {
           return false;
         }
-        settle(side, 0, 'idle');
+        settle(layout, 0, 'idle', undefined, cause);
         return true;
+      };
+      // UIKit calls the handler at the lift. The row fires once its content
+      // has left its box, so a row its app removes at once never vanishes
+      // mid-slide; at once when the release is already past that edge.
+      const sign = physicalSign(layout.side, layout.inlineSign);
+      const edge = sign * (rootRef.current?.clientWidth ?? 0);
+      settle(layout, outTravel(), 'held', undefined, cause, 1);
+      const motion = motionRef.current;
+      const handle = rootMotionRef.current;
+      const fade = reducedMotionFade(rootRef.current, {
+        touchRelease: cause === 'release',
+      });
+      // One pending fire at a time: a new slide-out replaces an older one's.
+      if (fireTimerRef.current != null) {
+        clearTimeout(fireTimerRef.current);
+        fireTimerRef.current = null;
+      }
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      const fireIfStill = () => {
+        if (fireTimerRef.current === timer) {
+          fireTimerRef.current = null;
+        }
+        if (motionRef.current === motion) {
+          fire();
+        }
+      };
+      if (
+        fade == null &&
+        timeToPass(animators.root, performance.now(), edge) === 0
+      ) {
+        fireIfStill();
+        return;
+      }
+      // Timed from when the slide-out starts on screen: one from rest waits
+      // for the browser's first frame (longer on a busy page), and until then
+      // the row is where it was. Under Reduce Motion the row never travels:
+      // it lands out of its box at the bottom of the cross-fade, and fires
+      // there; otherwise when the curve the animator plays carries it past
+      // the edge, read back from the animator itself.
+      void handle?.started.then(startedAt => {
+        if (motionRef.current !== motion) {
+          return;
+        }
+        const delay =
+          fade != null
+            ? fade.duration / 2
+            : timeToPass(animators.root, startedAt, edge);
+        if (delay == null) {
+          return;
+        }
+        const wait = Math.max(0, startedAt + delay - performance.now());
+        if (wait === 0) {
+          fireIfStill();
+          return;
+        }
+        timer = setTimeout(fireIfStill, wait);
+        fireTimerRef.current = timer;
       });
     },
-    [rootRef, settle],
+    [animators, outTravel, rootRef, settle],
   );
 
   const close = useCallback(() => {
-    const current = stateRef.current;
-    if (current.phase !== 'resting') {
+    const layout = layoutRef.current;
+    if (!isOpen() || layout == null) {
       return;
     }
     const root = rootRef.current;
     if (root != null && root.contains(document.activeElement)) {
       focusRowContent(root);
     }
-    settle(current.side, 0, 'idle');
-  }, [rootRef, settle]);
+    settle(layout, 0, 'idle');
+  }, [isOpen, rootRef, settle]);
 
-  // A resting row closes on a pointer landing anywhere outside it, which is
+  /** The layout of `side` now, as a drag or a reveal that uncovers it takes it. */
+  const layoutFor = useCallback(
+    (side: SwipeSide, root: HTMLElement): SwipeLayout => {
+      const outerWidth = animators[side].outer.element?.offsetWidth ?? 0;
+      return {
+        inlineSign: isRtlElement(root) ? -1 : 1,
+        openWidth: animators[side].entries.width() + outerWidth,
+        outerWidth,
+        side,
+      };
+    },
+    [animators],
+  );
+
+  // The entries keep their place against the track only for the width they
+  // were placed with; a first drag or reveal (or new entries) puts them in
+  // place, while the track still hides them.
+  const placeEntries = useCallback(
+    (layout: SwipeLayout) => {
+      const side = animators[layout.side];
+      const expected = swipeParts(travelNow(layout), layout).entries;
+      const pinned =
+        side.entries.members().length > 0
+          ? side.entries.get('x')
+          : side.outer.get('x');
+      if (Math.abs(pinned - expected) > AT_REST_PX) {
+        side.entries.set({x: expected});
+        side.outer.set({x: expected});
+      }
+    },
+    [animators, travelNow],
+  );
+
+  // A control in the row opens it, as UIKit's edit-mode delete control does:
+  // the row settles open on the side exactly as a release past half the panel
+  // leaves it, so it closes by the same tap, pointer, scroll or Escape.
+  const reveal = useCallback(
+    (side: SwipeSide) => {
+      const {phase, landing} = stateRef.current;
+      if (
+        dragRef.current != null ||
+        !latestRef.current.sides[side] ||
+        phase === 'held' ||
+        (phase === 'settling' && landing === 'held')
+      ) {
+        return;
+      }
+      const root = rootRef.current;
+      if (root == null) {
+        return;
+      }
+      const layout = layoutFor(side, root);
+      if (layout.openWidth <= 0) {
+        return;
+      }
+      const open = () => {
+        placeEntries(layout);
+        settle(layout, layout.openWidth, 'resting');
+      };
+      // A row open or moving on the other side closes first.
+      const current = layoutRef.current;
+      if (
+        current != null &&
+        current.side !== side &&
+        Math.abs(animators.root.get('x')) > AT_REST_PX
+      ) {
+        settle(current, 0, 'idle', () => {
+          open();
+          return true;
+        });
+        return;
+      }
+      open();
+    },
+    [animators, layoutFor, placeEntries, rootRef, settle],
+  );
+
+  const activateEntry = useCallback(
+    (fire: () => boolean) => {
+      const layout = layoutRef.current;
+      if (stateRef.current.phase !== 'resting' || layout == null) {
+        return;
+      }
+      const root = rootRef.current;
+      if (root != null && root.contains(document.activeElement)) {
+        focusRowContent(root);
+      }
+      if (fire()) {
+        settle(layout, outTravel(), 'held');
+      } else {
+        settle(layout, 0, 'idle');
+      }
+    },
+    [outTravel, rootRef, settle],
+  );
+
+  // An open row closes on a pointer landing anywhere outside it, which is
   // also how a drag on a neighbour closes it: one row rests open at a time
-  // with no shared state.
+  // with no shared state. It also closes when anything scrolling it moves
+  // (the list, the page), as a UIKit row closes when its table scrolls: a
+  // scroll that starts on the row itself lands no pointer outside it.
   useEffect(() => {
-    if (state.phase !== 'resting') {
+    if (!isOpen()) {
       return undefined;
     }
     const onOutside = (event: PointerEvent) => {
@@ -439,285 +1035,274 @@ export function useSwipeAction({
         close();
       }
     };
+    const onScroll = (event: Event) => {
+      const root = rootRef.current;
+      const {target} = event;
+      if (
+        root != null &&
+        (target === document ||
+          (target instanceof Element && target.contains(root))) &&
+        // Focus inside the row means the scroll may be the browser bringing
+        // the focused entry into view (keyboard or VoiceOver): the row stays.
+        !root.contains(document.activeElement)
+      ) {
+        close();
+      }
+    };
     document.addEventListener('pointerdown', onOutside, true);
+    // A scroll closes the row, as UIKit's table does.
+    document.addEventListener('scroll', onScroll, {
+      capture: true,
+      passive: true,
+    });
     return () => {
       document.removeEventListener('pointerdown', onOutside, true);
+      document.removeEventListener('scroll', onScroll, true);
     };
-  }, [close, rootRef, state.phase]);
+  }, [close, isOpen, rootRef, state.phase]);
 
-  // The browser's half of the claim (see the header). React's own touch
-  // listeners are passive, so this one is attached by hand; it is removed
-  // with the element.
-  useEffect(() => {
+  // ---------------------------------------------------------------------------
+  // The pan
+
+  /** The side a drag from a closed row uncovers: toward the inline end is leading. */
+  const sideFor = (dx: number, inlineSign: 1 | -1): SwipeSide =>
+    dx * inlineSign > 0 ? 'leading' : 'trailing';
+
+  // Two thresholds. The touch is claimed from the browser at `claim` px of
+  // sideways travel, before a browser commits to scrolling it; the swipe
+  // itself begins where UIKit's does, at `hysteresis` px, and starts from 0
+  // there. In between the row does whatever it was doing (resting,
+  // settling) and the browser does nothing.
+  const begin = (pan: PanGestureRecognizer) => {
     const root = rootRef.current;
-    if (root == null || !isEnabled) {
-      return undefined;
+    if (root == null) {
+      return;
     }
-    const onTouchMove = (event: TouchEvent) => {
-      if (dragRef.current?.claimed === true && event.cancelable) {
-        event.preventDefault();
-      }
+    const inlineSign: 1 | -1 = isRtlElement(root) ? -1 : 1;
+    const x = animators.root.get('x');
+    // An open or moving row continues on its side (closing it or going
+    // further); a closed one takes the side the finger moves toward.
+    const side: SwipeSide =
+      Math.abs(x) > AT_REST_PX
+        ? x * inlineSign > 0
+          ? 'leading'
+          : 'trailing'
+        : sideFor(pan.totalTranslation().x, inlineSign);
+    const layout = layoutFor(side, root);
+    const rowWidth = root.clientWidth;
+    placeEntries(layout);
+    dragRef.current = {
+      baseTravel: 0,
+      canConfirm: latestRef.current.canConfirm(side),
+      confirmAt: confirmPoint(layout.openWidth, rowWidth),
+      isArmed: false,
+      layout,
+      previous: stateRef.current,
+      raw: 0,
+      rowWidth,
+      started: false,
+      startSign: 1,
+      wasConfirmed: false,
     };
-    root.addEventListener('touchmove', onTouchMove, {passive: false});
-    return () => {
-      root.removeEventListener('touchmove', onTouchMove);
-    };
-  }, [isEnabled, rootRef]);
+    track(pan);
+  };
 
-  const activateEntry = useCallback(
-    (fire: () => boolean) => {
-      const current = stateRef.current;
-      if (current.phase !== 'resting') {
+  const track = (pan: PanGestureRecognizer) => {
+    const drag = dragRef.current;
+    if (drag == null) {
+      return;
+    }
+    const {layout} = drag;
+    // The finger's travel toward the side since it landed.
+    const along =
+      pan.totalTranslation().x * physicalSign(layout.side, layout.inlineSign);
+    // UIKit's dead zone: the swipe counts from where the finger crosses it.
+    const threshold = SWIPE.hysteresis;
+    if (!drag.started) {
+      if (Math.abs(along) < threshold) {
         return;
       }
-      const root = rootRef.current;
-      if (root != null && root.contains(document.activeElement)) {
-        focusRowContent(root);
-      }
-      const holdsOut = fire();
-      if (holdsOut) {
-        const width = root?.clientWidth ?? 0;
-        const out =
-          signOf(current.side) *
-          inlineSignRef.current *
-          (width + SLIDE_OUT_OVERSHOOT_PX);
-        settle(current.side, out, 'held');
-      } else {
-        settle(current.side, 0, 'idle');
+      // The swipe begins: the row is caught where it is, and the tracking
+      // spring takes over from its presentation value and velocity.
+      drag.started = true;
+      drag.startSign = Math.sign(along);
+      drag.baseTravel = travelNow(layout);
+      setSwipeState({
+        isArmed: drag.isArmed,
+        phase: 'dragging',
+        side: layout.side,
+      });
+    }
+    // The threshold's travel is not part of the swipe, as in UIKit: the
+    // swipe counts from where the finger crossed it.
+    const swipe = along - drag.startSign * threshold;
+    const raw = Math.max(0, drag.baseTravel + swipe);
+    drag.raw = raw;
+    // The full swipe confirms on the finger's travel, not the row's (which
+    // trails it on the spring), and only when the outermost entry can fire.
+    const isArmed = drag.canConfirm && raw >= drag.confirmAt;
+    const flipped = isArmed !== drag.isArmed;
+    if (flipped) {
+      drag.isArmed = isArmed;
+      drag.wasConfirmed ||= isArmed;
+      setSwipeState({isArmed, phase: 'dragging', side: layout.side});
+    }
+    // Confirmed, the row runs ahead of the finger to UIKit's confirmation
+    // offset; backed out, it follows the finger again.
+    const travel = isArmed
+      ? Math.max(raw, confirmedOffset(drag.rowWidth))
+      : raw;
+    const confirm = isArmed ? 1 : 0;
+    if (animators.root.reducedMotion() === 'off') {
+      void springTo(layout, travel, SWIPE.tracking, confirm);
+    } else if (flipped) {
+      // Confirming and backing out are changes of state, not the finger's
+      // drag: under Reduce Motion they cross-fade (design:reduced-motion
+      // DR2), and the moves leave that fade alone until it ends.
+      void springTo(layout, travel, SWIPE.tracking, confirm);
+      const fade = reducedMotionFade(rootRef.current);
+      drag.dipUntil =
+        fade == null ? undefined : performance.now() + fade.duration;
+    } else if (drag.dipUntil == null || performance.now() >= drag.dipUntil) {
+      // Otherwise the row follows the finger one for one: the finger's own
+      // drag is direct manipulation (design:reduced-motion).
+      drag.dipUntil = undefined;
+      moveTo(layout, travel, confirm);
+    }
+  };
+
+  /** A claimed touch that never became a swipe: the row carries on as it was. */
+  const abandon = (drag: Drag) => {
+    setSwipeState(drag.previous);
+  };
+
+  const release = (pan: PanGestureRecognizer) => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (drag == null) {
+      return;
+    }
+    if (!drag.started) {
+      abandon(drag);
+      return;
+    }
+    const {layout} = drag;
+    const velocity =
+      pan.velocity().x * physicalSign(layout.side, layout.inlineSign);
+    const landing = resolveRelease({
+      behavior: latestRef.current.behavior,
+      isConfirmed: drag.isArmed,
+      openWidth: layout.openWidth,
+      travel: drag.raw,
+      velocity,
+      wasConfirmed: drag.wasConfirmed,
+    });
+    if (landing === 'perform') {
+      slideOutAndFire(layout, 'release');
+    } else if (landing === 'open') {
+      settle(layout, layout.openWidth, 'resting', undefined, 'release');
+    } else {
+      settle(layout, 0, 'idle', undefined, 'release');
+    }
+  };
+
+  const cancel = () => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (drag == null) {
+      return;
+    }
+    if (!drag.started) {
+      abandon(drag);
+      return;
+    }
+    settle(drag.layout, 0, 'idle', undefined, 'release');
+  };
+
+  useGestureRecognizer(
+    rootRef,
+    () =>
+      new PanGestureRecognizer({
+        allowedPointerTypes: ['touch'],
+        direction: 'horizontal',
+        hysteresis: SWIPE.claim,
+        maximumNumberOfTouches: 1,
+        name: 'Item.swipe',
+        shouldBegin: pan => {
+          if (stateRef.current.phase === 'held') {
+            return false;
+          }
+          if (Math.abs(animators.root.get('x')) > AT_REST_PX) {
+            return true;
+          }
+          const root = rootRef.current;
+          const inlineSign: 1 | -1 = isRtlElement(root) ? -1 : 1;
+          return latestRef.current.sides[
+            sideFor(pan.totalTranslation().x, inlineSign)
+          ];
+        },
+      }),
+    pan => {
+      switch (pan.state) {
+        case 'began':
+          begin(pan);
+          break;
+        case 'changed':
+          track(pan);
+          break;
+        case 'ended':
+          release(pan);
+          break;
+        case 'cancelled':
+          cancel();
+          break;
+        case 'possible':
+        case 'failed':
+          break;
       }
     },
-    [rootRef, settle],
+    // `spec:AST-057` reads each event's pointer: a finger swipes the row on
+    // every device and a mouse never does, so the host's fine-pointer gate
+    // (`spec:AST-094` FR19) does not apply to it.
+    {perEventPointer: true},
   );
 
-  const onPointerDown = useCallback(
-    (event: ReactPointerEvent) => {
-      const current = stateRef.current;
-      const inFlight = dragRef.current;
-      if (inFlight != null) {
-        // A second finger before the axis is decided: a pinch, not a swipe.
-        if (
-          event.pointerType === 'touch' &&
-          event.pointerId !== inFlight.pointerId &&
-          inFlight.claimed === null
-        ) {
-          inFlight.claimed = false;
-          stopWatchingForPinch();
-        }
-        return;
+  // A tap on an open row's own content closes it and activates nothing, as
+  // UIKit's dismissal does: the tap recognizes at the lift, and taking the
+  // touch cancels the click it would have made. The panel's entries keep
+  // their own taps, and a closed row never offers this recognizer a touch.
+  useGestureRecognizer(
+    rootRef,
+    () =>
+      new TapGestureRecognizer({
+        allowedPointerTypes: ['touch'],
+        name: 'item-swipe-dismiss',
+        shouldReceiveTouch: (_tap, touch) =>
+          isOpen() &&
+          !(
+            touch.target instanceof Element &&
+            touch.target.closest('[data-swipe-panel]') != null
+          ),
+      }),
+    tap => {
+      if (tap.state === 'ended') {
+        close();
       }
-      if (
-        !isEnabled ||
-        event.pointerType !== 'touch' ||
-        // Another finger is already down: this one is part of a pinch.
-        event.isPrimary === false ||
-        current.phase === 'settling' ||
-        current.phase === 'held'
-      ) {
-        return;
-      }
-      const root = rootRef.current;
-      const inlineSign: 1 | -1 = isRtlElement(root) ? -1 : 1;
-      inlineSignRef.current = inlineSign;
-      const startTime = now();
-      const drag: DragState = {
-        // Logical: the physical travel through the inline sign.
-        baseTravel: travelRef.current * inlineSign,
-        claimed: null,
-        commitPx: 0,
-        inlineSign,
-        lastTime: startTime,
-        lastX: event.clientX,
-        panelWidth: 0,
-        pointerId: event.pointerId,
-        prevTime: startTime,
-        prevX: event.clientX,
-        side: current.phase === 'resting' ? current.side : 'leading',
-        startX: event.clientX,
-        startY: event.clientY,
-        travel: 0,
-      };
-      dragRef.current = drag;
-      watchForPinch(drag);
     },
-    [isEnabled, rootRef, stopWatchingForPinch, watchForPinch],
+    // The swipe's own dismissal reads each event's pointer, as the swipe
+    // does (`spec:AST-057`).
+    {perEventPointer: true},
   );
 
-  const onPointerMove = useCallback(
-    (event: ReactPointerEvent) => {
-      const drag = dragRef.current;
-      if (
-        drag == null ||
-        drag.pointerId !== event.pointerId ||
-        drag.claimed === false
-      ) {
-        return;
-      }
-      // Logical travel: positive toward the inline end.
-      const deltaX = (event.clientX - drag.startX) * drag.inlineSign;
-      const deltaY = event.clientY - drag.startY;
-      if (drag.claimed === null) {
-        if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < AXIS_LOCK_PX) {
-          return;
-        }
-        // The axis is decided now, whichever way: a later finger is the
-        // swipe's to ignore or the scroller's to use.
-        stopWatchingForPinch();
-        // More horizontal than vertical is the row's, the rest the scroller's.
-        if (Math.abs(deltaX) <= Math.abs(deltaY)) {
-          drag.claimed = false;
-          return;
-        }
-        const resting = stateRef.current.phase === 'resting';
-        // From rest, the drag continues the open side (closing it or going
-        // further); from closed, the drag's direction names the side.
-        const side: SwipeSide = resting
-          ? drag.side
-          : deltaX > 0
-            ? 'leading'
-            : 'trailing';
-        if (!sidesRef.current[side]) {
-          drag.claimed = false;
-          return;
-        }
-        drag.claimed = true;
-        drag.side = side;
-        drag.panelWidth = measurePanelRef.current(side);
-        const width = rootRef.current?.clientWidth ?? 0;
-        drag.commitPx = Math.max(
-          drag.panelWidth + COMMIT_PAST_PANEL_PX,
-          width * COMMIT_FRACTION,
-        );
-        if (rootRef.current != null) {
-          rootRef.current.style.setProperty(
-            SWIPE_DIRECTION_PROPERTY,
-            String(drag.inlineSign),
-          );
-        }
-        writeDuration(0);
-        setState({isArmed: false, phase: 'dragging', side});
-        try {
-          rootRef.current?.setPointerCapture(event.pointerId);
-        } catch {
-          // Pointer capture is a nicety (keeps the drag when the finger
-          // leaves the row); a platform without it still drags.
-        }
-      }
-      const sign = signOf(drag.side);
-      // Travel toward the side, counted from where the row already was.
-      const raw = Math.max(0, deltaX * sign + drag.baseTravel * sign);
-      const offset =
-        raw <= drag.commitPx
-          ? raw
-          : drag.commitPx + (raw - drag.commitPx) * OVERSHOOT_RESISTANCE;
-      const isArmed = raw >= drag.commitPx;
-      if (isArmed !== drag.travel >= drag.commitPx) {
-        setState({isArmed, phase: 'dragging', side: drag.side});
-      }
-      drag.travel = raw;
-      drag.prevX = drag.lastX;
-      drag.prevTime = drag.lastTime;
-      drag.lastX = event.clientX;
-      drag.lastTime = now();
-      paintOnNextFrame(sign * drag.inlineSign * offset);
-    },
-    [paintOnNextFrame, rootRef, stopWatchingForPinch, writeDuration],
-  );
-
-  const endGesture = useCallback(
-    (event: ReactPointerEvent, cancelled: boolean) => {
-      const drag = dragRef.current;
-      if (drag == null || drag.pointerId !== event.pointerId) {
-        return;
-      }
-      dragRef.current = null;
-      stopWatchingForPinch();
-      if (drag.claimed !== true) {
-        return;
-      }
-      suppressClickUntilRef.current = now() + CLICK_SUPPRESS_MS;
-      try {
-        rootRef.current?.releasePointerCapture(event.pointerId);
-      } catch {
-        // See setPointerCapture above.
-      }
-      const {side, inlineSign} = drag;
-      const restTravel = signOf(side) * inlineSign * drag.panelWidth;
-      if (cancelled) {
-        settle(side, 0, 'idle');
-        return;
-      }
-      const elapsed = Math.max(1, drag.lastTime - drag.prevTime);
-      const velocity =
-        (signOf(side) * inlineSign * (drag.lastX - drag.prevX)) / elapsed;
-      const flung =
-        velocity >= FLING_VELOCITY_PX_PER_MS && drag.travel >= FLING_MIN_PX;
-      if (drag.travel >= drag.commitPx || flung) {
-        slideOutAndFire(side, inlineSign);
-        return;
-      }
-      if (
-        behaviorRef.current === 'reveal' &&
-        drag.travel >= drag.panelWidth * REST_FRACTION
-      ) {
-        settle(side, restTravel, 'resting');
-        return;
-      }
-      settle(side, 0, 'idle');
-    },
-    [rootRef, settle, slideOutAndFire, stopWatchingForPinch],
-  );
-
-  const onPointerUp = useCallback(
-    (event: ReactPointerEvent) => endGesture(event, false),
-    [endGesture],
-  );
-  const onPointerCancel = useCallback(
-    (event: ReactPointerEvent) => endGesture(event, true),
-    [endGesture],
-  );
-  const shouldSuppressClick = useCallback(
-    () => now() < suppressClickUntilRef.current,
-    [],
-  );
-  const onClickCapture = useCallback(
-    (event: ReactMouseEvent) => {
-      // A tap on a resting panel's entry is a tap, however soon after the
-      // drag that opened it; the synthesized click lands on the row's content.
-      if (
-        !shouldSuppressClick() ||
-        (event.target instanceof Element &&
-          event.target.closest('[data-swipe-panel]') != null)
-      ) {
-        return;
-      }
-      suppressClickUntilRef.current = 0;
-      event.preventDefault();
-      event.stopPropagation();
-    },
-    [shouldSuppressClick],
-  );
   const onKeyDown = useCallback(
     (event: ReactKeyboardEvent) => {
-      if (event.key === 'Escape' && stateRef.current.phase === 'resting') {
+      if (event.key === 'Escape' && isOpen()) {
         event.stopPropagation();
         close();
       }
     },
-    [close],
+    [close, isOpen],
   );
 
-  return {
-    activateEntry,
-    close,
-    handlers: {
-      onClickCapture,
-      onKeyDown,
-      onPointerCancel,
-      onPointerDown,
-      onPointerMove,
-      onPointerUp,
-    },
-    shouldSuppressClick,
-    state,
-  };
+  return {activateEntry, close, onKeyDown, panelRefs, reveal, state};
 }
