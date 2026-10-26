@@ -561,6 +561,9 @@ export function MobileNav({
   // Under a finger, the input hold on the drawer's layer while it slides in
   // or out (Layer/inputHold); null under a mouse.
   const releaseHoldRef = useRef<(() => void) | null>(null);
+  // Whether the last run's cleanup released a hold: a reopen then knows the
+  // slide-out it interrupted held the drawer's content inert.
+  const wasHeldRef = useRef(false);
   // Element that was focused when the drawer opened; focus goes back to it
   // once the native dialog has closed (see closeAndRestoreFocus).
   const triggerElementRef = useRef<HTMLElement | null>(null);
@@ -629,7 +632,8 @@ export function MobileNav({
 
     // Under a finger the drawer presents and dismisses as a UIKit sheet
     // does: nothing takes a touch until the slide-in has finished, and
-    // nothing takes any input until the slide-out has finished (iOS 26.2).
+    // nothing takes any input until the slide-out has finished (iOS 26.2),
+    // at most MAX_EXIT_MS.
     // Under a mouse nothing is held. The pointer is the one condition this
     // presentation names (AST-094 FR13), read as the drawer opens or closes.
     const isTouch =
@@ -644,7 +648,8 @@ export function MobileNav({
     };
 
     if (isOpen) {
-      const wasHeld = releaseHoldRef.current != null;
+      const wasHeld = wasHeldRef.current || releaseHoldRef.current != null;
+      wasHeldRef.current = false;
       releaseHoldRef.current?.();
       releaseHoldRef.current = null;
       if (!dialog.open) {
@@ -693,6 +698,11 @@ export function MobileNav({
         clearTimeout(closeTimeoutRef.current);
         closeTimeoutRef.current = null;
       }
+      // The hold this run took ends with it: a reopen, a close or an
+      // unmount mid-slide never leaves input blocked.
+      wasHeldRef.current = releaseHoldRef.current != null;
+      releaseHoldRef.current?.();
+      releaseHoldRef.current = null;
     };
   }, [isOpen]);
 
