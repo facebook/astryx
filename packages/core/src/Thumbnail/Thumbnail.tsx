@@ -453,6 +453,7 @@ export function Thumbnail({
         size="sm"
         isIconOnly
         aria-disabled={isDisabled ? 'true' : undefined}
+        onKeyDown={isDisabled ? suppressActivationKeys : undefined}
         onClick={e => {
           e.stopPropagation();
           if (!isDisabled) {
@@ -494,6 +495,7 @@ export function Thumbnail({
           <button
             type="button"
             onClick={isInteractive ? onClick : stopInertPress}
+            onKeyDown={isInteractive ? undefined : suppressActivationKeys}
             aria-label={t('@astryx.thumbnail.open', {accessibleName})}
             aria-disabled={isInteractive ? undefined : 'true'}
             {...stylex.props(styles.interactiveButton)}>
@@ -523,9 +525,20 @@ export function Thumbnail({
 Thumbnail.displayName = 'Thumbnail';
 
 /**
- * An inert Open still receives Enter, Space and clicks: it calls nothing, and
- * the press stops here so an ancestor's click handler does not take it either
- * (spec:AST-085 FR2).
+ * Enter and Space on an inert action dispatch no click at all, so no listener
+ * anywhere receives one (spec:AST-085 FR2), as Button does for its own
+ * aria-disabled state.
+ */
+function suppressActivationKeys(event: React.KeyboardEvent<HTMLElement>) {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+  }
+}
+
+/**
+ * A click that still reaches an inert Open (a pointer, or assistive
+ * technology dispatching one) calls nothing and stops here, so an ancestor's
+ * click handler does not take it either (spec:AST-085 FR2).
  */
 function stopInertPress(event: React.MouseEvent<HTMLButtonElement>) {
   event.preventDefault();

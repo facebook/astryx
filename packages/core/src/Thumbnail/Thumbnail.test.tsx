@@ -215,6 +215,36 @@ describe('Thumbnail', () => {
     },
   );
 
+  it.each([
+    ['a disabled Open', {isDisabled: true}, 'Open Test'],
+    ['a loading Open', {isLoading: true}, 'Open Test'],
+    ['a disabled Remove', {isDisabled: true}, /Remove/],
+  ] as const)(
+    'Enter and Space on %s dispatch no click to any listener (spec:AST-085 FR2)',
+    async (_name, stateProps, buttonName) => {
+      const user = userEvent.setup();
+      const clicks = vi.fn();
+      document.addEventListener('click', clicks, {capture: true});
+      try {
+        render(
+          <Thumbnail
+            src="/img.jpg"
+            alt="Test"
+            onClick={vi.fn()}
+            onRemove={vi.fn()}
+            {...stateProps}
+          />,
+        );
+        screen.getByRole('button', {name: buttonName}).focus();
+        await user.keyboard('{Enter}');
+        await user.keyboard(' ');
+        expect(clicks).not.toHaveBeenCalled();
+      } finally {
+        document.removeEventListener('click', clicks, {capture: true});
+      }
+    },
+  );
+
   it('keeps focus on Open and Remove when the thumbnail becomes loading or disabled (spec:AST-085 FR4)', () => {
     const props = {
       src: '/img.jpg',
