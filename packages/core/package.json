@@ -714,6 +714,11 @@
       "types": "./dist/theme/index.d.ts",
       "default": "./dist/theme/index.js"
     },
+    "./touch-support": {
+      "source": "./src/touch-support/index.ts",
+      "types": "./dist/touch-support/index.d.ts",
+      "default": "./dist/touch-support/index.js"
+    },
     "./utils": {
       "source": "./src/utils/index.ts",
       "types": "./dist/utils/index.d.ts",

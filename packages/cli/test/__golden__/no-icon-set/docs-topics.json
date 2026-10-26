@@ -114,10 +114,9 @@
         "which-components-are-affected",
         "what-astryx-guarantees",
         "supporting-older-browsers",
-        "how-these-tiers-move-over-time",
-        "desktop-bundles-without-touch-code"
+        "how-these-tiers-move-over-time"
       ],
-      "skeleton": "1d56ace278823e64f0651e6a1b46a671a5e5440b251db66d4c3c94cfd858853b",
+      "skeleton": "98bdd1d0e1db35f5ad03896962be51d2f21679c3f3cd25cf724045778a959b5e",
       "mentions": []
     },
     "color": {

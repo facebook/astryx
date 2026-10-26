@@ -45,17 +45,6 @@ describe('main searcher', () => {
     );
   });
 
-  it('finds a guide section from what it covers, not from a stray word', async () => {
-    expect(
-      top(await search('desktop bundle without touch code', {cwd: REPO})),
-    ).toContain('doc:browser-support');
-    // The desktop-bundle section once ended on "saves", which matched
-    // "saved" here and grew this answer past the lexical ranker's.
-    expect(
-      top(await search('toast notice for a saved draft', {cwd: REPO})),
-    ).not.toContain('doc:browser-support');
-  });
-
   it('answers a whole-name query exactly as the lexical ranker does', async () => {
     for (const q of ['Button', 'Dialog', 'useTheme', 'tokens']) {
       expect(top(await search(q, {cwd: REPO}))).toEqual(

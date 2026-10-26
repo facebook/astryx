@@ -636,6 +636,40 @@ export default defineConfig(
       '@astryx/copyright-header': 'error',
     },
   },
+  // ── Core's touch module internals ─────────────────────────────────────────
+  // The gesture core, motion, and touch-support's registry and hook are Core's
+  // package-private path: Core and Lab reach the module through
+  // useTouchSupport, and the exports map holds only the public
+  // `@astryxdesign/core/touch-support` entry
+  // (architecture:react-component-runtime INV13). TypeScript files only, so
+  // this block stays disjoint from the CLI's `no-restricted-imports` blocks.
+  {
+    files: ['**/*.{ts,tsx}'],
+    ignores: ['packages/core/**', 'packages/lab/**', '**/*.d.ts', '**/dist/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@astryxdesign/core/touch-support/*',
+                '@astryxdesign/core/gestures',
+                '@astryxdesign/core/gestures/*',
+                '@astryxdesign/core/motion',
+                '@astryxdesign/core/motion/*',
+                '**/core/src/gestures/**',
+                '**/core/src/motion/**',
+                '**/core/src/touch-support/**',
+              ],
+              message:
+                "Core's touch internals are package-private (architecture:react-component-runtime INV13): install the module with `@astryxdesign/core/touch-support`; Core and Lab components reach it through useTouchSupport.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   // ── CLI architecture invariants ────────────────────────────────────────
   // Enforces the layering documented in CONTRIBUTING > "Working on the astryx
   // CLI". Every rule below is already clean across packages/cli, so they are
