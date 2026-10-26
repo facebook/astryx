@@ -192,7 +192,15 @@ down too: it waits on timers for the scheduled ends of the element's curves
 (looking `frames` times a frame apart before settling on none, so an
 animation the action starts a frame or two later is waited for) and reads no
 style until the trace ends (in the anchored fixture's steady middle,
-24 Layouts before, 0 now). The trace's `longTasks` are the page's own: only a
+24 Layouts before, 0 now). So do `waitForAnimation` and a watch's
+`started()`: they take the element's animations from the recorder's log,
+judge a started one by its own times, and reach the element through a handle,
+since each `locator.evaluate` makes a main-thread frame (there too, 24
+Layouts before, 0 now). That holds for script animations and CSS
+transitions. On a CSS `@keyframes` animation (and, unwatched, a cancelled CSS
+transition), `waitForAnimation` and `started()` read the animation's timing,
+which flushes its style and adds Layouts to the trace: wait on one with
+`waitForRest`, or after the trace. The trace's `longTasks` are the page's own: only a
 task the harness marked as its own read (`waitForAnimation` describing
 keyframes, `blockMainThread` without `during`) is in `devtoolsTasks` instead,
 and only when no page script ran inside it. A test's own `page.evaluate` stays a
