@@ -341,19 +341,17 @@ describe('build-css astryx.css', () => {
       );
     });
   });
-  describe('the compositor press layer (interactionOverlay.stylex.ts `cell`)', () => {
+  describe('the compositor press layer (rowPressLayer.ts `cell`)', () => {
     /** The cell clock and curve, read off their one stylesheet source. */
     async function readLayerConsts() {
       const source = await fs.readFile(
-        path.join(ROOT, 'packages/core/src/utils/interactionOverlay.stylex.ts'),
+        path.join(ROOT, 'packages/core/src/utils/rowPressLayer.stylex.ts'),
         'utf8',
       );
       const ms = source.match(/cellReleaseMs:\s*(\d+)/);
       const ease = source.match(/cellReleaseEase:\s*'([^']+)'/);
       if (ms == null || ease == null) {
-        throw new Error(
-          'cellPressConsts not found in interactionOverlay.stylex.ts',
-        );
+        throw new Error('cellPressConsts not found in rowPressLayer.stylex.ts');
       }
       return {
         ms: Number(ms[1]),
