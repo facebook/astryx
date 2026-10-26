@@ -93,14 +93,14 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-| Concept          | Closed values or states                         | Meaning                                   | Availability by variant/orientation/state          | Default                   | Owner                 | Stability | Invalid-value behavior           |
-| ---------------- | ----------------------------------------------- | ----------------------------------------- | -------------------------------------------------- | ------------------------- | --------------------- | --------- | -------------------------------- |
-| Type             | `text`, `password`, `email`                     | Native input type.                        | Always.                                            | `text`                    | `component:TextInput` | Stable    | TypeScript rejects other values. |
-| Size             | `sm`, `md`, `lg`                                | Control height.                           | Always.                                            | Inherited size, else `md` | `family:input-fields` | Stable    | TypeScript rejects other values. |
-| Status           | `error`, `warning`, `success`, optional message | Validation state.                         | Always; the message box only outside InputGroup.   | none                      | `family:input-fields` | Stable    | TypeScript rejects other types.  |
-| Status placement | `attached`, `detached`, `tooltip`               | Where the status message shows.           | Outside InputGroup.                                | `attached`                | `family:input-fields` | Stable    | TypeScript rejects other values. |
-| Busy             | idle, busy                                      | The value is loading or being saved.      | `isLoading`, or while a `changeAction` is pending. | idle                      | `family:input-fields` | Stable    | Not applicable.                  |
-| Availability     | editable, read-only, disabled                   | Whether the value can change and submits. | Always; disabled wins over read-only.              | editable                  | `component:TextInput` | Stable    | Not applicable.                  |
+| Concept          | Closed values or states                         | Meaning                                   | Availability by variant/orientation/state                                                                                   | Default                   | Owner                 | Stability | Invalid-value behavior           |
+| ---------------- | ----------------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------- | --------------------- | --------- | -------------------------------- |
+| Type             | `text`, `password`, `email`                     | Native input type.                        | Always.                                                                                                                     | `text`                    | `component:TextInput` | Stable    | TypeScript rejects other values. |
+| Size             | `sm`, `md`, `lg`                                | Control height.                           | Always.                                                                                                                     | Inherited size, else `md` | `family:input-fields` | Stable    | TypeScript rejects other values. |
+| Status           | `error`, `warning`, `success`, optional message | Validation state.                         | Always; the message box only outside InputGroup.                                                                            | none                      | `family:input-fields` | Stable    | TypeScript rejects other types.  |
+| Status placement | `attached`, `detached`, `tooltip`               | Where the status message shows.           | Outside InputGroup.                                                                                                         | `attached`                | `family:input-fields` | Stable    | TypeScript rejects other values. |
+| Busy             | idle, busy                                      | The value is loading or being saved.      | `isLoading`, or while the shown value differs from `value` (a pending `changeAction` whose value `value` has not accepted). | idle                      | `family:input-fields` | Stable    | Not applicable.                  |
+| Availability     | editable, read-only, disabled                   | Whether the value can change and submits. | Always; disabled wins over read-only.                                                                                       | editable                  | `component:TextInput` | Stable    | Not applicable.                  |
 
 ## Behavioral and layout contract
 
@@ -130,14 +130,14 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Representative states
 
-| State                  | Required invariant                                                                                                 | Allowed variation |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------- |
-| Empty with placeholder | Labelled input; placeholder visible.                                                                               | Size.             |
-| Typing with Action     | Proposed value shows while the Action is pending, with the Spinner and `aria-busy`; `value` shows once it settles. | —                 |
-| Error with message     | Error border and icon; `aria-invalid`; message described.                                                          | Placement.        |
-| Disabled with reason   | `aria-disabled`; focusable; read-only; not submitted; reason tooltip on focus.                                     | —                 |
-| Read-only              | Full opacity; submits; cannot change.                                                                              | —                 |
-| In InputGroup          | No Field; hidden label names the input; no message box.                                                            | Group geometry.   |
+| State                  | Required invariant                                                                                                                                       | Allowed variation |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| Empty with placeholder | Labelled input; placeholder visible.                                                                                                                     | Size.             |
+| Typing with Action     | Proposed value shows while the Action is pending, with the Spinner and `aria-busy` while it differs from `value`; `value` shows once the Action settles. | —                 |
+| Error with message     | Error border and icon; `aria-invalid`; message described.                                                                                                | Placement.        |
+| Disabled with reason   | `aria-disabled`; focusable; read-only; not submitted; reason tooltip on focus.                                                                           | —                 |
+| Read-only              | Full opacity; submits; cannot change.                                                                                                                    | —                 |
+| In InputGroup          | No Field; hidden label names the input; no message box.                                                                                                  | Group geometry.   |
 
 ### Transformation and precedence order
 
@@ -237,8 +237,6 @@ anatomy-theming map.
 - **Clear press under reduced motion (FR5).** The clear button scales to 0.98 on
   a press when the person prefers reduced motion, as `component:Button` FR15
   records, against `design:reduced-motion` DR1.
-- **Family adoption table.** `family:input-fields` lists TextInput under its
-  prop-target gap; TextInput meets FR10 (FR13).
 - **Source comment.** The `size` JSDoc in `TextInput.tsx` gives 18 px and 26 px
   heights; the shipped heights come from the shared element sizes (FR11).
 
