@@ -360,8 +360,13 @@ export function useChatKeyboard({
     liftStore,
   ]);
 
-  // A keyboard height the guide had no ride for (a resize, a rotation)
-  // reaches the layout directly.
+  // Synchronizes the layout with the keyboard module's height (the visual
+  // viewport, read through useKeyboardHeight) when the guide had no ride for
+  // it (a resize, a rotation): `commit` measures the root against the layout
+  // viewport and sets the lift store. It acquires nothing and is idempotent:
+  // it sets the lift only when that changes by half a pixel or more, and not
+  // during a ride, so a replay or a rerender changes nothing
+  // (architecture:react-component-runtime INV3).
   useIsomorphicLayoutEffect(() => {
     commitRef.current();
   }, [keyboardHeight]);
