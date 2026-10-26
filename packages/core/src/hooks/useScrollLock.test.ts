@@ -77,6 +77,32 @@ function scroller(
   return element;
 }
 
+const originalCss = Object.getOwnPropertyDescriptor(window, 'CSS');
+
+/**
+ * A desktop page with a classic scrollbar: a 1024px window over a 1009px
+ * layout viewport (a 15px scrollbar), on an engine with `scrollbar-gutter`.
+ */
+function classicScrollbar(clientWidth = 1009): void {
+  Object.defineProperty(window, 'innerWidth', {
+    value: 1024,
+    configurable: true,
+    writable: true,
+  });
+  Object.defineProperty(document.documentElement, 'clientWidth', {
+    value: clientWidth,
+    configurable: true,
+  });
+  Object.defineProperty(window, 'CSS', {
+    value: {
+      supports: (property: string, value: string) =>
+        property === 'scrollbar-gutter' && value === 'stable',
+    },
+    configurable: true,
+    writable: true,
+  });
+}
+
 describe('useScrollLock', () => {
   afterEach(() => {
     cleanup();
@@ -85,6 +111,12 @@ describe('useScrollLock', () => {
     document.documentElement.style.cssText = '';
     // @ts-expect-error -- drop the viewport stub so jsdom's own value comes back
     delete document.documentElement.clientWidth;
+    if (originalCss) {
+      Object.defineProperty(window, 'CSS', originalCss);
+    } else {
+      // @ts-expect-error -- jsdom has no CSS object of its own
+      delete window.CSS;
+    }
     vi.restoreAllMocks();
   });
 
@@ -377,18 +409,9 @@ describe('useScrollLock', () => {
   });
 
   it('holds the page still across the scrollbar it hides', () => {
-    // A 1024px window over a 1009px layout viewport = a 15px classic
-    // scrollbar. Hiding the page overflow hides it, which would widen the page
-    // by those 15px and reflow everything sideways.
-    Object.defineProperty(window, 'innerWidth', {
-      value: 1024,
-      configurable: true,
-      writable: true,
-    });
-    Object.defineProperty(document.documentElement, 'clientWidth', {
-      value: 1009,
-      configurable: true,
-    });
+    // Hiding the page overflow hides the classic scrollbar, which would widen
+    // the page by its 15px and reflow everything sideways.
+    classicScrollbar();
 
     const lock = renderHook(() => useScrollLock(true));
 
@@ -400,15 +423,7 @@ describe('useScrollLock', () => {
   });
 
   it('leaves the page alone when the scrollbar is an overlay one', () => {
-    Object.defineProperty(window, 'innerWidth', {
-      value: 1024,
-      configurable: true,
-      writable: true,
-    });
-    Object.defineProperty(document.documentElement, 'clientWidth', {
-      value: 1024,
-      configurable: true,
-    });
+    classicScrollbar(1024);
 
     const lock = renderHook(() => useScrollLock(true));
 
@@ -419,15 +434,7 @@ describe('useScrollLock', () => {
   });
 
   it('holds the gutter for the outermost overlay only, and gives it back once', () => {
-    Object.defineProperty(window, 'innerWidth', {
-      value: 1024,
-      configurable: true,
-      writable: true,
-    });
-    Object.defineProperty(document.documentElement, 'clientWidth', {
-      value: 1009,
-      configurable: true,
-    });
+    classicScrollbar();
 
     const first = renderHook(() => useScrollLock(true));
     const second = renderHook(() => useScrollLock(true));
