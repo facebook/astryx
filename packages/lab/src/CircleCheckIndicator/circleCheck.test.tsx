@@ -117,6 +117,21 @@ describe('CircleCheckIndicator ships the table', () => {
     return el;
   }
 
+  it('paints the touch press image only under a coarse pointer, so a held pen draws its press once', () => {
+    // A pen on a fine-pointer page draws the mouse `:active` fill; the press
+    // image as well would paint the press twice. CheckboxInput's own layer
+    // gates its image the same way.
+    const images = [
+      ...(declarationsOf(circle('md')).get('background-image') ??
+        new Map<string | null, string>()),
+    ];
+    expect(images.length).toBeGreaterThan(0);
+    for (const [media, value] of images) {
+      expect(media).toContain('(pointer: coarse)');
+      expect(value).toContain('--_press-paint-image');
+    }
+  });
+
   it('changes in one frame under a finger, keeps the theme’s fade with a mouse and none with a mouse under Reduce Motion', () => {
     const durations = [
       ...(declarationsOf(circle('md')).get('transition-duration') ??
