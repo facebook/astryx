@@ -25,6 +25,7 @@ import {
   busyWindowProof,
   castStoryboard,
   compareCurve,
+  drag,
   countBetween,
   freezeTimers,
   holdAnimations,
@@ -233,6 +234,50 @@ test.describe('with a mouse (a fine primary pointer)', () => {
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await expect(exitCopyOf(page)).toHaveCount(0);
   });
+});
+
+test('a tap or a drag that lands while it grows closes nothing, moves no focus and scrolls nothing (spec:AST-094 FR35)', async ({
+  page,
+}) => {
+  const story = await openDefault(page);
+  // A page that can scroll, so a drag that reached it would.
+  await page.addStyleTag({content: 'body { min-height: 300vh; }'});
+  const viewport = page.viewportSize()!;
+  const outside = {x: 20, y: viewport.height - 40};
+  const isOpen = async () =>
+    story.layer.evaluate(el => el.matches(':popover-open'));
+  const focused = async () =>
+    page.evaluate(() => document.activeElement?.outerHTML.slice(0, 80) ?? '');
+
+  // A tap outside, landing while it grows: no light dismiss, no focus move.
+  await openWithTap(story);
+  const before = await focused();
+  await story.driver.tap(outside);
+  await waitForRest(story.layer);
+  expect(await isOpen()).toBe(true);
+  expect(await focused()).toBe(before);
+
+  // Once it has grown, the same tap is the browser's light dismiss again.
+  await story.driver.tap(outside);
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'false');
+
+  // A tap on the trigger, landing while it grows, does not close it.
+  await waitForRest(page.locator('body'));
+  await openWithTap(story);
+  await story.driver.tap(story.center);
+  await waitForRest(story.layer);
+  expect(await isOpen()).toBe(true);
+  await story.driver.tap(outside);
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'false');
+
+  // A one-finger drag, landing while it grows, scrolls nothing.
+  await openWithTap(story);
+  await story.driver.play(
+    drag(outside, {x: outside.x, y: outside.y - 300}, {durationMs: 150}),
+  );
+  await waitForRest(story.layer);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  expect(await isOpen()).toBe(true);
 });
 
 test('the presentation grows out of the trigger on UIKit\u2019s present spring', async ({
