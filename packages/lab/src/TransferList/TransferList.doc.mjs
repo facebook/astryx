@@ -501,7 +501,7 @@ export const docs = {
       },
       {
         className: 'astryx-transfer-list-item',
-        visualProps: ['side', 'state'],
+        visualProps: ['side', 'state', 'reorder'],
       },
     ],
   },

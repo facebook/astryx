@@ -4,7 +4,7 @@
 
 /**
  * @file TransferListSelector.tsx
- * @input Controlled option data, uncontrolled ComplexSelector state, TransferList with the selector's own reorder (core's `createReorderable`, aimed at the draft when staged), action controls, and the core i18n catalog
+ * @input Controlled option data, uncontrolled ComplexSelector state, TransferList with the owner's reorderable object, adapted through Core's internal reorder entry (aimed at the draft when staged), action controls, and the core i18n catalog
  * @output Exports the immediate-or-staged TransferListSelector composition with draft cleanup after dismissal
  * @position Lab collection input shell; consumed by the TransferList entry point, docs, and tests
  *
@@ -24,11 +24,11 @@ import {
 import {useTranslator} from '@astryxdesign/core/i18n';
 import {HStack} from '@astryxdesign/core/Stack';
 import {borderVars, colorVars} from '@astryxdesign/core/theme/tokens.stylex';
+import type {Reorderable} from '@astryxdesign/core/reorderable';
 import {
-  createReorderable,
-  type Reorderable,
-} from '@astryxdesign/core/reorderable';
-import {reorderableOptions} from '@astryxdesign/core/internal/reorder';
+  adaptReorderable,
+  reorderableOptions,
+} from '@astryxdesign/core/internal/reorder';
 import {TransferList, type TransferListProps} from './TransferList';
 
 const DEFAULT_SELECTOR_WIDTH = 'min(41rem, calc(100vw - 32px))';
@@ -288,10 +288,12 @@ export function TransferListSelector<T extends string = string>({
           ownerReorderable == null
             ? undefined
             : reorderableOptions(ownerReorderable);
+        // Adapted, so the engine is the owner's (nothing here loads the
+        // reorder, spec:AST-103 FR2) and the owner's `start` finds the list.
         const reorderable =
-          owner == null
+          owner == null || ownerReorderable == null
             ? undefined
-            : createReorderable<T>({
+            : adaptReorderable(ownerReorderable, {
                 onReorder: move => {
                   if (state.isBusy) {
                     return;

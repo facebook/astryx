@@ -241,8 +241,6 @@ const LOCKED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
     label: 'Status',
     description: 'Current workflow state',
     group: 'Planning',
-    disabledMessage:
-      'Status can be hidden, but has no reorder handle while selected.',
   },
   {
     value: 'priority',
