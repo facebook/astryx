@@ -15,6 +15,10 @@
  *
  * This serializes the build behind a filesystem lock so exactly one worker
  * builds and the rest wait for it to finish before reading dist.
+ *
+ * A build older than Core's sources counts as missing: a reused worktree
+ * checked out to a new head keeps its old dist, and the suites would
+ * otherwise test the new CLI against the old theme build.
  */
 
 import {execFileSync} from 'node:child_process';
@@ -31,6 +35,12 @@ const CORE_THEME_ENTRY = path.join(
   REPO_ROOT,
   'packages/core/dist/theme/index.js',
 );
+// What the build compiles: a file here newer than the built entry means dist
+// is stale. A checkout rewrites the files it changes, so they read as newer.
+const CORE_SOURCES = [
+  path.join(REPO_ROOT, 'packages/core/src'),
+  path.join(REPO_ROOT, 'packages/core/package.json'),
+];
 // A lock directory (mkdir is atomic across processes) guards the build.
 const LOCK_DIR = path.join(os.tmpdir(), 'astryx-core-build.lock');
 
@@ -42,6 +52,47 @@ const POLL_MS = 250;
 /** @param {number} ms */
 function sleepSync(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/**
+ * Whether `entry` is missing or older than any file under `roots` (files or
+ * directories; `node_modules` and `dist` are skipped).
+ * @param {string} entry
+ * @param {readonly string[]} roots
+ * @returns {boolean}
+ */
+export function coreBuildIsStale(entry, roots) {
+  let built;
+  try {
+    built = fs.statSync(entry).mtimeMs;
+  } catch {
+    return true;
+  }
+  const pending = [...roots];
+  while (pending.length > 0) {
+    const current = /** @type {string} */ (pending.pop());
+    let stat;
+    try {
+      stat = fs.statSync(current);
+    } catch {
+      continue;
+    }
+    if (stat.isDirectory()) {
+      for (const name of fs.readdirSync(current)) {
+        if (name !== 'node_modules' && name !== 'dist') {
+          pending.push(path.join(current, name));
+        }
+      }
+    } else if (stat.mtimeMs > built) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** Whether packages/core/dist holds a build of Core's current sources. */
+function coreIsBuilt() {
+  return !coreBuildIsStale(CORE_THEME_ENTRY, CORE_SOURCES);
 }
 
 function buildCore() {
@@ -91,18 +142,18 @@ function tryAcquire() {
  * build-theme suite's beforeAll.
  */
 export function ensureCoreBuilt() {
-  if (fs.existsSync(CORE_THEME_ENTRY)) {
+  if (coreIsBuilt()) {
     return;
   }
 
   const deadline = Date.now() + STALE_LOCK_MS;
   while (Date.now() < deadline) {
-    if (fs.existsSync(CORE_THEME_ENTRY)) {
+    if (coreIsBuilt()) {
       return;
     }
     if (tryAcquire()) {
       try {
-        if (!fs.existsSync(CORE_THEME_ENTRY)) {
+        if (!coreIsBuilt()) {
           buildCore();
         }
       } finally {
