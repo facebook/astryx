@@ -322,10 +322,6 @@ class PagerPanGestureRecognizer extends PanGestureRecognizer {
     }
     return along >= paging.nestedPanAxisRatio * across ? 'begin' : 'fail';
   }
-
-  override claimsEarly(): boolean {
-    return !this.hasEnclosingVerticalPan() && super.claimsEarly();
-  }
 }
 
 /**
