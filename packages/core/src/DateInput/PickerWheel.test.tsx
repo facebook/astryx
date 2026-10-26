@@ -1221,13 +1221,42 @@ describe('PickerWheel — in a group, and under a held finger', () => {
   });
 
   it('neither selects text nor opens the callout under a held finger', () => {
-    const {column} = renderWheel();
+    const {column, option} = renderWheel();
+    const refuses = () => {
+      const event = new Event('selectstart', {bubbles: true, cancelable: true});
+      option('10').dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    // Outside iOS WebKit the lock refuses a selection that starts under the
+    // finger and writes no style.
     touch('touchstart', column, CENTRE);
-    // The gesture host locks the column while the finger is down (jsdom
-    // keeps no -webkit-touch-callout; the simulator check reads it).
-    expect(column.style.getPropertyValue('user-select')).toBe('none');
-    touch('touchend', column, CENTRE);
+    expect(refuses()).toBe(true);
     expect(column.style.getPropertyValue('user-select')).toBe('');
+    touch('touchend', column, CENTRE);
+    expect(refuses()).toBe(false);
+    // Where iOS WebKit runs (its touch callout query), the lock is a style
+    // that turns the callout off too (jsdom keeps no -webkit-touch-callout,
+    // so the writes are read; the simulator check reads the result).
+    const original = globalThis.CSS;
+    Object.defineProperty(globalThis, 'CSS', {
+      configurable: true,
+      value: {
+        ...original,
+        supports: (query: string) => query === '(-webkit-touch-callout: none)',
+      },
+    });
+    try {
+      const set = vi.spyOn(column.style, 'setProperty');
+      touch('touchstart', column, CENTRE);
+      expect(set).toHaveBeenCalledWith('-webkit-touch-callout', 'none');
+      expect(set).toHaveBeenCalledWith('user-select', 'none');
+      touch('touchend', column, CENTRE);
+    } finally {
+      Object.defineProperty(globalThis, 'CSS', {
+        configurable: true,
+        value: original,
+      });
+    }
   });
 });
 
