@@ -219,11 +219,17 @@ function animationRecorder(): void {
     },
     // Record first, then stamp strictly after the newest entry: a step that
     // changed style just before has its transition created by that read,
-    // and it started before the arm. While a trace runs the read stands
-    // down, as record() does.
-    arm: () => {
+    // and it started before the arm. While a trace runs the page-wide read
+    // stands down, as record() does; the watched element's own animations
+    // are still read, which resolves its pending style change (one the next
+    // frame would resolve anyway, so the trace gains no rendering step).
+    arm: (element?: Element) => {
       if (!tracing()) {
         record();
+      } else if (element != null) {
+        for (const animation of element.getAnimations({subtree: true})) {
+          remember(animation);
+        }
       }
       const newest = log.length === 0 ? 0 : log[log.length - 1].seenAt;
       armedAt = Math.max(performance.now(), newest + 0.001);
@@ -1010,7 +1016,10 @@ async function withinTimeout<T>(
  * does, so it adds no frame the trace counts: it takes the element's
  * animations from the recorder's log, judges a started one by its own times,
  * and reaches the element through a handle to what the locator matches at
- * each look.
+ * each look. That holds for script animations and CSS transitions. On a CSS
+ * `@keyframes` animation (and, unwatched, a cancelled CSS transition) it reads
+ * the animation's timing, which flushes its style and adds Layouts to the
+ * trace: wait on one with `waitForRest`, or after the trace.
  */
 export async function waitForAnimation(
   locator: Locator,
@@ -1250,13 +1259,31 @@ export async function waitForAnimation(
   }
 }
 
-/** Marks now as the point later waits count animations from. */
-async function armRecorder(page: Page): Promise<number> {
-  return page.evaluate(() =>
-    (
-      window as unknown as {__harnessAnimations: {arm: () => number}}
-    ).__harnessAnimations.arm(),
-  );
+/**
+ * Marks now as the point later waits count animations from. With a locator,
+ * its element's pending style change is resolved first, also inside a trace
+ * (reached through a handle, which adds no main-thread frame).
+ */
+async function armRecorder(page: Page, locator?: Locator): Promise<number> {
+  const handles = locator == null ? [] : await locator.elementHandles();
+  try {
+    if (handles.length === 1) {
+      return await handles[0].evaluate(element =>
+        (
+          window as unknown as {
+            __harnessAnimations: {arm: (element?: Element) => number};
+          }
+        ).__harnessAnimations.arm(element as Element),
+      );
+    }
+    return await page.evaluate(() =>
+      (
+        window as unknown as {__harnessAnimations: {arm: () => number}}
+      ).__harnessAnimations.arm(),
+    );
+  } finally {
+    await Promise.all(handles.map(handle => handle.dispose()));
+  }
 }
 
 export interface AnimationWatch {
@@ -1284,7 +1311,7 @@ export async function watchAnimations(
   locator: Locator,
 ): Promise<AnimationWatch> {
   await installCurveEnd(locator.page());
-  const since = await armRecorder(locator.page());
+  const since = await armRecorder(locator.page(), locator);
   return {
     started: options => waitForAnimation(locator, {...options, since}),
   };
