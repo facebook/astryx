@@ -159,50 +159,53 @@ those contracts.
   its own elements, and follows INV3 and INV5. The hook follows INV3 and
   INV5.
 - **INV12 — Disclosure height changes have one module and one handle.**
-  **Proposed; pending owner decision (OQ1).** In `@astryxdesign/core`, one
-  shared internal module animates the content that follows an element whose
-  disclosure changes its height. It measures the layout before and after the
-  change and moves following content with a compositor-only translate from
-  its old place to its new one (`spec:AST-094` FR5); it never animates height,
-  which lays out every frame. What moves is designated, never found by walking
-  siblings: a scroll-area container, such as ScrollArea, is the boundary that
-  coordinates, and content inside it that should move with a disclosure
-  registers as a participant through the module's internal hook. A disclosing
-  element (a TreeList group, Collapsible) reports its change to the nearest
-  boundary, which moves only the participants after it, each by translating an
-  element it already renders, so the module adds no elements
-  (`architecture:component-style-authoring` INV7). Anything else inside the
-  boundary, fixed or sticky elements, and content outside it take their final
-  place at once; a nested boundary moves as one participant of the boundary
-  around it. Under Reduce Motion nothing travels, and following content
-  cross-fades into place (`design:reduced-motion` DR2). The module and its hook
-  are not exported; a scroll container an app owns is not a boundary, so
-  content in it keeps today's flow, and making a boundary public needs
-  `spec:AST-002` admission and `architecture:public-component-api` INV21.
+  **Proposed; pending owner approval of the public hook.** In
+  `@astryxdesign/core`, one shared module animates the content that follows an
+  element whose disclosure changes its height. It measures the layout before
+  and after the change and moves following content with a compositor-only
+  translate from its old place to its new one (`spec:AST-094` FR5); it never
+  animates height, which lays out every frame. What moves is designated, never
+  found by walking siblings. A boundary is any container element registered by
+  ref: ScrollArea registers its scrolling element itself, and an app registers
+  its own scroll container or panel with `useDisclosureBoundary(containerRef)`.
+  Content inside a boundary that should move with a disclosure registers as a
+  participant. A disclosing element (a TreeList group, Collapsible) reports its
+  change to its nearest registered ancestor boundary, which moves only the
+  participants after it, each by translating an element it already renders,
+  so the module adds no elements (`architecture:component-style-authoring`
+  INV7). Anything else inside the boundary, fixed or sticky elements, and
+  content outside it take their final place at once; a nested boundary moves
+  as one participant of the boundary around it. Under Reduce Motion nothing
+  travels, and following content cross-fades into place
+  (`design:reduced-motion` DR2). The handle (a container boundary with opt-in
+  participants, any container by ref) is decided by `cixzhang`, 2026-10-25.
+  `useDisclosureBoundary` is the one public piece: it takes the container's
+  ref and returns nothing, because which container scopes the motion is the
+  caller's intent (`spec:AST-002` FR1) and no other API does that job
+  (`architecture:public-component-api` INV21). The participant and change
+  hooks stay internal.
 
-  Internal usage, not exported:
+  Usage:
 
   ```tsx
-  // A boundary: ScrollArea provides it around its scrolling element.
-  const boundary = useDisclosureBoundary(scrollRef);
-  <DisclosureBoundary value={boundary}>{children}</DisclosureBoundary>;
+  // Public: an app container opts in as a boundary. ScrollArea does this itself.
+  const panelRef = useRef(null);
+  useDisclosureBoundary(panelRef);
+  <div ref={panelRef}>
+    <TreeList items={items} />
+    <p>Notes</p>
+  </div>;
 
-  // A participant registers an element it already renders.
+  // Internal: a participant registers an element it already renders.
   useDisclosureParticipant(rowRef);
 
-  // A disclosing element measures before its commit and animates after it.
+  // Internal: a disclosing element measures before its commit and animates after it.
   const change = useDisclosureChange(groupRef);
   const toggle = () => {
     change.measureBefore();
     setExpanded(open => !open);
   };
   useLayoutEffect(() => change.animate(), [expanded]);
-
-  // App content inside a ScrollArea needs nothing; it takes its place at once.
-  <ScrollArea>
-    <TreeList items={items} />
-    <p>Notes</p>
-  </ScrollArea>;
   ```
 
 ## Authoring guidance
@@ -349,15 +352,3 @@ component suite is not blanket conformance with every invariant.
 | INV10            | Shared test over every adopter of the announcement module                                                                                                                                                                     | An adopter holding its own Effect, observer, timer, or listener for its own-content announcement                                                                                                                                                                                                                                                                                                                       |
 | INV11            | Source boundary check plus hook tests across StrictMode replay and unmount                                                                                                                                                    | A second keyboard listener or measurement in Core; a consumer reading a CSS custom property on the root or a shared ancestor for the height; an export of the hook; a component outside Core measuring by a rule other than AST-099 FR2, or riding the keyboard; a listener left after unmount; a Core rider driven by JavaScript per frame or by its own transition; or more than one layout read per keyboard change |
 | INV12 (proposed) | Real-browser tests on a throttled phone profile plus a source boundary check, over a disclosure inside a boundary with participants, non-participants, a sticky header, a nested boundary, content outside, and Reduce Motion | A per-frame height or layout, a sibling walk, a moved non-participant, an added element, or travel under Reduce Motion fails                                                                                                                                                                                                                                                                                           |
-
-## Open questions
-
-- **OQ1 — How following content is designated for a disclosure.**
-  (`human-design`) INV12 proposes (c). Options: (a) the scroll-area container
-  is the boundary and moves every element registered with it, so each
-  following component registers with the container; (b) following content
-  opts in as a participant, with no boundary, so each participant finds the
-  disclosure it follows on its own; or (c, recommended) both: the container is
-  the boundary that scopes and orders the move, and participants opt in inside
-  it, so a disclosure moves exactly the registered content after it in its own
-  container and nothing outside.
