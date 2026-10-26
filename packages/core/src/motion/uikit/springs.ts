@@ -388,8 +388,11 @@ export const SWITCH_THUMB_MOVE_SPRING = {
 
 /**
  * UISegmentedControl selection thumb sliding to a new segment.
- * @source GUESS — WebKit's UIKit-matched switch thumb spring, the nearest
- *   sourced control thumb
+ * @source GUESS — WebKit's UIKit-matched switch thumb spring
+ *   (RenderThemeCocoa.mm `thumbMoveSpring`: response 0.30 s, ratio 0.75),
+ *   kept only until UISegmentedControl's measured spring replaces it
+ *   (#8094); UISwitch's measured travel (`SWITCH_THUMB_MOVE_SPRING`)
+ *   belongs to another control
  * @measure M-SG02
  * @measure M-SG03
  */
