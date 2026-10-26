@@ -17,8 +17,11 @@ import {describe, expect, it} from 'vitest';
 import {search, timing} from '.';
 
 describe('UIKit search table', () => {
-  it('activates on UIKit’s ease-in-ease-out over 383 ms', () => {
-    expect(search.activationCurve).toEqual(timing.curves.move);
+  it('activates over 383 ms on UIKit’s ease-in-ease-out, the timing.curves.move role', () => {
+    // The animator's UICubicTimingParameters, read at setup, are the role's
+    // control points; the table keeps no copy of the curve.
+    expect(timing.curves.move).toEqual([0.42, 0, 0.58, 1]);
+    expect('activationCurve' in search).toBe(false);
     expect(search.activationMs).toBeCloseTo(383.3, 1);
   });
 

@@ -615,6 +615,12 @@ test('a tap into an existing query puts the caret where the finger lifted', asyn
   // Editing ends (the keyboard goes down) and the field stays active.
   await field.evaluate(element => (element as HTMLInputElement).blur());
   await expect(root(page)).toHaveAttribute('data-search-field-active', 'true');
+  // The parts finish moving first: as the keyboard goes down the field is
+  // still on its way to rest, and a point read mid-move lands the tap a
+  // character or two off once it arrives.
+  await waitForRest(root(page));
+  await waitForRest(end(page));
+  await waitForRest(close(page));
   // Where "hello" ends, measured with a span in the input's font.
   const point = await field.evaluate(element => {
     const input = element as HTMLInputElement;

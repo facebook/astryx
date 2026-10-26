@@ -33,8 +33,6 @@ export type {
 export {useTreeFocus} from './useTreeFocus';
 export type {UseTreeFocusOptions, UseTreeFocusReturn} from './useTreeFocus';
 
-export {isRtlElement} from './isRtlElement';
-
 export {useHotkeys} from './useHotkeys';
 export type {Hotkey} from './useHotkeys';
 
