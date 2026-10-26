@@ -242,7 +242,16 @@ describe('build-css astryx.css', () => {
   describe('the touch press release (utils/interactionOverlay.stylex.ts)', () => {
     /** `.2s`, `200ms`, `0.2s` → 200. */
     const toMs = value => {
-      const match = value.trim().match(/^([\d.]+)(ms|s)$/);
+      // Capped under reduced motion: `min(<clock>, 200ms)`.
+      const capped = /^min\((.+),\s*([\d.]+m?s)\)$/.exec(value.trim());
+      if (capped != null) {
+        return Math.min(toMs(capped[1]), toMs(capped[2]));
+      }
+      // The release plays a theme motion role: `var(--motion-…, 200ms)`.
+      const role = value.trim().match(/^var\(\s*--[\w-]+\s*,\s*(.+)\)$/);
+      const match = (role == null ? value : role[1])
+        .trim()
+        .match(/^([\d.]+)(ms|s)$/);
       return match == null
         ? Number.NaN
         : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
@@ -281,7 +290,7 @@ describe('build-css astryx.css', () => {
         .filter(Boolean)
         .map(match => toMs(match[1]));
       // One clock, the one the controller removes the attribute on.
-      expect(durations).toEqual([await readReleaseMs()]);
+      expect([...new Set(durations)]).toEqual([await readReleaseMs()]);
       // The onset is instant: nothing animates on the on arm.
       const on = lines().filter(line =>
         line.includes('[data-astryx-press="on"]'),
@@ -350,7 +359,16 @@ describe('build-css astryx.css', () => {
       };
     }
     const toMs = value => {
-      const match = value.trim().match(/^([\d.]+)(ms|s)$/);
+      // Capped under reduced motion: `min(<clock>, 200ms)`.
+      const capped = /^min\((.+),\s*([\d.]+m?s)\)$/.exec(value.trim());
+      if (capped != null) {
+        return Math.min(toMs(capped[1]), toMs(capped[2]));
+      }
+      // The release plays a theme motion role: `var(--motion-…, 200ms)`.
+      const role = value.trim().match(/^var\(\s*--[\w-]+\s*,\s*(.+)\)$/);
+      const match = (role == null ? value : role[1])
+        .trim()
+        .match(/^([\d.]+)(ms|s)$/);
       return match == null
         ? Number.NaN
         : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
@@ -376,18 +394,12 @@ describe('build-css astryx.css', () => {
         .map(line => line.match(/animation-duration:\s*([^;}]+)/))
         .filter(Boolean)
         .map(match => toMs(match[1]));
-      expect(durations).toEqual([ms]);
+      expect([...new Set(durations)]).toEqual([ms]);
       const curves = fading
         .map(line => line.match(/animation-timing-function:\s*([^;}]+)/))
         .filter(Boolean)
-        .map(match => match[1]);
-      // A literal curve: touch motion values are internal constants.
-      expect(curves.every(curve => curve.startsWith('cubic-bezier('))).toBe(
-        true,
-      );
-      expect(
-        curves.map(curve => curve.match(/-?\d*\.?\d+/g).map(Number)),
-      ).toEqual([points]);
+        .map(match => match[1].match(/-?\d*\.?\d+/g).map(Number));
+      expect(curves).toEqual([points]);
     });
 
     it('lets the motion animator promote the layer it animates', () => {
