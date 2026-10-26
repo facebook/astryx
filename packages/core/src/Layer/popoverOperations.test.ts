@@ -7,15 +7,19 @@
  * @position Core testing; validates popoverOperations.ts
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {afterEach, describe, it, expect, vi} from 'vitest';
 import {
   afterPopoverOperations,
-  beginBrowserPopoverOperation,
   isPopoverOperationInFlight,
+  observeBrowserHide,
   runPopoverOperation,
 } from './popoverOperations';
 
 describe('popoverOperations', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('runs a callback at once when the document has no operation in flight', () => {
     const callback = vi.fn();
     afterPopoverOperations(document, callback);
@@ -36,16 +40,87 @@ describe('popoverOperations', () => {
     expect(callback).toHaveBeenCalledTimes(1);
   });
 
-  it('counts the browser’s own hide from its start until it is ended, once', async () => {
+  it('counts the browser’s own hide from its start until the element’s toggle, once per hide', async () => {
+    const popover = document.createElement('div');
+    document.body.appendChild(popover);
+    try {
+      const callback = vi.fn();
+      observeBrowserHide(popover);
+      observeBrowserHide(popover);
+      expect(isPopoverOperationInFlight(document)).toBe(true);
+      afterPopoverOperations(document, callback);
+      await Promise.resolve();
+      expect(callback).not.toHaveBeenCalled();
+
+      popover.dispatchEvent(new Event('toggle'));
+      expect(isPopoverOperationInFlight(document)).toBe(false);
+      await Promise.resolve();
+      expect(callback).toHaveBeenCalledTimes(1);
+      // The toggle ended it once; the next task finds nothing to end.
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(isPopoverOperationInFlight(document)).toBe(false);
+    } finally {
+      popover.remove();
+    }
+  });
+
+  it('ends each hide exactly once: the loser of toggle and backstop is released, so a second in-flight hide keeps its count', () => {
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+    const first = document.createElement('div');
+    const second = document.createElement('div');
+    document.body.append(first, second);
+    try {
+      const removeListener = vi.spyOn(second, 'removeEventListener');
+      observeBrowserHide(first);
+      observeBrowserHide(second);
+      expect(isPopoverOperationInFlight(document)).toBe(true);
+      expect(vi.getTimerCount()).toBe(2);
+
+      // The first hide's toggle wins: its backstop is cleared, not left to
+      // run later against another hide's count.
+      first.dispatchEvent(new Event('toggle'));
+      expect(isPopoverOperationInFlight(document)).toBe(true);
+      expect(vi.getTimerCount()).toBe(1);
+      // The second hide's backstop wins: it ends the hide once and drops the
+      // one-shot toggle listener.
+      vi.runOnlyPendingTimers();
+      expect(isPopoverOperationInFlight(document)).toBe(false);
+      expect(removeListener).toHaveBeenCalledWith(
+        'toggle',
+        expect.any(Function),
+      );
+
+      // A toggle after the backstop won, and a second toggle after the toggle
+      // won, change nothing: the one-shot listeners are gone.
+      observeBrowserHide(first);
+      expect(isPopoverOperationInFlight(document)).toBe(true);
+      second.dispatchEvent(new Event('toggle'));
+      expect(isPopoverOperationInFlight(document)).toBe(true);
+      first.dispatchEvent(new Event('toggle'));
+      first.dispatchEvent(new Event('toggle'));
+      expect(isPopoverOperationInFlight(document)).toBe(false);
+
+      // Nothing drifted negative: a later hide is still counted.
+      observeBrowserHide(second);
+      expect(isPopoverOperationInFlight(document)).toBe(true);
+      vi.runOnlyPendingTimers();
+      expect(isPopoverOperationInFlight(document)).toBe(false);
+    } finally {
+      first.remove();
+      second.remove();
+    }
+  });
+
+  it('ends a counted hide at the next task when its toggle never arrives (the element left the document)', async () => {
+    const popover = document.createElement('div');
+    document.body.appendChild(popover);
     const callback = vi.fn();
-    const end = beginBrowserPopoverOperation(document);
-    expect(isPopoverOperationInFlight(document)).toBe(true);
+    observeBrowserHide(popover);
+    popover.remove();
     afterPopoverOperations(document, callback);
     await Promise.resolve();
     expect(callback).not.toHaveBeenCalled();
-
-    end();
-    end();
+    await new Promise(resolve => setTimeout(resolve, 0));
     expect(isPopoverOperationInFlight(document)).toBe(false);
     await Promise.resolve();
     expect(callback).toHaveBeenCalledTimes(1);
@@ -53,16 +128,22 @@ describe('popoverOperations', () => {
 
   it('postpones the replay when another operation starts before it runs', async () => {
     const callback = vi.fn();
-    const end = beginBrowserPopoverOperation(document);
-    afterPopoverOperations(document, callback);
-    end();
-    // Before the replay's microtask: a new show starts.
-    const endSecond = beginBrowserPopoverOperation(document);
-    await Promise.resolve();
-    expect(callback).not.toHaveBeenCalled();
-    endSecond();
-    await Promise.resolve();
-    expect(callback).toHaveBeenCalledTimes(1);
+    runPopoverOperation(document, () => {
+      afterPopoverOperations(document, callback);
+    });
+    // Before the replay's microtask: a new show starts, and ends.
+    const second = document.createElement('div');
+    document.body.appendChild(second);
+    try {
+      observeBrowserHide(second);
+      await Promise.resolve();
+      expect(callback).not.toHaveBeenCalled();
+      second.dispatchEvent(new Event('toggle'));
+      await Promise.resolve();
+      expect(callback).toHaveBeenCalledTimes(1);
+    } finally {
+      second.remove();
+    }
   });
 
   it('keeps one ledger per document', async () => {
@@ -74,12 +155,14 @@ describe('popoverOperations', () => {
     }
     try {
       const callback = vi.fn();
-      const end = beginBrowserPopoverOperation(other);
+      const popover = other.createElement('div');
+      other.body.appendChild(popover);
+      observeBrowserHide(popover);
       expect(isPopoverOperationInFlight(document)).toBe(false);
       afterPopoverOperations(document, callback);
       expect(callback).toHaveBeenCalledTimes(1);
       expect(isPopoverOperationInFlight(other)).toBe(true);
-      end();
+      popover.dispatchEvent(new Event('toggle'));
       expect(isPopoverOperationInFlight(other)).toBe(false);
     } finally {
       frame.remove();

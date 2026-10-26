@@ -25,12 +25,12 @@
  * to show while the hide is still running.
  *
  * Every layer's show and hide passes through `runPopoverOperation`, so those
- * windows are observable. A hide the browser runs on its own — a light
- * dismiss, an Escape its close watcher answers, an `auto` popover evicted by
- * another one opening — never passes through here, but it is observable too:
+ * windows are observable. A hide the browser runs on its own — an Escape its
+ * close watcher answers, a light dismiss, an `auto` popover evicted by another
+ * one opening — never passes through here, but it is observable too:
  * the element's `beforetoggle` event fires synchronously as the hide starts,
  * and its `toggle` event fires in a task once it has ended. A layer reports
- * those through `beginBrowserPopoverOperation`.
+ * those through `observeBrowserHide`.
  *
  * A `show()` that arrives inside either window waits in `afterPopoverOperations`
  * and replays once the document's last operation has ended and the script
@@ -85,14 +85,40 @@ export function isPopoverOperationInFlight(doc: Document): boolean {
   return (operationsByDocument.get(doc) ?? 0) > 0;
 }
 
+/** Popovers whose browser-run hide is being counted, so one hide is counted once. */
+const browserHidesInFlight = new WeakSet<Element>();
+
 /**
- * Counts a hide the browser runs itself from this call, made as the element's
- * `beforetoggle` fires, until the returned function is called: at the
- * element's `toggle` event, which the browser queues for the task after the
- * hide, or at the element's detach when it leaves the document before that
- * task runs. Calling it twice is a no-op.
+ * Counts a hide the browser runs itself. Called as the element's `beforetoggle`
+ * fires, which the hide dispatches synchronously as it starts; the count ends
+ * at the element's `toggle`, which the browser queues for the task after the
+ * hide, and in any case at the next task: the hide is synchronous, so the task
+ * after it is past the window even when the element has left the document and
+ * its `toggle` never arrives. Calling it again for the same hide is a no-op.
  */
-export function beginBrowserPopoverOperation(doc: Document): () => void {
+export function observeBrowserHide(popover: HTMLElement): void {
+  if (browserHidesInFlight.has(popover)) {
+    return;
+  }
+  browserHidesInFlight.add(popover);
+  const doc = popover.ownerDocument;
+  const end = beginBrowserPopoverOperation(doc);
+  const view = doc.defaultView ?? globalThis;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const finish = () => {
+    popover.removeEventListener('toggle', finish);
+    if (timer != null) {
+      view.clearTimeout(timer);
+      timer = null;
+    }
+    browserHidesInFlight.delete(popover);
+    end();
+  };
+  popover.addEventListener('toggle', finish);
+  timer = view.setTimeout(finish, 0);
+}
+
+function beginBrowserPopoverOperation(doc: Document): () => void {
   begin(doc);
   let ended = false;
   return () => {

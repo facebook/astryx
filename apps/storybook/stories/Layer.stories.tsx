@@ -1524,10 +1524,11 @@ export const Playground: Story = {
 /**
  * A trigger that carries a focus-driven layer (the shape of a tooltip, shown
  * on plain focus) and opens a light-dismissible layer. An Escape the browser's
- * close watcher answers, or a tap outside, is a hide the browser runs itself:
- * with focus inside the layer, it returns focus to the trigger while the
- * document still counts the layer as hiding, and the focus-driven layer asks
- * to show inside that window.
+ * close watcher answers is a hide the browser runs itself: with focus inside
+ * the layer, it returns focus to the trigger while the document still counts
+ * the layer as hiding, and the focus-driven layer asks to show inside that
+ * window. A tap outside is the browser's hide too, but it returns no focus:
+ * the press itself took it.
  */
 function BrowserHideWakesAFocusLayerDemo() {
   const content = useLayer({mode: 'context', lightDismiss: true});

@@ -48,8 +48,8 @@ import {
 } from './layerSlideRules';
 import {
   afterPopoverOperations,
-  beginBrowserPopoverOperation,
   isPopoverOperationInFlight,
+  observeBrowserHide,
   runPopoverOperation,
 } from './popoverOperations';
 import {preserveAnimations} from './preserveAnimations';
@@ -1296,8 +1296,8 @@ function useLayerImplementation(
       // Another popover is mid show/hide (typically one whose hide is handing
       // focus back to this layer's trigger): the browser would refuse the
       // show, so replay this call once that operation has returned. The
-      // hide may be the browser's own (a light dismiss, an Escape its close
-      // watcher answers), which the ledger learns of from `beforetoggle`.
+      // hide may be the browser's own (an Escape its close watcher answers),
+      // which the ledger learns of from `beforetoggle`.
       if (isPopoverOperationInFlight(popover.ownerDocument)) {
         pendingShowRef.current = true;
         afterPopoverOperations(popover.ownerDocument, () => {
@@ -1465,31 +1465,20 @@ function useLayerImplementation(
   // hide(), so the ledger of popover operations would not know the document
   // is mid-hide, and a layer that the hide's focus restore wakes would ask the
   // browser to show inside it. `beforetoggle` fires synchronously as such a
-  // hide starts: the operation is counted from there until the `toggle` the
-  // browser queues for the task after it, or until the element detaches.
-  const browserHideEndRef = useRef<(() => void) | null>(null);
-  const endBrowserHide = useCallback(() => {
-    browserHideEndRef.current?.();
-    browserHideEndRef.current = null;
-  }, []);
+  // hide starts; the ledger counts the hide from there until the element's
+  // own `toggle`, independent of this hook's bindings, which a render inside
+  // the hide can replace.
   const handleBeforeToggle = useCallback((e: Event) => {
     const toggleEvent = e as ToggleEvent;
-    if (
-      toggleEvent.newState === 'closed' &&
-      isOpenRef.current &&
-      browserHideEndRef.current == null
-    ) {
-      const el = e.currentTarget as HTMLElement | null;
-      browserHideEndRef.current = beginBrowserPopoverOperation(
-        el?.ownerDocument ?? document,
-      );
+    const el = e.currentTarget as HTMLElement | null;
+    if (toggleEvent.newState === 'closed' && isOpenRef.current && el != null) {
+      observeBrowserHide(el);
     }
   }, []);
 
   const handleToggle = useCallback(
     (e: Event) => {
       const toggleEvent = e as ToggleEvent;
-      endBrowserHide();
       if (toggleEvent.newState === 'closed' && isOpenRef.current) {
         openedPopoverRef.current = null;
         isOpenRef.current = false;
@@ -1501,7 +1490,7 @@ function useLayerImplementation(
         clearContextMount();
       }
     },
-    [onHide, clearContextMount, rememberDismissal, endBrowserHide],
+    [onHide, clearContextMount, rememberDismissal],
   );
 
   // Ref callback for popover element — sets up the `toggle` listener.
@@ -1529,8 +1518,6 @@ function useLayerImplementation(
         );
         listenedElRef.current = null;
         listenedHandlerRef.current = null;
-        // An element that detaches mid-hide never delivers its `toggle`.
-        endBrowserHide();
       }
       if (el && listenedElRef.current !== el) {
         el.addEventListener('toggle', handler);
@@ -1539,7 +1526,7 @@ function useLayerImplementation(
         listenedHandlerRef.current = handler;
       }
     },
-    [handleBeforeToggle, endBrowserHide],
+    [handleBeforeToggle],
   );
 
   const popoverRefCallback = useCallback(
@@ -1604,10 +1591,9 @@ function useLayerImplementation(
         );
         listenedElRef.current = null;
         listenedHandlerRef.current = null;
-        endBrowserHide();
       }
     };
-  }, [handleToggle, bindToggleListener, handleBeforeToggle, endBrowserHide]);
+  }, [handleToggle, bindToggleListener, handleBeforeToggle]);
 
   // Anchor visibility (FR5). The first frame must already be right (FR8), so
   // the opening read is synchronous — a layout effect runs before paint, and a

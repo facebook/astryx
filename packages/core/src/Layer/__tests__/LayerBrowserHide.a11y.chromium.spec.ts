@@ -6,9 +6,10 @@
  * @input The `Core/Layer` BrowserHideWakesAFocusLayer story in a built
  *   Storybook, driven by real Chromium pointer and keyboard input.
  * @output Real-engine proof that a show the browser's own hide wakes — its
- *   close watcher's Escape or a light dismiss returning focus to a trigger
- *   whose focus-driven layer asks to show — reaches the page as no error and
- *   ends with that layer shown when the trigger keeps focus. Only a real engine
+ *   close watcher's Escape returning focus to a trigger whose focus-driven
+ *   layer asks to show — reaches the page as no error and ends with that
+ *   layer shown, and that a tap outside, which returns no focus, hides the
+ *   layer with no error and wakes nothing. Only a real engine
  *   decides when a popover operation is in flight and refuses a show inside
  *   it; the unit suite (useLayer.test.tsx) covers the same rules on a
  *   mirrored Popover API. The in-flight rule is Chromium 150+: on the
@@ -78,7 +79,7 @@ test('an Escape the browser answers, with focus inside the layer, returns focus 
   expect(errors).toEqual([]);
 });
 
-test('a tap outside the layer, with focus inside it, hides the layer without an error; the focus-driven layer stays hidden because the tap took focus', async ({
+test('a tap outside the layer, with focus inside it, hides the layer without an error; it returns no focus, so the focus-driven layer stays hidden', async ({
   page,
 }) => {
   const errors = collectPageErrors(page);
@@ -93,9 +94,8 @@ test('a tap outside the layer, with focus inside it, hides the layer without an 
   await page.keyboard.press('Tab');
   await expect(inside).toBeFocused();
 
-  // The browser's light dismiss returns focus to the trigger inside its hide
-  // (the focus-driven layer asks to show), then the press itself moves focus
-  // to the page, which withdraws that show.
+  // A light dismiss returns no focus: the press moves focus to the page
+  // before the hide runs, so nothing wakes the focus-driven layer.
   await page.mouse.click(5, 5);
   await expect(inside).toBeHidden();
   await expect(trigger).not.toBeFocused();
