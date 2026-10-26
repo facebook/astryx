@@ -92,6 +92,7 @@ import {
 } from '../theme/tokens.stylex';
 import {focusOutlineStyles} from '../utils';
 import {wheelGeometry} from './wheelGeometry.stylex';
+import {lockSelection} from '../gestures/selectionLock';
 import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {PARKED_ANGLE, drumGeometry, rowAtPoint} from './wheelDrum';
 import {WheelMotion, type PlayOptions} from './wheelMotion';
@@ -494,7 +495,7 @@ export function PickerWheel({
         direction: 'vertical',
         // A held finger on the wheel never starts text selection or the
         // callout.
-        preventsTextSelection: true,
+        selectionLock: lockSelection,
         shouldReceiveTouch: (_pan, touch) => {
           onTouchDownRef.current(touch.time);
           return true;
