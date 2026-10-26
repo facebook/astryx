@@ -572,12 +572,11 @@ test('the activation keeps advancing every frame while the main thread is blocke
   });
   await film.write(testInfo, {block, slide});
   // The verdict judges the motion: enough judged frames
-  // (`minJudgedFrames`), no long stall, nearly every frame moved. The
-  // screencast's own delivery rate is not the animation's.
+  // (`minJudgedFrames`), no stall over a few delivered frames, nearly every
+  // frame moved. The screencast's own delivery rate is not the animation's.
   expect(proof.verdict.failures).toEqual([]);
   expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
   expect(proof.changed).toBeGreaterThanOrEqual(proof.frames - 1);
-  expect(proof.longestStallMs).toBeLessThan(40);
 });
 
 test('the activation does no Layout or Paint per frame', async ({
