@@ -589,17 +589,28 @@ test('the dim keeps its lockstep with the release while the main thread is block
     y: Math.max(8, tallTop / 2),
   });
   const tracked = await trackMarker(page, castFrames);
-  // Judged while the dim still changes by more than the screencast resolves
-  // per frame: until the backdrop is within 3 luminance steps of where it
-  // rests (WebKit sends ~90 frames a second, so near the end of the spring
-  // consecutive frames can round to the same value).
   const resting = (
     lum.filter(s => s.t >= block.to).at(-1) ?? lum[lum.length - 1]
   ).lum;
   const blocked = lum.filter(
     s => s.t >= block.from + 20 && s.t <= Math.min(block.to, settle.to),
   );
-  const during = blocked.filter(s => s.lum > resting + 3);
+  // The backdrop's luminance is whole steps, and near the end of the spring
+  // the dim moves about one step a frame: two frames the screencast delivers
+  // close together read the same step though the dim never stopped. So it is
+  // judged by time, as the harness judges a moving element: no stall longer
+  // than three screencast intervals while it is more than 3 steps from rest
+  // (a main-thread dim would hold still for the whole block), over at least
+  // the harness's fewest judged frames.
+  const proof = busyWindowProof(
+    lum.map(s => ({
+      t: s.t,
+      box: {x: 0, y: s.lum, width: 0, height: 0},
+      pixels: 1,
+    })),
+    {from: block.from, to: Math.min(block.to, settle.to)},
+    {settledWithin: 3, settledAt: resting, minMovedFraction: 0},
+  );
   await writeEvidence(
     'busy-main-thread/bottomsheet-dim',
     {
@@ -608,6 +619,7 @@ test('the dim keeps its lockstep with the release while the main thread is block
           block,
           settle,
           resting,
+          proof,
           frames: castFrames.map(f => ({
             t: +(f.t - block.from).toFixed(1),
             lum: +(lum.find(s => s.t === f.t)?.lum ?? -1).toFixed(1),
@@ -620,13 +632,13 @@ test('the dim keeps its lockstep with the release while the main thread is block
     },
     testInfo,
   );
-  // Through the block the backdrop darkens frame after frame (the dim keeps
-  // rising with the sheet) and never lightens.
-  expect(during.length).toBeGreaterThanOrEqual(5);
-  const changed = during.filter(
-    (s, i) => i > 0 && during[i - 1].lum - s.lum >= 0.5,
-  ).length;
-  expect(changed).toBeGreaterThanOrEqual(during.length - 2);
+  // Through the block the backdrop keeps darkening (the dim keeps rising
+  // with the sheet) and never lightens.
+  testInfo.annotations.push({
+    type: 'busy-main-thread',
+    description: proof.summary,
+  });
+  expect(proof.verdict.failures, proof.summary).toEqual([]);
   for (let i = 1; i < blocked.length; i++) {
     expect(
       blocked[i].lum,
