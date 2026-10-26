@@ -241,11 +241,8 @@ changing semantic token mappings in the palette-value change.
 **Decider:** `rubyycheung`, `2026-09-04`
 
 Neutral's semantic, categorical, syntax, and color-bearing effect values use
-named palette-stop references when an approved match exists. Token names and
-meanings remain unchanged. The status fills keep the explicit values Neutral's
-Badges have always shown, which no palette stop matches, and the text roles of
-`architecture:theme-tokens` INV11 carry the darker values readable on the
-page. Alpha
+named palette-stop references when an approved match exists; the status fills,
+which keep explicit values, are recorded in DEC-6. Alpha
 variants derive from the referenced stop rather than duplicating its hex value.
 
 The mapping is role-aware rather than a blind nearest-color conversion. Very
@@ -297,6 +294,12 @@ replacements are `--color-success`, `--color-warning`, and `--color-error` for
 the status fills, `--color-info-muted` for the pale accent surface,
 `--color-neutral` for on-tint content, and `--color-overlay-hover` and
 `--color-overlay-pressed` for the overlays.
+
+Neutral's `--color-success`, `--color-warning`, and `--color-error` are its
+strong status fills under `architecture:theme-tokens` INV11, set to the
+explicit colours its Badges have always shown, which no palette stop matches.
+Their Neutral values therefore change from the darker colours earlier releases
+used, which `--color-text-<status>` now carries for status text on the page.
 
 Rejected: keeping the nine as deprecated aliases, which would preserve names
 that were never promised and that Neutral no longer reads.

@@ -683,14 +683,14 @@ describe('rule order and writes', () => {
             when: {contrast: 'more'},
             value: {
               color: {accent: '#00AA00'},
-              tokens: {'--color-text-blue': '#FF0000'},
+              tokens: {'--color-accent': '#FF0000'},
             },
           },
         ],
       },
     });
 
-    expect(theme.__adaptationRules?.[0].tokens['--color-text-blue']).toBe(
+    expect(theme.__adaptationRules?.[0].tokens['--color-accent']).toBe(
       '#FF0000',
     );
   });

@@ -353,8 +353,9 @@ tiers.
 ## Known conformance and verification gaps
 
 Inside an `onDark`/`onLight` media surface, which sits on content the compiler
-cannot measure, a status colour the theme sets reaches its roles as an INV16
-alias rather than a derived value. Inside adaptation rules, each rule's derived
+cannot measure, a status fill the theme sets there gets its derived content, but
+its text and pale-fill content reach their roles as INV16 aliases rather than
+derived values. Inside adaptation rules, each rule's derived
 values combine the root with that rule alone, so rules that match together and
 each set a measured colour do not yet derive from their combination.
 

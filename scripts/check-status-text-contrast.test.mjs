@@ -391,6 +391,25 @@ describe('theme generation derives a complete status set (INV17)', () => {
     expect(media).toContain('--color-text-success: var(--color-text-green);');
   });
 
+  it('derives the content on a status fill a media surface sets', () => {
+    const theme = defineTheme({
+      name: 'status-media-fill',
+      onDark: {tokens: {'--color-success': '#7EE787'}},
+    });
+    const css = allThemeCSS(theme);
+    const media = css.slice(css.indexOf('[data-astryx-media="dark"]'));
+    const match = media.match(
+      /--color-on-success: light-dark\((#[0-9A-F]{6}), (#[0-9A-F]{6})\)/,
+    );
+    expect(match).not.toBeNull();
+    const fill = color({fill: '#7EE787'}, 'fill');
+    for (const ink of [match[1], match[2]]) {
+      expect(contrastRatio(color({ink}, 'ink'), fill)).toBeGreaterThanOrEqual(
+        4.5,
+      );
+    }
+  });
+
   it('re-derives text when a theme changes only a surface', () => {
     const darkCard = defineTheme({
       name: 'status-surface-only',

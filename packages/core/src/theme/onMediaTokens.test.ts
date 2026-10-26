@@ -54,9 +54,9 @@ describe('onMediaTokens', () => {
 
     it('merges user token overrides with defaults', () => {
       const result = resolveOnMedia('dark', {
-        tokens: {'--color-text-blue': '#90CAF9'},
+        tokens: {'--color-accent': '#90CAF9'},
       });
-      expect(result.tokens['--color-text-blue']).toBe('#90CAF9');
+      expect(result.tokens['--color-accent']).toBe('#90CAF9');
       expect(result.tokens['--color-text-primary']).toBe(
         'var(--color-on-dark)',
       );
@@ -64,9 +64,9 @@ describe('onMediaTokens', () => {
 
     it('resolves [light, dark] tuple tokens', () => {
       const result = resolveOnMedia('dark', {
-        tokens: {'--color-text-blue': ['#AAA', '#BBB']},
+        tokens: {'--color-accent': ['#AAA', '#BBB']},
       });
-      expect(result.tokens['--color-text-blue']).toBe('light-dark(#AAA, #BBB)');
+      expect(result.tokens['--color-accent']).toBe('light-dark(#AAA, #BBB)');
     });
 
     it('passes through component overrides', () => {
@@ -91,11 +91,11 @@ describe('defineTheme with onDark/onLight', () => {
     const theme = defineTheme({
       name: 'test',
       onDark: {
-        tokens: {'--color-text-blue': '#90CAF9'},
+        tokens: {'--color-accent': '#90CAF9'},
       },
     });
     expect(theme.__onDark).toBeDefined();
-    expect(theme.__onDark!.tokens['--color-text-blue']).toBe('#90CAF9');
+    expect(theme.__onDark!.tokens['--color-accent']).toBe('#90CAF9');
     expect(theme.__onDark!.tokens['--color-text-primary']).toBe(
       'var(--color-on-dark)',
     );
@@ -105,11 +105,11 @@ describe('defineTheme with onDark/onLight', () => {
     const theme = defineTheme({
       name: 'test',
       onLight: {
-        tokens: {'--color-text-blue': '#333'},
+        tokens: {'--color-accent': '#333'},
       },
     });
     expect(theme.__onLight).toBeDefined();
-    expect(theme.__onLight!.tokens['--color-text-blue']).toBe('#333');
+    expect(theme.__onLight!.tokens['--color-accent']).toBe('#333');
   });
 
   it('generates defaults even without explicit onDark/onLight', () => {
@@ -426,6 +426,6 @@ describe('reset.css baseline media rules', () => {
     );
     expect(darkMatch![1]).not.toContain('--color-text-primary');
     expect(darkMatch![1]).not.toContain('--color-icon-primary');
-    expect(darkMatch![1]).not.toContain('--color-text-blue');
+    expect(darkMatch![1]).not.toContain('--color-accent');
   });
 });

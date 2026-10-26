@@ -20,14 +20,14 @@ vi.mock('./defineTheme', async importOriginal => {
 const testTheme = defineTheme({
   name: 'test',
   tokens: {
-    '--color-text-blue': ['#AA0000', '#FF5555'],
+    '--color-accent': ['#AA0000', '#FF5555'],
   },
 });
 
 const altTheme = defineTheme({
   name: 'alt',
   tokens: {
-    '--color-text-blue': ['#00AA00', '#55FF55'],
+    '--color-accent': ['#00AA00', '#55FF55'],
   },
 });
 
@@ -59,7 +59,7 @@ describe('Theme', () => {
     try {
       const theme = defineTheme({
         name: 'declaration-boundary',
-        tokens: {'--color-text-blue': 'red; } body { color: red'},
+        tokens: {'--color-accent': 'red; } body { color: red'},
         components: {button: {base: {borderRadius: '4px'}}},
       });
       render(
@@ -79,7 +79,7 @@ describe('Theme', () => {
         ),
       ).toHaveLength(1);
       expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining('dropped "--color-text-blue" in tokens'),
+        expect.stringContaining('dropped "--color-accent" in tokens'),
       );
     } finally {
       warn.mockRestore();

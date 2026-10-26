@@ -34,7 +34,7 @@ import {
 } from './themeAdaptations';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
-import {deriveStatusRoleTokens} from './statusRoleDerivation';
+import {STATUS_NAMES, deriveStatusRoleTokens} from './statusRoleDerivation';
 import {cssVar, classPrefix, dataAttrNamespace} from '../naming';
 import {
   analyzeDeclarationValue,
@@ -948,6 +948,25 @@ function generatedMediaStatusRoleDefaults(
       aliases.push([role, alias]);
       for (const {values, candidate} of candidateValues) {
         values[role] = candidate;
+      }
+    }
+  }
+  // Content on a fill does not depend on the surface beneath it, so a status
+  // fill set here gets its INV17 content colour (theme-compilation INV17).
+  const mediaFills = new Set(
+    STATUS_NAMES.filter(
+      status =>
+        authoredMedia[`--color-${status}`] !== undefined &&
+        authoredMedia[`--color-on-${status}`] === undefined,
+    ).map(status => `--color-on-${status}`),
+  );
+  if (mediaFills.size > 0) {
+    for (const [role, value] of deriveStatusRoleTokens(
+      {...rootTokens, ...tokens},
+      rootLocalTokens,
+    )) {
+      if (mediaFills.has(role) && rootValues[role] !== value) {
+        aliases.push([role, value]);
       }
     }
   }
