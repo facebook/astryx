@@ -50,7 +50,7 @@ system_specs: []
 | Behavior                | A modal native dialog with a drawer that slides in from one inline edge, a header with a Close button, and a scrolling content region. Escape, the backdrop, and Close request closing; the dialog stays open until the slide-out runs, then focus returns to the opener. |
 | End-user impact         | Phone users open navigation in a drawer that contains focus, lock the page behind it, close it any usual way, and land back on the control that opened it.                                                                                                                |
 | Builder impact          | None.                                                                                                                                                                                                                                                                     |
-| Compatibility/readiness | Records shipped behavior; no public change. Three implementation gaps: automatic side selection uses physical position, reduced motion still animates, and a caller `id` disconnects the Toggle (see Current-state impact).                                               |
+| Compatibility/readiness | Records shipped behavior; no public change. Four implementation gaps: automatic side selection uses physical position, reduced motion still animates, a caller `id` disconnects the Toggle, and a caller `onCancel` never runs (see Current-state impact).                |
 | Review checks           | Reject a non-modal drawer, a close that hides the drawer before its slide-out runs, focus not returned to a connected opener, a backdrop click inside the drawer that closes it, or a Toggle rendered outside an enabled AppShell mobile layout.                          |
 | Governing rules         | `family:overlay-dismissal`; `architecture:layer-runtime`; `component:AppShell` FR10–FR13; `design:bidirectionality` DR7; `architecture:component-theming-surface`.                                                                                                        |
 
@@ -82,10 +82,14 @@ Consumer migration instructions belong in consumer docs and release notes.
   inline start is the right edge, so a trigger on the left opens the drawer on
   the far side. `design:bidirectionality` DR7 requires a layered surface to keep
   its start and end relationship to its trigger.
-- **A caller `id` disconnects the Toggle.** A caller `id` replaces the drawer
-  id on the dialog, so inside AppShell the Toggle's `aria-controls` names no
-  element. `architecture:public-component-api` INV5 keeps component-owned
+- **A caller `id` disconnects the Toggle.** A caller `id` prop, even
+  `undefined`, replaces the drawer id on the dialog, so inside AppShell the
+  Toggle's `aria-controls` names no element, breaking `component:AppShell` FR13
+  and AR3. `architecture:public-component-api` INV5 keeps component-owned
   accessibility from being overwritten by accident.
+- **A caller `onCancel` never runs.** MobileNav's own cancel handler replaces a
+  caller `onCancel` on the dialog. `architecture:public-component-api` INV5 and
+  INV7 have supported event inputs reach the element and compose.
 - **Motion under reduced motion.** Under reduced motion the Drawer's slide and
   the backdrop's fade still run, for 0.01 s, rather than changing at once for a
   fine pointer or cross-fading for touch. `design:reduced-motion` DR2 and DR3
@@ -124,16 +128,16 @@ Consumer migration instructions belong in consumer docs and release notes.
 | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
 | FR1  | MobileNav renders one native `<dialog>` Navigation overlay containing a Drawer with a stable Header, Close button, and scrollable Content region. The overlay carries `mobile-nav` with the resolved `side`; Drawer, Header, and Content carry no MobileNav public target.                                                                                                                                                                     | Current source, docs, and tests |
 | FR2  | `isOpen` and `onOpenChange` win when given; otherwise the drawer reads and changes the enclosing AppShell's drawer state. The dialog uses AppShell's drawer id when there is one, else its own; a caller `id` replaces either (Current-state impact).                                                                                                                                                                                          | Current source and tests        |
-| FR3  | Opening calls `showModal()`, records the focused element as the opener, and focuses the drawer panel rather than the Close button. While open, the page's root clips its overflow and keeps its scrollbar gutter; closing releases both.                                                                                                                                                                                                       | Current source and tests        |
-| FR4  | The native cancel request (Escape) is routed through the shared dismissal stack and requests close only when this drawer is topmost. A click on the overlay outside the Drawer requests close; a click inside does not. The Close button, named by `@astryx.mobileNav.closeNavigation`, requests close. A caller `onClick` on the dialog runs before the backdrop check; one that calls `preventDefault()` cancels that backdrop close.        | Current source and tests        |
+| FR3  | Opening calls `showModal()`, and records the focused element as the opener; where focus lands inside the open drawer is uncontracted here. While open, the page's root clips its overflow and keeps its scrollbar gutter; closing releases both.                                                                                                                                                                                               | Current source and tests        |
+| FR4  | The native cancel request (Escape) is routed through the shared dismissal stack and requests close only when this drawer is topmost. A click on the overlay outside the Drawer requests close; a click inside does not. The Close button, named by `@astryx.mobileNav.closeNavigation`, requests close. A caller `onClick` on the dialog also runs; whether it can cancel the backdrop close is uncontracted here.                             | Current source and tests        |
 | FR5  | After a close request the drawer slides out while the dialog stays open, and the dialog closes within its slide-out transition and no later than 250 ms after the request (at once under reduced motion or a zero-length transition). Reopening before then cancels the close. Unmounting closes the dialog.                                                                                                                                   | Current source and tests        |
 | FR6  | When the dialog closes, focus returns to the recorded opener if it is still connected and was not the document body; otherwise focus is left alone. A reopen that interrupted a close keeps the original opener.                                                                                                                                                                                                                               | Current source and tests        |
 | FR7  | The Drawer enters from its resolved inline edge, from off-screen to on-screen, and the backdrop fades in from transparent, without a reduced-motion preference. Under reduced motion, motion follows `design:reduced-motion` DR1–DR3 (Current-state impact records today's shortfall). The overlay clips the off-screen drawer without becoming a scroll container and allows pinch zoom.                                                      | Current source and tests        |
 | FR8  | `side="start"` or `"end"` sets the edge. `side="auto"` MUST keep the drawer's start and end relationship to the element that opened it (`design:bidirectionality` DR7). Implementation gap: it resolves on each open from the focused element's physical half of the viewport (left half picks `start`, otherwise `end`); when nothing is focused at open it keeps its last value, and before any open it is `end`.                            | Current source                  |
 | FR9  | The Drawer is `width` px wide (default 320), never wider than 85% of the viewport, so a strip of the page stays beside it.                                                                                                                                                                                                                                                                                                                     | Current source and tests        |
 | FR10 | The dialog is named by `label`, else a string `header`, else `@astryx.mobileNav.navigation`; a caller `aria-labelledby` outranks all three. A string `header` renders as a level-2 heading; other header content renders as given.                                                                                                                                                                                                             | Current source and tests        |
-| FR11 | MobileNavToggle renders only while AppShell reports its mobile layout with mobile navigation enabled. It is an icon-only ghost Button named by `label` or `@astryx.mobileNav.toggle.open`, with a menu icon unless `children` replace it; it toggles the drawer, exposes `aria-expanded`, and its `aria-controls` carries AppShell's drawer id, which a MobileNav inside that AppShell applies to its dialog unless a caller `id` replaces it. | Current source, docs, and tests |
-| FR12 | MobileNav forwards its `ref`, `data-testid`, other DOM props, `className`, `style`, and `xstyle` to the dialog, except that its own `aria-label` (FR10) and cancel handler (FR4) replace a caller's `aria-label` and `onCancel`, and a caller `id` replaces its id (FR2).                                                                                                                                                                      | Current source and tests        |
+| FR11 | MobileNavToggle renders only while AppShell reports its mobile layout with mobile navigation enabled. It is an icon-only ghost Button named by default by `@astryx.mobileNav.toggle.open`, with a menu icon unless `children` replace it; it toggles the drawer, exposes `aria-expanded`, and its `aria-controls` carries AppShell's drawer id, which a MobileNav inside that AppShell applies to its dialog unless a caller `id` replaces it. | Current source, docs, and tests |
+| FR12 | MobileNav forwards its `ref`, `data-testid`, other DOM props, `className`, `style`, and `xstyle` to the dialog, except that its own `aria-label` (FR10) replaces a caller's, a caller `onCancel` never runs (Current-state impact), and a caller `id` replaces its id (FR2).                                                                                                                                                                   | Current source and tests        |
 
 ### Allowed variation
 
@@ -148,14 +152,14 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Representative states
 
-| State                    | Required invariant                                                     | Allowed variation                                  |
-| ------------------------ | ---------------------------------------------------------------------- | -------------------------------------------------- |
-| Standalone drawer        | Navigation overlay contains Drawer, Header, Close button, and Content. | Caller controls open state and may choose an edge. |
-| AppShell drawer          | The same drawer anatomy consumes AppShell mobile state.                | Header and navigation content remain caller-owned. |
-| AppShell mobile toggle   | Toggle button controls and references the current drawer.              | Custom button content may replace the menu glyph.  |
-| Non-mobile/disabled host | Toggle button does not render.                                         | MobileNav remains owned by the parent contract.    |
-| Closing                  | Dialog stays open through the slide-out, then focus returns.           | Duration by theme.                                 |
-| Reopen mid-close         | Pending close is cancelled; focus stays in the drawer.                 | —                                                  |
+| State                    | Required invariant                                                                                               | Allowed variation                                  |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Standalone drawer        | Navigation overlay contains Drawer, Header, Close button, and Content.                                           | Caller controls open state and may choose an edge. |
+| AppShell drawer          | The same drawer anatomy consumes AppShell mobile state.                                                          | Header and navigation content remain caller-owned. |
+| AppShell mobile toggle   | Toggle button controls and references the current drawer.                                                        | Custom button content may replace the menu glyph.  |
+| Non-mobile/disabled host | Toggle button does not render.                                                                                   | MobileNav remains owned by the parent contract.    |
+| Closing                  | Dialog stays open while the drawer starts sliding out and closes within the slide-out (FR5); then focus returns. | Duration by theme.                                 |
+| Reopen mid-close         | Pending close is cancelled; focus stays in the drawer.                                                           | —                                                  |
 
 ### Transformation and precedence order
 
@@ -257,16 +261,15 @@ Read from source, with no focused test yet:
 
 - FR1: the distinct Drawer, Header, and Content elements, and the `mobile-nav`
   target with its `side` state.
-- FR2: the dialog's own id outside AppShell.
-- FR3: focus moving to the drawer panel rather than the Close button.
-- FR4: the caller `onClick` running before the backdrop check, and its
-  `preventDefault()` cancellation.
+- FR2: the dialog's own id outside AppShell, and a caller `id` replacing it.
 - FR5: the 250 ms upper bound.
 - FR8's shipped resolution.
-- FR10: the `label` prop and the level-2 heading for a string `header`.
+- FR10 and ORD2: the `label` prop, a caller `aria-labelledby` outranking the
+  name, and the level-2 heading for a string `header`.
 - FR11: rendering only in an enabled AppShell mobile layout, the ghost variant,
-  the `label` override, and the menu icon.
-- FR12: the forwarded `ref` and `xstyle`.
+  and the menu icon.
+- FR12: the forwarded `ref` and `xstyle`, and the replaced caller `aria-label`
+  and `onCancel`.
 
 ## Decision log
 
