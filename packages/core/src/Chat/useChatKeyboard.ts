@@ -532,6 +532,9 @@ export function useChatKeyboard({
     }
   }, [lift, scrollRef, dock.animator, messages.animator]);
 
+  // Synchronizes the transcript's touch stream with the software keyboard: a
+  // drag lifted at the composer dismisses it (architecture:react-component-
+  // runtime INV3).
   useIsomorphicLayoutEffect(() => {
     const root = rootRef.current;
     const win = root?.ownerDocument.defaultView;
