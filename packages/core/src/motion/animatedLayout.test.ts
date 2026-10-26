@@ -547,6 +547,21 @@ describe('the changed element exits (spec:AST-105 FR4)', () => {
     expect(played).toEqual([]);
   });
 
+  it("a refused hold keeps the element's own end margin and lets the content after it take its place at once", async () => {
+    const {content, after, layout} = exitSetUp();
+    content.style.setProperty('margin-block-end', '12px');
+    vi.spyOn(after, 'getBoundingClientRect').mockImplementation(
+      () =>
+        new DOMRect(0, content.style.display === 'none' ? 40 : 128, 400, 20),
+    );
+    expect(holdLayoutExit(layout, content, vi.fn())).toBe(false);
+    expect(content.style.getPropertyValue('margin-block-end')).toBe('12px');
+    // The component hides it; the flush glides nothing.
+    content.style.display = 'none';
+    await flushMicrotasks();
+    expect(played).toEqual([]);
+  });
+
   it('fades under Reduce Motion with a coarse pointer', () => {
     const {content, layout} = exitSetUp();
     media['(prefers-reduced-motion: reduce)'] = true;
