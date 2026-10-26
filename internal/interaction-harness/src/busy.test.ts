@@ -4,8 +4,9 @@
  * @file busy.test.ts
  * @input Synthetic tracked frames (no browser)
  * @output The busy-main-thread verdict's limits: dropped frames a loaded
- *   machine produces pass, a frozen animation fails every criterion, and
- *   out-of-order frames are judged in presentation order.
+ *   machine produces pass, a frozen animation fails every criterion, a window
+ *   with nothing moving to judge fails, and out-of-order frames are judged in
+ *   presentation order.
  * @position Unit test of ./busy and ./frames' ordering; the browser proof
  *   with a real compositor animation and a rAF control is in
  *   harness.interaction.browser.spec.ts.
@@ -88,16 +89,49 @@ describe('busyWindowProof verdict', () => {
     const proof = busyWindowProof(frozen, BLOCK);
     expect(proof.changed).toBe(0);
     expect(proof.verdict.pass).toBe(false);
-    expect(proof.verdict.failures.join('\n')).toMatch(/median frame interval/);
+    expect(proof.verdict.failures.join('\n')).toMatch(/no frame presented/);
     expect(proof.verdict.failures.join('\n')).toMatch(/longest stall/);
     expect(proof.verdict.failures.join('\n')).toMatch(/expected frames moved/);
   });
 
-  it('fails a half-rate animation (median interval above display rate)', () => {
-    const odd = moving().filter((_, i) => i % 2 === 1);
-    expect(busyWindowProof(odd, BLOCK).verdict.failures.join('\n')).toMatch(
-      /median frame interval/,
+  it('fails a window in which the animation under test was not moving', () => {
+    // Settled before the block: the judgment ends where it starts.
+    const settled = moving().map(f =>
+      f.t < 950
+        ? f
+        : ({...f, box: {...f.box!, y: 3 * at(950)}} as TrackedFrame),
     );
+    const before = busyWindowProof(settled, BLOCK, {settledWithin: 2});
+    expect(before.verdict.pass).toBe(false);
+    expect(before.verdict.failures.join('\n')).toMatch(
+      /judged = -?\d+ frames < 4: the animation under test was not moving/,
+    );
+    // Settled 40 ms into the block: two frames, too few to judge.
+    const early = moving().map(f =>
+      f.t < 1040
+        ? f
+        : ({...f, box: {...f.box!, y: 3 * at(1040)}} as TrackedFrame),
+    );
+    expect(
+      busyWindowProof(early, BLOCK, {settledWithin: 2}).verdict.failures.join(
+        '\n',
+      ),
+    ).toMatch(/frames < 4: the animation under test was not moving/);
+  });
+
+  it('judges the frames a slower screencast delivers by default, and display rate only when asked', () => {
+    // One frame in six, as a loaded machine's screencast delivers: every
+    // delivered frame moved, so the default verdict passes.
+    const sixth = moving().filter((_, i) => i % 6 === 0);
+    expect(busyWindowProof(sixth, BLOCK).verdict.failures).toEqual([]);
+    // Half rate fails only a proof that claims display rate.
+    const odd = moving().filter((_, i) => i % 2 === 1);
+    expect(busyWindowProof(odd, BLOCK).verdict.pass).toBe(true);
+    expect(
+      busyWindowProof(odd, BLOCK, {maxMedianFrameMs: 20}).verdict.failures.join(
+        '\n',
+      ),
+    ).toMatch(/median frame interval/);
   });
 });
 
@@ -127,6 +161,117 @@ describe('busyWindowProof settledWithin', () => {
       marginMs: 0,
     });
     expect(strict.longestStallFrames).toBeGreaterThanOrEqual(3);
+  });
+
+  it('takes the end value from settledAt over a stale last frame', () => {
+    // The tail reaches y = 24, then the last frame shows a stale 100 (WebKit
+    // presents the last committed position once an accelerated animation
+    // ends while the main thread is still blocked).
+    const ys = [
+      120, 100, 82, 67, 55, 46, 39, 34, 30, 28, 27, 26, 25, 24, 24, 24, 100,
+    ];
+    const frames = ys.map(
+      (y, i) =>
+        ({
+          t: 1000 + i * FRAME,
+          box: {x: 0, y, width: 10, height: 10},
+        }) as TrackedFrame,
+    );
+    const window = {from: 1000, to: 1000 + ys.length * FRAME};
+    const stale = busyWindowProof(frames, window, {
+      settledWithin: 2,
+      marginMs: 0,
+    });
+    expect(stale.verdict.pass).toBe(false);
+    const fromPage = busyWindowProof(frames, window, {
+      settledWithin: 2,
+      settledAt: 24,
+      marginMs: 0,
+    });
+    expect(fromPage.verdict.failures).toEqual([]);
+    expect(fromPage.judged.to).toBe(frames[11].t);
+  });
+});
+
+/** Seen at rest at t = 900, then on screen from `start`, moving 3 px a frame. */
+function startingAt(start: number): TrackedFrame[] {
+  const frames = [
+    {t: 900, box: {x: 0, y: 0, width: 10, height: 10}} as TrackedFrame,
+  ];
+  for (let i = 1; start + (i - 1) * FRAME <= 1900; i += 1) {
+    frames.push({
+      t: start + (i - 1) * FRAME,
+      box: {x: 0, y: 3 * i, width: 10, height: 10},
+    } as TrackedFrame);
+  }
+  return frames;
+}
+
+describe('busyWindowProof on-screen start', () => {
+  it('judges a just-started animation from its first presented change when it was seen at rest before the block, and reports when', () => {
+    // On screen 87 ms into the block: four intervals after the judged part's start.
+    const proof = busyWindowProof(startingAt(1087), BLOCK);
+    expect(proof.verdict.failures).toEqual([]);
+    expect(proof.onScreenFromMs).toBeCloseTo(87, 5);
+    expect(proof.judged.from).toBeCloseTo(1087, 5);
+    expect(proof.summary).toMatch(
+      /on screen from \+87 ms \(nothing moved before the block\)/,
+    );
+  });
+
+  it('still fails an animation that was already moving and stalls at the block start', () => {
+    const k = at(1020);
+    const proof = busyWindowProof(moving([k, k + 1, k + 2, k + 3]), BLOCK);
+    expect(proof.onScreenFromMs).toBeNull();
+    expect(proof.verdict.failures.join('\n')).toMatch(/longest stall/);
+  });
+
+  it('still fails a stall at the start when no frame before the block shows it at rest', () => {
+    const unseen = startingAt(1087).filter(f => f.t >= BLOCK.from);
+    const proof = busyWindowProof(unseen, BLOCK);
+    expect(proof.onScreenFromMs).toBeNull();
+    expect(proof.verdict.failures.join('\n')).toMatch(/longest stall/);
+  });
+
+  it('still fails a start the block itself delays until it ends', () => {
+    const proof = busyWindowProof(startingAt(1720), BLOCK);
+    expect(proof.onScreenFromMs).toBeNull();
+    expect(proof.verdict.failures.join('\n')).toMatch(/no frame presented/);
+    expect(proof.verdict.failures.join('\n')).toMatch(/longest stall/);
+  });
+
+  it('still fails a start that leaves fewer than minJudgedFrames inside the block', () => {
+    const proof = busyWindowProof(startingAt(1640), BLOCK);
+    expect(proof.onScreenFromMs).toBeCloseTo(640, 5);
+    expect(proof.verdict.failures.join('\n')).toMatch(
+      /frames < 4: the animation under test was not moving/,
+    );
+  });
+});
+
+describe('busyWindowProof position step', () => {
+  it("reports the cast's position step and motion per frame, and notes motion under two steps without failing", () => {
+    // 2.4 px a frame on a 2 px grid, as WebKit's casts report positions.
+    const grid = moving().map(
+      (f, i) =>
+        ({
+          ...f,
+          box: {...f.box!, y: 2 * Math.round((2.4 * i) / 2)},
+        }) as TrackedFrame,
+    );
+    const coarse = busyWindowProof(grid, BLOCK);
+    expect(coarse.stepPx).toBe(2);
+    expect(coarse.pxPerFrame).toBeCloseTo(2.4, 1);
+    expect(coarse.notes.join('\n')).toMatch(
+      /under two of the cast's 2 px position steps/,
+    );
+    expect(coarse.summary).toMatch(/2\.4 px\/frame in 2 px steps; note: /);
+    expect(coarse.verdict.failures).toEqual([]);
+    // 3 px a frame in whole pixels: resolvable, nothing to note.
+    const fine = busyWindowProof(moving(), BLOCK);
+    expect(fine.stepPx).toBe(1);
+    expect(fine.pxPerFrame).toBeCloseTo(3, 1);
+    expect(fine.notes).toEqual([]);
   });
 });
 

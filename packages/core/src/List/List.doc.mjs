@@ -48,12 +48,6 @@ export const docs = {
       default: 'false',
     },
     {
-      name: 'followingContent',
-      type: "'moves' | 'stays'",
-      description: "With hasAnimatedChanges, page content below the list moves with its rows (a transient translate, cleared at rest) instead of jumping when the list changes height, each piece by what layout moved it. While it moves, that translate makes it the containing block of any position: fixed element inside it. Use 'stays' to keep it still when the app manages that area itself.",
-      default: "'moves'",
-    },
-    {
       name: 'isEditing',
       type: 'boolean',
       description: 'Edit mode, as a UIKit table has: every row makes room at its leading edge for an editing control and its trailing content (endContent) leaves, as a table cell\'s accessory does. Under a finger, entering and leaving animate on UIKit\'s table spring: the rows\' content slides by the indent and the trailing content fades out in place. With a mouse the list switches at once.',

@@ -28,6 +28,7 @@ import {
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {cellPressableProps} from '../utils/pressFeedback';
+import {rowPressLayerStyles} from '../utils/rowPressLayer';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useInteractionModalityTracking} from '../utils/interactionModality';
 import {useTreeExpansionMotion} from './useTreeExpansionMotion';
@@ -369,8 +370,6 @@ export interface TreeListItemInternalProps {
    * guide element).
    */
   variant: TreeListVariant;
-  /** Whether page content below the tree moves with an expansion. */
-  followingContent: 'moves' | 'stays';
   /**
    * Renders the children subtree (the parent recursion), called while the
    * row shows its children: expanded, or sliding them away after a collapse.
@@ -415,7 +414,6 @@ export function TreeListItem({
   onToggle,
   density,
   variant,
-  followingContent,
   renderChildren,
   posInSet,
   setSize,
@@ -425,10 +423,7 @@ export function TreeListItem({
   // A selection hold returns focus to this row after a pop; its ring follows
   // how the user last interacted (List/selectionHold.ts).
   useInteractionModalityTracking();
-  const {showsChildren, groupRef} = useTreeExpansionMotion(
-    isExpanded,
-    followingContent,
-  );
+  const {showsChildren, groupRef} = useTreeExpansionMotion(isExpanded);
   const renderedChildren = showsChildren ? renderChildren?.() : undefined;
   const t = useTranslator();
   const labelId = useId();
@@ -707,8 +702,8 @@ export function TreeListItem({
                   interactionOverlayStyles.backgroundImage,
                   // The touch press on a compositor layer (after the
                   // overlay, whose own touch paint it turns off).
-                  interactionOverlayStyles.cell,
-                  interactionOverlayStyles.cellOnImage,
+                  rowPressLayerStyles.cell,
+                  rowPressLayerStyles.cellOnImage,
                   isDisabled && styles.disabled,
                   isSelected && styles.selected,
                   xstyle,

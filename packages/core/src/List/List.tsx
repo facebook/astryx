@@ -79,17 +79,6 @@ export interface ListProps extends BaseProps<
   hasAnimatedChanges?: boolean;
 
   /**
-   * With `hasAnimatedChanges`, page content below the list moves with its
-   * rows (a transient `translate`, cleared at rest) instead of jumping when
-   * the list changes height, each piece by what layout moved it. While it
-   * moves, that `translate` makes it the containing block of any
-   * `position: fixed` element inside it. `'stays'` keeps it still, for apps
-   * that manage that area themselves.
-   * @default 'moves'
-   */
-  followingContent?: 'moves' | 'stays';
-
-  /**
    * Edit mode, as a UIKit table's: every row makes room at its leading
    * edge for an editing control (UIKit indents a row in edit mode whatever
    * its editing style) and its trailing content (`endContent`) leaves, as a
@@ -256,7 +245,6 @@ const dynamicStyles = stylex.create({
 export function List({
   children,
   hasAnimatedChanges = false,
-  followingContent = 'moves',
   isEditing = false,
   density = 'balanced',
   hasDividers = false,
@@ -274,7 +262,7 @@ export function List({
 }: ListProps) {
   const headerId = useId();
   const listRef = useRef<HTMLUListElement & HTMLOListElement>(null);
-  useListUpdateMotion(listRef, hasAnimatedChanges, followingContent);
+  useListUpdateMotion(listRef, hasAnimatedChanges);
   // Edit mode's trailing content stays while it fades out under a finger,
   // and leaves once faded; leaving edit mode brings it back at once.
   const editingAnimates = useTouchPresentation().isTouch;
