@@ -120,7 +120,8 @@ beforeEach(() => {
       },
       ready,
       commit(at) {
-        if (!this.cancelled && start == null) {
+        // A paused animation's pending pause completes without a start.
+        if (!this.cancelled && start == null && !this.paused) {
           start = at;
         }
         resolveReady(this);
@@ -884,6 +885,15 @@ describe('promotion: a compositing layer while it moves', () => {
     expect(element.style.willChange).toBe('contents');
   });
 
+  it("keeps the stylesheet's will-change reasons while it promotes, and hands them back", async () => {
+    const {animator, element} = setup();
+    stylesheet = {'will-change': 'transform, opacity'};
+    animator.animate({y: 40, opacity: 0.5}, {spring: springs.quickChange});
+    expect(element.style.willChange).toBe('transform, translate, opacity');
+    await advance(5000 + PROMOTION_LINGER_MS);
+    expect(element.style.willChange).toBe('');
+  });
+
   it('promotes during direct manipulation, until the writes stop', async () => {
     const {animator, element} = setup();
     animator.set({y: 10});
@@ -1492,6 +1502,103 @@ describe('Reduced Motion (design:reduced-motion)', () => {
     await advance(fade + END_HOLD_MS + 1);
     expect(animator.get('x')).toBe(-80);
     expect(animator.get('y')).toBe(stopped.y);
+  });
+
+  it('a carried move keeps its own call: stopping or setting it settles that call, not the one carrying it', async () => {
+    for (const interrupt of ['set', 'stop'] as const) {
+      const {animator} = reduced();
+      const a = animator.animate({x: 100}, {spring: springs.navigationPush});
+      await advance(fade / 4);
+      const b = animator.animate({y: 50}, {spring: springs.navigationPush});
+      if (interrupt === 'set') {
+        animator.set({x: 40});
+      } else {
+        a.stop();
+      }
+      await advance(fade * 2 + END_HOLD_MS + 1);
+      await expect(a.finished).resolves.toBe(false);
+      await expect(b.finished).resolves.toBe(true);
+      expect(animator.get('x')).toBe(interrupt === 'set' ? 40 : 0);
+      expect(animator.get('y')).toBe(50);
+    }
+  });
+
+  it("an earlier handle's stop leaves a later call's move on the same property alone", async () => {
+    const {animator} = reduced();
+    const a = animator.animate({x: 100}, {spring: springs.navigationPush});
+    await advance(fade / 4);
+    const b = animator.animate({x: 200}, {spring: springs.navigationPush});
+    a.stop();
+    await advance(fade * 2 + END_HOLD_MS + 1);
+    expect(animator.get('x')).toBe(200);
+    await expect(a.finished).resolves.toBe(false);
+    await expect(b.finished).resolves.toBe(true);
+  });
+
+  it('a retargeted call settles interrupted; its retarget lands', async () => {
+    const {animator} = reduced();
+    const a = animator.animate({x: 100}, {spring: springs.navigationPush});
+    await advance(fade / 4);
+    const b = a.retarget({x: 150});
+    await advance(fade * 2 + END_HOLD_MS + 1);
+    expect(animator.get('x')).toBe(150);
+    await expect(a.finished).resolves.toBe(false);
+    await expect(b.finished).resolves.toBe(true);
+  });
+
+  it('a move whose animations are paused before their first frame still lands once released', async () => {
+    for (const release of ['resume', 'finish'] as const) {
+      const {animator} = reduced();
+      const handle = animator.animate(
+        {x: 100},
+        {spring: springs.navigationPush},
+      );
+      // Something pauses the call's animations in its own task.
+      for (const animation of recorded) {
+        animation.paused = true;
+      }
+      await commitFrame(clock);
+      clock += 30;
+      await commitFrame(clock);
+      for (const animation of recorded) {
+        if (release === 'resume') {
+          animation.paused = false;
+        } else {
+          animation.finish();
+        }
+      }
+      await advance(fade * 2 + END_HOLD_MS + 50);
+      expect(animator.get('x')).toBe(100);
+      expect(animator.get('opacity')).toBe(1);
+      await expect(handle.finished).resolves.toBe(true);
+    }
+  });
+
+  it('a caught dismissal fades straight back up: a call that sets every waiting value takes it over', async () => {
+    const {animator} = reduced();
+    const dismiss = animator.animate(
+      {y: 800, opacity: 0},
+      {spring: springs.sheetDismiss},
+    );
+    await advance(fade / 4);
+    const shown = animator.get('opacity');
+    const present = animator.animate(
+      {y: 0, opacity: 1},
+      {spring: springs.sheetPresent},
+    );
+    await commitFrame(clock);
+    // No dip: the opacity only rises from where it was.
+    let lowest = shown;
+    const start = clock;
+    while (clock <= start + fade * 2) {
+      await advance(2);
+      lowest = Math.min(lowest, animator.get('opacity'));
+    }
+    expect(lowest).toBeGreaterThanOrEqual(shown - 1e-6);
+    expect(animator.get('y')).toBe(0);
+    expect(animator.get('opacity')).toBe(1);
+    await expect(dismiss.finished).resolves.toBe(false);
+    await expect(present.finished).resolves.toBe(true);
   });
 
   it("a handle's stop mid-dip freezes its waiting travel where it is, as animator.stop() does (AST-094 FR6)", async () => {
