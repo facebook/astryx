@@ -352,31 +352,41 @@ test('a slow drag follows the finger and settles on the nearest detent', async (
   );
 });
 
-test('pulled up past the tallest detent, the sheet holds', async ({page}) => {
+test('pulled up past the tallest detent, the sheet stretches by the rubber band and settles back (spec:AST-094 FR3)', async ({
+  page,
+}) => {
   const {driver, sheet, tallTop, handle} = await openSheet(page);
-  const tops: number[] = [];
+  // UIKit's rubber band over the sheet's height (coefficient 0.55), no
+  // farther than the 48 px the sheet reserves below the screen.
+  const height = await sheet.evaluate(el => el.getBoundingClientRect().height);
+  const band = (past: number) =>
+    Math.min(48, (1 - 1 / ((past * 0.55) / height + 1)) * height);
+  const pulled: {top: number; past: number}[] = [];
   await driver.play(
     drag(handle, {x: handle.x, y: handle.y - 120}, {durationMs: 400, hz: 60}),
     {
       onEvent: async step => {
         if (step.type === 'touchMove') {
-          tops.push(await sheetTop(sheet));
+          // A frame after each move, so the page has handled it.
+          await frames(page, 1);
+          pulled.push({
+            top: await sheetTop(sheet),
+            past: handle.y - step.changed[0].y,
+          });
         }
       },
     },
   );
-  // UIKit's sheet doesn't stretch past its largest detent (iOS 26.2): no
-  // move lifts it, and the lift leaves nothing to settle.
-  expect(tops.length).toBeGreaterThan(10);
-  for (const top of tops) {
-    expect(top).toBeCloseTo(tallTop, 0);
+  expect(pulled.length).toBeGreaterThan(0);
+  for (const {top, past} of pulled) {
+    expect(Math.abs(top - (tallTop - band(past)))).toBeLessThanOrEqual(1);
   }
-  await frames(page, 2);
-  expect(await sheet.evaluate(el => el.getAnimations().length)).toBe(0);
+  // Let go, it settles back onto the tallest detent.
+  await waitForRest(sheet);
   expect(await sheetTop(sheet)).toBeCloseTo(tallTop, 0);
 });
 
-test('on Android too, the drag tracks the finger 1:1 and holds at the tallest detent', async ({
+test('on Android too, the drag tracks the finger 1:1 and stretches past the tallest detent', async ({
   page,
 }) => {
   // Tracking is universal (F4's Android audit): no shim, Chromium's own idiom.
@@ -406,7 +416,8 @@ test('on Android too, the drag tracks the finger 1:1 and holds at the tallest de
   const restTop = await sheetTop(sheet);
   const upHandle = {x: handle.x, y: restTop + 12};
   const tops: number[] = [];
-  // From half, up past the tallest detent: it follows to tall, then holds.
+  // From half, up past the tallest detent: it follows to tall, then
+  // stretches by the rubber band, within the 48 px reserve (spec:AST-094 FR3).
   await driver.play(
     drag(
       upHandle,
@@ -421,7 +432,8 @@ test('on Android too, the drag tracks the finger 1:1 and holds at the tallest de
       },
     },
   );
-  expect(Math.min(...tops)).toBeGreaterThanOrEqual(tallTop - 0.5);
+  expect(Math.min(...tops)).toBeGreaterThanOrEqual(tallTop - 48.5);
+  expect(Math.min(...tops)).toBeLessThan(tallTop - 10);
 });
 
 test('a downward flick lands on the next detent, and from there dismisses', async ({
