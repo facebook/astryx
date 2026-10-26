@@ -39,7 +39,7 @@
  *   which Safari puts off while the finger is down, and the sticky dock
  *   would leave the bottom to sit at that end.
  * - A finger dragging the transcript down to the composer dismisses the
- *   keyboard when it lifts there or flicks toward it, Messages' `interactive`
+ *   keyboard when it lifts there, Messages' `interactive`
  *   mode (keyboard/keyboardDismiss.ts; spec:AST-094 FR36, FR37): the composer
  *   is the bar on the keyboard, so its height is the dismiss padding. It is
  *   part of ChatLayout's touch behavior with no caller control

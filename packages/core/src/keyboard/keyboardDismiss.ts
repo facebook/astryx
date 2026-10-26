@@ -4,9 +4,8 @@
  * @file keyboardDismiss.ts
  * @input A scroller element, the keyboard module's height
  *   (getMobileKeyboardHeight) and its dismissal blur (blurAsDismissal), the
- *   layout viewport's height (utils/layoutViewport.ts), bringsUpKeyboard,
- *   the shared release velocity (gestures/VelocityTracker) and the scroll
- *   view's projection (motion/projection.ts)
+ *   layout viewport's height (utils/layoutViewport.ts), bringsUpKeyboard
+ *   and the shared release velocity (gestures/VelocityTracker)
  * @output Exports observeKeyboardDismiss and KeyboardDismissMode: dismisses
  *   the software keyboard from a drag on a scroller, as UIScrollView's
  *   `keyboardDismissMode`
@@ -16,21 +15,23 @@
  * UIKit's modes, per scroller, default `none`:
  *
  * - `none`: dragging the scroller leaves the keyboard up.
- * - `interactive`: in UIKit the keyboard follows the finger down. A page
- *   cannot move the system keyboard, so the drag decides once, when the
- *   finger lifts (spec:AST-094 FR36): if its projected travel (where the
- *   finger is plus its release velocity times the scroll view's projection,
- *   WWDC18's, on `scroll.decelerationRate.normal`) reaches the keyboard's top
- *   edge, less `dismissPadding` for a bar that sits on the keyboard
- *   (UIKeyboardLayoutGuide's `keyboardDismissPadding`), the keyboard is
- *   dismissed; otherwise it stays. A release moving back up cancels, however
- *   far the finger went (FR37). The release velocity is the one every
- *   gesture reads (spec:AST-100, FR40). That commit point and that
- *   projection are a guess (FR2): nothing measures UIKit's interactive
- *   dismissal yet. A measurement on the iOS 26.2 simulator will replace them:
- *   a `.interactive` scroll view in the UIKit lab, with and without an
- *   accessory bar, lifting at rest, slowly, fast and moving back, above, at
- *   and into the keyboard's top.
+ * - `interactive`: in UIKit the keyboard follows the finger down once the
+ *   finger reaches its top. A page cannot move the system keyboard, so the
+ *   drag decides once, when the finger lifts (spec:AST-094 FR36): if it
+ *   lifts at or past the keyboard's top edge, less `dismissPadding` for a bar
+ *   that sits on the keyboard (UIKeyboardLayoutGuide's
+ *   `keyboardDismissPadding`), the keyboard is dismissed; otherwise it stays.
+ *   The projection is none: a flick that lifts above that line keeps the
+ *   keyboard however fast. A release moving back up cancels, however far the
+ *   finger went (FR37); the release velocity is the one every gesture reads
+ *   (spec:AST-100, FR40).
+ *   measured: UIKit lab (injected host app), iOS 26.2 simulator, a
+ *   full-screen UIScrollView with keyboardDismissMode .interactive and a
+ *   focused field, with and without a 50 pt input accessory bar: drags
+ *   lifting 100, 40 and 10 pt above the input views' top, at it, and 20, 60
+ *   and 120 pt into it, at rest, slowly, fast and moving back up, Oct 25
+ *   2026. Nothing moved above the top, however fast; at or past it every
+ *   release dismissed but one moving up, which restored.
  *
  * UIKit's `onDrag`, which dismisses as a drag begins, is not offered: a drag
  * that dismisses the keyboard decides at its release (FR36).
@@ -50,7 +51,6 @@
  */
 
 import {VelocityTracker} from '../gestures/VelocityTracker';
-import {project} from '../motion/projection';
 import {bringsUpKeyboard} from './keyboardLayoutGuide';
 import {blurAsDismissal, getMobileKeyboardHeight} from './useMobileKeyboard';
 import {layoutViewportHeight} from '../utils/layoutViewport';
@@ -174,8 +174,8 @@ export function observeKeyboardDismiss(
     if (velocity < 0 || keyboardHeight() <= 0) {
       return;
     }
-    // The commit point and the projection are a guess (see the header).
-    if (project(touch.clientY, velocity) < triggerLine()) {
+    // Where it lifts decides, with no projection (see the header).
+    if (touch.clientY < triggerLine()) {
       return;
     }
     // The keyboard module's dismissal: no surface parks the focus it leaves.

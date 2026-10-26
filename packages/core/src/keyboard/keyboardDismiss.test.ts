@@ -7,7 +7,8 @@
  * @output Tests the interactive mode's one decision at the release
  *   (spec:AST-094 FR36, FR37): a slow drag that lifts past the line where the
  *   keyboard (less the padding) begins dismisses, a lift short of it keeps
- *   it, a flick that projects past it dismisses, a release moving back up
+ *   it, a flick that lifts above it keeps it however fast, a fast drag that
+ *   lifts past it dismisses (UIKit's interactive dismissal), a release moving back up
  *   cancels, a cancelled touch decides nothing, and no move decides; touches
  *   in the bar or the text, two fingers and a hardware keyboard never
  *   dismiss; `none` never does
@@ -159,12 +160,20 @@ describe('observeKeyboardDismiss', () => {
       expect(document.activeElement).not.toBe(field);
     });
 
-    it('dismisses a flick that projects past the line from above it', () => {
+    it('keeps the keyboard for a flick that lifts above the line, however fast', () => {
+      // In UIKit the keyboard never moves until the finger reaches it, so a
+      // fast flick that lifts above it never dismisses it.
       observe('interactive');
-      // 1.5 px/ms down at the lift, 150 px above the line: WWDC18's
-      // projection carries it about 750 px further.
-      const last = drag(row, 100, TRIGGER - 150, {pxPerFrame: 24});
-      touch('touchend', row, TRIGGER - 150, last + 4);
+      // 1.5 px/ms down at the lift, 10 px above the line.
+      const last = drag(row, 100, TRIGGER - 10, {pxPerFrame: 24});
+      touch('touchend', row, TRIGGER - 10, last + 4);
+      expect(document.activeElement).toBe(field);
+    });
+
+    it('dismisses a fast drag that lifts just past the line', () => {
+      observe('interactive');
+      const last = drag(row, 100, TRIGGER + 20, {pxPerFrame: 24});
+      touch('touchend', row, TRIGGER + 20, last + 4);
       expect(document.activeElement).not.toBe(field);
     });
 
