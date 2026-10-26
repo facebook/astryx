@@ -2,8 +2,8 @@
 
 /**
  * @file keyboardLayoutGuide.ts
- * @input The keyboard module's reports (useMobileKeyboard.ts:
- *   subscribeMobileKeyboard), createKeyboardModel, the keyboard
+ * @input The keyboard module's reports (keyboardHeight.ts:
+ *   subscribeKeyboardHeight), createKeyboardModel, the keyboard
  *   notifications' duration (`keyboardNotification`, motion/uikit/timing.ts)
  * @output Exports getKeyboardLayoutGuide (a window's one guide),
  *   bringsUpKeyboard and the KeyboardLayoutGuide type
@@ -37,10 +37,10 @@
 
 import {keyboardNotification} from '../motion/uikit/timing';
 import {
-  getMobileKeyboardHeight,
-  subscribeMobileKeyboard,
-  type MobileKeyboardEvent,
-} from './useMobileKeyboard';
+  getKeyboardHeight,
+  subscribeKeyboardHeight,
+  type KeyboardHeightEvent,
+} from './keyboardHeight';
 import {
   createKeyboardModel,
   type KeyboardModel,
@@ -158,7 +158,7 @@ export function getKeyboardLayoutGuide(win: Window): KeyboardLayoutGuide {
 function createGuide(win: Window): KeyboardLayoutGuide {
   const listeners = new Set<(transition: KeyboardTransition) => void>();
   let profile = keyboardProfileOf(win);
-  let model: KeyboardModel = createKeyboardModel(getMobileKeyboardHeight(win), {
+  let model: KeyboardModel = createKeyboardModel(getKeyboardHeight(win), {
     profile,
   });
   let verifyTimer: ReturnType<typeof setTimeout> | null = null;
@@ -229,9 +229,7 @@ function createGuide(win: Window): KeyboardLayoutGuide {
     verifyTimer = setTimeout(
       () => {
         verifyTimer = null;
-        publish(
-          model.verify(getMobileKeyboardHeight(win), win.performance.now()),
-        );
+        publish(model.verify(getKeyboardHeight(win), win.performance.now()));
       },
       Math.max(0, due - win.performance.now()),
     );
@@ -239,7 +237,7 @@ function createGuide(win: Window): KeyboardLayoutGuide {
 
   const attach = () => {
     profile = keyboardProfileOf(win);
-    model = createKeyboardModel(getMobileKeyboardHeight(win), {profile});
+    model = createKeyboardModel(getKeyboardHeight(win), {profile});
     // When a field that brings up a keyboard last gained focus.
     let keyboardFocusAt = -Infinity;
     let handoffTimer: ReturnType<typeof setTimeout> | null = null;
@@ -265,13 +263,13 @@ function createGuide(win: Window): KeyboardLayoutGuide {
         // settles, then believe whatever the keyboard is doing.
         handoffTimer = setTimeout(() => {
           handoffTimer = null;
-          publish(model.report(getMobileKeyboardHeight(win), settled));
+          publish(model.report(getKeyboardHeight(win), settled));
         }, settled - time);
         return null;
       }
       return model.report(height, time, frameBefore);
     };
-    const onReport = (event: MobileKeyboardEvent) => {
+    const onReport = (event: KeyboardHeightEvent) => {
       if (event.type === 'viewport') {
         const transition = report(event.height, event.timeStamp, lastFrame);
         if (transition?.kind === 'show') {
@@ -295,7 +293,7 @@ function createGuide(win: Window): KeyboardLayoutGuide {
         publish(model.blurred(event.timeStamp));
       }
     };
-    const unsubscribe = subscribeMobileKeyboard(win, onReport);
+    const unsubscribe = subscribeKeyboardHeight(win, onReport);
     return () => {
       unsubscribe();
       stopWatchingFrames();

@@ -2,7 +2,7 @@
 
 /**
  * @file index.ts
- * @input useMobileKeyboard.ts, keyboardLayoutGuide.ts, keyboardModel.ts and
+ * @input keyboardHeight.ts, keyboardLayoutGuide.ts, keyboardModel.ts and
  *   rideKeyboard.ts
  * @output Re-exports the on-screen keyboard module (the keyboard height, its
  *   reports, the focus refusal, the reveal-pan watch, BottomSheet's hook),
@@ -17,20 +17,20 @@
 
 export {
   findTextEntryControl,
-  getMobileKeyboardHeight,
+  getKeyboardHeight,
   isKeyboardMeasurable,
   isTextEntryControl,
   measureKeyboardHeight,
   refuseFocusReveal,
-  subscribeMobileKeyboard,
+  subscribeKeyboardHeight,
   useKeyboardHeight,
-  useMobileKeyboard,
+  useSheetKeyboard,
   watchRevealPan,
-  type MobileKeyboardEvent,
+  type KeyboardHeightEvent,
   type RefuseFocusRevealOptions,
   type RevealPanWatch,
   type WatchRevealPanOptions,
-} from './useMobileKeyboard';
+} from './keyboardHeight';
 export {
   bringsUpKeyboard,
   getKeyboardLayoutGuide,

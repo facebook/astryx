@@ -7,7 +7,7 @@
  * @output Exports rideKeyboard: moves an element with the keyboard on the
  *   keyboard's own motion
  * @position Keyboard module (internal to core); what a guide subscriber
- *   calls for each transition (BottomSheet's hook, useMobileKeyboard.ts)
+ *   calls for each transition (BottomSheet's hook, keyboardHeight.ts)
  *
  * iOS's keyboard moves on UIKit's keyboard spring and Android's on Gboard's
  * slides up and down (motion/android/keyboard.ts); the transition publishes
