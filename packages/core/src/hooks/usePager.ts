@@ -96,10 +96,8 @@ import {
   solveAnimatedPageScroll,
   solvePaging,
 } from '../motion/paging';
-import {resolveMotion} from '../motion/resolveMotion';
-import type {SpringDescription} from '../motion/spring';
 import {rubberBandClamp, rubberBandUnclamp} from '../motion/rubberBand';
-import {paging, registerPagingTable} from '../motion/uikit/paging';
+import {paging} from '../motion/uikit/paging';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {isRtlElement} from './isRtlElement';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
@@ -353,8 +351,6 @@ export function createPager(
   initial: PagerOptions,
   environment: PagerEnvironment = {},
 ): Pager {
-  // The settle's roles, before the first motion resolves one.
-  registerPagingTable();
   const setTimer =
     environment.setTimeout ??
     ((callback: () => void, ms: number) => setTimeout(callback, ms));
@@ -731,29 +727,6 @@ export function createPager(
     follow(animator.play({x: toTrackCurve(curve, sign())}, {touchRelease}));
   }
 
-  /** The settle on a theme's spring (`--motion-paging-settle`). */
-  function springTo(
-    position: number,
-    velocity: number,
-    spring: SpringDescription,
-    touchRelease: boolean,
-  ): void {
-    if (animator == null) {
-      return;
-    }
-    // The integrator starts the content at stepsPerSecond / 1000 of the
-    // finger's speed; a theme's spring starts it the same way.
-    const start = (velocity * paging.integrator.stepsPerSecond) / 1000;
-    // Only a release settles on a spring (see `play`).
-    follow(
-      animator.animate(
-        {x: positionToX(position)},
-        {spring, velocity: {x: sign() * start}},
-        {touchRelease},
-      ),
-    );
-  }
-
   function follow(handle: MotionHandle): void {
     const token = ++settleToken;
     settleHandle = handle;
@@ -788,18 +761,7 @@ export function createPager(
     touchRelease: boolean,
   ): void {
     const to = offsetOf(target);
-    // A theme that retunes the settle hands it a spring; without one the
-    // settle runs UIKit's integrator itself.
-    const spring = resolveMotion(viewport, paging, 'settle');
-    if (spring !== paging.settle) {
-      if (position === to && velocity === 0) {
-        animator?.set({x: positionToX(to)});
-        rest();
-        return;
-      }
-      springTo(to, velocity, spring, touchRelease);
-      return;
-    }
+    // UIKit's integrator, as a playable curve (touch motion stays internal).
     const curve = solvePaging({from: position, velocity, to});
     if (curve.steps === 0) {
       animator?.set({x: positionToX(to)});
@@ -1007,12 +969,8 @@ export function createPager(
       solveAnimatedPageScroll({
         from,
         to,
-        durationMs: resolveMotion(
-          viewport,
-          paging.animatedScroll,
-          'durationMs',
-        ),
-        curve: resolveMotion(viewport, paging.animatedScroll, 'curve'),
+        durationMs: paging.animatedScroll.durationMs,
+        curve: paging.animatedScroll.curve,
         velocity,
       }),
     );

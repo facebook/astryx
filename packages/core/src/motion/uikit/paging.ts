@@ -2,12 +2,12 @@
 
 /**
  * @file paging.ts
- * @input motion/roles.ts (registerMotionTable)
+ * @input Nothing; data only
  * @output Exports `paging`, the constants of a paging UIScrollView
  *   (`isPagingEnabled`, and the scroll view inside UIPageViewController): the
  *   integrator that carries a release onto its page, the rule that picks the
- *   page, the catch, and `setContentOffset(_:animated:)`; and
- *   `registerPagingTable`, which makes its motions roles
+ *   page, the catch, and `setContentOffset(_:animated:)`, as internal constants
+ *   (touch motion stays internal: no theme role)
  * @position The paging domain of the UIKit constants table (motion/uikit);
  *   read inside core only (motion/paging.ts and the pager), so the `uikit`
  *   namespace does not re-export it
@@ -34,10 +34,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/motion/MEASUREMENTS.md (measurement tasks)
  * - /packages/core/src/motion/paging.ts and paging.test.ts
- * - /packages/cli/assets/docs/motion.doc.mjs (`pnpm generate:motion-roles`)
  */
-
-import {registerMotionTable} from '../roles';
 
 export const paging = {
   integrator: {
@@ -82,16 +79,6 @@ export const paging = {
      */
     restSpeed: 0.05,
   },
-  /**
-   * The integrator above as a spring, in UIKit's vocabulary: the motion role
-   * a theme retunes (`--motion-paging-settle`). With no theme value the
-   * settle runs the integrator itself, which this spring follows to 1.5 pt.
-   * @source measured: UIKit lab, iOS 26.2 simulator, the integrator's pull
-   *   0.000284858 per ms² and friction 0.970815 per ms: a natural frequency
-   *   of 16.88 rad/s (response 0.3723 s) and a damping ratio of 0.8775
-   *   (2026-10-24)
-   */
-  settle: {response: 0.3723, dampingRatio: 0.8775},
   release: {
     /**
      * Released slower than `advanceSpeed`, the scroll view settles on the
@@ -199,14 +186,3 @@ export const paging = {
    */
   rubberBandDimension: 'pageWidth',
 } as const;
-
-/**
- * Makes the settle spring and `setContentOffset(_:animated:)`'s duration and
- * curve motion roles a theme may retune (motion/roles.ts). The catch decides
- * who holds the touch, not how anything moves, so it is not a role. Nothing
- * registers on import: the pager calls it once (it is idempotent), so a page
- * that never pages ships no registry.
- */
-export function registerPagingTable(): void {
-  registerMotionTable('paging', paging, {exclude: ['catchStopMs']});
-}
