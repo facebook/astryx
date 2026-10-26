@@ -68,7 +68,7 @@ import {
 import {useFingerScroll} from '@astryxdesign/core/gestures/useFingerScroll';
 import {registerTabBarTable, tabBar} from '@astryxdesign/core/motion/uikit';
 import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
-import {isRtlElement} from '@astryxdesign/core/hooks/isRtlElement';
+import {isRtlElement} from '../utils/isRtlElement';
 import {accessoryBox} from './tabBarModel';
 
 export interface UseTabBarMinimizeOptions {
