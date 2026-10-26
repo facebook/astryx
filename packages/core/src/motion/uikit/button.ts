@@ -16,10 +16,8 @@
  * control points [x1, y1, x2, y2].
  *
  * SYNC: When modified, update:
- * - /packages/core/src/utils/interactionOverlay.stylex.ts (`pressConsts`
+ * - /packages/core/src/utils/controlPressLayer.stylex.ts (`controlPressConsts`
  *   mirrors the control release; pressFeedback.test.ts checks it)
- * - /packages/core/src/utils/interactionOverlay.stylex.ts (`pressConsts`
- *   mirrors it for the overlays' own release)
  */
 
 import {timing} from './timing';

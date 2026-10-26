@@ -14,8 +14,7 @@
  *   the engine's own tap paints and activates once; a storyboard of a press,
  *   its trace asserted
  * @position Interaction evidence for the press model's control profile
- *   (gestures/PressTracker.ts, gestures/delegatedPress.ts as installed by
- *   hooks/usePressFeedback.ts)
+ *   (utils/pressFeedback.ts, as hooks/usePressFeedback.ts installs it)
  */
 
 import {expect, test, type Locator, type Page} from '@playwright/test';
