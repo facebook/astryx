@@ -102,6 +102,7 @@ import {
 import {VelocityTracker} from '../gestures/VelocityTracker';
 import {playHaptic} from '../gestures/haptics';
 import {readTouchPresentation} from './sheetTouch';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
 import {useMediaQuery} from '../hooks';
 import {
   createAnimator,
@@ -193,13 +194,14 @@ const CONTENT_END_HANDOFF_SLOP = 4;
 // 8px is the conventional tap slop, a shade over iOS's own recognizer, and
 // well under what a real pull covers in its first frames.
 const DRAG_PROMOTION_SLOP = 8;
-// A mouse or pen drag keeps the sheet's pointer behavior (spec:AST-017 FR59):
-// within this many px of a detent the live drag eases toward it, so it
-// "clicks" into place instead of hovering just off the mark. A finger tracks
-// 1:1, as UIKit's sheet does.
+// Today's drag (a mouse anywhere, and anything where the primary pointer is
+// fine) keeps the sheet's pointer behavior (spec:AST-017 FR59): within this
+// many px of a detent the live drag eases toward it, so it "clicks" into place
+// instead of hovering just off the mark. Under UIKit's presentation the sheet
+// tracks 1:1, as UIKit's does.
 const MAGNET_RANGE = 40;
-// Rubber-band factor for a mouse or pen dragging up past fully open. A
-// finger's stretch is UIKit's rubber band instead (spec:AST-094 FR3).
+// Rubber-band factor for today's drag up past fully open. Under UIKit's
+// presentation the stretch is UIKit's rubber band instead (spec:AST-094 FR3).
 const OVERSCROLL_RESISTANCE = 0.35;
 // How far any drag may lift the sheet past fully open: the bottom padding the
 // sheet reserves for the lift to reveal.
@@ -1166,6 +1168,10 @@ export function useSheetGestures({
   // pointer (design:reduced-motion DR2).
   const dragTouchRef = useRef(false);
 
+  // Whether the primary pointer is coarse, subscribed: the sheet's touch-only
+  // listeners exist only then (spec:AST-094 FR24), and come and go with it.
+  const coarsePrimary = useMediaQuery(TOUCH_QUERY);
+
   // Moves the sheet to `offset` on the travel channel, holding the layout
   // split it is rendered with (`layoutOffset`) until it lands; landing a
   // settle reconciles the layout, and the host folds the travel into its new
@@ -1636,7 +1642,10 @@ export function useSheetGestures({
       activeOffsetRef.current = baseOffset;
       beginScrimTracking();
       // Read before this drag turns transitions off (releaseMotion.ts).
-      releaseMotionRef.current = readReleaseMotion(sheetElRef.current);
+      releaseMotionRef.current = readReleaseMotion(
+        sheetElRef.current,
+        syntheticTouch ? 'touch' : event.pointerType,
+      );
       const tracker = new VelocityTracker();
       tracker.add(0, event.clientY, event.timeStamp);
       dragStateRef.current = {
@@ -1734,12 +1743,15 @@ export function useSheetGestures({
       const {offsets, peekOffset} = resolveDetents(state.height);
 
       const raw = state.baseOffset + delta;
-      // A finger tracks as UIKit's sheet does, with the record's rubber band
-      // past fully open; a mouse or pen keeps the pointer behavior
-      // (spec:AST-094 FR3, spec:AST-017 FR59).
-      const next = dragTouchRef.current
-        ? fingerDragOffset(raw, state.height)
-        : pointerDragOffset(raw, offsets);
+      // Under UIKit's presentation (a finger or a pen where the primary
+      // pointer is coarse, the same answer as the release's) the sheet tracks
+      // as UIKit's does, with the record's rubber band past fully open
+      // (spec:AST-094 FR3); otherwise today's pointer behavior (spec:AST-017
+      // FR59).
+      const next =
+        releaseMotionRef.current.kind === 'uikit'
+          ? fingerDragOffset(raw, state.height)
+          : pointerDragOffset(raw, offsets);
       // Dragging above the base restores the full layout height below the
       // viewport; otherwise keep whatever layout the base detent settled with
       // (0 at a peek, so a peek drag stays transform-only).
@@ -1961,11 +1973,13 @@ export function useSheetGestures({
     // it has to yield again if the finger comes back down.
     promotedAtContentEnd: boolean;
   } | null>(null);
-  const previousTouchHandlersRef = useRef<{
+  // The body's touch handlers, made with its node; attached by an Effect.
+  const bodyTouchHandlersRef = useRef<{
     start: (e: TouchEvent) => void;
     move: (e: TouchEvent) => void;
     end: (e: TouchEvent) => void;
   } | null>(null);
+  const [bodyMounts, setBodyMounts] = useState(0);
 
   // A second finger is a pinch, and pinch-zoom is the browser's. Whichever
   // surface it lands on and whichever finger came first, drop every armed
@@ -2038,7 +2052,9 @@ export function useSheetGestures({
   useEffect(() => {
     const sheetNode = sheetElRef.current;
     const dialog = sheetNode?.closest('dialog');
-    if (!isOpen || sheetNode == null || dialog == null) {
+    // Touch-only work: none where the primary pointer is fine (spec:AST-094
+    // FR24).
+    if (!isOpen || !coarsePrimary || sheetNode == null || dialog == null) {
       return;
     }
     const asPointer = (touch: Touch, timeStamp: number) =>
@@ -2166,7 +2182,7 @@ export function useSheetGestures({
       dialog.removeEventListener('click', onClick, true);
       caughtTouchRef.current = null;
     };
-  }, [drawnSheetRect, isOpen, sheetMounts]);
+  }, [coarsePrimary, drawnSheetRect, isOpen, sheetMounts]);
 
   const bodyRef = useCallback((node: HTMLElement | null) => {
     // `timeStamp` is the touch event's own: when the finger was there, on the
@@ -2338,29 +2354,33 @@ export function useSheetGestures({
       }
     };
 
-    const prev = bodyNodeRef.current;
-    if (prev && previousTouchHandlersRef.current) {
-      const h = previousTouchHandlersRef.current;
-      prev.removeEventListener('touchstart', h.start);
-      prev.removeEventListener('touchmove', h.move);
-      prev.removeEventListener('touchend', h.end);
-      prev.removeEventListener('touchcancel', h.end);
-    }
     bodyNodeRef.current = node;
-    if (node) {
-      node.addEventListener('touchstart', onTouchStart, {passive: true});
-      node.addEventListener('touchmove', onTouchMove, {passive: false});
-      node.addEventListener('touchend', onTouchEnd, {passive: true});
-      node.addEventListener('touchcancel', onTouchEnd, {passive: true});
-      previousTouchHandlersRef.current = {
-        start: onTouchStart,
-        move: onTouchMove,
-        end: onTouchEnd,
-      };
-    } else {
-      previousTouchHandlersRef.current = null;
-    }
+    bodyTouchHandlersRef.current =
+      node == null
+        ? null
+        : {start: onTouchStart, move: onTouchMove, end: onTouchEnd};
+    setBodyMounts(mounts => mounts + 1);
   }, []);
+  // The body's touch listeners, only where the primary pointer is coarse
+  // (spec:AST-094 FR24): attached for each mounted body, removed when it
+  // goes or the primary pointer turns fine.
+  useEffect(() => {
+    const node = bodyNodeRef.current;
+    const h = bodyTouchHandlersRef.current;
+    if (!coarsePrimary || node == null || h == null) {
+      return;
+    }
+    node.addEventListener('touchstart', h.start, {passive: true});
+    node.addEventListener('touchmove', h.move, {passive: false});
+    node.addEventListener('touchend', h.end, {passive: true});
+    node.addEventListener('touchcancel', h.end, {passive: true});
+    return () => {
+      node.removeEventListener('touchstart', h.start);
+      node.removeEventListener('touchmove', h.move);
+      node.removeEventListener('touchend', h.end);
+      node.removeEventListener('touchcancel', h.end);
+    };
+  }, [bodyMounts, coarsePrimary]);
 
   // Subscribed, not memoized: the preference can change while a sheet is open,
   // and it turns the sheet's CSS transitions off (the theme's motion under a
