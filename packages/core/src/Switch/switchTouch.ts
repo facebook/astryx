@@ -185,19 +185,15 @@ export function stepFlip(
 
 /**
  * What a release commits: the side a drag flipped to; when nothing flipped,
- * the other side of the value for a lift inside the switch's tracking bounds,
- * and the value as it is for a press slid off and lifted outside (WCAG 2.5.2:
- * an aborted press leaves the switch alone).
+ * the other side of the value, wherever the finger lifts. A press slid off
+ * and lifted outside toggles too, as UISwitch's does (iOS 26.2), under
+ * `spec:AST-020` FR9/DEC-5, the reversible-toggle exception.
  */
 export function commitOnRelease(
   flip: SwitchFlip | null,
   isOn: boolean,
-  isInside = true,
 ): boolean {
-  if (flip?.didFlip === true) {
-    return flip.isVisuallyOn;
-  }
-  return isInside ? !isOn : isOn;
+  return flip?.didFlip === true ? flip.isVisuallyOn : !isOn;
 }
 
 /**

@@ -853,29 +853,11 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
   });
 
   for (const direction of ['ltr', 'rtl'] as const) {
-    test(`a press slid off and lifted outside leaves the switch alone (WCAG 2.5.2, ${direction})`, async ({
+    test(`a press slid off and lifted outside toggles, as UISwitch's does (AST-020 FR9/DEC-5, ${direction})`, async ({
       page,
     }) => {
-      // Held, slid 160 px down, lifted outside.
-      {
-        const {driver, input, thumb, center} = await openSwitch(
-          page,
-          undefined,
-          {
-            direction,
-          },
-        );
-        await driver.play(
-          drag(
-            center,
-            {x: center.x, y: center.y + 160},
-            {durationMs: 300, holdMs: 300, restMs: 100},
-          ),
-        );
-        await waitForSwitchRest(page, thumb);
-        await expect(input).not.toBeChecked();
-      }
-      // Held, slid 160 px toward the off end (no flip), lifted outside.
+      // Held, slid 160 px toward the off end (no flip), lifted outside: it
+      // toggles.
       {
         const {driver, input, thumb, center} = await openSwitch(
           page,
@@ -893,7 +875,28 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
           ),
         );
         await waitForSwitchRest(page, thumb);
-        await expect(input).not.toBeChecked();
+        await expect(input).toBeChecked();
+      }
+      // Held, flipped by a drag 160 px toward the on end, lifted outside: it
+      // commits the side it shows.
+      {
+        const {driver, input, thumb, center} = await openSwitch(
+          page,
+          undefined,
+          {
+            direction,
+          },
+        );
+        const sign = direction === 'rtl' ? -1 : 1;
+        await driver.play(
+          drag(
+            center,
+            {x: center.x + sign * 160, y: center.y},
+            {durationMs: 300, holdMs: 300, restMs: 100},
+          ),
+        );
+        await waitForSwitchRest(page, thumb);
+        await expect(input).toBeChecked();
       }
     });
   }

@@ -37,7 +37,8 @@
  *   its input itself once the click window passes. A drag that flipped the
  *   switch gets no click from the browser, so its `touchend` is cancelled
  *   and the switch clicks its input. A press slid off and lifted outside
- *   commits nothing (WCAG 2.5.2). Forms, `onChange` and keyboard activation
+ *   toggles too, as UISwitch's does (`spec:AST-020` FR9/DEC-5, the
+ *   reversible-toggle exception), and the switch clicks its input for it. Forms, `onChange` and keyboard activation
  *   stay the native checkbox's.
  * - The drag never renders: each move retargets the thumb's tracking spring
  *   (one style write) and steps the flip rule on the finger's travel; the
@@ -50,7 +51,7 @@
  *   and the settle are one curve built at the release, so the settle starts
  *   on time on the compositor. The press also shows the shared pressed
  *   overlay (design:user-states), as the track's ::before under the thumb,
- *   released on the compositor (Switch.tsx, controlPressLayer.ts).
+ *   released on the compositor (Switch.tsx, switchPressLayer.ts).
  * - The track keeps its own fill, the theme's, in both states; the colour
  *   change is a fade layer over it, painted with the track's other fill
  *   (switchFill.ts) and faded on the compositor: clear while the visuals
@@ -275,11 +276,6 @@ export class SwitchTouchController {
   private pendingTravel = false;
   /** Passive: a finger is down on the switch. */
   private isTracking = false;
-  /**
-   * Whether the finger is inside the switch's tracking bounds (the press
-   * tracker's): a press slid off and lifted outside commits nothing.
-   */
-  private isInside = true;
   /** Passive: until when the browser's next trusted click is swallowed. */
   private clickGuardUntil = 0;
   /** Passive: the switch released on this touch; its `touchend` is cancelled. */
@@ -567,7 +563,6 @@ export class SwitchTouchController {
     switch (event) {
       case 'touchDown':
         this.isTracking = true;
-        this.isInside = true;
         this.clickGuardUntil = 0;
         this.touchDown(touch.startTime);
         return;
@@ -594,21 +589,15 @@ export class SwitchTouchController {
         // The finger's lift is a step of its own: a flip armed by the last
         // move happens here (a fast swipe flips on the lift).
         this.move(touch.time, travel);
-        this.isInside = event === 'touchUpInside';
-        if (this.drag?.flip.didFlip !== true) {
-          if (this.isInside) {
-            // A tap, a hold or a short drag: the browser's click activates
-            // it.
-            this.release(touch.time, {byBrowserClick: true});
-          } else {
-            // Slid off and lifted outside: the press is aborted (WCAG 2.5.2).
-            this.released = true;
-            this.abandon(touch.time);
-          }
+        if (this.drag?.flip.didFlip !== true && event === 'touchUpInside') {
+          // A tap, a hold or a short drag: the browser's click activates it.
+          this.release(touch.time, {byBrowserClick: true});
           return;
         }
-        // A drag that flipped: no click comes from the browser, so the
-        // switch clicks its input and cancels the lift.
+        // A drag that flipped, or a press slid off and lifted outside (it
+        // toggles, as UISwitch's does: `spec:AST-020` FR9/DEC-5, the
+        // reversible-toggle exception): no click comes from the browser, so
+        // the switch clicks its input and cancels the lift.
         this.cancelsTouchEnd = true;
         this.clickGuardUntil = now() + CLICK_GUARD_MS;
         this.release(touch.time);
@@ -623,10 +612,7 @@ export class SwitchTouchController {
         }
         return;
       case 'touchDragEnter':
-        this.isInside = true;
-        return;
       case 'touchDragExit':
-        this.isInside = false;
         return;
     }
   }
@@ -679,11 +665,7 @@ export class SwitchTouchController {
     }
     this.released = true;
     this.clearTimers();
-    const commit = commitOnRelease(
-      this.drag?.flip ?? null,
-      this.isOn,
-      this.isInside,
-    );
+    const commit = commitOnRelease(this.drag?.flip ?? null, this.isOn);
     this.drag = null;
     if (this.pressTime == null) {
       // A tap quicker than a scroller's content delay: the press begins now.
