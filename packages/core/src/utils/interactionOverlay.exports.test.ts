@@ -24,6 +24,7 @@ const ROW_LAYER_STYLES = [
   'cellOnImage',
   'control',
   'controlOver',
+  // Switch's strength hold: it enters with Switch's touch change.
   'pressedAlphaLayered',
 ];
 const ROW_LAYER_EXPORTS = ['cellPressConsts', 'controlPressConsts'];
