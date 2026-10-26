@@ -190,7 +190,7 @@ function useSortedNames(names: string[]) {
 Core exports a few undocumented modules under `@astryxdesign/core/internal/<name>`
 so Lab can build on machinery that has no public API of its own. They are reserved for
 Astryx's own packages and sit outside the compatibility promise
-(`spec:AST-017` FR21). The repo config turns this rule on for every file outside
+(`spec:AST-017` FR21, `architecture:react-component-runtime` INV13). The repo config turns this rule on for every file outside
 `packages/core` and `packages/lab`, so an import of an internal subpath from an
 app, a template or another package is an error.
 
@@ -198,8 +198,9 @@ Each internal subpath is one file, `packages/core/src/internal/<name>.ts`,
 whose header says it is reserved for Astryx's own packages, undocumented, and
 outside the compatibility promise. It gets its own explicit entry in Core's
 `package.json` `exports` (`"./internal/<name>": {source, types, default}`,
-never a wildcard), listed in `scripts/sync-exports.js`'s `STATIC_EXPORTS` so
-`sync-exports --check` keeps it. The rule reports every way to reach one:
+never a wildcard), listed with the file-module subpaths in
+`scripts/sync-exports.js` (`FILE_MODULE_SUBPATH_EXPORTS`), as `internal/touch`
+is. The rule reports every way to reach one:
 `import`, `export … from`, `import()`, `require()` and `typeof import()`.
 
 It is a custom rule, not a `no-restricted-imports` block: flat config overrides
