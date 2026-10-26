@@ -20,7 +20,10 @@
 import {useState, type ReactNode} from 'react';
 import {act, render, screen, waitFor} from '@testing-library/react';
 import {useScrollLock} from '@astryxdesign/core/hooks';
+import {SETTLE_THRESHOLD} from '@astryxdesign/core/motion/animator';
+import {solveSpring, toSpring} from '@astryxdesign/core/motion/spring';
 import {refreshControl} from '@astryxdesign/core/motion/uikit/refresh';
+import {timing} from '@astryxdesign/core/motion/uikit/timing';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   useRefreshControl,
@@ -161,6 +164,34 @@ function watchGlyph(): {added: HTMLElement[]; removed: HTMLElement[]} {
   return seen;
 }
 
+interface Played {
+  element: Element;
+  keyframes: Keyframe[];
+  options: KeyframeAnimationOptions;
+  animation: {onfinish: (() => void) | null; cancel: () => void};
+}
+
+/**
+ * Records the Web Animations elements start from now on (jsdom implements
+ * none), for the test that calls it.
+ */
+function recordAnimations(): Played[] {
+  const played: Played[] = [];
+  Object.defineProperty(HTMLElement.prototype, 'animate', {
+    configurable: true,
+    value(
+      this: Element,
+      keyframes: Keyframe[],
+      options: KeyframeAnimationOptions,
+    ) {
+      const animation = {onfinish: null, cancel: vi.fn()};
+      played.push({element: this, keyframes, options, animation});
+      return animation as unknown as Animation;
+    },
+  });
+  return played;
+}
+
 /** Lets the mutation observer and the animator's promises run. */
 async function flush(): Promise<void> {
   await act(async () => {
@@ -194,6 +225,7 @@ describe('useRefreshControl', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    Reflect.deleteProperty(HTMLElement.prototype, 'animate');
     window.matchMedia = originalMatchMedia;
     if (originalCss) {
       Object.defineProperty(window, 'CSS', originalCss);
@@ -914,8 +946,7 @@ describe('useRefreshControl', () => {
     expect(scroller.style.overscrollBehaviorY).toBe('');
   });
   it('at the trigger steps the spokes at once and fades a transient copy of them out over them', async () => {
-    // The animator settles a call on a timer at the end of its curve.
-    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+    const played = recordAnimations();
     let resolve: () => void = () => {};
     render(
       <SpokedRefreshable
@@ -942,20 +973,37 @@ describe('useRefreshControl', () => {
       expect(spoke.style.opacity).toBe('1');
       expect(spoke.childNodes).toHaveLength(0);
     }
-    // It fades out (the animator lands it at once here) and stays until the
-    // spring has settled, then it is gone: at rest the glyph holds its eight
-    // spokes alone.
-    expect(copy.style.opacity).toBe('0');
+    // Its one animation: 1 − w on the gradient spring until it settles, held
+    // at 0 until the copy is removed.
+    const fades = played.filter(p => p.element === copy);
+    expect(fades).toHaveLength(1);
+    const [{keyframes, options, animation}] = fades;
+    const settleMs =
+      solveSpring(toSpring(refreshControl.triggerGradientSpring), {
+        from: 0,
+        to: 1,
+      }).settleTime(SETTLE_THRESHOLD.opacity) * 1000;
+    expect(options).toEqual({
+      duration: settleMs,
+      easing: 'linear',
+      fill: 'forwards',
+    });
+    const opacities = keyframes.map(frame => Number(frame.opacity));
+    expect(opacities[0]).toBe(1);
+    expect(opacities.at(-1)).toBe(0);
+    opacities.slice(1).forEach((opacity, i) => {
+      expect(opacity).toBeLessThanOrEqual(opacities[i]);
+    });
+    // Its end removes it: at rest the glyph holds its eight spokes alone.
     expect(seen.removed).toEqual([]);
-    await act(async () => {
-      vi.advanceTimersByTime(10_000);
+    act(() => {
+      animation.onfinish?.();
     });
     await flush();
     expect(seen.removed).toEqual([copy]);
     expect(screen.getAllByTestId('spoke')).toHaveLength(
       refreshControl.indicatorSpokes,
     );
-    vi.useRealTimers();
     await act(async () => {
       resolve();
     });
@@ -966,8 +1014,7 @@ describe('useRefreshControl', () => {
     );
   });
 
-  it('under Reduce Motion fades the copy too, with the spokes stepping from the trigger', async () => {
-    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+  it('under Reduce Motion fades the copy in the shared 200 ms fade, the spokes stepping from the trigger', async () => {
     window.matchMedia = (query: string) =>
       ({
         matches: COARSE.test(query) || /prefers-reduced-motion/.test(query),
@@ -979,6 +1026,7 @@ describe('useRefreshControl', () => {
         removeEventListener: () => {},
         dispatchEvent: () => false,
       }) as MediaQueryList;
+    const played = recordAnimations();
     render(
       <SpokedRefreshable onRefresh={() => new Promise<void>(() => {})}>
         <p>Inbox</p>
@@ -989,13 +1037,29 @@ describe('useRefreshControl', () => {
     expect(indicator()).toHaveAttribute('data-refresh-spinning');
     await flush();
     expect(seen.added).toHaveLength(1);
-    // The animator's 200 ms cross-fade, then the copy is gone.
-    await act(async () => {
-      vi.advanceTimersByTime(1000);
+    const fade = played.find(p => p.element === seen.added[0]);
+    expect(fade?.keyframes).toEqual([{opacity: 1}, {opacity: 0}]);
+    expect(fade?.options.duration).toBe(timing.reducedMotionCrossFadeMs);
+    expect(fade?.options.easing).toMatch(/^cubic-bezier\(/);
+    act(() => {
+      fade?.animation.onfinish?.();
     });
     await flush();
-    vi.useRealTimers();
     expect(seen.removed).toEqual(seen.added);
+  });
+
+  it('without Web Animations steps at once and leaves no copy', async () => {
+    render(
+      <SpokedRefreshable onRefresh={() => new Promise<void>(() => {})}>
+        <p>Inbox</p>
+      </SpokedRefreshable>,
+    );
+    pull(content(), [30, 30, 30, 30]);
+    expect(indicator()).toHaveAttribute('data-refresh-spinning');
+    await flush();
+    expect(
+      (indicator().firstElementChild as HTMLElement).children,
+    ).toHaveLength(refreshControl.indicatorSpokes);
   });
 
   it('shows the gradient at once for a refresh begun without a pull', async () => {

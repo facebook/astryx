@@ -386,8 +386,8 @@ describe('RefreshControl indicator: UIRefreshControl\u2019s replicator', () => {
     const spring = table.triggerGradientSpring;
     expect(spring.damping).toBeCloseTo(2 * Math.sqrt(spring.stiffness), 2);
     // At rest the spokes run no animation: at the trigger the hook fades a
-    // transient copy of them out on the animator, so a theme that retunes the
-    // spring retunes it.
+    // transient copy of them out on the gradient spring under the theme, so a
+    // theme that retunes the spring retunes it.
     const spokes = Array.from(glyph.children) as HTMLElement[];
     for (const spoke of spokes) {
       expect(spoke.style.animationName).toBe('');

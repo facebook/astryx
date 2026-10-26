@@ -69,9 +69,10 @@ import {
 import {claimRootScrollStyle} from '@astryxdesign/core/gestures';
 import {useGestureRecognizer} from '@astryxdesign/core/gestures/useGestureRecognizer';
 import {
-  createAnimator,
+  SETTLE_THRESHOLD,
   type MotionCurve,
 } from '@astryxdesign/core/motion/animator';
+import {reducedMotionFade} from '@astryxdesign/core/motion/reducedMotion';
 import {cubicBezier} from '@astryxdesign/core/motion/bezier';
 import {resolveMotion} from '@astryxdesign/core/motion/resolveMotion';
 import {solveSpring, toSpring} from '@astryxdesign/core/motion/spring';
@@ -205,6 +206,44 @@ function derivative(
  * The refresh control's touch layer. The wiring owns the state and the
  * announcements; this owns everything a finger drives.
  */
+/**
+ * The trigger's cross-fade as Web Animation keyframes on the copy's opacity:
+ * 1 − w, w the gradient spring under the element's theme, until it settles
+ * where the animator's opacity springs do; or, under Reduce Motion, the
+ * shared opacity fade (reducedMotionFade).
+ */
+function crossFadeKeyframes(element: Element): {
+  frames: Keyframe[];
+  durationMs: number;
+  easing: string;
+} {
+  const fade = reducedMotionFade(element);
+  if (fade != null) {
+    return {
+      frames: [{opacity: 1}, {opacity: 0}],
+      durationMs: fade.duration,
+      easing: fade.easing,
+    };
+  }
+  const curve = solveSpring(
+    toSpring(resolveMotion(element, refreshControl.triggerGradientSpring)),
+    {from: 0, to: 1},
+  );
+  const durationMs = curve.settleTime(SETTLE_THRESHOLD.opacity) * 1000;
+  const count = Math.max(2, Math.ceil(durationMs / (1000 / 60)));
+  const frames: Keyframe[] = Array.from({length: count + 1}, (_, i) => ({
+    offset: i / count,
+    opacity:
+      i === count
+        ? 0
+        : Math.min(
+            1,
+            Math.max(0, 1 - curve.value(((i / count) * durationMs) / 1000)),
+          ),
+  }));
+  return {frames, durationMs, easing: 'linear'};
+}
+
 export function useRefreshTouchController({
   isPullEnabled,
   model,
@@ -359,9 +398,12 @@ export function useRefreshTouchController({
    * blending a copy at 1 − w over a spoke at g shows exactly 1 − w + w × g.
    * Each element runs one animation (the spokes their steps, the copy its
    * fade), so the cross-fade runs on the compositor and keeps going while a
-   * script holds the main thread; under Reduce Motion the animator makes the
-   * fade its 200 ms cross-fade. The copy is removed once its fade has ended
-   * (it holds 0 until then), so at rest the indicator draws its spokes once.
+   * script holds the main thread; under Reduce Motion the fade is the shared
+   * 200 ms opacity fade. It is a plain Web Animation, not the animator's: on a
+   * fresh element the animator's start-up cost a busy main thread's first
+   * frame one more interval in the settle proof. The copy is removed once its
+   * fade has ended (it holds 0 until then), so at rest the indicator draws its
+   * spokes once.
    */
   const playCrossFade = useCallback(() => {
     removeCrossFadeCopy();
@@ -381,18 +423,22 @@ export function useRefreshTouchController({
     }
     glyph.append(copy);
     crossFadeCopy.current = copy;
-    const fade = createAnimator(copy);
-    fade.set({opacity: 1});
-    void fade
-      .animate(
-        {opacity: 0},
-        {spring: refreshControl.triggerGradientSpring, velocity: {opacity: 0}},
-      )
-      .finished.then(() => {
-        if (crossFadeCopy.current === copy) {
-          removeCrossFadeCopy();
-        }
-      });
+    if (typeof copy.animate !== 'function') {
+      removeCrossFadeCopy();
+      return;
+    }
+    const keyframes = crossFadeKeyframes(glyph);
+    const animation = copy.animate(keyframes.frames, {
+      duration: keyframes.durationMs,
+      easing: keyframes.easing,
+      // Held at 0 until it is removed, however late the main thread is.
+      fill: 'forwards',
+    });
+    animation.onfinish = () => {
+      if (crossFadeCopy.current === copy) {
+        removeCrossFadeCopy();
+      }
+    };
   }, [removeCrossFadeCopy]);
 
   const resetIndicator = useCallback(() => {
