@@ -57,7 +57,7 @@ import {timing} from '../../motion/uikit/timing';
 const storybook = withStorybook(test);
 
 const TOGGLE_MS = datePicker.calendar.monthYearToggle.fadeMs;
-const ease = cubicBezier(...timing.curves.easeInOut);
+const ease = cubicBezier(...timing.curves.move);
 
 const STORY = 'core-dateinput--bottom-sheet-calendar';
 const DTI_STORY = 'core-datetimeinput--bottom-sheet-with-time-increment';

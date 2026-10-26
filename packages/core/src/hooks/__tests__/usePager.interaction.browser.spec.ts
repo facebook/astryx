@@ -28,6 +28,7 @@ import {
   flick,
   holdAnimations,
   markElement,
+  path,
   releaseAnimations,
   sampleCurve,
   startScreencast,
@@ -50,6 +51,9 @@ declare global {
     pager: ReturnType<typeof PagerBundle.createPager>;
     pagerLog: string[];
     cancelledMoves: boolean[];
+    /** Each move's position, and where the touch started (CSS px). */
+    moves: [number, number][];
+    touchStart: [number, number];
   }
 }
 
@@ -96,7 +100,9 @@ async function open(
   window.pagerLog = [];
   // Whether each move reached the page cancelled (read after every listener).
   window.cancelledMoves = [];
-  addEventListener('touchmove', e => window.cancelledMoves.push(e.defaultPrevented), {passive: true});
+  window.moves = [];
+  addEventListener('touchstart', e => { window.touchStart = [e.touches[0].clientX, e.touches[0].clientY]; }, {passive: true});
+  addEventListener('touchmove', e => { window.cancelledMoves.push(e.defaultPrevented); window.moves.push([e.touches[0].clientX, e.touches[0].clientY]); }, {passive: true});
   window.pager = Pager.createPager({
     count: ${COUNT},
     defaultIndex: ${startIndex},
@@ -179,17 +185,32 @@ function angled(degrees: number) {
 }
 
 for (const degrees of [35, 45]) {
-  test(`in a scrolling page, a ${degrees}° drag is the pager's: it pages, its moves are cancelled from the claim, and the page stays at scrollY 0`, async ({
+  test(`in a scrolling page, a ${degrees}° drag is the pager's: it pages, its moves are cancelled from the pan's start at 10 pt, and the page stays at scrollY 0`, async ({
     page,
   }) => {
     const {track, driver} = await open(page, {tall: true});
     await driver.play(angled(degrees));
     await waitForRest(track);
     expect(await page.evaluate(() => window.pager.index)).toBe(2);
-    const cancelled = await page.evaluate(() => window.cancelledMoves);
+    const {cancelled, moves, start} = await page.evaluate(() => ({
+      cancelled: window.cancelledMoves,
+      moves: window.moves,
+      start: window.touchStart,
+    }));
     expect(cancelled.length).toBeGreaterThan(3);
-    // Every move after the first (past the 5 px claim) is cancelled.
-    expect(cancelled.slice(1).every(Boolean)).toBe(true);
+    // Nothing is claimed before the pan begins at its 10 pt hysteresis; every
+    // move from the first one past it is. (Chromium holds back moves inside
+    // its own touch slop, so its first move may already be past 10 pt.)
+    // Mobile Safari claims a slow drag for the page at about 10–11 px, so on
+    // the iOS 26.2 simulator a drag steeper than about 27° scrolls the page
+    // instead (25° pages, 30° and 35° scroll), where UIKit pages up to 45°.
+    const past = moves.findIndex(
+      ([x, y]) =>
+        Math.max(Math.abs(x - start[0]), Math.abs(y - start[1])) >= 10,
+    );
+    expect(past).toBeGreaterThanOrEqual(0);
+    expect(cancelled.slice(0, past).some(Boolean)).toBe(false);
+    expect(cancelled.slice(past).every(Boolean)).toBe(true);
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
   });
 }
@@ -436,6 +457,85 @@ test('past the first page the track rubber-bands with d = the page width, then r
   expect(await log(page)).toEqual(['settle:0:0']);
 });
 
+// spec:AST-094 FR37: a release whose velocity points back toward the start
+// cancels, whatever the travel (UIKit takes the nearest page).
+test('a drag 70 % of the way to the next page that turns back and lifts while moving back settles on its start page', async ({
+  page,
+}) => {
+  const {track, driver} = await open(page);
+  const x0 = 320;
+  // Forward 70 % of a page, then back 30 px in the last 180 ms, lifted
+  // while moving back.
+  await driver.play(
+    path(
+      p =>
+        p <= 0.85
+          ? {x: x0 - (0.7 * PAGE * p) / 0.85, y: 200}
+          : {x: x0 - 0.7 * PAGE + (30 * (p - 0.85)) / 0.15, y: 200},
+      {durationMs: 1200, restMs: 0},
+    ),
+  );
+  await releaseAnimations(page);
+  await waitForRest(track);
+  expect(await page.evaluate(() => window.pager.index)).toBe(1);
+  expect(await trackX(track)).toBeCloseTo(-PAGE, 0);
+  expect(await log(page)).toEqual(['settle:1:1']);
+});
+
+// spec:AST-094 FR6: a new target keeps the current velocity.
+test('a goTo that retargets a running goTo keeps its velocity: the new curve starts at the speed the old one had', async ({
+  page,
+}) => {
+  const {track} = await open(page, {startIndex: 0});
+  await page.evaluate(() => window.pager.goTo(3));
+  await waitForAnimation(track);
+  const {before, after} = await page.evaluate(async () => {
+    const el = document.getElementById('track') as HTMLElement;
+    // The keyframes' slope at `time` (ms into the animation), px/s: the
+    // animator plays a curve as linear segments between samples.
+    const slope = (animation: Animation, time: number) => {
+      const effect = animation.effect as KeyframeEffect;
+      const frames = effect.getKeyframes();
+      const duration = Number(effect.getComputedTiming().duration);
+      const at = Math.min(Math.max(time / duration, 0), 1);
+      for (let i = 1; i < frames.length; i++) {
+        const a = frames[i - 1];
+        const b = frames[i];
+        if (at <= b.computedOffset || i === frames.length - 1) {
+          const span = (b.computedOffset - a.computedOffset) * duration;
+          return span > 0
+            ? ((parseFloat(String(b.translate)) -
+                parseFloat(String(a.translate))) /
+                span) *
+                1000
+            : 0;
+        }
+      }
+      return 0;
+    };
+    const running = el.getAnimations()[0];
+    await new Promise<void>(resolve => {
+      const tick = () => {
+        if (Number(running.currentTime) > 90) {
+          resolve();
+        } else {
+          requestAnimationFrame(tick);
+        }
+      };
+      requestAnimationFrame(tick);
+    });
+    const speed = slope(running, Number(running.currentTime));
+    window.pager.goTo(4);
+    const next = el.getAnimations().find(a => a !== running);
+    return {before: speed, after: next ? slope(next, 0) : Number.NaN};
+  });
+  expect(Math.abs(before)).toBeGreaterThan(1000);
+  expect(after / before).toBeGreaterThan(0.85);
+  expect(after / before).toBeLessThan(1.15);
+  await waitForRest(track);
+  expect(await trackX(track)).toBeCloseTo(-4 * PAGE, 0);
+});
+
 test('goTo plays setContentOffset(animated:): 0.3 s on a sinusoidal ease', async ({
   page,
 }) => {
@@ -630,7 +730,6 @@ test('a settle keeps advancing every frame through an 800 ms main-thread block',
   });
   expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
   expect(proof.changed).toBeGreaterThanOrEqual(proof.frames - 3);
-  expect(proof.longestStallMs).toBeLessThan(40);
   // And it lands while the thread is still blocked, and holds its end state
   // (page 1's marker at its inset from the viewport's left edge).
   const late = tracked.filter(

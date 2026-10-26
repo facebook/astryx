@@ -46,7 +46,7 @@ import {
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {useFieldInputStyling} from '../Field/fieldParts';
 import {joinAriaIDs} from '../utils/inputAria';
-import {groupStyles} from '../InputGroup/groupStyles';
+import {groupStyles, inputGroupItemProps} from '../InputGroup/groupStyles';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -58,7 +58,6 @@ import {useSize} from '../SizeContext/SizeContext';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {Wheel, type WheelOption} from '../DateInput/Wheel';
-import {WheelGroup} from '../DateInput/WheelGroup';
 import {useTouchPresentation} from '../utils/touchPresentation';
 import {dateInputTouchGeometry} from '../DateInput/tokens.stylex';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
@@ -472,6 +471,7 @@ export function TouchTimeField({
       ref={el => {
         disabledMessageTooltip.ref(el);
       }}
+      {...(inputGroup ? inputGroupItemProps : undefined)}
       {...mergeProps(
         themeProps('time-input', {
           size,
@@ -570,7 +570,7 @@ export function TouchTimeField({
                 }
               />
             ) : (
-              <WheelGroup>
+              <>
                 <Wheel
                   label={t('@astryx.dateTimeInput.hourWheel')}
                   options={hourOptions}
@@ -619,7 +619,7 @@ export function TouchTimeField({
                     }
                   />
                 )}
-              </WheelGroup>
+              </>
             )}
           </div>
           <div {...stylex.props(styles.footer)}>

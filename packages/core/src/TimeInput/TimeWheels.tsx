@@ -12,7 +12,7 @@
  *   (TouchTimeField.tsx) and of DateTimeInput's time panel
  *   (TouchDateTimeField.tsx)
  *
- * The columns are Wheels in one WheelGroup; this component adds what
+ * The columns are Wheels side by side; this component adds what
  * UIDatePicker adds on top of UIPickerView (motion/uikit/datePicker.ts
  * `wheels`, the rules in timeWheelRules.ts):
  *
@@ -60,7 +60,6 @@ import {useTranslator} from '../i18n';
 import {Wheel, type WheelHandle} from '../DateInput/Wheel';
 import {resolveMotion} from '../motion/resolveMotion';
 import {datePicker, registerDatePickerTable} from '../motion/uikit/datePicker';
-import {WheelGroup} from '../DateInput/WheelGroup';
 import {parseISOTime, type ISOTimeString} from '../utils';
 import {
   columnValue,
@@ -256,47 +255,45 @@ export function TimeWheels({
 
   return (
     <div ref={rootRef} {...stylex.props(styles.root)}>
-      <WheelGroup>
+      <Wheel
+        ref={hourRef}
+        label={t('@astryx.dateTimeInput.hourWheel')}
+        options={hourOptions}
+        value={columnValue(shown, 'hour', hourFormat)}
+        isLooping
+        isActive={isActive}
+        onChange={restOn('hour')}
+      />
+      <Wheel
+        ref={minuteRef}
+        label={t('@astryx.dateTimeInput.minuteWheel')}
+        options={minuteOptions}
+        value={shown.minute}
+        isLooping
+        isActive={isActive}
+        onChange={restOn('minute')}
+      />
+      {hasSeconds && (
         <Wheel
-          ref={hourRef}
-          label={t('@astryx.dateTimeInput.hourWheel')}
-          options={hourOptions}
-          value={columnValue(shown, 'hour', hourFormat)}
+          ref={secondRef}
+          label={t('@astryx.dateTimeInput.secondWheel')}
+          options={secondOptions}
+          value={shown.second}
           isLooping
           isActive={isActive}
-          onChange={restOn('hour')}
+          onChange={restOn('second')}
         />
+      )}
+      {hourFormat === '12h' && (
         <Wheel
-          ref={minuteRef}
-          label={t('@astryx.dateTimeInput.minuteWheel')}
-          options={minuteOptions}
-          value={shown.minute}
-          isLooping
+          ref={meridiemRef}
+          label={t('@astryx.dateTimeInput.meridiemWheel')}
+          options={meridiemOptions}
+          value={meridiemOf(shown.hour)}
           isActive={isActive}
-          onChange={restOn('minute')}
+          onChange={restOn('meridiem')}
         />
-        {hasSeconds && (
-          <Wheel
-            ref={secondRef}
-            label={t('@astryx.dateTimeInput.secondWheel')}
-            options={secondOptions}
-            value={shown.second}
-            isLooping
-            isActive={isActive}
-            onChange={restOn('second')}
-          />
-        )}
-        {hourFormat === '12h' && (
-          <Wheel
-            ref={meridiemRef}
-            label={t('@astryx.dateTimeInput.meridiemWheel')}
-            options={meridiemOptions}
-            value={meridiemOf(shown.hour)}
-            isActive={isActive}
-            onChange={restOn('meridiem')}
-          />
-        )}
-      </WheelGroup>
+      )}
     </div>
   );
 }

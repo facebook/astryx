@@ -34,6 +34,9 @@
  *   the end, and the bounce takes its velocity there.
  * - A release without velocity eases onto the nearest row at `snapRate`.
  * - A release past an end returns on the bounce spring.
+ * - A spring that has not settled by the animator's limit (an undamped
+ *   `scroll.bounce` a theme set) snaps onto its end there, as the animator's
+ *   own motion does (motion/animator.ts).
  *
  * SYNC: When modified, update:
  * - /packages/core/src/DateInput/wheelPhysics.test.ts
@@ -89,6 +92,13 @@ const UIKIT_ROW_HEIGHT = picker.geometry.rowHeight;
 
 /** Below half a device pixel at 3×, a motion is on its row. */
 const AT_REST_PT = 1 / 6;
+
+/**
+ * The longest a plan runs, s: the animator's limit (`MAX_DURATION_MS` in
+ * motion/animator.ts). A spring that has not settled by then (an undamped
+ * one, which never does) snaps onto its end.
+ */
+export const MAX_PLAN_SECONDS = 30;
 
 /** The constants' scale for a wheel whose rows are `rowHeight` px tall. */
 export function scaleFor(rowHeight: number): number {
@@ -229,7 +239,10 @@ export function bounceCurve(
     to,
     velocity,
   });
-  const duration = spring.settleTime(AT_REST_PT * scale);
+  const duration = Math.min(
+    MAX_PLAN_SECONDS,
+    spring.settleTime(AT_REST_PT * scale),
+  );
   return {
     duration,
     to,
@@ -261,11 +274,18 @@ export function edgeCurve(
     scale,
     bounceSpring,
   );
+  const duration = Math.min(MAX_PLAN_SECONDS, hit + bounce.duration);
   return {
-    duration: hit + bounce.duration,
+    duration,
     to: edge,
-    value: t => (t < hit ? decay.value(t) : bounce.value(t - hit)),
-    velocity: t => (t < hit ? decay.velocity(t) : bounce.velocity(t - hit)),
+    value: t =>
+      t >= duration ? edge : t < hit ? decay.value(t) : bounce.value(t - hit),
+    velocity: t =>
+      t >= duration
+        ? 0
+        : t < hit
+          ? decay.velocity(t)
+          : bounce.velocity(t - hit),
   };
 }
 
@@ -342,7 +362,7 @@ export function spinCurve(
   from: number,
   to: number,
   duration: number = picker.tapSpin.durationMs / 1000,
-  curve: readonly [number, number, number, number] = timing.curves.easeInOut,
+  curve: readonly [number, number, number, number] = timing.curves.move,
 ): WheelCurve {
   if (from === to || !(duration > 0)) {
     return restCurve(to);
