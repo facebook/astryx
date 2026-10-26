@@ -220,6 +220,11 @@ const styles = stylex.create({
       default: 'none',
       '@media (pointer: coarse)': 'manipulation',
     },
+    // The control's text is never selectable. WebKit applies only the
+    // prefixed property, so both are written; a held finger on the track
+    // then starts no selection either (spec:AST-094 FR41 keeps an element's
+    // always-on suppression as it is).
+    WebkitUserSelect: 'none',
     userSelect: 'none',
     isolation: 'isolate',
   },

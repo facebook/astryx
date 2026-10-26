@@ -792,9 +792,11 @@ test('a finger held on a thumb or on the track starts no selection: the thumb’
         const style = getComputedStyle(node);
         return {
           inline: (node as HTMLElement).style.getPropertyValue('user-select'),
+          // WebKit applies only the prefixed property (it reads the
+          // standard one back as `text`); Chromium reports both.
           computed:
-            style.getPropertyValue('user-select') ||
-            style.getPropertyValue('-webkit-user-select'),
+            style.getPropertyValue('-webkit-user-select') ||
+            style.getPropertyValue('user-select'),
           selected: String(getSelection() ?? ''),
         };
       });
