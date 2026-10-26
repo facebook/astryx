@@ -7,15 +7,7 @@ export const docs = {
   displayName: 'Chat Reasoning',
   group: 'Chat',
   category: 'Chat',
-  keywords: [
-    'reasoning',
-    'thinking',
-    'thought',
-    'chain-of-thought',
-    'chat',
-    'llm',
-    'ai',
-  ],
+  keywords: ['reasoning', 'thinking', 'thought', 'chain-of-thought', 'chat', 'llm', 'ai'],
 
   usage: {
     description:
@@ -43,8 +35,7 @@ export const docs = {
     {
       name: 'isStreaming',
       type: 'boolean',
-      description:
-        'Whether reasoning content is actively streaming. Displays animated shimmer effect.',
+      description: 'Whether reasoning content is actively streaming. Displays animated shimmer effect.',
       default: 'false',
     },
     {
