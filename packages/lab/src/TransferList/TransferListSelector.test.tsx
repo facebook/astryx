@@ -9,7 +9,7 @@
  * SYNC: When TransferListSelector.tsx behavior changes, update this test.
  */
 
-import {Profiler, useState} from 'react';
+import {Profiler, useMemo, useRef, useState} from 'react';
 import {afterAll, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   fireEvent,
@@ -24,6 +24,7 @@ import {
   type TransferListSelectorProps,
 } from './TransferListSelector';
 import type {TransferListOption} from './TransferList';
+import {createReorderable} from '@astryxdesign/core/reorderable';
 
 type Column = 'name' | 'owner' | 'status' | 'updated';
 
@@ -71,6 +72,8 @@ afterAll(() => {
 type HarnessProps = {
   initialValue?: readonly Column[];
   onCommit: (value: readonly Column[]) => void;
+  /** The owner's reorderable object's `isReorderable`. */
+  isMovable?: (value: Column) => boolean;
   selectorProps?: Partial<
     Omit<
       TransferListSelectorProps<Column>,
@@ -83,8 +86,25 @@ function Harness({
   initialValue = ['name', 'status'],
   onCommit,
   selectorProps,
+  isMovable,
 }: HarnessProps) {
   const [value, setValue] = useState<readonly Column[]>(initialValue);
+  const valueRef = useRef(value);
+  valueRef.current = value;
+  // The owner's reorder: each move it is handed applies to its value.
+  const reorderable = useMemo(
+    () =>
+      createReorderable<Column>({
+        onReorder: ({key, to}) => {
+          const rest = valueRef.current.filter(item => item !== key);
+          const next = [...rest.slice(0, to), key, ...rest.slice(to)];
+          onCommit(next);
+          setValue(next);
+        },
+        isReorderable: isMovable,
+      }),
+    [isMovable, onCommit],
+  );
 
   return (
     <>
@@ -97,6 +117,7 @@ function Harness({
           onCommit(nextValue);
           setValue(nextValue);
         }}
+        reorderable={reorderable}
         {...selectorProps}
       />
     </>
@@ -301,14 +322,14 @@ describe('TransferListSelector', () => {
     expect(onCommit).toHaveBeenCalledWith(['status', 'name', 'updated']);
   });
 
-  it('keeps in place the values a function isReorderable rejects, and commits immediate moves at once', async () => {
+  it('keeps in place the values the owner\u2019s isReorderable rejects, and hands immediate moves to the owner at once', async () => {
     const user = userEvent.setup();
     const onCommit = vi.fn();
     render(
       <Harness
         initialValue={['owner', 'name', 'status']}
         onCommit={onCommit}
-        selectorProps={{isReorderable: value => value !== 'owner'}}
+        isMovable={value => value !== 'owner'}
       />,
     );
     await waitForPanelFocus(await openSelector());
@@ -604,7 +625,6 @@ describe('TransferListSelector', () => {
         availableLabel="Hidden"
         hasSearch
         searchPlaceholder="Find a column"
-        isReorderable={false}
         hasSelectAll
         hasClear
         commitBehavior="staged"

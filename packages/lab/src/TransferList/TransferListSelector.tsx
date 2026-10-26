@@ -24,7 +24,11 @@ import {
 import {useTranslator} from '@astryxdesign/core/i18n';
 import {HStack} from '@astryxdesign/core/Stack';
 import {borderVars, colorVars} from '@astryxdesign/core/theme/tokens.stylex';
-import {createReorderable} from '@astryxdesign/core/reorderable';
+import {
+  createReorderable,
+  type Reorderable,
+} from '@astryxdesign/core/reorderable';
+import {reorderableOptions} from '@astryxdesign/core/internal/reorder';
 import {TransferList, type TransferListProps} from './TransferList';
 
 const DEFAULT_SELECTOR_WIDTH = 'min(41rem, calc(100vw - 32px))';
@@ -136,14 +140,14 @@ export type TransferListSelectorProps<T extends string = string> = Pick<
     /** Label for the staged discard action. Only used in staged behavior. @default 'Cancel' */
     cancelLabel?: string;
     /**
-     * Whether the selected options reorder: `true` for all of them, `false`
-     * for none, or a function that says which values move (one it rejects
-     * at either end of the list also keeps the others from moving past it).
-     * The selector owns the reorder: a staged move changes the draft, so
-     * Cancel drops it with the draft, and an immediate one commits at once.
-     * @default true
+     * Makes the selected options reorderable (spec:AST-103): pass the object
+     * `createReorderable` makes. Its `isReorderable(value)` says which values
+     * move. An immediate selector hands each move to its `onReorder`; a
+     * staged one moves its draft instead, so Cancel drops the move with the
+     * draft and Apply commits it through `onChange`. Without it, the
+     * selected options keep their order.
      */
-    isReorderable?: boolean | ((value: T) => boolean);
+    reorderable?: Reorderable<T>;
   };
 
 /** `value` with `key` moved to index `to`. */
@@ -218,7 +222,7 @@ export function TransferListSelector<T extends string = string>({
   hasSearch,
   searchLabel,
   searchPlaceholder,
-  isReorderable = true,
+  reorderable: ownerReorderable,
   hasSelectAll,
   hasClear,
   renderOption,
@@ -276,27 +280,31 @@ export function TransferListSelector<T extends string = string>({
       {(appliedValue, commit, close, state) => {
         const isStaged = commitBehavior === 'staged';
         const transferListValue = isStaged ? draftValue : appliedValue;
-        // The selector's own reorder, aimed at the draft when staged and at
-        // the applied value when immediate. Made each render, so a move
-        // reads this render's value (the object may be made anew).
+        // The owner's reorder, aimed at the draft when staged and handed to
+        // the owner when immediate, with the owner's `isReorderable`. Made
+        // each render, so a move reads this render's value (the object may
+        // be made anew).
+        const owner =
+          ownerReorderable == null
+            ? undefined
+            : reorderableOptions(ownerReorderable);
         const reorderable =
-          isReorderable === false
-            ? false
+          owner == null
+            ? undefined
             : createReorderable<T>({
-                onReorder: ({key, to}) => {
+                onReorder: move => {
                   if (state.isBusy) {
                     return;
                   }
                   if (isStaged) {
-                    setDraftValue(current => moveValue(current, key, to));
+                    setDraftValue(current =>
+                      moveValue(current, move.key, move.to),
+                    );
                   } else {
-                    commit([...moveValue(appliedValue, key, to)]);
+                    owner.onReorder(move);
                   }
                 },
-                isReorderable:
-                  typeof isReorderable === 'function'
-                    ? isReorderable
-                    : undefined,
+                isReorderable: owner.isReorderable,
               });
 
         return (

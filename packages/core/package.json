@@ -714,6 +714,11 @@
       "types": "./dist/reorderable/index.d.ts",
       "default": "./dist/reorderable/index.js"
     },
+    "./internal/reorder": {
+      "source": "./src/internal/reorder/index.ts",
+      "types": "./dist/internal/reorder/index.d.ts",
+      "default": "./dist/internal/reorder/index.js"
+    },
     "./theme": {
       "source": "./src/theme/index.ts",
       "types": "./dist/theme/index.d.ts",

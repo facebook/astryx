@@ -45,7 +45,7 @@ export const docs = {
       name: 'options',
       type: 'readonly TransferListOption<T>[]',
       description:
-        "Complete option pool. Each option has value and label, with optional searchable description metadata, group, an isTransferDisabled constraint, and disabledMessage. Which options keep their place is isReorderable's.",
+        "Complete option pool. Each option has value and label, with optional searchable description metadata, group, an isTransferDisabled constraint, and disabledMessage. Which options keep their place is the reorderable object's isReorderable.",
       required: true,
     },
     {
@@ -119,11 +119,10 @@ export const docs = {
       default: "'Search...'",
     },
     {
-      name: 'isReorderable',
-      type: 'boolean | ((value: T) => boolean)',
+      name: 'reorderable',
+      type: 'Reorderable<T>',
       description:
-        "Gives the selected options a reorder handle at the end of each row (core's createReorderable on the selected List): on a touch screen hold the handle for a moment, then drag; a mouse drags at once; a tap, a click, Space or Enter on a handle turns on reorder mode for its row, in which each arrow key (or each move in the hint below the handle) moves it a place, and Escape, Done or another activation ends the mode, keeping the moves. A function says which values move: one it rejects has no handle, and at either end of the selected list it also keeps the others from moving past it. The selector owns the reorder: in staged behavior a move changes the draft, so Cancel drops it with the draft; in immediate behavior it commits at once. Reordering pauses while a search filters the panel.",
-      default: 'true',
+        "Makes the selected options reorderable: pass the object createReorderable makes. Each selected row ends with a reorder handle: on a touch screen hold the handle for a moment, then drag; a mouse drags at once; a tap, a click, Space or Enter on a handle turns on reorder mode for its row, in which each arrow key (or each move in the hint below the handle) moves it a place, and Escape, Done or another activation ends the mode, keeping the moves. The object's isReorderable(value) says which values move: one it rejects has no handle, and at either end of the selected list it also keeps the others from moving past it. In immediate behavior each move goes to the object's onReorder({key, to}); in staged behavior the selector moves its draft instead, so Cancel drops the move with the draft and Apply commits it through onChange. Reordering pauses while a search filters the panel. Without it, the selected options keep their order.",
     },
     {
       name: 'hasSelectAll',
@@ -338,10 +337,9 @@ export const docs = {
         },
         {
           name: 'reorderable',
-          type: 'boolean | Reorderable<T>',
+          type: 'Reorderable<T>',
           description:
-            'Ordering through a reorder handle at the end of each selected row. true gives every selected option a handle and reports each move through onChange; false turns ordering off. An object made with createReorderable takes over: its isReorderable(value) decides which options move (one it rejects at either end of the list also keeps the others from moving past it), and each move goes to its onReorder({key, to}), to being the index of the value in value after the move, instead of onChange.',
-          default: 'true',
+            'Makes the selected options reorderable through a handle at the end of each row: pass the object createReorderable makes. Its isReorderable(value) decides which options move (one it rejects at either end of the list also keeps the others from moving past it), and each move goes to its onReorder({key, to}), to being the index of the value in value after the move. Without it, the selected options keep their order.',
         },
         {
           name: 'hasSelectAll',
@@ -410,7 +408,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use isTransferDisabled and isReorderable independently: isTransferDisabled pins an option to its panel, and an isReorderable function keeps an option in its place. Provide disabledMessage when a transfer is unavailable so the constraint is discoverable; a row that keeps its place shows no reorder handle, so say why in its content when it matters.',
+          "Use isTransferDisabled and the reorderable object's isReorderable independently: isTransferDisabled pins an option to its panel, and isReorderable keeps an option in its place. Provide disabledMessage when a transfer is unavailable so the constraint is discoverable; a row that keeps its place shows no reorder handle, so say why in its content when it matters.",
       },
       {
         guidance: true,
@@ -548,7 +546,17 @@ export const docs = {
     },
     {
       label: 'Independent transfer and reorder constraints',
-      code: `<TransferListSelector
+      code: `const reorderable = useMemo(
+  () =>
+    createReorderable({
+      onReorder: ({key, to}) => setFields(fields => moveTo(fields, key, to)),
+      // Status keeps its place, but can be removed.
+      isReorderable: value => value !== 'status',
+    }),
+  [],
+);
+
+<TransferListSelector
   label="Visible fields"
   options={[
     {
@@ -560,8 +568,7 @@ export const docs = {
     {value: 'status', label: 'Status'},
     {value: 'owner', label: 'Owner'},
   ]}
-  // Status keeps its place, but can be removed.
-  isReorderable={value => value !== 'status'}
+  reorderable={reorderable}
   value={fields}
   onChange={setFields}
 />`,
@@ -703,8 +710,8 @@ export const docsDense = {
     hasSearch: 'Shared list filter; default false.',
     searchLabel: 'Accessible search label.',
     searchPlaceholder: 'Search placeholder.',
-    isReorderable:
-      'Ordering through a trailing reorder handle (touch hold, mouse drag, keys): true, false, or a function saying which values move; default true; staged moves change the draft; paused while searching.',
+    reorderable:
+      'createReorderable object for a trailing reorder handle (touch hold, mouse drag, keys); its isReorderable says which values move; staged moves change the draft; paused while searching.',
     hasSelectAll: 'Add all transfer-enabled available options.',
     hasClear: 'Remove all transfer-enabled selected options.',
     renderOption: 'Custom row content.',
@@ -750,7 +757,7 @@ export const docsDense = {
         searchLabel: 'Accessible search label.',
         searchPlaceholder: 'Search placeholder.',
         reorderable:
-          'true (moves through onChange), false, or a createReorderable object (its isReorderable says which values move; its onReorder gets {key, to} in value terms); default true; paused while searching.',
+          'createReorderable object (its isReorderable says which values move; its onReorder gets {key, to} in value terms); paused while searching.',
         hasSelectAll: 'Add all transfer-enabled options.',
         hasClear: 'Remove all transfer-enabled selected options.',
         renderOption: 'Custom row content.',

@@ -78,11 +78,12 @@ type ControlledTransferListProps = Omit<
   onValueChange?: (value: readonly string[]) => void;
   options?: ReadonlyArray<TransferListOption<string>>;
   /**
-   * Values that keep their place: the helper then owns a reorderable object
-   * whose `isReorderable` rejects them and whose `onReorder` applies each
-   * move to its value.
+   * Values that keep their place: the helper's reorderable object rejects
+   * them in `isReorderable`. Its `onReorder` applies each move to its value.
    */
   fixed?: readonly string[];
+  /** Pass no reorderable object, so the selected options keep their order. */
+  isUnordered?: boolean;
 };
 
 function ControlledTransferList({
@@ -90,12 +91,13 @@ function ControlledTransferList({
   onValueChange,
   options = OPTIONS,
   fixed,
+  isUnordered = false,
   ...props
 }: ControlledTransferListProps) {
   const [value, setValue] = useState<readonly string[]>(initialValue);
   const reorderable = useMemo(
     () =>
-      fixed == null
+      isUnordered
         ? undefined
         : createReorderable<string>({
             onReorder: ({key, to}) =>
@@ -104,9 +106,10 @@ function ControlledTransferList({
                 onValueChange?.(next);
                 return next;
               }),
-            isReorderable: key => !fixed.includes(key),
+            isReorderable:
+              fixed == null ? undefined : key => !fixed.includes(key),
           }),
-    [fixed, onValueChange],
+    [fixed, isUnordered, onValueChange],
   );
 
   return (
@@ -342,7 +345,7 @@ describe('TransferList', () => {
         <ControlledTransferList
           initialValue={['name']}
           hasSearch
-          reorderable={false}
+          isUnordered
         />,
       );
 
@@ -586,7 +589,7 @@ describe('TransferList', () => {
       expect(screen.getByRole('button', {name: 'Reorder Name'})).toBeVisible();
     });
 
-    it('keeps values without an option in place when a row moves', async () => {
+    it('reports each move so the owner keeps the shown rows in the order the list shows, around a value without an option', async () => {
       const user = userEvent.setup();
       const onValueChange = vi.fn();
       render(
@@ -595,65 +598,22 @@ describe('TransferList', () => {
           onValueChange={onValueChange}
         />,
       );
+      // The rows the list shows: every value with an option, in value order.
+      const shown = () =>
+        (onValueChange.mock.lastCall?.[0] as readonly string[]).filter(
+          value => value !== 'retired',
+        );
       screen.getByRole('button', {name: 'Reorder Owner'}).focus();
-      await user.keyboard(' {ArrowDown}{Escape}');
-      expect(onValueChange).toHaveBeenLastCalledWith([
-        'name',
-        'retired',
-        'status',
-        'owner',
-      ]);
-      await user.keyboard(' {ArrowUp}{ArrowUp}{Escape}');
-      // The value without an option keeps its own slot.
-      expect(onValueChange).toHaveBeenLastCalledWith([
-        'owner',
-        'retired',
-        'name',
-        'status',
-      ]);
-    });
-
-    it('undoes a move with its inverse, around a value without an option', async () => {
-      const user = userEvent.setup();
-      const onValueChange = vi.fn();
-      render(
-        <ControlledTransferList
-          initialValue={['name', 'retired', 'owner', 'status']}
-          onValueChange={onValueChange}
-        />,
-      );
-      // Owner up a place, then back down.
-      screen.getByRole('button', {name: 'Reorder Owner'}).focus();
-      await user.keyboard(' {ArrowUp}');
-      expect(onValueChange).toHaveBeenLastCalledWith([
-        'owner',
-        'retired',
-        'name',
-        'status',
-      ]);
-      await user.keyboard('{ArrowDown}{Escape}');
-      expect(onValueChange).toHaveBeenLastCalledWith([
-        'name',
-        'retired',
-        'owner',
-        'status',
-      ]);
-      // Name down a place, then back up.
-      screen.getByRole('button', {name: 'Reorder Name'}).focus();
       await user.keyboard(' {ArrowDown}');
-      expect(onValueChange).toHaveBeenLastCalledWith([
-        'owner',
-        'retired',
-        'name',
-        'status',
-      ]);
-      await user.keyboard('{ArrowUp}{Escape}');
-      expect(onValueChange).toHaveBeenLastCalledWith([
-        'name',
-        'retired',
-        'owner',
-        'status',
-      ]);
+      expect(shown()).toEqual(['name', 'status', 'owner']);
+      await user.keyboard('{ArrowUp}{ArrowUp}{Escape}');
+      expect(shown()).toEqual(['owner', 'name', 'status']);
+      // The value without an option stays in the value, wherever the owner
+      // places it.
+      expect(onValueChange.mock.lastCall?.[0]).toContain('retired');
+      screen.getByRole('button', {name: 'Reorder Name'}).focus();
+      await user.keyboard(' {ArrowDown}{Escape}');
+      expect(shown()).toEqual(['owner', 'status', 'name']);
     });
   });
 

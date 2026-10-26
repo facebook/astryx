@@ -170,12 +170,33 @@ const BASIC_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
   {value: 'created', label: 'Created', description: 'Original creation time'},
 ];
 
+/** The owner's reorder: each move lands in `setValue`'s value where reported. */
+function useMoveReorderable<T extends string>(
+  setValue: (update: (value: readonly T[]) => readonly T[]) => void,
+  isReorderable?: (value: T) => boolean,
+) {
+  return useMemo(
+    () =>
+      createReorderable<T>({
+        onReorder: ({key, to}) =>
+          setValue(current => {
+            const next = current.filter(item => item !== key);
+            next.splice(to, 0, key);
+            return next;
+          }),
+        isReorderable,
+      }),
+    [setValue, isReorderable],
+  );
+}
+
 function DefaultExample() {
   const [value, setValue] = useState<readonly string[]>([
     'name',
     'owner',
     'status',
   ]);
+  const reorderable = useMoveReorderable(setValue);
   return (
     <TransferList
       label="Visible fields"
@@ -183,6 +204,7 @@ function DefaultExample() {
       options={BASIC_OPTIONS}
       value={value}
       onChange={setValue}
+      reorderable={reorderable}
       selectedLabel="Visible fields"
       availableLabel="Available fields"
       hasSelectAll
@@ -303,14 +325,13 @@ function UnorderedExample() {
       onChange={setValue}
       selectedLabel="Included"
       availableLabel="Not included"
-      reorderable={false}
       hasSelectAll
       hasClear
     />
   );
 }
 
-/** `reorderable={false}` for selections where order carries no meaning. */
+/** No `reorderable` for selections where order carries no meaning. */
 export const Unordered: Story = {
   render: () => <UnorderedExample />,
 };
@@ -330,6 +351,7 @@ function SearchableExample() {
   const [value, setValue] = useState<readonly string[]>(
     LARGE_POOL_OPTIONS.slice(0, 12).map(option => option.value),
   );
+  const reorderable = useMoveReorderable(setValue);
   return (
     <TransferList
       label="Report fields"
@@ -337,6 +359,7 @@ function SearchableExample() {
       options={LARGE_POOL_OPTIONS}
       value={value}
       onChange={setValue}
+      reorderable={reorderable}
       selectedLabel="In report"
       availableLabel="Available"
       hasSearch
@@ -646,6 +669,12 @@ function TableColumnSettingsExample() {
     setDraftColumns(nextColumns);
     setActiveSavedView(findSavedViewValue(nextColumns));
   };
+  // The draft is the order being edited, so a reorder moves the draft.
+  const draftColumnsRef = useRef(draftColumns);
+  draftColumnsRef.current = draftColumns;
+  const draftReorderable = useMoveReorderable<ProjectColumnKey>(update =>
+    changeDraftColumns(update(draftColumnsRef.current)),
+  );
 
   const saveCurrentColumnsAsView = () => {
     const nextNumber = nextSavedViewNumberRef.current;
@@ -724,6 +753,7 @@ function TableColumnSettingsExample() {
                   options={PROJECT_TRANSFER_OPTIONS}
                   value={draftColumns}
                   onChange={changeDraftColumns}
+                  reorderable={draftReorderable}
                   selectedLabel="Visible fields"
                   availableLabel="Available fields"
                   hasSearch

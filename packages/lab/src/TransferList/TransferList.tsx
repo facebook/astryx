@@ -34,9 +34,9 @@ import {List, ListItem} from '@astryxdesign/core/List';
 import {
   createReorderable,
   type Reorderable,
-  type ReorderableOptions,
   type ReorderMove,
 } from '@astryxdesign/core/reorderable';
+import {reorderableOptions} from '@astryxdesign/core/internal/reorder';
 import {Text} from '@astryxdesign/core/Text';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
@@ -121,17 +121,16 @@ export interface TransferListProps<T extends string = string> extends Omit<
   /** Search input placeholder. @default 'Search…' */
   searchPlaceholder?: string;
   /**
-   * Reordering of the selected options, through core List's reorder handle
-   * (touch hold, mouse drag, keys, reorder mode). `true` gives every
-   * selected option a handle and reports each move through `onChange`;
-   * `false` turns reordering off. An object made with `createReorderable`
-   * takes over: its `isReorderable(value)` decides which options move (one
-   * it rejects at either end of the list also keeps the others from moving
-   * past it), and each move goes to its `onReorder({key, to})`, `to` being
-   * the value's index in `value` after the move, instead of `onChange`.
-   * Paused while a search filters the panel. @default true
+   * Makes the selected options reorderable through core List's reorder
+   * handle (touch hold, mouse drag, keys, reorder mode; spec:AST-103): pass
+   * the object `createReorderable` makes. Its `isReorderable(value)` decides
+   * which options move (one it rejects at either end of the list also keeps
+   * the others from moving past it), and each move goes to its
+   * `onReorder({key, to})`, `to` being the value's index in `value` after
+   * the move. Paused while a search filters the panel. Without it, the
+   * selected options keep their order.
    */
-  reorderable?: boolean | Reorderable<T>;
+  reorderable?: Reorderable<T>;
   /** Shows an Add all action. @default false */
   hasSelectAll?: boolean;
   /** Shows a Clear action. Transfer-disabled selected options are retained. */
@@ -311,18 +310,6 @@ function matchesQuery<T extends string>(
 }
 
 /**
- * The options an owner's reorderable object was made with: its
- * `isReorderable` and `onReorder`. Until Core's internal reorder subpath
- * ships (Lab may use Core's internals), this reads the field Core's
- * `createReorderable` keeps them in.
- */
-function reorderableOptionsOf<T extends string>(
-  reorderable: Reorderable<T>,
-): ReorderableOptions<T> {
-  return (reorderable as unknown as {options: ReorderableOptions<T>}).options;
-}
-
-/**
  * A controlled dual-panel collection input for choosing and ordering values.
  * Selection, ordering, drafts, persistence, and saved views stay explicit in
  * the consumer; this component owns only search and active gesture state.
@@ -350,7 +337,7 @@ export function TransferList<T extends string = string>({
   hasSearch = false,
   searchLabel,
   searchPlaceholder: searchPlaceholderFromProps,
-  reorderable: reorderableProp = true,
+  reorderable: reorderableProp,
   hasSelectAll = false,
   hasClear = false,
   renderOption,
@@ -542,14 +529,10 @@ export function TransferList<T extends string = string>({
   // The selected panel's rows, in order, as List reports a move among them.
   // Reordering is off while a search filters the panel: a hidden row that
   // keeps its place could otherwise move past the visible ones.
-  const isOrdering = reorderableProp !== false && normalizedQuery === '';
-  // An owner's object (the staged selector's, for one) decides which values
-  // move and takes each move; without one every value moves and the moves
-  // go through onChange.
+  const isOrdering = reorderableProp != null && normalizedQuery === '';
+  // The owner's object decides which values move and takes each move.
   const owner =
-    typeof reorderableProp === 'object'
-      ? reorderableOptionsOf(reorderableProp)
-      : undefined;
+    reorderableProp == null ? undefined : reorderableOptions(reorderableProp);
   const canMove = useCallback(
     (optionValue: T) => owner?.isReorderable?.(optionValue) ?? true,
     [owner],
@@ -573,14 +556,13 @@ export function TransferList<T extends string = string>({
         isShown.has(item) ? order[next++] : item,
       );
       if (owner == null) {
-        commit(nextValue);
         return;
       }
       // In the value's terms: where the moved value lands. Moving it there
       // keeps the shown rows in this order.
       owner.onReorder({key: key as T, to: nextValue.indexOf(key as T)});
     },
-    [commit, owner, selectedOptions],
+    [owner, selectedOptions],
   );
   const reorderable = useMemo(
     () =>
