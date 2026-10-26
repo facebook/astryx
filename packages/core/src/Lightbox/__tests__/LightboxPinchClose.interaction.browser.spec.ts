@@ -15,7 +15,8 @@
  *   that starts zoomed gives way below the fitted size and never closes; the
  *   close keeps changing the screen every frame through a blocked main
  *   thread; under Reduce Motion (design:reduced-motion) the close fades the
- *   photo out in place in 200 ms or less; a storyboard of a pinch closing.
+ *   photo out in place and a release at 0.966 returns to the fitted size by
+ *   a fade, each in 200 ms or less; a storyboard of a pinch closing.
  *   Every case runs under a finger (a coarse pointer), in Chromium and
  *   WebKit alike
  * @position Interaction tests for Lightbox (browser), beside
@@ -457,6 +458,52 @@ test('the close keeps moving every frame while the main thread is blocked', asyn
   expect(stats.changed).toBeGreaterThanOrEqual(expected - 2);
   expect(stats.longestStallMs).toBeLessThan(cadence * 2.5);
   await expect(v.dialog).toBeHidden();
+});
+
+test('under Reduce Motion a release at 0.966 returns to the fitted size by a fade, not a spring', async ({
+  page,
+}) => {
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const v = await openViewer(page);
+  // 300 → 282 px: the recognizer reads 0.966, which springs back.
+  await v.driver.play(
+    pinch({
+      center: v.centre,
+      fromDistance: 300,
+      toDistance: 282,
+      durationMs: 300,
+      restMs: 150,
+    }),
+  );
+  await waitForAnimation(v.photo);
+  const released = await v.scale();
+  const held = await holdAnimations(page, v.photo);
+  const duration = Math.max(...held.map(a => a.curveEndMs));
+  const samples = await sampleCurve(v.photo, timeline(duration));
+  await releaseAnimations(page);
+  const scales = curveOf(samples, 'scaleX');
+  const opacity = curveOf(samples, 'opacity');
+  // design:reduced-motion DR2: a return the component starts at the lift
+  // cross-fades, opacity only, in 200 ms or less.
+  expect(duration).toBeLessThanOrEqual(205);
+  expect(released).toBeLessThan(0.98);
+  // No travel: the photo shows at the scale the fingers left it or at the
+  // fitted size, never in between, and dips out and back in between them.
+  for (const sample of scales) {
+    const atRelease = Math.abs(sample.value - released) < 0.002;
+    const atFit = Math.abs(sample.value - 1) < 0.002;
+    expect(atRelease || atFit, `scale ${sample.value} at ${sample.t} ms`).toBe(
+      true,
+    );
+  }
+  expect(Math.min(...opacity.map(s => s.value))).toBeLessThan(0.5);
+  await waitForRest(v.photo);
+  await expect(v.dialog).toBeVisible();
+  expect(await v.scale()).toBe(1);
+  expect(
+    await v.photo.evaluate(el => parseFloat(getComputedStyle(el).opacity)),
+  ).toBe(1);
+  expect(await v.backdropAlpha()).toBeCloseTo(1, 2);
 });
 
 test('under Reduce Motion the pinch close fades the photo out in place', async ({
