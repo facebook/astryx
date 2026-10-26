@@ -111,9 +111,9 @@ export interface LightboxProps extends BaseProps<HTMLDialogElement> {
    */
   onIndexChange?: (index: number) => void;
   /**
-   * Enable zoom (images only): pinch, double-tap or double-click to zoom in
-   * at that point, or Enter/Space/`+`/`-` via keyboard. When zoomed, drag
-   * or use arrow keys to pan.
+   * Enable zoom (images only): on a touch screen, pinch or double-tap to
+   * zoom in at that point; a double-click or Enter/Space/`+`/`-` zooms 2×
+   * about the centre. When zoomed, drag or use arrow keys to pan.
    * @default false
    */
   hasZoom?: boolean;
@@ -190,9 +190,11 @@ const styles = stylex.create({
     userSelect: 'none',
     minHeight: 0,
   },
-  // The stage's own pinch, pan and double tap take every touch on it. Only
-  // the stage: the controls and caption leave pinch-zoom to the page. On a
-  // touch screen it fills the viewer (mediaGroupZoom, imageWrapperFill).
+  // Under the touch layer, the stage's own pinch, pan and double tap take
+  // every touch on it. Only the stage: the controls and caption leave
+  // pinch-zoom to the page. On a touch screen it fills the viewer
+  // (mediaGroupZoom, imageWrapperFill). Where the primary pointer is fine no
+  // recognizer runs, so the browser keeps the touches (spec:AST-094 FR19).
   imageWrapperZoomTarget: {
     touchAction: 'none',
   },
@@ -529,6 +531,7 @@ export function Lightbox({
   const zoom = useZoomCore({
     stageRef: imageWrapperRef,
     isEnabled: isOpen && isZoomTarget,
+    isTouch,
     itemKey: viewedItem,
     onZoomedChange: next => {
       setIsZoomed(next);
@@ -684,7 +687,7 @@ export function Lightbox({
                 }
                 {...stylex.props(
                   styles.imageWrapper,
-                  isZoomTarget && styles.imageWrapperZoomTarget,
+                  isZoomTarget && isTouch && styles.imageWrapperZoomTarget,
                   isZoomTarget && isTouch && styles.imageWrapperFill,
                   isZoomTarget && focusOutlineStyles.focusVisible,
                   isZoomTarget && !isZoomed && styles.imageWrapperZoomable,

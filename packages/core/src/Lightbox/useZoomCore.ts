@@ -5,12 +5,15 @@
 /**
  * @file useZoomCore.ts
  * @input A stage element ref (clipping, centring the photo), whether zoom is
- *   on, the current item's key, and callbacks for zoom changes and drags
+ *   on, whether the touch layer is on, the current item's key, and callbacks
+ *   for zoom changes and drags
  * @output Exports `useZoomCore`: Lightbox's zoom stage for every pointer —
  *   the photo's transform, written through the compositor animator; its
- *   geometry; UIScrollView's eased settle; the keyboard's zoom and pan; a
- *   mouse double-click to the clicked point and back; and a mouse drag that
- *   pans a zoomed photo and stops at its edges — plus the callback ref for
+ *   geometry; UIScrollView's eased settle; Lightbox's released zoom for the
+ *   keyboard and a double-click (2x about the centre and back over a 200 ms
+ *   ease-out, from any pointer when the touch layer is off); the keyboard's
+ *   pan; and a mouse drag that pans a zoomed photo and stops at its edges
+ *   — plus the callback ref for
  *   the photo and the imperative API Lightbox calls. The finger paths
  *   (pinch, finger pan, double tap, the catch) are the touch layer,
  *   useZoomStage.ts, which drives this core
@@ -39,12 +42,13 @@ import {useAnimator} from '../motion/useAnimator';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {
   IDENTITY,
+  RELEASED_ZOOM,
   doubleTapScaleFor,
-  doubleTapTarget,
   draggedTransform,
   isZoomed,
   maxScaleFor,
   pannedBy,
+  releasedZoomTarget,
   restingTransform,
   settleCurves,
   transformForResize,
@@ -59,26 +63,16 @@ export const ZOOM_DRAGGING_ATTRIBUTE = 'data-zoom-dragging';
 /** A mouse press moves this far (px) before it drags the photo. */
 const MOUSE_DRAG_SLOP = 3;
 
-/**
- * The keyboard and the mouse zoom in at least `filledDoubleTapScale` (2x,
- * Lightbox's released double-click), even where the photo nearly fills its
- * stage and aspect fill would barely zoom it.
- */
-function keyAndMouseGeometry(geometry: ZoomGeometry): ZoomGeometry {
-  return {
-    ...geometry,
-    doubleTapScale: Math.min(
-      geometry.maxScale,
-      Math.max(geometry.doubleTapScale, zoomMedia.viewer.filledDoubleTapScale),
-    ),
-  };
-}
-
 export interface UseZoomCoreOptions {
   /** The stage: the photo's clipping parent, which centres it. */
   stageRef: RefObject<HTMLElement | null>;
   /** Zoom is on (an image item with `hasZoom`). */
   isEnabled: boolean;
+  /**
+   * The touch layer is on (a coarse primary pointer): fingers and pens are
+   * its recognizers'. Off, a double-click from any pointer is the mouse's.
+   */
+  isTouch: boolean;
   /** Changes when another item shows; the photo returns to the fitted size. */
   itemKey: unknown;
   /** The photo became zoomed or returned to the fitted size. */
@@ -93,7 +87,7 @@ export interface ZoomStage {
   readonly contentRef: (element: HTMLElement | null) => void;
   /** Whether the photo is zoomed now. */
   isZoomed(): boolean;
-  /** Keyboard: zoom in about the stage's centre, or out when zoomed. */
+  /** Keyboard: zoom in 2x about the stage's centre, or out when zoomed. */
   toggle(): void;
   zoomIn(): void;
   zoomOut(): void;
@@ -124,15 +118,16 @@ export interface ZoomCore {
   setTarget(transform: ZoomTransform): void;
   setZoomed(next: boolean): void;
   /**
-   * UIScrollView's eased settle (a release past a limit, a zoom to a rect).
-   * Under Reduce Motion the animator's default applies (design:reduced-
-   * motion): a fade in place on a touch screen, or for a touch drag's
-   * release (`touchRelease`); at once otherwise.
+   * UIScrollView's eased settle (a release past a limit, a zoom to a rect),
+   * or with `released` Lightbox's released 200 ms ease-out (the mouse and the
+   * keyboard, see RELEASED_ZOOM). Under Reduce Motion the animator's default
+   * applies (design:reduced-motion): a fade in place on a touch screen, or
+   * for a touch drag's release (`touchRelease`); at once otherwise.
    */
   settleTo(
     geometry: ZoomGeometry,
     target: ZoomTransform,
-    options?: {touchRelease?: boolean},
+    options?: {touchRelease?: boolean; released?: boolean},
   ): void;
 }
 
@@ -254,7 +249,10 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
     (
       geometry: ZoomGeometry,
       target: ZoomTransform,
-      {touchRelease = false}: {touchRelease?: boolean} = {},
+      {
+        touchRelease = false,
+        released = false,
+      }: {touchRelease?: boolean; released?: boolean} = {},
     ) => {
       const from = current();
       animator.stop();
@@ -274,16 +272,19 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
         return;
       }
       // The settle's curve is the `timing.curves.move` role (registered
-      // once; idempotent).
+      // once; idempotent); the mouse's and the keyboard's is the released
+      // ease-out.
       registerReducedMotionCrossFade();
-      const curves = settleCurves(
-        from,
-        target,
-        resolveMotion(
-          optionsRef.current.stageRef.current,
-          zoomMedia.settle.curve,
-        ),
-      );
+      const curves = released
+        ? settleCurves(from, target, RELEASED_ZOOM.curve, RELEASED_ZOOM.seconds)
+        : settleCurves(
+            from,
+            target,
+            resolveMotion(
+              optionsRef.current.stageRef.current,
+              zoomMedia.settle.curve,
+            ),
+          );
       animator.play(
         {x: curves.x, y: curves.y, scale: curves.scale},
         {touchRelease},
@@ -292,9 +293,12 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
     [animator, current, setZoomed],
   );
 
-  // The mouse: a double-click zooms in to the clicked point (Photos' double
-  // tap) or back; a drag pans a zoomed photo, stopping at its edges, and
-  // stops where it is released. Fingers are the touch layer's.
+  // The mouse keeps Lightbox's released zoom (spec:AST-017 FR59): a
+  // double-click zooms in 2x about the centre or back, from any pointer when
+  // the touch layer is off (a pen or a finger where the primary pointer is
+  // fine). A drag pans a zoomed photo, stopping at its edges (unbounded, it
+  // could carry the photo out of view), and stops where it is released.
+  // With the touch layer on, fingers and pens are its recognizers'.
   const isEnabled = options.isEnabled;
   useEffect(() => {
     const stage = optionsRef.current.stageRef.current;
@@ -363,19 +367,17 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
       }
       drag = null;
     };
-    const onDoubleClick = (event: MouseEvent) => {
-      if (lastPointerType !== 'mouse') {
+    const onDoubleClick = () => {
+      if (lastPointerType !== 'mouse' && optionsRef.current.isTouch) {
         return;
       }
       const geometry = measure();
       if (geometry == null) {
         return;
       }
-      const point = toStage({x: event.clientX, y: event.clientY});
-      settleTo(
-        geometry,
-        doubleTapTarget(keyAndMouseGeometry(geometry), current(), point),
-      );
+      settleTo(geometry, releasedZoomTarget(geometry, current()), {
+        released: true,
+      });
     };
     stage.addEventListener('pointerdown', onPointerDown);
     stage.addEventListener('pointermove', onPointerMove);
@@ -390,7 +392,7 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
       stage.removeEventListener('dblclick', onDoubleClick);
       stage.removeAttribute(ZOOM_DRAGGING_ATTRIBUTE);
     };
-  }, [animator, current, isEnabled, measure, settleTo, toStage, write]);
+  }, [animator, current, isEnabled, measure, settleTo, write]);
 
   // Another item: back to the fitted size before it paints. Lightbox resets
   // its own zoomed state during that render.
@@ -433,11 +435,9 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
     if (geometry == null || zoomedRef.current) {
       return;
     }
-    const centre = {x: geometry.width / 2, y: geometry.height / 2};
-    settleTo(
-      geometry,
-      doubleTapTarget(keyAndMouseGeometry(geometry), targetRef.current, centre),
-    );
+    settleTo(geometry, releasedZoomTarget(geometry, targetRef.current), {
+      released: true,
+    });
   }, [measure, settleTo]);
 
   const zoomOut = useCallback(() => {
@@ -448,6 +448,7 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
     settleTo(
       geometry,
       restingTransform(geometry, {...IDENTITY, scale: geometry.minScale}),
+      {released: true},
     );
   }, [measure, settleTo]);
 
@@ -463,7 +464,9 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
         if (geometry == null || !zoomedRef.current) {
           return;
         }
-        settleTo(geometry, pannedBy(geometry, targetRef.current, dx, dy));
+        settleTo(geometry, pannedBy(geometry, targetRef.current, dx, dy), {
+          released: true,
+        });
       },
     }),
     [contentRef, measure, settleTo, zoomIn, zoomOut],
