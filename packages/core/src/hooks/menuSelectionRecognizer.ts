@@ -99,16 +99,29 @@ export class MenuSelectionGestureRecognizer extends GestureRecognizer {
       // A second finger ends the press with nothing acting
       // (module:DropdownMenu/useMenuPress FR4). The touch itself is not
       // taken, so the pinch it may start stays the browser's.
-      this.secondTouch = true;
-      this.clearTimer();
-      if (isActive(this.state)) {
-        this.setState('cancelled');
-      } else if (this.state === 'possible') {
-        this.setState('failed');
-      }
+      this.endForSecondFinger();
       return false;
     }
     return super.acceptsTouch(touch);
+  }
+
+  /**
+   * A second finger that lands off the menu ends the press the same way as
+   * one that lands on it (FR4): nothing acts, and the touch stays the
+   * browser's.
+   */
+  protected override touchBeganElsewhere(): void {
+    this.endForSecondFinger();
+  }
+
+  private endForSecondFinger(): void {
+    this.secondTouch = true;
+    this.clearTimer();
+    if (isActive(this.state)) {
+      this.setState('cancelled');
+    } else if (this.state === 'possible') {
+      this.setState('failed');
+    }
   }
 
   protected override touchesBegan(

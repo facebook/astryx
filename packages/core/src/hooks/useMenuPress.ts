@@ -47,8 +47,9 @@
  *   is tracked as UIMenu's list tracks it instead (menuSelectionRecognizer.ts on the
  *   gesture system, driving the shared action-group tracker): its row lights
  *   after UIKit's content-touch delay, a tap acts at the lift, and in a menu
- *   that scrolls a travelling finger scrolls it, on every touch device. A
- *   mouse keeps the pointer model.
+ *   that scrolls a travelling finger scrolls it while a resting one near its
+ *   top or bottom edge autoscrolls it (`spec:AST-094` FR30), on every touch
+ *   device. A mouse keeps the pointer model.
  *
  * The menu root is marked `data-astryx-menu-press` so a nested flyout (a DOM
  * descendant of its parent menu) can tell which level owns a press, and so a
@@ -279,9 +280,10 @@ export interface DropdownMenuPressOptions extends UseMenuPressOptions {
    * the open menu as UIMenu's list tracks it (menuSelectionRecognizer.ts;
    * `spec:AST-094` FR26 to FR30): its row lights after the content-touch
    * delay, a tap acts at the lift, and in a menu that scrolls a travelling
-   * finger scrolls it. A menu with no trigger (a sub-menu) takes its root's,
-   * so a finger in it follows the root's rules: a cancelled touch clears its
-   * lit row (`spec:AST-094` FR28). A mouse is unaffected.
+   * finger scrolls it while a resting one near an edge autoscrolls it. A
+   * menu with no trigger (a sub-menu) takes its root's, so a finger in it
+   * follows the root's rules: a cancelled touch clears its lit row
+   * (`spec:AST-094` FR28). A mouse is unaffected.
    * @default 'pointer'
    */
   touchModel?: 'pointer' | 'uikit';
@@ -841,12 +843,12 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
     return menu.scrollHeight > menu.clientHeight + 1 ? menu : null;
   }, []);
 
-  const updateAutoscroll = useCallback(
-    (event: PointerEvent) => {
-      if (gestureRef.current.phase !== 'tracking') {
-        stopAutoscroll();
-        return;
-      }
+  // Starts, turns or stops the edge autoscroll for a held pointer or finger
+  // at `clientY`: near the scroller's top or bottom edge the menu scrolls
+  // toward it, and `reread` re-resolves what is under the resting contact
+  // after each step (spec:AST-094 FR30).
+  const autoscrollAt = useCallback(
+    (clientY: number, reread: () => void) => {
       const scroller = getScroller();
       if (scroller == null) {
         stopAutoscroll();
@@ -858,9 +860,9 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
         return;
       }
       let direction: 1 | -1 | 0 = 0;
-      if (event.clientY <= rect.top + MENU_PRESS_AUTOSCROLL_ZONE_PX) {
+      if (clientY <= rect.top + MENU_PRESS_AUTOSCROLL_ZONE_PX) {
         direction = -1;
-      } else if (event.clientY >= rect.bottom - MENU_PRESS_AUTOSCROLL_ZONE_PX) {
+      } else if (clientY >= rect.bottom - MENU_PRESS_AUTOSCROLL_ZONE_PX) {
         direction = 1;
       }
       if (direction === 0) {
@@ -871,29 +873,36 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
         return;
       }
       stopAutoscroll();
-      autoscrollRef.current = {
-        scroller,
-        direction,
-        // The rows moved under the resting pointer: re-read the row under it.
-        reread: () => {
-          const last = lastPointerEventRef.current;
-          if (last != null) {
-            const point = resolvePoint(last);
-            stepRef.current(
-              {
-                type: 'move',
-                row: point.row,
-                isInMenu: point.isInMenu,
-                time: Date.now(),
-              },
-              last,
-            );
-          }
-        },
-      };
+      autoscrollRef.current = {scroller, direction, reread};
       autoscroll.update();
     },
-    [autoscroll, getScroller, resolvePoint, stopAutoscroll],
+    [autoscroll, getScroller, stopAutoscroll],
+  );
+
+  const updateAutoscroll = useCallback(
+    (event: PointerEvent) => {
+      if (gestureRef.current.phase !== 'tracking') {
+        stopAutoscroll();
+        return;
+      }
+      // The rows moved under the resting pointer: re-read the row under it.
+      autoscrollAt(event.clientY, () => {
+        const last = lastPointerEventRef.current;
+        if (last != null) {
+          const point = resolvePoint(last);
+          stepRef.current(
+            {
+              type: 'move',
+              row: point.row,
+              isInMenu: point.isInMenu,
+              time: Date.now(),
+            },
+            last,
+          );
+        }
+      });
+    },
+    [autoscrollAt, resolvePoint, stopAutoscroll],
   );
 
   // --- Document-level tracking ----------------------------------------------
@@ -1206,6 +1215,16 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
         },
       }),
   );
+  // A finger held in a menu that scrolls, resting near its top or bottom
+  // edge, scrolls it toward that edge, and the lit row follows the row now
+  // under the finger (spec:AST-094 FR30). A finger that travels is the
+  // list's own scroll, which cancels the press and so the autoscroll.
+  const fingerAutoscroll = useCallback(
+    (clientY: number) => {
+      autoscrollAt(clientY, () => trackerRef.current?.remeasure());
+    },
+    [autoscrollAt],
+  );
   const onSelection = useCallback(
     (recognizer: MenuSelectionGestureRecognizer) => {
       const tracker = trackerRef.current;
@@ -1221,14 +1240,17 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
           if (x !== landing.x || y !== landing.y) {
             tracker.move(x, y);
           }
+          fingerAutoscroll(y);
           break;
         }
         case 'changed': {
           const {x, y} = recognizer.location();
           tracker.move(x, y);
+          fingerAutoscroll(y);
           break;
         }
         case 'ended': {
+          stopAutoscroll();
           const {x, y} = recognizer.location();
           if (tracker.isTracking) {
             tracker.move(x, y);
@@ -1245,6 +1267,7 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
           break;
         }
         case 'cancelled':
+          stopAutoscroll();
           tracker.cancel();
           if (recognizer.endedByAnotherFinger) {
             // A click the browser still reports for the first finger acts
@@ -1257,7 +1280,7 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
           break;
       }
     },
-    [getDocument],
+    [fingerAutoscroll, getDocument, stopAutoscroll],
   );
   // Synchronizes with the selection recognizer (gesture system): its state
   // changes drive the action-group tracker.
