@@ -33,7 +33,7 @@ export const docs = {
     ],
   },
   description:
-    'Radio group container with field integration for label, description, and status.',
+    'Radio group container with field integration for label, description, and status. Under a coarse pointer each option row is at least the theme’s touch target tall (`--size-touch-target`, 44 px by default). In a vertical list each row takes half the gap above and below as its own target, so the rows touch and a row grows only by what the gap does not already give it.',
   props: [
     {
       name: 'label',
@@ -148,12 +148,14 @@ export const docs = {
     {
       name: 'containerClassName',
       type: 'string',
-      description: 'Class name for the field container. Same targeting as `containerXstyle`.',
+      description:
+        'Class name for the field container. Same targeting as `containerXstyle`.',
     },
     {
       name: 'containerStyle',
       type: 'CSSProperties',
-      description: 'Inline styles for the field container. Same targeting as `containerXstyle`.',
+      description:
+        'Inline styles for the field container. Same targeting as `containerXstyle`.',
     },
     {
       name: 'controlXstyle',

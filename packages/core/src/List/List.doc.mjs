@@ -32,13 +32,13 @@ export const docs = {
     {
       name: 'density',
       type: "'compact' | 'balanced' | 'spacious'",
-      description: 'Spacing density for items.',
+      description: 'Spacing density for items. Under a finger, rows are at least 52px tall, 62px with a description, as iOS table rows are; a compact list and a list with markers keep their rows.',
       default: "'balanced'",
     },
     {
       name: 'hasDividers',
       type: 'boolean',
-      description: 'Show dividers between items.',
+      description: 'Show dividers between items. Under a finger, a touch press hides the dividers on either side of the pressed row until the finger lifts, as iOS lists do.',
       default: 'false',
     },
     {

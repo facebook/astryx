@@ -5,7 +5,9 @@
 /**
  * @file ListItem.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, the List row edge
- *   treatment, CheckboxInput, and the marker or task checkbox a
+ *   treatment, the press layer (dividers beside a touch-pressed or held row
+ *   hide and the layer reaches over the row's own), the touch row heights
+ *   (listRow.stylex.ts), CheckboxInput, and the marker or task checkbox a
  *   ListMarkerScope sets (Markdown's nested lists and the task items of mixed
  *   lists)
  * @output Exports ListItem component, ListItemProps type
@@ -34,10 +36,11 @@ import {
 import type {BaseProps} from '../BaseProps';
 import {ListContext, type ListMarker} from './ListContext';
 import {CheckboxInput} from '../CheckboxInput';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import {Item} from '../Item';
 import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
+import {listRowStyles} from './listRow.stylex';
 
 // =============================================================================
 // Types
@@ -186,13 +189,51 @@ const styles = stylex.create({
   withDivider: {
     borderBlockEndWidth: borderVars['--border-width'],
     borderBlockEndStyle: 'solid',
-    borderBlockEndColor: colorVars['--color-border'],
+    // Under a finger (a coarse primary pointer, TOUCH_QUERY in
+    // utils/touchPresentation.ts), a touch press hides this row's divider
+    // and the one above it, in the frame the press is believed, with no
+    // transition, as a highlighted UIKit cell hides its separators; both
+    // come back in the first frame of the release, while the press is still
+    // fading. A selection hold (the row kept selected through a navigation
+    // push) hides them the same way until its deselect begins, and again
+    // after a cancel. With a mouse the dividers stay drawn.
+    borderBlockEndColor: {
+      default: colorVars['--color-border'],
+      '@media (pointer: coarse)': {
+        default: null,
+        '[data-astryx-press="on"]': 'transparent',
+        '[data-astryx-press="held"]:not([data-astryx-deselecting])':
+          'transparent',
+        ':has(+ [data-astryx-press="on"])': 'transparent',
+        ':has(+ [data-astryx-press="held"]:not([data-astryx-deselecting]))':
+          'transparent',
+      },
+    },
     // A longhand, not the `borderBlockEnd` shorthand: StyleX's default
     // property-specificity mode drops border shorthands silently, so the
     // shorthand never reached the shipped CSS and the last item kept its
     // divider.
     ':last-child': {
       borderBlockEndWidth: 0,
+    },
+    // While its divider is hidden, the press layer (the `cell` style of
+    // utils/interactionOverlay.stylex.ts) reaches over it, so the whole row
+    // is pressed. The last row has no divider to cover.
+    '::before': {
+      insetBlockEnd: {
+        default: null,
+        '@media (pointer: coarse)': {
+          default: null,
+          '[data-astryx-press="on"]': {
+            default: `calc(-1 * ${borderVars['--border-width']})`,
+            ':last-child': 0,
+          },
+          '[data-astryx-press="held"]:not([data-astryx-deselecting])': {
+            default: `calc(-1 * ${borderVars['--border-width']})`,
+            ':last-child': 0,
+          },
+        },
+      },
     },
   },
 });
@@ -391,6 +432,16 @@ export function ListItem({
           hasMarkers && styles.withCounter,
           hasDividers && styles.withDivider,
           hasDividers && embeddedStyles.noRadius,
+          // A list with markers is running text (bullets, numbers, a
+          // Markdown list), not a table: its rows keep their own height, and
+          // each marker stays on its text's first line. A compact list is the
+          // dense case and keeps its density too: its rows already clear the
+          // 24px target minimum (WCAG 2.5.8).
+          !hasMarkers &&
+            density !== 'compact' &&
+            (isRenderable(description)
+              ? listRowStyles.touchTwoLine
+              : listRowStyles.touchOneLine),
           edge === 'flush' && styles.edgeFlush,
           edge === 'outset' && styles.edgeOutset,
           edge === 'bleed' && styles.edgeBleed,
