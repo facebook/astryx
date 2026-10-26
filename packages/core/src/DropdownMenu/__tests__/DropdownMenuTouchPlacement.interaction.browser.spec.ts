@@ -7,7 +7,9 @@
  *   UIMenu's values from the UIKit constants table
  * @output Placement proofs for the compact touch presentation (one touch
  *   model on every engine): the menu covers its trigger, top-aligned and
- *   centered on it; it stays UIKit's screen margin off the viewport's sides;
+ *   centered on it; it stays UIKit's screen margin off the viewport's sides,
+ *   plus each LayerProvider inline inset on the side it names (right to left
+ *   included);
  *   a trigger in the lower half opens it upward, bottom-aligned; in a short
  *   viewport it stays on screen and scrolls; the finger that opened it over
  *   its first row picks only after UIMenu's handoff distance. A mouse keeps
@@ -185,6 +187,59 @@ test('near the viewport\u2019s sides it stays UIKit\u2019s screen margin off the
       expect(m.x + m.width).toBeCloseTo(viewport.width - menu.screenMargin, 0);
     }
     expect(m.y).toBeCloseTo(t.y, 0);
+  }
+});
+
+test('right to left, each LayerProvider inline inset keeps the menu off the side it names', async ({
+  page,
+}) => {
+  const viewport = viewportOf(page);
+  // A bar on the inline-start side, which is the right one right to left.
+  const INSET = 40;
+  for (const side of ['left', 'right'] as const) {
+    await openStory(page, storybook(), 'core-dropdownmenu--default');
+    await page.evaluate(inset => {
+      // Right to left everywhere a direction is set, the story's own
+      // wrappers included.
+      document.documentElement.dir = 'rtl';
+      for (const element of document.querySelectorAll('[dir]')) {
+        element.setAttribute('dir', 'rtl');
+      }
+      document.documentElement.style.setProperty(
+        '--astryx-layer-inset-inline-start',
+        `${inset}px`,
+      );
+    }, INSET);
+    const trigger = page.getByRole('button', {name: 'Actions'});
+    expect(await trigger.evaluate(el => getComputedStyle(el).direction)).toBe(
+      'rtl',
+    );
+    const home = await boxOf(trigger);
+    // The trigger 4 px inside the side, in the upper half.
+    const dx =
+      side === 'left' ? 4 - home.x : viewport.width - 4 - (home.x + home.width);
+    await trigger.evaluate(
+      (node, {x, y}) => {
+        const el = node as HTMLElement;
+        el.style.position = 'relative';
+        el.style.left = `${x}px`;
+        el.style.top = `${y}px`;
+      },
+      {x: dx, y: UPPER},
+    );
+    const popover = page.locator('[popover]:has([role="menu"])').first();
+    await openWithTap(page, await touchDriver(page), trigger, popover);
+    const m = await boxOf(popover);
+    if (side === 'right') {
+      // The inline-start side: the screen margin and the bar's inset.
+      expect(m.x + m.width).toBeCloseTo(
+        viewport.width - menu.screenMargin - INSET,
+        0,
+      );
+    } else {
+      // The inline-end side, with no inset: the screen margin alone.
+      expect(m.x).toBeCloseTo(menu.screenMargin, 0);
+    }
   }
 });
 
