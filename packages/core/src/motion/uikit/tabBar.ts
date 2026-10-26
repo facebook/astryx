@@ -314,6 +314,54 @@ export const tabBar = {
    */
   minimizeFade: {response: 0.25, dampingRatio: 1},
   /**
+   * With a search tab (`UISearchTab`) the bar's tabs share a narrower
+   * capsule and the search tab is a circle as tall as the bar, this far after
+   * it at the trailing end (290 + 8 + 62 = 360); minimized, it shrinks to
+   * `minimizedSize` about its centre, its glyph unchanged.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, the platter at (21, 791, 290 × 62) and the search
+   *   circle at (319, 791, 62 × 62) with three and four tabs; minimized, the
+   *   search circle at (326, 798, 48 × 48) with its 28 pt glyph unchanged,
+   *   Oct 24 2026
+   */
+  searchGap: 8,
+  /**
+   * The search tab selected: the bar collapses to the leading circle and
+   * the search field sits inline in the bar's row, this far after the circle
+   * and concentric with the trailing cap (88 to 374 beside a circle ending
+   * at 76).
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, UISearchTab with and without
+   *   automaticallyActivatesSearch: the inline field at (88, 798, 286 × 48)
+   *   beside the leading circle at (28, 798), Oct 24 2026
+   */
+  searchFieldGap: 12,
+  /**
+   * The active search field (above the keyboard): this far from the
+   * screen's edges, leaving room for the 48 pt cancel button and the gap
+   * before it at the trailing end (8 to 338, the button centred at 370).
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, the active field at (8, 483, 330 × 48) and the cancel
+   *   button centred at (370, 507), Oct 24 2026
+   */
+  searchActive: {inset: 8, cancelSize: 48, cancelGap: 8},
+  /**
+   * The search field's glass between its inline and active places (x and
+   * width), on activation starting with this inward width velocity, pt/s
+   * (the glass squashes as it starts to move: 286 → 255 → 260 → 279 → … →
+   * 330).
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, a joint fit of the field's per-frame width activating
+   *   from the expanded bar and from the minimized bar (rms 1.3 pt),
+   *   Oct 24 2026
+   */
+  searchMorph: {response: 0.244, dampingRatio: 1.108},
+  /**
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, the same joint fit's initial width velocity, Oct 24 2026
+   */
+  searchSquashVelocity: -3424,
+  /**
    * The bottom accessory (`UITabBarController.bottomAccessory`, Music's mini
    * player): a capsule this tall, as wide as the bar and this far above it;
    * minimized, it sits inline between the circle and the bar's trailing end,

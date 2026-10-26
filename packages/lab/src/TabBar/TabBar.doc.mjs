@@ -19,9 +19,10 @@ export const docs = {
     'minimize on scroll',
     'bottom accessory',
     'mini player',
+    'search tab',
   ],
   description:
-    "The bottom tab bar of a phone app, as on iOS 26: the app's top-level sections as a floating capsule above the bottom edge, with a selection lens that slides to the chosen tab. Each tab has an icon, a label and an optional badge. Under a finger, on iOS and Android alike, it behaves like iOS 26's: the lens lifts into glass as a finger lands, follows a finger dragged across the tabs and settles on the tab nearest where it lifts, while the bar flexes; under a mouse, a click chooses a tab and the lens follows the theme's motion. Under a finger it can also collapse into a small circle while the page scrolls down. Choosing the selected tab again is reported separately, so a screen can return to its root as iOS does. Experimental: lands in lab first.",
+    "The bottom tab bar of a phone app, as on iOS 26: the app's top-level sections as a floating capsule above the bottom edge, with a selection lens that slides to the chosen tab. Each tab has an icon, a label and an optional badge. Under a finger, on iOS and Android alike, it behaves like iOS 26's: the lens lifts into glass as a finger lands, follows a finger dragged across the tabs and settles on the tab nearest where it lifts, while the bar flexes; under a mouse, a click chooses a tab and the lens follows the theme's motion. Under a finger it can also collapse into a small circle while the page scrolls down. It can hold a search tab apart at its trailing end. Choosing the selected tab again is reported separately, so a screen can return to its root as iOS does. Experimental: lands in lab first.",
   components: [
     {
       name: 'TabBar',
@@ -70,7 +71,7 @@ export const docs = {
           name: 'children',
           type: 'ReactNode',
           description:
-            'The tabs: TabBarItem elements, in order, as direct children.',
+            'The tabs: TabBarItem elements, in order, as direct children, and at most one TabBarSearchTab.',
           required: true,
         },
       ],
@@ -121,6 +122,65 @@ export const docs = {
         },
       ],
     },
+    {
+      name: 'TabBarSearchTab',
+      displayName: 'Tab Bar Search Tab',
+      description:
+        'The search tab, as on iOS 26: a circle as tall as the bar at its trailing end, apart from the other tabs, which share a narrower capsule. Choosing it selects it like any tab, collapses the bar to a circle holding the tab it was chosen from (a tap on that circle returns there) and shows its field in the bar; by default the same tap activates the field and focuses it, which raises the keyboard on a phone. Active, the field spans the screen but for a cancel button at its end. Under a mouse it selects in place: the bar stays expanded and the field shows at once above it, focused, where the bottom accessory sits; Escape returns to the tab it was chosen from. TabBar reads its props and draws it; it renders nothing on its own.',
+      props: [
+        {
+          name: 'value',
+          type: 'string',
+          description:
+            'Identifies the search tab in value, onChange and onReselect.',
+          required: true,
+        },
+        {
+          name: 'label',
+          type: 'string',
+          description:
+            'The tab\'s name for assistive technology, such as "Search".',
+          required: true,
+        },
+        {
+          name: 'icon',
+          type: 'ReactNode',
+          description: 'The search glyph, an Icon at size lg.',
+          required: true,
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description:
+            'The search field. It stays mounted, hidden and inert until the search tab is chosen, so the tap can focus it.',
+        },
+        {
+          name: 'isActive',
+          type: 'boolean',
+          description:
+            'Whether the field is active: widened to span the screen, with the keyboard up on a phone.',
+        },
+        {
+          name: 'onActiveChange',
+          type: '(isActive: boolean) => void',
+          description:
+            "Called with true when the tap that chooses the search tab activates its field. Set isActive false on cancel, and return to the tab it was chosen from in onChange's state if you want to leave search.",
+        },
+        {
+          name: 'fieldRef',
+          type: 'RefObject<{focus(): void; blur(): void} | null>',
+          description:
+            "The field's handle, focused by the tap that activates it (an input element works).",
+        },
+        {
+          name: 'automaticallyActivates',
+          type: 'boolean',
+          description:
+            'Whether choosing the search tab activates its field at once. When false, the field waits inline in the bar until it is tapped.',
+          default: 'true',
+        },
+      ],
+    },
   ],
   usage: {
     description:
@@ -145,6 +205,11 @@ export const docs = {
         guidance: true,
         description:
           'Use bottomAccessory for one persistent control that belongs to the whole app, such as what is playing; keep it to a line, and drop secondary controls when its placement is inline.',
+      },
+      {
+        guidance: true,
+        description:
+          'Add a TabBarSearchTab when search is a section of the app on its own; cancel should return to the tab it was chosen from.',
       },
       {
         guidance: false,

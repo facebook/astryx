@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState, type RefObject} from 'react';
 import {flushSync} from 'react-dom';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
@@ -18,9 +18,11 @@ import {
   BellIcon as BellSolid,
 } from '@heroicons/react/24/solid';
 import {ForwardIcon, PauseIcon, PlayIcon} from '@heroicons/react/24/solid';
+import {MagnifyingGlassIcon, XMarkIcon} from '@heroicons/react/24/outline';
 import {
   TabBar,
   TabBarItem,
+  TabBarSearchTab,
   type TabBarAccessoryPlacement,
 } from '@astryxdesign/lab';
 import {Button} from '@astryxdesign/core/Button';
@@ -117,6 +119,8 @@ function Bar({
   onChange,
   minimizeBehavior,
   bottomAccessory,
+  hasSearch = false,
+  searchActivates,
 }: {
   sections?: Section[];
   initial?: string;
@@ -127,10 +131,22 @@ function Bar({
   onChange?: (value: string) => void;
   minimizeBehavior?: 'never' | 'onScrollDown';
   bottomAccessory?: (placement: TabBarAccessoryPlacement) => React.ReactNode;
+  hasSearch?: boolean;
+  /** The search tab's `automaticallyActivates`. */
+  searchActivates?: boolean;
 }) {
   const [value, setValue] = useState(initial);
   const [reselects, setReselects] = useState(0);
-  const title = sections.find(section => section.value === value)?.label ?? '';
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const fieldRef = useRef<HTMLInputElement | null>(null);
+  // Cancelling search returns to the tab it was chosen from.
+  const lastTabRef = useRef(initial);
+  if (value !== 'search') {
+    lastTabRef.current = value;
+  }
+  const title =
+    sections.find(section => section.value === value)?.label ??
+    (value === 'search' ? 'Search' : '');
   return (
     <>
       <Screen title={title} reselects={reselects} />
@@ -157,6 +173,26 @@ function Bar({
             badge={badges[section.value]}
           />
         ))}
+        {hasSearch ? (
+          <TabBarSearchTab
+            value="search"
+            label="Search"
+            icon={<Icon icon={MagnifyingGlassIcon} size="lg" />}
+            isActive={isSearchActive}
+            onActiveChange={setIsSearchActive}
+            automaticallyActivates={searchActivates}
+            fieldRef={fieldRef}>
+            <SearchPlaceholder
+              fieldRef={fieldRef}
+              isActive={isSearchActive}
+              onActivate={() => setIsSearchActive(true)}
+              onCancel={() => {
+                setIsSearchActive(false);
+                setValue(lastTabRef.current);
+              }}
+            />
+          </TabBarSearchTab>
+        ) : null}
       </TabBar>
     </>
   );
@@ -244,6 +280,87 @@ export const BottomAccessory: Story = {
       />
     </LayerProvider>
   ),
+};
+
+/**
+ * A stand-in for a search field: the tab bar holds it inline while the search
+ * tab is selected and widens it while it is active.
+ */
+function SearchPlaceholder({
+  fieldRef,
+  isActive,
+  onActivate,
+  onCancel,
+}: {
+  fieldRef: RefObject<HTMLInputElement | null>;
+  isActive: boolean;
+  onActivate: () => void;
+  onCancel: () => void;
+}) {
+  const [query, setQuery] = useState('');
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        width: '100%',
+        padding: '0 6px 0 16px',
+        boxSizing: 'border-box',
+      }}>
+      <Icon icon={MagnifyingGlassIcon} size="md" />
+      <input
+        ref={fieldRef}
+        value={query}
+        onChange={event => setQuery(event.target.value)}
+        onFocus={onActivate}
+        placeholder="Search"
+        aria-label="Search"
+        style={{
+          flex: 1,
+          minWidth: 0,
+          border: 0,
+          outline: 'none',
+          background: 'transparent',
+          font: 'inherit',
+          fontSize: 17,
+        }}
+      />
+      {isActive ? (
+        <Button
+          label="Cancel"
+          variant="ghost"
+          isIconOnly
+          icon={<Icon icon={XMarkIcon} />}
+          onClick={onCancel}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * A search tab: a circle at the trailing end, apart from the tabs, which
+ * share a narrower capsule. Choosing it collapses the bar to a circle with
+ * the tab it was chosen from and raises its field; cancel returns to that
+ * tab. Scroll down under a finger: both circles stay.
+ */
+export const SearchTab: Story = {
+  render: () => (
+    <Bar
+      hasSearch
+      minimizeBehavior="onScrollDown"
+      bottomAccessory={placement => <NowPlaying placement={placement} />}
+    />
+  ),
+};
+
+/**
+ * A search tab that waits inline (`automaticallyActivates={false}`):
+ * choosing it shows the field in the bar; a tap on the field activates it.
+ */
+export const SearchTabWaitsInline: Story = {
+  render: () => <Bar hasSearch searchActivates={false} />,
 };
 
 /** Badges appear, change and disappear at once, as UIKit's do. */

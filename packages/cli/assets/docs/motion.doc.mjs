@@ -440,6 +440,12 @@ const calmTheme = defineTheme({
               '0.25s 0',
             ],
             [
+              'tabBar.searchMorph',
+              '--motion-tab-bar-search-morph',
+              'spring',
+              '0.244s -0.0974729',
+            ],
+            [
               'timing.curves.entrance',
               '--motion-timing-curves-entrance',
               'curve',

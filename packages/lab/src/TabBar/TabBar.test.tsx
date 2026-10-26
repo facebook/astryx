@@ -16,11 +16,11 @@
  */
 
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {InternationalizationProvider} from '@astryxdesign/core/i18n';
 import {COARSE_POINTER_QUERY} from '@astryxdesign/core/gestures/coarsePointer';
-import {TabBar, TabBarItem, type TabBarProps} from './TabBar';
+import {TabBar, TabBarItem, TabBarSearchTab, type TabBarProps} from './TabBar';
 
 function Glyph({name}: {name: string}) {
   return <svg data-testid={`icon-${name}`} />;
@@ -398,6 +398,46 @@ describe('TabBar minimize on scroll', () => {
     expect(isMinimized()).toBe(true);
   });
 
+  it('minimized, exposes only the circle: the selected tab, collapsed', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    render(<Bar minimizeBehavior="onScrollDown" initial="library" />);
+    const circle = document.querySelector('[data-tab-bar-circle]');
+    expect(circle).toHaveAttribute('aria-hidden', 'true');
+    dragPage([200]);
+    // The tabs are out of reach until the bar expands, as on iOS.
+    for (const tab of screen.getAllByRole('tab', {hidden: true})) {
+      expect(tab).toHaveAttribute('inert');
+    }
+    const button = screen.getByRole('button', {name: 'Library'});
+    expect(button).toBe(circle);
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(button).toHaveAttribute('tabindex', '0');
+  });
+
+  it('minimized with no tab selected, the circle takes the bar’s name and the keys expand onto the first tab', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    render(<Bar minimizeBehavior="onScrollDown" initial="none" />);
+    dragPage([200]);
+    const button = screen.getByRole('button', {name: 'Sections'});
+    button.focus();
+    fireEvent.click(button);
+    expect(isMinimized()).toBe(false);
+    expect(screen.getByRole('tab', {name: 'Home'})).toHaveFocus();
+  });
+
+  it('activating the circle from the keys expands the bar and focuses the selected tab', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    render(<Bar minimizeBehavior="onScrollDown" initial="library" />);
+    dragPage([200]);
+    const button = screen.getByRole('button', {name: 'Library'});
+    button.focus();
+    fireEvent.click(button);
+    expect(isMinimized()).toBe(false);
+    const library = screen.getByRole('tab', {name: 'Library'});
+    expect(library).not.toHaveAttribute('inert');
+    expect(library).toHaveFocus();
+  });
+
   it('expands on a tap on the circle, keeping the selection', () => {
     restorePointer.push(coarsePrimaryPointer());
     const onChange = vi.fn();
@@ -491,5 +531,237 @@ describe('TabBar bottom accessory', () => {
   it('renders nothing without one', () => {
     render(<Bar />);
     expect(document.querySelector('[data-tab-bar-accessory]')).toBeNull();
+  });
+});
+
+describe('TabBar search tab', () => {
+  function SearchBar({onChange}: {onChange?: (value: string) => void}) {
+    const [value, setValue] = useState('home');
+    return (
+      <TabBar
+        value={value}
+        onChange={next => {
+          setValue(next);
+          onChange?.(next);
+        }}
+        label="Sections">
+        <TabBarItem value="home" label="Home" icon={<Glyph name="home" />} />
+        <TabBarItem
+          value="browse"
+          label="Browse"
+          icon={<Glyph name="browse" />}
+        />
+        <TabBarSearchTab
+          value="search"
+          label="Search"
+          icon={<Glyph name="search" />}
+        />
+      </TabBar>
+    );
+  }
+
+  it('is the last tab of the tablist, named by its label', () => {
+    render(<SearchBar />);
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs.at(-1)).toHaveAccessibleName('Search');
+    expect(tabs.at(-1)).toHaveAttribute('aria-selected', 'false');
+    expect(tabs.at(-1)).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('selects the search tab like any other, taking the tab stop', () => {
+    const onChange = vi.fn();
+    render(<SearchBar onChange={onChange} />);
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    expect(onChange).toHaveBeenCalledWith('search');
+    const search = screen.getByRole('tab', {name: 'Search'});
+    expect(search).toHaveAttribute('aria-selected', 'true');
+    expect(search).toHaveAttribute('tabindex', '0');
+    expect(screen.getByRole('tab', {name: 'Home'})).toHaveAttribute(
+      'tabindex',
+      '-1',
+    );
+  });
+
+  it('reaches the search tab with the arrow keys', () => {
+    render(<SearchBar />);
+    const home = screen.getByRole('tab', {name: 'Home'});
+    home.focus();
+    fireEvent.keyDown(home, {key: 'End'});
+    expect(screen.getByRole('tab', {name: 'Search'})).toHaveFocus();
+  });
+});
+
+describe('TabBar search tab, selected', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function Searching({
+    automaticallyActivates,
+    onActiveChange,
+    bottomAccessory,
+  }: {
+    automaticallyActivates?: boolean;
+    onActiveChange?: (isActive: boolean) => void;
+    bottomAccessory?: React.ReactNode;
+  }) {
+    const [value, setValue] = useState('browse');
+    const [isActive, setIsActive] = useState(false);
+    const fieldRef = useRef<HTMLInputElement | null>(null);
+    return (
+      <TabBar
+        value={value}
+        onChange={setValue}
+        label="Sections"
+        bottomAccessory={bottomAccessory}>
+        <TabBarItem value="home" label="Home" icon={<Glyph name="home" />} />
+        <TabBarItem
+          value="browse"
+          label="Browse"
+          icon={<Glyph name="browse" />}
+          selectedIcon={<Glyph name="browse-filled" />}
+        />
+        <TabBarSearchTab
+          value="search"
+          label="Search"
+          icon={<Glyph name="search" />}
+          isActive={isActive}
+          onActiveChange={next => {
+            setIsActive(next);
+            onActiveChange?.(next);
+          }}
+          fieldRef={fieldRef}
+          automaticallyActivates={automaticallyActivates}>
+          <input ref={fieldRef} aria-label="Search query" />
+        </TabBarSearchTab>
+      </TabBar>
+    );
+  }
+
+  it('leaving search from the circle with the keys moves focus on to the tab it returns to', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    render(<Searching />);
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    const circle = document.querySelector(
+      '[data-tab-bar-circle]',
+    ) as HTMLElement;
+    act(() => {
+      circle.focus();
+    });
+    fireEvent.click(circle);
+    // Expanded, the circle is hidden and holds no tab stop: focus cannot
+    // stay on it (WCAG 2.4.3).
+    const browse = screen.getByRole('tab', {name: 'Browse'});
+    expect(browse).toHaveAttribute('aria-selected', 'true');
+    expect(document.activeElement).toBe(browse);
+  });
+
+  it('keeps the field mounted but inert until the search tab is chosen', () => {
+    render(<Searching />);
+    const field = screen.getByLabelText('Search query', {selector: 'input'});
+    expect(field.closest('[data-tab-bar-search-field]')).toHaveAttribute(
+      'inert',
+    );
+  });
+
+  it('activates and focuses the field in the tap that chooses the search tab', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    const onActiveChange = vi.fn();
+    render(<Searching onActiveChange={onActiveChange} />);
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    expect(onActiveChange).toHaveBeenCalledWith(true);
+    const field = screen.getByLabelText('Search query', {selector: 'input'});
+    expect(field).toHaveFocus();
+    const host = field.closest('[data-tab-bar-search-field]');
+    expect(host).not.toHaveAttribute('inert');
+    expect(host).toHaveAttribute('data-tab-bar-search-field', 'active');
+  });
+
+  it('with automaticallyActivates={false}, the field waits inline', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    const onActiveChange = vi.fn();
+    render(
+      <Searching
+        automaticallyActivates={false}
+        onActiveChange={onActiveChange}
+      />,
+    );
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    expect(onActiveChange).not.toHaveBeenCalled();
+    const field = screen.getByLabelText('Search query', {selector: 'input'});
+    expect(field).not.toHaveFocus();
+    expect(field.closest('[data-tab-bar-search-field]')).toHaveAttribute(
+      'data-tab-bar-search-field',
+      'inline',
+    );
+  });
+
+  it('collapses the bar to a circle holding the tab it came from, which returns to it', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    const {container} = render(<Searching automaticallyActivates={false} />);
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    expect(screen.getByRole('tablist')).toHaveAttribute(
+      'data-tab-bar-minimized',
+    );
+    const circle = container.querySelector('[data-tab-bar-circle]');
+    expect(
+      circle?.querySelector('[data-testid="icon-browse-filled"]'),
+    ).not.toBeNull();
+    fireEvent.click(circle as Element);
+    expect(screen.getByRole('tab', {name: 'Browse'})).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByRole('tablist')).not.toHaveAttribute(
+      'data-tab-bar-minimized',
+    );
+  });
+
+  it('sets the bottom accessory aside while searching', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    const {container} = render(
+      <Searching
+        automaticallyActivates={false}
+        bottomAccessory={<button type="button">Play</button>}
+      />,
+    );
+    const accessory = container.querySelector('[data-tab-bar-accessory]');
+    expect(accessory).not.toHaveAttribute('inert');
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    expect(accessory).toHaveAttribute('inert');
+  });
+
+  it('under a mouse selects in place: the bar stays expanded and the field takes the accessory’s place, focused', () => {
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    render(<Searching bottomAccessory={<span>Mini player</span>} />);
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    const field = screen.getByLabelText('Search query', {selector: 'input'});
+    expect(field).toHaveFocus();
+    expect(screen.getByRole('search', {name: 'Search'})).toHaveAttribute(
+      'data-tab-bar-search-field',
+      'above',
+    );
+    expect(screen.getByRole('tablist')).not.toHaveAttribute(
+      'data-tab-bar-minimized',
+    );
+    expect(
+      screen.getByText('Mini player').closest('[data-tab-bar-accessory]'),
+    ).toHaveAttribute('inert');
+  });
+
+  it('under a mouse Escape returns to the tab search was chosen from, and the accessory with it', () => {
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    render(<Searching bottomAccessory={<span>Mini player</span>} />);
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    fireEvent.keyDown(
+      screen.getByLabelText('Search query', {selector: 'input'}),
+      {key: 'Escape'},
+    );
+    const browse = screen.getByRole('tab', {name: 'Browse'});
+    expect(browse).toHaveAttribute('aria-selected', 'true');
+    expect(browse).toHaveFocus();
+    expect(
+      screen.getByText('Mini player').closest('[data-tab-bar-accessory]'),
+    ).not.toHaveAttribute('inert');
   });
 });

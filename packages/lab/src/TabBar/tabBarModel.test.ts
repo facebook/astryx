@@ -23,6 +23,7 @@ import {
   lensTarget,
   liftScale,
   accessoryBox,
+  searchFieldBox,
   minimizedCenter,
   naturalWidth,
   nearestIndex,
@@ -239,5 +240,29 @@ describe('accessoryBox', () => {
       y: 798,
       width: 290,
     });
+  });
+
+  it('with a search tab, ends 8 pt before the minimized search circle: (84, 798, 234 × 48)', () => {
+    expect(onScreen(accessoryBox(360, true, true))).toEqual({
+      x: 84,
+      y: 798,
+      width: 234,
+    });
+  });
+});
+
+describe('searchFieldBox', () => {
+  it('sits inline beside the leading circle: (88, 798, 286 × 48)', () => {
+    const box = searchFieldBox(360, false);
+    expect({x: 21 + box.start, y: 791 + box.top, width: box.width}).toEqual({
+      x: 88,
+      y: 798,
+      width: 286,
+    });
+  });
+
+  it('active, spans the screen but for the cancel button: (8, 330 wide)', () => {
+    const box = searchFieldBox(360, true);
+    expect({x: 21 + box.start, width: box.width}).toEqual({x: 8, width: 330});
   });
 });

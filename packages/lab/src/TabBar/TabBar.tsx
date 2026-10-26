@@ -7,10 +7,12 @@
  * @input React, StyleX, core's theme tokens, list focus and touch
  *   presentation hooks, the UIKit tab-bar table
  *   (`@astryxdesign/core/motion`), useTabBarLens.ts for the
- *   lens's touch motion and tabBarModel.ts for the geometry
+ *   lens's touch motion, useTabBarMinimize.ts and useTabBarSearch.ts for the
+ *   bar's collapse and its search tab, and tabBarModel.ts for the geometry
  * @output Exports TabBar (an iOS 26 floating tab bar: a capsule of items
- *   with a selection lens, badges and a reselect signal) and TabBarItem (one
- *   tab: its value, label, icon and badge)
+ *   with a selection lens, badges and a reselect signal), TabBarItem (one
+ *   tab: its value, label, icon and badge) and TabBarSearchTab (the search
+ *   tab apart at the trailing end, and its field)
  * @position Lab component (packages/lab/src/TabBar); the phone presentation
  *   of an app's top-level sections, UITabBarController's counterpart
  *
@@ -64,14 +66,30 @@
  *
  * Badges appear, change and disappear without animating, as UIKit's do.
  *
+ * SEARCH TAB
+ *
+ * A TabBarSearchTab (UIKit's `UISearchTab`) is a circle as tall as the bar
+ * at its trailing end; the other tabs share a capsule narrowed to leave it
+ * room. Choosing it selects it like any tab and the bar collapses to the
+ * leading circle, which holds the tab it was chosen from (choosing that
+ * circle returns there), while the search field shows inline in the bar.
+ * The field stays mounted (inert while hidden) so that the tap choosing the
+ * tab can, in the same commit, activate the field and focus it, which is
+ * what raises the keyboard on iOS. Active, its glass widens to span the
+ * screen but for the field's cancel button; the field inside rides the
+ * keyboard on the host element TabBarSearchContext hands it.
+ *
  * Accessibility: a `tablist` of `tab` buttons (`aria-selected`), one tab stop
  * with the arrow keys, Home and End moving between tabs and Enter or Space
  * choosing one. A badge is part of its tab's name, one message with both
- * ("Library, 3"; `badgeLabel`, or the badge itself).
+ * ("Library, 3"; `badgeLabel`, or the badge itself). Collapsed, the bar is
+ * one button for assistive technology, as on iOS: the circle, named after
+ * the selected tab and collapsed (`aria-expanded`), the tabs inert until it
+ * expands; activated from the keys, focus lands on the selected tab.
  *
  * SYNC: When modified, update TabBar.doc.mjs, TabBar.test.tsx,
- * useTabBarLens.ts, tabBarModel.ts and
- * __tests__/TabBar.interaction.browser.spec.ts.
+ * useTabBarLens.ts, useTabBarMinimize.ts, useTabBarSearch.ts,
+ * tabBarModel.ts and __tests__/TabBar.interaction.browser.spec.ts.
  */
 
 import {
@@ -80,9 +98,12 @@ import {
   useCallback,
   useId,
   useRef,
+  useState,
   type ReactElement,
   type ReactNode,
+  type RefObject,
 } from 'react';
+import {flushSync} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
 import {useListFocus, useMergedRefs} from '@astryxdesign/core/hooks';
@@ -101,8 +122,15 @@ import {
 import {useTranslator} from '@astryxdesign/core/i18n';
 import {mergeProps, themeProps} from '@astryxdesign/core/utils';
 import {tabBarItemMarker} from './tabBar.stylex';
-import {accessoryBox, itemWidthCss, naturalWidth} from './tabBarModel';
-import {useTabBarLens, useTabBarMinimize} from './TabBarTouch';
+import {
+  accessoryBox,
+  accessoryEnd,
+  itemWidthCss,
+  naturalWidth,
+  searchFieldBox,
+} from './tabBarModel';
+import {useTabBarLens, useTabBarMinimize, useTabBarSearch} from './TabBarTouch';
+import {TabBarSearchContext} from './tabBarSearchContext';
 
 // =============================================================================
 // Types
@@ -149,7 +177,7 @@ export interface TabBarProps extends Omit<
   /**
    * Whether scrolling the page down collapses the bar into a circle holding
    * the selected tab's icon (UIKit's `tabBarMinimizeBehavior`): reaching the
-   * top of the page, a tap on the circle or focus on a tab expands it. Under a finger only;
+   * top of the page or activating the circle (a tap, or the keys) expands it. Under a finger only;
    * under a mouse the bar stays expanded.
    * @default 'never'
    */
@@ -173,6 +201,50 @@ export type TabBarAccessoryPlacement = 'expanded' | 'inline';
  * and draws the tab (it must be a direct child of TabBar).
  */
 export function TabBarItem(_props: TabBarItemProps): null {
+  return null;
+}
+
+export interface TabBarSearchTabProps {
+  /** Identifies the search tab in `value`, `onChange` and `onReselect`. */
+  value: string;
+  /** The tab's name for assistive technology ("Search"). */
+  label: string;
+  /** The search glyph, drawn in the current text colour (an `<Icon />`). */
+  icon: ReactNode;
+  /**
+   * The search field, shown in the bar while the search tab is selected. It
+   * stays mounted (hidden and inert otherwise), so a tap can focus it.
+   */
+  children?: ReactNode;
+  /** Whether the field is active: raised above the keyboard. */
+  isActive?: boolean;
+  /** Called when the search tab's tap activates the field. */
+  onActiveChange?: (isActive: boolean) => void;
+  /** The field's handle: focused by the tap that activates it. */
+  fieldRef?: RefObject<{focus(): void; blur(): void} | null>;
+  /**
+   * Whether choosing the search tab activates its field at once (UIKit's
+   * `automaticallyActivatesSearch`); otherwise the field waits inline.
+   * @default true
+   */
+  automaticallyActivates?: boolean;
+}
+
+/**
+ * The search tab of a TabBar (UIKit's `UISearchTab`): a circle as tall as the
+ * bar at its trailing end, apart from the other tabs. Like TabBarItem it
+ * renders nothing on its own and must be a direct child of TabBar.
+ */
+export function TabBarSearchTab(_props: TabBarSearchTabProps): null {
+  return null;
+}
+
+function readSearch(children: ReactNode): TabBarSearchTabProps | null {
+  for (const child of Children.toArray(children)) {
+    if (isValidElement(child) && child.type === TabBarSearchTab) {
+      return (child as ReactElement<TabBarSearchTabProps>).props;
+    }
+  }
   return null;
 }
 
@@ -287,6 +359,87 @@ const styles = stylex.create({
   capsuleMinimized: {
     pointerEvents: 'none',
   },
+  // Beside a search tab: the capsule leaves it room at the trailing end.
+  capsuleBesideSearch: (room: string) => ({
+    width: `calc(100% - ${room})`,
+  }),
+  search: {
+    position: 'absolute',
+    top: 0,
+    margin: 0,
+    padding: 0,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    color: colorVars['--color-text-primary'],
+    font: 'inherit',
+    pointerEvents: 'auto',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+    outline: 'none',
+    WebkitTapHighlightColor: 'transparent',
+  },
+  searchBox: (start: string, size: string) => ({
+    insetInlineStart: start,
+    width: size,
+    height: size,
+  }),
+  searchGlass: {
+    position: 'absolute',
+    inset: 0,
+    borderRadius: radiusVars['--radius-full'],
+    outlineStyle: {
+      default: 'none',
+      [stylex.when.ancestor(':focus-visible', tabBarItemMarker)]:
+        focusVars['--focus-outline-style'],
+    },
+    outlineWidth: focusVars['--focus-outline-width'],
+    outlineColor: focusVars['--focus-outline-color'],
+    outlineOffset: focusVars['--focus-outline-offset'],
+  },
+  searchSelected: {
+    color: colorVars['--color-accent'],
+  },
+  // The search field's host, inline in the bar's row; the field rides the
+  // keyboard on it while active.
+  accessoryAside: {
+    pointerEvents: 'none',
+  },
+  // Under a mouse the field takes the accessory's place while searching.
+  accessoryHidden: {
+    opacity: 0,
+  },
+  searchHostHidden: {
+    opacity: 0,
+  },
+  searchHost: {
+    position: 'absolute',
+    pointerEvents: 'none',
+  },
+  searchHostShown: {
+    pointerEvents: 'auto',
+  },
+  searchField: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+  },
+  searchFieldBox: (start: string, width: string) => ({
+    insetInlineStart: start,
+    width,
+  }),
+  searchFieldContent: {
+    position: 'absolute',
+    inset: 0,
+    display: 'flex',
+    alignItems: 'center',
+  },
+  // While searching, the leading circle holds the tab the search tab was
+  // chosen from, in its plain colour.
+  circlePlain: {
+    color: colorVars['--color-text-primary'],
+  },
   // The tab buttons' layer: it fades as one when the bar minimizes.
   items: {
     position: 'absolute',
@@ -379,6 +532,21 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-full'],
     color: colorVars['--color-accent'],
     pointerEvents: 'none',
+  },
+  circleButton: {
+    margin: 0,
+    padding: 0,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    font: 'inherit',
+    outlineStyle: {
+      default: 'none',
+      ':focus-visible': focusVars['--focus-outline-style'],
+    },
+    outlineWidth: focusVars['--focus-outline-width'],
+    outlineColor: focusVars['--focus-outline-color'],
+    outlineOffset: focusVars['--focus-outline-offset'],
+    WebkitTapHighlightColor: 'transparent',
   },
   circleActive: {
     pointerEvents: 'auto',
@@ -593,8 +761,17 @@ const HALF_ACCESSORY = px(tabBar.accessoryHeight / 2);
 const ACCESSORY_HEIGHT = px(tabBar.accessoryHeight);
 /** The inline accessory's start and top (its width follows the bar's). */
 const INLINE_ACCESSORY = accessoryBox(0, true);
-/** Its distance from the bar's trailing end. */
-const INLINE_ACCESSORY_END = (tabBar.barHeight - tabBar.minimizedSize) / 2;
+/** The room a search tab takes at the bar's trailing end. */
+const SEARCH_ROOM = px(tabBar.barHeight + tabBar.searchGap);
+/** The inline search field (its width follows the bar's), and the active one relative to it. */
+const INLINE_FIELD = searchFieldBox(0, false);
+const ACTIVE_FIELD = searchFieldBox(0, true);
+const ACTIVE_FIELD_SHIFT = {
+  start: px(ACTIVE_FIELD.start - INLINE_FIELD.start),
+  width: px(ACTIVE_FIELD.width - INLINE_FIELD.width),
+};
+const SEARCH_SIZE = px(tabBar.barHeight);
+const SEARCH_ICON_INSET = px((tabBar.barHeight - tabBar.iconSize) / 2);
 const CIRCLE_INSET = px((tabBar.barHeight - tabBar.minimizedSize) / 2);
 const CIRCLE_SIZE = px(tabBar.minimizedSize);
 const CIRCLE_ICON_INSET = px((tabBar.minimizedSize - tabBar.iconSize) / 2);
@@ -670,6 +847,8 @@ export function TabBar({
 }: TabBarProps) {
   const t = useTranslator();
   const items = readItems(children);
+  const search = readSearch(children);
+  const hasSearch = search != null;
   const count = items.length;
   const selectedIndex = items.findIndex(item => item.value === value);
   const baseId = useId();
@@ -685,7 +864,7 @@ export function TabBar({
     hasRovingTabIndex: true,
   });
   const choose = useCallback(
-    (item: TabBarItemProps) => {
+    (item: {value: string}) => {
       if (item.value === value) {
         onReselect?.(item.value);
       } else {
@@ -694,20 +873,72 @@ export function TabBar({
     },
     [value, onChange, onReselect],
   );
+  const isSearchSelected = search != null && search.value === value;
+  // The tab the search tab was chosen from: the leading circle holds it while
+  // searching, and choosing it leaves the search tab.
+  // Kept in state and adjusted during render as the selection changes (a
+  // discarded render leaves no tab behind, as a ref written there would).
+  const [lastTabValue, setLastTabValue] = useState<string | null>(null);
+  if (!isSearchSelected && selectedIndex >= 0 && lastTabValue !== value) {
+    setLastTabValue(value);
+  }
+  const previousIndex = items.findIndex(item => item.value === lastTabValue);
+  // Under a finger, while searching, the leading circle holds the tab search
+  // was chosen from; under a mouse the search tab is selected in place.
+  const shownIndex =
+    isSearchSelected && isTouch ? Math.max(previousIndex, 0) : selectedIndex;
+  const isSearchActive = isSearchSelected && (search?.isActive ?? false);
+  const chooseSearch = () => {
+    if (search == null) {
+      return;
+    }
+    // Under a mouse the field shows active at once, in the accessory's place.
+    const activates = !isTouch || (search.automaticallyActivates ?? true);
+    if (isSearchSelected && (!activates || isSearchActive)) {
+      onReselect?.(search.value);
+      return;
+    }
+    // One commit: the field becomes visible and focusable before the focus,
+    // inside the tap, which is what lets iOS raise the keyboard.
+    flushSync(() => {
+      if (!isSearchSelected) {
+        onChange(search.value);
+      }
+      if (activates) {
+        search.onActiveChange?.(true);
+      }
+    });
+    if (activates) {
+      search.fieldRef?.current?.focus();
+    }
+  };
   const minimize = useTabBarMinimize({
     capsuleRef,
+    hasSearch,
+    // The search tab's collapse is a touch presentation: under a mouse it
+    // selects in place.
+    isSearching: isSearchSelected && isTouch,
     isEnabled: minimizeBehavior === 'onScrollDown' && isTouch,
   });
+  const searchMotion = useTabBarSearch({
+    capsuleRef,
+    isSearching: isSearchSelected && isTouch,
+    isActive: isSearchActive,
+    isTouch,
+  });
+  const searchHostRef = useRef<HTMLDivElement | null>(null);
+  const circleRef = useRef<HTMLButtonElement | null>(null);
   const lens = useTabBarLens({
     capsuleRef,
     count,
-    selectedIndex,
+    selectedIndex: shownIndex,
     isTouch,
-    isMinimized: minimize.isMinimized,
+    isMinimized: minimize.isCollapsed,
     onLift: index => choose(items[index]),
   });
   const mergedCapsuleRef = useMergedRefs(capsuleRef, listRef, lens.capsule);
-  const {isMinimized, expand} = minimize;
+  const mergedCircleRef = useMergedRefs(minimize.circleIcon, circleRef);
+  const {isCollapsed: isMinimized, expand} = minimize;
   const placement: TabBarAccessoryPlacement = isMinimized
     ? 'inline'
     : 'expanded';
@@ -721,9 +952,43 @@ export function TabBar({
     accessoryContent != null &&
     typeof accessoryContent !== 'boolean' &&
     accessoryContent !== '';
-  const selectedItem = selectedIndex >= 0 ? items[selectedIndex] : null;
+  const selectedItem = shownIndex >= 0 ? items[shownIndex] : null;
+  // The collapsed circle: it expands the bar, or while searching returns to
+  // the tab it holds. Activated from the keys (or VoiceOver), focus moves on
+  // to the selected tab once the bar has expanded.
+  const chooseCircle = () => {
+    const hadFocus = document.activeElement === circleRef.current;
+    // Expanded, the circle is hidden from assistive technology and holds
+    // no tab stop, so focus it had moves on to the tab the bar shows.
+    const moveFocusOn = () => {
+      if (!hadFocus) {
+        return;
+      }
+      const stop =
+        capsuleRef.current?.querySelector<HTMLElement>(
+          '[role="tab"][tabindex="0"]',
+        ) ??
+        document.getElementById(
+          `${baseId}-tab-${selectedIndex >= 0 ? selectedIndex : 0}`,
+        );
+      stop?.focus({preventScroll: true});
+    };
+    if (isSearchSelected) {
+      if (selectedItem != null) {
+        flushSync(() => choose(selectedItem));
+      }
+      moveFocusOn();
+      return;
+    }
+    flushSync(expand);
+    moveFocusOn();
+  };
+  // Collapsed, the search tab beside the circle stays a tab of its own
+  // unless it is the one being searched: the tab list goes inert only when
+  // none of its tabs is reachable.
+  const isSearchTabReachable = search != null && !(isSearchSelected && isTouch);
 
-  const restIndex = Math.max(selectedIndex, 0);
+  const restIndex = Math.max(shownIndex, 0);
   const capsuleInset = px(tabBar.itemInset);
   const itemSize = `calc(${size(count)})`;
 
@@ -744,19 +1009,26 @@ export function TabBar({
       <div
         {...stylex.props(
           styles.bar,
-          styles.barSize(px(tabBar.barHeight), px(naturalWidth(count))),
+          styles.barSize(
+            px(tabBar.barHeight),
+            hasSearch ? 'none' : px(naturalWidth(count)),
+          ),
         )}>
         {hasAccessory ? (
           <div
             ref={minimize.accessory}
             data-tab-bar-accessory={placement}
+            // While searching, the accessory steps aside for the field.
+            inert={isSearchSelected}
             {...stylex.props(
               styles.accessory,
+              isSearchSelected && styles.accessoryAside,
+              isSearchSelected && !isTouch && styles.accessoryHidden,
               isMinimized
                 ? [
                     styles.accessoryBox(
                       px(INLINE_ACCESSORY.start),
-                      `calc(100% - ${px(INLINE_ACCESSORY.start + INLINE_ACCESSORY_END)})`,
+                      `calc(100% - ${px(INLINE_ACCESSORY.start + accessoryEnd(hasSearch))})`,
                       ACCESSORY_HEIGHT,
                     ),
                     styles.accessoryInline(px(INLINE_ACCESSORY.top)),
@@ -798,6 +1070,9 @@ export function TabBar({
           role="tablist"
           aria-label={label}
           aria-orientation="horizontal"
+          // Collapsed (minimized, or while searching), the circle stands for
+          // the bar; with no tab left reachable the list goes inert too.
+          inert={isMinimized && !isSearchTabReachable}
           data-tab-bar-minimized={isMinimized ? '' : undefined}
           onKeyDown={handleKeyDown}
           onFocus={event => {
@@ -806,9 +1081,9 @@ export function TabBar({
               expand();
             }
           }}
-          onClick={isMinimized ? expand : undefined}
           {...stylex.props(
             styles.capsule,
+            hasSearch && styles.capsuleBesideSearch(SEARCH_ROOM),
             isMinimized && styles.capsuleMinimized,
           )}>
           <div
@@ -845,7 +1120,10 @@ export function TabBar({
                   id={`${baseId}-tab-${index}`}
                   aria-selected={isSelected}
                   tabIndex={
-                    isSelected || (selectedIndex < 0 && index === 0) ? 0 : -1
+                    isSelected ||
+                    (selectedIndex < 0 && !isSearchSelected && index === 0)
+                      ? 0
+                      : -1
                   }
                   // A badge is part of the name: one message with both.
                   aria-label={
@@ -857,6 +1135,9 @@ export function TabBar({
                       : undefined
                   }
                   data-tab-bar-value={item.value}
+                  // Collapsed, the circle stands for the bar (UIKit exposes it
+                  // alone to VoiceOver); the tabs return as it expands.
+                  inert={isMinimized}
                   onClick={() => choose(item)}
                   {...mergeProps(
                     themeProps('tab-bar-item', {
@@ -887,7 +1168,55 @@ export function TabBar({
               );
             })}
           </div>
-          {selectedIndex >= 0 ? (
+          {search != null ? (
+            <button
+              type="button"
+              role="tab"
+              id={`${baseId}-tab-search`}
+              aria-selected={isSearchSelected}
+              aria-label={search.label}
+              tabIndex={isSearchSelected ? 0 : -1}
+              // Under a finger, while searching (inline or active), it is
+              // faded out; under a mouse it stays, selected, in place.
+              inert={isSearchSelected && isTouch}
+              ref={searchMotion.circle}
+              data-tab-bar-search={search.value}
+              onClick={chooseSearch}
+              {...mergeProps(
+                themeProps('tab-bar-item', {
+                  selected: isSearchSelected ? 'selected' : null,
+                }),
+                stylex.props(
+                  tabBarItemMarker,
+                  styles.search,
+                  styles.searchBox(
+                    `calc(100% + ${px(tabBar.searchGap)})`,
+                    SEARCH_SIZE,
+                  ),
+                  isSearchSelected && styles.searchSelected,
+                ),
+              )}>
+              <span
+                ref={minimize.searchGlass}
+                aria-hidden
+                {...stylex.props(styles.glass, styles.searchGlass)}
+              />
+              <span
+                aria-hidden
+                {...stylex.props(
+                  styles.icon,
+                  styles.box(
+                    SEARCH_ICON_INSET,
+                    SEARCH_ICON_INSET,
+                    ICON_SIZE,
+                    ICON_SIZE,
+                  ),
+                )}>
+                {search.icon}
+              </span>
+            </button>
+          ) : null}
+          {shownIndex >= 0 ? (
             <div
               aria-hidden
               data-tab-bar-lens=""
@@ -967,31 +1296,139 @@ export function TabBar({
               ) : null,
             )}
           </div>
-          <div
-            ref={minimize.circleIcon}
-            aria-hidden
-            data-tab-bar-circle=""
-            {...stylex.props(
-              styles.circle,
-              styles.box(CIRCLE_INSET, CIRCLE_INSET, CIRCLE_SIZE, CIRCLE_SIZE),
-              isMinimized && styles.circleActive,
-            )}>
-            {selectedItem != null ? (
-              <span
-                {...stylex.props(
-                  styles.icon,
-                  styles.box(
-                    CIRCLE_ICON_INSET,
-                    CIRCLE_ICON_INSET,
-                    ICON_SIZE,
-                    ICON_SIZE,
-                  ),
-                )}>
-                {selectedItem.selectedIcon ?? selectedItem.icon}
-              </span>
-            ) : null}
-          </div>
         </div>
+        <button
+          ref={mergedCircleRef}
+          type="button"
+          data-tab-bar-circle=""
+          // Collapsed, the circle is the bar's one element for assistive
+          // technology, as on iOS: the selected tab, collapsed (while
+          // searching, the tab it returns to). Expanded, it is hidden.
+          aria-label={
+            isMinimized
+              ? (selectedItem?.label ?? label ?? t('@astryx.tabList.label'))
+              : undefined
+          }
+          aria-expanded={isMinimized && !isSearchSelected ? false : undefined}
+          aria-hidden={isMinimized ? undefined : true}
+          tabIndex={isMinimized ? 0 : -1}
+          onClick={chooseCircle}
+          {...stylex.props(
+            styles.circle,
+            styles.circleButton,
+            styles.box(CIRCLE_INSET, CIRCLE_INSET, CIRCLE_SIZE, CIRCLE_SIZE),
+            isMinimized && styles.circleActive,
+            isSearchSelected && styles.circlePlain,
+          )}>
+          {selectedItem != null ? (
+            <span
+              aria-hidden
+              {...stylex.props(
+                styles.icon,
+                styles.box(
+                  CIRCLE_ICON_INSET,
+                  CIRCLE_ICON_INSET,
+                  ICON_SIZE,
+                  ICON_SIZE,
+                ),
+              )}>
+              {selectedItem.selectedIcon ?? selectedItem.icon}
+            </span>
+          ) : null}
+        </button>
+        {search != null ? (
+          <div
+            ref={searchHostRef}
+            role="search"
+            aria-label={search.label}
+            data-tab-bar-search-field={
+              !isTouch ? 'above' : isSearchActive ? 'active' : 'inline'
+            }
+            inert={!isSearchSelected}
+            onKeyDown={event => {
+              // Under a mouse Escape leaves the search tab, back to the tab it
+              // was chosen from, and the accessory returns.
+              if (isTouch || event.key !== 'Escape' || lastTabValue == null) {
+                return;
+              }
+              event.preventDefault();
+              const back = lastTabValue;
+              flushSync(() => {
+                search.onActiveChange?.(false);
+                choose({value: back});
+              });
+              capsuleRef.current
+                ?.querySelector<HTMLElement>(
+                  '[role="tab"][aria-selected="true"]',
+                )
+                ?.focus({preventScroll: true});
+            }}
+            {...stylex.props(
+              styles.searchHost,
+              isTouch
+                ? [
+                    styles.accessoryBox(
+                      px(INLINE_FIELD.start),
+                      // The field's width follows the bar's (its box at width 0 is negative).
+                      `calc(100% + ${px(INLINE_FIELD.width)})`,
+                      ACCESSORY_HEIGHT,
+                    ),
+                    styles.accessoryInline(px(INLINE_FIELD.top)),
+                  ]
+                : [
+                    // Under a mouse, in the accessory's place, at once.
+                    styles.accessoryBox('0px', '100%', ACCESSORY_HEIGHT),
+                    styles.accessoryAbove(px(tabBar.accessoryGap)),
+                    !isSearchSelected && styles.searchHostHidden,
+                  ],
+              isSearchSelected && styles.searchHostShown,
+            )}>
+            <div
+              ref={isTouch ? searchMotion.field : undefined}
+              {...stylex.props(
+                styles.searchField,
+                isTouch && isSearchActive
+                  ? styles.searchFieldBox(
+                      ACTIVE_FIELD_SHIFT.start,
+                      `calc(100% + ${ACTIVE_FIELD_SHIFT.width})`,
+                    )
+                  : styles.searchFieldBox('0px', '100%'),
+              )}>
+              <div aria-hidden {...stylex.props(styles.accessoryGlass)}>
+                <div
+                  {...stylex.props(
+                    styles.glass,
+                    styles.platterStart(HALF_ACCESSORY),
+                  )}
+                />
+                <div
+                  ref={searchMotion.fieldMiddle}
+                  {...stylex.props(
+                    styles.glass,
+                    styles.platterMiddle(HALF_ACCESSORY),
+                  )}
+                />
+                <div
+                  ref={searchMotion.fieldEnd}
+                  {...stylex.props(
+                    styles.glass,
+                    styles.platterEnd(HALF_ACCESSORY),
+                  )}
+                />
+              </div>
+              <div {...stylex.props(styles.searchFieldContent)}>
+                <TabBarSearchContext.Provider
+                  value={{
+                    host: searchHostRef,
+                    placement: 'tab',
+                    isActive: isSearchActive,
+                  }}>
+                  {search.children}
+                </TabBarSearchContext.Provider>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

@@ -458,6 +458,11 @@ export function useTabBarLens({
         name: 'tab-bar-selection',
         minimumPressDuration: 0,
         allowedPointerTypes: ['touch', 'pen'],
+        // Only the capsule's own box: the search tab beside it is a button.
+        shouldReceiveTouch: (_recognizer, touch) => {
+          const box = capsuleRef.current?.getBoundingClientRect();
+          return box != null && touch.x >= box.left && touch.x <= box.right;
+        },
       }),
     recognizer => {
       switch (recognizer.state) {
@@ -529,6 +534,7 @@ export function useTabBarLens({
       body.animator.getVelocity('x', now) !== 0 ||
       body.animator.getVelocity('scaleX', now) !== 0;
     const options = isMoving ? {at: now} : {};
+    // Under a finger: the bar collapses for the minimize and the search tab.
     body.animator.animate(
       {x: target.x},
       {spring: tabBar.collapseTravel},
@@ -549,7 +555,7 @@ export function useTabBarLens({
       options,
     );
     playCopy(now, !isMoving, isMinimized ? COPY_FADE_S : COPY_HORIZON_S);
-  }, [isMinimized, capsuleRef, body, copy]);
+  }, [isMinimized, isTouch, capsuleRef, body, copy]);
 
   // Minimized, the bar's width can still change (a rotation, a split view):
   // the lens stays in the circle.

@@ -1444,6 +1444,49 @@ test.describe('minimize on scroll', () => {
     await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
   });
 
+  test('minimized, the accessibility tree holds no empty tab list beside the circle', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'reads Chromium’s accessibility tree',
+    );
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    const cdp = await page.context().newCDPSession(page);
+    const {nodes} = await cdp.send('Accessibility.getFullAXTree');
+    const roles = nodes
+      .filter(node => node.ignored !== true)
+      .map(node => node.role?.value);
+    expect(roles).not.toContain('tablist');
+    expect(roles).toContain('button');
+  });
+
+  test('minimized, the circle alone stands for the bar: the selected tab, collapsed; the keys expand it onto that tab', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    const button = page.getByRole('button', {name: 'Library'});
+    await expect(button).toHaveAttribute('aria-expanded', 'false');
+    // The tabs are inert: out of reach of assistive technology and focus.
+    const tabsInert = () =>
+      page
+        .getByRole('tablist')
+        .evaluate(list =>
+          [...list.querySelectorAll<HTMLElement>('[role="tab"]')].map(
+            element => element.inert,
+          ),
+        );
+    expect(await tabsInert()).toEqual([true, true, true, true]);
+    await button.focus();
+    await page.keyboard.press('Enter');
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    await expect(tab(page, 'Library')).toBeFocused();
+    expect(await tabsInert()).toEqual([false, false, false, false]);
+  });
+
   test('expanded again, the lens carries no copy at rest, and a slide’s copy lines up with the items', async ({
     page,
   }) => {
@@ -2063,6 +2106,519 @@ test(
       cellScale: 0.6,
     });
     await expand.write(testInfo);
+    await releaseAnimations(page, {finish: true});
+  },
+);
+
+/** uikit/tabBar.ts: the search field's morph and its starting squash. */
+const SEARCH_MORPH = {response: 0.244, dampingFraction: 1.108};
+const SEARCH_SQUASH = -3424;
+/** Inline beside the circle, and active (spanning the screen but for cancel). */
+const INLINE_FIELD = {start: 67, inset: 7};
+const ACTIVE_FIELD = {start: -13, width: 330};
+
+const searchCircle = (page: Page) => page.locator('[data-tab-bar-search]');
+const searchHost = (page: Page) => page.locator('[data-tab-bar-search-field]');
+const searchField = (page: Page) => searchHost(page).locator('> div');
+/** The field glass's trailing cap: it carries the width's change. */
+const searchFieldEnd = (page: Page) =>
+  searchField(page).locator('> div[aria-hidden] > div').nth(2);
+
+/**
+ * A damped spring's offset from rest `t` ms after it starts `d0` px away,
+ * moving at `v0` px/s (closed form; under-, over- and critically damped).
+ */
+function springOffset(
+  {
+    response,
+    dampingFraction: zeta,
+  }: {response: number; dampingFraction: number},
+  d0: number,
+  v0: number,
+  t: number,
+) {
+  const s = t / 1000;
+  const w = (2 * Math.PI) / response;
+  if (Math.abs(zeta - 1) < 1e-9) {
+    return Math.exp(-w * s) * (d0 + (v0 + w * d0) * s);
+  }
+  if (zeta < 1) {
+    const wd = w * Math.sqrt(1 - zeta * zeta);
+    return (
+      Math.exp(-zeta * w * s) *
+      (d0 * Math.cos(wd * s) + ((v0 + zeta * w * d0) / wd) * Math.sin(wd * s))
+    );
+  }
+  const root = w * Math.sqrt(zeta * zeta - 1);
+  const r1 = -zeta * w + root;
+  const r2 = -zeta * w - root;
+  const c2 = (v0 - r1 * d0) / (r2 - r1);
+  return (d0 - c2) * Math.exp(r1 * s) + c2 * Math.exp(r2 * s);
+}
+
+async function tapSearch(page: Page, driver: TouchDriver) {
+  const box = await searchCircle(page).boundingBox();
+  if (box == null) {
+    throw new Error('no search circle');
+  }
+  await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+}
+
+test.describe('search tab', () => {
+  test('the tabs share a narrower capsule and the search circle sits 8 px after it, as UIKit lays them out', async ({
+    page,
+  }) => {
+    const {bar} = await openBar(page, 'search-tab');
+    const capsule = await bar.boundingBox();
+    const search = await searchCircle(page).boundingBox();
+    const viewport = page.viewportSize();
+    if (capsule == null || search == null || viewport == null) {
+      throw new Error('no bar');
+    }
+    // 402 pt wide: the capsule (21, 290) and the circle (319, 62 × 62).
+    const room = viewport.width - 2 * 21;
+    expect(capsule.x).toBeCloseTo(21, 0);
+    expect(capsule.width).toBeCloseTo(room - 70, 0);
+    expect(search.x - (capsule.x + capsule.width)).toBeCloseTo(8, 0);
+    expect(search.width).toBeCloseTo(62, 0);
+    expect(search.height).toBeCloseTo(62, 0);
+    expect(search.y).toBeCloseTo(capsule.y, 0);
+    // It is the tablist's last tab.
+    await expect(page.getByRole('tab').last()).toHaveAccessibleName('Search');
+  });
+
+  test('a tap on it selects it and raises its field, the bar collapsing to a circle with the tab it came from; cancel returns there', async ({
+    page,
+    browserName,
+  }) => {
+    const {driver} = await openBar(page, 'search-tab');
+    const box = await searchCircle(page).boundingBox();
+    if (box == null) {
+      throw new Error('no search circle');
+    }
+    const at = {x: box.x + box.width / 2, y: box.y + box.height / 2};
+    if (browserName === 'chromium') {
+      // A finger held on the search circle never presses the lens. (Only
+      // Chromium's touches can be read mid-script; WebKit's scripted hold
+      // reads as a long press, which fires no click.)
+      const playing = driver.play(tapScript(at, {holdMs: 200}));
+      await page.waitForTimeout(100);
+      expect((await scaleOf(lensBody(page))).x).toBeCloseTo(1, 3);
+      await playing;
+    } else {
+      await driver.tap(at);
+    }
+
+    await expect(tab(page, 'Search')).toHaveAttribute('aria-selected', 'true');
+    await expect.poll(() => isMinimized(page)).toBe(true);
+    await expect(searchHost(page)).toHaveAttribute(
+      'data-tab-bar-search-field',
+      'active',
+    );
+    // The tap focused the field itself (iOS raises the keyboard for that).
+    await expect(page.getByRole('textbox', {name: 'Search'})).toBeFocused();
+    // The circle holds Home, the tab the search tab was chosen from.
+    await expect(circle(page).locator('svg')).toHaveCount(1);
+    await waitForRest(searchField(page));
+    const field = await searchField(page).boundingBox();
+    const viewport = page.viewportSize();
+    if (field == null || viewport == null) {
+      throw new Error('no field');
+    }
+    expect(field.x).toBeCloseTo(8, 0);
+    expect(field.width).toBeCloseTo(viewport.width - 8 - 48 - 8 - 8, 0);
+
+    await page.getByRole('button', {name: 'Cancel'}).click();
+    await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    await expect(searchHost(page)).toHaveAttribute(
+      'data-tab-bar-search-field',
+      'inline',
+    );
+    await expect
+      .poll(() =>
+        searchHost(page).evaluate(element => (element as HTMLElement).inert),
+      )
+      .toBe(true);
+  });
+
+  test('the field moves and widens on UIKit’s spring, squashing as it starts', async ({
+    page,
+  }, testInfo) => {
+    const {driver} = await openBar(page, 'search-tab');
+    await tapSearch(page, driver);
+    await expect(searchHost(page)).toHaveAttribute(
+      'data-tab-bar-search-field',
+      'active',
+    );
+    // Held as soon as the tap commits: in software-rendered WebKit the first
+    // frame of this many glass layers can take a second.
+    await holdAnimations(page);
+    const times = Array.from({length: 31}, (_, i) => i * 16.667);
+    const moved = await sampleCurve(searchField(page), times);
+    const widened = await sampleCurve(searchFieldEnd(page), times);
+    await releaseAnimations(page, {finish: true});
+    const host = await searchHost(page).boundingBox();
+    if (host == null) {
+      throw new Error('no field host');
+    }
+    // From its inline place (67 px into the bar, 7 px from its end) to the
+    // active one (8 px from the screen's edge, 330 px wide on this screen).
+    const dx = INLINE_FIELD.start - ACTIVE_FIELD.start;
+    const dw = host.width - (host.width + 44);
+    const samples = times.map((t, i) => ({
+      t: +t.toFixed(1),
+      x: moved[i].transform.translateX,
+      analyticX: dx * (1 - springStep(SEARCH_MORPH, t)),
+      end: widened[i].transform.translateX,
+      analyticEnd: springOffset(SEARCH_MORPH, dw, SEARCH_SQUASH, t),
+    }));
+    await writeEvidence(
+      'curves/tabbar-search',
+      {
+        [`${testInfo.project.name}.json`]: JSON.stringify(
+          {dx, dw, samples},
+          null,
+          1,
+        ),
+      },
+      testInfo,
+    );
+    for (const sample of samples) {
+      expect(
+        Math.abs(sample.x - sample.analyticX),
+        JSON.stringify(sample),
+      ).toBeLessThan(0.5);
+      expect(
+        Math.abs(sample.end - sample.analyticEnd),
+        JSON.stringify(sample),
+      ).toBeLessThan(0.5);
+    }
+    // The squash: the width first shrinks below where it started.
+    expect(Math.min(...samples.map(sample => sample.end))).toBeLessThan(
+      dw - 10,
+    );
+  });
+
+  test('with automaticallyActivates={false} the field waits inline until it is tapped', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'search-tab-waits-inline');
+    await tapSearch(page, driver);
+    await expect(tab(page, 'Search')).toHaveAttribute('aria-selected', 'true');
+    await expect(searchHost(page)).toHaveAttribute(
+      'data-tab-bar-search-field',
+      'inline',
+    );
+    await expect(page.getByRole('textbox', {name: 'Search'})).not.toBeFocused();
+    const field = await page
+      .getByRole('textbox', {name: 'Search'})
+      .boundingBox();
+    if (field == null) {
+      throw new Error('no field');
+    }
+    await driver.tap({
+      x: field.x + field.width / 2,
+      y: field.y + field.height / 2,
+    });
+    await expect(searchHost(page)).toHaveAttribute(
+      'data-tab-bar-search-field',
+      'active',
+    );
+    await expect(page.getByRole('textbox', {name: 'Search'})).toBeFocused();
+  });
+
+  test('a main thread blocked 120 ms after the tap still leaves the field focused by the tap itself', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'search-tab');
+    // The page blocks its main thread for 600 ms, 120 ms after the search
+    // tab is selected; the focus that raises iOS's keyboard happens in the
+    // tap, before it.
+    await page.evaluate(() => {
+      const target = document.querySelector('[data-tab-bar-search]');
+      const log: number[] = [];
+      (window as unknown as {__block: number[]}).__block = log;
+      const observer = new MutationObserver(() => {
+        if (target?.getAttribute('aria-selected') !== 'true') {
+          return;
+        }
+        observer.disconnect();
+        log.push(
+          document.activeElement?.getAttribute('aria-label') === 'Search'
+            ? 1
+            : 0,
+        );
+        setTimeout(() => {
+          const until = performance.now() + 600;
+          while (performance.now() < until) {
+            // Busy.
+          }
+          log.push(2);
+        }, 120);
+      });
+      if (target != null) {
+        observer.observe(target, {attributeFilter: ['aria-selected']});
+      }
+    });
+    await tapSearch(page, driver);
+    await expect
+      .poll(() =>
+        page.evaluate(() => (window as unknown as {__block: number[]}).__block),
+      )
+      .toEqual([1, 2]);
+    await expect(page.getByRole('textbox', {name: 'Search'})).toBeFocused();
+    await expect(searchHost(page)).toHaveAttribute(
+      'data-tab-bar-search-field',
+      'active',
+    );
+  });
+
+  test('with Reduce Motion the field cross-fades into place: opacity only, within 200 ms', async ({
+    page,
+  }) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    const {driver} = await openBar(page, 'search-tab');
+    const since = await timelineNow(page);
+    await tapSearch(page, driver);
+    // The fade starts with the input; what it changes follows a few
+    // frames later.
+    await expectCrossFade(page, since);
+    await expect(searchHost(page)).toHaveAttribute(
+      'data-tab-bar-search-field',
+      'active',
+    );
+    assertOpacityOnly(await runningAnimations(page, since));
+  });
+
+  test.describe('under a mouse', () => {
+    test.use({hasTouch: false, isMobile: false});
+
+    test('with Reduce Motion the search tab’s field appears at once', async ({
+      page,
+    }) => {
+      await expectFinePointer(page);
+      await page.emulateMedia({reducedMotion: 'reduce'});
+      await openStory(page, storybook(), 'lab-tabbar--search-tab');
+      await expect(page.getByRole('tablist', {name: 'Sections'})).toBeVisible();
+      const since = await timelineNow(page);
+      await page.getByRole('tab', {name: 'Search'}).click();
+      await expect(searchHost(page)).toHaveAttribute(
+        'data-tab-bar-search-field',
+        'above',
+      );
+      await expectNoMotion(page, since);
+    });
+  });
+
+  test('while searching, the keys never land on a faded-out tab', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'search-tab-waits-inline');
+    await tapSearch(page, driver);
+    await expect(searchHost(page)).toHaveAttribute(
+      'data-tab-bar-search-field',
+      'inline',
+    );
+    // The search tab has faded out.
+    await waitForRest(searchCircle(page));
+    await page.getByRole('textbox', {name: 'Search'}).focus();
+    await page.keyboard.press('Shift+Tab');
+    const landed = await page.evaluate(() => {
+      const focused = document.activeElement;
+      if (focused == null || focused === document.body) {
+        return {opacity: 1, name: 'body'};
+      }
+      let opacity = 1;
+      for (
+        let at: Element | null = focused;
+        at != null;
+        at = at.parentElement
+      ) {
+        opacity *= Number(getComputedStyle(at).opacity);
+      }
+      return {
+        opacity,
+        name: focused.getAttribute('aria-label') ?? focused.textContent ?? '',
+      };
+    });
+    expect(landed.opacity, JSON.stringify(landed)).toBeGreaterThan(0.5);
+  });
+
+  test('while searching, a tap on the leading circle returns to the tab it holds', async ({
+    page,
+  }) => {
+    // The field waits inline beside the circle (a focused field covers the
+    // bar's row, under the keyboard).
+    const {driver} = await openBar(page, 'search-tab-waits-inline');
+    await tapSearch(page, driver);
+    await expect(tab(page, 'Search')).toHaveAttribute('aria-selected', 'true');
+    await expect.poll(() => isMinimized(page)).toBe(true);
+    // The circle is one button named after the tab it holds.
+    const held = page.locator('[data-tab-bar-circle]');
+    await expect(held).toHaveAccessibleName('Home');
+    await waitForRest(lensBody(page));
+    const box = await held.boundingBox();
+    if (box == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+    await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    await expect(searchHost(page)).toHaveAttribute(
+      'data-tab-bar-search-field',
+      'inline',
+    );
+  });
+
+  test('right to left, the search circle sits at the left end and the field spans from the right', async ({
+    page,
+  }) => {
+    const {driver, bar} = await openBar(page, 'search-tab');
+    await rightToLeft(page);
+    const viewport = page.viewportSize();
+    const capsule = await bar.boundingBox();
+    const search = await searchCircle(page).boundingBox();
+    if (capsule == null || search == null || viewport == null) {
+      throw new Error('no bar');
+    }
+    expect(search.x).toBeCloseTo(21, 0);
+    expect(capsule.x - (search.x + search.width)).toBeCloseTo(8, 0);
+    expect(viewport.width - (capsule.x + capsule.width)).toBeCloseTo(21, 0);
+    await tapSearch(page, driver);
+    await expect(searchHost(page)).toHaveAttribute(
+      'data-tab-bar-search-field',
+      'active',
+    );
+    await waitForRest(searchField(page));
+    const field = await searchField(page).boundingBox();
+    if (field == null) {
+      throw new Error('no field');
+    }
+    // 8 px from the right edge, the cancel button's room on the left.
+    expect(viewport.width - (field.x + field.width)).toBeCloseTo(8, 0);
+    expect(field.width).toBeCloseTo(viewport.width - 8 - 48 - 8 - 8, 0);
+  });
+
+  test.describe('under a mouse', () => {
+    test.use({hasTouch: false, isMobile: false});
+
+    test('the search tab selects in place: the bar stays expanded and focus lands in the field, with no animator writes', async ({
+      page,
+    }) => {
+      await expectFinePointer(page);
+      await openStory(page, storybook(), 'lab-tabbar--search-tab');
+      await expect(page.getByRole('tablist', {name: 'Sections'})).toBeVisible();
+      const since = await timelineNow(page);
+      await page.getByRole('tab', {name: 'Search'}).click();
+      await expect(page.getByRole('textbox', {name: 'Search'})).toBeFocused();
+      await expect(searchHost(page)).toHaveAttribute(
+        'data-tab-bar-search-field',
+        'above',
+      );
+      expect(await isMinimized(page)).toBe(false);
+      // Nothing the animator plays (CSS transitions aside).
+      expect(
+        await page.evaluate(
+          since =>
+            document
+              .getAnimations()
+              .filter(
+                animation =>
+                  !(animation instanceof CSSTransition) &&
+                  !(animation instanceof CSSAnimation) &&
+                  (animation.startTime == null ||
+                    Number(animation.startTime) >= since),
+              ).length,
+          since,
+        ),
+      ).toBe(0);
+      // Escape returns to the tab search was chosen from.
+      await page.keyboard.press('Escape');
+      await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+      await expect(tab(page, 'Home')).toBeFocused();
+      // The keys choose it too, focus landing in the field.
+      await tab(page, 'Search').focus();
+      await page.keyboard.press('Enter');
+      await expect(page.getByRole('textbox', {name: 'Search'})).toBeFocused();
+    });
+  });
+
+  test('minimized, both circles stay and the accessory ends 8 px before the search circle', async ({
+    page,
+  }) => {
+    const {driver, bar} = await openBar(page, 'search-tab');
+    const barBox = await bar.boundingBox();
+    const search = await searchCircle(page).boundingBox();
+    if (barBox == null || search == null) {
+      throw new Error('no bar');
+    }
+    await minimizeBar(page, driver);
+    const glass = searchCircle(page).locator('> span').first();
+    await waitForRest(glass);
+    await waitForRest(accessory(page));
+    const shrunk = await glass.boundingBox();
+    const inline = await accessory(page).boundingBox();
+    if (shrunk == null || inline == null) {
+      throw new Error('no glass');
+    }
+    // The search circle shrinks to 48 about its centre (326, 798 on iOS).
+    expect(shrunk.width).toBeCloseTo(MINIMIZED_SIZE, 0);
+    expect(shrunk.x + shrunk.width / 2).toBeCloseTo(
+      search.x + search.width / 2,
+      0,
+    );
+    expect(shrunk.y + shrunk.height / 2).toBeCloseTo(
+      search.y + search.height / 2,
+      0,
+    );
+    // The accessory sits between the circles: 63 px into the bar, ending
+    // 8 px before the search circle (84 → 318 on iOS, 234 wide).
+    expect(inline.x - barBox.x).toBeCloseTo(63, 0);
+    expect(shrunk.x - (inline.x + inline.width)).toBeCloseTo(8, 0);
+  });
+});
+
+test(
+  'storyboard: the search tab raises its field as the bar collapses, and cancel brings the tabs back',
+  {tag: '@storyboard'},
+  async ({page}, testInfo) => {
+    const {driver, bar} = await openBar(page, 'search-tab');
+    const box = await bar.boundingBox();
+    if (box == null) {
+      throw new Error('no bar');
+    }
+    const clip = {
+      x: 0,
+      y: box.y - 72,
+      width: box.x * 2 + box.width + 62,
+      height: box.height + 84,
+    };
+    const times = Array.from({length: 20}, (_, i) => i * 33.333);
+    await tapSearch(page, driver);
+    await expect(searchHost(page)).toHaveAttribute(
+      'data-tab-bar-search-field',
+      'active',
+    );
+    const {storyboard: raise} = await animationStoryboard(page, {
+      name: 'tabbar-search-activate',
+      clip,
+      times,
+      columns: 5,
+      cellScale: 0.6,
+    });
+    await raise.write(testInfo);
+    await releaseAnimations(page, {finish: true});
+    await page.getByRole('button', {name: 'Cancel'}).click();
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    const {storyboard: cancel} = await animationStoryboard(page, {
+      name: 'tabbar-search-cancel',
+      clip,
+      times,
+      columns: 5,
+      cellScale: 0.6,
+    });
+    await cancel.write(testInfo);
     await releaseAnimations(page, {finish: true});
   },
 );

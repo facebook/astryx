@@ -182,6 +182,10 @@
         },
         {
           "kind": "component",
+          "name": "TabBarSearchTab"
+        },
+        {
+          "kind": "component",
           "name": "ThreeDBar"
         },
         {
