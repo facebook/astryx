@@ -277,29 +277,6 @@ export default function PreviewsPage() {
         </DemoCard>
 
         <DemoCard
-          title="ProgressBar fill"
-          question="Width against transform for the determinate fill. Width re-lays out the bar every frame; scaleX stays on the compositor but squashes the rounded ends."
-          badges={<Badge variant="warning" label="PARTIAL" />}>
-          <ComparePanes
-            panes={[
-              {
-                tone: 'before',
-                label: 'Today — real ProgressBar, width',
-                content: <ProgressFillRig mode="before" />,
-              },
-              {
-                tone: 'after',
-                label: 'Proposed — transform: scaleX',
-                content: <ProgressFillRig mode="after" />,
-              },
-            ]}
-          />
-          <DemoBody>
-            <TokenSlider token="--duration-medium" label="fill" max={900} />
-          </DemoBody>
-        </DemoCard>
-
-        <DemoCard
           title="Stat value change"
           question="A change of 4 and a change of 4,000 look identical today. Needs a delta threshold, or a jump from 12 to 1,300,000 spins for a second."
           badges={<Badge variant="error" label="ADD" />}>
@@ -319,6 +296,29 @@ export default function PreviewsPage() {
           />
         </DemoCard>
       </Grid>
+
+      <DemoCard
+        title="ProgressBar fill"
+        question="Width against transform for the determinate fill. Width re-lays out the bar every frame; scaleX stays on the compositor but squashes the rounded ends."
+        badges={<Badge variant="warning" label="PARTIAL" />}>
+        <ComparePanes
+          panes={[
+            {
+              tone: 'before',
+              label: 'Today — real ProgressBar, width',
+              content: <ProgressFillRig mode="before" />,
+            },
+            {
+              tone: 'after',
+              label: 'Proposed — transform: scaleX',
+              content: <ProgressFillRig mode="after" />,
+            },
+          ]}
+        />
+        <DemoBody>
+          <TokenSlider token="--duration-medium" label="fill" max={900} />
+        </DemoBody>
+      </DemoCard>
 
       <VStack gap={2}>
         <Heading level={2}>What is not here</Heading>
