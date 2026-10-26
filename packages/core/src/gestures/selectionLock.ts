@@ -22,6 +22,7 @@
  * SYNC: When modified, update GestureHost.ts and utils/pressFeedback.ts.
  */
 
+import {isCoarsePointer} from './coarsePointer';
 import {parentAcrossShadow} from './nativeScroll';
 
 /** What a held finger must not start on a control or a cell. */
@@ -46,23 +47,17 @@ const TEXT_ENTRY_TYPES = new Set([
 ]);
 
 /**
- * Whether a contact of this pointer kind takes the lock. A finger always
- * does. A pen does only where the primary pointer is coarse (an iPad's
- * pencil): a pen on a desktop tablet is a fine pointer, and keeps selection
- * exactly as a mouse does (`spec:AST-017` FR59). A mouse never does.
+ * Whether a contact of this pointer kind takes the lock: a finger or a pen,
+ * and only where the primary pointer is coarse (a phone, an iPad and its
+ * pencil). Where the primary pointer is fine (a laptop's touchscreen, a
+ * desktop pen tablet), a finger and a pen get the browser's defaults, as a
+ * mouse does (`spec:AST-094` FR19, `spec:AST-017` FR59). A mouse never does.
  */
 export function locksSelectionFor(
   pointerType: string,
   view: Window | null | undefined,
 ): boolean {
-  if (pointerType === 'touch') {
-    return true;
-  }
-  return (
-    pointerType === 'pen' &&
-    typeof view?.matchMedia === 'function' &&
-    view.matchMedia('(pointer: coarse)').matches
-  );
+  return pointerType !== 'mouse' && isCoarsePointer(view);
 }
 
 /** Locked elements, how many contacts hold each, and what to restore. */

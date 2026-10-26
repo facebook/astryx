@@ -48,10 +48,10 @@ import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 import {timing} from '../motion/uikit/timing';
 import {travel} from './geometry';
 import type {GestureRecognizer} from './GestureRecognizer';
-import {TapGestureRecognizer} from './TapGestureRecognizer';
+import {internals} from './recognizerInternals';
+import type {TapGestureRecognizer} from './TapGestureRecognizer';
 import type {GestureTouch, TouchConsumer} from './types';
 
-/** @experimental */
 export type ControlEvent =
   | 'touchDown'
   | 'touchDragInside'
@@ -62,7 +62,6 @@ export type ControlEvent =
   | 'touchUpOutside'
   | 'touchCancel';
 
-/** @experimental */
 export interface PressBounds {
   readonly left: number;
   readonly top: number;
@@ -70,7 +69,6 @@ export interface PressBounds {
   readonly bottom: number;
 }
 
-/** @experimental */
 export interface PressTrackerOptions {
   /** The control's bounds in client px, read when a finger lands. */
   getBounds: () => PressBounds | null;
@@ -119,12 +117,10 @@ export interface PressTrackerOptions {
 
 const PRESS = UIKIT_GESTURES.press;
 
-/** @experimental */
 export type PressHighlightDelay = 'inScrollers' | 'always' | 'never';
 
 /**
  * How a kind of pressable tracks a finger and how long its release takes.
- * @experimental
  */
 export interface PressProfile {
   readonly highlightDelay: PressHighlightDelay;
@@ -134,7 +130,6 @@ export interface PressProfile {
   readonly releaseMs: number;
 }
 
-/** @experimental */
 export const PRESS_PROFILES = {
   /** UIControl: same-frame highlight outside scrollers, 70 pt tracking. */
   control: {
@@ -151,19 +146,21 @@ export const PRESS_PROFILES = {
   },
 } as const satisfies Record<string, PressProfile>;
 
-/** @experimental */
 export type PressProfileName = keyof typeof PRESS_PROFILES;
 
-/** UIButton's rule: an ancestor's single-finger single tap. */
+/**
+ * UIButton's rule: an ancestor's single-finger single tap. The tap is told
+ * apart by its family rather than its class, so press tracking never ships
+ * TapGestureRecognizer.
+ */
 function vetoesSingleTap(recognizer: GestureRecognizer): boolean {
-  return (
-    recognizer instanceof TapGestureRecognizer &&
-    recognizer.numberOfTapsRequired === 1 &&
-    recognizer.numberOfTouchesRequired === 1
-  );
+  if (internals(recognizer).family !== 'tap') {
+    return false;
+  }
+  const tap = recognizer as TapGestureRecognizer;
+  return tap.numberOfTapsRequired === 1 && tap.numberOfTouchesRequired === 1;
 }
 
-/** @experimental */
 export class PressTracker implements TouchConsumer {
   isHighlighted = false;
   private isKept = false;
