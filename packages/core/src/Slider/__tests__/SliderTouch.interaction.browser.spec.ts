@@ -124,14 +124,20 @@ async function openSlider(
   const control = thumb.locator(
     'xpath=ancestor::*[contains(@class, "astryx-slider-control")][1]',
   );
-  // The touch presentation is live once its controller has loaded (on
-  // demand) and attached: the gesture host then gives the track the
-  // touch-action its tap needs.
+  // The touch presentation is live once its controller has attached: the
+  // gesture host then marks the track with the touch-action its tap needs
+  // (gestures/touchActionRule.ts's TOUCH_ACTION_ATTRIBUTE, under a rule any
+  // author rule outranks; spec:AST-094 FR18), and that is the value in force.
   await expect
     .poll(async () =>
-      control.evaluate(element => (element as HTMLElement).style.touchAction),
+      control.evaluate(element =>
+        element.getAttribute('data-astryx-touch-action'),
+      ),
     )
     .toBe('manipulation');
+  expect(
+    await control.evaluate(element => getComputedStyle(element).touchAction),
+  ).toBe('manipulation');
   const length = await control.evaluate(element =>
     parseFloat(getComputedStyle(element).width),
   );
@@ -737,7 +743,7 @@ test('a finger landing on a coasting thumb stops it where it is', async ({
   expect(await thumb.evaluate(element => element.style.translate)).toBe('');
 });
 
-test('a finger held on a thumb or on the track starts no selection: the thumb’s pan locks it until the lift, and the track’s own style keeps it unselectable', async ({
+test('a finger held on a thumb or on the track starts no selection: the thumb’s pan refuses one until the lift, and the track’s own style keeps it unselectable', async ({
   page,
 }) => {
   const {driver, thumb, center} = await openSlider(
@@ -749,15 +755,23 @@ test('a finger held on a thumb or on the track starts no selection: the thumb’
   const control = thumb.locator(
     'xpath=ancestor::*[contains(@class, "astryx-slider-control")][1]',
   );
-  // The lock is inline, on the element the finger holds; an engine keeps
-  // the standard or the prefixed form in its CSSOM (WebKit the prefixed).
-  const lockOf = async (element: Locator) =>
-    element.evaluate(node => {
-      const {style} = node as HTMLElement;
-      return (
-        style.getPropertyValue('user-select') ||
-        style.getPropertyValue('-webkit-user-select')
-      );
+  // The thumb's pan brings the gesture host's selection lock (spec:AST-094
+  // FR41). Where iOS WebKit's touch-callout query holds, it writes
+  // `user-select: none` inline on the held element (an engine keeps the
+  // standard or the prefixed form in its CSSOM); elsewhere it cancels the
+  // `selectstart` a long press fires, with no style write.
+  const refusesSelection = async () =>
+    hit.evaluate(node => {
+      if (CSS.supports('(-webkit-touch-callout: none)')) {
+        const {style} = node as HTMLElement;
+        return (
+          (style.getPropertyValue('user-select') ||
+            style.getPropertyValue('-webkit-user-select')) === 'none'
+        );
+      }
+      const event = new Event('selectstart', {bubbles: true, cancelable: true});
+      node.dispatchEvent(event);
+      return event.defaultPrevented;
     });
   const at = await center();
   const [onThumb] = await playReading(
@@ -767,12 +781,12 @@ test('a finger held on a thumb or on the track starts no selection: the thumb’
     [0],
     async () => {
       await page.waitForTimeout(300);
-      return lockOf(hit);
+      return refusesSelection();
     },
   );
-  expect(onThumb).toBe('none');
+  expect(onThumb).toBe(true);
   await frames(page, 4);
-  expect(await lockOf(hit)).toBe('');
+  expect(await refusesSelection()).toBe(false);
   const box = await control.boundingBox();
   if (box == null) {
     throw new Error('no control');
