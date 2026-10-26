@@ -37,7 +37,8 @@ export type CodeLanguageTokenize = (
 /**
  * A language value: an Astryx module from
  * `@astryxdesign/core/CodeBlock/languages/<path>`, or a custom language from
- * `createCodeLanguage`. Pass it as `language`.
+ * `createCodeLanguage`. Pass it as `language`, or list it in `codeLanguages`
+ * on Markdown, RichText, and DiffViewer.
  */
 export type CodeLanguage = {
   /** The identifier the label shows, such as `graphql`; shown verbatim. */
@@ -97,7 +98,8 @@ export type CreateCodeLanguageOptions = CodeLanguageMeta & {
 
 /**
  * Make a custom language value from your own tokenize function. It works
- * everywhere an Astryx language module does, starting with `language`.
+ * everywhere an Astryx language module does: as `language`, and in
+ * `codeLanguages` on Markdown, RichText, and DiffViewer.
  *
  * @example
  * ```
