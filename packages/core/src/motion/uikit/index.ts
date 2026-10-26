@@ -40,7 +40,7 @@ export {
   type HapticFeedbackKind,
 } from './gestures';
 export {navigation, registerNavigationTable} from './navigation';
-export {refreshControl, registerRefreshControlTable} from './refresh';
+export {refreshControl} from './refresh';
 export {registerScrollTable, scroll} from './scroll';
 export {
   ACTION_SHEET_DISMISS_SPRING,
