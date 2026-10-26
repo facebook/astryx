@@ -1892,6 +1892,44 @@ test('a tap commits through the item’s click: its onClick runs once and can ve
   expect((await selections()).map(change => change.value)).toEqual(['table']);
 });
 
+test('a tap whose browser click comes late (a busy main thread) runs the item’s click once', async ({
+  page,
+}) => {
+  const control = await openControl(page);
+  const clicks = await watchClicks(control, 'table');
+  const selections = await recordSelections(control.group);
+  // The lift arms a 300 ms wait for the browser's click; block the main
+  // thread for 450 ms right after, so the browser's click for this tap comes
+  // only after the wait ran out.
+  await page.evaluate(() => {
+    const original = window.setTimeout;
+    const patched = (
+      handler: TimerHandler,
+      ms?: number,
+      ...rest: unknown[]
+    ): number => {
+      const id = original(handler, ms, ...rest);
+      if (ms === 300) {
+        window.setTimeout = original;
+        const end = performance.now() + 450;
+        while (performance.now() < end) {
+          // busy: the main thread is blocked
+        }
+      }
+      return id;
+    };
+    window.setTimeout = patched as typeof window.setTimeout;
+  });
+  await control.driver.tap(await clientCenter(control, 'table'));
+  await expect(control.segment('table')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  await page.waitForTimeout(800);
+  expect(await clicks()).toBe(1);
+  expect((await selections()).map(change => change.value)).toEqual(['table']);
+});
+
 test('a vetoed tap selects nothing, and the lens goes back to the selection', async ({
   page,
 }) => {

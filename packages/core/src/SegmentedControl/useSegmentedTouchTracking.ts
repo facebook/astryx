@@ -90,7 +90,10 @@ const BROWSER_CLICK_WAIT_MS = 300;
 /**
  * Waits for the browser's own click on `segment` after a tap and reports
  * whether a handler cancelled it; with no click in time, clicks the segment
- * itself (its activation and every handler run) and reports that.
+ * itself (its activation and every handler run) and reports that. Either way
+ * the tap activates once: the browser's click stops the wait as it arrives,
+ * and one that comes after the segment was clicked (a busy main thread held
+ * it past the wait) is swallowed.
  */
 function awaitBrowserClick(
   segment: HTMLElement,
@@ -114,6 +117,9 @@ function awaitBrowserClick(
     if (!event.isTrusted || !segment.contains(event.target as Node | null)) {
       return;
     }
+    // The browser's click is the activation: the segment is not clicked
+    // again, even by a wait that ran out while the main thread was busy.
+    view.clearTimeout(timer);
     // After every handler has run: was it cancelled?
     view.setTimeout(() => finish(event.defaultPrevented), 0);
   };
@@ -123,8 +129,40 @@ function awaitBrowserClick(
     }
     view.removeEventListener('click', grab, true);
     finish(clickAndReport(segment));
+    swallowLateClick(segment);
   }, BROWSER_CLICK_WAIT_MS);
   view.addEventListener('click', grab, true);
+}
+
+/**
+ * After a tap's segment was clicked directly, the browser's own click for that
+ * tap may still come (a busy main thread holds it past the wait): it is the
+ * same activation, so it is swallowed before any handler sees it. Only until
+ * the next press or key: any later click belongs to them.
+ */
+function swallowLateClick(segment: HTMLElement): void {
+  const view = segment.ownerDocument.defaultView;
+  if (view == null) {
+    return;
+  }
+  const stop = () => {
+    view.removeEventListener('click', swallow, true);
+    view.removeEventListener('pointerdown', stop, true);
+    view.removeEventListener('touchstart', stop, true);
+    view.removeEventListener('keydown', stop, true);
+  };
+  const swallow = (event: MouseEvent) => {
+    if (!event.isTrusted || !segment.contains(event.target as Node | null)) {
+      return;
+    }
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    stop();
+  };
+  view.addEventListener('click', swallow, true);
+  view.addEventListener('pointerdown', stop, {capture: true, passive: true});
+  view.addEventListener('touchstart', stop, {capture: true, passive: true});
+  view.addEventListener('keydown', stop, true);
 }
 
 /**
