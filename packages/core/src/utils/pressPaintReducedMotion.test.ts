@@ -34,8 +34,11 @@ const {transformSync} = createRequire(import.meta.url)('@babel/core') as {
   ) => {code?: string; metadata?: unknown} | null;
 };
 
-function compile(): {code: string; rules: Rule[]} {
-  const file = path.resolve(__dirname, 'interactionOverlay.stylex.ts');
+function compile(name = 'interactionOverlay.stylex.ts'): {
+  code: string;
+  rules: Rule[];
+} {
+  const file = path.resolve(__dirname, name);
   const output = transformSync(fs.readFileSync(file, 'utf8'), {
     filename: file,
     babelrc: false,
@@ -96,9 +99,11 @@ describe('press paint under Reduce Motion', () => {
     // The cell redeclares `animationName` for its compositor layer; its own
     // classes must still stop the release under Reduce Motion with a fine
     // pointer, as the shared variant's do.
-    const cell = namespaceClasses(code, 'cell');
+    // The row layer lives in rowPressLayer.ts, off core's published paths.
+    const row = compile('rowPressLayer.ts');
+    const cell = namespaceClasses(row.code, 'cell');
     expect(cell.size).toBeGreaterThan(0);
-    const stop = rules.find(
+    const stop = row.rules.find(
       ([className, {ltr}]) =>
         cell.has(className) &&
         ltr.includes(reducedMotionKeys.instant) &&
@@ -125,14 +130,16 @@ describe('press paint under Reduce Motion', () => {
     const controlDuration = control([
       FADING,
       'animation-duration:',
-      'button-release-ms',
+      // UIButton's clock: its role, falling back to the table's 250 ms.
+      ',.25s)',
     ]);
     expect(duration![2]).toBeGreaterThan(controlDuration![2]);
     const cellFade = rule(rules, [fade, FADING, CELL, 'animation-duration:']);
     const cellDuration = rules.find(
       ([, {ltr}]) =>
         !ltr.includes(fade) &&
-        [FADING, CELL, 'animation-duration:', 'highlight-out-ms'].every(part =>
+        // The deselect's clock: its role, falling back to the table's 200 ms.
+        [FADING, CELL, 'animation-duration:', ',.2s)'].every(part =>
           ltr.includes(part),
         ),
     );

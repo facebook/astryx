@@ -63,7 +63,7 @@
  * pressFeedback.test.ts.
  */
 
-import {pressReleaseRoles} from './interactionOverlay.stylex';
+import {pressReleaseRoles} from './rowPressLayer.stylex';
 import type {PressGesture, PressPaint, PressStep} from './pressGesture';
 import {
   idlePressGesture,
@@ -344,10 +344,22 @@ function timerMs(
     .getPropertyValue(live.releaseRole)
     .trim();
   const match = value == null ? null : /^([\d.]+)(ms|s)$/.exec(value);
-  return match == null
-    ? live.releaseMs
-    : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
+  const ms =
+    match == null
+      ? live.releaseMs
+      : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
+  // design:reduced-motion DR2: under reduced motion a touch transition
+  // finishes in 200 ms or less, whatever the theme sets (the stylesheet caps
+  // its fade the same way).
+  const reduced =
+    live.element.ownerDocument.defaultView?.matchMedia?.(
+      '(prefers-reduced-motion: reduce)',
+    ).matches ?? false;
+  return reduced ? Math.min(ms, REDUCED_MOTION_MAX_MS) : ms;
 }
+
+/** The longest a touch transition runs under reduced motion (DR2). */
+const REDUCED_MOTION_MAX_MS = 200;
 
 const TIMER_EVENT = {
   fade: 'fadeEnd',

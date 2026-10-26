@@ -3,7 +3,7 @@
 /**
  * @file interactionOverlay.cell.test.ts
  * @input vitest, the UIKit constants table (motion/uikit/list.ts), the press
- *   layer style (`interactionOverlayStyles.cell`) and the rows that compose
+ *   layer style (`rowPressLayerStyles.cell`, rowPressLayer.ts) and the rows that compose
  *   it (Item, TreeList)
  * @output Holds the layer's build-time clock to the constants table, and
  *   asserts what a row ships for the touch press: the pressed token on a
@@ -26,7 +26,7 @@ import {Item} from '../Item';
 import {TreeList} from '../TreeList';
 import {durationToMs, rulesDeclaredFor} from '../__tests__/pressState';
 import {PRESS_FADE_MS} from './pressGesture';
-import {cellPressConsts, pressReleaseRoles} from './interactionOverlay.stylex';
+import {cellPressConsts, pressReleaseRoles} from './rowPressLayer.stylex';
 
 const ON = '[data-astryx-press="on"]';
 const FADING = '[data-astryx-press="fading"]';
@@ -172,9 +172,10 @@ describe.each([
     const row = mount();
     const fading = layerRules(row, FADING);
     expect(values(fading, 'animation-name')).toHaveLength(1);
-    expect(values(fading, 'animation-duration').map(durationToMs)).toEqual([
-      list.highlight.releaseMs,
-    ]);
+    // The clock, and its reduced-motion cap (DR2), both the table's value.
+    expect([
+      ...new Set(values(fading, 'animation-duration').map(durationToMs)),
+    ]).toEqual([list.highlight.releaseMs]);
     // StyleX writes the curve minified (`cubic-bezier(0,0,.2,1)`): compare
     // the control points.
     const points = (css: string) =>
