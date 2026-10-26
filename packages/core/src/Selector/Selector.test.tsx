@@ -5202,6 +5202,32 @@ describe('Selector press model', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 
+  it("after a mouse press, a click with no press of its own (element.click(), an assistive technology's activation) still toggles the list and reaches a caller's onClick", () => {
+    const onClick = vi.fn();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        onClick={onClick}
+      />,
+    );
+    const trigger = screen.getByRole('combobox');
+    fireEvent.pointerDown(trigger, mouse);
+    fireEvent.pointerUp(trigger, mouse);
+    fireEvent.click(trigger, {detail: 1});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(onClick).toHaveBeenCalledTimes(1);
+    // No pointer or key press since, so the gesture is the same one; the
+    // click counts no press (`detail` 0), so it is its own activation.
+    fireEvent.click(trigger, {detail: 0});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(onClick).toHaveBeenCalledTimes(2);
+    fireEvent.click(trigger, {detail: 0});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(onClick).toHaveBeenCalledTimes(3);
+  });
+
   it("a mouse press that closes the list calls a caller's onClick once, with the press, before the list closes", () => {
     const expandedAtClick: string[] = [];
     const onClick = vi.fn((event: React.MouseEvent<HTMLElement>) => {

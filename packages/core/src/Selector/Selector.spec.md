@@ -49,7 +49,16 @@ connection between the closed trigger and its selection surface.
 ## Compatibility and migration
 
 - Released defaults and behavior are unchanged except the `presentation`
-  default, which DEC-1 sets, and `adaptive`'s compact test (below).
+  default, which DEC-1 sets, `adaptive`'s compact test, and proposed FR8's
+  mouse press (below).
+- Proposed FR8: in the popover presentation a primary mouse press on the
+  trigger button opens the list at pointerdown, where the released trigger
+  opened it at the click, and a drag released over an option selects it. A
+  caller's `onClick` runs once with that press, before the list opens or
+  closes, and not again for the press's own click; a click with no press of
+  its own (`detail` 0) toggles as before. A caller `onPointerDown` that
+  prevents its default keeps the released click-open. A finger, the keyboard
+  and the bottom sheet are unchanged, so no caller must change source.
 - `indicatorPosition` defaults to `end`; a rendered selection mark occupies
   space at that logical edge, while an empty resolved indicator occupies none.
 - `presentation` defaults to `adaptive` (DEC-1): the modal bottom sheet on

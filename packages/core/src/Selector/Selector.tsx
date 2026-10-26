@@ -1659,15 +1659,28 @@ export function Selector<T extends SelectorOptionType>(
     isTriggerGestureRef.current = listboxPress.isTriggerClickFromPress;
   }, [listboxPress]);
 
-  // The press already opened or closed the list; its click is spent. A
-  // finger's press acts on nothing here, so its click toggles as it always
-  // did, a long hold included.
-  const handleTriggerClick = useCallback(() => {
-    if (listboxPress.isTriggerClickFromPress() && pressActedRef.current) {
-      return;
-    }
-    onTriggerClick();
-  }, [listboxPress, onTriggerClick]);
+  // The press already opened or closed the list, so its own click is spent:
+  // a pointer's click, which counts its presses in `detail`. A click with no
+  // press of its own (`element.click()` or an assistive technology's
+  // activation, `detail` 0) still toggles, though no pointer or key press has
+  // started a new gesture since. A finger's press acts on nothing here, so
+  // its click toggles as it always did, a long hold included.
+  const isClickSpentByPress = useCallback(
+    (event: React.MouseEvent<HTMLElement>) =>
+      pressActedRef.current &&
+      event.detail > 0 &&
+      listboxPress.isTriggerClickFromPress(),
+    [listboxPress],
+  );
+  const handleTriggerClick = useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      if (isClickSpentByPress(event)) {
+        return;
+      }
+      onTriggerClick();
+    },
+    [isClickSpentByPress, onTriggerClick],
+  );
 
   const handleTriggerKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -2167,7 +2180,7 @@ export function Selector<T extends SelectorOptionType>(
         }
       : event => {
           // A mouse press that opened or closed the list already ran it.
-          if (pressActedRef.current && listboxPress.isTriggerClickFromPress()) {
+          if (isClickSpentByPress(event)) {
             return;
           }
           onClickProp?.(event);
