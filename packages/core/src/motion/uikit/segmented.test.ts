@@ -5,7 +5,8 @@
  * @input vitest, the segmented-control domain of the UIKit constants table,
  *   the spring solver, and samples of UIKit's own selection slide
  * @output Holds `segmentedControl.selectionSpring` to UISegmentedControl's
- *   measured slide (position per frame, iOS 26.2 simulator), its only role
+ *   measured slide (position per frame, iOS 26.2 simulator), an internal
+ *   constant no theme retunes
  * @position Testing; parity of the segmented-control constants (law P4,
  *   unit layer). The browser layer is
  *   SegmentedControl/__tests__/SegmentedControl.interaction.browser.spec.ts.
@@ -16,11 +17,8 @@ import {cubicBezier} from '../bezier';
 import {dampingRatioOf, responseOf, solveSpring, toSpring} from '../spring';
 import {motionRoleIn, motionRoleOf} from '../roles';
 import {resolveMotion} from '../resolveMotion';
-import {registerSegmentedControlTable, segmentedControl} from './segmented';
+import {segmentedControl} from './segmented';
 import {springs} from './springs';
-
-// The touch module registers the table before its first animation.
-registerSegmentedControlTable();
 
 /**
  * The selection lens's presented position (pt, in the control) per frame,
@@ -130,28 +128,38 @@ describe('segmentedControl.selectionSpring reproduces UIKit’s slide', () => {
   });
 });
 
-describe('motion roles', () => {
-  it('every spring and clock is a role a theme can retune; the titles switch at once, with no clock', () => {
-    expect(motionRoleOf(segmentedControl.selectionSpring)).toMatchObject({
-      id: 'segmentedControl.selectionSpring',
-      kind: 'spring',
-      variable: '--motion-segmented-control-selection-spring',
-    });
-    expect(motionRoleOf(segmentedControl.liftSpring)).toMatchObject({
-      kind: 'spring',
-    });
-    expect(motionRoleIn(segmentedControl, 'tapLiftHangMs')).toMatchObject({
-      kind: 'duration',
-    });
+describe('internal constants', () => {
+  it('no value is a motion role (spec:AST-094 FR4 names none for the segmented control); the titles switch at once, with no clock', () => {
+    expect(motionRoleOf(segmentedControl.selectionSpring)).toBeUndefined();
+    expect(motionRoleIn(segmentedControl, 'selectionSpring')).toBeUndefined();
+    expect(motionRoleOf(segmentedControl.liftSpring)).toBeUndefined();
+    expect(motionRoleOf(segmentedControl.trackingSpring)).toBeUndefined();
+    expect(motionRoleIn(segmentedControl, 'tapLiftHangMs')).toBeUndefined();
+    expect(motionRoleIn(segmentedControl, 'dragOvershoot')).toBeUndefined();
     expect(Object.keys(segmentedControl)).not.toContain('labelCrossFadeMs');
   });
 
-  it('with no theme setting them, resolves to UIKit’s measured values', () => {
+  it('resolves to UIKit’s measured values whatever a theme sets: the old role variables do nothing', () => {
     const element = document.createElement('div');
+    element.style.setProperty(
+      '--motion-segmented-control-selection-spring',
+      '0.25s 0',
+    );
+    element.style.setProperty('--motion-segmented-control-lift-spring', '1s 0');
+    element.style.setProperty(
+      '--motion-segmented-control-tracking-spring',
+      '1s 0',
+    );
     document.body.append(element);
     try {
       expect(resolveMotion(element, segmentedControl.selectionSpring)).toEqual(
         segmentedControl.selectionSpring,
+      );
+      expect(resolveMotion(element, segmentedControl.liftSpring)).toEqual(
+        segmentedControl.liftSpring,
+      );
+      expect(resolveMotion(element, segmentedControl.trackingSpring)).toEqual(
+        segmentedControl.trackingSpring,
       );
     } finally {
       element.remove();
@@ -257,9 +265,6 @@ describe('one source for the slide', () => {
   it('the segmented slide has one spring, the measured one: no guessed thumb spring is left', () => {
     expect('segmentedThumb' in springs).toBe(false);
     expect(motionRoleIn(springs, 'segmentedThumb')).toBeUndefined();
-    expect(motionRoleIn(segmentedControl, 'selectionSpring')).toMatchObject({
-      id: 'segmentedControl.selectionSpring',
-    });
   });
 });
 
@@ -332,18 +337,11 @@ describe('the pressed title', () => {
     }
   });
 
-  it('is four theme roles (the two clocks and curves) and a measured opacity', () => {
-    expect(motionRoleIn(pressedTitle, 'fadeMs')).toMatchObject({
-      id: 'segmentedControl.pressedTitle.fadeMs',
-      kind: 'duration',
-      variable: '--motion-segmented-control-pressed-title-fade-ms',
-    });
-    expect(motionRoleIn(pressedTitle, 'liftMs')).toMatchObject({
-      id: 'segmentedControl.pressedTitle.liftMs',
-      kind: 'duration',
-    });
-    expect(motionRoleOf(pressedTitle.fadeCurve)).toMatchObject({kind: 'curve'});
-    expect(motionRoleOf(pressedTitle.liftCurve)).toMatchObject({kind: 'curve'});
+  it('is internal constants: its clocks, curves and opacity are no motion roles', () => {
+    expect(motionRoleIn(pressedTitle, 'fadeMs')).toBeUndefined();
+    expect(motionRoleIn(pressedTitle, 'liftMs')).toBeUndefined();
+    expect(motionRoleOf(pressedTitle.fadeCurve)).toBeUndefined();
+    expect(motionRoleOf(pressedTitle.liftCurve)).toBeUndefined();
     expect(motionRoleIn(pressedTitle, 'opacity')).toBeUndefined();
   });
 });

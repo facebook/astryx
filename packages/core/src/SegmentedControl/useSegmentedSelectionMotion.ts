@@ -22,10 +22,9 @@
  *
  * UISegmentedControl slides one selection indicator from the old segment to
  * the new one on a spring (`segmentedControl.selectionSpring`), after a tap and
- * after a programmatic change alike. Every spring and clock is a motion role:
- * the animator resolves the springs it is handed, and the curves baked here
- * resolve their own, under the control's theme (UIKit's measured values by
- * default).
+ * after a programmatic change alike. Every spring, clock and curve here is
+ * UIKit's measured value, an internal constant of the table: no theme
+ * retunes them.
  *
  * The selected segment paints its own raised surface at rest, so themes keep
  * styling it as they always have. For the slide the lens takes over: the
@@ -110,12 +109,8 @@ import {
   type SpringTransition,
 } from '../motion/animator';
 import {reducedMotionFade} from '../motion/reducedMotion';
-import {resolveMotion} from '../motion/resolveMotion';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
-import {
-  registerSegmentedControlTable,
-  segmentedControl,
-} from '../motion/uikit/segmented';
+import {segmentedControl} from '../motion/uikit/segmented';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {spacingVars} from '../theme/tokens.stylex';
@@ -656,10 +651,6 @@ export class SegmentedSelectionMotion {
     }),
     options: SegmentedSelectionMotionOptions = {},
   ) {
-    // The springs, dims and the hang are motion roles a theme may retune:
-    // registered before the first animation (idempotent; nothing registers
-    // on import).
-    registerSegmentedControlTable();
     this.now = options.now ?? defaultNow;
     this.after =
       options.afterAnimator ??
@@ -1405,13 +1396,11 @@ export class SegmentedSelectionMotion {
     this.springLens({x: 0}, this.springFrom({x: 0}, 'selection'), {at});
     // Up on the lift spring and, after the hang, back down on it: one curve
     // known in advance, so the compositor brings the lens down on time even
-    // while the main thread is busy. The lift's spring and hang as the
-    // control's theme sets them (motion roles), UIKit's by default: the curve
-    // is baked here, so it resolves them itself.
+    // while the main thread is busy. The lift's spring and hang are UIKit's
+    // measured values (internal constants).
     const peak = lifted(box, liftGrowthOf(this.track));
-    const liftSpring = resolveMotion(this.track, segmentedControl.liftSpring);
-    const hang =
-      resolveMotion(this.track, segmentedControl, 'tapLiftHangMs') / 1000;
+    const liftSpring = segmentedControl.liftSpring;
+    const hang = segmentedControl.tapLiftHangMs / 1000;
     const velocityX = this.velocity.scaleX ?? 0;
     const velocityY = this.velocity.scaleY ?? 0;
     this.velocity = {};
@@ -1701,22 +1690,13 @@ export class SegmentedSelectionMotion {
     if (typeof segment.animate !== 'function') {
       return;
     }
-    // The clock and curve as the segment's theme sets them (motion roles),
-    // UIKit's by default; under Reduced Motion the animator's fade, whatever
-    // the roles say (design:reduced-motion DR4).
+    // UIKit's measured clock and curve (internal constants); under Reduced
+    // Motion the animator's fade (design:reduced-motion DR4).
+    const {pressedTitle} = segmentedControl;
     const timing = this.reducedFade(segment, clock === 'lift') ?? {
-      duration: resolveMotion(
-        segment,
-        segmentedControl.pressedTitle,
-        clock === 'fade' ? 'fadeMs' : 'liftMs',
-      ),
+      duration: clock === 'fade' ? pressedTitle.fadeMs : pressedTitle.liftMs,
       easing: cssCubicBezier(
-        resolveMotion(
-          segment,
-          clock === 'fade'
-            ? segmentedControl.pressedTitle.fadeCurve
-            : segmentedControl.pressedTitle.liftCurve,
-        ),
+        clock === 'fade' ? pressedTitle.fadeCurve : pressedTitle.liftCurve,
       ),
     };
     const animations = targets.map(target => {
