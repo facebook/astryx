@@ -362,7 +362,7 @@ export function spinCurve(
   from: number,
   to: number,
   duration: number = picker.tapSpin.durationMs / 1000,
-  curve: readonly [number, number, number, number] = timing.curves.easeInOut,
+  curve: readonly [number, number, number, number] = timing.curves.move,
 ): WheelCurve {
   if (from === to || !(duration > 0)) {
     return restCurve(to);
