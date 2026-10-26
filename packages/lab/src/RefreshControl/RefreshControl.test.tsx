@@ -330,8 +330,8 @@ describe('RefreshControl indicator: UIRefreshControl\u2019s replicator', () => {
       const [{keyframes, options}] = played.filter(
         run => run.element === spoke,
       );
-      // One turn per iteration, forever, linear: the `refreshControl.spinMs`
-      // motion role, the table's value without a theme.
+      // One turn per iteration, forever, linear: the table's
+      // `refreshControl.spinMs`.
       expect(options).toEqual({duration: table.spinMs, iterations: Infinity});
       expect(keyframes.every(frame => frame.easing === undefined)).toBe(true);
       const frames = keyframes.map(
@@ -389,8 +389,7 @@ describe('RefreshControl indicator: UIRefreshControl\u2019s replicator', () => {
     const spring = table.triggerGradientSpring;
     expect(spring.damping).toBeCloseTo(2 * Math.sqrt(spring.stiffness), 2);
     // At rest the spokes run no animation: at the trigger the hook fades a
-    // transient copy of them out on the gradient spring under the theme, so a
-    // theme that retunes the spring retunes it.
+    // transient copy of them out on the table's gradient spring.
     const spokes = Array.from(glyph.children) as HTMLElement[];
     expect(played).toEqual([]);
     // A refresh begun without a pull hands the gradient over at once: every

@@ -231,9 +231,9 @@ function spinKeyframes(spoke: number, turnMs: number): Keyframe[] {
 
 /**
  * The trigger's cross-fade as Web Animation keyframes on the copy's opacity:
- * 1 − w, w the gradient spring under the element's theme, until it settles
- * where the animator's opacity springs do; or, under Reduce Motion, the
- * shared opacity fade (reducedMotionFade).
+ * 1 − w, w the table's gradient spring, until it settles where the animator's
+ * opacity springs do; or, under Reduce Motion, the shared opacity fade
+ * (reducedMotionFade).
  */
 function crossFadeKeyframes(element: Element): {
   frames: Keyframe[];
@@ -248,10 +248,10 @@ function crossFadeKeyframes(element: Element): {
       easing: fade.easing,
     };
   }
-  const curve = solveSpring(
-    toSpring(resolveMotion(element, refreshControl.triggerGradientSpring)),
-    {from: 0, to: 1},
-  );
+  const curve = solveSpring(toSpring(refreshControl.triggerGradientSpring), {
+    from: 0,
+    to: 1,
+  });
   const durationMs = curve.settleTime(SETTLE_THRESHOLD.opacity) * 1000;
   const count = Math.max(2, Math.ceil(durationMs / (1000 / 60)));
   const frames: Keyframe[] = Array.from({length: count + 1}, (_, i) => ({
@@ -415,8 +415,8 @@ export function useRefreshTouchController({
   /**
    * Starts the spin, marked by the spinning attribute: each spoke's turn of
    * the gradient, every one started in this task so they share one clock, a
-   * turn every `refreshControl.spinMs` under the theme. A spin already
-   * running is left as it is.
+   * turn every `refreshControl.spinMs`. A spin already running is left as it
+   * is.
    */
   const startStepping = useCallback(() => {
     const indicatorNode = indicatorElement.current;
@@ -431,7 +431,7 @@ export function useRefreshTouchController({
     if (glyph == null) {
       return;
     }
-    const turnMs = resolveMotion(glyph, refreshControl, 'spinMs');
+    const turnMs = refreshControl.spinMs;
     spin.current = Array.from(glyph.children)
       .filter(spoke => spoke !== crossFadeCopy.current)
       .flatMap((spoke, index) =>
@@ -461,9 +461,9 @@ export function useRefreshTouchController({
    * spoke at 1 − w + w × g, w the spring's progress and g the spoke's step of
    * the gradient. Here the spokes step from the trigger, at full, and a
    * transient copy of them as the pull left them (every one at full alpha)
-   * sits over them and fades out on that spring, under the theme: with normal
-   * blending a copy at 1 − w over a spoke at g shows exactly 1 − w + w × g.
-   * Each element runs one animation (the spokes their steps, the copy its
+   * sits over them and fades out on that spring: with normal blending a copy
+   * at 1 − w over a spoke at g shows exactly 1 − w + w × g. Each element runs
+   * one animation (the spokes their steps, the copy its
    * fade), so the cross-fade runs on the compositor and keeps going while a
    * script holds the main thread; under Reduce Motion the fade is the shared
    * 200 ms opacity fade. It is a plain Web Animation, not the animator's: on a

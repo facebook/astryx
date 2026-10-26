@@ -27,8 +27,7 @@
  * animation that keeps turning while a script runs. At the trigger the
  * spokes start stepping and the hook fades a transient copy of them, as the
  * pull left them, out over them on the gradient spring: UIKit's
- * cross-fade, so a theme that retunes `refreshControl.triggerGradientSpring`
- * retunes it, and under Reduce Motion the shared 200 ms opacity fade
+ * cross-fade, and under Reduce Motion the shared 200 ms opacity fade
  * (nothing travels). The copy is removed when its fade ends.
  *
  * SYNC: When modified, update these files to stay in sync:
