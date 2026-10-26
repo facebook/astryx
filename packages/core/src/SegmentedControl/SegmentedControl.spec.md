@@ -13,6 +13,8 @@ review_triggers: [theming, accessibility]
 verified_by:
   [
     packages/core/src/SegmentedControl/SegmentedControl.test.tsx,
+    packages/core/src/SegmentedControl/useSegmentedSelectionMotion.test.ts,
+    packages/core/src/SegmentedControl/__tests__/SegmentedControl.interaction.browser.spec.ts,
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
@@ -29,15 +31,16 @@ system_specs: []
 ## Intent
 
 SegmentedControl presents a group of mutually exclusive choices through
-SegmentedControlItem children. This draft records the current consumer anatomy
-and theming ownership without changing selection behavior, targets, or public
-API.
+SegmentedControlItem children. This draft records the consumer anatomy, the
+theming ownership, and how a change of selection presents under a finger;
+targets and public API are unchanged.
 
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: additive documentation only; runtime, DOM, styling,
-  targets, and public API remain unchanged
+- Compatibility class: additive; under a mouse, runtime, DOM, styling, targets,
+  and public API remain unchanged; under a finger a change of selection slides
+  (FR5, FR6)
 - Controlled/uncontrolled behavior: unchanged; selection remains controlled by
   `value` and `onChange`
 - Migration decision: none
@@ -68,12 +71,14 @@ in `SegmentedControl.doc.mjs` and `SegmentedControlItem.doc.mjs`.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                           | Basis                           | Draft review state                                 |
-| --- | ------------------------------------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------------- |
-| FR1 | The radiogroup container carries the current `segmented-control` target and renders its supplied children.    | Current source, docs, and tests | Verified current behavior; no new behavior decided |
-| FR2 | Each SegmentedControlItem renders one radio button carrying the current `segmented-control-item` target.      | Current source, docs, and tests | Verified current behavior; no new behavior decided |
-| FR3 | A visible item label and optional icon render inside the item without separate public targets.                | Current source and tests        | Verified current behavior; no target change        |
-| FR4 | Selected and disabled remain reflected states on `segmented-control-item`, not standalone anatomy or targets. | Current source, docs, and tests | Verified current behavior; no target change        |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                             | Basis                                                      | Draft review state                                 |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------- |
+| FR1 | The radiogroup container carries the current `segmented-control` target and renders its supplied children.                                                                                                                                                                      | Current source, docs, and tests                            | Verified current behavior; no new behavior decided |
+| FR2 | Each SegmentedControlItem renders one radio button carrying the current `segmented-control-item` target.                                                                                                                                                                        | Current source, docs, and tests                            | Verified current behavior; no new behavior decided |
+| FR3 | A visible item label and optional icon render inside the item without separate public targets.                                                                                                                                                                                  | Current source and tests                                   | Verified current behavior; no target change        |
+| FR4 | Selected and disabled remain reflected states on `segmented-control-item`, not standalone anatomy or targets.                                                                                                                                                                   | Current source, docs, and tests                            | Verified current behavior; no target change        |
+| FR5 | Under a finger (`spec:AST-094` FR13), a change of selection slides the selected surface from the old segment to the new one as one surface, the radiogroup's `::before`, animating transform and opacity only; under a mouse the theme's colour transition applies.             | `spec:AST-094` FR13; current source and tests              | Proposed; pending owner review                     |
+| FR6 | The slide runs on the motion role `segmentedControl.selectionSpring`, UISegmentedControl's measured selection spring, which a theme may retune (`spec:AST-094` FR4); under Reduced Motion the old surface fades out in place as the new one fades in (`design:reduced-motion`). | `spec:AST-094` FR4; UISegmentedControl, iOS 26.2 simulator | Proposed; pending owner review                     |
 
 ### Allowed variation
 
@@ -129,18 +134,19 @@ Selection is a state of Segment, not a separate anatomy part.
 
 ## Verification map
 
-| Contract            | Verification                                                | Representative states                          | Mutation or failure expectation                                                        | Audit section                    |
-| ------------------- | ----------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------- |
-| FR1, FR2            | `SegmentedControl.test.tsx` radiogroup and rendering suites | Control with multiple segment items            | Removing the group or item semantics fails existing role and content assertions.       | `audit:SegmentedControl/anatomy` |
-| FR3                 | `SegmentedControl.test.tsx` label and icon suites           | Visible label, icon with label, icon-only item | Removing or changing current label/icon rendering fails existing DOM assertions.       | `audit:SegmentedControl/anatomy` |
-| FR4                 | `SegmentedControl.test.tsx` selection and disabled suites   | Selected, unselected, and disabled items       | Breaking reflected item state fails current ARIA, class, or data-attribute assertions. | `audit:SegmentedControl/theming` |
-| Target inventory    | `packages/core/src/theme/themingTargets.test.ts`            | Control and item targets                       | Runtime and documented target metadata drift fails target validation.                  | `audit:SegmentedControl/theming` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                               | Canonical anatomy and both current targets     | Missing, extra, prefixed, or stale mappings fail repository validation.                | `audit:SegmentedControl/theming` |
+| Contract            | Verification                                                                          | Representative states                          | Mutation or failure expectation                                                                                        | Audit section                    |
+| ------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| FR1, FR2            | `SegmentedControl.test.tsx` radiogroup and rendering suites                           | Control with multiple segment items            | Removing the group or item semantics fails existing role and content assertions.                                       | `audit:SegmentedControl/anatomy` |
+| FR3                 | `SegmentedControl.test.tsx` label and icon suites                                     | Visible label, icon with label, icon-only item | Removing or changing current label/icon rendering fails existing DOM assertions.                                       | `audit:SegmentedControl/anatomy` |
+| FR4                 | `SegmentedControl.test.tsx` selection and disabled suites                             | Selected, unselected, and disabled items       | Breaking reflected item state fails current ARIA, class, or data-attribute assertions.                                 | `audit:SegmentedControl/theming` |
+| FR5, FR6            | `useSegmentedSelectionMotion.test.ts`; `SegmentedControl.interaction.browser.spec.ts` | Tap, retarget, keyboard, Reduced Motion, mouse | A second surface, a Layout or Paint per frame, a spring off the role, or travel under Reduced Motion fails the proofs. | `audit:SegmentedControl/anatomy` |
+| Target inventory    | `packages/core/src/theme/themingTargets.test.ts`                                      | Control and item targets                       | Runtime and documented target metadata drift fails target validation.                                                  | `audit:SegmentedControl/theming` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                         | Canonical anatomy and both current targets     | Missing, extra, prefixed, or stale mappings fail repository validation.                                                | `audit:SegmentedControl/theming` |
 
 ## Decision log
 
-None. This draft records current facts and introduces no component-local design,
-selection, accessibility, or API decision.
+None. FR5 and FR6 await owner review; this draft decides no component-local
+design, selection, accessibility, or API question.
 
 ## Open questions
 
