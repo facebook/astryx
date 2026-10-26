@@ -375,6 +375,8 @@ interface ReorderMessages {
   refused: (label: string) => string;
   /** A row's name when it shows no text: its place. */
   itemAt: (position: number) => string;
+  /** Reorder mode ended: the row's name and its place. */
+  modeDone: (label: string, position: number, total: number) => string;
   pickedUp: (position: number, total: number) => string;
   dropped: (position: number, total: number) => string;
   cancelled: (position: number, total: number) => string;
@@ -401,6 +403,8 @@ function messagesFrom(t: TranslatorFn): ReorderMessages {
             }),
     refused: label => t('@astryx.list.reorderRefused', {label}),
     itemAt: position => t('@astryx.list.reorderItemAt', {position}),
+    modeDone: (label, position, total) =>
+      t('@astryx.list.reorderModeDone', {label, position, total}),
     pickedUp: (position, total) =>
       t('@astryx.list.reorderPickedUp', {position, total}),
     dropped: (position, total) =>
@@ -593,7 +597,7 @@ export class ListReorderController implements ListReorderSession {
       return;
     }
     if (this.modeHandle === handle) {
-      this.setMode(null);
+      this.endMode();
       return;
     }
     if (this.handleOf(handle) === handle) {
@@ -607,11 +611,16 @@ export class ListReorderController implements ListReorderSession {
   }
 
   /**
-   * Ends reorder mode, keeping its moves. Focus that a screen reader moved
-   * into the hint goes back to the handle.
+   * Ends reorder mode, keeping its moves, and announces where the row is
+   * ("Done, Milk at position 3 of 5"): Escape, another activation of the
+   * handle, or the hint's Done. Focus that a screen reader moved into the
+   * hint goes back to the handle. A blur, a drag or the row leaving ends it
+   * without a word.
    */
   endMode(): void {
     const handle = this.modeHandle;
+    const list = this.getList();
+    const row = this.rowOf(handle);
     const active = handle?.ownerDocument.activeElement;
     if (
       handle != null &&
@@ -621,6 +630,18 @@ export class ListReorderController implements ListReorderSession {
       handle.focus({preventScroll: true});
     }
     this.setMode(null);
+    if (list == null || row == null) {
+      return;
+    }
+    const rows = rowsOf(list);
+    const index = rows.indexOf(row);
+    this.announce(
+      this.messages?.modeDone(
+        this.nameOf(row, index),
+        index + 1,
+        rows.length,
+      ) ?? '',
+    );
   }
 
   /** Records reorder mode's hint element (null once it goes). */
@@ -1421,7 +1442,7 @@ export class ListReorderController implements ListReorderSession {
       case 'Escape':
         event.preventDefault();
         event.stopPropagation();
-        this.setMode(null);
+        this.endMode();
         return;
       case 'ArrowUp':
       case 'ArrowDown':

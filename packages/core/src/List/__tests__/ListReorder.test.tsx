@@ -13,13 +13,13 @@
  *   index after the move, announced with its place and neighbours once it
  *   lands, a move into a row that stays at either end is refused and
  *   announced, and Escape, another activation or a lost focus ends the mode,
- *   keeping the moves; while the mode is on, a hint shows the moves and
- *   Done as buttons that do what the keys do and leave the focus on the
- *   handle; the object's start(key) enters the same mode from the app's own
- *   UI, keeping it when that UI hands its focus back, and does nothing but
- *   warn for a key that cannot move or is not mounted, or in the list
- *   mounted last for an object on two; a mouse drags past the slop, and a
- *   drag's click
+ *   keeping the moves (the first two announcing where the row is); while
+ *   the mode is on, a hint shows the moves and Done as buttons that do what
+ *   the keys do and leave the focus on the handle; the object's start(key)
+ *   enters the same mode from the app's own UI, keeping it when that UI
+ *   hands its focus back, and does nothing but warn for a key that cannot
+ *   move or is not mounted, or in the list mounted last for an object on
+ *   two; a mouse drags past the slop, and a drag's click
  *   leaves the mode alone; a new object keeps the mode and the next move
  *   calls the latest callback; one object serves two lists apart; the
  *   reorder adds one element to a row and no listener to a row or handle,
@@ -390,9 +390,12 @@ describe('List reorderable', () => {
     await user.keyboard(leave);
     expect(handle).toHaveAttribute('aria-pressed', 'false');
     expect(handle).toHaveFocus();
-    // Kept: two moves, nothing undone.
+    // Kept: two moves, nothing undone, and where the row is announced.
     expect(onReorder).toHaveBeenCalledTimes(2);
     expect(labels()).toEqual(['Sent', 'Drafts', 'Inbox']);
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent('Done, Inbox at position 3 of 3'),
+    );
     // Out of the mode, the arrows move nothing.
     await user.keyboard('{ArrowUp}');
     expect(onReorder).toHaveBeenCalledTimes(2);
@@ -488,6 +491,9 @@ describe('List reorderable', () => {
     expect(handle).toHaveAttribute('aria-pressed', 'false');
     expect(onReorder).toHaveBeenCalledTimes(1);
     expect(labels()).toEqual(['Sent', 'Inbox', 'Drafts']);
+    // Leaving without a word: the focus is elsewhere now.
+    await new Promise(resolve => setTimeout(resolve, 50));
+    expect(document.body).not.toHaveTextContent('Done,');
   });
 
   it('ignores arrows with a modifier: they are shortcuts', async () => {
@@ -807,6 +813,10 @@ describe('List reorderable', () => {
     expect(handle).toHaveAttribute('aria-pressed', 'false');
     expect(hintButton('Done')).toBeNull();
     expect(handle).toHaveFocus();
+    // Done ends the mode as Escape does, announcing where the row is.
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent('Done, Inbox at position 2 of 3'),
+    );
     // Kept: nothing undone.
     expect(onReorder).toHaveBeenCalledTimes(3);
     expect(labels()).toEqual(['Sent', 'Inbox', 'Drafts']);
