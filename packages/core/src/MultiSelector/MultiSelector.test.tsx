@@ -9,7 +9,15 @@
  * SYNC: When MultiSelector.tsx API changes, update these tests.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import {
   act,
   render,
@@ -37,6 +45,13 @@ import {groupStyles} from '../InputGroup/groupStyles';
 import {InputGroup, InputGroupText} from '../InputGroup';
 import {colorVars, focusVars} from '../theme/tokens.stylex';
 import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
+
+// SelectorBottomSheet loads the sheet lazily, and its chunk carries the gesture
+// host. Load it here, untimed, so a bottom-sheet test's findByRole waits only
+// for the render, never for a cold import.
+beforeAll(async () => {
+  await import('../BottomSheet/BottomSheet');
+});
 
 /**
  * Enters a search query as one change. Typing it key by key can land several
