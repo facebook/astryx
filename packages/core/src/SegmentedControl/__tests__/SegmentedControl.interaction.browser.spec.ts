@@ -699,14 +699,19 @@ test('Reduce Motion (design:reduced-motion): no travel or scale; the old surface
   );
 });
 
-test('Reduce Motion: a theme cannot lengthen the fade or bring back travel (design:reduced-motion DR4)', async ({
+test('Reduce Motion: a theme’s durations cannot lengthen the fade or bring back travel (design:reduced-motion DR4)', async ({
   page,
 }) => {
   await page.emulateMedia({reducedMotion: 'reduce'});
   const control = await openControl(page);
+  // A theme's motion is its duration scale; a slow one changes nothing here.
   await page.evaluate(() => {
     const root = document.documentElement.style;
-    root.setProperty('--motion-segmented-control-selection-spring', '1.2s 0.4');
+    for (const name of ['fast', 'medium', 'slow']) {
+      for (const suffix of ['', '-min', '-max']) {
+        root.setProperty(`--duration-${name}${suffix}`, '1200ms');
+      }
+    }
   });
   const {samples, titleFades} = await sampleReducedMotionChange(page, control);
   const fadeEnd = fadeEndOf(samples);
@@ -918,15 +923,18 @@ test('with a mouse nothing changes: no lens, the theme’s color transition, and
   }
 });
 
-test('a theme retunes the slide through its motion role', async ({page}) => {
+test('the slide plays UISegmentedControl’s measured spring, an internal constant: no theme setting retunes it', async ({
+  page,
+}) => {
   const control = await openControl(page);
-  // A theme sets the role's variable on its scope (here the root):
-  // critically damped, 0.25 s.
+  // Neither the variable a theme role once had nor a slow duration scale
+  // changes the slide.
   await page.evaluate(() => {
-    document.documentElement.style.setProperty(
-      '--motion-segmented-control-selection-spring',
-      '0.25s 0',
-    );
+    const root = document.documentElement.style;
+    root.setProperty('--motion-segmented-control-selection-spring', '0.25s 0');
+    for (const name of ['fast', 'medium', 'slow']) {
+      root.setProperty(`--duration-${name}`, '1200ms');
+    }
   });
   await control.tapSegment('table');
   await waitForLens(control);
@@ -936,20 +944,20 @@ test('a theme retunes the slide through its motion role', async ({page}) => {
   const from = boxOf(after, 'grid');
   const to = boxOf(after, 'table');
   await releaseAnimations(page);
-  const retuned = {response: 0.25, dampingFraction: 1} as const;
   const fit = compareCurve(
-    samples.map(sample => ({t: sample.t, value: sample.x})),
-    t => from.x + (to.x - from.x) * springStep(retuned, t),
-    0.25,
-  );
-  expect(fit.maxError, JSON.stringify(fit.worst)).toBeLessThanOrEqual(0.25);
-  // ...not UIKit's default spring.
-  const uikit = compareCurve(
     samples.map(sample => ({t: sample.t, value: sample.x})),
     t => from.x + (to.x - from.x) * springStep(SLIDE, t),
     0.25,
   );
-  expect(uikit.maxError).toBeGreaterThan(5);
+  expect(fit.maxError, JSON.stringify(fit.worst)).toBeLessThanOrEqual(0.25);
+  // ...not the spring the variable names.
+  const variable = {response: 0.25, dampingFraction: 1} as const;
+  const other = compareCurve(
+    samples.map(sample => ({t: sample.t, value: sample.x})),
+    t => from.x + (to.x - from.x) * springStep(variable, t),
+    0.25,
+  );
+  expect(other.maxError).toBeGreaterThan(5);
 });
 
 test('RTL: the surface slides toward the tapped segment', async ({page}) => {

@@ -195,7 +195,7 @@ function WorkspaceCard() {
   usage: {
     anatomy,
     description:
-      'A segmented button group that allows users to make a single selection from a small set of mutually exclusive options. Use SegmentedControl when all options should be visible at once and the selection controls a value or mode, not page navigation. Under a finger the selection slides to the new segment, as in UIKit, whether a tap, an arrow key or a new value moved it; with Reduce Motion nothing travels: the old selection fades out as the new one fades in. With a mouse the color fade stays. A theme can retune the slide through its motion role.',
+      'A segmented button group that allows users to make a single selection from a small set of mutually exclusive options. Use SegmentedControl when all options should be visible at once and the selection controls a value or mode, not page navigation. Under a finger the selection slides to the new segment, as in UIKit, whether a tap, an arrow key or a new value moved it; with Reduce Motion nothing travels: the old selection fades out as the new one fades in. With a mouse the color fade stays.',
     accessibility: [
       {
         name: 'Text label',
@@ -287,7 +287,7 @@ export const docsZh = {
   usage: {
     anatomy,
     description:
-      'A segmented button group that allows users to make a single selection from a small set of mutually exclusive options. Use SegmentedControl when all options should be visible at once and the selection controls a value or mode, not page navigation. Under a finger the selection slides to the new segment, as in UIKit, whether a tap, an arrow key or a new value moved it; with Reduce Motion nothing travels: the old selection fades out as the new one fades in. With a mouse the color fade stays. A theme can retune the slide through its motion role.',
+      'A segmented button group that allows users to make a single selection from a small set of mutually exclusive options. Use SegmentedControl when all options should be visible at once and the selection controls a value or mode, not page navigation. Under a finger the selection slides to the new segment, as in UIKit, whether a tap, an arrow key or a new value moved it; with Reduce Motion nothing travels: the old selection fades out as the new one fades in. With a mouse the color fade stays.',
     bestPractices: [
       {
         guidance: true,
@@ -323,7 +323,7 @@ export const docsDense = {
   usage: {
     anatomy,
     description:
-      'A segmented button group that allows users to make a single selection from a small set of mutually exclusive options. Use SegmentedControl when all options should be visible at once and the selection controls a value or mode, not page navigation. Under a finger the selection slides to the new segment, as in UIKit, whether a tap, an arrow key or a new value moved it; with Reduce Motion nothing travels: the old selection fades out as the new one fades in. With a mouse the color fade stays. A theme can retune the slide through its motion role.',
+      'A segmented button group that allows users to make a single selection from a small set of mutually exclusive options. Use SegmentedControl when all options should be visible at once and the selection controls a value or mode, not page navigation. Under a finger the selection slides to the new segment, as in UIKit, whether a tap, an arrow key or a new value moved it; with Reduce Motion nothing travels: the old selection fades out as the new one fades in. With a mouse the color fade stays.',
     bestPractices: [
       {
         guidance: true,

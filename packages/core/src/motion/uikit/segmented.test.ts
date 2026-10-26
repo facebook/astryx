@@ -5,7 +5,8 @@
  * @input vitest, the segmented-control domain of the UIKit constants table,
  *   the spring solver, and samples of UIKit's own selection slide
  * @output Holds `segmentedControl.selectionSpring` to UISegmentedControl's
- *   measured slide (position per frame, iOS 26.2 simulator), its only role
+ *   measured slide (position per frame, iOS 26.2 simulator), an internal
+ *   constant no theme retunes
  * @position Testing; parity of the segmented-control constants (law P4,
  *   unit layer). The browser layer is
  *   SegmentedControl/__tests__/SegmentedControl.interaction.browser.spec.ts.
@@ -15,7 +16,7 @@ import {describe, expect, it} from 'vitest';
 import {dampingRatioOf, responseOf, solveSpring, toSpring} from '../spring';
 import {motionRoleIn, motionRoleOf} from '../roles';
 import {resolveMotion} from '../resolveMotion';
-import {registerSegmentedControlTable, segmentedControl} from './segmented';
+import {segmentedControl} from './segmented';
 import {springs} from './springs';
 
 /**
@@ -126,21 +127,19 @@ describe('segmentedControl.selectionSpring reproduces UIKit’s slide', () => {
   });
 });
 
-describe('motion roles', () => {
-  // The touch module registers the table before its first animation.
-  registerSegmentedControlTable();
-
-  it('the slide spring is a role a theme can retune, and the only one: the titles switch at once', () => {
-    expect(motionRoleOf(segmentedControl.selectionSpring)).toMatchObject({
-      id: 'segmentedControl.selectionSpring',
-      kind: 'spring',
-      variable: '--motion-segmented-control-selection-spring',
-    });
+describe('an internal constant', () => {
+  it('the slide spring is no motion role (spec:AST-094 FR4 names none for the segmented control), and the only value: the titles switch at once', () => {
+    expect(motionRoleOf(segmentedControl.selectionSpring)).toBeUndefined();
+    expect(motionRoleIn(segmentedControl, 'selectionSpring')).toBeUndefined();
     expect(Object.keys(segmentedControl)).toEqual(['selectionSpring']);
   });
 
-  it('with no theme setting them, resolves to UIKit’s measured values', () => {
+  it('resolves to UIKit’s measured value whatever a theme sets: the old role variable does nothing', () => {
     const element = document.createElement('div');
+    element.style.setProperty(
+      '--motion-segmented-control-selection-spring',
+      '0.25s 0',
+    );
     document.body.append(element);
     try {
       expect(resolveMotion(element, segmentedControl.selectionSpring)).toEqual(
@@ -156,9 +155,6 @@ describe('one source for the slide', () => {
   it('the segmented slide has one spring, the measured one: no guessed thumb spring is left', () => {
     expect('segmentedThumb' in springs).toBe(false);
     expect(motionRoleIn(springs, 'segmentedThumb')).toBeUndefined();
-    expect(motionRoleIn(segmentedControl, 'selectionSpring')).toMatchObject({
-      id: 'segmentedControl.selectionSpring',
-    });
   });
 });
 

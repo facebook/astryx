@@ -39,6 +39,6 @@ export {
 } from './gestures';
 export {navigation, registerNavigationTable} from './navigation';
 export {registerScrollTable, scroll} from './scroll';
-export {registerSegmentedControlTable, segmentedControl} from './segmented';
+export {segmentedControl} from './segmented';
 export {registerSpringsTable, springs} from './springs';
 export {registerTimingTable, timing} from './timing';
