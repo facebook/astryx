@@ -173,7 +173,8 @@ announcements are those of FR3 and FR4, and the tree adds no option.
     the same announcement and focus on the handle, and Done leaves the mode
     as Escape does, so a pointer or a finger can reorder by tapping the
     handle, then the move buttons, then Done;
-    \1 it is a\n layer that follows `family:overlay-dismissal`; it uses
+  - the hint is a part named in each adopting collection's anatomy; it is a
+    layer that follows `family:overlay-dismissal`; it uses
     the layer, anchoring, and theme roles of Core's keyboard hint, whose
     public API is unchanged, and unlike that hint its buttons take taps and
     are exposed to assistive technology.
