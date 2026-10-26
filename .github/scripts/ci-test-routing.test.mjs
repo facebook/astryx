@@ -63,6 +63,8 @@ const WORKFLOWS = {
     lanes: ['test-ui', 'test-node'],
     // A PR that only touches docs skips the suite but must still report.
     scopeConditional: true,
+    // A pull request the import graph can scope runs only related tests.
+    graphScoped: true,
     // Each Vitest lane splits its project across matrix legs.
     sharded: true,
   },
@@ -71,6 +73,8 @@ const WORKFLOWS = {
     // other and so ride one lane of their own.
     lanes: ['test-ui', 'test-node', 'typecheck'],
     scopeConditional: false,
+    // The push to main runs every test.
+    graphScoped: false,
     sharded: true,
   },
 };
@@ -103,7 +107,7 @@ function runLines(job) {
 
 describe.each(Object.entries(WORKFLOWS))(
   '%s test routing',
-  (file, {lanes, scopeConditional, sharded}) => {
+  (file, {lanes, scopeConditional, graphScoped, sharded}) => {
     const workflow = load(file);
 
     it('gives the Node suite more than one Vitest worker', () => {
@@ -161,7 +165,24 @@ describe.each(Object.entries(WORKFLOWS))(
       // runs FR23 in a later step on the same runner, after its share exited.
       expect(suites).toHaveLength(2);
       const [share, isolated] = suites;
-      expect(share.run.trim()).toBe(`pnpm test:ui ${SHARD_ARG}`);
+      // Its share is the full UI project, or for a scoped pull request the
+      // tests related to its diff (check-scope's full_suite).
+      if (graphScoped) {
+        expect(share.run.trim()).toBe(
+          [
+            'if [ "$SCOPED" = true ]; then',
+            `  pnpm test:ui --changed=HEAD^1 --passWithNoTests ${SHARD_ARG}`,
+            'else',
+            `  pnpm test:ui ${SHARD_ARG}`,
+            'fi',
+          ].join('\n'),
+        );
+        expect(share.env.SCOPED).toBe(
+          "${{ github.event_name == 'pull_request' && needs.check-scope.outputs.full_suite == 'false' }}",
+        );
+      } else {
+        expect(share.run.trim()).toBe(`pnpm test:ui ${SHARD_ARG}`);
+      }
       expect(isolated.run.trim()).toBe('pnpm test:ui:isolated');
       expect(job.steps.indexOf(isolated)).toBeGreaterThan(
         job.steps.indexOf(share),

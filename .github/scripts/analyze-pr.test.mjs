@@ -280,9 +280,10 @@ describe('analyze-pr component ownership', () => {
       );
       const analysis = JSON.parse(fs.readFileSync(path.join(repo, 'analysis.json'), 'utf8'));
 
-      expect(analysis.modifiedComponentOwners).toEqual(['core/Tokenizer']);
-      expect(analysis.unresolvedComponentSources).toEqual(['core/Chat']);
-      expect(analysis.forceFullComponentAudits).toBe(true);
+      // The family folder owns each component it holds.
+      expect(analysis.modifiedComponentOwners).toEqual(['core/Tokenizer', 'core/Chat', 'core/ChatComposer']);
+      expect(analysis.unresolvedComponentSources).toEqual([]);
+      expect(analysis.forceFullComponentAudits).toBe(false);
     } finally {
       fs.rmSync(repo, {recursive: true, force: true});
     }
@@ -328,6 +329,49 @@ describe('analyze-pr base and head sizes', () => {
       );
       const analysis = JSON.parse(fs.readFileSync(path.join(repo, 'analysis.json'), 'utf8'));
       expect(Object.keys(analysis.componentSizes)).toEqual(['core/Card']);
+      // The shared hook's reverse dependent owns the browser audits, not the
+      // whole roster.
+      expect(analysis.modifiedComponentOwners).toEqual(['core/Card']);
+      expect(analysis.modifiedComponents).toEqual(['Card']);
+      expect(analysis.unresolvedComponentSources).toEqual([]);
+      expect(analysis.forceFullComponentAudits).toBe(false);
+
+      // A change to shared infrastructure asks for full audits whatever it
+      // reaches.
+      execFileSync(
+        process.execPath,
+        [SCRIPT, '--base', 'main', '--head', 'HEAD', '--output', 'analysis.json', '--force-full'],
+        {cwd: repo, encoding: 'utf8'},
+      );
+      const forced = JSON.parse(fs.readFileSync(path.join(repo, 'analysis.json'), 'utf8'));
+      expect(forced.forceFullComponentAudits).toBe(true);
+
+      // A module no component bundle holds changes no component: it adds no
+      // owner and asks for no full audit.
+      write('packages/core/src/hooks/useOrphan.ts', 'export function useOrphan() { return 1; }\n');
+      git(repo, ['add', '-A']);
+      git(repo, ['commit', '-qm', 'add a module nothing imports']);
+      write('packages/core/dist/hooks/useOrphan.js', 'export function useOrphan() { return 1; }\n');
+      execFileSync(
+        process.execPath,
+        [SCRIPT, '--base', 'main', '--head', 'HEAD', '--output', 'analysis.json'],
+        {cwd: repo, encoding: 'utf8'},
+      );
+      const orphan = JSON.parse(fs.readFileSync(path.join(repo, 'analysis.json'), 'utf8'));
+      expect(orphan.modifiedComponentOwners).toEqual(['core/Card']);
+      expect(orphan.forceFullComponentAudits).toBe(false);
+
+      // Without a build to read reach from, a shared module stays unresolved:
+      // full audits.
+      fs.rmSync(path.join(repo, 'packages/core/dist'), {recursive: true});
+      execFileSync(
+        process.execPath,
+        [SCRIPT, '--base', 'main', '--head', 'HEAD', '--output', 'analysis.json'],
+        {cwd: repo, encoding: 'utf8'},
+      );
+      const unbuilt = JSON.parse(fs.readFileSync(path.join(repo, 'analysis.json'), 'utf8'));
+      expect(unbuilt.unresolvedComponentSources).toEqual(['core/hooks']);
+      expect(unbuilt.forceFullComponentAudits).toBe(true);
     } finally {
       fs.rmSync(repo, {recursive: true, force: true});
     }

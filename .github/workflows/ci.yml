@@ -76,6 +76,13 @@ jobs:
       docsite_only: ${{ steps.scope.outputs.docsite_only }}
       spec_only: ${{ steps.scope.outputs.spec_only }}
       tooling_only: ${{ steps.scope.outputs.tooling_only }}
+      # 'false' only for a pull request whose changes the import graph can
+      # scope (components, shared modules, docs, records). Anything else, an
+      # empty value included, runs the full suite: main, release branches,
+      # the merge queue, release-check dispatches, and shared infrastructure
+      # (build and test config, the test harness, tokens, themes, root
+      # dependencies, CI itself).
+      full_suite: ${{ steps.scope.outputs.full_suite }}
       release_bump: ${{ steps.scope.outputs.release_bump }}
       release_branch: ${{ steps.release-authority.outputs.branch || steps.main-authority.outputs.branch }}
       release_head: ${{ steps.release-authority.outputs.head || steps.main-authority.outputs.head }}
@@ -181,18 +188,18 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
         run: |
           if [ "$EVENT_NAME" != pull_request ]; then
-            printf 'docsite_only=false\nspec_only=false\ntooling_only=false\nrelease_bump=false\n' >> "$GITHUB_OUTPUT"
+            printf 'docsite_only=false\nspec_only=false\ntooling_only=false\nfull_suite=true\nrelease_bump=false\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           if [[ "$BASE_REF" == release/v* ]]; then
             # Release bump PRs contain generated bookkeeping only. The final
             # branch head receives one full visual/a11y/RTL release-check.
-            printf 'docsite_only=false\nspec_only=true\ntooling_only=true\nrelease_bump=true\n' >> "$GITHUB_OUTPUT"
+            printf 'docsite_only=false\nspec_only=true\ntooling_only=true\nfull_suite=true\nrelease_bump=true\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           MERGE_BASE=$(git merge-base HEAD origin/${{ github.base_ref }} 2>/dev/null || echo "")
           if [ -z "$MERGE_BASE" ]; then
-            printf 'docsite_only=false\nspec_only=false\ntooling_only=false\nrelease_bump=false\n' >> "$GITHUB_OUTPUT"
+            printf 'docsite_only=false\nspec_only=false\ntooling_only=false\nfull_suite=true\nrelease_bump=false\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           echo 'release_bump=false' >> "$GITHUB_OUTPUT"
@@ -211,7 +218,7 @@ jobs:
           else
             # Missing trusted policy or dependencies cannot grant a specialized
             # lane. Run broad CI until the base branch supplies the full classifier.
-            printf 'docsite_only=false\nspec_only=false\ntooling_only=false\n' \
+            printf 'docsite_only=false\nspec_only=false\ntooling_only=false\nfull_suite=true\n' \
               >> "$GITHUB_OUTPUT"
           fi
   # Generated-only version PR lane. It validates release bookkeeping in a few
@@ -639,8 +646,12 @@ jobs:
         if: needs.check-scope.outputs.docsite_only == 'true' || needs.check-scope.outputs.spec_only == 'true' || needs.check-scope.outputs.tooling_only == 'true'
         run: echo "Specialized PR lane — skipping unrelated test suite"
 
+      # Two commits: a pull request's merge commit and its base parent, the
+      # diff a scoped run follows.
       - uses: actions/checkout@v7
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        with:
+          fetch-depth: 2
 
       - uses: ./.github/actions/setup
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
@@ -678,8 +689,19 @@ jobs:
         if: matrix.shard == 1 && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: pnpm lab:readiness:check
 
+      # A scoped pull request runs the tests Vitest's module graph relates to
+      # its diff against the base (`--changed`): the changed tests, and every
+      # test that imports a changed module, however indirectly. Anything else
+      # runs every test.
       - name: Run this shard of the UI tests
-        run: pnpm test:ui --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        env:
+          SCOPED: ${{ github.event_name == 'pull_request' && needs.check-scope.outputs.full_suite == 'false' }}
+        run: |
+          if [ "$SCOPED" = true ]; then
+            pnpm test:ui --changed=HEAD^1 --passWithNoTests --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+          else
+            pnpm test:ui --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+          fi
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
 
       # A child process isolates engine state, not CPU or memory contention.
@@ -718,11 +740,22 @@ jobs:
 
       - uses: actions/checkout@v7
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
+        with:
+          fetch-depth: 2
 
       - uses: ./.github/actions/setup
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
 
-      - run: pnpm test:node --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+      # Scoped like test-ui's run.
+      - name: Run this shard of the Node tests
+        env:
+          SCOPED: ${{ github.event_name == 'pull_request' && needs.check-scope.outputs.full_suite == 'false' }}
+        run: |
+          if [ "$SCOPED" = true ]; then
+            pnpm test:node --changed=HEAD^1 --passWithNoTests --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+          else
+            pnpm test:node --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+          fi
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
 
       # Theme-family compilation is owned by `theme-build`, not Build. Until
@@ -1051,11 +1084,18 @@ jobs:
 
       - name: Analyze components
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
+        env:
+          FULL_SUITE: ${{ needs.check-scope.outputs.full_suite }}
         run: |
+          # Browser audits follow the changed components and their reverse
+          # dependents, unless the change touches shared infrastructure.
+          FORCE_FULL=()
+          if [ "$FULL_SUITE" != false ]; then FORCE_FULL=(--force-full); fi
           node .github/scripts/analyze-pr.js \
             --base origin/${{ github.base_ref }} \
             --head HEAD \
-            --output analysis.json
+            --output analysis.json \
+            "${FORCE_FULL[@]}"
 
       - name: Write PR comment metadata
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'

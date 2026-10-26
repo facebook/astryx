@@ -61,6 +61,36 @@ const NODE_TOOLING_PATHS = new Set([
   '.github/workflows/crowdin-upload.yml',
 ]);
 
+// Inside a runtime package, files every component's tests or build read:
+// manifests, build and test configuration, shared test setup. A change to one
+// runs the full suite, like any shared-or-unknown or theme-build path.
+const PACKAGE_INFRA_PATTERNS = [
+  /^packages\/[^/]+\/package\.json$/,
+  /^packages\/[^/]+\/[^/]*\.config\.[^/]+$/,
+  /^packages\/[^/]+\/tsconfig[^/]*\.json$/,
+  /^packages\/[^/]+\/src\/(?:test-utils|testing|__mocks__)\//,
+  /^packages\/[^/]+\/src\/[^/]*setup[^/]*\.[^/]+$/i,
+  /^apps\/storybook\/\.storybook\//,
+];
+
+// Surfaces a pull request's tests can be scoped to by the import graph (the
+// components and modules it changed, and what imports them). Anything else,
+// or any infrastructure path above, runs the full suite.
+const SCOPABLE_SURFACES = new Set([
+  SURFACES.KNOWLEDGE,
+  SURFACES.DOCSITE,
+  SURFACES.NODE_TOOLING,
+  'storybook-visual',
+  ...RUNTIME_PACKAGE_SURFACES.map(([, surface]) => surface),
+]);
+
+function isSharedInfraPath(filePath) {
+  return (
+    PACKAGE_INFRA_PATTERNS.some(pattern => pattern.test(filePath)) ||
+    surfacesForPath(filePath).some(surface => !SCOPABLE_SURFACES.has(surface))
+  );
+}
+
 const THEME_DOC_CANDIDATE = /^docs\/themes\/(?!README\.md$)[^/]+\.md$/;
 const THEME_PACKAGE_CANDIDATE =
   /^packages\/themes\/[^/]+\/(?:.*\/)?[^/]+\.spec\.md$/;
@@ -152,6 +182,7 @@ function classifyChanges(changes, {expectedCount} = {}) {
       touchesDesignAssets: false,
       specChangesetConflict: false,
       docsiteOnly: false,
+      fullSuite: !complete,
       surfaces: complete ? [] : [SURFACES.SHARED_OR_UNKNOWN],
       complete,
       reason: complete ? 'no changed files' : 'changed-file list is incomplete',
@@ -199,6 +230,8 @@ function classifyChanges(changes, {expectedCount} = {}) {
   const specOnly = exactSurface(SURFACES.KNOWLEDGE);
   const docsiteOnly = exactSurface(SURFACES.DOCSITE);
   const toolingOnly = exactSurface(SURFACES.NODE_TOOLING);
+  // An incomplete list, or any shared infrastructure, runs everything.
+  const fullSuite = !complete || allPaths.some(isSharedInfraPath);
   return {
     specOnly,
     toolingOnly,
@@ -206,6 +239,7 @@ function classifyChanges(changes, {expectedCount} = {}) {
     touchesDesignAssets,
     specChangesetConflict,
     docsiteOnly,
+    fullSuite,
     surfaces,
     complete,
     reason: !complete
@@ -253,7 +287,7 @@ if (require.main === module) {
       throw new Error('GITHUB_OUTPUT is required with --github-output.');
     fs.appendFileSync(
       outputPath,
-      `spec_only=${result.specOnly}\ndocsite_only=${result.docsiteOnly}\ntooling_only=${result.toolingOnly}\n`,
+      `spec_only=${result.specOnly}\ndocsite_only=${result.docsiteOnly}\ntooling_only=${result.toolingOnly}\nfull_suite=${result.fullSuite}\n`,
     );
   } else {
     process.stdout.write(`${JSON.stringify(result)}\n`);
@@ -267,6 +301,7 @@ module.exports = {
   isKnowledgeRecordPath,
   isNodeToolingPath,
   isPackageReleasePath,
+  isSharedInfraPath,
   isSpecRecordPath,
   parseNameStatus,
 };

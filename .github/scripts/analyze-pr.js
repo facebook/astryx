@@ -4,11 +4,15 @@
 
 /**
  * @description Analyzes PR changes to detect new/modified components and gather stats
- * @input --base <branch> --head <ref> --output <file> [--base-root <dir> [--base-only]]
+ * @input --base <branch> --head <ref> --output <file> [--base-root <dir> [--base-only]] [--force-full]
  * @output JSON file with component analysis; exits non-zero if the base...head diff fails (e.g. shallow clone without a merge base).
  *   With --base-root (a built checkout of the merge base), the analysis also
  *   records baseComponentStats and baseBundlePackages measured in that tree;
  *   --base-only writes just those, with the head and base commits they belong to.
+ *   A changed module outside every component folder (a shared hook, the
+ *   animator) owns the components whose bundle reaches it, so browser audits
+ *   run for those reverse dependents; one no component reaches, or --force-full
+ *   (a change to shared infrastructure), asks for full audits.
  */
 
 const fs = require('node:fs');
@@ -40,6 +44,7 @@ const headRef = getArg('head') || 'HEAD';
 const outputFile = getArg('output') || 'analysis.json';
 const baseRoot = getArg('base-root');
 const baseOnly = args.includes('--base-only');
+const forceFull = args.includes('--force-full');
 if (baseOnly && !baseRoot) {
   console.error('::error::--base-only needs --base-root');
   process.exit(1);
@@ -556,8 +561,11 @@ function packageTargets(pkg) {
 // Every canonical public component a change can affect: its own folder or
 // file changed, or its bundle, import() targets included, reaches a changed
 // module of its package, such as a shared hook or style module. Family folders
-// that hold several components yield each of them.
-function sizeTargets(changedFiles) {
+// that hold several components yield each of them. `reach`, when given,
+// collects each changed source path some component reaches (its folder, or a
+// module in its bundle) in `paths`, and in `measured` each package whose
+// bundles could be read: there, a module no bundle holds reaches nothing.
+function sizeTargets(changedFiles, reached = null) {
   const withoutExtension = (file) => file.replace(/\.(tsx?|jsx?|mjs)$/, '');
   const targets = [];
   for (const pkg of PACKAGES) {
@@ -577,12 +585,18 @@ function sizeTargets(changedFiles) {
     for (const target of all) {
       const top = withoutExtension(target.distModule.split('/')[0]);
       const inputs = reach?.get(path.join(dist, target.distModule)) ?? [];
-      const reachesChange = inputs.some((input) => {
+      const reachedModules = inputs.flatMap((input) => {
         const relative = path.relative(distReal, input);
-        return !relative.startsWith('..') && changedModules.has(withoutExtension(relative));
+        const module = withoutExtension(relative);
+        return !relative.startsWith('..') && changedModules.has(module) ? [module] : [];
       });
-      if (changedTops.has(top) || reachesChange) targets.push(target);
+      if (changedTops.has(top) || reachedModules.length > 0) targets.push(target);
+      if (reached != null) {
+        for (const module of reachedModules) reached.paths.add(prefix + module);
+        if (changedTops.has(top)) reached.paths.add(prefix + top);
+      }
     }
+    if (reached != null && reach != null && reach.size > 0) reached.measured.add(prefix);
   }
   return targets;
 }
@@ -691,6 +705,8 @@ function analyze() {
   const newComponentOwners = [];
   const modifiedComponentOwners = [];
   const unresolvedComponentSources = [];
+  // Each changed file under an unresolved source, to decide its reach.
+  const unresolvedFiles = [];
   const componentStats = {};
   const changedPackages = new Set();
 
@@ -727,6 +743,7 @@ function analyze() {
 
       if (!allComponents.includes(componentName)) {
         const source = `${pkg.packageName}/${componentName}`;
+        unresolvedFiles.push({ source, file });
         if (!unresolvedComponentSources.includes(source)) {
           unresolvedComponentSources.push(source);
         }
@@ -788,7 +805,8 @@ function analyze() {
   // Components a change can affect, by reach in the head build and, when the
   // merge base is built, in the base build too: CI's size-base job builds only
   // the base, and a module change can add or remove reach.
-  const headTargets = sizeTargets(changedFiles);
+  const reachedSources = { paths: new Set(), measured: new Set() };
+  const headTargets = sizeTargets(changedFiles, reachedSources);
   let targets = headTargets;
   let baseComponentSizes = null;
   if (baseRoot) {
@@ -814,6 +832,40 @@ function analyze() {
   }
   const componentSizes = baseOnly ? null : measureSizes(targets);
 
+  // Reverse dependents: a changed module outside every component folder (a
+  // shared hook, the animator) owns the components whose head bundle reaches
+  // it, or whose family folder it is; in a package whose bundles were read, a
+  // module no bundle holds owns none. One in a package whose bundles could
+  // not be read stays unresolved and asks for full audits, as does
+  // --force-full.
+  const isDecided = (file) =>
+    [...reachedSources.measured].some((prefix) => file.startsWith(prefix)) ||
+    [...reachedSources.paths].some((reachedPath) => {
+      const module = file.replace(/\.(tsx?|jsx?|mjs)$/, '');
+      return module === reachedPath || module.startsWith(reachedPath + '/');
+    });
+  const unreachedSources = unresolvedComponentSources.filter((source) =>
+    unresolvedFiles.some((entry) => entry.source === source && !isDecided(entry.file)),
+  );
+  if (!baseOnly && unreachedSources.length < unresolvedComponentSources.length) {
+    for (const target of headTargets) {
+      const owner = `${target.pkg.packageName}/${target.name}`;
+      if (newComponentOwners.includes(owner) || modifiedComponentOwners.includes(owner)) continue;
+      modifiedComponentOwners.push(owner);
+      // The legacy bare-name list carries component folders only, as above.
+      if (
+        componentStats[target.name] ||
+        !getComponentNames(target.pkg).includes(target.name) ||
+        !componentExistsInBase(target.pkg, target.name)
+      ) {
+        continue;
+      }
+      componentStats[target.name] = getComponentStats(target.pkg, target.name);
+      modifiedComponents.push(target.name);
+    }
+    console.log(`Reverse dependents: ${modifiedComponentOwners.join(', ') || 'none'}`);
+  }
+
   if (baseOnly) {
     const baseResult = {
       headSha: execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim(),
@@ -833,8 +885,8 @@ function analyze() {
     modifiedComponents,
     newComponentOwners,
     modifiedComponentOwners,
-    unresolvedComponentSources,
-    forceFullComponentAudits: unresolvedComponentSources.length > 0,
+    unresolvedComponentSources: unreachedSources,
+    forceFullComponentAudits: forceFull || unreachedSources.length > 0,
     newExports,
     componentStats,
     changedPackages: [...changedPackages],
