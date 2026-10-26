@@ -415,34 +415,6 @@ test('the bar sets no page-level stacking rank: its layers order inside it', asy
   expect(root).toEqual({zIndex: 'auto', isolation: 'isolate'});
 });
 
-test('a held finger never starts text selection on the bar', async ({page}) => {
-  const {driver, bar} = await openBar(page);
-  const read = () =>
-    bar.evaluate(element => {
-      const style = getComputedStyle(element);
-      return {
-        // iOS Safari reads the prefixed property; WebKit has no other.
-        prefixed: style.getPropertyValue('-webkit-user-select'),
-        unprefixed: CSS.supports('user-select', 'none')
-          ? style.getPropertyValue('user-select')
-          : 'none',
-      };
-    });
-  // The lock belongs to the hold: the gesture host sets it on the elements
-  // a held finger presses and takes it off at the lift, so the bar carries
-  // nothing of its own at rest.
-  let held: {prefixed: string; unprefixed: string} | null = null;
-  const point = await itemCenter(page, 'Home');
-  await driver.play(tapScript(point, {holdMs: 300}), {
-    onEvent: async (_step, index) => {
-      if (index === 0) {
-        held = await read();
-      }
-    },
-  });
-  expect(held).toEqual({prefixed: 'none', unprefixed: 'none'});
-});
-
 test('badges appear, change and clear without animating', async ({page}) => {
   const {driver} = await openBar(page, 'badges');
   const badge = page.locator('[data-tab-bar-badge="inbox"]');

@@ -21,11 +21,7 @@ import type {SankeyLinkLayout} from './types';
  * - `string` — any CSS color for flat uniform fill
  */
 export type SankeyLinkColor =
-  | 'gradient'
-  | 'source'
-  | 'target'
-  | {gradient: number}
-  | (string & {});
+  'gradient' | 'source' | 'target' | {gradient: number} | (string & {});
 
 export interface SankeyLinkProps {
   /** Link coloring mode (default: 'gradient') */
