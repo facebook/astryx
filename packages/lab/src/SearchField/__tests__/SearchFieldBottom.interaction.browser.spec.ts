@@ -397,6 +397,22 @@ async function waitForNewAnimation(locator: Locator, after: number) {
   }
 }
 
+/**
+ * The trailing end's samples from its own start. The parts' turns start a few
+ * ms apart (each is created after the one before it), and a hold samples from
+ * the earliest start among them: until the end's own start it reads its first
+ * keyframe, the same presented frame again. On a slow runner that gap passes a
+ * sample step (24 ms at 8x CPU throttling), so the repeats are dropped and
+ * every sample left is a new frame.
+ */
+function fromOwnStart(xs: number[]): number[] {
+  let first = 0;
+  while (first + 1 < xs.length && xs[first + 1] === xs[first]) {
+    first += 1;
+  }
+  return xs.slice(first);
+}
+
 /** The largest step between neighbouring samples, px. */
 const largestStep = (xs: number[]) =>
   Math.max(...xs.slice(1).map((x, i) => Math.abs(x - xs[i])));
@@ -446,8 +462,10 @@ test('a cancel mid-activation turns around from where the field is, without a sn
   await holdAnimations(page);
   await expect(root(page)).not.toHaveAttribute('data-search-field-active');
   const times = timeline(reverse.to - reverse.from);
-  const xs = (await sampleCurve(end(page), times)).map(
-    sample => sample.transform.translateX,
+  const xs = fromOwnStart(
+    (await sampleCurve(end(page), times)).map(
+      sample => sample.transform.translateX,
+    ),
   );
   await releaseAnimations(page, {finish: true});
   // The measured cancel starts from the settled active field, so replaying
@@ -482,8 +500,10 @@ test('focusing the field early in a cancel re-activates from where the field is,
   await holdAnimations(page);
   await expect(root(page)).toHaveAttribute('data-search-field-active', 'true');
   const times = timeline(again.to - again.from);
-  const xs = (await sampleCurve(end(page), times)).map(
-    sample => sample.transform.translateX,
+  const xs = fromOwnStart(
+    (await sampleCurve(end(page), times)).map(
+      sample => sample.transform.translateX,
+    ),
   );
   await releaseAnimations(page, {finish: true});
   // From where the cancel had brought it (further toward rest than before
