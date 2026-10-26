@@ -8,8 +8,9 @@
  *   their centres in the capsule, the capsule's natural width, the item a
  *   lift commits, the lens's target under a finger (rubber-banded past the
  *   ends), the lifted lens's scale, the counter-transform that keeps the
- *   selected copy of the items still inside a moving lens, and where the
- *   minimized circle sits
+ *   selected copy of the items still inside a moving lens, where the
+ *   minimized circle sits, and the bottom accessory's box above the bar and
+ *   inline beside the circle
  * @position Math of the lab TabBar (TabBar.tsx); no DOM, no React
  *
  * Coordinates are the capsule's own, in px, before its flex scale: x from
@@ -154,4 +155,30 @@ export function copyTransform(
 export function minimizedCenter(width: number, isRtl = false): number {
   const half = tabBar.barHeight / 2;
   return isRtl ? width - half : half;
+}
+
+export interface AccessoryBox {
+  /** From the capsule's inline-start edge, px. */
+  readonly start: number;
+  /** From the capsule's top edge, px (negative: above it). */
+  readonly top: number;
+  readonly width: number;
+}
+
+/**
+ * The bottom accessory's box in a capsule `width` px wide: above the bar and
+ * as wide as it, or (minimized) inline between the circle and the bar's
+ * trailing end, concentric with the trailing cap.
+ */
+export function accessoryBox(width: number, isInline: boolean): AccessoryBox {
+  const {barHeight, minimizedSize, accessoryHeight, accessoryGap} = tabBar;
+  if (!isInline) {
+    return {start: 0, top: -(accessoryGap + accessoryHeight), width};
+  }
+  const start = barHeight / 2 + minimizedSize / 2 + accessoryGap;
+  return {
+    start,
+    top: (barHeight - accessoryHeight) / 2,
+    width: width - start - (barHeight - minimizedSize) / 2,
+  };
 }

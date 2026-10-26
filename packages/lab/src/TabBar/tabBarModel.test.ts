@@ -22,6 +22,7 @@ import {
   itemWidthCss,
   lensTarget,
   liftScale,
+  accessoryBox,
   minimizedCenter,
   naturalWidth,
   nearestIndex,
@@ -213,5 +214,30 @@ describe('minimizedCenter', () => {
 
   it('sits at the right end in a right-to-left bar', () => {
     expect(minimizedCenter(360, true)).toBe(329);
+  });
+});
+
+describe('accessoryBox', () => {
+  // UIKit's frames over a bar at (21, 791), 360 wide.
+  const onScreen = (box: {start: number; top: number; width: number}) => ({
+    x: 21 + box.start,
+    y: 791 + box.top,
+    width: box.width,
+  });
+
+  it('sits 8 pt above the bar, as wide as it: (21, 735, 360 × 48)', () => {
+    expect(onScreen(accessoryBox(360, false))).toEqual({
+      x: 21,
+      y: 735,
+      width: 360,
+    });
+  });
+
+  it('minimized, sits inline after the circle: (84, 798, 290 × 48)', () => {
+    expect(onScreen(accessoryBox(360, true))).toEqual({
+      x: 84,
+      y: 798,
+      width: 290,
+    });
   });
 });

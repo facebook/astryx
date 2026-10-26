@@ -379,6 +379,18 @@ const calmTheme = defineTheme({
               '0.344144s 0',
             ],
             [
+              'tabBar.accessoryCollapse',
+              '--motion-tab-bar-accessory-collapse',
+              'spring',
+              '0.405s 0.255',
+            ],
+            [
+              'tabBar.accessoryExpand',
+              '--motion-tab-bar-accessory-expand',
+              'spring',
+              '0.329s 0.269',
+            ],
+            [
               'tabBar.collapseSize',
               '--motion-tab-bar-collapse-size',
               'spring',

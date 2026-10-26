@@ -46,6 +46,8 @@ export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
   'springs.switchThumbStretch': 'spring',
   'springs.timedChange': 'spring',
   'springs.viewChange': 'spring',
+  'tabBar.accessoryCollapse': 'spring',
+  'tabBar.accessoryExpand': 'spring',
   'tabBar.collapseSize': 'spring',
   'tabBar.collapseTravel': 'spring',
   'tabBar.flexPress': 'spring',

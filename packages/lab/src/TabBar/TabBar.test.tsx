@@ -9,7 +9,8 @@
  *   (onReselect), badges in the tab's name (one message) and drawn without
  *   animation, the lens under the selected tab only, each item drawn once at
  *   rest, the stable theme
- *   classes, and when the bar minimizes on scroll and expands again
+ *   classes, when the bar minimizes on scroll and expands again, and the
+ *   bottom accessory's placement
  * @position Testing; the motion is proven in real engines by
  *   __tests__/TabBar.interaction.browser.spec.ts
  */
@@ -429,6 +430,29 @@ describe('TabBar minimize on scroll', () => {
     expect(isMinimized()).toBe(false);
   });
 
+  it('moves the bottom accessory inline while minimized, telling its content where it is', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    const placements: string[] = [];
+    render(
+      <Bar
+        minimizeBehavior="onScrollDown"
+        bottomAccessory={placement => {
+          placements.push(placement);
+          return <button type="button">Now playing</button>;
+        }}
+      />,
+    );
+    const accessory = () => document.querySelector('[data-tab-bar-accessory]');
+    expect(accessory()).toHaveAttribute('data-tab-bar-accessory', 'expanded');
+    dragPage([200]);
+    expect(accessory()).toHaveAttribute('data-tab-bar-accessory', 'inline');
+    expect(placements.at(-1)).toBe('inline');
+    // The accessory stays usable while the bar is minimized.
+    expect(screen.getByRole('button', {name: 'Now playing'})).toBeVisible();
+    dragPage([0]);
+    expect(accessory()).toHaveAttribute('data-tab-bar-accessory', 'expanded');
+  });
+
   it('stays expanded under a mouse', () => {
     expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
     render(<Bar minimizeBehavior="onScrollDown" />);
@@ -441,5 +465,31 @@ describe('TabBar minimize on scroll', () => {
     render(<Bar minimizeBehavior="onScrollDown" />);
     dragPage([200]);
     expect(isMinimized()).toBe(true);
+  });
+});
+
+describe('TabBar bottom accessory', () => {
+  it('draws no accessory when its content renders nothing', () => {
+    for (const bottomAccessory of [false, '', () => null]) {
+      const {container, unmount} = render(
+        <Bar bottomAccessory={bottomAccessory} />,
+      );
+      expect(container.querySelector('[data-tab-bar-accessory]')).toBeNull();
+      unmount();
+    }
+  });
+
+  it('renders its content above the bar, outside the tablist', () => {
+    render(<Bar bottomAccessory={<span>Mini player</span>} />);
+    const content = screen.getByText('Mini player');
+    expect(
+      content.closest('[data-tab-bar-accessory="expanded"]'),
+    ).not.toBeNull();
+    expect(content.closest('[role="tablist"]')).toBeNull();
+  });
+
+  it('renders nothing without one', () => {
+    render(<Bar />);
+    expect(document.querySelector('[data-tab-bar-accessory]')).toBeNull();
   });
 });

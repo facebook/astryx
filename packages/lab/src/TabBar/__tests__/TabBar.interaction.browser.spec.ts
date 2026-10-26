@@ -25,10 +25,11 @@
  *   UIKit's springs, through a blocked main thread), scrolling up mid-page
  *   and a script's scroll to the top leave it minimized, the top and a tap
  *   on the circle expand it, and the minimized bar lets the page take
- *   touches outside the circle. Under a mouse (a fine pointer) a click is a
- *   plain click, the bar never minimizes and the lens slides on the theme's
- *   motion instead, which Reduce Motion replaces as
- *   above
+ *   touches outside the circle; the bottom accessory moves down inline
+ *   beside the circle and back on UIKit's springs, and its content takes
+ *   taps in both places. Under a mouse (a fine pointer)
+ *   a press is a plain tap, the bar never minimizes and the lens slides on
+ *   the theme's motion instead, which Reduce Motion replaces as above
  * @position Interaction proof for lab TabBar (TabBar.tsx, tabBarModel.ts);
  *   shape copied from the harness exemplar,
  *   BottomSheetDetent.interaction.browser.spec.ts
@@ -1797,6 +1798,265 @@ test(
     await expect.poll(() => isMinimized(page)).toBe(false);
     const {storyboard: expand} = await animationStoryboard(page, {
       name: 'tabbar-expand',
+      clip,
+      times,
+      columns: 5,
+      cellScale: 0.6,
+    });
+    await expand.write(testInfo);
+    await releaseAnimations(page, {finish: true});
+  },
+);
+
+// =============================================================================
+// Bottom accessory
+// =============================================================================
+
+/** uikit/tabBar.ts: the accessory's springs. */
+const ACCESSORY_COLLAPSE = {response: 0.405, dampingFraction: 0.745};
+const ACCESSORY_EXPAND = {response: 0.329, dampingFraction: 0.731};
+
+const accessory = (page: Page) => page.locator('[data-tab-bar-accessory]');
+
+test.describe('bottom accessory', () => {
+  test('moves down inline beside the circle on UIKit’s spring, and back up when the bar expands', async ({
+    page,
+  }, testInfo) => {
+    const {driver, bar} = await openBar(page, 'bottom-accessory');
+    const barBox = await bar.boundingBox();
+    const above = await accessory(page).boundingBox();
+    if (barBox == null || above == null) {
+      throw new Error('no bar or accessory');
+    }
+    // Above the bar, as wide as it, 8 px over it.
+    expect(above.x).toBeCloseTo(barBox.x, 0);
+    expect(above.width).toBeCloseTo(barBox.width, 0);
+    expect(barBox.y - (above.y + above.height)).toBeCloseTo(8, 0);
+    expect(above.height).toBeCloseTo(48, 0);
+
+    await scrollByFinger(page, driver, 100, {settle: false});
+    await expect(accessory(page)).toHaveAttribute(
+      'data-tab-bar-accessory',
+      'inline',
+    );
+    await waitForAnimation(accessory(page));
+    await holdAnimations(page);
+    const times = Array.from({length: 46}, (_, i) => i * 16.667);
+    const collapse = await sampleCurve(accessory(page), times);
+    await releaseAnimations(page, {finish: true});
+    const inline = await accessory(page).boundingBox();
+    if (inline == null) {
+      throw new Error('no accessory');
+    }
+    // Inline: 8 px after the 48 px circle, 7 px from the bar's trailing end.
+    expect(inline.x - barBox.x).toBeCloseTo(63, 0);
+    expect(inline.x + inline.width).toBeCloseTo(barBox.x + barBox.width - 7, 0);
+    // It started where it was above the bar and sprang into place.
+    const dx = above.x - inline.x;
+    const dy = above.y - inline.y;
+    const samples = times.map((t, i) => ({
+      t: +t.toFixed(1),
+      x: collapse[i].transform.translateX,
+      y: collapse[i].transform.translateY,
+      analyticX: dx * (1 - springStep(ACCESSORY_COLLAPSE, t)),
+      analyticY: dy * (1 - springStep(ACCESSORY_COLLAPSE, t)),
+    }));
+    await writeEvidence(
+      'curves/tabbar-accessory',
+      {
+        [`${testInfo.project.name}.json`]: JSON.stringify(
+          {dx, dy, samples},
+          null,
+          1,
+        ),
+      },
+      testInfo,
+    );
+    for (const sample of samples) {
+      expect(
+        Math.abs(sample.x - sample.analyticX),
+        JSON.stringify(sample),
+      ).toBeLessThan(0.5);
+      expect(
+        Math.abs(sample.y - sample.analyticY),
+        JSON.stringify(sample),
+      ).toBeLessThan(0.5);
+    }
+
+    // Back up on the expand spring (a tap on the circle expands at once),
+    // once the collapse would have ended on its own: finish() above skipped
+    // the page's animations to their end, not the animator's clock.
+    await page.waitForTimeout(1000);
+    const target = await circle(page).boundingBox();
+    if (target == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({
+      x: target.x + target.width / 2,
+      y: target.y + target.height / 2,
+    });
+    await expect(accessory(page)).toHaveAttribute(
+      'data-tab-bar-accessory',
+      'expanded',
+    );
+    await waitForAnimation(accessory(page));
+    await holdAnimations(page);
+    const expand = await sampleCurve(accessory(page), times);
+    await releaseAnimations(page, {finish: true});
+    times.forEach((t, i) => {
+      expect(
+        Math.abs(
+          expand[i].transform.translateX +
+            dx * (1 - springStep(ACCESSORY_EXPAND, t)),
+        ),
+        JSON.stringify({t, x: expand[i].transform.translateX}),
+      ).toBeLessThan(0.5);
+    });
+    const back = await accessory(page).boundingBox();
+    expect(back?.x ?? 0).toBeCloseTo(above.x, 0);
+    expect(back?.y ?? 0).toBeCloseTo(above.y, 0);
+  });
+
+  test('its content takes taps above the bar and inline, never choosing a tab', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'bottom-accessory');
+    const play = () => page.getByRole('button', {name: /^(Play|Pause)$/});
+    const tapPlay = async () => {
+      const box = await play().boundingBox();
+      if (box == null) {
+        throw new Error('no play button');
+      }
+      await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+    };
+    await tapPlay();
+    await expect(page.getByRole('button', {name: 'Pause'})).toBeVisible();
+    await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+    await minimizeBar(page, driver);
+    // Inline, the content drops its secondary control.
+    await expect(page.getByRole('button', {name: 'Next'})).toHaveCount(0);
+    await waitForRest(accessory(page));
+    await tapPlay();
+    await expect(page.getByRole('button', {name: 'Play'})).toBeVisible();
+    expect(await isMinimized(page)).toBe(true);
+    await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('it keeps moving inline every frame while the main thread is blocked', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
+    );
+    const {driver} = await openBar(page, 'bottom-accessory');
+    const moving = accessory(page);
+    await markElement(moving);
+    const cast = await startScreencast(page);
+    await scrollByFinger(page, driver, 100, {settle: false});
+    const [move] = await waitForAnimation(moving, {minProgressMs: 16});
+    // Blocked by the page itself in the frame that sees the move running.
+    const block = await blockMainThread(page, 600, {during: moving});
+    await page.waitForTimeout(150);
+    const castFrames = await cast.stop();
+    const tracked = await trackMarker(page, castFrames);
+    const proof = busyWindowProof(
+      tracked,
+      {from: block.from, to: Math.min(block.to, move.to)},
+      {
+        axis: 'y',
+        settledWithin: 2,
+        // Screencast throughput, not the animation: no display-rate bound.
+        maxMedianFrameMs: Infinity,
+      },
+    );
+    expect(
+      proof.verdict.pass,
+      `${proof.summary}; ${proof.verdict.failures.join('; ')}`,
+    ).toBe(true);
+  });
+
+  test('with Reduce Motion it cross-fades inline: opacity only, within 200 ms', async ({
+    page,
+  }) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    const {driver} = await openBar(page, 'bottom-accessory');
+    const since = await timelineNow(page);
+    assertCrossFade(
+      await readDuringScroll(
+        page,
+        driver,
+        async () =>
+          (await accessory(page).getAttribute('data-tab-bar-accessory')) ===
+          'inline',
+        since,
+      ),
+    );
+    await expect(accessory(page)).toHaveAttribute(
+      'data-tab-bar-accessory',
+      'inline',
+    );
+  });
+
+  test('right to left, it moves inline to the left of the circle', async ({
+    page,
+  }) => {
+    const {driver, bar} = await openBar(page, 'bottom-accessory');
+    await rightToLeft(page);
+    const barBox = await bar.boundingBox();
+    await minimizeBar(page, driver);
+    await waitForRest(accessory(page));
+    const inline = await accessory(page).boundingBox();
+    const dot = await circle(page).boundingBox();
+    if (barBox == null || inline == null || dot == null) {
+      throw new Error('no bar, accessory or circle');
+    }
+    // The circle sits at the right; the accessory ends 8 px before it and
+    // starts 7 px from the bar's (left) trailing end.
+    expect(dot.x - (inline.x + inline.width)).toBeCloseTo(8, 0);
+    expect(inline.x - barBox.x).toBeCloseTo(7, 0);
+  });
+});
+
+test(
+  'storyboard: the bottom accessory moves inline as the bar collapses, and back',
+  {tag: '@storyboard'},
+  async ({page}, testInfo) => {
+    const {driver, bar} = await openBar(page, 'bottom-accessory');
+    const box = await bar.boundingBox();
+    if (box == null) {
+      throw new Error('no bar');
+    }
+    const clip = {
+      x: 0,
+      y: box.y - 72,
+      width: box.x * 2 + box.width,
+      height: box.height + 84,
+    };
+    const times = Array.from({length: 20}, (_, i) => i * 33.333);
+    await scrollByFinger(page, driver, 100, {settle: false});
+    await expect.poll(() => isMinimized(page)).toBe(true);
+    const {storyboard: collapse} = await animationStoryboard(page, {
+      name: 'tabbar-accessory-collapse',
+      clip,
+      times,
+      columns: 5,
+      cellScale: 0.6,
+    });
+    await collapse.write(testInfo);
+    await releaseAnimations(page, {finish: true});
+    const target = await circle(page).boundingBox();
+    if (target == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({
+      x: target.x + target.width / 2,
+      y: target.y + target.height / 2,
+    });
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    const {storyboard: expand} = await animationStoryboard(page, {
+      name: 'tabbar-accessory-expand',
       clip,
       times,
       columns: 5,
