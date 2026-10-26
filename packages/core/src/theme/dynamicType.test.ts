@@ -20,6 +20,7 @@ import path from 'node:path';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {typography} from './uikitTypography';
 import {defineTheme, generateThemeCSS} from './defineTheme';
+import {generateOnMediaCSS} from './generateThemeRules';
 import {
   FONT_SIZE_STEP_STYLES,
   TEXT_SIZE_CATEGORIES,
@@ -482,6 +483,33 @@ describe('every theme follows the reader text size', () => {
       expect(rule).toContain(`  ${step}: ${scaled(name, value)}`);
       expect(rule).toContain(`  ${name}: var(${step});`);
     }
+  });
+
+  it('scales the sizes a theme writes for media surfaces (onDark, onLight)', () => {
+    // A MediaTheme surface re-declares the theme's onDark or onLight tokens on
+    // a descendant; written raw, they would undo the reader's text size there.
+    const theme = defineTheme({
+      name: 'dt-media',
+      typography: {scale: {base: 14, ratio: 1.2}},
+      onDark: {tokens: {'--font-size-base': '15px'}},
+      onLight: {tokens: {'--text-supporting-size': '12px'}},
+    });
+    const css = generateOnMediaCSS(theme);
+    const block = (surface: string) => {
+      const start = css.indexOf(`[data-astryx-media="${surface}"] {`);
+      expect(start, surface).toBeGreaterThan(-1);
+      return css.slice(start, css.indexOf('}', start));
+    };
+    expect(block('dark')).toContain(
+      '--_scaled-font-size-base: min(calc(15px * var(--_dynamic-type-body, 1)), max(var(--_scaled-font-size-lg, 15px), 15px));',
+    );
+    expect(block('dark')).toContain(
+      '--font-size-base: var(--_scaled-font-size-base);',
+    );
+    expect(block('dark')).not.toMatch(/--font-size-base: 15px/);
+    expect(block('light')).toContain(
+      '--text-supporting-size: calc(12px * var(--_dynamic-type-footnote, 1));',
+    );
   });
 
   it('adds no theme option, prop or document attribute', () => {

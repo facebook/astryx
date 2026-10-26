@@ -1699,8 +1699,10 @@ export function generateOnMediaCSS(
       ...statusRoleDefaults,
     ];
     if (tokenEntries.length > 0) {
+      // The surface re-declares font sizes the way a theme's root does, so they
+      // keep following the reader's text size there (see dynamicType.ts).
       const declarations = joinDeclarations(
-        tokenEntries,
+        readerTextSizeEntries(tokenEntries),
         `${location}tokens`,
         sink,
       );
