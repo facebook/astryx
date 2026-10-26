@@ -116,6 +116,14 @@ async function openSelector(
   return trigger;
 }
 
+/** The selector moves the focus into its panel once open; wait for it. */
+async function waitForPanelFocus(trigger: HTMLElement): Promise<void> {
+  await waitFor(() => {
+    expect(document.activeElement).not.toBe(document.body);
+    expect(document.activeElement).not.toBe(trigger);
+  });
+}
+
 describe('TransferListSelector', () => {
   it('commits each edit immediately by default and renders no footer', async () => {
     const user = userEvent.setup();
@@ -263,6 +271,55 @@ describe('TransferListSelector', () => {
     );
     expect(trigger).toHaveTextContent('3 selected');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('reorders a staged draft through its own reorder object: Cancel drops the move with the draft, Apply commits it', async () => {
+    const user = userEvent.setup();
+    const onCommit = vi.fn();
+    render(
+      <Harness
+        initialValue={['name', 'status', 'updated']}
+        onCommit={onCommit}
+        selectorProps={{commitBehavior: 'staged'}}
+      />,
+    );
+    await waitForPanelFocus(await openSelector());
+    screen.getByRole('button', {name: 'Reorder Name', ...hidden}).focus();
+    await user.keyboard('{Enter}{ArrowDown}{Escape}');
+    expect(onCommit).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', {name: 'Cancel', ...hidden}));
+    expect(onCommit).not.toHaveBeenCalled();
+    expect(screen.getByTestId('applied-value')).toHaveTextContent(
+      '["name","status","updated"]',
+    );
+
+    await waitForPanelFocus(await openSelector());
+    screen.getByRole('button', {name: 'Reorder Name', ...hidden}).focus();
+    await user.keyboard('{Enter}{ArrowDown}{Escape}');
+    await user.click(screen.getByRole('button', {name: 'Apply', ...hidden}));
+    expect(onCommit).toHaveBeenCalledOnce();
+    expect(onCommit).toHaveBeenCalledWith(['status', 'name', 'updated']);
+  });
+
+  it('keeps in place the values a function isReorderable rejects, and commits immediate moves at once', async () => {
+    const user = userEvent.setup();
+    const onCommit = vi.fn();
+    render(
+      <Harness
+        initialValue={['owner', 'name', 'status']}
+        onCommit={onCommit}
+        selectorProps={{isReorderable: value => value !== 'owner'}}
+      />,
+    );
+    await waitForPanelFocus(await openSelector());
+    expect(
+      screen.queryByRole('button', {name: 'Reorder Owner', ...hidden}),
+    ).toBeNull();
+    screen.getByRole('button', {name: 'Reorder Status', ...hidden}).focus();
+    await user.keyboard('{Enter}{ArrowUp}{ArrowUp}{Escape}');
+    // Owner leads the list, so Status stops below it.
+    expect(onCommit).toHaveBeenCalledOnce();
+    expect(onCommit).toHaveBeenCalledWith(['owner', 'status', 'name']);
   });
 
   it('closes unchanged Apply without calling onChange or changeAction', async () => {

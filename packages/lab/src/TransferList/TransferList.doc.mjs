@@ -45,7 +45,7 @@ export const docs = {
       name: 'options',
       type: 'readonly TransferListOption<T>[]',
       description:
-        'Complete option pool. Each option has value and label, with optional searchable description metadata, group, independent isTransferDisabled and isReorderDisabled constraints, and disabledMessage.',
+        "Complete option pool. Each option has value and label, with optional searchable description metadata, group, an isTransferDisabled constraint, and disabledMessage. Which options keep their place is isReorderable's.",
       required: true,
     },
     {
@@ -120,9 +120,9 @@ export const docs = {
     },
     {
       name: 'isReorderable',
-      type: 'boolean',
+      type: 'boolean | ((value: T) => boolean)',
       description:
-        "Gives every selected option a reorder handle at the end of its row (core's createReorderable on the selected List): on a touch screen hold the handle for a moment, then drag; a mouse drags at once; a tap, a click, Space or Enter on a handle turns on reorder mode for its row, in which each arrow key (or each move in the hint below the handle) moves it a place and changes the value at once, and Escape, Done or another activation ends the mode, keeping the moves. Per-option isReorderDisabled removes the handle; at either end of the selected list such a row also keeps the others from moving past it. Reordering pauses while a search filters the panel.",
+        "Gives the selected options a reorder handle at the end of each row (core's createReorderable on the selected List): on a touch screen hold the handle for a moment, then drag; a mouse drags at once; a tap, a click, Space or Enter on a handle turns on reorder mode for its row, in which each arrow key (or each move in the hint below the handle) moves it a place, and Escape, Done or another activation ends the mode, keeping the moves. A function says which values move: one it rejects has no handle, and at either end of the selected list it also keeps the others from moving past it. The selector owns the reorder: in staged behavior a move changes the draft, so Cancel drops it with the draft; in immediate behavior it commits at once. Reordering pauses while a search filters the panel.",
       default: 'true',
     },
     {
@@ -337,10 +337,10 @@ export const docs = {
           default: "'Search...'",
         },
         {
-          name: 'isReorderable',
-          type: 'boolean',
+          name: 'reorderable',
+          type: 'boolean | Reorderable<T>',
           description:
-            'Enables ordering through a reorder handle at the end of each selected row. Per-option isReorderDisabled removes the handle; at either end of the selected list such a row also keeps the others from moving past it.',
+            'Ordering through a reorder handle at the end of each selected row. true gives every selected option a handle and reports each move through onChange; false turns ordering off. An object made with createReorderable takes over: its isReorderable(value) decides which options move (one it rejects at either end of the list also keeps the others from moving past it), and each move goes to its onReorder({key, to}), to being the index of the value in value after the move, instead of onChange.',
           default: 'true',
         },
         {
@@ -410,7 +410,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use isTransferDisabled and isReorderDisabled independently. Provide disabledMessage when a transfer is unavailable so the constraint is discoverable; a row that keeps its place shows no reorder handle, so say why in its content when it matters.',
+          'Use isTransferDisabled and isReorderable independently: isTransferDisabled pins an option to its panel, and an isReorderable function keeps an option in its place. Provide disabledMessage when a transfer is unavailable so the constraint is discoverable; a row that keeps its place shows no reorder handle, so say why in its content when it matters.',
       },
       {
         guidance: true,
@@ -557,14 +557,11 @@ export const docs = {
       isTransferDisabled: true,
       disabledMessage: 'Name must remain visible.',
     },
-    {
-      value: 'status',
-      label: 'Status',
-      isReorderDisabled: true,
-      disabledMessage: 'Status has no reorder handle but can be removed.',
-    },
+    {value: 'status', label: 'Status'},
     {value: 'owner', label: 'Owner'},
   ]}
+  // Status keeps its place, but can be removed.
+  isReorderable={value => value !== 'status'}
   value={fields}
   onChange={setFields}
 />`,
@@ -692,7 +689,7 @@ export const docsDense = {
   propDescriptions: {
     label: 'External field label and accessible name.',
     options:
-      'Full pool: value, label, description?, group?, isTransferDisabled?, isReorderDisabled?, disabledMessage?.',
+      'Full pool: value, label, description?, group?, isTransferDisabled?, disabledMessage?.',
     value: 'Committed selected values in display order.',
     onChange:
       'Called per edit in immediate behavior or from changed Apply in staged behavior.',
@@ -707,7 +704,7 @@ export const docsDense = {
     searchLabel: 'Accessible search label.',
     searchPlaceholder: 'Search placeholder.',
     isReorderable:
-      'Enable ordering through a trailing reorder handle (touch hold, mouse drag, keys); default true; paused while searching.',
+      'Ordering through a trailing reorder handle (touch hold, mouse drag, keys): true, false, or a function saying which values move; default true; staged moves change the draft; paused while searching.',
     hasSelectAll: 'Add all transfer-enabled available options.',
     hasClear: 'Remove all transfer-enabled selected options.',
     renderOption: 'Custom row content.',
@@ -744,8 +741,7 @@ export const docsDense = {
         label: 'Accessible control label.',
         isLabelHidden: 'Hide control label visually, preserving its name.',
         description: 'Supporting control guidance.',
-        options:
-          'Full pool with metadata, groups, transfer constraints, and reorder constraints.',
+        options: 'Full pool with metadata, groups, and transfer constraints.',
         value: 'Selected values in display order.',
         onChange: 'Called after each add/remove/bulk/reorder change.',
         selectedLabel: 'Selected-list heading and name.',
@@ -753,8 +749,8 @@ export const docsDense = {
         hasSearch: 'Shared list filter; default false.',
         searchLabel: 'Accessible search label.',
         searchPlaceholder: 'Search placeholder.',
-        isReorderable:
-          'Enable ordering through a trailing reorder handle; default true; paused while searching.',
+        reorderable:
+          'true (moves through onChange), false, or a createReorderable object (its isReorderable says which values move; its onReorder gets {key, to} in value terms); default true; paused while searching.',
         hasSelectAll: 'Add all transfer-enabled options.',
         hasClear: 'Remove all transfer-enabled selected options.',
         renderOption: 'Custom row content.',

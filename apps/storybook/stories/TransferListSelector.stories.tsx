@@ -136,7 +136,6 @@ const GROUPED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
     description: 'Required identity field',
     group: 'Identity',
     isTransferDisabled: true,
-    isReorderDisabled: true,
     disabledMessage: 'Name is required and fixed in position.',
   },
   {
@@ -158,7 +157,6 @@ const GROUPED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
     label: 'Status',
     description: 'Current workflow state',
     group: 'Planning',
-    isReorderDisabled: true,
     disabledMessage:
       'Status can be hidden, but has no reorder handle while selected.',
   },
@@ -199,6 +197,8 @@ function GroupedAndLockedExample() {
       options={GROUPED_OPTIONS}
       value={value}
       onChange={setValue}
+      // Name and Status keep their place.
+      isReorderable={field => field !== 'name' && field !== 'status'}
       selectedLabel="Shown"
       availableLabel="Hidden"
       hasSelectAll

@@ -4,7 +4,7 @@
 
 /**
  * @file TransferList.tsx
- * @input Controlled option data, local action glyphs, core's reorder (`createReorderable`, List `reorderable`, ListItem `itemKey`), and the core i18n catalog
+ * @input Controlled option data, local action glyphs, core's reorder (`createReorderable`, List `reorderable`, ListItem `itemKey`, and an owner's reorderable object, whose options it reads), and the core i18n catalog
  * @output Exports TransferList with immediate transfers, vertical reordering, and responsive scroll ownership
  * @position Lab collection input; consumed by index.ts, TransferListSelector, docs, and tests
  *
@@ -33,6 +33,8 @@ import {Item} from '@astryxdesign/core/Item';
 import {List, ListItem} from '@astryxdesign/core/List';
 import {
   createReorderable,
+  type Reorderable,
+  type ReorderableOptions,
   type ReorderMove,
 } from '@astryxdesign/core/reorderable';
 import {Text} from '@astryxdesign/core/Text';
@@ -86,11 +88,6 @@ export interface TransferListOption<T extends string = string> {
   group?: string;
   /** Prevents moving the option between the selected and available lists. */
   isTransferDisabled?: boolean;
-  /**
-   * Gives the selected option no reorder handle. At either end of the
-   * selected list it also keeps the other options from moving past it.
-   */
-  isReorderDisabled?: boolean;
   /** Explains why a transfer is unavailable (a fixed row has no reorder handle). */
   disabledMessage?: string;
 }
@@ -124,10 +121,17 @@ export interface TransferListProps<T extends string = string> extends Omit<
   /** Search input placeholder. @default 'Search…' */
   searchPlaceholder?: string;
   /**
-   * Gives selected options core List's reorder handle (touch hold, mouse
-   * drag, keys). Paused while a search filters the panel. @default true
+   * Reordering of the selected options, through core List's reorder handle
+   * (touch hold, mouse drag, keys, reorder mode). `true` gives every
+   * selected option a handle and reports each move through `onChange`;
+   * `false` turns reordering off. An object made with `createReorderable`
+   * takes over: its `isReorderable(value)` decides which options move (one
+   * it rejects at either end of the list also keeps the others from moving
+   * past it), and each move goes to its `onReorder({key, to})`, `to` being
+   * the value's index in `value` after the move, instead of `onChange`.
+   * Paused while a search filters the panel. @default true
    */
-  isReorderable?: boolean;
+  reorderable?: boolean | Reorderable<T>;
   /** Shows an Add all action. @default false */
   hasSelectAll?: boolean;
   /** Shows a Clear action. Transfer-disabled selected options are retained. */
@@ -307,6 +311,18 @@ function matchesQuery<T extends string>(
 }
 
 /**
+ * The options an owner's reorderable object was made with: its
+ * `isReorderable` and `onReorder`. Until Core's internal reorder subpath
+ * ships (Lab may use Core's internals), this reads the field Core's
+ * `createReorderable` keeps them in.
+ */
+function reorderableOptionsOf<T extends string>(
+  reorderable: Reorderable<T>,
+): ReorderableOptions<T> {
+  return (reorderable as unknown as {options: ReorderableOptions<T>}).options;
+}
+
+/**
  * A controlled dual-panel collection input for choosing and ordering values.
  * Selection, ordering, drafts, persistence, and saved views stay explicit in
  * the consumer; this component owns only search and active gesture state.
@@ -334,7 +350,7 @@ export function TransferList<T extends string = string>({
   hasSearch = false,
   searchLabel,
   searchPlaceholder: searchPlaceholderFromProps,
-  isReorderable = true,
+  reorderable: reorderableProp = true,
   hasSelectAll = false,
   hasClear = false,
   renderOption,
@@ -526,7 +542,18 @@ export function TransferList<T extends string = string>({
   // The selected panel's rows, in order, as List reports a move among them.
   // Reordering is off while a search filters the panel: a hidden row that
   // keeps its place could otherwise move past the visible ones.
-  const isOrdering = isReorderable && normalizedQuery === '';
+  const isOrdering = reorderableProp !== false && normalizedQuery === '';
+  // An owner's object (the staged selector's, for one) decides which values
+  // move and takes each move; without one every value moves and the moves
+  // go through onChange.
+  const owner =
+    typeof reorderableProp === 'object'
+      ? reorderableOptionsOf(reorderableProp)
+      : undefined;
+  const canMove = useCallback(
+    (optionValue: T) => owner?.isReorderable?.(optionValue) ?? true,
+    [owner],
+  );
   const reorderSelected = useCallback(
     ({key, to: toIndex}: ReorderMove) => {
       const shown = selectedOptions.map(option => option.value);
@@ -542,24 +569,28 @@ export function TransferList<T extends string = string>({
       // can be undone by its inverse.
       const isShown = new Set(shown);
       let next = 0;
-      commit(
-        currentValueRef.current.map(item =>
-          isShown.has(item) ? order[next++] : item,
-        ),
+      const nextValue = currentValueRef.current.map(item =>
+        isShown.has(item) ? order[next++] : item,
       );
+      if (owner == null) {
+        commit(nextValue);
+        return;
+      }
+      // In the value's terms: where the moved value lands. Moving it there
+      // keeps the shown rows in this order.
+      owner.onReorder({key: key as T, to: nextValue.indexOf(key as T)});
     },
-    [commit, selectedOptions],
+    [commit, owner, selectedOptions],
   );
   const reorderable = useMemo(
     () =>
       isOrdering
         ? createReorderable({
             onReorder: reorderSelected,
-            isReorderable: key =>
-              optionByValue.get(key as T)?.isReorderDisabled !== true,
+            isReorderable: key => canMove(key as T),
           })
         : undefined,
-    [isOrdering, optionByValue, reorderSelected],
+    [canMove, isOrdering, reorderSelected],
   );
 
   const handleSearch = useCallback(
@@ -614,9 +645,7 @@ export function TransferList<T extends string = string>({
         // A row that keeps its place has no handle: its Remove keeps the
         // movable rows' column, clear of where their handles sit.
         xstyle={
-          isOrdering && option.isReorderDisabled === true
-            ? styles.clearsHandle
-            : undefined
+          isOrdering && !canMove(option.value) ? styles.clearsHandle : undefined
         }
       />
     );
@@ -630,7 +659,7 @@ export function TransferList<T extends string = string>({
     const theme = themeProps('transfer-list-item', {
       side,
       state:
-        option.isTransferDisabled || option.isReorderDisabled
+        option.isTransferDisabled || !canMove(option.value)
           ? 'disabled'
           : 'enabled',
     });

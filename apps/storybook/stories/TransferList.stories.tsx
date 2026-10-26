@@ -16,7 +16,7 @@
  * docs, and tests.
  */
 
-import {useEffect, useRef, useState, type SVGProps} from 'react';
+import {useEffect, useMemo, useRef, useState, type SVGProps} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {TransferList} from '@astryxdesign/lab';
@@ -24,6 +24,7 @@ import type {TransferListOption} from '@astryxdesign/lab';
 import {Theme} from '@astryxdesign/core';
 import {Button} from '@astryxdesign/core/Button';
 import {ComplexSelector} from '@astryxdesign/core/ComplexSelector';
+import {createReorderable} from '@astryxdesign/core/reorderable';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Heading} from '@astryxdesign/core/Heading';
 import {Icon} from '@astryxdesign/core/Icon';
@@ -202,7 +203,6 @@ const LOCKED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
     description: 'Required identity field',
     group: 'Identity',
     isTransferDisabled: true,
-    isReorderDisabled: true,
     disabledMessage: 'Name is required and fixed in position.',
   },
   {
@@ -219,7 +219,6 @@ const LOCKED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
     label: 'Status',
     description: 'Current workflow state',
     group: 'Planning',
-    isReorderDisabled: true,
     disabledMessage:
       'Status can be hidden, but has no reorder handle while selected.',
   },
@@ -237,6 +236,9 @@ const LOCKED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
   },
 ];
 
+/** The fields that keep their place in the selected list. */
+const FIXED_FIELDS = new Set(['name', 'status']);
+
 function LockedExample() {
   const [value, setValue] = useState<readonly string[]>([
     'name',
@@ -244,13 +246,29 @@ function LockedExample() {
     'status',
     'updated',
   ]);
+  // The owner's reorder: Name and Status keep their place, and each move
+  // lands where TransferList reports it.
+  const reorderable = useMemo(
+    () =>
+      createReorderable<string>({
+        onReorder: ({key, to}) =>
+          setValue(current => {
+            const next = current.filter(item => item !== key);
+            next.splice(to, 0, key);
+            return next;
+          }),
+        isReorderable: key => !FIXED_FIELDS.has(key),
+      }),
+    [],
+  );
   return (
     <TransferList
       label="Record fields"
-      description="Transfer and reorder are constrained per option, so a field can be locked in place without being locked in the list."
+      description="Transfer and reorder are constrained independently, so a field can be locked in place without being locked in the list."
       options={LOCKED_OPTIONS}
       value={value}
       onChange={setValue}
+      reorderable={reorderable}
       selectedLabel="Shown"
       availableLabel="Hidden"
       hasSelectAll
@@ -262,8 +280,9 @@ function LockedExample() {
 /**
  * TransferList has no component-wide disabled state. Availability is decided
  * per option, and the two constraints are independent: `isTransferDisabled`
- * pins an option to its panel, `isReorderDisabled` takes away its reorder
- * handle (at either end of the selected list it also bounds the others).
+ * pins an option to its panel, and the reorderable object's `isReorderable`
+ * takes away its reorder handle (at either end of the selected list it also
+ * bounds the others).
  */
 export const Locked: Story = {
   render: () => <LockedExample />,
@@ -284,14 +303,14 @@ function UnorderedExample() {
       onChange={setValue}
       selectedLabel="Included"
       availableLabel="Not included"
-      isReorderable={false}
+      reorderable={false}
       hasSelectAll
       hasClear
     />
   );
 }
 
-/** `isReorderable={false}` for selections where order carries no meaning. */
+/** `reorderable={false}` for selections where order carries no meaning. */
 export const Unordered: Story = {
   render: () => <UnorderedExample />,
 };

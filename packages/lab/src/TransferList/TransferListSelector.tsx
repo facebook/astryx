@@ -4,7 +4,7 @@
 
 /**
  * @file TransferListSelector.tsx
- * @input Controlled option data, uncontrolled ComplexSelector state, TransferList, action controls, and the core i18n catalog
+ * @input Controlled option data, uncontrolled ComplexSelector state, TransferList with the selector's own reorder (core's `createReorderable`, aimed at the draft when staged), action controls, and the core i18n catalog
  * @output Exports the immediate-or-staged TransferListSelector composition with draft cleanup after dismissal
  * @position Lab collection input shell; consumed by the TransferList entry point, docs, and tests
  *
@@ -24,6 +24,7 @@ import {
 import {useTranslator} from '@astryxdesign/core/i18n';
 import {HStack} from '@astryxdesign/core/Stack';
 import {borderVars, colorVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {createReorderable} from '@astryxdesign/core/reorderable';
 import {TransferList, type TransferListProps} from './TransferList';
 
 const DEFAULT_SELECTOR_WIDTH = 'min(41rem, calc(100vw - 32px))';
@@ -105,7 +106,6 @@ type TransferListContentProp =
   | 'hasSearch'
   | 'searchLabel'
   | 'searchPlaceholder'
-  | 'isReorderable'
   | 'hasSelectAll'
   | 'hasClear'
   | 'renderOption'
@@ -135,7 +135,23 @@ export type TransferListSelectorProps<T extends string = string> = Pick<
     applyLabel?: string;
     /** Label for the staged discard action. Only used in staged behavior. @default 'Cancel' */
     cancelLabel?: string;
+    /**
+     * Whether the selected options reorder: `true` for all of them, `false`
+     * for none, or a function that says which values move (one it rejects
+     * at either end of the list also keeps the others from moving past it).
+     * The selector owns the reorder: a staged move changes the draft, so
+     * Cancel drops it with the draft, and an immediate one commits at once.
+     * @default true
+     */
+    isReorderable?: boolean | ((value: T) => boolean);
   };
+
+/** `value` with `key` moved to index `to`. */
+function moveValue<T>(value: readonly T[], key: T, to: number): readonly T[] {
+  const next = value.filter(item => item !== key);
+  next.splice(to, 0, key);
+  return next;
+}
 
 function areOrderedValuesEqual<T>(
   first: readonly T[],
@@ -202,7 +218,7 @@ export function TransferListSelector<T extends string = string>({
   hasSearch,
   searchLabel,
   searchPlaceholder,
-  isReorderable,
+  isReorderable = true,
   hasSelectAll,
   hasClear,
   renderOption,
@@ -260,6 +276,28 @@ export function TransferListSelector<T extends string = string>({
       {(appliedValue, commit, close, state) => {
         const isStaged = commitBehavior === 'staged';
         const transferListValue = isStaged ? draftValue : appliedValue;
+        // The selector's own reorder, aimed at the draft when staged and at
+        // the applied value when immediate. Made each render, so a move
+        // reads this render's value (the object may be made anew).
+        const reorderable =
+          isReorderable === false
+            ? false
+            : createReorderable<T>({
+                onReorder: ({key, to}) => {
+                  if (state.isBusy) {
+                    return;
+                  }
+                  if (isStaged) {
+                    setDraftValue(current => moveValue(current, key, to));
+                  } else {
+                    commit([...moveValue(appliedValue, key, to)]);
+                  }
+                },
+                isReorderable:
+                  typeof isReorderable === 'function'
+                    ? isReorderable
+                    : undefined,
+              });
 
         return (
           <div
@@ -300,7 +338,7 @@ export function TransferListSelector<T extends string = string>({
                 hasSearch={hasSearch}
                 searchLabel={searchLabel}
                 searchPlaceholder={searchPlaceholder}
-                isReorderable={isReorderable}
+                reorderable={reorderable}
                 hasSelectAll={hasSelectAll}
                 hasClear={hasClear}
                 renderOption={renderOption}
