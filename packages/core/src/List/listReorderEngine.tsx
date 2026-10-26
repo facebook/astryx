@@ -1592,13 +1592,9 @@ export class ListReorderController implements ListReorderSession {
       }, 0);
       return;
     }
-    if (
-      handle != null &&
-      handle === this.modeHandle &&
-      (next != null || !this.isMovingByKey)
-    ) {
-      this.setMode(null);
-    }
+    // Focus leaving the handle does not end reorder mode: its exits are
+    // Escape, Done, the handle again and its row going (spec:AST-103 FR4,
+    // FR4a). Back on the handle, its arrows move the row again.
   }
 
   /**
