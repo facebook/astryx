@@ -66,6 +66,7 @@ afterEach(() => {
   __resetLayoutViewportForTest();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe('the keyboard height (spec:AST-099 FR2)', () => {
@@ -268,6 +269,11 @@ describe('where the keyboard is measured (FR6, FR7)', () => {
       configurable: true,
       value: {overlaysContent: false},
     });
+    vi.stubGlobal(
+      'matchMedia',
+      (query: string) =>
+        ({matches: false, media: query}) as unknown as MediaQueryList,
+    );
     viewport.height = window.innerHeight - 300;
     expect(isKeyboardMeasurable(window)).toBe(true);
     expect(measureKeyboardHeight(window)).toBe(300);

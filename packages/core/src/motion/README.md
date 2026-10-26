@@ -19,6 +19,7 @@ so each keeps its measured value; no shipped component reads the roles yet.
 | `uikit/timing.ts`                                | Non-spring clocks and curves: press highlight, Core Animation's named curves, keyboard, Reduced Motion cross-fade.                                                   |
 | `uikit/navigation.ts`                            | UINavigationController: push velocity, parallax, dimming, transition clock, interactive pop finish rule.                                                             |
 | `uikit/keyboard.ts`                              | The software keyboard as a page sees it: Mobile Safari's late viewport report on a show, and when a hide starts after a blur.                                        |
+| `android/keyboard.ts`                            | Android's software keyboard (Chrome with Gboard): its slides' durations and curves (no theme's) and when they start against Chrome's report and a blur.              |
 | `uikit/gestures.ts`                              | Gesture recognizer thresholds, the velocity filter and haptic stand-ins, as `{value, unit}` entries (sources in JSDoc).                                              |
 | `roles.ts`                                       | Motion roles: each spring, duration and curve of a registered table, named by its path, and its CSS variable.                                                        |
 | `resolveMotion.ts`                               | A role's value: its table value while touch motion stays internal (`spec:AST-094` DEC-11).                                                                           |
@@ -43,9 +44,9 @@ The motion roles are the springs, durations and curves `spec:AST-094` FR4
 names for their use (`springs.settle`, `timing.stateChangeMs`,
 `timing.curves.move`, …): a shared table lists them when it registers
 (`roles`), and every other value, a component's measured spring included, is
-a plain constant. Touch motion stays internal: no public API sets a role. A
-role's value is carried by its CSS variable (`--motion-springs-settle`) on the
-element's scope, and an empty variable means the table's value. A table's
+a plain constant. Touch motion stays internal (`spec:AST-094` DEC-11): a role
+plays its table value, and nothing reads its CSS variable
+(`--motion-springs-settle`), so no page or theme style retunes it. A table's
 roles exist once its `register<Name>Table()` has run: the animator registers
 the Reduce Motion fade's curve, and code that plays the shared springs calls
 `registerSpringsTable()` before its first motion. The animator resolves each
@@ -209,8 +210,8 @@ Chromium and WebKit on the phone profile.
   end.
 - A dialog's `::backdrop` follows the curve when seeked and holds its end
   state.
-- A scope that sets `springs.settle`'s variable changes the curve the engine
-  plays for an element in it, and only there.
+- A scope that sets `springs.settle`'s variable changes nothing: touch motion
+  stays internal (DEC-11), so the engine plays the table's spring there too.
 
 ```
 pnpm test:interaction packages/core/src/motion

@@ -5,8 +5,8 @@
 /**
  * @file useMobileKeyboard.ts
  * @input The window's visual viewport, focus events, React effects and refs,
- *   the motion module's Reduce Motion queries, the layout viewport's height
- *   (utils/layoutViewport.ts)
+ *   the motion module's Reduce Motion queries, the touch query, the layout
+ *   viewport's height (utils/layoutViewport.ts)
  * @output Exports the on-screen keyboard module: measureKeyboardHeight,
  *   isKeyboardMeasurable, subscribeMobileKeyboard, getMobileKeyboardHeight,
  *   useKeyboardHeight, isTextEntryControl, findTextEntryControl,
