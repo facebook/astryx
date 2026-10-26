@@ -4,9 +4,8 @@
 
 /**
  * @file PickerWheel.tsx
- * @input Wheel's props (wheelOptions.ts): option list, selected value,
- *   change callback; optionally a rest rule, and a ref for programmatic
- *   turns
+ * @input Wheel's props (wheelOptions.ts): option list, selected value and
+ *   change callback
  * @output Exports PickerWheel — one picker column that moves like UIPickerView
  * @position Internal component; the Wheel under a finger (Wheel.tsx picks it)
  *
@@ -35,9 +34,8 @@
  *   and the bounce are resolved when their motion starts (internal roles,
  *   motion/resolveMotion.ts).
  * - The value commits when the wheel comes to rest, as UIPickerView's
- *   didSelectRow does. A row `resolveRest` moves away from (by default, a
- *   disabled one: outside the bounds) is followed by a turn onto the row it
- *   names, which then commits.
+ *   didSelectRow does. A rest on a disabled row (outside the bounds) is
+ *   followed by a turn onto the nearest enabled row, which then commits.
  * - Each row reaching the band ticks a selection haptic where the browser
  *   can vibrate (not iOS Safari, which cannot play haptics from script).
  * - Under reduced motion (design:reduced-motion DR2) the drag follows the
@@ -45,7 +43,7 @@
  *   its bounce at an end) plays as is, as scrolling keeps decelerating under
  *   iOS Reduce Motion. Every transition the wheel starts (a slow release's
  *   snap, a return from past an end, the turn on from a disabled row, a tap,
- *   a key, a click, `spinTo`, a scroll wheel's snap) lands without
+ *   a key, a click, a scroll wheel's snap) lands without
  *   travel: the rows cross-fade onto their row, opacity only, on the
  *   animator's Reduce Motion fade (`reducedMotionFade`).
  *
@@ -70,15 +68,7 @@
  * - /packages/core/src/TimeInput/TimeInput.doc.mjs
  */
 
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import {useCallback, useEffect, useId, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {PanGestureRecognizer} from '../gestures/PanGestureRecognizer';
 import {TapGestureRecognizer} from '../gestures/TapGestureRecognizer';
@@ -116,11 +106,7 @@ import {
   type WheelCurve,
   type WheelLayout,
 } from './wheelPhysics';
-import {
-  nearestEnabledIndex,
-  type WheelProps,
-  type WheelSpinOptions,
-} from './wheelOptions';
+import {nearestEnabledIndex, type WheelProps} from './wheelOptions';
 
 /** Today's row pitch, px: the touch column draws today's look (wheelLook.ts). */
 const ROW_HEIGHT = WHEEL_ROW_PITCH;
@@ -218,22 +204,20 @@ function registerWheelTables(): void {
 }
 
 /**
- * A turn onto `to` on the tap spin: `spin`'s duration and curve, or the
- * picker's tap spin (`picker.tapSpin.durationMs`) on `timing.curves.move` as
- * resolved under `column` when the turn starts.
+ * A turn onto `to` on the picker's tap spin (`picker.tapSpin.durationMs`),
+ * on `timing.curves.move` as resolved under `column` when the turn starts.
  */
 function turnCurve(
   column: Element | null,
   from: number,
   to: number,
-  spin: WheelSpinOptions = {},
 ): WheelCurve {
   registerWheelTables();
   return spinCurve(
     from,
     to,
-    spin.duration ?? picker.tapSpin.durationMs / 1000,
-    spin.curve ?? resolveMotion(column, timing.curves.move),
+    picker.tapSpin.durationMs / 1000,
+    resolveMotion(column, timing.curves.move),
   );
 }
 
@@ -269,8 +253,6 @@ export function PickerWheel({
   value,
   onChange,
   isActive = true,
-  resolveRest,
-  ref,
 }: WheelProps) {
   const id = useId();
   const columnRef = useRef<HTMLDivElement | null>(null);
@@ -290,9 +272,9 @@ export function PickerWheel({
   /** A finger landed on a moving wheel and stopped it. */
   const caughtRef = useRef(false);
 
-  const latestRef = useRef({options, value, onChange, resolveRest, layout});
+  const latestRef = useRef({options, value, onChange, layout});
   useIsomorphicLayoutEffect(() => {
-    latestRef.current = {options, value, onChange, resolveRest, layout};
+    latestRef.current = {options, value, onChange, layout};
   });
 
   // The row under the band is marked as today's column marks it. At rest
@@ -377,9 +359,7 @@ export function PickerWheel({
         0,
         current.options.findIndex(option => option.value === current.value),
       );
-      const resolved = current.resolveRest
-        ? current.resolveRest(row)
-        : nearestEnabledIndex(current.options, row, committed);
+      const resolved = nearestEnabledIndex(current.options, row, committed);
       if (resolved !== row && current.options[resolved] != null) {
         move(turnCurve(columnRef.current, offset, resolved * ROW_HEIGHT), {
           onEnd: (outcome, end) => {
@@ -680,24 +660,6 @@ export function PickerWheel({
       window.clearTimeout(idle);
     };
   }, [isActive, motion, move, onEnd]);
-
-  const spinTo = useCallback(
-    async (index: number, spin: WheelSpinOptions = {}): Promise<boolean> =>
-      new Promise(resolve => {
-        const offset = motion.offset();
-        move(turnCurve(columnRef.current, offset, index * ROW_HEIGHT, spin), {
-          onEnd: (outcome, end) => {
-            if (outcome === 'arrived') {
-              arrive(end);
-            }
-            resolve(outcome === 'arrived');
-          },
-        });
-      }),
-    [motion, move, arrive],
-  );
-
-  useImperativeHandle(ref, () => ({spinTo}), [spinTo]);
 
   // A key commits `row` at once and turns the wheel there from `offset`.
   const turnTo = useCallback(
