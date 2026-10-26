@@ -3,12 +3,12 @@ schema_version: 4
 template_version: 2
 kind: system-spec
 id: spec:AST-090
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-10-26
+phase: accepted
 owners: [ernestt, cixzhang]
 affects_architecture: [architecture:theme-tokens, architecture:layer-runtime]
 affects_families: [family:overlay-dismissal]
@@ -252,7 +252,7 @@ governs them in a touch presentation.
 ### DEC-1 — Exits ship off, and a theme turns them on
 
 **Reference:** `spec:AST-090/DEC-1`
-**Decider:** pending owner review
+**Decider:** `cixzhang`, `2026-10-26`
 
 Turning exits on changes how every pointer-presented dialog and layer closes in
 every product at once, so the capability ships switched off and a theme opts
@@ -266,7 +266,7 @@ Rejected: an exit prop on each component, which restates timing at every call si
 ### DEC-2 — One switch per kind of surface
 
 **Reference:** `spec:AST-090/DEC-2`
-**Decider:** pending owner review
+**Decider:** `cixzhang`, `2026-10-26`
 
 A person closes a dialog deliberately, and its exit shows what it uncovered. A
 layer is dismissed as attention moves on, often many times a minute
@@ -278,7 +278,7 @@ Rejected: one switch for every surface.
 ### DEC-3 — An exit retraces its entrance on an accelerating curve
 
 **Reference:** `spec:AST-090/DEC-3`
-**Decider:** pending owner review
+**Decider:** `cixzhang`, `2026-10-26`
 
 An animated exit follows its entrance's path back, as the motion docs ask. It
 runs on its own curve: a decelerating curve spends its travel in the first
@@ -291,7 +291,7 @@ Rejected: the entrance played backwards on `--ease-standard`.
 ### DEC-4 — Layer exits play only where the browser holds a closing layer
 
 **Reference:** `spec:AST-090/DEC-4`
-**Decider:** pending owner review
+**Decider:** `cixzhang`, `2026-10-26`
 
 The browser hides a light-dismissed layer before Core hears of it, so only CSS
 can animate that close. A layer that keeps painting after it leaves the top
@@ -303,7 +303,7 @@ Rejected: replacing native light dismissal with Core-owned outside-press handlin
 ### DEC-5 — Touch presentations keep their native exit
 
 **Reference:** `spec:AST-090/DEC-5`
-**Decider:** pending owner review
+**Decider:** `cixzhang`, `2026-10-26`
 
 On a touch device a surface moves the way its native counterpart does, by
 default and with no opt-in (`spec:AST-094`), and that record leaves pointer
