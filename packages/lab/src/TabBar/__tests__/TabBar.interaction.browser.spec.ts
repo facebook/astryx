@@ -371,6 +371,26 @@ test('with no tab selected, a finger chooses the tab under it', async ({
   await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
 });
 
+test('a tap reports its choice once, and a mouse click chooses through the browser', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page, 'removed-on-lift');
+  const read = () =>
+    page.evaluate(
+      () => (window as unknown as {__tabBarChanges: string[]}).__tabBarChanges,
+    );
+  await page.evaluate(() => {
+    (window as unknown as {__tabBarChanges: string[]}).__tabBarChanges = [];
+  });
+  // Under a finger the lift reports, and the click the browser sends after
+  // it must not report again (`spec:AST-094` FR21).
+  await driver.tap(await itemCenter(page, 'Library'));
+  await page.waitForTimeout(400);
+  expect((await read()).filter(entry => entry === 'library')).toEqual([
+    'library',
+  ]);
+});
+
 test('a bar removed as the finger lifts reports nothing after it is gone', async ({
   page,
 }) => {
@@ -1086,6 +1106,28 @@ async function expectCssSlide(page: Page, {isRunning = true} = {}) {
 test.describe('touch work costs nothing under a fine pointer', () => {
   test.describe('under a mouse', () => {
     test.use({hasTouch: false, isMobile: false});
+
+    test('a click chooses a tab, where the gesture host attaches nothing', async ({
+      page,
+    }) => {
+      await expectFinePointer(page);
+      await openBar(page);
+      // `spec:AST-094` FR19/FR24: under a fine pointer no recognizer attaches,
+      // so the tab activates from the browser's own click.
+      await tab(page, 'Library').click();
+      await expect(tab(page, 'Library')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'false');
+      // And from the keyboard, the other route a fine pointer leaves.
+      await page.keyboard.press('ArrowRight');
+      await page.keyboard.press('Enter');
+      await expect(tab(page, 'Browse')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+    });
 
     test('with Reduce Motion a click moves the lens at once', async ({
       page,
