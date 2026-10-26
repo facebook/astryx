@@ -168,8 +168,10 @@ those contracts.
   found by walking siblings. A boundary is any container element registered by
   ref: ScrollArea registers its scrolling element itself, and an app registers
   its own scroll container or panel with `useDisclosureBoundary(containerRef)`.
-  Content inside a boundary that should move with a disclosure registers as a
-  participant. A disclosing element (a TreeList group, Collapsible) reports its
+  Following content inside a boundary can mix Astryx components and plain app
+  elements; how each moves is OQ2, and INV12 proposes (ii): an Astryx
+  component that can follow a disclosure registers itself as a participant,
+  and an app element registers with `useDisclosureParticipant(elementRef)`. A disclosing element (a TreeList group, Collapsible) reports its
   change to its nearest registered ancestor boundary, which moves only the
   participants after it, each by translating an element it already renders,
   so the module adds no elements (`architecture:component-style-authoring`
@@ -179,11 +181,12 @@ those contracts.
   travels, and following content cross-fades into place
   (`design:reduced-motion` DR2). The handle (a container boundary with opt-in
   participants, any container by ref) is decided by `cixzhang`, 2026-10-25.
-  `useDisclosureBoundary` is the one public piece: it takes the container's
-  ref and returns nothing, because which container scopes the motion is the
-  caller's intent (`spec:AST-002` FR1) and no other API does that job
-  (`architecture:public-component-api` INV21). The participant and change
-  hooks stay internal.
+  The public pieces are `useDisclosureBoundary(containerRef)` and, under OQ2's
+  (ii), `useDisclosureParticipant(elementRef)`: each takes a ref and returns
+  nothing, because which container scopes the motion and which app content
+  moves with it are the caller's intent (`spec:AST-002` FR1), and no other API
+  does either job (`architecture:public-component-api` INV21). The change hook
+  stays internal.
 
   Usage:
 
@@ -193,11 +196,12 @@ those contracts.
   useDisclosureBoundary(panelRef);
   <div ref={panelRef}>
     <TreeList items={items} />
-    <p>Notes</p>
+    <p ref={noteRef}>Notes</p>
   </div>;
 
-  // Internal: a participant registers an element it already renders.
-  useDisclosureParticipant(rowRef);
+  // Public under OQ2 (ii): an app element moves with the disclosure.
+  // Astryx components that can follow a disclosure register themselves.
+  useDisclosureParticipant(noteRef);
 
   // Internal: a disclosing element measures before its commit and animates after it.
   const change = useDisclosureChange(groupRef);
@@ -352,3 +356,19 @@ component suite is not blanket conformance with every invariant.
 | INV10            | Shared test over every adopter of the announcement module                                                                                                                                                                     | An adopter holding its own Effect, observer, timer, or listener for its own-content announcement                                                                                                                                                                                                                                                                                                                       |
 | INV11            | Source boundary check plus hook tests across StrictMode replay and unmount                                                                                                                                                    | A second keyboard listener or measurement in Core; a consumer reading a CSS custom property on the root or a shared ancestor for the height; an export of the hook; a component outside Core measuring by a rule other than AST-099 FR2, or riding the keyboard; a listener left after unmount; a Core rider driven by JavaScript per frame or by its own transition; or more than one layout read per keyboard change |
 | INV12 (proposed) | Real-browser tests on a throttled phone profile plus a source boundary check, over a disclosure inside a boundary with participants, non-participants, a sticky header, a nested boundary, content outside, and Reduce Motion | A per-frame height or layout, a sibling walk, a moved non-participant, an added element, or travel under Reduce Motion fails                                                                                                                                                                                                                                                                                           |
+
+## Open questions
+
+- **OQ2 — Mixed following content.** (`human-design`) Content after a
+  disclosure inside a boundary can be Astryx components or plain app elements.
+  Options: (i) the boundary moves everything after the disclosure in its own
+  flow, by a walk bounded by the container that skips fixed, sticky, and
+  absolutely positioned descendants and moves a nested boundary as one unit,
+  with no app API, but it walks the DOM and measures every element it finds;
+  (ii, recommended) Astryx components register themselves and an app element
+  opts in with `useDisclosureParticipant(elementRef)`, so only registered
+  content moves, unregistered app content takes its final place at once, and
+  the cost grows with the number of participants; or (iii) the app wraps the
+  following content in one element passed by ref and translated as a block,
+  which needs one measurement but cannot separate a disclosure from content
+  inside the same wrapper.
