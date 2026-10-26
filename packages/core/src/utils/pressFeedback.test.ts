@@ -30,6 +30,7 @@ import {
 import {
   cellPressableProps,
   installPressFeedback,
+  paintPress,
   PRESS_PROFILES,
   PRESSABLE_ATTRIBUTE,
   PRESSED_ATTRIBUTE,
@@ -363,6 +364,25 @@ describe('the release', () => {
     expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('held');
     press(rows[0], 'pointercancel', 10, 10);
     expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('held');
+  });
+
+  it("another painter's fade never cuts the controller's own release short", () => {
+    // Two writers kept two clocks: a fade another painter left running on
+    // the surface removed the attribute in the middle of the controller's
+    // release. With one writer, any write ends a pending fade.
+    const control = pressable('button');
+    document.body.appendChild(control);
+    paintPress(control, 'fading', {releaseMs: 150});
+    press(control, 'pointerdown', 10, 10);
+    expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
+    vi.advanceTimersByTime(50);
+    press(control, 'pointerup', 10, 10);
+    expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+    // The other painter's clock ran out here: the release is still running.
+    vi.advanceTimersByTime(100);
+    expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+    vi.advanceTimersByTime(PRESS_FADE_MS - 100);
+    expect(control.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
   });
 });
 
