@@ -31,6 +31,7 @@ import {Badge} from '@astryxdesign/core/Badge';
 import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
 import {Grid} from '@astryxdesign/core/Grid';
+import {ScrollableArea} from '@astryxdesign/core/ScrollableArea';
 import {Section} from '@astryxdesign/core/Section';
 import {
   SegmentedControl,
@@ -771,28 +772,36 @@ export default function DiffViewerPerfPage() {
             </VStack>
           </Card>
 
-          <Card key={runKey} ref={surfaceRef} height={640} padding={3}>
-            <VStack gap={3}>
-              {files.map(file => {
-                const path = file.newPath ?? file.oldPath ?? '';
-                const fileProps = {
-                  file,
-                  viewMode,
-                  language,
-                  isCollapsed: collapsed.has(path),
-                  onToggle: toggleFile,
-                };
-                return mount === 'visible' ? (
-                  <OnScreenFile
-                    key={path}
-                    viewportRef={surfaceRef}
-                    {...fileProps}
-                  />
-                ) : (
-                  <BenchmarkFile key={path} {...fileProps} />
-                );
-              })}
-            </VStack>
+          <Card padding={3}>
+            {/* A named scroll area keeps a keyboard stop for the list, even
+                when the files on screen unmount (AST-025 FR12). */}
+            <ScrollableArea
+              key={runKey}
+              ref={surfaceRef}
+              label="Rendered change set"
+              height={616}>
+              <VStack gap={3}>
+                {files.map(file => {
+                  const path = file.newPath ?? file.oldPath ?? '';
+                  const fileProps = {
+                    file,
+                    viewMode,
+                    language,
+                    isCollapsed: collapsed.has(path),
+                    onToggle: toggleFile,
+                  };
+                  return mount === 'visible' ? (
+                    <OnScreenFile
+                      key={path}
+                      viewportRef={surfaceRef}
+                      {...fileProps}
+                    />
+                  ) : (
+                    <BenchmarkFile key={path} {...fileProps} />
+                  );
+                })}
+              </VStack>
+            </ScrollableArea>
           </Card>
         </Grid>
       </VStack>
