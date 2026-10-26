@@ -195,8 +195,9 @@ gesture, motion and touch-support source (`@astryxdesign/core/gestures`,
 `core/src/{gestures,motion,touch-support}`), which have no entry of their own
 (`architecture:react-component-runtime` INV13). It checks `import`,
 `export … from`, `import()`, `require()` and `typeof import()`. The repo config
-turns it on for every file outside `packages/core` and `packages/lab`, so only
-Core and Lab may import them.
+turns it on for every linted file outside `packages/core` and `packages/lab`
+(the global ignores still leave some scripts unlinted), so only Core and Lab
+may import them.
 
 An internal subpath is one file, `packages/core/src/internal/<name>.ts`, whose
 header says it is reserved for Astryx's own packages, undocumented, and outside
