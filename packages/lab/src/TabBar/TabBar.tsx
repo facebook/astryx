@@ -218,7 +218,11 @@ export interface TabBarSearchTabProps {
   children?: ReactNode;
   /** Whether the field is active: raised above the keyboard. */
   isActive?: boolean;
-  /** Called when the search tab's tap activates the field. */
+  /**
+   * Called when the search tab's tap activates the field, and with
+   * `false` when search ends: a tap on Cancel, the leading circle
+   * leaving search, or another tab being chosen.
+   */
   onActiveChange?: (isActive: boolean) => void;
   /** The field's handle: focused by the tap that activates it. */
   fieldRef?: RefObject<{focus(): void; blur(): void} | null>;
