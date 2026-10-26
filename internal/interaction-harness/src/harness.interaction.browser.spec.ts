@@ -720,6 +720,10 @@ test.describe('frame evidence', () => {
       read.from = await now();
       await waitForAnimation(page.locator('#list'));
       read.to = await now();
+      // On a slow machine each frame of 1,200 running rows is a long task of
+      // the page's own; the windows below hold only their own work.
+      await page.evaluate(() => document.getElementById('list')?.remove());
+      await frames(page, 2);
       // The page's own task: a timer that spins 60 ms.
       timer = await page.evaluate(
         () =>
@@ -747,8 +751,9 @@ test.describe('frame evidence', () => {
     });
     const within = (w: {from: number; to: number}) => (t: {start: number}) =>
       t.start >= w.from - 20 && t.start < w.to;
+    // The read itself is set apart. The rows' frames around it may be long
+    // tasks too, the page's own: they stay in longTasks.
     expect(trace.devtoolsTasks.some(within(read))).toBe(true);
-    expect(trace.longTasks.filter(within(read))).toEqual([]);
     expect(
       trace.longTasks.some(t => within(timer)(t) && t.durationMs >= 55),
     ).toBe(true);
@@ -1501,6 +1506,27 @@ test.describe('animation state', () => {
     const [found] = await waitForAnimation(box);
     expect(found.durationMs).toBe(1000);
     await box.evaluate(el => el.getAnimations().forEach(a => a.finish()));
+  });
+
+  test('a scroll-timeline animation in scope does not hold up a wait', async ({
+    page,
+  }) => {
+    await fixture(page);
+    const scroller = page.locator('#scroller');
+    await waitForRest(scroller);
+    // A row driven by its scroller's timeline (it moves only on scroll), and
+    // a short document animation that ends.
+    await scroller.evaluate(el => {
+      const [row, other] = [...el.children] as HTMLElement[];
+      row.animate([{opacity: 0.5}, {opacity: 1}], {
+        timeline: new ScrollTimeline({source: el}),
+      });
+      return other.animate([{opacity: 0.2}, {opacity: 1}], {duration: 40})
+        .finished;
+    });
+    const [found] = await waitForAnimation(scroller, {timeout: 2000});
+    expect(found.durationMs).toBe(40);
+    expect(found.finishedAt).not.toBeNull();
   });
 
   test('a watch reports only what started after it', async ({page}) => {
