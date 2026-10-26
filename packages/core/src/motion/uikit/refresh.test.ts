@@ -3,8 +3,8 @@
 /**
  * @file refresh.test.ts
  * @input vitest, the refresh-control table and the motion role registry
- * @output Covers registerRefreshControlTable: reading the table registers
- *   nothing; the call registers the table's motion roles, once
+ * @output Covers registerRefreshControlTable: the table's values stay
+ *   internal constants, before and after the call (no motion role)
  * @position Testing; colocated with refresh.ts
  */
 
@@ -19,17 +19,13 @@ const refreshRoles = () =>
     .sort();
 
 describe('registerRefreshControlTable', () => {
-  it('registers the table’s motion roles only when called, once', () => {
-    // Reading a value registers nothing.
+  it('keeps every value an internal constant, registered or not', () => {
+    // spec:AST-094 FR4 names none of the refresh control's values as a role.
     expect(refreshControl.endMs).toBe(300);
     expect(refreshRoles()).toEqual([]);
     registerRefreshControlTable();
     registerRefreshControlTable();
-    expect(refreshRoles()).toEqual([
-      'refreshControl.endMs',
-      'refreshControl.exitMs',
-      'refreshControl.spinMs',
-      'refreshControl.triggerTurnSpring',
-    ]);
+    expect(refreshRoles()).toEqual([]);
+    expect(refreshControl.endMs).toBe(300);
   });
 });
