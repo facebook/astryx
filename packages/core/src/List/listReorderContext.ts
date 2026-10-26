@@ -55,6 +55,16 @@ export interface ListReorderHandleProps {
   /** The row's item key (ListItem `itemKey`), which its moves report. */
   readonly itemKey: Key;
   /**
+   * The row's own accessible name, when its caller gave one (ListItem
+   * `aria-label`): the handle is "Reorder" followed by it.
+   */
+  readonly rowLabel?: string;
+  /**
+   * The elements that name the row, when its caller gave them (ListItem
+   * `aria-labelledby`): the handle is "Reorder" followed by them.
+   */
+  readonly rowLabelledBy?: string;
+  /**
    * The row is disabled: the handle stays focusable with
    * `aria-disabled="true"`, and no gesture or key moves the row
    * (spec:AST-085).
