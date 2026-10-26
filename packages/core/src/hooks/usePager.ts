@@ -23,8 +23,8 @@
  *   layout read and no React render; past the first or last page it follows
  *   UIKit's rubber band with d = the page width. Which drags are the pager's
  *   follows UIKit: inside a scroll view, the dominant axis
- *   (`paging.nestedPanAxisRatio`, the tie to the pager), claimed early so
- *   Safari never scrolls the page for a drag the pager took; inside a sheet
+ *   (`paging.nestedPanAxisRatio`, the tie to the pager), claimed when the pan
+ *   begins (its 10 pt hysteresis; nothing claims a pan earlier); inside a sheet
  *   (an enclosing vertical pan takes part in the touch), within
  *   atan(1 ÷ `paging.panAxisRatio`) of horizontal, and neither between that
  *   and 45°.
@@ -265,21 +265,14 @@ export interface PagerEnvironment {
  * layout while a finger moves.
  */
 /**
- * The distance a drag travels before the pager claims it, under the 10–11 px
- * at which WebKit claims a slow drag for the page (the gesture system's early
- * claim, PanGestureRecognizer `claimDistance`).
- */
-const PAGER_CLAIM_DISTANCE = 5;
-
-/**
  * The pager's pan: its release is a pan's `scrollVelocity()`, the one
  * UIScrollView hands `scrollViewWillEndDragging`
  * (but after a silent hold; spec:AST-100 FR2).
  * Inside a scroll view it takes UIKit's rule: a drag is the
  * pager's when its dominant axis is horizontal (`paging.nestedPanAxisRatio`,
- * the tie included) and the page's otherwise, and the pager cancels its moves
- * from `PAGER_CLAIM_DISTANCE`, since Safari gives the page no scroll for a
- * touch once one of its moves was cancelled. Inside a sheet, which the arena
+ * the tie included) and the page's otherwise. Its moves are cancelled from
+ * the moment it begins, at the pan's 10 pt hysteresis, as every pan's are:
+ * nothing claims a touch earlier. Inside a sheet, which the arena
  * shows as an enclosing vertical pan taking part in the touch, it keeps the
  * sheet's rule (`axisRatio`, `paging.panAxisRatio`): neither moves between
  * atan(1 ÷ that) and 45°.
@@ -529,7 +522,6 @@ export function createPager(
   let caughtSettle = false;
 
   const pan = new PagerPanGestureRecognizer({
-    claimDistance: PAGER_CLAIM_DISTANCE,
     ...options.panOptions,
     // Published, so app code can relate its own recognizers to the paging
     // pan (gesture delegates); instances are told apart by their element.
