@@ -1258,6 +1258,30 @@ describe("the drag's axis: UIKit's rule for a pager inside a scroll view", () =>
 });
 
 describe('review fixes', () => {
+  // spec:AST-094 FR41: a hold that does nothing keeps the browser's native
+  // long-press selection; stopping a settle does something.
+  it('a finger on a resting track leaves its text selectable; one that catches a settle locks it until the lift', async () => {
+    const f = setup({defaultIndex: 0});
+    // jsdom keeps only the unprefixed property.
+    const selection = () => f.track.style.getPropertyValue('user-select');
+    touch('touchstart', f.page, 200, 100, now);
+    await advance(16, f.clock);
+    expect(selection()).toBe('');
+    touch('touchend', f.page, 200, 100, now);
+    await advance(16, f.clock);
+    f.pager.goTo(3);
+    await advance(16, f.clock);
+    await advance(16, f.clock);
+    expect(f.pager.isSettling).toBe(true);
+    touch('touchstart', f.page, 200, 100, now);
+    await advance(16, f.clock);
+    expect(selection()).toBe('none');
+    await advance(120, f.clock);
+    touch('touchend', f.page, 200, 100, now);
+    await advance(16, f.clock);
+    expect(selection()).toBe('');
+  });
+
   // spec:AST-094 FR6.
   it('a goTo that retargets a running move keeps its velocity, read from the curve', async () => {
     const f = setup({defaultIndex: 0});
@@ -1447,6 +1471,86 @@ describe('usePager (React)', () => {
     });
     expect(onIndexChange).not.toHaveBeenCalled();
     view.unmount();
+  });
+
+  it('reads onPagesChange through the latest render, like the other callbacks', () => {
+    // The page change arrives on the next animation frame: run frames by hand.
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const runFrames = () => {
+      for (const callback of frames.splice(0)) {
+        callback(0);
+      }
+    };
+    const clientWidth = vi
+      .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+      .mockReturnValue(WIDTH);
+    // Children 150 px wide, 10 px apart, from the track's start.
+    const rects = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        if (this.dataset.child != null) {
+          const i = Array.prototype.indexOf.call(
+            this.parentElement?.children ?? [],
+            this,
+          );
+          return new DOMRect(i * 160, 0, 150, 100);
+        }
+        if (this.dataset.track != null) {
+          const n = this.children.length;
+          return new DOMRect(0, 0, n * 160 - 10, 100);
+        }
+        return new DOMRect(0, 0, WIDTH, 100);
+      });
+    try {
+      function Cards({
+        count,
+        onPagesChange,
+      }: {
+        count: number;
+        onPagesChange: (pageCount: number) => void;
+      }) {
+        const viewportRef = useRef<HTMLDivElement>(null);
+        const trackRef = useRef<HTMLDivElement>(null);
+        usePager({
+          viewportRef,
+          trackRef,
+          count,
+          pages: 'children',
+          onPagesChange,
+        });
+        return createElement(
+          'div',
+          {ref: viewportRef},
+          createElement(
+            'div',
+            {ref: trackRef, 'data-track': ''},
+            Array.from({length: count}, (_, i) =>
+              createElement('div', {key: i, 'data-child': ''}),
+            ),
+          ),
+        );
+      }
+      const first = vi.fn();
+      const second = vi.fn();
+      const view = render(
+        createElement(Cards, {count: 5, onPagesChange: first}),
+      );
+      act(() => {
+        view.rerender(createElement(Cards, {count: 6, onPagesChange: second}));
+      });
+      expect(second).not.toHaveBeenCalled();
+      act(() => runFrames());
+      expect(first).not.toHaveBeenCalled();
+      expect(second).toHaveBeenCalledWith(5);
+      view.unmount();
+    } finally {
+      rects.mockRestore();
+      clientWidth.mockRestore();
+    }
   });
 
   it('attaches again when the viewport element is replaced', () => {

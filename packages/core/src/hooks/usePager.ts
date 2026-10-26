@@ -322,10 +322,6 @@ class PagerPanGestureRecognizer extends PanGestureRecognizer {
     }
     return along >= paging.nestedPanAxisRatio * across ? 'begin' : 'fail';
   }
-
-  override claimsEarly(): boolean {
-    return !this.hasEnclosingVerticalPan() && super.claimsEarly();
-  }
 }
 
 /**
@@ -543,6 +539,10 @@ export function createPager(
   const catcher = new SettleCatcher({
     minimumPressDuration: 0,
     allowableMovement: Number.POSITIVE_INFINITY,
+    // Its own hold does nothing, so it brings no selection lock: a finger on
+    // a resting track keeps the browser's native long press (spec:AST-094
+    // FR41). Stopping a settle does something; `holdSelection` locks then.
+    selectionLock: null,
     shouldBegin: () => settleHandle != null && !isDragging,
   });
   catcher.recognizeSimultaneouslyWith(pan);
@@ -1171,6 +1171,7 @@ export function usePager({
       onIndexChange: (i, reason) =>
         latestRef.current.onIndexChange?.(i, reason),
       onSettle: (i, previous) => latestRef.current.onSettle?.(i, previous),
+      onPagesChange: pageCount => latestRef.current.onPagesChange?.(pageCount),
       shouldBeginPan: direction =>
         latestRef.current.shouldBeginPan?.(direction) ?? true,
     }),
