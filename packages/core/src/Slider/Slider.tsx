@@ -213,9 +213,9 @@ const styles = stylex.create({
     // Under a finger (a coarse primary pointer) the control leaves the browser
     // its pans, so a swipe from the track or across a thumb scrolls the page.
     // The gesture host narrows that per element from the recognizers attached
-    // to it (a thumb's pan keeps its own axis) and never widens it, and it
-    // turns text selection and the callout off where a finger is held. A mouse
-    // or a trackpad keeps the control's `none`.
+    // to it (a thumb's pan keeps its own axis) and never widens it; a held
+    // thumb's pan locks text selection and the callout until the lift
+    // (spec:AST-094 FR41). A mouse or a trackpad keeps the control's `none`.
     touchAction: {
       default: 'none',
       '@media (pointer: coarse)': 'manipulation',

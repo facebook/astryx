@@ -737,7 +737,7 @@ test('a finger landing on a coasting thumb stops it where it is', async ({
   expect(await thumb.evaluate(element => element.style.translate)).toBe('');
 });
 
-test('a finger held on a thumb or on the track starts no selection: the gesture host locks it until the lift', async ({
+test('a finger held on a thumb or on the track starts no selection: the thumb’s pan locks it until the lift, and the track’s own style keeps it unselectable', async ({
   page,
 }) => {
   const {driver, thumb, center} = await openSlider(
@@ -777,6 +777,9 @@ test('a finger held on a thumb or on the track starts no selection: the gesture 
   if (box == null) {
     throw new Error('no control');
   }
+  // A finger held on the track does nothing, so the track's tap takes no
+  // lock (spec:AST-094 FR41); the control's own style keeps its text
+  // unselectable, and the hold selects nothing.
   const onTrack = {x: box.x + box.width * 0.9, y: box.y + box.height / 2};
   const [held] = await playReading(
     page,
@@ -785,12 +788,19 @@ test('a finger held on a thumb or on the track starts no selection: the gesture 
     [0],
     async () => {
       await page.waitForTimeout(300);
-      return lockOf(control);
+      return control.evaluate(node => {
+        const style = getComputedStyle(node);
+        return {
+          inline: (node as HTMLElement).style.getPropertyValue('user-select'),
+          computed:
+            style.getPropertyValue('user-select') ||
+            style.getPropertyValue('-webkit-user-select'),
+          selected: String(getSelection() ?? ''),
+        };
+      });
     },
   );
-  expect(held).toBe('none');
-  await frames(page, 4);
-  expect(await lockOf(control)).toBe('');
+  expect(held).toEqual({inline: '', computed: 'none', selected: ''});
 });
 
 test('a finger lifted outside the tracking bounds coasts back to the lift value', async ({

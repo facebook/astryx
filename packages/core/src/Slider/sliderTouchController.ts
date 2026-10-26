@@ -84,6 +84,7 @@ import {
   type ControlEvent,
 } from '../gestures/PressTracker';
 import {SwipeGestureRecognizer} from '../gestures/SwipeGestureRecognizer';
+import {lockSelection} from '../gestures/selectionLock';
 import {TapGestureRecognizer} from '../gestures/TapGestureRecognizer';
 import type {PointerKind} from '../gestures/types';
 import {isRtlElement} from '../hooks/isRtlElement';
@@ -297,9 +298,11 @@ export class SliderTouchController {
         maximumNumberOfTouches: 1,
         cancelsTouchesInView: false,
         allowedPointerTypes: ['touch', 'pen'],
-        // A held finger never starts a text selection or the callout on the
-        // thumb (the gesture host's lock, restored on the lift).
-        preventsTextSelection: true,
+        // A held thumb does something, so a held finger never starts a text
+        // selection or the callout on it: the gesture host takes this lock
+        // for each held press and releases it on the lift (spec:AST-094
+        // FR41).
+        selectionLock: lockSelection,
       });
       const removeListener = pan.addListener(current =>
         this.handlePan(owner, current),
@@ -323,8 +326,9 @@ export class SliderTouchController {
       // A touch that travels as far as a thumb's pan needs to begin is a
       // swipe, not a tap (UITapGestureRecognizer would allow 45 pt).
       allowableMovement: UIKIT_GESTURES.pan.hysteresis.value,
-      // Nor does a finger held on the track start a selection.
-      preventsTextSelection: true,
+      // A finger held on the track does nothing, so the tap takes no
+      // selection lock: the control's own `user-select: none` already keeps
+      // its text unselectable.
     });
     this.trackTap = tap;
     const removeTapListener = tap.addListener(current => {
