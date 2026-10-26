@@ -20,7 +20,8 @@
  * would still scroll the page (`holdPageScroll`, deciding with
  * `isPanAbsorbedBeforePage` along the browser's scroll chain, and leaving a
  * touch a gesture recognizer owns to it), because iOS Safari before 26.4
- * scrolls an `overflow: hidden` page under a finger. The page's scroll offset never changes, so there is nothing
+ * scrolls an `overflow: hidden` page under a finger. On a pinch-zoomed page a
+ * one-finger drag pans the zoomed view instead, so it goes through. The page's scroll offset never changes, so there is nothing
  * to restore on unlock, and iOS Safari's toolbar keeps the state it had.
  *
  * SYNC: When modified, update:
@@ -34,7 +35,7 @@
 import {useEffect} from 'react';
 import {claimRootScrollStyle, reportScrollLock} from './rootScrollStyles';
 import {holdPageScroll} from '../gestures/pageHold';
-import {isPanAbsorbedBeforePage} from './scrollLockTouchGuard';
+import {isPageZoomedIn, isPanAbsorbedBeforePage} from './scrollLockTouchGuard';
 import {holdScrollbarGutter, type ScrollbarGutterHold} from './scrollbarGutter';
 
 interface ActiveLock {
@@ -85,7 +86,10 @@ export function useScrollLock(isLocked: boolean): void {
       // not bring the host into every overlay's import.
       const releasePageHold = holdPageScroll(
         document,
-        (origin, dx, dy) => !isPanAbsorbedBeforePage(origin, dx, dy),
+        // A drag on a pinch-zoomed page pans the zoomed view: it goes
+        // through, so a zoomed-in reader can move around the overlay.
+        (origin, dx, dy) =>
+          !isPageZoomedIn(document) && !isPanAbsorbedBeforePage(origin, dx, dy),
       );
       gutter.settle();
       activeLock = {releaseRootStyle, releasePageHold, gutter};
