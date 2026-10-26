@@ -33,7 +33,7 @@
  * utils/interactionOverlay.stylex.ts and pressFeedback.test.ts.
  */
 
-import {pressReleaseRoles} from './interactionOverlay.stylex';
+import {pressReleaseRoles} from './rowPressLayer.stylex';
 import type {PressGesture, PressPaint, PressStep} from './pressGesture';
 import {
   idlePressGesture,

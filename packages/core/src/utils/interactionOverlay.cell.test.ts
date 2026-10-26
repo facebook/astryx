@@ -3,7 +3,7 @@
 /**
  * @file interactionOverlay.cell.test.ts
  * @input vitest, the UIKit constants table (motion/uikit/list.ts), the press
- *   layer style (`interactionOverlayStyles.cell`) and the rows that compose
+ *   layer style (`rowPressLayerStyles.cell`, rowPressLayer.ts) and the rows that compose
  *   it (Item, TreeList)
  * @output Holds the layer's build-time clock to the constants table, and
  *   asserts what a row ships for the touch press: the pressed token on a
@@ -26,7 +26,7 @@ import {Item} from '../Item';
 import {TreeList} from '../TreeList';
 import {durationToMs, rulesDeclaredFor} from '../__tests__/pressState';
 import {PRESS_FADE_MS} from './pressGesture';
-import {cellPressConsts, pressReleaseRoles} from './interactionOverlay.stylex';
+import {cellPressConsts, pressReleaseRoles} from './rowPressLayer.stylex';
 
 const ON = '[data-astryx-press="on"]';
 const FADING = '[data-astryx-press="fading"]';
