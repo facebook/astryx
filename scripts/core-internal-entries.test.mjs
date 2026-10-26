@@ -2,13 +2,15 @@
 
 /**
  * @file core-internal-entries.test.mjs
- * @input The repository's ESLint config
+ * @input The repository's ESLint config and Lab's source
  * @output Pins who may import Core's internal entries
  *   (`@astryxdesign/core/internal/*`, architecture:react-component-runtime
- *   INV13): only Core and Lab
- * @position Node test over the lint config, so it needs no build
+ *   INV13): only Core and Lab, and Lab takes the Core modules they cover
+ *   through them, never by another path
+ * @position Node test over the lint config and source, so it needs no build
  */
 
+import fs from 'node:fs';
 import {createRequire} from 'node:module';
 import path from 'node:path';
 import {describe, expect, it} from 'vitest';
@@ -73,5 +75,67 @@ describe('core internal entries in lint', () => {
         file,
       ).toEqual([]);
     }
+  });
+});
+
+/**
+ * Core modules the internal entries cover: Lab takes these only through
+ * `@astryxdesign/core/internal/touch` or `internal/motion`. A module joins
+ * this list when it joins an entry.
+ */
+const COVERED = [
+  'gestures/PanGestureRecognizer',
+  'gestures/types',
+  'utils/touchPresentation',
+  'motion/animator',
+  'motion/bezier',
+  'motion/spring',
+  'motion/rubberBand',
+  'motion/uikit',
+  'motion/uikit/gestures',
+  'motion/uikit/navigation',
+  'motion/uikit/scroll',
+  'motion/uikit/springs',
+  'motion/uikit/timing',
+  'touch-support/touchModule',
+];
+
+/** Every file under `dir` whose name matches `pattern`. */
+function filesUnder(dir, pattern) {
+  const found = [];
+  for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== 'node_modules' && entry.name !== 'dist') {
+        found.push(...filesUnder(full, pattern));
+      }
+    } else if (pattern.test(entry.name)) {
+      found.push(full);
+    }
+  }
+  return found;
+}
+
+describe('Lab imports of the covered Core modules', () => {
+  it('go through the internal entries', () => {
+    const outside = [];
+    for (const file of filesUnder(
+      path.join(REPO, 'packages/lab/src'),
+      /\.(ts|tsx)$/,
+    )) {
+      const source = fs.readFileSync(file, 'utf8');
+      for (const [, specifier] of source.matchAll(
+        /\bfrom\s+['"]([^'"]+)['"]/g,
+      )) {
+        const module = specifier
+          .replace(/^@astryxdesign\/core\//, '')
+          .replace(/^(?:\.\.\/)+core\/src\//, '')
+          .replace(/\.(js|ts|tsx)$/, '');
+        if (module !== specifier && COVERED.includes(module)) {
+          outside.push(`${path.relative(REPO, file)}: ${specifier}`);
+        }
+      }
+    }
+    expect(outside).toEqual([]);
   });
 });

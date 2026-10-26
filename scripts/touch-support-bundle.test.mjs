@@ -8,8 +8,9 @@
  * @output Pins architecture:react-component-runtime INV13's bundle and
  *   boundary claims: Core's public entries carry none of the touch and gesture
  *   module until a component imports it; two components that import it share
- *   one copy per page; only the internal `internal/touch` entry reaches it,
- *   and no consumer doc or component `import()` does
+ *   one copy per page; only the internal entries reach it, and each ships a
+ *   component only what it imports; no consumer doc or component `import()`
+ *   reaches the internals
  * @position Node test over source, so it needs no build
  */
 
@@ -133,12 +134,60 @@ export const ${name} = () => new touchModule.GestureArena();
   });
 });
 
+describe('the internal entries in bundles', () => {
+  it('ship a component only the touch code it imports', () => {
+    const bytes = Object.assign(
+      {},
+      ...outputsOf([
+        entryWith(
+          'touch-query.ts',
+          `import {TOUCH_QUERY} from ${JSON.stringify(
+            path.join(CORE_SRC, 'internal/touch.ts'),
+          )};
+export const query = TOUCH_QUERY;
+`,
+        ),
+      ]),
+    );
+    expect(
+      bytes['packages/core/src/utils/touchPresentation.ts'],
+    ).toBeGreaterThan(0);
+    expect(bytesOf(bytes)).toEqual([]);
+  });
+
+  it('ship a component only the motion it imports', () => {
+    const bytes = Object.assign(
+      {},
+      ...outputsOf([
+        entryWith(
+          'motion-curve.ts',
+          `import {cubicBezier} from ${JSON.stringify(
+            path.join(CORE_SRC, 'internal/motion.ts'),
+          )};
+export const ease = cubicBezier(0.25, 0.1, 0.25, 1);
+`,
+        ),
+      ]),
+    );
+    expect(bytes['packages/core/src/motion/bezier.ts']).toBeGreaterThan(0);
+    expect(
+      bytesOf(
+        bytes,
+        /^packages\/core\/src\/motion\/(animator|spring|rubberBand|uikit\/)/,
+      ),
+    ).toEqual([]);
+  });
+});
+
 describe('the touch module internals', () => {
-  it('have no entry in the exports map beside the internal touch entry', () => {
+  it('have no entry in the exports map beside the internal entries', () => {
     const {exports} = JSON.parse(
       fs.readFileSync(path.join(REPO, 'packages/core/package.json'), 'utf8'),
     );
     expect(exports['./internal/touch']?.source).toBe('./src/internal/touch.ts');
+    expect(exports['./internal/motion']?.source).toBe(
+      './src/internal/motion.ts',
+    );
     const other = Object.keys(exports).filter(key =>
       /^\.\/(gestures|motion|touch-support)(\/|$)/.test(key),
     );

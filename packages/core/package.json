@@ -819,6 +819,11 @@
       "types": "./dist/Markdown/remark.d.ts",
       "default": "./dist/Markdown/remark.js"
     },
+    "./internal/motion": {
+      "source": "./src/internal/motion.ts",
+      "types": "./dist/internal/motion.d.ts",
+      "default": "./dist/internal/motion.js"
+    },
     "./internal/touch": {
       "source": "./src/internal/touch.ts",
       "types": "./dist/internal/touch.d.ts",
