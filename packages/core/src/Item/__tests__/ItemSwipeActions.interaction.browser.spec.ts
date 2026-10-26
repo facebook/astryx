@@ -623,8 +623,9 @@ test('the settle keeps advancing every frame while the main thread is blocked', 
     tracked,
     {from: block.from, to: Math.min(block.to, settle.to)},
     // Within 8 px of its end a critically damped settle moves less than a
-    // pixel a frame, finer than the screencast resolves.
-    {axis: 'x', settledWithin: 8},
+    // pixel a frame, finer than the screencast resolves. The judged part of
+    // the block is the settle's own motion, not a sliver: 16 frames at least.
+    {axis: 'x', settledWithin: 8, minJudgedFrames: 16},
   );
   await writeEvidence(
     'busy-main-thread/item-swipe-settle',
@@ -655,12 +656,12 @@ test('the settle keeps advancing every frame while the main thread is blocked', 
     data: t => ({x: tracked.find(f => f.t === t)?.box?.x ?? -1}),
   });
   await film.write(testInfo, {block, settle});
-  // The judged part of the block is the settle's own motion, not a sliver.
-  expect(proof.expectedFrames).toBeGreaterThan(15);
-  expect(proof.medianFrameMs).toBeLessThan(20);
+  // The harness's verdict (no stall over two dropped frames, nearly every
+  // expected frame moved, the judged part long enough), in frames at the
+  // screencast's own cadence rather than its delivery rate.
+  expect(proof.verdict.failures, proof.summary).toEqual([]);
   expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
   expect(proof.changed).toBeGreaterThanOrEqual(proof.frames - 3);
-  expect(proof.longestStallMs).toBeLessThan(40);
   expect(proof.monotonic).toBe(true);
 });
 
@@ -1064,7 +1065,10 @@ test('a confirmed full swipe slides out on every frame while the main thread is 
   const proof = busyWindowProof(
     tracked,
     {from: block.from, to: block.to},
-    {axis: 'x', settledWithin: 8},
+    // The slide-out is quick (it keeps the tracking spring's velocity) and its
+    // last 25 px leave the list's clip, so the judged part is shorter than a
+    // settle's: 10 frames at least.
+    {axis: 'x', settledWithin: 8, minJudgedFrames: 10},
   );
   await writeEvidence(
     'busy-main-thread/item-swipe-full-swipe',
@@ -1094,18 +1098,15 @@ test('a confirmed full swipe slides out on every frame while the main thread is 
     data: t => ({x: tracked.find(f => f.t === t)?.box?.x ?? -1}),
   });
   await film.write(testInfo, {block});
-  // The slide-out is quick (it keeps the tracking spring's velocity) and its
-  // last 25 px leave the list's clip, so the judged part is shorter than a
-  // settle's: at least 10 frames, over more than 100 px of the row's travel.
+  // Over more than 100 px of the row's travel, with the harness's verdict
+  // judged in frames at the screencast's own cadence.
   const inBlock = tracked
     .filter(f => f.t >= block.from && f.t <= block.to && f.box != null)
     .map(f => f.box?.x as number);
   expect(Math.max(...inBlock) - Math.min(...inBlock)).toBeGreaterThan(100);
-  expect(proof.expectedFrames).toBeGreaterThanOrEqual(10);
-  expect(proof.medianFrameMs).toBeLessThan(20);
+  expect(proof.verdict.failures, proof.summary).toEqual([]);
   expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
   expect(proof.changed).toBeGreaterThanOrEqual(proof.frames - 3);
-  expect(proof.longestStallMs).toBeLessThan(40);
   expect(proof.monotonic).toBe(true);
 });
 
