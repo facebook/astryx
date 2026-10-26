@@ -24,13 +24,15 @@ export const docs = {
     {
       name: 'variant',
       type: "'default' | 'terminal'",
-      description: "Visual variant style: 'default' uses theme surface background, 'terminal' uses fixed dark background.",
+      description:
+        "Visual variant style: 'default' uses theme surface background, 'terminal' uses fixed dark background.",
       default: "'default'",
     },
     {
       name: 'isFollowing',
       type: 'boolean',
-      description: 'Controlled follow-pinning state to auto-scroll to the newest entry.',
+      description:
+        'Controlled follow-pinning state to auto-scroll to the newest entry.',
     },
     {
       name: 'onFollowChange',
@@ -57,7 +59,8 @@ export const docs = {
     {
       name: 'renderEntry',
       type: '(entry: LogEntry) => ReactNode',
-      description: 'Custom render function for replacing individual row layout.',
+      description:
+        'Custom render function for replacing individual row layout.',
     },
     {
       name: 'xstyle',
