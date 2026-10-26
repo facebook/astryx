@@ -35,6 +35,7 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -52,7 +53,9 @@ import {
 import {useCollapsible} from './useCollapsible';
 import {
   applyLayoutChangeTransition,
+  holdLayoutExit,
   playLayoutChange,
+  releaseLayoutExit,
   reportLayoutChange,
   type AnimatedLayout,
 } from '../motion/animatedLayout';
@@ -371,6 +374,13 @@ export function Collapsible({
     () => reportLayoutChange(animatedLayout, contentRef),
     [animatedLayout],
   );
+  // A measured close keeps the content rendered (inert, out of flow) while it
+  // plays its exit, then hides it (`spec:AST-105` FR4).
+  const [isExiting, setIsExiting] = useState(false);
+  const endExit = useCallback(() => {
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- the content was kept rendered only to play its exit; an exit that lands at once hides it before the frame paints
+    setIsExiting(false);
+  }, []);
   // Before a change commits: the chevron (the trigger's Icon, its `icon`
   // theming target) turns on the glide's motion, and the content after this
   // Collapsible is measured where it is now.
@@ -381,7 +391,11 @@ export function Collapsible({
         null,
     );
     layoutChange.measureBefore();
-  }, [animatedLayout, layoutChange]);
+    if (animatedLayout != null) {
+      // Closing keeps the content for its exit; opening mid-exit ends it.
+      setIsExiting(isOpen);
+    }
+  }, [animatedLayout, layoutChange, isOpen]);
   // In a group, a toggle can change other items too (opening one in single
   // mode closes the open one): the group measures every item it changes, so
   // the rows between glide with the rest.
@@ -404,12 +418,38 @@ export function Collapsible({
       return;
     }
     wasOpenRef.current = isOpen;
-    // A change nothing measured (an owner set `isOpen` directly) lands at
-    // once, entrance included, so the content and what follows stay in step.
-    if (layoutChange.animate() && isOpen && contentRef.current != null) {
-      playLayoutChange(animatedLayout, contentRef.current);
+    const content = contentRef.current;
+    if (content == null) {
+      return;
     }
-  }, [isOpen, layoutChange, animatedLayout]);
+    // A change nothing measured (an owner set `isOpen` directly) lands at
+    // once, entrance and exit included, so the content and what follows stay
+    // in step.
+    const isMeasured = layoutChange.animate();
+    if (isOpen) {
+      // Opened again mid-exit: the content takes its place in flow.
+      releaseLayoutExit(content);
+      if (isMeasured) {
+        playLayoutChange(animatedLayout, content);
+      }
+      return;
+    }
+    const isHeld =
+      isExiting &&
+      isMeasured &&
+      holdLayoutExit(animatedLayout, content, endExit);
+    if (isExiting && !isHeld) {
+      // An exit that lands at once (unmeasured, out of view, or Reduce Motion
+      // with a fine pointer): hide the content before this frame paints.
+      endExit();
+    }
+  }, [isOpen, isExiting, layoutChange, animatedLayout, endExit]);
+  useLayoutEffect(() => {
+    if (!isOpen && !isExiting && contentRef.current != null) {
+      // Hidden again after its exit: drop the exit's inline values.
+      releaseLayoutExit(contentRef.current);
+    }
+  }, [isOpen, isExiting]);
 
   // Activation is blocked by this guard rather than the native `disabled`
   // attribute, so the trigger keeps `aria-disabled` semantics and stays
@@ -513,6 +553,8 @@ export function Collapsible({
       <div
         ref={contentRef}
         id={contentId}
+        inert={isExiting && !isOpen ? true : undefined}
+        aria-hidden={isExiting && !isOpen ? true : undefined}
         {...mergeProps(
           themeProps('collapsible-content', {
             density: density ?? undefined,
@@ -521,7 +563,7 @@ export function Collapsible({
           stylex.props(
             styles.content,
             density != null && contentDensity[density],
-            !isOpen && styles.contentHidden,
+            !isOpen && !isExiting && styles.contentHidden,
           ),
         )}>
         {presentation != null ? (

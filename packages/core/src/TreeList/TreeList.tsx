@@ -38,7 +38,9 @@ import {themeProps} from '../utils/themeProps';
 import {useTreeFocusInternal} from '../hooks/useTreeFocus';
 import {
   applyLayoutChangeTransition,
+  holdLayoutExit,
   playLayoutChange,
+  releaseLayoutExit,
   reportLayoutChange,
   type AnimatedLayout,
   type LayoutChange,
@@ -240,11 +242,32 @@ export function TreeList({
   // (`architecture:react-component-runtime` INV12). Read through a ref
   // because the tree element comes from the focus hook below.
   const treeElementRef = useRef<HTMLUListElement | null>(null);
-  const pendingLayoutRef = useRef<{change: LayoutChange; id: string} | null>(
-    null,
+  const pendingLayoutRef = useRef<{
+    change: LayoutChange;
+    id: string;
+    isExpanding: boolean;
+  } | null>(null);
+  // Rows whose measured collapse is still playing its exit: their child group
+  // stays rendered (inert, out of flow) until it finishes (`spec:AST-105` FR4).
+  const [exitingIds, setExitingIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
   );
+  const endExit = useCallback((id: string) => {
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- the group was kept rendered only to play its exit; an exit that lands at once removes it before the frame paints
+    setExitingIds(prev => {
+      if (!prev.has(id)) {
+        return prev;
+      }
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  }, []);
   const handleToggle = useCallback(
     (id: string) => {
+      const isExpanded = expandedKeysOverride.has(id)
+        ? (expandedKeysOverride.get(id) ?? false)
+        : expandedKeysFromProps.has(id);
       const row = treeElementRef.current?.querySelector<HTMLElement>(
         `[data-tree-id="${CSS.escape(id)}"]`,
       );
@@ -257,18 +280,30 @@ export function TreeList({
         );
         const change = reportLayoutChange(animatedLayout, () => row);
         change.measureBefore();
-        pendingLayoutRef.current = {change, id};
+        pendingLayoutRef.current = {change, id, isExpanding: !isExpanded};
+      }
+      if (animatedLayout != null) {
+        // A collapse keeps the group for its exit; expanding mid-exit ends it.
+        setExitingIds(prev => {
+          if (isExpanded === prev.has(id)) {
+            return prev;
+          }
+          const next = new Set(prev);
+          if (isExpanded) {
+            next.add(id);
+          } else {
+            next.delete(id);
+          }
+          return next;
+        });
       }
       setExpandedKeysOverride(prev => {
         const next = new Map(prev);
-        const isCurrentlyExpanded = prev.has(id)
-          ? (prev.get(id) ?? false)
-          : expandedKeysFromProps.has(id);
-        next.set(id, !isCurrentlyExpanded);
+        next.set(id, !isExpanded);
         return next;
       });
     },
-    [expandedKeysFromProps, animatedLayout],
+    [expandedKeysOverride, expandedKeysFromProps, animatedLayout],
   );
 
   // ---------------------------------------------------------------------------
@@ -311,16 +346,29 @@ export function TreeList({
       return;
     }
     pendingLayoutRef.current = null;
-    if (!pending.change.animate()) {
-      return;
-    }
+    const isMeasured = pending.change.animate();
     const group = treeElementRef.current?.querySelector<HTMLElement>(
       `[data-tree-id="${CSS.escape(pending.id)}"] > [role="group"]`,
     );
-    if (group != null) {
-      playLayoutChange(animatedLayout, group);
+    if (pending.isExpanding) {
+      if (group != null) {
+        // Expanded again mid-exit: the group takes its place in flow.
+        releaseLayoutExit(group);
+        if (isMeasured) {
+          playLayoutChange(animatedLayout, group);
+        }
+      }
+      return;
     }
-  }, [expandedKeysOverride, animatedLayout]);
+    const isHeld =
+      isMeasured &&
+      group != null &&
+      holdLayoutExit(animatedLayout, group, () => endExit(pending.id));
+    if (!isHeld) {
+      // An exit that lands at once: the group goes in this commit.
+      endExit(pending.id);
+    }
+  }, [expandedKeysOverride, animatedLayout, endExit]);
 
   const {treeRef, handleKeyDown, handleFocus} =
     useTreeFocusInternal<HTMLUListElement>({
@@ -330,6 +378,8 @@ export function TreeList({
       // Rows are named by their label (AR1); typeahead matches that label, not
       // the chevron toggle, start content or description.
       matchLabelledBy: true,
+      // Rows of a group still playing its collapse are gone already.
+      itemSelector: '[role="treeitem"]:not([data-tree-exiting] *)',
     });
   useLayoutEffect(() => {
     treeElementRef.current = treeRef.current;
@@ -382,8 +432,9 @@ export function TreeList({
         ? [...ancestorsIsLast, isLast]
         : ancestorsIsLast;
 
+      const isExiting = exitingIds.has(item.id);
       const renderedChildren =
-        isExpanded && hasChildren
+        (isExpanded || isExiting) && hasChildren
           ? renderItems(
               item.children ?? [],
               nestedLevel + 1,
@@ -413,6 +464,7 @@ export function TreeList({
           isLast={isLast}
           ancestorsIsLast={ancestorsIsLast}
           isExpanded={isExpanded}
+          isExiting={isExiting && !isExpanded}
           onToggle={handleToggle}
           density={density}
           variant={variant}

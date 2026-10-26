@@ -351,6 +351,11 @@ export interface TreeListItemInternalProps {
   isLast: boolean;
   ancestorsIsLast: ReadonlyArray<boolean>;
   isExpanded: boolean;
+  /**
+   * The row collapsed and its child group is playing its exit: the group
+   * stays rendered, inert and hidden from assistive technology, until it ends.
+   */
+  isExiting?: boolean;
   onToggle?: (id: string) => void;
   density: TreeListDensity;
   /**
@@ -397,6 +402,7 @@ export function TreeListItem({
   isLast,
   ancestorsIsLast,
   isExpanded,
+  isExiting = false,
   onToggle,
   density,
   variant,
@@ -703,8 +709,13 @@ export function TreeListItem({
           <div {...stylex.props(styles.indentedContent)}>{innerContent}</div>
         </div>
       </div>
-      {isExpanded && renderedChildren != null && (
-        <ul role="group" {...stylex.props(styles.childGroup)}>
+      {(isExpanded || isExiting) && renderedChildren != null && (
+        <ul
+          role="group"
+          inert={isExiting ? true : undefined}
+          aria-hidden={isExiting ? true : undefined}
+          data-tree-exiting={isExiting ? '' : undefined}
+          {...stylex.props(styles.childGroup)}>
           {renderedChildren}
         </ul>
       )}

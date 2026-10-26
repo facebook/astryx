@@ -15,7 +15,7 @@
  */
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {render, renderHook, screen} from '@testing-library/react';
+import {act, render, renderHook, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useRef, type ReactNode} from 'react';
 import {Collapsible} from '../Collapsible/Collapsible';
@@ -28,13 +28,24 @@ import {
 } from '../hooks/useAnimatedLayout';
 
 let animated: Element[] = [];
+/** Each animation's finish listener, by the element it plays on. */
+let finishes = new Map<Element, () => void>();
 const originalAnimate = Element.prototype.animate;
 
 beforeEach(() => {
   animated = [];
+  finishes = new Map();
   Element.prototype.animate = function (this: Element) {
     animated.push(this);
-    return {cancel() {}, addEventListener() {}} as unknown as Animation;
+    const element = this;
+    return {
+      cancel() {},
+      addEventListener(type: string, listener: () => void) {
+        if (type === 'finish') {
+          finishes.set(element, listener);
+        }
+      },
+    } as unknown as Animation;
   };
 });
 
@@ -238,5 +249,102 @@ describe('Collapsible changes another component made (spec:AST-105 FR3)', () => 
     );
     await flush();
     expect(animated).toEqual([]);
+  });
+});
+
+describe("a close plays the content's exit (spec:AST-105 FR4)", () => {
+  it("keeps a closing Collapsible's content rendered, inert and out of flow until its exit ends", async () => {
+    const user = userEvent.setup();
+    render(
+      <Area withHandle>
+        {layout => (
+          <Collapsible trigger="Details" defaultIsOpen animatedLayout={layout}>
+            Shown content
+          </Collapsible>
+        )}
+      </Area>,
+    );
+    stubGeometry();
+    const trigger = screen.getByRole('button', {name: 'Details'});
+    const content = document.getElementById(
+      trigger.getAttribute('aria-controls') ?? '',
+    ) as HTMLElement;
+    vi.spyOn(content, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 40, 400, 40),
+    );
+    await user.click(trigger);
+    await flush();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    // Still on screen for the exit, but out of reach and out of flow.
+    expect(getComputedStyle(content).display).not.toBe('none');
+    expect(content).toHaveAttribute('inert');
+    expect(content).toHaveAttribute('aria-hidden', 'true');
+    expect(content.style.position).toBe('absolute');
+    expect(animated).toContain(screen.getByTestId('after'));
+    act(() => finishes.get(content)?.());
+    expect(getComputedStyle(content).display).toBe('none');
+    expect(content).not.toHaveAttribute('inert');
+    expect(content.style.position).toBe('');
+  });
+
+  it("keeps a collapsing TreeList row's child group until its exit ends, out of the keyboard order", async () => {
+    const user = userEvent.setup();
+    render(
+      <Area withHandle>
+        {layout => (
+          <TreeList
+            items={[
+              {
+                id: 'src',
+                label: 'src',
+                isExpanded: true,
+                children: [{id: 'index', label: 'index.ts'}],
+              },
+            ]}
+            animatedLayout={layout}
+          />
+        )}
+      </Area>,
+    );
+    stubGeometry();
+    const groupOf = () =>
+      document.querySelector<HTMLElement>(
+        '[data-tree-id="src"] > [role="group"]',
+      );
+    vi.spyOn(groupOf() as HTMLElement, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 40, 400, 40),
+    );
+    await user.click(
+      document.querySelector<HTMLElement>('[data-tree-toggle]') ??
+        document.body,
+    );
+    await flush();
+    const group = groupOf();
+    expect(group).not.toBeNull();
+    expect(group).toHaveAttribute('inert');
+    expect(group).toHaveAttribute('aria-hidden', 'true');
+    expect(group?.style.position).toBe('absolute');
+    act(() => finishes.get(group as HTMLElement)?.());
+    expect(groupOf()).toBeNull();
+  });
+
+  it('lands a close at once without a handle', async () => {
+    const user = userEvent.setup();
+    render(
+      <Area withHandle={false}>
+        {layout => (
+          <Collapsible trigger="Details" defaultIsOpen animatedLayout={layout}>
+            Shown content
+          </Collapsible>
+        )}
+      </Area>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Details'});
+    await user.click(trigger);
+    const content = document.getElementById(
+      trigger.getAttribute('aria-controls') ?? '',
+    ) as HTMLElement;
+    expect(getComputedStyle(content).display).toBe('none');
+    expect(content).not.toHaveAttribute('inert');
   });
 });
