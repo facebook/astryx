@@ -2,14 +2,15 @@
 
 /**
  * @file wheelMotion.ts
- * @input The Wheel's DOM (its drum rows and its band strip), its layout, and
+ * @input A wheel's DOM (its drum rows and its band strip), its layout, and
  *   curves from wheelPhysics.ts
  * @output Exports WheelMotion: the one owner of a wheel's offset. It writes
  *   the rows for a drag frame by frame, plays any curve on the compositor
  *   (baked per row by wheelDrum.ts), reads the offset on screen at any
  *   instant, stops a motion where it is, ticks, and reports arrival
- * @position Imperative engine of the Wheel (Wheel.tsx). Never renders React:
- *   a gesture or a motion writes styles and nothing else
+ * @position Imperative engine of the touch picker wheel (PickerWheel.tsx).
+ *   Never renders React: a gesture or a motion writes styles and nothing
+ *   else
  *
  * A motion is a set of Web Animations, one per row that shows during it plus
  * one for the band strip, all baked from the same samples of the same curve
@@ -23,9 +24,9 @@
  * element without a compositing layer through a main-thread block.
  *
  * SYNC: When modified, update:
- * - /packages/core/src/DateInput/Wheel.tsx
- * - /packages/core/src/DateInput/Wheel.test.tsx
  * - /packages/core/src/DateInput/wheelMotion.test.ts
+ * - /packages/core/src/DateInput/PickerWheel.tsx
+ * - /packages/core/src/DateInput/PickerWheel.test.tsx
  */
 
 import {canVibrate, playHaptic} from '../gestures/haptics';

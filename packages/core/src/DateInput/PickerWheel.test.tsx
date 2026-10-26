@@ -234,6 +234,30 @@ describe('PickerWheel — at rest', () => {
     expect(column.getAttribute('aria-activedescendant')).toBe(option('08').id);
   });
 
+  it('rests back on a committed value outside the bounds and commits nothing', () => {
+    // component:DateInput FR13: a wheel resting on its committed row commits
+    // nothing, even outside the bounds, as the scrolling column keeps it.
+    const {column, row, onChange} = renderWheel({value: 8});
+    advance(2000);
+    // One gesture: up a row onto 09 (enabled), back down onto 08, held
+    // still, lifted.
+    const away = 10 + ROW;
+    touch('touchstart', column, 100);
+    for (let i = 1; i <= 15; i++) {
+      advance(40);
+      touch('touchmove', column, 100 - (away * i) / 15);
+    }
+    for (let i = 1; i <= 15; i++) {
+      advance(40);
+      touch('touchmove', column, 100 - away + (away * i) / 15);
+    }
+    advance(300);
+    touch('touchend', column, 100);
+    advance(2000);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(row('08').style.transform).toBe(rowTransform(0));
+  });
+
   it('shows a value set from outside without motion', () => {
     const {rerender, onChange, row} = renderWheel();
     rerender(
@@ -558,19 +582,42 @@ describe('PickerWheel — under reduced motion', () => {
     Reflect.deleteProperty(Element.prototype, 'animate');
   });
 
-  /** The wheel animated opacity alone, on the Reduce Motion fade. */
+  /**
+   * Nothing travels, on the Reduce Motion fade (design:reduced-motion DR2):
+   * the drawing's opacity dips out and back in, and the rows and the strip
+   * hold where they are until the fade's midpoint, then step onto their
+   * rows, on the compositor.
+   */
   function expectFadesOnly() {
-    expect(animations.length).toBeGreaterThan(0);
+    let fades = 0;
     for (const {keyframes, options} of animations) {
-      for (const frame of keyframes) {
-        expect(
+      const properties = new Set(
+        keyframes.flatMap(frame =>
           Object.keys(frame).filter(
             key => key !== 'offset' && key !== 'easing',
           ),
-        ).toEqual(['opacity']);
+        ),
+      );
+      if (!properties.has('transform')) {
+        expect([...properties]).toEqual(['opacity']);
+        expect(options.duration).toBe(FADE_MS);
+        fades += 1;
+        continue;
       }
-      expect(options.duration).toBe(FADE_MS);
+      // A landing: the origin held, then the destination, stepping at the
+      // fade's midpoint.
+      expect(keyframes).toHaveLength(4);
+      const [origin, held, landed, end] = keyframes;
+      expect(origin.offset).toBe(0);
+      expect(held).toEqual({...origin, offset: held.offset});
+      expect(landed.offset).toBe(held.offset);
+      expect(end).toEqual({...landed, offset: 1});
+      expect(Number(held.offset) * Number(options.duration)).toBeCloseTo(
+        FADE_MS / 2,
+        6,
+      );
     }
+    expect(fades).toBeGreaterThan(0);
   }
 
   it('coasts a fling as momentum, then commits it', () => {

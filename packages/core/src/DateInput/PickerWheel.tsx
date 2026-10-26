@@ -37,7 +37,8 @@
  * - The value commits when the wheel comes to rest, as UIPickerView's
  *   didSelectRow does. A row `resolveRest` moves away from (by default, a
  *   disabled one: outside the bounds) is followed by a turn onto the row it
- *   names, which then commits.
+ *   names, which then commits; a rest on the committed row commits nothing,
+ *   even outside the bounds (component:DateInput FR13).
  * - Each row reaching the band ticks a selection haptic where the browser
  *   can vibrate (not iOS Safari, which cannot play haptics from script).
  * - Under reduced motion (design:reduced-motion DR2) the drag follows the
@@ -534,13 +535,18 @@ export function PickerWheel({
       const current = latestRef.current;
       const position = nearestIndex(offset, current.layout);
       const row = wrapIndex(position, current.options.length);
-      const committed = Math.max(
-        0,
-        current.options.findIndex(option => option.value === current.value),
+      const committed = current.options.findIndex(
+        option => option.value === current.value,
       );
-      const resolved = current.resolveRest
-        ? current.resolveRest(row)
-        : nearestEnabledIndex(current.options, row, committed);
+      // Resting on the committed row is not a stop to correct
+      // (component:DateInput FR13): a committed value outside the bounds stays
+      // until a person moves the wheel off it, as in the scrolling column.
+      const resolved =
+        row === committed
+          ? row
+          : current.resolveRest
+            ? current.resolveRest(row)
+            : nearestEnabledIndex(current.options, row, Math.max(0, committed));
       if (resolved !== row && current.options[resolved] != null) {
         const target = position + (resolved - row);
         play(turnCurve(columnRef.current, offset, target * ROW_HEIGHT), {
