@@ -294,8 +294,11 @@ export function useAlertMotion({
       // starting values and moves from rest with no start time: the browser
       // starts it at the commit that first shows it, as Core Animation starts
       // an animation at its transaction's commit, and the animator promotes
-      // it in this task, so Mobile Safari runs it on the compositor from that
-      // first frame through a busy main thread (measured on iOS 26.2).
+      // it in this task. Chromium runs it on the compositor from that first
+      // frame through a busy main thread (the busy-thread browser proof). In
+      // iOS Safari an animation created in the task that first displays a
+      // dialog can stay on the main thread (motion/animator.ts, known limits);
+      // that case is not yet proven here.
       panel.set({opacity: 0, scale: presentScaleFrom(elementRef.current)});
       backdrop.set({opacity: 0});
       holdWhilePresenting(present(panel, backdrop));
