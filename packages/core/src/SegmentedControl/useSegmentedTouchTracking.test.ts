@@ -4,12 +4,17 @@
  * @file useSegmentedTouchTracking.test.ts
  * @input useSegmentedTouchTracking.ts's segment resolution
  * @output Proof of which segment a finger counts for, the rule the
- *   action-group tracker resolves the highlight and the commit with
+ *   action-group tracker resolves the highlight and the commit with; and of
+ *   which click the late-click guard swallows
  * @position Testing for /packages/core/src/SegmentedControl/useSegmentedTouchTracking.ts
  */
 
 import {describe, expect, it} from 'vitest';
-import {segmentTargetAt, type SegmentSpan} from './useSegmentedTouchTracking';
+import {
+  isLateClick,
+  segmentTargetAt,
+  type SegmentSpan,
+} from './useSegmentedTouchTracking';
 
 function spans(
   layout: ReadonlyArray<[string, number, number]>,
@@ -62,5 +67,35 @@ describe('segmentTargetAt', () => {
     expect(valueAt(130, segments)).toBeNull();
     expect(valueAt(111, segments)).toBeNull();
     expect(valueAt(109, segments)).toBe('grid');
+  });
+});
+
+describe('isLateClick', () => {
+  const segment = document.createElement('button');
+  const label = document.createElement('span');
+  segment.append(label);
+
+  it('swallows the browser\u2019s own trusted click on the segment', () => {
+    expect(
+      isLateClick({isTrusted: true, detail: 1, target: label}, segment),
+    ).toBe(true);
+  });
+
+  it('lets a keyboard\u2019s or assistive technology\u2019s activation (detail 0) through (AST-094 FR21)', () => {
+    expect(
+      isLateClick({isTrusted: true, detail: 0, target: label}, segment),
+    ).toBe(false);
+  });
+
+  it('lets a script\u2019s click and a click elsewhere through', () => {
+    expect(
+      isLateClick({isTrusted: false, detail: 1, target: label}, segment),
+    ).toBe(false);
+    expect(
+      isLateClick(
+        {isTrusted: true, detail: 1, target: document.createElement('div')},
+        segment,
+      ),
+    ).toBe(false);
   });
 });

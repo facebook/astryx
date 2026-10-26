@@ -154,11 +154,10 @@ const styles = stylex.create({
   // same change.
   touchPresentation: {
     transitionProperty: 'none',
-    // The pressed state (`segmented-control-item` target, `pressed`): a
-    // finger on an unselected segment dims it to this opacity, UIKit's
-    // measured 0.2 by default; a theme's `opacity` there retunes the dim. The
-    // selection motion reads it and fades the segment there on the
-    // compositor (useSegmentedSelectionMotion.ts).
+    // The pressed dim: a finger on an unselected segment dims it to UIKit's
+    // measured 0.2. It is internal, not a theming state. The selection
+    // motion reads it and fades the segment there on the compositor
+    // (useSegmentedSelectionMotion.ts).
     opacity: {
       default: null,
       ':is([data-pressed="pressed"])': 0.2,

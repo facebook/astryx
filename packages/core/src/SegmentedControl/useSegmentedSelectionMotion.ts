@@ -23,8 +23,9 @@
  * UISegmentedControl slides one selection indicator from the old segment to
  * the new one on a spring (`segmentedControl.selectionSpring`), after a tap and
  * after a programmatic change alike. Every spring, clock and curve here is
- * UIKit's measured value, an internal constant of the table: no theme
- * retunes them.
+ * UIKit's measured value, played through its internal motion role
+ * (`segmented.*`, `spec:AST-094` FR4): no theme retunes them while the roles
+ * stay internal (DEC-11).
  *
  * The selected segment paints its own raised surface at rest, so themes keep
  * styling it as they always have. For the slide the lens takes over: the
@@ -144,8 +145,8 @@ const FACE_HYSTERESIS_RATIO = 0.25;
 const FACE_HYSTERESIS_MIN_PX = 8;
 
 /**
- * The dim the pressed state's opacity sets (SegmentedControlItem.tsx gives
- * UIKit's 0.2; a theme may retune it), or UIKit's when it cannot be read.
+ * The dim the pressed segment's style sets (SegmentedControlItem.tsx gives
+ * UIKit's internal 0.2), or UIKit's when it cannot be read.
  */
 function pressedOpacityOf(segment: HTMLElement): number {
   const view = segment.ownerDocument.defaultView;

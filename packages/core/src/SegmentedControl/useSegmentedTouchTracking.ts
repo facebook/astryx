@@ -140,6 +140,23 @@ function awaitBrowserClick(
  * same activation, so it is swallowed before any handler sees it. Only until
  * the next press or key: any later click belongs to them.
  */
+/**
+ * Whether `event` is the browser's own late click on `segment` for the
+ * activation the tracker already ran. A keyboard's or assistive
+ * technology's activation (`detail === 0`) is never one: it always passes
+ * (`spec:AST-094` FR21), as the shared tracker's swallower lets it.
+ */
+export function isLateClick(
+  event: Pick<MouseEvent, 'isTrusted' | 'detail' | 'target'>,
+  segment: HTMLElement,
+): boolean {
+  return (
+    event.isTrusted &&
+    event.detail !== 0 &&
+    segment.contains(event.target as Node | null)
+  );
+}
+
 function swallowLateClick(segment: HTMLElement): void {
   const view = segment.ownerDocument.defaultView;
   if (view == null) {
@@ -152,7 +169,7 @@ function swallowLateClick(segment: HTMLElement): void {
     view.removeEventListener('keydown', stop, true);
   };
   const swallow = (event: MouseEvent) => {
-    if (!event.isTrusted || !segment.contains(event.target as Node | null)) {
+    if (!isLateClick(event, segment)) {
       return;
     }
     event.preventDefault();
