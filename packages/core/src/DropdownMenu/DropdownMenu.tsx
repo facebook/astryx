@@ -1177,7 +1177,14 @@ function DropdownMenuPopover({
     isUikitMotionRef.current = isUikitMotion;
     const trigger = buttonRef.current;
     if (surface != null && trigger != null) {
-      placeOverTrigger(surface, trigger, coversTriggerRef.current);
+      placeOverTrigger(
+        surface,
+        trigger,
+        coversTriggerRef.current,
+        // The menu's own scrolling element (its first role="menu"; a nested
+        // flyout comes after it in DOM order).
+        surface.querySelector<HTMLElement>('[role="menu"]'),
+      );
       const motion = getSurfaceMotion(surface);
       if (isUikitMotion) {
         motion.enter(() => {
