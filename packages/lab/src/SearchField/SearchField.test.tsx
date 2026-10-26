@@ -13,7 +13,8 @@
  *   activation it committed (a tab bar's tap); controlled and uncontrolled;
  *   the bottom placement's geometry and its lift above the software
  *   keyboard (spec:AST-099 FR2; none where the page has the VirtualKeyboard
- *   API, or under a mouse)
+ *   API, or under a mouse); the field's background is pseudo-elements, so
+ *   the field holds only the magnifier, the input and the trailing end
  * @position Testing; the motion is proven in real engines by
  *   __tests__/SearchField.interaction.browser.spec.ts
  */
@@ -184,15 +185,13 @@ describe('SearchField', () => {
     document.body.appendChild(host);
     try {
       const end = host.querySelector('[data-search-field-end]') as HTMLElement;
-      const middle = host.querySelector(
-        '[data-search-field-middle]',
-      ) as HTMLElement;
-      // The trailing end moved in, and the middle short, by the close button
-      // and its gap.
+      // The trailing end moved in by the close button and its gap. (The
+      // middle, the field's ::after, moves short by the same 55 px; jsdom
+      // computes no pseudo-element style, so the browser proof of the CSS
+      // pose checks it.)
       const {closeGap, closeSize} = search.stacked;
       expect(closeGap + closeSize).toBe(55);
       expect(getComputedStyle(end).marginInlineEnd).toBe('55px');
-      expect(getComputedStyle(middle).marginInlineEnd).toBe('55px');
     } finally {
       host.remove();
     }
@@ -203,6 +202,26 @@ describe('SearchField', () => {
     expect(root).toHaveAttribute('data-search-field-placed');
     const end = root.querySelector('[data-search-field-end]') as HTMLElement;
     expect(getComputedStyle(end).marginInlineEnd).not.toBe('55px');
+  });
+
+  it('draws its background as pseudo-elements: the field holds only the magnifier, the input and the trailing end (architecture:component-style-authoring INV7)', () => {
+    render(<Field />);
+    const field = box().parentElement as HTMLElement;
+    const parts = [...field.children];
+    // The rounded ends and the middle that scales are decoration with no
+    // role and no theme target: the field's ::before and ::after, and the
+    // trailing end's ::before, not elements of their own.
+    expect(parts).toHaveLength(3);
+    expect(parts[0].querySelector('svg')).not.toBeNull();
+    expect(parts[1]).toBe(box());
+    expect(parts[2]).toHaveAttribute('data-search-field-end');
+    // The trailing end holds nothing while the query is empty, then only the
+    // clear button.
+    expect(parts[2].children).toHaveLength(0);
+    fireEvent.change(box(), {target: {value: 'a'}});
+    expect([...parts[2].children].map(child => child.tagName)).toEqual([
+      'BUTTON',
+    ]);
   });
 
   it('draws its magnifier as the icon itself, with no wrapper element', () => {

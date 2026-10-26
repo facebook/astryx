@@ -16,6 +16,11 @@
  * when the browser commits it. A proof that read `getAnimations()` after the
  * action instead could miss on a busy runner: by the time its read ran, an
  * animation could have finished or been replaced by the next one.
+ *
+ * An animation that holds each property at one value moves nothing: the
+ * animator holds a pseudo-element's resting value that way (a pseudo-element
+ * has no inline style), as it does for the field's background pieces. Such a
+ * hold changes no property and does not start the fade's clock.
  */
 
 import type {Page} from '@playwright/test';
@@ -26,7 +31,7 @@ export interface RecordedFades {
   readonly properties: readonly string[];
   /**
    * When the last opacity change settles, ms after the first recorded
-   * animation starts; 0 when nothing fades.
+   * animation that changes something starts; 0 when nothing fades.
    */
   readonly fadeMs: number;
   /** How many of the recorded animations the browser started. */
@@ -150,10 +155,21 @@ export async function readFades(page: Page): Promise<RecordedFades> {
     if (started.length === 0) {
       return {properties: [], fadeMs: 0, started: 0};
     }
-    const startedAt = Math.min(...started.map(entry => entry.start));
+    // A property held at one value does not move anything.
+    const moves = (entry: {keyframes: ComputedKeyframe[]}) =>
+      Object.keys(entry.keyframes[0] ?? {}).some(
+        key =>
+          !SKIP.has(key) &&
+          new Set(entry.keyframes.map(frame => String(frame[key]))).size > 1,
+      );
+    const moving = started.filter(moves);
+    if (moving.length === 0) {
+      return {properties: [], fadeMs: 0, started: started.length};
+    }
+    const startedAt = Math.min(...moving.map(entry => entry.start));
     const properties = new Set<string>();
     let fadeMs = 0;
-    for (const entry of started) {
+    for (const entry of moving) {
       const frames = entry.keyframes;
       const begin = entry.start + entry.delay;
       const timeOf = (i: number) =>
@@ -163,7 +179,6 @@ export async function readFades(page: Page): Promise<RecordedFades> {
           continue;
         }
         const values = new Set(frames.map(frame => String(frame[key])));
-        // A property held at one value does not move anything.
         if (values.size > 1) {
           properties.add(key);
         }

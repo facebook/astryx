@@ -36,7 +36,7 @@
  * and the glass close button slides in from 44 px past its place while it
  * fades in. Every part moves on the compositor (translate, scale, opacity),
  * so the activation keeps moving while the page's script runs. The field
- * narrows without re-laying out: its background is three pieces, two
+ * narrows without re-laying out: its background is three pseudo-elements, two
  * rounded ends and a middle that scales, and the trailing end slides.
  *
  * The close button cancels: it clears the text, ends editing (the keyboard
@@ -213,29 +213,52 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     minWidth: 0,
+    // The background pseudo-elements paint under the magnifier and the
+    // text, inside the field's own stacking context.
+    isolation: 'isolate',
   },
   fieldHeight: (height: string) => ({height}),
   // The background: two rounded ends and a middle that scales, so the field
-  // narrows on the compositor without re-laying out.
-  piece: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    backgroundColor: colorVars['--color-background-muted'],
-    pointerEvents: 'none',
-  },
-  start: (cap: string) => ({
-    insetInlineStart: 0,
-    width: cap,
-    borderStartStartRadius: cap,
-    borderEndStartRadius: cap,
-  }),
-  middle: (cap: string) => ({
-    insetInlineStart: cap,
-    insetInlineEnd: cap,
-    transformOrigin: {
-      default: 'left center',
-      ':is([dir="rtl"] *)': 'right center',
+  // narrows on the compositor without re-laying out. They are decoration
+  // with no role and no theme target, so they are pseudo-elements
+  // (architecture:component-style-authoring INV7): the leading end is the
+  // field's ::before, the middle its ::after (the touch layer scales it), and
+  // the trailing end the trailing part's ::before (endCap), which moves with
+  // it.
+  background: (cap: string) => ({
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      insetInlineStart: 0,
+      zIndex: -1,
+      width: cap,
+      borderStartStartRadius: cap,
+      borderEndStartRadius: cap,
+      backgroundColor: colorVars['--color-background-muted'],
+      pointerEvents: 'none',
+      // The leading end moves under a bottom field's gel: promoted by the
+      // animator while it moves (motion/animator.ts, "Promotion").
+      willChange: 'var(--astryx-motion-will-change-before, auto)',
+    },
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      insetInlineStart: cap,
+      insetInlineEnd: cap,
+      zIndex: -1,
+      backgroundColor: colorVars['--color-background-muted'],
+      pointerEvents: 'none',
+      transformOrigin: {
+        default: 'left center',
+        ':is([dir="rtl"] *)': 'right center',
+      },
+      // The animator promotes the scaling middle through this property on
+      // the field while it moves (motion/animator.ts, "Promotion").
+      willChange: 'var(--astryx-motion-will-change-after, auto)',
     },
   }),
   end: {
@@ -248,17 +271,24 @@ const styles = stylex.create({
     justifyContent: 'flex-end',
     pointerEvents: 'none',
   },
-  // One px wider than the rounded end, reaching under the middle so the two
-  // never show an antialiased seam while they move.
+  // The trailing end's ::before: one px wider than the rounded end, reaching
+  // under the middle so the two never show an antialiased seam while they
+  // move.
   endCap: (cap: string) => ({
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    insetInlineEnd: 0,
-    width: `calc(${cap} + 1px)`,
-    borderStartEndRadius: cap,
-    borderEndEndRadius: cap,
-    backgroundColor: colorVars['--color-background-muted'],
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      insetInlineEnd: 0,
+      width: `calc(${cap} + 1px)`,
+      borderStartEndRadius: cap,
+      borderEndEndRadius: cap,
+      backgroundColor: colorVars['--color-background-muted'],
+      // The cap scales under a bottom field's gel: promoted by the animator
+      // while it moves (motion/animator.ts, "Promotion").
+      willChange: 'var(--astryx-motion-will-change-before, auto)',
+    },
   }),
   // A bottom field's magnifier and text, carried together with its leading
   // edge through the gel.
@@ -362,14 +392,23 @@ const styles = stylex.create({
   // opacity at 0) and takes no taps.
   // The active pose before the touch layer places the parts (a server
   // render, or the first paint before hydration): the trailing end already
-  // moved in by the close button and its gap, and the middle short by the
-  // same 55 px (`search.stacked.closeGap + closeSize`, kept equal by a test).
-  // The touch layer marks the root placed in its first layout, in the same
-  // task as it sets the parts' held values, which then take over.
+  // moved in by the close button and its gap, and the middle (the field's
+  // ::after) short by the same 55 px (`search.stacked.closeGap +
+  // closeSize`, kept equal by a test). The touch layer marks the root placed
+  // in its first layout, in the same task as it sets the parts' held values,
+  // which then take over.
   beforePlacement: {
     marginInlineEnd: {
       default: null,
       ':is([data-search-field-active]:not([data-search-field-placed]) *)': 55,
+    },
+  },
+  middleBeforePlacement: {
+    '::after': {
+      marginInlineEnd: {
+        default: null,
+        ':is([data-search-field-active]:not([data-search-field-placed]) *)': 55,
+      },
     },
   },
   // The resting (inactive) close button, in CSS so a server-rendered page
@@ -458,6 +497,10 @@ export function SearchField({
     lift,
     placement,
   });
+  // The field box hosts the leading end (::before) and the middle
+  // (::after); the trailing part hosts the trailing end's cap (::before).
+  const fieldRefs = useMergedRefs(fieldRef, motion.startRef, motion.middleRef);
+  const endRefs = useMergedRefs(motion.endRef, motion.endCapRef);
   const fieldHeight = isBottom
     ? bottom.fieldHeight
     : search.stacked.fieldHeight;
@@ -634,24 +677,13 @@ export function SearchField({
         style,
       )}>
       <div
-        ref={fieldRef}
-        {...stylex.props(styles.field, styles.fieldHeight(px(fieldHeight)))}>
-        <span
-          ref={motion.startRef}
-          aria-hidden
-          data-search-field-start=""
-          {...stylex.props(styles.piece, styles.start(cap))}
-        />
-        <span
-          ref={motion.middleRef}
-          aria-hidden
-          data-search-field-middle=""
-          {...stylex.props(
-            styles.piece,
-            styles.middle(cap),
-            !isBottom && styles.beforePlacement,
-          )}
-        />
+        ref={fieldRefs}
+        {...stylex.props(
+          styles.field,
+          styles.fieldHeight(px(fieldHeight)),
+          styles.background(cap),
+          !isBottom && styles.middleBeforePlacement,
+        )}>
         {isBottom ? (
           <div
             ref={motion.contentRef}
@@ -667,18 +699,13 @@ export function SearchField({
           </>
         )}
         <div
-          ref={motion.endRef}
+          ref={endRefs}
           data-search-field-end=""
           {...stylex.props(
             styles.end,
+            styles.endCap(cap),
             placement === 'stacked' && styles.beforePlacement,
           )}>
-          <span
-            ref={motion.endCapRef}
-            aria-hidden
-            data-search-field-end-cap=""
-            {...stylex.props(styles.endCap(cap))}
-          />
           {showsClear ? (
             <button
               type="button"
