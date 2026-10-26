@@ -39,15 +39,15 @@
  * scroller and fails it), toward a side with entries or on a row that is open
  * or moving: a browser commits to scrolling a touch at about 10 px, so the
  * row must claim before that. The swipe itself begins where UIKit's does,
- * after 25 px, from 0, and in between the row carries on as it was. Item
- * mounts this hook only under a finger (a coarse primary pointer,
- * `useTouchPresentation`), the one touch model on every touch device. The
- * foundation tells the browser (`touch-action: pan-y pinch-zoom`, `touchmove`
- * cancelled only while the pan owns the touch, the click the browser
- * synthesizes swallowed) and leaves a pinch to the page: a second finger that
- * lands before the claim fails the one-finger pan and leaves its touch to the
- * browser's pinch, and once the row has claimed its finger a second finger
- * leaves the swipe going (spec:AST-094 FR10).
+ * after 25 px, from 0, and in between the row carries on as it was. The pan
+ * reads each touch's pointer, as `spec:AST-057` says: a finger swipes the row
+ * whatever the primary pointer and a mouse never starts it, one rule on every
+ * device. The foundation tells the browser (`touch-action: pan-y
+ * pinch-zoom`, `touchmove` cancelled only while the pan owns the touch, the
+ * click the browser synthesizes swallowed) and leaves a pinch to the page: a
+ * second finger that lands before the claim fails the one-finger pan and
+ * leaves its touch to the browser's pinch, and once the row has claimed its
+ * finger a second finger leaves the swipe going (spec:AST-094 FR10).
  *
  * An open row (resting, or settling to rest open: UIKit counts a row open
  * from the release that opens it) closes on a pointer landing outside it, on
@@ -78,8 +78,8 @@
  * busy. A drag costs no React render; the
  * claim, the confirming and the landing each cost one.
  *
- * Item mounts all of this only under a finger (a coarse primary pointer):
- * the one touch model, the same on every touch device.
+ * The gesture reads each touch's pointer: a finger swipes the row on every
+ * device, whatever the primary pointer, and a mouse never does.
  *
  * Under Reduce Motion (`design:reduced-motion`) the finger's own drag is
  * direct manipulation and follows it one for one, but nothing a release or
@@ -1163,6 +1163,10 @@ export function useSwipeAction({
           break;
       }
     },
+    // `spec:AST-057` reads each event's pointer: a finger swipes the row on
+    // every device and a mouse never does, so the host's fine-pointer gate
+    // (`spec:AST-094` FR19) does not apply to it.
+    {perEventPointer: true},
   );
 
   // A tap on an open row's own content closes it and activates nothing, as
@@ -1187,6 +1191,9 @@ export function useSwipeAction({
         close();
       }
     },
+    // The swipe's own dismissal reads each event's pointer, as the swipe
+    // does (`spec:AST-057`).
+    {perEventPointer: true},
   );
 
   const onKeyDown = useCallback(

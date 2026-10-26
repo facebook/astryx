@@ -15,8 +15,8 @@
  * @position Browser-only regression test for Item's swipeActions. jsdom can
  *   hold the declared rules but not the paint or the geometry, and a real
  *   device has already disagreed with jsdom once on this gesture. The swipe
- *   is the one touch model on every touch device, under a finger (a coarse
- *   primary pointer): the context's touchscreen gives Chromium one.
+ *   reads each touch's pointer, the same on every device; the context's
+ *   touchscreen gives Chromium a phone's (a coarse primary pointer).
  */
 
 import {expect, test, type Locator, type Page} from '@playwright/test';

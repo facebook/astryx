@@ -56,10 +56,13 @@ describe('Item and the swipe layer', () => {
     expect(screen.getByTestId('row').childElementCount).toBe(1);
   });
 
-  it('loads no swipe layer under a fine pointer, even on a row with swipe actions', async () => {
-    // A mouse or a touchscreen laptop's trackpad: touch work costs nothing.
+  it('renders the swipe layer under a fine primary pointer too: a finger swipes on every device', async () => {
+    // A touchscreen laptop: a fine primary pointer, and a finger beside it.
+    // The gesture reads each touch's pointer (`spec:AST-057`), so the layer
+    // is there; a mouse never starts it (Item.test.tsx).
     // A fine primary pointer in this context, before anything is checked.
     expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    await import('./ItemSwipeLayer');
     layerRenders.mockClear();
     render(
       <Item
@@ -68,13 +71,14 @@ describe('Item and the swipe layer', () => {
         swipeActions={{trailing: [{label: 'Archive', onActivate: () => {}}]}}
       />,
     );
-    await act(async () => {});
-    expect(layerRenders).not.toHaveBeenCalled();
-    expect(document.querySelector('[data-swipe-panel]')).toBeNull();
-    expect(screen.getByTestId('row').childElementCount).toBe(1);
+    const row = screen.getByTestId('row');
+    await waitFor(() => {
+      expect(row.querySelector('[data-swipe-panel="trailing"]')).not.toBeNull();
+    });
+    expect(layerRenders).toHaveBeenCalled();
   });
 
-  it('renders the swipe layer into the root of a row with swipe actions under a finger', async () => {
+  it("renders the swipe layer into the root of a row with swipe actions on a phone's pointer", async () => {
     // The layer's module first: a cold import compiles the gesture and motion
     // modules it brings, which can outlast waitFor's one second on a busy
     // machine, while the import itself is awaited for as long as it takes.

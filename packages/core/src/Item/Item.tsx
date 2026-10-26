@@ -9,9 +9,8 @@
  * @position Core layout primitive; consumed by index.ts, tested by Item.test.tsx
  *
  * The swipe actions live in ItemSwipeLayer, reached only through a dynamic
- * import when `swipeActions` is set under a finger (a coarse primary
- * pointer): this module imports nothing of the gesture, so a row without
- * swipe actions, or under a fine pointer, ships none of it. The root here
+ * import when `swipeActions` is set: this module imports nothing of the
+ * gesture, so a row without swipe actions ships none of it. The root here
  * still carries the swipe styles and forwards its key events into the bridge
  * the layer fills; the layer attaches the gesture to the root itself, so a
  * swipeable row keeps the DOM it had when the gesture was imported here
@@ -57,7 +56,6 @@ import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import type {ItemSwipeBridge} from './ItemSwipeLayer';
-import {useTouchPresentation} from '../utils/touchPresentation';
 
 // The gesture and the panels, loaded only by a row that has swipe actions: a
 // row without them never bundles useSwipeAction. While the chunk loads the
@@ -290,13 +288,12 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    * radio). The element containing the rows clips in the inline axis
    * (`overflow-inline: clip`): `List` does; any other host does it once.
    *
-   * The swipe is a touch behaviour, the same on every touch device: it exists
-   * under a finger (a coarse primary pointer) and only there. The gesture and
-   * its panels are loaded on demand, the first time a row has swipe actions
-   * under a finger, so a row without them, or under a fine pointer (a mouse,
-   * a touchscreen laptop's trackpad), ships none of it; a row with them is
-   * drawn at once and becomes swipeable after hydration, as soon as that
-   * module has loaded.
+   * The swipe is a touch behaviour, the same on every device: the gesture
+   * reads each touch's pointer, so a finger swipes the row whatever the
+   * primary pointer (a touchscreen laptop's included) and a mouse never does.
+   * The gesture and its panels are loaded on demand, the first time a row has
+   * swipe actions, so a row without them ships none of it; a row with them is
+   * drawn at once and becomes swipeable as soon as that module has loaded.
    */
   swipeActions?: ItemSwipeActions;
 
@@ -638,13 +635,10 @@ export function Item({
     !isDelegate &&
     !isLinkRoot &&
     (role == null || SWIPE_ROLES.has(role));
-  // The swipe is a touch behaviour: it exists under a finger (a coarse
-  // primary pointer) on every touch device, and only there. Under a fine
-  // pointer (a mouse, a touchscreen laptop's trackpad) nothing of it loads
-  // and the row is the plain row; the touch presentation applies after
-  // hydration.
-  const {isTouch} = useTouchPresentation();
-  const hasSwipe = isSwipeServed && isTouch;
+  // The swipe is a touch behaviour, the same on every device: the gesture
+  // reads each touch's pointer (`spec:AST-057`), so a finger swipes whatever
+  // the primary pointer and a mouse never starts the drag.
+  const hasSwipe = isSwipeServed;
   useDevWarning(
     'Item',
     '`swipeBehavior="commit"` fires only the outermost entry of a side; the ' +

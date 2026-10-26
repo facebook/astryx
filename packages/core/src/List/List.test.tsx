@@ -1028,7 +1028,7 @@ describe('List and swipe actions', () => {
   beforeAll(async () => {
     await import('../Item/ItemSwipeLayer');
   });
-  // The swipe exists under a finger (a coarse primary pointer).
+  // The suite answers as a phone (a coarse primary pointer).
   beforeEach(() => {
     emulateTouch();
   });

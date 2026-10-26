@@ -35,6 +35,8 @@ import userEvent from '@testing-library/user-event';
 import {Item} from './Item';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
 import {emulateTouch} from './__tests__/emulateTouch';
+import {TapGestureRecognizer, useGestureRecognizer} from '../gestures';
+import {pointerQuery} from '../gestures/__tests__/pointerQuery';
 
 /**
  * Item in delegation mode: `interactiveRef` points at a nested control that
@@ -696,8 +698,6 @@ describe('swipeActions', () => {
   // machine, while the import itself is awaited for as long as it takes.
   beforeAll(async () => {
     await import('./ItemSwipeLayer');
-    // Under a finger: the swipe loads only there.
-    emulateTouch();
     render(
       <Item
         label="Warm"
@@ -711,7 +711,6 @@ describe('swipeActions', () => {
       ).not.toBeNull();
     });
     cleanup();
-    vi.unstubAllGlobals();
   });
 
   // The gesture system outlives a test (one per document) and keeps the time
@@ -719,9 +718,9 @@ describe('swipeActions', () => {
   // each test's fake clock starts after the last one's.
   let epoch = 0;
   beforeEach(() => {
-    // The swipe exists under a finger (a coarse primary pointer), the same on
-    // every touch device; the suite runs there, and `under a fine pointer`
-    // below checks that nothing of it exists there.
+    // The suite answers as a phone (a coarse primary pointer), where Reduce
+    // Motion cross-fades every change; `under a fine primary pointer` below
+    // checks that a finger swipes there too and a mouse never does.
     emulateTouch();
     // The gesture reads touch times, and the springs run on the document
     // clock and finish on timers: fake them all and move them together.
@@ -1116,25 +1115,113 @@ describe('swipeActions', () => {
     f.up();
   });
 
-  describe('under a fine pointer (a mouse, a touchscreen laptop’s trackpad)', () => {
-    // The rest of the suite answers as a touch device; here the primary
-    // pointer is fine, so the touch work costs nothing.
+  describe('under a fine primary pointer (a touchscreen laptop, a mouse)', () => {
+    // The rest of the suite answers as a phone; here the primary pointer is
+    // fine. The gesture reads each touch's pointer (`spec:AST-057`): a finger
+    // swipes the row whatever the primary pointer, and a mouse never does.
     beforeEach(() => {
       vi.unstubAllGlobals();
     });
 
-    it('loads nothing of the swipe: no panels, no gesture, the plain row', async () => {
+    it('swipes under a finger, claiming the touch and resting open as on a phone', async () => {
       // A fine primary pointer in this context, before anything is checked.
       expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
       const {row} = renderRow();
-      await settled();
-      expect(panelOf(row, 'leading')).toBeNull();
+      expect(panelOf(row, 'leading')).toHaveAttribute('inert');
       const f = finger(row);
       f.down(10);
-      expect(f.move(40).defaultPrevented).toBe(false);
-      expect(f.move(120).defaultPrevented).toBe(false);
-      expect(row.style.getPropertyValue('translate')).toBe('');
-      expect(f.up().defaultPrevented).toBe(false);
+      // Claimed at 8 px, before a browser would scroll it.
+      expect(f.move(20).defaultPrevented).toBe(true);
+      f.move(35);
+      f.move(80);
+      f.rest();
+      f.up();
+      await settled();
+      expect(xOf(row)).toBe(72);
+      expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
+    });
+
+    it('keeps every other recognizer on the gesture host inactive while a finger swipes the row (spec:AST-094 FR19; the row swipe reads each event, spec:AST-057)', async () => {
+      expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+      const taps: string[] = [];
+      function Other() {
+        const ref = useRef<HTMLDivElement>(null);
+        useGestureRecognizer(
+          ref,
+          () => new TapGestureRecognizer({name: 'test-other-tap'}),
+          tap => {
+            taps.push(tap.state);
+          },
+        );
+        return <div ref={ref} data-testid="other" />;
+      }
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const {row} = renderRow();
+      render(<Other />);
+      const t = finger(screen.getByTestId('other'), 3);
+      t.down(20);
+      t.up();
+      // Not opted out of the gate: inactive where the primary pointer is fine.
+      expect(taps).not.toContain('ended');
+      // The row swipes under a finger beside it.
+      dragLeading(row, 45);
+      await settled();
+      expect(xOf(row)).toBe(72);
+      warn.mockRestore();
+      // The control: on a phone's pointer the same tap is recognized.
+      const coarse = pointerQuery(true);
+      try {
+        cleanup();
+        taps.length = 0;
+        render(<Other />);
+        const u = finger(screen.getByTestId('other'), 4);
+        u.down(20);
+        u.up();
+        expect(taps).toContain('ended');
+      } finally {
+        coarse.restore();
+      }
+    });
+
+    it('closes a row a finger opened on a tap on its content, as on a phone', async () => {
+      expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+      const {row, onClick} = renderRow();
+      dragLeading(row, 45);
+      await settled();
+      expect(xOf(row)).toBe(72);
+      const f = finger(screen.getByRole('button', {name: 'Conversation'}), 2);
+      f.down(150);
+      // Taken at the lift: no click reaches the row.
+      expect(f.up().defaultPrevented).toBe(true);
+      await settled();
+      expect(xOf(row)).toBe(0);
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
+    it('never swipes under a mouse', async () => {
+      expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+      const {row} = renderRow();
+      const mouse = (type: string, x: number) =>
+        act(() => {
+          row.dispatchEvent(
+            new PointerEvent(type, {
+              bubbles: true,
+              button: 0,
+              buttons: type === 'pointerup' ? 0 : 1,
+              clientX: x,
+              clientY: 10,
+              pointerId: 1,
+              pointerType: 'mouse',
+            }),
+          );
+        });
+      mouse('pointerdown', 10);
+      mouse('pointermove', 60);
+      mouse('pointermove', 120);
+      mouse('pointerup', 120);
+      await settled();
+      expect(xOf(row)).toBe(0);
+      expect(panelOf(row, 'leading')).toHaveAttribute('inert');
     });
   });
 
@@ -1585,6 +1672,90 @@ describe('swipeActions', () => {
       // No `hasRemoval`: back home.
       await settled();
       expect(xOf(row)).toBe(0);
+    });
+
+    it('starts every part of a release that continues the drag on one clock, so the window, track and entries stay in step with the row', async () => {
+      // A browser's animations: one from rest starts when a frame commits it;
+      // one that continues motion starts where its call pins it.
+      const created: {
+        target: Element;
+        startTime: number | null;
+        commit: (at: number) => void;
+      }[] = [];
+      HTMLElement.prototype.animate = function (this: HTMLElement) {
+        let resolveReady: () => void = () => {};
+        const ready = new Promise<void>(resolve => {
+          resolveReady = resolve;
+        });
+        const record = {
+          target: this as Element,
+          startTime: null as number | null,
+          commit(at: number) {
+            if (record.startTime == null) {
+              record.startTime = at;
+            }
+            resolveReady();
+          },
+        };
+        created.push(record);
+        return {
+          get startTime() {
+            return record.startTime;
+          },
+          set startTime(value: number | null) {
+            record.startTime = value;
+            resolveReady();
+          },
+          get playState() {
+            return 'running';
+          },
+          ready,
+          cancel() {},
+        } as unknown as Animation;
+      };
+      try {
+        const {row} = renderRow();
+        const f = finger(row);
+        f.down(10);
+        f.move(20);
+        f.move(35);
+        f.move(65);
+        // A frame starts the drag's first springs.
+        const at = performance.now();
+        for (const animation of created) {
+          animation.commit(at);
+        }
+        await act(async () => {});
+        f.move(80);
+        // Touch events are tasks of their own.
+        await act(async () => {});
+        // The finger lifts while the row still moves, and each call takes
+        // time on a real page: the clock moves between calls.
+        let clock = performance.now();
+        const now = vi
+          .spyOn(performance, 'now')
+          .mockImplementation(() => (clock += 0.4));
+        const from = created.length;
+        try {
+          f.up();
+        } finally {
+          now.mockRestore();
+        }
+        const parts = [
+          row,
+          panelOf(row, 'leading'),
+          trackOf(row, 'leading'),
+          ...entriesOf(row, 'leading'),
+        ];
+        const starts = parts.map(part => {
+          const mine = created.slice(from).filter(a => a.target === part);
+          return mine[mine.length - 1]?.startTime;
+        });
+        expect(typeof starts[0]).toBe('number');
+        expect(new Set(starts).size).toBe(1);
+      } finally {
+        Reflect.deleteProperty(HTMLElement.prototype, 'animate');
+      }
     });
 
     describe('the full swipe', () => {

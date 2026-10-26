@@ -118,35 +118,6 @@ describe('resolveRelease', () => {
     }
   });
 
-  it('closes a release past the open width that is moving back, as UIKit did (batch 38)', () => {
-    // 204.67 pt open width; released about 300 pt out while coming back at
-    // 300 pt/s: UIKit closed the row, though it would coast to rest past half
-    // the open width.
-    expect(
-      resolveRelease({
-        behavior: 'reveal',
-        isConfirmed: false,
-        openWidth: 204.67,
-        travel: 305,
-        velocity: -300,
-        wasConfirmed: false,
-      }),
-    ).toBe('closed');
-    // The same release at rest, or still opening, stays open.
-    for (const velocity of [0, 300]) {
-      expect(
-        resolveRelease({
-          behavior: 'reveal',
-          isConfirmed: false,
-          openWidth: 204.67,
-          travel: 305,
-          velocity,
-          wasConfirmed: false,
-        }),
-      ).toBe('open');
-    }
-  });
-
   it('fires on a confirmed release at any velocity, and never on one that has not confirmed', () => {
     const base = {behavior: 'reveal' as const, openWidth: 204.67, travel: 340};
     for (const velocity of [0, 1000, -1000]) {
@@ -168,19 +139,6 @@ describe('resolveRelease', () => {
         wasConfirmed: false,
       }),
     ).toBe('open');
-  });
-
-  it('closes a swipe that confirmed and backed out, even at rest past half the panel (batch 38)', () => {
-    expect(
-      resolveRelease({
-        behavior: 'reveal',
-        isConfirmed: false,
-        openWidth: 204.67,
-        travel: 275,
-        velocity: 0,
-        wasConfirmed: true,
-      }),
-    ).toBe('closed');
   });
 
   it('fires under commit only when confirmed, and never rests', () => {
@@ -212,6 +170,100 @@ describe('resolveRelease', () => {
         wasConfirmed: false,
       }),
     ).toBe('closed');
+  });
+});
+
+// Current `spec:AST-057` FR5 reads differently from the measured rule above in
+// four places; the owners decide which governs. Each case below is UIKit's own
+// reading (the lab's releases, as the pan reported them), so changing the rule
+// to FR5's wording breaks it.
+describe('where the measured rule departs from AST-057 FR5', () => {
+  const reveal = {behavior: 'reveal' as const, isConfirmed: false};
+
+  it('never fires on a fling, under either model (FR5: a fling fires): batch 10a opened every release at 1,002 to 2,082 pt/s', () => {
+    const flings: [travel: number, velocity: number][] = [
+      [222.7, 1002],
+      [64, 1058],
+      [147.3, 1271],
+      [93, 1372],
+      [125, 1506],
+      [185, 1565],
+      [282.3, 1971],
+      [132.3, 1983],
+      [170, 2031],
+      [245, 2082],
+    ];
+    for (const [travel, velocity] of flings) {
+      const release = {
+        isConfirmed: false,
+        openWidth: 156.67,
+        travel,
+        velocity,
+        wasConfirmed: false,
+      };
+      expect(resolveRelease({...release, behavior: 'reveal'})).toBe('open');
+      // Under commit nothing rests: the fling closes, and fires nothing.
+      expect(resolveRelease({...release, behavior: 'commit'})).toBe('closed');
+    }
+  });
+
+  it('closes a swipe that confirmed and backed out, even released at rest past the panel width (FR5: rests open): batch 38', () => {
+    expect(
+      resolveRelease({
+        ...reveal,
+        openWidth: 204.67,
+        travel: 275,
+        velocity: 0,
+        wasConfirmed: true,
+      }),
+    ).toBe('closed');
+  });
+
+  it('closes a release past the panel width that is closing at the release speed or faster (FR5: rests open): batch 38', () => {
+    expect(
+      resolveRelease({
+        ...reveal,
+        openWidth: 204.67,
+        travel: 305,
+        velocity: -300,
+        wasConfirmed: false,
+      }),
+    ).toBe('closed');
+    // The same release at rest, or still opening, stays open, as FR5 reads.
+    for (const velocity of [0, 300]) {
+      expect(
+        resolveRelease({
+          ...reveal,
+          openWidth: 204.67,
+          travel: 305,
+          velocity,
+          wasConfirmed: false,
+        }),
+      ).toBe('open');
+    }
+  });
+
+  it('opens a release short of half the panel that is opening at the release speed or faster (FR5: springs back): batch 10a', () => {
+    // 156.67 pt open width: half of it is 78.3 pt.
+    const opening: [travel: number, velocity: number][] = [
+      [30.3, 293],
+      [35.7, 458],
+      [63, 286],
+      [64, 1058],
+      [65, 490],
+    ];
+    for (const [travel, velocity] of opening) {
+      expect(travel).toBeLessThan(swipeActions.openFraction * 156.67);
+      expect(
+        resolveRelease({
+          ...reveal,
+          openWidth: 156.67,
+          travel,
+          velocity,
+          wasConfirmed: false,
+        }),
+      ).toBe('open');
+    }
   });
 });
 

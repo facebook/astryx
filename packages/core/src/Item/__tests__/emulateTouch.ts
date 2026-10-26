@@ -4,8 +4,9 @@
  * @file emulateTouch.ts
  * @input vitest's global stubs; the touch presentation resolver's query
  * @output emulateTouch — jsdom answers as a device driven by a finger (the
- *   primary pointer coarse, TOUCH_QUERY matching), so useTouchPresentation()
- *   reads touch. Undo with `vi.unstubAllGlobals()`.
+ *   primary pointer coarse, TOUCH_QUERY matching), so the animator treats
+ *   every change as a touch presentation's (under Reduce Motion it
+ *   cross-fades). Undo with `vi.unstubAllGlobals()`.
  * @position Test helper for the swipe-action unit tests (Item, List)
  */
 
