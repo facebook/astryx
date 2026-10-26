@@ -148,11 +148,11 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "On a phone, the components that respond to the on-screen keyboard, a fully expanded `height='tall'` BottomSheet and ChatLayout's composer, measure it the same way: the layout viewport's height minus the visual viewport's height times its scale. Where the visual viewport shrinks for the keyboard, as in Safari on iOS in the browser and as a home-screen app and in Firefox for Android, they keep the focused field and the surface around it above the keyboard, and focusing a field never pans the page.",
+          text: "On a phone, the components that respond to the on-screen keyboard, a fully expanded `height='tall'` BottomSheet and ChatLayout's composer, measure it the same way: the layout viewport's height minus the visual viewport's height times its scale. Where the visual viewport shrinks for the keyboard, as in Safari on iOS in the browser and as a home-screen app, in Firefox for Android and in Chrome on Android, they keep the focused field and the surface around it above the keyboard, and focusing a field never pans the page.",
         },
         {
           type: 'prose',
-          text: "Chrome on Android follows your page's viewport setting. By default (`interactive-widget=resizes-visual`) it lays the keyboard over the page and pans to the focused field. With `interactive-widget=resizes-content` it shrinks the layout viewport instead, so content anchored to the bottom, such as a chat composer, sits above the keyboard. Astryx documents this setting and never sets it: your app owns its viewport `<meta>` element.",
+          text: 'In Chrome on Android, those components ride the keyboard as it slides up and down. Chrome follows your viewport setting, which Astryx documents and never sets: your app owns its viewport `<meta>` element. By default (`interactive-widget=resizes-visual`) Chrome lays the keyboard over the page and pans to a focused field elsewhere on the page. With `interactive-widget=resizes-content` it shrinks the layout viewport instead, so content anchored to the bottom sits above the keyboard, and those components measure no keyboard and do not ride: the browser has already made the room.',
         },
         {
           type: 'code',
