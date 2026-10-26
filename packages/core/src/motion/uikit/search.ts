@@ -161,8 +161,9 @@ export const search = {
     /**
      * While active, the field's centre stays this far above the keyboard's
      * top edge, pt (a 17 pt gap), on every frame: the bar rides the
-     * keyboard's own spring (`springs.keyboard`). A tab bar's search field
-     * rests at the same height.
+     * keyboard's own spring (`springs.keyboard`). Only the bottom field was
+     * measured: a tab bar's search field is not, so this value makes no
+     * claim about it.
      * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
      *   iPhone 17 Pro, the bar container's additive CASpringAnimation on
      *   position (the keyboard's spring) and the field's centre against the
