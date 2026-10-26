@@ -119,13 +119,6 @@ export const docs = {
           default: "'lineGuides'",
         },
         {
-          name: 'followingContent',
-          type: "'moves' | 'stays'",
-          description:
-            "Under a finger, expanding or collapsing a row slides the rows below it, and page content below the tree moves with them (a transient translate, cleared at rest), each piece by what layout moves it. While it moves, that translate makes it the containing block of any position: fixed element inside it. Use 'stays' to keep the content below the tree still when the app manages that area itself.",
-          default: "'moves'",
-        },
-        {
           name: 'header',
           type: 'ReactNode',
           description:
@@ -205,13 +198,6 @@ export const docsZh = {
           description:
             '层级引导线的视觉呈现。lineGuides 显示连接线；noGuides 隐藏连接线并保留缩进。与 density 正交。',
           default: "'lineGuides'",
-        },
-        {
-          name: 'followingContent',
-          type: "'moves' | 'stays'",
-          description:
-            "在触摸屏上，展开或折叠某一行时其下方的行会滑动，树下方的页面内容也随之移动（临时的 translate，静止后清除），每部分只移动布局实际移动的距离；移动期间，该 translate 会成为其内部 position: fixed 元素的包含块。若应用自行管理该区域，使用 'stays' 让树下方的内容保持不动。",
-          default: "'moves'",
         },
         {
           name: 'header',

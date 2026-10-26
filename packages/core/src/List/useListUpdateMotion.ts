@@ -50,16 +50,18 @@
  * the table spring. A row moved again mid-motion
  * keeps its velocity, and its curve: a layout shift never changes a running
  * motion's spring (a reorder's drop settles on its own), so the table spring
- * applies to rows at rest. Page content below the list moves on the same
- * spring by what layout moved it (utils/rowMotion.ts `contentBelow`, its
- * layout tops recorded with the rows), unless the list is told to keep it
- * still; while it moves, its `translate` makes it the containing block of
- * any `position: fixed` element inside it. With motion off, nothing is read.
+ * applies to rows at rest. Page content after the list is not the list's to move:
+ * the list's height changes by layout at the commit (`spec:AST-094` FR5
+ * forbids animating layout), so content after it takes its new place at
+ * once, with no transient translate on it. A list that got shorter clips
+ * its rows to its box (`overflow-y: clip`) while they move, so the rows
+ * sliding up into the gap never paint over that content; a removed last
+ * row's copy, outside the new box, is clipped with them. With motion off, nothing is read.
  *
  * Under reduced motion nothing travels (`design:reduced-motion`): every row
  * motion takes the animator's own Reduced Motion handling, so a removed row
  * fades out where it is, a new row fades in where it lands, and the rows
- * that move and the content below cross-fade into place.
+ * that move cross-fade into place.
  *
  * It runs under any finger (useTouchPresentation: a coarse primary pointer,
  * iOS and Android alike; one touch model). With a mouse (the theme's
@@ -80,7 +82,6 @@ import {solveSpring, toSpring, type SpringCurve} from '../motion/spring';
 import {list, registerListTable} from '../motion/uikit/list';
 import {
   animateRow,
-  contentBelow,
   motionNow,
   motionOf,
   playRow,
@@ -141,12 +142,6 @@ interface Layout {
   readonly rows: ReadonlyArray<HTMLElement>;
   readonly boxes: ReadonlyMap<HTMLElement, Box>;
   readonly height: number;
-  /**
-   * The page content below the list that would move along (when it moves),
-   * each with its layout top (`offsetTop`), so a commit moves each only by
-   * what layout moved it.
-   */
-  readonly below: ReadonlyMap<HTMLElement, number>;
 }
 
 /**
@@ -351,14 +346,8 @@ function rowsOf(element: HTMLElement): HTMLElement[] {
   );
 }
 
-/**
- * The rows, each row's layout box inside the list, the list's height, and
- * the layout tops of the content below it that moves along.
- */
-function readLayout(
-  element: HTMLElement,
-  followingContent: 'moves' | 'stays',
-): Layout {
+/** The rows, each row's layout box inside the list, and the list's height. */
+function readLayout(element: HTMLElement): Layout {
   const rows = rowsOf(element);
   const boxes = new Map<HTMLElement, Box>();
   for (const row of rows) {
@@ -366,19 +355,12 @@ function readLayout(
     const base = row.offsetParent === element ? 0 : element.offsetTop;
     boxes.set(row, {top: row.offsetTop - base, height: row.offsetHeight});
   }
-  const below = new Map<HTMLElement, number>();
-  if (followingContent === 'moves') {
-    for (const content of contentBelow(element)) {
-      below.set(content, content.offsetTop);
-    }
-  }
-  return {rows, boxes, height: element.offsetHeight, below};
+  return {rows, boxes, height: element.offsetHeight};
 }
 
 export function useListUpdateMotion(
   listRef: RefObject<HTMLElement | null>,
   enabled: boolean,
-  followingContent: 'moves' | 'stays' = 'moves',
 ): void {
   const animates = useTouchPresentation().isTouch && enabled;
   /**
@@ -388,6 +370,8 @@ export function useListUpdateMotion(
   const layoutRef = useRef<Layout | null>(null);
   /** The removed rows' copies still collapsing, each with its row. */
   const ghostsRef = useRef(new Map<HTMLElement, HTMLElement>());
+  /** The commit whose motions hold the list's clip; a newer one takes it. */
+  const clipRef = useRef(0);
 
   useIsomorphicLayoutEffect(() => {
     const element = listRef.current;
@@ -397,7 +381,7 @@ export function useListUpdateMotion(
       layoutRef.current = null;
       return;
     }
-    const layout = readLayout(element, followingContent);
+    const layout = readLayout(element);
     const {rows, boxes} = layout;
     const before = layoutRef.current;
     layoutRef.current = layout;
@@ -409,6 +393,7 @@ export function useListUpdateMotion(
     // Its springs are the list table's roles, resolved under the theme.
     registerListTable();
     const at = motionNow();
+    const motions: Promise<unknown>[] = [];
     const slides: Slide[] = [];
     const entering: HTMLElement[] = [];
     for (const row of rows) {
@@ -437,7 +422,7 @@ export function useListUpdateMotion(
       if (rides) {
         row.setAttribute(TRAVELLING_ATTRIBUTE, '');
       }
-      void springHome(row, 'y', slide.from - slide.to, SPRING, at).then(
+      const slid = springHome(row, 'y', slide.from - slide.to, SPRING, at).then(
         arrived => {
           if (arrived) {
             releaseMotion(row, 'translate');
@@ -447,6 +432,7 @@ export function useListUpdateMotion(
           }
         },
       );
+      motions.push(slid);
     }
     if (entering.length > 0) {
       // The spring the slides run under this list's theme: new rows time
@@ -468,7 +454,7 @@ export function useListUpdateMotion(
         );
         // From rest it starts with the slides, when the browser commits
         // them; a fade already running continues from the frame on screen.
-        void playRow(
+        const fade = playRow(
           row,
           'opacity',
           fadeIn(start, progress, duration, after),
@@ -479,6 +465,7 @@ export function useListUpdateMotion(
             releaseMotion(row, 'opacity');
           }
         });
+        motions.push(fade);
       }
     }
     // Removed rows collapse in place on the slides' spring, the row below
@@ -511,42 +498,54 @@ export function useListUpdateMotion(
       if (across !== 0) {
         animatorFor(row).set({x: across});
       }
-      void animateRow(row, {y: box.height}, SPRING, {crossfadeAs: 'exit'});
+      motions.push(
+        animateRow(row, {y: box.height}, SPRING, {crossfadeAs: 'exit'})
+          .finished,
+      );
       // The copy leaves when its collapse ends (arrival or interruption).
       ghosts.set(ghost, row);
-      void animateRow(ghost, {y: -(box.height + lift)}, SPRING, {
-        crossfadeAs: 'exit',
-      }).finished.then(() => {
-        ghosts.delete(ghost);
-        ghost.remove();
-      });
+      motions.push(
+        animateRow(ghost, {y: -(box.height + lift)}, SPRING, {
+          crossfadeAs: 'exit',
+        }).finished.then(() => {
+          ghosts.delete(ghost);
+          ghost.remove();
+        }),
+      );
     }
-    // What layout moved below the list moves back and comes along, each
-    // piece by what layout moved it: content layout did not move (a footer
-    // held at the bottom of its column) stays put.
-    for (const [below, top] of layout.below) {
-      const was = before.below.get(below);
-      if (was == null || Math.abs(top - was) < MIN_MOVE_PX) {
-        continue;
-      }
-      void springHome(below, 'y', was - top, SPRING, at).then(arrived => {
-        if (arrived) {
-          releaseMotion(below, 'translate');
+    // Content after the list took its new place by layout at this commit.
+    // A list that got shorter clips its rows to its box until they rest, so
+    // the rows sliding up into the gap never paint over that content; a clip
+    // still held by a running motion stays with this commit's motions.
+    if (
+      motions.length > 0 &&
+      (layout.height < before.height - MIN_MOVE_PX ||
+        element.style.getPropertyValue('overflow-y') === 'clip')
+    ) {
+      const mine = ++clipRef.current;
+      element.style.setProperty('overflow-y', 'clip');
+      void Promise.all(motions).then(() => {
+        if (clipRef.current === mine) {
+          element.style.removeProperty('overflow-y');
         }
       });
     }
   });
 
   // External system (`architecture:react-component-runtime` INV3): the
-  // removed rows' copies this hook put in the list, DOM outside React. When
-  // the motion stops owning the list (hasAnimatedChanges off, a mouse, an
-  // unmount), each leaves at once with its motion stopped.
+  // removed rows' copies this hook put in the list, DOM outside React, and
+  // the list's clip. When the motion stops owning the list (hasAnimatedChanges
+  // off, a mouse, an unmount), each copy leaves at once with its motion
+  // stopped, and the clip goes.
   useIsomorphicLayoutEffect(() => {
     if (!animates) {
       return;
     }
     const ghosts = ghostsRef.current;
+    const element = listRef.current;
     return () => {
+      clipRef.current += 1;
+      element?.style.removeProperty('overflow-y');
       for (const [ghost, row] of ghosts) {
         stopRow(row, 'translate');
         stopRow(ghost, 'translate', 'opacity');
@@ -554,7 +553,7 @@ export function useListUpdateMotion(
       }
       ghosts.clear();
     };
-  }, [animates]);
+  }, [listRef, animates]);
 
   // Layout that changes with no commit (a web font arriving, a rotation that
   // rewraps rows, a stylesheet or theme changing row heights, a row resizing
@@ -570,7 +569,7 @@ export function useListUpdateMotion(
       if (layoutRef.current == null) {
         return;
       }
-      layoutRef.current = readLayout(element, followingContent);
+      layoutRef.current = readLayout(element);
     });
-  }, [listRef, animates, followingContent]);
+  }, [listRef, animates]);
 }

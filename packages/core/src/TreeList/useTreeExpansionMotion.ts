@@ -37,18 +37,17 @@
  * value on screen when the row is toggled again mid-motion. A collapse keeps
  * the children rendered until the block has slid away; the commit that
  * removes them shifts the rows below back by the same amounts, so nothing
- * jumps. Page content below the tree moves the same way (utils/rowMotion.ts
- * `contentBelow`: in-flow content after the tree up to its scroll container,
- * never an element another owner already translates), only by what layout
- * moves it, unless the tree is told to keep it still (`followingContent:
- * 'stays'`). Its `translate` makes it the containing block of any
- * `position: fixed` element inside it while it moves. An unmount mid-motion
- * leaves nothing moved.
+ * jumps. Page content after the tree is not the tree's to move: the tree's
+ * height changes by layout at the commit that inserts or removes a group
+ * (`spec:AST-094` FR5 forbids animating layout), so content after it takes
+ * its new place at once, with no transient translate on it; only the tree's
+ * own rows animate, inside its box. An unmount mid-motion leaves nothing
+ * moved.
  *
  * Under reduced motion nothing travels (`design:reduced-motion`): every part
  * takes the animator's own Reduced Motion handling, so the children fade in
- * where they land and fade out where they are, and the rows below, the
- * content below and the chevron cross-fade into place.
+ * where they land and fade out where they are, and the rows below and
+ * the chevron cross-fade into place.
  *
  * One touch model: an Android finger gets the same motion as an iOS one.
  * With a mouse (the theme's presentation) nothing moves: the children appear
@@ -65,7 +64,6 @@ import {isRtlElement} from '../hooks/isRtlElement';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {list, registerListTable} from '../motion/uikit/list';
 import {
-  contentBelow,
   layoutShifts,
   motionNow,
   releaseMotion,
@@ -117,7 +115,6 @@ function chevronOf(group: HTMLElement): HTMLElement | null {
 
 export function useTreeExpansionMotion(
   isExpanded: boolean,
-  followingContent: 'moves' | 'stays' = 'moves',
 ): TreeExpansionMotion {
   const animates = useTouchPresentation().isTouch;
   const [shown, setShown] = useState(isExpanded);
@@ -135,9 +132,8 @@ export function useTreeExpansionMotion(
   /** A motion is running: a toggle now retargets it instead of restarting. */
   const inFlightRef = useRef(false);
   /**
-   * What the motion moves outside the group (the rows after it in the tree,
-   * page content below the tree), each with how far the group's layout moves
-   * it.
+   * What the motion moves outside the group (the rows after it in the
+   * tree), each with how far the group's layout moves it.
    */
   const movedRef = useRef<Map<HTMLElement, number>>(new Map());
 
@@ -171,20 +167,13 @@ export function useTreeExpansionMotion(
       (child): child is HTMLElement => child instanceof HTMLElement,
     );
     const justMounted = !before.shown;
-    // The rows after the group in the tree, and the page content below the
-    // tree (unless the app keeps it still), each by how far the group's
-    // layout moves it: content layout does not move stays put. Kept as they
-    // are while a motion runs, so a toggle mid-motion retargets the same
-    // elements.
-    const tree = element.closest<HTMLElement>('[role="tree"]');
+    // The rows after the group in the tree, each by how far the group's
+    // layout moves it. Content after the tree is not the tree's to move: it
+    // takes its new place by layout. Kept as they are while a motion runs,
+    // so a toggle mid-motion retargets the same rows.
     const moved =
       justMounted || !inFlightRef.current
-        ? layoutShifts(element, [
-            ...rowsAfter(element),
-            ...(followingContent === 'moves' && tree != null
-              ? contentBelow(tree)
-              : []),
-          ])
+        ? layoutShifts(element, rowsAfter(element))
         : movedRef.current;
     movedRef.current = moved;
     inFlightRef.current = true;
@@ -263,14 +252,13 @@ export function useTreeExpansionMotion(
       // the clip first would show them over the parent row for a frame.
       setShown(false);
     });
-  }, [isExpanded, shown, animates, followingContent]);
+  }, [isExpanded, shown, animates]);
 
   // External system (`architecture:react-component-runtime` INV3): the shared
   // motion animators of elements outside this row's render, the rows after
-  // its group and page content below the tree, which the effect above moves
-  // and releases. An unmount mid-motion must leave none of them moved: stop
-  // them at rest, clear their translate and the group's clip, and make any
-  // pending arrival moot.
+  // its group, which the effect above moves and releases. An unmount
+  // mid-motion must leave none of them moved: stop them at rest, clear their
+  // translate and the group's clip, and make any pending arrival moot.
   useIsomorphicLayoutEffect(
     () => () => {
       generationRef.current += 1;

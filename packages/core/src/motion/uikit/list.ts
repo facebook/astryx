@@ -28,7 +28,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/motion/MEASUREMENTS.md
- * - /packages/core/src/utils/interactionOverlay.stylex.ts (`cellPressConsts`
+ * - /packages/core/src/utils/rowPressLayer.stylex.ts (`cellPressConsts`
  *   mirrors the cell release; interactionOverlay.cell.test.ts checks it)
  * - /packages/core/src/List/listRow.stylex.ts (`listRowConsts` mirrors the
  *   row heights; List.test.tsx checks it)
@@ -58,7 +58,7 @@ export const list = {
      *   the cell's deselect is to be read
      * @measure M-LI01
      */
-    releaseCurve: [0, 0, 0.2, 1],
+    releaseCurve: timing.press.highlightOutCurve,
   },
   deselect: {
     /**

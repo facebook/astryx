@@ -407,6 +407,56 @@ describe('the release', () => {
     expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
   });
 
+  it('runs on the theme’s release clock when a theme retunes it', () => {
+    // AST-094 FR4: the release is the motion role
+    // `timing.press.highlightOutMs`; the stylesheet's fade plays the same
+    // role, so the attribute stays until that fade ends.
+    // Set on the row itself: a browser inherits a theme's variable down to
+    // it, which jsdom does not model.
+    const root = rows[0];
+    root.style.setProperty('--motion-timing-press-highlight-out-ms', '400ms');
+    try {
+      press(rows[0], 'pointerdown', 10, 10);
+      vi.advanceTimersByTime(PRESS_ONSET_MS);
+      press(rows[0], 'pointerup', 10, 10);
+      vi.advanceTimersByTime(PRESS_FADE_MS);
+      expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+      vi.advanceTimersByTime(400 - PRESS_FADE_MS);
+      expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    } finally {
+      root.style.removeProperty('--motion-timing-press-highlight-out-ms');
+    }
+  });
+
+  it('caps a retuned release clock at 200 ms under reduced motion (DR2)', () => {
+    const row = rows[0];
+    row.style.setProperty('--motion-timing-press-highlight-out-ms', '400ms');
+    const original = window.matchMedia;
+    window.matchMedia = (query: string) =>
+      query === '(prefers-reduced-motion: reduce)'
+        ? {
+            matches: true,
+            media: query,
+            onchange: null,
+            addEventListener: () => {},
+            removeEventListener: () => {},
+            addListener: () => {},
+            removeListener: () => {},
+            dispatchEvent: () => false,
+          }
+        : original.call(window, query);
+    try {
+      press(row, 'pointerdown', 10, 10);
+      vi.advanceTimersByTime(PRESS_ONSET_MS);
+      press(row, 'pointerup', 10, 10);
+      vi.advanceTimersByTime(200);
+      expect(row.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    } finally {
+      window.matchMedia = original;
+      row.style.removeProperty('--motion-timing-press-highlight-out-ms');
+    }
+  });
+
   it('answers a tap too quick for the delay, at the release', () => {
     press(rows[0], 'pointerdown', 10, 10);
     vi.advanceTimersByTime(20);

@@ -8,9 +8,9 @@
  *   collapse removes the children at once; under any finger (iOS and Android
  *   alike) they stay, inert and out of the arrow keys' reach, until they have
  *   slid away, and an expand that interrupts the collapse keeps them; page
- *   content below the tree moves with an expansion under a finger unless the
- *   tree keeps it still, only by what layout moves it, releases its translate at
- *   its own arrival and is left at rest when the tree unmounts mid-collapse
+ *   content after the tree is never moved (it takes its place by layout), the
+ *   rows inside the tree release their translate at their own arrival and are
+ *   left at rest when the tree unmounts mid-collapse
  * @position Beside TreeList/useTreeExpansionMotion.ts; the motion itself is
  *   proven in a real engine by
  *   TreeList/__tests__/TreeListExpand.interaction.browser.spec.ts
@@ -154,7 +154,7 @@ describe('TreeList expansion presence', () => {
   });
 });
 
-describe('content below the tree', () => {
+describe('content after the tree', () => {
   const collapsed: TreeListItemData[] = [
     {
       id: 'components',
@@ -164,54 +164,57 @@ describe('content below the tree', () => {
     {id: 'app', label: 'App.tsx'},
   ];
 
-  function Page({followingContent}: {followingContent?: 'moves' | 'stays'}) {
+  function Page() {
     return (
       <div>
-        <TreeList items={collapsed} followingContent={followingContent} />
+        <TreeList items={collapsed} />
         <p data-testid="below">Below the tree</p>
-        <p data-testid="pinned" data-pinned="">
-          A footer layout does not move
-        </p>
       </div>
     );
   }
 
-  it('moves with an expansion under a finger', async () => {
-    stubPointer('touch');
-    stubLayout();
-    render(<Page />);
-    await act(async () => undefined);
-    fireEvent.click(toggle() as HTMLElement);
-    expect(motionOf(screen.getByTestId('below'))).toBeDefined();
-  });
-
-  it('moves only what the expansion moves in layout: a pinned footer stays put', async () => {
-    stubPointer('touch');
-    stubLayout();
-    render(<Page />);
-    await act(async () => undefined);
-    fireEvent.click(toggle() as HTMLElement);
-    expect(motionOf(screen.getByTestId('below'))).toBeDefined();
-    expect(motionOf(screen.getByTestId('pinned'))).toBeUndefined();
-    expect(screen.getByTestId('pinned').style.translate).toBe('');
-  });
-
-  it("releases each moved element's translate when its own spring arrives", async () => {
+  it('is never moved by an expansion: it takes its place by layout', async () => {
     stubPointer('touch');
     stubLayout();
     render(<Page />);
     await act(async () => undefined);
     fireEvent.click(toggle() as HTMLElement);
     const below = screen.getByTestId('below');
-    // Moved: its spring starts when the browser commits it.
-    expect(motionOf(below)).toBeDefined();
+    expect(motionOf(below)).toBeUndefined();
+    expect(below.style.translate).toBe('');
+    // The rows inside the tree still move.
+    expect(motionOf(row('app') as HTMLElement)).toBeDefined();
+  });
+
+  it('is never moved by a collapse either', async () => {
+    stubPointer('touch');
+    stubLayout();
+    render(<Page />);
+    await act(async () => undefined);
+    fireEvent.click(toggle() as HTMLElement);
     await waitFor(
-      () => {
-        expect(below.style.translate).toBe('');
-        expect((row('app') as HTMLElement).style.translate).toBe('');
-      },
+      () => expect(motionOf(row('app') as HTMLElement)).toBeUndefined(),
       {timeout: 3000},
     );
+    fireEvent.click(toggle() as HTMLElement);
+    const below = screen.getByTestId('below');
+    expect(motionOf(row('app') as HTMLElement)).toBeDefined();
+    expect(motionOf(below)).toBeUndefined();
+    expect(below.style.translate).toBe('');
+  });
+
+  it("releases each moved row's translate when its own spring arrives", async () => {
+    stubPointer('touch');
+    stubLayout();
+    render(<Page />);
+    await act(async () => undefined);
+    fireEvent.click(toggle() as HTMLElement);
+    const app = row('app') as HTMLElement;
+    // Moved: its spring starts when the browser commits it.
+    expect(motionOf(app)).toBeDefined();
+    await waitFor(() => expect(app.style.translate).toBe(''), {
+      timeout: 3000,
+    });
   });
 
   it('leaves nothing moved when the tree unmounts mid-collapse', async () => {
@@ -221,22 +224,20 @@ describe('content below the tree', () => {
     await act(async () => undefined);
     fireEvent.click(toggle() as HTMLElement);
     await waitFor(
-      () => expect(motionOf(screen.getByTestId('below'))).toBeUndefined(),
-      {
-        timeout: 3000,
-      },
+      () => expect(motionOf(row('app') as HTMLElement)).toBeUndefined(),
+      {timeout: 3000},
     );
     // Collapse, and take the tree away while it runs.
     fireEvent.click(toggle() as HTMLElement);
-    const below = screen.getByTestId('below');
-    expect(motionOf(below)).toBeDefined();
+    const app = row('app') as HTMLElement;
+    expect(motionOf(app)).toBeDefined();
     rerender(
       <div>
         <p data-testid="below">Below the tree</p>
       </div>,
     );
-    expect(below.style.translate).toBe('');
-    expect(motionOf(below)).toBeUndefined();
+    expect(app.style.translate).toBe('');
+    expect(motionOf(app)).toBeUndefined();
   });
 
   it('stays still with a mouse, where nothing moves', async () => {
@@ -248,16 +249,5 @@ describe('content below the tree', () => {
     fireEvent.click(toggle() as HTMLElement);
     expect(motionOf(screen.getByTestId('below'))).toBeUndefined();
     expect(motionOf(row('app') as HTMLElement)).toBeUndefined();
-  });
-
-  it("stays still with followingContent: 'stays'", async () => {
-    stubPointer('touch');
-    stubLayout();
-    render(<Page followingContent="stays" />);
-    await act(async () => undefined);
-    fireEvent.click(toggle() as HTMLElement);
-    expect(motionOf(screen.getByTestId('below'))).toBeUndefined();
-    // The rows inside the tree still move.
-    expect(motionOf(row('app') as HTMLElement)).toBeDefined();
   });
 });

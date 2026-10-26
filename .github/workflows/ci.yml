@@ -2562,7 +2562,6 @@ jobs:
         pr-rtl-shard,
         pr-rtl-merge,
         pr-rtl,
-        pr-interaction,
       ]
     if: ${{ always() && github.event_name == 'pull_request' }}
     runs-on: ubuntu-slim

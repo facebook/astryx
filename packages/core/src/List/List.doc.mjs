@@ -60,13 +60,6 @@ export const docs = {
       default: 'false',
     },
     {
-      name: 'followingContent',
-      type: "'moves' | 'stays'",
-      description:
-        "With hasAnimatedChanges, page content below the list moves with its rows (a transient translate, cleared at rest) instead of jumping when the list changes height, each piece by what layout moved it. While it moves, that translate makes it the containing block of any position: fixed element inside it. Use 'stays' to keep it still when the app manages that area itself.",
-      default: "'moves'",
-    },
-    {
       name: 'isEditing',
       type: 'boolean',
       description:

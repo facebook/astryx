@@ -65,17 +65,6 @@ export interface TreeListProps extends BaseProps<HTMLDivElement> {
   variant?: TreeListVariant;
 
   /**
-   * Under a finger, a row's expand and collapse slide the rows below it,
-   * and page content below the tree moves with them (a
-   * transient `translate`, cleared at rest), each piece by what layout moves
-   * it. While it moves, that `translate` makes it the containing block of
-   * any `position: fixed` element inside it. `'stays'` keeps the content
-   * below the tree still, for apps that manage that area themselves.
-   * @default 'moves'
-   */
-  followingContent?: 'moves' | 'stays';
-
-  /**
    * Header content rendered above the tree list.
    * Semantically associated via aria-labelledby.
    */
@@ -198,7 +187,6 @@ export function TreeList({
   items,
   density = 'balanced',
   variant = 'lineGuides',
-  followingContent = 'moves',
   header,
   xstyle,
   className,
@@ -367,7 +355,6 @@ export function TreeList({
           onToggle={handleToggle}
           density={density}
           variant={variant}
-          followingContent={followingContent}
           renderChildren={renderChildren}
           posInSet={index + 1}
           setSize={items.length}
