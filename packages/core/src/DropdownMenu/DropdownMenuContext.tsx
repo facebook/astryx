@@ -106,7 +106,10 @@ export interface DropdownMenuSurfaceHost {
   getElement: () => HTMLElement | null;
 }
 
-/** What a sub-menu with a header or footer needs from the root. Internal. */
+/**
+ * What a sub-menu needs from its DropdownMenu root: the surface a sub-menu
+ * with a header or footer renders into, and the root's touch model. Internal.
+ */
 export interface DropdownMenuSurfaceValue {
   /**
    * An element inside the root's popover but outside every `role="menu"`
@@ -121,6 +124,13 @@ export interface DropdownMenuSurfaceValue {
   ownerId: string;
   /** The root's resolved `menuMaxHeight`, which a drilled-in view caps at. */
   menuMaxHeight?: string;
+  /**
+   * The root's touch model (`'uikit'` in its touch modes, `'pointer'` when
+   * its presentation pins the pointer model). A sub-menu's press model takes
+   * it, so a finger in a flyout follows the root's rules: a cancelled touch
+   * clears its lit row (`spec:AST-094` FR28).
+   */
+  touchModel?: 'pointer' | 'uikit';
 }
 
 /**
