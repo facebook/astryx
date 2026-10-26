@@ -180,6 +180,11 @@ export function declaresPressPaint(el: Element): boolean {
 /** `.2s`, `200ms`, `0.2s` → 200. */
 export function durationToMs(value: string): number {
   const text = value.trim();
+  // StyleX folds a constant cap into `calc(<time>)`.
+  const folded = /^calc\((.+)\)$/.exec(text);
+  if (folded != null) {
+    return durationToMs(folded[1]);
+  }
   // Under reduced motion the clock is capped: `min(<clock>, 200ms)`.
   const capped = /^min\((.+),\s*([\d.]+m?s)\)$/.exec(text);
   if (capped != null) {
