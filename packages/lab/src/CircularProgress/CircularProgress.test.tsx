@@ -585,7 +585,7 @@ describe('CircularProgress', () => {
     }
   });
 
-  it('stops a running change when the ring turns indeterminate, and the next value starts from rest', () => {
+  it('stops a running change when the ring turns indeterminate, and draws the next value at once', () => {
     const calls: Keyframe[][] = [];
     let cancelled = 0;
     const original = Element.prototype.animate;
@@ -633,12 +633,17 @@ describe('CircularProgress', () => {
       // The four layers' animations stop with the determinate ring.
       expect(cancelled).toBe(4);
       calls.length = 0;
+      // The indeterminate ring never drew the 80% it held, so the next value
+      // draws at once: nothing sweeps back from 80%.
       rerender(<CircularProgress value={30} size="md" label="Progress" />);
+      expect(calls).toHaveLength(0);
+      // The change after that starts from the 30% now drawn (108deg).
+      rerender(<CircularProgress value={60} size="md" label="Progress" />);
+      expect(calls).toHaveLength(4);
       const cap = calls[2];
       const angle = (frame: Keyframe) =>
         Number(/rotate\(([-\d.]+)deg\)/.exec(String(frame.transform))?.[1]);
-      // From 80% at rest (288deg), not from the stopped change's 40%.
-      expect(angle(cap[0])).toBeCloseTo(288, 5);
+      expect(angle(cap[0])).toBeCloseTo(108, 5);
     } finally {
       Element.prototype.animate = original;
       window.getComputedStyle = originalStyle;
