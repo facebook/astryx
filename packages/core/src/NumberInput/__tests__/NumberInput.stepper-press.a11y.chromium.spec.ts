@@ -6,13 +6,13 @@
  * iOS Safari selects the nearest text after a finger rests about half a second
  * on content that allows selection: on a stepper that is the field's label,
  * with the edit menu over the field, and the tap that would have stepped is
- * lost. The gesture host turns selection and the touch callout off only where
- * a hold does something by its rule: a long press, or a recognizer that asks
- * (`spec:AST-094` FR41, proposed in #8454). The stepper's hold-repeat runs on
- * a press tracker, which cannot ask yet, so that proof waits (the fixme
- * below). The column takes `touch-action: manipulation`, which keeps panning
- * and pinch-zoom the browser's: a scroll that starts on a stepper still
- * scrolls the page and steps nothing. (Chromium's touch emulation does not select on a long press,
+ * lost. `spec:AST-094` FR41 suppresses text-selection start and the callout
+ * for a stepper's hold-repeat press. The gesture host does that today only for
+ * a long press or a recognizer that asks, and the press tracker's opt-in is
+ * pending (#8336), so that proof waits (the fixme below). The column takes
+ * `touch-action: manipulation`, which keeps panning and pinch-zoom the
+ * browser's: a scroll that starts on a stepper still scrolls the page and
+ * steps nothing. (Chromium's touch emulation does not select on a long press,
  * so the selection itself is checked on the iOS simulator; this proves the
  * paths a hold must not change, including a hold longer than a tap.)
  */
@@ -59,10 +59,10 @@ test('the stepper column keeps touch-action manipulation, and the field stays pa
   );
 });
 
-// Waits on the press tracker's selection option: the gesture host locks
-// selection only for a long press or a recognizer that asks (`spec:AST-094`
-// FR41, proposed in #8454), and the stepper's hold-repeat runs on a press
-// tracker.
+// Waits on the press tracker's opt-in selection lock (pending in #8336):
+// `spec:AST-094` FR41 suppresses text-selection start and the callout for a
+// stepper's hold-repeat press, and the gesture host does that today only for a
+// long press or a recognizer that asks.
 test.fixme('a held finger turns text selection off on the stepper column', async ({
   page,
 }) => {

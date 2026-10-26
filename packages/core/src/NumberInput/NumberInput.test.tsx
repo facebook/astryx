@@ -2709,9 +2709,8 @@ describe('NumberInput stepper padding coupling', () => {
 
 describe('NumberInput stepper column under a held finger', () => {
   it('leaves selection to the gesture host and keeps touch-action manipulation', () => {
-    // Text selection under a held finger is the gesture host's, by its rule
-    // (`spec:AST-094` FR41, proposed in #8454); the column itself declares
-    // only touch-action.
+    // Text selection under a held finger is the gesture host's
+    // (`spec:AST-094` FR41); the column itself declares only touch-action.
     const source = readFileSync(
       'packages/core/src/NumberInput/NumberInput.tsx',
       'utf8',

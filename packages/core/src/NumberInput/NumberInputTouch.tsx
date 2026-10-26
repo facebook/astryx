@@ -27,10 +27,11 @@
  * under the pointer at once and clears at once; inside a scroll view a finger
  * waits for the content-touch delay, and a scroll that takes the touch
  * before then cancels it; once delivered, the press keeps its touch from the
- * page's pan. The gesture host turns text selection off under a held finger
- * only for a long press or a recognizer that asks (`spec:AST-094` FR41,
- * proposed in #8454); a press tracker cannot ask yet, so a held stepper keeps
- * the browser's long-press selection.
+ * page's pan. `spec:AST-094` FR41 suppresses text-selection start and the
+ * callout for a stepper's hold-repeat press; the gesture host does that today
+ * only for a long press or a recognizer that asks, and the press tracker's
+ * opt-in is pending (#8336), so until then a held stepper keeps the browser's
+ * long-press selection.
  *
  * While a press steps, the field shows the stepping value and `onChange` is
  * not called; at the release it is called once, with the final value, and

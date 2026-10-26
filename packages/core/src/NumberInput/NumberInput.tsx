@@ -184,11 +184,10 @@ const styles = stylex.create({
       insetInlineEnd: `min(0px, calc(50% - ${TOUCH_TARGET} / 2))`,
     },
     // `manipulation` keeps rapid taps from double-tap zooming the page while
-    // pans and pinch-zoom stay the browser's. Text selection under a held
-    // finger is the gesture host's: it turns selection off only for a long
-    // press or a recognizer that asks (`spec:AST-094` FR41, proposed in
-    // #8454), and the stepper's hold-repeat runs on a press tracker, which
-    // cannot ask yet.
+    // pans and pinch-zoom stay the browser's. `spec:AST-094` FR41 suppresses
+    // text-selection start and the callout for a held stepper's press: the
+    // gesture host's to do, today only for a long press or a recognizer that
+    // asks, with the press tracker's opt-in pending (#8336).
     touchAction: 'manipulation',
   },
   numberStepperButton: {
