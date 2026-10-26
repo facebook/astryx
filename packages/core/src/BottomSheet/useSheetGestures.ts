@@ -115,15 +115,12 @@ import {
   type RefObject,
   type UIEvent as ReactUIEvent,
 } from 'react';
-import {
-  getGestureHost,
-  LongPressGestureRecognizer,
-  PanGestureRecognizer,
-  useGestureRecognizer,
-  type GestureRecognizer,
-  type GestureTouch,
-  type PointerKind,
-} from '../gestures';
+import {getGestureHost} from '../gestures/GestureHost';
+import type {GestureRecognizer} from '../gestures/GestureRecognizer';
+import {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer';
+import {PanGestureRecognizer} from '../gestures/PanGestureRecognizer';
+import type {GestureTouch, PointerKind} from '../gestures/types';
+import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 import {playHaptic} from '../gestures/haptics';
 import {VelocityTracker} from '../gestures/VelocityTracker';
 import {readTouchPresentation} from './sheetTouch';
