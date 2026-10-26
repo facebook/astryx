@@ -185,7 +185,9 @@ those contracts.
   stops at the boundary and never passes it, so content outside the boundary
   takes its final place at once. The walk only collects
   candidates; an element moves only when its layout rectangle changed between
-  the two measurements (OQ5). Candidates follow these rules:
+  the two measurements (OQ5) and it intersects the boundary's visible area. An
+  element outside the visible area takes its final place at once, so the setup
+  cost is bounded by what the person can see. Candidates follow these rules:
   - an element with `display: contents` has no box, so the walk takes its
     children in its place;
   - an element with `display: none`, hidden, or of zero size is skipped;
