@@ -455,6 +455,12 @@ function ListDeleteControl({
     }
     wasEditingRef.current = isEditing;
   }, [isEditing, reveal]);
+  // A row whose actions never rest open (`swipeBehavior="commit"`, `spec:AST-057`
+  // FR5) gets no swipe seam from Item: nothing for the control to open, so
+  // there is none, and the row keeps the indent alone, as UIKit's `.none`.
+  if (reveal == null) {
+    return null;
+  }
   return (
     <span
       aria-hidden="true"
@@ -465,9 +471,6 @@ function ListDeleteControl({
       onClick={event => {
         // Its own tap, never the row's action.
         event.stopPropagation();
-        if (reveal == null) {
-          return;
-        }
         if (reveal.side === 'trailing') {
           reveal.close();
         } else {

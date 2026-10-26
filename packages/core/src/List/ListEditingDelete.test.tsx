@@ -13,7 +13,8 @@
  *   (desktop unchanged, swipe actions being touch-only); the control slides
  *   in and out with edit mode like every editing control; tapping it
  *   reveals the row's trailing actions through the row's own swipe, and
- *   tapping it again closes them
+ *   tapping it again closes them; a row whose swipe gives it nothing to open
+ *   (a commit row: Item hands it no swipe seam) keeps the indent alone
  * @position Beside List/List.tsx; the reveal's motion is the swipe's own
  *   (Item), proven in List/__tests__/ListEditingDelete.interaction.browser.spec.ts
  */
@@ -36,9 +37,11 @@ const swipe = vi.hoisted(() => ({
   reveal: vi.fn(),
   close: vi.fn(),
 }));
+// A row whose actions never rest open (a commit row) gets no seam from Item.
+const seam = vi.hoisted(() => ({present: true}));
 vi.mock('../Item/ItemSwipeRevealContext', async importOriginal => ({
   ...(await importOriginal<typeof RevealModule>()),
-  useItemSwipeReveal: () => swipe,
+  useItemSwipeReveal: () => (seam.present ? swipe : null),
 }));
 
 function stubPointer(pointer: 'touch' | 'mouse') {
@@ -59,6 +62,7 @@ function stubPointer(pointer: 'touch' | 'mouse') {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  seam.present = true;
 });
 
 const TRAILING: ItemSwipeActions = {
@@ -123,6 +127,25 @@ describe('List edit mode, delete control', () => {
     stubPointer('mouse');
     expect(matchMedia('(pointer: coarse)').matches).toBe(false);
     render(<Rows isEditing />);
+    await act(async () => undefined);
+    expect(isIndented('Sent')).toBe(true);
+    expect(controlOf('Sent')).toBeNull();
+  });
+
+  it('shows no delete control where the row’s swipe gives it nothing to open (a commit row): the indent alone', async () => {
+    stubPointer('touch');
+    // Nothing rests open under commit, so Item hands the row no swipe seam.
+    seam.present = false;
+    render(
+      <List isEditing editingControl="delete">
+        <ListItem
+          label="Sent"
+          onClick={ignoreClick}
+          swipeActions={TRAILING}
+          swipeBehavior="commit"
+        />
+      </List>,
+    );
     await act(async () => undefined);
     expect(isIndented('Sent')).toBe(true);
     expect(controlOf('Sent')).toBeNull();

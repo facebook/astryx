@@ -1240,6 +1240,30 @@ describe('List and swipe actions', () => {
     expect(rules.some(r => /overflow[-a-z]*: hidden/.test(r))).toBe(false);
   });
 
+  it('in edit mode, shows the delete control on a row whose actions can open and none on a commit row', () => {
+    const actions = {trailing: [{label: 'Delete', onActivate: () => {}}]};
+    render(
+      <List isEditing editingControl="delete">
+        <ListItem label="Opens" onClick={() => {}} swipeActions={actions} />
+        <ListItem
+          label="Commits"
+          onClick={() => {}}
+          swipeActions={actions}
+          swipeBehavior="commit"
+        />
+      </List>,
+    );
+    const disc = (label: string) =>
+      screen
+        .getByText(label)
+        .closest('li')
+        ?.querySelector('[data-astryx-delete-control]') ?? null;
+    expect(disc('Opens')).not.toBeNull();
+    // Nothing rests open under commit (`spec:AST-057` FR5): no control to
+    // open it, the indent alone.
+    expect(disc('Commits')).toBeNull();
+  });
+
   it('passes swipeActions and swipeBehavior through to the row unchanged', () => {
     render(
       <List>

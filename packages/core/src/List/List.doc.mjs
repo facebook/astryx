@@ -70,7 +70,7 @@ export const docs = {
       name: 'editingControl',
       type: "'select' | 'delete'",
       description:
-        "The control edit mode shows in each row's leading column. 'select': UIKit's multiple selection during editing, the theme's checkbox indicator (a theme can map it to a circle), checked when the row is isSelected. It is decorative: the row keeps its selected semantics and its one tab stop, and activating the row calls its onClick as before, for the app to toggle the row's selection. 'delete': UIKit's delete control, under a finger, on each row with trailing swipe actions; tapping it opens them as a swipe does and tapping it again closes them. With a mouse there is no delete control, only the indent. Under a finger each control slides in with the rows and fades in, and slides out on leaving. Proposed public API, pending owner review.",
+        "The control edit mode shows in each row's leading column. 'select': UIKit's multiple selection during editing, the theme's checkbox indicator (a theme can map it to a circle), checked when the row is isSelected. It is decorative: the row keeps its selected semantics and its one tab stop, and activating the row calls its onClick as before, for the app to toggle the row's selection. 'delete': UIKit's delete control, under a finger, on each row with trailing swipe actions that can rest open; tapping it opens them as a swipe does and tapping it again closes them. A row with swipeBehavior 'commit' (nothing rests open) and a mouse keep the indent alone. Under a finger each control slides in with the rows and fades in, and slides out on leaving. Proposed public API, pending owner review.",
     },
     {
       name: 'edge',
