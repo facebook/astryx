@@ -4,8 +4,10 @@
  * @file listRow.stylex.ts
  * @input Uses StyleX
  * @output Exports `listRowConsts` (the build-time mirror of the touch row
- *   heights in motion/uikit/list.ts, `list.metrics`) and `listRowStyles` (a
- *   row's minimum height under a finger)
+ *   heights in motion/uikit/list.ts, `list.metrics`), `listRowStyles` (a
+ *   row's minimum height under a finger) and `listRowTargetStyles` (a
+ *   CheckboxList row that toggles: that height, or the theme's touch target
+ *   when it is taller)
  * @position Internal styling utility; ListItem composes `listRowStyles`
  *
  * StyleX evaluates a style at build time and cannot read the constants
@@ -22,6 +24,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
+import {sizeVars} from '../theme/tokens.stylex';
 
 export const listRowConsts = stylex.defineConsts({
   /** `list.metrics.rowHeight`: a one-line row on iOS under a finger. */
@@ -54,6 +57,29 @@ export const listRowStyles = stylex.create({
     minHeight: {
       default: null,
       [TOUCH]: listRowConsts.touchSubtitleRowHeight,
+    },
+  },
+});
+
+/**
+ * A CheckboxList row that toggles, at balanced or spacious density, under a
+ * finger: the row height above, or the theme's touch target
+ * (`--size-touch-target`, Indicator/touchTarget.stylex.ts) when that is
+ * taller, so a theme that raises the target raises these rows too.
+ * CheckboxListItem composes it after ListItem's `listRowStyles`, which it
+ * replaces.
+ */
+export const listRowTargetStyles = stylex.create({
+  touchOneLine: {
+    minHeight: {
+      default: null,
+      [TOUCH]: `max(${sizeVars['--size-touch-target']}, ${listRowConsts.touchRowHeight})`,
+    },
+  },
+  touchTwoLine: {
+    minHeight: {
+      default: null,
+      [TOUCH]: `max(${sizeVars['--size-touch-target']}, ${listRowConsts.touchSubtitleRowHeight})`,
     },
   },
 });

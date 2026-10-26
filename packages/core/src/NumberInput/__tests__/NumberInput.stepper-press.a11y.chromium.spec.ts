@@ -63,18 +63,25 @@ test('under a finger the stepper column takes touch-action manipulation, and the
 // `spec:AST-094` FR41: a stepper's hold-repeat press suppresses text-selection
 // start and the callout for that press only, through the press tracker's
 // selection lock.
-test('a held finger turns text selection off on the stepper column', async ({
+test('a held finger refuses text selection on the stepper column for that press only', async ({
   page,
 }) => {
   await open(page);
   const plus = page.getByRole('button', {name: 'Increment Quantity'});
   const column = plus.locator('..');
-  // The lock is an inline style while a finger is down, gone at the lift.
-  const lock = async () =>
+  // Away from iOS WebKit the lock cancels `selectstart` while a finger is
+  // down, and writes no style, so nothing repaints.
+  const refuses = async () =>
+    column.evaluate(el => {
+      const event = new Event('selectstart', {bubbles: true, cancelable: true});
+      el.dispatchEvent(event);
+      return event.defaultPrevented;
+    });
+  const style = async () =>
     column.evaluate(el =>
       (el as HTMLElement).style.getPropertyValue('user-select'),
     );
-  expect(await lock()).toBe('');
+  expect(await refuses()).toBe(false);
   const box = await plus.boundingBox();
   if (box == null) {
     throw new Error('the stepper has no box');
@@ -84,12 +91,13 @@ test('a held finger turns text selection off on the stepper column', async ({
     type: 'touchStart',
     touchPoints: [{x: box.x + box.width / 2, y: box.y + box.height / 2}],
   });
-  await expect.poll(lock).toBe('none');
+  await expect.poll(refuses).toBe(true);
+  expect(await style()).toBe('');
   await cdp.send('Input.dispatchTouchEvent', {
     type: 'touchEnd',
     touchPoints: [],
   });
-  await expect.poll(lock).toBe('');
+  await expect.poll(refuses).toBe(false);
 });
 
 test("with a mouse the stepper column keeps the browser's own touch-action (spec:AST-094 FR19)", async ({
