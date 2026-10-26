@@ -197,6 +197,8 @@ describe('motion roles', () => {
     expect(
       Object.fromEntries(discovered.map(role => [role.id, role.kind])),
     ).toEqual({
+      'springs.alertDismiss': 'spring',
+      'springs.alertPresent': 'spring',
       'springs.directChange': 'spring',
       'springs.emphasis': 'spring',
       'springs.fingerTracking': 'spring',
