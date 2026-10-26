@@ -136,8 +136,14 @@ async function openRow(page: Page, story: RowStory): Promise<OpenRow> {
 }
 
 /** Opacity of the row's press layer (the `::before`), as the engine presents it. */
+/** The press layer's strength: 0 while the row has no layer box (at rest). */
 const layerOpacity = async (row: Locator) =>
-  row.evaluate(el => Number(getComputedStyle(el, '::before').opacity));
+  row.evaluate(el => {
+    const before = getComputedStyle(el, '::before');
+    return before.content === 'none' || before.content === 'normal'
+      ? 0
+      : Number(before.opacity);
+  });
 
 /** The press attribute the controller writes on the row. */
 const pressState = async (row: Locator) =>
@@ -410,12 +416,17 @@ test('WebKit: the release keeps fading while the main thread is blocked (video)'
   });
   expect(blocked.length).toBeGreaterThan(0);
   // The row kept getting lighter while script could not run, all the way
-  // to its resting color.
-  expect(distinct.length, JSON.stringify(distinct)).toBeGreaterThanOrEqual(3);
+  // to its resting color: from a frame still short of rest, it reached rest
+  // inside the blocked window. A release on the main thread would hold its
+  // first frame's value until the block ends, 700 ms on, and could not. (The
+  // recording's frames are 40 ms apart, so how many land inside the 250 ms
+  // release depends on its phase: the count is not judged.)
+  const values = JSON.stringify(blocked.map(s => Math.round(s.value)));
+  expect(blocked[0].value, values).toBeLessThan(rest - 1);
+  expect(restIndex, values).toBeGreaterThan(0);
   for (let i = 1; i < distinct.length; i++) {
-    expect(distinct[i]).toBeGreaterThan(distinct[i - 1]);
+    expect(distinct[i], values).toBeGreaterThan(distinct[i - 1]);
   }
-  expect(restIndex, JSON.stringify(distinct)).toBeGreaterThan(-1);
 });
 
 test(
