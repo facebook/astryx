@@ -211,7 +211,7 @@ test('in a menu that scrolls, a resting finger lights its row after UIKit\u2019s
   await driver.play(tap(row, {holdMs: 320}));
   await expect
     .poll(async () => (await readLog(page)).picked)
-    .toEqual(['Duplicate']);
+    .toEqual(['New File']);
   const log = await readLog(page);
   const lit = log.focus.find(entry => entry.row.startsWith('New File'));
   expect(lit).toBeDefined();
@@ -316,12 +316,24 @@ test('a finger resting at a scrolling menu\u2019s edge autoscrolls it, and the p
 }) => {
   const {driver, menu} = await openScrollingMenu(page);
   const box = await menu.boundingBox();
-  if (box == null) {
+  const viewport = page.viewportSize();
+  if (box == null || viewport == null) {
     throw new Error('no menu');
   }
+  // The furthest the menu scrolls while the finger rests, read page-side:
+  // a pick at the lift closes the menu.
+  await menu.evaluate(el => {
+    const record = window as unknown as {__menuScrollMax: number};
+    record.__menuScrollMax = el.scrollTop;
+    el.addEventListener('scroll', () => {
+      record.__menuScrollMax = Math.max(record.__menuScrollMax, el.scrollTop);
+    });
+  });
   const before = await menu.evaluate(el => el.scrollTop);
-  // Inside the bottom edge zone, held still past the delay, then lifted.
-  const edge = {x: box.x + box.width / 2, y: box.y + box.height - 4};
+  // Inside the bottom edge zone of the part of the menu on screen, held
+  // still past the delay, then lifted.
+  const bottom = Math.min(box.y + box.height, viewport.height);
+  const edge = {x: box.x + box.width / 2, y: bottom - 4};
   const at = (t: number, dy: number) => ({
     t,
     fingers: [{id: 0, x: edge.x, y: edge.y + dy}],
@@ -334,7 +346,10 @@ test('a finger resting at a scrolling menu\u2019s edge autoscrolls it, and the p
     {t: ONSET_MS + 650, fingers: []},
   ]);
   await page.waitForTimeout(300);
-  expect(await menu.evaluate(el => el.scrollTop)).toBeGreaterThan(before);
+  const scrolledTo = await page.evaluate(
+    () => (window as unknown as {__menuScrollMax: number}).__menuScrollMax,
+  );
+  expect(scrolledTo).toBeGreaterThan(before);
   // The menu's own scroll did not cancel the press: its lift picked a row.
   expect((await readLog(page)).picked).toHaveLength(1);
 });
