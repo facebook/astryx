@@ -50,7 +50,7 @@ system_specs: []
 | Behavior                | A modal native dialog with a drawer that slides in from one inline edge, a header with a Close button, and a scrolling content region. Escape, the backdrop, and Close request closing; the dialog stays open while the drawer starts sliding out and closes within the slide-out (FR5), then focus returns to the opener. |
 | End-user impact         | Phone users open navigation in a drawer that contains focus, lock the page behind it, close it any usual way, and land back on the control that opened it.                                                                                                                                                                 |
 | Builder impact          | None.                                                                                                                                                                                                                                                                                                                      |
-| Compatibility/readiness | Records shipped behavior; no public change. Five implementation gaps: automatic side selection uses physical position, reduced motion still animates, its own close hold and backdrop, a caller `id` disconnects the Toggle, and a caller `onCancel` never runs (see Current-state impact).                                |
+| Compatibility/readiness | Records shipped behavior; no public change. Five implementation gaps: automatic side selection uses physical position, reduced motion still animates, its own top layer, close hold, and backdrop, a caller `id` disconnects the Toggle, and a caller `onCancel` never runs (see Current-state impact).                    |
 | Review checks           | Reject a non-modal drawer, a close that hides the drawer before its slide-out runs, focus not returned to a connected opener, a backdrop click inside the drawer that closes it, or a Toggle rendered outside an enabled AppShell mobile layout.                                                                           |
 | Governing rules         | `family:overlay-dismissal`; `architecture:layer-runtime` INV14; `component:AppShell` FR10–FR13; `design:bidirectionality` DR7; `design:reduced-motion` DR1–DR3; `architecture:public-component-api` INV5, INV7; `architecture:component-theming-surface`.                                                                  |
 
@@ -90,10 +90,11 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **A caller `onCancel` never runs.** MobileNav's own cancel handler replaces a
   caller `onCancel` on the dialog. `architecture:public-component-api` INV5 and
   INV7 have supported event inputs reach the element and compose.
-- **MobileNav builds its own close hold and backdrop.** MobileNav keeps the
-  dialog open through its close with its own timer and paints its own backdrop
-  fade. `architecture:layer-runtime` INV14 has a layer use the runtime's
-  presentation hold and backdrop tint rather than building its own.
+- **MobileNav builds its own top layer, close hold, and backdrop.** MobileNav
+  calls `showModal()` itself, keeps the dialog open through its close with its
+  own timer, and paints its own backdrop fade. `architecture:layer-runtime`
+  INV14 has a layer use the runtime's top-layer mounting, presentation hold, and
+  backdrop tint rather than building its own.
 - **Motion under reduced motion.** Under reduced motion the Drawer's slide and
   the backdrop's fade still run, for 0.01 s, rather than changing at once for a
   fine pointer or cross-fading for touch. `design:reduced-motion` DR2 and DR3
@@ -271,13 +272,15 @@ Read from source, with no focused test yet:
 
 - FR1: the distinct Drawer, Header, and Content elements, and the `mobile-nav`
   target with its `side` state.
-- FR2: the dialog's own id outside AppShell.
+- FR2 and FR11: the dialog's own id outside AppShell, and a caller `id`
+  replacing AppShell's drawer id inside AppShell.
 - FR8's shipped resolution.
 - FR10 and ORD2: the `label` prop, a caller `aria-labelledby` outranking the
   name, the level-2 heading for a string `header`, and other header content
   rendering as given.
-- FR11: rendering only in an enabled AppShell mobile layout, the ghost variant,
-  the menu icon, and `children` replacing it.
+- FR11: rendering only in an enabled AppShell mobile layout, the icon-only
+  ghost Button, a Toggle `label` replacing the default name, the menu icon, and
+  `children` replacing it.
 - FR12: the forwarded `ref` and `xstyle`, and the replaced caller `aria-label`
   and `onCancel`.
 
