@@ -325,9 +325,10 @@ export function CheckboxListItem({
           // Under a finger a compact row that hands its clicks to its
           // checkbox is at least the theme's touch target tall: a standalone
           // CheckboxList is a touch target, whatever its density. Balanced
-          // and spacious rows are already taller (List's touch row heights),
-          // and a read-only row with no action of its own (Markdown's task
-          // list) keeps its pitch.
+          // and spacious rows keep List's touch row heights (52 px, 62 px
+          // with a description) whatever the touch target, and a read-only
+          // row with no action of its own (Markdown's task list) keeps its
+          // pitch.
           density === 'compact' && hasRowInteraction && touchTargetStyles.row,
           xstyle,
         ] as StyleXStyles
