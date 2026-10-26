@@ -77,17 +77,6 @@ export interface ListProps extends BaseProps<
   hasAnimatedChanges?: boolean;
 
   /**
-   * With `hasAnimatedChanges`, page content below the list moves with its
-   * rows (a transient `translate`, cleared at rest) instead of jumping when
-   * the list changes height, each piece by what layout moved it. While it
-   * moves, that `translate` makes it the containing block of any
-   * `position: fixed` element inside it. `'stays'` keeps it still, for apps
-   * that manage that area themselves.
-   * @default 'moves'
-   */
-  followingContent?: 'moves' | 'stays';
-
-  /**
    * Whether to show dividers between list items. Under a finger, a touch
    * press hides the dividers on either side of the pressed row until the
    * finger lifts, as iOS lists do.
@@ -242,7 +231,6 @@ const dynamicStyles = stylex.create({
 export function List({
   children,
   hasAnimatedChanges = false,
-  followingContent = 'moves',
   density = 'balanced',
   hasDividers = false,
   edge: edgeProp,
@@ -259,7 +247,7 @@ export function List({
 }: ListProps) {
   const headerId = useId();
   const listRef = useRef<HTMLUListElement & HTMLOListElement>(null);
-  useListUpdateMotion(listRef, hasAnimatedChanges, followingContent);
+  useListUpdateMotion(listRef, hasAnimatedChanges);
   const mergedRef = useMergedRefs(
     listRef,
     ref as React.Ref<HTMLUListElement & HTMLOListElement>,
