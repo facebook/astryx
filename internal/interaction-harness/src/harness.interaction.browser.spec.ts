@@ -545,6 +545,60 @@ test.describe('frame evidence', () => {
     expect(top.Layout ?? 0).toBeGreaterThan(18);
   });
 
+  test('with invalidations, a trace tells a compositor animation from one the compositor cannot run', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'rendering traces are Chromium-only (README: engine limits)',
+    );
+    await fixture(page);
+    const box = page.locator('#box');
+    const animate = async (property: 'transform' | 'top') => {
+      let started = 0;
+      const trace = await traceRendering(
+        page,
+        async () => {
+          started = await box.evaluate((el, prop) => {
+            el.animate(
+              prop === 'transform'
+                ? [
+                    {transform: 'translateY(0px)'},
+                    {transform: 'translateY(200px)'},
+                  ]
+                : [{top: '360px'}, {top: '560px'}],
+              {duration: 600},
+            );
+            return performance.timeOrigin + performance.now();
+          }, property);
+          await page.waitForTimeout(700);
+        },
+        {invalidations: true},
+      );
+      return {trace, started};
+    };
+    const transform = await animate('transform');
+    expect(transform.trace.animations).toEqual([
+      expect.objectContaining({composited: true}),
+    ]);
+    expect(
+      transform.trace.styleInvalidations?.some(
+        inv => inv.reason === 'Animation',
+      ),
+    ).toBe(true);
+    const top = await animate('top');
+    expect(top.trace.animations).toEqual([
+      expect.objectContaining({composited: false}),
+    ]);
+    // Its per-frame layout is the page's: none of it is left out.
+    expect(
+      countBetween(top.trace, top.started + 100, top.started + 500, {
+        skipCompositorAnimationUpdates: true,
+      }).Layout ?? 0,
+    ).toBeGreaterThan(18);
+  });
+
   test("the long-task log records the page's own long task but not a DevTools evaluate, which the trace reports apart", async ({
     page,
     browserName,
