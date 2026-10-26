@@ -46,6 +46,7 @@ import {
 import type {BaseProps} from '../BaseProps';
 import {isRenderable, mergeProps} from '../utils';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
+import {ItemLabelContext} from './ItemLabelContext';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {computeTargetAndRel} from '../Link/computeTargetAndRel';
 import {useLinkComponent} from '../Link/useLinkComponent';
@@ -679,6 +680,10 @@ export function Item({
   // only once React runs it, such as an empty fragment, still publishes an id.
   const descriptionID = useId();
   const hasRenderableDescription = isRenderable(description);
+  // The label element's id, published through ItemLabelContext for a control
+  // Item renders in a slot that is named after the row (`aria-labelledby`).
+  const labelID = useId();
+  const hasRenderableLabel = isRenderable(label);
 
   const isStringLabel = typeof label === 'string';
   const isStringDescription = typeof description === 'string';
@@ -708,6 +713,7 @@ export function Item({
   const labelAndDescription = (
     <>
       <span
+        id={hasRenderableLabel ? labelID : undefined}
         {...stylex.props(
           styles.label,
           isInline && styles.inlineLabel,
@@ -912,7 +918,9 @@ export function Item({
       onClick={rootOnClick}>
       <ItemDescriptionContext
         value={hasRenderableDescription ? descriptionID : null}>
-        {innerContent}
+        <ItemLabelContext value={hasRenderableLabel ? labelID : null}>
+          {innerContent}
+        </ItemLabelContext>
       </ItemDescriptionContext>
       {hasSwipe && (
         // The panels: out-of-flow children of this root, so the DOM is the one

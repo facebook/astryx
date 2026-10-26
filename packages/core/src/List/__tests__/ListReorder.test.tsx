@@ -221,9 +221,96 @@ describe('List reorderable', () => {
       </List>,
     );
     expect(handleOf('Sent mail')).toBeInTheDocument();
+    // An icon with its own name names the row through the label element.
     expect(
-      await screen.findByRole('button', {name: 'Reorder item 3'}),
+      await screen.findByRole('button', {name: 'Reorder Starred'}),
     ).toBeInTheDocument();
+  });
+
+  it('names the handle "Reorder" then the row label element, for a component label too (spec:AST-103 FR4)', async () => {
+    function FieldName({name}: {name: string}) {
+      return <span>{name}</span>;
+    }
+    render(
+      <List reorderable={createReorderable({onReorder: () => {}})}>
+        <ListItem itemKey="inbox" label="Inbox" />
+        <ListItem itemKey="custom" label={<FieldName name="Custom Name" />} />
+      </List>,
+    );
+    expect(handleOf('Inbox')).toBeInTheDocument();
+    const custom = await screen.findByRole('button', {
+      name: 'Reorder Custom Name',
+    });
+    // Named by the label element ListItem renders, not by a copied string.
+    expect(custom.getAttribute('aria-labelledby')?.split(' ')).toHaveLength(2);
+  });
+
+  it("names the handle after the row's own aria-label or aria-labelledby when its caller gave one", async () => {
+    render(
+      <>
+        <span id="row-name">Billing address</span>
+        <List reorderable={createReorderable({onReorder: () => {}})}>
+          <ListItem itemKey="a" label={<span>A</span>} aria-label="Account" />
+          <ListItem
+            itemKey="b"
+            label={<span>B</span>}
+            aria-labelledby="row-name"
+          />
+        </List>
+      </>,
+    );
+    expect(handleOf('Account')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', {name: 'Reorder Billing address'}),
+    ).toBeInTheDocument();
+  });
+
+  it('names the handle of a row that shows no text and has no name after its place, and warns in development', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <List reorderable={createReorderable({onReorder: () => {}})}>
+        <ListItem itemKey="inbox" label="Inbox" />
+        <ListItem itemKey="dot" label={<svg aria-hidden="true" />} />
+        <ListItem itemKey="star" label={<svg aria-label="Starred" />} />
+      </List>,
+    );
+    expect(
+      await screen.findByRole('button', {name: 'Reorder item 2'}),
+    ).toBeInTheDocument();
+    // Only the nameless row warns, once.
+    const nameless = warn.mock.calls.filter(([message]) =>
+      String(message).includes('A reorderable row has no accessible name'),
+    );
+    expect(nameless).toHaveLength(1);
+    warn.mockRestore();
+  });
+
+  it('does not warn about a nameless reorderable row in production', async () => {
+    vi.resetModules();
+    vi.stubEnv('NODE_ENV', 'production');
+    try {
+      const {List: ProdList} = await import('../List');
+      const {ListItem: ProdListItem} = await import('../ListItem');
+      const {createReorderable: prodCreate} =
+        await import('../../reorderable/createReorderable');
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      render(
+        <ProdList reorderable={prodCreate({onReorder: () => {}})}>
+          <ProdListItem itemKey="dot" label={<svg aria-hidden="true" />} />
+        </ProdList>,
+      );
+      expect(
+        await screen.findByRole('button', {name: 'Reorder item 1'}),
+      ).toBeInTheDocument();
+      expect(
+        warn.mock.calls.some(([message]) =>
+          String(message).includes('A reorderable row has no accessible name'),
+        ),
+      ).toBe(false);
+      warn.mockRestore();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it('adds one element to a row, the handle, whose lines are a pseudo-element', () => {
@@ -495,7 +582,7 @@ describe('List reorderable', () => {
     );
   });
 
-  it('leaves reorder mode when its handle loses focus, keeping its moves', async () => {
+  it('keeps reorder mode when its handle loses focus: only Escape, Done, the handle or the row going ends it (spec:AST-103 FR4a)', async () => {
     const user = userEvent.setup();
     const onReorder = vi.fn();
     render(
@@ -508,12 +595,17 @@ describe('List reorderable', () => {
     handle.focus();
     await user.keyboard(' {ArrowDown}');
     await user.tab();
-    expect(handle).toHaveAttribute('aria-pressed', 'false');
+    expect(handle).not.toHaveFocus();
+    expect(handle).toHaveAttribute('aria-pressed', 'true');
     expect(onReorder).toHaveBeenCalledTimes(1);
     expect(labels()).toEqual(['Sent', 'Inbox', 'Drafts']);
-    // Leaving without a word: the focus is elsewhere now.
-    await new Promise(resolve => setTimeout(resolve, 50));
-    expect(document.body).not.toHaveTextContent('Done,');
+    // Back on the handle, its arrows move the row again; Escape ends it.
+    handle.focus();
+    await user.keyboard('{ArrowDown}');
+    expect(onReorder).toHaveBeenCalledTimes(2);
+    expect(labels()).toEqual(['Sent', 'Drafts', 'Inbox']);
+    await user.keyboard('{Escape}');
+    expect(handle).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('ignores arrows with a modifier: they are shortcuts', async () => {
@@ -640,7 +732,8 @@ describe('List reorderable', () => {
     await user.keyboard('{ArrowDown}');
     expect(onReorder).toHaveBeenLastCalledWith({key: 'b1', to: 1});
     act(() => handleOf('A2').focus());
-    expect(handleOf('B1')).toHaveAttribute('aria-pressed', 'false');
+    // Focus leaving B1's handle does not end its list's mode (FR4a).
+    expect(handleOf('B1')).toHaveAttribute('aria-pressed', 'true');
     await user.keyboard(' {ArrowUp}');
     expect(onReorder).toHaveBeenLastCalledWith({key: 'a2', to: 0});
   });

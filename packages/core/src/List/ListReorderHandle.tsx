@@ -39,6 +39,7 @@ import {
   useEffect,
   useRef,
   useSyncExternalStore,
+  useId,
   type KeyboardEvent,
   type ReactNode,
 } from 'react';
@@ -50,6 +51,8 @@ import {
   ownRingContainerStyles,
 } from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n/useTranslator';
+import {devWarn} from '../utils/devWarning';
+import {ItemLabelContext} from '../Item/ItemLabelContext';
 import {ListContext} from './ListContext';
 import {
   HANDLE_ATTRIBUTE,
@@ -72,7 +75,9 @@ const styles = stylex.create({
     // A touch target on each side, centred on its row, with the lines in its
     // middle. It takes only the lines' height in the row's layout (the
     // negative block margins), so a compact row stays compact; the target and
-    // its focus ring reach past that into the row's padding.
+    // its focus ring reach past that into the row's padding, never past it:
+    // no further than the row's own inline inset, so a flush row's handle
+    // stays inside the list's clip.
     alignSelf: 'center',
     display: 'flex',
     alignItems: 'center',
@@ -81,7 +86,7 @@ const styles = stylex.create({
     width: HANDLE_SIZE,
     height: HANDLE_SIZE,
     marginBlock: (LINES_HEIGHT - HANDLE_SIZE) / 2,
-    marginInlineEnd: -8,
+    marginInlineEnd: 'calc(-1 * min(8px, var(--_item-inset-inline, 8px)))',
     padding: 0,
     borderWidth: 0,
     borderRadius: 4,
@@ -176,6 +181,31 @@ function textOf(node: ReactNode): string {
   return '';
 }
 
+/** The text the row's label element shows, collapsed; empty without one. */
+function labelTextOf(handle: HTMLElement | null, labelID: string | null) {
+  const element =
+    labelID == null
+      ? null
+      : (handle?.ownerDocument.getElementById(labelID) ?? null);
+  return (element?.textContent ?? '').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Whether the row's label element names it: it shows text, or holds an icon
+ * or image with an accessible name of its own.
+ */
+function namesRow(element: HTMLElement | null): boolean {
+  if (element == null) {
+    return false;
+  }
+  return (
+    (element.textContent ?? '').trim() !== '' ||
+    element.querySelector(
+      '[aria-label]:not([aria-label=""]), [aria-labelledby], img[alt]:not([alt=""])',
+    ) != null
+  );
+}
+
 /**
  * The reorder handle of a List row. Renders nothing outside a reorderable
  * List.
@@ -184,21 +214,37 @@ export function ListReorderHandle({
   label,
   itemKey,
   isDisabled = false,
+  rowLabel,
+  rowLabelledBy,
 }: ListReorderHandleProps) {
   const ref = useRef<HTMLButtonElement>(null);
   const t = useTranslator();
   const controller = use(ListContext)?.reorder?.session as
     ListReorderController | undefined;
-  // Named after the row's label text, an element's included ("Reorder
-  // Custom Name"); a label that shows no text names it after its place.
+  // The row's label element, when the handle sits in an Item's slot.
+  const labelID = use(ItemLabelContext);
+  const verbID = useId();
   const text = textOf(label).replace(/\s+/g, ' ').trim();
-  const named = text !== '';
+  // Named "Reorder" followed by the row's name (spec:AST-103 FR4): the name
+  // its caller gave the row; else the elements that name the row (its
+  // caller's `aria-labelledby`, or the label element Item renders), so a
+  // label of any shape names it; outside an Item, the label's text. A row
+  // that shows no name is named after its place.
+  const callerLabel = rowLabel?.trim() || null;
+  const labelledBy =
+    callerLabel != null ? undefined : (rowLabelledBy ?? labelID ?? undefined);
+  const named = callerLabel != null || labelledBy != null || text !== '';
+  const verb = t('@astryx.list.reorderHandleVerb');
+  const warnedNamelessRef = useRef(false);
   // The session moves the row only with its handle recorded, reports its
-  // moves with the row's key, and announces them with its name.
-  useIsomorphicLayoutEffect(
-    () => controller?.registerHandle(ref.current, itemKey, text),
-    [controller, itemKey, text],
-  );
+  // moves with the row's key, and announces them with its name: a component
+  // label's text is read from its element, rendered by now.
+  useIsomorphicLayoutEffect(() => {
+    const spoken =
+      callerLabel ??
+      (text !== '' ? text : labelTextOf(ref.current, labelID ?? null));
+    return controller?.registerHandle(ref.current, itemKey, spoken);
+  }, [controller, itemKey, callerLabel, text, labelID]);
   // Pressed while its row is in reorder mode.
   const isPressed = useSyncExternalStore(
     controller?.subscribeMode ?? subscribeNothing,
@@ -227,9 +273,35 @@ export function ListReorderHandle({
   // its rows' layout effects run.
   useEffect(() => {
     const handle = ref.current;
-    const position = controller?.positionOf(handle) ?? null;
-    if (named || handle == null || position == null) {
+    if (handle == null) {
       return;
+    }
+    // Named by Item's label element only while it shows a name: a label of
+    // an unnamed icon alone falls back to the place.
+    if (labelID != null && labelledBy === labelID) {
+      if (namesRow(handle.ownerDocument.getElementById(labelID))) {
+        handle.setAttribute('aria-labelledby', `${verbID} ${labelID}`);
+        handle.setAttribute('aria-label', verb);
+        return;
+      }
+      handle.removeAttribute('aria-labelledby');
+    } else if (named) {
+      return;
+    }
+    const position = controller?.positionOf(handle) ?? null;
+    if (position == null) {
+      return;
+    }
+    // Named after its place only: a person hears "Reorder item 3" with
+    // nothing to tell the rows apart. Development says so, once a handle.
+    if (!warnedNamelessRef.current) {
+      warnedNamelessRef.current = true;
+      devWarn(
+        'ListItem',
+        'A reorderable row has no accessible name, so its reorder handle is ' +
+          'named after its place ("Reorder item N"). Give the row a text ' +
+          'label or an aria-label.',
+      );
     }
     handle.setAttribute(
       'aria-label',
@@ -239,12 +311,21 @@ export function ListReorderHandle({
   if (controller == null) {
     return null;
   }
-  const name = named
-    ? t('@astryx.list.reorderHandle', {label: text})
-    : undefined;
+  // Named through the label element: the handle's own `aria-label` is the
+  // verb, and it lists itself first in its `aria-labelledby`, which reads its
+  // `aria-label` there ("Reorder" then the row's label).
+  const name =
+    callerLabel != null
+      ? t('@astryx.list.reorderHandle', {label: callerLabel})
+      : labelledBy != null
+        ? verb
+        : text !== ''
+          ? t('@astryx.list.reorderHandle', {label: text})
+          : undefined;
   return (
     <button
       ref={ref}
+      id={labelledBy == null ? undefined : verbID}
       type="button"
       {...{[HANDLE_ATTRIBUTE]: ''}}
       // The handle takes its own press, so the row does not highlight under
@@ -253,6 +334,9 @@ export function ListReorderHandle({
       // It rings itself: the row's focus-within ring stays off for it.
       data-astryx-own-ring=""
       aria-label={name}
+      aria-labelledby={
+        labelledBy == null ? undefined : `${verbID} ${labelledBy}`
+      }
       aria-describedby={controller.hintId}
       aria-disabled={isDisabled || undefined}
       aria-pressed={isPressed}
