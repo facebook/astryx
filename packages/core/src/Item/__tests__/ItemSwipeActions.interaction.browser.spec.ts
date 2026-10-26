@@ -98,7 +98,7 @@ async function openRow(page: Page): Promise<OpenRow> {
   const driver = await touchDriver(page);
   const row = page.locator('.astryx-item').first();
   const panel = row.locator('[data-swipe-panel="trailing"]');
-  // The gesture arrives with the lazily loaded swipe layer.
+  // The gesture arrives with the swipe layer.
   await expect(panel).toBeAttached();
   const track = panel.locator(':scope > div').first();
   // The entries are the track's children, each its own moving element.
@@ -553,30 +553,49 @@ test('a finger that lands on a settling row catches it where it is', async ({
 });
 
 /**
- * Arms a block of the page's main thread for `ms`, 30 ms after the next lift:
- * late enough for the release's motion to have started on the compositor,
- * early enough that its own motion fills the judged window, whatever the
- * runner's latency (a block started from the test lands wherever the runner
- * is). `blockWindow` resolves with the block's page-clock span once it ran.
+ * Arms a block of the page's main thread for `ms`, starting as soon as the
+ * release's motion has started on the compositor: the release's new
+ * animations resolve `ready` once the browser has started them, and the block
+ * follows in the next microtask, so the release's own motion fills the judged
+ * window. A block started from the test, or on a timer after the lift, lands
+ * wherever a loaded machine runs it, sometimes late in the motion (a 30 ms
+ * timer left the slide-out's judged window at 9 frames). `blockWindow`
+ * resolves with the block's page-clock span once it ran.
  */
 async function blockAfterLift(page: Page, ms: number) {
   await page.evaluate(duration => {
+    const block = () => {
+      const from = performance.timeOrigin + performance.now();
+      const end = performance.now() + duration;
+      while (performance.now() < end) {
+        // spin
+      }
+      Object.assign(window, {
+        __blockAfterLift: {
+          from,
+          to: performance.timeOrigin + performance.now(),
+        },
+      });
+    };
+    // The release's own animations: the ones that did not exist at the lift.
     addEventListener(
       'touchend',
       () => {
-        setTimeout(() => {
-          const from = performance.timeOrigin + performance.now();
-          const end = performance.now() + duration;
-          while (performance.now() < end) {
-            // spin
+        const before = new Set(document.getAnimations());
+        const watch = () => {
+          const fresh = document
+            .getAnimations()
+            .filter(animation => !before.has(animation));
+          if (fresh.length === 0) {
+            requestAnimationFrame(watch);
+            return;
           }
-          Object.assign(window, {
-            __blockAfterLift: {
-              from,
-              to: performance.timeOrigin + performance.now(),
-            },
-          });
-        }, 30);
+          void Promise.all(fresh.map(async animation => animation.ready)).then(
+            block,
+            block,
+          );
+        };
+        setTimeout(watch, 0);
       },
       {once: true, capture: true},
     );
@@ -755,7 +774,7 @@ test('a control in the row opens its trailing actions on the swipe’s own settl
   const row = page.locator('.astryx-item').first();
   const panel = row.locator('[data-swipe-panel="trailing"]');
   const control = row.getByRole('button', {name: 'Delete control'});
-  // The control renders once the lazily loaded swipe layer has mounted.
+  // The control renders once the swipe layer has mounted.
   await expect(control).toBeVisible();
   await expect(panel).toBeAttached();
   // The entries are the track's children.

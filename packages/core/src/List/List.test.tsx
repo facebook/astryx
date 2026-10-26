@@ -9,15 +9,7 @@
  * SYNC: When modified, update this header
  */
 
-import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  it,
-  expect,
-  vi,
-} from 'vitest';
+import {afterEach, beforeEach, describe, it, expect, vi} from 'vitest';
 import {cleanup, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {rulesDeclaredFor} from '../__tests__/pressState';
@@ -1227,12 +1219,6 @@ describe('List', () => {
 });
 
 describe('List and swipe actions', () => {
-  // A row's swipe panels arrive with a lazily loaded module; load it first,
-  // so a test waits on the import (however long a cold one takes) rather
-  // than on waitFor's one second.
-  beforeAll(async () => {
-    await import('../Item/ItemSwipeLayer');
-  });
   // The suite answers as a phone (a coarse primary pointer).
   beforeEach(() => {
     emulateTouch();

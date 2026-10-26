@@ -11,8 +11,7 @@
  *   `swipeActions` — and swipeParts, where every moving part sits for a
  *   travel (where a release lands is swipeRelease.ts)
  * @position Internal to Item, through ItemSwipeLayer (the only module that
- *   imports it, loaded on demand); tested through Item.test.tsx and
- *   useSwipeAction.test.ts
+ *   imports it); tested through Item.test.tsx and useSwipeAction.test.ts
  *
  * A UIKit list swipe: drag a row sideways and the side's panel is uncovered.
  * Under `reveal` a fast release goes the way it moves and a slow one rests
