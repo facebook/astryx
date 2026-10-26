@@ -1252,6 +1252,63 @@ describe('AppShell page scroll owner', () => {
     );
   });
 
+  it('a height outside the union keeps the auto minimum height, with no sticky regions', () => {
+    mockQueries(() => false);
+    render(
+      <AppShell
+        height={'unknown' as never}
+        topNav={<div>Nav</div>}
+        data-testid="shell">
+        <div>Content</div>
+      </AppShell>,
+    );
+
+    expect(screen.getByTestId('shell')).toHaveAttribute(
+      'data-scroll-owner',
+      'document',
+    );
+    expect(getComputedStyle(screen.getByRole('banner')).position).not.toBe(
+      'sticky',
+    );
+    expect(getComputedStyle(screen.getByRole('main')).overflow).not.toBe(
+      'auto',
+    );
+  });
+
+  it('adaptive keeps the side navigation mounted when the primary pointer changes, so a collapsed SideNav stays collapsed', async () => {
+    const lists = mockQueries(() => false);
+    const user = userEvent.setup();
+    render(
+      <AppShell
+        height="adaptive"
+        topNav={<div>Nav</div>}
+        sideNav={
+          <SideNav collapsible>
+            <SideNavSection title="Test" isHeaderHidden>
+              <SideNavItem label="Nav" />
+            </SideNavSection>
+          </SideNav>
+        }>
+        <div>Content</div>
+      </AppShell>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    expect(
+      screen.getByRole('button', {name: 'Expand sidebar'}),
+    ).toBeInTheDocument();
+
+    act(() => lists.get(TOUCH)?._setMatches(true));
+    expect(
+      screen.getByRole('button', {name: 'Expand sidebar'}),
+    ).toBeInTheDocument();
+
+    act(() => lists.get(TOUCH)?._setMatches(false));
+    expect(
+      screen.getByRole('button', {name: 'Expand sidebar'}),
+    ).toBeInTheDocument();
+  });
+
   it('adaptive follows the primary pointer when it changes', () => {
     const lists = mockQueries(() => false);
     render(

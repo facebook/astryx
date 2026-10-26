@@ -454,6 +454,11 @@ const styles = stylex.create({
     flex: 1,
     overflow: 'auto',
   },
+  // `adaptive` with a fine pointer: the side region's wrapper stays mounted
+  // but generates no box.
+  sideNavInFill: {
+    display: 'contents',
+  },
 });
 
 // =============================================================================
@@ -610,10 +615,11 @@ export function AppShell({
   const {isTouch} = useTouchPresentation({
     isTouch: mobileNavConfig?.defaultIsMobile ?? false,
   });
-  const scrollsDocument =
-    height === 'auto' || (height === 'adaptive' && isTouch);
-  const isFill = !scrollsDocument;
-  const isAuto = scrollsDocument;
+  // A `height` outside the union keeps the recorded `auto` minimum height,
+  // with no sticky regions, as before `adaptive` existed.
+  const isFill = height === 'fill' || (height === 'adaptive' && !isTouch);
+  const isAuto = height === 'auto' || (height === 'adaptive' && isTouch);
+  const scrollsDocument = !isFill;
 
   // Nav style derived values
   const hasBanner = isRenderable(banner);
@@ -793,9 +799,16 @@ export function AppShell({
     </LayoutPanel>
   ) : undefined;
 
+  // Under `adaptive` the wrapper stays in both pointer states and only its
+  // style changes, so a pointer change never remounts the side region (a
+  // collapsed SideNav stays collapsed). With a fine pointer it generates no
+  // box, and the panel lays out as in `fill`.
   const sideNavContent =
-    sideNavPanel != null && isAuto ? (
-      <div {...stylex.props(styles.sideNavSticky)}>{sideNavPanel}</div>
+    sideNavPanel != null && (isAuto || height === 'adaptive') ? (
+      <div
+        {...stylex.props(isAuto ? styles.sideNavSticky : styles.sideNavInFill)}>
+        {sideNavPanel}
+      </div>
     ) : (
       sideNavPanel
     );
