@@ -159,6 +159,10 @@ describe('Thumbnail', () => {
     remove.focus();
     await user.keyboard('{Enter}');
     expect(onRemove).not.toHaveBeenCalled();
+    // A click that reaches it (assistive technology dispatching one; the
+    // disabled thumbnail takes no pointer events) calls nothing either.
+    fireEvent.click(remove);
+    expect(onRemove).not.toHaveBeenCalled();
   });
 
   it('keeps a disabled Open mounted, focusable and announced as disabled, without calling onClick', async () => {
