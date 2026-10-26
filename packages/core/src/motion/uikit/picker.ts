@@ -5,8 +5,7 @@
  * @input Nothing; data only
  * @output Exports `picker`, the UIPickerView constants: the cylinder the rows
  *   sit on, the selection band, the release rule (velocity, target, coast),
- *   the snap at rest, the tap spin and the selection tick; and
- *   `registerPickerTable`, which makes the tap spin a theme role
+ *   the snap at rest, the tap spin and the selection tick
  * @position The picker domain of the UIKit constants table (motion/uikit);
  *   read by DateInput/wheelPhysics.ts, DateInput/wheelDrum.ts and the Wheel
  *
@@ -23,19 +22,15 @@
  * Pro), driven by real HID touches: per-frame offsets, the table views' and
  * cells' layers, the delegate calls and the haptics, Oct 23 2026.
  *
- * The tap spin's duration is a motion role a theme may retune
- * (`picker.tapSpin.durationMs`, motion/roles.ts); its curve is
- * `timing.curves.move` and the bounce at an end `scroll.bounce`. The
- * geometry, the release rule, the snap and the tick are UIKit's mechanics,
- * not roles.
+ * Every value here is an internal constant, not a motion role: spec:AST-094
+ * FR4 names none of them, so nothing registers this table. The tap spin's
+ * curve is the shared role `timing.curves.move`, and the bounce at an end is
+ * `scroll.bounce`.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/motion/MEASUREMENTS.md (measurement tasks)
- * - /packages/core/src/motion/roles.test.ts (the registered roles)
- * - /packages/core/src/DateInput/PickerWheel.tsx (calls registerPickerTable)
+ * - /packages/core/src/DateInput/PickerWheel.tsx (reads the tap spin)
  */
-
-import {registerMotionTable} from '../roles';
 
 export const picker = {
   geometry: {
@@ -174,16 +169,3 @@ export const picker = {
     minimumIntervalMs: 40,
   },
 } as const;
-
-/**
- * Makes the tap spin's duration a motion role a theme may retune
- * (motion/roles.ts): the only spring, duration or curve in this table. Nothing
- * registers on import: the picker wheel calls it once before its first motion
- * (it is idempotent), so a page without one ships no registry.
- */
-export function registerPickerTable(): void {
-  registerMotionTable('picker', picker, {
-    // A haptic's pacing, not how anything moves.
-    exclude: ['selectionTick.minimumIntervalMs'],
-  });
-}

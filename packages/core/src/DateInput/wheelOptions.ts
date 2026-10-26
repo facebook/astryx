@@ -30,11 +30,11 @@ export interface WheelOption {
 
 /** Options for a programmatic turn. */
 export interface WheelSpinOptions {
-  /** Seconds. @default the theme's `picker.tapSpin.durationMs` (0.3 s) */
+  /** Seconds. @default `picker.tapSpin.durationMs` (0.3 s, UIPickerView's) */
   duration?: number;
   /**
    * Cubic-bézier control points.
-   * @default the theme's `timing.curves.move`
+   * @default `timing.curves.move`
    */
   curve?: BezierPoints;
 }

@@ -35,8 +35,8 @@
  *
  * Each turn is the Wheel's spin (`spinTo`) on UIDatePicker's own turn
  * (`datePicker.wheels.columnTurn`: an animated `setContentOffset`, 0.3 s on
- * a sinusoid; a motion role, resolved under the wheels' theme when the turn
- * starts), started before the commit, so the new value arrives while the
+ * a sinusoid; internal constants, not theme roles), started before the
+ * commit, so the new value arrives while the
  * column is already moving instead of making it jump. The value commits when
  * the column that moved comes to rest, as UIDatePicker's `valueChanged`
  * does; UIKit starts the AM/PM column about 35 ms earlier, as the hour
@@ -54,12 +54,10 @@
  */
 
 import {useMemo, useRef} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useTranslator} from '../i18n';
 import {Wheel, type WheelHandle} from '../DateInput/Wheel';
-import {resolveMotion} from '../motion/resolveMotion';
-import {datePicker, registerDatePickerTable} from '../motion/uikit/datePicker';
+import {datePicker} from '../motion/uikit/datePicker';
 import {parseISOTime, type ISOTimeString} from '../utils';
 import {
   columnValue,
@@ -97,25 +95,14 @@ export interface TimeWheelsProps {
   onCommit: (time: TimeParts) => void;
 }
 
-const styles = stylex.create({
-  // The theme scope the column turn resolves under, adding no box.
-  root: {display: 'contents'},
-});
-
 /**
- * UIDatePicker's turn of a column it moves by itself, under the theme of
- * `element` (the `datePicker.wheels.columnTurn` motion roles). Nothing
- * registers on import (motion/roles.ts), so the table registers right before
- * its roles resolve; the call is idempotent.
+ * UIDatePicker's turn of a column it moves by itself
+ * (`datePicker.wheels.columnTurn`).
  */
-function columnTurn(element: Element | null) {
-  registerDatePickerTable();
-  return {
-    duration:
-      resolveMotion(element, datePicker.wheels.columnTurn, 'durationMs') / 1000,
-    curve: resolveMotion(element, datePicker.wheels.columnTurn.curve),
-  };
-}
+const COLUMN_TURN = {
+  duration: datePicker.wheels.columnTurn.durationMs / 1000,
+  curve: datePicker.wheels.columnTurn.curve,
+};
 
 function secondsOfISO(time: ISOTimeString | undefined): number | null {
   if (time == null) {
@@ -181,7 +168,6 @@ export function TimeWheels({
     [t, bounds],
   );
 
-  const rootRef = useRef<HTMLDivElement | null>(null);
   const hourRef = useRef<WheelHandle | null>(null);
   const minuteRef = useRef<WheelHandle | null>(null);
   const secondRef = useRef<WheelHandle | null>(null);
@@ -245,7 +231,7 @@ export function TimeWheels({
         row => row.value === turn.value,
       );
       if (index >= 0) {
-        void handles[turn.column]?.spinTo(index, columnTurn(rootRef.current));
+        void handles[turn.column]?.spinTo(index, COLUMN_TURN);
       }
     }
     if (!sameTime(next, from)) {
@@ -254,7 +240,7 @@ export function TimeWheels({
   };
 
   return (
-    <div ref={rootRef} {...stylex.props(styles.root)}>
+    <>
       <Wheel
         ref={hourRef}
         label={t('@astryx.dateTimeInput.hourWheel')}
@@ -294,7 +280,7 @@ export function TimeWheels({
           onChange={restOn('meridiem')}
         />
       )}
-    </div>
+    </>
   );
 }
 

@@ -219,15 +219,14 @@ test('a second tap mid-fade turns the fade around from where it is', async ({
   page,
 }) => {
   const {driver, wheels, titleAt} = await openCalendar(page);
-  // A theme's retune of the toggle's role stretches the fade to 2 s, so the
-  // second tap lands mid-fade deterministically instead of racing a 250 ms
-  // fade; the turnaround does not depend on the length.
-  await page.evaluate(() =>
-    document.documentElement.style.setProperty(
-      '--motion-date-picker-calendar-month-year-toggle-fade-ms',
-      '2000ms',
-    ),
-  );
+  // A test stylesheet stretches the toggle's fades (the panels' opacity and
+  // visibility, the chevron's turn) to 2 s, so the second tap lands mid-fade
+  // deterministically instead of racing a 250 ms fade; the turnaround does
+  // not depend on the length.
+  await page.addStyleTag({
+    content:
+      '[data-panel], button[aria-label$="Choose month and year"] .astryx-icon { transition-duration: 2000ms !important; }',
+  });
   await driver.tap(titleAt);
   await wheels.evaluate(
     async element =>

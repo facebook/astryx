@@ -23,9 +23,9 @@
  * scroll, so snap offsets are constant and momentum is never interrupted —
  * which is the failure mode of the usual "append months at the edge" approach.
  *
- * Under reduced motion (`design:reduced-motion`) a step the arrows, the keys
- * or Today ask for changes the month without travel: at once with a mouse or
- * a keyboard, through a short opacity dip on a touch screen.
+ * Under reduced motion (`design:reduced-motion`) a step the arrows, Reset or
+ * the keyboard ask for changes the month without travel: at once with a mouse
+ * or a keyboard, through a short opacity dip on a touch screen.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/DateInput/TouchDateField.tsx
@@ -429,15 +429,28 @@ export function MonthScroller({
         setCenterRow(row);
         return;
       }
-      steeredRowRef.current = row;
       const left = scrollOffsetForRow(row, paneSize, isRTL);
       // design:reduced-motion: under reduced motion the month changes without
       // travel, at once with a mouse or a keyboard and through an opacity dip
       // on a touch screen, the scroll landing at the dip (reducedMotionFade).
       const fade = behavior === 'smooth' ? reducedMotionFade(scroller) : null;
       if (fade != null) {
+        // The window mounts around the target first and the scroll lands in
+        // the layout effect below, as a far jump does, so nothing moves the
+        // window after the jump: a jump that the window then follows is
+        // re-snapped by WebKit one pane further on every frame. A scroll that
+        // lands on the centre row reports nothing.
+        const land = () => {
+          if (row === centerRowRef.current) {
+            scroller.scrollTo({left, behavior: 'auto'});
+            return;
+          }
+          pendingScrollRef.current = row;
+          centerRowRef.current = row;
+          setCenterRow(row);
+        };
         if (fade.duration === 0) {
-          scroller.scrollTo({left, behavior: 'auto'});
+          land();
           return;
         }
         // A second step within the dip replaces the first: only its scroll
@@ -450,11 +463,12 @@ export function MonthScroller({
           ),
           timer: window.setTimeout(() => {
             dipRef.current = null;
-            scroller.scrollTo({left, behavior: 'auto'});
+            land();
           }, fade.duration / 2),
         };
         return;
       }
+      steeredRowRef.current = row;
       scroller.scrollTo({left, behavior});
     },
     [paneSize, minMonthIndex, rowCount, isRTL, stopDip],

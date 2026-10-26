@@ -3416,9 +3416,8 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     const toggle = datePicker.calendar.monthYearToggle;
     // Prettier may break a long value onto its own line.
     const flat = tokens.replace(/:\s+'/g, ": '");
-    expect(flat).toContain(
-      `duration: 'var(--motion-date-picker-calendar-month-year-toggle-fade-ms, ${toggle.fadeMs}ms)'`,
-    );
+    // An internal constant, not a theme role (spec:AST-094 FR4).
+    expect(flat).toContain(`duration: '${toggle.fadeMs}ms'`);
     expect(flat).toContain(
       `curve: 'var(--motion-timing-curves-move, cubic-bezier(${timing.curves.move.join(', ')}))'`,
     );
