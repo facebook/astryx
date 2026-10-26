@@ -5,8 +5,10 @@
 /**
  * @file useMobileKeyboard.ts
  * @input The window's visual viewport, focus events, React effects and refs,
- *   the motion module's Reduce Motion queries, the touch query, the layout
- *   viewport's height (utils/layoutViewport.ts)
+ *   the motion module's Reduce Motion queries and animator, the touch query,
+ *   the layout viewport's height (utils/layoutViewport.ts), and for
+ *   BottomSheet's ride the keyboard layout guide's transitions and
+ *   rideKeyboard
  * @output Exports the on-screen keyboard module: measureKeyboardHeight,
  *   isKeyboardMeasurable, subscribeMobileKeyboard, getMobileKeyboardHeight,
  *   useKeyboardHeight, isTextEntryControl, findTextEntryControl,
@@ -47,7 +49,12 @@
  * only under a coarse primary pointer: a desktop browser keeps its own focus
  * (spec:AST-017 FR59). Shorter detents and other heights opt out entirely.
  * Starting Tall-sheet travel or closing the sheet blurs the field and
- * dismisses the keyboard (FR5).
+ * dismisses the keyboard (FR5). Where the keyboard layout guide publishes the
+ * keyboard's own slide (Gboard's, in Chrome on Android), the sheet rides it
+ * (FR8): a reveal scrolls the body at once and its content rides up from
+ * where it was on the show's curve, and through a hide the room stays while
+ * the content rides down by the scroll the room's drop takes back; at rest
+ * the room drops and the translate clears in one commit.
  *
  * SYNC: When modified, update /packages/core/src/keyboard/README.md
  */
@@ -57,6 +64,10 @@ import {
   REDUCED_MOTION_INSTANT_QUERY,
 } from '../motion/reducedMotion';
 import {TOUCH_QUERY} from '../utils/touchPresentation';
+import {animatorFor, type Animator} from '../motion/animator';
+import {getKeyboardLayoutGuide} from './keyboardLayoutGuide';
+import {rideKeyboard} from './rideKeyboard';
+import type {KeyboardTransition} from './keyboardModel';
 import {
   useEffect,
   useRef,
@@ -742,6 +753,39 @@ export function useMobileKeyboard({
     let keyboardGeometry: KeyboardGeometry | null = null;
     // Where a smooth reveal under way is taking the body's scrollTop.
     let smoothTarget: number | null = null;
+    // The room laid out at the end of the body, CSS px.
+    let room = 0;
+    // FR8: where the keyboard layout guide publishes the keyboard's own slide
+    // (Gboard's, in Chrome on Android), the sheet's content rides it. The
+    // guide is subscribed before the keyboard module below, so a report's
+    // transition is published before the reveal reads it.
+    const guide = getKeyboardLayoutGuide(window);
+    const contentAnimator = (): Animator | null => {
+      const content = body.firstElementChild;
+      return content instanceof HTMLElement ? animatorFor(content) : null;
+    };
+    // How far a ride has the content from where its layout puts it, as the
+    // page draws it now: the same frame a control's rect is read in.
+    const rideOffset = () => {
+      const content = body.firstElementChild;
+      if (!(content instanceof HTMLElement)) {
+        return 0;
+      }
+      const translate = getComputedStyle(content).translate;
+      return parseFloat(translate.split(' ')[1] ?? '') || 0;
+    };
+    // The keyboard's show the guide plays on its slide right now, if any.
+    const showOnSlide = (): KeyboardTransition | null => {
+      const transition = guide.transition;
+      return transition.kind === 'show' &&
+        transition.animated &&
+        transition.curve != null &&
+        performance.now() < transition.start + transition.curve.durationMs
+        ? transition
+        : null;
+    };
+    // A hide the room is held through (see holdRoomThrough).
+    let heldHide: {readonly release: () => void} | null = null;
     let documentScrollAtKeyboard: {x: number; y: number} | null = null;
     // FR6: where this window measures the keyboard, never by user agent.
     const ownsFocusTransitions = isKeyboardMeasurable(window);
@@ -756,6 +800,7 @@ export function useMobileKeyboard({
     // Lays the inset out before anything measures or scrolls the body: the
     // reveal scrolls into the room it adds in the same frame.
     const writeInset = (inset: number) => {
+      room = inset;
       // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- the reveal scrolls into this room in the same frame, so it must be laid out before the reveal measures
       flushSync(() => setKeyboardInset(inset));
     };
@@ -768,8 +813,30 @@ export function useMobileKeyboard({
       retainKeyboardLayoutRef.current = false;
     };
 
-    const scrollBodyBy = (distance: number, smoothly: boolean) => {
+    const scrollBodyBy = (
+      distance: number,
+      smoothly: boolean,
+      ride: KeyboardTransition | null = null,
+    ) => {
       smoothTarget = null;
+      const animator = ride == null ? null : contentAnimator();
+      if (ride != null && animator != null) {
+        // FR8: the body lands at once, and its content rides the keyboard's
+        // slide up from where it was, from the slide's start: content that
+        // joins the slide late is where the keyboard is (rideKeyboard). A
+        // further scroll during the slide adds to the same ride.
+        const before = body.scrollTop;
+        body.scrollTop = before + distance;
+        const moved = body.scrollTop - before;
+        // Only what the body actually scrolled rides: a remainder under the
+        // scroll position's precision moves nothing, so the ride under way
+        // is left on its curve.
+        if (moved !== 0) {
+          animator.set({y: animator.get('y', ride.start) + moved});
+          rideKeyboard(animator, {y: 0}, ride);
+        }
+        return;
+      }
       if (typeof body.scrollBy !== 'function') {
         body.scrollTop += distance;
         return;
@@ -814,6 +881,7 @@ export function useMobileKeyboard({
     const scrollControlIntoSafeArea = (
       control: HTMLElement,
       smoothly: boolean,
+      ride: KeyboardTransition | null = null,
     ) => {
       const measuredBodyRect = body.getBoundingClientRect();
       const measuredControlRect = control.getBoundingClientRect();
@@ -834,13 +902,14 @@ export function useMobileKeyboard({
       // Where the control will be once a smooth reveal under way lands: if
       // it lands the control, scrolling again would overshoot in Firefox,
       // which keeps adding a smooth scrollBy's distance after another scroll.
-      const pending = smoothDistanceLeft();
+      // A ride's translate is not where the layout puts the control either.
+      const pending = smoothDistanceLeft() + rideOffset();
       const controlBottom = measuredControlRect.bottom - pending;
       const controlTop = measuredControlRect.top - pending;
       if (controlBottom > safeBottom) {
-        scrollBodyBy(controlBottom - safeBottom, smoothly);
+        scrollBodyBy(controlBottom - safeBottom, smoothly, ride);
       } else if (controlTop < safeTop) {
-        scrollBodyBy(controlTop - safeTop, smoothly);
+        scrollBodyBy(controlTop - safeTop, smoothly, ride);
       }
     };
 
@@ -892,6 +961,10 @@ export function useMobileKeyboard({
       });
 
     const revealFocusedControl = () => {
+      // Through a hide the sheet rides, its layout holds until the end.
+      if (heldHide != null) {
+        return;
+      }
       const activeElement = document.activeElement;
       if (
         !isFullyExpandedRef.current ||
@@ -941,8 +1014,76 @@ export function useMobileKeyboard({
       scrollControlIntoSafeArea(
         activeElement,
         overlap > 0 && !revealsAtReport.has(window),
+        overlap > 0 ? showOnSlide() : null,
       );
     };
+
+    // FR8: through a hide on the keyboard's slide the room stays, so nothing
+    // drops while the keyboard still covers the sheet's bottom: the content
+    // rides down on the hide's curve by the scroll the room's drop takes back
+    // (how far the body is scrolled into the room), and at rest the room
+    // drops and the translate clears in one commit.
+    const holdRoomThrough = (transition: KeyboardTransition) => {
+      heldHide?.release();
+      const animator = contentAnimator();
+      const scrolledIntoRoom = Math.max(
+        0,
+        body.scrollTop - (body.scrollHeight - room - body.clientHeight),
+      );
+      const handle =
+        animator != null && scrolledIntoRoom > 0
+          ? rideKeyboard(animator, {y: scrolledIntoRoom}, transition)
+          : null;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const hold = {
+        release: () => {
+          clearTimeout(timer);
+          if (heldHide === hold) {
+            heldHide = null;
+          }
+        },
+      };
+      heldHide = hold;
+      const commit = () => {
+        if (heldHide !== hold) {
+          return;
+        }
+        heldHide = null;
+        if (isVisualViewportRecovered()) {
+          clearKeyboardLayout();
+        } else {
+          revealFocusedControl();
+        }
+        animator?.set({y: 0});
+      };
+      if (handle == null) {
+        const end = transition.start + (transition.curve?.durationMs ?? 0);
+        timer = setTimeout(commit, Math.max(0, end - performance.now()));
+      } else {
+        void handle.finished.then(commit);
+      }
+    };
+    const unsubscribeGuide = guide.subscribe(transition => {
+      // Safari's keyboard keeps the reveal below: only a slide rides.
+      if (transition.curve == null) {
+        return;
+      }
+      if (transition.kind === 'hide') {
+        if (hasKeyboardLayoutRef.current && transition.animated) {
+          holdRoomThrough(transition);
+        }
+        return;
+      }
+      if (heldHide != null) {
+        // The keyboard comes back before it is down (focus returns): the
+        // room never left, so the content rides back to its place with it.
+        heldHide.release();
+        const animator = contentAnimator();
+        if (animator != null) {
+          rideKeyboard(animator, {y: 0}, transition);
+        }
+      }
+    });
 
     let animationFrame = 0;
     const scheduleReveal = () => {
@@ -1131,6 +1272,9 @@ export function useMobileKeyboard({
       cancelAnimationFrame(animationFrame);
       stopClaiming?.();
       unsubscribe();
+      unsubscribeGuide();
+      heldHide?.release();
+      contentAnimator()?.set({y: 0});
       revealPan.stop();
       body.removeEventListener('focusin', handleFocusIn);
       body.removeEventListener('focusout', handleFocusOut);

@@ -1723,6 +1723,119 @@ describe('BottomSheet', () => {
       expect(keyboardInsetOf(body)).toBe(348);
     });
 
+    describe('on Gboard\u2019s slides in Chrome on Android (spec:AST-099 FR8)', () => {
+      // A Tall sheet in Chrome on Android: its body (top 100, bottom 800)
+      // holds 800 px of content and the room after it, so the last field's
+      // reveal scrolls into the room. The body's scroll stays within its
+      // range, as a browser keeps it. `scrollBy` records a smooth scroll and
+      // moves nothing, unless `instantScrollBy` lands it at once.
+      function renderChromeSheet({instantScrollBy = false} = {}) {
+        mockKeyboardGeometryApi();
+        mockPrimaryPointer('coarse');
+        mockWindowHeight(800);
+        const viewport = Object.assign(mockVisualViewport(800), {scale: 1});
+        render(
+          <BottomSheet
+            isOpen
+            onOpenChange={() => {}}
+            label="Add a comment"
+            height="tall">
+            <input aria-label="Comment" />
+          </BottomSheet>,
+        );
+        const body = getBody();
+        const content = body.firstElementChild as HTMLElement;
+        const input = screen.getByRole('textbox', {name: 'Comment'});
+        let scrollTop = 0;
+        const maxScroll = () => 800 + keyboardInsetOf(body) - 700;
+        Object.defineProperties(body, {
+          clientHeight: {configurable: true, get: () => 700},
+          scrollHeight: {
+            configurable: true,
+            get: () => 800 + keyboardInsetOf(body),
+          },
+          scrollTop: {
+            configurable: true,
+            get: () => Math.min(scrollTop, maxScroll()),
+            set: (value: number) => {
+              scrollTop = Math.max(0, Math.min(value, maxScroll()));
+            },
+          },
+        });
+        const scrollBy = vi.fn((options: ScrollToOptions) => {
+          if (instantScrollBy) {
+            body.scrollTop += options.top ?? 0;
+          }
+        });
+        Object.defineProperty(body, 'scrollBy', {
+          configurable: true,
+          value: scrollBy,
+        });
+        vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+          rect({top: 100, bottom: 800}),
+        );
+        vi.spyOn(input, 'getBoundingClientRect').mockImplementation(() =>
+          rect({top: 660 - body.scrollTop, bottom: 700 - body.scrollTop}),
+        );
+        const report = (height: number) => {
+          viewport.height = height;
+          act(() => {
+            viewport.dispatchEvent(new Event('resize'));
+          });
+        };
+        return {body, content, input, report, scrollBy};
+      }
+
+      const afterTheSlide = async () =>
+        act(async () => {
+          await new Promise(resolve => setTimeout(resolve, 400));
+        });
+
+      it('lands the body at once at the keyboard\u2019s report, and the content rides up from where it was', async () => {
+        const {body, content, input, report, scrollBy} = renderChromeSheet();
+        act(() => input.focus());
+        report(500);
+        // In the report's own event: the room (300 px of keyboard over the
+        // body, plus the 48 px clearance), and the body scrolled at once so
+        // the field rests 48 px above the keyboard. No smooth scroll trails
+        // Gboard's slide.
+        expect(keyboardInsetOf(body)).toBe(348);
+        expect(body.scrollTop).toBe(248);
+        expect(scrollBy).not.toHaveBeenCalled();
+        await afterTheSlide();
+        // The ride ends at the layout: no translate is left.
+        expect(content.style.translate).toBe('');
+        expect(body.scrollTop).toBe(248);
+      });
+
+      it('keeps the room through the keyboard\u2019s hide while the content rides down by the scroll the room\u2019s drop takes back, then drops both at rest', async () => {
+        const {body, content, input, report} = renderChromeSheet({
+          instantScrollBy: true,
+        });
+        act(() => input.focus());
+        report(500);
+        await afterTheSlide();
+        expect(body.scrollTop).toBe(248);
+
+        // Back: Chrome reports the keyboard gone, about 33 ms into Gboard's
+        // 167 ms slide down, and the field keeps focus.
+        report(800);
+        // The room stays, so the body keeps its scroll, while the content
+        // rides down by how far the body is scrolled into the room (248 past
+        // the 100 px the content alone scrolls).
+        expect(keyboardInsetOf(body)).toBe(348);
+        expect(body.scrollTop).toBe(248);
+        expect(content.style.translate).toBe('0px 148px');
+
+        await afterTheSlide();
+        // At rest, in one commit: the room drops, the body's scroll gives
+        // back the 148 px, and the translate clears.
+        expect(keyboardInsetOf(body)).toBe(0);
+        expect(body.scrollTop).toBe(100);
+        expect(content.style.translate).toBe('');
+      });
+    });
+
     it('keeps the keyboard room when the page is pinch-zoomed past 2x with the keyboard up', () => {
       // WebKit reports innerWidth and innerHeight in the zoomed visual
       // viewport's px (spec:AST-099 FR2): at 2x, innerHeight alone reads no
