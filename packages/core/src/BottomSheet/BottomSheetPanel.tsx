@@ -128,10 +128,6 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     minHeight: 0,
-    // The dialog lays the sheet out in a flex column: its height stays its
-    // own there, so a sheet taller than the viewport runs past the top edge
-    // instead of shrinking to fit.
-    flexShrink: 0,
     width: '100%',
     maxWidth: 640,
     backgroundColor: colorVars['--color-background-surface'],
