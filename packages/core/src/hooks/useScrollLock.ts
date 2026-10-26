@@ -70,7 +70,9 @@ export function useScrollLock(isLocked: boolean): void {
     }
 
     if (lockCount === 0) {
-      // Taken before the root's overflow hides the scrollbar.
+      // Measured before the lock writes a style, so opening an overlay forces
+      // no layout of its own; the gutter is written with the styles below
+      // (settle), and nothing reads layout after them.
       const gutter = holdScrollbarGutter(document.documentElement);
       // `overscroll-behavior-y: none` also keeps the browser's own
       // pull-to-refresh (Chrome on Android) from reloading the page behind
