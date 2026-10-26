@@ -25,7 +25,12 @@
  *   (UIKeyboardLayoutGuide's `keyboardDismissPadding`), the keyboard is
  *   dismissed; otherwise it stays. A release moving back up cancels, however
  *   far the finger went (FR37). The release velocity is the one every
- *   gesture reads (spec:AST-100, FR40).
+ *   gesture reads (spec:AST-100, FR40). That commit point and that
+ *   projection are a guess (FR2): nothing measures UIKit's interactive
+ *   dismissal yet. A measurement on the iOS 26.2 simulator will replace them:
+ *   a `.interactive` scroll view in the UIKit lab, with and without an
+ *   accessory bar, lifting at rest, slowly, fast and moving back, above, at
+ *   and into the keyboard's top.
  *
  * UIKit's `onDrag`, which dismisses as a drag begins, is not offered: a drag
  * that dismisses the keyboard decides at its release (FR36).
@@ -169,6 +174,7 @@ export function observeKeyboardDismiss(
     if (velocity < 0 || keyboardHeight() <= 0) {
       return;
     }
+    // The commit point and the projection are a guess (see the header).
     if (project(touch.clientY, velocity) < triggerLine()) {
       return;
     }

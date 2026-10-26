@@ -104,7 +104,9 @@ at any time, for something that appears while the keyboard moves.
   `dismissPadding` (the height of a bar on the keyboard); a release moving
   back up cancels (FR37). The release velocity is the shared
   `VelocityTracker`'s (`spec:AST-100`). UIKit's keyboard follows the finger;
-  a page cannot move it, so it leaves on its own at the lift.
+  a page cannot move it, so it leaves on its own at the lift. The commit point
+  and the projection are a guess (FR2) until a measurement of UIKit's
+  interactive dismissal on the iOS 26.2 simulator replaces them.
 - UIKit's `onDrag`, which dismisses as a drag begins, is not offered: a drag
   that dismisses the keyboard decides at its release.
 
