@@ -29,9 +29,17 @@
  * the animations UIKit attached, the gesture recognizers' states and the
  * `valueChanged` events, Oct 23 2026.
  *
- * Every value here is an internal constant the touch surfaces read directly:
- * none is a motion role (`spec:AST-094` FR4), so nothing here is a theme's to
- * retune.
+ * Seven leaves are motion: the animated selection's spring, the month/year
+ * toggle's fade, the compact popover's present and dismiss springs and its
+ * label dim, and the column turn's duration and curve. Where a leaf equals a
+ * motion role `spec:AST-094` FR4 names, a surface plays that role, not the
+ * leaf: the compact popover's springs are `springs.menuOpen` and
+ * `springs.menuClose`, and the toggle's fade and its chevron's turn run
+ * `timing.stateChangeMs` on `timing.curves.move`. The leaves no FR4 role
+ * matches (the column turn, the selection spring, the label dim) are internal
+ * measured constants, like every table value that is not a role, and become
+ * roles only if the date and time inputs' record names them (DEC-5). No
+ * surface plays a bare literal. The rest are rules.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/motion/MEASUREMENTS.md (measurement tasks)

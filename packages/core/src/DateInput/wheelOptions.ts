@@ -67,8 +67,9 @@ export interface WheelProps {
   isActive?: boolean;
   /**
    * The rows repeat without end, as UIDatePicker's minutes and hours do: the
-   * last row is followed by the first. Under a finger only, and ignored for a
-   * list too short to fill the column past its seam (fewer than 11 rows).
+   * last row is followed by the first. A list shorter than the column (a
+   * minute column every 15 minutes) repeats down all of it, as UIKit's does.
+   * Under a finger only; a single row never loops.
    */
   isLooping?: boolean;
   /**

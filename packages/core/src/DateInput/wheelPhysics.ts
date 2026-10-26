@@ -6,10 +6,10 @@
  *   picker constants (motion/uikit/picker.ts)
  * @output Exports the curves a picker wheel moves on: the release plan (a
  *   coast onto a row, a snap, a coast into an end and its bounce, a return
- *   from past an end), the tap spin, the rubber band while dragging, the
- *   release velocity and the row crossings that tick
- * @position Pure math of the Wheel (Wheel.tsx); the drum (wheelDrum.ts)
- *   renders whatever curve this returns
+ *   from past an end), the tap spin, the rubber band while dragging, and the
+ *   row crossings that tick
+ * @position Pure math of the touch picker wheel (PickerWheel.tsx); the drum
+ *   (wheelDrum.ts) renders whatever curve this returns
  *
  * Units follow the motion foundation: positions in px, time in seconds,
  * velocities in px/s. The offset is the distance the rows have travelled up:
@@ -40,7 +40,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/DateInput/wheelPhysics.test.ts
- * - /packages/core/src/DateInput/Wheel.tsx
+ * - /packages/core/src/DateInput/PickerWheel.tsx
  */
 
 import {cubicBezier} from '../motion/bezier';
@@ -225,7 +225,7 @@ export function coastCurve(
 
 /**
  * The bounce spring, from `from` with `velocity`, onto `to`. `bounce` is
- * `scroll.bounce`'s spring as the wheel resolves it (motion/resolveMotion.ts).
+ * `scroll.bounce`'s spring as its caller resolves it.
  */
 export function bounceCurve(
   from: number,
