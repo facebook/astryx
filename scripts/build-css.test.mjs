@@ -52,11 +52,18 @@ async function readReleaseClocks() {
     ),
     'utf8',
   );
+  const controlSource = await fs.readFile(
+    path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      '../packages/core/src/utils/controlPressLayer.stylex.ts',
+    ),
+    'utf8',
+  );
   const cell = source.match(/\breleaseMs:\s*(\d+)/);
-  const control = source.match(/\bcontrolReleaseMs:\s*(\d+)/);
+  const control = controlSource.match(/\bcontrolReleaseMs:\s*(\d+)/);
   if (cell == null || control == null) {
     throw new Error(
-      'pressConsts.releaseMs / controlReleaseMs not found in interactionOverlay.stylex.ts',
+      'pressConsts.releaseMs / controlPressConsts.controlReleaseMs not found',
     );
   }
   return {cell: Number(cell[1]), control: Number(control[1])};
@@ -516,7 +523,7 @@ describe('build-css astryx.css', () => {
       // it is. UIButton's release clock and curve, and the button's
       // `isolation`, apply only behind the coarse gate.
       const source = await fs.readFile(
-        path.join(ROOT, 'packages/core/src/utils/interactionOverlay.stylex.ts'),
+        path.join(ROOT, 'packages/core/src/utils/controlPressLayer.stylex.ts'),
         'utf8',
       );
       const ms = Number(source.match(/controlReleaseMs:\s*(\d+)/)[1]);
@@ -624,14 +631,14 @@ describe('build-css astryx.css', () => {
     /** The control clock and curve, read off the same stylesheet source. */
     async function readControlConsts() {
       const source = await fs.readFile(
-        path.join(ROOT, 'packages/core/src/utils/interactionOverlay.stylex.ts'),
+        path.join(ROOT, 'packages/core/src/utils/controlPressLayer.stylex.ts'),
         'utf8',
       );
       const ms = source.match(/controlReleaseMs:\s*(\d+)/);
       const ease = source.match(/controlReleaseEase:\s*'([^']+)'/);
       if (ms == null || ease == null) {
         throw new Error(
-          'control release not found in interactionOverlay.stylex.ts',
+          'control release not found in controlPressLayer.stylex.ts',
         );
       }
       return {

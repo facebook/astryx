@@ -42,6 +42,7 @@ const SRC = path.resolve(__dirname, '..');
 const MODEL_FILES = new Set([
   'utils/interactionOverlay.stylex.ts',
   'utils/rowPressLayer.ts',
+  'utils/controlPressLayer.ts',
   'utils/pressFeedback.ts',
   'utils/pressGesture.ts',
 ]);

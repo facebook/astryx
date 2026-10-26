@@ -22,6 +22,7 @@ import {
   rulesDeclaredFor,
   rulesWithSelector,
 } from '../__tests__/pressState';
+import {controlPressConsts} from './controlPressLayer.stylex';
 import {
   interactionOverlayStyles,
   pressConsts,
@@ -906,11 +907,15 @@ describe('the release fades: the arms the controller writes to', () => {
   it("each profile's clock is the stylesheet's constant: one number each", () => {
     expect(PRESS_FADE_MS).toBe(pressConsts.releaseMs);
     expect(PRESS_PROFILES.cell.releaseMs).toBe(pressConsts.releaseMs);
-    expect(pressConsts.controlReleaseMs).toBe(button.highlight.releaseMs);
-    expect(pressConsts.controlReleaseEase).toBe(
+    expect(controlPressConsts.controlReleaseMs).toBe(
+      button.highlight.releaseMs,
+    );
+    expect(controlPressConsts.controlReleaseEase).toBe(
       `cubic-bezier(${button.highlight.releaseCurve.join(', ')})`,
     );
-    expect(PRESS_PROFILES.control.releaseMs).toBe(pressConsts.controlReleaseMs);
+    expect(PRESS_PROFILES.control.releaseMs).toBe(
+      controlPressConsts.controlReleaseMs,
+    );
     expect(hasReleaseFade(surface(interactionOverlayStyles.pressedAlpha))).toBe(
       true,
     );

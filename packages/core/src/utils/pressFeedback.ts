@@ -72,7 +72,7 @@ import {
   PRESS_ONSET_MS,
   pressGestureStep,
 } from './pressGesture';
-import {pressConsts} from './interactionOverlay.stylex';
+import {controlPressConsts} from './controlPressLayer.stylex';
 import {TOUCH_QUERY} from './touchPresentation';
 
 /**
@@ -137,7 +137,7 @@ export const PRESS_PROFILES = {
    */
   control: {
     highlightDelay: 'inScrollers',
-    releaseMs: pressConsts.controlReleaseMs,
+    releaseMs: controlPressConsts.controlReleaseMs,
     releaseRole: pressReleaseRoles.controlDuration,
   },
   /** A table or collection cell: always inside a scroll view, so it waits. */

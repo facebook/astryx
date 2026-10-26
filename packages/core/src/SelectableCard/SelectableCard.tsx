@@ -48,6 +48,7 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {controlPressLayerStyles} from '../utils/controlPressLayer';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -452,7 +453,7 @@ export function SelectableCard({
           // Under a coarse primary pointer, the press's release runs on the
           // `::after`'s opacity, on the compositor; any other pointer keeps
           // the strength's release.
-          !isDisabled && interactionOverlayStyles.controlOver,
+          !isDisabled && controlPressLayerStyles.controlOver,
           isDisabled && styles.disabled,
           xstyleProp,
         ] as unknown as StyleXStyles

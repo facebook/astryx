@@ -127,12 +127,16 @@ describe('press paint under Reduce Motion', () => {
     expect(curve).toBeDefined();
     // A control's release runs on UIButton's clock; a cell's on the
     // deselect's. The fade outranks both.
-    const controlDuration = control([
-      FADING,
-      'animation-duration:',
-      // UIButton's clock: its role, falling back to the table's 250 ms.
-      ',.25s)',
-    ]);
+    // UIButton's clock: the coarse-pointer clock that is neither the fade nor
+    // a cell's.
+    const controlDuration = rules.find(
+      ([, {ltr}]) =>
+        !ltr.includes(CELL) &&
+        !ltr.includes(fade) &&
+        [FADING, 'animation-duration:', '@media (pointer: coarse)'].every(
+          part => ltr.includes(part),
+        ),
+    );
     expect(duration![2]).toBeGreaterThan(controlDuration![2]);
     const cellFade = rule(rules, [fade, FADING, CELL, 'animation-duration:']);
     const cellDuration = rules.find(

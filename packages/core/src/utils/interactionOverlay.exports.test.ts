@@ -19,8 +19,18 @@ import {describe, expect, it} from 'vitest';
 import * as utils from './index';
 import * as overlay from './interactionOverlay.stylex';
 
-const ROW_LAYER_STYLES = ['cell', 'cellOnImage'];
-const ROW_LAYER_EXPORTS = ['cellPressConsts', 'pressReleaseRoles'];
+const ROW_LAYER_STYLES = [
+  'cell',
+  'cellOnImage',
+  'control',
+  'controlOver',
+  'pressedAlphaLayered',
+];
+const ROW_LAYER_EXPORTS = [
+  'cellPressConsts',
+  'pressReleaseRoles',
+  'controlPressConsts',
+];
 
 describe("the list row's press layer stays internal", () => {
   it('is not exported from @astryxdesign/core/utils/interactionOverlay.stylex', () => {
@@ -50,5 +60,9 @@ describe("the list row's press layer stays internal", () => {
     );
     expect(sources).not.toContain('./src/utils/rowPressLayer.stylex.ts');
     expect(sources).not.toContain('./src/utils/rowPressLayer.ts');
+    expect(sources).not.toContain('./src/utils/controlPressLayer.stylex.ts');
+    expect(sources).not.toContain('./src/utils/controlPressLayer.ts');
+    // The published press clock is the one main shipped: no control keys.
+    expect(Object.keys(overlay.pressConsts)).toEqual(['releaseMs']);
   });
 });

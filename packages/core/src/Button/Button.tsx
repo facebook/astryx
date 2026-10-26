@@ -64,6 +64,7 @@ import type {LinkComponentType} from '../Link/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {controlPressLayerStyles} from '../utils/controlPressLayer';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
 import type {ButtonVariantMap} from './index';
@@ -719,7 +720,7 @@ export function Button({
     interactionOverlayStyles.backgroundImage,
     // The press the controller writes, on a layer under the label whose
     // release runs on the compositor (UIButton's highlight release).
-    interactionOverlayStyles.control,
+    controlPressLayerStyles.control,
     buttonDisabled && styles.inactive,
     isTrueDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
