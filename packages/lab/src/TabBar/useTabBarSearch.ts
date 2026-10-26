@@ -56,7 +56,7 @@ import {
 import {usePressTracker} from '@astryxdesign/core/gestures/usePressTracker';
 import {registerTabBarTable, tabBar} from '@astryxdesign/core/motion/uikit';
 import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
-import {isRtlElement} from '@astryxdesign/core/hooks';
+import {isRtlElement} from '../utils/isRtlElement';
 import {useKeyboardHeight} from '../keyboard/useKeyboardHeight';
 import {searchCancelShift, searchFieldBox, searchLift} from './tabBarModel';
 

@@ -47,6 +47,8 @@ import {
   writeEvidence,
 } from '@astryxdesign/interaction-harness';
 
+import {readFades, recordFades} from './fadeRecorder';
+
 const storybook = withStorybook(test);
 
 // The bottom placement's measurements, as in the UIKit table
@@ -677,72 +679,26 @@ test('the clear button refocuses the field without Safari’s reveal', async ({
   expect(calls).toEqual([{role: 'searchbox', options: {preventScroll: true}}]);
 });
 
-/** The properties the field's running animations change, and the fade's end. */
-async function animatedProperties(page: Page) {
-  return page.evaluate(() => {
-    const element = document.querySelector('[role="search"]') as HTMLElement;
-    const SKIP = ['offset', 'computedOffset', 'easing', 'composite'];
-    const animations = element.getAnimations({subtree: true});
-    const startedAt = Math.min(
-      ...animations.map(animation => Number(animation.startTime ?? 0)),
-    );
-    const properties = new Set<string>();
-    let fadeMs = 0;
-    for (const animation of animations) {
-      const effect = animation.effect as KeyframeEffect | null;
-      if (effect == null) {
-        continue;
-      }
-      const frames = effect.getKeyframes();
-      const timing = effect.getComputedTiming();
-      const begin =
-        Number(animation.startTime ?? 0) + Number(timing.delay ?? 0);
-      const duration = Number(timing.activeDuration ?? 0);
-      const timeOf = (i: number) =>
-        begin + Number(frames[i].computedOffset) * duration;
-      for (const key of Object.keys(frames[0] ?? {})) {
-        if (SKIP.includes(key)) {
-          continue;
-        }
-        if (new Set(frames.map(frame => String(frame[key]))).size > 1) {
-          properties.add(key);
-        }
-        if (key === 'opacity') {
-          // When the opacity reaches the value it ends on, for good (the
-          // animator holds a curve's last value past its end).
-          const final = String(frames[frames.length - 1].opacity);
-          let settles = timeOf(0);
-          for (let i = 0; i < frames.length; i++) {
-            if (String(frames[i].opacity) !== final) {
-              settles = timeOf(Math.min(i + 1, frames.length - 1));
-            }
-          }
-          fadeMs = Math.max(fadeMs, settles - startedAt);
-        }
-      }
-    }
-    return {properties: [...properties].sort(), fadeMs};
-  });
-}
-
 test.describe('with Reduce Motion', () => {
   test('a finger sees only opacity fades of 200 ms or less, and the bar moves to the keyboard at once', async ({
     page,
   }) => {
     await page.emulateMedia({reducedMotion: 'reduce'});
     const {driver, field} = await openBottom(page);
-    await driver.tap(await centerOf(field));
-    await waitForAnimation(end(page));
     // design:reduced-motion DR1 and DR2: no travel, opacity only, 200 ms or
-    // less.
-    const activation = await animatedProperties(page);
+    // less. The page records each animation as it starts, so a busy runner
+    // cannot make the proof miss one; it reads once the parts have landed
+    // and come to rest.
+    await recordFades(page);
+    await driver.tap(await centerOf(field));
+    await expect
+      .poll(async () => (await translate(end(page)))[0])
+      .toBeCloseTo(ACTIVE.trailing - REST.trailing, 1);
+    await waitForRest(end(page));
+    await waitForRest(close(page));
+    const activation = await readFades(page);
     expect(activation.properties).toEqual(['opacity']);
     expect(activation.fadeMs).toBeLessThanOrEqual(200);
-    await waitForRest(end(page));
-    expect((await translate(end(page)))[0]).toBeCloseTo(
-      ACTIVE.trailing - REST.trailing,
-      1,
-    );
     // The keyboard: the field's layout takes the new place at once.
     const restGap = await restGapOf(page);
     await showKeyboard(page);

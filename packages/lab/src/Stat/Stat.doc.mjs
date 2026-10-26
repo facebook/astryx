@@ -6,7 +6,18 @@ export const docs = {
   name: 'Stat',
   displayName: 'Stat',
   category: 'Content',
-  keywords: ["stat","kpi","metric","number","value","delta","trend","dashboard","statistic","measure"],
+  keywords: [
+    'stat',
+    'kpi',
+    'metric',
+    'number',
+    'value',
+    'delta',
+    'trend',
+    'dashboard',
+    'statistic',
+    'measure',
+  ],
   props: [
     {
       name: 'label',
@@ -53,19 +64,37 @@ export const docs = {
     },
   ],
   theming: {
-    targets: [
-      {className: 'astryx-stat', visualProps: ['size']},
-    ],
+    targets: [{className: 'astryx-stat', visualProps: ['size']}],
   },
   usage: {
     description:
       'A KPI/metric display for dashboards and summary rows: metric name, large tabular-nums value, an optional sentiment-aware delta, a supporting description, and a media slot for a sparkline or mini chart. Compose several in a Grid for a KPI row.',
     bestPractices: [
-      { guidance: true, description: 'Pass pre-formatted strings for value and delta ("1.2M", "+12.4%"); Stat does not format numbers.' },
-      { guidance: true, description: 'Set `sentiment` explicitly for inverted metrics where down is good, like error rate or latency.' },
-      { guidance: true, description: 'Wrap Stat in a Card and lay out KPI rows with Grid columns={{minWidth: 240, max: 4}}.' },
-      { guidance: false, description: 'Put a full-size chart in the media slot; it is meant for compact sparklines or trend glyphs.' },
-      { guidance: false, description: 'Rely on delta color alone to convey meaning; the direction glyph and screen-reader text carry it too.' },
+      {
+        guidance: true,
+        description:
+          'Pass pre-formatted strings for value and delta ("1.2M", "+12.4%"); Stat does not format numbers.',
+      },
+      {
+        guidance: true,
+        description:
+          'Set `sentiment` explicitly for inverted metrics where down is good, like error rate or latency.',
+      },
+      {
+        guidance: true,
+        description:
+          'Wrap Stat in a Card and lay out KPI rows with Grid columns={{minWidth: 240, max: 4}}.',
+      },
+      {
+        guidance: false,
+        description:
+          'Put a full-size chart in the media slot; it is meant for compact sparklines or trend glyphs.',
+      },
+      {
+        guidance: false,
+        description:
+          'Rely on delta color alone to convey meaning; the direction glyph and screen-reader text carry it too.',
+      },
     ],
   },
 };
@@ -119,41 +148,81 @@ export const docsZh = {
     },
   ],
   theming: {
-    targets: [
-      {className: 'astryx-stat', visualProps: ['size']},
-    ],
+    targets: [{className: 'astryx-stat', visualProps: ['size']}],
   },
   usage: {
     description:
       'A KPI/metric display for dashboards and summary rows: metric name, large tabular-nums value, an optional sentiment-aware delta, a supporting description, and a media slot for a sparkline or mini chart. Compose several in a Grid for a KPI row.',
     bestPractices: [
-      { guidance: true, description: 'Pass pre-formatted strings for value and delta ("1.2M", "+12.4%"); Stat does not format numbers.' },
-      { guidance: true, description: 'Set `sentiment` explicitly for inverted metrics where down is good, like error rate or latency.' },
-      { guidance: true, description: 'Wrap Stat in a Card and lay out KPI rows with Grid columns={{minWidth: 240, max: 4}}.' },
-      { guidance: false, description: 'Put a full-size chart in the media slot; it is meant for compact sparklines or trend glyphs.' },
-      { guidance: false, description: 'Rely on delta color alone to convey meaning; the direction glyph and screen-reader text carry it too.' },
+      {
+        guidance: true,
+        description:
+          'Pass pre-formatted strings for value and delta ("1.2M", "+12.4%"); Stat does not format numbers.',
+      },
+      {
+        guidance: true,
+        description:
+          'Set `sentiment` explicitly for inverted metrics where down is good, like error rate or latency.',
+      },
+      {
+        guidance: true,
+        description:
+          'Wrap Stat in a Card and lay out KPI rows with Grid columns={{minWidth: 240, max: 4}}.',
+      },
+      {
+        guidance: false,
+        description:
+          'Put a full-size chart in the media slot; it is meant for compact sparklines or trend glyphs.',
+      },
+      {
+        guidance: false,
+        description:
+          'Rely on delta color alone to convey meaning; the direction glyph and screen-reader text carry it too.',
+      },
     ],
   },
 };
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
-  description: 'KPI/metric display: label, large tabular-nums value, sentiment-aware delta, and trend media slot.',
+  description:
+    'KPI/metric display: label, large tabular-nums value, sentiment-aware delta, and trend media slot.',
   usage: {
     description:
       'A KPI/metric display for dashboards and summary rows: metric name, large tabular-nums value, an optional sentiment-aware delta, a supporting description, and a media slot for a sparkline or mini chart. Compose several in a Grid for a KPI row.',
     bestPractices: [
-      { guidance: true, description: 'Pass pre-formatted strings for value and delta ("1.2M", "+12.4%"); Stat does not format numbers.' },
-      { guidance: true, description: 'Set `sentiment` explicitly for inverted metrics where down is good, like error rate or latency.' },
-      { guidance: true, description: 'Wrap Stat in a Card and lay out KPI rows with Grid columns={{minWidth: 240, max: 4}}.' },
-      { guidance: false, description: 'Put a full-size chart in the media slot; it is meant for compact sparklines or trend glyphs.' },
-      { guidance: false, description: 'Rely on delta color alone to convey meaning; the direction glyph and screen-reader text carry it too.' },
+      {
+        guidance: true,
+        description:
+          'Pass pre-formatted strings for value and delta ("1.2M", "+12.4%"); Stat does not format numbers.',
+      },
+      {
+        guidance: true,
+        description:
+          'Set `sentiment` explicitly for inverted metrics where down is good, like error rate or latency.',
+      },
+      {
+        guidance: true,
+        description:
+          'Wrap Stat in a Card and lay out KPI rows with Grid columns={{minWidth: 240, max: 4}}.',
+      },
+      {
+        guidance: false,
+        description:
+          'Put a full-size chart in the media slot; it is meant for compact sparklines or trend glyphs.',
+      },
+      {
+        guidance: false,
+        description:
+          'Rely on delta color alone to convey meaning; the direction glyph and screen-reader text carry it too.',
+      },
     ],
   },
   propDescriptions: {
     label: 'Metric name above the value.',
     value: 'Pre-formatted headline metric; tabular numerals.',
-    delta: 'Direction glyph + colored change text; sentiment overrides direction colors.',
+    delta:
+      'Direction glyph + colored change text; sentiment overrides direction colors.',
     description: 'Muted supporting line under the value.',
     media: 'Trend slot below the text (sparkline/mini chart).',
     size: "Value font size: 'sm' | 'md' | 'lg'.",
