@@ -9,7 +9,9 @@
  *   a tap focuses it without moving the page, and the story's stand-in tab
  *   bar keeps above the keyboard by layout, committed on each report, so
  *   the field's centre rests 36 px above the keyboard's top, and back down
- *   when the field is cancelled
+ *   when the field is cancelled; the field paints no background of its own
+ *   (no ::before or ::after on the field or the trailing end: the tab bar
+ *   draws the glass)
  * @position Interaction proof for lab SearchField's tab placement and its
  *   story (SearchField.tsx, SearchField.stories.tsx); the real tab bar's
  *   keyboard handling is TabBar's
@@ -72,6 +74,28 @@ async function centerOf(locator: Locator) {
   }
   return {x: box.x + box.width / 2, y: box.y + box.height / 2};
 }
+
+test('the field paints no background of its own: the tab bar draws the glass', async ({
+  page,
+}) => {
+  await openStory(page, storybook(), 'lab-searchfield--in-tab-bar');
+  const field = page.getByRole('searchbox', {name: 'Search'});
+  await expect(field).toBeVisible();
+  const contents = await page.evaluate(() => {
+    const box = document.querySelector('[role="search"]')
+      ?.firstElementChild as HTMLElement;
+    const end = document.querySelector(
+      '[data-search-field-end]',
+    ) as HTMLElement;
+    return [
+      getComputedStyle(box, '::before').content,
+      getComputedStyle(box, '::after').content,
+      getComputedStyle(end, '::before').content,
+    ];
+  });
+  // A pseudo-element with no content is not generated.
+  expect(contents).toEqual(['none', 'none', 'none']);
+});
 
 test('the stand-in tab bar keeps above the keyboard: the field rests 36 px above it, and goes back down on cancel', async ({
   page,

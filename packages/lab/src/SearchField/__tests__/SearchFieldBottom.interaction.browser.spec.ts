@@ -48,6 +48,7 @@ import {
 } from '@astryxdesign/interaction-harness';
 
 import {readFades, recordFades} from './fadeRecorder';
+import {END_CAP, MIDDLE, START, samplePart} from './pseudoParts';
 
 const storybook = withStorybook(test);
 
@@ -204,13 +205,11 @@ const overlaysContent = async (page: Page) =>
 
 /** The field's computed `touch-action` (the gesture host writes it). */
 const touchActionOf = async (page: Page) =>
-  page
-    .locator('[data-search-field-start]')
-    .evaluate(element =>
-      element.parentElement == null
-        ? null
-        : getComputedStyle(element.parentElement).touchAction,
-    );
+  root(page).evaluate(element =>
+    element.firstElementChild == null
+      ? null
+      : getComputedStyle(element.firstElementChild).touchAction,
+  );
 
 /** How many animations the root itself runs. */
 const rootAnimations = async (page: Page) =>
@@ -252,10 +251,7 @@ async function openBottom(
 }
 
 const root = (page: Page) => page.getByRole('search');
-const start = (page: Page) => page.locator('[data-search-field-start]');
-const middle = (page: Page) => page.locator('[data-search-field-middle]');
 const end = (page: Page) => page.locator('[data-search-field-end]');
-const endCap = (page: Page) => page.locator('[data-search-field-end-cap]');
 const close = (page: Page) => page.locator('[data-search-field-close]');
 
 async function centerOf(locator: Locator) {
@@ -310,20 +306,23 @@ test('a tap plays iOS’s measured activation on every part', async ({
   await expect(root(page)).toHaveAttribute('data-search-field-active', 'true');
   const curveEnd = Math.max(...held.map(a => a.curveEndMs));
   const times = timeline(curveEnd);
-  const [starts, middles, ends, caps, closes] = await Promise.all(
-    [start, middle, end, endCap, close].map(async part =>
-      sampleCurve(part(page), times),
-    ),
+  const [ends, closes] = await Promise.all(
+    [end, close].map(async part => sampleCurve(part(page), times)),
   );
+  // The rounded ends and the middle are pseudo-elements (pseudoParts.ts),
+  // each sampled by seeking every held animation: one after another.
+  const starts = await samplePart(page, START, times);
+  const middles = await samplePart(page, MIDDLE, times);
+  const caps = await samplePart(page, END_CAP, times);
   await releaseAnimations(page, {finish: true});
   const samples = times.map((t, i) => {
     const edges = edgesAt(bottom.activationFrames, t);
     return {
       t: +t.toFixed(1),
-      startX: starts[i].transform.translateX,
-      middleScale: middles[i].transform.scaleX,
+      startX: starts[i].translateX,
+      middleScale: middles[i].scaleX,
       endX: ends[i].transform.translateX,
-      heightScale: caps[i].transform.scaleY,
+      heightScale: caps[i].scaleY,
       closeX: closes[i].transform.translateX,
       closeScale: closes[i].transform.scaleX,
       closeOpacity: closes[i].opacity,
@@ -1095,9 +1094,22 @@ test.describe('with a mouse', () => {
       'data-search-field-active',
       'true',
     );
+    // No animation moves anything. (The animator holds the rounded ends and
+    // the middle, pseudo-elements with no inline style, by static filling
+    // animations whose keyframes keep one value.)
     expect(
       await root(page).evaluate(
-        element => element.getAnimations({subtree: true}).length,
+        element =>
+          element.getAnimations({subtree: true}).filter(animation => {
+            const frames =
+              (animation.effect as KeyframeEffect | null)?.getKeyframes() ?? [];
+            return Object.keys(frames[0] ?? {}).some(
+              key =>
+                !['offset', 'computedOffset', 'easing', 'composite'].includes(
+                  key,
+                ) && new Set(frames.map(frame => String(frame[key]))).size > 1,
+            );
+          }).length,
       ),
     ).toBe(0);
     expect((await translate(end(page)))[0]).toBeCloseTo(

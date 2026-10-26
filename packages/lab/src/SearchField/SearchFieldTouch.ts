@@ -75,10 +75,19 @@ export type SearchFieldPlacement = 'stacked' | 'bottom' | 'tab';
 /** The refs SearchField puts on the parts the touch layer moves. */
 export interface SearchFieldMotion {
   rootRef: (element: HTMLElement | null) => void;
+  /**
+   * The field box: the touch layer moves its ::before, the leading end
+   * (under a bottom field's gel).
+   */
   startRef: (element: HTMLElement | null) => void;
   contentRef: (element: HTMLElement | null) => void;
+  /** The field box: the touch layer scales its ::after, the middle. */
   middleRef: (element: HTMLElement | null) => void;
   endRef: (element: HTMLElement | null) => void;
+  /**
+   * The trailing part: the touch layer scales its ::before, the trailing
+   * end's cap (under a bottom field's gel).
+   */
   endCapRef: (element: HTMLElement | null) => void;
   closeRef: (element: HTMLElement | null) => void;
   /**
@@ -108,11 +117,14 @@ export function useSearchFieldMotion({
   placement: SearchFieldPlacement;
 }): SearchFieldMotion {
   const rootAnimator = useAnimator();
-  const startAnimator = useAnimator();
+  // The rounded ends and the middle are pseudo-elements (decoration:
+  // architecture:component-style-authoring INV7): the field's ::before and
+  // ::after, and the trailing part's ::before.
+  const startAnimator = useAnimator({pseudoElement: '::before'});
   const contentAnimator = useAnimator();
-  const middleAnimator = useAnimator();
+  const middleAnimator = useAnimator({pseudoElement: '::after'});
   const endAnimator = useAnimator();
-  const endCapAnimator = useAnimator();
+  const endCapAnimator = useAnimator({pseudoElement: '::before'});
   const closeAnimator = useAnimator();
   const {isTouch} = useTouchPresentation();
   const isBottom = placement === 'bottom';
