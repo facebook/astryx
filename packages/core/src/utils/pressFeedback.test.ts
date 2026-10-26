@@ -322,9 +322,9 @@ describe('the release', () => {
     const row = rows[0];
     row.style.setProperty('--motion-timing-press-highlight-out-ms', '400ms');
     const original = window.matchMedia;
-    window.matchMedia = ((query: string) =>
+    window.matchMedia = (query: string) =>
       query === '(prefers-reduced-motion: reduce)'
-        ? ({
+        ? {
             matches: true,
             media: query,
             onchange: null,
@@ -333,8 +333,8 @@ describe('the release', () => {
             addListener: () => {},
             removeListener: () => {},
             dispatchEvent: () => false,
-          } as unknown as MediaQueryList)
-        : original.call(window, query)) as typeof window.matchMedia;
+          }
+        : original.call(window, query);
     try {
       press(row, 'pointerdown', 10, 10);
       vi.advanceTimersByTime(PRESS_ONSET_MS);
