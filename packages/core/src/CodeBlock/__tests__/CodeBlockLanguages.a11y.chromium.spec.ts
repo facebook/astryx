@@ -4,8 +4,9 @@
  * @file CodeBlockLanguages.a11y.chromium.spec.ts
  * @input Storybook stories core-codeblock--built-in-languages and
  *   core-codeblock--language-modules
- * @output CodeBlock FR12 and FR13 in a real browser: built-in and provided
- *   module languages register syntax highlights over the right text
+ * @output CodeBlock FR12 and FR13 in a real browser: built-in languages and
+ *   language values passed as `language` register syntax highlights over the
+ *   right text
  * @position CodeBlock FR12, FR13 browser evidence
  */
 
@@ -51,9 +52,7 @@ test('built-in C++, Rust, and SQL colour with no setup', async ({page}) => {
   );
 });
 
-test('Thrift and Java colour inside the provider that lists them', async ({
-  page,
-}) => {
+test('Thrift and Java colour when passed as the language', async ({page}) => {
   await page.goto(
     `${storybook.origin}/iframe.html?id=core-codeblock--language-modules&viewMode=story`,
   );

@@ -2,7 +2,8 @@
 
 /**
  * @file tokenizerBudget.test.ts
- * @input tokenizer.ts and languages/index.ts, bundled and minified by esbuild
+ * @input tokenizer.ts and each module under languages/, bundled and minified
+ *   by esbuild
  * @output The CodeBlock language budget (PR4): the built-in tokenizer within
  *   4,608 bytes and each language module within 512 bytes, minified and gzipped
  * @position CodeBlock PR4 evidence

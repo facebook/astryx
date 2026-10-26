@@ -670,7 +670,7 @@ export async function tokenizeAsync(
   language: CodeLanguageInput,
   signal?: AbortSignal,
 ): Promise<TokenLine[]> {
-  // A custom language runs synchronously, as the deprecated tokenizer does.
+  // A custom language runs synchronously, as the `tokenizer` prop does.
   const custom = customTokens(code, language);
   if (custom != null) {
     return custom;

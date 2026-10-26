@@ -4,8 +4,9 @@
  * @file CodeLanguage.test.tsx
  * @input CodeBlock, language modules, createCodeLanguage
  * @output CodeBlock FR13 evidence: a language value passed as `language`
- *   paints, labels with its name, and reflects its first identifier; a string never reaches a module; the deprecated
- *   `tokenizer` still wins; server rendering paints in the first render
+ *   paints, labels with its name, and reflects its first identifier; a string
+ *   never reaches a module; the `tokenizer` prop still wins; server rendering
+ *   paints in the first render
  * @position CodeBlock FR13 evidence
  */
 
@@ -106,7 +107,7 @@ describe('a language value as `language` (FR13)', () => {
     expect(keywordTexts(container)).toHaveLength(600);
   });
 
-  it('keeps the deprecated tokenizer winning, as released', () => {
+  it('keeps the tokenizer prop winning, as released', () => {
     const tokenizer = () => [{type: 'string', start: 0, end: 6}];
     const builtIn = render(
       <CodeBlock

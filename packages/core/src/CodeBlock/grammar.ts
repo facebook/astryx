@@ -5,11 +5,12 @@
  * @input Nothing
  * @output Shared pattern builders for CodeBlock grammars, the CodeLanguage
  *   value, createCodeLanguage, and lookups by identifier and file name
- * @position Shared utility; consumed by tokenizer.ts and languages/index.ts
+ * @position Shared utility; consumed by tokenizer.ts and the modules under
+ *   languages/
  *
  * SYNC: When modified, update:
  * - /packages/core/src/CodeBlock/tokenizer.ts
- * - /packages/core/src/CodeBlock/languages/index.ts
+ * - /packages/core/src/CodeBlock/languages/
  */
 
 /** One grammar rule: text matching `regex` paints as `type`. */
@@ -36,7 +37,7 @@ export type CodeLanguageTokenize = (
 /**
  * A language value: an Astryx module from
  * `@astryxdesign/core/CodeBlock/languages/<path>`, or a custom language from
- * `createCodeLanguage`. Pass it as `language`, or list it in `codeLanguages`.
+ * `createCodeLanguage`. Pass it as `language`.
  */
 export type CodeLanguage = {
   /** The identifier the label shows, such as `graphql`; shown verbatim. */
@@ -96,8 +97,7 @@ export type CreateCodeLanguageOptions = CodeLanguageMeta & {
 
 /**
  * Make a custom language value from your own tokenize function. It works
- * everywhere an Astryx language module does: as `language`, and in
- * `codeLanguages` on Markdown, RichText, and DiffViewer.
+ * everywhere an Astryx language module does, starting with `language`.
  *
  * @example
  * ```

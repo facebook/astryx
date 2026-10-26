@@ -603,10 +603,9 @@ export interface CodeBlockProps extends BaseProps<HTMLPreElement> {
    */
   container?: 'card' | 'section';
   /**
-   * @deprecated Pass a custom language as `language` instead:
-   * `language={createCodeLanguage({name, identifiers, tokenize})}` takes this
-   * same function as `tokenize`. Still works exactly as released and wins
-   * over `language`'s grammar; `astryx upgrade` rewrites static uses.
+   * Your own tokenizer; it wins over `language`'s grammar. The same function
+   * also makes a custom language: `createCodeLanguage({name, identifiers,
+   * tokenize})`.
    */
   tokenizer?: (
     code: string,

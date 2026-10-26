@@ -12,8 +12,6 @@ Every other language is opt in, one at a time:
 
 Your own languages work the same way. `createCodeLanguage({name, identifiers, fileExtensions, fileNames, tokenize})` makes a language value from your own tokenize function.
 
-`tokenizer` is deprecated. It still works exactly as released.
-
 The built-in tokenizer stays within 4,608 bytes gzipped. Each module adds at most 512 bytes, and only when you import it.
 
 @cixzhang
