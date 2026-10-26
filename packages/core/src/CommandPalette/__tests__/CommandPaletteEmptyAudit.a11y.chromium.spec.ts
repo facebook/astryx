@@ -133,9 +133,16 @@ function expectedTexts(item: AuditCase): string[] {
   ];
 }
 
-/** The search message the live region must carry; null where not asserted. */
+/**
+ * The search message the live region must carry; null where not asserted.
+ * Only the modal palette settles: the audit matrix keeps a never-settling
+ * pending palette beside the empty one, and React entangles their transitions,
+ * so its search stays pending and is announced only once it settles. The
+ * content matrix types into two palettes, so the region holds whichever
+ * message was announced last.
+ */
 function expectedAnnouncement(item: AuditCase): string | null {
-  if (item.state !== 'search' || item.story === 'content') {
+  if (item.state !== 'search' || item.story !== 'builtin') {
     return null;
   }
   return expectedTexts(item)[0];
@@ -268,12 +275,11 @@ for (const item of cases) {
         await comboboxes.nth(index).focus();
         await comboboxes.nth(index).pressSequentially(QUERY);
       }
-      if (wantAnnouncement != null) {
-        announcement = await waitFor(
-          async () => politeText(page),
-          value => value === wantAnnouncement,
-        );
-      }
+      announcement = await waitFor(
+        async () => politeText(page),
+        value =>
+          wantAnnouncement == null ? value !== '' : value === wantAnnouncement,
+      );
       await waitFor(
         async () => emptyTexts(subject),
         value => JSON.stringify(value) === JSON.stringify(wantTexts),
@@ -411,6 +417,7 @@ for (const item of cases) {
         });
       });
     const listboxesInSubject = await subject.getByRole('listbox').count();
+    const pendingIndicators = await subject.locator('.astryx-spinner').count();
     const comboboxStates = await subject
       .getByRole('combobox')
       .evaluateAll(nodes =>
@@ -481,6 +488,7 @@ for (const item of cases) {
         ...observed,
         empties,
         listboxesInSubject,
+        pendingIndicators,
         comboboxStates,
         announcement,
         pageErrors,
