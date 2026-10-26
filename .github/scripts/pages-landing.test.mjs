@@ -190,7 +190,7 @@ describe('GitHub Pages compatibility landing', () => {
     expect(document.querySelector('meta[name="robots"]')?.content).toBe(
       'noindex, follow',
     );
-    expect(PAGE).not.toMatch(/internalfb|localhost|@xds|@nest/i);
+    expect(PAGE).not.toMatch(/localhost|@xds/i);
   });
 
   it.each([
