@@ -84,7 +84,8 @@ interface TraceEvent {
 /**
  * Traces the page while `body` runs and counts the rendering work its main
  * thread did between a start mark (placed just before `body`) and an end mark
- * (just after).
+ * (just after). The harness's animation recorder and `waitForRest` stand down
+ * meanwhile, so a body may wait with either and add no frame of its own.
  */
 export async function traceRendering(
   page: Page,
@@ -116,9 +117,35 @@ export async function traceRendering(
       n => performance.timeOrigin + performance.mark(n).startTime,
       name,
     );
-  const fromEpoch = await mark(`${tag}:start`);
-  await body();
-  const toEpoch = await mark(`${tag}:end`);
+  // The harness's animation recorder (curves.ts) runs a callback every frame,
+  // which makes each frame a main-thread one where Blink restyles every running
+  // animation's target (and lays out an anchored one), and it reads the page's
+  // animations, which flushes style: exactly what this counts. It stands down
+  // while this flag is set, a recorder the body itself starts included, and
+  // resumes once the trace ends.
+  const standDown = (on: boolean) =>
+    page.evaluate(value => {
+      const w = window as unknown as {
+        __harnessRenderingTrace?: boolean;
+        __harnessAnimations?: {resume?: () => void};
+      };
+      w.__harnessRenderingTrace = value;
+      if (!value) {
+        w.__harnessAnimations?.resume?.();
+      }
+    }, on);
+  await standDown(true);
+  let fromEpoch: number;
+  let toEpoch: number;
+  try {
+    fromEpoch = await mark(`${tag}:start`);
+    await body();
+    toEpoch = await mark(`${tag}:end`);
+  } finally {
+    // Its catch-up read lands after the end mark, outside the counted window.
+    // A failure here would hide the body's own error, which is the one to see.
+    await standDown(false).catch(() => {});
+  }
   await cdp.send('Tracing.end');
   await complete;
   await cdp.detach().catch(() => {});
@@ -162,6 +189,63 @@ export async function traceRendering(
   };
 }
 
+/**
+ * Records when the compositor presents each frame, for `busyWindowProof`'s
+ * `presented`: a Chromium trace of `Display::FrameDisplayed`, on the page
+ * clock. Start it with the screencast, before the block, and stop it after.
+ * Engines without a CDP trace (WebKit) resolve `stop()` to [], and the
+ * verdict then judges the screencast alone. It runs its own trace, so not
+ * inside `traceRendering`.
+ */
+export async function startCompositorTrace(
+  page: Page,
+): Promise<{stop(): Promise<number[]>}> {
+  let cdp: CDPSession;
+  try {
+    cdp = await page.context().newCDPSession(page);
+  } catch {
+    return {stop: async () => []};
+  }
+  const events: TraceEvent[] = [];
+  cdp.on('Tracing.dataCollected', ({value}) => {
+    events.push(...(value as unknown as TraceEvent[]));
+  });
+  const complete = new Promise<void>(resolve =>
+    cdp.once('Tracing.tracingComplete', () => resolve()),
+  );
+  await cdp.send('Tracing.start', {
+    transferMode: 'ReportEvents',
+    traceConfig: {
+      includedCategories: [
+        'disabled-by-default-display.framedisplayed',
+        'blink.user_timing',
+      ],
+      excludedCategories: ['*'],
+    },
+  });
+  const tag = `harness-compositor-${Math.random().toString(36).slice(2, 8)}`;
+  const epoch = await page.evaluate(
+    n => performance.timeOrigin + performance.mark(n).startTime,
+    tag,
+  );
+  return {
+    async stop() {
+      await cdp.send('Tracing.end');
+      await complete;
+      await cdp.detach().catch(() => {});
+      const mark = events.find(e => e.name === tag);
+      if (mark == null) {
+        throw new Error('startCompositorTrace: the clock mark was not traced');
+      }
+      // Trace time (µs, monotonic) -> epoch ms, anchored on the mark.
+      return events
+        .filter(e => e.name === 'Display::FrameDisplayed')
+        .map(e => epoch + (e.ts - mark.ts) / 1000)
+        .sort((a, b) => a - b);
+    },
+  };
+}
+
 const LONG_TASK_SCRIPT = `(() => {
   if (window.__harnessLongTasks || typeof PerformanceObserver === 'undefined') return;
   const tasks = [];
@@ -173,7 +257,14 @@ const LONG_TASK_SCRIPT = `(() => {
   } catch {}
 })()`;
 
-/** Records every long task (> 50 ms) the page runs (install before navigation; Chromium). */
+/**
+ * Records every long task (> 50 ms) the page runs (install before navigation;
+ * Chromium), through the Long Tasks API. That sees the tasks of the page's own
+ * event loop: a timer, an event handler, `blockMainThread(page, ms, {during})`.
+ * A DevTools `page.evaluate`, such as `blockMainThread(page, ms)` without
+ * `during`, is not one of them and is never recorded here; the trace's
+ * `longTasks` (`traceRendering`) counts every main-thread task over 50 ms.
+ */
 export async function installLongTaskLog(page: Page): Promise<void> {
   await page.addInitScript(LONG_TASK_SCRIPT);
 }
