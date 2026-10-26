@@ -22,13 +22,10 @@
  *   the handle is on the left and the drag keeps x; a focused handle shows one
  *   whole ring, clear of its lines, on a 44 pt target that makes its row no
  *   taller; a held finger locks text selection on the handle until the lift,
- *   and a mouse sees a plain button's styles; a tap on a handle turns on
- *   reorder mode and taps on its hint's moves and Done reorder, and a drag
- *   leaves the mode off; in each engine, Space or Enter turns the mode on,
- *   each arrow commits a move at once with the focus on the handle, and
- *   Escape ends the mode keeping the moves; start(key) from a button or a
- *   context menu enters the same mode with the focus on the handle; a pinned
- *   first row bounds a drag; storyboards of a drag and a drop
+ *   and a mouse sees a plain button's styles; a pinned first row bounds a
+ *   drag; storyboards of a drag and a drop. Reorder mode's own proofs (keys,
+ *   a mouse click, taps alone, start(key) and the hint) are in
+ *   ListReorderMode.interaction.browser.spec.ts
  * @position Interaction evidence for List/listReorderEngine.tsx,
  *   List/ListReorderTouch.ts and List/ListReorderHandle.tsx
  */
@@ -70,7 +67,6 @@ const storybook = withStorybook(test);
 const STORY = 'core-list--reorderable';
 const LONG_STORY = 'core-list--reorder-long-list';
 const PINNED_STORY = 'core-list--reorder-with-pinned-rows';
-const START_STORY = 'core-list--reorder-from-your-ui';
 const ROWS = ['Inbox', 'Sent', 'Drafts', 'Archive', 'Spam', 'Trash'];
 const HOLD_MS = reorder.claim.delayMs + 80;
 
@@ -871,63 +867,6 @@ test.describe('with a mouse', () => {
     ).toEqual([]);
   });
 
-  test("a mouse click on a handle turns on reorder mode and shows its hint's moves and Done, and announces no drop", async ({
-    page,
-  }) => {
-    await openStory(page, storybook(), STORY);
-    await expectFinePointer(page);
-    await handle(page, 'Inbox').click();
-    await expect(handle(page, 'Inbox')).toHaveAttribute('aria-pressed', 'true');
-    for (const name of ['Move up', 'Move down', 'Done']) {
-      await expect(page.getByRole('button', {name})).toBeVisible();
-    }
-    // A click's focus is the handle's, whatever the engine does with a
-    // clicked button.
-    await expect(handle(page, 'Inbox')).toBeFocused();
-    // Nothing was picked up: the click announces no drop.
-    const announced = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('[aria-live], [role="status"]'))
-        .map(element => element.textContent ?? '')
-        .join(' '),
-    );
-    expect(announced).not.toContain('Dropped');
-  });
-
-  for (const from of ['a button', 'the context menu']) {
-    test(`start(key) from ${from} turns on reorder mode with the focus on the handle, and the arrows and the hint work`, async ({
-      page,
-    }) => {
-      // spec:AST-103 FR4a: a closing menu restores its trigger's focus; the
-      // handle takes it back.
-      await openStory(page, storybook(), START_STORY);
-      await expectFinePointer(page);
-      if (from === 'a button') {
-        await page.getByRole('button', {name: 'Move Sent'}).click();
-      } else {
-        await row(page, 'Drafts').click({button: 'right'});
-        await page.getByRole('menuitem', {name: 'Move Sent'}).click();
-      }
-      await expect(handle(page, 'Sent')).toHaveAttribute(
-        'aria-pressed',
-        'true',
-      );
-      await expect(handle(page, 'Sent')).toBeFocused();
-      await expect(page.getByRole('button', {name: 'Done'})).toBeVisible();
-      await page.keyboard.press('ArrowDown');
-      await expect
-        .poll(async () => labels(page))
-        .toEqual(['Inbox', 'Drafts', 'Sent', 'Archive', 'Spam', 'Trash']);
-      await page.getByRole('button', {name: 'Move up'}).click();
-      await expect.poll(async () => labels(page)).toEqual(ROWS);
-      await expect(handle(page, 'Sent')).toBeFocused();
-      await page.keyboard.press('Escape');
-      await expect(handle(page, 'Sent')).toHaveAttribute(
-        'aria-pressed',
-        'false',
-      );
-    });
-  }
-
   test('a mouse drag selects no text', async ({page}) => {
     await openStory(page, storybook(), STORY);
     await expectFinePointer(page);
@@ -941,64 +880,6 @@ test.describe('with a mouse', () => {
       await page.evaluate(() => window.getSelection()?.toString() ?? ''),
     ).toBe('');
   });
-
-  for (const key of ['Space', 'Enter']) {
-    test(`${key} turns on reorder mode, each arrow commits a move at once with the focus on the handle, and Escape ends the mode keeping the moves`, async ({
-      page,
-    }) => {
-      // spec:AST-103 FR4, in this engine: the key's own activation of the
-      // button (Space's comes with its keyup) toggles the mode once.
-      await openStory(page, storybook(), STORY);
-      await expectFinePointer(page);
-      await page.keyboard.press('Shift');
-      await handle(page, 'Inbox').focus();
-      await page.keyboard.press(key);
-      await expect(handle(page, 'Inbox')).toHaveAttribute(
-        'aria-pressed',
-        'true',
-      );
-      await expect(page.getByRole('button', {name: 'Done'})).toBeVisible();
-      await page.keyboard.press('ArrowDown');
-      await expect
-        .poll(async () => labels(page))
-        .toEqual(['Sent', 'Inbox', 'Drafts', 'Archive', 'Spam', 'Trash']);
-      await expect(handle(page, 'Inbox')).toBeFocused();
-      await page.keyboard.press('ArrowDown');
-      await expect
-        .poll(async () => labels(page))
-        .toEqual(['Sent', 'Drafts', 'Inbox', 'Archive', 'Spam', 'Trash']);
-      await expect(handle(page, 'Inbox')).toBeFocused();
-      await page.keyboard.press('Escape');
-      await expect(handle(page, 'Inbox')).toHaveAttribute(
-        'aria-pressed',
-        'false',
-      );
-      await expect(page.getByRole('button', {name: 'Done'})).toBeHidden();
-      // Leaving announces where the row is.
-      await expect
-        .poll(async () =>
-          page.evaluate(() =>
-            Array.from(document.querySelectorAll('[aria-live]'))
-              .map(element => element.textContent ?? '')
-              .join(' '),
-          ),
-        )
-        .toContain('Done, Inbox at position 3 of 6');
-      // Kept, and at rest: with a mouse nothing travels.
-      expect(await labels(page)).toEqual([
-        'Sent',
-        'Drafts',
-        'Inbox',
-        'Archive',
-        'Spam',
-        'Trash',
-      ]);
-      await expect(handle(page, 'Inbox')).toBeFocused();
-      for (const label of ROWS) {
-        expect(await translateY(row(page, label))).toBe(0);
-      }
-    });
-  }
 });
 
 // design:reduced-motion (current): under Reduce Motion a reorder's own
@@ -1445,55 +1326,6 @@ test('the handle is a 44 pt target whose ring clears its lines, and its row is n
   // The handle takes only its lines' height in the row's layout: the row is
   // as tall with it as without it.
   expect(geometry.withHandle).toBeCloseTo(geometry.withoutHandle, 1);
-});
-
-test("taps alone reorder: the handle turns on reorder mode, the hint's moves move the row, and Done ends the mode", async ({
-  page,
-  browserName,
-}) => {
-  // Linux WebKit's injected touches dispatch pointer and touch events but no
-  // click, so a tap cannot activate a button there (iOS Safari's tap does).
-  test.skip(browserName === 'webkit', 'injected touches synthesize no click');
-  await open(page);
-  const before = await labels(page);
-  const driver = await touchDriver(page);
-  await driver.play(tap(await centerOf(handle(page, 'Inbox'))));
-  await expect(handle(page, 'Inbox')).toHaveAttribute('aria-pressed', 'true');
-  const down = page.getByRole('button', {name: 'Move down'});
-  await expect(down).toBeVisible();
-  await driver.play(tap(await centerOf(down)));
-  await expect
-    .poll(async () => labels(page))
-    .toEqual([before[1], before[0], ...before.slice(2)]);
-  // The focus stayed on the handle through the taps.
-  await expect(handle(page, 'Inbox')).toBeFocused();
-  await driver.play(
-    tap(await centerOf(page.getByRole('button', {name: 'Done'}))),
-  );
-  await expect(handle(page, 'Inbox')).toHaveAttribute('aria-pressed', 'false');
-  await expect(down).toBeHidden();
-  expect(await labels(page)).toEqual([
-    before[1],
-    before[0],
-    ...before.slice(2),
-  ]);
-});
-
-test('a drag does not also turn on reorder mode', async ({page}) => {
-  await open(page);
-  const {pitch} = await pitchOf(page);
-  const from = await centerOf(handle(page, 'Inbox'));
-  const driver = await touchDriver(page);
-  await driver.play(
-    drag(
-      from,
-      {x: from.x, y: from.y + 1.2 * pitch},
-      {holdMs: HOLD_MS, durationMs: 300, restMs: 150},
-    ),
-  );
-  await page.waitForTimeout(400);
-  await expect(handle(page, 'Inbox')).toHaveAttribute('aria-pressed', 'false');
-  await expect(page.getByRole('button', {name: 'Done'})).toBeHidden();
 });
 
 test('a pinned first row bounds a drag: nothing drops above it', async ({
