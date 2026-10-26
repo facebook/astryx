@@ -48,7 +48,7 @@ for (const story of ['hug-direct-text', 'hug-direct-blocks']) {
     await expect(viewport).toHaveAttribute('data-scrollable-block', 'true');
     // The entrance has settled: nothing on the page is still running.
     await expect
-      .poll(() =>
+      .poll(async () =>
         page.evaluate(
           () =>
             document
