@@ -963,6 +963,47 @@ describe('start: when a call\u2019s animations start', () => {
     );
   });
 
+  it('presented: a call queued after another change flushed the queue still waits its own two frames', async () => {
+    const {animator} = setup();
+    animator.animate({x: 100}, {spring: springs.settle}, {start: 'presented'});
+    // Another change creates the waiting call's animations first.
+    animator.animate({y: 50}, {spring: springs.settle});
+    clock = 1016;
+    await commitFrame(1016);
+    animator.animate(
+      {opacity: 0.5},
+      {spring: springs.settle},
+      {start: 'presented'},
+    );
+    expect(live('opacity')).toHaveLength(0);
+    // The first call's second frame is this call's first: it still waits.
+    clock = 1033;
+    await commitFrame(1033);
+    expect(live('opacity')).toHaveLength(0);
+    clock = 1050;
+    await commitFrame(1050);
+    expect(live('opacity')).toHaveLength(1);
+  });
+
+  it('presented: a second presented call on the same property a frame later keeps its own two frames', async () => {
+    const {animator} = setup();
+    animator.animate({x: 100}, {spring: springs.settle}, {start: 'presented'});
+    clock = 1016;
+    await commitFrame(1016);
+    animator.animate({x: 200}, {spring: springs.settle}, {start: 'presented'});
+    // The first call's second frame: its property is now the second call's,
+    // so nothing starts yet.
+    clock = 1033;
+    await commitFrame(1033);
+    expect(live('translate')).toHaveLength(0);
+    // The second call's own second frame.
+    clock = 1050;
+    await commitFrame(1050);
+    expect(live('translate')).toHaveLength(1);
+    await commitFrame(1066);
+    expect(animator.get('x', 1066 + 5000)).toBeCloseTo(200, 3);
+  });
+
   it('presented: another change before then creates the animations first', async () => {
     const {animator} = setup();
     animator.animate({x: 100}, {spring: springs.settle}, {start: 'presented'});
@@ -1439,6 +1480,24 @@ describe('Reduced Motion (design:reduced-motion)', () => {
     );
     const fade = live('opacity').at(-1);
     expect(fade?.keyframes[0].opacity).toBe('0');
+  });
+
+  it('presented: a call that moves and fades in from transparent lands its travel', async () => {
+    // A control part at its rest offset, transparent, presented in one task
+    // with its own animator (SearchField's close button).
+    const {animator, element} = reduced();
+    animator.set({x: 44, opacity: 0});
+    animator.animate(
+      {x: 0, opacity: 1},
+      {spring: springs.settle},
+      {start: 'presented'},
+    );
+    await commitFrame(clock);
+    await commitFrame(clock);
+    await advance(fade + 16);
+    expect(animator.get('x')).toBe(0);
+    expect(parse(element.style.translate)[0] || 0).toBe(0);
+    expect(animator.get('opacity', clock)).toBeCloseTo(1, 9);
   });
 
   it('fades for 200 ms at most', () => {
