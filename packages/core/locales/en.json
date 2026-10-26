@@ -439,6 +439,10 @@
     "defaultMessage": "Back to {parent}",
     "description": "Menu row that returns from a drilled-in sub-menu to the menu it came from. {parent} is that menu's name (e.g. \"Back to Actions\"). Imperative navigation action."
   },
+  "@astryx.dropdownMenu.subMenuHeader": {
+    "defaultMessage": "{label}, {back}",
+    "description": "Screen-reader name of a drilled-in sub-menu's header row on a touch screen. The row shows {label}, the sub-menu row's own label (e.g. \"Move to\"), so the name starts with it; {back} is the \"Back to {parent}\" text saying where activating the row goes (e.g. \"Move to, Back to Actions\")."
+  },
   "@astryx.lightbox.close": {
     "defaultMessage": "Close",
     "description": "\"Close\" = shut/dismiss (not \"nearby\"). Screen-reader-only label on the X button that dismisses a Lightbox."

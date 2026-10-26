@@ -235,9 +235,45 @@ const translateY = (value: unknown) =>
 const elementCount = () => document.querySelectorAll('*').length;
 
 function push(m: ReturnType<typeof mount>) {
-  m.motion.capture('push', m.more);
+  m.motion.capture('push', m.more, true);
   m.drill();
   m.motion.play();
+}
+
+/**
+ * A second level inside the first one's card, as useMenuDrillIn renders it:
+ * every level portals into the one card, and the level under the shown one
+ * stays there, hidden.
+ */
+function addSecondLevel(m: ReturnType<typeof mount>) {
+  const view = document.createElement('div');
+  view.hidden = true;
+  view.innerHTML = `
+    <div role="menuitem" aria-label="Sort, Back to More" data-astryx-menu-submenu-header><span data-astryx-menu-submenu-title>Sort</span><span data-astryx-menu-submenu-chevron></span></div>
+    <div role="menuitem">Name</div>`;
+  m.host.append(view);
+  const header = view.querySelector<HTMLElement>(
+    '[data-astryx-menu-submenu-header]',
+  )!;
+  header.getBoundingClientRect = () =>
+    rect({...SUBMENU_BOX, height: HEADER_HEIGHT});
+  const chevron = view.querySelector<HTMLElement>(
+    '[data-astryx-menu-submenu-chevron]',
+  )!;
+  return {
+    view,
+    chevron,
+    /** The second level shows; the first waits under it, hidden. */
+    show() {
+      m.view.hidden = true;
+      view.hidden = false;
+    },
+    /** Back on the first level: the second one is gone. */
+    leave() {
+      view.remove();
+      m.view.hidden = false;
+    },
+  };
 }
 
 describe('createMenuDrillInMotion', () => {
@@ -334,7 +370,7 @@ describe('createMenuDrillInMotion', () => {
     recorded = [];
     const before = elementCount();
     const done = vi.fn();
-    m.motion.capture('pop', m.more);
+    m.motion.capture('pop', m.more, true);
     m.back();
     m.motion.play(done);
     expect(elementCount()).toBe(before);
@@ -370,11 +406,53 @@ describe('createMenuDrillInMotion', () => {
     expect(m.parent.style.getPropertyValue('display')).toBe('');
   });
 
+  it('two levels deep, the second level reveals itself and turns its own chevron, and the parent rows stay receded', async () => {
+    const m = mount();
+    push(m);
+    await settleAll();
+    const second = addSecondLevel(m);
+    recorded = [];
+    m.motion.capture(
+      'push',
+      m.view.querySelector<HTMLElement>('[role="menuitem"]:nth-child(2)'),
+      false,
+    );
+    second.show();
+    m.motion.play();
+    // The level that showed is the one revealed, not the first one under it.
+    expect(curvesOf(second.view)).toHaveLength(1);
+    expect(curvesOf(m.view)).toEqual([]);
+    expect(endsOf(second.chevron, 'rotate')).toEqual(['0deg', '90deg']);
+    expect(curvesOf(m.chevron)).toEqual([]);
+    // The root's rows stay where the first level left them.
+    expect(curvesOf(m.parent)).toEqual([]);
+  });
+
+  it('back from the second level leaves the parent rows receded and plays no card out', async () => {
+    const m = mount();
+    push(m);
+    await settleAll();
+    const second = addSecondLevel(m);
+    m.motion.capture('push', null, false);
+    second.show();
+    m.motion.play();
+    await settleAll();
+    recorded = [];
+    const done = vi.fn();
+    m.motion.capture('pop', null, false);
+    second.leave();
+    m.motion.play(done);
+    expect(curvesOf(m.parent)).toEqual([]);
+    expect(curvesOf(m.host)).toEqual([]);
+    await settleAll();
+    expect(done).toHaveBeenCalledTimes(1);
+  });
+
   it('reset ends a back at once: it reports done and undoes what it set', () => {
     const m = mount();
     push(m);
     const done = vi.fn();
-    m.motion.capture('pop', m.more);
+    m.motion.capture('pop', m.more, true);
     m.back();
     m.motion.play(done);
     m.motion.reset();

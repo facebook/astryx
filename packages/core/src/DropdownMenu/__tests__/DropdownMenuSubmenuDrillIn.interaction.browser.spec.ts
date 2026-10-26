@@ -117,20 +117,28 @@ test('a sub-menu opens in place: the box grows on its own pseudo-elements, and t
   await expect(parent).toHaveCount(1);
   const state = await parent.evaluate(el => ({
     opacity: getComputedStyle(el).opacity,
-    transform: getComputedStyle(el).transform,
+    // The scale the rows are drawn at, whatever sets it: the drawn width over
+    // the laid-out one (the computed width, which no transform or scale
+    // changes; the wrapper has no padding or border).
+    drawnScale:
+      el.getBoundingClientRect().width /
+      Number.parseFloat(getComputedStyle(el).width),
     hidden: el.getAttribute('aria-hidden'),
     inert: el.hasAttribute('inert'),
     rows: el.querySelectorAll('[role="menuitem"]').length,
   }));
   expect(Number(state.opacity)).toBeCloseTo(menu.submenuParentOpacity, 3);
-  expect(state.transform).toBe(
-    `matrix(${menu.submenuParentScale}, 0, 0, ${menu.submenuParentScale}, 0, 0)`,
-  );
+  // Once: the motion's value replaces the rest instead of multiplying it.
+  expect(state.drawnScale).toBeCloseTo(menu.submenuParentScale, 3);
   expect(state.hidden).toBe('true');
   expect(state.inert).toBe(true);
   expect(state.rows).toBeGreaterThan(0);
-  // The header: the row's label, its chevron down, named for going back.
-  const header = page.getByRole('menuitem', {name: 'Back to Actions'});
+  // The header: the row's label, its chevron down, named by that label and
+  // then for going back (WCAG 2.2 SC 2.5.3).
+  const header = page.getByRole('menuitem', {
+    name: 'Move to, Back to Actions',
+    exact: true,
+  });
   await expect(header).toHaveText('Move to');
   const turn = await header
     .locator('[data-astryx-menu-submenu-chevron]')

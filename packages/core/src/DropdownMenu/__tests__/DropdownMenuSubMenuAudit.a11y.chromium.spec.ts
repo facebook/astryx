@@ -580,13 +580,14 @@ for (const item of cases) {
           observed.dialog.hasButton &&
           observed.dialog.hasMenu
         : expectedExpanded[item.interaction] === (observed.flyout !== null),
-      // The drilled view's first row is Back, by name; the parent's rows have
-      // left the accessibility tree (hidden, or receded under the card).
+      // The drilled view's first row goes back, by name (a card's header is
+      // named by its label first); the parent's rows have left the
+      // accessibility tree (hidden, or receded under the card).
       drillIn:
         item.interaction !== 'drill-in' ||
         ((
           observed.flyout?.rows[0]?.label ?? observed.flyout?.rows[0]?.name
-        )?.startsWith('Back to Actions') === true &&
+        )?.endsWith('Back to Actions') === true &&
           rows.every(entry => !entry.inTree)),
       flyoutSide:
         !opensSideways ||

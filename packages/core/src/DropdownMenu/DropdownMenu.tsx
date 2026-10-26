@@ -1869,9 +1869,13 @@ function DropdownMenuPopover({
   // `presentation="drill-in"`) swaps the view as before.
   const drillInTransition = useMemo(
     () => ({
-      capture: (kind: 'push' | 'pop', row: HTMLElement | null) => {
+      capture: (
+        kind: 'push' | 'pop',
+        row: HTMLElement | null,
+        atRoot: boolean,
+      ) => {
         if (isTouchPresentationRef.current) {
-          drillInMotion.capture(kind, row);
+          drillInMotion.capture(kind, row, atRoot);
         }
       },
       play: (done?: () => void) => drillInMotion.play(done),
@@ -1879,12 +1883,14 @@ function DropdownMenuPopover({
     }),
     [drillInMotion],
   );
-  // On a phone a sub-menu opens as UIMenu's does, a card over the parent's
-  // rows (useMenuDrillIn).
+  // Under a finger a sub-menu opens as UIMenu's does, a card over the
+  // parent's rows (useMenuDrillIn); a mouse's drill-in (an explicit
+  // `presentation="drill-in"`) replaces the rows as before (spec:AST-094: a
+  // mouse keeps today's behavior).
   const {drillIn, isCardShown, isCardLeaving, wrapContent} = useMenuDrillIn(
     isOpen,
     drillInTransition,
-    {isCard: true},
+    {isCard: touchModes === true},
   );
   // The surface host is owned through a ref. State keeps only a key that
   // changes whenever a host element attaches, the host included when it

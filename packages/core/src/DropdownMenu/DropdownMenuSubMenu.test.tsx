@@ -26,6 +26,7 @@ import {warmMenuBottomSheet} from './__tests__/warmMenuBottomSheet';
 import {IconButton} from '../IconButton';
 import {RadioList, RadioListItem} from '../RadioList';
 import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
+import {TOUCH_QUERY} from '../utils/touchQueries';
 import {Theme, defineTheme} from '../theme';
 import {rtlStyles} from '../utils';
 
@@ -1333,7 +1334,10 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
     vi.stubGlobal(
       'matchMedia',
       vi.fn().mockImplementation((query: string) => ({
-        matches: matches && query === COMPACT_TOUCH_PRESENTATION_QUERY,
+        // A phone: a compact display and a coarse pointer (the touch modes).
+        matches:
+          matches &&
+          (query === COMPACT_TOUCH_PRESENTATION_QUERY || query === TOUCH_QUERY),
         media: query,
         onchange: null,
         addEventListener: vi.fn(),
@@ -1404,11 +1408,21 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
     // drilled list is named by its row and leads with a Back row.
     const drilled = await waitFor(() => shownMenu('Move to'));
     expect(rootMenu).toContainElement(drilled);
-    expect(visibleRows()).toEqual(['Back to Actions', 'Folder A', 'Archive']);
+    expect(visibleRows()).toEqual([
+      'Move to, Back to Actions',
+      'Folder A',
+      'Archive',
+    ]);
     // UIMenu's header: the row's own label, its chevron turned down.
-    expect(shownRow('Back to Actions').textContent).toBe('Move to');
+    expect(shownRow('Move to, Back to Actions').textContent).toBe('Move to');
+    // Its name starts with the text it shows, then says where it goes (WCAG
+    // 2.2 SC 2.5.3).
+    const header = shownRow('Move to, Back to Actions');
     expect(
-      shownRow('Back to Actions').hasAttribute(
+      header.getAttribute('aria-label')?.startsWith(header.textContent ?? '-'),
+    ).toBe(true);
+    expect(
+      shownRow('Move to, Back to Actions').hasAttribute(
         'data-astryx-menu-submenu-header',
       ),
     ).toBe(true);
@@ -1423,7 +1437,7 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
     expect(drilled.closest('[popover]')).toBe(rootMenu.closest('[popover]'));
 
     // Back returns to the sub-menu row.
-    fireEvent.click(shownRow('Back to Actions'), {
+    fireEvent.click(shownRow('Move to, Back to Actions'), {
       detail: 1,
     });
     await waitFor(() => expect(shownRow('Move to')).toHaveFocus());
@@ -1440,12 +1454,16 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
       key: 'Enter',
     });
     await waitFor(() => shownMenu('Archive'));
-    expect(visibleRows()).toEqual(['Back to Move to', '2025']);
+    expect(visibleRows()).toEqual(['Archive, Back to Move to', '2025']);
     expect(shownRow('2025')).toHaveFocus();
 
     fireEvent.keyDown(document.activeElement!, {key: 'ArrowLeft'});
     await waitFor(() => expect(shownRow('Archive')).toHaveFocus());
-    expect(visibleRows()).toEqual(['Back to Actions', 'Folder A', 'Archive']);
+    expect(visibleRows()).toEqual([
+      'Move to, Back to Actions',
+      'Folder A',
+      'Archive',
+    ]);
     fireEvent.keyDown(document.activeElement!, {key: 'Escape'});
     await waitFor(() => expect(shownRow('Move to')).toHaveFocus());
     // One Escape popped one level; the menu is still open.
@@ -1482,11 +1500,11 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
     // Arrows, Home and End walk the drilled list only, Back included; the
     // hidden parent rows are not in the order.
     fireEvent.keyDown(folderA, {key: 'ArrowUp'});
-    expect(shownRow('Back to Actions')).toHaveFocus();
+    expect(shownRow('Move to, Back to Actions')).toHaveFocus();
     fireEvent.keyDown(document.activeElement!, {key: 'End'});
     expect(shownRow('Archive')).toHaveFocus();
     fireEvent.keyDown(document.activeElement!, {key: 'Home'});
-    expect(shownRow('Back to Actions')).toHaveFocus();
+    expect(shownRow('Move to, Back to Actions')).toHaveFocus();
     expect(drilled).toBeInTheDocument();
   });
 
@@ -1525,6 +1543,12 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
       detail: 1,
     });
     await waitFor(() => shownRow('Back to Actions'));
+    // A mouse's drill-in replaces the rows as before: a Back row that shows
+    // where it goes, and no card over the parent's rows (spec:AST-094: a
+    // mouse keeps today's behavior).
+    expect(shownRow('Back to Actions').textContent).toBe('Back to Actions');
+    expect(document.querySelector('[data-astryx-menu-card]')).toBeNull();
+    expect(document.querySelector('[data-astryx-menu-parent]')).toBeNull();
   });
 
   it("follows the theme's md point: a 900 px touch screen drills in under md 1000, and keeps the flyout under the default (spec:AST-012 FR9)", async () => {
@@ -1580,7 +1604,7 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
     render(<Theme theme={wideMd}>{menu}</Theme>);
     await user.click(screen.getByRole('button', {name: /Actions/}));
     fireEvent.click(await waitFor(() => shownRow('Move to')), {detail: 1});
-    await waitFor(() => shownRow('Back to Actions'));
+    await waitFor(() => shownRow('Move to, Back to Actions'));
   });
 
   it('closing the menu resets the drilled view', async () => {

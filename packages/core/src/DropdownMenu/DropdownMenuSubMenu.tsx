@@ -34,10 +34,12 @@
  *
  * Drill-in (the phone presentation): the root menu keeps a view stack
  * (useMenuDrillIn) and this row pushes its view onto it; the root shows the
- * view — a header row named "Back to <parent>" that shows this row's label
- * with its chevron turned down, as UIMenu's sub-menu header does, then these
- * rows — in place of its own, portalled into the root's host so the row stays
- * mounted and its rows stay live. Back, Escape and ArrowLeft pop the view and
+ * view, portalled into the root's host so the row stays mounted and its rows
+ * stay live. As a card (the touch modes, a view without regions) it leads with
+ * UIMenu's sub-menu header: this row's label with its chevron turned down,
+ * named by that label and then "Back to <parent>" (WCAG 2.5.3). Otherwise the
+ * view replaces the root's rows and leads with a Back row that shows and is
+ * named "Back to <parent>". Back, Escape and ArrowLeft pop the view and
  * return focus to the row. Under a finger the root animates each push and
  * pop as UIMenu does (menuDrillInMotion.ts). The list keeps this level's own roving focus, typeahead and press
  * model, so nothing beside the row needs to know.
@@ -569,6 +571,9 @@ export function DropdownMenuSubMenu(
       ? drillIn
       : null;
   const isDrillIn = activeDrillIn != null;
+  // A view shows as a card over the parent's rows only in a card menu (the
+  // touch modes) and without regions of its own (useMenuDrillIn).
+  const isCardView = activeDrillIn?.isCard === true && !hasRegions;
   const viewId = useId();
   const isOnStack = activeDrillIn?.viewStack.includes(viewId) === true;
   const isTopView = isOnStack && activeDrillIn?.viewStack.at(-1) === viewId;
@@ -1107,10 +1112,27 @@ export function DropdownMenuSubMenu(
   const nestedRows = (
     <DropdownMenuContext value={nestedMenuContext}>
       <DropdownMenuSurfaceContext value={rootSurface}>
-        {isDrillIn && (
-          // UIMenu's sub-menu header: the row's own label with its chevron
-          // turned to point down, which takes the sub-menu back. Its name
-          // says where it goes.
+        {isDrillIn && !isCardView && (
+          // A view in place of the rows leads with its Back row.
+          <DropdownMenuItem
+            icon={
+              <Icon
+                icon="chevronLeft"
+                size="sm"
+                color="secondary"
+                xstyle={rtlStyles.mirror}
+              />
+            }
+            label={backLabel}
+            hasCloseOnSelect={false}
+            onClick={() => close({focusTrigger: true})}
+          />
+        )}
+        {isCardView && (
+          // UIMenu's sub-menu header, on a card: the row's own label with its
+          // chevron turned to point down, which takes the sub-menu back. Its
+          // name starts with the text it shows (WCAG 2.5.3), then says where
+          // it goes.
           <DropdownMenuItem
             label={
               // Its title, in semibold.
@@ -1120,7 +1142,14 @@ export function DropdownMenuSubMenu(
                 {stringLabel ?? backLabel}
               </span>
             }
-            aria-label={backLabel}
+            aria-label={
+              stringLabel != null
+                ? t('@astryx.dropdownMenu.subMenuHeader', {
+                    label: stringLabel,
+                    back: backLabel,
+                  })
+                : backLabel
+            }
             icon={icon}
             endContent={
               // Down is down in either direction: no mirroring here.

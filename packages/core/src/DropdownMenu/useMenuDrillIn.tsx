@@ -68,14 +68,16 @@ const styles = stylex.create({
     display: 'none',
   },
   // UIMenu's parent rows under an open sub-menu's card: still laid out as
-  // the menu lays them out, receded, in the card's cell.
+  // the menu lays them out, receded, in the card's cell. The rest is the
+  // individual `scale` property, the one the drill-in motion animates, so
+  // its value replaces the rest rather than multiplying it.
   receded: (opacity: number, scale: number) => ({
     display: 'flex',
     flexDirection: 'column',
     gap: 'inherit',
     gridArea: '1 / 1',
     opacity,
-    transform: `scale(${scale})`,
+    scale: `${scale}`,
     transformOrigin: '50% 50%',
   }),
   // The host is the card's cell: laid over the parent's rows, from the row
@@ -127,7 +129,12 @@ function offsetInMenu(row: HTMLElement): number {
  * `reset` drops everything when the menu closes.
  */
 export interface MenuDrillInTransition {
-  capture(kind: 'push' | 'pop', row: HTMLElement | null): void;
+  /**
+   * Read the layout before the stack changes. `atRoot`: the push leaves the
+   * root's rows, or the pop returns to them (only then do they recede or
+   * come back).
+   */
+  capture(kind: 'push' | 'pop', row: HTMLElement | null, atRoot: boolean): void;
   /** `done` runs once the transition has settled, or has been reset. */
   play(done?: () => void): void;
   reset(): void;
@@ -230,7 +237,11 @@ export function useMenuDrillIn(
         return;
       }
       // Read the layout as it stands, before the view replaces it.
-      transitionRef.current?.capture('push', row ?? null);
+      transitionRef.current?.capture(
+        'push',
+        row ?? null,
+        viewStackRef.current.length === 0,
+      );
       if (viewStackRef.current.length === 0) {
         // The first view's card starts at its row; a deeper one keeps the cell.
         setCardTop(!asCard ? null : row == null ? 0 : offsetInMenu(row));
@@ -248,7 +259,7 @@ export function useMenuDrillIn(
       if (stack.length === 0) {
         return;
       }
-      transitionRef.current?.capture('pop', row ?? null);
+      transitionRef.current?.capture('pop', row ?? null, stack.length === 1);
       // The card plays out where it stands, so the view stays rendered until
       // the motion is done (architecture:component-style-authoring INV7: no
       // copy of it).

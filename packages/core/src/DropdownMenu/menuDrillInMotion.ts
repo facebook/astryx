@@ -95,6 +95,12 @@ const boxOf = (element: Element): Box => {
 
 interface Captured {
   kind: 'push' | 'pop';
+  /**
+   * The push leaves the root's rows, or the pop returns to them: only then
+   * do the parent's rows recede or come back, and only a pop to the root
+   * plays its card out (a deeper level shows in the same card).
+   */
+  atRoot: boolean;
   /** The menu's box before the change. */
   box: Box;
   /** Push: where the tapped row's title stood (the header's starts there). */
@@ -119,7 +125,7 @@ export interface MenuDrillInMotion {
    * Read the layout before the view changes: `push` as a sub-menu opens from
    * `row`, `pop` as it goes back to it.
    */
-  capture(kind: 'push' | 'pop', row: HTMLElement | null): void;
+  capture(kind: 'push' | 'pop', row: HTMLElement | null, atRoot: boolean): void;
   /**
    * Play from the captured layout once the view has changed. `done` runs
    * once it has settled, or at once when there is nothing to play, or when
@@ -160,6 +166,24 @@ function paintOf(surface: HTMLElement, list: HTMLElement): HTMLElement {
     }
   }
   return surface;
+}
+
+/**
+ * The view a card shows: every level portals into the one card, and a level
+ * under a deeper one stays in it, hidden, so the shown view is the last child
+ * that is not hidden.
+ */
+function shownViewOf(card: HTMLElement): HTMLElement | null {
+  for (
+    let child = card.lastElementChild;
+    child != null;
+    child = child.previousElementSibling
+  ) {
+    if (child instanceof HTMLElement && !child.hidden) {
+      return child;
+    }
+  }
+  return null;
 }
 
 /** The title of a header row, where its text sits. */
@@ -365,7 +389,7 @@ export function createMenuDrillInMotion(
     );
   };
 
-  const capture: MenuDrillInMotion['capture'] = (kind, row) => {
+  const capture: MenuDrillInMotion['capture'] = (kind, row, atRoot) => {
     const {surface, list} = getElements();
     captured = null;
     endTransition();
@@ -375,6 +399,7 @@ export function createMenuDrillInMotion(
     const paint = paintOf(surface, list);
     captured = {
       kind,
+      atRoot,
       box: boxOf(paint),
       rowTitleTop: null,
       parent: list.querySelector<HTMLElement>(PARENT_SELECTOR),
@@ -385,7 +410,11 @@ export function createMenuDrillInMotion(
       captured.rowTitleTop = rowTitle == null ? null : boxOf(rowTitle).top;
       return;
     }
-    // Pop: the card itself plays out (its view stays rendered until done).
+    // Pop to the root: the card itself plays out (its view stays rendered
+    // until done). A deeper pop shows the level under it in the same card.
+    if (!atRoot) {
+      return;
+    }
     const card = list.querySelector<HTMLElement>(CARD_SELECTOR);
     if (card == null) {
       return;
@@ -394,11 +423,12 @@ export function createMenuDrillInMotion(
     if (cardBox.height <= 0) {
       return;
     }
-    const header = card.querySelector<HTMLElement>(HEADER_SELECTOR);
+    const view = shownViewOf(card);
+    const header = view?.querySelector<HTMLElement>(HEADER_SELECTOR) ?? null;
     const headerBox = header == null ? null : boxOf(header);
     captured.leaving = {
       card,
-      view: card.firstElementChild as HTMLElement | null,
+      view,
       chevron: header?.querySelector<HTMLElement>(CHEVRON_SELECTOR) ?? null,
       height: cardBox.height,
       // The card hides back up into its header, as it came.
@@ -431,11 +461,14 @@ export function createMenuDrillInMotion(
         : list.querySelector<HTMLElement>(PARENT_SELECTOR);
     if (from.kind === 'push') {
       const card = list.querySelector<HTMLElement>(CARD_SELECTOR);
-      const view = card?.firstElementChild as HTMLElement | null | undefined;
-      const header = card?.querySelector<HTMLElement>(HEADER_SELECTOR) ?? null;
+      // The level that just showed, and its own header.
+      const view = card == null ? null : shownViewOf(card);
+      const header = view?.querySelector<HTMLElement>(HEADER_SELECTOR) ?? null;
       const spring = springs.subMenuOpen;
       playBox(paint, from.box, boxOf(paint), spring, at);
-      playParent(parent, true, spring, at);
+      if (from.atRoot) {
+        playParent(parent, true, spring, at);
+      }
       if (card != null && view != null) {
         const cardBox = boxOf(card);
         const headerBox = header == null ? null : boxOf(header);
@@ -470,7 +503,9 @@ export function createMenuDrillInMotion(
     } else {
       const spring = springs.subMenuBack;
       playBox(paint, from.box, boxOf(paint), spring, at);
-      playParent(parent, false, spring, at);
+      if (from.atRoot) {
+        playParent(parent, false, spring, at);
+      }
       const leaving = from.leaving;
       if (leaving != null) {
         if (leaving.view != null) {
