@@ -1176,6 +1176,44 @@ test('a finger dragging the open sheet re-rasters none of it', async ({
   expect(tiles.moving, JSON.stringify(tiles)).toBe(0);
 });
 
+test("the dim a release plays re-rasters nothing: the open sheet's backdrop keeps its layer", async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'raster traces are Chromium-only');
+  const {driver, sheet, tallTop, handle} = await openSheet(page);
+  // The presentation's own layer goes this long after it settles.
+  await page.waitForTimeout(PROMOTION_LINGER_MS + 100);
+  // Measure the dim alone. The two pending causes above are taken out of the
+  // window: the animator's promotion adds to an inline will-change and keeps
+  // it, and the selection lock puts an inline user-select back as it found it.
+  await sheet.evaluate(el => {
+    el.style.setProperty('will-change', 'transform, opacity');
+    el.style.setProperty('user-select', 'none');
+    el.style.setProperty('-webkit-user-select', 'none');
+  });
+  await frames(page, 2);
+  let lifted = false;
+  const tiles = await traceRasterTiles(page, async mark => {
+    await mark('drag');
+    await driver.play(outAndBack(handle), {
+      onEvent: async step => {
+        if (step.type === 'touchEnd' && !lifted) {
+          lifted = true;
+          await mark('release');
+        }
+      },
+    });
+    await waitForRest(sheet);
+    await page.waitForTimeout(PROMOTION_LINGER_MS + 200);
+  });
+  expect(await sheetTop(sheet)).toBeCloseTo(tallTop, 0);
+  // The release plays the dim back to full on the backdrop's compositor
+  // layer. A backdrop given a layer only for that animation is re-rastered
+  // when it gets one and again when it loses it.
+  expect(tiles.release, JSON.stringify(tiles)).toBe(0);
+});
+
 test(
   'storyboard: drag to the half detent and settle',
   {tag: '@storyboard'},
