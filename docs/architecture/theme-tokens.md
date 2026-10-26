@@ -186,13 +186,15 @@ then have contradictory winners.
   status keeps its non-colour cue (a label, an icon, or text), and a strong or
   pale status fill keeps a visible `CanvasText` border so its shape survives.
 
-  Tailwind projects each status by paint property: `bg-<status>` is the strong
-  fill, `text-<status>` is the status text role, and `border-<status>` is the
-  status border role, so the released `text-success`, `text-warning`, and
-  `text-error` read as status text on the page. Tailwind also projects
-  `bg-<status>-muted`, `text-on-<status>`, `text-on-<status>-muted`, and
-  `text-status-<status>`, an alias of the status text role; like every Tailwind
-  key, these alias the tokens and add no CSS variable.
+  Tailwind projects each status by paint property: text-like utilities
+  (`text-`, `decoration-`, `placeholder-`, `caret-<status>`) read the status text
+  role, line-like utilities (`border-`, `divide-`, `outline-`, `ring-<status>`)
+  read the status border role, and fill-like utilities (`bg-`, `accent-`,
+  `fill-`, `stroke-<status>`, shadow colours, and gradients) are the strong
+  fill. Tailwind also projects `bg-<status>-muted`, `text-on-<status>`,
+  `text-on-<status>-muted`, and `text-status-<status>`, kept as an alias of the
+  status text role; like every Tailwind key, these alias the tokens and add no
+  CSS variable.
 
 This record does not own:
 

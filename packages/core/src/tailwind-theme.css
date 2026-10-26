@@ -95,17 +95,40 @@
   --color-status-success: var(--color-text-success);
   --color-status-warning: var(--color-text-warning);
   --color-status-error: var(--color-text-error);
-  /* text-<status> and border-<status> read the readable text and border roles;
-   * bg-<status> stays the strong fill. Tailwind resolves --text-color-* and
-   * --border-color-* before --color-* for those utilities. */
+  /* Each status projects by paint property: text-like utilities (text-,
+   * decoration-, placeholder-, caret-) read the status text role, line-like
+   * utilities (border-, divide-, outline-, ring-) read the status border role,
+   * and fill-like utilities (bg-, accent-, fill-, stroke-, shadows, gradients)
+   * keep the strong fill. Tailwind resolves these per-utility keys before
+   * --color-*. */
   --text-color-info: var(--color-text-info);
   --text-color-success: var(--color-text-success);
   --text-color-warning: var(--color-text-warning);
   --text-color-error: var(--color-text-error);
+  --text-decoration-color-info: var(--color-text-info);
+  --text-decoration-color-success: var(--color-text-success);
+  --text-decoration-color-warning: var(--color-text-warning);
+  --text-decoration-color-error: var(--color-text-error);
+  --placeholder-color-info: var(--color-text-info);
+  --placeholder-color-success: var(--color-text-success);
+  --placeholder-color-warning: var(--color-text-warning);
+  --placeholder-color-error: var(--color-text-error);
+  --caret-color-info: var(--color-text-info);
+  --caret-color-success: var(--color-text-success);
+  --caret-color-warning: var(--color-text-warning);
+  --caret-color-error: var(--color-text-error);
   --border-color-info: var(--color-border-info);
   --border-color-success: var(--color-border-success);
   --border-color-warning: var(--color-border-warning);
   --border-color-error: var(--color-border-error);
+  --outline-color-info: var(--color-border-info);
+  --outline-color-success: var(--color-border-success);
+  --outline-color-warning: var(--color-border-warning);
+  --outline-color-error: var(--color-border-error);
+  --ring-color-info: var(--color-border-info);
+  --ring-color-success: var(--color-border-success);
+  --ring-color-warning: var(--color-border-warning);
+  --ring-color-error: var(--color-border-error);
   --color-on-info-muted: var(--color-on-info-muted);
   --color-on-success-muted: var(--color-on-success-muted);
   --color-on-warning-muted: var(--color-on-warning-muted);

@@ -115,15 +115,30 @@ describe('Tailwind theme bridge', () => {
     expect(css).not.toContain('background-color: var(--color-surface);');
   });
 
-  it('maps text-<status> and border-<status> to the roles and bg-<status> to the fill', async () => {
+  it('projects each status by paint property', async () => {
     const compiler = await compile(`${bridgeCSS}\n@tailwind utilities;`);
     for (const status of ['info', 'success', 'warning', 'error']) {
-      const text = compiler.build([`text-${status}`]);
-      const border = compiler.build([`border-${status}`]);
-      const bg = compiler.build([`bg-${status}`]);
-      expect(text).toContain(`color: var(--color-text-${status});`);
-      expect(border).toContain(`border-color: var(--color-border-${status});`);
-      expect(bg).toContain(`background-color: var(--color-${status});`);
+      const text = `var(--color-text-${status})`;
+      const border = `var(--color-border-${status})`;
+      const fill = `var(--color-${status})`;
+      for (const [utility, expected] of [
+        [`text-${status}`, text],
+        [`decoration-${status}`, text],
+        [`placeholder-${status}`, text],
+        [`caret-${status}`, text],
+        [`border-${status}`, border],
+        [`divide-${status}`, border],
+        [`outline-${status}`, border],
+        [`ring-${status}`, border],
+        [`bg-${status}`, fill],
+        [`accent-${status}`, fill],
+        [`fill-${status}`, fill],
+      ]) {
+        expect([utility, compiler.build([utility])]).toEqual([
+          utility,
+          expect.stringContaining(expected),
+        ]);
+      }
     }
   });
 });
