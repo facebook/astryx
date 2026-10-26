@@ -126,12 +126,20 @@ async function open(
 
 const log = async (page: Page) => page.evaluate(() => window.pagerLog);
 
-/** The computed user-select (WebKit reports it only prefixed). */
-const userSelectOf = (el: Element) => {
+/**
+ * Whether a selection starting on the track's text is refused now: where iOS
+ * WebKit does not run, the shared selection lock cancels `selectstart` and
+ * writes no style; where it runs, the lock is `user-select: none` (WebKit
+ * reports it only prefixed). `spec:AST-094` FR41.
+ */
+const refusesSelection = (el: Element) => {
+  const event = new Event('selectstart', {bubbles: true, cancelable: true});
+  (el.firstElementChild ?? el).dispatchEvent(event);
   const style = getComputedStyle(el) as CSSStyleDeclaration & {
     webkitUserSelect?: string;
   };
-  return style.userSelect || (style.webkitUserSelect ?? '');
+  const userSelect = style.userSelect || (style.webkitUserSelect ?? '');
+  return event.defaultPrevented || userSelect === 'none';
 };
 
 /** The track's presented x (from the `translate` the pager drives). */
@@ -629,7 +637,7 @@ test(`a still finger catches a settle ${85} ms after it lands, selects no text, 
   const {track, driver} = await open(page, {startIndex: 0});
   await page.evaluate(() => window.pager.goTo(3));
   await waitForAnimation(track);
-  const reads: {x: number; userSelect: string}[] = [];
+  const reads: {x: number; refused: boolean}[] = [];
   let step = 0;
   await driver.play(
     // A finger held still for 600 ms (a 0.6 px creep, reported every 100 ms).
@@ -637,20 +645,12 @@ test(`a still finger catches a settle ${85} ms after it lands, selects no text, 
     {
       onEvent: async event => {
         if (event.type === 'touchMove' && (step++ === 2 || step === 5)) {
-          reads.push(
-            await track.evaluate(el => ({
-              x: parseFloat(getComputedStyle(el).translate) || 0,
-              // WebKit reports user-select only prefixed.
-              userSelect:
-                getComputedStyle(el).userSelect ||
-                ((
-                  getComputedStyle(el) as CSSStyleDeclaration & {
-                    webkitUserSelect?: string;
-                  }
-                ).webkitUserSelect ??
-                  ''),
-            })),
-          );
+          reads.push({
+            x: await track.evaluate(
+              el => parseFloat(getComputedStyle(el).translate) || 0,
+            ),
+            refused: await track.evaluate(refusesSelection),
+          });
         }
       },
     },
@@ -660,12 +660,12 @@ test(`a still finger catches a settle ${85} ms after it lands, selects no text, 
   expect(reads[1].x).toBeCloseTo(reads[0].x, 1);
   expect(reads[0].x).toBeGreaterThan(-3 * PAGE);
   expect(reads[0].x).toBeLessThan(0);
-  expect(reads[0].userSelect).toBe('none');
+  expect(reads[0].refused).toBe(true);
   // The lift settles on the page nearest to where it was held.
   const nearest = Math.round(-reads[1].x / PAGE);
   await waitForRest(track);
   expect(await trackX(track)).toBeCloseTo(-nearest * PAGE, 0);
-  expect(await track.evaluate(userSelectOf)).not.toBe('none');
+  expect(await track.evaluate(refusesSelection)).toBe(false);
 });
 
 // spec:AST-094 FR41: a hold that does nothing keeps the browser's native
@@ -675,20 +675,19 @@ test('a finger held on a resting track leaves its text selectable', async ({
   page,
 }) => {
   const {track, driver} = await open(page, {startIndex: 1});
-  const reads: string[] = [];
+  const reads: boolean[] = [];
   let step = 0;
   await driver.play(
     drag({x: 200, y: 200}, {x: 200.6, y: 200}, {durationMs: 600, hz: 10}),
     {
       onEvent: async event => {
         if (event.type === 'touchMove' && step++ === 3) {
-          reads.push(await track.evaluate(userSelectOf));
+          reads.push(await track.evaluate(refusesSelection));
         }
       },
     },
   );
-  expect(reads).toHaveLength(1);
-  expect(reads[0]).not.toBe('none');
+  expect(reads).toEqual([false]);
   await waitForRest(track);
   expect(await trackX(track)).toBeCloseTo(-PAGE, 0);
 });
