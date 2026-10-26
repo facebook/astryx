@@ -897,6 +897,15 @@ export function NumberInput({
     stepperPointerTypeRef.current = event.pointerType;
   };
 
+  // iOS Safari follows the second tap of a quick double tap with a
+  // compatibility mousedown even though its pointerdown was prevented; that
+  // mousedown's default would focus the stepper and blur an editing field.
+  const handleStepperMouseDown = (
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    event.preventDefault();
+  };
+
   const pressStepper = (
     direction: StepDirection,
     event: React.MouseEvent<HTMLButtonElement>,
@@ -1070,6 +1079,7 @@ export function NumberInput({
             }
             aria-label={t('@astryx.numberInput.incrementLabel', {label})}
             onPointerDown={handleStepperPointerDown}
+            onMouseDown={handleStepperMouseDown}
             onClick={event => pressStepper(1, event)}
             {...stylex.props(
               styles.numberStepperButton,
@@ -1093,6 +1103,7 @@ export function NumberInput({
             }
             aria-label={t('@astryx.numberInput.decrementLabel', {label})}
             onPointerDown={handleStepperPointerDown}
+            onMouseDown={handleStepperMouseDown}
             onClick={event => pressStepper(-1, event)}
             {...stylex.props(
               styles.numberStepperButton,
