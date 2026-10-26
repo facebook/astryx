@@ -37,6 +37,7 @@ import type {
 import {themeProps} from '../utils/themeProps';
 import {useTreeFocusInternal} from '../hooks/useTreeFocus';
 import {
+  applyLayoutChangeTransition,
   playLayoutChange,
   reportLayoutChange,
   type AnimatedLayout,
@@ -248,6 +249,12 @@ export function TreeList({
         `[data-tree-id="${CSS.escape(id)}"]`,
       );
       if (row != null) {
+        // The row's own chevron (the first toggle in it; its children's come
+        // after) turns on the glide's motion.
+        applyLayoutChangeTransition(
+          animatedLayout,
+          row.querySelector<SVGSVGElement>('[data-tree-toggle] svg'),
+        );
         const change = reportLayoutChange(animatedLayout, () => row);
         change.measureBefore();
         pendingLayoutRef.current = {change, id};
@@ -309,7 +316,7 @@ export function TreeList({
       `[data-tree-id="${CSS.escape(pending.id)}"] > [role="group"]`,
     );
     if (group != null) {
-      playLayoutChange(animatedLayout, group, 'enter');
+      playLayoutChange(animatedLayout, group);
     }
   }, [expandedKeysOverride, animatedLayout]);
 
@@ -411,7 +418,6 @@ export function TreeList({
           posInSet={index + 1}
           setSize={items.length}
           isTabbable={item.id === initialTabbableId}
-          hasAnimatedLayout={animatedLayout != null}
         />
       );
     });

@@ -49,6 +49,7 @@ import {
 
 import {useCollapsible} from './useCollapsible';
 import {
+  applyLayoutChangeTransition,
   playLayoutChange,
   reportLayoutChange,
   type AnimatedLayout,
@@ -130,11 +131,6 @@ const styles = stylex.create({
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-  },
-  // With an animated layout, the chevron turns on the layout-change role (a
-  // placeholder until the theme names it), the content's glide timing.
-  chevronAnimatedLayout: {
-    transitionDuration: durationVars['--duration-medium-min'],
   },
   chevronOpen: {
     transform: 'rotate(180deg)',
@@ -369,6 +365,7 @@ export function Collapsible({
   // (`architecture:react-component-runtime` INV12). Without one, nothing
   // changes.
   const contentRef = useRef<HTMLDivElement>(null);
+  const chevronRef = useRef<SVGSVGElement>(null);
   const layoutChange = useMemo(
     () => reportLayoutChange(animatedLayout, contentRef),
     [animatedLayout],
@@ -381,7 +378,7 @@ export function Collapsible({
     wasOpenRef.current = isOpen;
     layoutChange.animate();
     if (isOpen && contentRef.current != null) {
-      playLayoutChange(animatedLayout, contentRef.current, 'enter');
+      playLayoutChange(animatedLayout, contentRef.current);
     }
   }, [isOpen, layoutChange, animatedLayout]);
 
@@ -389,6 +386,9 @@ export function Collapsible({
     if (isDisabled) {
       return;
     }
+    // Before the change commits: the chevron turns on the glide's motion,
+    // and the content after this Collapsible is measured where it is now.
+    applyLayoutChangeTransition(animatedLayout, chevronRef.current);
     layoutChange.measureBefore();
     toggle();
   };
@@ -407,6 +407,7 @@ export function Collapsible({
 
   const chevron = (
     <Icon
+      ref={chevronRef}
       // The glyph is part of the placement, not a separate choice: a trailing
       // indicator points down and flips up, a leading one points into the row
       // and turns down. Rotating `chevronDown` by a quarter turn would leave
@@ -420,7 +421,6 @@ export function Collapsible({
       color="secondary"
       xstyle={[
         styles.chevron,
-        animatedLayout != null && styles.chevronAnimatedLayout,
         isChevronAtStart && styles.chevronStart,
         isChevronAtStart
           ? isOpen

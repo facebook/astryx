@@ -4,16 +4,16 @@
 
 /**
  * @file useAnimatedLayout.ts
- * @input React (useMemo, useRef), motion/animatedLayout.ts
+ * @input React (useMemo), motion/animatedLayout.ts
  * @output Exports `useAnimatedLayout` and the opaque `AnimatedLayout` handle
  *   type
- * @position Public hook over the one layout-change module
+ * @position Public hook (`spec:AST-105`) over the one size-change module
  *   (`architecture:react-component-runtime` INV12)
  *
  * SYNC: When modified, update /packages/core/src/motion/animatedLayout.ts
  */
 
-import {useMemo, useRef, type RefObject} from 'react';
+import {useMemo, type RefObject} from 'react';
 import {
   createAnimatedLayout,
   type AnimatedLayout,
@@ -27,12 +27,15 @@ export interface UseAnimatedLayoutOptions {
 }
 
 /**
- * A handle for animating size changes inside a container. Pass it to a
- * component's `animatedLayout` prop: when that component changes size, the
- * changed element and the content after it, up to the container, animate
- * together on one shared motion token instead of jumping. Fixed and stuck
- * sticky elements stay put and Reduce Motion is respected. Without a handle
- * a component keeps today's behavior.
+ * Returns a handle to pass to a component whose size changes, such as
+ * TreeList or Collapsible. When that component changes size, it and the
+ * content after it inside `containerRef` animate together on one shared
+ * motion role. Fixed and stuck sticky elements stay put, the glide never
+ * scrolls the area, and Reduce Motion is respected.
+ *
+ * `containerRef` names the area: an app passes the ref it already gives its
+ * scroll container or panel (a ScrollableArea's ref reaches its native scroll
+ * viewport). The handle has no public members (`spec:AST-105` FR1).
  *
  * @example
  * ```
@@ -51,10 +54,8 @@ export function useAnimatedLayout({
 }: UseAnimatedLayoutOptions): AnimatedLayout {
   // The container is read when a change runs, so the handle stays stable
   // across renders and a later ref assignment is still seen.
-  const refHolder = useRef(containerRef);
-  refHolder.current = containerRef;
   return useMemo(
-    () => createAnimatedLayout(() => refHolder.current.current),
-    [],
+    () => createAnimatedLayout(() => containerRef.current),
+    [containerRef],
   );
 }

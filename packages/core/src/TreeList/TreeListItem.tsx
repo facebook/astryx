@@ -260,11 +260,6 @@ const styles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
-  // With an animated layout, the chevron turns on the layout-change role (a
-  // placeholder until the theme names it), the rows' glide timing.
-  chevronAnimatedLayout: {
-    transitionDuration: durationVars['--duration-medium-min'],
-  },
   // The RTL mirror is folded into each state's transform rather than living on
   // a parent span. Both are `transform`, so on one element the later value
   // would win — spelling out `scaleX(-1) rotate(...)` per state composes them
@@ -376,8 +371,6 @@ export interface TreeListItemInternalProps {
    * then owns the tab stop dynamically.
    */
   isTabbable: boolean;
-  /** The tree has an animated layout: the chevron turns on its timing. */
-  hasAnimatedLayout?: boolean;
 }
 
 // =============================================================================
@@ -411,7 +404,6 @@ export function TreeListItem({
   posInSet,
   setSize,
   isTabbable,
-  hasAnimatedLayout = false,
 }: TreeListItemInternalProps) {
   const pressable = usePressFeedback();
   const t = useTranslator();
@@ -542,7 +534,6 @@ export function TreeListItem({
       color="inherit"
       xstyle={[
         styles.chevronSvg,
-        hasAnimatedLayout && styles.chevronAnimatedLayout,
         isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
       ]}
     />
