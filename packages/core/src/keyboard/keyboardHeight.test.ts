@@ -29,6 +29,7 @@ import {
   subscribeKeyboardHeight,
   useKeyboardHeight,
   watchRevealPan,
+  type KeyboardHeightEvent,
 } from './keyboardHeight';
 
 type FakeViewport = EventTarget & {
@@ -381,7 +382,7 @@ describe('one set of listeners per window (FR1, INV11)', () => {
     stopHook();
   });
 
-  it('reads the layout once per keyboard change, however many read the height (INV11)', () => {
+  it('reads the layout once per keyboard change for a lone component, which keeps its one subscription across renders (INV11)', () => {
     // Count every read of the visual viewport's height: one per measurement.
     let height = viewport.height;
     let reads = 0;
@@ -395,31 +396,17 @@ describe('one set of listeners per window (FR1, INV11)', () => {
         height = value;
       },
     });
-    const guide = getKeyboardLayoutGuide(window);
-    const seen: number[] = [];
-    const stopGuide = guide.subscribe(transition => {
-      // A rider reads the height again as it commits its layout.
-      seen.push(getKeyboardHeight(window));
-      seen.push(transition.to);
-    });
-    const stopListener = subscribeKeyboardHeight(window, event => {
-      if (event.type === 'viewport') {
-        seen.push(getKeyboardHeight(window));
-      }
-    });
-    const first = renderHook(() => useKeyboardHeight());
-    const second = renderHook(() => useKeyboardHeight());
+    const add = vi.spyOn(viewport, 'addEventListener');
+    const {result, unmount} = renderHook(() => useKeyboardHeight());
+    add.mockClear();
     reads = 0;
     report({height: window.innerHeight - 300});
-    expect(first.result.current).toBe(300);
-    expect(second.result.current).toBe(300);
-    expect(seen.length).toBeGreaterThan(0);
-    expect(seen.every(value => value === 300)).toBe(true);
+    expect(result.current).toBe(300);
+    // The re-render keeps the subscription: no listener is added again, and
+    // the change is measured once.
+    expect(add).not.toHaveBeenCalled();
     expect(reads).toBe(1);
-    first.unmount();
-    second.unmount();
-    stopListener();
-    stopGuide();
+    unmount();
   });
 
   it('re-renders a component when the height changes, and only then', () => {
@@ -438,21 +425,6 @@ describe('one set of listeners per window (FR1, INV11)', () => {
     unmount();
   });
 
-  it('reads a keyboard that is already up when the first component mounts', () => {
-    // Nothing listens yet: the keyboard came up before any keyboard-aware
-    // component mounted (a sheet opened from a focused field).
-    viewport.height = window.innerHeight - 300;
-    const {result, unmount} = renderHook(() => useKeyboardHeight());
-    expect(result.current).toBe(300);
-    const guide = getKeyboardLayoutGuide(window);
-    const stopGuide = guide.subscribe(() => {});
-    expect(guide.inset).toBe(300);
-    report({height: window.innerHeight});
-    expect(result.current).toBe(0);
-    stopGuide();
-    unmount();
-  });
-
   it('leaves no listener once every component has unmounted, StrictMode replay included', () => {
     const remove = vi.spyOn(viewport, 'removeEventListener');
     const {unmount} = renderHook(() => useKeyboardHeight(), {
@@ -468,6 +440,80 @@ describe('one set of listeners per window (FR1, INV11)', () => {
     stop();
   });
 
+  it('reads a keyboard that is already up when the first component mounts, through useKeyboardHeight', () => {
+    // Nothing listens yet: the keyboard came up before any keyboard-aware
+    // component mounted (a sheet opened from a focused field).
+    viewport.height = window.innerHeight - 300;
+    const {result, unmount} = renderHook(() => useKeyboardHeight());
+    expect(result.current).toBe(300);
+    report({height: window.innerHeight});
+    expect(result.current).toBe(0);
+    unmount();
+  });
+
+  it('reads the layout once per keyboard change, however many read the height (INV11)', () => {
+    // Count every read of the visual viewport's height: one per measurement.
+    let height = viewport.height;
+    let reads = 0;
+    Object.defineProperty(viewport, 'height', {
+      configurable: true,
+      get: () => {
+        reads += 1;
+        return height;
+      },
+      set: (value: number) => {
+        height = value;
+      },
+    });
+    const seen: number[] = [];
+    // Three readers, each reading the height again as it lays out.
+    const reader = () => (event: KeyboardHeightEvent) => {
+      if (event.type === 'viewport') {
+        seen.push(getKeyboardHeight(window), event.height);
+      }
+    };
+    // And the keyboard layout guide, whose rider reads the height again as
+    // it commits its layout.
+    const stopGuide = getKeyboardLayoutGuide(window).subscribe(transition => {
+      seen.push(getKeyboardHeight(window), transition.to);
+    });
+    const stops = [reader(), reader(), reader()].map(listener =>
+      subscribeKeyboardHeight(window, listener),
+    );
+    try {
+      reads = 0;
+      report({height: window.innerHeight - 300});
+      expect(seen).toHaveLength(8);
+      expect(seen.every(value => value === 300)).toBe(true);
+      expect(reads).toBe(1);
+    } finally {
+      for (const stop of stops) {
+        stop();
+      }
+      stopGuide();
+    }
+  });
+  it('reads a keyboard that is already up when the first subscriber attaches', () => {
+    // Nothing listens yet: the keyboard came up before any keyboard-aware
+    // component mounted (a sheet opened from a focused field).
+    viewport.height = window.innerHeight - 300;
+    expect(getKeyboardHeight(window)).toBe(300);
+    const heights: number[] = [];
+    const stop = subscribeKeyboardHeight(window, event => {
+      if (event.type === 'viewport') {
+        heights.push(event.height);
+      }
+    });
+    expect(getKeyboardHeight(window)).toBe(300);
+    // The guide reads it too.
+    const guide = getKeyboardLayoutGuide(window);
+    const stopGuide = guide.subscribe(() => {});
+    expect(guide.inset).toBe(300);
+    report({height: window.innerHeight});
+    expect(heights).toEqual([0]);
+    stopGuide();
+    stop();
+  });
   it('is the only visual viewport listener for the keyboard in core', () => {
     // Visible-viewport readers that place layers and scroll areas, not the
     // keyboard; the layer cap's keyboard is architecture:layer-runtime's.

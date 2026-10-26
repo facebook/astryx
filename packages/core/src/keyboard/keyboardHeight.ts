@@ -66,6 +66,7 @@ import {getKeyboardLayoutGuide} from './keyboardLayoutGuide';
 import {rideKeyboard} from './rideKeyboard';
 import type {KeyboardTransition} from './keyboardModel';
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -247,8 +248,12 @@ export function getKeyboardHeight(win: Window): number {
  */
 export function useKeyboardHeight(win?: Window | null): number {
   const target = win ?? (typeof window === 'undefined' ? null : window);
-  return useSyncExternalStore(
-    onChange => {
+  // One subscription for the component's life (per window): a subscribe
+  // function made anew each render would make React unsubscribe and
+  // resubscribe on every render, and a lone reader would detach the module's
+  // listeners and measure again (architecture:react-component-runtime INV11).
+  const subscribe = useCallback(
+    (onChange: () => void) => {
       if (target == null) {
         return () => {};
       }
@@ -260,9 +265,18 @@ export function useKeyboardHeight(win?: Window | null): number {
         }
       });
     },
-    () => (target == null ? 0 : getKeyboardHeight(target)),
-    () => 0,
+    [target],
   );
+  const getSnapshot = useCallback(
+    () => (target == null ? 0 : getKeyboardHeight(target)),
+    [target],
+  );
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
+/** The keyboard height during server render and hydration. */
+function getServerSnapshot(): number {
+  return 0;
 }
 
 /** Whether focusing `element` brings up a keyboard for typing text. */
