@@ -5,9 +5,10 @@
 /**
  * @file NumberInputTouch.tsx
  * @input NumberInput's stepping state and its stepper buttons; the gesture
- *   system's PressTracker (usePressTracker), the coarse-pointer gate
- *   (gestures/coarsePointer.ts), stepperTracking.ts and the UIKit constants
- *   (motion/uikit/gestures.ts)
+ *   system's PressTracker (usePressTracker) and its selection lock
+ *   (gestures/selectionLock.ts), the coarse-pointer gate
+ *   (gestures/coarsePointer.ts), stepperTracking.ts and the UIKit press and
+ *   click constants (motion/uikit/gestures.ts)
  * @output The steppers' press layer: useStepperTouch, which tracks a press on
  *   the steppers (a held half repeats on one steady ramp, a slide carries it
  *   to the other half, the pressed half paints at once), shows the stepping
@@ -27,11 +28,10 @@
  * under the pointer at once and clears at once; inside a scroll view a finger
  * waits for the content-touch delay, and a scroll that takes the touch
  * before then cancels it; once delivered, the press keeps its touch from the
- * page's pan. `spec:AST-094` FR41 suppresses text-selection start and the
- * callout for a stepper's hold-repeat press; the gesture host does that today
- * only for a long press or a recognizer that asks, and the press tracker's
- * opt-in is pending (#8336), so until then a held stepper keeps the browser's
- * long-press selection.
+ * page's pan. A held finger selects no text and opens no callout: the press
+ * tracker's selection lock turns both off for that press only and restores
+ * them at the lift or a cancel (`spec:AST-094` FR41, a stepper's
+ * hold-repeat).
  *
  * While a press steps, the field shows the stepping value and `onChange` is
  * not called; at the release it is called once, with the final value, and
@@ -62,7 +62,8 @@ import {
   type PressTracker,
   type UsePressTrackerOptions,
 } from '../gestures';
-import {UIKIT_GESTURES} from '../motion/uikit/gestures';
+import {lockSelection} from '../gestures/selectionLock';
+import {UIKIT_CLICK, UIKIT_PRESS} from '../motion/uikit/gestures';
 import {StepperTracking, type StepperHalf} from './stepperTracking';
 
 /** What the press layer reads from NumberInput, current at every render. */
@@ -249,6 +250,9 @@ export function useStepperTouch(
     // half is not the page's pan. (A scroll that starts on the column waits
     // on the main thread for it.)
     keepsTouch: true,
+    // A stepper's hold repeats, so its press selects no text and opens no
+    // callout, for that press only (`spec:AST-094` FR41).
+    selectionLock: lockSelection,
     isEnabled: () =>
       !latestRef.current.isDisabled && !latestRef.current.isReadOnly,
     onControlEvent: (event, touch) => {
@@ -309,7 +313,7 @@ export function useStepperTouch(
       if (isHighlighted) {
         tracking.deliver(
           press.isDelayed
-            ? press.downTime + UIKIT_GESTURES.press.contentTouchDelay.value
+            ? press.downTime + UIKIT_PRESS.contentTouchDelay.value
             : press.downTime,
         );
       }
@@ -336,7 +340,7 @@ export function useStepperTouch(
     if (
       !isFromPointer ||
       lift == null ||
-      browserClock.now() - lift.at > UIKIT_GESTURES.click.strayClickWindow.value
+      browserClock.now() - lift.at > UIKIT_CLICK.strayClickWindow.value
     ) {
       return 'own';
     }

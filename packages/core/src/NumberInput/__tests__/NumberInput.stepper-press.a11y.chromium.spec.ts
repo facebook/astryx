@@ -7,9 +7,8 @@
  * on content that allows selection: on a stepper that is the field's label,
  * with the edit menu over the field, and the tap that would have stepped is
  * lost. `spec:AST-094` FR41 suppresses text-selection start and the callout
- * for a stepper's hold-repeat press. The gesture host does that today only for
- * a long press or a recognizer that asks, and the press tracker's opt-in is
- * pending (#8336), so that proof waits (the fixme below). The column takes
+ * for a stepper's hold-repeat press: the press tracker's selection lock turns
+ * them off while a finger is down and back on at the lift. The column takes
  * `touch-action: manipulation`, which keeps panning and pinch-zoom the
  * browser's: a scroll that starts on a stepper still scrolls the page and
  * steps nothing. (Chromium's touch emulation does not select on a long press,
@@ -59,11 +58,10 @@ test('the stepper column keeps touch-action manipulation, and the field stays pa
   );
 });
 
-// Waits on the press tracker's opt-in selection lock (pending in #8336):
-// `spec:AST-094` FR41 suppresses text-selection start and the callout for a
-// stepper's hold-repeat press, and the gesture host does that today only for a
-// long press or a recognizer that asks.
-test.fixme('a held finger turns text selection off on the stepper column', async ({
+// `spec:AST-094` FR41: a stepper's hold-repeat press suppresses text-selection
+// start and the callout for that press only, through the press tracker's
+// selection lock.
+test('a held finger turns text selection off on the stepper column', async ({
   page,
 }) => {
   await open(page);

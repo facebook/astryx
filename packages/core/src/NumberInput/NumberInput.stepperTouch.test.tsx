@@ -310,6 +310,19 @@ describe('NumberInput steppers under a finger', () => {
     expect(shown(input)).toBe('5');
   });
 
+  it('a held finger turns text selection and the callout off on the column for that press only (spec:AST-094 FR41)', () => {
+    const {increment} = setup();
+    const column = increment.parentElement as HTMLElement;
+    expect(column.style.getPropertyValue('user-select')).toBe('');
+    const id = fingerDown(increment, INCREMENT);
+    expect(column.style.getPropertyValue('user-select')).toBe('none');
+    wait(600);
+    expect(column.style.getPropertyValue('user-select')).toBe('none');
+    touch('touchend', increment, INCREMENT, id);
+    // Lifted at the lift: the column's text is selectable again.
+    expect(column.style.getPropertyValue('user-select')).toBe('');
+  });
+
   it('paints the touched half at once and clears it at once', () => {
     const {increment, decrement} = setup();
     const id = fingerDown(increment, INCREMENT);
