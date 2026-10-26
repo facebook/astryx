@@ -94,7 +94,6 @@ struct LoginTemplateContent: View {
             type: .password,
             onChange: { form.password = $0 },
             size: .lg,
-            onEnter: signIn,
             placeholder: "Enter your password"
           )
           Button(
