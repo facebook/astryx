@@ -51,6 +51,7 @@ import {
   ownRingContainerStyles,
 } from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n/useTranslator';
+import {devWarn} from '../utils/devWarning';
 import {ItemLabelContext} from '../Item/ItemLabelContext';
 import {ListContext} from './ListContext';
 import {
@@ -232,6 +233,7 @@ export function ListReorderHandle({
     callerLabel != null ? undefined : (rowLabelledBy ?? labelID ?? undefined);
   const named = callerLabel != null || labelledBy != null || text !== '';
   const verb = t('@astryx.list.reorderHandleVerb');
+  const warnedNamelessRef = useRef(false);
   // The session moves the row only with its handle recorded, reports its
   // moves with the row's key, and announces them with its name: a component
   // label's text is read from its element, rendered by now.
@@ -287,6 +289,17 @@ export function ListReorderHandle({
     const position = controller?.positionOf(handle) ?? null;
     if (position == null) {
       return;
+    }
+    // Named after its place only: a person hears "Reorder item 3" with
+    // nothing to tell the rows apart. Development says so, once a handle.
+    if (!warnedNamelessRef.current) {
+      warnedNamelessRef.current = true;
+      devWarn(
+        'ListItem',
+        'A reorderable row has no accessible name, so its reorder handle is ' +
+          'named after its place ("Reorder item N"). Give the row a text ' +
+          'label or an aria-label.',
+      );
     }
     handle.setAttribute(
       'aria-label',
