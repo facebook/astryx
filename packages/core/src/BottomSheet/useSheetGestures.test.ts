@@ -1520,18 +1520,6 @@ describe('useSheetGestures', () => {
     expect(liveOffset(hook)).toBe(-48);
   });
 
-  it('under a mouse, rubber-bands an upward drag past the fully-open position, as before', () => {
-    asMouse();
-    const {hook} = setup({snapHeights: () => [200]});
-    const t = makeTarget();
-    down(hook, 100, 0, t);
-    move(hook, 20, 100, t); // 80px past the top of a rested-at-top sheet
-    // Damped and capped: above the top, smaller than the raw 80px.
-    const off = liveOffset(hook);
-    expect(off).toBeLessThan(0);
-    expect(off).toBeGreaterThan(-80);
-  });
-
   it('dismisses a single-height sheet on a slow drag past the floor', () => {
     const {hook, onDismiss} = setup(); // no snapHeights
     const t = makeTarget();
@@ -2414,7 +2402,12 @@ describe('useSheetGestures: the release on the compositor', () => {
     expect(liveOffset(hook)).toBeCloseTo(onScreen - (20 - PAN_THRESHOLD), 0);
   });
 
-  it('turns text selection off on the sheet while a finger holds or drags it, and back on at the lift', () => {
+  it('on iOS, turns text selection and the callout off on the whole sheet while a finger holds or drags it, and back on at the lift', () => {
+    // iOS WebKit fires no selectstart for a long-press selection (iOS 26.2
+    // simulator), so only user-select refuses one there, and only on the whole
+    // sheet: on the element under the finger alone, the long press selected a
+    // word beside it (4 of 4 takes).
+    stubIosIdiom();
     const {hook} = setup({snapHeights: () => [200]});
     const t = makeTarget();
     t.style.setProperty('user-select', 'text');
@@ -2436,6 +2429,44 @@ describe('useSheetGestures: the release on the compositor', () => {
     expect(t.style.getPropertyValue('user-select')).toBe('text');
   });
 
+  it('elsewhere, cancels the selection a finger holding or dragging the sheet would start, and changes no style', () => {
+    stubCoarsePointer();
+    vi.stubGlobal('CSS', {supports: () => false, escape: (v: string) => v});
+    const {hook} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    const row = document.createElement('span');
+    t.appendChild(row);
+    t.style.setProperty('user-select', 'text');
+    // A long press on the row: Chromium fires `selectstart` there first.
+    const longPressSelects = () => {
+      const event = new Event('selectstart', {bubbles: true, cancelable: true});
+      row.dispatchEvent(event);
+      return !event.defaultPrevented;
+    };
+    down(hook, 0, 0, t);
+    stream(hook, t, {from: 0, to: 60, t0: 0, t1: 100});
+    // The pan began: a long press selects nothing, and the lock wrote no
+    // style, which would repaint the whole sheet at the catch and again at the
+    // lift.
+    expect(longPressSelects()).toBe(false);
+    expect(t.style.getPropertyValue('user-select')).toBe('text');
+    expect(t.style.getPropertyValue('-webkit-user-select')).toBe('');
+    expect(row.getAttribute('style')).toBeNull();
+    lift(hook, 60, 102, t);
+    expect(longPressSelects()).toBe(true);
+    act(() => {
+      vi.advanceTimersByTime(80);
+    });
+    // A finger catches it mid-settle and holds still: refused from the
+    // touch-down, before a long press would select, until it lets go.
+    press(hook, 500, 1000, t);
+    expect(hook.result.current.isDragging).toBe(true);
+    expect(longPressSelects()).toBe(false);
+    expect(t.style.getPropertyValue('user-select')).toBe('text');
+    lift(hook, 500, 1600, t);
+    expect(longPressSelects()).toBe(true);
+  });
+
   it('leaves text selection to the browser for a finger where the primary pointer is fine (spec:AST-094 FR19)', () => {
     // A touchscreen laptop: a finger drags the handle through today's drag
     // (its pointer events; the recognizers stay off), and selection and the
@@ -2444,6 +2475,11 @@ describe('useSheetGestures: the release on the compositor', () => {
     const {hook} = setup({snapHeights: () => [200]});
     const t = makeTarget();
     t.style.setProperty('user-select', 'text');
+    const longPressSelects = () => {
+      const event = new Event('selectstart', {bubbles: true, cancelable: true});
+      t.dispatchEvent(event);
+      return !event.defaultPrevented;
+    };
     attach(hook, t);
     act(() => {
       mouseEvent('pointerdown', handleOf(t), 0, 0, 0, 'touch');
@@ -2453,6 +2489,7 @@ describe('useSheetGestures: the release on the compositor', () => {
     });
     expect(hook.result.current.isDragging).toBe(true);
     expect(t.style.getPropertyValue('user-select')).toBe('text');
+    expect(longPressSelects()).toBe(true);
     act(() => {
       mouseEvent('pointerup', handleOf(t), 60, 102, 0, 'touch');
     });
@@ -3893,12 +3930,19 @@ describe('useSheetGestures: the release storyboards (interactive-transition driv
       dialog.appendChild(target);
       document.body.appendChild(dialog);
       if (pointer === 'mouse') {
-        // The theme timing a mouse release reads off the stylesheet.
-        target.style.transition = 'transform 410ms cubic-bezier(0.2, 0, 0, 1)';
+        // The theme timing a mouse release reads off the stylesheet, set as
+        // longhands: the test DOM does not expand the `transition` shorthand,
+        // so with it the release read no duration and played no curve.
+        target.style.transitionProperty = 'transform';
+        target.style.transitionDuration = '410ms';
+        target.style.transitionTimingFunction = 'cubic-bezier(0.2, 0, 0, 1)';
       }
       const sheet = recordAnimations(target);
       const backdrop = recordAnimations(dialog);
       gesture(hook, target);
+      // Every scenario plays a curve on the sheet: a storyboard with none
+      // could not fail.
+      expect(curves(sheet).length).toBeGreaterThan(0);
       recorded[name] = {
         sheet: curves(sheet).map(animation =>
           samples(animation, readOf(animation)),

@@ -12,7 +12,8 @@
  *   velocity (critically damped below `sheet.release.fastSpeed`, 80 % damped
  *   above); a finger catches the settling sheet where it is; the settle keeps
  *   advancing every frame through a blocked main thread; it does no Layout or
- *   Paint per frame; storyboards of the drag, the settle and a flick. A finger
+ *   Paint per frame; a finger's drag on Android re-rasters none of the sheet
+ *   (pending a fix at its origin); storyboards of the drag, the settle and a flick. A finger
  *   on Android gets the same (one touch model, AST-094); a mouse keeps today's
  *   rule and the theme's timing (unit tests). Under reduced motion a touch release cross-fades in place
  *   in 200 ms or less (design:reduced-motion DR2).
@@ -53,6 +54,7 @@ import {
   releaseVelocity,
   seekAnimations,
   springStep,
+  startCompositorTrace,
   startScreencast,
   thawTimers,
   timeline,
@@ -72,6 +74,7 @@ import {
   type TouchDriver,
 } from '@astryxdesign/interaction-harness';
 import {END_HOLD_MS} from './specConstants';
+import {PROMOTION_LINGER_MS} from '../../motion/animator';
 import {sheet as sheetTable} from '../../motion/uikit/sheet';
 import {springs} from '../../motion/uikit/springs';
 import {UIKIT_GESTURES} from '../../motion/uikit/gestures';
@@ -153,6 +156,25 @@ function slowDragTo(from: {x: number; y: number}, dy: number) {
   );
 }
 const slowDragSpeed = (dy: number) => (dy * 1000) / SLOW_DRAG_MS;
+
+/**
+ * A finger that holds 100 ms, drags 80 px down and most of the way back, and
+ * lifts still, 16 px below where it started: the sheet settles back on the
+ * tallest detent and keeps its size, so nothing about its layout changes.
+ */
+function outAndBack(from: {x: number; y: number}) {
+  return drag(
+    from,
+    {x: from.x, y: from.y + 80},
+    {
+      durationMs: SLOW_DRAG_MS,
+      hz: 60,
+      holdMs: 100,
+      restMs: 60,
+      easing: p => (p <= 0.5 ? 2 * p : 1 - 1.6 * (p - 0.5)),
+    },
+  );
+}
 
 /**
  * The sheet's vertical translation at each time (ms from the held
@@ -583,6 +605,10 @@ test('the dim keeps its lockstep with the release while the main thread is block
   const dy = Math.round(halfTop - tallTop + (viewport.height - halfTop) * 0.3);
   await markElement(sheet);
   const cast = await startScreencast(page);
+  // What the compositor presented: frames the screencast skips under load
+  // while the compositor draws them are not stalls (WebKit: none, so the
+  // screencast alone is judged).
+  const compositor = await startCompositorTrace(page);
   await driver.play(
     drag(
       handle,
@@ -594,6 +620,7 @@ test('the dim keeps its lockstep with the release while the main thread is block
   const block = await blockMainThread(page, 700);
   await page.waitForTimeout(150);
   const castFrames = await cast.stop();
+  const presented = await compositor.stop();
   // A point of the backdrop above the sheet at every stop.
   const lum = await luminanceAt(page, castFrames, {
     x: viewport.width - 24,
@@ -620,7 +647,7 @@ test('the dim keeps its lockstep with the release while the main thread is block
       pixels: 1,
     })),
     {from: block.from, to: Math.min(block.to, settle.to)},
-    {settledWithin: 3, settledAt: resting, minMovedFraction: 0},
+    {settledWithin: 3, settledAt: resting, minMovedFraction: 0, presented},
   );
   await writeEvidence(
     'busy-main-thread/bottomsheet-dim',
@@ -959,6 +986,7 @@ test('a finger on the drawn sheet catches it even when the hit test lands on the
 
 test('the settle keeps advancing every frame while the main thread is blocked', async ({
   page,
+  browserName,
 }, testInfo) => {
   const {driver, sheet, tallTop, halfTop, handle} = await openSheet(page);
   await markElement(sheet);
@@ -990,9 +1018,12 @@ test('the settle keeps advancing every frame while the main thread is blocked', 
   const castFrames = await cast.stop();
   const tracked = await trackMarker(page, castFrames);
   // Judge the part of the block during which the settle was still moving:
-  // until it is within 2 px of rest (the screencast rounds to whole pixels,
-  // so the easing tail shows plateaus there).
-  const proof = busyWindowProof(tracked, block, {settledWithin: 2, settledAt});
+  // until it is within two of the screencast's position steps of rest
+  // (Chromium's are 1 px, WebKit's 2 px). Closer, the spring's tail moves
+  // less than a step a frame and shows plateaus: on WebKit, two frames at one
+  // 2 px step read as not moved though the sheet never stopped.
+  const settledWithin = browserName === 'webkit' ? 4 : 2;
+  const proof = busyWindowProof(tracked, block, {settledWithin, settledAt});
   await writeEvidence(
     'busy-main-thread/bottomsheet-settle',
     {
@@ -1029,13 +1060,14 @@ test('the settle keeps advancing every frame while the main thread is blocked', 
   });
   expect(proof.verdict.failures, proof.summary).toEqual([]);
   expect(proof.monotonic).toBe(true);
-  // The judged window runs until the marker is within 2 px of where it rests.
+  // The judged window runs until the marker is within two steps of where it
+  // rests.
   const lastJudged = tracked
     .filter(f => f.box != null && f.t <= proof.judged.to)
     .at(-1);
   expect(
     Math.abs((lastJudged?.box?.y ?? Number.NaN) - settledAt),
-  ).toBeLessThanOrEqual(2);
+  ).toBeLessThanOrEqual(settledWithin);
 });
 
 test('the settle does no Layout or Paint per frame', async ({
@@ -1057,6 +1089,156 @@ test('the settle does no Layout or Paint per frame', async ({
   expect(during.Layout ?? 0, JSON.stringify(during)).toBe(0);
   expect(during.Paint ?? 0, JSON.stringify(during)).toBe(0);
   expect(trace.longTasks).toEqual([]);
+});
+
+/**
+ * Tiles Chromium's compositor schedules for raster in the page's renderer
+ * (cc's `TileManager::ScheduleTasks`), per window between the marks `body`
+ * places: `{[mark]: tiles until the next mark}`. A transform or an opacity on
+ * a composited layer rasters nothing; a style change that repaints content,
+ * or gives an element a layer or takes it away, re-rasters its tiles.
+ */
+async function traceRasterTiles(
+  page: Page,
+  body: (mark: (name: string) => Promise<void>) => Promise<void>,
+): Promise<Record<string, number>> {
+  const cdp = await page.context().newCDPSession(page);
+  const events: {
+    name: string;
+    ts: number;
+    pid: number;
+    args?: {count?: number};
+  }[] = [];
+  cdp.on('Tracing.dataCollected', ({value}) => {
+    events.push(...(value as unknown as typeof events));
+  });
+  const complete = new Promise<void>(resolve =>
+    cdp.once('Tracing.tracingComplete', () => resolve()),
+  );
+  await cdp.send('Tracing.start', {
+    transferMode: 'ReportEvents',
+    traceConfig: {
+      includedCategories: ['cc', 'blink.user_timing'],
+      excludedCategories: ['*'],
+    },
+  });
+  const tag = `raster-${Math.random().toString(36).slice(2, 8)}`;
+  const names: string[] = [];
+  const mark = async (name: string) => {
+    names.push(name);
+    await page.evaluate(n => void performance.mark(n), `${tag}:${name}`);
+  };
+  try {
+    await body(mark);
+    await mark('end');
+  } finally {
+    await cdp.send('Tracing.end');
+    await complete;
+    await cdp.detach().catch(() => {});
+  }
+  const marks = names.map(name => {
+    const event = events.find(e => e.name === `${tag}:${name}`);
+    if (event == null) {
+      throw new Error(`traceRasterTiles: the mark "${name}" was not traced`);
+    }
+    return {name, ts: event.ts, pid: event.pid};
+  });
+  const tiles: Record<string, number> = {};
+  for (let i = 0; i < marks.length - 1; i++) {
+    const {name, ts, pid} = marks[i];
+    tiles[name] = events
+      .filter(
+        e =>
+          e.name === 'TileManager::ScheduleTasks' &&
+          e.pid === pid &&
+          e.ts >= ts &&
+          e.ts < marks[i + 1].ts,
+      )
+      .reduce((sum, e) => sum + (e.args?.count ?? 0), 0);
+  }
+  return tiles;
+}
+
+test('a finger dragging the open sheet re-rasters none of it', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'raster traces are Chromium-only');
+  test.fail(
+    true,
+    'Pending a fix at its origin: the motion animator promotes the sheet by ' +
+      "replacing its stylesheet's will-change (transform, opacity) with " +
+      'translate, a layer change that re-rasters the whole sheet when the ' +
+      'gesture starts and again once it ends; on a software GPU (the ' +
+      'Android emulator) that is 40-115 ms a frame.',
+  );
+  // A finger on Android: its selection lock changes no style. On iOS WebKit
+  // the lock still turns user-select off on the sheet (the only refusal iOS
+  // honors, sheetSelectionLock.ts), which repaints it at the catch and the
+  // lift.
+  const {driver, sheet, tallTop, handle} = await openSheet(page, {
+    idiom: 'android',
+  });
+  // The presentation's own layer goes this long after it settles.
+  await page.waitForTimeout(PROMOTION_LINGER_MS + 100);
+  let moving = false;
+  const tiles = await traceRasterTiles(page, async mark => {
+    await mark('touch-down');
+    await driver.play(outAndBack(handle), {
+      onEvent: async step => {
+        if (step.type === 'touchMove' && !moving) {
+          moving = true;
+          await mark('moving');
+        }
+      },
+    });
+    await waitForRest(sheet);
+    // The animator lets the sheet's layer go this long after the settle.
+    await page.waitForTimeout(PROMOTION_LINGER_MS + 200);
+  });
+  expect(await sheetTop(sheet)).toBeCloseTo(tallTop, 0);
+  // The touch-down's own frame is excluded: it pins the sheet's height for
+  // the drag, as it did before the release rule. From the first move through
+  // the settle and its layer's release, nothing may re-raster.
+  expect(tiles.moving, JSON.stringify(tiles)).toBe(0);
+});
+
+test("the dim a release plays re-rasters nothing: the open sheet's backdrop keeps its layer", async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'raster traces are Chromium-only');
+  const {driver, sheet, tallTop, handle} = await openSheet(page);
+  // The presentation's own layer goes this long after it settles.
+  await page.waitForTimeout(PROMOTION_LINGER_MS + 100);
+  // Measure the dim alone. The two pending causes above are taken out of the
+  // window: the animator's promotion adds to an inline will-change and keeps
+  // it, and the selection lock puts an inline user-select back as it found it.
+  await sheet.evaluate(el => {
+    el.style.setProperty('will-change', 'transform, opacity');
+    el.style.setProperty('user-select', 'none');
+    el.style.setProperty('-webkit-user-select', 'none');
+  });
+  await frames(page, 2);
+  let lifted = false;
+  const tiles = await traceRasterTiles(page, async mark => {
+    await mark('drag');
+    await driver.play(outAndBack(handle), {
+      onEvent: async step => {
+        if (step.type === 'touchEnd' && !lifted) {
+          lifted = true;
+          await mark('release');
+        }
+      },
+    });
+    await waitForRest(sheet);
+    await page.waitForTimeout(PROMOTION_LINGER_MS + 200);
+  });
+  expect(await sheetTop(sheet)).toBeCloseTo(tallTop, 0);
+  // The release plays the dim back to full on the backdrop's compositor
+  // layer. A backdrop given a layer only for that animation is re-rastered
+  // when it gets one and again when it loses it.
+  expect(tiles.release, JSON.stringify(tiles)).toBe(0);
 });
 
 test(
