@@ -6,15 +6,15 @@
  * iOS Safari selects the nearest text after a finger rests about half a second
  * on content that allows selection: on a stepper that is the field's label,
  * with the edit menu over the field, and the tap that would have stepped is
- * lost. The gesture host turns selection and the touch callout off on the
- * stepper column while a finger is down, the held stepper's lock
- * (`keepsTouch`; `spec:AST-094` FR41, proposed in #8454), and the column takes
- * `touch-action: manipulation`, which keeps panning and pinch-zoom the
- * browser's: a scroll that starts on a stepper still scrolls the page and
- * steps nothing. (Chromium's touch emulation does not select on a long press,
- * so the selection itself is proven on the iOS simulator; this proves the
- * lock the fix relies on and the paths it must not change, including a hold
- * longer than a tap.)
+ * lost. The gesture host turns selection and the touch callout off only where
+ * a hold does something by its rule: a long press, or a recognizer that asks
+ * (`spec:AST-094` FR41, proposed in #8454). The stepper's hold-repeat runs on
+ * a press tracker, which cannot ask yet, so that proof waits (the fixme
+ * below). The column takes `touch-action: manipulation`, which keeps panning
+ * and pinch-zoom the browser's: a scroll that starts on a stepper still
+ * scrolls the page and steps nothing. (Chromium's touch emulation does not select on a long press,
+ * so the selection itself is checked on the iOS simulator; this proves the
+ * paths a hold must not change, including a hold longer than a tap.)
  */
 
 import {expect, test, type Page} from '@playwright/test';
@@ -45,16 +45,31 @@ async function open(page: Page): Promise<void> {
   await page.getByRole('spinbutton', {name: 'Quantity'}).waitFor();
 }
 
-test('a held finger turns text selection off on the stepper column, which keeps touch-action manipulation', async ({
+test('the stepper column keeps touch-action manipulation, and the field stays pannable', async ({
+  page,
+}) => {
+  await open(page);
+  const column = page
+    .getByRole('button', {name: 'Increment Quantity'})
+    .locator('..');
+  await expect(column).toHaveCSS('touch-action', 'manipulation');
+  await expect(page.getByRole('spinbutton', {name: 'Quantity'})).toHaveCSS(
+    'touch-action',
+    'auto',
+  );
+});
+
+// Waits on the press tracker's selection option: the gesture host locks
+// selection only for a long press or a recognizer that asks (`spec:AST-094`
+// FR41, proposed in #8454), and the stepper's hold-repeat runs on a press
+// tracker.
+test.fixme('a held finger turns text selection off on the stepper column', async ({
   page,
 }) => {
   await open(page);
   const plus = page.getByRole('button', {name: 'Increment Quantity'});
   const column = plus.locator('..');
-  await expect(column).toHaveCSS('touch-action', 'manipulation');
-  // The gesture host locks selection on the column while a finger is down
-  // (an inline style), and restores it at the lift: the held stepper's lock
-  // (`keepsTouch`; `spec:AST-094` FR41, proposed in #8454).
+  // The lock is an inline style while a finger is down, gone at the lift.
   const lock = async () =>
     column.evaluate(el =>
       (el as HTMLElement).style.getPropertyValue('user-select'),
@@ -75,11 +90,6 @@ test('a held finger turns text selection off on the stepper column, which keeps 
     touchPoints: [],
   });
   await expect.poll(lock).toBe('');
-  // The field itself stays selectable and pannable.
-  await expect(page.getByRole('spinbutton', {name: 'Quantity'})).toHaveCSS(
-    'touch-action',
-    'auto',
-  );
 });
 
 test('a vertical drag that starts on a stepper scrolls the page and steps nothing', async ({

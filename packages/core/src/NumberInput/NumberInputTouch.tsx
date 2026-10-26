@@ -21,9 +21,10 @@
  * paints the half under the pointer at once and clears at once; inside a
  * scroll view a finger waits for the content-touch delay, and a scroll that
  * takes the touch before then cancels it; once delivered, the press keeps
- * its touch from the page's pan. While a finger is down, the gesture host
- * keeps text selection and the touch callout off the column: the held
- * stepper's lock (`keepsTouch`; `spec:AST-094` FR41, proposed in #8454).
+ * its touch from the page's pan. The gesture host turns text selection off
+ * under a held finger only for a long press or a recognizer that asks
+ * (`spec:AST-094` FR41, proposed in #8454); a press tracker cannot ask yet,
+ * so a held stepper keeps the browser's long-press selection.
  *
  * While a press steps, the field shows the stepping value and `onChange` is
  * not called; at the release it is called once, with the final value, and
