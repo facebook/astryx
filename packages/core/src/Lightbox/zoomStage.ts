@@ -8,8 +8,10 @@
  *   place for a scale (centred where the photo is smaller than the stage,
  *   kept inside it where larger), the rubber band of a drag, the overshoot
  *   of a pinch past a limit, the transform that keeps a point under the
- *   fingers, the eased settle curves (UIScrollView's zoom animation), and
- *   the chrome's fade and the black behind the photo as a tap hides it
+ *   fingers, the eased settle curves (UIScrollView's zoom animation),
+ *   the chrome's fade and the black behind the photo as a tap hides it, and
+ *   Lightbox's released zoom that the mouse and the keyboard keep (2x about
+ *   the centre over a 200 ms ease-out)
  * @position Pure math under useZoomCore and useZoomStage (Lightbox's zoom);
  *   no DOM, no React
  *
@@ -20,8 +22,9 @@
  * shows at (fit.x + x + u·scale, fit.y + y + v·scale). On an axis where the
  * scaled photo is smaller than the stage it rests centred (WWDC 2010 session
  * 104's recentring, which every UIKit photo viewer uses); where it is larger
- * it rests with no gap at either edge. All constants come from
- * motion/uikit/zoomMedia.ts and motion/uikit/scroll.ts.
+ * it rests with no gap at either edge. The UIKit constants come from
+ * motion/uikit/zoomMedia.ts and motion/uikit/scroll.ts; RELEASED_ZOOM keeps
+ * the released mouse and keyboard zoom.
  *
  * SYNC: When modified, update zoomStage.test.ts, useZoomCore.ts and
  * useZoomStage.ts.
@@ -368,20 +371,20 @@ const defaultEase = cubicBezier(zoomMedia.settle.curve);
 /**
  * UIScrollView's zoom settle as curves for the animator: the offset and the
  * scale move together along the eased curve (one CABasicAnimation), from
- * `from` to `to`, over `settleSeconds`, on `curve` (the table's
- * `zoomMedia.settle.curve` by default).
+ * `from` to `to`, over `settleSeconds` (or `duration`), on `curve` (the
+ * table's `zoomMedia.settle.curve` by default).
  */
 export function settleCurves(
   from: ZoomTransform,
   to: ZoomTransform,
   curve: readonly [number, number, number, number] = zoomMedia.settle.curve,
+  duration: number = settleSeconds(from.scale, to.scale),
 ): {
   readonly duration: number;
   readonly x: MotionCurve;
   readonly y: MotionCurve;
   readonly scale: MotionCurve;
 } {
-  const duration = settleSeconds(from.scale, to.scale);
   const ease =
     curve === zoomMedia.settle.curve ? defaultEase : cubicBezier(curve);
   const easeSlope = slopeOf(ease);
@@ -397,6 +400,31 @@ export function settleCurves(
     y: along(from.y, to.y),
     scale: along(from.scale, to.scale),
   };
+}
+
+/**
+ * Lightbox's released zoom, which the mouse and the keyboard keep: touch work
+ * leaves what fine-pointer and keyboard users see alone (spec:AST-017 FR59).
+ * A double-click, Enter, Space or `+` zooms to `zoomMedia.viewer.
+ * filledDoubleTapScale` (2x) about the stage's centre, or back to the fitted
+ * size when zoomed, and every such change, a keyboard pan included, plays the
+ * released 200 ms CSS `ease-out`.
+ */
+export const RELEASED_ZOOM = {
+  seconds: 0.2,
+  curve: [0, 0, 0.58, 1] as readonly [number, number, number, number],
+};
+
+/** Where a double-click or a zoom key goes from `from` (see RELEASED_ZOOM). */
+export function releasedZoomTarget(
+  geometry: ZoomGeometry,
+  from: ZoomTransform,
+): ZoomTransform {
+  return doubleTapTarget(
+    {...geometry, doubleTapScale: zoomMedia.viewer.filledDoubleTapScale},
+    from,
+    {x: geometry.width / 2, y: geometry.height / 2},
+  );
 }
 
 /** The resting transform after panning by (dx, dy): a keyboard step. */

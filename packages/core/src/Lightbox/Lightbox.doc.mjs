@@ -99,7 +99,7 @@ export const docs = {
       name: 'hasZoom',
       type: 'boolean',
       description:
-        'Enable zoom (images only): pinch, or double-tap or double-click to zoom in at that point and back, or Enter/Space/+/- via keyboard. When zoomed, drag (with momentum) or use arrow keys to pan. On a touch screen a tap on the photo hides the controls and turns the background black, as a zoom in does; the next tap, a return to the fitted size, or a keyboard focus on a control brings them back.',
+        'Enable zoom (images only): on a touch screen, pinch, or double-tap to zoom in at that point and back; a double-click or Enter/Space/+/- zooms 2× about the centre and back. When zoomed, drag (with momentum under a finger) or use arrow keys to pan. On a touch screen a tap on the photo hides the controls and turns the background black, as a zoom in does; the next tap, a return to the fitted size, or a keyboard focus on a control brings them back.',
       default: 'false',
     },
     {
@@ -120,7 +120,7 @@ export const docs = {
       name: 'sourceFor',
       type: '(index: number) => HTMLElement | null',
       description:
-        "The element an item opens from and closes into, usually its thumbnail: the photo zooms out of it on open and back into it on close (for the item showing then), and a photo dragged down lands in it. Return null when there is none or it is off screen. Without it, the element that opened the viewer is the opened item's source when it shows a picture. Proposed; pending owner review.",
+        "The element an item opens from and closes into, usually its thumbnail: on a touch screen the photo zooms out of it on open and back into it on close (for the item showing then), and a photo dragged down lands in it; with a mouse the viewer opens and closes at once, as before. Return null when there is none or it is off screen. Without it, the element that opened the viewer is the opened item's source when it shows a picture. Proposed; pending owner review.",
     },
     {
       name: 'xstyle',
@@ -220,14 +220,14 @@ export const docsZh = {
       name: 'hasZoom',
       type: 'boolean',
       description:
-        '启用缩放（仅图片）：双指捏合，或双击/双点按在该处放大并还原，或使用 Enter/Space/+/- 键。缩放后可拖动（带惯性）或用方向键平移。在触摸屏上，点按照片会隐藏控件并使背景变黑（放大时也是如此）；再次点按、还原到适合大小或用键盘聚焦控件会让控件重新出现。',
+        '启用缩放（仅图片）：在触屏上，双指捏合或双点按在该处放大并还原；双击或使用 Enter/Space/+/- 键以中心放大 2 倍并还原。缩放后可拖动（手指拖动带惯性）或用方向键平移。在触摸屏上，点按照片会隐藏控件并使背景变黑（放大时也是如此）；再次点按、还原到适合大小或用键盘聚焦控件会让控件重新出现。',
       default: 'false',
     },
     {
       name: 'sourceFor',
       type: '(index: number) => HTMLElement | null',
       description:
-        '某一项打开时放大自、关闭时缩回的元素（通常是其缩略图）；向下拖动的照片也会落入其中。没有或不在屏幕上时返回 null。未提供时，若打开查看器的元素显示图片，则它是所打开项的来源。提议中，待负责人审核。',
+        '某一项打开时放大自、关闭时缩回的元素（通常是其缩略图），仅在触屏上；向下拖动的照片也会落入其中。使用鼠标时，查看器照常立即打开和关闭。没有或不在屏幕上时返回 null。未提供时，若打开查看器的元素显示图片，则它是所打开项的来源。提议中，待负责人审核。',
     },
     {
       name: 'xstyle',
@@ -315,7 +315,7 @@ export const docsDense = {
     hasZoom:
       'Enable zoom (pinch, double-tap or double-click, Enter/Space, or +/-) and pan (drag or arrow keys) for images; on touch, a tap on the photo hides the controls.',
     sourceFor:
-      'The element an item zooms out of on open and back into on close (its thumbnail).',
+      'The element an item zooms out of on open and back into on close on a touch screen (its thumbnail).',
     xstyle: 'StyleX styles for layout customization.',
   },
 };

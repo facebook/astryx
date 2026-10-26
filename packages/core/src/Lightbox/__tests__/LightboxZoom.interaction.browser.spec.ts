@@ -40,7 +40,6 @@ import {
   openStory,
   PARTIAL_LIFT_SKIP,
   pinch,
-  readLongTasks,
   releaseAnimations,
   sampleCurve,
   startScreencast,
@@ -1025,6 +1024,5 @@ test(
       cellScale: 0.35,
     });
     await zoomIn.write(testInfo);
-    expect(await readLongTasks(page, {from: 0, to: Date.now()})).toBeDefined();
   },
 );

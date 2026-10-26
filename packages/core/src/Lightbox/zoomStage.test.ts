@@ -7,8 +7,10 @@
  *   overshoot law past the limits (and its inverse), the settle's duration
  *   law and eased curve, Photos' aspect-fill double tap and maximum zoom, the
  *   point kept under the fingers, the resting place for a scale, the rubber
- *   band of a drag, the transform kept across a resize, and Photos'
- *   drag to dismiss (the shrink and fades by travel, the release rule)
+ *   band of a drag, the transform kept across a resize, Photos' drag to
+ *   dismiss (the shrink and fades by travel, the release rule), and the
+ *   released zoom the mouse and the keyboard keep (2x about the centre,
+ *   200 ms ease-out)
  * @position Testing; zoomStage.ts without a browser
  */
 
@@ -23,6 +25,7 @@ import {
 import {zoomMedia} from '../motion/uikit/zoomMedia';
 import {
   IDENTITY,
+  RELEASED_ZOOM,
   chromeBackgroundCurve,
   chromeFadeCurve,
   dismissBackdropAlpha,
@@ -41,6 +44,7 @@ import {
   pinchScaleFor,
   rawForDragged,
   releaseTarget,
+  releasedZoomTarget,
   restRange,
   restingTransform,
   settleCurves,
@@ -547,5 +551,49 @@ describe('the chrome a tap hides (Photos, iOS 26.2)', () => {
       (curve.at(0.45 + h) - curve.at(0.45 - h)) / (2 * h),
       3,
     );
+  });
+});
+
+describe('the released zoom the mouse and the keyboard keep (spec:AST-017 FR59)', () => {
+  const g = landscape();
+  const centre = {x: g.width / 2, y: g.height / 2};
+  it('zooms 2x about the centre, whatever aspect fill would give', () => {
+    // Aspect fill would zoom this photo about 3.3x.
+    expect(g.doubleTapScale).toBeGreaterThan(3);
+    const target = releasedZoomTarget(g, {...IDENTITY, scale: g.minScale});
+    expect(target.scale).toBe(2);
+    // The stage's centre shows the photo's centre, as before.
+    const middle = shown(g, target, g.fit.width / 2, g.fit.height / 2);
+    expect(middle.x).toBeCloseTo(centre.x, 9);
+    expect(middle.y).toBeCloseTo(centre.y, 9);
+  });
+  it('returns to the fitted size when zoomed', () => {
+    const zoomed = releasedZoomTarget(g, {...IDENTITY, scale: g.minScale});
+    expect(releasedZoomTarget(g, zoomed)).toEqual(
+      restingTransform(g, {...IDENTITY, scale: g.minScale}),
+    );
+  });
+  it('stays inside the limits', () => {
+    const small = landscape({maxScale: 1.5});
+    expect(
+      releasedZoomTarget(small, {...IDENTITY, scale: small.minScale}).scale,
+    ).toBe(1.5);
+  });
+  it("plays CSS's 200 ms ease-out, not the settle", () => {
+    const from = {...IDENTITY, scale: 1};
+    const to = releasedZoomTarget(g, from);
+    const curves = settleCurves(
+      from,
+      to,
+      RELEASED_ZOOM.curve,
+      RELEASED_ZOOM.seconds,
+    );
+    expect(curves.duration).toBe(0.2);
+    expect(settleSeconds(from.scale, to.scale)).not.toBe(0.2);
+    const ease = cubicBezier([0, 0, 0.58, 1]);
+    for (const t of [0.05, 0.1, 0.15]) {
+      expect(curves.scale.at(t)).toBeCloseTo(1 + ease(t / 0.2), 9);
+    }
+    expect(curves.scale.at(0.2)).toBe(2);
   });
 });
