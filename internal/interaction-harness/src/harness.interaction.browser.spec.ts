@@ -777,6 +777,56 @@ test.describe('frame evidence', () => {
     expect(trace.window.to - (started as number)).toBeGreaterThanOrEqual(590);
   });
 
+  test('a waitForRest awaited inside a traced body waits for a run going backward to its end, and no longer', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'rendering traces are Chromium-only (README: engine limits)',
+    );
+    await page.route('http://anchored.test/', route =>
+      route.fulfill({contentType: 'text/html', body: ANCHORED}),
+    );
+    await page.goto('http://anchored.test/');
+    const pop = page.locator('#pop');
+    await waitForRest(pop);
+    // How long a traced waitForRest holds after a 600 ms move starts.
+    const traced = async (reverse: boolean, endDelay = 0) => {
+      let started = 0;
+      const trace = await traceRendering(page, async () => {
+        started = await pop.evaluate(
+          (el, {reverse, endDelay}) => {
+            const run = el.animate(
+              [
+                {transform: 'translateY(0px)'},
+                {transform: 'translateY(100px)'},
+              ],
+              {duration: 600, endDelay},
+            );
+            if (reverse) {
+              // Its current time falls from its end time to 0.
+              run.reverse();
+            }
+            return performance.timeOrigin + performance.now();
+          },
+          {reverse, endDelay},
+        );
+        await waitForRest(pop);
+      });
+      await waitForRest(pop);
+      return trace.window.to - started;
+    };
+    // Reversed with a 200 ms end delay: the move plays from 200 to 800 ms.
+    expect(await traced(true, 200)).toBeGreaterThanOrEqual(790);
+    // A reversed run is waited for as long as the same run forward, not
+    // twice as long.
+    const forward = await traced(false);
+    const backward = await traced(true);
+    expect(backward).toBeGreaterThanOrEqual(590);
+    expect(backward).toBeLessThan(forward * 1.5);
+  });
+
   test('a waitForRest awaited inside a traced body runs on the real timers, so a frozen timer gate cannot hold it', async ({
     page,
     browserName,
@@ -859,7 +909,7 @@ test.describe('frame evidence', () => {
     expect(ended.every(a => a.finishedAt != null)).toBe(true);
   });
 
-  test("the long-task log records the page's own long task but not a DevTools evaluate, which the trace counts", async ({
+  test("the long-task log records the page's own long task but not a DevTools evaluate, which the trace reports apart", async ({
     page,
     browserName,
   }) => {
@@ -887,22 +937,87 @@ test.describe('frame evidence', () => {
     const recorded = await readLongTasks(page, own);
     expect(recorded).toHaveLength(1);
     expect(recorded[0].durationMs).toBeGreaterThanOrEqual(110);
-    // A DevTools evaluate that spins 300 ms: the trace counts it, the log
-    // never sees it.
+    // A DevTools evaluate that spins 300 ms: the trace reports it apart from
+    // the page's long tasks, and the log never sees it.
     let block = {from: 0, to: 0};
     const trace = await traceRendering(page, async () => {
       block = await blockMainThread(page, 300);
     });
     await frames(page, 2);
+    const inBlock = (t: {start: number}) =>
+      t.start < block.to && t.start >= block.from - 20;
     expect(
-      trace.longTasks.some(
-        t =>
-          t.durationMs >= 290 &&
-          t.start < block.to &&
-          t.start >= block.from - 20,
-      ),
+      trace.devtoolsTasks.some(t => t.durationMs >= 290 && inBlock(t)),
     ).toBe(true);
+    expect(trace.longTasks.filter(inBlock)).toEqual([]);
     expect(await readLongTasks(page, block)).toEqual([]);
+  });
+
+  test("a harness read inside a trace is not the page's long task, while page script an evaluate sets off is", async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'rendering traces are Chromium-only (README: engine limits)',
+    );
+    // Enough animated rows that describing their keyframes takes a DevTools
+    // task over 50 ms.
+    const rows = Array.from(
+      {length: 1200},
+      (_, i) => `<div class="row">row ${i}</div>`,
+    ).join('');
+    await page.setContent(
+      `<style>.row { height: 4px; animation: slide 2s linear infinite; } @keyframes slide { from { transform: translateX(0); } 25% { transform: translateX(4px); } 50% { transform: translateX(0); } 75% { transform: translateX(4px); } to { transform: translateX(0); } }</style><button id="slow">slow</button><div id="list">${rows}</div>`,
+    );
+    const slow = page.locator('#slow');
+    await slow.evaluate(el =>
+      el.addEventListener('click', () => {
+        const end = performance.now() + 60;
+        while (performance.now() < end) {
+          // spin
+        }
+      }),
+    );
+    await frames(page, 3);
+    const now = () =>
+      page.evaluate(() => performance.timeOrigin + performance.now());
+    const read = {from: 0, to: 0};
+    const click = {from: 0, to: 0};
+    let timer = {from: 0, to: 0};
+    const trace = await traceRendering(page, async () => {
+      read.from = await now();
+      await waitForAnimation(page.locator('#list'));
+      read.to = await now();
+      // The page's own task: a timer that spins 60 ms.
+      timer = await page.evaluate(
+        () =>
+          new Promise<{from: number; to: number}>(resolve => {
+            setTimeout(() => {
+              const from = performance.timeOrigin + performance.now();
+              const end = performance.now() + 60;
+              while (performance.now() < end) {
+                // spin
+              }
+              resolve({from, to: performance.timeOrigin + performance.now()});
+            }, 0);
+          }),
+      );
+      // Page script run inside a DevTools evaluate: a 60 ms click handler.
+      click.from = await now();
+      await slow.evaluate(el => (el as HTMLElement).click());
+      click.to = await now();
+    });
+    const within = (w: {from: number; to: number}) => (t: {start: number}) =>
+      t.start >= w.from - 20 && t.start < w.to;
+    expect(trace.devtoolsTasks.some(within(read))).toBe(true);
+    expect(trace.longTasks.filter(within(read))).toEqual([]);
+    expect(
+      trace.longTasks.some(t => within(timer)(t) && t.durationMs >= 55),
+    ).toBe(true);
+    expect(
+      trace.longTasks.some(t => within(click)(t) && t.durationMs >= 55),
+    ).toBe(true);
   });
 });
 
