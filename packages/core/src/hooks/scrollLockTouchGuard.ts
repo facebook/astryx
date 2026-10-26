@@ -6,20 +6,25 @@
  * @file scrollLockTouchGuard.ts
  * @input The node under a finger and the pan's direction, while a scroll lock
  *   holds the page
- * @output isPanAbsorbedBeforePage, the scroll lock's decision for the gesture
- *   host's page-scroll hold
+ * @output isPanAbsorbedBeforePage, the scroll lock's decision for the page
+ *   hold
  * @position Internal hook utility; used by useScrollLock, through
- *   gestures/pageHold's holdPageScroll on the gesture host (the host owns
- *   the touch listeners).
+ *   gestures/pageHold's holdPageScroll, which owns the touch listeners (its
+ *   own, on the document, only while a lock holds) and asks the document's
+ *   gesture host only whether a recognizer owns the touch.
  *
  * `overflow: hidden` on the root stops wheel, keyboard and scrollbar scrolling,
  * but iOS Safari before 26.4 still scrolls such a page under a finger: on iOS
  * 26.2 a drag on a scrim, on a dialog's header, or on an `overflow: auto` body
  * whose content fits each scrolls the page behind the overlay. The lock
- * cancels exactly those pans through the gesture host. This walk decides each
+ * cancels exactly those pans through the page hold. This walk decides each
  * one: a scroller that can move in the pan's direction, or one at its edge
  * that contains its own overscroll, takes the pan, and the move goes through;
- * a pan that would reach the page is cancelled.
+ * a pan that would reach the page is cancelled. The walk follows the scroll
+ * chain the browser uses, which runs along containing blocks: it ends at an
+ * element in the top layer (an open modal dialog) or a fixed-position one,
+ * whose untaken pans go to the viewport, so an overlay rendered inside a
+ * scrolling container still holds the page.
  */
 
 import {parentAcrossShadow} from '../gestures/nativeScroll';
@@ -52,9 +57,72 @@ function canMoveX(
 }
 
 /**
- * Whether a scroller under `target` takes a pan of (`dx`, `dy`) before the
- * page does: one that can still move that way, or one at its edge whose
- * `overscroll-behavior` keeps the overscroll to itself.
+ * Whether `element` itself takes a pan: it scrolls and can still move that
+ * way, or it is at its edge and its `overscroll-behavior` keeps the
+ * overscroll to itself.
+ */
+function takesPan(
+  element: Element,
+  style: CSSStyleDeclaration,
+  isVertical: boolean,
+  dx: number,
+  dy: number,
+): boolean {
+  if (!SCROLLABLE.has(isVertical ? style.overflowY : style.overflowX)) {
+    return false;
+  }
+  const range = isVertical
+    ? element.scrollHeight - element.clientHeight
+    : element.scrollWidth - element.clientWidth;
+  // Content that fits gives the finger nothing to scroll: the pan passes on
+  // to the next scroller in the chain, and in the end to the page.
+  if (range <= EDGE_TOLERANCE) {
+    return false;
+  }
+  const canMove = isVertical
+    ? canMoveY(element, dy, range)
+    : canMoveX(element, dx, range, isRtlElement(element as HTMLElement));
+  if (canMove) {
+    return true;
+  }
+  const behavior = isVertical
+    ? style.overscrollBehaviorY
+    : style.overscrollBehaviorX;
+  return behavior === 'contain' || behavior === 'none';
+}
+
+function matchesSelector(element: Element, selector: string): boolean {
+  try {
+    return element.matches(selector);
+  } catch {
+    // An engine without the pseudo-class: the position check still applies.
+    return false;
+  }
+}
+
+/**
+ * Whether a pan `element` does not take goes on to the viewport rather than to
+ * its DOM parent. The browser chains scrolling along containing blocks, and an
+ * element in the top layer (an open modal dialog or popover) or a
+ * fixed-position one has the viewport as its containing block: a Dialog
+ * rendered inside a scrolling container hands an untaken pan to the page,
+ * never to that container.
+ */
+function chainsToViewport(
+  element: Element,
+  style: CSSStyleDeclaration,
+): boolean {
+  return (
+    style.position === 'fixed' ||
+    matchesSelector(element, ':modal') ||
+    matchesSelector(element, ':popover-open')
+  );
+}
+
+/**
+ * Whether a scroller in the scroll chain of `target` takes a pan of (`dx`,
+ * `dy`) before the page does: one that can still move that way, or one at
+ * its edge whose `overscroll-behavior` keeps the overscroll to itself.
  */
 export function isPanAbsorbedBeforePage(
   target: EventTarget | null,
@@ -86,28 +154,11 @@ export function isPanAbsorbedBeforePage(
       break;
     }
     const style = view.getComputedStyle(node);
-    if (!SCROLLABLE.has(isVertical ? style.overflowY : style.overflowX)) {
-      continue;
-    }
-    const range = isVertical
-      ? node.scrollHeight - node.clientHeight
-      : node.scrollWidth - node.clientWidth;
-    // Content that fits gives the finger nothing to scroll: the pan passes
-    // on to the next scroller up, and in the end to the page.
-    if (range <= EDGE_TOLERANCE) {
-      continue;
-    }
-    const canMove = isVertical
-      ? canMoveY(node, dy, range)
-      : canMoveX(node, dx, range, isRtlElement(node as HTMLElement));
-    if (canMove) {
+    if (takesPan(node, style, isVertical, dx, dy)) {
       return true;
     }
-    const behavior = isVertical
-      ? style.overscrollBehaviorY
-      : style.overscrollBehaviorX;
-    if (behavior === 'contain' || behavior === 'none') {
-      return true;
+    if (chainsToViewport(node, style)) {
+      break;
     }
   }
   return false;
