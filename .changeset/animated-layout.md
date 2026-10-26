@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[feature] `useAnimatedLayout({containerRef})` returns a handle that Collapsible and TreeList take as their new `animatedLayout` prop (`spec:AST-105`). When one of them opens or closes, the content after it inside that container glides to its new place instead of jumping, on one shared motion role with the revealed content and the chevron, under every pointer, a mouse included. Fixed and stuck sticky elements stay put, the glide never scrolls the container, and under Reduce Motion the change cross-fades on touch and happens at once with a mouse. Without the prop, nothing changes.
+[feature] `useAnimatedLayout({containerRef})` returns an opaque handle for an area (`spec:AST-105`). A component whose size changes takes it and reports each change, and the content after that component inside the container glides to its new place instead of jumping, on one shared motion role, under every pointer, a mouse included. Fixed and stuck sticky elements stay put, the glide never scrolls the container, and under Reduce Motion the change cross-fades on touch and happens at once with a mouse. No component takes the handle yet; Collapsible and TreeList adopt it next.
 
 @cixzhang
