@@ -48,8 +48,9 @@ function sourceFiles(dir: string): string[] {
 describe('architecture:react-component-runtime INV12 source boundary', () => {
   it('animates no layout property: only translate, opacity and the entrance clip', () => {
     const body = code(moduleSource);
+    // No keyframe or style object names a box property.
     expect(body).not.toMatch(
-      /\b(height|width|top|left|right|bottom|margin\w*|padding\w*|inset\w*)\s*:/,
+      /(?:^|[{,])\s*(height|width|top|left|right|bottom|margin\w*|padding\w*|inset\w*)\s*:/m,
     );
     const animated = [
       ...body.matchAll(/[{,\s](translate|opacity|clipPath)\s*:/g),

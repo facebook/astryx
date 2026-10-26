@@ -446,18 +446,31 @@ describe('the changed element exits (spec:AST-105 FR4)', () => {
       new DOMRect(0, 40, 400, 80),
     );
     Object.defineProperty(content, 'offsetHeight', {value: 80});
-    content.style.marginTop = '8px';
-    return {area, content, layout: createAnimatedLayout(() => area)};
+    // The row after it: 8 px of gap below the 80 px content, which a hidden
+    // content gives back too, and its end margin pulls the row up.
+    const after = document.getElementById('after') as HTMLElement;
+    vi.spyOn(after, 'getBoundingClientRect').mockImplementation(() => {
+      if (content.style.display === 'none') {
+        return new DOMRect(0, 40, 400, 20);
+      }
+      const margin =
+        Number.parseFloat(content.style.getPropertyValue('margin-block-end')) ||
+        0;
+      return new DOMRect(0, 40 + 80 + 8 + margin, 400, 20);
+    });
+    return {area, content, after, layout: createAnimatedLayout(() => area)};
   }
 
   it('keeps the content where it is while it gives up its space, conceals it on the spring, then hands it back', () => {
     const {content, layout} = exitSetUp();
     const done = vi.fn();
     expect(holdLayoutExit(layout, content, done)).toBe(true);
-    // In flow (it scrolls and clips with its container), taking no space:
-    // its box and start margin given back through its end margin.
+    // In flow (it scrolls and clips with its container), taking exactly the
+    // space it frees when hidden, gap included; out of reach.
     expect(content.style.position).toBe('');
     expect(content.style.getPropertyValue('margin-block-end')).toBe('-88px');
+    expect(content.style.display).toBe('');
+    expect(content).toHaveAttribute('inert');
     expect(content.style.pointerEvents).toBe('none');
     const exit = played.find(p => p.element === content);
     expect(exit?.keyframes[0].opacity).toBe(1);
@@ -468,6 +481,7 @@ describe('the changed element exits (spec:AST-105 FR4)', () => {
     expect(done).toHaveBeenCalledTimes(1);
     releaseLayoutExit(content);
     expect(content.style.getPropertyValue('margin-block-end')).toBe('');
+    expect(content).not.toHaveAttribute('inert');
     expect(content.style.pointerEvents).toBe('');
   });
 
@@ -489,6 +503,20 @@ describe('the changed element exits (spec:AST-105 FR4)', () => {
     media['(prefers-reduced-motion: reduce)'] = true;
     expect(holdLayoutExit(layout, content, vi.fn())).toBe(false);
     expect(content.style.getPropertyValue('margin-block-end')).toBe('');
+    expect(played).toEqual([]);
+  });
+
+  it('lands at once where no end margin frees its space (a grid track)', () => {
+    const {content, after, layout} = exitSetUp();
+    // The row after it ignores the margin: it moves only when the content
+    // is hidden.
+    vi.spyOn(after, 'getBoundingClientRect').mockImplementation(
+      () =>
+        new DOMRect(0, content.style.display === 'none' ? 40 : 128, 400, 20),
+    );
+    expect(holdLayoutExit(layout, content, vi.fn())).toBe(false);
+    expect(content.style.getPropertyValue('margin-block-end')).toBe('');
+    expect(content).not.toHaveAttribute('inert');
     expect(played).toEqual([]);
   });
 
@@ -550,5 +578,32 @@ describe('two changes in one frame (spec:AST-105 FR3)', () => {
     report.animate();
     await flushMicrotasks();
     expect(played).toEqual([]);
+  });
+});
+
+describe('elements the app moves itself (spec:AST-105 Coverage)', () => {
+  it('leaves a follower with its own transform or translate to take its place at once', async () => {
+    const {area, changed, phase} = setUp(
+      `<div id="area"><div id="changed"></div>
+        <div id="transformed" style="transform: rotate(2deg)"></div>
+        <div id="translated" style="translate: 4px 0"></div>
+        <div id="plain"></div></div>`,
+    );
+    for (const id of ['transformed', 'translated', 'plain']) {
+      placeAt(
+        document.getElementById(id) as HTMLElement,
+        {before: [0, 10, 400, 40], after: [0, 90, 400, 40]},
+        phase,
+      );
+    }
+    await runChange(
+      createAnimatedLayout(() => area),
+      changed,
+      phase,
+    );
+    const moved = played
+      .filter(p => p.keyframes[0].translate != null)
+      .map(p => (p.element as HTMLElement).id);
+    expect(moved).toEqual(['plain']);
   });
 });

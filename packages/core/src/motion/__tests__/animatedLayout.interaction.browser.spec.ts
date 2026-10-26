@@ -725,6 +725,94 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     expect(result.scrolled.top).toBeCloseTo(result.before.top - 20, 0);
   });
 
+  for (const layout of [
+    {
+      name: 'a flex column with a gap',
+      style: 'display: flex; flex-direction: column; gap: 8px',
+      content: 'height: 80px',
+    },
+    {
+      name: 'collapsing margins',
+      style: '',
+      content: 'height: 80px; margin: 10px 0 20px',
+    },
+  ]) {
+    test(`an exiting element frees exactly its space in ${layout.name}: the content after it does not jump when it hides (FR3, FR4)`, async ({
+      page,
+    }) => {
+      await open(
+        page,
+        `<div id="area" class="area"><div style="${layout.style}">
+          <div class="row" style="margin: 0"></div>
+          <div id="content" style="${layout.content}; background: #fd9">Details</div>
+          <div id="after" class="row" style="margin: 0"></div>
+        </div></div>`,
+      );
+      const result = await page.evaluate(async () => {
+        const area = document.querySelector('#area');
+        const content = document.querySelector('#content') as HTMLElement;
+        const after = document.querySelector('#after') as HTMLElement;
+        const layoutHandle = window.AnimatedLayout.createAnimatedLayout(
+          () => area,
+        );
+        const report = window.AnimatedLayout.reportLayoutChange(
+          layoutHandle,
+          () => content,
+        );
+        report.measureBefore();
+        const held = window.AnimatedLayout.holdLayoutExit(
+          layoutHandle,
+          content,
+          () => {},
+        );
+        const inert = content.hasAttribute('inert');
+        report.animate();
+        await new Promise<void>(resolve => {
+          queueMicrotask(resolve);
+        });
+        for (const animation of document.getAnimations()) {
+          animation.finish();
+        }
+        const settled = after.getBoundingClientRect().top;
+        // The component hides it once its exit ends.
+        content.style.display = 'none';
+        window.AnimatedLayout.releaseLayoutExit(content);
+        const hidden = after.getBoundingClientRect().top;
+        return {held, inert, settled, hidden};
+      });
+      expect(result.held).toBe(true);
+      expect(result.inert).toBe(true);
+      expect(result.settled).toBeCloseTo(result.hidden, 0);
+    });
+  }
+
+  test('a follower the app moves with its own transform takes its final place at once', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area"><div id="grow" class="grow"></div>
+        <div id="moved" class="row" style="transform: translateX(4px)"></div>
+        <div id="spun" class="row"></div>
+        <div id="plain" class="row"></div></div>`,
+    );
+    await page.evaluate(() => {
+      document
+        .querySelector('#spun')
+        ?.animate([{rotate: '0deg'}, {rotate: '3deg'}], {
+          duration: 5000,
+          iterations: Infinity,
+        });
+    });
+    await change(page);
+    expect(await page.evaluate(() => window.motionOf('#moved'))).toEqual([]);
+    const spun = await page.evaluate(() => window.motionOf('#spun'));
+    expect(spun.filter(m => m.first?.includes('px') === true)).toEqual([]);
+    expect(await page.evaluate(() => window.motionOf('#plain'))).toHaveLength(
+      1,
+    );
+  });
+
   test("a scope's --motion-springs-settle changes nothing: the role is internal (FR4)", async ({
     page,
   }) => {
