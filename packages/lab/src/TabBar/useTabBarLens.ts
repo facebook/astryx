@@ -89,6 +89,7 @@ import {
   UIKIT_GESTURES,
 } from '@astryxdesign/core/motion/uikit';
 import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
+import {lockSelection} from '@astryxdesign/core/gestures/selectionLock';
 import {isRtlElement} from '../utils/isRtlElement';
 import {
   copyTransform,
@@ -439,6 +440,10 @@ export function useTabBarLens({
         name: 'tab-bar-selection',
         minimumPressDuration: 0,
         allowedPointerTypes: ['touch', 'pen'],
+        // The hold lifts the lens and drags it, so no selection or callout
+        // starts under the finger; a press at 0 ms brings no lock of its
+        // own (`spec:AST-094` FR41).
+        selectionLock: lockSelection,
       }),
     recognizer => {
       switch (recognizer.state) {
