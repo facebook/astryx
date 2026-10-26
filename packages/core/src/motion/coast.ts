@@ -36,9 +36,8 @@ export interface CoastOptions {
   /** Edges: a coast crossing one hands its velocity to `bounce`. */
   bounds?: Partial<Record<'x' | 'y', {min: number; max: number}>>;
   /**
-   * The edge spring; `scroll.bounce` by default, played as the table measures
-   * it. A spring that is a motion role plays its role's value under the
-   * animator's element (motion/roles.ts).
+   * The edge spring; `scroll.bounce` by default, which plays its table value
+   * (it is not a motion role: `spec:AST-094` FR4 lists no scroll spring).
    */
   bounce?: SpringDescription;
   /**
