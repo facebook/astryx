@@ -668,6 +668,31 @@ test(`a still finger catches a settle ${85} ms after it lands, selects no text, 
   expect(await track.evaluate(userSelectOf)).not.toBe('none');
 });
 
+// spec:AST-094 FR41: a hold that does nothing keeps the browser's native
+// long-press selection, so a finger held on a resting pager's text can still
+// select it.
+test('a finger held on a resting track leaves its text selectable', async ({
+  page,
+}) => {
+  const {track, driver} = await open(page, {startIndex: 1});
+  const reads: string[] = [];
+  let step = 0;
+  await driver.play(
+    drag({x: 200, y: 200}, {x: 200.6, y: 200}, {durationMs: 600, hz: 10}),
+    {
+      onEvent: async event => {
+        if (event.type === 'touchMove' && step++ === 3) {
+          reads.push(await track.evaluate(userSelectOf));
+        }
+      },
+    },
+  );
+  expect(reads).toHaveLength(1);
+  expect(reads[0]).not.toBe('none');
+  await waitForRest(track);
+  expect(await trackX(track)).toBeCloseTo(-PAGE, 0);
+});
+
 test('a settle keeps advancing every frame through an 800 ms main-thread block', async ({
   page,
   browserName,

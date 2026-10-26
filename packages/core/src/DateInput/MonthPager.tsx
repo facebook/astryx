@@ -369,11 +369,10 @@ function MonthPagerComponent({
     // UIKit's split in a sheet (useSheetAxisSplit, motion/MEASUREMENTS.md
     // M-DP01): the pan begins on the first move where either axis has
     // travelled its hysteresis, and only if the sideways travel has reached
-    // it there, however steep the drag; it claims nothing earlier, since the
-    // sheet's claim starts at the same move.
+    // it there, however steep the drag. Like every pan, it claims its touch
+    // only when it begins, the move the sheet's split decides on too.
     panOptions: {
       axisRatio: 0,
-      claimDistance: null,
       shouldBegin: recognizer =>
         Math.abs(recognizer.totalTranslation().x) >=
         UIKIT_GESTURES.pan.hysteresis.value,

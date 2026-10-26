@@ -12,6 +12,6 @@
 
 With a mouse, the calendar keeps today's native scrolling. On every pointer, PageUp and PageDown now move the keyboard focus by a month, and with Shift by a year.
 
-With Reduce Motion on (`design:reduced-motion`), the months no longer travel: under a finger the arrows' step and a swipe's settle cross-fade in 200 ms, and with a mouse the arrows change the month at once.
+With Reduce Motion on (`design:reduced-motion`), the months no longer travel under a finger: the arrows' step and a swipe's settle cross-fade in 200 ms.
 
 @vjeux

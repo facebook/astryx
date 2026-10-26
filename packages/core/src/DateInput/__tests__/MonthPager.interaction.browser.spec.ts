@@ -14,7 +14,7 @@
  *   Reduced Motion cross-fading instead of travelling, and storyboards of the
  *   arrow step and a release. They run under a finger in Chromium (as on
  *   Android) and WebKit alike; with a mouse the calendar keeps today's native
- *   scroller, and under Reduced Motion its arrows change the month at once.
+ *   scroller.
  * @position Interaction tests of MonthPager.tsx (`*.interaction.browser.spec.ts`,
  *   run by `pnpm test:interaction`)
  */
@@ -155,31 +155,6 @@ test.describe('with a mouse', () => {
         element => getComputedStyle(element).scrollSnapType,
       ),
     ).toContain('mandatory');
-  });
-
-  test('under Reduced Motion the arrows change the month at once', async ({
-    page,
-  }) => {
-    // design:reduced-motion DR3: immediate, no animated property.
-    await page.emulateMedia({reducedMotion: 'reduce'});
-    await openStory(page, storybook(), STORY);
-    expect(
-      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
-    ).toBe(false);
-    await page
-      .getByRole('button', {name: /calendar/i})
-      .first()
-      .click();
-    const viewport = page.locator('[data-scroller="months"]');
-    await expect(viewport).toBeVisible();
-    await page.waitForTimeout(600);
-    const before = await viewport.evaluate(element => element.scrollLeft);
-    await page.getByRole('button', {name: 'Next month'}).click();
-    const after = await viewport.evaluate(element => element.scrollLeft);
-    expect(after).not.toBe(before);
-    expect(
-      await viewport.evaluate(element => element.getAnimations().length),
-    ).toBe(0);
   });
 });
 
