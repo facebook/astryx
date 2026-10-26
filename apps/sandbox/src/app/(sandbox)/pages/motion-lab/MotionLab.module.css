@@ -762,7 +762,6 @@
   position: relative;
   height: 8px;
   border-radius: 9999px;
-  background: var(--color-background-muted);
   overflow: hidden;
 }
 
@@ -770,9 +769,21 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: var(--color-accent);
   transform-origin: left center;
   transition: transform var(--duration-medium) var(--ease-standard);
+}
+
+/* Core's own paint, in Core's layer, so a theme's rule for the
+   ProgressBar targets (the copy carries their classes) wins as it does on
+   the real bar. */
+@layer astryx-base {
+  .fillTrack {
+    background: var(--color-background-muted);
+  }
+
+  .fillScale {
+    background: var(--color-accent);
+  }
 }
 
 :dir(rtl) .fillScale {
