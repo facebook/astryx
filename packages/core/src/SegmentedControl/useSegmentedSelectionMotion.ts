@@ -1706,7 +1706,7 @@ export class SegmentedSelectionMotion {
    * dim has let go of it (nothing of the animator's covers it); until then
    * the segment keeps the reading from before, since the animator's opacity
    * is on screen. Once a return is over the next press reads again, so a
-   * theme change reaches it.
+   * change to its style reaches it.
    */
   private pressedOpacity(segment: HTMLElement): number {
     const kept = this.pressedOpacities.get(segment);

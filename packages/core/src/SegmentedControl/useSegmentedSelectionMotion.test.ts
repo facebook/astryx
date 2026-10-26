@@ -1222,13 +1222,13 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
     expect(opacityIn(ctx.segments.list, 471)).toBeCloseTo(0.2, 3);
   });
 
-  it('a press after the return has finished reads the pressed state again, so a theme change reaches it', async () => {
+  it('a press after the return has finished reads the pressed style again, so a change to it reaches the next press', async () => {
     const ctx = setup('grid');
     let pressedOpacity = '0.2';
     showOpacityAsABrowserDoes(() => pressedOpacity);
     press(ctx, clientCenterOf('list'));
     ctx.motion.cancel();
-    // The 470 ms return finishes; then the theme retunes the pressed state.
+    // The 470 ms return finishes; then the pressed style changes.
     await advance(520);
     expect(opacityIn(ctx.segments.list, 0)).toBe(1);
     pressedOpacity = '0.5';
