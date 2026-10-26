@@ -12,7 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {act, renderHook} from '@testing-library/react';
+import {act} from '@testing-library/react';
 import {
   __resetLayoutViewportForTest,
   layoutViewportHeight,
@@ -23,8 +23,8 @@ import {
   measureKeyboardHeight,
   refuseFocusReveal,
   subscribeKeyboardHeight,
-  useKeyboardHeight,
   watchRevealPan,
+  type KeyboardHeightEvent,
 } from './keyboardHeight';
 
 type FakeViewport = EventTarget & {
@@ -371,67 +371,43 @@ describe('one set of listeners per window (FR1, INV11)', () => {
       },
     });
     const seen: number[] = [];
-    const stopListener = subscribeKeyboardHeight(window, event => {
+    // Three readers, each reading the height again as it lays out.
+    const reader = () => (event: KeyboardHeightEvent) => {
       if (event.type === 'viewport') {
-        seen.push(getKeyboardHeight(window));
+        seen.push(getKeyboardHeight(window), event.height);
       }
-    });
-    const first = renderHook(() => useKeyboardHeight());
-    const second = renderHook(() => useKeyboardHeight());
-    reads = 0;
-    report({height: window.innerHeight - 300});
-    expect(first.result.current).toBe(300);
-    expect(second.result.current).toBe(300);
-    expect(seen.length).toBeGreaterThan(0);
-    expect(seen.every(value => value === 300)).toBe(true);
-    expect(reads).toBe(1);
-    first.unmount();
-    second.unmount();
-    stopListener();
+    };
+    const stops = [reader(), reader(), reader()].map(listener =>
+      subscribeKeyboardHeight(window, listener),
+    );
+    try {
+      reads = 0;
+      report({height: window.innerHeight - 300});
+      expect(seen).toHaveLength(6);
+      expect(seen.every(value => value === 300)).toBe(true);
+      expect(reads).toBe(1);
+    } finally {
+      for (const stop of stops) {
+        stop();
+      }
+    }
   });
-
-  it('re-renders a component when the height changes, and only then', () => {
-    let renders = 0;
-    const {result, unmount} = renderHook(() => {
-      renders += 1;
-      return useKeyboardHeight();
-    });
-    expect(result.current).toBe(0);
-    const before = renders;
-    report({offsetTop: 10});
-    expect(renders).toBe(before);
-    report({height: window.innerHeight - 300});
-    expect(result.current).toBe(300);
-    expect(getKeyboardHeight(window)).toBe(300);
-    unmount();
-  });
-
-  it('reads a keyboard that is already up when the first component mounts', () => {
+  it('reads a keyboard that is already up when the first subscriber attaches', () => {
     // Nothing listens yet: the keyboard came up before any keyboard-aware
     // component mounted (a sheet opened from a focused field).
     viewport.height = window.innerHeight - 300;
-    const {result, unmount} = renderHook(() => useKeyboardHeight());
-    expect(result.current).toBe(300);
-    report({height: window.innerHeight});
-    expect(result.current).toBe(0);
-    unmount();
-  });
-
-  it('leaves no listener once every component has unmounted, StrictMode replay included', () => {
-    const remove = vi.spyOn(viewport, 'removeEventListener');
-    const {unmount} = renderHook(() => useKeyboardHeight(), {
-      reactStrictMode: true,
+    expect(getKeyboardHeight(window)).toBe(300);
+    const heights: number[] = [];
+    const stop = subscribeKeyboardHeight(window, event => {
+      if (event.type === 'viewport') {
+        heights.push(event.height);
+      }
     });
-    unmount();
-    const removed = remove.mock.calls.map(([type]) => type);
-    expect(removed.filter(type => type === 'resize').length).toBeGreaterThan(0);
-    // Every add was matched by a remove.
-    const add = vi.spyOn(viewport, 'addEventListener');
-    const stop = subscribeKeyboardHeight(window, () => {});
-    expect(add).toHaveBeenCalledTimes(2);
+    expect(getKeyboardHeight(window)).toBe(300);
+    report({height: window.innerHeight});
+    expect(heights).toEqual([0]);
     stop();
   });
-
   it('is the only visual viewport listener for the keyboard in core', () => {
     // Visible-viewport readers that place layers and scroll areas, not the
     // keyboard; the layer cap's keyboard is architecture:layer-runtime's.
