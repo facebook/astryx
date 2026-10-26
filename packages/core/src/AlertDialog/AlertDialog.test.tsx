@@ -326,6 +326,26 @@ describe('AlertDialog', () => {
       vi.restoreAllMocks();
     });
 
+    it('with presentation="dialog" under a finger on a compact screen keeps today\'s stack: the action above Cancel, even when both labels fit', () => {
+      stubAlertDialogMedia({
+        smallScreen: true,
+        coarsePointer: true,
+        noHover: true,
+      });
+      stubFittingLabels();
+      render(<AlertDialog {...defaultProps} presentation="dialog" />);
+
+      const dialog = screen.getByRole('alertdialog');
+      const buttons = within(dialog).getAllByRole('button');
+      expect(buttons.map(button => button.textContent)).toEqual([
+        'Delete',
+        'Cancel',
+      ]);
+      const footerStack = buttons[0].parentElement as HTMLElement;
+      expect(getComputedStyle(footerStack).flexDirection).toBe('column');
+      vi.restoreAllMocks();
+    });
+
     it('under a finger on a compact screen stacks two long actions, the action above Cancel', () => {
       stubAlertDialogMedia({
         smallScreen: true,
