@@ -79,6 +79,12 @@ export interface UseTabBarMinimizeOptions {
   readonly isSearching: boolean;
   /** `minimizeBehavior="onScrollDown"` under a finger. */
   readonly isEnabled: boolean;
+  /**
+   * Until when (ms, the document timeline) the search tab's glass keeps its
+   * minimized size as the bar expands: the search field's Cancel wobbles at
+   * that size first, as UIKit's does.
+   */
+  readonly searchGlassHoldRef?: RefObject<number>;
 }
 
 export interface TabBarMinimize {
@@ -269,6 +275,7 @@ export function useTabBarMinimize({
   hasSearch,
   isSearching,
   isEnabled,
+  searchGlassHoldRef,
 }: UseTabBarMinimizeOptions): TabBarMinimize {
   // The table's springs become motion roles (a theme may retune them)
   // before this hook's first animation.
@@ -331,10 +338,13 @@ export function useTabBarMinimize({
       options,
     );
     // The search tab's glass shrinks to the minimized size, its glyph kept.
+    // Expanding as the search field's Cancel releases, it keeps that size
+    // until Cancel's wobble rests.
+    const glassHold = searchGlassHoldRef?.current ?? 0;
     searchGlass.animator.animate(
       {scale: isCollapsed ? tabBar.minimizedSize / tabBar.barHeight : 1},
       size,
-      options,
+      !isCollapsed && glassHold > now ? {at: glassHold} : options,
     );
     // The accessory's box changed in CSS this frame: it starts where it was
     // on screen (its offset and width carried over) and springs to rest. It

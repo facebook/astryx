@@ -60,6 +60,8 @@ export const MOTION_ROLE_KINDS: Readonly<Record<string, MotionRoleKind>> = {
   'tabBar.lensTravel': 'spring',
   'tabBar.lift': 'spring',
   'tabBar.minimizeFade': 'spring',
+  'tabBar.searchCancelPress': 'spring',
+  'tabBar.searchCancelReturn': 'spring',
   'tabBar.searchMorph': 'spring',
   'timing.curves.entrance': 'curve',
   'timing.curves.exit': 'curve',

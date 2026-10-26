@@ -1020,6 +1020,9 @@ export function TabBar({
       search.fieldRef?.current?.focus();
     }
   };
+  // Until when the search tab's glass keeps its minimized size as the bar
+  // expands: the search field's Cancel wobbles at that size first.
+  const searchGlassHoldRef = useRef(0);
   const minimize = useTabBarMinimize({
     capsuleRef,
     hasSearch,
@@ -1027,6 +1030,7 @@ export function TabBar({
     // selects in place.
     isSearching: isSearchSelected && isTouch,
     isEnabled: minimizeBehavior === 'onScrollDown' && isTouch,
+    searchGlassHoldRef,
   });
   const searchHostRef = useRef<HTMLDivElement | null>(null);
   const searchMotion = useTabBarSearch({
@@ -1035,10 +1039,12 @@ export function TabBar({
     isSearching: isSearchSelected && isTouch,
     isActive: isSearchActive,
     isTouch,
+    glassHoldRef: searchGlassHoldRef,
   });
   const isSearchCancel = isSearchActive && isTouch;
   const circleRef = useRef<HTMLButtonElement | null>(null);
   const cancelRef = useRef<HTMLButtonElement | null>(null);
+  const mergedCancelRef = useMergedRefs(cancelRef, searchMotion.cancel);
   const lens = useTabBarLens({
     capsuleRef,
     count,
@@ -1619,7 +1625,7 @@ export function TabBar({
           // search circle, outside the tab list (whose tabs stay inert):
           // concentric with it, as UIKit's is, its glyph drawn by the circle.
           <button
-            ref={cancelRef}
+            ref={mergedCancelRef}
             type="button"
             aria-label={t('@astryx.tabBar.cancelSearch')}
             data-tab-bar-search-cancel=""

@@ -458,6 +458,18 @@ const calmTheme = defineTheme({
               '0.25s 0',
             ],
             [
+              'tabBar.searchCancelPress',
+              '--motion-tab-bar-search-cancel-press',
+              'spring',
+              '0.145s 0.254',
+            ],
+            [
+              'tabBar.searchCancelReturn',
+              '--motion-tab-bar-search-cancel-return',
+              'spring',
+              '0.399s 0.626',
+            ],
+            [
               'tabBar.searchMorph',
               '--motion-tab-bar-search-morph',
               'spring',

@@ -3129,3 +3129,77 @@ test.describe('search tab, active above the keyboard', () => {
     });
   });
 });
+
+/**
+ * The painted circle's width under the Cancel button over a held press and
+ * its release, as a fraction of its width at rest (the minimized size).
+ */
+async function pressCancel(page: Page, driver: TouchDriver, windowMs = 1400) {
+  const cancel = page.getByRole('button', {name: 'Cancel'});
+  await expect(cancel).toHaveAttribute('data-tab-bar-search-cancel', '');
+  const glass = page.locator('[data-tab-bar-search] > span').first();
+  await waitForRest(page.locator('[data-tab-bar-search]'));
+  await waitForRest(glass);
+  const box = await cancel.boundingBox();
+  const rest = await glass.boundingBox();
+  if (box == null || rest == null) {
+    throw new Error('no cancel button');
+  }
+  const sampling = sampleRects(glass, windowMs);
+  await driver.play(
+    tapScript(
+      {x: box.x + box.width / 2, y: box.y + box.height / 2},
+      {holdMs: 400},
+    ),
+  );
+  return (await sampling).flatMap(sample =>
+    sample.box == null ? [] : [sample.box.width / rest.width],
+  );
+}
+
+test.describe('search tab, the cancel button', () => {
+  test("pressed, it grows to UIKit's pressed size (48 → 63.65) and, released, shrinks back past its size before settling, UIKit's wobble", async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName === 'webkit',
+      "Playwright's WebKit reads a held finger as a long press, which fires no click",
+    );
+    const {driver} = await openBar(page, 'search-tab');
+    await tapSearch(page, driver);
+    const widths = await pressCancel(page, driver, 2600);
+    const peak = widths.indexOf(Math.max(...widths));
+    expect(widths[peak]).toBeCloseTo(63.65 / 48, 1);
+    // The wobble plays on the painted circle at the minimized size, as
+    // UIKit's does (63.65 → 43.6 → 49.2 → 48), before the bar grows it back.
+    const released = widths.slice(peak);
+    const dip = released.indexOf(Math.min(...released));
+    expect(released[dip]).toBeLessThan(0.95);
+    expect(released[dip]).toBeGreaterThan(43.6 / 48 - 0.04);
+    expect(released.slice(dip).some(width => Math.abs(width - 1) < 0.02)).toBe(
+      true,
+    );
+    // Then the bar expands, the search circle with it (62 px).
+    expect(widths.at(-1)).toBeCloseTo(62 / 48, 1);
+    // The lift ran the cancel: back on the tab search was chosen from.
+    await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test.describe('with Reduce Motion (design:reduced-motion)', () => {
+    test('a press scales nothing', async ({page, browserName}) => {
+      test.skip(
+        browserName === 'webkit',
+        "Playwright's WebKit reads a held finger as a long press, which fires no click",
+      );
+      await page.emulateMedia({reducedMotion: 'reduce'});
+      const {driver} = await openBar(page, 'search-tab');
+      await tapSearch(page, driver);
+      // Over the held press (the release then runs Cancel, and the bar
+      // expands).
+      const widths = await pressCancel(page, driver, 380);
+      expect(Math.max(...widths)).toBeCloseTo(1, 2);
+      expect(Math.min(...widths)).toBeCloseTo(1, 2);
+    });
+  });
+});

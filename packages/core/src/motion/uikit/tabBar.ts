@@ -380,6 +380,29 @@ export const tabBar = {
    */
   searchCancelDelay: 0.12,
   /**
+   * Pressed, the cancel button grows from the minimized size to this,
+   * about its centre (48 → 63.65), on `searchCancelPress`.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, the cancel button's per-frame size from the touch
+   *   (48 → 49.5 → 52.2 → 58.2 → … → 63.65), Oct 24 2026
+   */
+  searchCancelPressedSize: 63.65,
+  /**
+   * The cancel button's press, to `searchCancelPressedSize`.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, a fit of the cancel button's per-frame size from the
+   *   touch (rms 0.6 pt), Oct 24 2026
+   */
+  searchCancelPress: {response: 0.145, dampingRatio: 0.746},
+  /**
+   * Released, the cancel button shrinks back to the minimized size with a
+   * wobble (63.65 → 43.6 → 49.2 → 48).
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, the cancel button's per-frame size from the release
+   *   (rms 0.03 pt), Oct 24 2026
+   */
+  searchCancelReturn: {response: 0.399, dampingRatio: 0.374},
+  /**
    * The bottom accessory (`UITabBarController.bottomAccessory`, Music's mini
    * player): a capsule this tall, as wide as the bar and this far above it;
    * minimized, it sits inline between the circle and the bar's trailing end,
