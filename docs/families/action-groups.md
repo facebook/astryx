@@ -23,7 +23,6 @@ members:
     component:Selector,
     component:MultiSelector,
     component:DateInput,
-    component:SegmentedControl,
     component:AlertDialog,
     component:Dialog,
     component:ButtonGroup,
@@ -55,7 +54,8 @@ deciding_specs: [spec:AST-094/DEC-17]
 
 A person can press one action in a group of sibling actions, slide across the
 others while the highlight follows, and act on the one they lift on, the same
-way in every group. One internal module, `actionGroupTracker`, gives every
+way in every group, with SegmentedControl's richer model as the one named
+exception. One internal module, `actionGroupTracker`, gives every
 member the same behavior, so no member builds its own.
 
 ## Membership rule
@@ -67,7 +67,6 @@ today:
 - menus: DropdownMenu, ContextMenu, and their sub-menus;
 - option lists: Selector's and MultiSelector's options, and the date wheels of
   DateInput and DateTimeInput;
-- SegmentedControl;
 - AlertDialog's actions, and Dialog's actions and footer area, not arbitrary
   dialog content;
 - ButtonGroup and ToggleButtonGroup;
@@ -77,6 +76,10 @@ today:
 
 A component built later that matches the rule joins by the rule, including an
 action sheet, a tab bar or navigation bar, a filter-chip group, and a rating.
+
+SegmentedControl is a named exception: its thumb follows the finger and moves
+the selection, a richer model that `component:SegmentedControl` governs. It may
+use `actionGroupTracker` internally, but this family's rule does not bind it.
 
 These are not members:
 
@@ -130,20 +133,18 @@ it. It is internal and unexported (`spec:AST-017` FR21).
 
 ## Representative matrix
 
-| Member and state                       | Shared invariant                                    | Deliberate variation                            |
-| -------------------------------------- | --------------------------------------------------- | ----------------------------------------------- |
-| DropdownMenu / slide from row to row   | the lifted row acts; one row lit at a time          | opening and handoff stay the menu's (FR29)      |
-| SegmentedControl / slide across        | the lifted segment is selected                      | the selected surface's look stays the control's |
-| AlertDialog / slide from Cancel        | the lifted action runs; a lift outside does nothing | the actions' order and stacking stay local      |
-| ToggleButtonGroup / slide across three | only the lifted toggle changes                      | single or multiple selection stays the group's  |
-| Toolbar with a field / slide across    | buttons track; the field is skipped                 | which controls a toolbar holds stays local      |
+| Member and state                       | Shared invariant                                    | Deliberate variation                           |
+| -------------------------------------- | --------------------------------------------------- | ---------------------------------------------- |
+| DropdownMenu / slide from row to row   | the lifted row acts; one row lit at a time          | opening and handoff stay the menu's (FR29)     |
+| AlertDialog / slide from Cancel        | the lifted action runs; a lift outside does nothing | the actions' order and stacking stay local     |
+| ToggleButtonGroup / slide across three | only the lifted toggle changes                      | single or multiple selection stays the group's |
+| Toolbar with a field / slide across    | buttons track; the field is skipped                 | which controls a toolbar holds stays local     |
 
 ## Adoption and exceptions
 
 | Components or surface                         | Required adoption                                                              |
 | --------------------------------------------- | ------------------------------------------------------------------------------ |
 | Menus, Selector, MultiSelector, date wheels   | Track through `actionGroupTracker`; `useMenuPress` converges onto it.          |
-| SegmentedControl                              | Track through `actionGroupTracker`.                                            |
 | AlertDialog, Dialog's actions and footer area | Track the actions only; dialog content outside the action area is not a group. |
 | ButtonGroup, ToggleButtonGroup, Toolbar       | Track sibling buttons; a field inside is skipped; toggles follow FR4.          |
 | Banner, Toast, and Card action rows           | Track only a row with two or more sibling actions.                             |
@@ -154,11 +155,11 @@ they are outside the family.
 
 ## Verification map
 
-| Contract | Verification                                                                  | Representative members and states                                                               |
-| -------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| FR1–FR3  | `actionGroupTracker` tests and each member's pointer-stream tests             | a slide across a menu, a SegmentedControl, AlertDialog's actions, a ButtonGroup; a lift outside |
-| FR4      | ToggleButtonGroup pointer-stream tests                                        | a slide across three toggles; only the lifted one toggles                                       |
-| FR5      | Member tests with a mouse, a pen, a finger, the keyboard, and a screen reader | a 44 px target under a coarse pointer only; unchanged keyboard and screen-reader paths          |
+| Contract | Verification                                                                  | Representative members and states                                                      |
+| -------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| FR1–FR3  | `actionGroupTracker` tests and each member's pointer-stream tests             | a slide across a menu, AlertDialog's actions, a ButtonGroup; a lift outside            |
+| FR4      | ToggleButtonGroup pointer-stream tests                                        | a slide across three toggles; only the lifted one toggles                              |
+| FR5      | Member tests with a mouse, a pen, a finger, the keyboard, and a screen reader | a 44 px target under a coarse pointer only; unchanged keyboard and screen-reader paths |
 
 ## Decision links
 
