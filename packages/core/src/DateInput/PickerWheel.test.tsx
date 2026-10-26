@@ -394,6 +394,32 @@ describe('PickerWheel — a finger', () => {
     expect(onChange).toHaveBeenCalledWith(11);
   });
 
+  it('a finger’s tap turns once: its lift is cancelled, so the browser sends no click', () => {
+    // spec:AST-094 FR19: the tap recognizer owns a finger's tap, and the
+    // row's click handler is left to keys, assistive technology and a mouse.
+    const {column, onChange} = renderWheel();
+    const below = CENTRE + ROW;
+    touch('touchstart', column, below);
+    advance(60);
+    const lift = new Event('touchend', {bubbles: true, cancelable: true});
+    const entry = {
+      identifier: finger,
+      clientX: 60,
+      clientY: below,
+      target: column,
+    };
+    Object.defineProperty(lift, 'changedTouches', {value: [entry]});
+    Object.defineProperty(lift, 'touches', {value: []});
+    Object.defineProperty(lift, 'timeStamp', {value: performance.now()});
+    act(() => {
+      column.dispatchEvent(lift);
+    });
+    expect(lift.defaultPrevented).toBe(true);
+    advance(310);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith(11);
+  });
+
   it('does nothing for a tap on the band’s row', () => {
     const {column, onChange} = renderWheel();
     touch('touchstart', column, CENTRE);
