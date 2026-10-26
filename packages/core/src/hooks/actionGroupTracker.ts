@@ -172,7 +172,9 @@ interface TrackedAction {
 /**
  * The browser's own click for a touch the lift already acted on: swallowed
  * once, by listeners that exist only from that lift until the click, or the
- * next press or key (whichever comes first).
+ * next press or key (whichever comes first). An activation with
+ * `detail === 0` (a key, assistive technology) is not that click: it always
+ * passes, and the swallower keeps waiting (`spec:AST-094` FR21).
  */
 function swallowNextClick(view: Window): void {
   const disarm = () => {
@@ -181,7 +183,7 @@ function swallowNextClick(view: Window): void {
     view.removeEventListener('keydown', disarm, true);
   };
   const onClick = (event: MouseEvent) => {
-    if (!event.isTrusted) {
+    if (!event.isTrusted || event.detail === 0) {
       return;
     }
     disarm();
