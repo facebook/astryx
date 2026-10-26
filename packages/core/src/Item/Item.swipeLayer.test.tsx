@@ -4,13 +4,13 @@
  * @file Item.swipeLayer.test.tsx
  * @input Item with and without swipe actions; the swipe layer module, spied
  * @output Verifies a row without swipe actions never renders the swipe layer,
- *   and a row with them renders it into the root once it has loaded
- * @position Companion to Item.test.tsx for the lazily loaded swipe layer
+ *   and a row with them renders it into the root at its first render
+ * @position Companion to Item.test.tsx for the swipe layer
  */
 
 import {createElement, type ReactNode} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {act, render, screen, waitFor} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import {Item} from './Item';
 import type {ItemSwipeLayerProps} from './ItemSwipeLayer';
 import {emulateTouch} from './__tests__/emulateTouch';
@@ -48,21 +48,19 @@ describe('Item and the swipe layer', () => {
         <Item as="li" label="Archive" />
       </ul>,
     );
-    // Let anything the first render scheduled — a lazy chunk resolving, an
-    // effect — run before looking.
+    // Let anything the first render scheduled run before looking.
     await act(async () => {});
     expect(layerRenders).not.toHaveBeenCalled();
     expect(document.querySelector('[data-swipe-panel]')).toBeNull();
     expect(screen.getByTestId('row').childElementCount).toBe(1);
   });
 
-  it('renders the swipe layer under a fine primary pointer too: a finger swipes on every device', async () => {
+  it('renders the swipe layer under a fine primary pointer too: a finger swipes on every device', () => {
     // A touchscreen laptop: a fine primary pointer, and a finger beside it.
     // The gesture reads each touch's pointer (`spec:AST-057`), so the layer
     // is there; a mouse never starts it (Item.test.tsx).
     // A fine primary pointer in this context, before anything is checked.
     expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
-    await import('./ItemSwipeLayer');
     layerRenders.mockClear();
     render(
       <Item
@@ -72,17 +70,11 @@ describe('Item and the swipe layer', () => {
       />,
     );
     const row = screen.getByTestId('row');
-    await waitFor(() => {
-      expect(row.querySelector('[data-swipe-panel="trailing"]')).not.toBeNull();
-    });
+    expect(row.querySelector('[data-swipe-panel="trailing"]')).not.toBeNull();
     expect(layerRenders).toHaveBeenCalled();
   });
 
-  it("renders the swipe layer into the root of a row with swipe actions on a phone's pointer", async () => {
-    // The layer's module first: a cold import compiles the gesture and motion
-    // modules it brings, which can outlast waitFor's one second on a busy
-    // machine, while the import itself is awaited for as long as it takes.
-    await import('./ItemSwipeLayer');
+  it("renders the swipe layer into the root of a row with swipe actions on a phone's pointer", () => {
     emulateTouch();
     render(
       <Item
@@ -92,11 +84,9 @@ describe('Item and the swipe layer', () => {
       />,
     );
     const row = screen.getByTestId('row');
-    const panel = await waitFor(() => {
-      const found = row.querySelector('[data-swipe-panel="trailing"]');
-      expect(found).not.toBeNull();
-      return found;
-    });
+    // At the first render: nothing to wait for.
+    const panel = row.querySelector('[data-swipe-panel="trailing"]');
+    expect(panel).not.toBeNull();
     expect(layerRenders).toHaveBeenCalled();
     // The layer adds nothing but the panel: the root is still the content
     // followed by the out-of-flow panel, with no wrapper for either.
