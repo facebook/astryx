@@ -11,10 +11,13 @@
 
 import {describe, expect, it} from 'vitest';
 import {PRESS_SLOP_PX} from '../../utils/pressGesture';
+import {press} from './timing';
 import {
   HAPTIC_FEEDBACK_KINDS,
   HAPTIC_VIBRATION_PATTERNS,
   UIKIT_GESTURES,
+  UIKIT_PRESS,
+  UIKIT_ROTATION,
   type GestureConstant,
 } from './gestures';
 
@@ -61,6 +64,13 @@ describe('UIKIT_GESTURES', () => {
     // fling until its own scrollend, with no time window, so the momentum
     // memory is the gesture host's alone.
     expect(UIKIT_GESTURES.press.slop.value).toBe(PRESS_SLOP_PX);
+    // Written as numbers in the table so each group bundles alone.
+    expect(UIKIT_PRESS.quickTapFlash.value).toBe(press.flashMs);
+    expect(UIKIT_PRESS.scrollBrake.value).toBe(press.scrollBrakeMs);
+    expect(UIKIT_ROTATION.hysteresis.value).toBeCloseTo(
+      (5 * Math.PI) / 180,
+      15,
+    );
   });
 
   it('keeps the pan decision within the distance WebKit claims a scroll at', () => {
