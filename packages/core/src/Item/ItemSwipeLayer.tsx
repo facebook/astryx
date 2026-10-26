@@ -8,10 +8,11 @@
  *   theme tokens
  * @output Exports ItemSwipeLayer (default) — the panels of a row's swipe
  *   actions and the gesture that uncovers them — and the ItemSwipeBridge type
- *   through which the root reaches the gesture's key handler
- * @position Internal to Item, reached only through a dynamic import from
- *   Item.tsx when `swipeActions` is set, so a row without them never loads
- *   the gesture. Tested through Item.test.tsx and Item.source-build.test.mjs.
+ *   through which the root reaches the gesture's key handler, and a control in
+ *   the row its reveal and close
+ * @position Internal to Item, imported by Item.tsx with the row (no lazy
+ *   chunk: a row's first swipe never waits for one). Tested through
+ *   Item.test.tsx and Item.source-build.test.mjs.
  *
  * The row's root stays Item's: it carries the swipe root styles and forwards
  * its key events into the bridge this layer fills; the gesture attaches to
@@ -285,16 +286,22 @@ export default function ItemSwipeLayer({
       trailing: trailing.length > 0,
     },
   });
-  // The root forwards its key events, and a control in the row its reveal,
-  // into what this publishes. The first Effect keeps the gesture's latest
-  // handlers for the bridge to call; the second installs the bridge on Item,
-  // which lives outside this layer, once when the layer mounts,
-  // and releases it when the layer leaves. React flushes effects before it
-  // delivers a discrete event, so a call never meets a stale handler.
+  // The bridge: Item's root forwards its key events, and a control in the row
+  // its reveal and close, into the gesture from their own event handlers,
+  // which run outside this layer's render. Two Effects synchronize it.
+  // This one synchronizes the bridge's target with the committed gesture,
+  // whose handlers change with every render: the bridge's callers run after
+  // a commit, never during one. It acquires nothing, so a replay only writes
+  // the same value again.
   const swipeRef = useRef(swipe);
   useEffect(() => {
     swipeRef.current = swipe;
   });
+  // This one synchronizes Item's bridge ref, which lives outside this layer,
+  // with the layer's lifetime: it installs the bridge when the layer mounts,
+  // and its cleanup releases it when the layer leaves (StrictMode's replay
+  // installs, releases and installs again). React flushes effects before it
+  // delivers a discrete event, so a call never meets a stale handler.
   useEffect(() => {
     onBridge({
       close: () => swipeRef.current.close(),

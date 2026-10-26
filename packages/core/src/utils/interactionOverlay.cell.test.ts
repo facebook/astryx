@@ -100,7 +100,7 @@ describe('press layer clock', () => {
     expect(cellPressConsts.cellReleaseMs).toBe(PRESS_FADE_MS);
   });
 
-  it('is the press model’s release', () => {
+  it("plays the table's release clock and curve", () => {
     expect(list.highlight.releaseMs).toBe(timing.press.highlightOutMs);
     expect(list.highlight.releaseCurve).toBe(timing.press.highlightOutCurve);
   });
@@ -157,16 +157,10 @@ describe.each([
     const row = mount();
     const fading = layerRules(row, FADING);
     expect(values(fading, 'animation-name')).toHaveLength(1);
-    // One literal clock and curve: touch motion values are internal
-    // constants, never a `--motion-*` variable.
-    expect(values(fading, 'animation-duration').map(durationToMs)).toEqual([
-      list.highlight.releaseMs,
-    ]);
-    expect(
-      values(fading, 'animation-timing-function').every(curve =>
-        curve.startsWith('cubic-bezier('),
-      ),
-    ).toBe(true);
+    // The clock, and its reduced-motion cap (DR2), both the table's value.
+    expect([
+      ...new Set(values(fading, 'animation-duration').map(durationToMs)),
+    ]).toEqual([list.highlight.releaseMs]);
     // StyleX writes the curve minified (`cubic-bezier(0,0,.2,1)`): compare
     // the control points.
     const points = (css: string) =>
