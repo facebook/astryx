@@ -173,6 +173,36 @@ class LockingConsumer extends RecordingConsumer {
 }
 
 describe('GestureHost', () => {
+  it('sets touch-action only while the primary pointer is coarse and a recognizer is enabled (spec:AST-094 FR19)', () => {
+    // jsdom drops touch-action from the style, so the writes are observed.
+    const {box} = mount('<div id="box"></div>');
+    const set = vi.spyOn(box.style, 'setProperty');
+    const remove = vi.spyOn(box.style, 'removeProperty');
+    const writes = () =>
+      set.mock.calls.filter(call => call[0] === 'touch-action').length;
+    let coarse = false;
+    const host2 = new GestureHost(document, {
+      clock,
+      isPrimaryPointerCoarse: () => coarse,
+    });
+    const pan = new PanGestureRecognizer({direction: 'horizontal'});
+    const detach = host2.attach(box, pan);
+    expect(writes()).toBe(0);
+    coarse = true;
+    host2.update(box);
+    expect(set).toHaveBeenLastCalledWith('touch-action', 'pan-y pinch-zoom');
+    pan.setEnabled(false);
+    expect(remove).toHaveBeenCalledWith('touch-action');
+    pan.setEnabled(true);
+    expect(writes()).toBe(2);
+    coarse = false;
+    host2.update(box);
+    expect(remove.mock.calls.filter(c => c[0] === 'touch-action').length).toBe(
+      2,
+    );
+    detach();
+  });
+
   it('registers no document listener for a disabled consumer until it is enabled (spec:AST-094 FR24)', () => {
     const {box} = mount('<div id="box"></div>');
     const added = vi.spyOn(document, 'addEventListener');
@@ -1559,6 +1589,34 @@ describe('GestureHost', () => {
     expect(set).not.toHaveBeenCalledWith('-webkit-touch-callout', 'none');
     expect(photo.style.getPropertyValue('user-select')).toBe('text');
     touch('touchend', photo, [finger], [], 1200);
+  });
+
+  it('keeps only the finger a kept-press control tracks: a second finger on the held control still scrolls (spec:AST-094 FR19)', () => {
+    detachers.push(coarsePrimaryPointer());
+    const {stepper} = mount('<div id="stepper">+</div>');
+    detachers.push(
+      host.attachConsumer(
+        stepper,
+        new PressTracker({getBounds: () => null, keepsTouch: true}),
+      ),
+    );
+    const held = {id: 1, x: 5, y: 5};
+    const heldMoved = {id: 1, x: 5, y: 40};
+    const second = {id: 2, x: 8, y: 8};
+    const secondMoved = {id: 2, x: 8, y: 60};
+    touch('touchstart', stepper, [held], [held], 0);
+    // The held finger's press is delivered: its moves are kept.
+    expect(
+      touch('touchmove', stepper, [heldMoved], [heldMoved], 16)
+        .defaultPrevented,
+    ).toBe(true);
+    // A second finger the tracker is not tracking keeps its own moves.
+    touch('touchstart', stepper, [second], [heldMoved, second], 32);
+    expect(
+      touch('touchmove', stepper, [secondMoved], [heldMoved, secondMoved], 48)
+        .defaultPrevented,
+    ).toBe(false);
+    touch('touchend', stepper, [heldMoved, secondMoved], [], 64);
   });
 
   it('writes touch-action: manipulation for a kept-press control where the primary pointer is coarse, so rapid taps never zoom, and nothing where it is fine (spec:AST-094 FR18, FR19)', () => {
