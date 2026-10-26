@@ -23,23 +23,28 @@
  * SYNC: When modified, update useGestureRecognizer.test.tsx and README.md.
  */
 
-import {useEffect, useMemo, useRef, useState, type RefObject} from 'react';
+import {useEffect, useRef, useState, type RefObject} from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {getGestureHost} from './GestureHost';
 import type {GestureRecognizer} from './GestureRecognizer';
-import {useAttachedElement, useIsUnmountedRef} from './useAttachedElement';
+import {useAttachment, useIsUnmountedRef} from './useAttachment';
 
-/** @experimental */
 export interface UseGestureRecognizerOptions {
   /**
-   * Live toggle. Turning it off mid-gesture ends the gesture without calling
-   * the listener: the handler that turned it off owns that end. A handler
-   * that wants UIKit's `.cancelled` calls `recognizer.setEnabled(false)`
-   * itself, which reports it at once. @default true
+   * Live toggle; turning it off mid-gesture cancels the gesture. That cancel
+   * does not call `onGesture`: it comes from the render that turned the
+   * recognizer off, and the code that turned it off already knows.
+   * @default true
    */
   isEnabled?: boolean;
   /** Let the host set touch-action (and long-press callout) styles. @default true */
   manageStyle?: boolean;
+  /**
+   * The recognizer reads each event's pointer itself (`spec:AST-057`'s row
+   * swipe), so it attaches even where the primary pointer is fine; see the
+   * host's AttachOptions. @default false
+   */
+  perEventPointer?: boolean;
 }
 
 /**
@@ -55,7 +60,6 @@ export interface UseGestureRecognizerOptions {
  *   },
  * );
  * ```
- * @experimental
  */
 export function useGestureRecognizer<R extends GestureRecognizer>(
   ref: RefObject<Element | null>,
@@ -65,16 +69,20 @@ export function useGestureRecognizer<R extends GestureRecognizer>(
 ): R {
   const [recognizer] = useState(create);
   const onGestureRef = useRef(onGesture);
+  // True while an Effect drives the recognizer, so a transition it causes
+  // reaches no caller callback (react-component-runtime INV2, INV3).
+  const isSyncingRef = useRef(false);
   useIsomorphicLayoutEffect(() => {
     onGestureRef.current = onGesture;
   });
-  const {isEnabled = true, manageStyle = true} = options;
+  const {
+    isEnabled = true,
+    manageStyle = true,
+    perEventPointer = false,
+  } = options;
   const isUnmountedRef = useIsUnmountedRef();
-  // True while the isEnabled sync below runs: the listener stays quiet.
-  const isSyncingRef = useRef(false);
 
-  // Synchronizes the consumer's listener with the recognizer (an external
-  // object): it runs inside input events, never during a render or an
+  // The listener runs inside input events, never during a render or an
   // Effect, and goes quiet once the component unmounts.
   useEffect(
     () =>
@@ -86,24 +94,16 @@ export function useGestureRecognizer<R extends GestureRecognizer>(
     [recognizer, isUnmountedRef],
   );
 
-  // Synchronizes the document's gesture host with the element behind `ref`,
-  // whichever element that is at this commit: a node rendered later, or
-  // swapped behind the same ref, is attached then.
-  useAttachedElement(
+  useAttachment(
     ref,
     element =>
       getGestureHost(element.ownerDocument).attach(element, recognizer, {
         manageStyle,
+        perEventPointer,
       }),
-    [recognizer, manageStyle],
+    `${manageStyle}:${perEventPointer}`,
   );
 
-  // Synchronizes the recognizer's `isEnabled` (UIKit's setter) with the
-  // prop. Turning it off mid-gesture ends the gesture, but this Effect calls
-  // no consumer callback (architecture:react-component-runtime INV2): the
-  // handler that turned it off owns the end, or calls
-  // `recognizer.setEnabled(false)` itself to hear `cancelled` from that
-  // handler, and then this has nothing left to do.
   useIsomorphicLayoutEffect(() => {
     isSyncingRef.current = true;
     try {

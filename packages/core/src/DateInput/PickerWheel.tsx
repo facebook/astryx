@@ -7,15 +7,15 @@
  * @input Wheel's props (wheelOptions.ts): option list, selected value,
  *   change callback; optionally looping, a rest rule, and a ref for
  *   programmatic turns
- * @output Exports PickerWheel — one UIPickerView column
- * @position Internal component; the Wheel under a finger (Wheel.tsx picks
- *   it and loads it lazily), drawn standalone or inside a WheelGroup
+ * @output Exports PickerWheel — one picker column that moves like UIPickerView
+ * @position Internal component; the Wheel under a finger (Wheel.tsx picks it)
  *
- * This is UIPickerView's column, its look and motion, drawn under a finger
- * on every touch device (one touch model, iOS and Android alike); Wheel.tsx
- * draws today's scrolling column under a mouse or other fine pointer. It is
- * rebuilt on the gesture system and the UIKit constants table rather than on
- * a native scroller, because a native scroll-snap container cannot move like a picker: WebKit gives every
+ * This column moves like UIPickerView's and keeps today's look, under a
+ * finger on every touch device (one touch model, iOS and Android alike);
+ * Wheel.tsx draws today's scrolling column under a mouse or other fine
+ * pointer. It is rebuilt on the gesture system and the UIKit constants table
+ * rather than on a native scroller, because a native scroll-snap container
+ * cannot move like a picker: WebKit gives every
  * scroll-snapping scroller the fast deceleration rate (0.99 a millisecond),
  * a UIPickerView decelerates at the normal rate (0.998) onto a row it picks
  * from its own projection, and a scroller's momentum cannot be caught,
@@ -30,7 +30,7 @@
  *   busy main thread neither stops nor jumps it. A finger landing on a moving
  *   wheel stops it where it is on screen.
  * - A tap on a row turns the wheel onto it on the tap spin (0.3 s, the
- *   theme's `picker.tapSpin.durationMs` on `timing.curves.easeInOut`). A
+ *   theme's `picker.tapSpin.durationMs` on `timing.curves.move`). A
  *   tap on the band's row does nothing. An end bounces on the theme's
  *   `scroll.bounce`. Each role is resolved when its motion starts.
  * - The value commits when the wheel comes to rest, as UIPickerView's
@@ -39,16 +39,21 @@
  *   names, which then commits.
  * - Each row reaching the band ticks a selection haptic where the browser
  *   can vibrate (not iOS Safari, which cannot play haptics from script).
- * - Under reduced motion (design:reduced-motion) every transition the wheel
- *   starts (a release's coast, snap or bounce, the turn on from a disabled
- *   row, a tap, a key, a click, `spinTo`, a scroll wheel's snap) lands
- *   without travel: the rows cross-fade onto their row, opacity only, on the
- *   animator's Reduce Motion fade (`reducedMotionFade`, DR2: this column
- *   draws under a finger). The drag itself follows the finger.
+ * - Under reduced motion (design:reduced-motion DR2) the drag follows the
+ *   finger, and the momentum that continues a throw (a release's coast, and
+ *   its bounce at an end) plays as is, as scrolling keeps decelerating under
+ *   iOS Reduce Motion. Every transition the wheel starts (a slow release's
+ *   snap, a return from past an end, the turn on from a disabled row, a tap,
+ *   a key, a click, `spinTo`, a scroll wheel's snap) lands without
+ *   travel: the rows cross-fade onto their row, opacity only, on the
+ *   animator's Reduce Motion fade (`reducedMotionFade`).
  *
- * The rows are drawn twice, as UIKit draws them: dimmed on a cylinder seen
- * in perspective above and below the band (wheelDrum.ts), and flat and
- * magnified inside it.
+ * The rows are today's (wheelLook.ts): each option is drawn once, as its own
+ * row, tipping and fading toward the column's edges as today's `view()`
+ * timeline draws it (only fading, under reduced motion), over today's band.
+ * The row under the band is marked as today's column marks it: in render at
+ * rest, painted directly on a drag frame, and moved where a motion stops or
+ * ends, so the compositor plays a motion with no layout or paint per frame.
  *
  * Accessibility: a listbox, one tab stop, `aria-activedescendant` on the
  * committed row (a value set from outside shows in the same render). Arrow
@@ -87,13 +92,17 @@ import {registerTimingTable, timing} from '../motion/uikit/timing';
 import {
   colorVars,
   fontWeightVars,
+  radiusVars,
   spacingVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
+import {useMediaQuery} from '../hooks/useMediaQuery';
 import {focusOutlineStyles} from '../utils';
-import {wheelGeometry} from './wheelGeometry.stylex';
+import {lockSelection} from '../gestures/selectionLock';
+import {dateInputTouchGeometry, dateInputTouchSizes} from './tokens.stylex';
 import {useOwnScrollGesture} from './useOwnScrollGesture';
-import {PARKED_ANGLE, drumGeometry, rowAtPoint} from './wheelDrum';
+import {drumGeometry} from './wheelDrum';
+import {WHEEL_ROW_PITCH, todayLook} from './wheelLook';
 import {WheelMotion, type PlayOptions} from './wheelMotion';
 import {reducedMotionFade} from '../motion/reducedMotion';
 import {
@@ -107,101 +116,94 @@ import {
   type WheelCurve,
   type WheelLayout,
 } from './wheelPhysics';
-import {useWheelGroup, wheelGroupStyles} from './WheelGroup';
 import {
   nearestEnabledIndex,
   type WheelProps,
   type WheelSpinOptions,
 } from './wheelOptions';
 
-/** UIKit's row pitch, px: the wheel's geometry is UIPickerView's. */
-const ROW_HEIGHT = picker.geometry.rowHeight;
+/** Today's row pitch, px: the touch column draws today's look (wheelLook.ts). */
+const ROW_HEIGHT = WHEEL_ROW_PITCH;
+/** UIKit's geometry scaled to the row: the rubber band's dimension. */
 const GEOMETRY = drumGeometry(ROW_HEIGHT);
+/** Today's column, px: six 44 px day rows (`dateInputTouchGeometry.paneBlockSize`). */
+const COLUMN_HEIGHT = 6 * 44;
 /** Wheel events stop moving the wheel after this long without one, ms. */
 const WHEEL_IDLE_MS = 160;
 
 const styles = stylex.create({
+  // Today's column (Wheel.tsx): the same box, band and rows, moved by the
+  // gesture system and the compositor instead of a native scroller.
   column: {
     position: 'relative',
     flex: '1 1 0',
     minInlineSize: 0,
-    blockSize: '100%',
+    blockSize: dateInputTouchGeometry.paneBlockSize,
     overflow: 'hidden',
     outline: 'none',
+    // Gives the rows' tip somewhere to recede to, from the column's centre,
+    // as today's scroller does.
+    perspective: '520px',
     WebkitTapHighlightColor: 'transparent',
   },
-  // Outside a WheelGroup: the picker's 216 px, centred in its container.
-  standalone: {
-    alignSelf: 'center',
-    blockSize: wheelGeometry.pickerHeight,
-  },
   /**
-   * The dimmed copy: the rows on the cylinder, seen in the picker's
-   * perspective, with the band cut out of it (the band's copy fills it).
+   * Today's selection band: a centred row-height plate behind the rows.
+   * Decorative: the committed value is announced by `aria-selected`.
    */
-  drum: {
+  band: {
     position: 'absolute',
-    inset: 0,
-    perspective: wheelGeometry.perspective,
-    clipPath: `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, 0 calc(50% - ${wheelGeometry.bandHeight} / 2), 100% calc(50% - ${wheelGeometry.bandHeight} / 2), 100% calc(50% + ${wheelGeometry.bandHeight} / 2), 0 calc(50% + ${wheelGeometry.bandHeight} / 2), 0 calc(50% - ${wheelGeometry.bandHeight} / 2))`,
+    insetInline: 0,
+    insetBlockStart: `calc(50% - (${dateInputTouchSizes.wheelItemSize} / 2))`,
+    blockSize: dateInputTouchSizes.wheelItemSize,
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-neutral'],
     pointerEvents: 'none',
   },
+  /**
+   * The strip: the rows at their places along the wheel, its top on the
+   * band's row, translated by minus the wheel's offset. Also what a
+   * reduced-motion cross-fade fades.
+   */
+  strip: {
+    position: 'absolute',
+    insetInline: 0,
+    insetBlockStart: `calc(50% - (${dateInputTouchSizes.wheelItemSize} / 2))`,
+    transformStyle: 'preserve-3d',
+    pointerEvents: 'none',
+  },
+  /** One row: an option at its place along the strip, tipped (wheelLook.ts). */
   row: {
     position: 'absolute',
     insetInline: 0,
-    insetBlockStart: `calc(50% - ${wheelGeometry.rowHalfHeight})`,
-    blockSize: wheelGeometry.rowHeight,
+    blockSize: dateInputTouchSizes.wheelItemSize,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     paddingInline: spacingVars['--spacing-2'],
     boxSizing: 'border-box',
-    transformOrigin: `50% 50% ${wheelGeometry.rowOriginDepth}`,
     backfaceVisibility: 'hidden',
-    opacity: wheelGeometry.outerOpacity,
     fontSize: typeScaleVars['--text-large-size'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-primary'],
     whiteSpace: 'nowrap',
     overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    userSelect: 'none',
+    // No transition on the mark, unlike today's column: a colour or weight
+    // that animates lays out and paints every frame on the main thread, and
+    // a mark set as a drag lets go would do so through the coast
+    // (spec:AST-094 FR5).
+  },
+  /** The row under the band, as today's column marks it. */
+  rowActive: {
+    color: colorVars['--color-text-accent'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
   },
   rowDisabled: {
     color: colorVars['--color-text-disabled'],
   },
-  /** The band's copy: flat, opaque and magnified, clipped to the band. */
-  bandCopy: {
-    position: 'absolute',
-    inset: 0,
-    clipPath: `inset(calc(50% - ${wheelGeometry.bandHeight} / 2) 0)`,
-    pointerEvents: 'none',
-  },
-  strip: {
-    position: 'absolute',
-    insetInline: 0,
-    insetBlockStart: `calc(50% - ${wheelGeometry.rowHalfHeight})`,
-  },
-  stripRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    blockSize: wheelGeometry.rowHeight,
-    paddingInline: spacingVars['--spacing-2'],
-    boxSizing: 'border-box',
-    fontSize: typeScaleVars['--text-large-size'],
-    fontWeight: fontWeightVars['--font-weight-normal'],
-    color: colorVars['--color-text-primary'],
-    whiteSpace: 'nowrap',
-  },
-  // The band copy's text is generated content, so the listbox holds each
-  // label once: text searches, find-in-page and assistive technology meet
-  // only the options.
-  stripLabel: {
-    display: 'inline-block',
-    scale: wheelGeometry.bandMagnification,
-    '::before': {
-      content: 'attr(data-label)',
-    },
-  },
+  /** A row at its place along the strip. */
+  rowAt: (top: string) => ({insetBlockStart: top}),
 });
 
 /**
@@ -218,7 +220,7 @@ function registerWheelTables(): void {
 
 /**
  * A turn onto `to` on the tap spin: `spin`'s duration and curve, or the
- * theme's `picker.tapSpin.durationMs` and `timing.curves.easeInOut` under
+ * theme's `picker.tapSpin.durationMs` and `timing.curves.move` under
  * `column`, resolved as the turn starts.
  */
 function turnCurve(
@@ -232,19 +234,26 @@ function turnCurve(
     from,
     to,
     spin.duration ?? resolveMotion(column, picker.tapSpin, 'durationMs') / 1000,
-    spin.curve ?? resolveMotion(column, timing.curves.easeInOut),
+    spin.curve ?? resolveMotion(column, timing.curves.move),
   );
 }
 
-/** A transition's options: the player's, and whether a finger's release started it. */
+/** A transition's options: the player's, and what started it. */
 interface MoveOptions extends PlayOptions {
-  /** Started by a touch drag's release (design:reduced-motion DR3). */
+  /** Started by a touch drag's release (design:reduced-motion DR2). */
   touchRelease?: boolean;
+  /**
+   * The momentum that continues a throw: a coast, and its settle at an edge.
+   * It is direct movement, so it plays under reduced motion too
+   * (design:reduced-motion DR2), as scrolling keeps decelerating under iOS
+   * Reduce Motion.
+   */
+  momentum?: boolean;
 }
 
-/** Whether a looping wheel of `rowCount` rows can hide its seam. */
+/** Whether a looping wheel of `rowCount` rows can hide its seam: the list is longer than the column shows. */
 function canLoop(rowCount: number): boolean {
-  return (rowCount * ROW_HEIGHT) / 2 > PARKED_ANGLE * GEOMETRY.radius;
+  return rowCount * ROW_HEIGHT > COLUMN_HEIGHT + ROW_HEIGHT;
 }
 
 /**
@@ -289,11 +298,9 @@ export function PickerWheel({
   ref,
 }: WheelProps) {
   const id = useId();
-  const group = useWheelGroup();
   const columnRef = useRef<HTMLDivElement | null>(null);
-  const drumRef = useRef<HTMLDivElement | null>(null);
-  const bandCopyRef = useRef<HTMLDivElement | null>(null);
-  const stripRef = useRef<HTMLDivElement | null>(null);
+  const rowsRef = useRef<HTMLDivElement | null>(null);
+  const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const rowCount = options.length;
   const loops = isLooping && canLoop(rowCount);
   const layout = useMemo<WheelLayout>(
@@ -314,22 +321,72 @@ export function PickerWheel({
     latestRef.current = {options, value, onChange, resolveRest, layout};
   });
 
+  // The row under the band is marked as today's column marks it. At rest
+  // that is the committed row, styled in render; while a finger drags the
+  // wheel, the row reaching the band is painted directly, so marking it never
+  // re-renders. A motion unmarks every row as it starts and marks the row it
+  // stops or ends on: the compositor plays it with no layout or paint per
+  // frame (spec:AST-094 FR5), and no mark rides away from the band.
+  const paintedRef = useRef<Set<HTMLElement>>(new Set());
+  const paintRow = useCallback((position: number | null) => {
+    const container = rowsRef.current;
+    if (container == null || container.children.length === 0) {
+      return;
+    }
+    const rows = container.children;
+    const {options: currentOptions, value: currentValue} = latestRef.current;
+    const active =
+      position == null
+        ? null
+        : (rows[wrapIndex(position, rows.length)] as HTMLElement);
+    const painted = paintedRef.current;
+    for (const row of painted) {
+      row.style.removeProperty('color');
+      row.style.removeProperty('font-weight');
+    }
+    painted.clear();
+    const selected = currentOptions.findIndex(
+      option => option.value === currentValue,
+    );
+    if (rows[selected] != null && rows[selected] !== active) {
+      // The committed row's own mark gives way while another row is under
+      // the band.
+      const row = rows[selected] as HTMLElement;
+      row.style.color = currentOptions[selected]?.isDisabled
+        ? colorVars['--color-text-disabled']
+        : colorVars['--color-text-primary'];
+      row.style.fontWeight = fontWeightVars['--font-weight-normal'];
+      painted.add(row);
+    }
+    if (active == null || position == null) {
+      return;
+    }
+    const index = wrapIndex(position, rows.length);
+    active.style.color = currentOptions[index]?.isDisabled
+      ? colorVars['--color-text-disabled']
+      : colorVars['--color-text-accent'];
+    active.style.fontWeight = fontWeightVars['--font-weight-semibold'];
+    painted.add(active);
+  }, []);
+
   // Every transition the wheel starts. Under reduced motion it lands without
   // travel: the rows cross-fade onto their row on the animator's Reduce
-  // Motion fade, whatever the curve (design:reduced-motion DR2, DR4).
+  // Motion fade, whatever the curve (design:reduced-motion DR2, DR4). The
+  // momentum that continues a throw is not a transition and plays as is.
   const move = useCallback(
     (
       curve: WheelCurve,
-      {touchRelease = false, ...options}: MoveOptions = {},
+      {touchRelease = false, momentum = false, ...options}: MoveOptions = {},
     ) => {
-      const fadeTiming = reducedMotionFade(columnRef.current, {touchRelease});
+      paintRow(null);
+      const fadeTiming = momentum
+        ? null
+        : reducedMotionFade(columnRef.current, {touchRelease});
       if (fadeTiming == null) {
         motion.play(curve, options);
         return;
       }
-      const fade = [drumRef.current, bandCopyRef.current].filter(
-        (element): element is HTMLDivElement => element != null,
-      );
+      const fade = rowsRef.current == null ? [] : [rowsRef.current];
       motion.crossFade(curve.to, {
         durationMs: fadeTiming.duration,
         easing: fadeTiming.easing,
@@ -337,7 +394,7 @@ export function PickerWheel({
         onEnd: options.onEnd,
       });
     },
-    [motion],
+    [motion, paintRow],
   );
 
   // The wheel came to rest at `offset`: commit, or turn on to the row the
@@ -389,15 +446,50 @@ export function PickerWheel({
   // Hand the rows to the motion engine whenever they are rendered anew.
   useIsomorphicLayoutEffect(() => {
     motion.setLayout(layout);
-    const drum = drumRef.current;
+    const container = rowsRef.current;
     const rows =
-      drum == null
+      container == null
         ? []
-        : Array.from(drum.children).filter(
+        : Array.from(container.children).filter(
             (child): child is HTMLElement => child instanceof HTMLElement,
           );
-    motion.attach(rows, stripRef.current);
+    motion.attach(rows, container);
   }, [motion, layout, options]);
+
+  // Today's look, for the column's height: rows tip and fade toward its
+  // edges (only fade, under reduced motion). The shared observer measures
+  // once at once, then on every resize.
+  useIsomorphicLayoutEffect(() => {
+    const column = columnRef.current;
+    if (column == null) {
+      return;
+    }
+    return observeResize(column, () => {
+      const height = column.getBoundingClientRect().height || COLUMN_HEIGHT;
+      motion.setLook(todayLook(height, {reducedMotion}));
+    });
+  }, [motion, reducedMotion]);
+
+  useIsomorphicLayoutEffect(() => {
+    motion.onNearestChange(paintRow);
+    return () => motion.onNearestChange(null);
+  }, [motion, paintRow]);
+  // At rest on the committed row, render's own mark takes over again.
+  useIsomorphicLayoutEffect(() => {
+    if (
+      motion.isMoving() ||
+      dragRef.current != null ||
+      nearestIndex(motion.offset(), layout) !==
+        nearestPosition(selectedIndex, motion.offset(), layout)
+    ) {
+      return;
+    }
+    for (const row of paintedRef.current) {
+      row.style.removeProperty('color');
+      row.style.removeProperty('font-weight');
+    }
+    paintedRef.current.clear();
+  });
 
   useEffect(() => () => motion.dispose(), [motion]);
 
@@ -425,37 +517,6 @@ export function PickerWheel({
     }
   }, [isActive, motion]);
 
-  // Every column draws towards one vanishing point, the group's centre, and
-  // the band's magnified copy sits that much further from it.
-  useIsomorphicLayoutEffect(() => {
-    const column = columnRef.current;
-    const drum = drumRef.current;
-    const bandCopy = bandCopyRef.current;
-    if (column == null || drum == null || bandCopy == null) {
-      return;
-    }
-    const place = () => {
-      const columnBox = column.getBoundingClientRect();
-      const groupBox =
-        group?.groupRef.current?.getBoundingClientRect() ?? columnBox;
-      const centre = groupBox.left + groupBox.width / 2;
-      drum.style.perspectiveOrigin = `${centre - columnBox.left}px 50%`;
-      const shift =
-        (columnBox.left + columnBox.width / 2 - centre) *
-        (picker.geometry.bandMagnification - 1);
-      bandCopy.style.translate = `${shift}px 0`;
-    };
-    // The shared observer measures once at once, then on every resize.
-    const unobserveColumn = observeResize(column, place);
-    const groupElement = group?.groupRef.current;
-    const unobserveGroup =
-      groupElement != null ? observeResize(groupElement, place) : null;
-    return () => {
-      unobserveColumn();
-      unobserveGroup?.();
-    };
-  }, [group, isActive]);
-
   // A finger lands: a moving wheel stops where it is on screen.
   const onTouchDown = useCallback(
     (time: number) => {
@@ -481,7 +542,12 @@ export function PickerWheel({
         latestRef.current.layout,
         resolveMotion(columnRef.current, scroll.bounce),
       );
-      move(plan.curve, {ticks: true, onEnd, touchRelease: true});
+      move(plan.curve, {
+        ticks: true,
+        onEnd,
+        touchRelease: true,
+        momentum: plan.kind === 'coast' || plan.kind === 'edge',
+      });
     },
     [motion, move, onEnd],
   );
@@ -494,7 +560,7 @@ export function PickerWheel({
         direction: 'vertical',
         // A held finger on the wheel never starts text selection or the
         // callout.
-        preventsTextSelection: true,
+        selectionLock: lockSelection,
         shouldReceiveTouch: (_pan, touch) => {
           onTouchDownRef.current(touch.time);
           return true;
@@ -582,7 +648,6 @@ export function PickerWheel({
         y - (box.top + box.height / 2),
         offset,
         currentLayout,
-        GEOMETRY,
       );
       const restingRow = wrapIndex(
         nearestIndex(offset, currentLayout),
@@ -812,8 +877,6 @@ export function PickerWheel({
     [moveBy, moveToEnd],
   );
 
-  const stripCopies = loops ? 3 : 1;
-
   return (
     <div
       ref={columnRef}
@@ -824,15 +887,9 @@ export function PickerWheel({
       tabIndex={0}
       onKeyDown={handleKeyDown}
       data-wheel=""
-      data-wheel-band={group == null ? '' : undefined}
-      {...stylex.props(
-        styles.column,
-        group == null && styles.standalone,
-        // On its own, the column draws the band with its `::before`.
-        group == null && wheelGroupStyles.band,
-        focusOutlineStyles.focusVisible,
-      )}>
-      <div ref={drumRef} {...stylex.props(styles.drum)}>
+      {...stylex.props(styles.column, focusOutlineStyles.focusVisible)}>
+      <div aria-hidden="true" {...stylex.props(styles.band)} />
+      <div ref={rowsRef} data-wheel-strip="" {...stylex.props(styles.strip)}>
         {options.map((option, index) => (
           <div
             key={option.value}
@@ -840,42 +897,42 @@ export function PickerWheel({
             role="option"
             aria-selected={option.value === value}
             aria-disabled={option.isDisabled || undefined}
+            data-wheel-row=""
+            data-label={option.label}
             onClick={() => activateRow(index)}
             {...stylex.props(
               styles.row,
+              styles.rowAt(`${index * ROW_HEIGHT}px`),
+              index === selectedIndex && styles.rowActive,
               option.isDisabled && styles.rowDisabled,
             )}>
             {option.label}
           </div>
         ))}
       </div>
-      <div
-        ref={bandCopyRef}
-        aria-hidden="true"
-        {...stylex.props(styles.bandCopy)}>
-        <div ref={stripRef} data-wheel-strip="" {...stylex.props(styles.strip)}>
-          {Array.from({length: stripCopies}, (_, copy) =>
-            options.map(option => (
-              <div
-                key={`${copy}-${option.value}`}
-                {...stylex.props(
-                  styles.stripRow,
-                  option.isDisabled && styles.rowDisabled,
-                )}>
-                <span
-                  data-label={option.label}
-                  {...stylex.props(styles.stripLabel)}
-                />
-              </div>
-            )),
-          )}
-        </div>
-      </div>
     </div>
   );
 }
 
 PickerWheel.displayName = 'PickerWheel';
+
+/**
+ * The position of the row under a point `dy` px below the band's centre
+ * (an option index, or on a looping wheel any integer), or null past either
+ * end of a list that does not loop. Today's rows tip about their own
+ * centres, so each centre stays where the row is laid out.
+ */
+function rowAtPoint(
+  dy: number,
+  offset: number,
+  layout: WheelLayout,
+): number | null {
+  const position = Math.round((offset + dy) / layout.rowHeight);
+  if (!layout.looping && (position < 0 || position >= layout.rowCount)) {
+    return null;
+  }
+  return position;
+}
 
 /**
  * The finger's offset for a shown one: past an end, the travel that the
