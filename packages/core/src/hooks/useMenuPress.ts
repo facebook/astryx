@@ -300,7 +300,7 @@ function normalizePointerType(type: string): MenuPressPointerType | null {
 /**
  * Where a pointer is, for a finger's handoff distance: given with
  * `touchModel: 'uikit'`, the primary pointer being coarse, for the trigger's
- * opening finger (`spec:AST-094` FR29, FR33). Without
+ * opening finger (`spec:AST-094` FR29). Without
  * it the machine keeps the settle rule.
  */
 function handoffPosition(

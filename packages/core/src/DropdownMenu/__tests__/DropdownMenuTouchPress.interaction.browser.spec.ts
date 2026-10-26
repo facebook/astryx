@@ -11,8 +11,9 @@
  *   tap opens it as it presses and its lift leaves it open; in scrolling page
  *   content a held finger opens it once the 150 ms content-touch delay
  *   passes, and a scroll that starts on the trigger takes the touch; a press
- *   that slides onto a row, past the 10 pt handoff, picks that row once; a
- *   storyboard of the press, hold, slide and lift
+ *   that slides onto a row, past the 10 pt handoff, picks that row once; one
+ *   open and one close for a tap and a pick (module AR5); a storyboard of the
+ *   press, hold, slide and lift
  * @position Evidence for the finger's press model in DropdownMenu (and
  *   MoreMenu, which renders it); the machine itself is unit-tested in
  *   menuPressGesture.test.ts and useMenuPress.test.tsx
@@ -106,6 +107,14 @@ async function installMenuLog(page: Page) {
     document.addEventListener(
       'toggle',
       event => {
+        // A popover hidden from assistive technology (a close's exit copy)
+        // is no menu a screen reader hears (module AR5).
+        if (
+          event.target instanceof Element &&
+          event.target.getAttribute('aria-hidden') === 'true'
+        ) {
+          return;
+        }
         const state = event.newState;
         (state === 'open' ? log.opened : log.closed).push(performance.now());
       },
@@ -166,14 +175,6 @@ async function openDefault(page: Page): Promise<OpenStory> {
   };
 }
 
-/**
- * The element's presented box at each time of its held animations: its
- * layout box scaled by the presented `scale` about its `transform-origin`.
- * Read from the computed style, which follows a seek; a composited animation
- * of an individual transform property does not reach getBoundingClientRect
- * in Chromium.
- */
-
 const centerOf = (box: Box) => ({
   x: box.x + box.width / 2,
   y: box.y + box.height / 2,
@@ -217,6 +218,34 @@ test('a tap opens the menu as it presses and its lift leaves it open', async ({
   expect(log.picked).toEqual([]);
   // Focus moves into the menu, as for any pointer open.
   await expect(page.getByRole('menu')).toBeVisible();
+});
+
+test('a finger opens the menu once and it closes once at a pick: nothing withdraws the open (module AR5)', async ({
+  page,
+}) => {
+  const story = await openDefault(page);
+  // The tap opens the menu as it presses; its lift's click must not toggle
+  // it again.
+  await story.driver.tap(story.center);
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'true');
+  await waitForRest(story.popover);
+  // The toggle events are queued as tasks after the open.
+  await expect
+    .poll(async () => (await readMenuLog(page)).opened.length)
+    .toBe(1);
+  await frames(page, 2);
+  expect((await readMenuLog(page)).closed).toEqual([]);
+  const row = await boxOf(page.getByRole('menuitem', {name: 'Duplicate'}));
+  await story.driver.tap(centerOf(row));
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect
+    .poll(async () => (await readMenuLog(page)).closed.length)
+    .toBe(1);
+  await frames(page, 2);
+  const log = await readMenuLog(page);
+  expect(log.opened.length).toBe(1);
+  expect(log.closed.length).toBe(1);
+  expect(log.picked).toEqual(['Duplicate']);
 });
 
 /** Lets the page scroll without moving the centered story. */
