@@ -1002,29 +1002,40 @@ describe('Switch', () => {
       // pressed or releasing (no element and no box at rest), paints the
       // pressed token, shows at once, and releases on a control's clock on
       // the compositor.
-      const layer = rulesDeclaredFor(track).filter(rule =>
-        selector(rule).includes('::before'),
-      );
-      const creates = layer.filter(rule =>
-        /(^|[{;\s])content:/.test(body(rule)),
-      );
-      expect(creates.length).toBeGreaterThan(0);
-      for (const rule of creates) {
-        expect(selector(rule)).toMatch(/data-astryx-press="(on|fading)"/);
+      // Track and thumb both paint it (design:user-states DR1).
+      for (const part of [track, thumb]) {
+        const layer = rulesDeclaredFor(part).filter(rule =>
+          selector(rule).includes('::before'),
+        );
+        const creates = layer.filter(rule =>
+          /(^|[{;\s])content:/.test(body(rule)),
+        );
+        expect(creates.length).toBeGreaterThan(0);
+        for (const rule of creates) {
+          expect(selector(rule)).toMatch(/data-astryx-press="(on|fading)"/);
+        }
+        expect(
+          layer.some(rule =>
+            /background-color:[^;}]*--color-overlay-pressed/.test(rule),
+          ),
+        ).toBe(true);
+        // The release reads the `timing.press.buttonReleaseMs` motion role.
+        expect(
+          layer.some(rule =>
+            rule.includes('--motion-timing-press-button-release-ms'),
+          ),
+        ).toBe(true);
       }
-      expect(
-        layer.some(rule =>
-          /background-color:[^;}]*--color-overlay-pressed/.test(rule),
-        ),
-      ).toBe(true);
       const on = rulesWithSelector(track, '[data-astryx-press="on"]', coarse);
       expect(on.some(rule => /opacity:\s*1\b/.test(rule))).toBe(true);
       expect(on.some(rule => /animation-name:\s*(?!none)/.test(rule))).toBe(
         false,
       );
-      expect(
-        releasesOnLayer(track, '::before', uikitButton.highlight.releaseMs),
-      ).toBe(true);
+      for (const part of [track, thumb]) {
+        expect(
+          releasesOnLayer(part, '::before', uikitButton.highlight.releaseMs),
+        ).toBe(true);
+      }
       // Nothing reads the strength under a finger, so its main-thread
       // release stops there; any other pointer keeps it (the desktop rule).
       expect(

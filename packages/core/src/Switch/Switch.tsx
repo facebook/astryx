@@ -368,7 +368,9 @@ const styles = stylex.create({
         [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
           default: null,
           [TOUCH]: {
-            default: `${pressConsts.controlReleaseMs}ms`,
+            // The `timing.press.buttonReleaseMs` motion role, UIButton's
+            // measured 250 ms by default (spec:AST-094 FR4).
+            default: `var(--motion-timing-press-button-release-ms, ${pressConsts.controlReleaseMs}ms)`,
             '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
               reducedMotionFadeConsts.duration,
           },
@@ -503,6 +505,79 @@ const styles = stylex.create({
     // The lifted shadow, under a finger: the theme's elevation on a layer the
     // thumb's size, faded in with the lift on the compositor (useSwitchTouch
     // owns its opacity). At rest it is clear.
+    // The press on the thumb too, under a finger (design:user-states DR1:
+    // track and thumb both paint the pressed overlay): the same layer as the
+    // track's, over the thumb's fill.
+    '::before': {
+      content: {
+        default: null,
+        [stylex.when.ancestor('[data-astryx-press="on"]', switchScope)]: {
+          default: null,
+          [TOUCH]: '""',
+        },
+        [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+          default: null,
+          [TOUCH]: '""',
+        },
+      },
+      position: 'absolute',
+      inset: 0,
+      borderRadius: 'inherit',
+      pointerEvents: 'none',
+      backgroundColor: {
+        default: null,
+        '@media (forced-colors: none)': colorVars['--color-overlay-pressed'],
+      },
+      opacity: {
+        default: null,
+        [stylex.when.ancestor('[data-astryx-press="on"]', switchScope)]: {
+          default: null,
+          [TOUCH]: 1,
+        },
+        [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+          default: null,
+          [TOUCH]: 0,
+        },
+      },
+      animationName: {
+        default: null,
+        [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+          default: null,
+          [TOUCH]: pressLayerRelease,
+        },
+      },
+      animationDuration: {
+        default: null,
+        [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+          default: null,
+          [TOUCH]: {
+            // The `timing.press.buttonReleaseMs` motion role, UIButton's
+            // measured 250 ms by default (spec:AST-094 FR4).
+            default: `var(--motion-timing-press-button-release-ms, ${pressConsts.controlReleaseMs}ms)`,
+            '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+              reducedMotionFadeConsts.duration,
+          },
+        },
+      },
+      animationTimingFunction: {
+        default: null,
+        [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+          default: null,
+          [TOUCH]: {
+            default: pressConsts.controlReleaseEase,
+            '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+              reducedMotionFadeConsts.easing,
+          },
+        },
+      },
+      animationFillMode: {
+        default: null,
+        [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+          default: null,
+          [TOUCH]: 'both',
+        },
+      },
+    },
     '::after': {
       content: '""',
       display: {default: 'none', [TOUCH]: 'block'},

@@ -303,16 +303,21 @@ async function tapForClick(
  * The opacity of the first track's press layer (its ::before), or null when
  * the track has none (at rest).
  */
-async function pressLayer(page: Page): Promise<number | null> {
-  return page.evaluate(() => {
+async function pressLayer(
+  page: Page,
+  part: 'track' | 'thumb' = 'track',
+): Promise<number | null> {
+  return page.evaluate(which => {
     const track = document.querySelector<HTMLElement>(
-      '#storybook-root .astryx-switch',
+      which === 'track'
+        ? '#storybook-root .astryx-switch'
+        : '#storybook-root .astryx-switch-thumb',
     )!;
     const layer = getComputedStyle(track, '::before');
     return layer.content === 'none' || layer.content === 'normal'
       ? null
       : Number(layer.opacity);
-  });
+  }, part);
 }
 
 /** The press state the row's press feedback shows (`data-astryx-press`). */
@@ -540,6 +545,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     let held: Presented | null = null;
     let press: string | null = null;
     let layer: number | null = null;
+    let thumbLayer: number | null = null;
     await driver.play(script, {
       onEvent: async step => {
         if (step.type === 'touchStart') {
@@ -547,6 +553,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
           held = await presented(page);
           press = await pressState(page);
           layer = await pressLayer(page);
+          thumbLayer = await pressLayer(page, 'thumb');
         }
       },
     });
@@ -559,7 +566,11 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     expect(held!.fill).toBeCloseTo(1, 2);
     expect(press).toBe('on');
     expect(layer).toBeCloseTo(1, 2);
+    // The thumb paints it too (design:user-states DR1: track and thumb).
+    expect(thumbLayer).toBeCloseTo(1, 2);
     await expect(input).toBeChecked();
+    // Released: the layer is gone once its fade ends.
+    await expect.poll(async () => pressLayer(page, 'thumb')).toBeNull();
   });
 
   for (const direction of ['ltr', 'rtl'] as const) {
@@ -678,12 +689,18 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     await freezeTimers(page);
     const row = page.locator('#storybook-root [data-astryx-pressable]').first();
     const held = await holdAnimations(page, row);
-    // One CSS animation runs the release: the layer's opacity, on UIButton's
+    // One CSS animation per press layer runs the release, the track's and
+    // the thumb's (design:user-states DR1), each its opacity on UIButton's
     // clock. The row's strength has no release of its own under a finger (no
     // main-thread fade), and the lift and travel are the animator's.
     const css = held.filter(a => a.kind === 'CSSAnimation');
-    expect(css, JSON.stringify(held)).toHaveLength(1);
-    expect(css[0].durationMs).toBe(PRESS_RELEASE_MS);
+    expect(
+      css.map(a => a.target.split('.')[1]).sort(),
+      JSON.stringify(held),
+    ).toEqual(['astryx-switch', 'astryx-switch-thumb']);
+    for (const animation of css) {
+      expect(animation.durationMs).toBe(PRESS_RELEASE_MS);
+    }
     // The lift's settle started at the lift's touch event, a frame or two
     // before the attribute's change started the release: seek on the
     // release's own clock.

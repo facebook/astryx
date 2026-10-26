@@ -351,9 +351,13 @@ export function declaresPressPaint(el: Element): boolean {
   );
 }
 
-/** `.2s`, `200ms`, `0.2s` → 200. */
+/**
+ * `.2s`, `200ms`, `0.2s` → 200. A motion role read with its default,
+ * `var(--motion-…, 250ms)`, is its default: the value with no theme.
+ */
 export function durationToMs(value: string): number {
-  const match = value.trim().match(/^([\d.]+)(ms|s)$/);
+  const role = value.trim().match(/^var\(--motion-[\w-]+,\s*([^)]+)\)$/);
+  const match = (role?.[1] ?? value).trim().match(/^([\d.]+)(ms|s)$/);
   if (match == null) {
     return Number.NaN;
   }
