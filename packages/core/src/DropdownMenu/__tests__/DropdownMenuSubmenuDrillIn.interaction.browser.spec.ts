@@ -12,7 +12,9 @@
  *   assistive technology; the header shows the row's label with its chevron
  *   turned down and is named for going back; back plays the card out on
  *   itself, with no copy, and the parent rows come back; Reduce Motion
- *   cross-fades with nothing moving; the open menu under a finger has no more
+ *   cross-fades with nothing moving; a finger resting on a sub-menu row does
+ *   not drill in and its lift there does (module FR10); the open menu under a
+ *   finger has no more
  *   elements than under a mouse (architecture:component-style-authoring
  *   INV7); a storyboard
  * @position Evidence for menuDrillInMotion.ts and useMenuDrillIn as
@@ -23,6 +25,7 @@ import {expect, test, type Page} from '@playwright/test';
 import {
   openStory,
   Storyboard,
+  tap,
   touchDriver,
   waitForRest,
   withStorybook,
@@ -133,6 +136,43 @@ test('a sub-menu opens in place: the box grows on its own pseudo-elements, and t
     .locator('[data-astryx-menu-submenu-chevron]')
     .evaluate(el => getComputedStyle(el).rotate);
   expect(turn).toBe('90deg');
+});
+
+test('a finger resting on a sub-menu row does not drill in; its lift there does (module FR10)', async ({
+  page,
+}) => {
+  const driver = await openMenu(page);
+  const moveTo = await center(page, 'Move to');
+  // When the finger lifted, and when the sub-menu's card first showed.
+  await page.evaluate(() => {
+    const log = {liftAt: 0, cardAt: 0};
+    (window as unknown as {__fr10: typeof log}).__fr10 = log;
+    // The lift's first event: Chromium sends the pointerup ahead of the
+    // touchend, and the row acts on the pointerup.
+    const markLift = () => {
+      log.liftAt ||= performance.now();
+    };
+    document.addEventListener('pointerup', markLift, true);
+    document.addEventListener('touchend', markLift, true);
+    new MutationObserver(() => {
+      if (
+        log.cardAt === 0 &&
+        document.querySelector('[data-astryx-menu-card]') != null
+      ) {
+        log.cardAt = performance.now();
+      }
+    }).observe(document.body, {subtree: true, childList: true});
+  });
+  // Rested on the row well past a hover's open delay, then lifted there.
+  await driver.play(tap(moveTo, {holdMs: 900}));
+  await expect(page.locator(CARD)).toHaveCount(1);
+  const log = await page.evaluate(
+    () =>
+      (window as unknown as {__fr10: {liftAt: number; cardAt: number}}).__fr10,
+  );
+  expect(log.liftAt).toBeGreaterThan(0);
+  // Nothing drilled in while the finger rested: the card came with the lift.
+  expect(log.cardAt).toBeGreaterThanOrEqual(log.liftAt);
 });
 
 test('back plays the card out on itself, with no copy, and the parent rows come back', async ({
