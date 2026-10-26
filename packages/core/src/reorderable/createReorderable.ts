@@ -7,7 +7,8 @@
  * @input The reorder's options, and List's reorder machinery
  *   (List/listReorderEngine.ts: the session, its handle and its touch layer)
  * @output `createReorderable`, which makes the object a collection's
- *   `reorderable` prop takes, and its types: `Reorderable`,
+ *   `reorderable` prop takes, whose one public method, `start(key)`, enters
+ *   reorder mode from the app's own UI; and its types: `Reorderable`,
  *   `ReorderableOptions`, `ReorderMove`
  * @position Public Core API (spec:AST-103), exported from the package root.
  *   The machinery ships here, on the object: a collection imports only the
@@ -60,23 +61,39 @@ declare const reorderableBrand: unique symbol;
 
 /**
  * A collection's reorder behavior, made by `createReorderable` and passed as
- * its `reorderable` prop.
+ * its `reorderable` prop. It applies to the whole collection; each item's key
+ * and `isReorderable` decide which items move.
  */
 export interface Reorderable<TKey extends Key = Key, TTo = number> {
   /** The keys and places it reports; a type, not a value. */
   readonly [reorderableBrand]: {readonly key: TKey; readonly to: TTo};
+  /**
+   * Enters reorder mode for the item with `key` from the app's own UI, such
+   * as a Move item in its context menu or a toolbar button, as activating
+   * its handle does: the focus moves to the handle, which scrolls into view,
+   * and the mode's keys, hint, announcements and exits follow. A key that
+   * cannot move, or whose item is not mounted, does nothing (and warns in
+   * development). On an object passed to two collections, it starts the
+   * mode in the one mounted last.
+   */
+  start(key: TKey): void;
 }
 
 /**
  * Makes a collection's rows reorderable: pass the result as the collection's
  * `reorderable` prop (`<List reorderable={createReorderable({onReorder})}>`),
- * with an `itemKey` on each ListItem.
+ * with an `itemKey` on each ListItem. Make it once per collection (with
+ * `useMemo`); one made again on each render still works.
  *
  * @example
  * ```
- * const reorderable = createReorderable({
- *   onReorder: ({key, to}) => setTasks(tasks => moveItem(tasks, key, to)),
- * });
+ * const reorderable = useMemo(
+ *   () =>
+ *     createReorderable({
+ *       onReorder: ({key, to}) => setTasks(tasks => moveItem(tasks, key, to)),
+ *     }),
+ *   [],
+ * );
  * <List reorderable={reorderable}>
  *   {tasks.map(task => (
  *     <ListItem key={task.id} itemKey={task.id} label={task.title} />
@@ -90,6 +107,7 @@ export function createReorderable<TKey extends Key = Key, TTo = number>(
   const internals: ReorderableInternals = {
     options: options as unknown as ListReorderOptions,
     [REORDER_ENGINE]: listReorderEngine,
+    start: key => listReorderEngine.start(internals.options, key),
   };
   return internals as unknown as Reorderable<TKey, TTo>;
 }

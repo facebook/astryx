@@ -119,6 +119,44 @@ export const MOUSE_DRAG_SLOP = 4;
 const MIN_MOVE_PX = 0.5;
 
 /**
+ * How long after `start` the handle takes back the focus the UI that
+ * started the mode hands back, in ms: a menu restores its trigger's focus
+ * as it closes, within a task or two; no person moves the focus that fast.
+ */
+const START_FOCUS_CLAIM_MS = 150;
+
+/**
+ * The sessions each reorderable object (by its options) is mounted on, in
+ * the order they mounted: `start` uses the last (spec:AST-103 FR1, FR4a).
+ */
+const sessionsByOptions = new WeakMap<
+  ListReorderOptions,
+  ListReorderController[]
+>();
+
+/** Records `controller` as mounted with `options`; returns the removal. */
+function mountSession(
+  options: ListReorderOptions,
+  controller: ListReorderController,
+): () => void {
+  const sessions = sessionsByOptions.get(options) ?? [];
+  sessionsByOptions.set(options, [
+    ...sessions.filter(session => session !== controller),
+    controller,
+  ]);
+  return () => {
+    const rest = (sessionsByOptions.get(options) ?? []).filter(
+      session => session !== controller,
+    );
+    if (rest.length > 0) {
+      sessionsByOptions.set(options, rest);
+    } else {
+      sessionsByOptions.delete(options);
+    }
+  };
+}
+
+/**
  * Where a row's `y` is on screen at `at`: its shared animator's value, which
  * the drag writes directly (`set`) as well as through springs.
  */
@@ -415,6 +453,11 @@ export class ListReorderController implements ListReorderSession {
    * move the handle's element, and the blur that causes keeps the mode.
    */
   private isMovingByKey = false;
+  /**
+   * Until when the handle takes back the focus the UI that started the mode
+   * with `start` hands back (a menu that closes restores its trigger's).
+   */
+  private claimFocusUntil = 0;
   private session: DragSession | null = null;
   private pending: PendingDrop | null = null;
   private fallback: ReturnType<typeof setTimeout> | null = null;
@@ -549,6 +592,35 @@ export class ListReorderController implements ListReorderSession {
   /** Ends reorder mode, keeping its moves. */
   endMode(): void {
     this.setMode(null);
+  }
+
+  /**
+   * Reorder mode for the item with `key`, started from the app's own UI
+   * (spec:AST-103 FR4a): the focus moves to its handle, which scrolls into
+   * view, as activating it does. Returns whether an item with that key can
+   * move here.
+   */
+  startByKey(key: Key): boolean {
+    if (this.session != null) {
+      return true;
+    }
+    for (const [handle, handleKey] of this.keys) {
+      if (
+        handleKey === key &&
+        handle instanceof HTMLElement &&
+        this.handleOf(handle) === handle
+      ) {
+        this.setMode(handle);
+        handle.focus({preventScroll: true});
+        this.rowOf(handle)?.scrollIntoView?.({
+          block: 'nearest',
+          inline: 'nearest',
+        });
+        this.claimFocusUntil = performance.now() + START_FOCUS_CLAIM_MS;
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -1436,6 +1508,20 @@ export class ListReorderController implements ListReorderSession {
    * nowhere while it does).
    */
   blur(handle: HTMLElement | null, next: EventTarget | null): void {
+    // The UI that started the mode handing its focus back (a closing menu
+    // restoring its trigger's) at once: the handle takes it again.
+    if (
+      handle != null &&
+      handle === this.modeHandle &&
+      performance.now() < this.claimFocusUntil
+    ) {
+      setTimeout(() => {
+        if (this.modeHandle === handle) {
+          handle.focus({preventScroll: true});
+        }
+      }, 0);
+      return;
+    }
     if (
       handle != null &&
       handle === this.modeHandle &&
@@ -1526,6 +1612,11 @@ function ListReorderHost({reorder}: {reorder: ListReorderContextValue}) {
     });
   });
   useIsomorphicLayoutEffect(() => controller.attachMouse(), [controller]);
+  // Where the object's `start` finds this list.
+  useIsomorphicLayoutEffect(
+    () => mountSession(options, controller),
+    [options, controller],
+  );
   // The List stopped reordering, or unmounted: a drag goes home.
   useIsomorphicLayoutEffect(() => () => controller.dispose(), [controller]);
   useIsomorphicLayoutEffect(
@@ -1543,4 +1634,22 @@ function ListReorderHost({reorder}: {reorder: ListReorderContextValue}) {
 export const listReorderEngine: ListReorderEngine = {
   createSession: (getList, hintId) =>
     new ListReorderController(getList, hintId),
+  start: (options, key) => {
+    const sessions = sessionsByOptions.get(options) ?? [];
+    if (sessions.length > 1) {
+      devWarn(
+        'createReorderable',
+        '`start` was called on an object passed to more than one ' +
+          'collection: it starts reorder mode in the one mounted last.',
+      );
+    }
+    const session = sessions.at(-1);
+    if (session == null || !session.startByKey(key)) {
+      devWarn(
+        'createReorderable',
+        `\`start(${String(key)})\` found no mounted item with ` +
+          'that key that can be reordered, so it did nothing.',
+      );
+    }
+  },
 };

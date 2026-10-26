@@ -7,7 +7,7 @@
  * @position Storybook demonstrations for List consumers
  */
 
-import {useRef, useState, type MouseEvent} from 'react';
+import {useMemo, useRef, useState, type MouseEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
 import {List, ListItem} from '@astryxdesign/core/List';
@@ -20,6 +20,7 @@ import {Switch} from '@astryxdesign/core/Switch';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Button} from '@astryxdesign/core/Button';
+import {ContextMenu} from '@astryxdesign/core/ContextMenu';
 import {
   holdSelection,
   type SelectionHold as RowSelectionHold,
@@ -701,6 +702,68 @@ export const ReorderWithPinnedRows: Story = {
           'A row the object’s `isReorderable` rejects has no handle. At an ' +
           'end of the list it also bounds the others (nothing drops above ' +
           'Favorites); in the middle, other rows move past it.',
+      },
+    },
+  },
+};
+
+function ReorderFromYourUIDemo() {
+  const [rows, setRows] = useState([
+    'Inbox',
+    'Sent',
+    'Drafts',
+    'Archive',
+    'Spam',
+    'Trash',
+  ]);
+  const [selected, setSelected] = useState('Sent');
+  const reorderable = useMemo(
+    () =>
+      createReorderable({
+        onReorder: ({key, to}) => setRows(current => moveKey(current, key, to)),
+      }),
+    [],
+  );
+  return (
+    <VStack gap={2}>
+      <Button
+        label={`Move ${selected}`}
+        onClick={() => reorderable.start(selected)}
+      />
+      <ContextMenu
+        label="Row actions"
+        items={[
+          {
+            label: `Move ${selected}`,
+            onClick: () => reorderable.start(selected),
+          },
+        ]}>
+        <List hasDividers hasAnimatedChanges reorderable={reorderable}>
+          {rows.map(label => (
+            <ListItem
+              key={label}
+              itemKey={label}
+              label={label}
+              isSelected={label === selected}
+              onClick={() => setSelected(label)}
+            />
+          ))}
+        </List>
+      </ContextMenu>
+    </VStack>
+  );
+}
+
+export const ReorderFromYourUI: Story = {
+  render: () => <ReorderFromYourUIDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The object’s `start(key)` turns on reorder mode for a row from ' +
+          'your own UI, here a button and the list’s context menu: the ' +
+          'focus moves to the row’s handle, and its arrow keys, hint and ' +
+          'Done work as they do from the handle.',
       },
     },
   },

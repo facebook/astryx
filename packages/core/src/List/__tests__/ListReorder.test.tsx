@@ -13,7 +13,11 @@
  *   index after the move, announced with its place and neighbours once it
  *   lands, a move into a row that stays at either end is refused and
  *   announced, and Escape, another activation or a lost focus ends the mode,
- *   keeping the moves; a mouse drags past the slop, and a drag's click
+ *   keeping the moves; the object's start(key) enters the same mode from the
+ *   app's own UI, keeping it when that UI hands its focus back, and does
+ *   nothing but warn for a key that cannot move or is not mounted, or in the
+ *   list mounted last for an object on two; a mouse drags past the slop,
+ *   and a drag's click
  *   leaves the mode alone; a new object keeps the mode and the next move
  *   calls the latest callback; one object serves two lists apart; the
  *   reorder adds one element to a row and no listener to a row or handle,
@@ -600,6 +604,148 @@ describe('List reorderable', () => {
     expect(handleOf('B1')).toHaveAttribute('aria-pressed', 'false');
     await user.keyboard(' {ArrowUp}');
     expect(onReorder).toHaveBeenLastCalledWith({key: 'a2', to: 0});
+  });
+
+  /** Rows whose object a button outside the list starts reorder mode with. */
+  function StartableRows({
+    initial,
+    fixed = NONE,
+    onReorder,
+    start,
+    isMenu = false,
+  }: {
+    initial: ReadonlyArray<string>;
+    fixed?: ReadonlyArray<string>;
+    onReorder?: (move: ReorderMove) => void;
+    start: string;
+    isMenu?: boolean;
+  }) {
+    const [items, setItems] = useState(initial);
+    // A new object on every render: `start` on the latest one works.
+    const reorderable = createReorderable({
+      onReorder: move => {
+        onReorder?.(move);
+        setItems(previous => moveKey(previous, move.key, move.to));
+      },
+      isReorderable: key => !fixed.includes(key as string),
+    });
+    return (
+      <>
+        <button
+          type="button"
+          onClick={event => {
+            reorderable.start(start);
+            // A closing menu hands the focus back to what had it.
+            if (isMenu) {
+              event.currentTarget.focus();
+            }
+          }}>
+          Move {start}
+        </button>
+        <List reorderable={reorderable}>
+          {items.map(item => (
+            <ListItem key={item} itemKey={item} label={item} />
+          ))}
+        </List>
+      </>
+    );
+  }
+
+  it("starts reorder mode from the app's own UI with start(key): the focus moves to the handle, and the arrows move the row", async () => {
+    const user = userEvent.setup();
+    const onReorder = vi.fn();
+    render(
+      <StartableRows
+        initial={['Inbox', 'Sent', 'Drafts']}
+        onReorder={onReorder}
+        start="Sent"
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Move Sent'}));
+    const handle = handleOf('Sent');
+    expect(handle).toHaveAttribute('aria-pressed', 'true');
+    expect(handle).toHaveFocus();
+    await user.keyboard('{ArrowDown}');
+    expect(onReorder).toHaveBeenCalledWith({key: 'Sent', to: 2});
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent(
+        'Sent, position 3 of 3, after Drafts, at the end',
+      ),
+    );
+    await user.keyboard('{Escape}');
+    expect(handle).toHaveAttribute('aria-pressed', 'false');
+    expect(labels()).toEqual(['Inbox', 'Drafts', 'Sent']);
+  });
+
+  it('keeps the mode start(key) entered when the UI that started it hands its focus back, as a closing menu does', async () => {
+    const user = userEvent.setup();
+    render(
+      <StartableRows
+        initial={['Inbox', 'Sent', 'Drafts']}
+        start="Sent"
+        isMenu
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Move Sent'}));
+    const handle = handleOf('Sent');
+    await waitFor(() => expect(handle).toHaveFocus());
+    expect(handle).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it.each([
+    ['cannot move', 'Pinned'],
+    ['is not mounted', 'Spam'],
+  ])(
+    'does nothing with start(key) for a key that %s, and warns in development',
+    async (_, key) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const user = userEvent.setup();
+      const onReorder = vi.fn();
+      render(
+        <StartableRows
+          initial={['Pinned', 'Inbox', 'Sent']}
+          fixed={['Pinned']}
+          onReorder={onReorder}
+          start={key}
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: `Move ${key}`}));
+      for (const label of ['Inbox', 'Sent']) {
+        expect(handleOf(label)).toHaveAttribute('aria-pressed', 'false');
+      }
+      await user.keyboard('{ArrowDown}');
+      expect(onReorder).not.toHaveBeenCalled();
+      expect(
+        warn.mock.calls.some(([message]) =>
+          String(message).includes(`start(${key})`),
+        ),
+      ).toBe(true);
+      warn.mockRestore();
+    },
+  );
+
+  it('starts reorder mode in the list mounted last when one object serves two, and warns in development', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const reorderable = createReorderable({onReorder: () => {}});
+    render(
+      <>
+        <List reorderable={reorderable} aria-label="Today">
+          <ListItem itemKey="same" label="Today's" />
+        </List>
+        <List reorderable={reorderable} aria-label="Later">
+          <ListItem itemKey="same" label="Later's" />
+        </List>
+      </>,
+    );
+    act(() => reorderable.start('same'));
+    expect(handleOf("Later's")).toHaveAttribute('aria-pressed', 'true');
+    expect(handleOf("Today's")).toHaveAttribute('aria-pressed', 'false');
+    expect(
+      warn.mock.calls.some(([message]) =>
+        String(message).includes('more than one collection'),
+      ),
+    ).toBe(true);
+    warn.mockRestore();
   });
 
   it("keeps the mouse drag slop equal to the date wheel's", () => {

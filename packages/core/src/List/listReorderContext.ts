@@ -93,12 +93,20 @@ export interface ListReorderEngine {
     getList: () => HTMLElement | null,
     hintId: string,
   ): ListReorderSession;
+  /**
+   * Reorder mode for the item with `key`, started from the app's own UI, in
+   * the collection the object with `options` is mounted on (the one mounted
+   * last, if several).
+   */
+  start(options: ListReorderOptions, key: Key): void;
 }
 
 /** What a reorderable object holds (reorderable/createReorderable.ts). */
 export interface ReorderableInternals {
   readonly options: ListReorderOptions;
   readonly [REORDER_ENGINE]: ListReorderEngine;
+  /** Reorder mode for the item with `key`, from the app's own UI. */
+  start(key: Key): void;
 }
 
 /** What a reorderable List hands its rows. */

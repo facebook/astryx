@@ -38,7 +38,7 @@ export const docs = {
       name: 'reorderable',
       type: 'Reorderable',
       description:
-        "The collection's reorder behavior: pass it as `List`'s `reorderable` prop, with an `itemKey` on each `ListItem`. One object may serve several collections; each reorders on its own.",
+        "The collection's reorder behavior: pass it as `List`'s `reorderable` prop, with an `itemKey` on each `ListItem`. Make it once per collection (with useMemo); one made on every render still works. Its one method, `start(key)`, enters reorder mode for that item from your own UI (a Move item in its context menu, a toolbar button): the focus moves to its handle, as activating it does; a key that cannot move or is not mounted does nothing and warns in development. One object may serve several collections, each reordering on its own; `start` then uses the one mounted last.",
     },
   ],
   usage: {
@@ -54,6 +54,11 @@ export const docs = {
         guidance: true,
         description:
           'Use `isReorderable` for rows that must stay put, such as a pinned first row.',
+      },
+      {
+        guidance: true,
+        description:
+          "Offer reorder mode from your own UI too, such as a row's context menu, with `reorderable.start(item.id)`.",
       },
       {
         guidance: false,
@@ -78,7 +83,8 @@ export const docsDense = {
       '(key) => boolean; a rejected row has no handle, and at an end bounds the drop.',
   },
   returnDescriptions: {
-    reorderable: "pass as List's reorderable prop.",
+    reorderable:
+      "pass as List's reorderable prop; start(key) enters reorder mode from your own UI.",
   },
   usage: {
     description:
