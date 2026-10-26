@@ -317,6 +317,27 @@ describe('Switch', () => {
     expect(children.length).toBe(2);
   });
 
+  it('keeps its input when labelPosition changes, so what is attached to it stays attached', () => {
+    const view = render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        labelPosition="start"
+      />,
+    );
+    const input = screen.getByRole('switch');
+    view.rerender(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        labelPosition="end"
+      />,
+    );
+    expect(screen.getByRole('switch')).toBe(input);
+  });
+
   // Retained on purpose: the shared switch contract encodes no busy expectation
   // — no current record adopts one — so this is the only thing gating it.
   it('sets aria-busy on input when loading', () => {

@@ -17,6 +17,7 @@
  */
 
 import {
+  Fragment,
   useId,
   useMemo,
   useOptimistic,
@@ -1095,17 +1096,18 @@ export function Switch({
           !isDisabled && switchPressLayerStyles.pressedAlphaLayered,
         )}>
         {' '}
-        {labelPosition === 'start' ? (
-          <>
-            {labelElement}
-            {switchElement}
-          </>
-        ) : (
-          <>
-            {switchElement}
-            {labelElement}
-          </>
-        )}
+        {/* Keyed, so a labelPosition change moves the nodes instead of
+            rebuilding them: the touch controller stays on the input, track
+            and thumb it attached to (react-component-runtime INV6). */}
+        {labelPosition === 'start'
+          ? [
+              <Fragment key="label">{labelElement}</Fragment>,
+              <Fragment key="switch">{switchElement}</Fragment>,
+            ]
+          : [
+              <Fragment key="switch">{switchElement}</Fragment>,
+              <Fragment key="label">{labelElement}</Fragment>,
+            ]}
       </div>
       {status?.message && (
         <FieldStatus
