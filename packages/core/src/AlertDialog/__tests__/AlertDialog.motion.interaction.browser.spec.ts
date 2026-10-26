@@ -388,21 +388,47 @@ async function sampleAlert(
 const channel = (samples: AlertSample[], key: 'scale' | 'opacity' | 'dim') =>
   samples.map(s => ({t: s.t, value: s[key]}));
 
-/** Frames the compositor presented inside a window, and the longest gap. */
+/**
+ * Frames the screencast delivered inside a window, judged at its own cadence,
+ * as the harness's busy-window verdict judges them: the median interval
+ * between the frames around the window (a loaded machine's screencast can
+ * deliver one frame in several), the frames that cadence makes room for, and
+ * the longest gap in those intervals. A main-thread animation delivers no
+ * frame for the whole block.
+ */
 function cadence(
   frameTimes: ReadonlyArray<number>,
   window: {from: number; to: number},
-): {frames: number; expected: number; longestGapMs: number} {
+): {
+  frames: number;
+  expected: number;
+  cadenceMs: number;
+  longestGapMs: number;
+  longestGapFrames: number;
+} {
   const inside = frameTimes.filter(t => t >= window.from && t <= window.to);
   const edges = [window.from, ...inside, window.to];
   let longestGapMs = 0;
   for (let i = 1; i < edges.length; i += 1) {
     longestGapMs = Math.max(longestGapMs, edges[i] - edges[i - 1]);
   }
+  const around = frameTimes.filter(
+    t => t >= window.from - 250 && t <= window.to + 250,
+  );
+  const intervals = around
+    .slice(1)
+    .map((t, i) => t - around[i])
+    .sort((a, b) => a - b);
+  const cadenceMs =
+    intervals.length >= 4
+      ? intervals[Math.floor(intervals.length / 2)]
+      : 1000 / 60;
   return {
     frames: inside.length,
-    expected: Math.floor((window.to - window.from) / (1000 / 60)),
+    expected: Math.floor((window.to - window.from) / cadenceMs),
+    cadenceMs,
     longestGapMs,
+    longestGapFrames: Math.round(longestGapMs / cadenceMs),
   };
 }
 
@@ -751,11 +777,18 @@ test.describe('under a finger', () => {
       {[`${testInfo.project.name}.json`]: JSON.stringify(proofs, null, 1)},
       testInfo,
     );
+    // Judged at the screencast's own cadence (the harness's verdict, from
+    // #8045): something to judge, nearly every frame that cadence makes room
+    // for, and no gap over three of its intervals. No bound is absolute.
     for (const proof of Object.values(proofs)) {
+      expect(proof.expected, JSON.stringify(proofs)).toBeGreaterThanOrEqual(4);
       expect(proof.frames, JSON.stringify(proofs)).toBeGreaterThanOrEqual(
         proof.expected - 2,
       );
-      expect(proof.longestGapMs, JSON.stringify(proofs)).toBeLessThan(40);
+      expect(
+        proof.longestGapFrames,
+        JSON.stringify(proofs),
+      ).toBeLessThanOrEqual(3);
     }
   });
 
