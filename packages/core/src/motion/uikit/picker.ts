@@ -7,7 +7,8 @@
  *   sit on, the selection band, the release rule (velocity, target, coast),
  *   the snap at rest, the tap spin and the selection tick
  * @position The picker domain of the UIKit constants table (motion/uikit);
- *   read by DateInput/wheelPhysics.ts, DateInput/wheelDrum.ts and the Wheel
+ *   read by DateInput/wheelPhysics.ts, DateInput/wheelDrum.ts and
+ *   DateInput/PickerWheel.tsx (the tap spin)
  *
  * Every leaf carries one `@source` (apple-docs | wwdc | webkit | measured |
  * GUESS); webkit and GUESS values also carry the `@measure` task that will

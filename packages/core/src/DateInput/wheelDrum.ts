@@ -5,10 +5,11 @@
  * @input A wheel's rows, its offset or a curve of it (wheelPhysics.ts), and
  *   the UIKit picker geometry (motion/uikit/picker.ts)
  * @output Exports the drum's geometry: each row's angle on the cylinder and
- *   its CSS transform, the band copy's translation, which row is under a
- *   point, and the curve baked into keyframes per row so a motion runs on the
- *   compositor
- * @position Rendering math of the Wheel (Wheel.tsx); pure, no DOM
+ *   its CSS transform, where a row is drawn through the perspective, the band
+ *   copy's translation, which row is drawn under a point, and the curve baked
+ *   into keyframes per row so a motion runs on the compositor
+ * @position Rendering math of the touch picker wheel (PickerWheel.tsx); pure,
+ *   no DOM
  *
  * UIPickerView draws each row on a cylinder: a row whose centre is d px from
  * the band's (along the list) is turned about x by θ = d ÷ R and moved onto
@@ -26,7 +27,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/DateInput/wheelDrum.test.ts
- * - /packages/core/src/DateInput/Wheel.tsx
+ * - /packages/core/src/DateInput/PickerWheel.tsx
  */
 
 import {picker} from '../motion/uikit/picker';
@@ -124,10 +125,39 @@ export function stripTranslation(offset: number, layout: WheelLayout): number {
   return -(folded + cycle);
 }
 
+/** Where a row is drawn along y, from the band's centre, px. */
+export interface RowExtent {
+  readonly top: number;
+  readonly bottom: number;
+}
+
 /**
- * The row whose cylinder position is under a point `dy` px below the band's
- * centre, or null past the drum's top or bottom. Orthographic: the
- * perspective moves rows by under a pixel along y.
+ * Where a row at `angle` is drawn: laid out at the band's centre, turned by
+ * `rowTransform(angle)` about the origin `rowOrigin` puts R behind it, and
+ * seen through the picker's perspective from the band's centre. Near the
+ * drum's edge the perspective draws a row several px nearer the band than
+ * the cylinder alone would (7 px for the fourth row).
+ */
+export function rowExtent(angle: number, geometry: DrumGeometry): RowExtent {
+  const {radius, perspective, rowHeight} = geometry;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  // An edge `y` from the row's centre, R in front of the origin, turned
+  // about x by −angle; then its depth from the layout plane sets its scale.
+  const drawn = (y: number) => {
+    const turnedY = y * cos + radius * sin;
+    const depth = radius * cos - y * sin - radius;
+    return (turnedY * perspective) / (perspective - depth);
+  };
+  return {top: drawn(-rowHeight / 2), bottom: drawn(rowHeight / 2)};
+}
+
+/**
+ * The row drawn under a point `dy` px below the band's centre, or null where
+ * none is. Inside the band its flat copy shows (the drum is cut away there),
+ * so the band strip's row. Outside it, the drum's rows where `rowExtent`
+ * draws them; a point in the sliver between two of them takes the nearer,
+ * and a point past the outermost one finds nothing.
  */
 export function rowAtPoint(
   dy: number,
@@ -135,15 +165,65 @@ export function rowAtPoint(
   layout: WheelLayout,
   geometry: DrumGeometry,
 ): number | null {
-  if (Math.abs(dy) >= geometry.radius) {
-    return null;
+  const {rowHeight} = layout;
+  if (Math.abs(dy) < geometry.bandHeight / 2) {
+    return rowAtPosition(Math.round((offset + dy) / rowHeight), layout);
   }
-  const distance = geometry.radius * Math.asin(dy / geometry.radius);
-  const index = Math.round((offset + distance) / layout.rowHeight);
+  // Rows within a quarter turn face the viewer; the rest are not drawn.
+  const reach = Math.ceil((geometry.radius * Math.PI) / 2 / rowHeight) + 1;
+  const centre = Math.round(offset / rowHeight);
+  let nearest: number | null = null;
+  let nearestGap = Infinity;
+  let drawnAbove = false;
+  let drawnBelow = false;
+  for (let position = centre - reach; position <= centre + reach; position++) {
+    const distance = position * rowHeight - offset;
+    if (!isDrawnAt(position, distance, layout)) {
+      continue;
+    }
+    const angle = rowAngle(distance, geometry);
+    if (!isRowVisible(angle)) {
+      continue;
+    }
+    const {top, bottom} = rowExtent(angle, geometry);
+    if (dy >= top && dy <= bottom) {
+      return rowAtPosition(position, layout);
+    }
+    drawnAbove ||= bottom < dy;
+    drawnBelow ||= top > dy;
+    const gap = dy < top ? top - dy : dy - bottom;
+    if (gap < nearestGap) {
+      nearestGap = gap;
+      nearest = position;
+    }
+  }
+  return drawnAbove && drawnBelow && nearest != null
+    ? rowAtPosition(nearest, layout)
+    : null;
+}
+
+/**
+ * Whether the drum draws a row at `position` (`distance` px from the band):
+ * a list's own rows, and on a looping wheel the copy nearest the band.
+ */
+function isDrawnAt(
+  position: number,
+  distance: number,
+  layout: WheelLayout,
+): boolean {
+  if (!layout.looping) {
+    return position >= 0 && position < layout.rowCount;
+  }
+  const cycle = layout.rowCount * layout.rowHeight;
+  return distance >= -cycle / 2 && distance < cycle / 2;
+}
+
+/** The option at `position` along the wheel, or null past a list's ends. */
+function rowAtPosition(position: number, layout: WheelLayout): number | null {
   if (layout.looping) {
-    return wrapIndex(index, layout.rowCount);
+    return wrapIndex(position, layout.rowCount);
   }
-  return index >= 0 && index < layout.rowCount ? index : null;
+  return position >= 0 && position < layout.rowCount ? position : null;
 }
 
 /** One baked sample of a curve. */
