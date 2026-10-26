@@ -18,7 +18,9 @@ export interface ChartMargin {
 
 /** Any d3 scale that maps a domain to a pixel range */
 export type ChartScale =
-  ScaleLinear<number, number> | ScaleBand<string> | ScaleTime<number, number>;
+  | ScaleLinear<number, number>
+  | ScaleBand<string>
+  | ScaleTime<number, number>;
 
 /** Resolved data coordinates from pixel position */
 export interface DataPoint {
