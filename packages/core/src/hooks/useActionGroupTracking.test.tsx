@@ -14,7 +14,7 @@
  * @position jsdom tests of packages/core/src/hooks/useActionGroupTracking.ts
  */
 
-import {render} from '@testing-library/react';
+import {act, render} from '@testing-library/react';
 import {useRef} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {GestureHost} from '../gestures/GestureHost';
@@ -151,6 +151,13 @@ function Group({
       </button>
     </div>
   );
+}
+
+/** Runs the frame in which the gesture host styles what it just attached. */
+function runAttachFrame(): void {
+  act(() => {
+    vi.advanceTimersToNextFrame();
+  });
 }
 
 function mount(props: Partial<Parameters<typeof Group>[0]> = {}) {
@@ -378,6 +385,10 @@ describe('useActionGroupTracking', () => {
   it('leaves no fade behind when tracking turns off or the group unmounts', () => {
     const view = mount();
     const {cancel} = view;
+    // The gesture host reads the surface's touch-action in the frame after it
+    // attaches (spec:AST-094 FR18): that frame runs first, so only the fade's
+    // own timers are counted below.
+    runAttachFrame();
     const f = finger();
     f.down(cancel, centerOf(CANCEL));
     f.up(cancel, centerOf(CANCEL));
@@ -393,6 +404,7 @@ describe('useActionGroupTracking', () => {
     expect(paintOf(cancel)).toBeNull();
     expect(vi.getTimerCount()).toBe(0);
     view.rerender(<Group onCancel={view.onCancel} onDelete={view.onDelete} />);
+    runAttachFrame();
     const g = finger();
     g.down(cancel, centerOf(CANCEL));
     g.up(cancel, centerOf(CANCEL));
