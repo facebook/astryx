@@ -21,7 +21,6 @@ import {PanGestureRecognizer} from '../gestures/PanGestureRecognizer';
 import {ManualClock} from '../gestures/__tests__/harness';
 import {createAnimator, type Animator} from '../motion/animator';
 import {solveAnimatedPageScroll, solvePaging} from '../motion/paging';
-import {formatMotionRoleValue} from '../motion/roles';
 import {rubberBand} from '../motion/rubberBand';
 import {paging} from '../motion/uikit/paging';
 import {createPager, usePager, type Pager, type PagerOptions} from './usePager';
@@ -780,67 +779,46 @@ describe('createPager', () => {
     expect(f.pager.index).toBe(1);
   });
 
-  /** Puts the fixture under a theme scope that sets motion roles. */
-  function themed(f: Fixture, roles: Record<string, string>) {
-    const scope = document.createElement('div');
-    scope.setAttribute('data-astryx-theme', 'paging-test');
-    for (const [variable, value] of Object.entries(roles)) {
-      scope.style.setProperty(variable, value);
-    }
-    document.body.appendChild(scope);
-    scope.appendChild(f.viewport);
-    return scope;
-  }
-
-  it("a theme's --motion-paging-settle spring reaches the settle", async () => {
+  // Touch motion stays internal: the paging values are constants, so no
+  // `--motion-paging-…` variable changes a settle or a goTo.
+  it('a --motion-paging-… variable changes neither the settle nor goTo', async () => {
     const plain = setup({defaultIndex: 1});
     await drag(plain, {from: 300, dx: -250, step: 4, dt: 8, hold: 100});
     await advance(16, plain.clock);
     await advance(150, plain.clock);
-    const integrator = -plain.x();
+    const integrator = plain.x();
 
     const f = setup({defaultIndex: 1});
-    themed(f, {
-      '--motion-paging-settle': formatMotionRoleValue('spring', {
-        response: 1.2,
-        dampingRatio: 1,
-      }),
-    });
+    const scope = document.createElement('div');
+    scope.setAttribute('data-astryx-theme', 'paging-test');
+    scope.style.setProperty(
+      '--motion-paging-settle',
+      'spring(response 1.2s, damping-ratio 1)',
+    );
+    scope.style.setProperty(
+      '--motion-paging-animated-scroll-duration-ms',
+      '600ms',
+    );
+    scope.style.setProperty(
+      '--motion-paging-animated-scroll-curve',
+      'cubic-bezier(0, 0, 1, 1)',
+    );
+    document.body.appendChild(scope);
+    scope.appendChild(f.viewport);
     await drag(f, {from: 300, dx: -250, step: 4, dt: 8, hold: 100});
-    expect(f.pager.index).toBe(2);
-    const lift = -f.x();
     await advance(16, f.clock);
     await advance(150, f.clock);
-    // The theme's slower spring has covered less of the way to page 2 than
-    // UIKit's integrator in the same time, and still lands on the page.
-    expect(-f.x()).toBeGreaterThan(lift);
-    expect(-f.x()).toBeLessThan(integrator - 20);
-    for (let i = 0; i < 200 && f.pager.isSettling; i++) {
-      await advance(16, f.clock);
-    }
-    expect(f.x()).toBeCloseTo(-2 * WIDTH, 0);
-  });
+    expect(f.x()).toBe(integrator);
+    await settle(f);
+    expect(f.x()).toBe(-2 * WIDTH);
 
-  it("a theme's setContentOffset duration and curve reach goTo", async () => {
-    const f = setup({defaultIndex: 0});
-    themed(f, {
-      '--motion-paging-animated-scroll-duration-ms': formatMotionRoleValue(
-        'duration',
-        600,
-      ),
-      '--motion-paging-animated-scroll-curve': formatMotionRoleValue(
-        'curve',
-        [0, 0, 1, 1],
-      ),
-    });
-    f.pager.goTo(1);
+    // goTo plays the table's 300 ms: landed at 300 ms, not halfway.
+    f.pager.goTo(3);
     await advance(0, f.clock);
     await advance(300, f.clock);
-    // Linear over 600 ms: halfway at 300 ms (the table's 300 ms sinusoid
-    // would have landed).
-    expect(-f.x()).toBeCloseTo(0.5 * WIDTH, -1);
-    await settle(f);
-    expect(f.x()).toBe(-WIDTH);
+    await advance(16, f.clock);
+    expect(f.x()).toBe(-3 * WIDTH);
+    scope.remove();
   });
 
   // design:reduced-motion (current): after the finger lifts nothing travels.
