@@ -519,6 +519,45 @@ for (const item of cases) {
         : '#storybook-root';
     const subject = page.locator(rootSelector);
     await subject.waitFor();
+    // Read the shipped transitions under reduced motion before
+    // `holdMotionStill` overrides every duration for the captures:
+    // design:reduced-motion DR1/DR3 require a fine-pointer state change to
+    // complete at once, with no animated transform.
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    const reducedMotionTransitions = await page.evaluate(selector => {
+      const root = document.querySelector(selector);
+      return [
+        ...(root?.querySelectorAll(
+          '.astryx-complex-selector, .astryx-complex-selector *',
+        ) ?? []),
+      ]
+        .map(element => {
+          const style = getComputedStyle(element);
+          const properties = style.transitionProperty.split(',');
+          const durations = style.transitionDuration.split(',');
+          return properties
+            .map((property, index) => ({
+              property: property.trim(),
+              duration: (durations[index % durations.length] ?? '0s').trim(),
+            }))
+            .filter(
+              ({property, duration}) =>
+                (property === 'transform' || property === 'all') &&
+                Number.parseFloat(duration) > 0,
+            )
+            .map(transition => ({
+              target:
+                typeof element.className === 'string'
+                  ? (element.className
+                      .split(' ')
+                      .find(name => name.startsWith('astryx-')) ??
+                    element.tagName.toLowerCase())
+                  : element.tagName.toLowerCase(),
+              ...transition,
+            }));
+        })
+        .flat();
+    }, rootSelector);
     if (item.inset) {
       await page.addStyleTag({
         content: `:root { --astryx-layer-inset-block-end: ${APP_INSET_BLOCK_END}px; }`,
@@ -722,7 +761,8 @@ for (const item of cases) {
     let statePass: boolean;
     if (item.state === 'rest') {
       statePass =
-        item.story === 'secondary'
+        reducedMotionTransitions.length === 0 &&
+        (item.story === 'secondary'
           ? observed.comboboxes === 1
           : observed.comboboxes === 10 &&
             observed.statuses === 3 &&
@@ -732,7 +772,7 @@ for (const item of cases) {
             matrixFacts.invalid?.required === 'true' &&
             matrixFacts.invalid.invalid === 'true' &&
             matrixFacts.customRole === 'combobox' &&
-            matrixFacts.customDisabled === null;
+            matrixFacts.customDisabled === null);
     } else if (item.state === 'hover') {
       statePass =
         stateFacts.hovered === true &&
@@ -804,6 +844,7 @@ for (const item of cases) {
         viewport: item.viewport,
         dpr: 1,
         appInsetBlockEnd: item.inset ? APP_INSET_BLOCK_END : 0,
+        reducedMotionTransforms: item.state === 'rest' ? 0 : null,
         runningAnimations: 0,
         geometryStable: true,
         textContrastThreshold: 4.5,
@@ -816,6 +857,7 @@ for (const item of cases) {
         restPaint,
         statePaint,
         stateFacts,
+        reducedMotionTransitions,
         popup: popupScroll,
         contrast,
         settled,
