@@ -599,19 +599,42 @@ describe('PickerWheel — under reduced motion', () => {
     Reflect.deleteProperty(Element.prototype, 'animate');
   });
 
-  /** The wheel animated opacity alone, on the Reduce Motion fade. */
+  /**
+   * Nothing travels, on the Reduce Motion fade (design:reduced-motion DR2):
+   * the drawing's opacity dips out and back in, and the rows and the strip
+   * hold where they are until the fade's midpoint, then step onto their
+   * rows, on the compositor.
+   */
   function expectFadesOnly() {
-    expect(animations.length).toBeGreaterThan(0);
+    let fades = 0;
     for (const {keyframes, options} of animations) {
-      for (const frame of keyframes) {
-        expect(
+      const properties = new Set(
+        keyframes.flatMap(frame =>
           Object.keys(frame).filter(
             key => key !== 'offset' && key !== 'easing',
           ),
-        ).toEqual(['opacity']);
+        ),
+      );
+      if (!properties.has('transform')) {
+        expect([...properties]).toEqual(['opacity']);
+        expect(options.duration).toBe(FADE_MS);
+        fades += 1;
+        continue;
       }
-      expect(options.duration).toBe(FADE_MS);
+      // A landing: the origin held, then the destination, stepping at the
+      // fade's midpoint.
+      expect(keyframes).toHaveLength(4);
+      const [origin, held, landed, end] = keyframes;
+      expect(origin.offset).toBe(0);
+      expect(held).toEqual({...origin, offset: held.offset});
+      expect(landed.offset).toBe(held.offset);
+      expect(end).toEqual({...landed, offset: 1});
+      expect(Number(held.offset) * Number(options.duration)).toBeCloseTo(
+        FADE_MS / 2,
+        6,
+      );
     }
+    expect(fades).toBeGreaterThan(0);
   }
 
   it('coasts a fling as momentum, its rows flat, then commits it', () => {
