@@ -577,12 +577,17 @@ export function CircularProgress({
   // interrupted, the point its own curve has reached. A change's cleanup
   // records it and releases the change's animations (react-component-runtime
   // INV3), so the next change starts from there and an unmount or a switch to
-  // indeterminate leaves nothing running.
-  const drawn = useRef(percentage);
+  // indeterminate leaves nothing running. While indeterminate no value is
+  // drawn (null): the ring draws its own arc, not the value it holds, so the
+  // next value draws at once instead of sweeping from that held value.
+  const drawn = useRef<number | null>(percentage);
   useLayoutEffect(() => {
     const from = drawn.current;
-    if (isIndeterminate || from === percentage) {
-      // Indeterminate draws its own arc; a return to a value starts from rest.
+    if (isIndeterminate) {
+      drawn.current = null;
+      return;
+    }
+    if (from === null || from === percentage) {
       drawn.current = percentage;
       return;
     }
