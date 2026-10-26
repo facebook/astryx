@@ -30,7 +30,8 @@ import {listReorderEngine} from '../List/listReorderEngine';
 export interface ReorderMove<TKey extends Key = Key, TTo = number> {
   /**
    * The moved item's key: its ListItem's `itemKey`, or the key a collection
-   * built from data takes from `getKey(item)`.
+   * built from data takes through its `idKey` (a field name or a function of
+   * the item, as Table's).
    */
   readonly key: TKey;
   /**

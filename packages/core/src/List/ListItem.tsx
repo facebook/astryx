@@ -434,7 +434,7 @@ export function ListItem({
   // In a reorderable List: a trailing handle, or a row that stays put.
   const reorder = ctx?.reorder;
   const reorderHandle =
-    reorder != null &&
+    reorder &&
     itemKey != null &&
     (reorder.options.isReorderable?.(itemKey) ?? true) ? (
       <reorder.session.Handle
@@ -488,7 +488,7 @@ export function ListItem({
   // announcements of the moves beside it. It follows the row, so the row's
   // element is set when it records it.
   const reorderName =
-    reorder != null && !isRenderable(reorderHandle) ? (
+    reorder && !reorderHandle ? (
       <reorder.session.RowName row={rowRef} label={label} />
     ) : null;
 
@@ -502,7 +502,7 @@ export function ListItem({
         label={label}
         description={description}
         endContent={
-          isRenderable(reorderHandle) ? (
+          reorderHandle ? (
             <>
               {endContent}
               {reorderHandle}
@@ -541,7 +541,7 @@ export function ListItem({
             edge === 'bleed' && styles.edgeBleed,
             // A focused handle rings itself; the row's focus-within ring stays
             // off for it (two rings, and the list clips the row's sides).
-            isRenderable(reorderHandle) && reorder?.session.rowStyle,
+            reorderHandle && reorder?.session.rowStyle,
             xstyle,
           ] as StyleXStyles
         }
