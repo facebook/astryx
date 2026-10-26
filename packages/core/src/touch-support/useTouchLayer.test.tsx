@@ -120,6 +120,18 @@ describe('useTouchLayer', () => {
     expect(cleanup).toHaveBeenCalledTimes(1);
   });
 
+  it('reads the pointer afresh for a layer mounted after the last one left', () => {
+    const turn = primaryPointer(true);
+    const first = recorder();
+    render(<first.Layer />).unmount();
+    expect(first.setup).toHaveBeenCalledTimes(1);
+    // Nothing follows the pointer while no layer is mounted.
+    turn(false);
+    const second = recorder();
+    render(<second.Layer />);
+    expect(second.setup).not.toHaveBeenCalled();
+  });
+
   it('moves to a new element: the old one cleans up, the new one sets up', () => {
     primaryPointer(true);
     const {setup, cleanup, Layer} = recorder();

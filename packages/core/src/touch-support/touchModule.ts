@@ -15,7 +15,7 @@
  * The one place the module's primitives are gathered. Importing it attaches
  * no listeners: a recognizer listens only once a component starts it under a
  * coarse pointer (`spec:AST-094` FR19, FR24). Every member is a plain value,
- * never a hook. The animator joins the gesture core here.
+ * never a hook.
  *
  * SYNC: When modified, update scripts/touch-support-bundle.test.mjs.
  */

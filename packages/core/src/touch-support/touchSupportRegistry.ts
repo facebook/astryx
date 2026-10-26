@@ -13,8 +13,9 @@
  * only says whether a touch layer runs now. Under a fine primary pointer the
  * answer is null, so a component keeps its plain behavior and attaches no
  * input listener (`spec:AST-094` FR19). The media query is read when first
- * asked and followed only while a reader subscribes. On the server the
- * answer is always null.
+ * asked and followed only while a reader subscribes; once the last reader
+ * leaves, the read is forgotten, so the next one reads the pointer afresh.
+ * On the server the answer is always null.
  */
 
 import {TOUCH_QUERY} from '../utils/touchPresentation';
@@ -74,7 +75,10 @@ export function subscribeTouchModule(listener: () => void): () => void {
   return () => {
     listeners.delete(listener);
     if (listeners.size === 0) {
+      // Unfollowed, the read would go stale: the next layer reads afresh.
       query?.removeEventListener('change', onChange);
+      query = null;
+      isCoarse = null;
     }
   };
 }
