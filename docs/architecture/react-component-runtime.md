@@ -159,7 +159,7 @@ those contracts.
   its own elements, and follows INV3 and INV5. The hook follows INV3 and
   INV5.
 - **INV12 — Size changes inside a container have one module.** **Proposed;
-  pending owner decision (OQ3, OQ4).** When something inside an area changes
+  pending owner decision (OQ3–OQ5).** When something inside an area changes
   size, the content after it glides to its new place instead of jumping. The
   measuring, the walk, and the translate all live inside one internal module;
   the public hook only marks the area where the walk stops, and the internal
