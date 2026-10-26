@@ -58,6 +58,21 @@ describe('spring rows', () => {
     }
   });
 
+  it('registering the alert\u2019s roles carries its spring and no other row', () => {
+    const alert = bundle(
+      "import {registerAlertTable} from './alert'; registerAlertTable();",
+    );
+    expect(alert).toContain(ALERT);
+    for (const other of [
+      KEYBOARD,
+      SHEET_DETENT,
+      FINGER_TRACKING,
+      DIRECT_CHANGE,
+    ]) {
+      expect(alert).not.toContain(other);
+    }
+  });
+
   it('registering the motion roles carries only the springs that are roles', () => {
     const roles = bundle(
       "import {registerSpringsTable} from './springs'; registerSpringsTable();",
