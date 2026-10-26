@@ -48,7 +48,6 @@
 
 import {registerMotionTable} from '../roles';
 
-/** @experimental */
 export const refreshControl = {
   /**
    * The refreshing inset: while refreshing, the content rests this far below
@@ -187,7 +186,6 @@ export const refreshControl = {
  * retune (motion/roles.ts). Nothing registers on import: the refresh
  * control's touch layer calls it once before its first animation (it is
  * idempotent), so a page that never pulls ships no registry.
- * @experimental
  */
 export function registerRefreshControlTable(): void {
   registerMotionTable('refreshControl', refreshControl, {
