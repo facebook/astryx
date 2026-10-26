@@ -54,10 +54,12 @@ function Sheet() {
   gesture the unmount ended.
 - `usePressTracker(ref, options)` gives an element `UIControl` touch tracking
   (see below). It follows its element the same way, takes `isBraking` (by
-  default the host's: a touch that stops a flick presses nothing), and
-  rebuilds its tracker when `trackingExpansion`, `highlightDelay`,
-  `cancelTravel` or `quickTapFlash` change, from the next touch. Unmounting
-  calls neither `onHighlightChange` nor `onControlEvent`.
+  default the host's: a touch that stops a flick presses nothing), and keeps
+  one tracker for the component's life: it reads `trackingExpansion`,
+  `highlightDelay`, `cancelTravel` and `quickTapFlash` (and the ref itself)
+  as they are now, so a change, even mid-press, never drops the press in
+  progress. Unmounting or losing its element calls neither
+  `onHighlightChange` nor `onControlEvent`.
 
 Outside React, `getGestureHost(document).attach(element, recognizer)` does
 the same and returns a detach function. `getGestureHost(document).fingersDown()`
@@ -71,7 +73,7 @@ in `shouldBegin`, so two fingers stay the browser's pinch.
 | -------------------------------- | ---------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `TapGestureRecognizer`           | `UITapGestureRecognizer`           | discrete   | `numberOfTapsRequired`, `numberOfTouchesRequired`; fails past 45 px of travel, on extra fingers, a hold over 1.5 s, a late or far next tap                                                            |
 | `LongPressGestureRecognizer`     | `UILongPressGestureRecognizer`     | continuous | `minimumPressDuration` 500 ms, `allowableMovement` 10 px (a distance, not per axis), `numberOfTapsRequired`; a zero duration begins on the touch itself (a selection tracker over a group of actions) |
-| `PanGestureRecognizer`           | `UIPanGestureRecognizer`           | continuous | min/max touches, `direction` (axis or one-way) with `axisRatio`, `lockAxis`, `scrollEdge`, `scrollHandoff`; `translation()`, `totalTranslation()`, `velocity()`                                       |
+| `PanGestureRecognizer`           | `UIPanGestureRecognizer`           | continuous | min/max touches, `direction` (axis or one-way) with `axisRatio`, `lockAxis`, `scrollEdge`; `translation()`, `totalTranslation()`, `velocity()`                                                        |
 | `SwipeGestureRecognizer`         | `UISwipeGestureRecognizer`         | discrete   | recognized during the motion; one or more directions, `numberOfTouchesRequired`; 50 px along, at most 50 px across, 500 ms                                                                            |
 | `PinchGestureRecognizer`         | `UIPinchGestureRecognizer`         | continuous | `scale` (settable, to re-base it), `velocity` in scale per second, `focalPoint()`                                                                                                                     |
 | `RotationGestureRecognizer`      | `UIRotationGestureRecognizer`      | continuous | `rotation` in radians, unwrapped, clockwise positive; `velocity` in rad/s                                                                                                                             |
@@ -227,45 +229,64 @@ warning, so two writers never fight over the paint. Pass another
   flight and removes it all. A development warning names the first attach
   under a fine pointer: attach touch work under a touch presentation. The
   one carve-out is a recognizer or press tracker that reads each event's
-  pointer itself, as `spec:AST-057`'s row swipe does, or a stepper whose
-  held press repeats the same under a mouse: attached with
+  pointer itself, as `spec:AST-057`'s row swipe does, or a press tracker that
+  paints press feedback (an FR19 exception for press feedback only, pending
+  in `spec:AST-094`'s amendment): attached with
   `perEventPointer: true` (an option of `attach`, `attachConsumer`,
   `useGestureRecognizer` and `usePressTracker`), it gets the host's
   listeners, its deliveries and its own element's style on any pointer,
-  with no warning, while everything else beside it stays inactive.
+  with no warning, while everything else beside it stays inactive. There
+  such a press tracker paints a finger's press and does nothing else: it
+  reports no control event, keeps nothing from the browser, which still
+  pans, and takes no mouse or pen press.
+  Even where it is coarse, the host listens only while something enabled
+  could take a touch: a disabled recognizer or consumer registers nothing
+  (FR24), and after a consumer's `isEnabled()` changes, `host.update(element)`
+  re-syncs. So a component that activates through a recognizer (a tap that
+  pages, a press that opens) also activates from the browser's own `click`
+  where the pointer is fine, and a mouse, a trackpad and the keyboard keep
+  working; its tests declare a phone's pointer for the touch path
+  (`coarsePrimaryPointer()` in `__tests__/pointerQuery.ts`).
 - **`touch-action`.** Each element gets the intersection of what its
   recognizers leave the browser, and never more than the element's own
   value allows: a caller's explicit `touch-action` (a trigger's `none`)
   stays in force, as the intersection of both. It is set inline on attach
   and restored on detach (opt out with `manageStyle: false`):
 
-  | Recognizers on the element                         | `touch-action`      |
-  | -------------------------------------------------- | ------------------- |
-  | tap, long press                                    | `manipulation`      |
-  | horizontal pan or swipe, horizontal edge pan       | `pan-y pinch-zoom`  |
-  | vertical pan or swipe                              | `pan-x pinch-zoom`  |
-  | one-way pan, pan with `scrollEdge`/`scrollHandoff` | left as is (`auto`) |
-  | free pan                                           | `pinch-zoom`        |
-  | pinch or rotation                                  | `pan-x pan-y`       |
-  | pinch or rotation together with a free pan         | `none`              |
-  | a watcher (`claimsTouches: false`), any direction  | left as is (`auto`) |
+  | Recognizers on the element                        | `touch-action`      |
+  | ------------------------------------------------- | ------------------- |
+  | tap, long press                                   | `manipulation`      |
+  | horizontal pan or swipe, horizontal edge pan      | `pan-y pinch-zoom`  |
+  | vertical pan or swipe                             | `pan-x pinch-zoom`  |
+  | one-way pan, pan with `scrollEdge`                | left as is (`auto`) |
+  | free pan                                          | `pinch-zoom`        |
+  | pinch or rotation                                 | `pan-x pan-y`       |
+  | pinch or rotation together with a free pan        | `none`              |
+  | a watcher (`claimsTouches: false`), any direction | left as is (`auto`) |
 
   A one-way pan leaves the browser its own axis too: a toast dragged away
   from its edge scrolls the page. It claims its direction by cancelling
   `touchmove` when it begins.
 
   `pinch-zoom` stays in the value unless a pinch or rotation recognizer is
-  attached, so the page stays zoomable (WCAG 1.4.4). A long press also turns
-  off the iOS callout and text selection on its element.
+  attached, so the page stays zoomable (WCAG 1.4.4). A long press with a
+  hold also turns off the iOS callout and text selection on its element for
+  its press; one at 0 ms (a touch-down detector) or given
+  `selectionLock: null` leaves them to the browser.
 
-  While a finger or a pen is down, the host turns them off too on the
-  element of a press tracker (attached or delegated: a control or a cell)
-  and of a recognizer with `preventsTextSelection` (a slider's, a segmented
+  While a finger or a pen is down, the host turns them off too only where
+  the hold does something (`spec:AST-094` FR41): on the element of a
+  recognizer created with a `selectionLock` (pass `lockSelection`; a
+  slider's thumb, a segmented
   control's or a switch's drag) that would take the touch (enabled, and
-  accepting its pointer), and restores them when the contact ends: UIKit
-  never starts a selection under a held control or cell. The document press
-  controller (`usePressFeedback` rows) takes the same lock on its surface,
-  iOS or not (`selectionLock.ts` is shared). A non-text input under the finger inside such an element (a checkbox, a radio, a switch's input) is locked too: WebKit's own stylesheet makes every input selectable, which no ancestor's lock reaches. A text field keeps its selection, since a held finger places its caret. Only where the
+  accepting its pointer), restored when the contact ends. The host calls
+  the recognizer's lock and never imports one, so a component with no such
+  hold does not bundle it. A press tracker created with a `selectionLock`
+  (a control whose own record defines a hold action, such as a stepper's
+  hold-repeat) gets the same for each press. A press-tracked
+  control or row whose hold does nothing, and the document press
+  controller's surfaces (`usePressFeedback` rows), keep the browser's
+  long-press selection; a tap never selects. A non-text input under the finger inside such an element (a checkbox, a radio, a switch's input) is locked too: WebKit's own stylesheet makes every input selectable, which no ancestor's lock reaches. A text field keeps its selection, since a held finger places its caret. Only where the
   primary pointer is coarse: a mouse never takes the lock, nor a finger or a
   pen where the primary pointer is fine (a touchscreen laptop, a desktop pen
   tablet), so desktop selection is unchanged (`spec:AST-094` FR19); content
@@ -284,31 +305,25 @@ warning, so two writers never fight over the paint. Pass another
   as a held stepper; never plain buttons, links, cards or list cells) gets
   one: once its press is delivered its finger's moves are cancelled, so the
   browser's pan never takes the held control (UIKit's
-  `touchesShouldCancel(in:)` is false for a tracking control). A scroll that
-  starts on such a control waits on the main thread; a move before the
-  press is delivered still scrolls. The listener the host
+  `touchesShouldCancel(in:)` is false for a tracking control). Where the
+  pointer is coarse its element also gets `touch-action: manipulation`, as a
+  tap recognizer's does (`spec:AST-094` FR18), so taps in quick succession
+  never zoom. A scroll that starts on such a control waits on the main
+  thread; a move before the press is delivered still scrolls. The listener the host
   adds to a finger's target at touch-down, for a target that leaves the
   document mid-gesture, is passive too unless a recognizer on that touch can
   claim while it moves.
-- **Early claim.** A one-way pan over content the browser could scroll (an
-  overlay such as a toast or a banner) cancels its touch's moves once the
-  finger has gone 5 px its way (`claimDistance`), before WebKit claims a
-  slow drag at 10–11 px; it still begins at 10 px with UIKit's translation.
-  Safari gives the page no scroll for a touch once one of its moves was
-  cancelled, so from then on the touch is the pan's: a reversal no longer
-  fails it, and it begins whichever way the finger goes. That is UIKit's
-  outcome too, where a drag that starts on an overlay never reaches the
-  content behind it. A `scrollEdge` pan (a sheet over its own content)
-  claims at its begin instead, as UIKit gives a reversed drag to the
-  content.
+- **Claim at the begin.** A pan claims its touch only as it begins, at
+  UIKit's 10 pt (`spec:AST-094` FR19), before WebKit commits a slow drag to
+  a scroll at 10–11 px; a drag the browser took first stays the browser's
+  (FR14).
   Measured in Mobile Safari (iOS 26.2): `touchmove` arrives from the first
   pixel; on a scrollable element WebKit commits to scrolling at 10 to 11 px
   (the last cancelable `touchmove` at 10 px), and cancelling every
   `touchmove` from 8 px keeps the page still for the whole gesture. Under
   `pan-y` it scrolls only drags steeper than about 2:1 to 3:1, once the
   vertical travel reaches about 10 px. A pan that competes with native
-  scrolling therefore decides at 10 px or less (the toast's swipe decides at
-  8).
+  scrolling therefore decides at 10 px or less.
 - **The browser's claim.** `pointercancel` on a finger, or a scroll above
   the touch once the finger has travelled the slop (the browser starts a pan
   no earlier), means the browser took the finger; a scroll under a finger
@@ -319,8 +334,7 @@ warning, so two writers never fight over the paint. Pass another
   finger's main axis. (Chromium also stops asking after one unconsumed
   `touchmove` when `touch-action` keeps it from panning that way, as for a
   horizontal drag under `pan-y`; that is not a claim.) Possible recognizers that share it fail, active ones are
-  cancelled, and the view's press is cancelled. The exception is a pan with
-  `scrollHandoff`, which keeps watching.
+  cancelled, and the view's press is cancelled.
 - **Clicks.** When a touch's gesture cancelled the view's touches, its
   `touchend` is cancelled (no click and no compatibility mouse events) and a
   one-shot guard swallows the next trusted click. A click held back for a
@@ -335,22 +349,16 @@ warning, so two writers never fight over the paint. Pass another
 
 ### Native scrolling
 
-`scrollEdge` and `scrollHandoff` make a pan share its axis with the native
-scrollers under the finger. This is the sheet over its own list:
+`scrollEdge` makes a pan share its axis with the native scrollers under the
+finger. This is the sheet over its own list: the pan begins only if nothing
+under the touch could scroll for that movement, the finger landed at the
+edge and pulls away from it. The browser has not committed yet, so beginning
+claims the touch and the content never moves.
 
-- With `scrollEdge`, the pan begins only if nothing under the touch could
-  scroll for that movement: the finger landed at the edge and pulls away
-  from it. The browser has not committed yet, so beginning claims the touch
-  and the content never moves.
-- With `scrollHandoff` (one-way directions only), once the browser has taken
-  the touch to scroll, the pan keeps watching. When the content runs out in
-  the pan's direction, the travel past that point becomes the pan, after
-  `contentEndHandoffSlop`. The point is placed from the distance the content
-  had left, not at the next sample. If the finger comes back, the
-  translation clamps at zero while the content scrolls again. This is NOT
-  UIKit: a UIKit sheet decides when the drag begins, and a drag that began
-  as a scroll stays the scroll view's for its whole length (it scrolls to
-  the top, then rubber-bands). For parity use `scrollEdge` alone.
+Who gets a drag is decided once, when it begins, as in UIKit: a drag that
+began as a scroll stays the scroll view's for its whole length (it scrolls
+to the top, then rubber-bands), and never changes hands midway
+(`spec:AST-094` FR14).
 
 "Could scroll" follows the browser's own rules: `touch-action` between the
 touch and each scroller, scroll chaining stopped by `overscroll-behavior`,
@@ -444,10 +452,11 @@ in `../utils/touchPresentation.ts`:
 - touch behaviours (this system, the press model, UIKit springs and
   timings) key on a coarse PRIMARY pointer (`TOUCH_QUERY`); the gesture
   host itself installs nothing while it is fine (What the browser is told);
-- layout behaviours key on a compact viewport, below the theme's `md`
-  width point (`spec:AST-012` FR9): `COMPACT_QUERY` spells the default
-  points for a style, and behaviour reads the active theme's definition, so
-  a theme that moves `md` moves compact with it;
+- layout behaviours key on a compact viewport, narrower than the theme's
+  `md` width point or shorter than 500 px (`COMPACT_QUERY`; behaviour reads
+  the active theme's points), the closest a size can get to
+  UIKit's compact size class (a Max-size iPhone in landscape is its one
+  known miss);
 - a presentation that needs both, a sheet in place of a popover, asks for
   both (`COMPACT_TOUCH_QUERY`).
 
@@ -495,10 +504,6 @@ presentation above.
   reveal inside the row would never wait, but it tracks with scroll physics
   rather than UIKit's measured tracking spring; it is a possible opt-in, not
   the default.
-- **A jitter on an overlay keeps the touch.** A finger that moves 5 px or
-  more in a one-way overlay's direction and then drags the other way moves
-  the overlay, not the page behind it, for that touch (UIKit's outcome, and
-  Safari would not scroll the page after a cancelled move anyway).
 - **Follow-up:** Chromium keeps 3:1 to 1.5:1 drags as swipes even with a
   passive listener (its `touch-action` filter drops a `pan-y` scroll that
   starts sideways), so a passive listener there would cost no parity. It
@@ -546,5 +551,5 @@ presentation above.
   `pnpm exec playwright test --config packages/core/src/gestures/__tests__/browser/playwright.config.ts`;
   where WebKit cannot launch on the host, its project runs in the official
   Playwright image (see the config header). The same fixture passed in
-  Mobile Safari on the iOS 26.2 simulator: claims, click suppression, scroll
-  handoff, pinch, and a long press at exactly 500 ms.
+  Mobile Safari on the iOS 26.2 simulator: claims, click suppression, the
+  scroll edge, pinch, and a long press at exactly 500 ms.

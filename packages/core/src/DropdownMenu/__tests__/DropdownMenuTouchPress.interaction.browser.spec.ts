@@ -6,10 +6,13 @@
  *   CDP / WebKit's input command), the interaction harness, and UIMenu's
  *   values from the UIKit constants table
  * @output Interaction proofs for a finger on DropdownMenu's trigger, one
- *   touch model on every engine: a held finger opens the menu at UIKit's
- *   hold-open delay and its lift picks nothing; a tap opens at the lift; a
- *   held press slides onto a row and picks it, once; a storyboard of the
- *   press, hold, slide and lift
+ *   touch model on every engine (`spec:AST-094` FR29): the menu opens as the
+ *   finger presses a trigger in no scroll view, and the lift picks nothing; a
+ *   tap opens it as it presses and its lift leaves it open; in scrolling page
+ *   content a held finger opens it once the 150 ms content-touch delay
+ *   passes, and a scroll that starts on the trigger takes the touch; a press
+ *   that slides onto a row, past the 10 pt handoff, picks that row once; a
+ *   storyboard of the press, hold, slide and lift
  * @position Evidence for the finger's press model in DropdownMenu (and
  *   MoreMenu, which renders it); the machine itself is unit-tested in
  *   menuPressGesture.test.ts and useMenuPress.test.tsx
