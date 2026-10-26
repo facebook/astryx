@@ -1005,8 +1005,11 @@ export function useSwitchTouch(
     const input = parts.input.current;
     const thumb = parts.thumb.current;
     const track = parts.track.current;
+    // A disabled or busy switch takes no touch: no touch-only listener is
+    // active (spec:AST-094 FR24).
     if (
       !isTouch ||
+      !isInteractive ||
       surface == null ||
       input == null ||
       thumb == null ||
@@ -1016,5 +1019,5 @@ export function useSwitchTouch(
     }
     controller.attach({surface, input, thumb, track});
     return () => controller.detach();
-  }, [controller, isTouch, parts]);
+  }, [controller, isTouch, isInteractive, parts]);
 }

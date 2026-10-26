@@ -655,7 +655,7 @@ export const InScrollingList: Story = {
     docs: {
       description: {
         story:
-          'Switches in rows of a list taller than the screen, as in a settings page. Under a finger, a finger that starts moving at once scrolls the page; a finger that rests on a switch first keeps it, so moving then never scrolls and lifting toggles.',
+          'Switches in rows of a list taller than the screen, as in a settings page. Under a finger, a vertical drag scrolls the page and changes nothing, even after the finger rests on a switch; a horizontal drag moves the thumb, and a tap toggles.',
       },
     },
   },
