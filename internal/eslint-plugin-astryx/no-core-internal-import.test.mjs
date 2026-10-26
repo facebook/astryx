@@ -5,10 +5,14 @@
  */
 
 import {RuleTester} from 'eslint';
+import tseslint from 'typescript-eslint';
 import rule from './no-core-internal-import.js';
 
+// typescript-eslint's parser reads the JavaScript cases too, and gives the
+// `typeof import('…')` case its TSImportType node.
 const ruleTester = new RuleTester({
   languageOptions: {
+    parser: tseslint.parser,
     ecmaVersion: 2022,
     sourceType: 'module',
   },
@@ -25,6 +29,11 @@ ruleTester.run('no-core-internal-import', rule, {
     // A path that only contains the word is not the internal subpath.
     {code: `import {x} from '@astryxdesign/core/internalization';`},
     {code: `import {x} from './internal/reorder';`},
+    {code: `const core = require('@astryxdesign/core/List');`},
+    // A computed specifier is not a literal subpath.
+    {code: `const m = require(name);`},
+    {code: `const r = load('@astryxdesign/core/internal/reorder');`},
+    {code: `type T = typeof import('@astryxdesign/core/reorderable');`},
   ],
   invalid: [
     {
@@ -46,6 +55,14 @@ ruleTester.run('no-core-internal-import', rule, {
     {
       code: `import '@astryxdesign/core/internal';`,
       errors: [{message: message('@astryxdesign/core/internal')}],
+    },
+    {
+      code: `const touch = require('@astryxdesign/core/internal/touch');`,
+      errors: [{message: message('@astryxdesign/core/internal/touch')}],
+    },
+    {
+      code: `type Touch = typeof import('@astryxdesign/core/internal/touch');`,
+      errors: [{message: message('@astryxdesign/core/internal/touch')}],
     },
   ],
 });
