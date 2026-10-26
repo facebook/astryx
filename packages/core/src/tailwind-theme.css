@@ -91,10 +91,10 @@
    * content at 4.5:1 or more (architecture:theme-tokens INV11). text-status-*
    * reads the status text role for page text; icons and borders use the same
    * colour by default. */
-  --color-status-info: var(--color-text-info);
-  --color-status-success: var(--color-text-success);
-  --color-status-warning: var(--color-text-warning);
-  --color-status-error: var(--color-text-error);
+  --text-color-status-info: var(--color-text-info);
+  --text-color-status-success: var(--color-text-success);
+  --text-color-status-warning: var(--color-text-warning);
+  --text-color-status-error: var(--color-text-error);
   /* Each status projects by paint property: text-like utilities (text-,
    * decoration-, placeholder-, caret-) read the status text role, line-like
    * utilities (border-, divide-, outline-, ring-) read the status border role,

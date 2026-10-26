@@ -133,11 +133,20 @@ describe('Tailwind theme bridge', () => {
         [`bg-${status}`, fill],
         [`accent-${status}`, fill],
         [`fill-${status}`, fill],
+        [`text-status-${status}`, text],
       ]) {
         expect([utility, compiler.build([utility])]).toEqual([
           utility,
           expect.stringContaining(expected),
         ]);
+      }
+      // text-status-<status> is a text-only alias.
+      for (const utility of [
+        `bg-status-${status}`,
+        `border-status-${status}`,
+        `ring-status-${status}`,
+      ]) {
+        expect(compiler.build([utility])).not.toContain(`.${utility} {`);
       }
     }
   });
