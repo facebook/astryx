@@ -201,6 +201,9 @@ for (const degrees of [35, 45]) {
     // Nothing is claimed before the pan begins at its 10 pt hysteresis; every
     // move from the first one past it is. (Chromium holds back moves inside
     // its own touch slop, so its first move may already be past 10 pt.)
+    // Mobile Safari claims a slow drag for the page at about 10–11 px, so on
+    // the iOS 26.2 simulator a drag steeper than about 27° scrolls the page
+    // instead (25° pages, 30° and 35° scroll), where UIKit pages up to 45°.
     const past = moves.findIndex(
       ([x, y]) =>
         Math.max(Math.abs(x - start[0]), Math.abs(y - start[1])) >= 10,
