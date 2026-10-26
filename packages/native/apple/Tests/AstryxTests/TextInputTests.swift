@@ -276,3 +276,10 @@ import Testing
   let attached = Astryx.TextInput(label: "Email", value: "", status: TextInputStatus(type: .error, message: "Required"))
   #expect(attached.statusTipAccessibility == nil)
 }
+
+@MainActor
+@Test func theFieldDrawsItsValueOnlyWhileReadOnlyOrDisabled() {
+  #expect(!Astryx.TextInput(label: "Email", value: "").isDrawn)
+  #expect(Astryx.TextInput(label: "Email", value: "", isReadOnly: true).isDrawn)
+  #expect(Astryx.TextInput(label: "Email", value: "", isDisabled: true).isDrawn)
+}

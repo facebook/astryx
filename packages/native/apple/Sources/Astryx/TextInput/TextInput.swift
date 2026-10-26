@@ -7,7 +7,10 @@
 public struct TextInput: View {
   public let props: TextInputProps
   @Environment(\.astryx) private var astryx
-  @FocusState private var isFocused: Bool
+  /// Which of the field's two parts holds focus: the editable field, or the
+  /// drawn read-only or disabled field.
+  enum FieldFocus: Hashable { case editable, drawn }
+  @FocusState private var focus: FieldFocus?
   /// Set on the first appearance, so a field that scrolls back into view in a
   /// List or Form does not announce or take focus again.
   @State private var hasAppeared = false
@@ -126,7 +129,7 @@ public struct TextInput: View {
     .onAppear {
       guard !hasAppeared else { return }
       hasAppeared = true
-      if props.hasAutoFocus == true, !hidesControl { isFocused = true }
+      if props.hasAutoFocus == true, !hidesControl { focus = isDrawn ? .drawn : .editable }
       // A field that appears busy says so, as core announces a busy start.
       if props.isLoading == true { AccessibilityNotification.Announcement(AstryxStrings.spinnerLoading).post() }
       // A status message already present when the field appears is
@@ -236,7 +239,6 @@ public struct TextInput: View {
       field
         .font(astryx.font(TypeStyle(astryx.tokens.font.body, families: astryx.tokens.font.family.body)))
         .foregroundStyle(astryx.tokens.color.textPrimary)
-        .focused($isFocused)
         .onSubmit { props.onEnter?() }
         .accessibilityLabel(SwiftUI.Text(accessibilityLabelText))
         .accessibilityHint(SwiftUI.Text(accessibilityDescription))
@@ -250,7 +252,7 @@ public struct TextInput: View {
         if showsClear {
           SwiftUI.Button {
             props.onChange?("")
-            isFocused = true
+            focus = .editable
           } label: {
             icon("close").frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
           }
@@ -311,28 +313,49 @@ public struct TextInput: View {
     }
   }
 
-  @ViewBuilder private var field: some View {
+  /// Whether the field draws its value instead of the editable field.
+  var isDrawn: Bool { isReadOnly || keepsFocusWhileDisabled }
+
+  /// Both parts stay in one view structure, so a field that becomes read-only
+  /// or disabled keeps its identity and its focus moves to the drawn part, as
+  /// core keeps focus on an input that becomes disabled (`spec:AST-085`).
+  private var field: some View {
+    ZStack(alignment: .leading) {
+      editableField
+        .focused($focus, equals: .editable)
+        .disabled(isDrawn)
+        .opacity(isDrawn ? 0 : 1)
+        .accessibilityHidden(isDrawn)
+      readOnlyField
+        .focusable(isDrawn)
+        .focused($focus, equals: .drawn)
+        .opacity(isDrawn ? 1 : 0)
+        .allowsHitTesting(isDrawn)
+        .accessibilityHidden(!isDrawn)
+    }
+    .onChange(of: isDrawn) { _, drawn in
+      if focus != nil { focus = drawn ? .drawn : .editable }
+    }
+  }
+
+  @ViewBuilder private var editableField: some View {
     let prompt = props.placeholder.map {
       SwiftUI.Text($0).foregroundStyle(astryx.tokens.color.textSecondary)
     }
-    if isReadOnly || keepsFocusWhileDisabled {
-      readOnlyField
-    } else {
-      switch props.type ?? .text {
-      case .password:
-        SecureField("", text: text, prompt: prompt)
-          .textContentType(.password)
-      case .email:
-        TextField("", text: text, prompt: prompt)
-          .textContentType(.emailAddress)
-          .autocorrectionDisabled()
-          #if os(iOS)
-          .keyboardType(.emailAddress)
-          .textInputAutocapitalization(.never)
-          #endif
-      case .text:
-        TextField("", text: text, prompt: prompt)
-      }
+    switch props.type ?? .text {
+    case .password:
+      SecureField("", text: text, prompt: prompt)
+        .textContentType(.password)
+    case .email:
+      TextField("", text: text, prompt: prompt)
+        .textContentType(.emailAddress)
+        .autocorrectionDisabled()
+        #if os(iOS)
+        .keyboardType(.emailAddress)
+        .textInputAutocapitalization(.never)
+        #endif
+    case .text:
+      TextField("", text: text, prompt: prompt)
     }
   }
 
@@ -357,7 +380,6 @@ public struct TextInput: View {
       : SwiftUI.Text(readOnlyText)
     let text = shown
       .frame(maxWidth: .infinity, alignment: .leading)
-      .focusable()
       .onKeyPress(.return) {
         guard isReadOnly else { return .ignored }
         props.onEnter?()
