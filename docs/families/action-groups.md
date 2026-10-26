@@ -71,8 +71,8 @@ today:
 - the action rows of Banner and Toast when a row has two or more sibling
   actions.
 
-Action rows that products compose, such as a Dialog's or a Card's footer in a
-`LayoutFooter`, get the behavior by using ButtonGroup.
+Action rows in a Dialog's footer, a Card's footer, or any `LayoutFooter` get
+the behavior by composing ButtonGroup.
 
 A component built later that matches the rule joins by the rule, including an
 action sheet, a tab bar or navigation bar, a filter-chip group, and a rating.
