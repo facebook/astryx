@@ -74,6 +74,7 @@ import {
   PRESS_FADE_MS,
   PRESS_FLASH_MS,
   PRESS_ONSET_MS,
+  PRESS_SCROLL_BRAKE_MS,
   pressGestureStep,
 } from './pressGesture';
 import {TOUCH_QUERY} from './touchPresentation';
@@ -303,12 +304,13 @@ let holders = 0;
  * moved, or if it is the fling that finger left running.
  */
 let fling: Node | null = null;
-/**
- * Where an engine has no `scrollend` (Safari 17 and 18), a fling ends when its
- * scroll events stop: a decelerating scroller fires one every frame, so this
- * long without one means it has come to rest.
+/*
+ * Where an engine has no `scrollend` (Safari 17 and 18), a fling ends once its
+ * scroll events stop for PRESS_SCROLL_BRAKE_MS, UIKit's measured brake window
+ * (a touch on a scroller that moved this recently brakes it): a decelerating
+ * scroller fires a scroll every frame, so that long without one means it has
+ * come to rest.
  */
-const FLING_IDLE_MS = 100;
 let flingIdleTimer: ReturnType<typeof setTimeout> | undefined;
 
 /** Forget the fling, and the idle timer that stands in for its `scrollend`. */
@@ -828,7 +830,7 @@ function onScroll(event: Event): void {
   // scroller, or this is the fling it left running. Anything else is the
   // program moving something, and must leave the brake unarmed. The fling
   // ends at its `scrollend`, or where there is none, once its scroll events
-  // stop (FLING_IDLE_MS).
+  // stop for the brake window (PRESS_SCROLL_BRAKE_MS).
   const driven =
     (touching || fling === scroller) &&
     lastTouchTarget != null &&
@@ -842,7 +844,7 @@ function onScroll(event: Event): void {
           clearFling();
           settle();
         }
-      }, FLING_IDLE_MS);
+      }, PRESS_SCROLL_BRAKE_MS);
     }
   }
   const live = finger.live;

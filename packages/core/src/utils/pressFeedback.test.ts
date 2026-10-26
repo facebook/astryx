@@ -37,6 +37,7 @@ import {
   PRESS_FADE_MS,
   PRESS_FLASH_MS,
   PRESS_ONSET_MS,
+  PRESS_SCROLL_BRAKE_MS,
   PRESS_SLOP_PX,
 } from './pressGesture';
 
@@ -265,8 +266,8 @@ describe('a scroll takes it away and nothing brings it back', () => {
     expect(pressedRow()).toBe(-1);
     press(rows[1], 'pointerup', 10, 100);
     lift(rows[1]);
-    // No scroll event for the idle window: the list has come to rest.
-    vi.advanceTimersByTime(200);
+    // No scroll event for the brake window: the list has come to rest.
+    vi.advanceTimersByTime(PRESS_SCROLL_BRAKE_MS + 1);
     press(rows[2], 'pointerdown', 10, 190);
     vi.advanceTimersByTime(PRESS_ONSET_MS);
     expect(pressedRow()).toBe(2);
