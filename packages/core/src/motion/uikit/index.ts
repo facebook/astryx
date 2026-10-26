@@ -39,6 +39,6 @@ export {
 } from './gestures';
 export {navigation, registerNavigationTable} from './navigation';
 export {registerScrollTable, scroll} from './scroll';
-export {registerSliderTable, slider} from './slider';
+export {slider} from './slider';
 export {registerSpringsTable, springs} from './springs';
 export {registerTimingTable, timing} from './timing';
