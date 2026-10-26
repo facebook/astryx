@@ -1720,15 +1720,18 @@ export async function topicLinks(catalog, entry) {
  * places), a namespace or typed doc in the tree, or nothing, as nameOwner
  * decides.
  * @param {unknown} topic
- * @param {{cwd?: string}} [options]
+ * @param {{cwd?: string, catalog?: DocsCatalog}} [options] `catalog`: one the
+ *   read already loaded, so the read and every part of it share one snapshot
+ *   of the project's docs (and its memoized lowering) instead of loading the
+ *   project again for each part
  * @returns {Promise<
  *   | {kind: 'topic', catalog: DocsCatalog, entry: import('../../foundation/discovery/docs-discovery.mjs').DocsTopicEntry}
  *   | {kind: 'node', catalog: DocsCatalog, tree: import('../../foundation/doc-compiler/tree.mjs').DocsTree, node: import('../../foundation/doc-compiler/tree.mjs').TreeNode}
  *   | {kind: 'unknown', catalog: DocsCatalog}
  * >}
  */
-export async function resolveDocsArgument(topic, {cwd} = {}) {
-  const catalog = await loadDocsCatalog(cwd);
+export async function resolveDocsArgument(topic, {cwd, catalog: loaded} = {}) {
+  const catalog = loaded ?? (await loadDocsCatalog(cwd));
   if (typeof topic !== 'string' || topic === '')
     return {kind: 'unknown', catalog};
   const tree = await projectTree(catalog);
@@ -1941,14 +1944,21 @@ export function notLoaded(catalog) {
  * Resolve a topic (a flat one, or a guide the docs tree places by its route)
  * and lower it for the topic readers.
  * @param {unknown} topic
- * @param {{lang?: string | null, zh?: boolean, dense?: boolean, cwd?: string}} [options]
+ * @param {{lang?: string | null, zh?: boolean, dense?: boolean, cwd?: string, catalog?: DocsCatalog}} [options]
+ *   `catalog` as {@link resolveDocsArgument}
  */
 export async function resolveTopicDocs(topic, options = {}) {
-  const {lang = null, zh = false, dense = false, cwd} = options;
+  const {
+    lang = null,
+    zh = false,
+    dense = false,
+    cwd,
+    catalog: loaded,
+  } = options;
   const effectiveLang = lang || (dense ? 'dense' : zh ? 'zh' : null);
   // A public API caller could pass a non-string topic; it lands on the same
   // stable code as an unknown name rather than a raw TypeError.
-  const found = await resolveDocsArgument(topic, {cwd});
+  const found = await resolveDocsArgument(topic, {cwd, catalog: loaded});
   if (found.kind !== 'topic') {
     throw found.kind === 'node'
       ? new AstryxError(
