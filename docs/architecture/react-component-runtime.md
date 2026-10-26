@@ -173,7 +173,7 @@ those contracts.
   `spec:AST-094` FR5); it never animates height, which lays out every frame. A
   boundary is any container element registered by ref: ScrollableArea
   registers its scrolling element itself, and an app registers its own scroll
-  container or panel with `useAnimatedLayout(containerRef)`. An element whose
+  container or panel with `useSmoothLayoutShift(containerRef)`. An element whose
   size changes reports the change, around its commit, to its nearest
   registered ancestor boundary. From that element, the module walks up each
   ancestor to the boundary: at every level, each following in-flow sibling
@@ -195,7 +195,7 @@ those contracts.
   ```tsx
   // Public: an app container opts in as a boundary. ScrollableArea does this itself.
   const panelRef = useRef(null);
-  useAnimatedLayout(panelRef);
+  useSmoothLayoutShift(panelRef);
   <div ref={panelRef}>
     <TreeList items={items} />
     <p>Notes</p>
