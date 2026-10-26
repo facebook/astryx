@@ -19,6 +19,7 @@ so each keeps its measured value; no shipped component reads the roles yet.
 | `uikit/timing.ts`                                | Non-spring clocks and curves: press highlight, Core Animation's named curves, keyboard, Reduced Motion cross-fade.                                                   |
 | `uikit/navigation.ts`                            | UINavigationController: push velocity, parallax, dimming, transition clock, interactive pop finish rule.                                                             |
 | `uikit/list.ts`                                  | UITableView / UICollectionView list cells: the cell highlight's release clock and curve.                                                                             |
+| `uikit/search.ts`                                | UISearchController: activation clock (on `timing.curves.move`), the stacked field and close button, the bar's fades, scroll-away, the bottom placement.              |
 | `uikit/gestures.ts`                              | Gesture recognizer thresholds, the velocity filter and haptic stand-ins, as `{value, unit}` entries (sources in JSDoc).                                              |
 | `roles.ts`                                       | Motion roles: each spring, duration and curve of a registered table, named by its path, and its CSS variable.                                                        |
 | `resolveMotion.ts`                               | A role's value: its table value while touch motion stays internal (`spec:AST-094` DEC-11).                                                                           |
@@ -126,7 +127,12 @@ await handle.finished; // true if it ran to the end, false if interrupted
   delays the motion instead of skipping into it (WebKit starts it at the
   frame before the block). Everything the call starts shares that start
   (`handle.started`); a retarget keeps an explicit one, and `{at}` puts
-  several animators on one clock.
+  several animators on one clock. `{start: 'commit'}` lets the browser date
+  a retarget too; `{start: 'presented'}` waits two frames, until the
+  element at rest has been presented. `handle.curve(property)` is the curve
+  a call plays, for a companion to follow. `{additive: true}` retargets the
+  way UIKit does: the old curve keeps going and the change is added on top,
+  in one animation.
 - Reduced Motion (`prefers-reduced-motion: reduce`, design:reduced-motion):
   every `animate` and `play` is replaced and nothing moves, scales or
   springs. On a coarse primary pointer, or for a call started by a touch
@@ -157,11 +163,14 @@ await handle.finished; // true if it ran to the end, false if interrupted
 
 ### How it stays on the compositor
 
-Each curve is baked into keyframes, sampled adaptively until linear
-interpolation is within 0.05 px, and played with `easing: linear` on one
-start time. The element's inline style already holds the end values,
-and the keyframes hold the end state for a few seconds past the curve's end;
-the main thread drops the animation as soon as it runs after that end. So the
+Each curve is baked into keyframes on a 30 Hz grid, refined until linear
+interpolation is within each channel's tolerance (`SAMPLE_TOLERANCE`, a
+quarter pixel for a move), and played with `easing: linear` on one start
+time. The element's inline style holds the
+value the curve starts from, where the element is, never where it is going;
+the keyframes hold the end state for a minute past the curve's end
+(`END_HOLD_MS`), and the main thread retires a finished animation as soon as
+it runs after that end, writing the end values inline in the same task. So the
 frame an animation ends needs no main thread and shows no flicker, even when
 the main thread is blocked as the curve ends (WebKit's compositor otherwise
 falls back to the last value its main thread committed, mid-flight).
@@ -206,8 +215,8 @@ Chromium and WebKit on the phone profile.
 - A spring that ends inside the block keeps showing its end state. Without the
   animator's end-state hold, WebKit falls back to a mid-flight value.
 - No Layout or Paint runs while it animates (Chromium trace).
-- Seeked to fixed times, the engine plays the analytic curve within 0.05 px,
-  with every channel on one start time.
+- Seeked to fixed times, the engine plays the analytic curve within the
+  sampling tolerance, with every channel on one start time.
 - A finished animation leaves the element within a frame or two of the curve's
   end.
 - A dialog's `::backdrop` follows the curve when seeked and holds its end

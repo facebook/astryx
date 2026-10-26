@@ -6,6 +6,8 @@
  * @output Re-exports `springs` and one constant per spring (`SHEET_PRESENT_SPRING`,
  *   …), `scroll`, `timing`, `navigation`, the list cells' values (`list`) and
  *   the gesture thresholds (one `UIKIT_*` group per recognizer, their union
+ *   …), `scroll`, `search`, `timing`, `navigation` and the
+ *   gesture thresholds (one `UIKIT_*` group per recognizer, their union
  *   `UIKIT_GESTURES`, and the haptic tables)
  * @position Entry of the UIKit constants table (motion/uikit). Internal to
  *   core: not exported from the package entry point
@@ -41,6 +43,7 @@ export {
 export {list} from './list';
 export {navigation, registerNavigationTable} from './navigation';
 export {registerScrollTable, scroll} from './scroll';
+export {search} from './search';
 export {
   ACTION_SHEET_DISMISS_SPRING,
   ACTION_SHEET_PRESENT_SPRING,
