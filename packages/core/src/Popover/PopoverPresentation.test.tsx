@@ -276,6 +276,29 @@ describe('Popover presentation', () => {
     expect(document.querySelector('[popover]:popover-open')).toBeNull();
   });
 
+  it('anchorRect: a sheet presentation holds the content once, in the sheet', async () => {
+    render(
+      <Popover
+        label="Filters"
+        presentation="bottom-sheet"
+        isOpen
+        onOpenChange={() => {}}
+        anchorRect={{top: 10, left: 20, width: 30, height: 40}}
+        content={<button type="button">Apply</button>}
+      />,
+    );
+    const dialog = await vi.waitFor(() => {
+      const element = sheetDialog();
+      expect(element).toHaveAttribute('open');
+      return element!;
+    });
+    expect(dialog.querySelector('button')).toHaveTextContent('Apply');
+    expect(
+      screen.getAllByRole('button', {name: 'Apply', hidden: true}),
+    ).toHaveLength(1);
+    expect(document.querySelector('[popover]:popover-open')).toBeNull();
+  });
+
   it('a sheet without a label is named by the trigger\u2019s text, never an unnamed dialog (DEC-8)', async () => {
     isCompactTouch = true;
     render(
