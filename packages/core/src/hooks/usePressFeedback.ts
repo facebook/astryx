@@ -5,7 +5,7 @@
 /**
  * @file usePressFeedback.ts
  * @input The document-level press controller (utils/pressFeedback.ts)
- * @output Exports usePressFeedback and UsePressFeedbackOptions
+ * @output Exports usePressFeedback
  * @position Core hook; every component that paints a press calls it and
  *   spreads its result on the element that paints
  *
@@ -16,23 +16,7 @@
  */
 
 import {useEffect} from 'react';
-import {
-  cellPressableProps,
-  installPressFeedback,
-  pressableProps,
-} from '../utils/pressFeedback';
-
-export interface UsePressFeedbackOptions {
-  /**
-   * How a finger's press is tracked. `control` (a button, a card, a switch)
-   * highlights in the frame the finger lands, or after the content-touch
-   * delay inside a scroller. `cell` (a list row) waits for that delay
-   * wherever it is. Both are cancelled by 10 px of travel or by the scroll
-   * that takes the touch, and fade at the lift.
-   * @default 'control'
-   */
-  profile?: 'control' | 'cell';
-}
+import {installPressFeedback, pressableProps} from '../utils/pressFeedback';
 
 /**
  * Mark an element as a pressable surface of the touch press model, and make
@@ -43,7 +27,7 @@ export interface UsePressFeedbackOptions {
  * element: `backgroundColor` or `backgroundImage` for a surface whose hover
  * and press are the system's overlays, `pressedBackgroundColor` for one
  * whose hover is its own. Under a finger the controller tracks the press the
- * way UIKit tracks a control or a cell (see `profile`) and writes its
+ * way UIKit tracks a control and writes its
  * attribute on the element while the press is held and for the release; the
  * composed style paints the pressed token on the first frame and fades it
  * over the release, keeping `:active` for a mouse on a desktop. On a phone or
@@ -63,14 +47,9 @@ export interface UsePressFeedbackOptions {
  * ```
  * const pressable = usePressFeedback();
  * return <button {...pressable} {...stylex.props(styles.button)} />;
- *
- * const row = usePressFeedback({profile: 'cell'});
- * return <div role="button" {...row} {...stylex.props(styles.row)} />;
  * ```
  */
-export function usePressFeedback(
-  options: UsePressFeedbackOptions = {},
-): typeof pressableProps | typeof cellPressableProps {
+export function usePressFeedback(): typeof pressableProps {
   useEffect(() => installPressFeedback(), []);
-  return options.profile === 'cell' ? cellPressableProps : pressableProps;
+  return pressableProps;
 }

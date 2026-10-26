@@ -127,7 +127,6 @@ export {useLongPress} from './useLongPress';
 export type {UseLongPressOptions, UseLongPressHandlers} from './useLongPress';
 
 export {usePressFeedback} from './usePressFeedback';
-export type {UsePressFeedbackOptions} from './usePressFeedback';
 
 export {useDevWarning} from './useDevWarning';
 export {useIndicatorFocusRing} from './useIndicatorFocusRing';

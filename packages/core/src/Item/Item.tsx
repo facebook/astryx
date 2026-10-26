@@ -591,7 +591,9 @@ export function Item({
 }: ItemProps) {
   // A row's press is a cell's: it waits UIScrollView's content-touch delay,
   // yields to the pan, and releases on the deselect clock.
-  const pressable = usePressFeedback({profile: 'cell'});
+  usePressFeedback();
+  // The cell profile (utils/pressFeedback.ts), internal to core.
+  const pressable = cellPressableProps;
   // A selection hold (List/selectionHold.ts) returns focus to this row after
   // a pop; its ring follows how the user last interacted, so a finger's pop
   // shows none.
