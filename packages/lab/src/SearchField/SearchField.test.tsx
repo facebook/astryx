@@ -411,6 +411,27 @@ describe('SearchField', () => {
       expect(close().getAttribute('style')).toContain('17px');
     });
 
+    it('draws its background as pseudo-elements: the field holds only the content the gel carries and the trailing end', () => {
+      render(<SearchField label="Search" placement="bottom" />);
+      const content = screen
+        .getByRole('searchbox')
+        .closest('[data-search-field-content]') as HTMLElement;
+      const field = content.parentElement as HTMLElement;
+      // The rounded ends and the middle are the field's ::before and ::after
+      // and the trailing end's ::before (architecture:component-style-authoring
+      // INV7); the content wrapper moves the magnifier and the text with the
+      // leading edge.
+      expect([...field.children]).toEqual([
+        content,
+        field.querySelector('[data-search-field-end]'),
+      ]);
+      expect(content.children).toHaveLength(2);
+      expect(
+        (field.querySelector('[data-search-field-end]') as HTMLElement)
+          .children,
+      ).toHaveLength(0);
+    });
+
     it('activates on focus and cancels from the close button, as the stacked field does', () => {
       const onActiveChange = vi.fn();
       render(
