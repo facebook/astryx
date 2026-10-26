@@ -114,27 +114,40 @@ announcements are those of FR3 and FR4, and the tree adds no option.
   With the prop absent the collection renders no handle, registers no reorder
   listener, and loads no reorder code: the machinery ships in the factory's
   own module, and a collection imports only its type.
-- **FR3 — Every collection behaves the same.** Each adopting collection wires
-  the object to its own internal drag, keyboard, and assistive-technology
-  paths, and the behavior is the same in every one:
+- **FR3 — Every collection drags the same way.** Each adopting collection
+  wires the object to its own internal drag, keyboard, and
+  assistive-technology paths, and the behavior is the same in every one:
   - a drag starts from a row's handle (`design:ordered-collection-reordering`
     DR1); under a finger, a hold on the handle picks the row up at
     `spec:AST-094`'s values, and a flick still scrolls;
-  - the arrow keys along the collection's layout axis, Home, and End move the
-    focused item while it is picked up,
-    Space or Enter picks it up and drops it, and Escape cancels;
-  - the order commits once, at the drop (DR4), and `onReorder` is called once
-    per committed move; a cancel calls nothing;
+  - a drag commits once, at the drop (DR4), and `onReorder` is called once
+    for it; a cancelled drag calls nothing;
   - under Reduce Motion the dragged row still follows the finger or pointer,
     and the other rows and the drop take their places without travel
     (`design:reduced-motion` DR2).
-- **FR4 — Every input can reorder without a drag.** Each reorderable row's
-  handle is a button named "Reorder" and the row's label. It exposes "Move
-  before" and "Move after" actions with their keyboard equivalents, and a
-  mouse reaches the same actions without dragging (`spec:AST-094` FR39; OQ1),
-  and a pick-up, each move, a drop, and a cancel are announced once, after
-  they render, through the shared announcement channel. Focus stays on the
-  handle throughout.
+- **FR4 — Reorder mode is the one path without a drag.** Each reorderable
+  row's handle is a toggle button named "Reorder" and the row's label, with
+  `aria-pressed`. Activating it, by click, Enter, or Space, enters reorder
+  mode for that item, and a mouse, a keyboard, and assistive technology all
+  use it (`spec:AST-094` FR39). In reorder mode:
+  - the arrow keys move the item along the layout axis: Up and Down in a
+    vertical collection, Left and Right in a horizontal one, all four in a
+    two-dimensional grid; in a tree, Up and Down move among visible positions,
+    and Left and Right move the item out of or into a parent where
+    `isReorderable` allows;
+  - each move commits at once through `onReorder({ key, to })`, so the data,
+    the screen, and the announcement always agree;
+  - each move is announced once, after it renders, through the shared polite
+    announcement channel, naming the item, its position and count, and its
+    neighbors, such as "Milk, position 3 of 5, after Eggs, before Bread";
+    the first and last positions say "at the top" and "at the end", and a
+    tree adds the parent;
+  - a move past a row `isReorderable` rejects is refused and announced, such
+    as "Can't move past Pinned";
+  - focus stays on the handle, and the row scrolls into view;
+  - Escape, or activating the handle again, leaves reorder mode and keeps
+    every move, announcing "Done" with the item's position, such as "Done,
+    Milk at position 3 of 5".
 - **FR5 — Reordering adds at most one element to a row.** The one added
   element is the handle, the interactive drag target, with its role. Its grip
   is decoration, drawn by a pseudo-element or a theme-role glyph, not by
@@ -161,13 +174,13 @@ announcements are those of FR3 and FR4, and the tree adds no option.
 
 ## Verification
 
-| Contract     | Verification                                                           | Representative states                                                                              | Mutation or failure expectation                                                                                                                    |
-| ------------ | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1, FR6–FR8 | Public-API review, type tests, and descriptor checks                   | the factory's options; a collection's `reorderable` type; the factory's and List's descriptors     | an extra gesture, timing, or animation option, an experimental name or subpath, a missing descriptor, or a second public reorder API, fails        |
-| FR2          | Bundle and runtime check of a collection with and without the prop     | without the prop; with the prop                                                                    | reorder code in the bundle, a handle, or a listener without the prop fails; the measured cost is recorded in the pull request                      |
-| FR3          | Browser tests with real touch input and keyboard (`spec:AST-013` FR10) | a hold and drag; a flick; arrows, Home, End, Space, Enter, Escape; a drop; a cancel; Reduce Motion | a drag that starts off the handle, a commit before the drop, two callbacks for one move, a callback on cancel, or travel under Reduce Motion fails |
-| FR4          | Screen-reader and announcement tests                                   | "Move before" and "Move after"; a horizontal collection's arrow keys; pick-up, move, drop, cancel  | a missing action, an announcement before render or repeated, or focus leaving the handle fails                                                     |
-| FR5          | Element and listener counts of a list with and without the prop        | a row at rest; a row picked up                                                                     | more than one added element per row, a grip drawn with elements, a per-row listener, or a copy of the moving row, fails                            |
+| Contract     | Verification                                                          | Representative states                                                                                                                                                                                                                                                              | Mutation or failure expectation                                                                                                                                               |
+| ------------ | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1, FR6–FR8 | Public-API review, type tests, and descriptor checks                  | the factory's options; a collection's `reorderable` type; the factory's and List's descriptors                                                                                                                                                                                     | an extra gesture, timing, or animation option, an experimental name or subpath, a missing descriptor, or a second public reorder API, fails                                   |
+| FR2          | Bundle and runtime check of a collection with and without the prop    | without the prop; with the prop                                                                                                                                                                                                                                                    | reorder code in the bundle, a handle, or a listener without the prop fails; the measured cost is recorded in the pull request                                                 |
+| FR3          | Browser tests with real touch input and a mouse (`spec:AST-013` FR10) | a hold and drag; a flick; a drop; a cancelled drag; Reduce Motion                                                                                                                                                                                                                  | a drag that starts off the handle, a commit before the drop, two callbacks for one drag, a callback on cancel, or travel under Reduce Motion fails                            |
+| FR4          | Keyboard, mouse, VoiceOver, and TalkBack tests of reorder mode        | entering by click, Enter, and Space; arrows in vertical, horizontal, and grid collections; Up, Down, Left, and Right in a tree; each move's announcement at the top, middle, and end; a move past a rejected row; Escape and a second activation; focus and scroll after each move | a move that does not commit at once, an announcement missing, repeated, or before render, a move past a rejected row, focus leaving the handle, or moves undone on exit fails |
+| FR5          | Element and listener counts of a list with and without the prop       | a row at rest; a row picked up                                                                                                                                                                                                                                                     | more than one added element per row, a grip drawn with elements, a per-row listener, or a copy of the moving row, fails                                                       |
 
 ## Decision log
 
@@ -223,10 +236,19 @@ second one, since no new API shares a job with an existing one
 
 Rejected: reading each direct child's React `key`.
 
+### DEC-5 — Reorder mode, not a move menu, is the path without a drag
+
+**Reference:** `spec:AST-103/DEC-5`
+**Decider:** `cixzhang`, `2026-10-25`
+
+Move menus are tiring for keyboard users. The handle instead toggles a reorder
+mode in which the arrow keys move the item and each move is announced with its
+position and neighbors. Each move commits at once, so leaving the mode keeps
+the moves and the app never undoes several commits; focus stays on the handle
+until Escape or a second activation.
+
+Rejected: a menu of Move before and Move after.
+
 ## Open questions
 
-- **OQ1 — Reordering with a mouse without dragging.** (`human-design`)
-  `spec:AST-094` FR39 requires a path without a drag. Options: (a,
-  recommended) a click on the handle opens a small menu with "Move before"
-  and "Move after"; or (b) a click on the handle picks the row up as Space
-  does, and the next click on a row drops it there.
+None.
