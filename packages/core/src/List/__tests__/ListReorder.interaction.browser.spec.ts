@@ -1374,28 +1374,27 @@ test('a held finger locks text selection on the handle, and the lift unlocks it'
 }) => {
   await open(page);
   const target = handle(page, 'Inbox');
-  // WebKit computes only the prefixed property.
-  const read = async () =>
+  // Where iOS WebKit does not run, the gesture host's selection lock refuses
+  // `selectstart` and writes no style (spec:AST-094 FR41).
+  const refuses = async () =>
     target.evaluate(element => {
-      const style = getComputedStyle(element);
-      return (
-        style.getPropertyValue('user-select') ||
-        style.getPropertyValue('-webkit-user-select')
-      );
+      const event = new Event('selectstart', {bubbles: true, cancelable: true});
+      element.dispatchEvent(event);
+      return event.defaultPrevented;
     });
-  const before = await read();
+  expect(await refuses()).toBe(false);
   const driver = await touchDriver(page);
-  let held = '';
+  let held = false;
   // Lifted before the hold would claim the drag: the lock is the finger's.
   await driver.play(tap(await centerOf(target), {holdMs: 120}), {
     onEvent: async (step: TouchEventStep) => {
       if (step.type === 'touchStart') {
-        held = await read();
+        held = await refuses();
       }
     },
   });
-  expect(held).toBe('none');
-  await expect.poll(read).toBe(before);
+  expect(held).toBe(true);
+  await expect.poll(refuses).toBe(false);
 });
 
 test('the handle is a 44 pt target whose ring clears its lines, and its row is no taller for it', async ({
