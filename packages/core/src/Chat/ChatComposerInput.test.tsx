@@ -193,6 +193,11 @@ describe('ChatComposerInput', () => {
       window.getSelection()!.collapse(editor.lastChild, 1);
       rerender(view(true));
       onChange.mockClear();
+      // emitChange is itself silent while disabled, so the draft is checked
+      // directly: neither the value nor the editor's markup (the token) may
+      // change.
+      const valueBefore = handle.getValue();
+      const markupBefore = editor.innerHTML;
 
       act(() => {
         handle.insertText('blocked');
@@ -203,6 +208,8 @@ describe('ChatComposerInput', () => {
       });
       fireEvent.keyDown(editor, {key: 'Backspace'});
       expect(onChange).not.toHaveBeenCalled();
+      expect(handle.getValue()).toBe(valueBefore);
+      expect(editor.innerHTML).toBe(markupBefore);
       handle.focus();
       expect(editor).toHaveFocus();
 
