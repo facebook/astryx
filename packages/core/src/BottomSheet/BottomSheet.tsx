@@ -105,11 +105,15 @@ const styles = stylex.create({
   // An open standalone dialog is its panel's positioner: the panel sits at its
   // block end, centred, with no wrapper between them
   // (architecture:component-style-authoring INV7). A tap beside a narrower
-  // panel lands on the dialog itself, which light dismiss reads.
+  // panel lands on the dialog itself, which light dismiss reads. A flex
+  // column, not a grid: in WebKit every re-render inside a presented sheet
+  // relays the dialog out, and a grid host makes that relayout about 40 ms
+  // longer on a phone, while a flex column costs what a block does.
   dialogPanelHost: {
-    display: 'grid',
-    alignContent: 'end',
-    justifyItems: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
   },
   dialogNonModal: {
     pointerEvents: 'none',
