@@ -91,8 +91,8 @@ components read through two shared primitives is a system fact.
   follow the `--ease-<job>` and `--duration-<job>` pattern so that vocabulary
   can join them without a rename.
 - Equivalent internal implementations remain valid when they satisfy this
-  contract. How a dialog stays open while it leaves, how a layer stays in the
-  top layer while it leaves, and how the end of an exit is detected are
+  contract. How a dialog stays open while it leaves, how a leaving layer stays
+  drawn where it was, and how the end of an exit is detected are
   implementation.
 
 ## Requirements
@@ -147,11 +147,10 @@ governs them in a touch presentation.
   `prefers-reduced-motion: reduce`, a dialog or layer surface in a pointer
   presentation closes at once, whatever its kind's exit duration
   (`design:reduced-motion` DR3, DR4).
-- **FR11 — Content stays while it leaves.** A surface keeps rendering the
-  content it showed when its close began until it is hidden. A component does
-  not unmount or reset its own content before its exit ends: a hover card's
-  lazily mounted content, a menu's open sub-menu path, and a selector's search
-  query keep their state until the surface is hidden.
+- **FR11 — Content stays while it leaves.** A leaving surface keeps showing the
+  content it showed when its close began until it is hidden: a hover card's
+  content, a menu's open sub-menu, and a selector's search query stay on screen
+  until the surface is hidden.
 - **FR12 — The exit vocabulary.** `--ease-exit` defaults to
   `cubic-bezier(0.3, 0, 0.6, 0.6)`, a curve that moves off slowly and leaves
   fast. Dialog and layer exits use it, and so does `BottomSheet`'s close in a
@@ -177,14 +176,13 @@ governs them in a touch presentation.
   consumer doc.
 - This section covers pointer presentations; a touch exit follows
   `spec:AST-094`.
-- Dialog exits play in every Tier 1 and Tier 2 browser.
-- Layer exits play only in browsers that can keep a closing layer in the top
-  layer until its exit ends, which takes a transition of `overlay` with
-  `transition-behavior: allow-discrete`. In other browsers, and where the
-  Popover API is missing, a layer closes at once whatever its exit duration:
-  the same result as the exit off.
-- Browser evidence: real-browser sampling of frames during an exit, in a browser
-  that plays layer exits and in one that does not.
+- Dialog and layer exits play in every Tier 1 and Tier 2 browser.
+- A layer whose exit cannot be drawn in the top layer, such as where the
+  Popover API is missing, closes at once whatever its exit duration: the same
+  result as the exit off.
+- Browser evidence: real-browser sampling of frames during a dialog exit and a
+  layer exit, in Chromium and WebKit, and a layer close where the Popover API
+  is missing.
 
 ## Current-state impact
 
@@ -192,11 +190,13 @@ governs them in a touch presentation.
   `--duration-exit-dialog`, and `--duration-exit-layer` join the canonical
   vocabulary, with their theme template and generated token documentation
   projections (INV1, INV7).
-- `architecture:layer-runtime`: a layer's close gains a leaving phase between
-  `hide()` and the moment the layer is hidden. Native close reconciliation stays
-  single-fired (INV6), and lazily mounted content unmounts when the exit ends.
-  A leaving Dialog keeps supplying its modal outlet until it is hidden (FR13);
-  BottomSheet's outlet behavior does not change.
+- `architecture:layer-runtime`: a layer closes when its close is requested, as
+  it does with the exit off, and its exit plays after that, drawn in the top
+  layer where the layer was. Native close reconciliation stays single-fired
+  (INV6). A leaving active or blocking owner keeps its place on the dismissal
+  stack until its exit ends (FR5). A leaving Dialog keeps supplying its modal
+  outlet until it is hidden (FR13); BottomSheet's outlet behavior does not
+  change.
 - `family:overlay-dismissal`: no claim changes. A leaving member stays present
   for FR2 until it is hidden, and animation stays member-owned (AV6).
 - `spec:AST-003`: no claim changes. A leaving surface keeps its interaction role
@@ -241,11 +241,11 @@ governs them in a touch presentation.
 | FR8      | Unit and real-browser tests                                                                                 | Reopen during an exit, unmount during an exit, `Activity` hidden during an exit                                                           | The surface disappears and reappears, or stays after unmount                                                               |
 | FR9      | Unit test with a suppressed end event; real-browser test with animations and transitions disabled page-wide | Open and close in one update; page-wide `transition: none`; no end event                                                                  | The surface is present more than 100ms after its exit duration                                                             |
 | FR10     | Real-browser test with reduced motion emulated, fine primary pointer                                        | Each kind turned on                                                                                                                       | An exit plays                                                                                                              |
-| FR11     | Unit tests                                                                                                  | Hover card content, an open sub-menu path, a selector query                                                                               | Content unmounts or resets before the surface is hidden                                                                    |
+| FR11     | Real-browser frame sampling during an exit                                                                  | A hover card, a menu with an open sub-menu, a selector with a search query                                                                | The leaving surface shows other content, or none, before it is hidden                                                      |
 | FR12     | Token default tests, theme template inventory test, token documentation check                               | Defaults; the `BottomSheet` closing curve                                                                                                 | A default drifts, or `BottomSheet` restates the curve                                                                      |
 | FR13     | Real-browser test                                                                                           | A toast action pressed, and a toast dismissed, during a dialog exit; the same toast after the dialog is hidden                            | The toast ignores input or fades with the dialog during the exit, or loses its entries or timers when the dialog is hidden |
 | FR14     | Real-browser test with a coarse primary pointer, after hydration                                            | A Dialog, a Popover, and a menu opened and closed by a finger, with each kind switched off and on; the same surfaces under reduced motion | A switch changes the touch exit, or the surface closes without the exit `spec:AST-094` FR7 and FR8 give it                 |
-| Platform | Real-browser tests                                                                                          | A browser that plays layer exits and one that does not                                                                                    | A layer paints outside the top layer, or a browser without support delays the close                                        |
+| Platform | Real-browser tests in Chromium and WebKit                                                                   | A dialog exit and a layer exit with each kind on; a layer close where the Popover API is missing                                          | A layer exit paints outside the top layer or does not play, or a close without the Popover API is delayed                  |
 
 ## Decision log
 
@@ -288,17 +288,20 @@ moves off from rest and leaves fast. `BottomSheet` closes on this curve, and
 
 Rejected: the entrance played backwards on `--ease-standard`.
 
-### DEC-4 — Layer exits play only where the browser holds a closing layer
+### DEC-4 — A layer's exit plays where the layer was drawn
 
 **Reference:** `spec:AST-090/DEC-4`
 **Decider:** `cixzhang`, `2026-10-26`
 
-The browser hides a light-dismissed layer before Core hears of it, so only CSS
-can animate that close. A layer that keeps painting after it leaves the top
-layer paints in the wrong place. Where the browser cannot keep a closing layer
-in the top layer, the layer closes at once, which is also the default.
+The browser hides a light-dismissed layer before Core hears of it, so a layer's
+exit cannot hold the live layer open. The exit plays on what the layer showed
+when its close began, drawn in the top layer where the layer was, because a
+layer that keeps painting outside the top layer paints in the wrong place.
+Every browser with the Popover API can draw it there, so layer exits play in
+every Tier 1 and Tier 2 browser; where it cannot be drawn, the layer closes at
+once, which is also the default.
 
-Rejected: replacing native light dismissal with Core-owned outside-press handling so every browser plays layer exits.
+Rejected: holding the live layer in the top layer with an `overlay` transition, which plays only in browsers that support that transition.
 
 ### DEC-5 — Touch presentations keep their native exit
 
