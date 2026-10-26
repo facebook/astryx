@@ -36,7 +36,7 @@
 import {useLayoutEffect, useRef, type RefObject} from 'react';
 import {registerTabBarTable, tabBar} from '@astryxdesign/core/motion/uikit';
 import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
-import {isRtlElement} from '@astryxdesign/core/hooks/isRtlElement';
+import {isRtlElement} from '../utils/isRtlElement';
 import {searchFieldBox} from './tabBarModel';
 
 export interface UseTabBarSearchOptions {
