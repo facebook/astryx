@@ -79,7 +79,9 @@ same generated contract.
   labeled one as a `@ViewBuilder` closure and the props one as the slot's
   generated node type, as `packages/native/specs/swift/library/slots.md` says,
   and both build the view from the same `<Name>Props` values; the view's `body`
-  reads only those values and slots.
+  reads only those values and slots. The two initializers are one API in two Swift
+  spellings (`architecture:public-component-api` INV21): the labeled one
+  builds the props the other takes.
 - **A4 — SwiftUI shapes for SwiftUI concepts.**
   - The component's main word comes first and unlabeled, as in `Button` and
     `Text`.
