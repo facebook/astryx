@@ -368,7 +368,6 @@ DEC-6 does not require unrelated components to add a new floor.
   | DateInput (pointer, native, touch) | control box          | control box                            | date input                  | `control*`               |
   | DateRangeInput                     | control box          | control box; `ref` on a trigger button | range trigger               | `control*`               |
   | DateTimeInput (pointer, touch)     | control box          | control box                            | date-time input             | `control*`               |
-  | TimeInput (typed, native, touch)   | control box          | not forwarded                          | time input                  | `control*`               |
   | Selector                           | control box          | trigger button                         | trigger button              | `control*`               |
   | MultiSelector                      | control box          | not forwarded                          | trigger button              | `control*`               |
   | ComplexSelector                    | control box          | control box                            | trigger button              | `control*`               |
