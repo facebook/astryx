@@ -235,9 +235,21 @@ describe('useGestureRecognizer', () => {
   });
 });
 
-function Button({onEvent}: {onEvent: (event: ControlEvent) => void}) {
+function Button({
+  onEvent,
+  cancelTravel,
+  isBraking,
+}: {
+  onEvent: (event: ControlEvent) => void;
+  cancelTravel?: number;
+  isBraking?: () => boolean;
+}) {
   const ref = useRef<HTMLButtonElement>(null);
-  usePressTracker(ref, {onControlEvent: event => onEvent(event)});
+  usePressTracker(ref, {
+    onControlEvent: event => onEvent(event),
+    cancelTravel,
+    isBraking,
+  });
   return (
     <button data-testid="button" ref={ref} type="button">
       Go
@@ -255,6 +267,105 @@ describe('usePressTracker', () => {
     touch('touchstart', button, {id: 5, x: 1, y: 1}, 0);
     touch('touchend', button, {id: 5, x: 1, y: 1}, 50, true);
     expect(events).toEqual(['touchDown', 'touchUpInside']);
+  });
+
+  it('takes an option changed after mount from the next touch', () => {
+    const events: ControlEvent[] = [];
+    const {getByTestId, rerender} = render(
+      <Button onEvent={event => events.push(event)} />,
+    );
+    rerender(<Button onEvent={event => events.push(event)} cancelTravel={5} />);
+    const button = getByTestId('button');
+    touch('touchstart', button, {id: 7, x: 1, y: 1}, 0);
+    touch('touchmove', button, {id: 7, x: 1, y: 11}, 16);
+    expect(events).toEqual(['touchDown', 'touchCancel']);
+    touch('touchend', button, {id: 7, x: 1, y: 11}, 50, true);
+  });
+
+  it('ends a held press on unmount without calling back from the effect', () => {
+    const highlights: boolean[] = [];
+    const events: ControlEvent[] = [];
+    function HeldButton() {
+      const ref = useRef<HTMLButtonElement>(null);
+      usePressTracker(ref, {
+        onControlEvent: event => events.push(event),
+        onHighlightChange: isHighlighted => highlights.push(isHighlighted),
+      });
+      return (
+        <button data-testid="held" ref={ref} type="button">
+          Go
+        </button>
+      );
+    }
+    const {getByTestId, unmount} = render(<HeldButton />);
+    touch('touchstart', getByTestId('held'), {id: 9, x: 1, y: 1}, 0);
+    const seenHighlights = [...highlights];
+    const seenEvents = [...events];
+    unmount();
+    expect(highlights).toEqual(seenHighlights);
+    expect(events).toEqual(seenEvents);
+  });
+
+  it("attaches a press tracker that reads each event's pointer where the primary pointer is fine, beside one that stays inactive", () => {
+    const pointer = pointerQuery(false);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const held: ControlEvent[] = [];
+      const inactive: ControlEvent[] = [];
+      function Stepper({
+        events,
+        perEventPointer,
+        testId,
+      }: {
+        events: ControlEvent[];
+        perEventPointer: boolean;
+        testId: string;
+      }) {
+        const ref = useRef<HTMLButtonElement>(null);
+        usePressTracker(ref, {
+          onControlEvent: event => events.push(event),
+          perEventPointer,
+        });
+        return (
+          <button data-testid={testId} ref={ref} type="button">
+            +
+          </button>
+        );
+      }
+      const {getByTestId} = render(
+        <>
+          <Stepper events={held} perEventPointer testId="held" />
+          <Stepper events={inactive} perEventPointer={false} testId="other" />
+        </>,
+      );
+      const mouse = (type: string, target: Element, id: number) => {
+        const event = new PointerEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          pointerId: id,
+          pointerType: 'mouse',
+          clientX: 5,
+          clientY: 5,
+          button: 0,
+          buttons: type === 'pointerdown' ? 1 : 0,
+        });
+        target.dispatchEvent(event);
+      };
+      const stepper = getByTestId('held');
+      boundsOf(stepper, 44, 44);
+      mouse('pointerdown', stepper, 1);
+      mouse('pointerup', stepper, 1);
+      expect(held).toEqual(['touchDown', 'touchUpInside']);
+      const other = getByTestId('other');
+      boundsOf(other, 44, 44);
+      mouse('pointerdown', other, 2);
+      mouse('pointerup', other, 2);
+      expect(inactive).toEqual([]);
+    } finally {
+      warn.mockRestore();
+      pointer.restore();
+    }
   });
 
   it('passes isBraking through to the tracker', () => {
@@ -278,6 +389,17 @@ describe('usePressTracker', () => {
     touch('touchend', button, {id: 8, x: 1, y: 1}, 50, true);
     expect(isBraking).toHaveBeenCalled();
     expect(events).not.toContain('touchDown');
+  });
+
+  it("uses the caller's scroll brake", () => {
+    const events: ControlEvent[] = [];
+    const {getByTestId} = render(
+      <Button onEvent={event => events.push(event)} isBraking={() => true} />,
+    );
+    const button = getByTestId('button');
+    touch('touchstart', button, {id: 8, x: 1, y: 1}, 0);
+    touch('touchend', button, {id: 8, x: 1, y: 1}, 50, true);
+    expect(events).toEqual([]);
   });
 });
 
