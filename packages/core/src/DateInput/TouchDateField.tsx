@@ -158,8 +158,9 @@ const TOUCH_TARGET = dateInputTouchSizes.daySize;
 const SWAP_DURATION = durationVars['--duration-fast'];
 /**
  * UIDatePicker's month/year toggle, the swap under a finger: its fades and the
- * chevron's quarter turn, 0.25 s on `UIView.animate`'s ease-in-ease-out (motion
- * roles a theme may retune; monthYearToggle.stylex.ts `monthYearToggleMotion`).
+ * chevron's quarter turn, 0.25 s on `UIView.animate`'s ease-in-ease-out (the
+ * internal motion roles `timing.stateChangeMs` and `timing.curves.move`;
+ * monthYearToggle.stylex.ts `monthYearToggleMotion`).
  */
 const TOGGLE_DURATION = monthYearToggleMotion.duration;
 const TOGGLE_CURVE = monthYearToggleMotion.curve;

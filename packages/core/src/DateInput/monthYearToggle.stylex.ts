@@ -18,15 +18,16 @@ import * as stylex from '@stylexjs/stylex';
 /**
  * UIDatePicker's month/year toggle, the swap under a finger, from the UIKit
  * constants table (motion/uikit/datePicker.ts `calendar.monthYearToggle`,
- * measured on the iOS 26.2 simulator). The duration is an internal constant;
- * the curve is `timing.curves.move`, an internal motion role, read as its CSS
- * variable with the table's value as the fallback. StyleX inlines only
+ * measured on the iOS 26.2 simulator). The duration is `timing.stateChangeMs`
+ * and the curve `timing.curves.move`, internal motion roles (`spec:AST-094`
+ * FR4), each read as its CSS variable with its table value as the fallback.
+ * StyleX inlines only
  * literal constants, so the values are repeated here; a test holds them to
  * the table.
  */
 export const monthYearToggleMotion = stylex.defineConsts({
-  /** Every fade of the toggle and the chevron's turn: fadeMs. */
-  duration: '250ms',
+  /** Every fade of the toggle and the chevron's turn: timing.stateChangeMs. */
+  duration: 'var(--motion-timing-state-change-ms, 250ms)',
   /** `UIView.animate`'s default curve: timing.curves.move. */
   curve: 'var(--motion-timing-curves-move, cubic-bezier(0.42, 0, 0.58, 1))',
   /** The title chevron's quarter turn: chevronTurnDegrees. */
