@@ -5,8 +5,9 @@
 /**
  * @file CheckboxListItem.tsx
  * @input Uses React, CheckboxInput, ListItem, CheckboxListContext,
- *   CheckboxRowPressContext, the touch query and the row's own press paint
- *   (under a coarse primary pointer the row owns its checkbox's press)
+ *   CheckboxRowPressContext, the shared touch-pointer store and the row's
+ *   own press paint (under a coarse primary pointer the row owns its
+ *   checkbox's press)
  * @output Exports CheckboxListItem component, CheckboxListItemProps
  * @position Core implementation; consumed by index.ts, tested by CheckboxList.test.tsx
  *
@@ -27,9 +28,8 @@ import type {BaseProps} from '../BaseProps';
 import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
 import type {CheckboxInputProps} from '../CheckboxInput/CheckboxInput';
 import {CheckboxRowPressContext} from '../CheckboxInput/CheckboxRowPressContext';
-import {useMediaQuery} from '../hooks/useMediaQuery';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {TOUCH_QUERY} from '../utils/touchPresentation';
+import {useIsTouchPointer} from '../utils/touchPointerStore';
 import {ListItem} from '../List/ListItem';
 import {ListContext} from '../List/ListContext';
 import {CheckboxListContext} from './CheckboxListContext';
@@ -295,9 +295,11 @@ export function CheckboxListItem({
   // the box itself presses the row, and the box paints the row's press, the
   // way a radio row's circle does. A fine primary pointer keeps main's
   // behavior (spec:AST-017 FR59): the box stays its own press owner, so a pen
-  // on a fine-pointer page presses the box, never the row. The server and
-  // hydrating renders take the fine-pointer answer (spec:AST-094 FR13).
-  const isTouch = useMediaQuery(TOUCH_QUERY, false);
+  // on a fine-pointer page presses the box, never the row. Every row reads
+  // one shared answer, so a long list adds no touch observer per row
+  // (spec:AST-094 FR24); server and hydrating renders read the fine-pointer
+  // answer (spec:AST-094 FR13).
+  const isTouch = useIsTouchPointer();
   const rowOwnsPress = isTouch && hasRowInteraction && !effectiveDisabled;
   // The row's own press arms (the row's press paint) key on the attribute
   // the touch press controller writes on this row, so the row names itself
