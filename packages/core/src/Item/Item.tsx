@@ -647,13 +647,14 @@ export function Item({
       swipeBehavior === 'commit' &&
       (leadingSwipe.length > 1 || trailingSwipe.length > 1),
   );
-  // Filled by the swipe layer once it has mounted; empty until then and on a
-  // row without swipe actions, when the forwarders below do nothing.
+  // Installed by the swipe layer's Effect in the commit that mounts it, and
+  // read only by event handlers: the root's key forwarder and the reveal
+  // seam's calls. React flushes that Effect before it delivers a discrete
+  // event, so a handler always finds it; on a row without swipe actions it
+  // stays empty and the forwarders do nothing. Nothing renders from it.
   const swipeBridgeRef = useRef<ItemSwipeBridge | null>(null);
-  const [hasSwipeBridge, setHasSwipeBridge] = useState(false);
   const setSwipeBridge = useCallback((bridge: ItemSwipeBridge | null) => {
     swipeBridgeRef.current = bridge;
-    setHasSwipeBridge(bridge != null);
   }, []);
   // The side an open row is open on. An open row's root is no pressable
   // surface: a tap on its content only closes it, and UIKit's cell neither
@@ -663,21 +664,22 @@ export function Item({
   );
   const isSwipeOpen = swipeOpenSide != null;
   // The row's swipe as a control rendered in the row reaches it (List's
-  // edit-mode delete control, in the marker slot): `null` wherever there is
-  // none to reveal, and until the layer has mounted. A `commit` row rests
-  // nothing open (`spec:AST-057` FR5), so it has none: its panel has no
+  // edit-mode delete control, in the marker slot), derived from the props at
+  // every render: there from the row's first render, its calls going through
+  // the bridge, and `null` wherever there is none to reveal. A `commit` row
+  // rests nothing open (`spec:AST-057` FR5), so it has none: its panel has no
   // button to show.
   const canRevealSwipe = hasSwipe && swipeBehavior !== 'commit';
   const swipeReveal = useMemo<ItemSwipeReveal | null>(
     () =>
-      canRevealSwipe && hasSwipeBridge
+      canRevealSwipe
         ? {
             close: () => swipeBridgeRef.current?.close(),
             reveal: side => swipeBridgeRef.current?.reveal(side),
             side: swipeOpenSide,
           }
         : null,
-    [canRevealSwipe, hasSwipeBridge, swipeOpenSide],
+    [canRevealSwipe, swipeOpenSide],
   );
   const linkRootProps = isLinkRoot
     ? {
