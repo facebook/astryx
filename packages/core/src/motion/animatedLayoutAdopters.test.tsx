@@ -397,6 +397,87 @@ describe("a close plays the content's exit (spec:AST-105 FR4)", () => {
     expect(groupOf()).toBeNull();
   });
 
+  it('collapses a row with an expanded child as one change: only the outer group exits, and the child goes with it', async () => {
+    const user = userEvent.setup();
+    render(
+      <Area withHandle>
+        {layout => (
+          <TreeList
+            aria-label="Files"
+            items={[
+              {
+                id: 'photos',
+                label: 'Photos',
+                isExpanded: true,
+                children: [
+                  {
+                    id: 'trips',
+                    label: 'Trips',
+                    isExpanded: true,
+                    children: [{id: 'snow', label: 'Snow.jpg'}],
+                  },
+                ],
+              },
+            ]}
+            animatedLayout={layout}
+          />
+        )}
+      </Area>,
+    );
+    stubGeometry();
+    const groupOf = (id: string) =>
+      document.querySelector<HTMLElement>(
+        `[data-tree-id="${id}"] > [role="group"]`,
+      );
+    vi.spyOn(
+      groupOf('photos') as HTMLElement,
+      'getBoundingClientRect',
+    ).mockReturnValue(new DOMRect(0, 40, 400, 80));
+    await user.click(
+      document.querySelector<HTMLElement>(
+        '[data-tree-id="photos"] > div [data-tree-toggle]',
+      ) ?? document.body,
+    );
+    await flush();
+    const outer = groupOf('photos');
+    // Only the outer group is held; the child's group stays inside it as it
+    // was, so the content after them moves once.
+    expect(outer?.style.getPropertyValue('margin-block-end')).not.toBe('');
+    expect(groupOf('trips')?.style.getPropertyValue('margin-block-end')).toBe(
+      '',
+    );
+    act(() => finishes.get(outer as HTMLElement)?.());
+    expect(groupOf('photos')).toBeNull();
+  });
+
+  it("drops the chevron's spring when the handle is removed", async () => {
+    const user = userEvent.setup();
+    const {rerender} = render(
+      <Area withHandle>
+        {layout => (
+          <Collapsible trigger="Details" animatedLayout={layout}>
+            Content
+          </Collapsible>
+        )}
+      </Area>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Details'}));
+    const chevron = screen
+      .getByRole('button', {name: 'Details'})
+      .querySelector<HTMLElement>(':scope > .astryx-icon');
+    expect(chevron?.style.getPropertyValue('transition-duration')).not.toBe('');
+    rerender(
+      <Area withHandle={false}>
+        {layout => (
+          <Collapsible trigger="Details" animatedLayout={layout}>
+            Content
+          </Collapsible>
+        )}
+      </Area>,
+    );
+    expect(chevron?.style.getPropertyValue('transition-duration')).toBe('');
+  });
+
   it('lands a close at once without a handle', async () => {
     const user = userEvent.setup();
     render(

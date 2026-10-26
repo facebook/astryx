@@ -304,7 +304,10 @@ export function TreeList({
     }
   }
   const endExit = useCallback((id: string) => {
-    // eslint-disable-next-line @eslint-react/set-state-in-effect -- holdLayoutExit decides from layout read in the collapsing commit (the group's place in the area's visible part, Reduce Motion and the pointer, and whether an end margin frees its space); a group it does not hold goes before the frame paints
+    // Called from the exit effect: holdLayoutExit decides from layout read
+    // in the collapsing commit (the group's place in the area's visible part,
+    // Reduce Motion and the pointer, and whether an end margin frees its
+    // space); a group it does not hold goes before the frame paints.
     setExitingIds(prev => {
       if (!prev.has(id)) {
         return prev;
@@ -319,7 +322,13 @@ export function TreeList({
   // for each row whose expansion changed. The row's own chevron (the Icon in
   // its toggle, the first one in the row) turns on the glide's motion.
   const pendingLayoutRef = useRef<
-    {change: LayoutChange; id: string; isExpanding: boolean}[]
+    {
+      change: LayoutChange;
+      id: string;
+      isExpanding: boolean;
+      /** Changed rows inside this one: they move and exit with it. */
+      nested: string[];
+    }[]
   >([]);
   const measureChanges = useCallback(
     (previous: ReadonlySet<string>) => {
@@ -327,11 +336,32 @@ export function TreeList({
         ...[...previous].filter(id => !expandedIds.has(id)),
         ...[...expandedIds].filter(id => !previous.has(id)),
       ];
+      const rows = new Map<string, HTMLElement>();
       for (const id of changed) {
         const row = treeElementRef.current?.querySelector<HTMLElement>(
           `[data-tree-id="${CSS.escape(id)}"]`,
         );
-        if (row == null) {
+        if (row != null) {
+          rows.set(id, row);
+        }
+      }
+      // A changed row inside another changed row (a child left expanded when
+      // its parent collapses) is not a change of its own: its group goes with
+      // the outer one, so the content after them moves once (`spec:AST-105`
+      // FR3).
+      const outerOf = (row: HTMLElement): string | undefined =>
+        [...rows].find(
+          ([, other]) => other !== row && other.contains(row),
+        )?.[0];
+      const nested = new Map<string, string[]>();
+      for (const [id, row] of rows) {
+        const outer = outerOf(row);
+        if (outer != null) {
+          nested.set(outer, [...(nested.get(outer) ?? []), id]);
+        }
+      }
+      for (const [id, row] of rows) {
+        if (outerOf(row) != null) {
           continue;
         }
         applyLayoutChangeTransition(
@@ -344,11 +374,24 @@ export function TreeList({
           change,
           id,
           isExpanding: expandedIds.has(id),
+          nested: nested.get(id) ?? [],
         });
       }
     },
     [animatedLayout, expandedIds],
   );
+  // Without a handle the chevrons keep the theme's own turn: a spring a
+  // handle set stays only while it is passed (`spec:AST-105` FR2).
+  useLayoutEffect(() => {
+    if (animatedLayout != null) {
+      return;
+    }
+    for (const chevron of treeElementRef.current?.querySelectorAll<HTMLElement>(
+      '[data-tree-toggle] > .astryx-icon',
+    ) ?? []) {
+      applyLayoutChangeTransition(null, chevron);
+    }
+  }, [animatedLayout]);
   const handleToggle = useCallback(
     (id: string) => {
       setExpandedKeysOverride(prev => {
@@ -415,15 +458,22 @@ export function TreeList({
         }
         continue;
       }
+      // The rows nested in it leave with it, once its exit ends.
+      const endAll = () => {
+        endExit(pending.id);
+        for (const id of pending.nested) {
+          endExit(id);
+        }
+      };
       const isHeld =
         isMeasured &&
         group != null &&
-        holdLayoutExit(animatedLayout, group, () => endExit(pending.id));
+        holdLayoutExit(animatedLayout, group, endAll);
       if (!isHeld) {
         // An exit holdLayoutExit did not hold (out of view, Reduce Motion
         // with a fine pointer, or no margin frees its space): the group goes
         // before this frame paints.
-        endExit(pending.id);
+        endAll();
       }
     }
   }, [expandedIds, animatedLayout, endExit]);

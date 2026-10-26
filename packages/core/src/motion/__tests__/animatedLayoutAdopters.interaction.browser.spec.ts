@@ -175,4 +175,43 @@ test.describe('component:Collapsible FR10 and component:TreeList FR8 (spec:AST-1
       )
       .toBe(true);
   });
+
+  test('collapsing a row with an expanded child moves the rows after it once, with no jump when the exit ends (spec:AST-105 FR3)', async ({
+    page,
+  }) => {
+    await openStory(page);
+    const photos = page.getByRole('treeitem', {name: 'Photos'});
+    await photos.locator('[data-tree-toggle]').first().click();
+    await page.waitForTimeout(1200);
+    await page
+      .getByRole('treeitem', {name: 'Trips'})
+      .locator('[data-tree-toggle]')
+      .first()
+      .click();
+    await page.waitForTimeout(1200);
+    const documents = '[data-tree-id="docs"]';
+    const openTop = await page.evaluate(
+      sel => document.querySelector(sel)?.getBoundingClientRect().top ?? 0,
+      documents,
+    );
+    await photos.locator('[data-tree-toggle]').first().click();
+    // It glides from where it was: its offset is the whole distance it moves.
+    const offset = await glideOf(page, documents);
+    await expect
+      .poll(async () =>
+        page.evaluate(
+          () =>
+            document.querySelector(
+              '[data-tree-id="photos"] > [role="group"]',
+            ) == null,
+        ),
+      )
+      .toBe(true);
+    const closedTop = await page.evaluate(
+      sel => document.querySelector(sel)?.getBoundingClientRect().top ?? 0,
+      documents,
+    );
+    expect(offset).not.toBeNull();
+    expect(Math.abs((offset ?? 0) - (openTop - closedTop))).toBeLessThan(2);
+  });
 });

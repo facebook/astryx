@@ -384,6 +384,18 @@ export function Collapsible({
     );
     layoutChange.measureBefore();
   }, [animatedLayout, layoutChange]);
+  // Without a handle the chevron keeps the theme's own turn: a spring a handle
+  // set stays only while it is passed (`spec:AST-105` FR2).
+  useLayoutEffect(() => {
+    if (animatedLayout == null) {
+      applyLayoutChangeTransition(
+        null,
+        triggerRef.current?.querySelector<HTMLElement>(
+          ':scope > .astryx-icon',
+        ) ?? null,
+      );
+    }
+  }, [animatedLayout]);
   // A close with a handle keeps the content rendered while it plays its exit
   // (the exit makes it inert and gives up its space), then hides it
   // (`spec:AST-105` FR4). Derived from the open state as it changes, during
