@@ -64,7 +64,8 @@ a measured, sourced difference exists.
   deceleration rate, rubber-band coefficient, gesture threshold and haptic
   moment a touch presentation uses MUST default to the measured native value
   for that use (FR2), and every component that plays the same motion or
-  gesture MUST use the same value; a theme MAY override a motion role (FR4).
+  gesture MUST use the same value; once the roles are public, a theme MAY
+  override a motion role (FR4).
   No component uses a value of its own where a measured value exists. The same
   values apply on every touch platform; a platform gets a value of its own only
   where a measured, sourced difference exists (FR2).
@@ -94,22 +95,22 @@ a measured, sourced difference exists.
   measures (0.55 for a scroll view and a sheet), and a release MUST pick its
   rest point by projecting its velocity the way its UIKit counterpart does:
   with a deceleration rate, or with a measured projection time.
-- **FR4 — Touch motion is themeable.** Every spring, duration and curve a
-  touch presentation plays MUST be a theme motion role named for its use
+- **FR4 — Touch motion uses named roles.** Every spring, duration and curve a
+  touch presentation plays MUST be a motion role named for its use
   (`architecture:theme-tokens` INV3). The roles this record names are listed below with their defaults and
   sources; further roles a component's own record measures join through the
-  generated motion role table (DEC-5). The role's default value is
-  its measured value (FR1, FR2), and a theme MAY override it through `motion`, at its root or
-  in an adaptation rule. A component MUST read touch motion through these roles
-  and MUST NOT play a literal. A theme value MUST reach the motion at its
+  generated motion role table (DEC-5). The role's value is its
+  measured value (FR1, FR2). The roles are internal until the public
+  motion-token set is decided, so a theme cannot override them yet (DEC-11). A component MUST read touch motion through these roles
+  and MUST NOT play a literal. Once a role is public, a theme value MUST reach the motion at its
   start, without changing how the motion runs (FR5, FR6). Motion that
   must stay in step with the on-screen keyboard is not a theme role: it rides
   the keyboard's own motion (`spec:AST-099` FR8,
   `architecture:react-component-runtime` INV11). Gesture thresholds, the timings that decide who gets a touch (the
   content-touch delay, the scroll brake, momentum memory) and haptics are not
-  motion: they stay internal measured values and are not public concepts (`spec:AST-002` FR3). This adds touch motion roles to the motion
-  configuration of `architecture:theme-authoring-contract` and to
-  `architecture:theme-tokens` beside the existing duration and easing tokens, whose rules are unchanged. It departs from the draft `design:motion` DR3
+  motion: they stay internal measured values and are not public concepts (`spec:AST-002` FR3). When the public set is decided, its roles join the motion configuration of
+  `architecture:theme-authoring-contract` and `architecture:theme-tokens`,
+  whose rules are unchanged until then. It departs from the draft `design:motion` DR3
   wherever the native motion settles with an overshoot or stretches with a
   rubber band.
 
@@ -621,6 +622,18 @@ element is not selectable by a long press, and the system adds no Copy item,
 so a caller that wants copying puts a Copy action in its own menu.
 
 Rejected: a system Copy item; suppressing selection on every press-tracked control.
+
+### DEC-11 — Touch motion roles stay internal until the public set is decided
+
+**Reference:** `spec:AST-094/DEC-11`
+**Decider:** `cixzhang`, `2026-10-25`
+
+Motion values stay internal for now: a public, theme-settable set is decided
+separately, so no component-specific role becomes a public token first.
+
+This defers DEC-3's theme override until that set exists.
+
+Rejected: publishing the per-component roles as theme tokens.
 
 ## Open questions
 
