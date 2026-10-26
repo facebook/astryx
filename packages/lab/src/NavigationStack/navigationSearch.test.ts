@@ -6,7 +6,7 @@
  * @output Checks the bar side of a search activation against iOS 26.2's
  *   measured rules: the back button gone by 35 % of the activation, the large
  *   title its square, the large title's return over the cancel's last 35 %,
- *   the clock from the table when no theme retunes it, and `searchCurve`
+ *   the clock from the search table, and `searchCurve`
  *   on UIKit's curve
  * @position Testing
  */
@@ -21,7 +21,7 @@ import {
   searchLargeTitleReturnOpacity,
 } from './navigationSearch';
 
-// No theme: the clock is the table's (a detached element reads it too).
+// The clock is the table's (a detached element reads it too).
 const {durationS: SEARCH_ACTIVATION_S, ease: searchEase} = searchClock(null);
 
 describe('the bar side of a search activation', () => {

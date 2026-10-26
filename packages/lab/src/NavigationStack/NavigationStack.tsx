@@ -1908,7 +1908,7 @@ export function NavigationStack<T>({
           searchMoveRef.current = null;
           return;
         }
-        // The field's clock, under its theme, read as the move starts.
+        // The field's clock, read as the move starts.
         const clock = searchClock(layers.searchElement);
         const duration = clock.durationS;
         // From rest the parts start on the frame that presents them at rest,
