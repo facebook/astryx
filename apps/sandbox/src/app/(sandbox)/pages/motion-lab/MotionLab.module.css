@@ -780,7 +780,11 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+/* Also the "real rule" rows on the Bugs page, which are divs: the padding
+   and radius are theirs (a table row ignores both). */
 .tintRow {
+  padding: var(--space-2, 6px) var(--space-3, 10px);
+  border-radius: var(--radius-sm, 6px);
   transition: background-color 150ms ease;
 }
 
