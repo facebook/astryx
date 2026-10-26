@@ -57,18 +57,17 @@
  * release, the way a finger's press leaves. The query is the stylesheet's
  * own, so the two cannot disagree about which presses are the controller's.
  *
- * While a finger or a pen is down on a surface, its text selection and the
- * touch callout are off (gestures/selectionLock.ts, shared with the gesture
- * host), as on UIKit's controls and cells, where the primary pointer is
- * coarse; elsewhere every contact keeps the browser's selection.
+ * A surface's hold does nothing, so it keeps the browser's long-press text
+ * selection (`spec:AST-094` FR41); only an element whose hold does something
+ * suppresses it, through the gesture host (gestures/selectionLock.ts).
  *
  * Its touch-only listeners, the finger's `touchend` and `touchcancel`, are on
  * only while a press is tracked and the primary pointer is coarse
  * (gestures/coarsePointer.ts, `spec:AST-094` FR24).
  *
  * SYNC: When modified, update pressGesture.ts, hooks/usePressFeedback.ts,
- * hooks/usePressFeedback.doc.mjs, utils/interactionOverlay.stylex.ts,
- * gestures/selectionLock.ts and pressFeedback.test.ts.
+ * hooks/usePressFeedback.doc.mjs, utils/interactionOverlay.stylex.ts and
+ * pressFeedback.test.ts.
  */
 
 import type {PressGesture, PressPaint, PressStep} from './pressGesture';
@@ -82,7 +81,6 @@ import {
 import {pressConsts} from './interactionOverlay.stylex';
 import {TOUCH_QUERY} from './touchPresentation';
 import {isCoarsePointer, watchCoarsePointer} from '../gestures/coarsePointer';
-import {lockSelection, locksSelectionFor} from '../gestures/selectionLock';
 
 /**
  * The marker the controller finds with `closest()`. Every Astryx component
@@ -291,12 +289,6 @@ interface LiveGesture {
   /** The surface's profile's release clock, in ms. */
   releaseMs: number;
   timer: ReturnType<typeof setTimeout> | null;
-  /**
-   * Releases the text-selection lock a finger holds while it is down
-   * (gestures/selectionLock.ts); `null` for a mouse button or a key, which
-   * never lock, and once the finger is up.
-   */
-  unlock: (() => void) | null;
 }
 
 /**
@@ -455,7 +447,6 @@ function apply(slot: Slot, step: PressStep): void {
   live.gesture = step.gesture;
   paintElement(live.element, step.paint);
   if (step.gesture.phase === 'idle') {
-    unlockSelection(slot);
     slot.live = null;
     settle();
     return;
@@ -539,17 +530,8 @@ function scrollerIsBraking(element: HTMLElement): boolean {
 function releaseIfDead(slot: Slot): void {
   if (slot.live?.gesture.phase === 'dead') {
     clearTimer(slot);
-    unlockSelection(slot);
     slot.live = null;
     settle();
-  }
-}
-
-/** The finger is up or gone: text selection comes back on its surface. */
-function unlockSelection(slot: Slot): void {
-  slot.live?.unlock?.();
-  if (slot.live != null) {
-    slot.live.unlock = null;
   }
 }
 
@@ -560,7 +542,6 @@ function finish(slot: Slot): void {
     return;
   }
   clearTimer(slot);
-  unlockSelection(slot);
   const {element} = live;
   const wasPainted =
     !ownedElsewhere(element) && element.hasAttribute(PRESSED_ATTRIBUTE);
@@ -648,7 +629,6 @@ function pressButton(
     pointerId,
     releaseMs: releaseMsOf(profileOf(element)),
     timer: null,
-    unlock: null,
   };
   holdKey(pointerId == null);
   apply(button, pressGestureStep(button.live.gesture, {kind: 'buttonDown'}));
@@ -724,16 +704,6 @@ function onPointerDown(event: PointerEvent): void {
     pointerId: event.pointerId,
     releaseMs: releaseMsOf(profile),
     timer: null,
-    // A held finger never starts text selection on the surface (UIKit's
-    // controls and cells never do), where the primary pointer is coarse: a
-    // touchscreen laptop's finger and a desktop pen keep selection, as a
-    // mouse does (spec:AST-094 FR19).
-    unlock: locksSelectionFor(
-      event.pointerType,
-      element.ownerDocument.defaultView,
-    )
-      ? lockSelection([element], event.target)
-      : null,
   };
   apply(
     finger,
@@ -790,7 +760,6 @@ function onPointerUp(event: PointerEvent): void {
   ) {
     return;
   }
-  unlockSelection(finger);
   apply(finger, pressGestureStep(live.gesture, {kind: 'up'}));
   releaseIfDead(finger);
 }
@@ -816,7 +785,6 @@ function onCancel(event?: Event): void {
   if (live == null) {
     return;
   }
-  unlockSelection(finger);
   apply(finger, pressGestureStep(live.gesture, {kind: 'cancel'}));
   // The pointer is gone: a scroll-claimed gesture sends no further pointer
   // events, so nothing else would ever free the slot.
