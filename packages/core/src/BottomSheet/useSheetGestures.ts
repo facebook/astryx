@@ -116,7 +116,11 @@ import {
 import {rubberBand} from '../motion/rubberBand';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {sheet as sheetTable} from '../motion/uikit/sheet';
-import {SHEET_DETENT_SPRING} from '../motion/uikit/springs';
+import {
+  SHEET_DETENT_SPRING,
+  SHEET_DISMISS_SPRING,
+  SHEET_PRESENT_SPRING,
+} from '../motion/uikit/springs';
 import {
   readReleaseMotion,
   themeCurve,
@@ -522,7 +526,7 @@ export interface UseSheetGesturesResult {
   resetTravel: () => void;
   /**
    * Presents the sheet the way UIKit does under a finger: from below the
-   * screen to its detent on `springs.sheetPresent`, the dim on the same
+   * screen to its detent on `SHEET_PRESENT_SPRING`, the dim on the same
    * curve (under reduced motion, a fade in place). Call from an effect
    * as the sheet opens, before its dialog is shown (a child's effect runs
    * before its host's): the dim is taken over at once, and the travel starts
@@ -532,7 +536,7 @@ export interface UseSheetGesturesResult {
   present: () => boolean;
   /**
    * Dismisses the sheet the way UIKit does under a finger: off screen on
-   * `springs.sheetDismiss`, the dim on the same curve. During the entrance it
+   * `SHEET_DISMISS_SPRING`, the dim on the same curve. During the entrance it
    * waits for the sheet to land, then runs from the detent, as UIKit queues
    * it. Sets and returns `gestureExitRef`'s exit for the host to wait on;
    * null under a mouse.
@@ -1709,10 +1713,10 @@ export function useSheetGestures({
       // start.
       const handle = animator.animate(
         {y: 0},
-        {spring: springs.sheetPresent},
+        {spring: SHEET_PRESENT_SPRING},
         {crossfadeAs: 'entrance'},
       );
-      const curve = solveSpring(toSpring(springs.sheetPresent), {
+      const curve = solveSpring(toSpring(SHEET_PRESENT_SPRING), {
         from: distance,
         to: 0,
       });
@@ -1789,10 +1793,10 @@ export function useSheetGestures({
     // instead of skipping into its curve. The dim shares that start.
     const handle = animator.animate(
       {y: from + distance},
-      {spring: springs.sheetDismiss},
+      {spring: SHEET_DISMISS_SPRING},
       {crossfadeAs: 'exit'},
     );
-    const curve = solveSpring(toSpring(springs.sheetDismiss), {
+    const curve = solveSpring(toSpring(SHEET_DISMISS_SPRING), {
       from,
       to: from + distance,
     });
