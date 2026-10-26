@@ -1139,9 +1139,13 @@ const rowHighlight = async (page: Page, name: string) =>
     .first()
     .evaluate(control => {
       const row = control.closest('[data-astryx-pressable="cell"]');
-      return row == null
-        ? -1
-        : Number(getComputedStyle(row, '::before').opacity);
+      if (row == null) {
+        return -1;
+      }
+      // At rest a row paints no press layer (no generated box), so nothing
+      // is highlighted; the layer exists only while pressed, fading or held.
+      const layer = getComputedStyle(row, '::before');
+      return layer.content === 'none' ? 0 : Number(layer.opacity);
     });
 
 test.describe('the row that pushed', () => {
