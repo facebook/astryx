@@ -324,6 +324,11 @@ describe("a close plays the content's exit (spec:AST-105 FR4)", () => {
     expect(group).toHaveAttribute('inert');
     expect(group).toHaveAttribute('aria-hidden', 'true');
     expect(group?.style.position).toBe('absolute');
+    // The tree's keyboard order (the rows its focus model reaches) has only
+    // the collapsed row.
+    expect(
+      document.querySelectorAll('[role="treeitem"]:not([data-tree-exiting] *)'),
+    ).toHaveLength(1);
     act(() => finishes.get(group as HTMLElement)?.());
     expect(groupOf()).toBeNull();
   });
