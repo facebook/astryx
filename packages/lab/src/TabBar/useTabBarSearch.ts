@@ -28,7 +28,11 @@
  * `searchSquashVelocity`), its box changed in CSS and its start carried
  * over. The search circle, shrunk to the minimized size, is the field's
  * cancel button: its cancel glyph appears at `searchCancelDelay`, moved
- * `searchCancelShift` toward the screen's edge. Field and button sit
+ * `searchCancelShift` toward the screen's edge. Pressed (core's press
+ * tracker, UIControl's highlight, only while it is the cancel button under a
+ * finger), it grows to `searchCancelPressedSize` on `searchCancelPress` and,
+ * released, shrinks back with UIKit's wobble on `searchCancelReturn`; under
+ * Reduce Motion it does not scale. Field and button sit
  * `searchKeyboardGap` above the software keyboard: lab's measurement reports
  * the keyboard's height (AST-099 FR2, and Chrome's own report, FR8) and each
  * report is committed once, as an offset, with no ride (a Lab surface,
@@ -42,7 +46,14 @@
  * __tests__/TabBar.interaction.browser.spec.ts.
  */
 
-import {useLayoutEffect, useRef, useState, type RefObject} from 'react';
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
+import {usePressTracker} from '@astryxdesign/core/gestures/usePressTracker';
 import {registerTabBarTable, tabBar} from '@astryxdesign/core/motion/uikit';
 import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
 import {isRtlElement} from '../utils/isRtlElement';
@@ -68,6 +79,13 @@ export interface UseTabBarSearchOptions {
    * springs); under a mouse it shows at once.
    */
   readonly isTouch: boolean;
+  /**
+   * When the search circle's glass may grow back to its bar size (ms, the
+   * document timeline): set as Cancel's release wobble starts, so the
+   * wobble plays at the minimized size, as UIKit's does (TabBar passes it to
+   * the minimize, which grows the glass).
+   */
+  readonly glassHoldRef: RefObject<number>;
 }
 
 export interface TabBarSearch {
@@ -80,6 +98,8 @@ export interface TabBarSearch {
   readonly searchGlyph: (element: HTMLElement | null) => void;
   /** The circle's cancel glyph, while the field is active under a finger. */
   readonly cancelGlyph: (element: HTMLElement | null) => void;
+  /** The Cancel button over the circle: the press's target. */
+  readonly cancel: (element: HTMLElement | null) => void;
   /** The field's glass and content: fades in, moves between its places. */
   readonly field: (element: HTMLElement | null) => void;
   /** The field glass's middle: its width. */
@@ -101,6 +121,7 @@ export function useTabBarSearch({
   isSearching,
   isActive,
   isTouch,
+  glassHoldRef,
 }: UseTabBarSearchOptions): TabBarSearch {
   // The table's springs become motion roles (a theme may retune them)
   // before this hook's first animation.
@@ -161,6 +182,49 @@ export function useTabBarSearch({
     cancelGlyph.animator.animate({opacity: isCancel ? 1 : 0}, swap, options);
     searchGlyph.animator.animate({opacity: isCancel ? 0 : 1}, swap, options);
   }, [isCancel, cancelGlyph, searchGlyph]);
+
+  // The Cancel button's press: UIControl's highlight from core's press
+  // tracker on the button, attached only while it shows. The circle under it
+  // draws the press: pressed, it grows to `searchCancelPressedSize`;
+  // released, it shrinks back with UIKit's wobble, at the minimized size
+  // (the glass grows back to its bar size only once the wobble rests). Under
+  // Reduce Motion a press scales nothing.
+  const cancelElementRef = useRef<HTMLElement | null>(null);
+  const cancelRef = useCallback((element: HTMLElement | null) => {
+    cancelElementRef.current = element;
+  }, []);
+  const pressTargetRef = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    pressTargetRef.current = isCancel ? cancelElementRef.current : null;
+  });
+  usePressTracker(pressTargetRef, {
+    onHighlightChange: isPressed => {
+      const options = {touchRelease: !isPressed};
+      if (circle.animator.reducedMotion(options) !== 'off') {
+        return;
+      }
+      const now = performance.now();
+      const velocity = circle.animator.getVelocity('scale', now);
+      const handle = circle.animator.animate(
+        {
+          scale: isPressed
+            ? tabBar.searchCancelPressedSize / tabBar.minimizedSize
+            : 1,
+        },
+        {
+          spring: isPressed
+            ? tabBar.searchCancelPress
+            : tabBar.searchCancelReturn,
+          velocity: {scale: velocity},
+        },
+        options,
+      );
+      if (!isPressed) {
+        const wobble = handle.curve('scale');
+        glassHoldRef.current = now + (wobble?.duration ?? 0) * 1000;
+      }
+    },
+  });
 
   // Where the active field and its cancel button sit: above the keyboard as
   // of its last report, read once per report and committed as an offset (no
@@ -251,6 +315,7 @@ export function useTabBarSearch({
     circle: circle.ref,
     searchGlyph: searchGlyph.ref,
     cancelGlyph: cancelGlyph.ref,
+    cancel: cancelRef,
     field: field.ref,
     fieldMiddle: fieldMiddle.ref,
     fieldEnd: fieldEnd.ref,
