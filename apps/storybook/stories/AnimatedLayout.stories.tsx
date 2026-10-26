@@ -16,8 +16,9 @@ import {TextInput} from '@astryxdesign/core/TextInput';
 import {Button} from '@astryxdesign/core/Button';
 import {useAnimatedLayout} from '@astryxdesign/core/hooks';
 import type {AnimatedLayout as AnimatedLayoutHandle} from '@astryxdesign/core/hooks';
-// The internal reporting half of the module: a plain app element whose size
-// changes reports it here, as Astryx components do internally.
+// Story-only: these demos drive the internal reporting half directly, as an
+// adopting component does, to show cases no adopter covers yet. It is not app
+// API: an app passes the handle to a component (spec:AST-105 FR1).
 import {
   playLayoutChange,
   reportLayoutChange,
