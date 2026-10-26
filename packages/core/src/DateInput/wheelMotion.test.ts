@@ -7,7 +7,8 @@
  * @output Proves what the player leaves on the rows when it lets a motion go,
  *   and its cross-fade for reduced motion: opacity only, the rows landing at
  *   the midpoint (baked into their own animations where Web Animations run,
- *   so a late timer moves nothing), stoppable before it
+ *   so a late timer moves nothing), timed from when it starts on screen,
+ *   stoppable before it
  * @position Unit coverage for wheelMotion.ts; jsdom runs no Web Animations,
  *   so the player writes each motion's end state inline and keeps time with
  *   its timers. The wheels' tests and the browser specs cover it on screen.
@@ -167,6 +168,77 @@ describe('WheelMotion', () => {
     expect(played.get(drawing)?.keyframes.map(frame => frame.opacity)).toEqual([
       1, 0, 1,
     ]);
+  });
+
+  it('times the midpoint and the end from when its animations start, not from the call', async () => {
+    const rows = Array.from({length: LAYOUT.rowCount}, () =>
+      document.createElement('div'),
+    );
+    const strip = document.createElement('div');
+    const drawing = document.createElement('div');
+    // Every animation the fade creates waits for the frame that starts them.
+    let commit = () => {};
+    const ready = new Promise<void>(resolve => {
+      commit = resolve;
+    });
+    const created: {
+      startTime: number | null;
+      pending: boolean;
+      cancel: () => void;
+    }[] = [];
+    for (const element of [...rows, strip, drawing]) {
+      element.animate = () => {
+        const animation = {
+          startTime: null,
+          pending: true,
+          ready,
+          cancel: vi.fn(),
+        };
+        created.push(animation);
+        return animation as unknown as Animation;
+      };
+    }
+    const motion = new WheelMotion(LAYOUT);
+    motion.attach(rows, strip);
+    motion.setOffset(0);
+    const onMidpoint = vi.fn();
+    const onEnd = vi.fn();
+    motion.crossFade(20 * 32, {
+      durationMs: 200,
+      fade: [drawing],
+      onMidpoint,
+      onEnd,
+    });
+
+    // A busy main thread holds that frame past the fade's whole length:
+    // nothing lands, ends or is cancelled before the fade starts.
+    vi.advanceTimersByTime(250);
+    expect(onMidpoint).not.toHaveBeenCalled();
+    expect(onEnd).not.toHaveBeenCalled();
+    for (const animation of created) {
+      expect(animation.cancel).not.toHaveBeenCalled();
+    }
+
+    // The frame commits: the fade starts now, and is timed from here.
+    const startTime = performance.now();
+    for (const animation of created) {
+      animation.startTime = startTime;
+      animation.pending = false;
+    }
+    commit();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(motion.offset()).toBe(0);
+    vi.advanceTimersByTime(99);
+    expect(onMidpoint).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(2);
+    expect(onMidpoint).toHaveBeenCalledTimes(1);
+    expect(motion.offset()).toBe(640);
+    vi.advanceTimersByTime(98);
+    expect(onEnd).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(2);
+    expect(onEnd).toHaveBeenCalledWith('arrived', 640);
+    expect(onMidpoint).toHaveBeenCalledTimes(1);
   });
 
   it('is stopped by a finger before its midpoint with the rows unmoved', () => {
