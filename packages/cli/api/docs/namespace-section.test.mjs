@@ -99,6 +99,25 @@ afterEach(() => {
 
 describe('a section read on a namespace', () => {
   it(
+    'ignores a catalog key a caller passes: the read loads its own project',
+    async () => {
+      const reference = await docs('authoring/field-reference', undefined, {
+        index: true,
+      });
+      const key = reference.data.sections[0].id;
+      const expected = await docs('authoring', key);
+      // An undeclared option is not a control (spec:AST-017 FR14).
+      expect(
+        await docs('authoring', key, /** @type {any} */ ({catalog: 'npm'})),
+      ).toEqual(expected);
+      expect(
+        await docs('tokens', undefined, /** @type {any} */ ({catalog: 'npm'})),
+      ).toEqual(await docs('tokens'));
+    },
+    SLOW,
+  );
+
+  it(
     "loads the project once: every guide below the namespace reads from the read's own catalog",
     async () => {
       const reference = await docs('authoring/field-reference', undefined, {

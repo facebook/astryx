@@ -152,7 +152,7 @@ export async function namespaceSection(
   /** @type {Omit<GuideMatch, 'match'>[]} */
   const reads = [];
   for (const guide of guides) {
-    const resolved = await resolveTopicDocs(guide.route, {...options, catalog});
+    const resolved = await resolveTopicDocs(guide.route, options, catalog);
     reads.push({guide, resolved, sections: readerSections(resolved.node)});
   }
 
