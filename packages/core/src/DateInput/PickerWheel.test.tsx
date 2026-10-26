@@ -14,7 +14,7 @@
  */
 
 import {act, fireEvent, render, screen} from '@testing-library/react';
-import {Profiler, createRef} from 'react';
+import {Profiler} from 'react';
 import {
   afterAll,
   afterEach,
@@ -28,7 +28,7 @@ import {
 import {timing} from '../motion/uikit';
 import {fontWeightVars} from '../theme/tokens.stylex';
 import {PickerWheel} from './PickerWheel';
-import type {WheelHandle, WheelOption, WheelProps} from './wheelOptions';
+import type {WheelOption, WheelProps} from './wheelOptions';
 import {WHEEL_ROW_PITCH, todayLook} from './wheelLook';
 
 const ROW = WHEEL_ROW_PITCH;
@@ -86,9 +86,7 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-function renderWheel(
-  props: Partial<WheelProps> & {ref?: WheelProps['ref']} = {},
-) {
+function renderWheel(props: Partial<WheelProps> = {}) {
   const onChange = vi.fn();
   const view = render(
     <PickerWheel
@@ -237,6 +235,30 @@ describe('PickerWheel — at rest', () => {
     advance(2000);
     expect(onChange).not.toHaveBeenCalled();
     expect(column.getAttribute('aria-activedescendant')).toBe(option('08').id);
+  });
+
+  it('rests back on a committed value outside the bounds and commits nothing', () => {
+    // component:DateInput FR13: a wheel resting on its committed row commits
+    // nothing, even outside the bounds, as the scrolling column keeps it.
+    const {column, option, onChange} = renderWheel({value: 8});
+    advance(2000);
+    // One gesture: up a row onto 09 (enabled), back down onto 08, held
+    // still, lifted.
+    const away = 10 + ROW;
+    touch('touchstart', column, 100);
+    for (let i = 1; i <= 15; i++) {
+      advance(40);
+      touch('touchmove', column, 100 - (away * i) / 15);
+    }
+    for (let i = 1; i <= 15; i++) {
+      advance(40);
+      touch('touchmove', column, 100 - away + (away * i) / 15);
+    }
+    advance(300);
+    touch('touchend', column, 100);
+    advance(2000);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(option('08').style.transform).toBe(AT_BAND);
   });
 
   it('shows a value set from outside without motion', () => {
@@ -599,19 +621,42 @@ describe('PickerWheel — under reduced motion', () => {
     Reflect.deleteProperty(Element.prototype, 'animate');
   });
 
-  /** The wheel animated opacity alone, on the Reduce Motion fade. */
+  /**
+   * Nothing travels, on the Reduce Motion fade (design:reduced-motion DR2):
+   * the drawing's opacity dips out and back in, and the rows and the strip
+   * hold where they are until the fade's midpoint, then step onto their
+   * rows, on the compositor.
+   */
   function expectFadesOnly() {
-    expect(animations.length).toBeGreaterThan(0);
+    let fades = 0;
     for (const {keyframes, options} of animations) {
-      for (const frame of keyframes) {
-        expect(
+      const properties = new Set(
+        keyframes.flatMap(frame =>
           Object.keys(frame).filter(
             key => key !== 'offset' && key !== 'easing',
           ),
-        ).toEqual(['opacity']);
+        ),
+      );
+      if (!properties.has('transform')) {
+        expect([...properties]).toEqual(['opacity']);
+        expect(options.duration).toBe(FADE_MS);
+        fades += 1;
+        continue;
       }
-      expect(options.duration).toBe(FADE_MS);
+      // A landing: the origin held, then the destination, stepping at the
+      // fade's midpoint.
+      expect(keyframes).toHaveLength(4);
+      const [origin, held, landed, end] = keyframes;
+      expect(origin.offset).toBe(0);
+      expect(held).toEqual({...origin, offset: held.offset});
+      expect(landed.offset).toBe(held.offset);
+      expect(end).toEqual({...landed, offset: 1});
+      expect(Number(held.offset) * Number(options.duration)).toBeCloseTo(
+        FADE_MS / 2,
+        6,
+      );
     }
+    expect(fades).toBeGreaterThan(0);
   }
 
   it('coasts a fling as momentum, its rows flat, then commits it', () => {
@@ -650,9 +695,8 @@ describe('PickerWheel — under reduced motion', () => {
     expect(onChange).toHaveBeenLastCalledWith(9);
   });
 
-  it('fades for a tap, a key and a spin, whatever spin it is asked for', async () => {
-    const ref = createRef<WheelHandle>();
-    const {column, onChange} = renderWheel({ref});
+  it('fades for a tap and a key', () => {
+    const {column, onChange} = renderWheel();
     const below = CENTRE + ROW;
     touch('touchstart', column, below);
     advance(60);
@@ -663,16 +707,6 @@ describe('PickerWheel — under reduced motion', () => {
     fireEvent.keyDown(column, {key: 'ArrowDown'});
     expect(onChange).toHaveBeenLastCalledWith(12);
     advance(FADE_MS);
-    let arrived: boolean | undefined;
-    act(() => {
-      void ref.current!.spinTo(15, {duration: 2}).then(value => {
-        arrived = value;
-      });
-    });
-    advance(FADE_MS);
-    await act(async () => {});
-    expect(arrived).toBe(true);
-    expect(onChange).toHaveBeenLastCalledWith(15);
     expectFadesOnly();
   });
 });
@@ -700,94 +734,6 @@ describe('PickerWheel — mechanics for its owners', () => {
       button: 0,
     });
     expect(onPointerDown).not.toHaveBeenCalled();
-  });
-
-  it('spins to a row on request and commits it there', async () => {
-    const ref = createRef<WheelHandle>();
-    const {onChange} = renderWheel({ref});
-    let arrived: boolean | undefined;
-    act(() => {
-      void ref.current!.spinTo(15).then(value => {
-        arrived = value;
-      });
-    });
-    advance(310);
-    await act(async () => {});
-    expect(arrived).toBe(true);
-    expect(onChange).toHaveBeenCalledWith(15);
-  });
-
-  it('reports a spin a finger interrupted', async () => {
-    const ref = createRef<WheelHandle>();
-    const {column} = renderWheel({ref});
-    let arrived: boolean | undefined;
-    act(() => {
-      void ref.current!.spinTo(15).then(value => {
-        arrived = value;
-      });
-    });
-    advance(100);
-    touch('touchstart', column, 100);
-    await act(async () => {});
-    expect(arrived).toBe(false);
-  });
-
-  it('loops: the first row follows the last', () => {
-    const {column, option, onChange} = renderWheel({
-      options: MINUTES,
-      value: 59,
-      label: 'Minute',
-      isLooping: true,
-    });
-    // Minute 00 is drawn just below 59.
-    expect(distanceOf(option('00'))).toBeCloseTo(ROW, 2);
-    fireEvent.keyDown(column, {key: 'ArrowDown'});
-    expect(onChange).toHaveBeenLastCalledWith(0);
-  });
-
-  it('rests where its owner’s rule says', () => {
-    // Only even hours: an odd rest moves on to the next even hour.
-    const {column, onChange} = renderWheel({
-      options: HOURS.map(option => ({...option, isDisabled: false})),
-      resolveRest: index => (index % 2 === 0 ? index : index + 1),
-    });
-    drag(column, 150, 100, {steps: 25, interval: 40, hold: 300});
-    advance(2000);
-    expect(onChange).toHaveBeenLastCalledWith(12);
-  });
-
-  it('keeps a spin going when its owner re-renders the rows mid-turn', async () => {
-    const ref = createRef<WheelHandle>();
-    const {rerender, onChange} = renderWheel({
-      ref,
-      options: MINUTES,
-      value: 15,
-      label: 'Minute',
-    });
-    let arrived: boolean | undefined;
-    act(() => {
-      void ref.current!.spinTo(30).then(value => {
-        arrived = value;
-      });
-    });
-    advance(100);
-    // The owner commits a time on its bound: the minutes before 30 are
-    // disabled now. The same row nodes come back, so the turn goes on.
-    rerender(
-      <PickerWheel
-        ref={ref}
-        label="Minute"
-        options={MINUTES.map(option => ({
-          ...option,
-          isDisabled: option.value < 30,
-        }))}
-        value={30}
-        onChange={onChange}
-      />,
-    );
-    advance(250);
-    await act(async () => {});
-    expect(arrived).toBe(true);
   });
 
   it('keeps coasting when its owner hands it a copy of the same rows', () => {

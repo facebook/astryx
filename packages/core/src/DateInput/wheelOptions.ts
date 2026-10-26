@@ -3,8 +3,8 @@
 /**
  * @file wheelOptions.ts
  * @input Nothing; types and one pure function
- * @output WheelOption, WheelProps, WheelHandle, WheelSpinOptions and
- *   nearestEnabledIndex: what both wheels share
+ * @output WheelOption, WheelProps and nearestEnabledIndex: what both wheels
+ *   share
  * @position Internal; read by Wheel.tsx (which re-exports all of it) and
  *   PickerWheel.tsx
  *
@@ -12,9 +12,6 @@
  * - /packages/core/src/DateInput/Wheel.tsx
  * - /packages/core/src/DateInput/PickerWheel.tsx
  */
-
-import type {Ref} from 'react';
-import type {BezierPoints} from '../motion/bezier';
 
 export interface WheelOption {
   /** Stable numeric identity of the row (a month 1-12, or a year). */
@@ -26,28 +23,6 @@ export interface WheelOption {
    * stops on one travels on to the nearest enabled row.
    */
   isDisabled?: boolean;
-}
-
-/** Options for a programmatic turn. */
-export interface WheelSpinOptions {
-  /** Seconds. @default `picker.tapSpin.durationMs` (0.3 s, UIPickerView's) */
-  duration?: number;
-  /**
-   * Cubic-bézier control points.
-   * @default `timing.curves.move`
-   */
-  curve?: BezierPoints;
-}
-
-/** What a Wheel's `ref` exposes. */
-export interface WheelHandle {
-  /**
-   * Turn the wheel onto `index` (an index into `options`), then commit it as
-   * a rest would. Resolves true on arrival, false if a finger or another
-   * turn interrupted it. Under a fine pointer the row commits at once and
-   * the column scrolls to it as it does for any new value.
-   */
-  spinTo(index: number, options?: WheelSpinOptions): Promise<boolean>;
 }
 
 export interface WheelProps {
@@ -65,20 +40,6 @@ export interface WheelProps {
    * turns its gestures off and shows a value set from outside without motion.
    */
   isActive?: boolean;
-  /**
-   * The rows repeat without end, as UIDatePicker's minutes and hours do: the
-   * last row is followed by the first. Under a finger only, and ignored for a
-   * list too short to fill the column past its seam (fewer than 11 rows).
-   */
-  isLooping?: boolean;
-  /**
-   * The row the wheel rests on after stopping on `index`. When it differs,
-   * the wheel turns on to it and commits that one. Under a finger only.
-   * @default the nearest enabled row (`nearestEnabledIndex`)
-   */
-  resolveRest?: (index: number) => number;
-  /** Programmatic turns: `spinTo(index)`. */
-  ref?: Ref<WheelHandle>;
 }
 
 /**

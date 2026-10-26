@@ -2,14 +2,15 @@
 
 /**
  * @file wheelMotion.ts
- * @input The Wheel's DOM (its drum rows and its band strip), its layout, and
+ * @input A wheel's DOM (its drum rows and its band strip), its layout, and
  *   curves from wheelPhysics.ts
  * @output Exports WheelMotion: the one owner of a wheel's offset. It writes
  *   the rows for a drag frame by frame, plays any curve on the compositor
  *   (baked per row by wheelDrum.ts), reads the offset on screen at any
  *   instant, stops a motion where it is, ticks, and reports arrival
- * @position Imperative engine of the Wheel (Wheel.tsx). Never renders React:
- *   a gesture or a motion writes styles and nothing else
+ * @position Imperative engine of the touch picker wheel (PickerWheel.tsx).
+ *   Never renders React: a gesture or a motion writes styles and nothing
+ *   else
  *
  * A motion is a set of Web Animations, one per row that shows during it plus
  * one for the band strip, all baked from the same samples of the same curve
@@ -23,9 +24,9 @@
  * element without a compositing layer through a main-thread block.
  *
  * SYNC: When modified, update:
- * - /packages/core/src/DateInput/Wheel.tsx
- * - /packages/core/src/DateInput/Wheel.test.tsx
  * - /packages/core/src/DateInput/wheelMotion.test.ts
+ * - /packages/core/src/DateInput/PickerWheel.tsx
+ * - /packages/core/src/DateInput/PickerWheel.test.tsx
  */
 
 import {canVibrate, playHaptic} from '../gestures/haptics';
@@ -99,6 +100,15 @@ function now(): number {
 
 function canAnimate(element: Element): boolean {
   return typeof (element as HTMLElement).animate === 'function';
+}
+
+/**
+ * What the player last wrote on an element, as a keyframe: its transform,
+ * and its opacity when one is set.
+ */
+function drawnStyle(element: HTMLElement): Keyframe {
+  const {transform, opacity} = element.style;
+  return opacity === '' ? {transform} : {transform, opacity};
 }
 
 /**
@@ -388,10 +398,16 @@ export class WheelMotion {
   /**
    * Land on `to` without travel, as reduced motion asks
    * (design:reduced-motion DR2): `fade` dips out where the rows are, the
-   * rows land on `to` at the midpoint (`onMidpoint` runs just before, to
-   * mount them), and `fade` comes back in; opacity only, `durationMs` in all.
+   * rows land on `to` at the midpoint (`onMidpoint` runs just before), and
+   * `fade` comes back in; nothing is seen to move, `durationMs` in all.
    * Like any motion it ends once (`onEnd`), and `stop` (a finger) ends it
    * where it is shown: before the midpoint the rows have not moved.
+   *
+   * The landing is baked, as `play()` bakes its end: the destination goes
+   * inline first, and each row that moves, and the strip, holds its origin in
+   * an animation that steps onto the destination at the midpoint, on the
+   * compositor, so a busy main thread never brings the fade back in on the
+   * old rows. Without Web Animations (jsdom) the rows land on a timer.
    */
   crossFade(to: number, options: CrossFadeOptions): void {
     const {durationMs, easing = 'linear', fade, onMidpoint, onEnd} = options;
@@ -420,11 +436,46 @@ export class WheelMotion {
           {duration: durationMs, easing: 'linear'},
         ),
       );
+    const promoted: HTMLElement[] = [];
+    const baked = this.rows.length > 0 && canAnimate(this.rows[0]);
+    if (baked) {
+      const moved = this.strip == null ? this.rows : [...this.rows, this.strip];
+      const origins = moved.map(element => drawnStyle(element));
+      this.restingOffset = to;
+      this.render(to, true);
+      // Like `play()`, the last keyframe holds past the end.
+      const totalMs = durationMs + END_HOLD_MS;
+      const midpoint = durationMs / 2 / totalMs;
+      moved.forEach((element, index) => {
+        const origin = origins[index];
+        const destination = drawnStyle(element);
+        if (
+          !canAnimate(element) ||
+          (origin.transform === destination.transform &&
+            origin.opacity === destination.opacity)
+        ) {
+          return;
+        }
+        element.style.willChange = 'transform';
+        promoted.push(element);
+        animations.push(
+          element.animate(
+            [
+              {offset: 0, ...origin},
+              {offset: midpoint, ...origin},
+              {offset: midpoint, ...destination},
+              {offset: 1, ...destination},
+            ],
+            {duration: totalMs, easing: 'linear'},
+          ),
+        );
+      });
+    }
     const motion: RunningMotion = {
       curve,
       origin: now(),
       animations,
-      promoted: [],
+      promoted,
       timers: [],
       ticks: false,
       onEnd,
@@ -434,7 +485,9 @@ export class WheelMotion {
       window.setTimeout(() => {
         if (this.motion === motion) {
           onMidpoint?.();
-          this.render(to, true);
+          if (!baked) {
+            this.render(to, true);
+          }
           this.reportNearest(nearestIndex(to, this.layout));
         }
       }, durationMs / 2),
