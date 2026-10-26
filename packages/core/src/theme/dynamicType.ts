@@ -286,31 +286,44 @@ function isFixedSize(value: string): boolean {
 }
 
 /**
- * A block's tokens with its font sizes following the reader's text size: each
- * raw font-size step it writes as `scaledFontSizeEntries` gives it, and each
- * semantic size (`--text-*-size`) it fixes at a length times the scale of the
- * step that size reads by default, so supporting text fixed at `12px` scales
- * like Footnote. A size that reads a variable follows what it reads, and one
+ * A block's token declarations, in order, with its font sizes following the
+ * reader's text size: each raw font-size step it writes at a fixed length
+ * becomes its private scaled size and the step reading it
+ * (`scaledFontSizeEntries`), and each semantic size (`--text-*-size`) it
+ * fixes at a length becomes that length times the scale of the step that
+ * size reads by default, so supporting text fixed at `12px` scales like
+ * Footnote. A size that reads a variable follows what it reads, and one
  * relative to its parent (`em`, `%`) follows the parent, so neither scales
  * twice; a fixed size is not capped, since the theme that fixes it also fixes
  * its place in the hierarchy. A step the block does not write keeps the value
  * it inherits, already scaled. A value written `!important` stays important.
+ * Every other declaration keeps its value and its place.
  */
-export function readerTextSizeTokens(
-  tokens: Record<string, string>,
-): Record<string, string> {
-  const out = {...tokens};
-  for (const [name, value] of scaledFontSizeEntries(tokens)) {
-    out[name] = value;
-  }
-  for (const [name, step] of TEXT_SIZE_STEPS) {
-    const [value, important] = splitImportant(tokens[name] ?? '');
-    if (isFixedSize(value)) {
-      out[name] =
-        `calc(${value} * var(${dynamicTypeScaleProperty(FONT_SIZE_STEP_STYLES[step])}, 1))${important}`;
+export function readerTextSizeEntries(
+  entries: ReadonlyArray<readonly [string, string]>,
+): [string, string][] {
+  const scaled = new Map(scaledFontSizeEntries(Object.fromEntries(entries)));
+  const fixedSteps = new Map(TEXT_SIZE_STEPS);
+  return entries.flatMap(([name, raw]): [string, string][] => {
+    const step = scaled.get(name);
+    if (step !== undefined) {
+      const property = scaledStepProperty(name as FontSizeToken);
+      return [
+        [property, scaled.get(property) ?? ''],
+        [name, step],
+      ];
     }
-  }
-  return out;
+    const [value, important] = splitImportant(raw);
+    const reads = fixedSteps.get(name);
+    return [
+      [
+        name,
+        reads !== undefined && isFixedSize(value)
+          ? `calc(${value} * var(${dynamicTypeScaleProperty(FONT_SIZE_STEP_STYLES[reads])}, 1))${important}`
+          : raw,
+      ],
+    ];
+  });
 }
 
 /**

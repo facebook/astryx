@@ -9,6 +9,8 @@
  */
 
 import type {NativeAdditions} from '../contract/fromComponentDoc.js';
+import {avatar} from './Avatar.js';
+import {avatarStatusDot} from './AvatarStatusDot.js';
 import {badge} from './Badge.js';
 import {button} from './Button.js';
 import {card} from './Card.js';
@@ -24,6 +26,8 @@ import {textInput} from './TextInput.js';
 import {vStack} from './VStack.js';
 
 export const NATIVE_COMPONENTS: readonly NativeAdditions[] = [
+  avatar,
+  avatarStatusDot,
   badge,
   button,
   card,
