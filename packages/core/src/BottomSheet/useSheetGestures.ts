@@ -109,7 +109,6 @@ import {
   type Animator,
   type MotionHandle,
 } from '../motion/animator';
-import {resolveMotion} from '../motion/resolveMotion';
 import {rubberBand} from '../motion/rubberBand';
 import type {SpringDescription} from '../motion/spring';
 import {sheet as sheetTable} from '../motion/uikit/sheet';
@@ -1062,10 +1061,6 @@ export function useSheetGestures({
       // travel (design:reduced-motion). A finger started it, so it fades
       // whatever the primary pointer (DR2).
       const touchRelease = dragTouchRef.current;
-      // The spring the release plays: its theme value, read once, so the
-      // overshoot cap below and the motion agree (a theme may retune it,
-      // spec:AST-094 FR4).
-      const played = resolveMotion(sheetElRef.current, spring);
       // Thrown up onto the tallest detent, the 80 % damped spring overshoots
       // above it; the sheet extends only its reserve below the screen, so
       // the hand-off is capped to keep the page from showing under it.
@@ -1073,7 +1068,7 @@ export function useSheetGestures({
       const v =
         motion.kind === 'uikit' && offset === 0
           ? limitOvershoot(
-              played,
+              spring,
               animator.get('y'),
               to,
               handed,
@@ -1088,7 +1083,7 @@ export function useSheetGestures({
             )
           : animator.animate(
               {y: to},
-              {spring: played, velocity: {y: v}},
+              {spring, velocity: {y: v}},
               {crossfadeAs, touchRelease},
             );
       travelHandleRef.current = handle;
