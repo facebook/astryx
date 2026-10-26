@@ -47,7 +47,12 @@ beforeEach(() => {
       options: options as KeyframeAnimationOptions,
       cancel,
     });
-    return {cancel, addEventListener() {}} as unknown as Animation;
+    // Every glide reads as 100 ms in when a later change retargets it.
+    return {
+      cancel,
+      addEventListener() {},
+      currentTime: 100,
+    } as unknown as Animation;
   };
   window.matchMedia = (query: string) =>
     ({
@@ -367,6 +372,13 @@ describe('one shared motion (spec:AST-105 FR4)', () => {
     expect(second).toHaveLength(1);
     // From 50 on screen to 120: it starts 70 px above its new place.
     expect(translateOf(second[0]).y).toBeCloseTo(-70);
+    // And it keeps the first glide's speed 100 ms in (about 6 px a frame);
+    // a new spring from rest moves about 1.4 px in its first frame.
+    const next = translateOf({
+      ...second[0],
+      keyframes: second[0].keyframes.slice(1),
+    });
+    expect(next.y - -70).toBeGreaterThan(3);
   });
 
   it('drops a measurement no commit claims by the next frame', async () => {

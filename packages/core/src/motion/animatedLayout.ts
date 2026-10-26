@@ -30,8 +30,9 @@
  * - The move is a compositor-only `translate` (replace composition) from the
  *   old place to the new one, sampled from `springs.settle` into linear
  *   keyframes and corrected for a scaled ancestor. An element already gliding
- *   is retargeted: its glide stops and the new one starts from where it was
- *   on screen. Nothing animates height, and nothing scrolls the area.
+ *   keeps that motion and adds the new move: the rest of its curve and the
+ *   new move are summed into one new glide, velocity included. Nothing
+ *   animates height, and nothing scrolls the area.
  * - A measurement no commit claims by the next frame is dropped.
  * - The changed element plays its own entrance on the same spring, started in
  *   the same frame (`playLayoutChange`), and a disclosure's indicator turns
@@ -125,24 +126,29 @@ function layoutMotion(area: Element): LayoutMotion {
   return {kind: 'spring', progress: springProgress(settleSpring())};
 }
 
+/** Linear keyframes over `durationMs`, one per frame, from `frame(t ms)`. */
+function sampleOver(
+  durationMs: number,
+  frame: (t: number) => Keyframe,
+): Keyframe[] {
+  const count = Math.max(
+    2,
+    Math.ceil((durationMs / 1000) * SAMPLES_PER_SECOND) + 1,
+  );
+  const keyframes: Keyframe[] = [];
+  for (let i = 0; i < count; i++) {
+    const offset = i / (count - 1);
+    keyframes.push({...frame(offset * durationMs), offset});
+  }
+  return keyframes;
+}
+
 /** Linear keyframes sampled from the spring, one per frame. */
 function sampleKeyframes(
   progress: SpringProgress,
   frame: (remaining: number) => Keyframe,
 ): Keyframe[] {
-  const count = Math.max(
-    2,
-    Math.ceil((progress.durationMs / 1000) * SAMPLES_PER_SECOND) + 1,
-  );
-  const keyframes: Keyframe[] = [];
-  for (let i = 0; i < count; i++) {
-    const offset = i / (count - 1);
-    keyframes.push({
-      ...frame(progress.remaining(offset * progress.durationMs)),
-      offset,
-    });
-  }
-  return keyframes;
+  return sampleOver(progress.durationMs, t => frame(progress.remaining(t)));
 }
 
 /** The spring as a CSS `linear()` easing, for a CSS transition. */
@@ -178,15 +184,35 @@ function safeAnimate(
   if (typeof (element as HTMLElement).animate !== 'function') {
     return null;
   }
+  let animation: Animation;
   try {
-    return (element as HTMLElement).animate(keyframes, options);
+    animation = (element as HTMLElement).animate(keyframes, options);
   } catch {
     return null;
   }
+  // Started on the document timeline's current time, not on the next frame:
+  // a retargeted glide keeps moving through the frame it is replaced in, and
+  // every animation of one change shares the same start.
+  const now = element.ownerDocument.timeline?.currentTime;
+  if (now != null) {
+    animation.startTime = now;
+  }
+  return animation;
 }
 
-/** The glide each element is playing, so a new change can retarget it. */
-const glides = new WeakMap<Element, Animation>();
+/** An offset in the element's own px, as a function of ms into a glide. */
+type OffsetCurve = (t: number) => {readonly x: number; readonly y: number};
+
+const AT_REST: OffsetCurve = () => ({x: 0, y: 0});
+
+/** A glide an element is playing, so a new change can retarget it. */
+interface Glide {
+  readonly animation: Animation;
+  readonly offsetAt: OffsetCurve;
+  readonly durationMs: number;
+}
+
+const glides = new WeakMap<Element, Glide>();
 
 /** A computed `translate` value in px (`none` is 0 0); null for other units. */
 function parseTranslate(value: string): {x: number; y: number} | null {
@@ -417,11 +443,23 @@ function flush(batch: Batch): void {
       // Added by the change, or itself a changed element: it plays its own.
       continue;
     }
-    // An element already gliding is retargeted: its running glide stops, so
-    // the rectangle below is its new layout place, and the new glide starts
-    // from where it was on screen when the change was measured (`before`).
-    glides.get(element)?.cancel();
-    glides.delete(element);
+    // An element already gliding keeps that motion and adds the new move: the
+    // running glide stops (so the rectangle below is its new layout place)
+    // and the rest of its curve carries into the one new glide, velocity
+    // included, summed with the new move.
+    const running = glides.get(element);
+    let carried = AT_REST;
+    let carriedMs = 0;
+    if (running != null) {
+      const time = Number(running.animation.currentTime);
+      const elapsed = Number.isFinite(time) ? Math.max(0, time) : 0;
+      if (elapsed < running.durationMs) {
+        carried = t => running.offsetAt(elapsed + t);
+        carriedMs = running.durationMs - elapsed;
+      }
+      running.animation.cancel();
+      glides.delete(element);
+    }
     const after = element.getBoundingClientRect();
     const dx = before.left - after.left;
     const dy = before.top - after.top;
@@ -447,20 +485,32 @@ function flush(batch: Batch): void {
     if (own == null) {
       continue;
     }
+    // Where it shows now, against its new place, in its own px; the part the
+    // carried glide does not cover is the new move.
     const scale = scaleOf(element, after);
-    const x = dx / scale.x;
-    const y = dy / scale.y;
+    const now = carried(0);
+    const moveX = dx / scale.x - now.x;
+    const moveY = dy / scale.y - now.y;
+    const {progress} = motion;
+    const offsetAt: OffsetCurve = t => {
+      const remaining = progress.remaining(t);
+      const carry = carried(t);
+      return {x: carry.x + moveX * remaining, y: carry.y + moveY * remaining};
+    };
+    const durationMs = Math.max(progress.durationMs, carriedMs);
     // One replace-composited `translate`: the compositor runs it (INV12).
-    const glide = safeAnimate(
+    const animation = safeAnimate(
       element,
-      sampleKeyframes(motion.progress, remaining => ({
-        translate: `${own.x + x * remaining}px ${own.y + y * remaining}px`,
-      })),
-      {duration: motion.progress.durationMs, easing: 'linear'},
+      sampleOver(durationMs, t => {
+        const offset = offsetAt(t);
+        return {translate: `${own.x + offset.x}px ${own.y + offset.y}px`};
+      }),
+      {duration: durationMs, easing: 'linear'},
     );
-    if (glide != null) {
+    if (animation != null) {
+      const glide: Glide = {animation, offsetAt, durationMs};
       glides.set(element, glide);
-      glide.addEventListener?.('finish', () => {
+      animation.addEventListener?.('finish', () => {
         if (glides.get(element) === glide) {
           glides.delete(element);
         }

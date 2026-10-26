@@ -52,7 +52,7 @@ describe('architecture:react-component-runtime INV12 source boundary', () => {
       /\b(height|width|top|left|right|bottom|margin\w*|padding\w*|inset\w*)\s*:/,
     );
     const animated = [
-      ...body.matchAll(/^\s+(translate|opacity|clipPath)\s*:/gm),
+      ...body.matchAll(/[{,\s](translate|opacity|clipPath)\s*:/g),
     ]
       .map(match => match[1])
       .sort();

@@ -357,7 +357,7 @@ test.describe('spec:AST-105 Coverage', () => {
     expect(await page.evaluate(() => window.motionOf('#pop'))).toEqual([]);
   });
 
-  test('an element already moving keeps its motion and adds the new move, retargeted from where it is on screen', async ({
+  test('an element already moving keeps its motion and adds the new move: no jump, no lost speed', async ({
     page,
   }) => {
     await open(
@@ -367,36 +367,44 @@ test.describe('spec:AST-105 Coverage', () => {
     );
     await change(page);
     await page.waitForTimeout(100);
-    // Where the row is on screen mid-glide, and where it is the frame after a
-    // second change: no jump, and one glide (the first is retargeted).
-    const onScreen = async () =>
-      page.evaluate(
-        () => document.querySelector('#after')?.getBoundingClientRect().top,
-      );
     const [first] = await page.evaluate(() => window.motionOf('#after'));
-    const atChange = await page.evaluate(async mutate => {
-      const before = document
-        .querySelector('#after')
-        ?.getBoundingClientRect().top;
+    // The row's on-screen speed over the frame before the second change and
+    // the frame after it, and its place either side of the change.
+    const run = await page.evaluate(async mutate => {
+      const row = document.querySelector('#after') as HTMLElement;
+      const frame = async () =>
+        new Promise<number>(resolve => requestAnimationFrame(resolve));
+      const t0 = await frame();
+      const y0 = row.getBoundingClientRect().top;
+      const t1 = await frame();
+      const y1 = row.getBoundingClientRect().top;
       await window.change({changed: '#second', mutate});
-      const after = document
-        .querySelector('#after')
-        ?.getBoundingClientRect().top;
-      return {before, after};
+      const y1After = row.getBoundingClientRect().top;
+      const t2 = await frame();
+      const y2 = row.getBoundingClientRect().top;
+      return {
+        before: (y1 - y0) / (t1 - t0),
+        after: (y2 - y1After) / (t2 - t1),
+        y1,
+        y1After,
+      };
     }, `document.querySelector('#second').classList.add('open')`);
     const motions = await page.evaluate(() => window.motionOf('#after'));
     expect(motions).toHaveLength(1);
     expect(motions[0].composite).toBe('replace');
     expect(motions[0].startTime).not.toBe(first.startTime);
-    expect(atChange.after ?? 0).toBeCloseTo(atChange.before ?? 0, 0);
+    expect(run.y1After).toBeCloseTo(run.y1, 0);
+    // Still gliding down at least as fast: the new move adds to the motion.
+    expect(run.before).toBeGreaterThan(0);
+    expect(run.after).toBeGreaterThan(run.before * 0.9);
     // It still lands where layout put it: 160 px below where it began.
     await settle(page);
-    expect(await onScreen()).toBeCloseTo(
-      (await page.evaluate(
-        () => document.querySelector('#area')?.getBoundingClientRect().top ?? 0,
-      )) + 160,
-      0,
-    );
+    const landed = await page.evaluate(() => {
+      const area = document.querySelector('#area')?.getBoundingClientRect();
+      const row = document.querySelector('#after')?.getBoundingClientRect();
+      return (row?.top ?? 0) - (area?.top ?? 0);
+    });
+    expect(landed).toBeCloseTo(160, 0);
   });
 
   test('nested areas: motion stops at the inner area; an inner area moves as one unit', async ({
