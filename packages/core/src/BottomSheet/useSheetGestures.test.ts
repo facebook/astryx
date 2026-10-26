@@ -3848,12 +3848,19 @@ describe('useSheetGestures: the release storyboards (interactive-transition driv
       dialog.appendChild(target);
       document.body.appendChild(dialog);
       if (pointer === 'mouse') {
-        // The theme timing a mouse release reads off the stylesheet.
-        target.style.transition = 'transform 410ms cubic-bezier(0.2, 0, 0, 1)';
+        // The theme timing a mouse release reads off the stylesheet, set as
+        // longhands: the test DOM does not expand the `transition` shorthand,
+        // so with it the release read no duration and played no curve.
+        target.style.transitionProperty = 'transform';
+        target.style.transitionDuration = '410ms';
+        target.style.transitionTimingFunction = 'cubic-bezier(0.2, 0, 0, 1)';
       }
       const sheet = recordAnimations(target);
       const backdrop = recordAnimations(dialog);
       gesture(hook, target);
+      // Every scenario plays a curve on the sheet: a storyboard with none
+      // could not fail.
+      expect(curves(sheet).length).toBeGreaterThan(0);
       recorded[name] = {
         sheet: curves(sheet).map(animation =>
           samples(animation, readOf(animation)),
