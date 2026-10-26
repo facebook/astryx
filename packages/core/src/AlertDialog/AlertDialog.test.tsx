@@ -518,7 +518,7 @@ describe('AlertDialog touch tracking', () => {
 
   /**
    * Lets the presentation complete: UIKit drops touches until it does. The
-   * presentation hold ends UIKit's touch window after the animator reports
+   * input hold ends UIKit's touch window after the animator reports
    * its start.
    */
   async function completePresentation(): Promise<void> {
@@ -647,7 +647,7 @@ describe('AlertDialog touch tracking', () => {
     expect(content().some(child => child.hasAttribute('inert'))).toBe(false);
     close();
     // Leaving: still open while it fades out, its content inert under the
-    // presentation hold's shield, so no click, Enter or assistive-technology
+    // input hold's shield, so no click, Enter or assistive-technology
     // activation reaches an action; the browser checks cover the taps.
     expect(dialog).toHaveAttribute('open');
     expect(content().length).toBeGreaterThan(0);

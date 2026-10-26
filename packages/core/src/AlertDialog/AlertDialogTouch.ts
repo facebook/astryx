@@ -71,7 +71,7 @@ export function useAlertDialogTouch(
   const isDriving = isTouch && !isInline;
   const motion = useAlertMotion({isOpen, isEnabled: isDriving});
   // Tracked while presented under a touch presentation, leaving included.
-  // During either transition the presentation hold (useAlertMotion) keeps
+  // During either transition the input hold (useAlertMotion) keeps
   // every touch from the group and from the buttons under it.
   const isTracking = isDriving && motion.isPresented;
   const isBodyScrollable = useIsScrollable(bodyRef, isTracking);

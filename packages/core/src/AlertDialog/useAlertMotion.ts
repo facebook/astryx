@@ -20,7 +20,7 @@
  * - dismissing, the alert and the dimming only fade out, on the same spring,
  *   from where they are (closed mid-presentation, or reopened mid-exit, the
  *   fade springs from the presented opacity with its velocity);
- * - input is held during either transition (Layer/presentationHold): while
+ * - input is held during either transition (Layer/inputHold): while
  *   it presents, a touch, a press or a click anywhere reaches nothing until
  *   the presentation completes (UIKit's touch window, counted from when the
  *   browser started it, `handle.started`); while it leaves, its content is
@@ -63,7 +63,7 @@ import {
   toSpring,
   type SpringDescription,
 } from '../motion/spring';
-import {holdPresentation, isInHeldLayer} from '../Layer/presentationHold';
+import {holdInput, isInHeldLayer} from '../Layer/inputHold';
 import {alertController} from '../motion/uikit/alert';
 import {
   ALERT_DISMISS_SPRING,
@@ -206,7 +206,7 @@ export function useAlertMotion({
   const statusRef = useRef<Status>('hidden');
   // The exit in flight: only its own end may hide the dialog.
   const exitRef = useRef<MotionHandle | null>(null);
-  // The presentation hold in place (Layer/presentationHold): a touch during
+  // The input hold in place (Layer/inputHold): a touch during
   // either transition reaches nothing.
   const releaseHoldRef = useRef<(() => void) | null>(null);
   const acceptsTouches = useCallback(
@@ -241,7 +241,7 @@ export function useAlertMotion({
       releaseHoldRef.current?.();
       const element = elementRef.current;
       const release =
-        element == null ? null : holdPresentation(element, {until, scope});
+        element == null ? null : holdInput(element, {until, scope});
       releaseHoldRef.current = () => {
         cancel?.();
         release?.();
