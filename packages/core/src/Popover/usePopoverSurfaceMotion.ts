@@ -131,6 +131,6 @@ export function usePopoverSurfaceMotion(): (
         source: boxOf(source),
       }));
     },
-    [motionFor],
+    [motionFor, touchHold],
   );
 }
