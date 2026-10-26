@@ -110,13 +110,13 @@ import {
   type MotionValues,
   type SpringTransition,
 } from '../motion/animator';
-import {reducedMotionFade} from '../motion/reducedMotion';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {segmentedControl} from '../motion/uikit/segmented';
 import {registerSpringsTable, springs} from '../motion/uikit/springs';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {spacingVars} from '../theme/tokens.stylex';
+import {fadePressDim, stopPressDim} from '../utils/pressDim';
 import {useSegmentedTouchTracking} from './useSegmentedTouchTracking';
 
 /** The segments, in DOM order. */
@@ -295,10 +295,6 @@ interface Pending {
   readonly isLifted: boolean;
   /** The selected segment's box: where a tap's slide starts. */
   readonly from: Box | null;
-}
-
-function cssCubicBezier(points: ReadonlyArray<number>): string {
-  return `cubic-bezier(${points.join(', ')})`;
 }
 
 function faceOf(element: HTMLElement): TitleFace {
@@ -615,7 +611,7 @@ export class SegmentedSelectionMotion {
   /** The segment whose title a press on it dims (the lens is elsewhere). */
   private pressedTitle: HTMLElement | null = null;
   /** Each segment's running dim or return (its title and icon). */
-  private readonly titleDims = new Map<HTMLElement, Animation[]>();
+  private readonly dimmedTitles = new Set<HTMLElement>();
   /** The segment showing the selected face under a dragging finger. */
   private facedSegment: HTMLElement | null = null;
   /** The frame request that keeps the face on the lens while it is carried. */
@@ -1154,12 +1150,10 @@ export class SegmentedSelectionMotion {
     this.clearFaces();
     this.pressedTitle?.removeAttribute(PRESSED_STATE);
     this.pressedTitle = null;
-    for (const animations of this.titleDims.values()) {
-      for (const animation of animations) {
-        animation.cancel();
-      }
+    for (const segment of this.dimmedTitles) {
+      stopPressDim(segment);
     }
-    this.titleDims.clear();
+    this.dimmedTitles.clear();
     this.settle();
   }
 
@@ -1653,20 +1647,26 @@ export class SegmentedSelectionMotion {
     isPressed: boolean,
     clock: 'fade' | 'lift',
   ): void {
-    const view = segment.ownerDocument.defaultView;
-    const shown =
-      view == null ? NaN : parseFloat(view.getComputedStyle(segment).opacity);
-    for (const animation of this.titleDims.get(segment) ?? []) {
-      animation.cancel();
-    }
-    this.titleDims.delete(segment);
     if (isPressed) {
       segment.setAttribute(PRESSED_STATE, 'pressed');
     } else {
       segment.removeAttribute(PRESSED_STATE);
     }
-    const to = isPressed ? pressedOpacityOf(segment) : 1;
-    this.fadeTitle(segment, to, clock, Number.isFinite(shown) ? shown : 1);
+    // The pressed segment fades as a whole: it is an unselected one, which
+    // paints no surface of its own under a finger, so its content is all it
+    // shows. UIKit's measured clock and curve (internal constants).
+    const {pressedTitle} = segmentedControl;
+    fadePressDim(
+      segment,
+      isPressed ? pressedOpacityOf(segment) : 1,
+      clock === 'fade'
+        ? {durationMs: pressedTitle.fadeMs, curve: pressedTitle.fadeCurve}
+        : {durationMs: pressedTitle.liftMs, curve: pressedTitle.liftCurve},
+      {touchRelease: clock === 'lift'},
+    );
+    if (isPressed) {
+      this.dimmedTitles.add(segment);
+    }
   }
 
   /** The finger let go: the pressed title comes back on the lift's clock. */
@@ -1675,61 +1675,6 @@ export class SegmentedSelectionMotion {
     this.pressedTitle = null;
     if (pressed != null) {
       this.setPressed(pressed, false, 'lift');
-    }
-  }
-
-  /**
-   * Fades what a press dims on `segment` (its title and icon) to `to`, from
-   * the opacity on screen.
-   */
-  private fadeTitle(
-    segment: HTMLElement,
-    to: number,
-    clock: 'fade' | 'lift',
-    from: number,
-  ): void {
-    for (const animation of this.titleDims.get(segment) ?? []) {
-      animation.cancel();
-    }
-    this.titleDims.delete(segment);
-    // The pressed segment fades as a whole: it is an unselected one, which
-    // paints no surface of its own under a finger, so its content is all it
-    // shows.
-    const targets = [segment];
-    if (typeof segment.animate !== 'function') {
-      return;
-    }
-    // UIKit's measured clock and curve (internal constants); under Reduced
-    // Motion the animator's fade (design:reduced-motion DR4).
-    const {pressedTitle} = segmentedControl;
-    const timing = this.reducedFade(segment, clock === 'lift') ?? {
-      duration: clock === 'fade' ? pressedTitle.fadeMs : pressedTitle.liftMs,
-      easing: cssCubicBezier(
-        clock === 'fade' ? pressedTitle.fadeCurve : pressedTitle.liftCurve,
-      ),
-    };
-    const animations = targets.map(target => {
-      return target.animate([{opacity: from}, {opacity: to}], {
-        ...timing,
-        fill: 'forwards',
-      });
-    });
-    this.titleDims.set(segment, animations);
-    if (to === 1) {
-      // Back at rest: the content's own style takes over again.
-      animations[0].finished.then(
-        () => {
-          if (this.titleDims.get(segment) === animations) {
-            this.titleDims.delete(segment);
-            for (const animation of animations) {
-              animation.cancel();
-            }
-          }
-        },
-        () => {
-          // Replaced by a newer fade, which owns the content now.
-        },
-      );
     }
   }
 
@@ -1780,18 +1725,6 @@ export class SegmentedSelectionMotion {
     }
     this.faceOverrides.clear();
     this.facedSegment = null;
-  }
-
-  /**
-   * The Reduce Motion fade for a fade this controller plays itself (a dim),
-   * from the person's settings as the animator reads them: null when motion
-   * is not reduced, duration 0 when it changes at once.
-   */
-  private reducedFade(
-    element: HTMLElement,
-    touchRelease: boolean,
-  ): {duration: number; easing: string} | null {
-    return reducedMotionFade(element, {touchRelease});
   }
 }
 
