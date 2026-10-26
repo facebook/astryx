@@ -126,6 +126,11 @@ const styles = stylex.create({
       transitionDuration: `var(--_sheet-scrim-duration, ${durationVars['--duration-medium']})`,
       transitionTimingFunction: easeVars['--ease-standard'],
       transitionBehavior: 'allow-discrete',
+      // The backdrop keeps its own compositing layer while the sheet is open.
+      // A release plays the dim on the compositor; a backdrop given a layer
+      // only for that animation is re-rastered as it gets one and again as it
+      // loses it, which costs a frame on a software GPU.
+      willChange: 'opacity',
       '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': {
         transitionDuration: `var(--_sheet-scrim-duration, ${reducedMotionFadeConsts.duration})`,
         transitionTimingFunction: reducedMotionFadeConsts.easing,
