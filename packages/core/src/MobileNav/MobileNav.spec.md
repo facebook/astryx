@@ -50,7 +50,7 @@ system_specs: []
 | Behavior                | A modal native dialog with a drawer that slides in from one inline edge, a header with a Close button, and a scrolling content region. Escape, the backdrop, and Close request closing; the dialog stays open while the drawer starts sliding out and closes within the slide-out (FR5), then focus returns to the opener. |
 | End-user impact         | Phone users open navigation in a drawer that contains focus, lock the page behind it, close it any usual way, and land back on the control that opened it.                                                                                                                                                                 |
 | Builder impact          | None.                                                                                                                                                                                                                                                                                                                      |
-| Compatibility/readiness | Records shipped behavior; no public change. Five implementation gaps: automatic side selection uses physical position, reduced motion still animates, its own top layer, close hold, and backdrop, a caller `id` disconnects the Toggle, and a caller `onCancel` never runs (see Current-state impact).                    |
+| Compatibility/readiness | Records shipped behavior; no public change. Six implementation gaps: automatic side selection uses physical position, reduced motion still animates, its own top layer, close hold, and backdrop, a caller `id` disconnects the Toggle, and a caller `aria-label` and `onCancel` are dropped (see Current-state impact).   |
 | Review checks           | Reject a non-modal drawer, a close that hides the drawer before its slide-out runs, focus not returned to a connected opener, a backdrop click inside the drawer that closes it, or a Toggle rendered outside an enabled AppShell mobile layout.                                                                           |
 | Governing rules         | `family:overlay-dismissal`; `architecture:layer-runtime` INV14; `component:AppShell` FR10–FR13; `design:bidirectionality` DR7; `design:reduced-motion` DR1–DR3; `architecture:public-component-api` INV5, INV7; `architecture:component-theming-surface`.                                                                  |
 
@@ -79,14 +79,17 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **Automatic side follows physical position.** With `side="auto"`, a trigger
   whose center is in the left half of the viewport opens the drawer at the
   inline start, otherwise at the inline end. In a right-to-left layout the
-  inline start is the right edge, so a trigger on the left opens the drawer on
-  the far side. `design:bidirectionality` DR7 requires a layered surface to keep
+  inline start is the right edge, so every trigger opens the drawer on the far
+  side. `design:bidirectionality` DR7 requires a layered surface to keep
   its start and end relationship to its trigger.
 - **A caller `id` disconnects the Toggle.** A caller `id` prop, even
   `undefined`, replaces the drawer id on the dialog, so inside AppShell the
   Toggle's `aria-controls` names no element, breaking `component:AppShell` FR13
   and AR3. `architecture:public-component-api` INV5 keeps component-owned
   accessibility from being overwritten by accident.
+- **A caller `aria-label` is dropped.** MobileNav's own name (FR10) replaces a
+  caller `aria-label` on the dialog. `architecture:public-component-api` INV5
+  has supported ARIA inputs reach the element.
 - **A caller `onCancel` never runs.** MobileNav's own cancel handler replaces a
   caller `onCancel` on the dialog. `architecture:public-component-api` INV5 and
   INV7 have supported event inputs reach the element and compose.
@@ -135,14 +138,14 @@ Consumer migration instructions belong in consumer docs and release notes.
 | FR2  | `isOpen` and `onOpenChange` win when given; otherwise the drawer reads and changes the enclosing AppShell's drawer state. The dialog uses AppShell's drawer id when there is one, else its own; a caller `id` replaces either (Current-state impact).                                                                                                                                                                                          | Current source and tests        |
 | FR3  | Opening calls `showModal()`, and records the focused element as the opener; where focus lands inside the open drawer is uncontracted here. While open, the page's root clips its overflow and keeps its scrollbar gutter; closing releases both.                                                                                                                                                                                               | Current source and tests        |
 | FR4  | The native cancel request (Escape) is routed through the shared dismissal stack and requests close only when this drawer is topmost. A click on the overlay outside the Drawer requests close; a click inside does not. The Close button, named by `@astryx.mobileNav.closeNavigation`, requests close. A caller `onClick` on the dialog also runs; whether it can cancel the backdrop close is uncontracted here.                             | Current source and tests        |
-| FR5  | After a close request the drawer slides out while the dialog stays open, and the dialog closes within its slide-out transition and no later than 250 ms after the request (at once under reduced motion or a zero-length transition). Reopening before then cancels the close. Unmounting closes the dialog.                                                                                                                                   | Current source and tests        |
+| FR5  | After a close request the drawer slides out while the dialog stays open, and the dialog closes within its slide-out transition and no later than 250 ms after the request (on the next task, never in the commit that requests it, under reduced motion or a zero-length transition). Reopening before then cancels the close. Unmounting closes the dialog.                                                                                   | Current source and tests        |
 | FR6  | When the dialog closes, focus returns to the recorded opener if it is still connected and was not the document body; otherwise focus is left alone. A reopen that interrupted a close keeps the original opener.                                                                                                                                                                                                                               | Current source and tests        |
 | FR7  | The Drawer enters from its resolved inline edge, from off-screen to on-screen, and the backdrop fades in from transparent, without a reduced-motion preference. Under reduced motion, motion follows `design:reduced-motion` DR1–DR3 (Current-state impact records today's shortfall). The overlay clips the off-screen drawer without becoming a scroll container and allows pinch zoom.                                                      | Current source and tests        |
 | FR8  | `side="start"` or `"end"` sets the edge. `side="auto"` MUST keep the drawer's start and end relationship to the element that opened it (`design:bidirectionality` DR7). Implementation gap: it resolves on each open from the focused element's physical half of the viewport (left half picks `start`, otherwise `end`); when nothing is focused at open it keeps its last value, and before any open it is `end`.                            | Current source                  |
 | FR9  | The Drawer is `width` px wide (default 320), never wider than 85% of the viewport, so a strip of the page stays beside it.                                                                                                                                                                                                                                                                                                                     | Current source and tests        |
 | FR10 | The dialog is named by `label`, else a string `header`, else `@astryx.mobileNav.navigation`; a caller `aria-labelledby` outranks all three. A string `header` renders as a level-2 heading; other header content renders as given.                                                                                                                                                                                                             | Current source and tests        |
 | FR11 | MobileNavToggle renders only while AppShell reports its mobile layout with mobile navigation enabled. It is an icon-only ghost Button named by default by `@astryx.mobileNav.toggle.open`, with a menu icon unless `children` replace it; it toggles the drawer, exposes `aria-expanded`, and its `aria-controls` carries AppShell's drawer id, which a MobileNav inside that AppShell applies to its dialog unless a caller `id` replaces it. | Current source, docs, and tests |
-| FR12 | MobileNav forwards its `ref`, `data-testid`, other DOM props, `className`, `style`, and `xstyle` to the dialog, except that its own `aria-label` (FR10) replaces a caller's, a caller `onCancel` never runs (Current-state impact), and a caller `id` replaces its id (FR2).                                                                                                                                                                   | Current source and tests        |
+| FR12 | MobileNav forwards its `ref`, `data-testid`, other DOM props, `className`, `style`, and `xstyle` to the dialog, except that its own `aria-label` (FR10) replaces a caller's (Current-state impact), a caller `onCancel` never runs (Current-state impact), and a caller `id` replaces its id (FR2).                                                                                                                                            | Current source and tests        |
 
 ### Allowed variation
 
@@ -172,7 +175,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **ORD2 — Name.** A caller `aria-labelledby`, then `label`, then string
   `header`, then the translated default.
 - **ORD3 — Close delay.** Bounded by the dialog's slide-out transition and by
-  250 ms; zero under reduced motion or a zero-length transition.
+  250 ms; the next task under reduced motion or a zero-length transition.
 
 ### Performance and resources
 
