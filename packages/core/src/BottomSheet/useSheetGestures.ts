@@ -2257,8 +2257,12 @@ export function useSheetGestures({
     [cancelPointerDrag],
   );
   // A blurred window or a hidden page ends a pointer-path drag; the gesture
-  // host does the same for its recognizers.
+  // host does the same for its recognizers. Only an open sheet can be
+  // dragged, so a closed one holds no window listener.
   useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
     const onBlur = () => cancelPointerDrag();
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') {
@@ -2271,7 +2275,7 @@ export function useSheetGestures({
       window.removeEventListener('blur', onBlur);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [cancelPointerDrag]);
+  }, [cancelPointerDrag, isOpen]);
 
   // The body's pull down from its top, on the pointer path (a mouse, or a pen
   // where the primary pointer is fine): armed at the press, promoted after
