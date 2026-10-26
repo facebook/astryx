@@ -505,8 +505,10 @@ describe('the ChatLayout stories', () => {
       ),
       'utf8',
     );
+    // Storybook's preview pads every story by 16 px on each side.
     expect(stories).not.toMatch(/height: '100vh'/);
-    expect(stories).toMatch(/height: '100dvh'/);
+    expect(stories).not.toMatch(/height: '100dvh'/);
+    expect(stories).toMatch(/height: 'calc\(100dvh - 32px\)'/);
   });
 });
 
