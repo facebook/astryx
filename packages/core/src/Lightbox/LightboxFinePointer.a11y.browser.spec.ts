@@ -8,9 +8,10 @@
  *   (spec:AST-017 FR59, spec:AST-094 FR19): nothing between the photo and
  *   the dialog takes the browser's touch-action (a single photo or a
  *   gallery), a double-click from a mouse or a pen zooms 2x about the
- *   centre and back over the released 200 ms ease-out, a drag stops at the
- *   photo's edges, Next and the arrow keys show the next photo at once, and
- *   a click on the dark area closes the viewer
+ *   centre and back over the released 200 ms ease-out, a pen drag pans a
+ *   zoomed photo as a mouse drag does, a drag stops at the photo's edges,
+ *   Next and the arrow keys show the next photo at once, and a click on the
+ *   dark area closes the viewer
  * @position Cross-browser proof for Lightbox's mouse, pen and keyboard zoom
  *   where no touch layer runs
  */
@@ -375,6 +376,46 @@ test('a pen double-click zooms too: no touch layer takes the pen', async ({
     }
   }
   await expect(stage).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('a pen drag pans a zoomed photo too: no touch layer takes the pen', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'Pen input is dispatched through the Chrome DevTools Protocol.',
+  );
+  const {stage, img, stageBox} = await openViewer(page);
+  const middle = centre(stageBox);
+  await page.mouse.dblclick(middle.x, middle.y);
+  await expect(stage).toHaveAttribute('aria-pressed', 'true');
+  await settled(page);
+  const before = await boxOf(img);
+  const cdp = await page.context().newCDPSession(page);
+  const pen = async (
+    type: 'mouseMoved' | 'mousePressed' | 'mouseReleased',
+    x: number,
+    pressed: boolean,
+  ) =>
+    cdp.send('Input.dispatchMouseEvent', {
+      type,
+      x,
+      y: middle.y,
+      pointerType: 'pen',
+      button: type === 'mouseMoved' && !pressed ? 'none' : 'left',
+      buttons: pressed ? 1 : 0,
+      clickCount: type === 'mouseMoved' ? 0 : 1,
+    });
+  await pen('mouseMoved', middle.x, false);
+  await pen('mousePressed', middle.x, true);
+  for (let i = 1; i <= 8; i++) {
+    await pen('mouseMoved', middle.x - i * 10, true);
+  }
+  await pen('mouseReleased', middle.x - 80, false);
+  await settled(page);
+  const after = await boxOf(img);
+  expect(after.x - before.x).toBeCloseTo(-80, 0);
 });
 
 test('a mouse drag stops at the photo’s edges instead of carrying it out of view', async ({

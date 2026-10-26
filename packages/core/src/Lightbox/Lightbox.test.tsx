@@ -950,6 +950,38 @@ describe('Lightbox mouse and pen zoom where the primary pointer is fine', () => 
     });
     expect(stage).toHaveAttribute('aria-pressed', 'true');
   });
+
+  it('pans a zoomed photo under a pen drag too, stopping at its edges', async () => {
+    const {stage, img} = renderPhoto();
+    fireEvent.keyDown(document.querySelector('dialog')!, {key: '+'});
+    expect(photoTransform(img).translate).toBe('-200px -100px');
+    // A drag starts where the photo shows: let the 200 ms zoom land first.
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 400));
+    });
+    const pen = (type: string, x: number) => {
+      const event = new Event(type, {bubbles: true, cancelable: true});
+      Object.defineProperty(event, 'pointerType', {value: 'pen'});
+      Object.defineProperty(event, 'button', {value: 0});
+      Object.defineProperty(event, 'pointerId', {value: 7});
+      Object.defineProperty(event, 'clientX', {value: x});
+      Object.defineProperty(event, 'clientY', {value: 300});
+      act(() => {
+        stage.dispatchEvent(event);
+      });
+    };
+    pen('pointerdown', 200);
+    pen('pointermove', 170);
+    pen('pointermove', 150);
+    pen('pointerup', 150);
+    // 50 px to the left, as the pen moved; a mouse drag moves it the same.
+    expect(photoTransform(img).translate).toBe('-250px -100px');
+    pen('pointerdown', 150);
+    pen('pointermove', 900);
+    pen('pointerup', 900);
+    // The left edge stops on the stage's left edge.
+    expect(photoTransform(img).translate).toBe('0px -100px');
+  });
 });
 
 describe('Lightbox double-click under the touch layer', () => {

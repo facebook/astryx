@@ -13,9 +13,10 @@
  *   geometry; UIScrollView's eased settle; Lightbox's released zoom for the
  *   keyboard and a double-click (2x about the centre and back over a 200 ms
  *   ease-out, from any pointer when the touch layer is off); the keyboard's
- *   pan; and a mouse drag that pans a zoomed photo and stops at its edges
- *   — plus the callback ref for the photo and the imperative API Lightbox
- *   calls (with `isAtEdge` for an outer pager). The finger paths
+ *   pan; and a drag (a mouse's, or any pointer's when the touch layer is
+ *   off) that pans a zoomed photo and stops at its edges — plus the
+ *   callback ref for the photo and the imperative API Lightbox calls (with
+ *   `isAtEdge` for an outer pager). The finger paths
  *   (pinch, finger pan, double tap, the catch) are the touch layer,
  *   useZoomStage.ts, which drives this core
  * @position Lightbox's shared zoom stage (internal); the geometry is in
@@ -337,12 +338,13 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
   );
 
   // The mouse keeps Lightbox's released zoom (spec:AST-017 FR59): a
-  // double-click zooms in 2x about the centre or back, from any pointer when
-  // the touch layer is off (a pen or a finger where the primary pointer is
-  // fine). A drag pans a zoomed photo, stopping at its edges (unbounded, it
-  // could carry the photo out of view), and stops where it is released.
-  // With the touch layer on, fingers and pens are its recognizers'.
-  // Re-attached for each item: in a gallery the stage is the current page's.
+  // double-click zooms in 2x about the centre or back, and a drag pans a
+  // zoomed photo, stopping at its edges (unbounded, it could carry the photo
+  // out of view) and where it is released. Both take any pointer when the
+  // touch layer is off (a pen or a finger where the primary pointer is fine,
+  // interaction-modality INV4); with it on, fingers and pens are its
+  // recognizers'. Re-attached for each item: in a gallery the stage is the
+  // current page's.
   const isEnabled = options.isEnabled;
   const itemKey = options.itemKey;
   useEffect(() => {
@@ -360,7 +362,7 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
     const onPointerDown = (event: PointerEvent) => {
       lastPointerType = event.pointerType;
       if (
-        event.pointerType !== 'mouse' ||
+        (event.pointerType !== 'mouse' && optionsRef.current.isTouch) ||
         event.button !== 0 ||
         !zoomedRef.current ||
         measure() == null
