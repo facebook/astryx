@@ -11,7 +11,7 @@
  *   the other; lifting runs the action under the finger, once, and nothing
  *   off both; a touch that lands on the message can slide onto an action; a
  *   tap and a mouse click still run their action once; a held finger starts
- *   no text selection; the tracking is the same under a finger in Chrome's
+ *   no text selection (refused by style or by a cancelled selectstart); the tracking is the same under a finger in Chrome's
  *   engine; with `presentation="dialog"` a finger keeps each button's own
  *   press, so the slide from Delete to Cancel runs no Cancel; a storyboard of
  *   the slide from Delete to Cancel.
@@ -226,30 +226,44 @@ test('a lift off both actions runs nothing and leaves the alert open', async ({
   expect((await readLog(page)).clicks).toEqual([]);
 });
 
-test('a held finger starts no text selection: the surface is locked while it is down, and selectable again after', async ({
+test('a held finger starts no text selection: a selection is refused while it is down, and allowed again after', async ({
   page,
 }) => {
   const {driver, dialog, centers, bottom} = await openAlert(page);
-  const userSelect = async () =>
-    dialog.evaluate(element => {
+  const message = dialog.getByText('This action cannot be undone', {
+    exact: false,
+  });
+  // The lock refuses a selection one of two ways (spec:AST-094 FR41): where
+  // iOS WebKit runs, `user-select: none` on the held surface; elsewhere a
+  // cancelled `selectstart` on the text under the finger, with no style
+  // write. Either is a refusal; with neither, the text is selectable.
+  const refusesSelection = async () => {
+    const userSelect = await dialog.evaluate(element => {
       const style = getComputedStyle(element);
       return (
         style.getPropertyValue('user-select') ||
         style.getPropertyValue('-webkit-user-select')
       );
     });
-  expect(await userSelect()).not.toBe('none');
+    const isCancelled = await message.evaluate(element => {
+      const start = new Event('selectstart', {bubbles: true, cancelable: true});
+      element.dispatchEvent(start);
+      return start.defaultPrevented;
+    });
+    return userSelect === 'none' || isCancelled;
+  };
+  expect(await refusesSelection()).toBe(false);
   await driver.play(slide(centers.del, {x: centers.del.x, y: bottom + 60}), {
     onEvent: async (step, index) => {
       if (index !== 0) {
         return;
       }
       expect(step.type).toBe('touchStart');
-      expect(await userSelect()).toBe('none');
+      expect(await refusesSelection()).toBe(true);
     },
   });
   await expect(dialog).toBeVisible();
-  expect(await userSelect()).not.toBe('none');
+  expect(await refusesSelection()).toBe(false);
 });
 
 test("no pan can take the group's touch: the surface and a short alert's content allow only pinch-zoom, and a long alert's content keeps its pan", async ({
