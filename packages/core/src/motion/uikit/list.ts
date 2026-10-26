@@ -20,11 +20,9 @@
  * cubic-bézier control points [x1, y1, x2, y2]; lengths are in points, one
  * CSS px each.
  *
- * The deselect's clock and curve and the update springs are motion roles a
- * theme may retune (motion/roles.ts: `list.deselect.navigationPopMs`,
- * `list.deselect.navigationPopCurve`, `list.update.outlineSpring`,
- * `list.update.tableSpring`); the highlight's release is not (see the
- * registration below), and the row heights are lengths, not motion.
+ * Every value here is a list's own measured motion, an internal constant:
+ * it is no motion role, and no theme variable reaches it. The row heights
+ * are lengths, not motion.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/motion/MEASUREMENTS.md
@@ -34,7 +32,6 @@
  *   row heights; List.test.tsx checks it)
  */
 
-import {registerMotionTable} from '../roles';
 import {timing} from './timing';
 
 export const list = {
@@ -123,17 +120,3 @@ export const list = {
     tableSpring: {mass: 1, stiffness: 438.649, damping: 41.888},
   },
 } as const;
-
-/**
- * Registers the list table's motion roles: each spring, duration and curve
- * above is a role a theme may retune (motion/roles.ts), but for the cell
- * highlight's release, whose clock is the touch press model's
- * (`timing.press.highlightOutMs`, a role of its own) and which the press
- * layer reads at build time (utils/interactionOverlay.stylex.ts
- * `cellPressConsts`), where no theme variable reaches it. Idempotent; the
- * list's touch modules call it before their first motion, so a page that
- * never animates a list ships no list roles.
- */
-export function registerListTable(): void {
-  registerMotionTable('list', list, {exclude: ['highlight']});
-}
