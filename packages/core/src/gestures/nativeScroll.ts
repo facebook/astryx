@@ -27,7 +27,11 @@
  * read fresh on every question, since a native scroll moves them.
  */
 
+import {isRtlElement} from '../hooks/isRtlElement';
 import type {NativeScrollProbe} from './types';
+import {parentAcrossShadow} from '../utils/flatTree';
+
+export {parentAcrossShadow};
 
 export interface AllowedPans {
   readonly x: boolean;
@@ -65,16 +69,6 @@ interface ChainEntry {
 
 const SCROLLABLE = new Set(['auto', 'scroll', 'overlay']);
 const EDGE_TOLERANCE = 1;
-
-/** The node's parent, crossing out of shadow roots. */
-export function parentAcrossShadow(node: Node): Node | null {
-  if (node.parentNode != null) {
-    return node.parentNode instanceof ShadowRoot
-      ? node.parentNode.host
-      : node.parentNode;
-  }
-  return null;
-}
 
 interface Chain {
   readonly entries: ChainEntry[];
@@ -120,7 +114,8 @@ function buildChain(target: Element): Chain {
         element,
         x: scrollsX && allowX,
         y: scrollsY && allowY,
-        isRtl: style.direction === 'rtl',
+        // The writing direction through core's one helper.
+        isRtl: isRtlElement(element as HTMLElement),
         stopsX: behaviorX !== 'auto',
         stopsY: behaviorY !== 'auto',
       });

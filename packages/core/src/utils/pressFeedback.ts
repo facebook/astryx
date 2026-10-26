@@ -2,11 +2,13 @@
 
 /**
  * @file pressFeedback.ts
- * @input The press state machine (pressGesture.ts) and the document's pointer,
- *   keyboard, scroll and visibility events
+ * @input The press state machine (pressGesture.ts), the shared input stream
+ *   (inputStream.ts) for the document's pointer, touch, scroll, focus and
+ *   visibility events, and the window's keyboard events
  * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, PRESS_PROFILES,
  *   pressableProps, the list row's press profile (CELL_PRESS_PROFILE,
- *   cellPressableProps) and installPressFeedback
+ *   cellPressableProps), installPressFeedback, isPressFeedbackInstalled and
+ *   subscribePressPaint
  * @position The DOM half of the touch press model: one delegated controller
  *   per document that writes `data-astryx-press` on the nearest pressable surface.
  *   Installed by usePressFeedback (hooks/usePressFeedback.ts) on first mount;
@@ -25,8 +27,17 @@
  * the slop or by the scroll that takes the touch, and both fade at the lift
  * on their profile's clock.
  *
+ * A surface's hold does nothing, so it keeps the browser's long-press text
+ * selection (`spec:AST-094` FR41); only an element whose hold does something
+ * suppresses it, through the gesture host (gestures/selectionLock.ts).
+ *
+ * Its touch-only listeners, the finger's `touchend` and `touchcancel`, are on
+ * only while a press is tracked and the primary pointer is coarse
+ * (coarsePointer.ts, `spec:AST-094` FR24).
+ *
  * LISTENERS ONLY WHILE A PRESS IS LIVE. At rest the document carries two
- * passive listeners, `pointerdown` and `keydown`, which only arm. A touch, or
+ * passive listeners, `pointerdown` (through the shared input stream) and
+ * `keydown`, which only arm. A touch, or
  * a mouse button or Space press the controller paints, attaches the rest
  * (move, up, cancel, the finger's lift, scroll, drag and visibility; a Space
  * press also the key's release and focus loss). They come down once no press
@@ -70,6 +81,8 @@ import {
   PRESS_ONSET_MS,
   pressGestureStep,
 } from './pressGesture';
+import {isCoarsePointer, watchCoarsePointer} from './coarsePointer';
+import {subscribeInput} from './inputStream';
 import {pressConsts} from './interactionOverlay.stylex';
 import {TOUCH_QUERY} from './touchPresentation';
 
@@ -327,19 +340,68 @@ function ownedElsewhere(element: HTMLElement): boolean {
   return value != null && value !== 'on' && value !== 'fading';
 }
 
+/** Who follows the paint of each surface: one registry, no observer. */
+const paintListeners = new WeakMap<Element, Set<(paint: PressPaint) => void>>();
+
+/**
+ * Call `listener` with the paint the controller gives `element` each time it
+ * changes (`on` once it believes the press, `fading` while the release
+ * fades, `none` when it clears), until the returned function runs. One
+ * registry serves every surface, so a page of many triggers adds no observer
+ * and no listener per trigger. Not exported from the package entry point.
+ */
+export function subscribePressPaint(
+  element: Element,
+  listener: (paint: PressPaint) => void,
+): () => void {
+  let listeners = paintListeners.get(element);
+  if (listeners == null) {
+    listeners = new Set();
+    paintListeners.set(element, listeners);
+  }
+  listeners.add(listener);
+  return () => {
+    const current = paintListeners.get(element);
+    current?.delete(listener);
+    if (current?.size === 0) {
+      paintListeners.delete(element);
+    }
+  };
+}
+
+/** Tell `element`'s subscribers its new paint; one's throw stops no other. */
+function reportPaint(element: Element, paint: PressPaint): void {
+  const listeners = paintListeners.get(element);
+  if (listeners == null) {
+    return;
+  }
+  for (const listener of [...listeners]) {
+    try {
+      listener(paint);
+    } catch (error) {
+      queueMicrotask(() => {
+        throw error;
+      });
+    }
+  }
+}
+
 function paintElement(element: HTMLElement, paint: PressPaint): void {
   if (ownedElsewhere(element)) {
     return;
   }
-  if (paint === 'none') {
-    element.removeAttribute(PRESSED_ATTRIBUTE);
-    return;
-  }
+  const previous = element.getAttribute(PRESSED_ATTRIBUTE) ?? 'none';
   // A pass-through step repeats the paint it already wrote: writing it again
   // would only wake every observer of the attribute for nothing.
-  if (element.getAttribute(PRESSED_ATTRIBUTE) !== paint) {
+  if (previous === paint) {
+    return;
+  }
+  if (paint === 'none') {
+    element.removeAttribute(PRESSED_ATTRIBUTE);
+  } else {
     element.setAttribute(PRESSED_ATTRIBUTE, paint);
   }
+  reportPaint(element, paint);
 }
 
 function clearTimer(slot: Slot): void {
@@ -476,12 +538,18 @@ function finish(slot: Slot): void {
     return;
   }
   clearTimer(slot);
-  if (!ownedElsewhere(live.element)) {
-    live.element.removeAttribute(PRESSED_ATTRIBUTE);
+  const {element} = live;
+  const wasPainted =
+    !ownedElsewhere(element) && element.hasAttribute(PRESSED_ATTRIBUTE);
+  if (wasPainted) {
+    element.removeAttribute(PRESSED_ATTRIBUTE);
   }
   slot.live = null;
   if (slot === button) {
     holdKey(false);
+  }
+  if (wasPainted) {
+    reportPaint(element, 'none');
   }
   settle();
 }
@@ -616,7 +684,9 @@ function onPointerDown(event: PointerEvent): void {
   // question the brake asks is whether a PREVIOUS finger's fling is still
   // running here.
   const braking = element != null && scrollerIsBraking(element);
-  touching = true;
+  // The finger's lift is heard only where the primary pointer is coarse
+  // (FR24): elsewhere nothing waits for it.
+  touching = isCoarsePointer(window);
   lastTouchTarget = event.target instanceof Node ? event.target : null;
   if (element == null || braking) {
     settle();
@@ -841,46 +911,97 @@ function onVisibilityChange(): void {
   }
 }
 
-const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
 const PASSIVE = {passive: true} as const;
+
+/*
+ * Pointer, touch, drag, scroll, visibility and focus input arrive through the
+ * shared input stream (utils/inputStream.ts): one passive listener per type
+ * on the window's capture phase for every subscriber in the page, which an
+ * app's capture-phase stopPropagation cannot starve, and which hears every
+ * scroller's `scroll` and `scrollend` (neither bubbles). The keyboard stays
+ * on the window's bubble phase, outside the stream: a Space press must see
+ * the target's `preventDefault` (`defaultPrevented`), as `:active` does, and
+ * only the bubble phase has run the target's own listeners.
+ */
+
+/** The stream subscriptions that arm the controller, while it is installed. */
+let arming: (() => void)[] = [];
+/** The stream subscriptions that track a live press, while one is. */
+let trackingSubscriptions: (() => void)[] = [];
+/** The focus-loss subscription while Space holds a press. */
+let keySubscriptions: (() => void)[] = [];
+
+const unsubscribeAll = (subscriptions: (() => void)[]): void => {
+  for (const unsubscribe of subscriptions.splice(0)) {
+    unsubscribe();
+  }
+};
 
 /** The two listeners a document carries at rest: they only arm the rest. */
 function addArmingListeners(): void {
-  window.addEventListener('pointerdown', onPointerDown, PASSIVE_CAPTURE);
+  arming = [subscribeInput(window, 'pointerdown', onPointerDown)];
   window.addEventListener('keydown', onKeyDown, PASSIVE);
 }
 
 function removeArmingListeners(): void {
-  window.removeEventListener('pointerdown', onPointerDown, PASSIVE_CAPTURE);
+  unsubscribeAll(arming);
   window.removeEventListener('keydown', onKeyDown);
 }
 
 function addTrackingListeners(): void {
-  window.addEventListener('pointermove', onPointerMove, PASSIVE_CAPTURE);
-  window.addEventListener('pointerup', onPointerUp, PASSIVE_CAPTURE);
-  window.addEventListener('pointercancel', onCancel, PASSIVE_CAPTURE);
-  window.addEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
-  window.addEventListener('touchend', onTouchEnd, PASSIVE_CAPTURE);
-  window.addEventListener('touchcancel', onTouchEnd, PASSIVE_CAPTURE);
-  window.addEventListener('dragstart', onDragStart, PASSIVE_CAPTURE);
-  // `scroll` and `scrollend` do not bubble, so the capture phase is the only
-  // way one listener hears every scroller in the document.
-  document.addEventListener('scroll', onScroll, PASSIVE_CAPTURE);
-  document.addEventListener('scrollend', onScrollEnd, PASSIVE_CAPTURE);
-  document.addEventListener('visibilitychange', onVisibilityChange);
+  trackingSubscriptions = [
+    subscribeInput(window, 'pointermove', onPointerMove),
+    subscribeInput(window, 'pointerup', onPointerUp),
+    subscribeInput(window, 'pointercancel', onCancel),
+    subscribeInput(window, 'dragstart', onDragStart),
+    subscribeInput(window, 'scroll', onScroll),
+    subscribeInput(window, 'scrollend', onScrollEnd),
+    subscribeInput(window, 'visibilitychange', onVisibilityChange),
+  ];
+  stopWatchingPointer = watchCoarsePointer(window, followPointer);
+  hearTouch(isCoarsePointer(window));
 }
 
 function removeTrackingListeners(): void {
-  window.removeEventListener('pointermove', onPointerMove, PASSIVE_CAPTURE);
-  window.removeEventListener('pointerup', onPointerUp, PASSIVE_CAPTURE);
-  window.removeEventListener('pointercancel', onCancel, PASSIVE_CAPTURE);
-  window.removeEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
-  window.removeEventListener('touchend', onTouchEnd, PASSIVE_CAPTURE);
-  window.removeEventListener('touchcancel', onTouchEnd, PASSIVE_CAPTURE);
-  window.removeEventListener('dragstart', onDragStart, PASSIVE_CAPTURE);
-  document.removeEventListener('scroll', onScroll, PASSIVE_CAPTURE);
-  document.removeEventListener('scrollend', onScrollEnd, PASSIVE_CAPTURE);
-  document.removeEventListener('visibilitychange', onVisibilityChange);
+  unsubscribeAll(trackingSubscriptions);
+  stopWatchingPointer?.();
+  stopWatchingPointer = null;
+  hearTouch(false);
+}
+
+/** The finger's touch-only subscriptions, while tracked and coarse. */
+let touchSubscriptions: (() => void)[] = [];
+/** Stops following the primary pointer, while a press is tracked. */
+let stopWatchingPointer: (() => void) | null = null;
+
+/**
+ * The finger's touch-only listeners are on only while the primary pointer is
+ * coarse (`spec:AST-094` FR24); where it is fine, a finger's press still ends
+ * through `pointerup` and `pointercancel`.
+ */
+function hearTouch(on: boolean): void {
+  if (on === touchSubscriptions.length > 0) {
+    return;
+  }
+  if (on) {
+    touchSubscriptions = [
+      subscribeInput(window, 'touchcancel', onCancel),
+      subscribeInput(window, 'touchend', onTouchEnd),
+      subscribeInput(window, 'touchcancel', onTouchEnd),
+    ];
+  } else {
+    unsubscribeAll(touchSubscriptions);
+  }
+}
+
+/** The primary pointer turned coarse or fine while a press is tracked. */
+function followPointer(isCoarse: boolean): void {
+  hearTouch(isCoarse);
+  if (!isCoarse && touching) {
+    // Nothing hears the finger's lift any more.
+    touching = false;
+    settle();
+  }
 }
 
 /** Whether the key-release listeners are attached. */
@@ -900,10 +1021,10 @@ function holdKey(held: boolean): void {
     window.addEventListener('keyup', onKeyUp, PASSIVE);
     // `blur` does not bubble: the capture phase hears the element losing
     // focus and the window losing it.
-    window.addEventListener('blur', onBlur, PASSIVE_CAPTURE);
+    keySubscriptions = [subscribeInput(window, 'blur', onBlur)];
   } else {
     window.removeEventListener('keyup', onKeyUp);
-    window.removeEventListener('blur', onBlur, PASSIVE_CAPTURE);
+    unsubscribeAll(keySubscriptions);
   }
 }
 
@@ -935,6 +1056,14 @@ function settle(): void {
     return;
   }
   untrack();
+}
+
+/**
+ * Whether the touch press controller is installed: the delegated press of
+ * gestures/delegatedPress.ts stays off the same attribute while it is.
+ */
+export function isPressFeedbackInstalled(): boolean {
+  return holders > 0;
 }
 
 /**
