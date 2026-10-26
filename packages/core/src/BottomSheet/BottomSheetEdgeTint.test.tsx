@@ -3,14 +3,12 @@
 /**
  * @file BottomSheetEdgeTint.test.tsx
  * @input Uses vitest, @testing-library/react, BottomSheet, BottomSheetSwitcher
- * @output Tests that every presented sheet carries the iOS Safari bottom edge
- *   tint on its own panel, with no element of its own, and pins the
- *   declarations WebKit's edge sampler reads
- * @position Core testing; validates the sheet panel's `::after` in
- *   BottomSheetPanel.tsx and its two hosts
+ * @output Tests which sheets carry the iOS Safari bottom edge tint, and pins
+ *   the declarations WebKit's edge sampler reads
+ * @position Core testing; validates BottomSheetEdgeTint.tsx and its two hosts
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/BottomSheet/BottomSheetPanel.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetEdgeTint.tsx
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
@@ -62,37 +60,12 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-/** The sheet panels in the document: each one draws the tint as its `::after`. */
-function panels(): ReadonlyArray<Element> {
-  return Array.from(document.querySelectorAll('dialog [tabindex="-1"]')).filter(
-    element =>
-      element.parentElement?.tagName === 'DIALOG' ||
-      element.parentElement?.parentElement?.tagName === 'DIALOG',
-  );
-}
-
-async function panelSource(): Promise<string> {
-  const fs = await import('fs');
-  const path = await import('path');
-  return fs.readFileSync(
-    path.resolve(__dirname, './BottomSheetPanel.tsx'),
-    'utf-8',
-  );
-}
-
-/** The sheet style's body, from `sheet: {` to its closing brace. */
-async function sheetSource(): Promise<string> {
-  const sheet = (await panelSource()).match(
-    /\n {2}sheet: \{([\s\S]*?)\n {2}\},/,
-  );
-  expect(sheet).not.toBeNull();
-  return sheet![1];
+function tints(): ReadonlyArray<Element> {
+  return Array.from(document.querySelectorAll('[data-sheet-edge-tint]'));
 }
 
 async function edgeTintSource(): Promise<string> {
-  const tint = (await sheetSource()).match(
-    /\n {4}'::after': \{([\s\S]*?)\n {4}\},/,
-  );
+  const tint = (await fullSource()).match(/\n {2}tint: \{([\s\S]*?)\n {2}\},/);
   expect(tint).not.toBeNull();
   return tint![1];
 }
@@ -105,8 +78,17 @@ async function edgeTintDeclarations(): Promise<string> {
     .join('\n');
 }
 
+async function fullSource(): Promise<string> {
+  const fs = await import('fs');
+  const path = await import('path');
+  return fs.readFileSync(
+    path.resolve(__dirname, './BottomSheetEdgeTint.tsx'),
+    'utf-8',
+  );
+}
+
 describe('BottomSheetEdgeTint', () => {
-  it('draws the tint on the sheet panel, with no element of its own', () => {
+  it('gives a non-modal sheet an edge tint to colour the iOS toolbar strip', () => {
     render(
       <BottomSheet
         isOpen
@@ -116,23 +98,57 @@ describe('BottomSheetEdgeTint', () => {
         Content
       </BottomSheet>,
     );
-    expect(document.querySelectorAll('[data-sheet-edge-tint]')).toHaveLength(0);
-    expect(document.querySelector('dialog')?.children).toHaveLength(1);
+    expect(tints()).toHaveLength(1);
   });
 
-  it('gives a modal sheet the same panel and tint', () => {
+  it('gives a modal sheet the same surface-coloured edge tint', () => {
     render(
       <BottomSheet isOpen onOpenChange={() => {}} label="Place details">
         Content
       </BottomSheet>,
     );
-    expect(document.querySelectorAll('[data-sheet-edge-tint]')).toHaveLength(0);
-    expect(document.querySelector('dialog')?.children).toHaveLength(1);
+    expect(tints()).toHaveLength(1);
   });
 
-  // Each switcher step owns a dialog whose panel tints it while presented:
-  // one at rest, one per presented dialog through a handoff.
-  it('gives a modal switcher flow one tinting panel at rest, and one per presented dialog through a handoff', () => {
+  it('renders the tint inside the dialog, so it unmounts with the sheet', () => {
+    const {rerender} = render(
+      <BottomSheet
+        isOpen
+        onOpenChange={() => {}}
+        hasScrim={false}
+        label="Place details">
+        Content
+      </BottomSheet>,
+    );
+    const [tint] = tints();
+    expect(tint?.closest('dialog')).not.toBeNull();
+
+    rerender(<div />);
+    expect(tints()).toHaveLength(0);
+  });
+
+  // Each switcher step owns a dialog and tints it while presented: one tint
+  // at rest, one per open dialog through a handoff (the retained dialog's
+  // sits beneath the entering dialog), none for a sheet that is not
+  // presented.
+  it('gives a non-modal switcher flow exactly one tint', () => {
+    render(
+      <BottomSheetSwitcher
+        activeSheet="comment"
+        hasScrim={false}
+        onActiveSheetChange={() => {}}>
+        <BottomSheet sheetId="comment" label="Add a comment">
+          Comment
+        </BottomSheet>
+        <BottomSheet sheetId="confirmation" label="Confirmation">
+          Confirmation
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+    expect(tints()).toHaveLength(1);
+  });
+
+  it('gives a modal switcher flow exactly one tint at rest, and one per presented dialog through a handoff', () => {
     const {rerender} = render(
       <BottomSheetSwitcher activeSheet="comment" onActiveSheetChange={() => {}}>
         <BottomSheet sheetId="comment" label="Add a comment">
@@ -143,13 +159,11 @@ describe('BottomSheetEdgeTint', () => {
         </BottomSheet>
       </BottomSheetSwitcher>,
     );
-    const presented = () =>
-      Array.from(document.querySelectorAll('dialog'))
-        .filter(
-          dialog => dialog.firstElementChild?.hasAttribute('hidden') === false,
-        )
-        .map(dialog => dialog.getAttribute('aria-label'));
-    expect(presented()).toEqual(['Add a comment']);
+    expect(tints()).toHaveLength(1);
+    expect(tints()[0]?.closest('dialog')?.getAttribute('aria-label')).toBe(
+      'Add a comment',
+    );
+
     rerender(
       <BottomSheetSwitcher
         activeSheet="confirmation"
@@ -162,11 +176,25 @@ describe('BottomSheetEdgeTint', () => {
         </BottomSheet>
       </BottomSheetSwitcher>,
     );
-    expect(presented()).toEqual(['Add a comment', 'Confirmation']);
-    expect(document.querySelectorAll('[data-sheet-edge-tint]')).toHaveLength(0);
+    // Mid-handoff both dialogs are presented; each carries its own tint.
+    expect(
+      tints().map(tint => tint.closest('dialog')?.getAttribute('aria-label')),
+    ).toEqual(['Add a comment', 'Confirmation']);
   });
 
-  it('keeps the tint out of hit testing', async () => {
+  it('keeps the tint out of the accessibility tree and out of hit testing', async () => {
+    render(
+      <BottomSheet
+        isOpen
+        onOpenChange={() => {}}
+        hasScrim={false}
+        label="Place details">
+        Content
+      </BottomSheet>,
+    );
+    const [tint] = tints();
+    expect(tint?.getAttribute('aria-hidden')).toBe('true');
+    expect(tint?.textContent).toBe('');
     expect(await edgeTintSource()).toContain("pointerEvents: 'none'");
   });
 
@@ -177,28 +205,21 @@ describe('BottomSheetEdgeTint', () => {
   describe('the declarations WebKit samples', () => {
     it('is fixed and flush with the bottom edge of the viewport', async () => {
       const tint = await edgeTintSource();
-      const sheet = await sheetSource();
       // Only a fixed or sticky box is a candidate, and only a box flush with
-      // the edge is the one Safari hit tests. The sheet's transform makes it
-      // the fixed strip's containing block, and the sheet ends the overscroll
-      // padding below the viewport, so the strip sits that far above the
-      // sheet's own bottom edge.
-      expect(tint).toContain('content: \'""\'');
+      // the edge is the one Safari hit tests.
       expect(tint).toContain("position: 'fixed'");
-      expect(tint).toContain('insetBlockEnd: `${OVERSCROLL_PADDING}px`');
+      expect(tint).toContain('insetBlockEnd: 0');
       expect(tint).toContain('insetInline: 0');
-      expect(sheet).toContain("default: 'translateY(0)'");
-      expect(sheet).toContain('marginBlockEnd: `${-OVERSCROLL_PADDING}px`');
     });
 
     it('clears the 10px floor below which WebKit ignores the declared colour', async () => {
-      const height = (await panelSource()).match(
-        /const EDGE_TINT_HEIGHT_PX = (\d+);/,
+      const height = (await fullSource()).match(
+        /const SAMPLE_HEIGHT_PX = (\d+);/,
       );
       expect(height).not.toBeNull();
       expect(Number(height![1])).toBeGreaterThan(10);
       expect(await edgeTintSource()).toContain(
-        'height: `${EDGE_TINT_HEIGHT_PX}px`',
+        'height: `${SAMPLE_HEIGHT_PX}px`',
       );
     });
 
@@ -209,8 +230,8 @@ describe('BottomSheetEdgeTint', () => {
     });
 
     // visibility: hidden, display: none and a low opacity all disqualify the
-    // box from sampling. A mask does not, which is the only reason the strip
-    // can be both readable by Safari and invisible to the user.
+    // element from sampling. A mask does not, which is the only reason the
+    // strip can be both readable by Safari and invisible to the user.
     it('hides itself with a mask rather than with visibility or opacity', async () => {
       const tint = await edgeTintDeclarations();
       expect(tint).toContain(

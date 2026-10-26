@@ -378,6 +378,56 @@ describe('Popover presentation', () => {
     });
   });
 
+  it('a sheet with read-only content focuses the labelled dialog (FR2)', async () => {
+    isCompactTouch = true;
+    render(
+      <Popover
+        label="About this filter"
+        presentation="adaptive"
+        content={<p>Shows open items only.</p>}>
+        <Button label="Filter">Filter</Button>
+      </Popover>,
+    );
+    await tapTrigger();
+    await vi.waitFor(() => {
+      expect(document.activeElement).toBe(
+        screen.getByRole('dialog', {name: 'About this filter'}),
+      );
+    });
+  });
+
+  it('the sheet focuses its first content control again at each opening (FR2)', async () => {
+    isCompactTouch = true;
+    render(
+      <Popover
+        label="Filters"
+        presentation="bottom-sheet"
+        content={<button type="button">Apply</button>}>
+        <Button label="Filter">Filter</Button>
+      </Popover>,
+    );
+    const apply = () => screen.getByRole('button', {name: 'Apply'});
+    await tapTrigger();
+    await vi.waitFor(() => expect(document.activeElement).toBe(apply()));
+    // A second tap on the trigger closes the sheet; a third opens it again.
+    await tapTrigger();
+    // The exit ends on the panel's transform transition, which jsdom never
+    // runs: end it by hand.
+    const panel = document.querySelector('dialog [tabindex="-1"]');
+    if (panel != null) {
+      fireEvent.transitionEnd(panel, {propertyName: 'transform'});
+    }
+    await vi.waitFor(
+      () => expect(document.querySelector('dialog[open]')).toBeNull(),
+      {timeout: 3000},
+    );
+    act(() => {
+      (document.activeElement as HTMLElement | null)?.blur();
+    });
+    await tapTrigger();
+    await vi.waitFor(() => expect(document.activeElement).toBe(apply()));
+  });
+
   it('adaptive: a desktop keeps the anchored popover', async () => {
     render(<Filters presentation="adaptive" />);
     await tapTrigger();
@@ -701,7 +751,9 @@ describe('Popover presentation', () => {
     });
     expect(document.querySelector('[popover]')).toBeNull();
     expect(screen.getAllByRole('button', {name: 'Apply'})).toHaveLength(1);
-    expect(elements()).toBeLessThanOrEqual(desktopOpen);
+    // Open under touch, the sheet adds at most its edge tint, within the
+    // open-layer allowance (spec:AST-017 FR60).
+    expect(elements()).toBeLessThanOrEqual(desktopOpen + 1);
     // Closed: the sheet stays, closed, as it was at rest.
     act(() => {
       fireEvent.keyDown(dialog, {key: 'Escape'});
@@ -810,7 +862,8 @@ describe('Popover presentation', () => {
     await vi.waitFor(() => {
       expect(sheetDialog()).toHaveAttribute('open');
     });
-    expect(elements()).toBe(anchoredOpen);
+    // Plus the edge tint, its own element while presented (spec:AST-017 FR60).
+    expect(elements()).toBe(anchoredOpen + 1);
   });
 
   it('without a Theme provider, adaptive measures compact against the registered root theme', async () => {

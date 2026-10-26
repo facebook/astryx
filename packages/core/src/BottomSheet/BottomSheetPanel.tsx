@@ -90,15 +90,6 @@ const TRANSITION_BACKSTOP_BUFFER_MS = 50;
 // padding already provides.
 const HANDLE_BAR_HEIGHT = spacingVars['--spacing-6'];
 
-/**
- * The height of the strip that colours iOS Safari's bottom toolbar (the
- * sheet's `::after`). WebKit ignores the declared `background-color` of a
- * sampled box thinner than 10px and falls back to sampling painted pixels,
- * which a masked box has none of. 12px clears that floor with room to spare
- * and is still far below the ~40px of chrome it colours.
- */
-const EDGE_TINT_HEIGHT_PX = 12;
-
 // Measure the same viewport the height budgets are written against. Those are
 // `dvh`, which the virtual keyboard does not shrink, so reading
 // `visualViewport` here would make the two disagree by exactly the keyboard's
@@ -174,31 +165,6 @@ const styles = stylex.create({
     willChange: 'transform, opacity',
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0.01s',
-    },
-    // The edge tint. iOS 26 Safari derives the colour behind its translucent
-    // toolbars by sampling the page: it hit tests a point just inside each
-    // viewport edge, walks up to the nearest `fixed` or `sticky` box, and
-    // extends that box's declared `background-color` into the chrome. Left to
-    // the dialog's backdrop or the host page, otherwise identical sheets would
-    // colour the toolbar differently. This strip gives the sampler one answer:
-    // fixed, flush with the viewport's bottom edge (the sheet's transform makes
-    // it the strip's containing block, and the sheet ends the overscroll
-    // padding below that edge), painted in the sheet's surface colour, and
-    // masked out so the user never sees it. WebKit's sampler checks
-    // `visibility` and `opacity`, either of which would disqualify the box,
-    // but not `mask`. Above the sheet's content so the edge hit test lands
-    // here, and never in the way of a touch.
-    '::after': {
-      content: '""',
-      position: 'fixed',
-      insetInline: 0,
-      insetBlockEnd: `${OVERSCROLL_PADDING}px`,
-      height: `${EDGE_TINT_HEIGHT_PX}px`,
-      backgroundColor: colorVars['--color-background-surface'],
-      zIndex: 2,
-      pointerEvents: 'none',
-      maskImage: 'linear-gradient(transparent, transparent)',
-      WebkitMaskImage: 'linear-gradient(transparent, transparent)',
     },
   },
   /**

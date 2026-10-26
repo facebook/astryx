@@ -682,24 +682,6 @@ describe('BottomSheet', () => {
       expect(document.activeElement).not.toBe(getSheet());
     });
 
-    it('a modal sheet honors data-autofocus after showModal focused its panel, as Chromium does', () => {
-      HTMLDialogElement.prototype.showModal = vi.fn(function (
-        this: HTMLDialogElement,
-      ) {
-        this.setAttribute('open', '');
-        // Chromium's dialog focusing steps focus the first focusable area.
-        this.querySelector<HTMLElement>('[tabindex="-1"]')?.focus();
-      });
-      render(
-        <BottomSheet isOpen onOpenChange={() => {}} label="Filters">
-          <input data-autofocus aria-label="Search" />
-        </BottomSheet>,
-      );
-      expect(document.activeElement).toBe(
-        screen.getByRole('textbox', {name: 'Search'}),
-      );
-    });
-
     it('still honors a descendant with data-autofocus', () => {
       render(
         <BottomSheet

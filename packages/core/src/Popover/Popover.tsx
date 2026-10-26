@@ -594,23 +594,53 @@ export function Popover({
     hasSheetBeenOpen ||
     (resolvedPresentation === 'bottom-sheet' && !popover.isOpen);
   const sheetPanelRef = useRef<HTMLDivElement | null>(null);
-  // Focus enters the sheet as it enters the anchored popover (FR2): on the
-  // first genuine content control, never the injected fallback close.
-  // BottomSheet focuses a `[data-autofocus]` descendant first, so the panel
-  // marks that control as it mounts, unless the caller marked one.
+  const [sheetPanel, setSheetPanel] = useState<HTMLDivElement | null>(null);
   const attachSheetPanel = useCallback((panel: HTMLDivElement | null) => {
     sheetPanelRef.current = panel;
-    if (panel == null || panel.querySelector('[data-autofocus]') != null) {
+    setSheetPanel(panel);
+  }, []);
+  // Focus enters the sheet at each opening as it enters the anchored popover
+  // (FR2): a caller's `[data-autofocus]`, else the first genuine content
+  // control (never the injected fallback close), else the labelled dialog.
+  // It runs a frame after BottomSheet presents the dialog, whose own focus
+  // (the unnamed panel in Chromium) it replaces; BottomSheet is unchanged.
+  useEffect(() => {
+    if (!isSheetOpen || sheetPanel == null) {
       return;
     }
-    const firstControl = Array.from(
-      panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-    ).find(
-      element =>
-        element.closest('[data-astryx-popover-fallback-close]') == null,
-    );
-    firstControl?.setAttribute('data-autofocus', '');
-  }, []);
+    const frame = requestAnimationFrame(() => {
+      const dialog = sheetPanel.closest('dialog');
+      if (dialog == null || !dialog.open) {
+        return;
+      }
+      const active = sheetPanel.ownerDocument.activeElement;
+      if (
+        active != null &&
+        active !== sheetPanel &&
+        active !== dialog &&
+        sheetPanel.contains(active)
+      ) {
+        return;
+      }
+      const target =
+        sheetPanel.querySelector<HTMLElement>('[data-autofocus]') ??
+        Array.from(
+          sheetPanel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+        ).find(
+          element =>
+            element.closest('[data-astryx-popover-fallback-close]') == null,
+        );
+      if (target != null) {
+        target.focus({preventScroll: true});
+        return;
+      }
+      if (!dialog.hasAttribute('tabindex')) {
+        dialog.tabIndex = -1;
+      }
+      dialog.focus({preventScroll: true});
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [isSheetOpen, sheetPanel]);
   useEffect(() => {
     if (isSheetOpen || !hasSheetBeenOpen) {
       return;

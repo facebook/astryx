@@ -32,6 +32,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheetPanel.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetEdgeTint.tsx
  * - /packages/core/src/BottomSheet/BottomSheet.doc.mjs
  * - /packages/core/src/BottomSheet/BottomSheet.test.tsx
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.tsx
@@ -70,6 +71,7 @@ import {
   type BottomSheetPanelMotion,
   type BottomSheetPanelState,
 } from './BottomSheetPanel';
+import {BottomSheetEdgeTint} from './BottomSheetEdgeTint';
 import {
   BottomSheetSwitcherContext,
   type BottomSheetSwitcherContextValue,
@@ -267,14 +269,7 @@ function panelStateForSwitcherPhase(
 // brings the field into view within the sheet instead.
 function focusPanel(panel: HTMLElement | null, isModal: boolean): void {
   const activeElement = document.activeElement;
-  // Focus already inside stays put, except on the panel itself: Chromium's
-  // showModal() focuses the first focusable area, the panel, which would
-  // otherwise shadow a `[data-autofocus]` descendant.
-  if (
-    activeElement != null &&
-    activeElement !== panel &&
-    panel?.contains(activeElement)
-  ) {
+  if (activeElement != null && panel?.contains(activeElement)) {
     return;
   }
   const autofocus = panel?.querySelector<HTMLElement>('[data-autofocus]');
@@ -520,6 +515,10 @@ function StandaloneBottomSheet({
           <BottomSheetEscapeContext value>{children}</BottomSheetEscapeContext>
         </LayerDepthProvider>
       </BottomSheetPanel>
+      {/* Its own element, outside the panel's transform, so it stays flush
+          with the viewport's bottom edge at every detent; only while the
+          sheet is presented, so a closed sheet renders no extra element. */}
+      {shouldPresent && <BottomSheetEdgeTint />}
     </dialog>
   );
 }
@@ -833,6 +832,7 @@ function SwitcherBottomSheetItem({
           </BottomSheetSwitcherContext>
         </BottomSheetPanel>
       </div>
+      {isPresented && <BottomSheetEdgeTint />}
     </dialog>
   );
 }

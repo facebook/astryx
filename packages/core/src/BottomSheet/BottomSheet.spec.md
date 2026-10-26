@@ -122,17 +122,20 @@ in `BottomSheet.doc.mjs`.
   - the dialog carries the sheet's dialog role, modality and the top layer
     when the sheet is modal, and holds the panel at the block end with its
     own grid;
-  - the panel paints the `bottom-sheet` target, and its `::after` gives iOS
-    Safari's toolbar the sheet's color;
+  - the panel paints the `bottom-sheet` target;
   - the grabber bar is the drag handle, and its `::before` draws the handle;
   - the body is the scroll area;
   - the content box carries the padding and is the observed content box (FR3);
+  - the edge tint gives iOS Safari's toolbar the sheet's color: its own
+    element outside the panel's transform, so it stays flush with the
+    viewport's bottom edge at every detent, rendered only while the sheet is
+    presented;
   - in a BottomSheetSwitcher, each sheet's positioner holds its panel at the
     block end and hides a sheet that is not presented, so one dialog can
     switch between sheets.
-- The handle's pill and the toolbar tint are pseudo-elements and a standalone
-  sheet's dialog holds the panel in place, so a standalone sheet's frame has
-  no positioner, pill or tint element of its own.
+- The handle's pill is a pseudo-element and a standalone sheet's dialog holds
+  the panel in place, so a standalone sheet's frame has no positioner or pill
+  element of its own.
 - Elements a presenting component adds beyond this frame are its own to
   justify.
 
