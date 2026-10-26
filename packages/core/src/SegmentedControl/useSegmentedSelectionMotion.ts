@@ -154,15 +154,44 @@ interface Slide {
   readonly trackSize: {readonly width: number; readonly height: number};
 }
 
+/**
+ * A hidden segment's own inline declarations (its `style`) for the properties
+ * `hideSurface` overrides: value and priority, restored by `showSurface`.
+ */
+const ownSurface = new WeakMap<
+  HTMLElement,
+  ReadonlyArray<readonly [property: string, value: string, priority: string]>
+>();
+
 function hideSurface(segment: HTMLElement): void {
+  if (!ownSurface.has(segment)) {
+    ownSurface.set(
+      segment,
+      HIDDEN_SURFACE.map(([property]) => [
+        property,
+        segment.style.getPropertyValue(property),
+        segment.style.getPropertyPriority(property),
+      ]),
+    );
+  }
   for (const [property, value] of HIDDEN_SURFACE) {
     segment.style.setProperty(property, value, 'important');
   }
 }
 
+/** Gives a hidden segment its surface back, its own inline values included. */
 function showSurface(segment: HTMLElement): void {
-  for (const [property] of HIDDEN_SURFACE) {
-    segment.style.removeProperty(property);
+  const own = ownSurface.get(segment);
+  if (own == null) {
+    return;
+  }
+  ownSurface.delete(segment);
+  for (const [property, value, priority] of own) {
+    if (value === '') {
+      segment.style.removeProperty(property);
+    } else {
+      segment.style.setProperty(property, value, priority);
+    }
   }
 }
 

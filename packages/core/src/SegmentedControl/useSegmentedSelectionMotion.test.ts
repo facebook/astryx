@@ -227,6 +227,35 @@ describe('the selection slide', () => {
     expectOwnSurface(ctx.segments.table);
   });
 
+  it('the hand-back restores a segment’s own inline surface (its `style`)', async () => {
+    const ctx = setup('grid');
+    const {table, list} = ctx.segments;
+    table.style.setProperty('background-color', 'gold', 'important');
+    table.style.setProperty('border-top-color', 'red');
+    select(ctx, 'grid', 'table');
+    // Hidden while the lens carries the surface...
+    expect(table.style.getPropertyValue('background-color')).toBe(
+      'transparent',
+    );
+    await advance(2400);
+    expect(ctx.motion.isSliding).toBe(false);
+    // ...then the segment's own declarations come back, priority included,
+    // and nothing it did not have is left behind.
+    expect(table.style.getPropertyValue('background-color')).toBe('gold');
+    expect(table.style.getPropertyPriority('background-color')).toBe(
+      'important',
+    );
+    expect(table.style.getPropertyValue('border-top-color')).toBe('red');
+    expect(table.style.getPropertyPriority('border-top-color')).toBe('');
+    expect(table.style.getPropertyValue('background-image')).toBe('');
+    expect(table.style.getPropertyValue('box-shadow')).toBe('');
+    // A segment the slide never hid keeps its inline surface too.
+    list.style.setProperty('background-color', 'teal');
+    select(ctx, 'table', 'grid');
+    ctx.motion.settle();
+    expect(list.style.getPropertyValue('background-color')).toBe('teal');
+  });
+
   it('a change mid-flight starts from what is on screen and keeps its velocity', async () => {
     const ctx = setup('grid');
     select(ctx, 'grid', 'table');
