@@ -274,14 +274,23 @@ describe('PickerWheel — at rest', () => {
 
 describe('PickerWheel — a finger', () => {
   it('turns text selection off while a finger holds it (spec:AST-094 FR41)', () => {
-    // A held finger turns the wheel, so its pan takes the selection lock
-    // (jsdom keeps only the standard property of the lock).
-    const {column} = renderWheel();
+    // A held finger turns the wheel, so its pan takes the selection lock.
+    // Outside iOS WebKit (jsdom here) the lock refuses a selection that
+    // starts under the finger by cancelling `selectstart`, and writes no
+    // style.
+    const {column, option} = renderWheel();
+    const refuses = () => {
+      const event = new Event('selectstart', {bubbles: true, cancelable: true});
+      option('10').dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    expect(refuses()).toBe(false);
     touch('touchstart', column, CENTRE);
-    expect(column.style.getPropertyValue('user-select')).toBe('none');
+    expect(refuses()).toBe(true);
+    expect(column.style.getPropertyValue('user-select')).toBe('');
     advance(300);
     touch('touchend', column, CENTRE);
-    expect(column.style.getPropertyValue('user-select')).toBe('');
+    expect(refuses()).toBe(false);
   });
 
   it('drags the rows with it, without committing until the wheel rests', () => {
