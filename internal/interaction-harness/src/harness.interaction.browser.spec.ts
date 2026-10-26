@@ -735,6 +735,50 @@ test.describe('frame evidence', () => {
     expect(trace.window.to - started).toBeGreaterThanOrEqual(590);
   });
 
+  test('a waitForAnimation or watch.started() awaited inside a traced body stands down too, so the trace counts no Layout from it', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'rendering traces are Chromium-only (README: engine limits)',
+    );
+    await page.route('http://anchored.test/', route =>
+      route.fulfill({contentType: 'text/html', body: ANCHORED}),
+    );
+    await page.goto('http://anchored.test/');
+    const pop = page.locator('#pop');
+    await waitForRest(pop);
+    const watch = await watchAnimations(pop);
+    let started = 0;
+    let waited: {durationMs: number}[] = [];
+    let watched: {durationMs: number}[] = [];
+    const trace = await traceRendering(page, async () => {
+      started = await pop.evaluate(el => {
+        el.animate(
+          [
+            {transform: 'translateY(0px)', opacity: 1},
+            {transform: 'translateY(100px)', opacity: 0.5},
+          ],
+          {duration: 600},
+        );
+        return performance.timeOrigin + performance.now();
+      });
+      // Both poll until 450 ms of the curve has played, across the steady
+      // middle; a read of the page's animations each time would lay it out.
+      waited = await waitForAnimation(pop, {minProgressMs: 450});
+      watched = await watch.started({minProgressMs: 450});
+      await page.waitForTimeout(200);
+    });
+    expect(countBetween(trace, started + 100, started + 500).Layout ?? 0).toBe(
+      0,
+    );
+    // Each still answered with the animation once 450 ms of it had played.
+    expect(waited.map(a => a.durationMs)).toEqual([600]);
+    expect(watched.map(a => a.durationMs)).toEqual([600]);
+    expect(trace.window.to - started).toBeGreaterThanOrEqual(590);
+  });
+
   test('a waitForRest awaited inside a traced body waits for an animation the action starts two frames later', async ({
     page,
     browserName,
@@ -1924,6 +1968,75 @@ test.describe('animation state', () => {
     const [found] = await waitForAnimation(scroller, {timeout: 2000});
     expect(found.durationMs).toBe(40);
     expect(found.finishedAt).not.toBeNull();
+  });
+
+  test('a watch taken right after a style change does not report that change', async ({
+    page,
+  }) => {
+    await fixture(page);
+    const box = page.locator('#box');
+    await waitForRest(box);
+    // The step: a transition the next style read creates.
+    await box.evaluate(el => {
+      el.style.transition = 'opacity 300ms linear';
+      el.style.opacity = '0.5';
+    });
+    const watch = await watchAnimations(box);
+    await expect(watch.started({timeout: 200})).rejects.toThrow(
+      /waitForAnimation/,
+    );
+    await box.evaluate(el => el.getAnimations().forEach(a => a.finish()));
+  });
+
+  test('an exit whose element the page removes at its end is still reported', async ({
+    page,
+  }) => {
+    await fixture(page);
+    await page.evaluate(() => {
+      const wrap = document.createElement('div');
+      wrap.id = 'wrap';
+      const leaf = document.createElement('div');
+      leaf.id = 'leaf';
+      leaf.style.cssText = 'width:20px;height:20px;background:#c33';
+      wrap.append(leaf);
+      document.body.append(wrap);
+    });
+    const wrap = page.locator('#wrap');
+    const watch = await watchAnimations(wrap);
+    await page.evaluate(() => {
+      const leaf = document.getElementById('leaf') as HTMLElement;
+      const exit = leaf.animate([{opacity: 1}, {opacity: 0}], {duration: 60});
+      exit.finished.then(() => leaf.remove());
+    });
+    await expect
+      .poll(() => page.evaluate(() => document.getElementById('leaf') == null))
+      .toBe(true);
+    const [exit] = await watch.started();
+    expect(exit.durationMs).toBe(60);
+    expect(exit.finishedAt).not.toBeNull();
+  });
+
+  test('a wait on an element no longer in the document rejects at its own timeout', async ({
+    page,
+  }) => {
+    await fixture(page);
+    await page.evaluate(() => {
+      const gone = document.createElement('div');
+      gone.id = 'gone';
+      document.body.append(gone);
+    });
+    const gone = page.locator('#gone');
+    const watch = await watchAnimations(gone);
+    await page.evaluate(() => document.getElementById('gone')?.remove());
+    for (const wait of [
+      () => watch.started({timeout: 300}),
+      () => waitForAnimation(gone, {timeout: 300}),
+      () => waitForRest(gone, {timeout: 300}),
+    ]) {
+      const startedAt = Date.now();
+      await expect(wait()).rejects.toThrow(/not in the document/);
+      expect(Date.now() - startedAt).toBeLessThan(3_000);
+    }
   });
 
   test('a watch reports only what started after it', async ({page}) => {
