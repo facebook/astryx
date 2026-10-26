@@ -13,6 +13,7 @@
 import {render} from '@testing-library/react';
 import {describe, expect, it} from 'vitest';
 import {createCodeLanguage} from '../CodeBlock/grammar';
+import {objectiveC} from '../CodeBlock/languages/objective-c';
 import {thrift} from '../CodeBlock/languages/thrift';
 import {Markdown} from './Markdown';
 
@@ -35,6 +36,17 @@ describe('Markdown codeLanguages (Markdown FR30)', () => {
     );
     // jsdom has no CSS Custom Highlight API, so CodeBlock falls back to spans.
     expect(keywordTexts(listed.container)).toContain('struct');
+  });
+
+  it('labels a matched fence with the value name, not the fence word', () => {
+    const fence = '```objc\n@interface A : NSObject\n@end\n```';
+    const {container} = render(
+      <Markdown codeLanguages={[objectiveC]}>{fence}</Markdown>,
+    );
+    expect(container.textContent).toContain('objective-c');
+    expect(container.querySelector('pre')?.getAttribute('data-language')).toBe(
+      'objective-c',
+    );
   });
 
   it('lets a later entry win a shared identifier', () => {

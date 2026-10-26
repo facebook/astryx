@@ -54,4 +54,8 @@ test('RichText code blocks colour and label a listed language value', async ({
   await expect(
     page.locator('[data-testid="listed"] [data-richtext-code-header]'),
   ).toContainText('thrift');
+  // An `objc` fence matched by objectiveC is labelled with the value's name.
+  await expect(
+    page.locator('[data-testid="listed-renamed"] [data-richtext-code-header]'),
+  ).toContainText('objective-c');
 });

@@ -12,6 +12,7 @@ import {
   type RichTextEditorRef,
 } from '@astryxdesign/richtext';
 import type {EditorState} from 'lexical';
+import {objectiveC} from '@astryxdesign/core/CodeBlock/languages/objective-c';
 import {thrift} from '@astryxdesign/core/CodeBlock/languages/thrift';
 import {BOLD_STAR, ITALIC_STAR, UNORDERED_LIST} from '@lexical/markdown';
 import {$getRoot} from 'lexical';
@@ -595,6 +596,10 @@ export const MarkdownParityLongDocument: MarkdownParityStory = {
   },
 };
 
+const OBJC_FENCE = markdownToEditorStateJSON(
+  '```objc\n@interface Greeter : NSObject\n@end\n```',
+);
+
 const THRIFT_FENCE = markdownToEditorStateJSON(
   '```thrift\n# A user record\nstruct User {\n  1: required string name;\n}\n```',
 );
@@ -608,6 +613,9 @@ export const CodeLanguageModules: Story = {
     <div style={{display: 'grid', gap: 16, maxWidth: 520}}>
       <div data-testid="listed">
         <RichTextView value={THRIFT_FENCE} codeLanguages={[thrift]} />
+      </div>
+      <div data-testid="listed-renamed">
+        <RichTextView value={OBJC_FENCE} codeLanguages={[objectiveC]} />
       </div>
       <div data-testid="unlisted">
         <RichTextView value={THRIFT_FENCE} />
