@@ -1185,9 +1185,8 @@ function DropdownMenuPopover({
         // flyout comes after it in DOM order).
         surface.querySelector<HTMLElement>('[role="menu"]'),
       );
-      const motion = getSurfaceMotion(surface);
       if (isUikitMotion) {
-        motion.enter(() => {
+        getSurfaceMotion(surface).enter(() => {
           const triggerBox = trigger.getBoundingClientRect();
           const surfaceBox = surface.getBoundingClientRect();
           return {
@@ -1203,8 +1202,10 @@ function DropdownMenuPopover({
             },
           };
         });
-      } else {
-        motion.reset();
+      } else if (surfaceMotionRef.current?.element === surface) {
+        // A mouse runs nothing touch-related (spec:AST-094 FR24): it creates
+        // no motion, and stops one a finger's open left.
+        surfaceMotionRef.current.motion.reset();
       }
     }
     if (renderTrigger != null) {

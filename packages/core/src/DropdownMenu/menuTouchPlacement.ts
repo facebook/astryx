@@ -30,16 +30,17 @@ function coverEdge(
 
 /**
  * Over the trigger on a phone, as UIMenu: centered on it (`anchor-center`)
- * within the viewport less the screen margin on each side. The vertical
- * edge and the room below or above it are set as the menu opens
- * (placeOverTrigger).
+ * within the viewport less the screen margin on each side. Those sides, the
+ * vertical edge and the room below or above it are set as the menu opens
+ * (placeOverTrigger), where the menu's direction is known.
  */
 export const COVER_TRIGGER_STYLE: React.CSSProperties = {
-  left: coverEdge('left', 'inline-start'),
-  right: coverEdge('right', 'inline-end'),
   justifySelf: 'anchor-center',
   margin: 0,
 };
+
+/** Surfaces whose sides placeOverTrigger set, so it clears only its own. */
+const coveredSides = new WeakSet<HTMLElement>();
 
 /**
  * The inline `max-block-size` each box had before placeOverTrigger capped
@@ -102,12 +103,28 @@ export function placeOverTrigger(
     clearCap(box);
   }
   const {style} = surface;
+  if (coveredSides.delete(surface)) {
+    style.removeProperty('left');
+    style.removeProperty('right');
+  }
   if (!covers) {
     style.removeProperty('top');
     style.removeProperty('bottom');
     return;
   }
   const view = surface.ownerDocument.defaultView;
+  // Each side keeps the screen margin, the safe area and the LayerProvider
+  // inset of the inline edge it is: right to left, inline start is the right.
+  const isRtl = view?.getComputedStyle(surface).direction === 'rtl';
+  style.setProperty(
+    'left',
+    coverEdge('left', isRtl ? 'inline-end' : 'inline-start'),
+  );
+  style.setProperty(
+    'right',
+    coverEdge('right', isRtl ? 'inline-start' : 'inline-end'),
+  );
+  coveredSides.add(surface);
   // The layout viewport, the space getBoundingClientRect and a fixed box's
   // insets are in (a pinch-zoomed visual viewport is smaller and offset);
   // the window's height where the document has no layout.
