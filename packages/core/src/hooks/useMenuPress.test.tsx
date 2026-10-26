@@ -21,7 +21,6 @@ import {
   useDropdownMenuPress,
   useMenuPress,
   type DropdownMenuPressReturn,
-  type UseMenuPressReturn,
 } from './useMenuPress';
 import {MENU_PRESS_SETTLE_MS} from './menuPressGesture';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
