@@ -9,7 +9,7 @@
  * @position Core implementation; renders markdown as Astryx components
  */
 
-import {Suspense, useMemo, useRef} from 'react';
+import {Suspense, useMemo, useRef, useState} from 'react';
 import type React from 'react';
 import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -28,7 +28,7 @@ import {
 import type {TextDisplay} from '../theme/types';
 import {CodeBlock, Code} from '../CodeBlock';
 import {parseFenceLanguage} from '../CodeBlock/tokenizer';
-import {listedLanguage} from '../CodeBlock/grammar';
+import {listedLanguage, sameCodeLanguageList} from '../CodeBlock/grammar';
 import type {CodeLanguage} from '../CodeBlock/grammar';
 import {CheckboxList} from '../CheckboxList/CheckboxList';
 import {CheckboxListItem} from '../CheckboxList/CheckboxListItem';
@@ -2134,7 +2134,7 @@ export function Markdown<
   plugins,
   inlinePlugins,
   autolink,
-  codeLanguages,
+  codeLanguages: codeLanguagesProp,
   xstyle,
   className,
   style,
@@ -2143,6 +2143,13 @@ export function Markdown<
   ...props
 }: MarkdownProps<Plugins>): React.ReactElement {
   const t = useTranslator();
+  // Keep one list while it names the same values, so an inline
+  // `codeLanguages={[…]}` does not re-render every block on each parent
+  // render (adjusting state during render, not in an Effect).
+  const [codeLanguages, setCodeLanguages] = useState(codeLanguagesProp);
+  if (!sameCodeLanguageList(codeLanguages, codeLanguagesProp)) {
+    setCodeLanguages(codeLanguagesProp);
+  }
   const LinkComponent = useLinkComponent();
   // Links read the caller's handler when clicked, so a handler recreated on
   // every caller render does not invalidate the memoized document below.

@@ -91,6 +91,33 @@ describe('Markdown codeLanguages (Markdown FR30)', () => {
     expect(container.querySelector('[data-diff="added"]')).not.toBeNull();
   });
 
+  it('does not re-render the document when an inline list names the same values', () => {
+    // An inline plugin's render runs each time Markdown renders its blocks.
+    let renders = 0;
+    const counting = [
+      {
+        pattern: /marker/g,
+        render: () => {
+          renders++;
+          return 'marker';
+        },
+      },
+    ];
+    const doc = 'A marker here.\n\n' + fence;
+    const {rerender} = render(
+      <Markdown codeLanguages={[thrift]} inlinePlugins={counting}>
+        {doc}
+      </Markdown>,
+    );
+    const first = renders;
+    rerender(
+      <Markdown codeLanguages={[thrift]} inlinePlugins={counting}>
+        {doc}
+      </Markdown>,
+    );
+    expect(renders).toBe(first);
+  });
+
   it('keeps a custom code renderer receiving the fence word', () => {
     const seen: unknown[] = [];
     render(
