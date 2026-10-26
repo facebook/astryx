@@ -8,6 +8,8 @@ unpublished.** Specs live next to their component as
 a phone-sized touch screen (402 × 714 CSS px page, 402 × 874 screen, 3 device
 pixels per CSS px, touch, mobile viewport rules), in Chromium and WebKit.
 
+The exemplar to copy is
+[`BottomSheetDetent.interaction.browser.spec.ts`](../../packages/core/src/BottomSheet/__tests__/BottomSheetDetent.interaction.browser.spec.ts).
 The harness proves its own instruments in
 [`src/harness.interaction.browser.spec.ts`](src/harness.interaction.browser.spec.ts):
 every positive check has a negative control beside it (a rAF animation that
@@ -19,13 +21,15 @@ freezes, a `top` animation that lays out every frame).
 pnpm storybook:build                      # the specs read stories from the built Storybook
 pnpm exec playwright install chromium webkit
 pnpm test:interaction --project chromium  # everything, Chromium
-pnpm test:interaction <spec file>         # one spec, both engines
+pnpm test:interaction BottomSheetDetent   # one spec, both engines
 pnpm storyboards                          # only the tests tagged @storyboard
 ```
 
 On Linux distributions whose system libraries are older than Playwright's
 WebKit build needs, run the WebKit project inside the official Playwright
-image (podman or docker; the repository is mounted at the same path):
+image (podman or docker; the repository is mounted at the same path, and
+under a rootful docker daemon the container runs as your user so its
+`test-results/` stay yours):
 
 ```sh
 node internal/interaction-harness/scripts/webkit-container.mjs [playwright test args…]
@@ -44,18 +48,18 @@ committed: a pull request links or attaches it.
 
 ## Instruments
 
-| Module          | What it gives a spec                                                                                                                                                                                                          |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scripts.ts`    | Touch scripts as data: `tap`, `drag` (hold, rest), `flick` (exact final-move speed, velocity profiles), `holdThenDrag`, `pinch`, `rotate`, `path`, `merge` (a second finger mid-gesture), `releaseVelocity`, `toTouchEvents`. |
-| `touch.ts`      | `touchDriver(page).play(script)`: the script as real engine input. `installInputLog` / `readInputLog`: what the page received.                                                                                                |
-| `frames.ts`     | `startScreencast` (timestamped composited frames), `markElement` (a marker chip or outline), `trackMarker` (marker box per frame), `sampleRects` (per-rAF rects), `frameStats`.                                               |
-| `busy.ts`       | `blockMainThread(page, ms)` and `busyWindowProof(tracked, window)`: frames presented, frames that moved, longest stall, a verdict; `presented` adds the compositor's own frames.                                              |
-| `trace.ts`      | `traceRendering(page, body)`: main-thread Layout / Paint / UpdateLayoutTree / PrePaint counts, `countBetween`, long tasks; `installLongTaskLog` / `readLongTasks`; `startCompositorTrace`: when the compositor presents.      |
-| `curves.ts`     | `holdAnimations`, `seekAnimations`, `sampleCurve` (presented transform / opacity at any t), `waitForAnimation`, `watchAnimations`, `waitForRest`, `releaseAnimations`.                                                        |
-| `math.ts`       | Oracles independent of the code under test: `cubicBezier`, `timingFunction`, `springStep` (SwiftUI response / dampingFraction, initial velocity), `projectDecay`, `rubberBand`, `parseTransform`, `compareCurve`, `timeline`. |
-| `storyboard.ts` | `animationStoryboard` (seek to t = 0, 16.7, 33.3 … ms), `touchStoryboard` (a frame per scripted event), `castStoryboard` (real screencast frames): PNG contact sheet + JSON trace.                                            |
-| `output.ts`     | `evidenceDir`, `writeEvidence`: where evidence goes and how it is attached to the report.                                                                                                                                     |
-| `story.ts`      | `phone`, `withStorybook`, `openStory`, `frames`, and the timer gate (`installTimerGate`, `freezeTimers`, `thawTimers`).                                                                                                       |
+| Module          | What it gives a spec                                                                                                                                                                                                                                                                                                       |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts.ts`    | Touch scripts as data: `tap`, `drag` (hold, rest), `flick` (exact final-move speed, velocity profiles), `holdThenDrag`, `pinch`, `rotate`, `path`, `merge` (a second finger mid-gesture), `releaseVelocity`, `toTouchEvents`.                                                                                              |
+| `touch.ts`      | `touchDriver(page).play(script)`: the script as real engine input. `installInputLog` / `readInputLog`: what the page received.                                                                                                                                                                                             |
+| `frames.ts`     | `startScreencast` (timestamped composited frames), `markElement` (a marker chip or outline), `trackMarker` (marker box per frame), `sampleRects` (per-rAF rects), `frameStats`.                                                                                                                                            |
+| `busy.ts`       | `blockMainThread(page, ms)` and `busyWindowProof(tracked, window)`: frames presented, frames that moved, longest stall, a verdict; `presented` adds the compositor's own frames.                                                                                                                                           |
+| `trace.ts`      | `traceRendering(page, body, {invalidations?})`: main-thread Layout / Paint / UpdateLayoutTree / PrePaint counts, `countBetween` for a sub-window (optionally without Chrome's own compositor animation updates), long tasks; `installLongTaskLog` / `readLongTasks`; `startCompositorTrace`: when the compositor presents. |
+| `curves.ts`     | `holdAnimations`, `seekAnimations`, `sampleCurve` (presented transform / opacity at any t), `waitForAnimation`, `watchAnimations`, `waitForRest`, `releaseAnimations`.                                                                                                                                                     |
+| `math.ts`       | Oracles independent of the code under test: `cubicBezier`, `timingFunction`, `springStep` (SwiftUI response / dampingFraction, initial velocity), `projectDecay`, `rubberBand`, `parseTransform`, `compareCurve`, `timeline`.                                                                                              |
+| `storyboard.ts` | `animationStoryboard` (seek to t = 0, 16.7, 33.3 … ms), `touchStoryboard` (a frame per scripted event), `castStoryboard` (real screencast frames): PNG contact sheet + JSON trace.                                                                                                                                         |
+| `output.ts`     | `evidenceDir`, `writeEvidence`: where evidence goes and how it is attached to the report.                                                                                                                                                                                                                                  |
+| `story.ts`      | `phone`, `withStorybook`, `openStory`, `frames`, and the timer gate (`installTimerGate`, `freezeTimers`, `thawTimers`).                                                                                                                                                                                                    |
 
 ## The proofs
 
@@ -196,7 +200,11 @@ style until the trace ends (in the anchored fixture's steady middle,
 `started()`: they take the element's animations from the recorder's log,
 judge a started one by its own times, and reach the element through a handle,
 since each `locator.evaluate` makes a main-thread frame (there too, 24
-Layouts before, 0 now). The trace's `longTasks` are the page's own: only a
+Layouts before, 0 now). That holds for script animations and CSS
+transitions. On a CSS `@keyframes` animation (and, unwatched, a cancelled CSS
+transition), `waitForAnimation` and `started()` read the animation's timing,
+which flushes its style and adds Layouts to the trace: wait on one with
+`waitForRest`, or after the trace. The trace's `longTasks` are the page's own: only a
 task the harness marked as its own read (`waitForAnimation` describing
 keyframes, `blockMainThread` without `during`) is in `devtoolsTasks` instead,
 and only when no page script ran inside it. A test's own `page.evaluate` stays a
