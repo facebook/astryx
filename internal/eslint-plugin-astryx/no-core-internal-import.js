@@ -3,7 +3,8 @@
 /**
  * @file no-core-internal-import.js
  * @description Keeps Core's internal subpaths (`@astryxdesign/core/internal/*`)
- * inside Astryx's own packages.
+ * and its gesture, motion and touch-support source inside Astryx's own
+ * packages.
  *
  * Core exports a few undocumented modules under `./internal/<name>` so Lab can
  * build on machinery that has no public API of its own (such as the reorder
@@ -12,12 +13,16 @@
  * only Core and Lab may import them. The config applies this rule everywhere
  * else (apps, other packages, templates), so an import there is an error.
  *
- *   Banned (outside packages/core and packages/lab):
- *     import {x} from '@astryxdesign/core/internal/reorder';
- *     export {x} from '@astryxdesign/core/internal/reorder';
- *     await import('@astryxdesign/core/internal/reorder');
- *     require('@astryxdesign/core/internal/reorder');
- *     type T = typeof import('@astryxdesign/core/internal/reorder');
+ *
+ * The gesture core, motion and touch support have no entry of their own
+ * (architecture:react-component-runtime INV13): a deep import of them, by
+ * package path or by source path, is reported too.
+ *
+ *   Banned (outside packages/core and packages/lab), by `import`,
+ *   `export … from`, `import()`, `require()` and `typeof import()`:
+ *     '@astryxdesign/core/internal/reorder'
+ *     '@astryxdesign/core/gestures', '@astryxdesign/core/motion/animator'
+ *     '../../packages/core/src/touch-support/touchModule'
  *
  * A custom rule rather than a `no-restricted-imports` block, because flat
  * config overrides a same-named rule per file: a repo-wide block would undo
@@ -25,6 +30,12 @@
  */
 
 const INTERNAL = /^@astryxdesign\/core\/internal(?:\/|$)/;
+// Core's gesture core, motion and touch support, which have no entry of
+// their own: by package path, or by a path into Core's source.
+const DEEP = [
+  /^@astryxdesign\/core\/(?:gestures|motion)(?:\/|$)/,
+  /(?:^|\/)core\/src\/(?:gestures|motion|touch-support)(?:\/|$)/,
+];
 
 const rule = {
   meta: {
@@ -37,12 +48,18 @@ const rule = {
     messages: {
       internal:
         "'{{source}}' is one of Core's internal subpaths, reserved for Astryx's own packages (Core and Lab) and outside the compatibility promise. Use Core's public API instead.",
+      deep: "'{{source}}' reaches into Core's gesture, motion or touch-support source, which has no entry of its own and is for Core and Lab only (architecture:react-component-runtime INV13). Use Core's public API instead.",
     },
   },
   create(context) {
     function check(node, source) {
-      if (typeof source === 'string' && INTERNAL.test(source)) {
+      if (typeof source !== 'string') {
+        return;
+      }
+      if (INTERNAL.test(source)) {
         context.report({node, messageId: 'internal', data: {source}});
+      } else if (DEEP.some(pattern => pattern.test(source))) {
+        context.report({node, messageId: 'deep', data: {source}});
       }
     }
     function checkLiteral(node) {
