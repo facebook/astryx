@@ -475,6 +475,14 @@
     "defaultMessage": "Drag to move this item, or press Space or Enter to pick it up, the arrow keys to move it, and Space or Enter again to drop it. Escape puts it back.",
     "description": "Description read after the label of every reorder handle in a List: how to move a row by dragging or from the keyboard."
   },
+  "@astryx.list.reorderMoveAfter": {
+    "defaultMessage": "Move after",
+    "description": "Action in the menu a List row's reorder handle opens when activated (tapped or clicked) instead of dragged: moves the row one place later, after the next row."
+  },
+  "@astryx.list.reorderMoveBefore": {
+    "defaultMessage": "Move before",
+    "description": "Action in the menu a List row's reorder handle opens when activated (tapped or clicked) instead of dragged: moves the row one place earlier, before the previous row."
+  },
   "@astryx.list.reorderPosition": {
     "defaultMessage": "Position {position, number} of {total, number}",
     "description": "Screen-reader announcement each time a row being reordered in a List reaches a new place. `{position}` is its 1-based place, `{total}` the number of rows."

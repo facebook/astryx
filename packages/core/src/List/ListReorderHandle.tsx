@@ -9,8 +9,10 @@
  * @output `ListReorderHandle` and `reorderRowStyle`: the trailing handle of a
  *   reorderable List row,
  *   a button that a finger (held still for a moment, where the primary
- *   pointer is coarse) or a mouse drags, and whose Space or Enter picks the
- *   row up for the arrow keys; and the style of a row that has one
+ *   pointer is coarse) or a mouse drags, whose Space or Enter picks the row
+ *   up for the arrow keys, and which, activated without a drag (a tap, a
+ *   click, a screen reader's double tap), opens its row's Move before and
+ *   Move after in the list's menu; and the style of a row that has one
  * @position Part of the reorder machinery that createReorderable carries:
  *   ListItem renders it, from the List's context, at the end of each row
  *   that can move
@@ -24,7 +26,11 @@
  * elsewhere a finger gets the browser's defaults. The handle is the one
  * element the reorder adds to a row (spec:AST-103 FR5): its lines are a
  * pseudo-element, and it listens to nothing itself. The list's listeners
- * (the session's) take its drags; its keys go through React's.
+ * (the session's) take its drags; its keys and click go through React's.
+ * A drag is not everyone's: its activation opens Move before and Move
+ * after (FR4; WCAG 2.2 SC 2.5.7, a single pointer and no drag), each one
+ * committed move. Space and Enter pick up instead, and a press that
+ * dragged opens nothing.
  *
  * SYNC: When modified, update List/listReorderEngine.tsx and
  * List/ListItem.tsx.
@@ -227,9 +233,21 @@ export function ListReorderHandle({
       aria-label={name}
       aria-describedby={controller.hintId}
       aria-disabled={isDisabled || undefined}
+      aria-haspopup="menu"
+      onClick={() => {
+        if (!controller.takeDrag(ref.current) && !isDisabled) {
+          controller.requestMoves(ref.current);
+        }
+      }}
       onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
         if (!isDisabled) {
           controller.keyDown(controller.rowOf(ref.current), event);
+        }
+      }}
+      // Space picks up (on its keydown); its keyup makes no click.
+      onKeyUp={(event: KeyboardEvent<HTMLButtonElement>) => {
+        if (event.key === ' ') {
+          event.preventDefault();
         }
       }}
       onBlur={() => controller.blur(controller.rowOf(ref.current))}

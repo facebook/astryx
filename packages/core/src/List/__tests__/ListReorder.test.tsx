@@ -15,7 +15,9 @@
  *   new object mid-drag keeps the drag and the drop calls the latest
  *   callback; one object serves two lists apart; the reorder adds one element
  *   to a row and no listener to a row or handle, and a List without it loads
- *   no reorder module
+ *   no reorder module; a handle activated without a drag opens the list's one
+ *   menu with Move before and Move after, only the ones that move its row,
+ *   each one committed move
  * @position Tests for List/listReorderEngine.tsx, List/ListReorderHandle.tsx
  *   and reorderable/createReorderable.ts
  */
@@ -30,6 +32,7 @@ import {
   renderHook,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {List} from '../List';
@@ -781,6 +784,140 @@ describe('List reorderable', () => {
     ).toEqual([]);
     unmount();
     added.mockRestore();
+  });
+
+  it('opens Move before and Move after when a handle is activated, each only when it moves the row, and commits one move', async () => {
+    const user = userEvent.setup();
+    const onReorder = vi.fn();
+    render(
+      <ReorderableRows
+        initial={['Inbox', 'Sent', 'Drafts']}
+        onReorder={onReorder}
+      />,
+    );
+    await user.click(handleOf('Sent'));
+    // Open once its first frame has passed (it mounts closed, then opens).
+    await waitFor(() =>
+      expect(handleOf('Sent')).toHaveAttribute('aria-expanded', 'true'),
+    );
+    // The menu is named by its handle (jsdom never shows the popover).
+    let menu = await screen.findByRole('menu', {
+      name: 'Reorder Sent',
+      hidden: true,
+    });
+    expect(
+      within(menu)
+        .getAllByRole('menuitem', {hidden: true})
+        .map(item => item.textContent),
+    ).toEqual(['Move before', 'Move after']);
+    expect(handleOf('Sent')).toHaveAttribute('aria-expanded');
+    fireEvent.keyDown(menu, {key: 'Escape'});
+    await waitFor(() =>
+      expect(screen.queryByRole('menu', {hidden: true})).toBeNull(),
+    );
+    // The first row cannot go before anything.
+    await user.click(handleOf('Inbox'));
+    await waitFor(() =>
+      expect(handleOf('Inbox')).toHaveAttribute('aria-expanded', 'true'),
+    );
+    menu = await screen.findByRole('menu', {
+      name: 'Reorder Inbox',
+      hidden: true,
+    });
+    expect(
+      within(menu)
+        .getAllByRole('menuitem', {hidden: true})
+        .map(item => item.textContent),
+    ).toEqual(['Move after']);
+    fireEvent.click(
+      within(menu).getByRole('menuitem', {name: 'Move after', hidden: true}),
+    );
+    expect(onReorder).toHaveBeenCalledTimes(1);
+    expect(onReorder).toHaveBeenCalledWith({key: 'Inbox', to: 1});
+    expect(labels()).toEqual(['Sent', 'Inbox', 'Drafts']);
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent('Position 2 of 3'),
+    );
+  });
+
+  it('puts the menu outside the rows: the list has one, and a row gains nothing', async () => {
+    const user = userEvent.setup();
+    render(<ReorderableRows initial={['Inbox', 'Sent', 'Drafts']} />);
+    const row = screen.getByText('Sent').closest('li') as HTMLElement;
+    const before = row.querySelectorAll('*').length;
+    await user.click(handleOf('Sent'));
+    const menu = await screen.findByRole('menu', {hidden: true});
+    expect(menu.closest('li')).toBeNull();
+    expect(row.querySelectorAll('*').length).toBe(before);
+  });
+
+  it('opens the moves on a mouse click, and not after a mouse press that moved past the slop', async () => {
+    stubPrimaryPointer(false);
+    render(<ReorderableRows initial={['Inbox', 'Sent', 'Drafts']} />);
+    layOut(screen.getByRole('list'));
+    const handle = handleOf('Inbox');
+    // A press that drags: its click, after the lift, opens nothing.
+    fireEvent.pointerDown(handle, {...MOUSE, clientY: 322});
+    fireEvent.pointerMove(handle, {...MOUSE, clientY: 322 + MOUSE_DRAG_SLOP});
+    act(() => {
+      fireEvent.pointerUp(handle, {...MOUSE, clientY: 322 + MOUSE_DRAG_SLOP});
+    });
+    fireEvent.click(handle);
+    await act(async () => undefined);
+    expect(screen.queryByRole('menu', {hidden: true})).toBeNull();
+    // A click: the press stays under the slop, and the moves open.
+    fireEvent.pointerDown(handle, {...MOUSE, clientY: 322});
+    fireEvent.pointerUp(handle, {...MOUSE, clientY: 322});
+    fireEvent.click(handle);
+    expect(
+      await screen.findByRole('menu', {name: 'Reorder Inbox', hidden: true}),
+    ).toBeInTheDocument();
+  });
+
+  it.each([' ', 'Enter'])(
+    'picks a row up with %j and opens no menu',
+    async key => {
+      const user = userEvent.setup();
+      render(<ReorderableRows initial={['Inbox', 'Sent', 'Drafts']} />);
+      handleOf('Inbox').focus();
+      await user.keyboard(key === ' ' ? ' ' : '{Enter}');
+      await act(async () => undefined);
+      expect(screen.getByRole('list')).toHaveAttribute(
+        'data-astryx-reordering',
+      );
+      expect(screen.queryByRole('menu', {hidden: true})).toBeNull();
+      expect(handleOf('Inbox')).not.toHaveAttribute('aria-expanded');
+    },
+  );
+
+  it('offers no moves from a disabled row, nor from a row with nowhere to go', async () => {
+    render(
+      <ReorderableRows
+        initial={['Inbox', 'Pinned', 'Drafts']}
+        fixed={['Pinned']}
+        isDisabled={['Inbox']}
+      />,
+    );
+    // A screen reader activates a handle with a click, whatever its paint.
+    fireEvent.click(handleOf('Inbox'));
+    // Drafts may pass Pinned (a rejected row in the middle): it has a move.
+    fireEvent.click(handleOf('Drafts'));
+    expect(
+      await screen.findByRole('menu', {name: 'Reorder Drafts', hidden: true}),
+    ).toBeInTheDocument();
+    expect(handleOf('Inbox')).not.toHaveAttribute('aria-expanded');
+  });
+
+  it('offers no moves from a row that the rejected rows at both ends hold in place', async () => {
+    render(
+      <ReorderableRows
+        initial={['Pinned', 'Drafts', 'Trash']}
+        fixed={['Pinned', 'Trash']}
+      />,
+    );
+    fireEvent.click(handleOf('Drafts'));
+    await act(async () => undefined);
+    expect(screen.queryByRole('menu', {hidden: true})).toBeNull();
   });
 
   it('does not activate an interactive row from its handle', async () => {

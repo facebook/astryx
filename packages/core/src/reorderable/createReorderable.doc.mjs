@@ -23,7 +23,7 @@ export const docs = {
       name: 'onReorder',
       type: '(move: {key: Key; to: number}) => void',
       description:
-        "Called once per committed move (a drop) with the moved item's key and its index after the move, in the full order of the collection's items. Apply it by rendering the items in their new order. A cancelled move calls nothing. The latest function given is the one called, so the object may be made on every render.",
+        "Called once per committed move (a drop, or a Move before or Move after action) with the moved item's key and its index after the move, in the full order of the collection's items. Apply it by rendering the items in their new order. A cancelled move calls nothing. The latest function given is the one called, so the object may be made on every render.",
       required: true,
     },
     {
@@ -43,7 +43,7 @@ export const docs = {
   ],
   usage: {
     description:
-      "Makes a collection's rows reorderable the way an iOS table's edit mode does. On a touch screen a finger held still on a row's handle for a moment picks it up (a flick on the handle still scrolls); the row follows the finger, the rows it passes slide out of its way, the page scrolls near its edges, and on release the row settles into its new place. A mouse drags a handle at once, and the rows take their places without motion. From the keyboard, Space or Enter on a handle picks its row up, the arrow keys, Home and End move it, Space or Enter drops it, and Escape puts it back; screen readers hear the pick-up, each move, the drop and a cancel. The reorder code ships with this function: a collection without the prop loads none of it.",
+      "Makes a collection's rows reorderable the way an iOS table's edit mode does. On a touch screen a finger held still on a row's handle for a moment picks it up (a flick on the handle still scrolls); the row follows the finger, the rows it passes slide out of its way, the page scrolls near its edges, and on release the row settles into its new place. A mouse drags a handle at once, and the rows take their places without motion. Activating a handle without a drag (a tap, a click, a screen reader's double tap) opens Move before and Move after, each one committed move. From the keyboard, Space or Enter on a handle picks its row up, the arrow keys, Home and End move it, Space or Enter drops it, and Escape puts it back; screen readers hear the pick-up, each move, the drop and a cancel. The reorder code ships with this function: a collection without the prop loads none of it.",
     bestPractices: [
       {
         guidance: true,

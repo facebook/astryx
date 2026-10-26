@@ -679,7 +679,8 @@ export const Reorderable: Story = {
           '`itemKey` gets a reorder handle. On a touch screen, hold a handle ' +
           'for a moment, then drag: the rows you pass slide out of the way ' +
           'and the row settles into its new place on release. A mouse drags ' +
-          'a handle at once. From the keyboard, Space or Enter picks the ' +
+          'a handle at once; a tap or click on a handle opens Move before ' +
+          'and Move after. From the keyboard, Space or Enter picks the ' +
           'focused handle’s row up, the arrow keys move it, and Space or ' +
           'Enter drops it.',
       },
