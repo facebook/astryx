@@ -194,7 +194,8 @@ assistive-technology activation keep working.
 
 - `control` (a button, a switch): the highlight comes on in the same frame
   outside a scroller, the finger is tracked 70 pt beyond the bounds, and
-  the release takes UIButton's 0.25 s;
+  the release takes the list's deselect clock, as every surface's does
+  until a control runs its own (UIButton's 0.25 s);
 - `cell` (a table or collection row): the highlight waits the content-touch
   delay inside a scroll view and comes on at once outside one
   (`spec:AST-094` FR11), travel past the pan hysteresis cancels the press for
@@ -441,8 +442,9 @@ light impact only when a real tap toggles an `<input type="checkbox"
 switch>`, and WebKit requires a trusted event for it. `attachTapHaptic(label)`
 puts a hidden switch inside a label the control renders as its tap target,
 so every real tap on it plays that impact; focus the activation gives the
-switch goes straight back, and a label that already labels another control
-gets no switch. Nothing can play a haptic later
+switch goes straight back. A label tied to its control by `for`, or whose
+control is itself a switch, gets no switch; a label wrapping its own control
+gets one, which hands each tap on to that control. Nothing can play a haptic later
 from script, so mid-drag haptics (detent snaps, picker ticks) are not
 possible in iOS Safari.
 
@@ -567,7 +569,8 @@ way:
 - `__tests__/GestureHost.test.ts`: the DOM integration through real
   listeners in jsdom.
 - `__tests__/VelocityTracker.test.ts`: the filter against the velocities
-  UIKit reported on recorded touch streams, and the stillness reset.
+  UIKit reported on recorded touch streams, a steady speed and a hard
+  acceleration.
 - `__tests__/haptics.test.ts`: vibration patterns and the hidden switch.
 - `__tests__/importGraph.test.ts`: a gesture-only component's static
   imports (`useGestureRecognizer`, the pan recognizers, the host) reach
