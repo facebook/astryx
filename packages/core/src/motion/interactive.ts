@@ -9,13 +9,14 @@
  * @output Exports createInteractiveTransition (grab, track, release, to,
  *   presented) and the rule and layer types
  * @position Touch core of the motion foundation, on the animator (animator.ts)
- *   and the progress helpers (progress.ts); reached only from a component's
- *   touch module, never from its always-loaded code
+ *   and the progress helpers (progress.ts). A component's gesture code
+ *   imports it statically (BottomSheet's useSheetGestures), so it loads with
+ *   the component: touch code takes no lazy chunk
  *
  * One driver for every transition a finger scrubs and a release settles: a
  * sheet between detents, a list row's swipe actions, a toast swiped away, an
  * interactive pop, a photo dragged to close. Internal to core: components'
- * touch modules use it, and it is not exported from the package.
+ * gesture code uses it, and it is not exported from the package.
  *
  * - The release is decided once, at the release (spec:AST-094 FR36), by the
  *   component's own rule: a sheet settles on the position nearest where the

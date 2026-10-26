@@ -114,7 +114,7 @@ import {
   type MotionHandle,
 } from '../motion/animator';
 import {rubberBand} from '../motion/rubberBand';
-import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
+import type {SpringDescription} from '../motion/spring';
 import {sheet as sheetTable} from '../motion/uikit/sheet';
 import {
   SHEET_DETENT_SPRING,
