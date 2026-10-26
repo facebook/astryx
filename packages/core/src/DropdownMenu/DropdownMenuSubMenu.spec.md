@@ -138,7 +138,7 @@ intentional decision.
 | Open     | `aria-expanded=true`; flyout beside the row, labelled by it.          | Pointer, keyboard, or press opening.  |
 | Drilled  | Back row first, then the children, in the root's box.                 | Nested drill-in depth.                |
 | Regions  | Modal dialog named by the row; Tab walks header, rows, footer, wraps. | Header or footer only.                |
-| Sheet    | Its own header and footer replace the menu's, around its live rows.   | Header or footer only.                |
+| Sheet    | A data item's header and footer replace the menu's, around live rows. | Header or footer only.                |
 | Disabled | `aria-disabled=true`, no tab stop, half opacity, no opening.          | Loading or not.                       |
 | RTL      | Caret mirrors once; flyout opens toward the inline end.               | Placement flips at the viewport edge. |
 
