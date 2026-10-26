@@ -142,16 +142,16 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Representative states
 
-| State                | Required invariant                                                                                                                                                                            | Allowed variation |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| Image, named         | Group named from `label` and `alt`; image exposed with its `alt`.                                                                                                                             | —                 |
-| Image without alt    | Image `alt=""`, `role="presentation"`, `aria-hidden`.                                                                                                                                         | —                 |
-| Placeholder or error | Placeholder glyph; a new `src` retries.                                                                                                                                                       | —                 |
-| Loading, no src      | Skeleton; an Open action stays mounted and inert (today it is not rendered, the FR4 gap).                                                                                                     | —                 |
-| Uploading            | The image, or the placeholder if it failed, under the scrim with a hidden Spinner; busy start announced once; an Open action stays mounted and inert (today it is not rendered, the FR4 gap). | —                 |
-| Openable             | "Open {name}" button; focus outline on the container (the button's own ring is the FR4 gap).                                                                                                  | —                 |
-| Removable, hover     | "Remove {name}" in the tab order, revealed on hover, focus, and touch.                                                                                                                        | —                 |
-| Disabled             | Half opacity; Open and Remove stay mounted, focusable, and inert (today neither renders, the FR6 gap).                                                                                        | —                 |
+| State                | Required invariant                                                                                                                                    | Allowed variation |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| Image, named         | Group named from `label` and `alt`; image exposed with its `alt`.                                                                                     | —                 |
+| Image without alt    | Image `alt=""`, `role="presentation"`, `aria-hidden`.                                                                                                 | —                 |
+| Placeholder or error | Placeholder glyph; a new `src` retries.                                                                                                               | —                 |
+| Loading, no src      | Skeleton; an Open action stays mounted and inert.                                                                                                     | —                 |
+| Uploading            | The image, or the placeholder if it failed, under the scrim with a hidden Spinner; busy start announced once; an Open action stays mounted and inert. | —                 |
+| Openable             | "Open {name}" button; focus outline on the container (the button's own ring is the FR4 gap).                                                          | —                 |
+| Removable, hover     | "Remove {name}" in the tab order, revealed on hover, focus, and touch.                                                                                | —                 |
+| Disabled             | Half opacity; Open and Remove stay mounted, focusable, and inert.                                                                                     | —                 |
 
 ### Transformation and precedence order
 
@@ -187,8 +187,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **AR5 — Disabled and loading.** A disabled thumbnail's actions stay mounted,
   focusable, and announced as disabled, and a loading thumbnail's Open stays
   mounted and inert, so focus never moves when either state starts
-  (`spec:AST-085` FR1, FR4, FR5, FR6). Implementation gap: those actions are
-  not rendered in those states.
+  (`spec:AST-085` FR1, FR4, FR5, FR6).
 - **AR6 — Reachable remove.** A hover-revealed remove button is never removed
   from the tab order and appears on keyboard focus and on touch devices.
 
@@ -208,7 +207,7 @@ declared.
 
 ## Family and system relationships
 
-- `spec:AST-085` owns focusable disabled controls; AR5 records Thumbnail's gap.
+- `spec:AST-085` owns focusable disabled controls; AR5 records how Thumbnail applies it.
 - `spec:AST-086` owns busy announcements; AR3 records Thumbnail's conformance.
 - `architecture:internationalization` owns the catalog behind the fallback
   name and the open and remove names.

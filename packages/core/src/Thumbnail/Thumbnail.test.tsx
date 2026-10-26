@@ -184,6 +184,37 @@ describe('Thumbnail', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['disabled', {isDisabled: true}],
+    ['loading', {isLoading: true}],
+  ])(
+    'stops a press on a %s Open before it reaches an ancestor (spec:AST-085 FR2)',
+    async (_state, stateProps) => {
+      const user = userEvent.setup();
+      const onClick = vi.fn();
+      const onAncestorClick = vi.fn();
+      render(
+        <div onClick={onAncestorClick}>
+          <Thumbnail
+            src="/img.jpg"
+            alt="Test"
+            onClick={onClick}
+            {...stateProps}
+          />
+        </div>,
+      );
+      const open = screen.getByRole('button', {name: 'Open Test'});
+      open.focus();
+      await user.keyboard('{Enter}');
+      await user.keyboard(' ');
+      // A disabled thumbnail takes no pointer events, so the click is
+      // dispatched directly, as assistive technology may.
+      fireEvent.click(open);
+      expect(onClick).not.toHaveBeenCalled();
+      expect(onAncestorClick).not.toHaveBeenCalled();
+    },
+  );
+
   it('keeps focus on Open and Remove when the thumbnail becomes loading or disabled (spec:AST-085 FR4)', () => {
     const props = {
       src: '/img.jpg',

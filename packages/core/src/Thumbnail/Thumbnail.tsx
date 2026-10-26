@@ -493,7 +493,7 @@ export function Thumbnail({
         {hasOpen ? (
           <button
             type="button"
-            onClick={isInteractive ? onClick : undefined}
+            onClick={isInteractive ? onClick : stopInertPress}
             aria-label={t('@astryx.thumbnail.open', {accessibleName})}
             aria-disabled={isInteractive ? undefined : 'true'}
             {...stylex.props(styles.interactiveButton)}>
@@ -521,3 +521,13 @@ export function Thumbnail({
 }
 
 Thumbnail.displayName = 'Thumbnail';
+
+/**
+ * An inert Open still receives Enter, Space and clicks: it calls nothing, and
+ * the press stops here so an ancestor's click handler does not take it either
+ * (spec:AST-085 FR2).
+ */
+function stopInertPress(event: React.MouseEvent<HTMLButtonElement>) {
+  event.preventDefault();
+  event.stopPropagation();
+}
