@@ -42,6 +42,35 @@ export const COVER_TRIGGER_STYLE: React.CSSProperties = {
 };
 
 /**
+ * The inline `max-block-size` each box had before placeOverTrigger capped
+ * it, so clearing the cap gives back the caller's own value (a `style` on the
+ * menu) rather than removing it.
+ */
+const capsBefore = new WeakMap<HTMLElement, string>();
+
+/** Gives `box` back the inline `max-block-size` it had before the cap. */
+function clearCap(box: HTMLElement): void {
+  const before = capsBefore.get(box);
+  if (before === undefined) {
+    return;
+  }
+  capsBefore.delete(box);
+  if (before === '') {
+    box.style.removeProperty('max-block-size');
+  } else {
+    box.style.setProperty('max-block-size', before);
+  }
+}
+
+/** Caps `box` inline at `value`, keeping what it had before. */
+function setCap(box: HTMLElement, value: string): void {
+  if (!capsBefore.has(box)) {
+    capsBefore.set(box, box.style.getPropertyValue('max-block-size'));
+  }
+  box.style.setProperty('max-block-size', value);
+}
+
+/**
  * Pins the covering menu's vertical edge to its trigger as it opens: its top
  * to the trigger's top, or, when the trigger's center is in the lower part of
  * the viewport, its bottom to the trigger's bottom (UIMenu on iOS 26.2).
@@ -51,8 +80,8 @@ export const COVER_TRIGGER_STYLE: React.CSSProperties = {
  * and every capped box from the surface down to `content` (the scrolling
  * `role="menu"` element, and the column it shares with a header or footer),
  * so the box that scrolls is the one held to the room, never a taller box
- * inside a shorter surface. Clears all of it off a menu that does not cover
- * its trigger.
+ * inside a shorter surface. Clears only what it wrote off a menu that does
+ * not cover its trigger, giving each box back its own inline cap.
  */
 export function placeOverTrigger(
   surface: HTMLElement,
@@ -70,7 +99,7 @@ export function placeOverTrigger(
     capped.splice(1, 0, node);
   }
   for (const box of capped) {
-    box.style.removeProperty('max-block-size');
+    clearCap(box);
   }
   const {style} = surface;
   if (!covers) {
@@ -100,9 +129,9 @@ export function placeOverTrigger(
       computed?.maxBlockSize || computed?.maxHeight || '',
     );
     if (Number.isFinite(cap)) {
-      target.style.setProperty('max-block-size', `min(${cap}px, ${room})`);
+      setCap(target, `min(${cap}px, ${room})`);
     } else if (target === surface) {
-      target.style.setProperty('max-block-size', room);
+      setCap(target, room);
     }
   }
 }
