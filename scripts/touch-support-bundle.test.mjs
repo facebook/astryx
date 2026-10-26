@@ -8,7 +8,8 @@
  * @output Pins architecture:react-component-runtime INV13's bundle and
  *   boundary claims: Core's public entries carry none of the touch module
  *   until an app installs TouchSupport; a component that reads the module
- *   through useTouchSupport carries none of it; the install entry carries it;
+ *   through useTouchSupport carries none of it, nor the gesture core it
+ *   gathers; the install entry carries it;
  *   no export map entry, `.doc.mjs`, or component `import()` reaches the
  *   internals
  * @position Node test over source, so it needs no build
@@ -25,8 +26,14 @@ const CORE_SRC = path.join(REPO, 'packages/core/src');
 const require = createRequire(path.join(REPO, 'package.json'));
 const esbuild = require('esbuild');
 
-/** The touch module's code: the gesture core and the module that gathers it. */
-const MODULE_INPUT =
+/**
+ * The touch module: the file that gathers its primitives. An entry that
+ * imports it, directly or through TouchSupport, carries the whole module.
+ */
+const MODULE_INPUT = /^packages\/core\/src\/touch-support\/touchModule\.ts$/;
+
+/** The module and the gesture core it gathers. */
+const PRIMITIVE_INPUT =
   /^packages\/core\/src\/(gestures\/|touch-support\/touchModule\.ts$)/;
 
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-touch-support-'));
@@ -78,10 +85,10 @@ function entryWith(name, source) {
   return file;
 }
 
-/** The touch module's inputs that put bytes in the bundle. */
-function moduleBytes(bytes) {
+/** The inputs matching `pattern` that put bytes in the bundle. */
+function bytesOf(bytes, pattern = MODULE_INPUT) {
   return Object.entries(bytes).filter(
-    ([input, size]) => MODULE_INPUT.test(input) && size > 0,
+    ([input, size]) => pattern.test(input) && size > 0,
   );
 }
 
@@ -107,7 +114,7 @@ describe('the touch module in bundles', () => {
     ['the hooks entry', 'hooks/index.ts'],
     ['the utils entry', 'utils/index.ts'],
   ])('is absent from %s', (_name, entry) => {
-    expect(moduleBytes(bytesByInput(path.join(CORE_SRC, entry)))).toEqual([]);
+    expect(bytesOf(bytesByInput(path.join(CORE_SRC, entry)))).toEqual([]);
   });
 
   it('is absent from a component that reads it through useTouchSupport', () => {
@@ -125,7 +132,7 @@ export function Glue() {
     expect(
       bytes['packages/core/src/touch-support/useTouchSupport.ts'],
     ).toBeGreaterThan(0);
-    expect(moduleBytes(bytes)).toEqual([]);
+    expect(bytesOf(bytes, PRIMITIVE_INPUT)).toEqual([]);
   });
 
   it('is present once the app installs TouchSupport', () => {
@@ -137,7 +144,9 @@ export function Glue() {
 TouchSupport.install();
 `,
     );
-    const present = Object.fromEntries(moduleBytes(bytesByInput(app)));
+    const present = Object.fromEntries(
+      bytesOf(bytesByInput(app), PRIMITIVE_INPUT),
+    );
     for (const input of [
       'packages/core/src/touch-support/touchModule.ts',
       'packages/core/src/gestures/GestureArena.ts',
