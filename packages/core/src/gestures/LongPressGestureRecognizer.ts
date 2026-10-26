@@ -20,7 +20,7 @@
  * a blocked main thread delays the callback, not the moment it reports.
  */
 
-import {UIKIT_GESTURES} from '../motion/uikit/gestures';
+import {UIKIT_LONG_PRESS, UIKIT_TAP} from '../motion/uikit/gestures';
 import {lockSelection} from './selectionLock';
 import {travel} from './geometry';
 import {
@@ -57,14 +57,24 @@ export class LongPressGestureRecognizer extends GestureRecognizer {
 
   constructor(options: LongPressGestureRecognizerOptions = {}) {
     // A long press's hold does something (a menu, a hold-repeat): it locks
-    // selection for its press (spec:AST-094 FR41).
-    super({...options, selectionLock: options.selectionLock ?? lockSelection});
+    // selection for its press (spec:AST-094 FR41). One at 0 ms recognizes at
+    // touch-down and has no hold, so it brings none, nor does one told null:
+    // there the browser keeps its native long press.
+    super({
+      ...options,
+      selectionLock:
+        options.selectionLock !== undefined
+          ? options.selectionLock
+          : (options.minimumPressDuration ??
+                UIKIT_LONG_PRESS.minimumPressDuration.value) > 0
+            ? lockSelection
+            : null,
+    });
     this.minimumPressDuration =
       options.minimumPressDuration ??
-      UIKIT_GESTURES.longPress.minimumPressDuration.value;
+      UIKIT_LONG_PRESS.minimumPressDuration.value;
     this.allowableMovement =
-      options.allowableMovement ??
-      UIKIT_GESTURES.longPress.allowableMovement.value;
+      options.allowableMovement ?? UIKIT_LONG_PRESS.allowableMovement.value;
     this.numberOfTapsRequired = options.numberOfTapsRequired ?? 0;
     this.numberOfTouchesRequired = options.numberOfTouchesRequired ?? 1;
   }
@@ -165,7 +175,7 @@ export class LongPressGestureRecognizer extends GestureRecognizer {
     this.tapStartedAt = null;
     this.tapMostTouches = 0;
     if (
-      heldFor > UIKIT_GESTURES.tap.maximumTapDuration.value ||
+      heldFor > UIKIT_TAP.maximumTapDuration.value ||
       fingers !== this.numberOfTouchesRequired
     ) {
       this.setState('failed');
@@ -173,7 +183,7 @@ export class LongPressGestureRecognizer extends GestureRecognizer {
     }
     this.tapsDone += 1;
     this.setTimer(
-      event.time + UIKIT_GESTURES.tap.maximumIntervalBetweenTaps.value,
+      event.time + UIKIT_TAP.maximumIntervalBetweenTaps.value,
       () => {
         this.setState('failed');
       },
