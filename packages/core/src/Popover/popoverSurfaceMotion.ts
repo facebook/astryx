@@ -67,7 +67,6 @@ import {
   type SpringDescription,
 } from '../motion/spring';
 import {registerSpringsTable, springs} from '../motion/uikit/springs';
-import {resolveMotion} from '../motion/resolveMotion';
 import {placeLayerExitCopy} from '../Layer/layerExitCopy';
 import {
   frameOf,
@@ -209,8 +208,11 @@ export function createPopoverSurfaceMotion(
   element: HTMLElement,
   options: Pick<AnimatorOptions, 'now'> = {},
 ): PopoverSurfaceMotion {
-  // The springs it animates with are roles a theme can retune: the table
-  // registers once, before the first animation (nothing runs on import).
+  // The table registers once, before the first animation (nothing runs on
+  // import). The popover's two springs are not among the roles it
+  // registers: they are this component's measured values, so there is
+  // nothing to resolve them against. Making them roles is the motion
+  // table's call, and no theme writes a role variable on this base anyway.
   registerSpringsTable();
   const animator = createAnimator(element, options);
   // The presentation in progress or last played; null while the popover is
@@ -283,7 +285,7 @@ export function createPopoverSurfaceMotion(
         start,
         PRESENTED,
         next.axis,
-        resolveMotion(element, springs.popoverPresent),
+        springs.popoverPresent,
         velocity,
       ),
     );
@@ -328,7 +330,7 @@ export function createPopoverSurfaceMotion(
         from,
         {scale: target.scale, length: target.length, opacity: 0},
         target.axis,
-        resolveMotion(element, springs.popoverDismiss),
+        springs.popoverDismiss,
         velocity,
       ),
     );
