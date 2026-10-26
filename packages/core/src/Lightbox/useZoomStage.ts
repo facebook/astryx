@@ -75,6 +75,7 @@ import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {coast as coastCurves} from '../motion/coast';
 import {decayRestDistance} from '../motion/decay';
+import {zoomMedia} from '../motion/uikit/zoomMedia';
 import {
   IDENTITY,
   dismissCommits,

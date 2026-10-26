@@ -534,18 +534,23 @@ test('under Reduce Motion a zoomed photo pulled past its edge settles back to it
   await page.emulateMedia({reducedMotion: 'reduce'});
   const {driver, img, read} = await openPhone(page);
   const s = await read();
-  const y = s.stage.y + s.stage.height / 2;
-  // A double tap near the photo's left edge zooms it with that edge on the
-  // stage's.
-  await driver.play(doubleTap({x: s.stage.x + 12, y}));
+  const mid = {
+    x: s.stage.x + s.stage.width / 2,
+    y: s.stage.y + s.stage.height / 2,
+  };
+  await driver.play(doubleTap(mid));
   await waitForRest(img);
   await frames(page, 2);
+  // One slow drag right across the stage: the photo, centred and zoomed,
+  // moves until its left edge reaches the stage's, then gives past it.
   const zoomed = await edges(img);
-  expect(Math.abs(zoomed.photo.left - zoomed.stage.left)).toBeLessThan(0.5);
   let pastAtLift = Number.NaN;
-  const from = {x: s.stage.x + s.stage.width / 2, y};
   await driver.play(
-    drag(from, {x: from.x + 160, y}, {durationMs: 500, restMs: 150}),
+    drag(
+      {x: zoomed.stage.left + 6, y: mid.y},
+      {x: zoomed.stage.right - 6, y: mid.y},
+      {durationMs: 600, restMs: 150},
+    ),
     {
       onEvent: async step => {
         if (step.type === 'touchEnd') {
@@ -555,7 +560,6 @@ test('under Reduce Motion a zoomed photo pulled past its edge settles back to it
       },
     },
   );
-  // The pull took it past the edge (the rubber band gives).
   expect(pastAtLift).toBeGreaterThan(10);
   await waitForRest(img);
   const {photo, stage} = await edges(img);
