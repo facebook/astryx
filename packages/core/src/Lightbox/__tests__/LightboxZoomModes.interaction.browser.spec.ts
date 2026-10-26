@@ -19,7 +19,8 @@
  *   closes the viewer on a touch screen; under Reduce Motion
  *   (design:reduced-motion) a touch zoom fades in 200 ms or less, a keyboard
  *   zoom with a fine pointer completes at once, a pinch released past the
- *   maximum settles with no travel, and a zoomed flick does not coast
+ *   maximum settles with no travel, and a zoomed flick coasts on and
+ *   settles at the edge, as does a photo pulled past it (DR2, DEC-2)
  * @position Interaction tests for Lightbox (browser), beside
  *   LightboxZoom.interaction.browser.spec.ts
  */
@@ -33,6 +34,7 @@ import {
 } from '@playwright/test';
 import {
   curveOf,
+  drag,
   flick,
   frames,
   holdAnimations,
@@ -461,8 +463,24 @@ test('under Reduce Motion a pinch released past the maximum settles in place, wi
   expect((await read()).scale).toBeGreaterThan(1.5);
 });
 
-test('under Reduce Motion a zoomed flick does not coast', async ({page}) => {
-  // design:reduced-motion DR1: no momentum once the finger lifts.
+/** The photo's box and its stage's, in page px. */
+async function edges(img: Locator) {
+  return img.evaluate(el => {
+    const photo = el.getBoundingClientRect();
+    const stage = (el.parentElement as HTMLElement).getBoundingClientRect();
+    return {
+      photo: {left: photo.left, right: photo.right},
+      stage: {left: stage.left, right: stage.right},
+    };
+  });
+}
+
+test('under Reduce Motion a zoomed flick coasts on and settles at the edge, as on iOS', async ({
+  page,
+}) => {
+  // design:reduced-motion DR2 and DEC-2: momentum that continues a throw is
+  // the person's own movement, so it coasts and settles at an edge, with no
+  // cross-fade.
   await page.emulateMedia({reducedMotion: 'reduce'});
   const {driver, img, read} = await openPhone(page);
   const s = await read();
@@ -481,6 +499,65 @@ test('under Reduce Motion a zoomed flick does not coast', async ({page}) => {
       }
     },
   });
-  await frames(page, 30);
-  expect((await read()).x).toBeCloseTo(lifted, 0);
+  const opacities = await img.evaluate(
+    async el =>
+      new Promise<number[]>(resolve => {
+        const seen: number[] = [];
+        const start = performance.now();
+        const tick = (now: number) => {
+          seen.push(parseFloat(getComputedStyle(el).opacity));
+          if (now - start < 600) {
+            requestAnimationFrame(tick);
+          } else {
+            resolve(seen);
+          }
+        };
+        requestAnimationFrame(tick);
+      }),
+  );
+  await waitForRest(img);
+  // It coasted on past where the finger lifted.
+  expect((await read()).x).toBeLessThan(lifted - 20);
+  // No cross-fade.
+  expect(Math.min(...opacities)).toBe(1);
+  // It rests with no gap at the stage's edges.
+  const {photo, stage} = await edges(img);
+  expect(photo.left).toBeLessThanOrEqual(stage.left + 0.5);
+  expect(photo.right).toBeGreaterThanOrEqual(stage.right - 0.5);
+});
+
+test('under Reduce Motion a zoomed photo pulled past its edge settles back to it', async ({
+  page,
+}) => {
+  // The coast's settle at an edge (DR2): released still past the edge, the
+  // photo returns to it instead of staying out.
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const {driver, img, read} = await openPhone(page);
+  const s = await read();
+  const y = s.stage.y + s.stage.height / 2;
+  // A double tap near the photo's left edge zooms it with that edge on the
+  // stage's.
+  await driver.play(doubleTap({x: s.stage.x + 12, y}));
+  await waitForRest(img);
+  await frames(page, 2);
+  const zoomed = await edges(img);
+  expect(Math.abs(zoomed.photo.left - zoomed.stage.left)).toBeLessThan(0.5);
+  let pastAtLift = Number.NaN;
+  const from = {x: s.stage.x + s.stage.width / 2, y};
+  await driver.play(
+    drag(from, {x: from.x + 160, y}, {durationMs: 500, restMs: 150}),
+    {
+      onEvent: async step => {
+        if (step.type === 'touchEnd') {
+          const now = await edges(img);
+          pastAtLift = now.photo.left - now.stage.left;
+        }
+      },
+    },
+  );
+  // The pull took it past the edge (the rubber band gives).
+  expect(pastAtLift).toBeGreaterThan(10);
+  await waitForRest(img);
+  const {photo, stage} = await edges(img);
+  expect(photo.left).toBeLessThanOrEqual(stage.left + 0.5);
 });
