@@ -144,11 +144,12 @@ export interface LightboxProps extends BaseProps<HTMLDialogElement> {
   hasAutoPlay?: boolean;
   /**
    * The element an item's photo opens from and closes into, usually its
-   * thumbnail: the viewer zooms out of it on open and back into it on close
-   * (UIKit's zoom transition), for whichever item shows then. Return null
-   * when there is none, or it is off screen. Without it, the element that
-   * opened the viewer is the opened item's source when it shows a picture
-   * (an image, or a button or link around one).
+   * thumbnail: on a touch screen (a coarse primary pointer) the viewer zooms
+   * out of it on open and back into it on close (UIKit's zoom transition),
+   * for whichever item shows then; with a mouse it opens and closes at once,
+   * as before. Return null when there is none, or it is off screen. Without
+   * it, the element that opened the viewer is the opened item's source when
+   * it shows a picture (an image, or a button or link around one).
    *
    * Proposed; pending owner review.
    */
@@ -903,11 +904,12 @@ export function Lightbox({
     },
   });
 
-  // Open and close the dialog. With a source (`sourceFor`, or the element
-  // that opened the viewer for the opened item), the photo zooms out of it on
-  // open and back into the current item's on close (UIKit's zoom
-  // transition); the dialog stays open, the page inert, until the photo has
-  // landed. Opening again after a dismissal or a transition puts the photo,
+  // Open and close the dialog. Under the touch layer, with a source
+  // (`sourceFor`, or the element that opened the viewer for the opened item),
+  // the photo zooms out of it on open and back into the current item's on
+  // close (UIKit's zoom transition); the dialog stays open, the page inert,
+  // until the photo has landed. Where the primary pointer is fine the viewer
+  // opens and closes at once, as it always has (spec:AST-017 FR59). Opening again after a dismissal or a transition puts the photo,
   // the backdrop and the controls back first. Only then: a write promotes
   // the layers, and their release later would repaint mid-gesture.
   const transitionRef = useRef({
@@ -917,6 +919,7 @@ export function Lightbox({
     index,
     src: currentItem?.src ?? '',
     isImage: !isVideo,
+    isTouch,
   });
   transitionRef.current = {
     stage,
@@ -925,6 +928,7 @@ export function Lightbox({
     index,
     src: currentItem?.src ?? '',
     isImage: !isVideo,
+    isTouch,
   };
   const closeTokenRef = useRef(0);
   const openTokenRef = useRef(0);
@@ -991,7 +995,8 @@ export function Lightbox({
           : document.activeElement;
       openedIndexRef.current = now.index;
       dialog.showModal();
-      const source = now.isImage ? now.sourceElementFor(now.index) : null;
+      const source =
+        now.isImage && now.isTouch ? now.sourceElementFor(now.index) : null;
       const container = containerRef.current;
       const img = container?.querySelector<HTMLImageElement>(
         '[data-current] img, :scope > [data-lightbox-media] img',
@@ -1055,7 +1060,7 @@ export function Lightbox({
     // A dismissed photo has already landed (or left): close now.
     const container = containerRef.current;
     const source =
-      !dismissedRef.current && now.isImage
+      !dismissedRef.current && now.isImage && now.isTouch
         ? now.sourceElementFor(now.index)
         : null;
     const fades = fadesNow();

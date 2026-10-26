@@ -77,6 +77,24 @@ function stubStageLayout(): () => void {
   return () => undo.reverse().forEach(restore => restore());
 }
 
+/** A phone: the primary pointer is coarse, so the touch layer is on. Returns the undo. */
+function stubCoarsePointer(): () => void {
+  const original = window.matchMedia;
+  window.matchMedia = (query: string) => ({
+    matches: query === '(pointer: coarse)',
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  });
+  return () => {
+    window.matchMedia = original;
+  };
+}
+
 /** The photo's inline `translate` and `scale`, as the zoom stage wrote them. */
 function photoTransform(img: HTMLElement): {translate: string; scale: string} {
   return {translate: img.style.translate, scale: img.style.scale};
@@ -273,7 +291,8 @@ describe('Lightbox', () => {
       expect(onOpenChange).not.toHaveBeenCalled();
     });
 
-    it('asks sourceFor for the item opening and the item showing at close', () => {
+    it('asks sourceFor for the item opening and the item showing at close, on a touch screen', () => {
+      const restorePointer = stubCoarsePointer();
       const sourceFor = vi.fn((): HTMLElement | null => null);
       const {rerender} = render(
         <Lightbox
@@ -316,6 +335,22 @@ describe('Lightbox', () => {
       expect(sourceFor).toHaveBeenLastCalledWith(2);
       // No source box to zoom into: the dialog closes at once.
       expect(HTMLDialogElement.prototype.close).toHaveBeenCalled();
+      restorePointer();
+    });
+
+    it('never asks sourceFor with a mouse: the viewer opens and closes at once, as before', () => {
+      // Touch work leaves fine-pointer behavior alone (spec:AST-017 FR59):
+      // the zoom transition is the touch layer's.
+      const thumbnail = document.createElement('img');
+      document.body.append(thumbnail);
+      const sourceFor = vi.fn((): HTMLElement | null => thumbnail);
+      const props = {onOpenChange: () => {}, media, index: 0, sourceFor};
+      const {rerender} = render(<Lightbox isOpen={false} {...props} />);
+      rerender(<Lightbox isOpen={true} {...props} />);
+      rerender(<Lightbox isOpen={false} {...props} />);
+      expect(sourceFor).not.toHaveBeenCalled();
+      expect(HTMLDialogElement.prototype.close).toHaveBeenCalled();
+      thumbnail.remove();
     });
 
     it('shows gallery counter', () => {
