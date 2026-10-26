@@ -612,6 +612,12 @@ export class SegmentedSelectionMotion {
   private pressedTitle: HTMLElement | null = null;
   /** Each segment's running dim or return (its title and icon). */
   private readonly dimmedTitles = new Set<HTMLElement>();
+  /**
+   * Each dimmed segment's pressed-state opacity, read on its first dim: a
+   * finger that slides back onto it during its return would read the
+   * animator's opacity on screen, not the state's.
+   */
+  private readonly pressedOpacities = new WeakMap<HTMLElement, number>();
   /** The segment showing the selected face under a dragging finger. */
   private facedSegment: HTMLElement | null = null;
   /** The frame request that keeps the face on the lens while it is carried. */
@@ -1658,7 +1664,7 @@ export class SegmentedSelectionMotion {
     const {pressedTitle} = segmentedControl;
     fadePressDim(
       segment,
-      isPressed ? pressedOpacityOf(segment) : 1,
+      isPressed ? this.pressedOpacity(segment) : 1,
       clock === 'fade'
         ? {durationMs: pressedTitle.fadeMs, curve: pressedTitle.fadeCurve}
         : {durationMs: pressedTitle.liftMs, curve: pressedTitle.liftCurve},
@@ -1667,6 +1673,21 @@ export class SegmentedSelectionMotion {
     if (isPressed) {
       this.dimmedTitles.add(segment);
     }
+  }
+
+  /**
+   * The opacity `segment`'s pressed state sets: read from its style on its
+   * first dim, while the animator holds no opacity on it; a segment dimmed
+   * before keeps that reading, since the animator's opacity may be on screen.
+   */
+  private pressedOpacity(segment: HTMLElement): number {
+    const kept = this.pressedOpacities.get(segment);
+    if (this.dimmedTitles.has(segment) && kept !== undefined) {
+      return kept;
+    }
+    const read = pressedOpacityOf(segment);
+    this.pressedOpacities.set(segment, read);
+    return read;
   }
 
   /** The finger let go: the pressed title comes back on the lift's clock. */

@@ -1038,6 +1038,47 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
     expect(recordedCalls()).toHaveLength(fades);
   });
 
+  it('sliding back onto a segment during its return dims it to the state’s 0.2 again, not to the opacity on screen', () => {
+    const ctx = setup('grid');
+    // As a browser shows it: a segment the dim has played on reads the
+    // animator's opacity on screen; until then, its pressed state's 0.2.
+    const realStyle = window.getComputedStyle.bind(window);
+    vi.spyOn(window, 'getComputedStyle').mockImplementation(
+      (element, pseudo) => {
+        const style = realStyle(element, pseudo);
+        if (!(element instanceof HTMLElement) || pseudo != null) {
+          return style;
+        }
+        const played = vi
+          .mocked(fadePressDim)
+          .mock.calls.some(([dimmed]) => dimmed === element);
+        const opacity = played
+          ? String(animatorFor(element).get('opacity'))
+          : element.getAttribute('data-pressed') === 'pressed'
+            ? '0.2'
+            : style.opacity;
+        return new Proxy(style, {
+          get: (target, key) => {
+            if (key === 'opacity') {
+              return opacity;
+            }
+            const value = Reflect.get(target, key, target) as
+              string | ((...args: never[]) => unknown) | undefined;
+            return typeof value === 'function' ? value.bind(target) : value;
+          },
+        });
+      },
+    );
+    press(ctx, clientCenterOf('list'));
+    drag(ctx, clientCenterOf('table'));
+    drag(ctx, clientCenterOf('list'));
+    vi.mocked(window.getComputedStyle).mockRestore();
+    const again = lastFadeOf(ctx.segments.list);
+    expect(again.keyframes.at(-1)).toEqual({opacity: 0.2});
+    expect(again.options.duration).toBe(470);
+    expect(opacityIn(ctx.segments.list, 471)).toBeCloseTo(0.2, 3);
+  });
+
   it('a tap on the selected segment dims nothing', () => {
     const ctx = setup('grid');
     press(ctx, clientCenterOf('grid'));
