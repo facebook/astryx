@@ -451,20 +451,19 @@ layers use Layer rendering without joining Escape/platform dismissal.
   beside the trigger, and a consumer minimum is clamped by the runtime's cap.
 - **INV12 — The first frame is the settled frame.** No input to a layer's
   viewport geometry is measured after paint and then applied, with one
-  exception. The runtime observes anchor visibility for every layer, the
-  layer's box under a software keyboard, and, for a layer that keeps its
-  anchor clear, whether it covers its anchor or leaves the viewport and
-  whether its content overflows; each is read before first paint and, while
-  the layer is open, from callbacks that run before the frame paints. The
-  keyboard's cap is read again only when the keyboard moves, once more when an
-  entrance in progress at that read ends, and in the commit that brings a
-  replaced layer element. The exception is a same-size anchor that moves on
-  screen, in layout or by a scroll, which only an intersection observer
-  reports, after paint: at most one painted frame shows the layer over its
-  anchor before the correction. Otherwise a layer never paints at a geometry
-  it is about to correct, and the runtime polls nothing: an anchor that a
-  scrolled container hides is followed again when an intersection observer
-  reports it back in view.
+  exception. The runtime observes anchor visibility for every layer, the layer's
+  box under a software keyboard, and, for a layer that keeps its anchor clear,
+  whether it covers its anchor or leaves the viewport and whether its content
+  overflows; each is read before first paint and, while the layer is open, from
+  callbacks that run before the frame paints. The keyboard's cap is read again
+  only when the keyboard moves and once more when an entrance in progress at
+  that read ends; the cap is the layer's own style, so a replaced layer element
+  keeps it. The exception is a same-size anchor that moves on screen, in layout
+  or by a scroll, which only an intersection observer reports, after paint: at
+  most one painted frame shows the layer over its anchor before the correction.
+  Otherwise a layer never paints at a geometry it is about to correct, and the
+  runtime polls nothing: an anchor that a scrolled container hides is followed
+  again when an intersection observer reports it back in view.
 - **INV13 — One exit copy per closing layer.** A layer's close plays on at most
   one exit copy, made by `placeLayerExitCopy`: drawn where the layer was drawn,
   inert, hidden from assistive technology, without ids, form names, or form
