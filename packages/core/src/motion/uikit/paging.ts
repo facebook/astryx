@@ -206,7 +206,6 @@ export const paging = {
  * who holds the touch, not how anything moves, so it is not a role. Nothing
  * registers on import: the pager calls it once (it is idempotent), so a page
  * that never pages ships no registry.
- * @experimental
  */
 export function registerPagingTable(): void {
   registerMotionTable('paging', paging, {exclude: ['catchStopMs']});

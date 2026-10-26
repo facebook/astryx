@@ -50,6 +50,9 @@ beforeEach(() => {
   recorded = [];
   frameQueue = [];
   vi.useFakeTimers();
+  // A phone: the gesture host takes input only where the primary pointer is
+  // coarse (spec:AST-094 FR19), and reads it when it first attaches.
+  stubMedia(false, true);
   HTMLElement.prototype.animate = function (keyframes, options) {
     let resolveReady: (value: unknown) => void = () => {};
     let rejectReady: (error: Error) => void = () => {};
@@ -909,30 +912,32 @@ describe('createPager', () => {
       );
   }
 
-  for (const coarse of [true, false]) {
-    it(`under Reduce Motion, a release settle does not travel: an opacity cross-fade of at most 200 ms on a ${coarse ? 'coarse' : 'fine'} pointer (a touch release, DR2/DR3)`, async () => {
-      const f = setup({defaultIndex: 1});
-      const {pager, reduced} = reducedPager(f, 1, coarse);
-      // The pointer this case claims, as the animator sees it.
-      expect(reduced.reducedMotion()).toBe(coarse ? 'crossfade' : 'instant');
-      expect(reduced.reducedMotion({touchRelease: true})).toBe('crossfade');
-      const before = recorded.length;
-      await drag(
-        {...f, pager, animator: reduced, x: () => reduced.get('x', now)},
-        {from: 300, dx: -250, step: 4, dt: 8, hold: 100},
-      );
-      await frames(f, 40);
-      // The drag itself writes the track (no animation); every animation is
-      // the settle's.
-      expect(travelsSince(before)).toEqual([]);
-      const fades = fadesSince(before);
-      expect(fades.length).toBeGreaterThan(0);
-      for (const fade of fades) {
-        expect(activeMs(fade, 'opacity')).toBeLessThanOrEqual(200);
-      }
-      expect(-reduced.get('x', now)).toBeCloseTo(2 * WIDTH, 0);
-    });
+  // Touch reaches the pager only where the primary pointer is coarse
+  // (spec:AST-094 FR19), so a release always settles on a coarse pointer.
+  it('under Reduce Motion, a release settle does not travel: an opacity cross-fade of at most 200 ms on a coarse pointer (a touch release, DR2)', async () => {
+    const f = setup({defaultIndex: 1});
+    const {pager, reduced} = reducedPager(f, 1, true);
+    // The pointer this case claims, as the animator sees it.
+    expect(reduced.reducedMotion()).toBe('crossfade');
+    expect(reduced.reducedMotion({touchRelease: true})).toBe('crossfade');
+    const before = recorded.length;
+    await drag(
+      {...f, pager, animator: reduced, x: () => reduced.get('x', now)},
+      {from: 300, dx: -250, step: 4, dt: 8, hold: 100},
+    );
+    await frames(f, 40);
+    // The drag itself writes the track (no animation); every animation is
+    // the settle's.
+    expect(travelsSince(before)).toEqual([]);
+    const fades = fadesSince(before);
+    expect(fades.length).toBeGreaterThan(0);
+    for (const fade of fades) {
+      expect(activeMs(fade, 'opacity')).toBeLessThanOrEqual(200);
+    }
+    expect(-reduced.get('x', now)).toBeCloseTo(2 * WIDTH, 0);
+  });
 
+  for (const coarse of [true, false]) {
     it(`under Reduce Motion, goTo does not travel (${coarse ? 'coarse pointer: an opacity cross-fade of at most 200 ms, DR2' : 'fine pointer: at once, DR3'})`, async () => {
       const f = setup({defaultIndex: 0});
       const {pager, reduced} = reducedPager(f, 0, coarse);
@@ -955,12 +960,15 @@ describe('createPager', () => {
     });
   }
 
-  it("under Reduce Motion, a mouse drag's release on a fine pointer lands at once: no travel, no fade (DR3)", async () => {
+  it('on a fine primary pointer the pager takes no input (spec:AST-094 FR19): a mouse drag leaves the track and the page as they were', async () => {
     const f = setup({defaultIndex: 1});
-    const {pager, reduced} = reducedPager(f, 1, false);
-    // The pointer this case claims, as the animator sees it.
-    expect(reduced.reducedMotion()).toBe('instant');
-    const before = recorded.length;
+    stubMedia(false, false);
+    f.pager.dispose();
+    const pager = createPager(
+      {count: 3, defaultIndex: 1},
+      {host: f.host, animator: f.animator},
+    );
+    pager.attach(f.viewport, f.track);
     mouse('pointerdown', f.page, 300, 100, now);
     for (let i = 1; i <= 62; i++) {
       await advance(8, f.clock);
@@ -968,11 +976,9 @@ describe('createPager', () => {
     }
     await advance(8, f.clock);
     mouse('pointerup', f.page, 52, 100, now);
-    expect(pager.index).toBe(2);
     await frames(f, 2);
-    expect(travelsSince(before)).toEqual([]);
-    expect(fadesSince(before)).toEqual([]);
-    expect(-reduced.get('x', now)).toBeCloseTo(2 * WIDTH, 0);
+    expect(pager.index).toBe(1);
+    expect(f.x()).toBe(-WIDTH);
   });
 });
 
