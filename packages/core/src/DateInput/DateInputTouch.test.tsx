@@ -2154,8 +2154,9 @@ describe('DateInput — nested scrollers keep their own touch gesture', () => {
     // and the sheet read every downward drag as a dismiss. Paging sideways
     // removes the conflict: horizontal pans stay here and vertical ones go to
     // the sheet, so a downward drag can go back to meaning swipe-to-dismiss.
-    // A move with no direction yet (the same point twice) is nobody's.
-    expect(ancestor.seen).toEqual(['touchstart', 'touchmove']);
+    // The touch's start reaches the sheet; a move with no direction yet (the
+    // same point twice) is held until the drag has one.
+    expect(ancestor.seen).toEqual(['touchstart']);
     ancestor.stop();
   });
 
@@ -2189,13 +2190,99 @@ describe('DateInput — nested scrollers keep their own touch gesture', () => {
     ancestor.stop();
   });
 
-  it('under a finger: gives a drag steeper than 45° to the sheet', () => {
+  /**
+   * A drag from `origin` through `points` (offsets from it), then the lift:
+   * each point is one delivered move, so the steps are the sampling.
+   */
+  const dragThrough = (
+    el: Element,
+    points: ReadonlyArray<readonly [number, number]>,
+  ) => {
+    const origin = {x: 150, y: 200};
+    touch(el, 'touchstart', origin);
+    for (const [dx, dy] of points) {
+      touch(el, 'touchmove', {x: origin.x + dx, y: origin.y + dy});
+    }
+    touch(el, 'touchend');
+  };
+
+  /** `count` moves of `step` px along `degrees` off horizontal, leftward. */
+  const stepsAlong = (degrees: number, step: number, count: number) => {
+    const radians = (degrees * Math.PI) / 180;
+    return Array.from(
+      {length: count},
+      (_, i) =>
+        [
+          -Math.cos(radians) * step * (i + 1),
+          Math.sin(radians) * step * (i + 1),
+        ] as const,
+    );
+  };
+
+  /**
+   * UIKit's split in a sheet (motion/MEASUREMENTS.md M-DP01): decided on the
+   * first move where either axis has travelled 10 px, the calendar's when
+   * its sideways travel has reached 10 px there and the sheet's otherwise.
+   * The first moves are the UIKit lab's own samples past the threshold.
+   */
+  it.each([
+    [10, 11, 'calendar'],
+    [10, 13, 'calendar'],
+    [10.7, 12.7, 'calendar'],
+    [9.7, 11.3, 'sheet'],
+    [8, 10.3, 'sheet'],
+    [8.7, 12.3, 'sheet'],
+  ] as const)(
+    'under a finger: a first move past 10 px at (%f, %f) makes the drag the %s’s',
+    (dx, dy, owner) => {
+      renderAndOpen();
+      const scroller = document.querySelector('[data-scroller="months"]')!;
+      const ancestor = watchAncestor();
+      dragThrough(scroller, [
+        [-dx, dy],
+        [-dx * 2, dy * 2],
+        [-dx * 4, dy * 4],
+      ]);
+      expect(ancestor.seen.includes('touchmove')).toBe(owner === 'sheet');
+      ancestor.stop();
+    },
+  );
+
+  it('under a finger: a fast drag steeper than 45° is the calendar’s when its first move jumps 10 px sideways', () => {
     renderAndOpen();
     const scroller = document.querySelector('[data-scroller="months"]')!;
     const ancestor = watchAncestor();
-    // ~50° off horizontal.
-    swipe(scroller, -60, 72);
+    // 55° at about 800 px/s: the first move lands 20 px out, 11.5 px sideways.
+    dragThrough(scroller, stepsAlong(55, 20, 5));
+    expect(ancestor.seen).not.toContain('touchmove');
+    ancestor.stop();
+  });
+
+  it('under a finger: gives a slow drag steeper than 45° to the sheet', () => {
+    renderAndOpen();
+    const scroller = document.querySelector('[data-scroller="months"]')!;
+    const ancestor = watchAncestor();
+    // 55° in 3.3 px steps: the vertical travel reaches 10 px first.
+    dragThrough(scroller, stepsAlong(55, 3.3, 30));
     expect(ancestor.seen).toContain('touchmove');
+    ancestor.stop();
+  });
+
+  it('under a finger: holds a touch’s moves from the sheet until it has travelled 10 px either way', () => {
+    renderAndOpen();
+    const scroller = document.querySelector('[data-scroller="months"]')!;
+    const ancestor = watchAncestor();
+    const origin = {x: 150, y: 200};
+    touch(scroller, 'touchstart', origin);
+    // The sheet promotes its own drag at 8 px: these moves would start it
+    // before the decision.
+    touch(scroller, 'touchmove', {x: origin.x - 5, y: origin.y + 6});
+    touch(scroller, 'touchmove', {x: origin.x - 7, y: origin.y + 8.5});
+    expect(ancestor.seen).toEqual(['touchstart']);
+    // The vertical travel reaches 10 px first: the sheet's from this move.
+    touch(scroller, 'touchmove', {x: origin.x - 8, y: origin.y + 10.3});
+    expect(ancestor.seen).toEqual(['touchstart', 'touchmove']);
+    touch(scroller, 'touchend');
     ancestor.stop();
   });
 

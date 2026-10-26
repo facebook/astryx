@@ -8,8 +8,9 @@
  *   UIDatePicker: slow releases before and past half a month, a flick that
  *   pages exactly one month, the title following the drag at half a page,
  *   the arrows' 0.3 s sinusoid and its retarget, the arrow step advancing
- *   through a blocked main thread, the sheet taking only drags steeper than
- *   45°, the rubber band past the range's first and last months, RTL paging,
+ *   through a blocked main thread, a drag decided between the grid and the
+ *   sheet as UIKit decides it (once it has moved 10 px either way), the
+ *   rubber band past the range's first and last months, RTL paging,
  *   Reduced Motion cross-fading instead of travelling, and storyboards of the
  *   arrow step and a release. They run under a finger in Chromium (as on
  *   Android) and WebKit alike; with a mouse the calendar keeps today's native
@@ -36,7 +37,6 @@ import {
   startScreencast,
   thawTimers,
   timeline,
-  toTouchEvents,
   touchDriver,
   trackMarker,
   waitForAnimation,
@@ -623,47 +623,71 @@ test('the arrow step keeps advancing every frame through a blocked main thread',
   expect(proof.verdict.failures, proof.summary).toEqual([]);
 });
 
-test('in the sheet, a 35° drag moves nothing and a 60° drag moves the sheet', async ({
+/**
+ * UIKit's split in a sheet (motion/MEASUREMENTS.md M-DP01): a drag on the
+ * grid is decided on the first move where either axis has travelled 10 px,
+ * the grid's when its sideways travel has reached 10 px there and the
+ * sheet's otherwise. At 60 Hz a slow drag steps a few px per move, so its
+ * angle decides; a fast one's first move can land 10 px sideways however
+ * steep it is.
+ */
+test('in the sheet, a drag is decided once it has moved 10 px either way: slow 35° and fast 55° drags are the grid’s, a slow 60° drag the sheet’s', async ({
   page,
 }) => {
   const {driver, sheet, viewport, track, center} = await openCalendar(page);
   const sheetTop = async () =>
     sheet.evaluate(el => el.getBoundingClientRect().y);
   const topBefore = await sheetTop();
-
-  // 35°: past the pager's axis lock (26.6°), not steep enough for the sheet.
-  const shallow = slowDrag(center, -120, 120 * Math.tan((35 * Math.PI) / 180));
-  let shallowMax = 0;
-  await driver.play(shallow, {
-    onEvent: async step => {
-      if (step.type === 'touchMove') {
-        shallowMax = Math.max(shallowMax, (await sheetTop()) - topBefore);
-      }
-    },
+  const along = (degrees: number, length: number) => ({
+    x: center.x - length * Math.cos((degrees * Math.PI) / 180),
+    y: center.y + length * Math.sin((degrees * Math.PI) / 180),
   });
-  await waitForRest(track);
-  expect(shallowMax).toBeLessThan(1);
-  expect(await monthsIn(viewport)).toBeCloseTo(9, 2);
+  /** Plays `script`, sampling the sheet's drop and the grid's offset per move. */
+  const play = async (script: Parameters<typeof driver.play>[0]) => {
+    const seen = {sheetDrop: 0, monthsMin: Infinity, monthsMax: -Infinity};
+    await driver.play(script, {
+      onEvent: async step => {
+        if (step.type === 'touchMove') {
+          seen.sheetDrop = Math.max(
+            seen.sheetDrop,
+            Math.abs((await sheetTop()) - topBefore),
+          );
+          const months = await monthsIn(viewport);
+          seen.monthsMin = Math.min(seen.monthsMin, months);
+          seen.monthsMax = Math.max(seen.monthsMax, months);
+        }
+      },
+    });
+    return seen;
+  };
 
-  // 60°: the sheet's.
-  const steep = drag(
-    center,
-    {x: center.x - 60, y: center.y + 60 * Math.tan((60 * Math.PI) / 180)},
-    {durationMs: 300},
+  // 35°, slow (4 px steps): the sideways travel reaches 10 px first. The
+  // grid follows the finger, the sheet stays, and the slow release settles
+  // back on September.
+  const shallow = await play(
+    drag(center, along(35, 145), {durationMs: 500, restMs: 150}),
   );
-  const lastMove =
-    toTouchEvents(steep).filter(e => e.type === 'touchMove').length - 1;
-  let moves = 0;
-  let steepDrop = 0;
-  await driver.play(steep, {
-    onEvent: async step => {
-      if (step.type === 'touchMove' && moves++ === lastMove) {
-        steepDrop = (await sheetTop()) - topBefore;
-      }
-    },
-  });
-  expect(steepDrop).toBeGreaterThan(20);
+  expect(shallow.sheetDrop).toBeLessThan(1);
+  expect(shallow.monthsMax - 9).toBeGreaterThan(0.2);
+  await waitForRest(track);
   expect(await monthsIn(viewport)).toBeCloseTo(9, 2);
+
+  // 55°, fast (25 px steps, ~1500 px/s): the first move lands 14 px
+  // sideways, so the grid takes the drag and the flick pages to October;
+  // the sheet never moves.
+  const fast = await play(drag(center, along(55, 150), {durationMs: 100}));
+  expect(fast.sheetDrop).toBeLessThan(1);
+  await waitForRest(track);
+  expect(await monthsIn(viewport)).toBeCloseTo(10, 2);
+
+  // 60°, slow (3.3 px steps): the vertical travel reaches 10 px first, so
+  // the sheet takes the drag and the grid never moves.
+  const steep = await play(
+    drag(center, along(60, 120), {durationMs: 600, restMs: 150}),
+  );
+  expect(steep.sheetDrop).toBeGreaterThan(20);
+  expect(steep.monthsMax - steep.monthsMin).toBeLessThan(0.01);
+  expect(await monthsIn(viewport)).toBeCloseTo(10, 2);
 });
 
 test(

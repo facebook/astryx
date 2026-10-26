@@ -29,8 +29,10 @@
  * - `scrollToMonth` runs `setContentOffset(_:animated:)`'s 0.3 s curve (the
  *   header chevrons), restarting from wherever the grid is when a second tap
  *   lands mid-scroll; a far jump (the wheels, Today) moves at once.
- * - Inside a bottom sheet, a drag steeper than 45° belongs to the sheet; one
- *   between the pager's own axis lock and 45° moves neither, as in UIKit.
+ * - Inside a bottom sheet, a drag is decided as UIKit decides it, on the
+ *   first move where either axis has travelled 10 px: the pager's when its
+ *   sideways travel has reached 10 px there, the sheet's otherwise
+ *   (useSheetAxisSplit).
  *
  * Every pane is a fixed six-row grid, so the picker never changes height. The
  * list is long (a century by default) but only a few panes are mounted, each
@@ -60,7 +62,7 @@ import * as stylex from '@stylexjs/stylex';
 import {useCalendarDays} from '../Calendar';
 import {usePager} from '../hooks/usePager';
 import {useDirection, useLocale} from '../i18n';
-import {datePicker} from '../motion/uikit/datePicker';
+import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 import {
   colorVars,
   radiusVars,
@@ -107,8 +109,13 @@ const OVERSCAN = 3;
  * A horizontal wheel gesture (a trackpad's two-finger swipe, or Shift with a
  * mouse wheel) pages one month once it has travelled this far, as the native
  * scroller paged before; a gesture ends after this long without a wheel
- * event, its momentum included. Not UIKit measurements: they only keep the
- * pointer path the native scroller had.
+ * event, its momentum included.
+ *
+ * @source GUESS — not UIKit values: UIKit's grid follows a trackpad's scroll
+ *   and pages on its release rule, which this step stands in for; 25 px turns
+ *   a month on a short deliberate swipe but not on a nudge, and 120 ms
+ *   outlasts the gap between a swipe's momentum events
+ * @measure M-DP02
  */
 const WHEEL_STEP_PX = 25;
 const WHEEL_QUIET_MS = 120;
@@ -359,6 +366,18 @@ function MonthPagerComponent({
     // The settle has come to rest: whatever the frames showed, the title
     // names the month the grid rests on.
     onSettle: index => report(index),
+    // UIKit's split in a sheet (useSheetAxisSplit, motion/MEASUREMENTS.md
+    // M-DP01): the pan begins on the first move where either axis has
+    // travelled its hysteresis, and only if the sideways travel has reached
+    // it there, however steep the drag; it claims nothing earlier, since the
+    // sheet's claim starts at the same move.
+    panOptions: {
+      axisRatio: 0,
+      claimDistance: null,
+      shouldBegin: recognizer =>
+        Math.abs(recognizer.totalTranslation().x) >=
+        UIKIT_GESTURES.pan.hysteresis.value,
+    },
   });
 
   useLayoutEffect(() => {
@@ -545,13 +564,9 @@ function MonthPagerComponent({
   }, [pager, report, rowCount, isWheelRTL, stopFollowingSettle]);
 
   // Inside a bottom sheet, keep the sheet's own touch listener off the drags
-  // that are not the sheet's: those no steeper than
-  // `datePicker.calendar.pager.sheetAxisRatio` (45°). The pager pans only
-  // within its own axis lock (`paging.panAxisRatio`, 26.6°), so the drags in
-  // between move neither, as UIKit's do.
-  useSheetAxisSplit(viewportRef, {
-    verticalDominance: datePicker.calendar.pager.sheetAxisRatio,
-  });
+  // UIKit gives the grid, and off every move before the decision (see
+  // useSheetAxisSplit; the pager's pan begins on the same rule, above).
+  useSheetAxisSplit(viewportRef);
 
   // Move the keyboard focus by whole days (or months) and let the pager
   // follow. The vocabulary is the APG grid's, plus PageUp/PageDown for a

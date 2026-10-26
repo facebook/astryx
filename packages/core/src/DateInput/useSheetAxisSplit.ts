@@ -4,7 +4,7 @@
 
 /**
  * @file useSheetAxisSplit.ts
- * @input A horizontally paging element's ref and the steepest drag it keeps
+ * @input A horizontally paging element's ref
  * @output useSheetAxisSplit: keeps a bottom sheet's touch and pointer
  *   listeners off the drags that belong to the element
  * @position Internal behavior hook; consumed by MonthPager.tsx (the month
@@ -16,13 +16,15 @@
  * a native pan's `pointercancel` did: without this, the sheet would promote
  * a sideways drag on the calendar into a sheet drag.
  *
- * The decision is UIDatePicker's: on the first move past a few pixels, a drag
- * whose vertical travel is at most `verticalDominance` times its horizontal
- * travel is the pager's (`datePicker.calendar.pager.sheetAxisRatio`, 45°) and
- * stops at the element; a steeper one reaches the sheet. The pager itself pans
- * only within its tighter axis lock, so a drag in between moves neither, as
- * in UIKit. A finger's pointer events (which arrive ahead of its touch events)
- * get the same decision as its touch events.
+ * The decision is UIDatePicker's in a sheet: on the first move where either
+ * axis has travelled the pan's hysteresis (10 px), the drag is the pager's
+ * when its sideways travel has reached it there and the sheet's otherwise.
+ * For a steady drag that is 45°; a fast drag whose first move jumps 10 px
+ * sideways is the pager's however steep. The moves before the decision reach
+ * neither, so the sheet's own drag promotion (8 px) cannot start ahead of it:
+ * UIKit's sheet pan and the grid's begin on the same sample. A finger's
+ * pointer events (which arrive ahead of its touch events) get the same
+ * decision as its touch events.
  *
  * Native listeners on the element, in the bubble phase, so they run before
  * the sheet's listener on its body; all passive, so nothing here cancels a
@@ -33,24 +35,34 @@
 
 import {useEffect} from 'react';
 
-/** Movement below this is noise, not a direction. */
-const AXIS_LOCK_SLOP = 6;
+import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 
 /**
- * Keeps the sheet off the drags on `ref`'s element no steeper than
- * `verticalDominance` (vertical over horizontal travel).
+ * The travel, on either axis, at which a drag on the grid is decided: the
+ * pan's hysteresis, where UIKit begins both the sheet's pan and the grid's.
+ *
+ * @source measured: UIKit lab, iOS 26.2 simulator, `.date` `.inline` in a
+ *   medium-detent sheet, 100 pt drags from the grid at 45°, 47.5°, 50°,
+ *   52.5° and 55°, slow and fast, three each, logged per touch sample
+ *   (motion/MEASUREMENTS.md M-DP01), Oct 25 2026: every drag was decided on
+ *   the first sample where |dx| or |dy| reached 10 pt; the grid took it when
+ *   |dx| had (first samples (10.0, 11.0), (10.7, 12.7)) and the sheet when
+ *   only |dy| had ((9.7, 11.3), (8.0, 10.3))
+ */
+const DECISION_TRAVEL = UIKIT_GESTURES.pan.hysteresis.value;
+
+/**
+ * Keeps the sheet off the drags on `ref`'s element that UIKit gives the grid,
+ * and off every move before the decision.
  *
  * @example
  * ```
- * useSheetAxisSplit(viewportRef, {verticalDominance: 1});
+ * useSheetAxisSplit(viewportRef);
  * ```
  */
 export function useSheetAxisSplit(
   ref: React.RefObject<HTMLElement | null>,
-  {
-    verticalDominance = 1,
-    isEnabled = true,
-  }: {verticalDominance?: number; isEnabled?: boolean} = {},
+  {isEnabled = true}: {isEnabled?: boolean} = {},
 ): void {
   useEffect(() => {
     const element = ref.current;
@@ -68,15 +80,18 @@ export function useSheetAxisSplit(
       claimed = null;
     };
 
-    /** Whether a move at (x, y) belongs to the element; decides once. */
-    const owns = (x: number, y: number): boolean => {
+    /**
+     * Whether a move at (x, y) is kept from the sheet: until the decision,
+     * and after it when the drag is the element's. Decides once.
+     */
+    const isKept = (x: number, y: number): boolean => {
       if (claimed == null) {
         const dx = Math.abs(x - originX);
         const dy = Math.abs(y - originY);
-        if (Math.max(dx, dy) < AXIS_LOCK_SLOP) {
-          return false;
+        if (Math.max(dx, dy) < DECISION_TRAVEL) {
+          return true;
         }
-        claimed = dy <= dx * verticalDominance;
+        claimed = dx >= DECISION_TRAVEL;
       }
       return claimed;
     };
@@ -87,7 +102,7 @@ export function useSheetAxisSplit(
     };
     const onTouchMove = (event: TouchEvent) => {
       const touch = event.touches[0];
-      if (touch != null && owns(touch.clientX, touch.clientY)) {
+      if (touch != null && isKept(touch.clientX, touch.clientY)) {
         event.stopPropagation();
       }
     };
@@ -100,7 +115,7 @@ export function useSheetAxisSplit(
       if (
         event.pointerType === 'touch' &&
         event.isPrimary &&
-        owns(event.clientX, event.clientY)
+        isKept(event.clientX, event.clientY)
       ) {
         event.stopPropagation();
       }
@@ -125,5 +140,5 @@ export function useSheetAxisSplit(
       element.removeEventListener('touchend', onEnd);
       element.removeEventListener('touchcancel', onEnd);
     };
-  }, [ref, isEnabled, verticalDominance]);
+  }, [ref, isEnabled]);
 }

@@ -273,7 +273,14 @@ chevron turn, the month/year wheels, the compact popover's springs, the AM/PM
 column following the hour, the looping time columns, the minutes not carrying,
 the turn back onto a bound, the day clamped to the month, and the
 year-and-month mode; the AM/PM column's turn, the disabled chevron and the
-short minute lists' loop followed on Oct 24 2026.
+short minute lists' loop followed on Oct 24 2026; the sheet split (M-DP01:
+100 pt drags from the grid at 45° to 55°, slow and fast, logged per touch
+sample) on Oct 25 2026, decided on the first sample where either axis
+reaches the pan's hysteresis, the grid's when the horizontal travel has.
+
+| ID     | What            | App and gesture                                                                                                                        | Extract                                                                                                                                                  | Method | Feeds                                                       |
+| ------ | --------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ----------------------------------------------------------- |
+| M-DP02 | Trackpad paging | `.date` `.inline` on an iPad with a pointer: two-finger horizontal swipes of 10 to 60 pt, slow and fast, and swipes 50 to 300 ms apart | whether the grid follows the swipe and pages on its end, the travel and speed that turn a month, and the gap after which a swipe counts as a new gesture | C      | the wheel step and quiet time in `DateInput/MonthPager.tsx` |
 
 ## Context menu (UIContextMenuInteraction)
 
