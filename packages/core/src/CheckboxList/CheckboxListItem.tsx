@@ -31,6 +31,8 @@ import {useTranslator} from '../i18n';
 import {ItemDescriptionContext} from '../Item/ItemDescriptionContext';
 import type {ItemAlign} from '../Item';
 import {touchTargetStyles} from '../Indicator/touchTarget.stylex';
+import {listRowTargetStyles} from '../List/listRow.stylex';
+import {isRenderable} from '../utils';
 
 // =============================================================================
 // Styles
@@ -322,14 +324,19 @@ export function CheckboxListItem({
             !effectiveDisabled &&
             !effectiveReadOnly &&
             styles.selected,
-          // Under a finger a compact row that hands its clicks to its
-          // checkbox is at least the theme's touch target tall: a standalone
-          // CheckboxList is a touch target, whatever its density. Balanced
-          // and spacious rows keep List's touch row heights (52 px, 62 px
-          // with a description) whatever the touch target, and a read-only
-          // row with no action of its own (Markdown's task list) keeps its
-          // pitch.
-          density === 'compact' && hasRowInteraction && touchTargetStyles.row,
+          // Under a finger a row that hands its clicks to its checkbox is a
+          // touch target in every density: a standalone CheckboxList is one.
+          // A compact row is at least the theme's touch target tall; a
+          // balanced or spacious row is at least the taller of that and
+          // List's touch row height (52 px, 62 px with a description), which
+          // this replaces. A read-only row with no action of its own
+          // (Markdown's task list) keeps its pitch.
+          hasRowInteraction &&
+            (density === 'compact'
+              ? touchTargetStyles.row
+              : isRenderable(description)
+                ? listRowTargetStyles.touchTwoLine
+                : listRowTargetStyles.touchOneLine),
           xstyle,
         ] as StyleXStyles
       }

@@ -7,8 +7,9 @@
  * @output Proofs that on a touch screen a checkbox and a radio option are as
  *   easy to hit as an iOS control (the theme's `--size-touch-target`, 44 pt
  *   by default, Apple's control size): the checkbox's input is at least
- *   44 × 44 px and centred on its box, its row at least 44 px; a compact
- *   CheckboxList's rows are at least 44 px; each radio row
+ *   44 × 44 px and centred on its box, its row at least 44 px; a
+ *   CheckboxList's rows that toggle are at least 44 px in every density
+ *   (balanced ones keep 52 px and take a larger theme target); each radio row
  *   is at least 44 px and the rows touch; a tap at the edge of those targets
  *   picks the option; a theme's value tunes every target, and 24px keeps
  *   the old touch layout; a list whose gap already gives each option 44 px
@@ -286,6 +287,34 @@ test.describe('selection controls under a finger', () => {
       }
     } finally {
       await context.close();
+    }
+  });
+
+  test('a balanced CheckboxList’s rows keep 52 px under a finger and take a larger theme touch target', async ({
+    page,
+  }) => {
+    // Every density is a touch target (requirement 2); the size is the
+    // theme's (requirement 4), and List's 52 px row holds at the default.
+    const rowHeights = async () =>
+      page
+        .locator('#storybook-root li')
+        .evaluateAll(rows =>
+          rows.map(row => row.getBoundingClientRect().height),
+        );
+    await openStory(page, storybook(), 'core-checkboxlist--default');
+    const atDefault = await rowHeights();
+    expect(atDefault.length).toBeGreaterThan(1);
+    for (const height of atDefault) {
+      expect(height).toBeGreaterThanOrEqual(52 - 0.5);
+    }
+    await page
+      .locator('#storybook-root ul')
+      .first()
+      .evaluate(list =>
+        list.parentElement?.style.setProperty('--size-touch-target', '60px'),
+      );
+    for (const height of await rowHeights()) {
+      expect(height).toBeGreaterThanOrEqual(60 - 0.5);
     }
   });
 
