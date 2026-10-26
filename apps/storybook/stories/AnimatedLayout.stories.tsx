@@ -189,12 +189,15 @@ function LoadMore({animatedLayout}: {animatedLayout: AnimatedLayoutHandle}) {
 }
 
 function Tags({animatedLayout}: {animatedLayout: AnimatedLayoutHandle}) {
+  // Three chips nearly fill the narrow row, so the next one wraps.
   const [tags, setTags] = useState(['design', 'motion', 'layout']);
   const {ref, before} = useReportedChange(animatedLayout, tags.length);
   return (
     <div style={card}>
       <p style={label}>“+ Add tag”: chips that wrap to a new line</p>
-      <div ref={ref} style={{display: 'flex', flexWrap: 'wrap', gap: 6}}>
+      <div
+        ref={ref}
+        style={{display: 'flex', flexWrap: 'wrap', gap: 6, maxWidth: 240}}>
         {tags.map(tag => (
           <span
             key={tag}
