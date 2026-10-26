@@ -14,15 +14,24 @@
  * (the momentum after the lift is still the finger's). A scroll that ends
  * while its finger still rests there stays the finger's until the lift. A
  * scroll the program starts while no finger is down there (`scrollTo`, a
- * status-bar tap) is not. No clock is involved. The host keeps the one
- * finger record; this module adds only passive scroll listeners, and only
- * while something is watched.
+ * status-bar tap) is not. Where the browser sends no `scrollend`, a quiet
+ * spell of `SCROLL_END_FALLBACK_MS` after its last scroll event ends a
+ * finger's scroll instead. The host keeps the one finger record; this module
+ * adds only passive scroll listeners, and only while something is watched.
  */
 
 import {isCoarsePointer, watchCoarsePointer} from './coarsePointer';
 import type {GestureHost} from './GestureHost';
 
 const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
+
+/**
+ * Where the browser sends no `scrollend`, how long a finger-driven scroller
+ * stays quiet (no scroll event) before its scroll counts as ended, in ms:
+ * longer than the gap between a momentum scroll's events, short enough that
+ * a program's scroll right after it is not read as the finger's.
+ */
+const SCROLL_END_FALLBACK_MS = 150;
 
 interface Watch {
   /** Watched scrollers, and how many watchers each has. */
@@ -42,6 +51,31 @@ function start(host: GestureHost, watch: Watch): () => void {
     const target = event.target === doc ? doc : event.target;
     return target instanceof Node ? target : null;
   };
+  // A finger's scroll ends at the scroller's scrollend, or, where the
+  // browser sends none, after a quiet spell.
+  const endScroll = (scroller: Node): void => {
+    if (!watch.fingerScrollers.has(scroller)) {
+      return;
+    }
+    if (host.isFingerDownIn(scroller)) {
+      // The finger still rests there: the scroll is its until the lift.
+      watch.endedWhileDown.add(scroller);
+    } else {
+      watch.fingerScrollers.delete(scroller);
+    }
+  };
+  const scrollEndFallbacks = new Map<Node, ReturnType<typeof setTimeout>>();
+  const clearScrollEndFallback = (scroller: Node): void => {
+    const timer = scrollEndFallbacks.get(scroller);
+    if (timer != null) {
+      clearTimeout(timer);
+      scrollEndFallbacks.delete(scroller);
+    }
+  };
+  const hasScrollEnd = (): boolean => {
+    const view = doc.defaultView;
+    return view != null && 'onscrollend' in view;
+  };
   const onScroll = (event: Event): void => {
     const scroller = scrollerOf(event);
     if (scroller == null || !watch.scrollers.has(scroller)) {
@@ -51,17 +85,21 @@ function start(host: GestureHost, watch: Watch): () => void {
     if (host.isFingerDownIn(scroller)) {
       watch.fingerScrollers.add(scroller);
     }
+    if (watch.fingerScrollers.has(scroller) && !hasScrollEnd()) {
+      clearScrollEndFallback(scroller);
+      scrollEndFallbacks.set(
+        scroller,
+        setTimeout(() => {
+          scrollEndFallbacks.delete(scroller);
+          endScroll(scroller);
+        }, SCROLL_END_FALLBACK_MS),
+      );
+    }
   };
   const onScrollEnd = (event: Event): void => {
     const scroller = scrollerOf(event);
-    if (scroller == null || !watch.fingerScrollers.has(scroller)) {
-      return;
-    }
-    if (host.isFingerDownIn(scroller)) {
-      // The finger still rests there: the scroll is its until the lift.
-      watch.endedWhileDown.add(scroller);
-    } else {
-      watch.fingerScrollers.delete(scroller);
+    if (scroller != null) {
+      endScroll(scroller);
     }
   };
   // A scroll that ended while its finger rested ends with the lift.
@@ -88,6 +126,9 @@ function start(host: GestureHost, watch: Watch): () => void {
     } else {
       doc.removeEventListener('scroll', onScroll, PASSIVE_CAPTURE);
       doc.removeEventListener('scrollend', onScrollEnd, PASSIVE_CAPTURE);
+      for (const scroller of [...scrollEndFallbacks.keys()]) {
+        clearScrollEndFallback(scroller);
+      }
       watch.fingerScrollers.clear();
       watch.endedWhileDown.clear();
     }
