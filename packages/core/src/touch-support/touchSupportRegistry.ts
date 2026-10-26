@@ -2,24 +2,23 @@
 
 /**
  * @file touchSupportRegistry.ts
- * @input The touch module and the touch media query
- * @output getTouchModule, getServerTouchModule and subscribeTouchModule: the
- *   touch module while the primary pointer is coarse, null otherwise; and
- *   resetTouchSupportForTests
+ * @input The touch media query
+ * @output isTouchLayerActive, isTouchLayerActiveOnServer and
+ *   subscribeTouchLayer: whether a touch layer runs now (the primary pointer
+ *   is coarse); and resetTouchSupportForTests
  * @position Internal to touch-support. useTouchLayer reads it
  *   (architecture:react-component-runtime INV13).
  *
- * Nothing installs the module: components import it statically, and this
- * only says whether a touch layer runs now. Under a fine primary pointer the
- * answer is null, so a component keeps its plain behavior and attaches no
- * input listener (`spec:AST-094` FR19). The media query is read when first
+ * Nothing is installed: components import the touch modules statically, and
+ * this only says whether a touch layer runs now. Under a fine primary pointer
+ * the answer is false, so a component keeps its plain behavior and attaches
+ * no input listener (`spec:AST-094` FR19). The media query is read when first
  * asked and followed only while a reader subscribes; once the last reader
  * leaves, the read is forgotten, so the next one reads the pointer afresh.
- * On the server the answer is always null.
+ * On the server the answer is always false.
  */
 
 import {TOUCH_QUERY} from '../utils/touchPresentation';
-import {touchModule, type TouchModule} from './touchModule';
 
 let isCoarse: boolean | null = null;
 let query: MediaQueryList | null = null;
@@ -64,21 +63,21 @@ function readPointer(): boolean {
   return isCoarse;
 }
 
-/** The touch module while the primary pointer is coarse, else null. */
-export function getTouchModule(): TouchModule | null {
-  return readPointer() ? touchModule : null;
+/** Whether a touch layer runs now: the primary pointer is coarse. */
+export function isTouchLayerActive(): boolean {
+  return readPointer();
 }
 
 /** The server's answer: no touch layer runs while rendering on the server. */
-export function getServerTouchModule(): null {
-  return null;
+export function isTouchLayerActiveOnServer(): boolean {
+  return false;
 }
 
 /**
  * Calls `listener` when the answer changes (the primary pointer turns coarse
  * or fine); returns the unsubscribe.
  */
-export function subscribeTouchModule(listener: () => void): () => void {
+export function subscribeTouchLayer(listener: () => void): () => void {
   listeners.add(listener);
   if (listeners.size === 1) {
     // The first layer: read the pointer and follow it from here.

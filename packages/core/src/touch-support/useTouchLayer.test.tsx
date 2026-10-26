@@ -6,7 +6,7 @@
  *   media query, and React's client and server renderers
  * @output Proves the one-element layer lifecycle: no setup under a fine
  *   primary pointer, and no input listener; setup once under a coarse one
- *   with the module and the element; setup when the pointer turns coarse
+ *   with the element; setup when the pointer turns coarse
  *   after the first render, with no remount, and cleanup when it turns fine;
  *   a re-render does not set up again; a new element moves the layer; cleanup
  *   on unmount; balanced under StrictMode; nothing on the server
@@ -17,9 +17,8 @@ import {Activity, StrictMode, useRef} from 'react';
 import {act, render, screen} from '@testing-library/react';
 import {renderToString} from 'react-dom/server';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {touchModule} from './touchModule';
 import {
-  getTouchModule,
+  isTouchLayerActive,
   resetTouchSupportForTests,
 } from './touchSupportRegistry';
 import {useTouchLayer} from './useTouchLayer';
@@ -89,15 +88,12 @@ describe('useTouchLayer', () => {
     );
   });
 
-  it('sets up once under a coarse pointer with the module and the element, and cleans up on unmount', () => {
+  it('sets up once under a coarse pointer with the element, and cleans up on unmount', () => {
     primaryPointer(true);
     const {setup, cleanup, Layer} = recorder();
     const view = render(<Layer />);
     expect(setup).toHaveBeenCalledTimes(1);
-    expect(setup).toHaveBeenCalledWith(
-      touchModule,
-      screen.getByTestId('layer'),
-    );
+    expect(setup).toHaveBeenCalledWith(screen.getByTestId('layer'));
     view.rerender(<Layer />);
     expect(setup).toHaveBeenCalledTimes(1);
     expect(cleanup).not.toHaveBeenCalled();
@@ -116,7 +112,7 @@ describe('useTouchLayer', () => {
     });
     expect(screen.getByTestId('layer')).toBe(element);
     expect(setup).toHaveBeenCalledTimes(1);
-    expect(setup).toHaveBeenCalledWith(touchModule, element);
+    expect(setup).toHaveBeenCalledWith(element);
     act(() => {
       turn(false);
     });
@@ -138,7 +134,7 @@ describe('useTouchLayer', () => {
   it('keeps no answer from a read no layer follows (a hidden Activity), so a later layer reads the pointer as it is', () => {
     const turn = primaryPointer(false);
     // A render with no commit after it reads the pointer, follows nothing.
-    expect(getTouchModule()).toBeNull();
+    expect(isTouchLayerActive()).toBe(false);
     turn(true);
     const {setup, Layer} = recorder();
     render(<Layer />);
@@ -171,10 +167,7 @@ describe('useTouchLayer', () => {
     view.rerender(<Layer tag="span" />);
     expect(cleanup).toHaveBeenCalledTimes(1);
     expect(setup).toHaveBeenCalledTimes(2);
-    expect(setup).toHaveBeenLastCalledWith(
-      touchModule,
-      screen.getByTestId('layer'),
-    );
+    expect(setup).toHaveBeenLastCalledWith(screen.getByTestId('layer'));
   });
 
   it('keeps one layer attached under StrictMode', () => {
