@@ -17,8 +17,9 @@
  * rest, the close button sliding out at the opacity it has. A change of
  * mind mid-flight adds the turn to the curves on screen, on the whole clock,
  * as UIKit's animations do (the animator's `additive`).
- * The clock and the curve are the search table's internal constants: no
- * theme retunes them (touch motion has no theme surface).
+ * The clock and the curve are the search table's constants, not motion roles
+ * yet: they become internal roles once SearchField's own record measures them
+ * (`spec:AST-094` FR4, DEC-5), and no theme retunes them (DEC-11).
  *
  * SYNC: When modified, update searchFieldModel.test.ts and SearchField.tsx.
  */
