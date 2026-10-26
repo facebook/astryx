@@ -27,8 +27,12 @@
  *
  * A tap on the trailing side of the current indicator asks for the next
  * page, on the leading side for the previous one (mirrored in RTL), when the
- * finger lifts, as UIPageControl reports it. The app owns the page (`value`
- * + `onChange`), so the paging view and the control stay in step.
+ * finger lifts, as UIPageControl reports it. Where the primary pointer is
+ * coarse the gesture system's tap recognizer reads the touch; where it is
+ * fine the gesture host listens to nothing (`spec:AST-094` FR19, FR24), so a
+ * click, a mouse's or a touchscreen finger's, pages by the same rule. The app
+ * owns the page (`value` + `onChange`), so the paging view and the control
+ * stay in step.
  *
  * Accessibility: one adjustable element, a `slider` named "Page indicators"
  * whose value reads "Page 3 of 5"; the arrow keys, Home and End change the
@@ -49,6 +53,8 @@ import {
   useRef,
   type CSSProperties,
   type KeyboardEvent,
+  type MouseEvent,
+  type PointerEvent,
   type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -65,7 +71,8 @@ import {
   TapGestureRecognizer,
   useGestureRecognizer,
 } from '@astryxdesign/core/gestures';
-import {pageControl} from '@astryxdesign/core/motion/uikit';
+import {UIKIT_TAP, pageControl} from '@astryxdesign/core/motion/uikit';
+import {TOUCH_QUERY} from '@astryxdesign/core/utils/touchPresentation';
 import {pageControlLayout, tapTarget, windowOffset} from './pageControlModel';
 
 const PC = pageControl;
@@ -179,6 +186,8 @@ function PageControlRow({
   'data-testid': testId,
   ref,
   onKeyDown: onKeyDownProp,
+  onClick: onClickProp,
+  onPointerDown: onPointerDownProp,
   ...htmlProps
 }: PageControlProps) {
   const t = useTranslator();
@@ -193,33 +202,68 @@ function PageControlRow({
     latestRef.current = {current, pages, onChange};
   });
 
+  // A tap or a click at `x` (viewport px): the page beside the current one on
+  // that side.
+  const pageAt = (x: number) => {
+    const root = rootRef.current;
+    const strip = stripRef.current;
+    const {current: page, pages: total, onChange: change} = latestRef.current;
+    const indicator = strip?.children[page];
+    if (root == null || indicator == null || total < 2) {
+      return;
+    }
+    const box = indicator.getBoundingClientRect();
+    const next = tapTarget(
+      x,
+      box.left + box.width / 2,
+      page,
+      total,
+      isRtlElement(root),
+    );
+    if (next !== page) {
+      change(next);
+    }
+  };
+
+  // A coarse primary pointer: the tap recognizer reads the touch.
   useGestureRecognizer(
     rootRef,
     () => new TapGestureRecognizer(),
     recognizer => {
-      if (recognizer.state !== 'ended') {
-        return;
-      }
-      const root = rootRef.current;
-      const strip = stripRef.current;
-      const {current: page, pages: total, onChange: change} = latestRef.current;
-      const indicator = strip?.children[page];
-      if (root == null || indicator == null || total < 2) {
-        return;
-      }
-      const box = indicator.getBoundingClientRect();
-      const next = tapTarget(
-        recognizer.location().x,
-        box.left + box.width / 2,
-        page,
-        total,
-        isRtlElement(root),
-      );
-      if (next !== page) {
-        change(next);
+      if (recognizer.state === 'ended') {
+        pageAt(recognizer.location().x);
       }
     },
   );
+
+  // A fine primary pointer: the gesture host listens to nothing (FR19, FR24),
+  // so the browser's click pages, by UIKit's tap rule: a press that travels
+  // more than `UIKIT_TAP.allowableMovement` is a drag and pages nothing. Under
+  // a coarse one the recognizer already did, so the click that follows a tap
+  // is ignored.
+  const pressRef = useRef<{x: number; y: number} | null>(null);
+  const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    pressRef.current = {x: event.clientX, y: event.clientY};
+  };
+  const onClick = (event: MouseEvent<HTMLDivElement>) => {
+    const press = pressRef.current;
+    pressRef.current = null;
+    const view = event.currentTarget.ownerDocument.defaultView;
+    if (
+      typeof view?.matchMedia === 'function' &&
+      view.matchMedia(TOUCH_QUERY).matches
+    ) {
+      return;
+    }
+    if (
+      press != null &&
+      Math.hypot(event.clientX - press.x, event.clientY - press.y) >
+        UIKIT_TAP.allowableMovement.value
+    ) {
+      return;
+    }
+    pageAt(event.clientX);
+  };
 
   const mergedRef = useMemo(() => mergeRefs(ref, rootRef), [ref]);
 
@@ -289,8 +333,10 @@ function PageControlRow({
         current: current + 1,
         total: pages,
       })}
-      // The caller's handler first: its preventDefault keeps the page.
-      onKeyDown={composeEventHandlers(onKeyDownProp, onKeyDown)}>
+      // The caller's handlers first: their preventDefault keeps the page.
+      onKeyDown={composeEventHandlers(onKeyDownProp, onKeyDown)}
+      onClick={composeEventHandlers(onClickProp, onClick)}
+      onPointerDown={composeEventHandlers(onPointerDownProp, onPointerDown)}>
       <span
         ref={stripRef}
         aria-hidden="true"

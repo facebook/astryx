@@ -11,7 +11,7 @@
  *   __tests__/PageControl.interaction.browser.spec.ts
  */
 
-import {describe, expect, it, vi} from 'vitest';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import {createRef} from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {PageControl} from './PageControl';
@@ -41,6 +41,27 @@ function tap(target: Element, x: number) {
     target.dispatchEvent(event);
   }
 }
+
+/**
+ * A coarse primary pointer (a phone): the gesture host listens only there
+ * (`spec:AST-094` FR19, FR24). jsdom models a desktop otherwise.
+ */
+function asCoarsePointer() {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: query.includes('pointer: coarse'),
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  }));
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 /** WCAG contrast of `fg` at `alpha` over `bg` against `bg`. */
 function contrastOver(fg: number[], bg: number[], alpha: number): number {
@@ -146,13 +167,48 @@ describe('PageControl', () => {
     ).toBeGreaterThan(0);
   });
 
-  it('a tap on the trailing side of the current dot asks for the next page', () => {
+  it('under a finger, a tap on the trailing side of the current dot asks for the next page, once', () => {
+    asCoarsePointer();
     const {onChange} = renderControl();
-    tap(screen.getByRole('slider'), 50);
+    const slider = screen.getByRole('slider');
+    tap(slider, 50);
+    // The click the browser sends after the tap does not page again.
+    fireEvent.click(slider, {clientX: 50});
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith(3);
+  });
+
+  it('with a fine primary pointer, a click pages by the same rule: the trailing side asks for the next page, the leading side for the previous', () => {
+    const {onChange} = renderControl();
+    const slider = screen.getByRole('slider');
+    // jsdom boxes are 0 px wide at x 0: any x > 0 is the trailing side.
+    fireEvent.click(slider, {clientX: 50});
+    expect(onChange).toHaveBeenLastCalledWith(3);
+    fireEvent.click(slider, {clientX: -50});
+    expect(onChange).toHaveBeenLastCalledWith(1);
+  });
+
+  it("with a fine primary pointer, a press that travels more than 45 px is a drag and pages nothing (UIKit's tap rule)", () => {
+    const {onChange} = renderControl();
+    const slider = screen.getByRole('slider');
+    fireEvent.pointerDown(slider, {clientX: 0, clientY: 10});
+    fireEvent.click(slider, {clientX: 46, clientY: 10});
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.pointerDown(slider, {clientX: 0, clientY: 10});
+    fireEvent.click(slider, {clientX: 44, clientY: 10});
+    expect(onChange).toHaveBeenCalledWith(3);
+  });
+
+  it("a caller's onClick runs first", () => {
+    const onClick = vi.fn();
+    const {onChange} = renderControl({onClick});
+    fireEvent.click(screen.getByRole('slider'), {clientX: 50});
+    expect(onClick).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith(3);
   });
 
   it('taps work when the control first renders with no pages and the pages arrive later', () => {
+    asCoarsePointer();
     const onChange = vi.fn();
     const view = render(
       <PageControl count={0} value={0} onChange={onChange} />,
@@ -179,6 +235,7 @@ describe('PageControl', () => {
   });
 
   it('forwards ref to the slider, and taps still page with a ref passed', () => {
+    asCoarsePointer();
     const ref = createRef<HTMLDivElement>();
     const onChange = vi.fn();
     render(<PageControl ref={ref} count={5} value={2} onChange={onChange} />);

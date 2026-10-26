@@ -16,7 +16,7 @@ export const docs = {
     'paging',
   ],
   description:
-    'A row of page indicators under a paging view, as on iOS: one dot per page, the current one highlighted. A tap to either side of the current dot moves one page that way. Experimental: lands in lab first.',
+    'A row of page indicators under a paging view, as on iOS: one dot per page, the current one highlighted. A tap to either side of the current dot (a click with a mouse) moves one page that way. Experimental: lands in lab first.',
   props: [
     {
       name: 'count',
@@ -34,7 +34,7 @@ export const docs = {
       name: 'onChange',
       type: '(page: number) => void',
       description:
-        'Called with the page a tap, an arrow key, Home, End or an assistive technology asks for. Update the paging view and value together.',
+        'Called with the page a tap, a click, an arrow key, Home, End or an assistive technology asks for. Update the paging view and value together.',
       required: true,
     },
     {
