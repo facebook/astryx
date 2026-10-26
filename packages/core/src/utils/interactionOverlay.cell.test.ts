@@ -167,9 +167,10 @@ describe.each([
     const row = mount();
     const fading = layerRules(row, FADING);
     expect(values(fading, 'animation-name')).toHaveLength(1);
-    expect(values(fading, 'animation-duration').map(durationToMs)).toEqual([
-      list.highlight.releaseMs,
-    ]);
+    // The clock, and its reduced-motion cap (DR2), both the table's value.
+    expect([
+      ...new Set(values(fading, 'animation-duration').map(durationToMs)),
+    ]).toEqual([list.highlight.releaseMs]);
     // StyleX writes the curve minified (`cubic-bezier(0,0,.2,1)`): compare
     // the control points.
     const points = (css: string) =>

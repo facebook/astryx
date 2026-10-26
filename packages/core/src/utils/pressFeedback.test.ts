@@ -318,6 +318,35 @@ describe('the release', () => {
     }
   });
 
+  it('caps a retuned release clock at 200 ms under reduced motion (DR2)', () => {
+    const row = rows[0];
+    row.style.setProperty('--motion-timing-press-highlight-out-ms', '400ms');
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) =>
+      query === '(prefers-reduced-motion: reduce)'
+        ? ({
+            matches: true,
+            media: query,
+            onchange: null,
+            addEventListener: () => {},
+            removeEventListener: () => {},
+            addListener: () => {},
+            removeListener: () => {},
+            dispatchEvent: () => false,
+          } as unknown as MediaQueryList)
+        : original.call(window, query)) as typeof window.matchMedia;
+    try {
+      press(row, 'pointerdown', 10, 10);
+      vi.advanceTimersByTime(PRESS_ONSET_MS);
+      press(row, 'pointerup', 10, 10);
+      vi.advanceTimersByTime(200);
+      expect(row.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    } finally {
+      window.matchMedia = original;
+      row.style.removeProperty('--motion-timing-press-highlight-out-ms');
+    }
+  });
+
   it('answers a tap too quick for the delay, at the release', () => {
     press(rows[0], 'pointerdown', 10, 10);
     vi.advanceTimersByTime(20);

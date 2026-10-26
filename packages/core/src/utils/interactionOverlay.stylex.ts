@@ -142,6 +142,12 @@ export const pressReleaseRoles = stylex.defineConsts({
 
 /** The release's clock as CSS: the role, or the table's value. */
 const PRESS_RELEASE_DURATION = `var(${pressReleaseRoles.duration}, ${pressConsts.releaseMs}ms)`;
+/**
+ * Under reduced motion a theme's clock is capped at 200 ms
+ * (`design:reduced-motion` DR2: a touch transition is opacity only and
+ * finishes in 200 ms or less); pressFeedback.ts caps its timer the same way.
+ */
+const PRESS_RELEASE_DURATION_REDUCED = `min(${PRESS_RELEASE_DURATION}, 200ms)`;
 
 const ENABLED = ':where(:not(:disabled,[aria-disabled="true"]))';
 const HOVER_HOVER = '@media (hover: hover)';
@@ -197,6 +203,9 @@ const pressRelease = stylex.keyframes({
 
 /** The row layer's clock as CSS: the same role as the strength's release. */
 const CELL_RELEASE = `var(${pressReleaseRoles.duration}, ${cellPressConsts.cellReleaseMs}ms)`;
+/** The row layer's clock under reduced motion: capped as the strength's is. */
+const CELL_RELEASE_REDUCED = `min(${CELL_RELEASE}, 200ms)`;
+const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 
 /** Opacity 1 → 0: the row layer leaves; its fading arm runs it. */
 const cellRelease = stylex.keyframes({
@@ -244,7 +253,10 @@ const pressReleaseAnimation = {
   },
   animationDuration: {
     default: null,
-    '[data-astryx-press="fading"]': PRESS_RELEASE_DURATION,
+    '[data-astryx-press="fading"]': {
+      default: PRESS_RELEASE_DURATION,
+      '@media (prefers-reduced-motion: reduce)': PRESS_RELEASE_DURATION_REDUCED,
+    },
   },
   animationTimingFunction: {
     default: null,
@@ -478,7 +490,13 @@ export const interactionOverlayStyles = stylex.create({
       },
       animationDuration: {
         default: null,
-        [COARSE]: {default: null, [PRESSED_FADING]: CELL_RELEASE},
+        [COARSE]: {
+          default: null,
+          [PRESSED_FADING]: {
+            default: CELL_RELEASE,
+            [REDUCED_MOTION]: CELL_RELEASE_REDUCED,
+          },
+        },
       },
       animationTimingFunction: {
         default: null,
