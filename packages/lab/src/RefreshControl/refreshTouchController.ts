@@ -467,7 +467,11 @@ export function useRefreshTouchController({
    * fresh element the animator's start-up cost a busy main thread's first
    * frame one more interval in the settle proof. The copy is removed once its
    * fade has ended (it holds 0 until then), so at rest the indicator draws its
-   * spokes once.
+   * spokes once. It is `architecture:component-style-authoring` INV7's
+   * recorded conformance gap until Core's shared transient copy exists. It
+   * cannot be the glyph's `::after`: while the glyph turns, Chromium then ticks
+   * every animation in the glyph on the main thread, restyling and repainting
+   * every frame.
    */
   const playCrossFade = useCallback(() => {
     removeCrossFadeCopy();
