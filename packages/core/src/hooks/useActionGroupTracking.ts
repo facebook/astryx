@@ -45,6 +45,7 @@
 
 import {useEffect, useRef, type RefObject} from 'react';
 import {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer';
+import {lockSelection} from '../gestures/selectionLock';
 import type {GestureTouch, PointerKind} from '../gestures/types';
 import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
@@ -219,7 +220,7 @@ export function useActionGroupTracking(
         // callout on the group, as on UIKit's action rows: the gesture
         // host's selection lock, for as long as the contact is down. A mouse
         // keeps selecting text.
-        preventsTextSelection: true,
+        selectionLock: lockSelection,
         shouldReceiveTouch: (recognizer, touch) =>
           receiveTouch(recognizer, touch, optionsRef.current),
       }),
