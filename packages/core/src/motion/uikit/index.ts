@@ -38,7 +38,7 @@ export {
   type GestureConstantUnit,
   type HapticFeedbackKind,
 } from './gestures';
-export {list, registerListTable} from './list';
+export {list} from './list';
 export {navigation, registerNavigationTable} from './navigation';
 export {registerReorderTable, reorder} from './reorder';
 export {registerScrollTable, scroll} from './scroll';
