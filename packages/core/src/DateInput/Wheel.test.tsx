@@ -256,6 +256,31 @@ describe('Wheel — where it comes to rest', () => {
       ]);
     });
 
+    it('starts a second step’s dip where the first one’s fade-in has the column', () => {
+      // design:reduced-motion DR2: a leaving element fades out where it is,
+      // so a step during the last dip's fade-in never pops back to opaque.
+      stubReducedMotion('coarse');
+      vi.useFakeTimers();
+      renderWheel(10);
+      const scroller = screen.getByRole('listbox', {name: 'Hour'});
+      const animate = vi.fn();
+      scroller.animate = animate as HTMLElement['animate'];
+      pressArrowDown();
+      const [first, timing] = animate.mock.calls[0];
+      expect((first as Keyframe[])[0].opacity).toBe(1);
+      // Past the midpoint: the rows have landed and the column fades back in.
+      act(() => {
+        vi.advanceTimersByTime(timing.duration / 2 + 40);
+      });
+      scroller.style.opacity = '0.5';
+      pressArrowDown();
+      expect(animate).toHaveBeenCalledTimes(2);
+      const [second] = animate.mock.calls[1];
+      expect((second as Keyframe[]).map(frame => frame.opacity)).toEqual([
+        0.5, 0, 1,
+      ]);
+    });
+
     it('changes at once after an earlier touch on a fine pointer, for a key or a tap', () => {
       // A touch screen whose primary pointer is fine (a laptop's): only a
       // touch drag's release fades (DR2); a key step or a row tap is
