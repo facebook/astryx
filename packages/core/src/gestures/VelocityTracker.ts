@@ -2,33 +2,34 @@
 
 /**
  * @file VelocityTracker.ts
- * @input Timestamped positions of a moving contact
- * @output Exports VelocityTracker, the one release-velocity filter every
- *   continuous recognizer uses (`spec:AST-100`), read as a pan recognizer
- *   reads it or as a scroll view reads it
+ * @input Timestamped positions of a moving contact, and the release time
+ * @output Exports VelocityTracker, the one velocity tracker every continuous
+ *   recognizer uses (architecture:interaction-modality INV10,
+ *   spec:AST-100 FR1, FR2)
  * @position Pure math under packages/core/src/gestures; no DOM
  *
- * What a release hands to a spring or a deceleration: the contact's velocity
- * when it lifted, in px per SECOND. One filter for every gesture and every
- * pointer (FR1), UIKit's own, measured. Each sample's instantaneous velocity
- * (position change over timestamp change since the previous sample, the
- * touch-down counting as the first) is blended with the previous one:
+ * What a release hands to a spring or a deceleration: the finger's velocity
+ * when it lifted, in px per SECOND (UIKit's unit for `velocity(in:)`).
  *
- *   pan(n) = w * v(n) + (1 - w) * v(n-1), w = `velocity.currentWeight`,
+ * One filter, iOS's measured blend, updated on each MOVED sample (a sample
+ * at the newest position is not motion):
  *
- * which is UIPanGestureRecognizer's `velocity(in:)`. A scroll view smooths
- * its pan recognizer once more for the velocity it hands
- * `scrollViewWillEndDragging`:
+ * - A pan's velocity is 0.2 times the newest interval's velocity plus 0.8
+ *   times the previous interval's (an interval runs from one moved sample to
+ *   the next; the touch-down counts as the first). With one interval so far
+ *   it is that interval, as UIKit reports it. It reproduces every value
+ *   UIKit reported on six HID streams, and like UIKit's it reacts a frame
+ *   late to an acceleration.
+ * - A scrolling surface's release (paging, a wheel) is 0.25 times the newest
+ *   pan value plus 0.75 times the previous one.
  *
- *   scroll(n) = s * pan(n) + (1 - s) * pan(n-1), s = `velocity.scrollReleaseWeight`.
+ * A release (`velocity(releaseTime)`, `scrollVelocity(releaseTime)`) reads 0
+ * when the contact was still for longer than the stillness interval before
+ * lifting, the one difference from iOS, whose filter never decays and so
+ * flings after a rest; and 0 with fewer than two moved samples.
  *
- * Samples update it: a resting contact that keeps reporting brings it to 0
- * within two samples (three for a scroll view). Read at the lift, a contact
- * still for longer than the stillness interval (`velocity.stillness`) reads
- * 0 (FR2: a still finger never flicks), the one place it differs from iOS,
- * whose blend keeps the last motion through a silent rest. Times are the
- * input events' own timestamps (FR4); thresholds stay with each component
- * (FR3).
+ * Feed it one sample per input event: coalesced samples would change its
+ * timing.
  *
  * SYNC: When modified, update VelocityTracker.test.ts.
  */
@@ -37,45 +38,116 @@ import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 import type {Point, TouchSample} from './types';
 
 export interface VelocityTrackerOptions {
-  /** At most this many samples are kept. */
-  maxSamples?: number;
+  /**
+   * A contact that has not moved for longer than this (ms) before its
+   * release releases at 0 (spec:AST-100 FR2).
+   */
+  stillness?: number;
 }
 
 const ZERO: Point = {x: 0, y: 0};
-const PAN_WEIGHT = UIKIT_GESTURES.velocity.currentWeight.value;
-const STILLNESS = UIKIT_GESTURES.velocity.stillness.value;
-const SCROLL_RELEASE_WEIGHT = UIKIT_GESTURES.velocity.scrollReleaseWeight.value;
+const PAN_CURRENT_WEIGHT = UIKIT_GESTURES.velocity.currentWeight.value;
+const SCROLL_CURRENT_WEIGHT = UIKIT_GESTURES.velocity.scrollReleaseWeight.value;
+
+function blend(weight: number, current: Point, previous: Point): Point {
+  return {
+    x: weight * current.x + (1 - weight) * previous.x,
+    y: weight * current.y + (1 - weight) * previous.y,
+  };
+}
 
 export class VelocityTracker {
-  private readonly maxSamples: number;
-  private samples: TouchSample[] = [];
+  private readonly stillness: number;
+  /** The newest sample added, moved or not. */
+  private newest: TouchSample | null = null;
+  /**
+   * The newest moved samples, oldest first (the touch-down counts as the
+   * first); the filter reads the last three.
+   */
+  private moved: TouchSample[] = [];
+  /** Moved samples since the touch-down. */
+  private moves = 0;
+  /** The newest pan value, and the one before it. */
+  private pan: Point = ZERO;
+  private previousPan: Point = ZERO;
 
   constructor(options: VelocityTrackerOptions = {}) {
-    this.maxSamples =
-      options.maxSamples ?? UIKIT_GESTURES.velocity.maxSamples.value;
+    this.stillness =
+      options.stillness ?? UIKIT_GESTURES.velocity.stillness.value;
   }
 
   /** Forget every sample (a new gesture). */
   reset(): void {
-    this.samples = [];
+    this.newest = null;
+    this.moved = [];
+    this.moves = 0;
+    this.pan = ZERO;
+    this.previousPan = ZERO;
   }
 
   /**
-   * Record a position. Timestamps must not go backwards; a sample at the
-   * same timestamp as the newest replaces it.
+   * Record a position. Timestamps must not go backwards (an older sample is
+   * ignored), and a moved sample at the newest moved sample's timestamp
+   * replaces it. A sample at the newest position is not motion: it changes
+   * no velocity.
    */
   add(x: number, y: number, time: number): void {
-    const newest = this.samples[this.samples.length - 1];
-    if (newest != null && time <= newest.time) {
-      if (time === newest.time) {
-        this.samples[this.samples.length - 1] = {x, y, time};
-      }
+    if (this.newest != null && time < this.newest.time) {
       return;
     }
-    this.samples.push({x, y, time});
-    if (this.samples.length > this.maxSamples) {
-      this.samples.shift();
+    this.newest = {x, y, time};
+    const last = this.moved[this.moved.length - 1];
+    if (last != null && x === last.x && y === last.y) {
+      return;
     }
+    if (last != null && time === last.time) {
+      this.moved[this.moved.length - 1] = {x, y, time};
+    } else {
+      this.moved.push({x, y, time});
+      if (this.moved.length > 3) {
+        this.moved.shift();
+      }
+      if (last != null) {
+        this.moves += 1;
+        this.previousPan = this.pan;
+      }
+    }
+    this.pan = panVelocity(this.moved);
+  }
+
+  /**
+   * Re-base the samples by an offset (a recognizer whose value was set
+   * mid-gesture): every interval, the moved-sample count and the velocity
+   * carry on unchanged.
+   */
+  offsetBy(dx: number, dy: number): void {
+    const shift = (sample: TouchSample): TouchSample => ({
+      ...sample,
+      x: sample.x + dx,
+      y: sample.y + dy,
+    });
+    this.newest = this.newest == null ? null : shift(this.newest);
+    this.moved = this.moved.map(shift);
+  }
+
+  /**
+   * Re-base the samples by a factor (a pinch whose scale was set
+   * mid-gesture): positions and velocities scale with it, and the
+   * moved-sample count carries on.
+   */
+  scaleBy(factor: number): void {
+    const scale = (sample: TouchSample): TouchSample => ({
+      ...sample,
+      x: sample.x * factor,
+      y: sample.y * factor,
+    });
+    this.newest = this.newest == null ? null : scale(this.newest);
+    this.moved = this.moved.map(scale);
+    this.pan = {x: this.pan.x * factor, y: this.pan.y * factor};
+    this.previousPan = {
+      x: this.previousPan.x * factor,
+      y: this.previousPan.y * factor,
+    };
   }
 
   /** Record every sample in order. */
@@ -87,68 +159,62 @@ export class VelocityTracker {
 
   /** The newest sample, if any. */
   get lastSample(): TouchSample | null {
-    return this.samples[this.samples.length - 1] ?? null;
+    return this.newest;
   }
 
   /**
-   * The velocity in px/s as a pan recognizer reports it: pan(n). `at`, the
-   * lift's event time, applies the stillness reset.
+   * The pan's velocity in px/s. Pass the release's event time to read the
+   * release velocity of a dragged surface: 0 after a rest longer than the
+   * stillness interval, or with fewer than two moved samples (AST-100 FR2).
    */
-  velocity(at?: number): Point {
-    if (this.isStill(at)) {
+  velocity(releaseTime?: number): Point {
+    if (releaseTime != null && !this.releases(releaseTime)) {
       return ZERO;
     }
-    return panVelocity(this.samples, this.samples.length);
+    return this.pan;
   }
 
   /**
-   * The velocity in px/s as a scroll view releases it: scroll(n), its pan
-   * recognizer's last two values blended once more. With one interval so
-   * far, the pan's value.
+   * A scrolling surface's release velocity in px/s (paging, a wheel): 0.25
+   * times the newest pan value plus 0.75 times the previous one, with the
+   * same stillness and two-moved-sample rules (AST-100 FR2).
    */
-  scrollReleaseVelocity(at?: number): Point {
-    if (this.isStill(at)) {
+  scrollVelocity(releaseTime: number): Point {
+    if (!this.releases(releaseTime)) {
       return ZERO;
     }
-    const end = this.samples.length;
-    if (end < 3) {
-      return panVelocity(this.samples, end);
-    }
-    return blend(
-      panVelocity(this.samples, end),
-      panVelocity(this.samples, end - 1),
-      SCROLL_RELEASE_WEIGHT,
+    return blend(SCROLL_CURRENT_WEIGHT, this.pan, this.previousPan);
+  }
+
+  private releases(releaseTime: number): boolean {
+    const last = this.moved[this.moved.length - 1];
+    return (
+      this.moves >= 2 &&
+      last != null &&
+      releaseTime - last.time <= this.stillness
     );
-  }
-
-  /** No sample for longer than the stillness interval before `at`. */
-  private isStill(at: number | undefined): boolean {
-    const newest = this.samples[this.samples.length - 1];
-    return at != null && newest != null && at - newest.time > STILLNESS;
   }
 }
 
-/** pan(n) over `samples[0..end)`: one interval so far is reported whole. */
-function panVelocity(samples: ReadonlyArray<TouchSample>, end: number): Point {
-  if (end < 2) {
+/**
+ * UIPanGestureRecognizer's filter over the newest moved samples: 0.2 x the
+ * newest interval's velocity + 0.8 x the previous one's; one interval so far
+ * is reported whole, as UIKit does.
+ */
+function panVelocity(moved: ReadonlyArray<TouchSample>): Point {
+  const n = moved.length;
+  if (n < 2) {
     return ZERO;
   }
-  const current = pairVelocity(samples[end - 2], samples[end - 1]);
-  if (end === 2) {
+  const current = pairVelocity(moved[n - 2], moved[n - 1]);
+  if (n === 2) {
     return current;
   }
   return blend(
+    PAN_CURRENT_WEIGHT,
     current,
-    pairVelocity(samples[end - 3], samples[end - 2]),
-    PAN_WEIGHT,
+    pairVelocity(moved[n - 3], moved[n - 2]),
   );
-}
-
-function blend(current: Point, previous: Point, weight: number): Point {
-  return {
-    x: weight * current.x + (1 - weight) * previous.x,
-    y: weight * current.y + (1 - weight) * previous.y,
-  };
 }
 
 /** Instantaneous velocity (px/s) between two samples, zero across no time. */
