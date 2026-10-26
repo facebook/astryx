@@ -103,7 +103,9 @@ import {
 import {
   MenuBottomSheet,
   MenuBottomSheetActionList,
+  preloadMenuBottomSheetActionList,
 } from './lazyMenuBottomSheet';
+import {menuBottomSheetStyles} from './menuBottomSheet.stylex';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {
@@ -131,12 +133,13 @@ const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(${MENU_BLOCK_CAP}, ${layerViewportInse
 const MENU_TRIGGER_OPEN_BACKGROUND = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
 
 // A sub-menu's drilled-in view with a header or footer renders in the surface
-// host that follows the menu, as the frame marked
-// `data-astryx-submenu-regions="view"` (hidden while a deeper view shows).
-// While one shows, the menu and its header and footer step aside. The rule
-// reads that from the DOM, so no state mirrors which view shows.
+// host that follows the menu (marked `data-astryx-submenu-host`), as the frame
+// marked `data-astryx-submenu-regions="view"` (hidden while a deeper view
+// shows). While one shows, the menu and its header and footer step aside. The
+// rule reads that from the DOM, so no state mirrors which view shows; it names
+// the host by its marker rather than a universal selector.
 const STEPS_ASIDE_FOR_VIEW =
-  ':has(~ * > [data-astryx-submenu-regions="view"]:not([hidden]))';
+  ':has(~ [data-astryx-submenu-host] > [data-astryx-submenu-regions="view"]:not([hidden]))';
 
 const styles = stylex.create({
   triggerOpen: {
@@ -679,6 +682,11 @@ function DropdownMenuBottomSheet({
       setSubmenuPath([]);
     }
   }
+  // The closed sheet renders nothing, so load its rows at rest: the first
+  // open shows the actions at once.
+  useEffect(() => {
+    preloadMenuBottomSheetActionList();
+  }, []);
   const currentSubmenu = submenuPath.at(-1);
   const currentItems = currentSubmenu?.items ?? items;
   const currentTitle = currentSubmenu?.label ?? button.label;
@@ -798,6 +806,23 @@ function DropdownMenuBottomSheet({
     setOpen(!isOpen);
   };
 
+  // The root view's heading stands alone; a sub-menu's sits in a row with its
+  // back button.
+  const viewHeading = (
+    <Heading
+      ref={viewHeadingRef}
+      level={3}
+      tabIndex={-1}
+      xstyle={[
+        bottomSheetStyles.viewHeading,
+        submenuPath.length === 0 && [
+          bottomSheetStyles.rootHeading,
+          menuBottomSheetStyles.headingAlone,
+        ],
+      ]}>
+      {currentTitle}
+    </Heading>
+  );
   return (
     <>
       {renderTrigger != null ? (
@@ -857,12 +882,16 @@ function DropdownMenuBottomSheet({
           {...rest}
           {...mergeProps(
             themeProps('dropdown-menu', {presentation: 'bottom-sheet'}),
-            stylex.props(bottomSheetStyles.content, xstyle),
+            stylex.props(
+              bottomSheetStyles.content,
+              menuBottomSheetStyles.content,
+              xstyle,
+            ),
             className,
             style,
           )}>
-          <div {...stylex.props(bottomSheetStyles.header)}>
-            {submenuPath.length > 0 && (
+          {submenuPath.length > 0 ? (
+            <div {...stylex.props(bottomSheetStyles.header)}>
               <Button
                 label={backLabel}
                 variant="ghost"
@@ -877,18 +906,11 @@ function DropdownMenuBottomSheet({
                 isIconOnly
                 onClick={() => setSubmenuPath(path => path.slice(0, -1))}
               />
-            )}
-            <Heading
-              ref={viewHeadingRef}
-              level={3}
-              tabIndex={-1}
-              xstyle={[
-                bottomSheetStyles.viewHeading,
-                submenuPath.length === 0 && bottomSheetStyles.rootHeading,
-              ]}>
-              {currentTitle}
-            </Heading>
-          </div>
+              {viewHeading}
+            </div>
+          ) : (
+            viewHeading
+          )}
           {isRenderable(header) && (
             <div {...stylex.props(bottomSheetStyles.region)}>{header}</div>
           )}
@@ -1713,7 +1735,7 @@ function DropdownMenuPopover({
       host: surfaceHost,
       ownerId: menuId,
       menuMaxHeight: resolvedMaxHeight ?? undefined,
-      touchModes: touchModes === true,
+      touchModel: touchModes ? 'uikit' : 'pointer',
     }),
     [surfaceHost, menuId, resolvedMaxHeight, touchModes],
   );
@@ -1730,7 +1752,11 @@ function DropdownMenuPopover({
   // menu too; while such a sub-menu's drilled-in view shows there, the menu and
   // the regions step aside (STEPS_ASIDE_FOR_VIEW).
   const surfaceHostElement = (
-    <div ref={attachSurfaceHost} {...stylex.props(styles.surfaceHost)} />
+    <div
+      ref={attachSurfaceHost}
+      data-astryx-submenu-host=""
+      {...stylex.props(styles.surfaceHost)}
+    />
   );
   const renderWithRegions = (menu: ReactNode): ReactNode =>
     hasRegions ? (

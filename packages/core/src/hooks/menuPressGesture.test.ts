@@ -13,17 +13,18 @@ import {
   MENU_PRESS_HANDOFF_PX,
   MENU_PRESS_SETTLE_MS,
   menuPressStep,
-  type MenuPressEvent,
-  type MenuPressGesture,
+  menuPressTransition,
+  type MenuPressInput,
+  type MenuPressState,
 } from './menuPressGesture';
 
 type Row = 'A' | 'B';
 
-function run(events: MenuPressEvent<Row>[]) {
-  let gesture: MenuPressGesture<Row> = IDLE_MENU_PRESS;
+function run(events: MenuPressInput<Row>[]) {
+  let gesture: MenuPressState<Row> = IDLE_MENU_PRESS;
   const effects = [];
   for (const event of events) {
-    const step = menuPressStep(gesture, event);
+    const step = menuPressTransition(gesture, event);
     gesture = step.gesture;
     effects.push(step.effect);
   }
@@ -124,16 +125,21 @@ describe('menuPressStep — inside the menu', () => {
     });
   });
 
+  it('Tracking → Idle: a cancelled MOUSE press keeps its lit row', () => {
+    const {last} = run([downInMenu('A', 'mouse'), move('B'), {type: 'cancel'}]);
+    expect(last).toEqual({type: 'settle', stray: false, dismiss: false});
+  });
+
   it('Tracking → Idle: a cancel with nothing lit has nothing to clear', () => {
     const {last} = run([downInMenu('A'), move(null), {type: 'cancel'}]);
     expect(last).toEqual({type: 'settle', stray: false, dismiss: false});
   });
 
   it('ignores a move or a release with no gesture live', () => {
-    expect(menuPressStep(IDLE_MENU_PRESS, move('A')).effect).toEqual({
+    expect(menuPressTransition(IDLE_MENU_PRESS, move('A')).effect).toEqual({
       type: 'none',
     });
-    expect(menuPressStep(IDLE_MENU_PRESS, up('A')).effect).toEqual({
+    expect(menuPressTransition(IDLE_MENU_PRESS, up('A')).effect).toEqual({
       type: 'none',
     });
   });
@@ -271,7 +277,7 @@ describe('menuPressStep — a finger that opened the menu hands off after travel
     [
       downOnTrigger(pointerType, 0),
       {type: 'opened', time: 150},
-    ] as MenuPressEvent<Row>[];
+    ] as MenuPressInput<Row>[];
   const moveTo = (x: number, y: number, row: Row | null = 'A', time = 400) =>
     ({type: 'move', row, isInMenu: row != null, time, x, y}) as const;
   const upAt = (
@@ -406,5 +412,38 @@ describe('menuPressStep — a finger that opened the menu hands off after travel
         upAt(200, 182, 'A', {time: MENU_PRESS_SETTLE_MS}),
       ]).last,
     ).toEqual({type: 'act', row: 'A'});
+  });
+});
+
+describe('menuPressStep, the released public machine', () => {
+  it('keeps the released shapes: no handoff state, no settle clear', () => {
+    let gesture = menuPressStep(IDLE_MENU_PRESS, {
+      type: 'down',
+      target: 'menu',
+      pointerType: 'touch',
+      row: 'A' as Row,
+      time: 0,
+    }).gesture;
+    gesture = menuPressStep(gesture, {
+      type: 'move',
+      row: 'B' as Row,
+      isInMenu: true,
+      time: 10,
+    }).gesture;
+    const {effect} = menuPressStep(gesture, {type: 'cancel'});
+    expect(effect).toEqual({type: 'settle', stray: false, dismiss: false});
+    const opened = menuPressStep(
+      menuPressStep(IDLE_MENU_PRESS, {
+        type: 'down',
+        target: 'trigger',
+        pointerType: 'touch',
+        row: null,
+        time: 0,
+      }).gesture,
+      {type: 'opened', time: 500},
+    ).gesture;
+    expect(Object.keys(opened).sort()).toEqual(
+      ['openedAt', 'phase', 'pointerType'].sort(),
+    );
   });
 });

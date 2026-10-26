@@ -4,7 +4,7 @@
  * @file menu.ts
  * @input Nothing; data only
  * @output Exports `menu`: the shape the menu grows out of and collapses
- *   into, where it sits over its button on a phone, and UIMenu's haptics
+ *   into, where it sits over its button on a phone
  * @position The menu domain of the UIKit constants table (motion/uikit); its
  *   springs are `springs.menuOpen`, `springs.menuClose` and, under Reduce
  *   Motion, `springs.menuReducedMotion`
@@ -18,12 +18,13 @@
  * `@measure` task that will confirm or replace them. uikit.test.ts enforces
  * both.
  *
- * Registered as the `menu` motion table: its springs and durations are roles
- * a theme may retune. When a finger's press opens the menu is
- * `spec:AST-094` FR29's (as it presses in a fixed bar; after the scroll
- * view's content-touch delay, `scroll.delaysContentTouchesMs`, inside one).
+ * Registered as the `menu` motion table with no roles: `spec:AST-094` FR4
+ * names none of its values, so each stays an internal constant. When a
+ * finger's press opens the menu is `spec:AST-094` FR29's (as it presses in a
+ * fixed bar; after the scroll view's content-touch delay,
+ * `scroll.delaysContentTouchesMs`, inside one).
  * The press values the shared menu press model reads (the drift allowance
- * and the handoff) are `UIKIT_GESTURES.menuPress` (gestures.ts).
+ * and the handoff) are `UIKIT_MENU_PRESS` (gestures.ts).
  *
  * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md
  */
@@ -64,22 +65,12 @@ export const menu = {
    * @measure M-MN3
    */
   openUpwardBelow: 0.5,
-  /**
-   * Haptics: a selection tick each time a scrubbing finger moves the
-   * highlight to another row; nothing at the open or at the pick.
-   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, feedback-generator hooks, Oct 23 2026: a scrub across
-   *   five rows logged one selectionChangedAtLocation: per row change (four),
-   *   between userInteractionStarted at the scrub's start and
-   *   userInteractionEnded at the lift
-   */
-  scrubHaptic: 'selection',
 } as const;
 
 /**
- * Registers the menu table's motion roles with the theme (idempotent; nothing
- * runs on import). The menu's touch module calls it before its first
- * animation; the hold-open delay is a gesture threshold, not a role.
+ * Registers the menu table with the motion registry (idempotent; nothing
+ * runs on import). It lists no roles, so its values stay internal constants
+ * (motion/roles.ts); the hold-open delay is a gesture threshold, not a role.
  */
 export function registerMenuTable(): void {
   registerMotionTable('menu', menu);
