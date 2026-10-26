@@ -799,7 +799,7 @@
     "test:watch": "vitest --root ../..",
     "lint": "eslint src",
     "typecheck:docs": "tsc --project tsconfig.docs.json",
-    "typecheck": "tsc --project tsconfig.json --noEmit"
+    "typecheck": "tsc --project tsconfig.json --noEmit && pnpm typecheck:docs"
   },
   "peerDependencies": {
     "@stylexjs/stylex": "^0.19.0",
@@ -808,8 +808,8 @@
   },
   "devDependencies": {
     "@astryxdesign/a11y-spec": "workspace:*",
-    "@astryxdesign/interaction-harness": "workspace:*",
     "@astryxdesign/cli": "workspace:*",
+    "@astryxdesign/interaction-harness": "workspace:*",
     "@babel/cli": "catalog:",
     "@babel/core": "catalog:",
     "@babel/preset-react": "catalog:",
