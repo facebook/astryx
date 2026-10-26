@@ -908,7 +908,8 @@ const FILL_STEPS = [12, 58, 34, 86] as const;
  * which transitions `width` (a layout property, every frame of every tick).
  * After is a sandbox copy of its track and fill that moves the same fill with
  * `transform: scaleX()` on the same token and curve, so only the technique
- * differs.
+ * differs. It carries ProgressBar's theming-target classes, so the theme
+ * paints it as it paints the real bar.
  */
 export function ProgressFillRig({mode}: {mode: Mode}) {
   const [step, setStep] = useState(0);
@@ -926,14 +927,14 @@ export function ProgressFillRig({mode}: {mode: Mode}) {
             <Text color="secondary">{value}%</Text>
           </HStack>
           <div
-            className={styles.fillTrack}
+            className={`astryx-progress-bar-track ${styles.fillTrack}`}
             role="progressbar"
             aria-label="Uploading"
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={value}>
             <div
-              className={styles.fillScale}
+              className={`astryx-progress-bar-fill ${styles.fillScale}`}
               style={{transform: `scaleX(${value / 100})`}}
             />
           </div>

@@ -315,9 +315,6 @@ export default function PreviewsPage() {
             },
           ]}
         />
-        <DemoBody>
-          <TokenSlider token="--duration-medium" label="fill" max={900} />
-        </DemoBody>
       </DemoCard>
 
       <VStack gap={2}>
