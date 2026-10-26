@@ -59,33 +59,14 @@ export function withStorybook(test: TestType<any, any>): () => string {
   };
 }
 
-/** How openStory opens a story beyond its id and args. */
-export interface OpenStoryOptions {
-  /**
-   * false sets `globals=touchSupport:off`: the story renders without
-   * TouchSupport (apps/storybook/.storybook/touchSupport.ts), to check a
-   * component's plain behavior. @default true
-   */
-  readonly touchSupport?: boolean;
-}
-
 /** Loads a story in the page and waits for its first render, its fonts and two frames. */
 export async function openStory(
   page: Page,
   origin: string,
   storyId: string,
   args?: Readonly<Record<string, string>>,
-  {touchSupport = true}: OpenStoryOptions = {},
 ): Promise<void> {
   const params = new URLSearchParams({id: storyId, viewMode: 'story'});
-  /** Storybook globals, as `key:value` pairs joined by `;`. */
-  const globals: string[] = [];
-  if (!touchSupport) {
-    globals.push('touchSupport:off');
-  }
-  if (globals.length > 0) {
-    params.set('globals', globals.join(';'));
-  }
   if (args != null) {
     params.set(
       'args',

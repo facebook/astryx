@@ -5,18 +5,17 @@
  * @input The gesture core (the arena, the recognizers, velocity tracking and
  *   their geometry), the motion math (springs, decay, projection, rubber
  *   banding), the motion roles, and the shared UIKit tables
- * @output touchModule, the global touch and gesture module's primitives, and
- *   its type TouchModule
- * @position Internal to touch-support. `TouchSupport.install()` registers it,
- *   and components reach it only through useTouchSupport or useTouchLayer
+ * @output touchModule, the touch and gesture module's primitives, and its type
+ *   TouchModule
+ * @position Internal. Core components import it directly (or through
+ *   useTouchLayer), and Lab components through
+ *   `@astryxdesign/core/internal/touch`; a bundler keeps one copy per page
  *   (architecture:react-component-runtime INV13).
  *
- * The one place the module's primitives are gathered. Only the
- * `@astryxdesign/core/touch-support` entry imports this file, so a bundle
- * that never installs TouchSupport carries none of it. Every member is a plain
- * value, never a hook: a component reads the module after it renders (null
- * first, the module once installed), so a hook on it would change the
- * component's hook count. The animator joins the gesture core here.
+ * The one place the module's primitives are gathered. Importing it attaches
+ * no listeners: a recognizer listens only once a component starts it under a
+ * coarse pointer (`spec:AST-094` FR19, FR24). Every member is a plain value,
+ * never a hook. The animator joins the gesture core here.
  *
  * SYNC: When modified, update scripts/touch-support-bundle.test.mjs.
  */
@@ -59,7 +58,7 @@ import {TapGestureRecognizer} from '../gestures/TapGestureRecognizer';
 import {DEFAULT_ENVIRONMENT} from '../gestures/types';
 import {VelocityTracker} from '../gestures/VelocityTracker';
 
-/** The global touch and gesture module, as `TouchSupport.install()` registers it. */
+/** The module's primitives, as components import them. */
 export const touchModule = Object.freeze({
   // The gesture core.
   GestureArena,

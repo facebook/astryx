@@ -259,6 +259,18 @@ export default defineConfig(
       '@typescript-eslint/switch-exhaustiveness-check': reactSeverity,
     },
   },
+  // Core's internal subpaths (`@astryxdesign/core/internal/*`) are reserved
+  // for Astryx's own packages: only Core and Lab may import them.
+  {
+    files: ['**/*.{ts,tsx,js,jsx,mjs,cjs}'],
+    ignores: ['packages/core/**', 'packages/lab/**', '**/dist/**'],
+    plugins: {
+      '@astryx': astryxEslintPlugin,
+    },
+    rules: {
+      '@astryx/no-core-internal-import': 'error',
+    },
+  },
   // Copyright header — all source files must have the Meta copyright notice
   {
     files: ['**/*.{ts,tsx}'],
@@ -636,40 +648,6 @@ export default defineConfig(
       '@astryx/copyright-header': 'error',
     },
   },
-  // ── Core's touch module internals ─────────────────────────────────────────
-  // The gesture core, motion, and touch-support's registry and hook are Core's
-  // package-private path: Core and Lab reach the module through
-  // useTouchSupport, and the exports map holds only the public
-  // `@astryxdesign/core/touch-support` entry
-  // (architecture:react-component-runtime INV13). TypeScript files only, so
-  // this block stays disjoint from the CLI's `no-restricted-imports` blocks.
-  {
-    files: ['**/*.{ts,tsx}'],
-    ignores: ['packages/core/**', 'packages/lab/**', '**/*.d.ts', '**/dist/**'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: [
-                '@astryxdesign/core/touch-support/*',
-                '@astryxdesign/core/gestures',
-                '@astryxdesign/core/gestures/*',
-                '@astryxdesign/core/motion',
-                '@astryxdesign/core/motion/*',
-                '**/core/src/gestures/**',
-                '**/core/src/motion/**',
-                '**/core/src/touch-support/**',
-              ],
-              message:
-                "Core's touch internals are package-private (architecture:react-component-runtime INV13): install the module with `@astryxdesign/core/touch-support`; Core and Lab components reach it through useTouchSupport.",
-            },
-          ],
-        },
-      ],
-    },
-  },
   // ── CLI architecture invariants ────────────────────────────────────────
   // Enforces the layering documented in CONTRIBUTING > "Working on the astryx
   // CLI". Every rule below is already clean across packages/cli, so they are
@@ -797,20 +775,17 @@ export default defineConfig(
             'Register commands with defineCommand(parent, doc, {fn, action}) so --help and the manifest come from the colocated CommandDoc. See CONTRIBUTING > Working on the astryx CLI.',
         },
         {
-          selector:
-            "CallExpression[callee.property.name='padEnd']",
+          selector: "CallExpression[callee.property.name='padEnd']",
           message:
             'Use the formatter kit — record(), records({layout: "inline"}), list() — not .padEnd() (INV23, FR3). See architecture:cli-surface.',
         },
         {
-          selector:
-            "CallExpression[callee.property.name='padStart']",
+          selector: "CallExpression[callee.property.name='padStart']",
           message:
             'Use the formatter kit — record(), records({layout: "inline"}), list() — not .padStart() (INV23, FR3). See architecture:cli-surface.',
         },
         {
-          selector:
-            "CallExpression[callee.property.name='repeat']",
+          selector: "CallExpression[callee.property.name='repeat']",
           message:
             'Use the formatter kit — section(), text(), code() — not .repeat() for layout (INV23, FR3). See architecture:cli-surface.',
         },

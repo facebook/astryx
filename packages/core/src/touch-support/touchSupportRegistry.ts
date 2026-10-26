@@ -2,92 +2,94 @@
 
 /**
  * @file touchSupportRegistry.ts
- * @input None (module-level state)
- * @output installTouchModule, getTouchModule and subscribeTouchModule: the one
- *   module-level registry that holds the installed touch module; whether
- *   `TouchSupport.install()` ran (markInstallRan, installRan); the
- *   registration still waiting for a coarse pointer (setPendingRegistration);
- *   and resetTouchSupportForTests
- * @position Internal to touch-support. `TouchSupport.install()` writes it and
- *   useTouchSupport reads it (architecture:react-component-runtime INV13).
+ * @input The touch module and the touch media query
+ * @output getTouchModule, getServerTouchModule and subscribeTouchModule: the
+ *   touch module while the primary pointer is coarse, null otherwise; and
+ *   resetTouchSupportForTests
+ * @position Internal to touch-support. useTouchLayer reads it
+ *   (architecture:react-component-runtime INV13).
  *
- * No directive and no browser access, so it is importable on the server,
- * where nothing installs. It refers to the module by type only: reading it
- * carries none of the module's code.
+ * Nothing installs the module: components import it statically, and this
+ * only says whether a touch layer runs now. Under a fine primary pointer the
+ * answer is null, so a component keeps its plain behavior and attaches no
+ * input listener (`spec:AST-094` FR19). The media query is read when first
+ * asked and followed only while a reader subscribes. On the server the
+ * answer is always null.
  */
 
-import type {TouchModule} from './touchModule';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
+import {touchModule, type TouchModule} from './touchModule';
 
-let installed: TouchModule | null = null;
-let ran = false;
-let pendingRegistration: (() => void) | null = null;
+let isCoarse: boolean | null = null;
+let query: MediaQueryList | null = null;
 const listeners = new Set<() => void>();
 
-/**
- * Registers the module. Once a module is installed, a later call does
- * nothing, so nothing registers twice.
- */
-export function installTouchModule(module: TouchModule): void {
-  if (installed !== null) {
-    return;
-  }
-  installed = module;
+function notify(): void {
   for (const listener of [...listeners]) {
     listener();
   }
 }
 
-/** The installed module, or null before any install. */
+const onChange = (): void => {
+  isCoarse = query?.matches ?? false;
+  notify();
+};
+
+/** Follows the media query while a reader subscribes. */
+function follow(): void {
+  query?.addEventListener('change', onChange);
+}
+
+function readPointer(): boolean {
+  if (isCoarse === null) {
+    query =
+      typeof window === 'undefined' || typeof window.matchMedia !== 'function'
+        ? null
+        : window.matchMedia(TOUCH_QUERY);
+    isCoarse = query?.matches ?? false;
+  }
+  return isCoarse;
+}
+
+/** The touch module while the primary pointer is coarse, else null. */
 export function getTouchModule(): TouchModule | null {
-  return installed;
+  return readPointer() ? touchModule : null;
+}
+
+/** The server's answer: no touch layer runs while rendering on the server. */
+export function getServerTouchModule(): null {
+  return null;
 }
 
 /**
- * Records that `TouchSupport.install()` ran on this page. Returns whether it
- * had already, so a second call does nothing.
+ * Calls `listener` when the answer changes (the primary pointer turns coarse
+ * or fine); returns the unsubscribe.
  */
-export function markInstallRan(): boolean {
-  const already = ran;
-  ran = true;
-  return already;
-}
-
-/** Whether `TouchSupport.install()` ran on this page. */
-export function installRan(): boolean {
-  return ran;
-}
-
-/**
- * Keeps the cancel for a registration still waiting for a coarse pointer, so
- * a reset can drop it; null once it has registered.
- */
-export function setPendingRegistration(cancel: (() => void) | null): void {
-  pendingRegistration = cancel;
-}
-
-/**
- * Forgets the install, as on a fresh page, a registration still waiting for a
- * coarse pointer included, and tells every reader. For tests only; it is not
- * on `TouchSupport`.
- */
-export function resetTouchSupportForTests(): void {
-  ran = false;
-  const cancel = pendingRegistration;
-  pendingRegistration = null;
-  cancel?.();
-  if (installed === null) {
-    return;
-  }
-  installed = null;
-  for (const listener of [...listeners]) {
-    listener();
-  }
-}
-
-/** Calls `listener` when a module is installed; returns the unsubscribe. */
 export function subscribeTouchModule(listener: () => void): () => void {
+  readPointer();
+  if (listeners.size === 0) {
+    follow();
+  }
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
+    if (listeners.size === 0) {
+      query?.removeEventListener('change', onChange);
+    }
   };
+}
+
+/**
+ * Forgets the pointer read, as on a fresh page, and tells every reader to
+ * read again. For tests only.
+ */
+export function resetTouchSupportForTests(): void {
+  query?.removeEventListener('change', onChange);
+  query = null;
+  isCoarse = null;
+  if (listeners.size > 0) {
+    readPointer();
+    follow();
+  }
+  notify();
 }

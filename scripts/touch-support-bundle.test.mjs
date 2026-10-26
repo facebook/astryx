@@ -6,13 +6,10 @@
  *   (.github/scripts/lib/component-size.js); core's package.json; core's and
  *   the CLI's docs; core's and Lab's component source
  * @output Pins architecture:react-component-runtime INV13's bundle and
- *   boundary claims: Core's public entries carry none of the touch module
- *   until an app installs TouchSupport; a component that reads the module
- *   through useTouchSupport or useTouchLayer carries none of it, nor the
- *   gesture core and motion math it gathers; the install entry carries all of
- *   it;
- *   no export map entry, `.doc.mjs`, or component `import()` reaches the
- *   internals
+ *   boundary claims: Core's public entries carry none of the touch and gesture
+ *   module until a component imports it; two components that import it share
+ *   one copy per page; only the internal `internal/touch` entry reaches it,
+ *   and no consumer doc or component `import()` does
  * @position Node test over source, so it needs no build
  */
 
@@ -27,30 +24,24 @@ const CORE_SRC = path.join(REPO, 'packages/core/src');
 const require = createRequire(path.join(REPO, 'package.json'));
 const esbuild = require('esbuild');
 
-/**
- * The touch module: the file that gathers its primitives. An entry that
- * imports it, directly or through TouchSupport, carries the whole module.
- */
-const MODULE_INPUT = /^packages\/core\/src\/touch-support\/touchModule\.ts$/;
-
-/** The module and what it gathers: the gesture core, the motion math and tables. */
+/** The module and the gesture core it gathers. */
 const PRIMITIVE_INPUT =
-  /^packages\/core\/src\/(gestures\/|motion\/|touch-support\/touchModule\.ts$)/;
+  /^packages\/core\/src\/(gestures\/|touch-support\/touchModule\.ts$)/;
 
-const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-touch-support-'));
+const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-touch-module-'));
 afterAll(() => {
   fs.rmSync(scratch, {recursive: true, force: true});
 });
 
 /**
- * Bytes each source module contributes to everything `entry` can load, eager
- * chunks and import() targets alike, built as the size report builds a
- * component import. React and StyleX stay external: they hold no touch code.
+ * Each output of a build of `entries`, with the bytes each source module puts
+ * in it, built as the size report builds a component import. React and StyleX
+ * stay external: they hold no touch code.
  */
-function bytesByInput(entry) {
+function outputsOf(entries) {
   const result = esbuild.buildSync({
     absWorkingDir: REPO,
-    entryPoints: [entry],
+    entryPoints: entries,
     outdir: path.join(scratch, 'out'),
     bundle: true,
     splitting: true,
@@ -70,13 +61,21 @@ function bytesByInput(entry) {
     write: false,
     logLevel: 'silent',
   });
-  const bytes = {};
-  for (const output of Object.values(result.metafile.outputs)) {
-    for (const [input, {bytesInOutput}] of Object.entries(output.inputs)) {
-      bytes[input] = (bytes[input] ?? 0) + bytesInOutput;
-    }
-  }
-  return bytes;
+  return Object.values(result.metafile.outputs).map(output =>
+    Object.fromEntries(
+      Object.entries(output.inputs).map(([input, {bytesInOutput}]) => [
+        input,
+        bytesInOutput,
+      ]),
+    ),
+  );
+}
+
+/** The inputs matching `pattern` that put bytes in `bytes`. */
+function bytesOf(bytes, pattern = PRIMITIVE_INPUT) {
+  return Object.entries(bytes).filter(
+    ([input, size]) => pattern.test(input) && size > 0,
+  );
 }
 
 /** A scratch entry module with `source`. */
@@ -84,13 +83,6 @@ function entryWith(name, source) {
   const file = path.join(scratch, name);
   fs.writeFileSync(file, source);
   return file;
-}
-
-/** The inputs matching `pattern` that put bytes in the bundle. */
-function bytesOf(bytes, pattern = MODULE_INPUT) {
-  return Object.entries(bytes).filter(
-    ([input, size]) => pattern.test(input) && size > 0,
-  );
 }
 
 /** Every file under `dir` whose name matches `pattern`. */
@@ -115,92 +107,42 @@ describe('the touch module in bundles', () => {
     ['the hooks entry', 'hooks/index.ts'],
     ['the utils entry', 'utils/index.ts'],
   ])('is absent from %s', (_name, entry) => {
-    expect(bytesOf(bytesByInput(path.join(CORE_SRC, entry)))).toEqual([]);
+    for (const bytes of outputsOf([path.join(CORE_SRC, entry)])) {
+      expect(bytesOf(bytes)).toEqual([]);
+    }
   });
 
-  it.each([
-    [
-      'useTouchSupport',
-      'useTouchSupport.ts',
-      `export function Glue() {
-  return useTouchSupport() === null ? 'plain' : 'touch';
-}`,
-    ],
-    [
-      'useTouchLayer',
-      'useTouchLayer.ts',
-      `export function Glue(props: {target: {current: Element | null}}) {
-  useTouchLayer(props.target, touch => {
-    const recognizer = new touch.TapGestureRecognizer();
-    return recognizer.addListener(() => {});
-  });
-  return null;
-}`,
-    ],
-  ])(
-    'is absent from a component that reads it through %s',
-    (name, file, body) => {
-      const glue = entryWith(
-        `glue-${name}.tsx`,
-        `import {${name}} from ${JSON.stringify(
-          path.join(CORE_SRC, 'touch-support', file),
+  it('is one copy that two components importing it share', () => {
+    const component = name =>
+      entryWith(
+        `${name}.ts`,
+        `import {touchModule} from ${JSON.stringify(
+          path.join(CORE_SRC, 'internal/touch.ts'),
         )};
-${body}
+export const ${name} = () => new touchModule.GestureArena();
 `,
       );
-      const bytes = bytesByInput(glue);
-      expect(bytes[`packages/core/src/touch-support/${file}`]).toBeGreaterThan(
-        0,
-      );
-      expect(bytesOf(bytes, PRIMITIVE_INPUT)).toEqual([]);
-    },
-  );
-
-  it('is present once the app installs TouchSupport', () => {
-    const app = entryWith(
-      'app.ts',
-      `import TouchSupport from ${JSON.stringify(
-        path.join(CORE_SRC, 'touch-support/index.ts'),
-      )};
-TouchSupport.install();
-`,
+    const outputs = outputsOf([component('First'), component('Second')]);
+    const holding = outputs.filter(
+      bytes => bytes['packages/core/src/gestures/GestureArena.ts'] > 0,
     );
-    const present = Object.fromEntries(
-      bytesOf(bytesByInput(app), PRIMITIVE_INPUT),
-    );
-    for (const input of [
-      'packages/core/src/touch-support/touchModule.ts',
-      'packages/core/src/gestures/GestureArena.ts',
-      'packages/core/src/gestures/GestureRecognizer.ts',
-      'packages/core/src/gestures/TapGestureRecognizer.ts',
-      'packages/core/src/gestures/LongPressGestureRecognizer.ts',
-      'packages/core/src/gestures/PanGestureRecognizer.ts',
-      'packages/core/src/gestures/VelocityTracker.ts',
-      'packages/core/src/motion/spring.ts',
-      'packages/core/src/motion/decay.ts',
-      'packages/core/src/motion/projection.ts',
-      'packages/core/src/motion/rubberBand.ts',
-      'packages/core/src/motion/roles.ts',
-      'packages/core/src/motion/uikit/gestures.ts',
-      'packages/core/src/motion/uikit/springs.ts',
-    ]) {
-      expect(present[input], input).toBeGreaterThan(0);
+    expect(holding).toHaveLength(1);
+    for (const bytes of outputs.filter(output => output !== holding[0])) {
+      expect(bytesOf(bytes)).toEqual([]);
     }
   });
 });
 
 describe('the touch module internals', () => {
-  it('have no entry in the exports map beside the public TouchSupport entry', () => {
+  it('have no entry in the exports map beside the internal touch entry', () => {
     const {exports} = JSON.parse(
       fs.readFileSync(path.join(REPO, 'packages/core/package.json'), 'utf8'),
     );
-    expect(exports['./touch-support']?.source).toBe(
-      './src/touch-support/index.ts',
+    expect(exports['./internal/touch']?.source).toBe('./src/internal/touch.ts');
+    const other = Object.keys(exports).filter(key =>
+      /^\.\/(gestures|motion|touch-support)(\/|$)/.test(key),
     );
-    const internal = Object.keys(exports).filter(key =>
-      /^\.\/(gestures|motion)(\/|$)|^\.\/touch-support\//.test(key),
-    );
-    expect(internal).toEqual([]);
+    expect(other).toEqual([]);
   });
 
   it('are named by no consumer doc', () => {
@@ -209,7 +151,7 @@ describe('the touch module internals', () => {
       ...filesUnder(path.join(REPO, 'packages/cli/assets/docs'), /\.mjs$/),
     ];
     const naming = docs.filter(file =>
-      /\b(GestureArena|GestureRecognizer|useTouchSupport|touchModule|touchSupportRegistry)\b/.test(
+      /\b(GestureArena|GestureRecognizer|touchModule)\b|@astryxdesign\/core\/internal\//.test(
         fs.readFileSync(file, 'utf8'),
       ),
     );
@@ -222,7 +164,7 @@ describe('the touch module internals', () => {
       ...filesUnder(path.join(REPO, 'packages/lab/src'), /\.(ts|tsx)$/),
     ].filter(file => !/\.(test|spec)\.(ts|tsx)$|__tests__/.test(file));
     const dynamic = sources.filter(file =>
-      /\bimport\(\s*['"][^'"]*(\/gestures\/|\/motion\/|touch-support)/.test(
+      /\bimport\(\s*['"][^'"]*(\/gestures\/|\/motion\/|touch-support|internal\/touch)/.test(
         fs.readFileSync(file, 'utf8'),
       ),
     );
