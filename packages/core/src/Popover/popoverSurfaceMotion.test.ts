@@ -17,7 +17,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {cubicBezier} from '../motion/bezier';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {popover, springs, timing} from '../motion/uikit';
-import {isPresentationShield} from '../Layer/presentationHold';
+import {isInputShield} from '../Layer/inputHold';
 import {
   createPopoverSurfaceMotion,
   POPOVER_EXIT_COPY_ATTRIBUTE,
@@ -524,7 +524,7 @@ describe('createPopoverSurfaceMotion', () => {
     // The layer runtime's own hold: its shield, inside the layer.
     const holdOf = (element: HTMLElement) =>
       [...element.children].find((node): node is HTMLElement =>
-        isPresentationShield(node),
+        isInputShield(node),
       ) ?? null;
 
     it('takes every touch until the present spring settles, as UIKit ignores touches during the presentation', async () => {
@@ -588,7 +588,7 @@ describe('createPopoverSurfaceMotion', () => {
       reset.motion.reset();
       expect(holdOf(reset.element)).toBeNull();
       // No hold is left in the top layer (the dismissal's copy is, by design).
-      expect([...shown].filter(node => isPresentationShield(node))).toEqual([]);
+      expect([...shown].filter(node => isInputShield(node))).toEqual([]);
     });
 
     it('holds under Reduce Motion too, for the length of the cross-fade', async () => {

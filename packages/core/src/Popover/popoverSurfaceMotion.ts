@@ -6,7 +6,7 @@
  * @file popoverSurfaceMotion.ts
  * @input A Popover's layer element, the source it hangs off, the motion
  *   foundation (compositor animator, spring math), the UIKit table and the
- *   layer runtime's exit copy and presentation hold
+ *   layer runtime's exit copy and input hold
  * @output Exports `popoverCollapsedState` (where the popover meets its source
  *   and the shape it grows from), `popoverFrame` (the transform and opacity
  *   at a progress of the spring), `POPOVER_EXIT_COPY_ATTRIBUTE` and
@@ -51,7 +51,7 @@
  * 60 ms in neither dismisses it nor reaches what is under it, and the
  * presentation finishes. The browser's light dismiss cannot be cancelled from
  * an event, so the presentation runs under the layer runtime's own hold
- * (`holdPresentation`, scope `viewport`), the one the Layer module places for
+ * (`holdInput`, scope `viewport`), the one the Layer module places for
  * every component whose layer presents under a finger: its shield covers the
  * viewport from inside the layer until the present spring settles, so a tap
  * on it is a tap inside the popover, which the browser leaves open, and a
@@ -81,7 +81,7 @@ import {
   POPOVER_PRESENT_SPRING,
 } from '../motion/uikit/springs';
 import {placeLayerExitCopy} from '../Layer/layerExitCopy';
-import {holdPresentation} from '../Layer/presentationHold';
+import {holdInput} from '../Layer/inputHold';
 import {
   frameOf,
   popoverCollapsedState,
@@ -311,7 +311,7 @@ export function createPopoverSurfaceMotion(
     presentHandle = handle;
     // No touch reaches the page, or dismisses the popover, until it is in.
     releaseHold();
-    holdRelease = holdPresentation(element, {until: handle, scope: 'viewport'});
+    holdRelease = holdInput(element, {until: handle, scope: 'viewport'});
     void handle.finished.then(() => {
       if (presentHandle === handle) {
         presentHandle = null;

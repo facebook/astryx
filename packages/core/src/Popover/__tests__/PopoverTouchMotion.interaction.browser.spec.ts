@@ -57,9 +57,9 @@ import {popoverCollapsedState, popoverFrame} from '../popoverSurfaceFrame';
 
 const storybook = withStorybook(test);
 
-// The layer runtime's presentation hold puts its shield inside the layer: a
+// The layer runtime's input hold puts its shield inside the layer: a
 // manual popover, hidden from assistive technology, that is not the exit
-// copy (`holdPresentation`, Layer/presentationHold.ts).
+// copy (`holdInput`, Layer/inputHold.ts).
 const SHIELD = '[popover][aria-hidden="true"]:not([data-astryx-popover-exit])';
 
 interface Box {
