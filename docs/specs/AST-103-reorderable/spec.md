@@ -40,8 +40,7 @@ not reorder loads none of it.
 ## Non-goals
 
 - Moving several items in one drag, a destination predicate, moves between
-  collection instances, and keyboard reparenting in a tree; each can be added
-  later without changing this contract.
+  collection instances; each can be added later without changing this contract.
 - Moving items between collections, freeform canvas placement, and file drops.
 - Reorder motion values, thresholds, and timing: these stay internal
   (`spec:AST-002` FR3) and come from the theme's motion roles and
@@ -98,7 +97,7 @@ announcements are those of FR3 and FR4, and the tree adds no option.
   `isReorderable(key)` predicate keeps a row in place: a row it rejects shows no
   handle and cannot be picked up (DEC-2). A row it rejects at either end of the
   collection also bounds the drop range: nothing drops beyond it, and a
-  keyboard or assistive-technology move past it is not offered.
+  keyboard or assistive-technology move past it is refused and announced (FR4).
   Each item's key comes from the data,
   never from React's `key`: List reads each `ListItem`'s `itemKey`, a string;
   a collection whose items already carry an identity, such as TreeList's `id`
