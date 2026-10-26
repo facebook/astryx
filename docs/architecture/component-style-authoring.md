@@ -281,6 +281,8 @@ before assigning a verdict.
 - `spec:AST-080/DEC-4` — every pull request reports component JavaScript and
   CSS size; touch-only JavaScript over 2 KB or CSS over 1 KB is flagged, and
   shared value tables ship only the rows a component uses (INV6).
+- `spec:AST-080/DEC-5` — touch primitives come from the shared internal touch
+  modules, or the cost is justified; no component lazy-loads its own (INV6).
 - `spec:AST-017/DEC-26` — components are built from minimal DOM, with two
   budgets and an owner-recorded exception path; reducing DOM is compatible
   (INV7).
