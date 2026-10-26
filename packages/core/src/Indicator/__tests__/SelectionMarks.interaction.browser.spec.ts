@@ -11,7 +11,9 @@
  *   both radios of a moving choice, and under Reduce Motion; a mouse keeps the
  *   theme's transition (the negative control); the presented frames of a tap
  *   show no colour between the two states (storyboard); and a main thread
- *   blocked right after the change keeps showing the whole mark.
+ *   blocked right after the change keeps showing the whole mark (judging the
+ *   frame on screen when the block began and the frames inside it, after a
+ *   precondition that the change was presented first).
  * @position Real-engine layer of the touch mark change; the stylesheet layer
  *   is Indicator/selectionMotion.test.ts.
  */
@@ -251,6 +253,75 @@ const same = (a: RGB, b: RGB) => near(a, b, 2);
 /** Further than this from both ends is a blend between the two states. */
 const PRESS_TOLERANCE = 20;
 
+/** Attempts a busy-window probe gets to land its block after the change. */
+const BUSY_ATTEMPTS = 3;
+
+interface BusyProbe {
+  /** The colour at the rest state's sample point before the tap. */
+  readonly restColour: RGB;
+  /** Each frame on screen during the block, oldest first. */
+  readonly colours: RGB[];
+  readonly trace: Record<string, unknown>;
+}
+
+/**
+ * One busy-window probe: a tap checks "Push notification", then the main
+ * thread blocks for 500 ms. It returns what the screen showed during the
+ * block: the last frame presented before the block began, plus every frame
+ * presented inside it. Chromium's screencast sends nothing for an unchanged
+ * screen, so once the row's 200 ms press release has ended the block window
+ * can hold no frame at all, and an earlier captured frame was never on screen
+ * during it. The capture starts before the tap, so the frame that presents
+ * the change is in it; when the block began before that frame (a lagging
+ * runner), the probe missed its window and returns null.
+ */
+async function probeBusyAfterChange(page: Page): Promise<BusyProbe | null> {
+  await openStory(page, storybook(), 'core-checkboxlist--default');
+  const driver = await touchDriver(page);
+  const at = await centreOf(page, 'Push notification', 'checkbox');
+  const sample = {x: at.x - at.w / 2 + 3, y: at.y};
+  const restColour = await pagePixel(page, sample);
+  const cast = await startScreencast(page);
+  await driver.tap(at);
+  await expect(
+    page.getByRole('checkbox', {name: 'Push notification'}),
+  ).toBeChecked();
+  // The change has been presented; now the app does 500 ms of work.
+  await frames(page, 1);
+  const busy = await blockMainThread(page, 500);
+  await frames(page, 2);
+  const shot = await cast.stop();
+  const decoded = await decodeFrames(page, shot, sample);
+  const read = shot.map((frame, i) => ({
+    t: frame.t,
+    colour: decoded[i].colour,
+  }));
+  const change = read.find(
+    frame => !near(frame.colour, restColour, PRESS_TOLERANCE),
+  );
+  if (change == null || change.t > busy.from) {
+    return null;
+  }
+  const before = read
+    .filter(frame => frame.t >= change.t && frame.t < busy.from)
+    .at(-1);
+  const inside = read.filter(
+    frame => frame.t >= busy.from && frame.t <= busy.to,
+  );
+  const onScreen = before == null ? inside : [before, ...inside];
+  return {
+    restColour,
+    colours: onScreen.map(frame => frame.colour),
+    trace: {
+      busy,
+      frames: shot.length,
+      changePresented: change.t,
+      inBlock: inside.length,
+      judged: onScreen.map(frame => ({t: frame.t, colour: frame.colour})),
+    },
+  };
+}
+
 test.describe('selection marks under a finger', () => {
   // One touch model on every touch device: a coarse primary pointer. The
   // touch page here is the engine's own touch emulation; real iOS Safari and
@@ -426,39 +497,38 @@ test.describe('selection marks under a finger', () => {
   test('a main thread blocked right after the change shows the whole mark', async ({
     page,
   }, testInfo) => {
-    await openStory(page, storybook(), 'core-checkboxlist--default');
-    const driver = await touchDriver(page);
-    const at = await centreOf(page, 'Push notification', 'checkbox');
-    const sample = {x: at.x - at.w / 2 + 3, y: at.y};
-    const restColour = await pagePixel(page, sample);
-    await driver.tap(at);
-    await expect(
-      page.getByRole('checkbox', {name: 'Push notification'}),
-    ).toBeChecked();
-    // The change has been presented; now the app does 500 ms of work.
-    await frames(page, 1);
-    const cast = await startScreencast(page);
-    const busy = await blockMainThread(page, 500);
-    await frames(page, 2);
-    const shot = await cast.stop();
-    const inBlock = shot.filter(f => f.t >= busy.from && f.t <= busy.to);
-    const colours = (
-      await decodeFrames(page, inBlock.length > 0 ? inBlock : shot, sample)
-    ).map(frame => frame.colour);
-    // Whatever the block lets through shows the checked mark, whole.
+    // A probe lands when the change is on screen before the block begins. On
+    // a lagging runner it can miss that window; it then runs again on a fresh
+    // page, so a late frame never reads as a missing mark.
+    let probe: BusyProbe | null = null;
+    for (
+      let attempt = 1;
+      attempt <= BUSY_ATTEMPTS && probe == null;
+      attempt++
+    ) {
+      const target = attempt === 1 ? page : await page.context().newPage();
+      try {
+        probe = await probeBusyAfterChange(target);
+      } finally {
+        if (target !== page) {
+          await target.close();
+        }
+      }
+    }
+    if (probe == null) {
+      throw new Error(
+        `in ${BUSY_ATTEMPTS} attempts the change was never presented before the block`,
+      );
+    }
+    const {colours, restColour} = probe;
+    // Whatever the screen showed during the block is the checked mark, whole.
     for (const colour of colours) {
       expect(near(colour, restColour, PRESS_TOLERANCE)).toBe(false);
       expect(near(colour, colours[0], 8)).toBe(true);
     }
     await writeEvidence(
       'selection-marks/busy-after-change',
-      {
-        'trace.json': JSON.stringify(
-          {busy, frames: shot.length, inBlock: inBlock.length, colours},
-          null,
-          2,
-        ),
-      },
+      {'trace.json': JSON.stringify(probe.trace, null, 2)},
       testInfo,
     );
   });
