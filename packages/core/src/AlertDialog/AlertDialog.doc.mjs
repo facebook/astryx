@@ -177,6 +177,13 @@ export const docs = {
         'Requested dialog width. Dialog preserves this preferred width and clamps it to the container and dynamic viewport with token gutters. Without one, a finger gets the iOS alert width, 320.',
     },
     {
+      name: 'presentation',
+      type: "'adaptive' | 'dialog'",
+      default: "'adaptive'",
+      description:
+        "How the alert presents under a finger. 'adaptive' gives a touch screen the native alert's touch model: a finger is tracked across both actions as one group and runs the action it lifts on. 'dialog' keeps the dialog a mouse gets on every device, with each button's own press and click.",
+    },
+    {
       name: 'isInline',
       type: 'boolean',
       default: 'false',
