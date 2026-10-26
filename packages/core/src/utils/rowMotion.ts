@@ -38,6 +38,9 @@ import type {SpringDescription} from '../motion/spring';
  */
 export type RowCrossfade = 'entrance' | 'exit';
 
+/** Below this speed (units per second) a property counts as resting. */
+const MOVING_VELOCITY = 0.001;
+
 /** The elements this module has moved: their animator holds our state. */
 const moved = new WeakSet<HTMLElement>();
 /** The latest motion started on each element through this module. */
@@ -82,7 +85,9 @@ export function presentation(
 /**
  * Springs `element`'s `property` to its resting value (0, or 1 for opacity)
  * after moving it by `shift` (the layout just moved it the other way),
- * keeping the velocity it has on screen. Resolves true when it arrives.
+ * keeping the velocity it has on screen. From rest it starts when the
+ * browser commits it, so a busy first frame cannot skip into the curve; a
+ * motion already running keeps its clock. Resolves true when it arrives.
  */
 export async function springHome(
   element: HTMLElement,
@@ -95,6 +100,7 @@ export async function springHome(
   const animator = animatorFor(element);
   const value = animator.get(property, at);
   const velocity = animator.getVelocity(property, at);
+  const moving = isMoving(element) || Math.abs(velocity) > MOVING_VELOCITY;
   if (shift !== 0) {
     animator.set({[property]: value + shift});
   }
@@ -103,7 +109,10 @@ export async function springHome(
     animator.animate(
       {[property]: property === 'opacity' ? 1 : 0},
       {spring, velocity: {[property]: velocity}},
-      {at, crossfadeAs},
+      // From rest, the browser's commit sets the start, so a busy first
+      // frame cannot skip the curve; a motion already running keeps its
+      // clock (`at`) along with the velocity on screen.
+      moving ? {at, crossfadeAs} : {crossfadeAs},
     ),
   ).finished;
 }
