@@ -1,0 +1,1592 @@
+{
+  "schemaVersion": 2,
+  "version": "0.7.5",
+  "branch": "release/v0.7.5",
+  "cutSha": "0aec0eebf0aac325e2014214736eb846f66e558b",
+  "changesets": [
+    {
+      "path": ".changeset/announce-same-frame-join.md",
+      "sha256": "9b5766430c0293f2c870010843ae257605f2dafa0fd1f56eb3956fbfba30c78b",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "useAnnounce: messages announced in the same frame are now joined, in order, into one announcement instead of the last one replacing the others, and an identical repeat is spoken once, so a screen reader no longer misses an earlier status such as a result count announced alongside a confirmation. An empty message still clears the region, including joined messages not yet spoken. This meets the shared-channel requirement in spec:AST-086 (FR9). Introduced in [#8244](https://github.com/facebook/astryx/pull/8244); final-state evidence: [#8294](https://github.com/facebook/astryx/pull/8294).",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/announcer-role-query.md",
+      "sha256": "e4f07ad3c58d12bceb6913a9516f195679ecfd5c0ead9eda379e210795b60f9e",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "docs",
+      "headline": "EmptyState now announces through the page's shared announcer regions, a visually hidden `role=\"status\"` (polite) and `role=\"alert\"` (assertive) pair that Astryx mounts once on `document.body`. In tests, a query such as `getByRole('status')` or `getByRole('alert')` can therefore match one of these regions rather than your component. Scope the query to your component with `within(container)`.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/ast-085-complexselector.md",
+      "sha256": "793ea40da97c1b4b26e335c5f4169d6709d48b5034d361a3524e1b93f6d03cb7",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "ComplexSelector ignores value commits from an already-open popup while disabled, without changing focus or caller-owned content.",
+      "contributors": [
+        "korkt-kim"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/ast-085-inputgroup.md",
+      "sha256": "5a9543da54005acc407844f7ad63998eb28137940d5cb4adb74c5e13e95b2b41",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Propagate InputGroup disablement to compatible inputs and Button addons so child editing, opening, and form participation use their disabled behavior. Preserve nested group disablement and explicitly disabled children without modifying caller-rendered controls.",
+      "contributors": [
+        "korkt-kim"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/ast-085-tokenizer.md",
+      "sha256": "f815e8810dbca25a625d59e2b10f9d266d8573182b5fb0aa1d8b1fe3d464dcfa",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Tokenizer blocks token additions, creation, removal, and supplied removal callbacks while disabled, preserving enabled removal and focus behavior. Disabled form values are omitted instead of rendering native-disabled hidden inputs.",
+      "contributors": [
+        "korkt-kim"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/badge-label-required-doc.md",
+      "sha256": "e59792ddb5c730d1fee293723ad31919ac49af4e17473e281362d430f6d6d337",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "docs",
+      "headline": "Badge's documentation marks `label` as required, as its props type already does. `astryx component Badge` and the docsite no longer list it as optional.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/bottom-sheet-fewer-elements.md",
+      "sha256": "28148a36f27305d023b44c70e7e8ad153c25a5678dbe073cdab619ca7073967b",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "BottomSheet renders fewer elements, with no visual change: an open sheet's dialog positions the panel itself, the grab bar draws its pill, and a closed sheet renders no edge tint. A switcher's sheets keep their positioner.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/bottom-sheet-toast-outlet.md",
+      "sha256": "86e88a1b91e2ac78ca348a52b6bfe71d0e2f05bf0eb501449e2cb278bece5e52",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Toasts stay visible and clickable above an open BottomSheet. The `ToastViewport` from `LayerProvider` (or the one `useToast` mounts on its own) now moves into a standalone BottomSheet while it is open, as it already does into an open Dialog, and back as soon as the sheet starts closing. Before, the sheet covered the viewport and made it inert, so a click on a toast's action landed on the sheet instead and could dismiss it. A sheet with `hasScrim={false}` is not modal and leaves the viewport in place. Sheets inside a `BottomSheetSwitcher` are unchanged.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/busy-start-not-after-outcome.md",
+      "sha256": "999006f13e4956d309001ea600864df47b7f6ca904a57c84561b79e89a09c998",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "BaseTypeahead and CommandPalette: when a typed search finishes before its \"Loading\" announcement is made, the pending \"Loading\" is dropped, so a screen reader no longer hears \"Loading\" after the result count or has it replace the count. This meets the busy-announcement requirement in spec:AST-086 (FR8).",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/card-press-overlay-touch.md",
+      "sha256": "cbd34f2f6fd28d779491b75d18c5789c41e909ea9c93afb8ac0dc8c5db717f84",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "ClickableCard, SelectableCard and an interactive Thumbnail now show the pressed overlay under a finger in apps that compile Astryx from source with cascade layers (the Vite and PostCSS integrations, and Storybook). The touch press was written as an arm of a custom property whose own default sits outside the cascade layer the arm lands in, so the default always won and a touch press painted nothing. The press now paints as the overlay's own image, at the press's strength, and fades at the lift; mouse hover and press are unchanged, and the precompiled stylesheet keeps the same pixels.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/chatcomposer-status-own-content.md",
+      "sha256": "c834b9d9c8b5a03b2422e0fdb1f724e906719d9f7e4afc5af874428d6702c92d",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`ChatComposer`'s status bar announces through the shared own-content announcement module (`spec:AST-086` FR11–FR13). It still announces errors assertively and warnings politely, once per occasion, but a status that is already showing while the page loads is no longer announced, and it speaks the bar's rendered text without the decorative icon.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/clear-button-keeps-the-keyboard.md",
+      "sha256": "8dbe067ce4e86e4170b7dc4d589e02541fa8e29e6b7deacbfbfc017a1070b7ce",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Tapping the clear button of a TextInput or NumberInput that is not focused now brings up the iOS keyboard. The field took focus a frame after the tap, and iOS Safari only raises its keyboard for a focus made while handling the touch, so the field ended up focused with no keyboard. The focus now happens inside the tap, still with `preventScroll`, so a scrolled page stays put.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/cli-experimental-render.md",
+      "sha256": "8d87dc68f3dc6b27dff88c8a007c329e4dc1db61c47a81ac2313864a92d20884",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "experimental",
+      "headline": "New command `astryx experimental render <page>`: renders a page with your installed Astryx components to ONE self-contained HTML file. The file inlines only the Core CSS rules the page uses plus the page's own StyleX styles and local images, runs no script, loads nothing from the network, follows light and dark mode, and carries the page's source. `astryx experimental render --reverse <file.html>` writes that source back byte for byte, rebuilds a page from Astryx markup when the source was removed, and refuses other HTML. Warnings flag what may not look as meant, such as a `ListItem` given children instead of `label`. Experimental commands live under `astryx experimental`, are marked `[experimental]` in help and the manifest, and may change or be removed in any patch release. Guide: `astryx docs cli/experimental/render-pages`.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/cli-icon-sets-authoring.md",
+      "sha256": "0eaac4640f7bd83e7c4432a1dcf1aa9e7966534d681756348ba1fd46da5531da",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "experimental",
+      "headline": "Icon sets: authoring a set from a library takes fewer steps and fewer guesses. Only the experimental icon commands, the icon-set guide, and `astryx template` in a project that sets `experimental.iconSet` change; without the opt-in, every stable command reads as before except the `experimental` group's summary in `astryx help` and `astryx manifest`, which now names icon sets: \"Try features that may change in a patch release: icon sets (find icons, build an icon-set package)\" (it read \"Try features that may change or be removed in a patch release\").",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": "- **`experimental icon new-set`.** `--from` maps a definition only when an icon has its exact name and lists those entries for review; other likely icons come back as at most three suggestions per definition, never written. It records the library and version as `source`, copies the library's license notices and takes its license, keeps `--exclude` in the data file's `exclude` for every refresh, and names the exports it left out as not icons. It writes only the set's own files: its receipt names, as text to copy, the entry change that makes the set's icons import from the package by name (never editing a built or CommonJS entry), the `react` and optional `@types/react` and `@astryxdesign/cli` peers, and the `typecheck` script the package is missing, and `integration check` names the same entry change, once, until it is made. `--variants` and `--default-variant` declare variants; `--display-name` and `--description` fill the descriptor, on a refresh too; a refresh that first records the library also copies its license notices and takes its license, and a refresh changes only the icons the refreshed library supplies (your own `./` artwork and other libraries' icons keep their map entries and variants, and `add --all` leaves them alone), knows an existing icon by the library export it re-exports, so the icon keeps its export name exactly, its map entries, variants, and words when its id changes, and the change is listed under `renamed`. Ids keep a dimension as one word (`squares-2x2`), a library's other names for an icon become its words, and `…Provider` and `…Context` exports are never icons. A library of 1,600 icons is read in about two seconds.\n- **`experimental icon add` and `map`.** `add --variant <name> --from <module> --all` adds a variant for every icon at once; a `./` file is named as written, and the receipt names the package.json `files` that publishes it. `map --pairs a=b,c=d` writes many entries in one checked write, and both accept a definition's kebab id; `map` names an icon by its id, its export name in any case, or another name its library exports it as, never by one word of its id.\n- **Options decided in pairs.** Every icon command refuses two options it would not both honor, with `ERR_INVALID_OPTION` (such as `--list --definitions`, `--definitions --limit 3`, `--all-icons` with a query, `add --all --id`, or `new-set --exclude` without `--from`), instead of ignoring one.\n- **All or nothing.** When `new-set`, `add`, `map`, or `new-definition` fails partway, every file is as it was and the error is `ERR_WRITE_FAILED`.\n- **Sets named consistently.** Every icon command that names a set (`--set` with a query or `--all-icons`, `<set>/<id>`, `use`, and `add`, `map`, `new-definition` in the package) reports a set that is not there as missing and an invalid one as withdrawn, with why, both `ERR_NOT_FOUND`.\n- **Listing.** `experimental icon --set <set> --all-icons` lists every icon of a set (`icon.setIcons`) and `--definitions` lists every Astryx definition, built in or optional (`icon.definitions`). Search shows partial matches only when nothing better matches.\n- **Templates.** A mapped icon drops the library's sizing props (`size`, `strokeWidth`, `absoluteStrokeWidth`), reported as `dropped`, and comments on a rewritten import line are kept.\n- **Definitions.** Thirteen new icon definitions (`rotate`, `flipHorizontal`, `flipVertical`, `alignStart`, `alignCenter`, `alignEnd`, `panelLeft`, `panelRight`, `gitBranch`, `gitFork`, `scale`, `cpu`, `textCase`), declared by the templates that draw them. Built-in and optional definitions gain common glyph names as words; seven optional definitions lose a word that named a different thing, so a search for that word no longer finds a set's icon through them: `star` (`bookmark`), `database` (`table`), `raiseHand` (`stop`), `redo` (`forward`), `activity` (`monitor`), `archive` (`store`), `mobile` (`device`).\n- **Checks.** `integration check` suggests icons by the same rule and lists each optional definition with its description and words; the version-drift warning gives the refresh command."
+    },
+    {
+      "path": ".changeset/cli-tokenizer-blocks-mobile-width.md",
+      "sha256": "087c0c24009f4cd50450c658e36c912e4c0d3c6735e4ee0c451f7170b11b789c",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "docs",
+      "headline": "The Tokenizer block templates (`Tokenizer`, `Clear`, `Creatable`, `End Content`, `Icon`, `Max Entries`, `Overflow`, `States`) size their field through a column that is 400px wide where there is room and shrinks with its container, instead of a fixed 400px width, so the live examples fit a phone-sized screen without clipping.",
+      "contributors": [
+        "imdreamrunner"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/cli-verify-npm-command.md",
+      "sha256": "f68cfaaa35e40569c44c42bd6da0971f325d6b4565239376fce095b06a384e4d",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx integration verify` starts npm the way the rest of the CLI does: npm's own entry file, run with the Node that runs the CLI, when one is found. An `npm` earlier on the PATH that is not npm itself, such as a wrapper that refuses npm commands, no longer fails the check with \"npm pack failed\".",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/codeblock-copy-never-covers-code.md",
+      "sha256": "3ba84e5e622b4c9aee236e8010d0c93aaf760777f80f0f8bcae52bf81a210beb",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "A CodeBlock with no title or language label no longer lets its Copy button cover code. The button sits in its own column beside the code instead of over it, so a long first line ends before the button, whether the code is scrolled sideways, wrapped, or right-to-left. The button is centred on the first line, so a one-line block reads as one row with even space above and below, and a block that grows line by line keeps the button where it was. Blocks with a header are unchanged.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/codeblock-end-content.md",
+      "sha256": "3e979018d9f9cce49c3900f631b835ffce506cd8df4e4774ab3f97f0c36e2d25",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "`CodeBlock` takes `endContent`, a slot for your own controls, such as a \"Run in terminal\" button. They appear just before Copy: in the header when the block has one, otherwise beside the code in the top inline-end corner, never over it. The slot never creates a header, and clicking or pressing keys in it never collapses the block. For single-line mode, leave out the title and pass `hasLanguageLabel={false}`: a one-line command then reads as one row with its controls beside it.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/codeblock-languages.md",
+      "sha256": "9faab497f4800856d5e3a43bd7163384ef8c44fddbc71c6d72af574a2735002a",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "`CodeBlock` highlights C, C++, SQL, Rust, Kotlin, Swift, and Go with no setup.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": "Every other language is opt in, one at a time:\n\n- Import that language on its own and pass it as `language`, for example `graphql` from `@astryxdesign/core/CodeBlock/languages/graphql`.\n- Modules ship for `graphql`, `java`, `thrift`, `objectiveC` (path `languages/objective-c`), `toml`, `powershell`, `ruby`, `lua`, and `dockerfile`.\n- A string such as `language=\"graphql\"` still selects only a built-in language.\n\nYour own languages work the same way. `createCodeLanguage({name, identifiers, fileExtensions, fileNames, tokenize})` makes a language value from your own tokenize function.\n\nThe built-in tokenizer stays within 4,608 bytes gzipped. Each module adds at most 512 bytes, and only when you import it."
+    },
+    {
+      "path": ".changeset/codeblock-snippet-example-headerless.md",
+      "sha256": "249525396ecc3ea3be346b5bbb8b5f4bf94960b5f89320b7c56c4cfb0b73ea4a",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "docs",
+      "headline": "The CodeBlock \"Code — Snippet\" example shows one-line commands with no header. Copy sits beside the code in its own column, so each command reads as a single row. A third block shows a long first line that ends before the button.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/codeblock-tokenizer-codemod.md",
+      "sha256": "ee32e624fa9ed3bccf8d35c9edd193a8e150d5849883e048695c170ad33e35ed",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        },
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "CodeBlock's `tokenizer` prop is deprecated in favour of a custom language value: pass `language={createCodeLanguage({name, identifiers, tokenize})}` with the same function. The prop still works exactly as released. `astryx upgrade` rewrites it when it sits beside a static `language`. A function literal becomes `language={createCodeLanguage({name: 'zig', identifiers: ['zig'], tokenize: (code) => …})}`. A name or call-free property becomes `language={fn ? createCodeLanguage({…, tokenize: fn}) : 'zig'}`, since it may be undefined. Uses it cannot prove are left unchanged, with a TODO comment: a computed, missing, or `plaintext` language, any other tokenizer value, or a block that spreads props.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/codemod-skip-unparseable-protected.md",
+      "sha256": "ad005a5858a77c4679b55dd17c816f6e23775ed84ba4ed772737252c6a0b5791",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx upgrade` no longer fails when a protected file (vendored, generated, or ignored) does not parse, such as a vendored bundle written for another toolchain. It skips the file, lists it under `declinedCandidates` with the parse error's location, and completes the rest of the upgrade. A file upgrade owns that does not parse still fails the run, and protected files that parse are still checked and reported.",
+      "contributors": [
+        "ejhammond"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/codemod-walk-skip-symlinked-dependencies.md",
+      "sha256": "d00c19fe6b1b3df3b1509936d1982ea5af50616bdf40bf628d5f39b6defe554d",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx upgrade` no longer scans through a symbolic link into installed dependencies or version-control metadata, such as a symlinked `node_modules` or a link into a package store. Those trees were already never written; skipping them stops a run from the project root spending minutes reading them. Other symbolically linked folders are still scanned so their required changes are reported.",
+      "contributors": [
+        "ejhammond"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/command-palette-empty-long-text.md",
+      "sha256": "5bd5c70546205cebf84fdc2b20d5170998fce4f6df8ecfac974f39a381c2d575",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "CommandPaletteEmpty wraps a long unbroken word, such as a file path or URL in an empty-search message, inside the palette instead of spilling it past both edges where its start and end could not be read.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/complex-selector-combobox-trigger.md",
+      "sha256": "5d4b7c34b4ef4cf0e61db6128b5882c1294d1af13892e66dbaa2bf6345f04853",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "ComplexSelector: the trigger is now a combobox whose popup is a dialog, so a screen reader hears when the field is required (`aria-required` was ignored on the old button role). With `renderTrigger`, the caller's control receives the same `role`, `aria-required`, and `aria-disabled`, is named by `label` unless the selector is given `aria-label` or `aria-labelledby`, and a disabled control keeps its tab stop but does not open. Button keeps a caller-supplied `aria-disabled` and `aria-busy`, so a Button used as that control carries the selector's state. Tests that find the trigger with `getByRole('button')` should use `getByRole('combobox')`.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/complexselector-trigger-caller-name.md",
+      "sha256": "3c0169266521a9d85d12185f5d67a9b0dba4122d251c4a09639c5b1fcc043cb2",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "ComplexSelector: a caller's `aria-label` or `aria-labelledby` now names the built-in trigger, replacing the field label, as it already did for a `renderTrigger` control. Before, the built-in trigger always took its name from the label, so a name passed to the selector was never announced.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/context-menu-long-press-lift.md",
+      "sha256": "aacb83f74bdbcd983c3d259422af22ae41412877fd3ef0a21ee9977bcb211e9b",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "A ContextMenu opened by a finger's long press stays open as the finger lifts: the compatibility `mousedown` the browser sends for that press as it lifts no longer reads as a press outside. Every other press outside the menu closes it, or leaves it open, as before.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/data-token-upgrade-no-fallbacks.md",
+      "sha256": "2ffa647d9b5507263573f946752ed4a761768709c4a0009a4838c4d9cc772d1e",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx upgrade --from` a version before 0.7.0 no longer fails on `var(--color-data-*)` uses without a fallback. Prebuilt `@astryxdesign/core/astryx.css` defines all 56 data-color defaults, and source builds read data colors through `dataVars`, so the upgrade no longer asks for fallbacks. A graph-based source build, such as `@astryxdesign/build/vite`, that reads raw `var(--color-data-*)` strings without a `dataVars` import should import `dataVars` from `@astryxdesign/core/theme/dataTokens.stylex`; the upgrade no longer reports those uses. Stale generated theme CSS that still emits the defaults at `:root` still fails the upgrade.",
+      "contributors": [
+        "ejhammond"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/dialog-reduced-motion-touch-fade.md",
+      "sha256": "b86df62a2fc16979d1dc36cea5f32e8cae9f5ca5c4764312cc8c1264a40392e2",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Dialog: with reduced motion on a touch screen, the dialog fades in where it lands, in 200 ms or less, instead of appearing with no transition. With a mouse it still appears at once, and it never slides or scales in under reduced motion (design:reduced-motion).",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/doc-edits-seen-in-process.md",
+      "sha256": "40d56cfbedb1c60e9e945bd54444d5d57e30284389f32c6c24b24ac1c50acd64",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "A process that calls the CLI API more than once, such as a docs site's search or an agent harness, now sees an edit to a doc file it already read: `search()`, `docs()` and `component()` read the edited file's new content on their next call, instead of what the process first imported. An unchanged doc file is still imported once and shared, so readers keep getting the module's own doc.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/dropdown-menu-radio-item-caller-handlers.md",
+      "sha256": "3b1105dab52a0933fd6cdfa3b3cf57d507781c9536ac6c4a3c611252eaa7f788",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`DropdownMenuRadioItem` now runs a caller's `onClick` and `onPointerMove`. Before, the row's own selection and hover-focus handlers replaced them, so they never ran. They now run after the row selects its value and takes hover focus, as they already do on `DropdownMenuItem` and `DropdownMenuCheckboxItem`; a disabled row still selects nothing and does not call `onClick`. The documentation also marks `value` and `label` as required and no longer says disabled radio items stay reachable with the arrow keys, which DropdownMenu currently skips.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/dropdown-menu-submenu-docs.md",
+      "sha256": "c7b0346b9e99862f8d53cb7b8026769253f4cb554245cb9a12333f1198ff520e",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "docs",
+      "headline": "`DropdownMenuSubMenu`'s documentation marks `label` and `children` as required, as its props type already does, and documents `menuDataTestId`, the test id for the sub-menu's own menu (the flyout, or the drilled-in list on a phone). The `presentation` prop's JSDoc now declares its `'adaptive'` default.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/dropdownmenu-submenu-host-selector.md",
+      "sha256": "266b6c63a62259ab80d258e3c3c0987dba61275305dcdbcc72f8a2fdae79c495",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "chore",
+      "headline": "Internal: DropdownMenu's rule that steps the root menu aside while a sub-menu's drilled-in view shows names its surface host by an internal marker instead of a universal selector. No visible or behavior change.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/edge-autoscroll.md",
+      "sha256": "cc729c462016b411b5dcc70e67a82859ee490f604a2e4a1997d21d3286c4ac2f",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "chore",
+      "headline": "Internal: a menu's edge autoscroll runs on a shared edge-autoscroll timer (utils/edgeAutoscroll.ts), with the same zone, step and interval as before. No behavior change.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/empty-state-no-live-role.md",
+      "sha256": "fcb5a037776d13685239f5ec1a1063b98ca6e31f58dee0694b785ee77e4e9bb3",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "EmptyState's root no longer carries `role=\"status\"`, so it is not a live region that mounts already holding its text, which screen readers announce unreliably (`spec:AST-086` FR2). Apps need no code change. An EmptyState rendered or changed while the page loads announces nothing; one that appears later, or whose title or description changes later, announces its title and description once through the shared polite live region; inside a live container such as `ChatMessageList`'s log, the container announces it (`spec:AST-086` FR4). A `role` you pass now reaches the root instead of being replaced; tests that found EmptyState with `getByRole('status')` need another selector.",
+      "contributors": [
+        "harjothkhara"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/family-members-from-source.md",
+      "sha256": "71323b45661c6402e649f125229d0dbc254c3b794a27848e0832ea024ed3ca14",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "A component family lists the same members whether or not its package has been built. When the package's `exports` give a `source` condition and that file is in the package, the CLI reads the family's members from it instead of from the built output. Before, a member that only the package's entry exports, such as Lab's `TourStep`, was listed only after a local build. The official package list now includes `TourStep`.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/gesture-pan.md",
+      "sha256": "7a57d1d8426360288fe7b0e75c2b274b2a9fa373946f30428a0c36c12b2a028a",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "chore",
+      "headline": "Internal: the pan gesture recognizer, with UIKit's measured hysteresis and velocity filter. Not exported from the package entry point; no component uses it yet.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/gesture-recognizer-core.md",
+      "sha256": "0e861b49920070cde89b63bc02961d0468e4e1960dc99604c11b9d040bf83c82",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "chore",
+      "headline": "Internal: the gesture recognizer core for touch presentations: UIKit's recognizer state machine and the arena that settles which recognizer owns a touch. Not exported from the package entry point; no component uses it yet.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/gesture-tap-long-press.md",
+      "sha256": "6494493da683485565d7cddba84dd79770dec95de24014279096e845094f7a01",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "chore",
+      "headline": "Internal: tap and long-press gesture recognizers with UIKit's measured thresholds. Not exported from the package entry point; no component uses them yet.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/hover-layers-open-on-tap.md",
+      "sha256": "acf69ac0c571858368f52fe34b5807e61faf0ac1cf41ac9d08e2183a2ace782b",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Tooltip and HoverCard answer a touch only once it is a tap. On a touch screen they used to open as soon as a finger landed on a trigger that performs no action, so a scroll that started on an info icon or an abbreviation opened its tooltip and left it open, and a finger resting on the trigger opened it too. Now the tap opens the layer when the finger lifts, and a touch that turns into a scroll never opens it, the way a tap on iOS behaves. A tap-opened tooltip or card closes when a tap outside lifts, or as soon as a scroll that starts outside takes the touch, which is when iOS dismisses a popover; before, it closed the moment a finger landed anywhere else. Triggers that perform an action keep their tap, and `touchTrigger` keeps its meaning.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/input-group-member-selector.md",
+      "sha256": "2369417f57410ec1e258c8f0f644d079d95d12e21c89e431581cce3bf20d63b5",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "chore",
+      "headline": "Internal: InputGroup's edge rules name group members by an internal marker instead of a universal selector. No visible or behavior change.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/item-swipe-pinch-zoom.md",
+      "sha256": "bb5b427ff0836112ce1d64079d5107114979fc5b47eae1a8e56fad47b46a33b2",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "A row with `swipeActions` no longer blocks pinch-zoom. A pinch that started on a swipeable `Item` or `ListItem` did nothing, because the row declared `touch-action: pan-y`, and a sideways pinch could also be taken as a swipe. The row now leaves pinch to the browser (`pan-y pinch-zoom`), and a second finger that lands before the swipe has begun, on the row or anywhere else, hands the touch to the browser, so the page zooms and the row stays where it is. One-finger swipes and vertical scrolling are unchanged.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/layer-slot-second-render.md",
+      "sha256": "ce953ae069ba1abc57a55184f2b03bb6c94ef78e9c33e3465994d1355fe07d85",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "perf",
+      "headline": "useLayer: placing a context layer no longer re-renders its host. The hook still resolves where the layer goes from its inert marker once the marker is in the DOM, but it now hands that mount to an internal slot that renders the marker and the layer, so the render that places the layer is the slot's alone. A Tooltip, Selector or ComplexSelector that mounts closed renders once; a Popover or DropdownMenu keeps only the renders its own state costs. The host still renders when a resolved mount is replaced by a render call that moved to another host. The DOM, server markup, hydration and `lazyMount` are unchanged.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/layer-touch-reduced-motion-fade.md",
+      "sha256": "24fc3cb43c6e13b271d2b536ec536206d108f40c469ebe68c6cd5e018815d903",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "With Reduce Motion on, a Tooltip, HoverCard, Popover, menu or other layer that opens under a finger now fades in, with no slide and no scale, in 200 ms or less, instead of appearing at once. Under a mouse it still appears at once, and without Reduce Motion the entrance is unchanged.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/layout-codemod-const-config.md",
+      "sha256": "8c5fb7789610314135da4e00ad88d5be32a4d08f7b34b6250a4ddd823be3a086",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx upgrade` no longer reports an error on an `astryx.config` written as `const config = {...}; export default config;`, the shape generated configs use. The `migrate-layout-components-to-experimental` codemod now follows a default-exported identifier to its top-level `const` binding when the binding is not exported any other way and nothing else references it, so a config without `layout` is left unchanged and one with `layout.components` is migrated.",
+      "contributors": [
+        "ejhammond"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/layout-edge-padding-no-has-universal.md",
+      "sha256": "f2bf0ccf1b353018373bb820c591f9601f6fd36759c38f5dc6af0c4b407d1aa5",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`Layout` no longer ships a `:has()` on the layout followed by a universal `*` selector for the padding that collapses next to a `LayoutHeader` or `LayoutFooter` without a divider. That selector shape can make a browser restyle everything inside the layout on each change within it, which costs the most in long documents. `LayoutHeader` and `LayoutFooter` now carry internal markers, and Layout's middle row reads them with sibling selectors. Rendering is unchanged for a Layout's own content, and a Layout nested in another Layout's content or panels still inherits the outer collapse. One case changes: a Layout nested inside a `LayoutHeader` or `LayoutFooter` that has no divider no longer takes that outer collapse, so its content keeps its own inner padding beside its own divider (16px at the default spacing) instead of 0px.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/lightbox-rtl-arrow-keys.md",
+      "sha256": "0ec77a05a0d0a245b1001940bd59a48aed2a7d5b280243556bb2f17b5bf27293",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Lightbox's Left and Right arrow keys now follow the writing direction. In a right-to-left page the gallery's Next button sits on the left, and ArrowLeft now moves to the next item and ArrowRight to the previous one, matching the buttons. Before, ArrowLeft always went to the previous item, so in RTL the keys moved against their buttons. Panning a zoomed image with the arrow keys is unchanged in both directions: the image is not mirrored, so ArrowRight still reveals what is to its right.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/list-item-aria-current-doc.md",
+      "sha256": "24b5003f420a1a12eeaa97f96d5a233f40ec9a4255a349e7dc005890d0dcc340",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "docs",
+      "headline": "`ListItem`'s documentation says what `isSelected` does: it marks the row as the current item with `aria-current=\"true\"`. It used to say `aria-selected`, which a list item cannot carry and which the component has not set since 0.1.9.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/lookup-suggestion-recall.md",
+      "sha256": "74f7594c95243de2daa808cd59148c349118aa1196b0c9e97161f56d8a9655cd",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx component <name>` now suggests a component whose whole name is part of the typed name (a wrapper or prefixed name) when nothing else matches, instead of no suggestions.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/lookup-suggestions-stop-at-weaker.md",
+      "sha256": "4661c97eaa5082b401f9845b58aafaca2854bc4bc9a6c916be6014c3e0d3b282",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "When `astryx component`, `astryx template` or `astryx docs` names nothing, the suggestions now stop where the matches get weaker, so a strong first suggestion is no longer followed by unrelated entries. A component list keeps its first two suggestions and, after them, only suggestions about as close as the first or a close spelling of the whole typed name. In a template list, and in the docs list for an unknown topic that is not a route, when the closest entry carries every typed word, only entries that carry every typed word stay; when it carries some of them, entries that carry none are left out. One-letter words do not count. A name that shares no word with any entry still gets the full list, and an unknown route still suggests every child of its namespace. Lists only get shorter, and every suggestion still names a real entry.",
+      "contributors": [
+        "josephfarina"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/markdown-code-languages.md",
+      "sha256": "9630e1c7dc10db436f9311c22601d06784e18882a9782acaf8d74e7af75301d0",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "`Markdown` takes `codeLanguages`, a list of CodeBlock language values, each imported on its own or made with `createCodeLanguage`. A fence whose language word names a listed value renders with that value, ahead of a built-in language with the same name. A `diff-<name>` fence gets the diff layer over that value.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/markdown-fr23-thread-clock.md",
+      "sha256": "33b90ece3488421cb567ad5724e60b797635c8fd5cc5a3aae9ed42a122e4cceb",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "chore",
+      "headline": "Markdown's FR23 performance bench times each sampling window on the calling thread's CPU clock instead of the whole process's, so CPU spent by V8's background threads or a worker no longer counts toward either side. Test-only; `Markdown`'s behavior does not change.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/menu-hover-focus-not-visible.md",
+      "sha256": "934d791402ae326be775d1da95ccaf66256561c4376e6577f9933e11d8971195",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "DropdownMenu, ContextMenu: after a pointer press, a row the mouse rests on, or a held press is dragged over, takes focus without matching `:focus-visible`. A plain focus inherited the state from the focus before it (the menu after a pointer open), so any keyboard-only focus style, a theme's or an app's, painted on the row under the mouse. That focus now follows the last input, as other programmatic focus in Astryx does: after a keyboard open, or a key press, the indicator stays. Checkbox, radio and sub-menu rows, and the ContextMenu and Breadcrumbs menus built on them, follow. Browsers without the focus option (Chrome and Edge before 145, Safari before 18.4) keep the earlier behavior.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/menu-sheet-nothing-at-rest.md",
+      "sha256": "2305b8fbced7f3ec64b220491827fa201ec0a241456bae5ce1872798a35a05e4",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "DropdownMenu, MoreMenu and ContextMenu: a menu presented as a bottom sheet (`presentation=\"bottom-sheet\"`, or `\"adaptive\"` on a phone) no longer keeps its closed sheet and every item mounted while the menu is closed. The sheet mounts as it opens and unmounts after its exit, with focus still returning to the trigger. The open sheet also renders two fewer wrapper elements, with the same layout.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/metadata-list-columns-selector.md",
+      "sha256": "f9e0f5569a277cf772387164a99dd41247fe6a3dcae4a1cac7fcfeb163c595b0",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx upgrade` to 0.7 no longer rewrites an app's own class on MetadataList, such as `.astryx-metadata-list.app-compact-list`, into a `[data-columns=\"app-compact-list\"]` selector that never matches. Only the column values MetadataList emitted (`single`, `multi`, and `columns-<n>`) become `data-columns` selectors. (#7982)",
+      "contributors": [
+        "ejhammond"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/mobile-nav-width-cap.md",
+      "sha256": "b71ee73560f1ab77bf22a44daae5e0ceb3cca1eff359c442e0db9b2c427a6d50",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`MobileNav` is never wider than 85% of the viewport, as its `width` documentation says. A 320 px drawer on a 320 px phone used to cover the whole screen and leave no backdrop to tap; it is now 272 px wide and leaves a 48 px strip of the page beside it, and a tap on that strip closes it. On wider screens the drawer keeps its `width`.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/mobile-power-search-discovery.md",
+      "sha256": "bd5240637698cfe90875f93e565999182e9c218880e0b71462a0be2c9da8d3fc",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx discover` lists the experimental MobilePowerSearch component from `@astryxdesign/lab`. (#7983)",
+      "contributors": [
+        "imdreamrunner"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/number-input-focusable-disabled.md",
+      "sha256": "021987b38aa5ed5395cedd5e81b8eed3341e2d19329969a6fa4a757759392c82",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "NumberInput: a disabled field now keeps its place in the tab order, so keyboard and screen-reader users can reach it and hear that it is unavailable (WCAG 2.2 SC 2.1.1 Keyboard, 4.1.2 Name, Role, Value and 2.4.7 Focus Visible; `spec:AST-085` FR1–FR3 and FR6). It exposes `aria-disabled=\"true\"` and is read-only instead of carrying the native `disabled` attribute, as it already did with a `disabledMessage`; it is still dimmed, cannot be edited or stepped, and is left out of form submission. Like a natively disabled field, it runs no caller event handler other than focus and blur, and Enter does not submit its form. Its number steppers expose `aria-disabled` too, and under keyboard focus the field shows its focus ring, dimmed with the rest of the field. The Pagination page box follows.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": "Part of #7814."
+    },
+    {
+      "path": ".changeset/popover-cancel-stale-autofocus.md",
+      "sha256": "99c61bbbd1b26c5fb46a2ec16db21d899eb1bb2fa3a207d3ab1b4c2b7afb6904",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "usePopover: a popover that closes or unmounts before its first frame no longer moves focus into its hidden content. Auto-focus waits a frame for the content to mount, and that frame is now cancelled with the open, so pressing Escape right after opening a Popover or a collapsed SideNav submenu leaves focus on the trigger.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/popover-presentation.md",
+      "sha256": "31dce6469600801db35bab4f30b09db207d5da9e5b60812b1f752c8f30eebb69",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "Popover takes `presentation`, with the values DropdownMenu and Selector use: `'popover'` (the default, unchanged) anchors it to its trigger, `'bottom-sheet'` presents its content in a modal BottomSheet labeled by `label`, and `'adaptive'` uses the BottomSheet on a compact touch screen (a phone) and the anchored popover elsewhere, the way iOS presents a popover on an iPhone. Compact is the theme's compact definition: narrower than its `md` width point or shorter than 500 px. In a sheet, `placement`, `alignment`, `width`, `role`, `isModal` and `hasAutoFocus` do not apply, and `xstyle`, `className` and `style` style the sheet's panel. The sheet loads only when a popover can present one.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/popover-second-document.md",
+      "sha256": "bc46ebcf6b59054200b743a2bfe3906e61f6ed450c32afa9bfa869a5539dd486",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "A `Popover` rendered into a second document through a portal, such as a same-origin iframe or a Document Picture-in-Picture window, now focuses its first control on open, keeps Tab inside, closes on Escape, and returns focus to its trigger, as it does in the page. Its trigger there stays the popover's invoker `source`.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/published-type-declarations-use-fully-specified--rphc.md",
+      "sha256": "8f1b5825746c27dfcd57b542bbdea4f181763ce0f61b77ad239e13a5861dd860",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        },
+        {
+          "name": "@astryxdesign/richtext",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Published type declarations use fully specified relative imports, so projects compiled with `moduleResolution: NodeNext` resolve them (#7702)",
+      "contributors": [
+        "harjothkhara"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/radio-list-press-no-descendant-has.md",
+      "sha256": "4999d21cb4b93a3c83a8067c72a770b2ac826bce26576ca068a8063f4ccd97ab",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`RadioList`'s pressed circle no longer comes from a `:has()` check that reached every element under the row, so a large page no longer restyles everything under each row whenever anything inside it changes. The row is pressed and the circle shows it exactly as before, and a link or button inside the row still keeps its own press.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/richtext-code-corner-column.md",
+      "sha256": "7b496f1c9512524bb8b49d5064ca05647b1dc3f0a6d88fd94fb6140b5968d309",
+      "packages": [
+        {
+          "name": "@astryxdesign/richtext",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "In `RichTextEditor` and `RichTextView`, a code block that names no language now leaves room for its corner Copy button. A long line wraps before the button instead of running under it. The block is as tall as the same fence in `Markdown`, so switching between reading and editing no longer moves the content below it.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/richtext-code-languages.md",
+      "sha256": "327febd7f0f9f427b959f66bd2a6c793d81767a655a2c39def3c2dbe894f4bbd",
+      "packages": [
+        {
+          "name": "@astryxdesign/richtext",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "`RichTextEditor` and `RichTextView` take `codeLanguages`, the same list of CodeBlock language values that `Markdown` takes. A fence named by a listed value is coloured with that value and labelled with its name, so reading and editing match.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/scroll-to-top-reduced-motion-note.md",
+      "sha256": "4415596f2f89e64472818e25013c78002d39a3e4739a8ec57712a649855798d8",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "chore",
+      "headline": "Internal: the UIKit scroll table's scroll-to-top note says that under Reduce Motion a tap-started scroll to the top cross-fades on a coarse pointer and jumps otherwise, since only momentum after a throw keeps decaying. No behavior change.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/scrollable-area-first-frame-tab-stop.md",
+      "sha256": "94e7bd14b72b19761d30080fed02bed4308debfb64125103cb95bdf2e74647a7",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "A scroll viewport that owns keyboard access (`ScrollableArea`, and the Table, CodeBlock, BottomSheet and Schedule viewports built on the same hook) is a tab stop from the first frame its content overflows. Content that arrived already overflowing, such as loaded data replacing a loading state, used to scroll for at least one animation frame, and longer on a busy page, before the viewport joined the tab order. During that time a keyboard user could not reach it and an accessibility audit reported `scrollable-region-focusable`.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/scrollable-area-touch-indicator.md",
+      "sha256": "cb48bde8d26ad664cfb593735af9851c02f4a10355cd2a7445f40342fc236176",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "On touch screens, `ScrollableArea` keeps the platform's own scroll indicator. Its neutral `scrollbar-color` replaced iOS Safari's indicator with a faint bar that was hard to see while scrolling and also showed in the gap a pull opens; iOS now draws its own indicator, only while scrolling. Mouse and trackpad scrollbars keep the neutral colour. To keep the neutral colour on touch screens too, set `scrollbarColor` through the `xstyle` prop.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/selectablecard-not-single-select-docs.md",
+      "sha256": "e61220c97692d7cd1a26673354af4263af6f39102d296c32e596d4a243fc67a5",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "docs",
+      "headline": "SelectableCard's guidance no longer recommends it for single-select groups. Each card is a checkbox, so a single-select set built from it is announced as multi-select, with one tab stop per card and no arrow-key navigation between them. Its guidance now covers multi-select groups only.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/sidenav-heading-end-content-beside-link.md",
+      "sha256": "c783ddb191b049a6a1eb940d8e3e71ea790c09edd34c79d9a1b7f6bb79891b2b",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "SideNavHeading: with `headingHref` as its only link, `headerEndContent` now renders beside the heading link instead of inside it. A button placed there was nested in the link, so pressing it also followed the link. The link's accessible name no longer includes the end content.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/skeleton-pulse-compositor.md",
+      "sha256": "dd531da8c60a387d5254d99be6f3a26ab703033693795d5c34435bbd94316130",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Skeleton keeps pulsing in Safari while a script runs. Its stepped pulse used a `steps()` timing function, which Safari never animates off the main thread, so the placeholders froze for as long as the page ran JavaScript; Chromium and Firefox were unaffected. The same ten steps are now written as keyframes with a linear timing function, which every engine animates on its compositor. The pulse looks and times exactly as before, including its stagger and reduced-motion behavior.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/slider-lost-capture-drag-scope.md",
+      "sha256": "537197020e06cd0ccf767a2643442bfaf0c0cacc79f3f93eac2ad6ecedad775d",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Slider: the document listener that ends a drag when its pointer capture is lost now exists only while a drag is in progress, so an idle slider no longer holds a document-level listener for its whole lifetime. A drag still ends when the control is replaced mid-drag (a FormLayout direction change).",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/slider-one-pointer-per-drag.md",
+      "sha256": "84efd2aa164ef605ec8f0c8f250723432d57bf3f9472a0fbd7b3b5c95970ccac",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Slider: a drag belongs to the pointer that started it. A second finger that lands on the slider, moves or lifts during a drag no longer moves the value, takes over the drag or ends it, and two fingers can still drag two sliders at once. A drag whose pointer capture is lost without a pointer up also ends, with one `onChangeEnd`, so the slider keeps answering new presses. Introduced in [#8152](https://github.com/facebook/astryx/pull/8152); final-state evidence: [#8284](https://github.com/facebook/astryx/pull/8284).",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/status-color-roles.md",
+      "sha256": "91d1b1fd758395035828c23e5a752e1d47a04281c8319d6ccf760effaa349a8d",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        },
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        },
+        {
+          "name": "@astryxdesign/richtext",
+          "bump": "patch"
+        },
+        {
+          "name": "@astryxdesign/theme-neutral",
+          "bump": "patch"
+        },
+        {
+          "name": "@astryxdesign/theme-butter",
+          "bump": "patch"
+        },
+        {
+          "name": "@astryxdesign/theme-chocolate",
+          "bump": "patch"
+        },
+        {
+          "name": "@astryxdesign/theme-gothic",
+          "bump": "patch"
+        },
+        {
+          "name": "@astryxdesign/theme-matcha",
+          "bump": "patch"
+        },
+        {
+          "name": "@astryxdesign/theme-stone",
+          "bump": "patch"
+        },
+        {
+          "name": "@astryxdesign/theme-y2k",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "Status colours now have a role for each surface, and Info is a new status. For each of info, success, warning, and error: `--color-<status>` is the strong fill and `--color-on-<status>` is content on it, at 4.5:1 or more; `--color-<status>-muted` is the pale fill, with `--color-on-<status>-muted` content; and `--color-text-<status>` is readable status text on the page and cards, with `--color-icon-<status>` and `--color-border-<status>` (status icons and borders) defaulting to it. `--color-info`, `--color-on-info`, `--color-info-muted`, and the other Info roles are new and independent of the accent. Tailwind gains `bg-info`, `bg-info-muted`, `text-on-<status>`, `text-on-<status>-muted`, and `text-status-<status>` (the status text role). Introduced in [#7657](https://github.com/facebook/astryx/pull/7657).",
+      "contributors": [
+        "rubyycheung"
+      ],
+      "body": "`--color-success`, `--color-warning`, and `--color-error` and `bg-<status>` keep their meaning as the strong fills. Tailwind now projects each status by paint property: `text-`, `decoration-`, `placeholder-`, and `caret-<status>` read the status text role, and `border-`, `divide-`, `outline-`, and `ring-<status>` read the status border role, so status text and lines are readable on the page; `bg-`, `accent-`, `fill-`, `stroke-<status>`, shadow colours, and gradients keep the strong fill. for example, Core's light `text-warning` is now `#753F07` instead of `#E9AF08`, and `text-success` is `#09441F` instead of `#0D8626`. To keep the fill colour on text, use `text-[var(--color-warning)]`.\n\nWhat changes on screen:\n\n- Core's dark Error content (`--color-on-error`) is now `#0A1317` instead of white, so text on dark-mode error fills reaches 4.5:1. Core's Info Badge uses `--color-info` (`#0064E0`) instead of the accent; in dark mode the accent was `#2694FE`.\n- Icon `color=\"info|success|warning|error\"`, Stepper status glyphs, and Chat tool-call status icons use the icon roles, which are the readable text colours. For example, Core's success icon is now `#09441F` (light) instead of `#0D8626`.\n- Input and FileInput status borders use the border roles. Core's light warning border is now `#753F07` instead of `#E9AF08`. Butter's light success and warning input rims are now mid-ramp stops that reach 3:1.\n- Banner paints its built-in title, description, icon, and controls with the on-muted roles, and fills Info with `--color-info-muted`.\n- Status fills keep a visible boundary in forced-colors mode.\n- Chocolate and Matcha's `--color-on-success` and `--color-on-error` are now a dark ink instead of white, and Stone's `--color-on-success`, `--color-on-warning` and `--color-on-error` are white in light mode and near-black in dark mode instead of the status hue, so content on those fills reaches 4.5:1.\n- Neutral's `--color-success`, `--color-warning`, and `--color-error` are now its status fills, the colours its Badges already showed: success `#00490B` to `#198100` (dark `#A4D6A3` to `#64AF4C`), warning `#4B3900` to `#FFCE2F` (dark `#F8D36A` to `#FFCE2F`), and error `#76000C` to `#C9303A` (dark `#FFC4BE` to `#FF705D`); `--color-info` is `#0074E2` (dark `#6D9CFE`). Its Badges, StatusDots, progress fills, and Stepper badges look the same, and its `text-<status>` utilities read its status text roles.\n- Neutral drops its own status overrides and uses the standard roles: the accent variants of ProgressBar, StatusDot, and Stepper now paint Neutral's accent instead of blue, and Banner and the pale destructive Button use the standard overlays. Neutral no longer defines its proposed and undocumented local tokens; use the standard roles instead: `--astryx-theme-neutral-color-status-fill-success`, `-status-fill-warning`, and `-status-fill-error` → `--color-success`, `--color-warning`, `--color-error`; `-status-muted-accent` → `--color-info-muted`; `-on-tint-neutral` → `--color-neutral`; `-on-tint-overlay-hover`, `-on-tint-overlay-pressed`, `-destructive-overlay-hover`, and `-destructive-overlay-pressed` → `--color-overlay-hover` and `--color-overlay-pressed`. `--astryx-theme-neutral-color-status-fill-accent` keeps its value for Neutral extensions but is deprecated and no longer used by Neutral.\n- Every first-party theme sets a blue `--color-info`; Chocolate and Matcha Info Badges move from the accent to that blue (Butter keeps its own Info Badge colours).\n\nCustom themes get the content and text roles they don't set: theme generation derives `--color-on-<status>` (light or dark content, whichever contrasts more), readable status text, and on-muted content from the theme's status fills. To keep a component's previous colour, set the matching role in your theme; for example, set `--color-icon-success` to your old `--color-success` value."
+    },
+    {
+      "path": ".changeset/step-indicator-label-gap.md",
+      "sha256": "518a398f395dc586477d0f3dfdbdfe75c075acdbd57bb429c093bda7d0f40387",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Step: a clickable step's number badge and label are no longer adjacent text, so a text reading of the button no longer joins them as \"1Account\" (axe-core 4.14's Label in Name rule reported every clickable numbered step). A whitespace node now separates them in all four layouts; the rows are flex containers, so nothing changes on screen. A step's `description` inside the button is a separate Label in Name case and is unchanged.",
+      "contributors": [
+        "HelloOjasMutreja"
+      ],
+      "body": "Fixes #7966."
+    },
+    {
+      "path": ".changeset/switch-focus-ring-sibling.md",
+      "sha256": "e9c0f70ce1624b8aa36e74a121cc5266791522646747d2e4c6e77d158d4d6b89",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`Switch`'s focus ring now follows the switch's own input through a sibling selector instead of a `:has()` check on the whole row, so a switch whose row holds large content (a long description, for example) no longer restyles everything in that row whenever something inside it changes. The ring looks and behaves the same. One edge changes: a focusable link inside the switch's label or description keeps its own focus ring and no longer also rings the switch.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/tab-and-drawer-doc-claims.md",
+      "sha256": "a92929e6e0dea359706a95dbc72b88eececf67938153410f4368792fd9a1e421",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        },
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "docs",
+      "headline": "TabList's description no longer promises a built-in \"more\" menu: a strip narrower than its tabs scrolls horizontally and keeps the selected tab in view (`TabMenu` stays the way to group extra options). The library page template describes `MobileNav` as the slide-out navigation drawer it is, not as a bottom tab bar.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/text-fields-focusable-disabled.md",
+      "sha256": "1c0afb08a63cca1aa34e9030d3083b2480f842dd2c8bf32f0b5ffd4b2572d7cd",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "TextInput, TextArea: a disabled field now keeps its place in the tab order, so keyboard and screen-reader users can reach it and hear that it is unavailable (WCAG 2.2 SC 2.1.1 Keyboard, 4.1.2 Name, Role, Value and 2.4.7 Focus Visible; `spec:AST-085` FR1–FR3 and FR6). It exposes `aria-disabled=\"true\"` and is read-only instead of carrying the native `disabled` attribute, as the field already did when a `disabledMessage` was set. It is still dimmed, cannot be edited, and is left out of form submission. Like a natively disabled field, it runs no caller event handler other than focus and blur, and Enter in a disabled TextInput does not submit its form. Under keyboard focus it shows the field's focus ring, dimmed with the rest of the field.",
+      "contributors": [
+        "HelloOjasMutreja"
+      ],
+      "body": "Part of #7814."
+    },
+    {
+      "path": ".changeset/theme-compact-definition.md",
+      "sha256": "11860165d1af627f5f74eb95e5e760af26ae2509443528d911f081f407d54303",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "`@astryxdesign/core/theme` exports the compact definition: `compactDefinition(widthBreakpoints?)` and `DEFAULT_COMPACT_DEFINITION`. A screen is compact while its viewport is narrower than the theme's `md` point (768 by default) or shorter than 500. The definition carries both edges and ready-made media queries, with and without a coarse pointer, so every component that picks a presentation by screen size reads one shared definition. Nothing changes behavior yet.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/theme-surface-codemod-look-alikes.md",
+      "sha256": "96324770f04c6c596f10dc9a21d17e027762a8a4229b4f850c03f02c6a5928a2",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`astryx upgrade` to 0.7 no longer renames component keys in a look-alike theme object that is not an Astryx theme, such as another library's `{name, components: {checkbox, radio, textarea}}` theme. A theme object with no `defineTheme()` call or Astryx theme type is migrated only when it is the binding a same-stem theme descriptor declares (`brandTheme` exported from `brandTheme.ts` beside `brandTheme.doc.mjs`). (#7980)",
+      "contributors": [
+        "ejhammond"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/tokenizer-caret-after-last-token.md",
+      "sha256": "3f5e7dce4bc36f0f6b319e96013c4d47eb29b322c4d445611f7f55eb18db5eef",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Tokenizer: once a field has tokens, its text cursor sits right after the last token, on the last row, instead of at the end of the first row. PowerSearch gets the same fix. When the last row is too full for the cursor, focusing starts a new row for it; when it fits the cursor but not the typing area, the first keystroke moves to a new row. At rest the field keeps its height.",
+      "contributors": [
+        "kentonquatman"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/tokenizer-tokens-wrap-before-the-clear-all-butto-a99p.md",
+      "sha256": "9e47ebdcd1cd9cc103ea04625e4595bd20296ebf6ec92b8b55e8770383bd8146",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Tokenizer: tokens wrap before the clear-all button and busy indicator instead of running under them, including PowerSearch filters. While the field has tokens and can search, the busy indicator's space stays reserved, so a search starting or settling does not move token rows",
+      "contributors": [
+        "harjothkhara"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/tooltip-tall-content-follows-trigger.md",
+      "sha256": "451533e7d57c35879eeaf05d7211a201cc660660185c296cf5172194e6b97e59",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`Tooltip`: an open tooltip that has moved clear of its trigger now also stays clear when the trigger moves on screen without resizing, in layout or because the page scrolled, at most one painted frame later. Moving it keeps every animation in its content where it was.",
+      "contributors": [
+        "ejhammond"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/tooltip-tall-content-keeps-trigger-clear.md",
+      "sha256": "e74bf6da1f2ed1316381dcd01d46bee284aab6168471c31183a3580b59457762",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "`Tooltip`: a tooltip taller than the room above and below its trigger no longer opens over the trigger. It opens beside the trigger when there is room there, otherwise on the other side if it fits there, and otherwise on the side with more room, sized to that room, scrolling content it cannot show. It also moves clear when its content grows, or its trigger or the viewport resizes, while it is open. Before, it slid over its own trigger, where a resting pointer could lose it, and content past the viewport could not be read. Tooltips that fit are placed exactly as before.",
+      "contributors": [
+        "ejhammond"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/touch-motion-theme-roles.md",
+      "sha256": "06cfbedd810be20844fe111056aa7a0687c9ae1845d48ccbea4f774d7213a2c1",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "chore",
+      "headline": "Internal: the touch motion tables register their springs, durations and curves as internal motion roles, each read once when a motion starts, so every component keeps its measured value. Nothing public changes: themes do not set motion roles, and no shipped component reads the roles yet.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/touch-presentation.md",
+      "sha256": "749c001b01c648a6cffa2a0f8c3712686df49cdb311751a45e0ed538ce942849",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "`presentation=\"adaptive\"` on DropdownMenu, ContextMenu, MoreMenu, Selector and MultiSelector, and a DropdownMenu's or ContextMenu's default sub-menu drill-in, now use the theme's compact definition with a coarse primary pointer: a viewport narrower than the theme's `md` point (768px by default) or shorter than 500px. This is a behavior change. The old default was a bottom sheet at 768px wide and below on a coarse pointer. Now a coarse-pointer screen exactly 768px wide keeps the anchored popover, and a phone in landscape (wider than 768px but shorter than 500px) gets the bottom sheet and the drilled-in sub-menu. A theme that moves `md` moves the edge with it. To pin a component's presentation regardless of the rule, pass `presentation=\"popover\"` or `presentation=\"bottom-sheet\"`; to keep a sub-menu's flyout, pass `presentation=\"flyout\"` on `DropdownMenuSubMenu`. Mouse and keyboard users on desktop see no change, because every case requires a coarse pointer.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/typeahead-edit-focus-in-tap.md",
+      "sha256": "b2d95875dcc6cca5a7b0c7da7f3be353a65a6de3f77e964d3cde488f8adc7391",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "Taps that start typing in a search field raise the touch keyboard. A tap on a Typeahead's selected value (edit mode) and a tap on the clear button of a Selector or MultiSelector search row now focus the input inside the tap itself instead of one frame later; iOS raises its keyboard only for a focus made while the browser is still handling the tap, so the deferred focus left a caret with no keyboard until a second tap. A clear tapped while the keyboard is already up keeps it up, as before. Introduced in [#8158](https://github.com/facebook/astryx/pull/8158); final-state evidence: [#8247](https://github.com/facebook/astryx/pull/8247).",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/typeahead-highlight-follows-pointer-movement.md",
+      "sha256": "c44c065b572ebd0923d68e76d6d5d3780f6d49fc82910d3fe0a78b070b637b5e",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "BaseTypeahead, and the Typeahead, Tokenizer and PowerSearch menus built on it: an option now takes the highlight when the pointer moves over it, not when it merely appears under a resting pointer. A menu opened from the keyboard, or one that scrolls during arrow-key navigation, used to hand its highlight to whichever option slid under the cursor, so Enter could pick an option the user never pointed at and arrow keys appeared to jump back. The keyboard highlight now stays put until the pointer actually moves.",
+      "contributors": [
+        "ejhammond"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/uikit-constants-table.md",
+      "sha256": "a86e000cd3681aeb161a398f47da66266111e54fa9f7db46e4d827c51dfb45bf",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "chore",
+      "headline": "Internal: the UIKit constants table for touch presentations (springs, scroll physics, timing curves and navigation values), each value with its source and a checked list of the simulator measurements still owed. Not exported from the package entry point; no component reads it yet.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/uikit-gestures-named-groups.md",
+      "sha256": "e85bf495b5d2a52a2fbbcc0caabda5b1be3cadc004647cfda63999f6bb09ea26",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "chore",
+      "headline": "Internal: the UIKit gesture thresholds are one export per recognizer (`UIKIT_TAP`, `UIKIT_PAN`, `UIKIT_PRESS`, …), so a touch component bundles only the group it reads. The table's notes say that the status-bar scroll-to-top does not coast under Reduce Motion and that UIKit's Reduce Motion menu spring is never played. No behavior change.",
+      "contributors": [
+        "cixzhang"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/uikit-motion-animator.md",
+      "sha256": "3c8d4423f8e95ce77892efb240db313dfa8632e077e11668c77b03583f57d8cb",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "chore",
+      "headline": "Internal: a compositor animator for touch presentations. It plays UIKit's springs, and scroll coasts (built by a separate coast module, so a surface that never coasts does not carry them; `decay` plays a release's momentum, and under Reduce Motion cross-fades a spring back from past an edge) as Web Animations on translate, rotate, scale and opacity, so they keep running while JavaScript is busy, and reads values and velocities back from the curves for interruption, retargeting and Reduce Motion cross-fades. Not exported from the package entry point; no component uses it yet.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/uikit-motion-math.md",
+      "sha256": "65987022d95e54832afd9ad802eed9073c9f7eb652d7acb56fc10569f89240fd",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "chore",
+      "headline": "Internal: the spring, decay, rubber-band and projection math of UIKit for touch presentations, as pure functions checked against an independent integration and against values read from UIKit. Not exported from the package entry point; no component uses it yet.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/upgrade-manual-and-regenerate-outcomes.md",
+      "sha256": "b9ea4c584b684777c3b169a5f2044ca01b738552ce9e7fcac02cf216f36b4fdc",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "feat",
+      "headline": "`astryx upgrade` now reports stale generated files in a new `regenerate` receipt field, and reports code a codemod can identify but not migrate safely in the existing `declinedCandidates` list instead of failing. A manual migration is a `declinedCandidates` row with the file, its line as `location` when known, and a `reason` that starts with `manual migration needed (<codemod>):` followed by what to change (a file with several declined findings keeps one row listing each, with its own prefix, joined by `; `); it is printed after the run, does not fail the upgrade, and the run completes and exits 0. A generated file that must be rebuilt, such as stale theme CSS that `validate-data-token-ownership` reports and `astryx theme build` regenerates, is listed in `regenerate` with its rebuild command until it is rebuilt; a `hooks.postCodemod` command that rebuilds it clears it. When the project protects the file (for example an `@generated` header), the run is incomplete exactly as for a protected file (`complete: false`, `errorCode: \"ERR_CODEMOD_PROTECTED\"`, exit 1); when nothing protects it, it stays a codemod error (`ERR_CODEMOD_FAILED`, as before), now with the rebuild command in `regenerate`. Protected generated files also appear in `regenerate` with their header's `Command:`, and a reported file the project marks generated also appears in `protectedFiles` with the rule that protects it. A real codemod failure keeps its `ERR_CODEMOD_FAILED` error, and the `receipt` it carries lists both too.",
+      "contributors": [
+        "ejhammond"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/upgrade-receipt-on-failure.md",
+      "sha256": "d3644b12a4e93e9d94409d6b8469a6f2f8e509b4bbbaa6d532de892f3944a14f",
+      "packages": [
+        {
+          "name": "@astryxdesign/cli",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "A failed `astryx upgrade` now says which files it already changed. When a codemod or post-codemod hook fails, the upgrade still writes every other change; the `--json` error (`{\"error\", \"code\": \"ERR_CODEMOD_FAILED\"}`) now adds a `receipt` with the same fields a finished run returns (`modifiedFiles`, `errors`, `protectedFiles`, `complete: false`, `errorCode`), and the error `upgrade()` rejects with carries it as `receipt`. The change is additive: the error code, the error shape, `isError()`, the rejection and exit code 1 are unchanged. An error that stops the run after codemods have written files, such as an astryx.config that fails validation, carries a `receipt` too.",
+      "contributors": [
+        "ejhammond"
+      ],
+      "body": ""
+    },
+    {
+      "path": ".changeset/visuallyhidden-keeps-its-clip-block-and-its-dom-a3k7.md",
+      "sha256": "692f8972b1b13e025b07a495061d240f8fc3c051b6b089a47e81027f79eae9b3",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "VisuallyHidden keeps its clip block and its DOM clean: `xstyle`, `className` and `style` no longer reach the element. The component's contract is that content in the accessibility tree stays invisible, so its clip block is meant to be non-overridable — but the implementation spread leftover props onto the element, which wrote the literal attribute `xstyle=\"[object Object]\"` into the DOM, and let the same props arriving through a cast or a `{...consumerProps}` object take the last word on `position` and un-hide the node while assistive technology kept announcing it.",
+      "contributors": [
+        "aashish254"
+      ],
+      "body": "Measured prop by prop against `main`'s implementation, before and after this change:\n\n- `xstyle` arrived as the attribute only — the `style` attribute stayed `null` and the clip classes were the same set in both arms — so a consumer passing it loses a stray attribute and no pixel.\n- `className` was already displaced by the clip block's own class list; it reaches the element in neither arm.\n- `style` did reach the element (`style=\"position: static;\"`), and an inline declaration outranks a class rule, so the node was un-hidden. It stops reaching the element. That is the one rendering change here, and it moves the node back to the hidden state the contract calls non-overridable.\n\nNone of the three is styling surface on `VisuallyHiddenProps` — `className` and `style` are behind its `Omit`, reaching the element only through a cast or an untyped spread, and `xstyle` is documented as ignored — so no typed call site loses an effect it was promised.\n\n`xstyle` stays declared on `VisuallyHiddenProps`, documented as ignored, because released 0.7.2 accepted it through `BaseProps`: removing it from the interface makes `<VisuallyHidden xstyle={…}>` stop compiling, and AST-017 FR31 and FR53 admit that narrowing only as a `[breaking]` change in a planned minor. It is deliberately not marked `@deprecated`: under FR28 a patch that deprecates a surface has to ship the exact migration or a codemod with it, and this fix ships neither. The removal and its migration belong to a planned minor, and the migration is to delete the prop — it applies nothing to the element."
+    },
+    {
+      "path": ".changeset/wheel-pinch-zoom.md",
+      "sha256": "98b2fa6a4fd77e453ce89f89377bdc83aeeb134c379fc258fe5669947a1bdc38",
+      "packages": [
+        {
+          "name": "@astryxdesign/core",
+          "bump": "patch"
+        }
+      ],
+      "category": "fix",
+      "headline": "A two-finger pinch over an open picker wheel zooms the page again. The wheels in the TimeInput, DateTimeInput and DateInput bottom sheets accepted vertical pans only, which also refused the browser's pinch-zoom, so the page could not be zoomed over an open picker. They now leave the pinch to the page, as the menus and listboxes already do. Scrolling a wheel is unchanged.",
+      "contributors": [
+        "vjeux"
+      ],
+      "body": ""
+    }
+  ]
+}
