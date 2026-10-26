@@ -58,6 +58,14 @@
  * release, the way a finger's press leaves. The query is the stylesheet's
  * own, so the two cannot disagree about which presses are the controller's.
  *
+ * A surface's hold does nothing, so it keeps the browser's long-press text
+ * selection (`spec:AST-094` FR41); only an element whose hold does something
+ * suppresses it, through the gesture host (gestures/selectionLock.ts).
+ *
+ * Its touch-only listeners, the finger's `touchend` and `touchcancel`, are on
+ * only while a press is tracked and the primary pointer is coarse
+ * (gestures/coarsePointer.ts, `spec:AST-094` FR24).
+ *
  * SYNC: When modified, update pressGesture.ts, hooks/usePressFeedback.ts,
  * hooks/usePressFeedback.doc.mjs, utils/interactionOverlay.stylex.ts and
  * pressFeedback.test.ts.
@@ -77,6 +85,7 @@ import {
 } from './pressGesture';
 import {controlPressConsts} from './controlPressLayer.stylex';
 import {TOUCH_QUERY} from './touchPresentation';
+import {isCoarsePointer, watchCoarsePointer} from '../gestures/coarsePointer';
 
 /**
  * The marker the controller finds with `closest()`. Every Astryx component
@@ -736,7 +745,9 @@ function onPointerDown(event: PointerEvent): void {
   // question the brake asks is whether a PREVIOUS finger's fling is still
   // running here.
   const braking = element != null && scrollerIsBraking(element);
-  touching = true;
+  // The finger's lift is heard only where the primary pointer is coarse
+  // (FR24): elsewhere nothing waits for it.
+  touching = isCoarsePointer(window);
   lastTouchTarget = event.target instanceof Node ? event.target : null;
   if (element == null || braking) {
     settle();
@@ -975,13 +986,48 @@ function removeArmingListeners(): void {
   window.removeEventListener('keydown', onKeyDown);
 }
 
+/** Whether the finger's touch-only listeners are on (see hearTouch). */
+let hearsTouch = false;
+/** Stops following the primary pointer, while a press is tracked. */
+let stopWatchingPointer: (() => void) | null = null;
+
+/**
+ * The finger's touch-only listeners are on only while the primary pointer is
+ * coarse (`spec:AST-094` FR24); where it is fine, a finger's press still ends
+ * through `pointerup` and `pointercancel`.
+ */
+function hearTouch(on: boolean): void {
+  if (on === hearsTouch) {
+    return;
+  }
+  hearsTouch = on;
+  if (on) {
+    window.addEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
+    window.addEventListener('touchend', onTouchEnd, PASSIVE_CAPTURE);
+    window.addEventListener('touchcancel', onTouchEnd, PASSIVE_CAPTURE);
+  } else {
+    window.removeEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
+    window.removeEventListener('touchend', onTouchEnd, PASSIVE_CAPTURE);
+    window.removeEventListener('touchcancel', onTouchEnd, PASSIVE_CAPTURE);
+  }
+}
+
+/** The primary pointer turned coarse or fine while a press is tracked. */
+function followPointer(isCoarse: boolean): void {
+  hearTouch(isCoarse);
+  if (!isCoarse && touching) {
+    // Nothing hears the finger's lift any more.
+    touching = false;
+    settle();
+  }
+}
+
 function addTrackingListeners(): void {
   window.addEventListener('pointermove', onPointerMove, PASSIVE_CAPTURE);
   window.addEventListener('pointerup', onPointerUp, PASSIVE_CAPTURE);
   window.addEventListener('pointercancel', onCancel, PASSIVE_CAPTURE);
-  window.addEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
-  window.addEventListener('touchend', onTouchEnd, PASSIVE_CAPTURE);
-  window.addEventListener('touchcancel', onTouchEnd, PASSIVE_CAPTURE);
+  stopWatchingPointer = watchCoarsePointer(window, followPointer);
+  hearTouch(isCoarsePointer(window));
   window.addEventListener('dragstart', onDragStart, PASSIVE_CAPTURE);
   // `scroll` and `scrollend` do not bubble, so the capture phase is the only
   // way one listener hears every scroller in the document.
@@ -994,9 +1040,9 @@ function removeTrackingListeners(): void {
   window.removeEventListener('pointermove', onPointerMove, PASSIVE_CAPTURE);
   window.removeEventListener('pointerup', onPointerUp, PASSIVE_CAPTURE);
   window.removeEventListener('pointercancel', onCancel, PASSIVE_CAPTURE);
-  window.removeEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
-  window.removeEventListener('touchend', onTouchEnd, PASSIVE_CAPTURE);
-  window.removeEventListener('touchcancel', onTouchEnd, PASSIVE_CAPTURE);
+  stopWatchingPointer?.();
+  stopWatchingPointer = null;
+  hearTouch(false);
   window.removeEventListener('dragstart', onDragStart, PASSIVE_CAPTURE);
   document.removeEventListener('scroll', onScroll, PASSIVE_CAPTURE);
   document.removeEventListener('scrollend', onScrollEnd, PASSIVE_CAPTURE);
