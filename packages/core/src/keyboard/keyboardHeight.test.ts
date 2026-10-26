@@ -393,7 +393,6 @@ describe('one set of listeners per window (FR1, INV11)', () => {
         height = value;
       },
     });
-    const guide = getKeyboardLayoutGuide(window);
     const seen: number[] = [];
     // Three readers, each reading the height again as it lays out.
     const reader = () => (event: KeyboardHeightEvent) => {
