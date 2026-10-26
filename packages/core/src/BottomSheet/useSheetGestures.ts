@@ -188,13 +188,14 @@ const CONTENT_END_HANDOFF_SLOP = 4;
 // 8px is the conventional tap slop, a shade over iOS's own recognizer, and
 // well under what a real pull covers in its first frames.
 const DRAG_PROMOTION_SLOP = 8;
-// A mouse or pen drag keeps the sheet's pointer behavior (spec:AST-017 FR59):
-// within this many px of a detent the live drag eases toward it, so it
-// "clicks" into place instead of hovering just off the mark. A finger tracks
-// 1:1, as UIKit's sheet does.
+// Today's drag (a mouse anywhere, and anything where the primary pointer is
+// fine) keeps the sheet's pointer behavior (spec:AST-017 FR59): within this
+// many px of a detent the live drag eases toward it, so it "clicks" into place
+// instead of hovering just off the mark. Under UIKit's presentation the sheet
+// tracks 1:1, as UIKit's does.
 const MAGNET_RANGE = 40;
-// Rubber-band factor for a mouse or pen dragging up past fully open. A
-// finger's stretch is UIKit's rubber band instead (spec:AST-094 FR3).
+// Rubber-band factor for today's drag up past fully open. Under UIKit's
+// presentation the stretch is UIKit's rubber band instead (spec:AST-094 FR3).
 const OVERSCROLL_RESISTANCE = 0.35;
 // How far any drag may lift the sheet past fully open: the bottom padding the
 // sheet reserves for the lift to reveal.
@@ -1420,7 +1421,10 @@ export function useSheetGestures({
       }
       activeOffsetRef.current = baseOffset;
       // Read before this drag turns transitions off (releaseMotion.ts).
-      releaseMotionRef.current = readReleaseMotion(sheetElRef.current);
+      releaseMotionRef.current = readReleaseMotion(
+        sheetElRef.current,
+        syntheticTouch ? 'touch' : event.pointerType,
+      );
       const tracker = new VelocityTracker();
       tracker.add(0, event.clientY, event.timeStamp);
       dragStateRef.current = {
@@ -1517,12 +1521,15 @@ export function useSheetGestures({
       const {offsets, peekOffset} = resolveDetents(state.height);
 
       const raw = state.baseOffset + delta;
-      // A finger tracks as UIKit's sheet does, with the record's rubber band
-      // past fully open; a mouse or pen keeps the pointer behavior
-      // (spec:AST-094 FR3, spec:AST-017 FR59).
-      const next = dragTouchRef.current
-        ? fingerDragOffset(raw, state.height)
-        : pointerDragOffset(raw, offsets);
+      // Under UIKit's presentation (a finger or a pen where the primary
+      // pointer is coarse, the same answer as the release's) the sheet tracks
+      // as UIKit's does, with the record's rubber band past fully open
+      // (spec:AST-094 FR3); otherwise today's pointer behavior (spec:AST-017
+      // FR59).
+      const next =
+        releaseMotionRef.current.kind === 'uikit'
+          ? fingerDragOffset(raw, state.height)
+          : pointerDragOffset(raw, offsets);
       // Dragging above the base restores the full layout height below the
       // viewport; otherwise keep whatever layout the base detent settled with
       // (0 at a peek, so a peek drag stays transform-only).
