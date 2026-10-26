@@ -446,6 +446,36 @@ describe('List reorderable', () => {
     );
   });
 
+  it('leaves out the ghost of a removed row still collapsing: places and names count only the rows', async () => {
+    const user = userEvent.setup();
+    const onReorder = vi.fn();
+    render(
+      <ReorderableRows
+        initial={['Inbox', 'Sent', 'Drafts']}
+        onReorder={onReorder}
+      />,
+    );
+    // The update motion keeps a removed row in the list while it collapses.
+    const list = screen.getByRole('list');
+    const ghost = document.createElement('li');
+    ghost.setAttribute('data-astryx-leaving', '');
+    ghost.setAttribute('aria-hidden', 'true');
+    ghost.textContent = 'Spam';
+    list.insertBefore(ghost, list.children[1]);
+    handleOf('Drafts').focus();
+    await user.keyboard(' {ArrowUp}');
+    expect(onReorder).toHaveBeenCalledWith({key: 'Drafts', to: 1});
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent(
+        'Drafts, position 2 of 3, after Inbox, before Sent',
+      ),
+    );
+    // Up again: Inbox, not the ghost, is passed.
+    await user.keyboard('{ArrowUp}');
+    expect(onReorder).toHaveBeenLastCalledWith({key: 'Drafts', to: 0});
+    ghost.remove();
+  });
+
   it('names a row that shows no text after its place', async () => {
     const user = userEvent.setup();
     render(

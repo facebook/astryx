@@ -20,9 +20,10 @@
  * UIKit's reorder control (iOS 26.2, measured): the three gray lines at the
  * trailing edge of a row in edit mode. A finger held still on it for the
  * scroll view's content-touch delay (150 ms) claims the drag; a flick that
- * starts on it scrolls the table instead, so the handle lets the browser pan
- * vertically and pinch-zoom (`pan-y pinch-zoom`) until the claim. All of that
- * applies only where the primary pointer is coarse (spec:AST-094 FR19);
+ * starts on it scrolls the table instead, so the handle leaves the browser
+ * everything but double-tap zoom (`manipulation`, for a long press:
+ * spec:AST-094 FR18) until the claim. All of that applies only where the
+ * primary pointer is coarse (spec:AST-094 FR19);
  * elsewhere a finger gets the browser's defaults. The handle is the one
  * element the reorder adds to a row (spec:AST-103 FR5): its lines are a
  * pseudo-element, and it listens to nothing itself. The list's listeners
@@ -120,14 +121,15 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     // Where the primary pointer is coarse: until the hold claims the drag,
-    // the page keeps its vertical scroll and its pinch-zoom (a flick on the
-    // handle scrolls, as on iOS). No text selection under a held finger: the
+    // the page keeps its scrolling and its pinch-zoom (a flick on the handle
+    // scrolls, as on iOS): `manipulation`, what a long press leaves the
+    // browser (spec:AST-094 FR18). No text selection under a held finger: the
     // hold's selection lock holds it while the finger is down, so a mouse
     // keeps the page's selection as it was. Where it is fine, a finger gets
     // the browser's defaults.
     touchAction: {
       default: null,
-      '@media (pointer: coarse)': 'pan-y pinch-zoom',
+      '@media (pointer: coarse)': 'manipulation',
     },
     WebkitTapHighlightColor: {
       default: null,
