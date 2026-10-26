@@ -244,8 +244,16 @@ const styles = stylex.create({
   // in an LTR region of an RTL page fills from the left like its label and
   // marks. The layer is declared up front so Safari has the whole bar painted
   // before it first moves.
+  //
+  // Under forced colors the fill is sized to the value instead (its `width`,
+  // no transform), as before: the track's clip would cut the CanvasText
+  // outline's start cap off a slid fill, and that outline is what keeps the
+  // fill's shape visible there (architecture:theme-tokens INV11).
   fill: {
-    width: '100%',
+    width: {
+      default: '100%',
+      '@media (forced-colors: active)': 'var(--_progress-bar-fill, 0%)',
+    },
     height: '100%',
     // Forced colors replace status fills with Canvas; this boundary keeps the
     // fill's shape visible (architecture:theme-tokens INV11).
@@ -259,15 +267,24 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-full'],
     transform: {
       default: 'translateX(calc(var(--_progress-bar-fill, 0%) - 100%))',
-      ':dir(rtl)': 'translateX(calc(100% - var(--_progress-bar-fill, 0%)))',
+      ':dir(rtl)': {
+        default: 'translateX(calc(100% - var(--_progress-bar-fill, 0%)))',
+        '@media (forced-colors: active)': 'none',
+      },
+      '@media (forced-colors: active)': 'none',
     },
-    willChange: 'transform',
-    transitionProperty: 'transform',
-    // Under reduced motion a new value lands at once, on every pointer:
-    // progress indicators sit outside design:reduced-motion's scope, and a
-    // fill that never travels is the choice that cannot conflict with it.
-    // The keys are the shared reduced-motion queries, a fine pointer's and a
-    // coarse pointer's, spelled as the record's other transitions spell them.
+    willChange: {
+      default: 'transform',
+      '@media (forced-colors: active)': 'auto',
+    },
+    transitionProperty: {
+      default: 'transform',
+      '@media (forced-colors: active)': 'width',
+    },
+    // Under reduced motion a new value lands at once, on every pointer: the
+    // fill never travels (design:reduced-motion DR1). The keys are the shared
+    // reduced-motion queries, a fine pointer's and a coarse pointer's, spelled
+    // as the record's other transitions spell them.
     transitionDuration: {
       default: durationVars['--duration-medium'],
       '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
