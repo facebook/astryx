@@ -658,14 +658,6 @@ export function Lightbox({
   if (isOpen && !isPresented) {
     setIsPresented(true);
   }
-  // Latched during render when the viewer opens, as `viewedItem` is.
-  if (isOpen && !isPresented) {
-    setIsPresented(true);
-  }
-  // Latched during render when the viewer opens, as `viewedItem` is.
-  if (isOpen && !isPresented) {
-    setIsPresented(true);
-  }
   const {shouldDismissOnCloseRequest} = useLayerDismissal({
     isActive: isOpen || isPresented,
     escapeBehavior: isOpen ? 'close' : 'block',
