@@ -1056,6 +1056,37 @@ describe('useRefreshControl', () => {
     expect(seen.removed).toEqual(seen.added);
   });
 
+  it('cancels the spin and the cross-fade when the control unmounts mid-refresh', async () => {
+    const played = recordAnimations();
+    const {unmount} = render(
+      <SpokedRefreshable onRefresh={() => new Promise<void>(() => {})}>
+        <p>Inbox</p>
+      </SpokedRefreshable>,
+    );
+    pull(content(), [30, 30, 30, 30]);
+    await flush();
+    // The spokes' eight turns, and the trigger's cross-fade: 1 to 0, held.
+    const steps = played.filter(p => p.options.iterations === Infinity);
+    const fades = played.filter(
+      p =>
+        p.options.fill === 'forwards' &&
+        Number(p.keyframes[0]?.opacity) === 1 &&
+        Number(p.keyframes.at(-1)?.opacity) === 0,
+    );
+    expect(steps).toHaveLength(refreshControl.indicatorSpokes);
+    expect(fades).toHaveLength(1);
+    // Still running: nothing has ended them yet.
+    for (const run of [...steps, ...fades]) {
+      expect(run.animation.cancel).not.toHaveBeenCalled();
+    }
+    // Unmounted mid-refresh, mid-fade: nothing keeps running on detached
+    // nodes.
+    unmount();
+    for (const run of [...steps, ...fades]) {
+      expect(run.animation.cancel).toHaveBeenCalled();
+    }
+  });
+
   it('without Web Animations marks the spin and leaves no copy', async () => {
     render(
       <SpokedRefreshable onRefresh={() => new Promise<void>(() => {})}>

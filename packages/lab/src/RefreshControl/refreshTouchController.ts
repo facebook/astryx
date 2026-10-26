@@ -286,6 +286,7 @@ export function useRefreshTouchController({
   // the transient copy of them that fades out over them at the trigger.
   const spinnerElement = useRef<HTMLElement | null>(null);
   const crossFadeCopy = useRef<HTMLElement | null>(null);
+  const crossFadeAnimation = useRef<Animation | null>(null);
   // The spokes' turns while the refresh spins, one animation each.
   const spin = useRef<Animation[]>([]);
   const contentElement = useRef<HTMLElement | null>(null);
@@ -397,8 +398,13 @@ export function useRefreshTouchController({
     }
   }, [indicator.animator, title.animator, turn.animator]);
 
-  /** Removes the trigger's transient copy of the spokes, if it is there. */
+  /**
+   * Removes the trigger's transient copy of the spokes, if it is there, and
+   * cancels its fade.
+   */
   const removeCrossFadeCopy = useCallback(() => {
+    crossFadeAnimation.current?.cancel();
+    crossFadeAnimation.current = null;
     crossFadeCopy.current?.remove();
     crossFadeCopy.current = null;
   }, []);
@@ -491,6 +497,7 @@ export function useRefreshTouchController({
       // Held at 0 until it is removed, however late the main thread is.
       fill: 'forwards',
     });
+    crossFadeAnimation.current = animation;
     animation.onfinish = () => {
       if (crossFadeCopy.current === copy) {
         removeCrossFadeCopy();
@@ -504,6 +511,16 @@ export function useRefreshTouchController({
     restoreIndicator();
     removeCrossFadeCopy();
   }, [removeCrossFadeCopy, restoreIndicator, setReveal, stopStepping]);
+
+  // Unmounted mid-refresh or mid-fade: nothing keeps running on detached
+  // spokes (`architecture:react-component-runtime` INV5).
+  useEffect(
+    () => () => {
+      stopStepping();
+      removeCrossFadeCopy();
+    },
+    [removeCrossFadeCopy, stopStepping],
+  );
 
   const startSpinning = useCallback(
     (withTurn: boolean) => {
