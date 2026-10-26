@@ -225,7 +225,7 @@ export function coastCurve(
 
 /**
  * The bounce spring, from `from` with `velocity`, onto `to`. `bounce` is
- * `scroll.bounce`'s spring as the wheel resolves it (motion/resolveMotion.ts).
+ * `scroll.bounce`'s spring as its caller resolves it.
  */
 export function bounceCurve(
   from: number,
