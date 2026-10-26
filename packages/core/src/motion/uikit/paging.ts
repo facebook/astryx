@@ -96,6 +96,8 @@ export const paging = {
     /**
      * Released slower than `advanceSpeed`, the scroll view settles on the
      * page nearest the content position: past half a page, the next one.
+     * `selectPage` keeps the start page instead for a release moving back
+     * toward it (`spec:AST-094` FR37).
      * @source measured: UIKit lab, iOS 26.2 simulator, releases at rest from
      *   page 1: content at 48.5 % of the page stays, 57.5 % goes to the next
      *   page; 45 % stays and 55 % advances on a second 402 pt pager
@@ -204,7 +206,6 @@ export const paging = {
  * who holds the touch, not how anything moves, so it is not a role. Nothing
  * registers on import: the pager calls it once (it is idempotent), so a page
  * that never pages ships no registry.
- * @experimental
  */
 export function registerPagingTable(): void {
   registerMotionTable('paging', paging, {exclude: ['catchStopMs']});

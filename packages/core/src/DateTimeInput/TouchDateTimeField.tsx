@@ -104,7 +104,6 @@ import {
 } from '../DateInput/MonthScroller';
 import {MonthYearWheels} from '../DateInput/MonthYearWheels';
 import {Wheel, type WheelOption} from '../DateInput/Wheel';
-import {WheelGroup} from '../DateInput/WheelGroup';
 import {
   MonthPager,
   TimeWheels,
@@ -520,8 +519,6 @@ const styles = stylex.create({
   touchWheelSpacer: {
     blockSize: sizeVars['--size-element-sm'],
   },
-  // Today's columns keep their gutter; under a finger the WheelGroup is the
-  // row's one child and centres itself.
   touchTimeWheels: {
     display: 'flex',
     inlineSize: '100%',
@@ -1475,7 +1472,7 @@ export function TouchDateTimeField({
                 }
               />
             ) : (
-              <WheelGroup>
+              <>
                 <Wheel
                   label={t('@astryx.dateTimeInput.hourWheel')}
                   options={hourOptions}
@@ -1524,7 +1521,7 @@ export function TouchDateTimeField({
                     }
                   />
                 )}
-              </WheelGroup>
+              </>
             )}
           </div>
           <div {...stylex.props(styles.touchFooter)}>

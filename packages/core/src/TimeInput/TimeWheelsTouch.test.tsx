@@ -177,12 +177,12 @@ describe('TimeInput sheet wheels under a finger and a mouse', () => {
 });
 
 describe('TimeInput sheet wheels: a short minute list loops like the full list', () => {
-  /** The minute column's drum rows (one per position on the cylinder). */
+  /** The minute column's drawn rows, the short loop's copies included. */
   function drumLabels(minute: HTMLElement): string[] {
     const column = minute.closest('[data-wheel]') ?? minute;
     return [
       ...column.querySelectorAll<HTMLElement>(
-        '[data-wheel-drum] > [data-label]',
+        '[data-wheel-strip] > [data-label]',
       ),
     ].map(row => row.dataset.label!);
   }
@@ -191,7 +191,7 @@ describe('TimeInput sheet wheels: a short minute list loops like the full list',
     [15, '10:45', '10:00', ['00', '15', '30', '45']],
     [30, '10:30', '10:00', ['00', '30']],
   ] as const)(
-    'under a finger, a minute column stepped by %i wraps both ways without carrying the hour, its copies filling the cylinder',
+    'under a finger, a minute column stepped by %i wraps both ways without carrying the hour, its copies filling the column',
     (increment, initial, next, options) => {
       stubDevice(IOS);
       const onChange = vi.fn();

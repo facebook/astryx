@@ -30,7 +30,12 @@
  */
 
 import {picker} from '../motion/uikit/picker';
-import {scaleFor, type WheelCurve, type WheelLayout} from './wheelPhysics';
+import {
+  scaleFor,
+  wrapIndex,
+  type WheelCurve,
+  type WheelLayout,
+} from './wheelPhysics';
 
 /** A row turned this far is edge-on or beyond: hidden by its back face. */
 export const PARKED_ANGLE = (95 * Math.PI) / 180;
@@ -68,18 +73,21 @@ export function drumGeometry(rowHeight: number): DrumGeometry {
 }
 
 /**
- * The distance (px) below the band's centre, at `offset`, of the row drawn at
- * `position` along the wheel: its option index, or on a looping wheel any
- * integer. A looping wheel draws one row per position, so every copy of an
- * option has its own and a short list repeats around the cylinder, as
- * UIPickerView's looping table does.
+ * Row `index`'s distance below the band's centre (px) at `offset`. A looping
+ * wheel shows each row once, at the copy nearest the band.
  */
 export function rowDistance(
-  position: number,
+  index: number,
   offset: number,
   layout: WheelLayout,
 ): number {
-  return position * layout.rowHeight - offset;
+  const distance = index * layout.rowHeight - offset;
+  if (!layout.looping) {
+    return distance;
+  }
+  const cycle = layout.rowCount * layout.rowHeight;
+  // Fold into [−cycle / 2, cycle / 2).
+  return distance - cycle * Math.floor(distance / cycle + 0.5);
 }
 
 /** The angle (radians, positive below the band) of a row `distance` away. */
@@ -104,20 +112,22 @@ export function rowOrigin(geometry: DrumGeometry): string {
 }
 
 /**
- * The band copy's strip translation for `offset`. The strip's rows sit at
- * their positions along the wheel (position × row height, a looping wheel's
- * positions running past either end), so the strip moves with the offset
- * itself, unfolded.
+ * The band copy's strip translation for `offset`. A looping strip carries
+ * three cycles of rows and translates within the middle one.
  */
-export function stripTranslation(offset: number): number {
-  return -offset;
+export function stripTranslation(offset: number, layout: WheelLayout): number {
+  if (!layout.looping) {
+    return -offset;
+  }
+  const cycle = layout.rowCount * layout.rowHeight;
+  const folded = offset - cycle * Math.floor(offset / cycle);
+  return -(folded + cycle);
 }
 
 /**
- * The position of the row under a point `dy` px below the band's centre (an
- * option index, or on a looping wheel the copy's own position), or null past
- * the drum's top or bottom. Orthographic: the perspective moves rows by under
- * a pixel along y.
+ * The row whose cylinder position is under a point `dy` px below the band's
+ * centre, or null past the drum's top or bottom. Orthographic: the
+ * perspective moves rows by under a pixel along y.
  */
 export function rowAtPoint(
   dy: number,
@@ -129,11 +139,11 @@ export function rowAtPoint(
     return null;
   }
   const distance = geometry.radius * Math.asin(dy / geometry.radius);
-  const position = Math.round((offset + distance) / layout.rowHeight);
+  const index = Math.round((offset + distance) / layout.rowHeight);
   if (layout.looping) {
-    return position;
+    return wrapIndex(index, layout.rowCount);
   }
-  return position >= 0 && position < layout.rowCount ? position : null;
+  return index >= 0 && index < layout.rowCount ? index : null;
 }
 
 /** One baked sample of a curve. */
@@ -194,12 +204,14 @@ export interface RowKeyframe {
 }
 
 /**
- * The keyframes of the row at `position` along `samples` (a baked curve
- * lasting `duration` seconds), or null when the row stays parked out of sight
- * throughout. Runs of identical angles collapse to their ends.
+ * Row `index`'s keyframes along `samples` (a baked curve lasting `duration`
+ * seconds), or null when the row stays parked out of sight throughout.
+ * Runs of identical angles collapse to their ends; a looping row that jumps
+ * to its other copy while parked gets two keyframes at the same progress, so
+ * it never sweeps across the front on the way.
  */
 export function rowKeyframes(
-  position: number,
+  index: number,
   samples: ReadonlyArray<CurveSample>,
   duration: number,
   layout: WheelLayout,
@@ -212,10 +224,7 @@ export function rowKeyframes(
   const progress = (t: number) =>
     duration > 0 ? Math.min(1, t / duration) : 1;
   for (const sample of samples) {
-    const angle = rowAngle(
-      rowDistance(position, sample.value, layout),
-      geometry,
-    );
+    const angle = rowAngle(rowDistance(index, sample.value, layout), geometry);
     const frame = {offset: progress(sample.t), transform: rowTransform(angle)};
     if (isRowVisible(angle)) {
       everVisible = true;
@@ -228,6 +237,17 @@ export function rowKeyframes(
     if (pendingParked != null) {
       frames.push(pendingParked);
       pendingParked = null;
+    }
+    if (
+      previousAngle != null &&
+      Math.abs(angle - previousAngle) > Math.PI &&
+      frames.length > 0
+    ) {
+      // A looping row jumping to its other copy: step at this progress.
+      frames.push({
+        offset: frame.offset,
+        transform: frames[frames.length - 1].transform,
+      });
     }
     frames.push(frame);
     previousAngle = angle;
@@ -248,12 +268,23 @@ export function rowKeyframes(
 export function stripKeyframes(
   samples: ReadonlyArray<CurveSample>,
   duration: number,
+  layout: WheelLayout,
 ): {offset: number; transform: string}[] {
   const frames: {offset: number; transform: string}[] = [];
+  let previous: number | null = null;
+  const cycle = layout.rowCount * layout.rowHeight;
   for (const sample of samples) {
-    const y = stripTranslation(sample.value);
+    const y = stripTranslation(sample.value, layout);
     const offset = duration > 0 ? Math.min(1, sample.t / duration) : 1;
+    if (
+      previous != null &&
+      layout.looping &&
+      Math.abs(y - previous) > cycle / 2
+    ) {
+      frames.push({offset, transform: `translateY(${round(previous, 3)}px)`});
+    }
     frames.push({offset, transform: `translateY(${round(y, 3)}px)`});
+    previous = y;
   }
   if (frames.length === 1) {
     frames.push({offset: 1, transform: frames[0].transform});

@@ -50,6 +50,9 @@ beforeEach(() => {
   recorded = [];
   frameQueue = [];
   vi.useFakeTimers();
+  // A phone: the gesture host takes input only where the primary pointer is
+  // coarse (spec:AST-094 FR19), and reads it when it first attaches.
+  stubMedia(false, true);
   HTMLElement.prototype.animate = function (keyframes, options) {
     let resolveReady: (value: unknown) => void = () => {};
     let rejectReady: (error: Error) => void = () => {};
@@ -493,6 +496,27 @@ describe('createPager', () => {
     touch('touchend', f.page, 288, 100, now + 200);
   });
 
+  it('a release whose report is still waiting reports nothing when the pager detaches: no callback from an unmount', async () => {
+    const f = setup({defaultIndex: 1});
+    await drag(f, {from: 300, dx: -250, step: 4, dt: 8, hold: 100});
+    expect(f.pager.index).toBe(2);
+    expect(f.calls).toEqual([]);
+    f.pager.dispose();
+    await frames(f, 4);
+    expect(f.calls).toEqual([]);
+  });
+
+  it("a controlled move during a release's waiting report drops it: the owner's own page wins, with no callback", async () => {
+    const f = setup({defaultIndex: 1});
+    await drag(f, {from: 300, dx: -250, step: 4, dt: 8, hold: 100});
+    expect(f.pager.index).toBe(2);
+    f.pager.goTo(3, {reason: 'controlled'});
+    expect(f.calls).toEqual([]);
+    await settle(f);
+    expect(f.pager.index).toBe(3);
+    expect(f.calls).toEqual(['settle:3:1']);
+  });
+
   it('released slowly before half a page, returns to the page it started on', async () => {
     const f = setup({defaultIndex: 1});
     // 2 px every 16 ms (125 px/s), then still.
@@ -695,6 +719,20 @@ describe('createPager', () => {
     expect(f.pager.virtualIndex).toBe(4);
   });
 
+  it("with two pages, a loop's step forward goes forward: of two copies equally near, the one asked for", () => {
+    const f = setup({count: 2, loop: true});
+    f.pager.goTo(f.pager.virtualIndex + 1, {animated: false});
+    expect(f.pager.virtualIndex).toBe(1);
+    f.pager.goTo(f.pager.virtualIndex + 1, {animated: false});
+    expect(f.pager.virtualIndex).toBe(2);
+    expect(f.x()).toBe(-2 * WIDTH);
+    f.pager.goTo(f.pager.virtualIndex - 1, {animated: false});
+    expect(f.pager.virtualIndex).toBe(1);
+    // A page index takes its nearest copy as before.
+    f.pager.goTo(0, {animated: false});
+    expect(f.pager.virtualIndex).toBe(0);
+  });
+
   it('clamps goTo to the pages when not looping', () => {
     const f = setup({defaultIndex: 0});
     f.pager.goTo(9, {animated: false});
@@ -874,30 +912,32 @@ describe('createPager', () => {
       );
   }
 
-  for (const coarse of [true, false]) {
-    it(`under Reduce Motion, a release settle does not travel: an opacity cross-fade of at most 200 ms on a ${coarse ? 'coarse' : 'fine'} pointer (a touch release, DR2/DR3)`, async () => {
-      const f = setup({defaultIndex: 1});
-      const {pager, reduced} = reducedPager(f, 1, coarse);
-      // The pointer this case claims, as the animator sees it.
-      expect(reduced.reducedMotion()).toBe(coarse ? 'crossfade' : 'instant');
-      expect(reduced.reducedMotion({touchRelease: true})).toBe('crossfade');
-      const before = recorded.length;
-      await drag(
-        {...f, pager, animator: reduced, x: () => reduced.get('x', now)},
-        {from: 300, dx: -250, step: 4, dt: 8, hold: 100},
-      );
-      await frames(f, 40);
-      // The drag itself writes the track (no animation); every animation is
-      // the settle's.
-      expect(travelsSince(before)).toEqual([]);
-      const fades = fadesSince(before);
-      expect(fades.length).toBeGreaterThan(0);
-      for (const fade of fades) {
-        expect(activeMs(fade, 'opacity')).toBeLessThanOrEqual(200);
-      }
-      expect(-reduced.get('x', now)).toBeCloseTo(2 * WIDTH, 0);
-    });
+  // Touch reaches the pager only where the primary pointer is coarse
+  // (spec:AST-094 FR19), so a release always settles on a coarse pointer.
+  it('under Reduce Motion, a release settle does not travel: an opacity cross-fade of at most 200 ms on a coarse pointer (a touch release, DR2)', async () => {
+    const f = setup({defaultIndex: 1});
+    const {pager, reduced} = reducedPager(f, 1, true);
+    // The pointer this case claims, as the animator sees it.
+    expect(reduced.reducedMotion()).toBe('crossfade');
+    expect(reduced.reducedMotion({touchRelease: true})).toBe('crossfade');
+    const before = recorded.length;
+    await drag(
+      {...f, pager, animator: reduced, x: () => reduced.get('x', now)},
+      {from: 300, dx: -250, step: 4, dt: 8, hold: 100},
+    );
+    await frames(f, 40);
+    // The drag itself writes the track (no animation); every animation is
+    // the settle's.
+    expect(travelsSince(before)).toEqual([]);
+    const fades = fadesSince(before);
+    expect(fades.length).toBeGreaterThan(0);
+    for (const fade of fades) {
+      expect(activeMs(fade, 'opacity')).toBeLessThanOrEqual(200);
+    }
+    expect(-reduced.get('x', now)).toBeCloseTo(2 * WIDTH, 0);
+  });
 
+  for (const coarse of [true, false]) {
     it(`under Reduce Motion, goTo does not travel (${coarse ? 'coarse pointer: an opacity cross-fade of at most 200 ms, DR2' : 'fine pointer: at once, DR3'})`, async () => {
       const f = setup({defaultIndex: 0});
       const {pager, reduced} = reducedPager(f, 0, coarse);
@@ -920,12 +960,15 @@ describe('createPager', () => {
     });
   }
 
-  it("under Reduce Motion, a mouse drag's release on a fine pointer lands at once: no travel, no fade (DR3)", async () => {
+  it('on a fine primary pointer the pager takes no input (spec:AST-094 FR19): a mouse drag leaves the track and the page as they were', async () => {
     const f = setup({defaultIndex: 1});
-    const {pager, reduced} = reducedPager(f, 1, false);
-    // The pointer this case claims, as the animator sees it.
-    expect(reduced.reducedMotion()).toBe('instant');
-    const before = recorded.length;
+    stubMedia(false, false);
+    f.pager.dispose();
+    const pager = createPager(
+      {count: 3, defaultIndex: 1},
+      {host: f.host, animator: f.animator},
+    );
+    pager.attach(f.viewport, f.track);
     mouse('pointerdown', f.page, 300, 100, now);
     for (let i = 1; i <= 62; i++) {
       await advance(8, f.clock);
@@ -933,11 +976,201 @@ describe('createPager', () => {
     }
     await advance(8, f.clock);
     mouse('pointerup', f.page, 52, 100, now);
-    expect(pager.index).toBe(2);
     await frames(f, 2);
-    expect(travelsSince(before)).toEqual([]);
-    expect(fadesSince(before)).toEqual([]);
-    expect(-reduced.get('x', now)).toBeCloseTo(2 * WIDTH, 0);
+    expect(pager.index).toBe(1);
+    expect(f.x()).toBe(-WIDTH);
+  });
+});
+
+/** A rect for jsdom, which lays nothing out. */
+function rectOf(left: number, width: number): DOMRect {
+  return new DOMRect(left, 0, width, 100);
+}
+
+/**
+ * A pager whose pages are the track's children (`pages: 'children'`): one
+ * child per width, `gap` px apart, laid out from the start edge (the right
+ * one in RTL) of a WIDTH-wide viewport.
+ */
+function setupChildren(
+  widths: number[],
+  gap: number,
+  options: Partial<PagerOptions> = {},
+  rtl = false,
+): Fixture {
+  const clock = new ManualClock();
+  clock.time = now;
+  const host = new GestureHost(document, {clock});
+  const viewport = document.createElement('div');
+  const track = document.createElement('div');
+  if (rtl) {
+    viewport.style.direction = 'rtl';
+  }
+  let start = 0;
+  for (const width of widths) {
+    const child = document.createElement('div');
+    const from = start;
+    child.getBoundingClientRect = () =>
+      rtl ? rectOf(WIDTH - from - width, width) : rectOf(from, width);
+    track.appendChild(child);
+    start += width + gap;
+  }
+  const extent = start - gap;
+  track.getBoundingClientRect = () =>
+    rtl ? rectOf(WIDTH - extent, extent) : rectOf(0, extent);
+  viewport.appendChild(track);
+  document.body.appendChild(viewport);
+  Object.defineProperty(viewport, 'clientWidth', {
+    value: WIDTH,
+    configurable: true,
+  });
+  const animator = createAnimator(track, {
+    now: () => now,
+    requestFrame: callback => {
+      frameQueue.push(callback);
+    },
+  });
+  const calls: string[] = [];
+  const pager = createPager(
+    {
+      count: widths.length,
+      pages: 'children',
+      onIndexChange: (index, reason) => calls.push(`index:${index}:${reason}`),
+      onSettle: (index, previous) => calls.push(`settle:${index}:${previous}`),
+      ...options,
+    },
+    {
+      host,
+      animator,
+      requestFrame: callback => {
+        frameQueue.push(callback);
+      },
+    },
+  );
+  pager.attach(viewport, track);
+  return {
+    pager,
+    viewport,
+    track,
+    page: track.children[0] as HTMLElement,
+    animator,
+    clock,
+    host,
+    calls,
+    x: () => animator.get('x', now),
+  };
+}
+
+describe("children pages: each child's start edge, as a snap container places it", () => {
+  // Five 150 px children 10 px apart in a 400 px viewport: starts at 0, 160,
+  // 320, 480 and 640; the track ends at 790, so its end meets the viewport's
+  // at 390, where the last two children rest.
+  const CARDS = [150, 150, 150, 150, 150];
+
+  it("measures one page per child start, the last children sharing the page where the track's end meets the viewport's", () => {
+    const f = setupChildren(CARDS, 10);
+    expect(f.pager.pageCount).toBe(4);
+    f.pager.goTo(2, {animated: false});
+    expect(f.x()).toBe(-320);
+    f.pager.goTo(4, {animated: false});
+    expect(f.pager.index).toBe(3);
+    expect(f.x()).toBe(-390);
+  });
+
+  it('a flick moves one child, on the paging settle', async () => {
+    const f = setupChildren(CARDS, 10);
+    // 625 px/s, lifted 32 ms after the last move.
+    await drag(f, {from: 300, dx: -50, step: 10, dt: 16, hold: 16});
+    expect(f.pager.index).toBe(1);
+    await settle(f);
+    expect(f.x()).toBe(-160);
+    expect(f.calls).toEqual(['index:1:drag', 'settle:1:0']);
+  });
+
+  it('a slow drag past half the way to the next child settles there; short of half, back', async () => {
+    const f = setupChildren(CARDS, 10);
+    // 125 px/s to 90 px, past half of the 160 px to the next child.
+    await drag(f, {from: 300, dx: -90, step: 2, dt: 16, hold: 100});
+    await settle(f);
+    expect(f.pager.index).toBe(1);
+    expect(f.x()).toBe(-160);
+    // 70 px of the 160 px back toward the first child: short of half.
+    await drag(f, {from: 100, dx: 70, step: 2, dt: 16, hold: 100});
+    await settle(f);
+    expect(f.pager.index).toBe(1);
+    expect(f.x()).toBe(-160);
+  });
+
+  it('past the last page the track rubber-bands and returns: children pages never loop', async () => {
+    const f = setupChildren(CARDS, 10, {loop: true});
+    f.pager.goTo(3, {animated: false});
+    await drag(f, {from: 300, dx: -100, step: 10, dt: 16, hold: 16});
+    expect(f.pager.index).toBe(3);
+    await settle(f);
+    expect(f.x()).toBe(-390);
+    f.pager.goTo(-1, {animated: false});
+    expect(f.pager.index).toBe(0);
+  });
+
+  it('content that fits is one page: nothing pages', async () => {
+    const f = setupChildren([150, 150], 10);
+    expect(f.pager.pageCount).toBe(1);
+    await drag(f, {from: 300, dx: -50, step: 10, dt: 16, hold: 16});
+    await settle(f);
+    expect(f.pager.index).toBe(0);
+    expect(f.x()).toBe(0);
+  });
+
+  it('reads where each page rests and the page nearest an offset', () => {
+    const f = setupChildren(CARDS, 10);
+    expect([0, 1, 2, 3].map(i => f.pager.pageOffset(i))).toEqual([
+      0, 160, 320, 390,
+    ]);
+    expect(f.pager.nearestPage(70)).toBe(0);
+    expect(f.pager.nearestPage(90)).toBe(1);
+    expect(f.pager.nearestPage(370)).toBe(3);
+    expect(f.pager.nearestPage(5000)).toBe(3);
+  });
+
+  it('a child added to the track is measured on the next options change, and reported from the next frame', async () => {
+    const pages: number[] = [];
+    const f = setupChildren(CARDS, 10, {
+      onPagesChange: pageCount => pages.push(pageCount),
+    });
+    const child = document.createElement('div');
+    child.getBoundingClientRect = () => rectOf(800, 150);
+    f.track.appendChild(child);
+    f.track.getBoundingClientRect = () => rectOf(0, 950);
+    f.pager.setOptions({count: 6});
+    expect(f.pager.pageCount).toBe(5);
+    expect(pages).toEqual([]);
+    await advance(16, f.clock);
+    expect(pages).toEqual([5]);
+  });
+
+  it("under a CSS zoom the rects are scaled; the pages are measured in the track's own pixels", () => {
+    const f = setupChildren(CARDS, 10);
+    // Rects at twice the size, as an ancestor's \`zoom: 2\` reports them;
+    // the track's own width stays 790 CSS px.
+    const children = Array.from(f.track.children) as HTMLElement[];
+    children.forEach((child, i) => {
+      child.getBoundingClientRect = () => rectOf(2 * i * 160, 2 * 150);
+    });
+    f.track.getBoundingClientRect = () => rectOf(0, 2 * 790);
+    f.track.style.width = '790px';
+    f.pager.setOptions({count: 5});
+    expect([0, 1, 2, 3].map(i => f.pager.pageOffset(i))).toEqual([
+      0, 160, 320, 390,
+    ]);
+  });
+
+  it('RTL: pages measure from the right edge, and a drag right goes forward', async () => {
+    const f = setupChildren(CARDS, 10, {}, true);
+    expect(f.pager.pageCount).toBe(4);
+    await drag(f, {from: 100, dx: 50, step: 10, dt: 16, hold: 16});
+    expect(f.pager.index).toBe(1);
+    await settle(f);
+    expect(f.x()).toBe(160);
   });
 });
 
@@ -982,12 +1215,15 @@ describe("the drag's axis: UIKit's rule for a pager inside a scroll view", () =>
   }
 
   for (const degrees of [35, 45]) {
-    it(`a ${degrees}° drag is the pager's (|dx| ≥ |dy|, the tie included): it pages, and its moves are cancelled from 5 px so the page never scrolls`, async () => {
+    it(`a ${degrees}° drag is the pager's (|dx| ≥ |dy|, the tie included): it pages, and its moves are cancelled from the pan's start at 10 pt, not before`, async () => {
       const f = setup();
       const cancelled = await angledDrag(f, degrees);
-      // The second move (8 px) is past the 5 px claim; every move from it on
-      // is cancelled.
-      expect(cancelled.slice(1).every(Boolean)).toBe(true);
+      // 4 px steps: the horizontal part reaches the pan's 10 pt hysteresis on
+      // the fourth move. Nothing claims the touch before the pan begins
+      // (no earlier committed claim); every move from then on is cancelled.
+      const start = 3;
+      expect(cancelled.slice(0, start).some(Boolean)).toBe(false);
+      expect(cancelled.slice(start).every(Boolean)).toBe(true);
       await frames(f, 40);
       expect(f.calls).toContain('index:1:drag');
     });
@@ -1022,6 +1258,84 @@ describe("the drag's axis: UIKit's rule for a pager inside a scroll view", () =>
 });
 
 describe('review fixes', () => {
+  // spec:AST-094 FR6.
+  it('a goTo that retargets a running move keeps its velocity, read from the curve', async () => {
+    const f = setup({defaultIndex: 0});
+    f.pager.goTo(2);
+    await advance(16, f.clock);
+    await advance(16, f.clock);
+    await advance(16, f.clock);
+    const before = f.animator.getVelocity('x', now);
+    expect(Math.abs(before)).toBeGreaterThan(1000);
+    f.pager.goTo(3);
+    expect(f.animator.getVelocity('x', now)).toBeCloseTo(before, -1);
+    await settle(f);
+    expect(f.x()).toBe(-3 * WIDTH);
+  });
+
+  // spec:AST-094 FR37.
+  it('a release moving back toward the start page settles there, whatever the travel', async () => {
+    const f = setup({defaultIndex: 1});
+    // One touch: 70 % of the way to page 2, then back 20 px at 125 px/s,
+    // lifted while moving back.
+    let x = 350;
+    touch('touchstart', f.page, x, 100, now);
+    for (let i = 0; i < 70; i++) {
+      await advance(8, f.clock);
+      x -= 4;
+      touch('touchmove', f.page, x, 100, now);
+    }
+    for (let i = 0; i < 10; i++) {
+      await advance(16, f.clock);
+      x += 2;
+      touch('touchmove', f.page, x, 100, now);
+    }
+    touch('touchend', f.page, x, 100, now);
+    await settle(f);
+    expect(f.pager.index).toBe(1);
+    expect(f.x()).toBe(-WIDTH);
+  });
+
+  // react-component-runtime INV2: setOptions and a controlled goTo run from
+  // the owner's Effect, so nothing they cause may call back from inside it.
+  it('a gap change before a release reports keeps the report and delivers it, and the settle, from a frame callback', async () => {
+    const f = setup({defaultIndex: 1});
+    await drag(f, {from: 300, dx: -250, step: 4, dt: 8, hold: 100});
+    expect(f.pager.index).toBe(2);
+    expect(f.calls).toEqual([]);
+    f.pager.setOptions({gap: 10});
+    // Nothing from inside the update.
+    expect(f.calls).toEqual([]);
+    expect(f.x()).toBe(-2 * (WIDTH + 10));
+    await advance(16, f.clock);
+    expect(f.calls).toEqual(['index:2:drag', 'settle:2:1']);
+  });
+
+  it('a controlled move calls nothing from inside the update: its settle comes on the next frame', async () => {
+    const f = setup({defaultIndex: 1});
+    f.pager.goTo(3, {animated: false, reason: 'controlled'});
+    expect(f.calls).toEqual([]);
+    await advance(16, f.clock);
+    expect(f.calls).toEqual(['settle:3:1']);
+  });
+
+  it('a count that clamps the page calls nothing from inside the update', async () => {
+    const f = setup({defaultIndex: 4});
+    f.pager.setOptions({count: 3});
+    expect(f.pager.index).toBe(2);
+    expect(f.calls).toEqual([]);
+    await advance(16, f.clock);
+    expect(f.calls).toEqual(['settle:2:4']);
+  });
+
+  it('callbacks an update left for the next frame are dropped when the pager detaches first', async () => {
+    const f = setup({defaultIndex: 1});
+    f.pager.goTo(3, {animated: false, reason: 'controlled'});
+    f.pager.dispose();
+    await advance(16, f.clock);
+    expect(f.calls).toEqual([]);
+  });
+
   it('a vertical swipe that starts on a settling track still reaches the page: the catch never cancels its moves', async () => {
     const f = setup();
     await drag(f, {dx: -250, step: 10, dt: 8});

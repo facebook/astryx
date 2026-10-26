@@ -61,7 +61,7 @@ export function useChevronDip(
     // A second change within the dip restarts it from where it is rather
     // than snapping the glyph back to opaque first. The fixed curve keeps the
     // dip's middle on the turn's fixed delay (half the policy's duration) even
-    // when a theme retunes `timing.curves.easeInOut`.
+    // when a theme retunes `timing.curves.move`.
     dipRef.current?.cancel();
     dipRef.current = element.animate(
       [{opacity: 1}, {opacity: 0}, {opacity: 1}],
