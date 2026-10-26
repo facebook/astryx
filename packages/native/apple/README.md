@@ -28,6 +28,7 @@ apple/
 │   │   ├── Localization/
 │   │   ├── Icon/          # Icon, Icon.spec.md
 │   │   ├── Avatar/        # Avatar, Avatar.spec.md
+│   │   ├── AvatarStatusDot/ # AvatarStatusDot, AvatarStatusDot.spec.md
 │   │   ├── Text/          # Text
 │   │   ├── Heading/       # Heading
 │   │   ├── Button/        # Button
