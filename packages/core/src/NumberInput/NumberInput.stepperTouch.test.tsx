@@ -329,9 +329,13 @@ describe('NumberInput steppers under a finger', () => {
     );
     const {increment} = setup();
     const column = increment.parentElement as HTMLElement;
-    expect(
-      writes.filter(({style}) => style === column.style).map(w => w.value),
-    ).toEqual(['manipulation']);
+    // The host may write it more than once (at attach and as it re-applies);
+    // every write is manipulation.
+    const columnWrites = writes
+      .filter(({style}) => style === column.style)
+      .map(w => w.value);
+    expect(columnWrites).toContain('manipulation');
+    expect(new Set(columnWrites)).toEqual(new Set(['manipulation']));
   });
 
   it('a held finger turns text selection and the callout off on the column for that press only (spec:AST-094 FR41)', () => {

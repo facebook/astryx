@@ -56,14 +56,13 @@ import {useMediaQuery} from '../hooks/useMediaQuery';
 import {COARSE_POINTER_QUERY} from '../gestures/coarsePointer';
 import {
   browserClock,
-  paintPress,
-  readPressPaint,
   usePressTracker,
   type PressTracker,
   type UsePressTrackerOptions,
 } from '../gestures';
 import {lockSelection} from '../gestures/selectionLock';
 import {UIKIT_CLICK, UIKIT_PRESS} from '../motion/uikit/gestures';
+import {paintPress, readPressPaint} from '../utils/pressFeedback';
 import {StepperTracking, type StepperHalf} from './stepperTracking';
 
 /** What the press layer reads from NumberInput, current at every render. */
