@@ -132,7 +132,7 @@ Measured frame by frame on the emulator, with a marker the page paints on each
 report and Gboard's top read from every recorded frame (`../motion/android/
 keyboard.ts` has the numbers and their sources). The guide reads these reports
 in a browser with the VirtualKeyboard API (`keyboardProfileOf`), and the
-keyboard module measures them from the visual viewport under a finger
+keyboard module measures them from the visual viewport, as in every browser
 (`spec:AST-099` FR8, DEC-4).
 
 - Show: Gboard slides up over the page in about 267 ms. Chrome's one `resize`

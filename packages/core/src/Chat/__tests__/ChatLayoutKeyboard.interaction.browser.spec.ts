@@ -159,8 +159,9 @@ async function installKeyboard(page: Page) {
 /**
  * Chrome on Android: the same visual viewport the test drives (headless
  * browsers have no keyboard), and a VirtualKeyboard object the guide must
- * leave alone, so the guide reads Chrome's profile. Run it under a finger:
- * the keyboard module measures such a browser only there.
+ * leave alone, so the guide reads Chrome's profile. Run it under a finger,
+ * as Chrome on Android runs: the composer's focus routes are the touch ones
+ * there (the keyboard module measures under any pointer).
  */
 async function installAndroidKeyboard(page: Page) {
   await page.addInitScript(() => {
