@@ -15,6 +15,7 @@ import {getGestureHost} from '../../GestureHost';
 import type {GestureRecognizer} from '../../GestureRecognizer';
 import {LongPressGestureRecognizer} from '../../LongPressGestureRecognizer';
 import {PanGestureRecognizer} from '../../PanGestureRecognizer';
+import {lockSelection} from '../../selectionLock';
 import {PinchGestureRecognizer} from '../../PinchGestureRecognizer';
 import {TapGestureRecognizer} from '../../TapGestureRecognizer';
 
@@ -25,7 +26,6 @@ interface Entry {
   x?: number;
   y?: number;
   scale?: number;
-  handoff?: boolean;
   beganAt?: number | null;
   startedAt?: number;
 }
@@ -84,6 +84,7 @@ document.body.innerHTML = `
     <div id="passive" style="height: 60px; background: #dfd; touch-action: pan-y pinch-zoom">passive control</div>
     <div id="slider" style="height: 60px; background: #fdf">slider: a pan that turns selection off</div>
     <div id="checkRow" style="height: 60px; background: #eef">checkbox row <input id="check" type="checkbox" style="width: 40px; height: 40px"></div>
+    <div id="switchRow" style="height: 60px; background: #efe">switch: a drag that turns selection off <input id="switchInput" type="checkbox" style="width: 40px; height: 40px"></div>
     <div id="card" style="height: 80px; background: #def">card (swipe up)</div>
     <div id="cardLate" style="height: 80px; background: #fed">card, claims only when it begins</div>
     <div style="height: 1600px">page</div>
@@ -140,12 +141,8 @@ const sheet = new PanGestureRecognizer({
   name: 'sheet',
   direction: 'down',
   scrollEdge: true,
-  scrollHandoff: true,
 });
-record(sheet, () => ({
-  y: sheet.translation().y,
-  handoff: sheet.isHandoff,
-}));
+record(sheet, () => ({y: sheet.translation().y}));
 host.attach(element('sheetBody'), sheet);
 
 // A one-way pan over the scrollable page, as a toast's upward swipe is: it
@@ -174,7 +171,16 @@ host.attach(
   new PanGestureRecognizer({
     name: 'slider',
     direction: 'horizontal',
-    preventsTextSelection: true,
+    selectionLock: lockSelection,
+  }),
+);
+
+host.attach(
+  element('switchRow'),
+  new PanGestureRecognizer({
+    name: 'switchRow',
+    direction: 'horizontal',
+    selectionLock: lockSelection,
   }),
 );
 

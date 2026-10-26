@@ -49,6 +49,7 @@
 
 import {useEffect, useRef, type RefObject} from 'react';
 import {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer';
+import {lockSelection} from '../gestures/selectionLock';
 import type {GestureTouch, PointerKind} from '../gestures/types';
 import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
@@ -82,9 +83,9 @@ export interface ActionGroupTrackingOptions {
   /**
    * Let the gesture host write a long press's permanent styles on the
    * tracked element (`touch-action`, and no callout and no text selection
-   * for every pointer). Pass false to keep text selectable with a mouse: the
-   * host's selection lock still turns selection and the callout off while a
-   * finger or a pen is down. @default true
+   * for every pointer). Pass false to keep text selectable with a mouse: a
+   * held finger or pen still starts no selection and opens no callout
+   * (the recognizer's `selectionLock`, `spec:AST-094` FR41). @default true
    */
   manageStyle?: boolean;
   /** Runs the action under the finger at the lift. @default its own click */
@@ -225,11 +226,13 @@ export function useActionGroupTracking(
         allowableMovement: Number.POSITIVE_INFINITY,
         allowedPointerTypes: options.pointerTypes ?? ['touch', 'pen'],
         delaysTouchesBegan: true,
-        // A held finger or pen starts no text selection and opens no
-        // callout on the group, as on UIKit's action rows: the gesture
-        // host's selection lock, for as long as the contact is down. A mouse
-        // keeps selecting text.
-        preventsTextSelection: true,
+        // The group's hold does something (it tracks the finger across the
+        // actions, and the lift picks one), so a held finger or pen starts
+        // no text selection and opens no callout on it while down, as on
+        // UIKit's action rows (`spec:AST-094` FR41). A long press brings
+        // this lock by default; the group names it, since its hold has no
+        // minimum duration. A mouse keeps selecting text.
+        selectionLock: lockSelection,
         shouldReceiveTouch: (recognizer, touch) =>
           receiveTouch(recognizer, touch, optionsRef.current),
       }),

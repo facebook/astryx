@@ -99,7 +99,8 @@ export function useAlertDialogTouch(
     isInert: () => !motion.acceptsTouches(),
     isEnabled: isTracking,
     // A mouse keeps selecting the alert's text: the host's permanent
-    // long-press styles stay off, and its selection lock covers a finger.
+    // long-press styles stay off. A held finger selects nothing, since the
+    // group's hold does something (`spec:AST-094` FR41).
     manageStyle: false,
   });
   return {isTracking, isBodyScrollable, motion};

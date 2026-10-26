@@ -19,6 +19,8 @@ import {render} from '@testing-library/react';
 import {useRef} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {GestureHost} from '../gestures/GestureHost';
+import {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer';
+import {lockSelection} from '../gestures/selectionLock';
 import {coarsePrimaryPointer} from '../gestures/__tests__/pointerQuery';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 import {PRESS_FADE_MS} from '../utils/pressGesture';
@@ -424,6 +426,15 @@ describe('useActionGroupTracking', () => {
     g.down(cancel, centerOf(CANCEL));
     g.up(cancel, centerOf(CANCEL));
     expect(view.onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('suppresses text selection under a held finger: the group’s hold does something (spec:AST-094 FR41)', () => {
+    const attach = vi.spyOn(GestureHost.prototype, 'attach');
+    mount();
+    const recognizer = attach.mock.calls[0]?.[1];
+    expect(recognizer).toBeInstanceOf(LongPressGestureRecognizer);
+    expect(recognizer?.selectionLock).toBe(lockSelection);
+    attach.mockRestore();
   });
 
   it('attaches nothing while tracking is off, and attaches when it turns on', () => {
