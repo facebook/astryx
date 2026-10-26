@@ -166,14 +166,6 @@ async function openDefault(page: Page): Promise<OpenStory> {
   };
 }
 
-/**
- * The element's presented box at each time of its held animations: its
- * layout box scaled by the presented `scale` about its `transform-origin`.
- * Read from the computed style, which follows a seek; a composited animation
- * of an individual transform property does not reach getBoundingClientRect
- * in Chromium.
- */
-
 const centerOf = (box: Box) => ({
   x: box.x + box.width / 2,
   y: box.y + box.height / 2,
