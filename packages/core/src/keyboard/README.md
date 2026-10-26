@@ -194,8 +194,9 @@ keyboard module measures them from the visual viewport, as in every browser
   content box on Gboard's slides (`rideKeyboard`, from the guide's
   transitions).
 - ChatLayout (`Chat/useChatKeyboard.ts`): the dock and the message area's end
-  padding are laid out from `useKeyboardHeight`; the guide's ride moves the
-  dock, and a transcript at its newest message, with the keyboard; a tap on
+  padding are laid out from `useKeyboardHeight`; under a coarse pointer the
+  guide's ride moves the dock, and a transcript at its newest message, with
+  the keyboard; a tap on
   the composer's text is the tap route, and every other move into it the
   focus takeover (`refuseFocusReveal`), so none scrolls the page; the
   keyboard's Done parks focus on the composer region, a named group that is
