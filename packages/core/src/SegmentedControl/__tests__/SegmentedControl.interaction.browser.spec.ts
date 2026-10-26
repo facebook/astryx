@@ -2154,18 +2154,30 @@ test('a held finger selects no text on the control; letting go gives selection b
       };
       return style.userSelect || style.webkitUserSelect;
     });
+  // Whether a selection starting on the held segment is refused now. Where
+  // iOS WebKit does not run, the gesture host's lock cancels `selectstart`
+  // and writes no style, so nothing repaints at the touch-down or the lift
+  // (`spec:AST-094` FR41); in iOS WebKit, which fires no `selectstart` for a
+  // long press, the lock is `user-select` and the callout, which the
+  // simulator recordings cover.
+  const refusesSelection = async () =>
+    control.segment('list').evaluate(element => {
+      const event = new Event('selectstart', {bubbles: true, cancelable: true});
+      element.dispatchEvent(event);
+      return event.defaultPrevented;
+    });
   // At rest the titles are as selectable as anywhere else on the page.
   const atRest = await userSelect();
   expect(atRest).not.toBe('none');
+  expect(await refusesSelection()).toBe(false);
   const playing = control.driver.play(
     touchTap(await clientCenter(control, 'list'), {holdMs: 600}),
   );
-  // While the finger is down the gesture host locks selection on the track
-  // (the callout beside it exists only in iOS Safari: the simulator
-  // recordings cover it).
-  await expect.poll(userSelect).toBe('none');
+  await expect.poll(refusesSelection).toBe(true);
+  expect(await userSelect()).toBe(atRest);
   await playing;
-  await expect.poll(userSelect).toBe(atRest);
+  await expect.poll(refusesSelection).toBe(false);
+  expect(await userSelect()).toBe(atRest);
 });
 
 /** Makes the story page scroll: the control sits in a scroller. */
