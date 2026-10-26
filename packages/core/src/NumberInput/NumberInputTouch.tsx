@@ -241,10 +241,11 @@ export function useStepperTouch(
   });
 
   const options: UsePressTrackerOptions = {
-    // No trackingExpansion: the press keeps tracking within the control
-    // profile's expanded area (AST-094 FR11), so a pointer trembling over
-    // the edge stays on the press. Proposed, pending owner review: UIStepper
-    // itself tracks within its frame only (motion/MEASUREMENTS.md).
+    // No trackingExpansion of its own: the press keeps tracking within the
+    // control profile's area, `UIKIT_CONTROL.trackingExpansion` (70 px past
+    // the column), so a pointer trembling over the edge stays on the press.
+    // Proposed, pending owner review (M-STP20 in motion/MEASUREMENTS.md):
+    // UIStepper itself tracks within its frame only.
     //
     // Once a press is delivered the pointer's touch stays the stepper's, as a
     // scroll view never cancels a tracking UIControl: a slide onto the other
