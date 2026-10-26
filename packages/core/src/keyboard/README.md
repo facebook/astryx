@@ -67,7 +67,13 @@ exported from the package entry.
   keyboard when the sheet starts to move. It returns the room the keyboard
   takes at the end of the sheet's body, which the sheet lays out through a
   functional style on its own body (FR3), committed before the reveal scrolls
-  into it.
+  into it. Where the guide publishes the keyboard's own slide (Gboard's, in
+  Chrome on Android), the sheet rides it (FR8): a reveal during the show
+  scrolls the body at once and the content box rides up from where it was on
+  the show's curve; through the hide the room stays and the content box
+  rides down by the scroll the room's drop takes back, and at rest the room
+  drops and the translate clears in one commit. Safari's and Firefox's
+  reveals are unchanged.
 
 ## Laying out from the height, riding on top
 
@@ -208,7 +214,9 @@ keyboard module measures them from the visual viewport, as in every browser
   inset the content box's `keyboardInset` functional style lays out as the
   content's last box (after its own children, so it adds scroll range in
   Firefox too, which keeps the content box at the body's height); it reveals the
-  focused field in the keyboard report's own event.
+  focused field in the keyboard report's own event, and in Chrome rides the
+  content box on Gboard's slides (`rideKeyboard`, from the guide's
+  transitions).
 - ChatLayout (`Chat/useChatKeyboard.ts`): the dock and the message area's end
   padding are laid out from `useKeyboardHeight`; the guide's ride moves the
   dock, and a transcript at its newest message, with the keyboard; a tap on
