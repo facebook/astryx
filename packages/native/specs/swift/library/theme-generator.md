@@ -133,7 +133,7 @@ re-implements theme logic.
     inside Display P3 is `Color(.displayP3, red:green:blue:opacity:)` (D5). A
     color outside Display P3 is gamut-mapped into it by CSS Color 4's
     algorithm (OKLCH chroma lowered until clipping moves the color less than
-    ΔEOK 0.02). Each channel and alpha rounds to the nearest of 256 steps,
+    ΔEOK 0.02), which warns (G15). Each channel and alpha rounds to the nearest of 256 steps,
     halves up, and is written as `0`, `1`, or the exact decimal of its step
     over 255 (the same `Double` as `n / 255`); the package declares no color
     initializer of its own.
@@ -141,28 +141,27 @@ re-implements theme logic.
     `pc` × 16, `in` × 96, and `cm`, `mm`, and `Q` from `in`; `calc()`,
     `min()`, `max()`, and `clamp()` over those; `thin`, `medium`, and
     `thick` as 1, 3, and 5 for `border-width` only, with no length elsewhere. A unitless number is points. An `em` is read
-    against the 16-point root.
+    against the 16-point root and warns.
   - Font weights (`font-weight-*`, `text-*-weight`) are numbers from 1 to
     1000; `normal` is 400 and `bold` 700. `bolder` (700) and `lighter` (100)
-    are read against 400.
+    are read against 400 and warn.
   - Line heights (`text-*-leading`) are multipliers of the font size: a
     number as is, a percentage ÷ 100, a length ÷ the same style's
     `text-<style>-size` in the same mode (so an `em` counts against that
-    size and `1.5em` is 1.5), to 12 significant digits. `normal` is 1.2.
+    size and `1.5em` is 1.5), to 12 significant digits. `normal` is 1.2 and warns.
   - Font families are `[String]`, quotes removed, in the CSS stack's order.
   - Shadows are `[ShadowLayer]`, one per `box-shadow` layer in order, its
     color and lengths in either order; `none` is no layers. A drop layer is
     `x y [blur [spread]] color`; SwiftUI draws no drop spread, so a spread is
-    left out. An inset layer is a ring, `inset 0 0 0 <width> color`, which a
+    left out and warns. An inset layer is a ring, `inset 0 0 0 <width> color`, which a
     view draws inside its border, as CSS draws an inset shadow.
-  - These have no static form: `currentColor`; system colors such as
+  - These have no static form (G15): `currentColor`; system colors such as
     `Canvas`; percentages outside color channels and line heights; viewport
     and container units; font-relative units (`ex`, `ch`, `ic`, `cap`,
     `lh`, and their root forms); a `var()` core's resolver leaves unresolved;
     `env()` and `attr()`; CSS-wide keywords; `calc()` that adds unlike
     kinds; an offset or blurred inset shadow; and any value outside the
-    forms above. Such a value fails the run with the theme, mode,
-    token, value, and reason. A token present in one mode and missing in the other fails
+    forms above. A token present in one mode and missing in the other fails
     the run with the theme, mode, and token.
 - **G8 — Theme-local tokens wait for a per-mode source.** A theme's local
   tokens (AST-006) are generated only once core's resolver returns them per
@@ -206,6 +205,26 @@ re-implements theme logic.
   files are committed beside the Swift sources until CI publishes generated
   Swift to a Swift-only branch or tag, as the package README notes.
 
+- **G15 — Every conversion is exact, warned, or an error.**
+  - An exact conversion, including G7's stated rounding, prints nothing.
+  - A lossy conversion (a color gamut-mapped into Display P3, an `em` read
+    against the root, `bolder` or `lighter` read against 400, `normal` line
+    height read as 1.2, a drop shadow's spread left out) emits the value and
+    one warning naming the theme, mode, token, CSS value, emitted Swift
+    value, and what was lost.
+  - A value with no static form stops the run with an error naming the
+    theme, mode, token, CSS value, and reason, unless the token is optional.
+    A token is optional when core fills a default for it: core's resolver
+    returns it with no theme (`resolveThemeTokens(null, {mode})`), as it does
+    every G5 token. An optional token takes core's default for that mode,
+    converted by G7, and warns, naming the default. A token core has no
+    default for, a default with no static form, and every token of core's
+    own defaults are required.
+  - Warnings print after the run writes its files, one line each, starting
+    `warning: `. `--strict` turns every warning into an error: the run prints
+    each starting `error: `, writes no file, and exits non-zero. A product
+    theme (`--theme`) gets the same treatment, and `renderSwiftTheme` takes `warnings` (a list it appends to) and `strict`; called without a list, it prints each warning to standard error, so a loss is never silent. A token's notes print once per mode, and notes from a value that failed are dropped with it, so a fallback's warning names only the failure and core's default.
+
 ## Acceptance checks
 
 | Requirement | Check                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -224,6 +243,7 @@ re-implements theme logic.
 | G12         | A test reads `packages/themes/*/package.json` and finds one generated file per non-private package plus `default`. A fixture product theme renders through `renderSwiftTheme`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | G13         | Editing one generated value or member name by hand fails the drift test with the regenerate command in the message.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | G14         | The README's generated-Swift note lists the generated theme files.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| G15         | `oklch(0.7 0.4 150)` emits `Color(.displayP3, red: 0, green: 0.7843137254901961, blue: 0.19607843137254902, opacity: 1)` and warns in light and dark with theme, mode, token, value, and that Swift value; `--spacing-4: 2vw` emits core's default and warns; `currentColor` in a token core has no default for fails with theme, mode, token, value, and reason; with `--strict`, a theme that warns fails and no file is written. Without a list, `renderSwiftTheme` prints each warning to standard error; `calc(1em + 2vw)` falls back with one warning that does not mention the `em`; `calc(1em + 1em)` warns once per mode.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 ## Decisions
 
@@ -289,7 +309,8 @@ re-implements theme logic.
 - Core's resolver substitutes `var()` references between tokens and
   evaluates `color-mix(in srgb, …)` over the colors it parses; the generator
   converts every other G7 form itself.
-- Every color in the published themes is inside sRGB.
+- Every published theme generates with no warning, and every color in them is
+  inside sRGB.
 
 ## Open questions
 
