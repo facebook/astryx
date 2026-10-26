@@ -14,8 +14,8 @@
  *   touch device, spec:AST-094 FR13), attached by useSliderTouch once that
  *   presentation applies; useSliderTouch is its one import site, so a desktop
  *   build can swap the module. A mouse or a trackpad keeps Slider's own
- *   pointer handlers. The coast spring is the `slider.releaseSpring` motion
- *   role (spec:AST-094 FR4), resolved under the thumb's theme.
+ *   pointer handlers. Every spring is the UIKit table's internal constant
+ *   (touch motion has no theme surface).
  *
  * WHAT A FINGER DOES (UISlider, iOS 26.2; values and sources in
  * motion/uikit/slider.ts)
@@ -95,13 +95,9 @@ import {
   type MotionHandle,
 } from '../motion/animator';
 import {projectDistance} from '../motion/projection';
-import {resolveMotion} from '../motion/resolveMotion';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {UIKIT_CONTROL, UIKIT_PAN} from '../motion/uikit/gestures';
-import {
-  registerSliderTable,
-  slider as UIKIT_SLIDER,
-} from '../motion/uikit/slider';
+import {slider as UIKIT_SLIDER} from '../motion/uikit/slider';
 
 /** Frames of a coast before it reports values (the touch hand-off limit). */
 const HAND_OFF_FRAMES = 3;
@@ -273,9 +269,6 @@ export class SliderTouchController {
     if (parts == null || parts.hits.length === 0) {
       return () => {};
     }
-    // The slider's springs are motion roles a theme may retune: register
-    // them before the first lift, drop or coast (idempotent).
-    registerSliderTable();
     const host = getGestureHost(parts.control.ownerDocument);
     const detachers: (() => void)[] = [];
     parts.hits.forEach((hit, owner) => {
@@ -728,11 +721,9 @@ export class SliderTouchController {
       velocity: velocityPx,
       lower: (lowerValue - min) * pxPerValue,
       upper: (upperValue - min) * pxPerValue,
-      // A theme may retune the coast (`slider.releaseSpring`).
-      spring: resolveMotion(
-        this.getParts()?.control,
-        UIKIT_SLIDER.releaseSpring,
-      ),
+      // UIKit's release spring, an internal constant (touch motion has no
+      // theme surface).
+      spring: UIKIT_SLIDER.releaseSpring,
     });
     const moves =
       Math.abs(toPx - fromPx) >= MIN_COAST_PX ||
