@@ -108,6 +108,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'itemKey',
+      type: 'string | number | bigint',
+      description:
+        "The row's item key in a reorderable List (List reorderable): the key the reorderable object's onReorder reports and isReorderable is asked about. A row without one has no reorder handle and keeps its place. Separate from React's key. No effect elsewhere.",
+    },
+    {
       name: 'swipeActions',
       type: '{leading?: ItemSwipeAction[]; trailing?: ItemSwipeAction[]}',
       description:
@@ -223,6 +229,8 @@ export const docsDense = {
   propDescriptions: {
     align:
       "Start/end content alignment, passed to Item: 'center' (default), 'start', or 'first-line' (centered on the label's first line).",
+    itemKey:
+      'In a reorderable List: the key onReorder reports; without one the row keeps its place.',
     label:
       'Primary content. String auto-truncates; ReactNode renders as given.',
     description: 'Secondary text below label.',

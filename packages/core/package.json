@@ -709,6 +709,11 @@
       "types": "./dist/i18n/index.d.ts",
       "default": "./dist/i18n/index.js"
     },
+    "./reorderable": {
+      "source": "./src/reorderable/index.ts",
+      "types": "./dist/reorderable/index.d.ts",
+      "default": "./dist/reorderable/index.js"
+    },
     "./theme": {
       "source": "./src/theme/index.ts",
       "types": "./dist/theme/index.d.ts",

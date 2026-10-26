@@ -48,6 +48,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'reorderable',
+      type: 'Reorderable',
+      description:
+        "Makes the rows reorderable, with the object createReorderable({onReorder, isReorderable}) makes: each ListItem with an itemKey gets a reorder handle at its end, and each committed move calls onReorder once with the row's key and its index after the move ({key, to}); render the rows in the new order to apply it. A row the object's isReorderable rejects has no handle and keeps its place; one at either end of the list also bounds the others. The object may be made on every render. On a touch screen, a finger held still on a handle for a moment picks up its row (a flick on it still scrolls): the row follows the finger, the rows it passes slide out of its way, the page scrolls near the edges, and on release the row settles into its new place on UIKit's springs, as an iOS table reorders. A mouse drags a handle at once, and the rows take their places without motion. From the keyboard, Space or Enter on a handle picks its row up, the arrow keys, Home and End move it, Space or Enter drops it and Escape puts it back; nothing is reported before the drop. The pick-up, each key move, the drop and a cancel are announced, a drop once the new order renders (or as cancelled if the order is kept). A disabled row's handle stays focusable but moves nothing.",
+    },
+    {
       name: 'edge',
       type: "'padded' | 'flush' | 'outset' | 'bleed'",
       description:

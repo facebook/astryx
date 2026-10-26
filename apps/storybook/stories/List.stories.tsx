@@ -11,6 +11,7 @@ import {useRef, useState, type MouseEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
 import {List, ListItem} from '@astryxdesign/core/List';
+import {createReorderable} from '@astryxdesign/core/reorderable';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {Badge} from '@astryxdesign/core/Badge';
 import {Card} from '@astryxdesign/core/Card';
@@ -626,6 +627,97 @@ export const AnimatedChangesSwipe: Story = {
           'With `hasAnimatedChanges`, a row swiped away with a removal ' +
           'action collapses in place, its action showing, while the rows ' +
           'below slide up into its gap on UIKit’s table update spring.',
+      },
+    },
+  },
+};
+
+function moveKey(
+  rows: ReadonlyArray<string>,
+  key: unknown,
+  to: number,
+): string[] {
+  const next = rows.filter(row => row !== key);
+  next.splice(to, 0, key as string);
+  return next;
+}
+
+function ReorderDemo({
+  initial,
+  pinned = [],
+}: {
+  initial: ReadonlyArray<string>;
+  pinned?: ReadonlyArray<string>;
+}) {
+  const [rows, setRows] = useState(initial);
+  return (
+    <List
+      hasDividers
+      hasAnimatedChanges
+      reorderable={createReorderable({
+        onReorder: ({key, to}) => setRows(current => moveKey(current, key, to)),
+        isReorderable: key => !pinned.includes(key as string),
+      })}>
+      {rows.map(label => (
+        <ListItem key={label} itemKey={label} label={label} />
+      ))}
+    </List>
+  );
+}
+
+export const Reorderable: Story = {
+  render: () => (
+    <ReorderDemo
+      initial={['Inbox', 'Sent', 'Drafts', 'Archive', 'Spam', 'Trash']}
+    />
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'With `reorderable` (from `createReorderable`), each row with an ' +
+          '`itemKey` gets a reorder handle. On a touch screen, hold a handle ' +
+          'for a moment, then drag: the rows you pass slide out of the way ' +
+          'and the row settles into its new place on release. A mouse drags ' +
+          'a handle at once. From the keyboard, Space or Enter picks the ' +
+          'focused handle’s row up, the arrow keys move it, and Space or ' +
+          'Enter drops it.',
+      },
+    },
+  },
+};
+
+export const ReorderWithPinnedRows: Story = {
+  render: () => (
+    <ReorderDemo
+      initial={['Favorites', 'Inbox', 'Sent', 'All mail', 'Drafts', 'Spam']}
+      pinned={['Favorites', 'All mail']}
+    />
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A row the object’s `isReorderable` rejects has no handle. At an ' +
+          'end of the list it also bounds the others (nothing drops above ' +
+          'Favorites); in the middle, other rows move past it.',
+      },
+    },
+  },
+};
+
+export const ReorderLongList: Story = {
+  render: () => (
+    <ReorderDemo
+      initial={Array.from({length: 30}, (_, index) => `Item ${index + 1}`)}
+    />
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Dragging a row near the top or bottom of the screen scrolls the ' +
+          'page, faster the further past the edge the row goes.',
       },
     },
   },

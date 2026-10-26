@@ -14,6 +14,11 @@
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
  *
+ * In a reorderable List (`List reorderable`), each row with an `itemKey`
+ * that the reorderable object lets move ends with its handle, which comes
+ * through ListContext's `reorder` with the rest of the reorder machinery
+ * (List/listReorderContext.ts); a row without one keeps its place.
+ *
  * Composes Item for the shared start content + label + description + end content layout
  * and the invisible button/anchor interactive pattern.
  *
@@ -25,7 +30,7 @@
  * - /packages/cli/assets/templates/blocks/components/List/ (showcase blocks)
  */
 
-import {use, useRef, type ReactNode} from 'react';
+import {use, useRef, type Key, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -133,6 +138,14 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
    * @default false
    */
   isSelected?: boolean;
+
+  /**
+   * The row's item key in a reorderable List (`List reorderable`): the key
+   * the reorderable object's `onReorder` reports and `isReorderable` is
+   * asked about. A row without one has no reorder handle. Separate from
+   * React's `key`, which stays React's own. No effect elsewhere.
+   */
+  itemKey?: Key;
 
   /**
    * Swipe actions for touch, passed through to `Item` unchanged: the verbs a
@@ -388,6 +401,7 @@ export function ListItem({
   rel,
   isDisabled = false,
   isSelected = false,
+  itemKey,
   align,
   xstyle,
   className,
@@ -417,6 +431,18 @@ export function ListItem({
       }
     };
   }, []);
+  // In a reorderable List: a trailing handle, or a row that stays put.
+  const reorder = ctx?.reorder;
+  const reorderHandle =
+    reorder != null &&
+    itemKey != null &&
+    (reorder.options.isReorderable?.(itemKey) ?? true) ? (
+      <reorder.session.Handle
+        label={label}
+        itemKey={itemKey}
+        isDisabled={isDisabled}
+      />
+    ) : null;
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
   const edge = ctx?.edge ?? 'padded';
@@ -466,7 +492,16 @@ export function ListItem({
       startContent={startContent}
       label={label}
       description={description}
-      endContent={endContent}
+      endContent={
+        isRenderable(reorderHandle) ? (
+          <>
+            {endContent}
+            {reorderHandle}
+          </>
+        ) : (
+          endContent
+        )
+      }
       onClick={onClick}
       interactiveRef={interactiveRef}
       href={href}
@@ -495,6 +530,9 @@ export function ListItem({
           edge === 'flush' && styles.edgeFlush,
           edge === 'outset' && styles.edgeOutset,
           edge === 'bleed' && styles.edgeBleed,
+          // A focused handle rings itself; the row's focus-within ring stays
+          // off for it (two rings, and the list clips the row's sides).
+          isRenderable(reorderHandle) && reorder?.session.rowStyle,
           xstyle,
         ] as StyleXStyles
       }
