@@ -234,8 +234,9 @@ const GONE = 874;
 describe('resolveSheetRelease against UIKit', () => {
   // Every measured drag began at the medium detent. A release moving back
   // toward it cancels there (spec:AST-094 FR37), where UIKit's own sheet
-  // settled 15 of those back-outs where they were nearest (listed below);
-  // on every other release the rule lands where UIKit landed.
+  // settled 14 of those back-outs on the stop nearest them and flicked one
+  // (`d0.v-1400`) to large (listed below); on every other release the rule
+  // lands where UIKit landed.
   const movingBack = (offset: number, velocity: number) =>
     velocity !== 0 && Math.sign(velocity) === Math.sign(MEDIUM - offset);
   const releases = [
