@@ -144,9 +144,17 @@ announcements are those of FR3 and FR4, and the tree adds no option.
   - a move past a row `isReorderable` rejects is refused and announced, such
     as "Can't move past Pinned";
   - focus stays on the handle, and the row scrolls into view;
-  - Escape, or activating the handle again, leaves reorder mode and keeps
-    every move, announcing "Done" with the item's position, such as "Done,
-    Milk at position 3 of 5".
+    \1
+  - while the item is in reorder mode, a hint anchored to it shows the moves
+    for its axis and a Done control, with the same layer, anchoring, and
+    theme roles as Core's keyboard hint, and stays until the mode ends; each
+    move in the hint is a button that does exactly what its key does, with
+    the same announcement and focus on the handle, and Done leaves the mode
+    as Escape does, so a pointer or a finger can reorder by tapping the
+    handle, then the move buttons, then Done;
+  - the hint is the mode's one added part, inside the open-layer element
+    allowance (`spec:AST-017` FR60), and it shares the keyboard hint's
+    internal anchored-hint layer, whose public API is unchanged.
 - **FR5 — Reordering adds at most one element to a row.** The one added
   element is the handle, the interactive drag target, with its role. Its grip
   is decoration, drawn by a pseudo-element or a theme-role glyph, not by
@@ -173,13 +181,14 @@ announcements are those of FR3 and FR4, and the tree adds no option.
 
 ## Verification
 
-| Contract     | Verification                                                          | Representative states                                                                                                                                                                                                                                                              | Mutation or failure expectation                                                                                                                                               |
-| ------------ | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1, FR6–FR8 | Public-API review, type tests, and descriptor checks                  | the factory's options; a collection's `reorderable` type; the factory's and List's descriptors                                                                                                                                                                                     | an extra gesture, timing, or animation option, an experimental name or subpath, a missing descriptor, or a second public reorder API, fails                                   |
-| FR2          | Bundle and runtime check of a collection with and without the prop    | without the prop; with the prop                                                                                                                                                                                                                                                    | reorder code in the bundle, a handle, or a listener without the prop fails; the measured cost is recorded in the pull request                                                 |
-| FR3          | Browser tests with real touch input and a mouse (`spec:AST-013` FR10) | a hold and drag; a flick; a drop; a cancelled drag; Reduce Motion                                                                                                                                                                                                                  | a drag that starts off the handle, a commit before the drop, two callbacks for one drag, a callback on cancel, or travel under Reduce Motion fails                            |
-| FR4          | Keyboard, mouse, VoiceOver, and TalkBack tests of reorder mode        | entering by click, Enter, and Space; arrows in vertical, horizontal, and grid collections; Up, Down, Left, and Right in a tree; each move's announcement at the top, middle, and end; a move past a rejected row; Escape and a second activation; focus and scroll after each move | a move that does not commit at once, an announcement missing, repeated, or before render, a move past a rejected row, focus leaving the handle, or moves undone on exit fails |
-| FR5          | Element and listener counts of a list with and without the prop       | a row at rest; a row picked up                                                                                                                                                                                                                                                     | more than one added element per row, a grip drawn with elements, a per-row listener, or a copy of the moving row, fails                                                       |
+| Contract     | Verification                                                              | Representative states                                                                                                                                                                                                                                                              | Mutation or failure expectation                                                                                                                                                                                               |
+| ------------ | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1, FR6–FR8 | Public-API review, type tests, and descriptor checks                      | the factory's options; a collection's `reorderable` type; the factory's and List's descriptors                                                                                                                                                                                     | an extra gesture, timing, or animation option, an experimental name or subpath, a missing descriptor, or a second public reorder API, fails                                                                                   |
+| FR2          | Bundle and runtime check of a collection with and without the prop        | without the prop; with the prop                                                                                                                                                                                                                                                    | reorder code in the bundle, a handle, or a listener without the prop fails; the measured cost is recorded in the pull request                                                                                                 |
+| FR3          | Browser tests with real touch input and a mouse (`spec:AST-013` FR10)     | a hold and drag; a flick; a drop; a cancelled drag; Reduce Motion                                                                                                                                                                                                                  | a drag that starts off the handle, a commit before the drop, two callbacks for one drag, a callback on cancel, or travel under Reduce Motion fails                                                                            |
+| FR4          | Keyboard, mouse, VoiceOver, and TalkBack tests of reorder mode            | entering by click, Enter, and Space; arrows in vertical, horizontal, and grid collections; Up, Down, Left, and Right in a tree; each move's announcement at the top, middle, and end; a move past a rejected row; Escape and a second activation; focus and scroll after each move | a move that does not commit at once, an announcement missing, repeated, or before render, a move past a rejected row, focus leaving the handle, or moves undone on exit fails                                                 |
+| FR4 hint     | Browser tests with a mouse, a finger, and a keyboard, plus element counts | the hint's axis in vertical, horizontal, and grid collections; each move button and Done; a tap-only reorder; the hint's theme roles; open-layer element count                                                                                                                     | a hint that differs from the keyboard hint's layer or theme roles, a button whose move or announcement differs from its key, focus leaving the handle, a hint that outlives the mode, or more elements than FR60 allows fails |
+| FR5          | Element and listener counts of a list with and without the prop           | a row at rest; a row picked up                                                                                                                                                                                                                                                     | more than one added element per row, a grip drawn with elements, a per-row listener, or a copy of the moving row, fails                                                                                                       |
 
 ## Decision log
 
@@ -245,6 +254,11 @@ mode in which the arrow keys move the item and each move is announced with its
 position and neighbors. Each move commits at once, so leaving the mode keeps
 the moves and the app never undoes several commits; focus stays on the handle
 until Escape or a second activation.
+
+While the mode is on, a hint anchored to the item shows the moves and Done,
+and its glyphs are buttons, so a sighted person who does not want to drag can
+tap through the same moves; it reuses the keyboard hint's layer rather than a
+second hint pattern.
 
 Rejected: a menu of Move before and Move after.
 
