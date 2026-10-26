@@ -141,8 +141,8 @@ const FACE_HYSTERESIS_RATIO = 0.25;
 const FACE_HYSTERESIS_MIN_PX = 8;
 
 /**
- * The dim the pressed state's opacity sets (SegmentedControlItem.tsx gives
- * UIKit's 0.2; a theme may retune it), or UIKit's when it cannot be read.
+ * The dim the pressed segment's style sets (SegmentedControlItem.tsx gives
+ * UIKit's internal 0.2), or UIKit's when it cannot be read.
  */
 function pressedOpacityOf(segment: HTMLElement): number {
   const view = segment.ownerDocument.defaultView;
