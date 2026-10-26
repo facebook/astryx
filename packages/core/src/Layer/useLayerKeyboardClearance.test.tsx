@@ -52,6 +52,7 @@ const guide = {
         velocity: 0,
         animated: true,
         predicted: false,
+        curve: null,
         spring: keyboard.spring,
         ...transition,
       });
