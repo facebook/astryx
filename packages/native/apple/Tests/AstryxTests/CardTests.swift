@@ -67,8 +67,18 @@ import Testing
 
 @MainActor
 @Test func aTransparentCardDrawsNoGroundAndNoBorder() {
-  let card = Pixels(Astryx.Card(variant: .transparent) { Color.clear.frame(width: 40, height: 40) }.frame(width: 80))
-  #expect(card.contains { $0[3] > 0 } == false)
+  // An opaque marker beside the card keeps the rendered image from being
+  // empty, which the iOS Simulator's image renderer does not draw reliably;
+  // only the card's 80 points are checked.
+  let view = SwiftUI.HStack(spacing: 0) {
+    Astryx.Card(variant: .transparent) { Color.clear.frame(width: 40, height: 40) }.frame(width: 80)
+    Color.black.frame(width: 8)
+  }
+  let pixels = Pixels(view.fixedSize())
+  #expect(close(pixels.at(pixels.width - 4, pixels.height / 2), [0, 0, 0, 255]))
+  for y in 0..<pixels.height {
+    for x in 0..<80 { #expect(pixels.at(x, y)[3] == 0, "pixel \(x),\(y)") }
+  }
 }
 
 @MainActor
