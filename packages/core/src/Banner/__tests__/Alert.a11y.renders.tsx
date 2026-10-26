@@ -4,13 +4,15 @@
 
 /**
  * @file Alert.a11y.renders.tsx
- * @input Uses Banner's public status, role, title, and dismissibility surfaces
+ * @input Uses Banner's public status, role, title, description, dismissibility,
+ *   endContent, and children surfaces
  * @output One public-interface rendering for every Banner alert binding state
  * @position Shared jsdom and checked-in Storybook fixture layer
  */
 
 import {useState, type ReactElement} from 'react';
 import {Banner} from '../Banner';
+import {Button} from '../../Button';
 import type {
   BannerAlertBindingState,
   BannerAlertStateId,
@@ -25,7 +27,7 @@ function BannerAlertHarness({state}: {state: BannerAlertBindingState}) {
       `${state.id}: Banner alert facts must describe a live region`,
     );
   }
-  const [message, setMessage] = useState(state.facts.initialMessage);
+  const [title, setTitle] = useState(state.title);
   return (
     <div>
       <span data-a11y-ready="true" hidden />
@@ -35,15 +37,22 @@ function BannerAlertHarness({state}: {state: BannerAlertBindingState}) {
       <button
         data-testid={transitionTestId('replace')}
         type="button"
-        onClick={() => setMessage(state.facts.replacement)}>
+        onClick={() => setTitle(state.replacementTitle)}>
         Replace alert
       </button>
       <Banner
         status={state.status}
         role="alert"
-        title={message}
+        title={title}
+        description={state.description}
         isDismissable={state.dismissible}
-      />
+        endContent={
+          state.endContentLabel == null ? undefined : (
+            <Button label={state.endContentLabel} variant="ghost" />
+          )
+        }>
+        {state.collapsedContent}
+      </Banner>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
-// @pr-a11y scope ^(internal/a11y-spec/src/patterns/status-message\.|packages/core/src/Banner/|apps/storybook/stories/AlertA11y)
+// @pr-a11y scope ^(internal/a11y-spec/src/patterns/status-message\.|internal/a11y-spec/src/harness|packages/core/src/Banner/|packages/core/src/Button/|packages/core/src/Tooltip/|apps/storybook/stories/AlertA11y)
 
 /** Real-browser and accessibility-tree binding for Banner's urgent alert states. */
 

@@ -43,3 +43,12 @@ export const BannerErrorAlertMounted = alertStory('banner-error-alert-mounted');
 export const BannerWarningAlertDismissible = alertStory(
   'banner-warning-alert-dismissible',
 );
+export const BannerWarningAlertCollapsible = alertStory(
+  'banner-warning-alert-collapsible',
+);
+export const BannerErrorAlertEndContent = alertStory(
+  'banner-error-alert-end-content',
+);
+export const BannerErrorAlertDescription = alertStory(
+  'banner-error-alert-description',
+);
