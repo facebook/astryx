@@ -368,6 +368,9 @@ const styles = stylex.create({
         [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
           default: null,
           [TOUCH]: {
+            // UIButton's measured release, the table's internal constant
+            // (`button.highlight.releaseMs`, mirrored for the stylesheet and
+            // drift-tested): touch motion stays internal (spec:AST-094 DEC-11).
             default: `${pressConsts.controlReleaseMs}ms`,
             '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
               reducedMotionFadeConsts.duration,
@@ -549,6 +552,9 @@ const styles = stylex.create({
         [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
           default: null,
           [TOUCH]: {
+            // UIButton's measured release, the table's internal constant
+            // (`button.highlight.releaseMs`, mirrored for the stylesheet and
+            // drift-tested): touch motion stays internal (spec:AST-094 DEC-11).
             default: `${pressConsts.controlReleaseMs}ms`,
             '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
               reducedMotionFadeConsts.duration,
