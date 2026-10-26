@@ -32,20 +32,24 @@ let animated: Element[] = [];
 let finishes = new Map<Element, () => void>();
 const originalAnimate = Element.prototype.animate;
 
+/** Records an animation on `target` and keeps its finish listener. */
+function recordAnimation(target: Element): Animation {
+  animated.push(target);
+  return {
+    cancel() {},
+    addEventListener(type: string, listener: () => void) {
+      if (type === 'finish') {
+        finishes.set(target, listener);
+      }
+    },
+  } as unknown as Animation;
+}
+
 beforeEach(() => {
   animated = [];
   finishes = new Map();
-  Element.prototype.animate = function (this: Element) {
-    animated.push(this);
-    const element = this;
-    return {
-      cancel() {},
-      addEventListener(type: string, listener: () => void) {
-        if (type === 'finish') {
-          finishes.set(element, listener);
-        }
-      },
-    } as unknown as Animation;
+  Element.prototype.animate = function animate(this: Element) {
+    return recordAnimation(this);
   };
 });
 
@@ -275,16 +279,16 @@ describe("a close plays the content's exit (spec:AST-105 FR4)", () => {
     await user.click(trigger);
     await flush();
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    // Still on screen for the exit, but out of reach and out of flow.
+    // Still on screen for the exit, out of reach, giving up its space.
     expect(getComputedStyle(content).display).not.toBe('none');
     expect(content).toHaveAttribute('inert');
     expect(content).toHaveAttribute('aria-hidden', 'true');
-    expect(content.style.position).toBe('absolute');
+    expect(content.style.getPropertyValue('margin-block-end')).not.toBe('');
     expect(animated).toContain(screen.getByTestId('after'));
     act(() => finishes.get(content)?.());
     expect(getComputedStyle(content).display).toBe('none');
     expect(content).not.toHaveAttribute('inert');
-    expect(content.style.position).toBe('');
+    expect(content.style.getPropertyValue('margin-block-end')).toBe('');
   });
 
   it("keeps a collapsing TreeList row's child group until its exit ends, out of the keyboard order", async () => {
@@ -323,7 +327,7 @@ describe("a close plays the content's exit (spec:AST-105 FR4)", () => {
     expect(group).not.toBeNull();
     expect(group).toHaveAttribute('inert');
     expect(group).toHaveAttribute('aria-hidden', 'true');
-    expect(group?.style.position).toBe('absolute');
+    expect(group?.style.getPropertyValue('margin-block-end')).not.toBe('');
     // The tree's keyboard order (the rows its focus model reaches) has only
     // the collapsed row.
     expect(

@@ -374,7 +374,7 @@ export function Collapsible({
     () => reportLayoutChange(animatedLayout, contentRef),
     [animatedLayout],
   );
-  // A measured close keeps the content rendered (inert, out of flow) while it
+  // A measured close keeps the content rendered (inert, giving up its space) while it
   // plays its exit, then hides it (`spec:AST-105` FR4).
   const [isExiting, setIsExiting] = useState(false);
   const endExit = useCallback(() => {

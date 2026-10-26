@@ -7,12 +7,13 @@
  *   cross-fade clock (uikit/timing.ts)
  * @output Exports `createAnimatedLayout` and the opaque `AnimatedLayout`
  *   handle, `reportLayoutChange`, `playLayoutChange`, `holdLayoutExit` /
- *   `releaseLayoutExit` and `applyLayoutChangeTransition`: the one module that produces the
+ *   `releaseLayoutExit` and `applyLayoutChangeTransition`: the one module
+ *   that produces the
  *   size-change glide `spec:AST-105` defines
  *   (`architecture:react-component-runtime` INV12)
- * @position Motion foundation, internal to core. `useAnimatedLayout`
- *   (public) returns a handle; Collapsible and TreeList take it as their
- *   `animatedLayout` prop and report their size changes through it.
+ * @position Motion foundation, internal to core. A handle comes from the
+ *   public `useAnimatedLayout` hook; a component that takes it reports its
+ *   size changes through this module.
  *
  * How it works:
  * - `measureBefore()` runs before the change commits: from the changed
@@ -35,9 +36,9 @@
  *   animates height, and nothing scrolls the area.
  * - A measurement no commit claims by the next frame is dropped.
  * - The changed element plays its own entrance on the same spring, started in
- *   the same frame (`playLayoutChange`), or its exit: held out of flow where
- *   it is while it conceals (`holdLayoutExit`). A disclosure's indicator
- *   turns on the same motion (`applyLayoutChangeTransition`).
+ *   the same frame (`playLayoutChange`), or its exit: kept where it is while
+ *   it gives up its space and conceals (`holdLayoutExit`). A disclosure's
+ *   indicator turns on the same motion (`applyLayoutChangeTransition`).
  * - Every pointer (`spec:AST-105` FR5). Under Reduce Motion nothing travels
  *   (`design:reduced-motion` DR1–DR3): a cross-fade under a coarse primary
  *   pointer, an immediate change otherwise.
@@ -440,8 +441,10 @@ function flush(batch: Batch): void {
   const view = batch.area.ownerDocument.defaultView;
   for (const element of followers) {
     const before = batch.before.get(element);
-    if (before == null || batch.changed.has(element)) {
-      // Added by the change, or itself a changed element: it plays its own.
+    if (before == null || (before.width === 0 && before.height === 0)) {
+      // Added by the change, or not rendered before it: it has no old place.
+      // A changed element an earlier change displaced does have one, and
+      // moves with its row while it plays its own entrance or exit.
       continue;
     }
     // An element already gliding keeps that motion and adds the new move: the
@@ -628,23 +631,21 @@ export function playLayoutChange(
 
 /** The inline properties an exit sets, so a release removes exactly them. */
 const EXIT_PROPERTIES = [
-  'position',
-  'top',
-  'left',
-  'width',
-  'margin',
+  'margin-block-end',
+  'margin-inline-end',
   'pointer-events',
 ] as const;
 
-/** Exits holding an element out of flow, so a release can stop one. */
+/** Exits holding an element back, so a release can stop one. */
 const exits = new WeakMap<Element, Animation | null>();
 
 /**
  * The changed element's exit (`spec:AST-105` FR4): content that disappears
- * keeps its place on screen but leaves the flow (absolutely positioned where
- * it is, so the content after it glides up at once), conceals upward from its
- * bottom edge on the same motion, and then `done` runs, when the component
- * hides or unmounts it. Under Reduce Motion with a coarse primary pointer it
+ * keeps its place on screen but gives up its space (a negative end margin as
+ * large as its box, so the content after it glides up at once and it still
+ * scrolls and clips with its container), conceals upward from its bottom
+ * edge on the same motion, and then `done` runs, when the component hides or
+ * unmounts it. Under Reduce Motion with a coarse primary pointer it
  * fades instead. Call it in the layout effect of the commit that closes the
  * element, before the change's `animate()`.
  *
@@ -672,15 +673,36 @@ export function holdLayoutExit(
     return false;
   }
   releaseLayoutExit(element);
-  // Its border box, against the box an absolute element is placed in.
-  const top = element.offsetTop;
-  const left = element.offsetLeft;
-  const width = element.offsetWidth;
-  element.style.setProperty('position', 'absolute');
-  element.style.setProperty('top', `${top}px`);
-  element.style.setProperty('left', `${left}px`);
-  element.style.setProperty('width', `${width}px`);
-  element.style.setProperty('margin', '0');
+  // It gives up the space it takes along its parent's main axis: its border
+  // box plus its start margin, so what follows takes its final place while
+  // it stays where it is, in flow, scrolling and clipping with its container.
+  const view = element.ownerDocument.defaultView;
+  const style = view?.getComputedStyle(element);
+  const parent =
+    element.parentElement == null
+      ? undefined
+      : view?.getComputedStyle(element.parentElement);
+  const isRow =
+    parent != null &&
+    parent.display.includes('flex') &&
+    parent.flexDirection.startsWith('row');
+  if (isRow) {
+    const inlineStart =
+      style?.direction === 'rtl' ? 'margin-right' : 'margin-left';
+    const start =
+      Number.parseFloat(style?.getPropertyValue(inlineStart) ?? '') || 0;
+    element.style.setProperty(
+      'margin-inline-end',
+      `${-(element.offsetWidth + start)}px`,
+    );
+  } else {
+    const start =
+      Number.parseFloat(style?.getPropertyValue('margin-top') ?? '') || 0;
+    element.style.setProperty(
+      'margin-block-end',
+      `${-(element.offsetHeight + start)}px`,
+    );
+  }
   element.style.setProperty('pointer-events', 'none');
   const animation =
     motion.kind === 'fade'
@@ -716,8 +738,8 @@ export function holdLayoutExit(
 }
 
 /**
- * Puts an element `holdLayoutExit` took out of flow back: stops its exit and
- * removes the inline values the exit set. Called once the component has
+ * Puts an element `holdLayoutExit` held back: stops its exit and removes the
+ * inline values the exit set. Called once the component has
  * hidden the element, or when the element opens again mid-exit.
  */
 export function releaseLayoutExit(element: HTMLElement): void {

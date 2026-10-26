@@ -434,6 +434,126 @@ describe('one shared motion (spec:AST-105 FR4)', () => {
   });
 });
 
+describe('the changed element exits (spec:AST-105 FR4)', () => {
+  function exitSetUp() {
+    document.body.innerHTML =
+      '<div id="area"><div id="content">Details</div><p id="after">Next</p></div>';
+    const area = document.getElementById('area') as HTMLElement;
+    const content = document.getElementById('content') as HTMLElement;
+    vi.spyOn(area, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 0, 400, 600),
+    );
+    vi.spyOn(content, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 40, 400, 80),
+    );
+    Object.defineProperty(content, 'offsetHeight', {value: 80});
+    content.style.marginTop = '8px';
+    return {area, content, layout: createAnimatedLayout(() => area)};
+  }
+
+  it('keeps the content where it is while it gives up its space, conceals it on the spring, then hands it back', () => {
+    const {content, layout} = exitSetUp();
+    const done = vi.fn();
+    expect(holdLayoutExit(layout, content, done)).toBe(true);
+    // In flow (it scrolls and clips with its container), taking no space:
+    // its box and start margin given back through its end margin.
+    expect(content.style.position).toBe('');
+    expect(content.style.getPropertyValue('margin-block-end')).toBe('-88px');
+    expect(content.style.pointerEvents).toBe('none');
+    const exit = played.find(p => p.element === content);
+    expect(exit?.keyframes[0].opacity).toBe(1);
+    expect(String(exit?.keyframes.at(-1)?.clipPath)).toBe('inset(0 0 100% 0)');
+    expect(exit?.options.fill).toBe('forwards');
+    expect(done).not.toHaveBeenCalled();
+    exit?.finish?.();
+    expect(done).toHaveBeenCalledTimes(1);
+    releaseLayoutExit(content);
+    expect(content.style.getPropertyValue('margin-block-end')).toBe('');
+    expect(content.style.pointerEvents).toBe('');
+  });
+
+  it('stops an exit when the content opens again', () => {
+    const {content, layout} = exitSetUp();
+    const done = vi.fn();
+    holdLayoutExit(layout, content, done);
+    const exit = played.find(p => p.element === content);
+    releaseLayoutExit(content);
+    expect(exit?.cancel).toHaveBeenCalledTimes(1);
+    expect(content.style.getPropertyValue('margin-block-end')).toBe('');
+    exit?.finish?.();
+    expect(done).not.toHaveBeenCalled();
+  });
+
+  it('lands at once without a handle, and under Reduce Motion with a fine pointer', () => {
+    const {content, layout} = exitSetUp();
+    expect(holdLayoutExit(null, content, vi.fn())).toBe(false);
+    media['(prefers-reduced-motion: reduce)'] = true;
+    expect(holdLayoutExit(layout, content, vi.fn())).toBe(false);
+    expect(content.style.getPropertyValue('margin-block-end')).toBe('');
+    expect(played).toEqual([]);
+  });
+
+  it('fades under Reduce Motion with a coarse pointer', () => {
+    const {content, layout} = exitSetUp();
+    media['(prefers-reduced-motion: reduce)'] = true;
+    media['(pointer: coarse)'] = true;
+    expect(holdLayoutExit(layout, content, vi.fn())).toBe(true);
+    const exit = played.find(p => p.element === content);
+    expect(exit?.keyframes.map(k => k.opacity)).toEqual([1, 0]);
+    expect(exit?.keyframes[0].clipPath).toBeUndefined();
+  });
+});
+
+describe('two changes in one frame (spec:AST-105 FR3)', () => {
+  it('moves a changed element an earlier change displaced with its row, by its total change', async () => {
+    document.body.innerHTML =
+      '<div id="area"><div id="g1"></div><div id="g2"></div><div id="after"></div></div>';
+    const area = document.getElementById('area') as HTMLElement;
+    const phase: {current: 'before' | 'after'} = {current: 'before'};
+    placeAt(area, {before: [0, 0, 400, 600]}, phase);
+    // The second group opens and is pushed down 80 px by the first.
+    placeAt(
+      document.getElementById('g2') as HTMLElement,
+      {before: [0, 0, 400, 40], after: [0, 80, 400, 120]},
+      phase,
+    );
+    const layout = createAnimatedLayout(() => area);
+    const one = reportLayoutChange(layout, () => document.getElementById('g1'));
+    const two = reportLayoutChange(layout, () => document.getElementById('g2'));
+    one.measureBefore();
+    two.measureBefore();
+    phase.current = 'after';
+    one.animate();
+    two.animate();
+    await flushMicrotasks();
+    const moves = played.filter(p => (p.element as HTMLElement).id === 'g2');
+    expect(moves).toHaveLength(1);
+    expect(translateOf(moves[0]).y).toBeCloseTo(-80);
+  });
+
+  it('does not move an element that was not rendered before the change', async () => {
+    document.body.innerHTML =
+      '<div id="area"><div id="g1"></div><div id="shown"></div></div>';
+    const area = document.getElementById('area') as HTMLElement;
+    const phase: {current: 'before' | 'after'} = {current: 'before'};
+    placeAt(area, {before: [0, 0, 400, 600]}, phase);
+    placeAt(
+      document.getElementById('shown') as HTMLElement,
+      {before: [0, 0, 0, 0], after: [0, 80, 400, 40]},
+      phase,
+    );
+    const report = reportLayoutChange(
+      createAnimatedLayout(() => area),
+      () => document.getElementById('g1'),
+    );
+    report.measureBefore();
+    phase.current = 'after';
+    report.animate();
+    await flushMicrotasks();
+    expect(played).toEqual([]);
+  });
+});
+
 describe('the indicator transition', () => {
   it('takes the spring as a linear() easing with a handle, and clears without one', () => {
     document.body.innerHTML = '<div id="area"><svg id="chevron"></svg></div>';
@@ -467,70 +587,5 @@ describe('the indicator transition', () => {
       chevron,
     );
     expect(chevron.style.getPropertyValue('transition-duration')).toBe('0s');
-  });
-});
-
-describe('the changed element exits (spec:AST-105 FR4)', () => {
-  function exitSetUp() {
-    document.body.innerHTML =
-      '<div id="area"><div id="content">Details</div><p id="after">Next</p></div>';
-    const area = document.getElementById('area') as HTMLElement;
-    const content = document.getElementById('content') as HTMLElement;
-    vi.spyOn(area, 'getBoundingClientRect').mockReturnValue(
-      new DOMRect(0, 0, 400, 600),
-    );
-    vi.spyOn(content, 'getBoundingClientRect').mockReturnValue(
-      new DOMRect(0, 40, 400, 80),
-    );
-    return {area, content, layout: createAnimatedLayout(() => area)};
-  }
-
-  it('holds the content out of flow where it is, conceals it on the spring, then hands it back', () => {
-    const {content, layout} = exitSetUp();
-    const done = vi.fn();
-    expect(holdLayoutExit(layout, content, done)).toBe(true);
-    expect(content.style.position).toBe('absolute');
-    expect(content.style.pointerEvents).toBe('none');
-    const exit = played.find(p => p.element === content);
-    expect(exit?.keyframes[0].opacity).toBe(1);
-    expect(String(exit?.keyframes.at(-1)?.clipPath)).toBe('inset(0 0 100% 0)');
-    expect(exit?.options.fill).toBe('forwards');
-    expect(done).not.toHaveBeenCalled();
-    exit?.finish?.();
-    expect(done).toHaveBeenCalledTimes(1);
-    releaseLayoutExit(content);
-    expect(content.style.position).toBe('');
-    expect(content.style.pointerEvents).toBe('');
-  });
-
-  it('stops an exit when the content opens again', () => {
-    const {content, layout} = exitSetUp();
-    const done = vi.fn();
-    holdLayoutExit(layout, content, done);
-    const exit = played.find(p => p.element === content);
-    releaseLayoutExit(content);
-    expect(exit?.cancel).toHaveBeenCalledTimes(1);
-    expect(content.style.position).toBe('');
-    exit?.finish?.();
-    expect(done).not.toHaveBeenCalled();
-  });
-
-  it('lands at once without a handle, and under Reduce Motion with a fine pointer', () => {
-    const {content, layout} = exitSetUp();
-    expect(holdLayoutExit(null, content, vi.fn())).toBe(false);
-    media['(prefers-reduced-motion: reduce)'] = true;
-    expect(holdLayoutExit(layout, content, vi.fn())).toBe(false);
-    expect(content.style.position).toBe('');
-    expect(played).toEqual([]);
-  });
-
-  it('fades under Reduce Motion with a coarse pointer', () => {
-    const {content, layout} = exitSetUp();
-    media['(prefers-reduced-motion: reduce)'] = true;
-    media['(pointer: coarse)'] = true;
-    expect(holdLayoutExit(layout, content, vi.fn())).toBe(true);
-    const exit = played.find(p => p.element === content);
-    expect(exit?.keyframes.map(k => k.opacity)).toEqual([1, 0]);
-    expect(exit?.keyframes[0].clipPath).toBeUndefined();
   });
 });

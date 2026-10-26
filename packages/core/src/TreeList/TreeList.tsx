@@ -248,7 +248,7 @@ export function TreeList({
     isExpanding: boolean;
   } | null>(null);
   // Rows whose measured collapse is still playing its exit: their child group
-  // stays rendered (inert, out of flow) until it finishes (`spec:AST-105` FR4).
+  // stays rendered (inert, giving up its space) until it finishes (`spec:AST-105` FR4).
   const [exitingIds, setExitingIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );

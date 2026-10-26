@@ -221,26 +221,35 @@ test.describe('spec:AST-105 Coverage', () => {
   test('a sticky element glides while unstuck and stays put while stuck', async ({
     page,
   }) => {
+    // Both headers come after the change; the first is stuck at the area's
+    // top, the second is still in flow below. No scroll anchoring, so content
+    // after a change above the fold moves.
     await open(
       page,
-      `<div id="area" class="area">
-        ${'<div class="row"></div>'.repeat(4)}
-        <div id="stuck" style="position: sticky; top: 0; height: 30px; background: #ccf"></div>
-        ${'<div class="row"></div>'.repeat(4)}
+      `<div id="area" class="area" style="overflow-anchor: none">
         <div id="grow" class="grow"></div>
+        ${'<div class="row"></div>'.repeat(2)}
+        <div id="stuck" style="position: sticky; top: 0; height: 30px; background: #ccf"></div>
+        ${'<div class="row"></div>'.repeat(10)}
         <div id="unstuck" style="position: sticky; top: 0; height: 30px; background: #fcc"></div>
         ${'<div class="row"></div>'.repeat(20)}
       </div>`,
     );
-    // Scrolled past the first header: it is stuck at the area's top.
-    await page.evaluate(() => {
-      (document.querySelector('#area') as HTMLElement).scrollTop = 200;
+    const stuckTop = await page.evaluate(() => {
+      const area = document.querySelector('#area') as HTMLElement;
+      area.scrollTop = 300;
+      const top = area.getBoundingClientRect().top;
+      return (
+        (document.querySelector('#stuck')?.getBoundingClientRect().top ?? 0) -
+        top
+      );
     });
+    // Precondition: the first header is stuck at the top.
+    expect(stuckTop).toBeCloseTo(0, 0);
     await change(page);
     expect(await page.evaluate(() => window.motionOf('#stuck'))).toEqual([]);
-    expect(await page.evaluate(() => window.motionOf('#unstuck'))).toHaveLength(
-      1,
-    );
+    const [unstuck] = await page.evaluate(() => window.motionOf('#unstuck'));
+    expect(startOffset(unstuck.first).y).toBeCloseTo(-80, 0);
   });
 
   test('a float after the change glides', async ({page}) => {
@@ -255,35 +264,51 @@ test.describe('spec:AST-105 Coverage', () => {
     );
   });
 
-  test('flex items: a wrapped item glides, a row-direction neighbor that does not shift stays', async ({
+  test('flex items: an item that wraps glides, a row-direction neighbor whose rectangle does not change stays', async ({
     page,
   }) => {
     await open(
       page,
       `<div id="area" class="area">
-        <div style="display: flex; gap: 8px"><div id="chip" style="width: 40px; height: 30px; background: #fd9"></div><div id="neighbor" style="width: 40px; height: 30px; background: #9cf"></div></div>
-        <div id="tags" style="display: flex; flex-wrap: wrap; gap: 4px; width: 200px">
-          <span class="tag" style="width: 60px; height: 24px; background: #ddd"></span>
-          <span class="tag" style="width: 60px; height: 24px; background: #ddd"></span>
-          <span class="tag" style="width: 60px; height: 24px; background: #ddd"></span>
-          <span id="last" class="tag" style="width: 60px; height: 24px; background: #ddd"></span>
-        </div></div>`,
+        <div style="display: flex; flex-wrap: wrap; gap: 4px; width: 200px">
+          <div id="chip" style="width: 40px; height: 24px; background: #fd9"></div>
+          <div id="t1" style="width: 60px; height: 24px; background: #ddd"></div>
+          <div id="t2" style="width: 60px; height: 24px; background: #ddd"></div>
+        </div>
+        <div style="display: flex; align-items: flex-start; gap: 8px">
+          <div id="tall" style="width: 40px; height: 30px; background: #fd9"></div>
+          <div id="neighbor" style="width: 40px; height: 30px; background: #9cf"></div>
+        </div>
+        <div id="below" class="row"></div>
+      </div>`,
     );
-    // The first chip widens: its row-direction neighbor moves sideways.
+    // The first chip widens: the last item wraps to a new line and glides.
+    const t2Before = await page.evaluate(
+      () => document.querySelector('#t2')?.getBoundingClientRect().top ?? 0,
+    );
     await change(page, {
       changed: '#chip',
       mutate: `document.querySelector('#chip').style.width = '120px'`,
     });
-    const [neighbor] = await page.evaluate(() => window.motionOf('#neighbor'));
-    expect(startOffset(neighbor.first).x).toBeCloseTo(-80, 0);
-    // A tag inserted before the last wraps it to a new line.
+    const t2After = await page.evaluate(
+      () => document.querySelector('#t2')?.getBoundingClientRect().top ?? 0,
+    );
+    const [wrapped] = await page.evaluate(() => window.motionOf('#t2'));
+    expect(wrapped).toBeDefined();
+    // It wrapped: its layout moved down a line, and it starts where it was.
+    expect(startOffset(wrapped.first).y).toBeLessThan(-20);
+    // A round trip after the change: it has barely left its old place.
+    expect(Math.abs(t2After - t2Before)).toBeLessThan(4);
+    await settle(page);
+    // An item grows taller: its row-direction neighbor keeps its rectangle and
+    // stays; the content after the row glides.
     await change(page, {
-      changed: '#tags',
-      mutate: `const tag = document.createElement('span'); tag.style.cssText = 'width: 60px; height: 24px; background: #ddd'; document.querySelector('#last').before(tag)`,
+      changed: '#tall',
+      mutate: `document.querySelector('#tall').style.height = '110px'`,
     });
-    // The wrapping row itself grew: the change is reported on it, and its own
-    // children are not followers (only content after it is).
-    expect(await page.evaluate(() => window.motionOf('#last'))).toEqual([]);
+    expect(await page.evaluate(() => window.motionOf('#neighbor'))).toEqual([]);
+    const [below] = await page.evaluate(() => window.motionOf('#below'));
+    expect(startOffset(below.first).y).toBeCloseTo(-80, 0);
   });
 
   test('hidden, display: none and zero-size elements are skipped', async ({
@@ -552,6 +577,10 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     const motions = await page.evaluate(() => window.motionOf('#after'));
     expect(motions).toHaveLength(1);
     expect(startOffset(motions[0].first).y).toBeCloseTo(-160, 0);
+    // The second changed element, pushed down by the first, moves with its
+    // row from its old place.
+    const [second] = await page.evaluate(() => window.motionOf('#g2'));
+    expect(startOffset(second.first).y).toBeCloseTo(-80, 0);
   });
 
   test('the glide never scrolls the area (FR3)', async ({page}) => {
@@ -641,6 +670,7 @@ test.describe('spec:AST-105 FR2–FR4', () => {
         held,
         visible,
         position: getComputedStyle(content).position,
+        marginEnd: content.style.getPropertyValue('margin-block-end'),
         followerStart,
         exitDuration: Number(timing?.duration),
         followerDuration: window.motionOf('#a')[0]?.duration ?? null,
@@ -649,10 +679,50 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     });
     expect(result.held).toBe(true);
     expect(result.visible).toBe(true);
-    expect(result.position).toBe('absolute');
+    // In flow, where it was, giving up its space.
+    expect(result.position).toBe('static');
+    expect(result.marginEnd).toBe('-80px');
     // The row below starts 80 px lower, where it was, and glides up.
     expect(startOffset(result.followerStart).y).toBeCloseTo(80, 0);
     expect(result.finished).toBe(true);
+  });
+
+  test('an exiting element in a scrolled area stays where it is, scrolls with the area and keeps its width (FR4)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area" style="overflow-anchor: none">
+        ${'<div class="row"></div>'.repeat(3)}
+        <div id="content" style="box-sizing: content-box; padding: 12px 18px; border: 2px solid #c90; height: 80px">Details</div>
+        ${'<div class="row"></div>'.repeat(30)}
+      </div>`,
+    );
+    const result = await page.evaluate(async () => {
+      const area = document.querySelector('#area') as HTMLElement;
+      const content = document.querySelector('#content') as HTMLElement;
+      area.scrollTop = 60;
+      const before = content.getBoundingClientRect();
+      const layout = window.AnimatedLayout.createAnimatedLayout(() => area);
+      const report = window.AnimatedLayout.reportLayoutChange(
+        layout,
+        () => content,
+      );
+      report.measureBefore();
+      window.AnimatedLayout.holdLayoutExit(layout, content, () => {});
+      report.animate();
+      await new Promise<void>(resolve => {
+        queueMicrotask(resolve);
+      });
+      const held = content.getBoundingClientRect();
+      area.scrollTop = 80;
+      const scrolled = content.getBoundingClientRect();
+      return {before, held, scrolled};
+    });
+    expect(result.held.top).toBeCloseTo(result.before.top, 0);
+    expect(result.held.width).toBeCloseTo(result.before.width, 0);
+    // It scrolls with the area (so the area still clips it).
+    expect(result.scrolled.top).toBeCloseTo(result.before.top - 20, 0);
   });
 
   test("a scope's --motion-springs-settle changes nothing: the role is internal (FR4)", async ({
