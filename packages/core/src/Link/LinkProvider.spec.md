@@ -137,8 +137,9 @@ LinkProvider has no visual output. No design record governs it.
   shared link boundary applies the family's destination rules before
   `component` sees a destination.
 - Every component that renders a link through the shared link boundary
-  consumes it, including the `family:navigation-destinations` members; for
-  example `component:Link` and `component:Button` link mode.
+  consumes it, for example `component:Link` and `component:Button` link mode.
+  A component that renders a native anchor directly, as the family's adoption
+  table lists, does not.
 
 ## Verification map
 
