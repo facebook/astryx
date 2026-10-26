@@ -2,11 +2,15 @@
 
 /**
  * @file keyboardDismiss.test.ts
- * @input vitest, jsdom, observeKeyboardDismiss, a stand-in visual viewport
- * @output Tests the three dismiss modes: interactive dismisses where the
- *   finger reaches the keyboard (less the padding), onDrag when the browser
- *   takes the touch to scroll, none never; touches in the bar or the text
- *   never dismiss
+ * @input vitest, jsdom, observeKeyboardDismiss, a stand-in visual viewport,
+ *   touch streams with explicit timestamps
+ * @output Tests the interactive mode's one decision at the release
+ *   (spec:AST-094 FR36, FR37): a slow drag that lifts past the line where the
+ *   keyboard (less the padding) begins dismisses, a lift short of it keeps
+ *   it, a flick that projects past it dismisses, a release moving back up
+ *   cancels, a cancelled touch decides nothing, and no move decides; touches
+ *   in the bar or the text, two fingers and a hardware keyboard never
+ *   dismiss; `none` never does
  * @position Unit tests for keyboard/keyboardDismiss.ts
  */
 
@@ -27,8 +31,11 @@ type FakeViewport = EventTarget & {
 const COVER = 300;
 const PADDING = 60;
 // jsdom's layout viewport is 768 px tall: the keyboard's top edge is at 468
-// and an interactive dismissal begins 60 px above it.
+// and an interactive dismissal commits 60 px above it.
 const TRIGGER = 768 - COVER - PADDING;
+// Longer than the velocity tracker's stillness (40 ms): a lift after it
+// releases at 0, so the finger's own position decides.
+const REST_MS = 100;
 
 let viewport: FakeViewport;
 let scroller: HTMLElement;
@@ -38,31 +45,41 @@ let stop: () => void = () => {};
 let unsubscribe: () => void = () => {};
 
 function touch(
-  type: 'touchstart' | 'touchmove' | 'touchend',
+  type: 'touchstart' | 'touchmove' | 'touchend' | 'touchcancel',
   target: Element,
   clientY: number,
+  time: number,
   {id = 1, fingers = 1}: {id?: number; fingers?: number} = {},
 ) {
   const point = {identifier: id, clientY, clientX: 100};
   const event = new Event(type, {bubbles: true});
   Object.assign(event, {
     touches:
-      type === 'touchend'
+      type === 'touchend' || type === 'touchcancel'
         ? []
         : Array.from({length: fingers}, (_, i) => ({...point, identifier: i})),
     changedTouches: [point],
   });
+  Object.defineProperty(event, 'timeStamp', {value: time});
   target.dispatchEvent(event);
 }
 
-function pointer(
-  type: 'pointerdown' | 'pointercancel',
+// A drag at one sample per 60 Hz frame from `from` to `to`, starting at
+// `start`: returns the time of the last sample.
+function drag(
   target: Element,
-  pointerId: number,
-) {
-  const event = new Event(type, {bubbles: true});
-  Object.assign(event, {pointerId, pointerType: 'touch', isPrimary: true});
-  target.dispatchEvent(event);
+  from: number,
+  to: number,
+  {start = 0, pxPerFrame = 8}: {start?: number; pxPerFrame?: number} = {},
+): number {
+  touch('touchstart', target, from, start);
+  const steps = Math.max(1, Math.ceil(Math.abs(to - from) / pxPerFrame));
+  let time = start;
+  for (let i = 1; i <= steps; i++) {
+    time = start + i * 16;
+    touch('touchmove', target, from + ((to - from) * i) / steps, time);
+  }
+  return time;
 }
 
 function observe(mode: KeyboardDismissMode) {
@@ -118,17 +135,58 @@ describe('observeKeyboardDismiss', () => {
     document.body.innerHTML = '';
   });
 
-  describe('interactive', () => {
-    it('dismisses when the finger reaches the keyboard less the padding', () => {
+  describe('interactive: one decision, at the release (spec:AST-094 FR36, FR37)', () => {
+    it('dismisses when a slow drag lifts past the line, and not on the move that crosses it', () => {
       observe('interactive');
-      touch('touchstart', row, 200);
-      touch('touchmove', row, TRIGGER - 1);
+      const last = drag(row, 200, TRIGGER + 20);
+      // The move crossed the line: nothing is decided until the lift.
       expect(document.activeElement).toBe(field);
-      touch('touchmove', row, TRIGGER);
+      touch('touchend', row, TRIGGER + 20, last + 8);
       expect(document.activeElement).not.toBe(field);
     });
 
-    it('dismisses where the finger reaches the keyboard on a page WebKit pinch-zooms', () => {
+    it('keeps the keyboard when the finger lifts at rest short of the line', () => {
+      observe('interactive');
+      const last = drag(row, 200, TRIGGER - 1);
+      touch('touchend', row, TRIGGER - 1, last + REST_MS);
+      expect(document.activeElement).toBe(field);
+    });
+
+    it('dismisses when the finger lifts at rest on the line', () => {
+      observe('interactive');
+      const last = drag(row, 200, TRIGGER);
+      touch('touchend', row, TRIGGER, last + REST_MS);
+      expect(document.activeElement).not.toBe(field);
+    });
+
+    it('dismisses a flick that projects past the line from above it', () => {
+      observe('interactive');
+      // 1.5 px/ms down at the lift, 150 px above the line: WWDC18's
+      // projection carries it about 750 px further.
+      const last = drag(row, 100, TRIGGER - 150, {pxPerFrame: 24});
+      touch('touchend', row, TRIGGER - 150, last + 4);
+      expect(document.activeElement).not.toBe(field);
+    });
+
+    it('cancels a release moving back up, however far the finger went (FR37)', () => {
+      observe('interactive');
+      let last = drag(row, 200, TRIGGER + 80);
+      for (let y = TRIGGER + 72; y >= TRIGGER + 40; y -= 8) {
+        last += 16;
+        touch('touchmove', row, y, last);
+      }
+      touch('touchend', row, TRIGGER + 40, last + 8);
+      expect(document.activeElement).toBe(field);
+    });
+
+    it('decides nothing for a touch the browser cancels', () => {
+      observe('interactive');
+      const last = drag(row, 200, TRIGGER + 20);
+      touch('touchcancel', row, TRIGGER + 20, last + 8);
+      expect(document.activeElement).toBe(field);
+    });
+
+    it('commits at the line on a page WebKit pinch-zooms', () => {
       // WebKit reports innerWidth and innerHeight in the zoomed visual
       // viewport's px (spec:AST-099 FR2); clientY stays in layout px. At 2x
       // innerHeight alone would put the line 384 px too high.
@@ -141,104 +199,58 @@ describe('observeKeyboardDismiss', () => {
       });
       viewport.dispatchEvent(new Event('resize'));
       observe('interactive');
-      touch('touchstart', row, 200);
-      touch('touchmove', row, TRIGGER - 1);
+      let last = drag(row, 200, TRIGGER - 1);
+      touch('touchend', row, TRIGGER - 1, last + REST_MS);
       expect(document.activeElement).toBe(field);
-      touch('touchmove', row, TRIGGER);
+      last = drag(row, 200, TRIGGER, {start: last + 1000});
+      touch('touchend', row, TRIGGER, last + REST_MS);
       expect(document.activeElement).not.toBe(field);
     });
 
     it('ignores a touch that starts in the bar on the keyboard', () => {
       observe('interactive');
-      touch('touchstart', row, TRIGGER + 10);
-      touch('touchmove', row, TRIGGER + 120);
+      const last = drag(row, TRIGGER + 10, TRIGGER + 120);
+      touch('touchend', row, TRIGGER + 120, last + 8);
       expect(document.activeElement).toBe(field);
     });
 
     it('ignores a touch in the focused text (moving the caret, selecting)', () => {
       observe('interactive');
-      touch('touchstart', field, 200);
-      touch('touchmove', field, TRIGGER + 20);
+      const last = drag(field, 200, TRIGGER + 20);
+      touch('touchend', field, TRIGGER + 20, last + 8);
       expect(document.activeElement).toBe(field);
     });
 
     it('ignores two fingers', () => {
       observe('interactive');
-      touch('touchstart', row, 200, {fingers: 2});
-      touch('touchmove', row, TRIGGER + 20);
+      touch('touchstart', row, 200, 0, {fingers: 2});
+      touch('touchmove', row, TRIGGER + 20, 16);
+      touch('touchend', row, TRIGGER + 20, 24);
       expect(document.activeElement).toBe(field);
     });
 
-    it('does nothing while no keyboard covers the page', () => {
+    it('does nothing while no keyboard covers the page (a hardware keyboard)', () => {
       viewport.height = window.innerHeight;
       viewport.dispatchEvent(new Event('resize'));
       observe('interactive');
-      touch('touchstart', row, 200);
-      touch('touchmove', row, 760);
-      expect(document.activeElement).toBe(field);
-    });
-
-    it('follows only until the lift', () => {
-      observe('interactive');
-      touch('touchstart', row, 200);
-      touch('touchend', row, 300);
-      touch('touchmove', row, TRIGGER + 20);
-      expect(document.activeElement).toBe(field);
-    });
-  });
-
-  describe('onDrag', () => {
-    it('dismisses when the browser takes the touch to scroll', () => {
-      observe('onDrag');
-      pointer('pointerdown', row, 7);
-      touch('touchstart', row, 200);
-      expect(document.activeElement).toBe(field);
-      pointer('pointercancel', row, 7);
-      expect(document.activeElement).not.toBe(field);
-    });
-
-    it('keeps the keyboard for another pointer and for a move without a scroll', () => {
-      observe('onDrag');
-      pointer('pointerdown', row, 7);
-      touch('touchstart', row, 200);
-      touch('touchmove', row, TRIGGER + 20);
-      pointer('pointercancel', row, 8);
-      expect(document.activeElement).toBe(field);
-    });
-
-    it('ignores a drag that starts in the bar on the keyboard', () => {
-      observe('onDrag');
-      pointer('pointerdown', row, 7);
-      touch('touchstart', row, TRIGGER + 10);
-      pointer('pointercancel', row, 7);
-      expect(document.activeElement).toBe(field);
-    });
-
-    it('keeps the focus while no software keyboard is up (a hardware keyboard)', () => {
-      viewport.height = window.innerHeight;
-      viewport.dispatchEvent(new Event('resize'));
-      observe('onDrag');
-      pointer('pointerdown', row, 7);
-      touch('touchstart', row, 200);
-      pointer('pointercancel', row, 7);
+      const last = drag(row, 200, 760);
+      touch('touchend', row, 760, last + 8);
       expect(document.activeElement).toBe(field);
     });
   });
 
   it('none leaves the keyboard up', () => {
     observe('none');
-    pointer('pointerdown', row, 7);
-    touch('touchstart', row, 200);
-    touch('touchmove', row, TRIGGER + 20);
-    pointer('pointercancel', row, 7);
+    const last = drag(row, 200, TRIGGER + 20);
+    touch('touchend', row, TRIGGER + 20, last + 8);
     expect(document.activeElement).toBe(field);
   });
 
   it('stops on cleanup', () => {
     observe('interactive');
     stop();
-    touch('touchstart', row, 200);
-    touch('touchmove', row, TRIGGER + 20);
+    const last = drag(row, 200, TRIGGER + 20);
+    touch('touchend', row, TRIGGER + 20, last + 8);
     expect(document.activeElement).toBe(field);
   });
 });

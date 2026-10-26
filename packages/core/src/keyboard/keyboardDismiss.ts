@@ -4,45 +4,54 @@
  * @file keyboardDismiss.ts
  * @input A scroller element, the keyboard module's height
  *   (getMobileKeyboardHeight) and its dismissal blur (blurAsDismissal), the
- *   layout viewport's height (utils/layoutViewport.ts), bringsUpKeyboard
+ *   layout viewport's height (utils/layoutViewport.ts), bringsUpKeyboard,
+ *   the shared release velocity (gestures/VelocityTracker) and the scroll
+ *   view's projection (motion/projection.ts)
  * @output Exports observeKeyboardDismiss and KeyboardDismissMode: dismisses
  *   the software keyboard from a drag on a scroller, as UIScrollView's
  *   `keyboardDismissMode`
  * @position Keyboard module (internal to core); ChatLayout opts its
  *   transcript in through Chat/useChatKeyboard.ts
  *
- * UIKit's three modes, each per scroller, default `none`:
+ * UIKit's modes, per scroller, default `none`:
  *
  * - `none`: dragging the scroller leaves the keyboard up.
- * - `onDrag`: the keyboard is dismissed when a drag begins. On the web that
- *   is the moment the browser claims the touch to scroll, which it announces
- *   with `pointercancel` for the touch's pointer. (A `scroll` while the
- *   finger is down is no signal: the page may scroll itself then.)
  * - `interactive`: in UIKit the keyboard follows the finger down. A page
- *   cannot move the system keyboard, so the keyboard is dismissed when the
- *   finger reaches it: its top edge, less `dismissPadding` for a bar that
- *   sits on the keyboard (UIKeyboardLayoutGuide's `keyboardDismissPadding`).
- *   Pulling back up cannot cancel it.
+ *   cannot move the system keyboard, so the drag decides once, when the
+ *   finger lifts (spec:AST-094 FR36): if its projected travel (where the
+ *   finger is plus its release velocity times the scroll view's projection,
+ *   WWDC18's, on `scroll.decelerationRate.normal`) reaches the keyboard's top
+ *   edge, less `dismissPadding` for a bar that sits on the keyboard
+ *   (UIKeyboardLayoutGuide's `keyboardDismissPadding`), the keyboard is
+ *   dismissed; otherwise it stays. A release moving back up cancels, however
+ *   far the finger went (FR37). The release velocity is the one every
+ *   gesture reads (spec:AST-100, FR40).
  *
- * Only a touch that starts above that line, outside the focused editable,
- * while a software keyboard is up, is followed: a drag in the bar or in the
- * text (moving the caret, selecting), or with only a hardware keyboard,
- * never dismisses. Every listener is passive: dismissal never claims the
- * touch or delays the scroll. It blurs the focused editable, and the keyboard
- * layout guide reports the hide from the blur, so content on the keyboard
- * rides it down. Where the keyboard is comes from the keyboard module, core's
- * one source for it (spec:AST-099).
+ * UIKit's `onDrag`, which dismisses as a drag begins, is not offered: a drag
+ * that dismisses the keyboard decides at its release (FR36).
+ *
+ * Only a touch that starts above that line, outside the focused field, while
+ * a software keyboard is up, is followed: a drag in the bar or in the text
+ * (moving the caret, selecting), or with only a hardware keyboard, never
+ * dismisses. Every listener is passive: dismissal never claims the touch or
+ * delays the scroll. It blurs the focused field, and the keyboard layout
+ * guide reports the hide from the blur, so content on the keyboard rides it
+ * down. Where the keyboard is comes from the keyboard module, core's one
+ * source for it (spec:AST-099). The caller registers it only where the
+ * primary pointer is coarse (FR19).
  *
  * SYNC: When modified, update /packages/core/src/keyboard/README.md and the
  * consumers it lists.
  */
 
+import {VelocityTracker} from '../gestures/VelocityTracker';
+import {project} from '../motion/projection';
 import {bringsUpKeyboard} from './keyboardLayoutGuide';
 import {blurAsDismissal, getMobileKeyboardHeight} from './useMobileKeyboard';
 import {layoutViewportHeight} from '../utils/layoutViewport';
 
-/** UIScrollView's `keyboardDismissMode`. */
-export type KeyboardDismissMode = 'none' | 'onDrag' | 'interactive';
+/** UIScrollView's `keyboardDismissMode`, the modes that decide at a release. */
+export type KeyboardDismissMode = 'none' | 'interactive';
 
 export interface KeyboardDismissOptions {
   readonly mode: KeyboardDismissMode;
@@ -91,30 +100,17 @@ export function observeKeyboardDismiss(
   // The keyboard's height over the layout viewport: 0 with no software
   // keyboard up (a hardware keyboard), or where nothing is measured.
   const keyboardHeight = () => getMobileKeyboardHeight(win);
-  // The touch being followed: only one, the first finger down while an
-  // editable has focus; null between touches and after a dismissal.
+  // The touch being followed: only one, the first finger down while a field
+  // that brings up the keyboard has focus; null between touches.
   let touchId: number | null = null;
-  // The touch's pointer. Pointer events come before touch events, so the
-  // latest touch pointer down is remembered and adopted by the touch start.
-  let pointerId: number | null = null;
-  let downPointerId: number | null = null;
   let padding = 0;
+  const tracker = new VelocityTracker();
 
-  // Where an interactive dismissal begins, in the layout viewport's
+  // Where an interactive dismissal commits, in the layout viewport's
   // coordinates (clientY and the keyboard height share them), read in layout
   // px under a pinch zoom too (utils/layoutViewport.ts).
   const triggerLine = () =>
     layoutViewportHeight(win) - keyboardHeight() - padding;
-
-  const dismiss = () => {
-    touchId = null;
-    pointerId = null;
-    // The keyboard module's dismissal: no surface parks the focus it leaves.
-    const editable = focusedEditable(doc);
-    if (editable != null) {
-      blurAsDismissal(editable);
-    }
-  };
 
   const onTouchStart = (event: TouchEvent) => {
     if (touchId != null || event.touches.length !== 1) {
@@ -137,43 +133,56 @@ export function observeKeyboardDismiss(
       return;
     }
     touchId = touch.identifier;
-    pointerId = downPointerId;
+    tracker.reset();
+    tracker.add(touch.clientX, touch.clientY, event.timeStamp);
+  };
+
+  const followed = (event: TouchEvent): Touch | null => {
+    if (touchId == null) {
+      return null;
+    }
+    for (const touch of Array.from(event.changedTouches)) {
+      if (touch.identifier === touchId) {
+        return touch;
+      }
+    }
+    return null;
   };
 
   const onTouchMove = (event: TouchEvent) => {
-    if (touchId == null || mode !== 'interactive' || keyboardHeight() <= 0) {
-      return;
-    }
-    for (const touch of Array.from(event.changedTouches)) {
-      if (touch.identifier !== touchId) {
-        continue;
-      }
-      if (touch.clientY >= triggerLine()) {
-        dismiss();
-      }
-      return;
+    const touch = followed(event);
+    if (touch != null) {
+      tracker.add(touch.clientX, touch.clientY, event.timeStamp);
     }
   };
 
+  // The one decision, at the release (FR36, FR37).
   const onTouchEnd = (event: TouchEvent) => {
-    for (const touch of Array.from(event.changedTouches)) {
-      if (touch.identifier === touchId) {
-        touchId = null;
-        pointerId = null;
-      }
+    const touch = followed(event);
+    if (touch == null) {
+      return;
+    }
+    touchId = null;
+    tracker.add(touch.clientX, touch.clientY, event.timeStamp);
+    // px per second, 0 after a still pause before the lift (spec:AST-100).
+    const velocity = tracker.velocity(event.timeStamp).y;
+    if (velocity < 0 || keyboardHeight() <= 0) {
+      return;
+    }
+    if (project(touch.clientY, velocity) < triggerLine()) {
+      return;
+    }
+    // The keyboard module's dismissal: no surface parks the focus it leaves.
+    const editable = focusedEditable(doc);
+    if (editable != null) {
+      blurAsDismissal(editable);
     }
   };
 
-  const onPointerDown = (event: PointerEvent) => {
-    if (event.pointerType === 'touch' && event.isPrimary) {
-      downPointerId = event.pointerId;
-    }
-  };
-
-  // The browser took the touch to scroll: a drag began.
-  const onPointerCancel = (event: PointerEvent) => {
-    if (touchId != null && event.pointerId === pointerId) {
-      dismiss();
+  // The browser cancelled the touch: no release, no decision.
+  const onTouchCancel = (event: TouchEvent) => {
+    if (followed(event) != null) {
+      touchId = null;
     }
   };
 
@@ -181,17 +190,11 @@ export function observeKeyboardDismiss(
   scroller.addEventListener('touchstart', onTouchStart, passive);
   scroller.addEventListener('touchmove', onTouchMove, passive);
   scroller.addEventListener('touchend', onTouchEnd, passive);
-  scroller.addEventListener('touchcancel', onTouchEnd, passive);
-  if (mode === 'onDrag') {
-    scroller.addEventListener('pointerdown', onPointerDown, passive);
-    scroller.addEventListener('pointercancel', onPointerCancel, passive);
-  }
+  scroller.addEventListener('touchcancel', onTouchCancel, passive);
   return () => {
     scroller.removeEventListener('touchstart', onTouchStart);
     scroller.removeEventListener('touchmove', onTouchMove);
     scroller.removeEventListener('touchend', onTouchEnd);
-    scroller.removeEventListener('touchcancel', onTouchEnd);
-    scroller.removeEventListener('pointerdown', onPointerDown);
-    scroller.removeEventListener('pointercancel', onPointerCancel);
+    scroller.removeEventListener('touchcancel', onTouchCancel);
   };
 }

@@ -446,16 +446,23 @@ describe('focus moves into the composer (spec:AST-099 FR4)', () => {
       new DOMRect(0, window.innerHeight - 300, 400, 60);
     act(() => message.focus());
     const transcript = screen.getByText('Hello');
-    const finger = (type: string, clientY: number) => {
+    const finger = (type: string, clientY: number, time: number) => {
       const point = {identifier: 0, clientX: 100, clientY};
       const event = new Event(type, {bubbles: true});
-      Object.assign(event, {touches: [point], changedTouches: [point]});
+      Object.assign(event, {
+        touches: type === 'touchend' ? [] : [point],
+        changedTouches: [point],
+      });
+      Object.defineProperty(event, 'timeStamp', {value: time});
       act(() => {
         transcript.dispatchEvent(event);
       });
     };
-    finger('touchstart', 100);
-    finger('touchmove', window.innerHeight - 300);
+    finger('touchstart', 100, 0);
+    finger('touchmove', window.innerHeight - 300, 16);
+    // The drag decides at the lift (spec:AST-094 FR36).
+    expect(document.activeElement).toBe(message);
+    finger('touchend', window.innerHeight - 300, 116);
     expect(document.activeElement).toBe(document.body);
   });
 
@@ -481,18 +488,26 @@ describe('focus moves into the composer (spec:AST-099 FR4)', () => {
     }).getBoundingClientRect = () => new DOMRect(0, 400, 400, 60);
     act(() => message.focus());
     const transcript = screen.getByText('Hello');
-    const finger = (type: string, clientY: number) => {
+    const finger = (type: string, clientY: number, time: number) => {
       const point = {identifier: 0, clientX: 100, clientY};
       const event = new Event(type, {bubbles: true});
-      Object.assign(event, {touches: [point], changedTouches: [point]});
+      Object.assign(event, {
+        touches: type === 'touchend' ? [] : [point],
+        changedTouches: [point],
+      });
+      Object.defineProperty(event, 'timeStamp', {value: time});
       act(() => {
         transcript.dispatchEvent(event);
       });
     };
-    finger('touchstart', 100);
-    finger('touchmove', 399);
+    // Lifted at rest, so the finger's own position decides (FR36).
+    finger('touchstart', 100, 0);
+    finger('touchmove', 399, 16);
+    finger('touchend', 399, 116);
     expect(document.activeElement).toBe(message);
-    finger('touchmove', 420);
+    finger('touchstart', 100, 1000);
+    finger('touchmove', 420, 1016);
+    finger('touchend', 420, 1116);
     expect(document.activeElement).not.toBe(message);
   });
 });
@@ -606,11 +621,18 @@ describe('the caret a claimed tap places', () => {
 });
 
 describe('what ChatLayout loads for the keyboard', () => {
-  it('imports no gesture system: the composer tap is the keyboard module\u2019s focus route', () => {
+  it('imports no gesture recognizer: the composer tap is the keyboard module\u2019s focus route, and the dismissal reads only the shared velocity tracker', () => {
     const here = path.dirname(fileURLToPath(import.meta.url));
     for (const file of ['ChatLayout.tsx', 'useChatKeyboard.ts']) {
       const source = fs.readFileSync(path.join(here, file), 'utf8');
       expect(source, file).not.toMatch(/from '\.\.\/gestures/);
     }
+    const dismissal = fs.readFileSync(
+      path.join(here, '../keyboard/keyboardDismiss.ts'),
+      'utf8',
+    );
+    expect(dismissal.match(/from '\.\.\/gestures\/[^']*'/g)).toEqual([
+      "from '../gestures/VelocityTracker'",
+    ]);
   });
 });

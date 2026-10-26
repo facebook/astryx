@@ -93,12 +93,16 @@ at any time, for something that appears while the keyboard moves.
 `observeKeyboardDismiss(scroller, {mode, dismissPadding})` is UIScrollView's
 `keyboardDismissMode` for drags that start on `scroller`, default `none`:
 
-- `onDrag` blurs the focused editable when the browser takes the touch to
-  scroll (`pointercancel` for the touch's pointer).
-- `interactive` blurs it when the finger reaches the keyboard's top edge, less
-  `dismissPadding` (the height of a bar on the keyboard). UIKit's keyboard
-  follows the finger; a page cannot move it, so it leaves on its own and
-  pulling back cannot cancel.
+- `interactive` decides once, when the finger lifts (`spec:AST-094` FR36): it
+  blurs the focused field if the finger's projected travel (where it lifted
+  plus its release velocity times the scroll view's projection, WWDC18's on
+  `scroll.decelerationRate.normal`) reaches the keyboard's top edge, less
+  `dismissPadding` (the height of a bar on the keyboard); a release moving
+  back up cancels (FR37). The release velocity is the shared
+  `VelocityTracker`'s (`spec:AST-100`). UIKit's keyboard follows the finger;
+  a page cannot move it, so it leaves on its own at the lift.
+- UIKit's `onDrag`, which dismisses as a drag begins, is not offered: a drag
+  that dismisses the keyboard decides at its release.
 
 Only a touch that starts above that line and outside the focused editable,
 while a software keyboard is up (the keyboard module's height), is followed (a
@@ -155,10 +159,11 @@ which starts it at the blur.
   keyboard's Done parks focus on the composer region, a named group that is
   no tab stop. The composer's own focus routes pass `preventScroll` under a
   finger in that region (`Chat/keyboardSurface.ts`). A finger dragging the
-  transcript down to the composer dismisses the keyboard (`interactive`, with
-  the composer as the bar on the keyboard; part of ChatLayout's touch behavior,
-  no caller control); the dismissal only blurs the composer, so focus moves
-  nowhere else (no Done park).
+  transcript down to the composer and lifting it there, or flicking toward it,
+  dismisses the keyboard (`interactive`, with the composer as the bar on the
+  keyboard; part of ChatLayout's touch behavior, no caller control, registered
+  only under a coarse pointer); the dismissal only blurs the focused field, so
+  focus moves nowhere else (no Done park).
 
 ## Files
 
