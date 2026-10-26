@@ -33,7 +33,7 @@
 import {useRef, type RefObject} from 'react';
 import {isRtlElement} from '../hooks/isRtlElement';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import {list, registerListTable} from '../motion/uikit/list';
+import {list} from '../motion/uikit/list';
 import {
   animateRow,
   animatorFor,
@@ -88,7 +88,6 @@ export function useListEditingMotion(
     if (element == null || was === isEditing || !animates) {
       return;
     }
-    registerListTable();
     const at = motionNow();
     const mine = ++generationRef.current;
     const indent = list.metrics.editingIndent;
