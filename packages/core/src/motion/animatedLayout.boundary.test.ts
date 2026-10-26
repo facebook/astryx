@@ -120,7 +120,8 @@ describe('architecture:react-component-runtime INV12 source boundary', () => {
       )
       .map(path => relative(coreSrc, path))
       .sort();
-    // Components that adopt the handle join this list as they adopt it.
-    expect(users).toEqual(['hooks/useAnimatedLayout.ts']);
+    // The hook and the components that adopt the handle join this list as
+    // they adopt it.
+    expect(users).toEqual([]);
   });
 });

@@ -3745,11 +3745,6 @@
       "aliases": []
     },
     {
-      "name": "hook-use-animated-layout",
-      "path": "hooks/use-animated-layout",
-      "aliases": []
-    },
-    {
       "name": "hook-use-announce",
       "path": "hooks/use-announce",
       "aliases": []
