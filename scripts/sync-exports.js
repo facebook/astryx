@@ -72,6 +72,14 @@ const STATIC_EXPORTS = {
     types: './dist/naming.d.ts',
     default: './dist/naming.js',
   },
+  // Core's internal subpaths: reserved for Astryx's own packages (Core and
+  // Lab), undocumented, outside the compatibility promise (spec:AST-017
+  // FR21); @astryx/no-core-internal-import keeps them out of everything else.
+  './internal/reorder': {
+    source: './src/internal/reorder.ts',
+    types: './dist/internal/reorder.d.ts',
+    default: './dist/internal/reorder.js',
+  },
   './theme/tokens': {
     source: './src/theme/tokens.ts',
     types: './dist/theme/tokens.d.ts',

@@ -61,6 +61,11 @@
       "types": "./dist/naming.d.ts",
       "default": "./dist/naming.js"
     },
+    "./internal/reorder": {
+      "source": "./src/internal/reorder.ts",
+      "types": "./dist/internal/reorder.d.ts",
+      "default": "./dist/internal/reorder.js"
+    },
     "./theme/tokens": {
       "source": "./src/theme/tokens.ts",
       "types": "./dist/theme/tokens.d.ts",
@@ -713,11 +718,6 @@
       "source": "./src/reorderable/index.ts",
       "types": "./dist/reorderable/index.d.ts",
       "default": "./dist/reorderable/index.js"
-    },
-    "./internal/reorder": {
-      "source": "./src/internal/reorder/index.ts",
-      "types": "./dist/internal/reorder/index.d.ts",
-      "default": "./dist/internal/reorder/index.js"
     },
     "./theme": {
       "source": "./src/theme/index.ts",
