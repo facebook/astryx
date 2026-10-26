@@ -53,6 +53,9 @@ const DESKTOP = {
 
 /** Longer than the content-touch delay a press waits before it paints. */
 const HOLD_MS = 300;
+/** A quick tap, and how soon after its lift the row is read. */
+const TAP_MS = 80;
+const AFTER_LIFT_MS = 50;
 
 type RGB = [number, number, number];
 type Point = {x: number; y: number};
@@ -258,12 +261,13 @@ test.describe('CheckboxList row press', () => {
     expect(darker(onBox.row, rest.row)).toBe(true);
   });
 
-  test('a pen on a fine-pointer page paints the box as a mouse does', async ({
+  test('a pen on a fine-pointer page presses the box as a mouse does, never the row', async ({
     browser,
   }) => {
     // Touch work leaves a fine pointer's behavior as it is (spec:AST-017
-    // FR59): the row's touch press reaches the box only under a coarse
-    // pointer, so a pen's press shows the box's own `:active` paint alone.
+    // FR59): the row takes the press only under a coarse primary pointer, so
+    // on a fine-pointer page a pen presses the box itself and shows the box's
+    // own `:active` paint alone, and the row never paints a press.
     const row = await openRow(
       browser,
       'core-checkboxlist--default',
@@ -302,6 +306,25 @@ test.describe('CheckboxList row press', () => {
       const mouse = await hold('mouse');
       expect(darker(mouse, rest)).toBe(true);
       expect(pen).toEqual(mouse);
+      // Just after a quick tap's lift, the row looks as a mouse tap leaves it:
+      // on a fine-pointer page a pen presses the box, as on main, never the
+      // row, so no row press fades out after the lift.
+      const tap = async (pointerType: 'mouse' | 'pen'): Promise<RGB> => {
+        await send('mouseMoved', pointerType);
+        await send('mousePressed', pointerType);
+        await row.page.waitForTimeout(TAP_MS);
+        await send('mouseReleased', pointerType);
+        await row.page.waitForTimeout(AFTER_LIFT_MS);
+        const read = await pixel(row.page, row.rowSample);
+        await row.page.waitForTimeout(HOLD_MS);
+        return read;
+      };
+      // Each tap toggles the box, so the mouse taps twice: both reads see the
+      // same checked state.
+      const penTap = await tap('pen');
+      await tap('mouse');
+      const mouseTap = await tap('mouse');
+      expect(penTap).toEqual(mouseTap);
     } finally {
       await row.close();
     }

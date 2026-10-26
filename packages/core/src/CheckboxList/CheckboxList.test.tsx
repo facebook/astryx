@@ -26,6 +26,7 @@ import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {List} from '../List/List';
 import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
+import {stubMatchMedia} from '../__tests__/stubMatchMedia';
 import {
   declaresPressPaint,
   hasPressedArm,
@@ -1169,6 +1170,17 @@ describe('CheckboxListItem ARIA props', () => {
 describe('CheckboxListItem press surface', () => {
   const hoverScopeClass = stylex.props(indicatorScope).className ?? '';
 
+  // The row owns its checkbox's press only under a coarse primary pointer (a
+  // finger); a fine-pointer page keeps main's behavior (spec:AST-017 FR59).
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /** A coarse primary pointer: every non-motion query matches. */
+  function withCoarsePointer() {
+    stubMatchMedia({matches: true});
+  }
+
   /** The row's checkbox: its indicator wrapper and the control around it. */
   function parts(row: HTMLElement) {
     const box = row.querySelector('.astryx-checkbox-indicator');
@@ -1273,6 +1285,7 @@ describe('CheckboxListItem press surface', () => {
   }
 
   it('makes the row the one press surface, so the label and the box press the same element', () => {
+    withCoarsePointer();
     render(
       <CheckboxList label="Notifications" value={['email']} onChange={() => {}}>
         <CheckboxListItem label="Email" value="email" />
@@ -1306,6 +1319,7 @@ describe('CheckboxListItem press surface', () => {
   });
 
   it('makes a standalone row with a check handler its press surface too', () => {
+    withCoarsePointer();
     render(
       <List>
         <CheckboxListItem
@@ -1319,6 +1333,29 @@ describe('CheckboxListItem press surface', () => {
     expect(row).toHaveAttribute('data-astryx-pressable');
     expect(row.querySelectorAll('[data-astryx-pressable]')).toHaveLength(0);
     expect(declaresPressPaint(row)).toBe(true);
+  });
+
+  it('keeps the box its own press owner on a fine-pointer page', () => {
+    // A pen, or a finger on a touchscreen laptop, on a fine-pointer page
+    // presses the box itself, as on main (spec:AST-017 FR59): the box keeps
+    // its own press marker, so it is the innermost pressable under the pen,
+    // and the row hands its box no press paint, so nothing paints a row press
+    // that fades after the lift.
+    stubMatchMedia({matches: false});
+    render(
+      <CheckboxList label="Notifications" value={['email']} onChange={() => {}}>
+        <CheckboxListItem label="Email" value="email" />
+      </CheckboxList>,
+    );
+    const row = rowOf('Email');
+    const {wrapper, control} = parts(row);
+    expect(control).toHaveAttribute('data-astryx-pressable');
+    expect(Array.from(row.querySelectorAll('[data-astryx-pressable]'))).toEqual(
+      [control],
+    );
+    expect(declaresRowPressPaint(row)).toBe(false);
+    expect(readsRowPressPaint(wrapper)).toBe(false);
+    expect(hasPressedArm(wrapper)).toBe(true);
   });
 
   it('leaves a row that does not respond to presses out of it', () => {
