@@ -29,6 +29,9 @@
  *   those units per second. A rule converts at its own boundary (a pop's
  *   progress is `position / width`).
  * - Rules are data: pure functions, tested against their UIKit measurements.
+ *   A release rule that picks one of a set of rest positions picks it with
+ *   `resolveDetent` (resolveDetent.ts), the motion foundation's release
+ *   policy, rather than with its own nearest/flick logic.
  *   The track rule turns the finger's travel into where the driver goes and
  *   the drag's own state (a confirmed full swipe); the release rule turns
  *   where the gesture let go, and that state, into a target and a motion.

@@ -3,7 +3,7 @@
 /**
  * @file sheetRelease.ts
  * @input The UIKit constants table (`sheet.release`, the sheet springs) and
- *   the motion foundation's snap-point projection
+ *   the motion foundation's release policy (resolveDetent)
  * @output Exports resolveSheetRelease, which says where a released sheet goes
  *   and on which spring under a finger; resolveDefaultRelease, today's rule
  *   everywhere else; and the SheetRelease type
@@ -42,7 +42,7 @@
  * - /packages/core/src/BottomSheet/useSheetGestures.ts
  */
 
-import {selectSnapPoint} from '../motion/projection';
+import {resolveDetent} from '../motion/resolveDetent';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import type {ReleaseInput, ReleaseOutcome} from '../motion/interactive';
 import {sheet} from '../motion/uikit/sheet';
@@ -64,29 +64,6 @@ export interface SheetRelease {
   projected: number;
   /** The spring that takes it there, handed the release velocity. */
   spring: SpringDescription;
-}
-
-/** The deceleration rate whose projection reaches `seconds` of the velocity. */
-function rateForProjection(seconds: number): number {
-  // WWDC18's projection coasts (v / 1000) · r / (1 − r): r / (1 − r) = 1000·τ.
-  const ms = seconds * 1000;
-  return ms / (1 + ms);
-}
-
-const PROJECTION_RATE = rateForProjection(sheet.release.projectionSeconds);
-
-/** The index of the position nearest `offset` (the first on a tie). */
-function nearestIndex(
-  positions: ReadonlyArray<number>,
-  offset: number,
-): number {
-  let best = 0;
-  for (let i = 1; i < positions.length; i += 1) {
-    if (Math.abs(positions[i] - offset) < Math.abs(positions[best] - offset)) {
-      best = i;
-    }
-  }
-  return best;
 }
 
 /**
@@ -133,39 +110,22 @@ export function resolveSheetRelease({
   }
   const positions =
     dismissedOffset == null ? [...detents] : [...detents, dismissedOffset];
-  // Below the slowest projected speed the release is where it was let go.
-  const projectedVelocity =
-    Math.abs(velocity) < sheet.release.minProjectionSpeed ? 0 : velocity;
-  const choice = selectSnapPoint(positions, {
+  // The release policy (motion/resolveDetent.ts): nearest where it projects,
+  // a flick on to the next position beyond, and a release moving back
+  // toward where the drag began cancels to it (spec:AST-094 FR37).
+  const {index, projected} = resolveDetent({
+    detents: positions,
     position,
-    velocity: projectedVelocity,
-    rate: PROJECTION_RATE,
+    velocity,
+    flickSpeed: sheet.release.fastSpeed,
+    tolerance: sheet.release.detentTolerance,
+    projection: {
+      seconds: sheet.release.projectionSeconds,
+      minSpeed: sheet.release.minProjectionSpeed,
+    },
+    start,
   });
   const isFast = Math.abs(velocity) >= sheet.release.fastSpeed;
-  let index = choice.index;
-  if (isFast) {
-    // A flick goes at least to the next position beyond where it is.
-    const tolerance = sheet.release.detentTolerance;
-    let next = -1;
-    if (velocity > 0) {
-      next = positions.findIndex(p => p > position + tolerance);
-    } else {
-      for (let i = positions.length - 1; i >= 0 && next === -1; i -= 1) {
-        if (positions[i] < position - tolerance) {
-          next = i;
-        }
-      }
-    }
-    if (next !== -1 && (velocity > 0 ? next > index : next < index)) {
-      index = next;
-    }
-  }
-  // spec:AST-094 FR37: a release whose velocity points back toward where
-  // the drag began cancels, whatever the travel so far, to the stop nearest
-  // that start.
-  if (velocity !== 0 && Math.sign(velocity) === Math.sign(start - position)) {
-    index = nearestIndex(positions, start);
-  }
   if (dismissedOffset != null && index === detents.length) {
     // GUESS (spec:AST-094 FR2): a slow dismissal plays `SHEET_DETENT_SPRING`.
     // None of the measured releases that dismissed had its spring read;
@@ -175,7 +135,7 @@ export function resolveSheetRelease({
       kind: 'dismiss',
       index: -1,
       offset: dismissedOffset,
-      projected: choice.projected,
+      projected,
       spring: isFast ? SHEET_DISMISS_SWIPE_SPRING : SHEET_DETENT_SPRING,
     };
   }
@@ -183,7 +143,7 @@ export function resolveSheetRelease({
     kind: 'detent',
     index,
     offset: positions[index],
-    projected: choice.projected,
+    projected,
     spring: isFast ? SHEET_RELEASE_FAST_SPRING : SHEET_DETENT_SPRING,
   };
 }
