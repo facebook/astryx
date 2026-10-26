@@ -56,10 +56,10 @@ const styles = stylex.create({
   // a long press does: the browser may pinch-zoom there but never pans (Chrome
   // on Android cancels a pointer it pans, which would cancel the group's
   // touch), and a double tap zooms nothing. A long alert's content keeps its
-  // pan (see `isBodyScrollable`). While a finger or a pen is down, the gesture
-  // host's selection lock keeps it from starting a text selection or opening
-  // the callout (useActionGroupTracking); a mouse keeps selecting text, which
-  // is why the host's permanent long-press styles stay off
+  // pan (see `isBodyScrollable`). The group's hold does something, so a held
+  // finger or pen starts no text selection and opens no callout there
+  // (`spec:AST-094` FR41; useActionGroupTracking); a mouse keeps selecting
+  // text, which is why the host's permanent long-press styles stay off
   // (`manageStyle: false`).
   trackingSurface: {
     touchAction: 'pinch-zoom',
