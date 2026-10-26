@@ -194,6 +194,27 @@ function armStrayClick(doc: Document): void {
   swallower.timer = setTimeout(disarmStrayClick, MENU_PRESS_STRAY_CLICK_MS);
 }
 
+/**
+ * A gesture the window's blur ended may still hold its pointer: the browser
+ * can keep a touch alive across the blur. That pointer's release is still the
+ * gesture's, so the click it reports is swallowed as a tracked release's is
+ * (FR5, `spec:AST-094` FR28): the swallower arms at that release.
+ */
+function armStrayClickAtRelease(doc: Document, pointerId: number): void {
+  const onRelease = (event: PointerEvent) => {
+    if (event.pointerId !== pointerId) {
+      return;
+    }
+    doc.removeEventListener('pointerup', onRelease, true);
+    doc.removeEventListener('pointercancel', onRelease, true);
+    if (event.type === 'pointerup') {
+      armStrayClick(doc);
+    }
+  };
+  doc.addEventListener('pointerup', onRelease, true);
+  doc.addEventListener('pointercancel', onRelease, true);
+}
+
 /** Test-only: forget an armed swallower between cases. */
 export function __resetMenuPressForTest(): void {
   disarmStrayClick();
@@ -332,7 +353,7 @@ function normalizePointerType(type: string): MenuPressPointerType | null {
 /**
  * Where a pointer is, for a finger's handoff distance: given with
  * `touchModel: 'uikit'`, the primary pointer being coarse, for the trigger's
- * opening finger (`spec:AST-094` FR29, FR33). Without
+ * opening finger (`spec:AST-094` FR29). Without
  * it the machine keeps the settle rule.
  */
 function handoffPosition(
@@ -1140,7 +1161,11 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
         }
       };
       const onBlur = () => {
+        const blurredPointerId = pointerIdRef.current;
         stepRef.current({type: 'cancel'});
+        if (blurredPointerId != null) {
+          armStrayClickAtRelease(doc, blurredPointerId);
+        }
       };
 
       doc.addEventListener('pointermove', onMove, true);
