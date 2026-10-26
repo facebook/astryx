@@ -95,9 +95,10 @@ function releaseOnArrival(element: HTMLElement, arrived: Promise<boolean>) {
 /** UIKit's motion for the rows of a reorder under a finger. */
 export const touchMotion = {
   /**
-   * The slides' spring under the list's theme: a motion role
-   * (`reorder.slide.spring`) a theme may retune, read once when a motion
-   * starts. Registers the reorder table first (once).
+   * The slides' spring, read once when a motion starts: the measured
+   * constant (`reorder.slide.spring`), through the motion table, which
+   * makes no reorder value a role (touch motion stays internal). Registers
+   * the reorder table first (once).
    */
   slideBase(list: HTMLElement): DurationBounce {
     registerReorderTable();

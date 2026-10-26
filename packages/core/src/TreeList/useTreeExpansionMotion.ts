@@ -19,9 +19,9 @@
  * disclosure): on expand, the children slide down out from under the parent
  * as one block, inside a clip that grows with them; the rows below move down
  * with them; the disclosure chevron turns 90°; all on one critically damped
- * spring (`list.update.outlineSpring`, a motion role: the animator plays it
- * as the tree's theme sets it), with no fade. Collapse runs the same motion
- * back: the children slide up under the parent and leave when it ends.
+ * spring (`list.update.outlineSpring`, an internal constant), with no fade.
+ * Collapse runs the same motion back: the children slide up under the parent
+ * and leave when it ends.
  *
  * HOW IT RUNS, compositor only. The group keeps its final layout; it clips its
  * own box for the length of the motion, so its top edge (the parent row's
@@ -62,7 +62,7 @@
 import {useCallback, useRef, useState} from 'react';
 import {isRtlElement} from '../hooks/isRtlElement';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import {list, registerListTable} from '../motion/uikit/list';
+import {list} from '../motion/uikit/list';
 import {
   layoutShifts,
   motionNow,
@@ -158,8 +158,6 @@ export function useTreeExpansionMotion(
     if (element == null) {
       return;
     }
-    // Its springs are the list table's roles, resolved under the theme.
-    registerListTable();
     const at = motionNow();
     const mine = ++generationRef.current;
     const height = element.offsetHeight;
