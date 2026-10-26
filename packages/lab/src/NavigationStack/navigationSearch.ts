@@ -8,7 +8,7 @@
  * @output The bar side of a search activation, as pure functions of its
  *   progress: the back button's and inline title's opacity, the large
  *   title's, the large title's return on cancel; `searchClock`, the
- *   activation's length and easing under an element's theme; and
+ *   activation's length and easing; and
  *   `searchCurve`, which turns any of them into a MotionCurve on that clock
  * @position Math for NavigationStack's search hook (NavigationStack.tsx);
  *   the field's own motion is SearchField's
