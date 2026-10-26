@@ -111,7 +111,11 @@ import {
   type SpringTransition,
 } from '../motion/animator';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
-import {segmentedControl} from '../motion/uikit/segmented';
+import {resolveMotion} from '../motion/resolveMotion';
+import {
+  registerSegmentedTable,
+  segmentedControl,
+} from '../motion/uikit/segmented';
 import {registerSpringsTable, springs} from '../motion/uikit/springs';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {observeResize} from '../utils/sharedResizeObserver';
@@ -347,19 +351,24 @@ function showSurface(segment: HTMLElement): void {
   }
 }
 
-/** Paints `layer` with `segment`'s computed surface. */
+/**
+ * Paints `layer` with `segment`'s computed surface. Every value is read
+ * before any is written: a write to the track's style makes the next read
+ * from a computed style recompute it, so interleaving them restyled the
+ * control once per property.
+ */
 function paintLayer(
   track: HTMLElement,
   layer: Layer,
   segment: HTMLElement,
 ): void {
   const style = getComputedStyle(segment);
-  for (const property of SURFACE_PROPERTIES) {
-    track.style.setProperty(
-      layerVariable(layer, property),
-      style.getPropertyValue(property),
-    );
-  }
+  const values = SURFACE_PROPERTIES.map(property =>
+    style.getPropertyValue(property),
+  );
+  SURFACE_PROPERTIES.forEach((property, index) => {
+    track.style.setProperty(layerVariable(layer, property), values[index]);
+  });
 }
 
 /** Copies the lens's paint onto the ::after. */
@@ -660,9 +669,12 @@ export class SegmentedSelectionMotion {
     }),
     options: SegmentedSelectionMotionOptions = {},
   ) {
-    // The chase plays the shared role `springs.fingerTracking`: registered
-    // before the first animation (idempotent; nothing registers on import).
+    // The chase plays the shared role `springs.fingerTracking`, and the
+    // slide, the lift and the pressed title play the segmented roles
+    // (`spec:AST-094` FR4): registered before the first animation
+    // (idempotent; nothing registers on import).
     registerSpringsTable();
+    registerSegmentedTable();
     this.now = options.now ?? defaultNow;
     this.after =
       options.afterAnimator ??
@@ -1410,10 +1422,11 @@ export class SegmentedSelectionMotion {
     // Up on the lift spring and, after the hang, back down on it: one curve
     // known in advance, so the compositor brings the lens down on time even
     // while the main thread is busy. The lift's spring and hang are UIKit's
-    // measured values (internal constants).
+    // measured values, read through their internal roles.
     const peak = lifted(box, liftGrowthOf(this.track));
     const liftSpring = segmentedControl.liftSpring;
-    const hang = segmentedControl.tapLiftHangMs / 1000;
+    const hang =
+      resolveMotion(this.track, segmentedControl, 'tapLiftHangMs') / 1000;
     const velocityX = this.velocity.scaleX ?? 0;
     const velocityY = this.velocity.scaleY ?? 0;
     this.velocity = {};
@@ -1664,14 +1677,22 @@ export class SegmentedSelectionMotion {
     }
     // The pressed segment fades as a whole: it is an unselected one, which
     // paints no surface of its own under a finger, so its content is all it
-    // shows. UIKit's measured clock and curve (internal constants).
+    // shows.
     const {pressedTitle} = segmentedControl;
+    // UIKit's measured clocks and curves, read through their internal roles
+    // (`segmented.pressedTitle.*`).
     fadePressDim(
       segment,
       isPressed ? this.pressedOpacity(segment) : 1,
       clock === 'fade'
-        ? {durationMs: pressedTitle.fadeMs, curve: pressedTitle.fadeCurve}
-        : {durationMs: pressedTitle.liftMs, curve: pressedTitle.liftCurve},
+        ? {
+            durationMs: resolveMotion(segment, pressedTitle, 'fadeMs'),
+            curve: resolveMotion(segment, pressedTitle.fadeCurve),
+          }
+        : {
+            durationMs: resolveMotion(segment, pressedTitle, 'liftMs'),
+            curve: resolveMotion(segment, pressedTitle.liftCurve),
+          },
       {touchRelease: clock === 'lift'},
     );
     if (isPressed) {

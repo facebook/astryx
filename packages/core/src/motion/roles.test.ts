@@ -197,6 +197,13 @@ describe('motion roles', () => {
     expect(
       Object.fromEntries(discovered.map(role => [role.id, role.kind])),
     ).toEqual({
+      'segmented.liftSpring': 'spring',
+      'segmented.pressedTitle.fadeCurve': 'curve',
+      'segmented.pressedTitle.fadeMs': 'duration',
+      'segmented.pressedTitle.liftCurve': 'curve',
+      'segmented.pressedTitle.liftMs': 'duration',
+      'segmented.selectionSpring': 'spring',
+      'segmented.tapLiftHangMs': 'duration',
       'springs.directChange': 'spring',
       'springs.emphasis': 'spring',
       'springs.fingerTracking': 'spring',
