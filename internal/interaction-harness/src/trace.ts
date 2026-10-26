@@ -23,9 +23,13 @@
  * out the one rendering pass Chrome makes on its own for a compositor
  * animation (its start time arriving from the compositor, late on a loaded
  * machine): a pass whose style recalculations all have the reason
- * `Animation`, on elements whose animations run on the compositor, with no
- * script since the previous pass. Anything the page causes (a style write, a
- * layout read, an animation the compositor cannot run) is still counted.
+ * `Animation`, on elements with an animation on the compositor at the time
+ * (one entry per animation, as Chrome reuses an animation's trace id once it
+ * is gone), with no script since the previous pass. A pseudo-element's
+ * `Conditional ::backdrop` restyle on such an element counts with the
+ * element's own, in that pass or the one before. Anything the page causes (a
+ * style write, a layout read, an animation the compositor cannot run) is
+ * still counted.
  *
  * SYNC: Keep RENDERING_EVENTS equal to the README's list.
  */
@@ -106,18 +110,24 @@ export interface RenderingTrace {
     readonly nodeId?: number;
   }[];
   /**
-   * With `invalidations`: the elements animations ran on, and whether each
-   * of them ran on the compositor (Chrome reported no reason it could not).
+   * With `invalidations`: one entry per animation that ran, with the element
+   * it ran on, whether it ran on the compositor (Chrome reported no reason it
+   * could not) and when it ran, epoch ms (`to` absent while it still runs).
    */
-  readonly animations?: readonly {
-    readonly nodeId: number;
-    readonly composited: boolean;
-  }[];
+  readonly animations?: readonly TraceAnimation[];
   /**
    * With `invalidations`: when script started on the main thread (function
    * calls, animation frame callbacks, timers, event dispatch), epoch ms.
    */
   readonly scripts?: readonly number[];
+}
+
+/** An animation as a trace shows it (see `traceAnimations`). */
+export interface TraceAnimation {
+  readonly nodeId: number;
+  readonly composited: boolean;
+  readonly from?: number;
+  readonly to?: number;
 }
 
 export interface TraceRenderingOptions {
@@ -133,9 +143,10 @@ export interface CountBetweenOptions {
   /**
    * Leave out a rendering pass Chrome makes on its own for compositor
    * animations: every style recalculation since the previous pass has the
-   * reason `Animation` and is on an element whose animations run on the
-   * compositor, and no script ran in between. Needs a trace recorded with
-   * `{invalidations: true}`.
+   * reason `Animation` (or is a pseudo-element's `Conditional ::…` restyle
+   * following that element's) and is on an element with an animation on the
+   * compositor at the time, and no script ran in between. Needs a trace
+   * recorded with `{invalidations: true}`.
    */
   skipCompositorAnimationUpdates?: boolean;
 }
@@ -155,14 +166,19 @@ function compositorAnimationUpdates(trace: RenderingTrace): Set<number> {
       'countBetween: skipCompositorAnimationUpdates needs traceRendering(…, {invalidations: true})',
     );
   }
-  const composited = new Set<number>();
-  const notComposited = new Set<number>();
-  for (const animation of animations) {
-    (animation.composited ? composited : notComposited).add(animation.nodeId);
-  }
+  // An element counts as composited at a time when an animation on it runs
+  // on the compositor then and none on the main thread does.
+  const alive = (a: TraceAnimation, t: number) =>
+    (a.from == null || a.from <= t) && (a.to == null || t <= a.to);
+  const compositedAt = (nodeId: number | undefined, t: number) =>
+    nodeId != null &&
+    animations.some(a => a.nodeId === nodeId && a.composited && alive(a, t)) &&
+    !animations.some(a => a.nodeId === nodeId && !a.composited && alive(a, t));
   const events = [...trace.events].sort((a, b) => a.t - b.t);
   const skipped = new Set<number>();
   let previousEnd = -Infinity;
+  // The elements Chrome restyled on its own in the previous pass.
+  let ownBefore = new Set<number>();
   let i = 0;
   while (i < events.length) {
     let j = i;
@@ -177,14 +193,23 @@ function compositorAnimationUpdates(trace: RenderingTrace): Set<number> {
     const causes = styleInvalidations.filter(
       inv => inv.t > previousEnd && inv.t <= end,
     );
+    // A pseudo-element (`::backdrop`) restyles after the element it belongs
+    // to: `Conditional ::backdrop` is Chrome's own when that element's
+    // restyle is, in this pass or the one before.
+    const own = new Set(
+      causes
+        .filter(inv => inv.reason === 'Animation' && inv.nodeId != null)
+        .map(inv => inv.nodeId as number),
+    );
     const isAnimationUpdate =
       causes.length > 0 &&
       causes.every(
         inv =>
-          inv.reason === 'Animation' &&
-          inv.nodeId != null &&
-          composited.has(inv.nodeId) &&
-          !notComposited.has(inv.nodeId),
+          (inv.reason === 'Animation' ||
+            (inv.reason.startsWith('Conditional ::') &&
+              inv.nodeId != null &&
+              (own.has(inv.nodeId) || ownBefore.has(inv.nodeId)))) &&
+          compositedAt(inv.nodeId, start),
       ) &&
       !scripts.some(t => t > previousEnd && t <= start);
     if (isAnimationUpdate) {
@@ -192,6 +217,7 @@ function compositorAnimationUpdates(trace: RenderingTrace): Set<number> {
         skipped.add(events[k].t);
       }
     }
+    ownBefore = isAnimationUpdate ? own : new Set();
     previousEnd = end;
     i = j + 1;
   }
@@ -226,6 +252,76 @@ interface TraceEvent {
   pid: number;
   tid: number;
   args?: Record<string, unknown>;
+}
+
+/** A trace event as `traceAnimations` reads it. */
+export interface AnimationTraceEvent {
+  readonly name: string;
+  readonly ph: string;
+  readonly ts: number;
+  readonly id?: string;
+  readonly id2?: {readonly local?: string};
+  readonly args?: Record<string, unknown>;
+}
+
+/**
+ * The animations a trace shows, one entry each, from Chrome's `Animation`
+ * events: the element (`nodeId`), whether it ran on the compositor and when.
+ * Chrome names an animation's events by an id it reuses once that animation
+ * is gone (a popover's exit copy gets its present's ids), so a begin event
+ * opens a new entry under its id and later events for the id add to it.
+ * `toMs` turns a trace timestamp into the times the trace reports.
+ */
+export function traceAnimations(
+  events: readonly AnimationTraceEvent[],
+  toMs: (ts: number) => number,
+): TraceAnimation[] {
+  const open = new Map<
+    string,
+    {nodeId?: number; composited?: boolean; from: number; to?: number}
+  >();
+  const all: {
+    nodeId?: number;
+    composited?: boolean;
+    from: number;
+    to?: number;
+  }[] = [];
+  for (const e of [...events].sort((a, b) => a.ts - b.ts)) {
+    if (e.name !== 'Animation') {
+      continue;
+    }
+    const id = e.id2?.local ?? e.id ?? '';
+    const d = ((e.args as {data?: Record<string, unknown>} | undefined)?.data ??
+      {}) as Record<string, unknown>;
+    let entry = open.get(id);
+    if (e.ph === 'b' || entry == null) {
+      entry = {from: toMs(e.ts)};
+      open.set(id, entry);
+      all.push(entry);
+    }
+    if (typeof d.nodeId === 'number') {
+      entry.nodeId = d.nodeId;
+    }
+    if (typeof d.compositeFailed === 'number') {
+      entry.composited = (entry.composited ?? true) && d.compositeFailed === 0;
+    }
+    if (e.ph === 'e') {
+      entry.to = toMs(e.ts);
+      open.delete(id);
+    }
+  }
+  return all.flatMap(({nodeId, composited, from, to}) =>
+    nodeId == null
+      ? []
+      : [
+          {
+            nodeId,
+            composited: composited ?? false,
+            from,
+            ...(to == null ? {} : {to}),
+          },
+        ],
+  );
 }
 
 /**
@@ -334,32 +430,10 @@ export async function traceRendering(
     const data = (e: TraceEvent) =>
       ((e.args as {data?: Record<string, unknown>} | undefined)?.data ??
         {}) as Record<string, unknown>;
-    const asyncId = (e: TraceEvent) =>
-      (e as TraceEvent & {id2?: {local?: string}; id?: string}).id2?.local ??
-      (e as TraceEvent & {id?: string}).id ??
-      '';
-    const animationNode = new Map<string, number>();
-    const animationComposited = new Map<string, boolean>();
-    for (const e of events) {
-      if (e.name !== 'Animation' || e.pid !== start.pid) {
-        continue;
-      }
-      const d = data(e);
-      if (typeof d.nodeId === 'number') {
-        animationNode.set(asyncId(e), d.nodeId);
-      }
-      if (typeof d.compositeFailed === 'number') {
-        const id = asyncId(e);
-        animationComposited.set(
-          id,
-          (animationComposited.get(id) ?? true) && d.compositeFailed === 0,
-        );
-      }
-    }
-    extra.animations = [...animationNode].map(([id, nodeId]) => ({
-      nodeId,
-      composited: animationComposited.get(id) ?? false,
-    }));
+    extra.animations = traceAnimations(
+      events.filter(e => e.pid === start.pid),
+      toEpochMs,
+    );
     extra.styleInvalidations = events
       .filter(e => onMain(e) && e.name === 'StyleRecalcInvalidationTracking')
       .map(e => {
