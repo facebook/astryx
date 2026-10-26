@@ -44,10 +44,9 @@ export const menu = {
 } as const;
 
 /**
- * Registers the menu table's motion roles with the theme (idempotent; nothing
- * runs on import), the register function every UIKit table has. While the
- * table holds only the haptic it registers nothing; the hold-open delay is a
- * gesture threshold, not a role.
+ * Registers the roles the menu table holds with the theme (idempotent;
+ * nothing runs on import): its springs, durations and curves, not its
+ * haptics. The hold-open delay is a gesture threshold, not a role.
  */
 export function registerMenuTable(): void {
   registerMotionTable('menu', menu);
