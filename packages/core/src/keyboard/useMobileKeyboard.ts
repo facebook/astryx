@@ -5,9 +5,9 @@
 /**
  * @file useMobileKeyboard.ts
  * @input The window's visual viewport, focus events, React effects and refs,
- *   the motion module's Reduce Motion queries and animator, the touch query,
- *   the layout viewport's height (utils/layoutViewport.ts), and for
- *   BottomSheet's ride the keyboard layout guide's transitions and
+ *   the Reduce Motion media query, the touch query, the layout viewport's
+ *   height (utils/layoutViewport.ts), and for BottomSheet's ride the
+ *   compositor animator, the keyboard layout guide's transitions and
  *   rideKeyboard
  * @output Exports the on-screen keyboard module: measureKeyboardHeight,
  *   isKeyboardMeasurable, subscribeMobileKeyboard, getMobileKeyboardHeight,
@@ -59,10 +59,7 @@
  * SYNC: When modified, update /packages/core/src/keyboard/README.md
  */
 
-import {
-  REDUCED_MOTION_FADE_QUERY,
-  REDUCED_MOTION_INSTANT_QUERY,
-} from '../motion/reducedMotion';
+import {useMediaQuery} from '../hooks/useMediaQuery';
 import {TOUCH_QUERY} from '../utils/touchPresentation';
 import {animatorFor, type Animator} from '../motion/animator';
 import {getKeyboardLayoutGuide} from './keyboardLayoutGuide';
@@ -227,9 +224,8 @@ export function subscribeMobileKeyboard(
 
 /**
  * `win`'s keyboard height. While the module listens, it is the height
- * measured at the last report: every reader of a keyboard change (the
- * layout guide, each component's hook, a rider committing its layout)
- * shares that one layout read (architecture:react-component-runtime INV11).
+ * measured at the last report: every reader of a keyboard change (each
+ * component's hook) shares that one layout read (architecture:react-component-runtime INV11).
  * Every change of the visual viewport or the window is a report, so a reader
  * between two reports sees the current height. With nothing listening yet,
  * the height is measured now.
@@ -727,6 +723,8 @@ export function useMobileKeyboard({
   const isOpenRef = useRef(isOpen);
   isFullyExpandedRef.current = isFullyExpanded;
   isOpenRef.current = isOpen;
+  // The ride attaches only under a coarse primary pointer (the touch query).
+  const isTouch = useMediaQuery(TOUCH_QUERY, false);
 
   useEffect(() => {
     if (!isEnabled || !isSheetTraveling) {
@@ -782,13 +780,17 @@ export function useMobileKeyboard({
     let room = 0;
     let roomRange = 0;
     // FR8: where the keyboard layout guide publishes the keyboard's own slide
-    // (Gboard's, in Chrome on Android), the sheet's content rides it. The
-    // guide is subscribed before the keyboard module below, so a report's
-    // transition is published before the reveal reads it.
-    const guide = getKeyboardLayoutGuide(window);
+    // (Gboard's, in Chrome on Android), the sheet's content rides it. Only
+    // under a coarse primary pointer: under a fine one nothing of the ride
+    // attaches, and the room follows the reports. The guide is subscribed
+    // before the keyboard module below, so a report's transition is
+    // published before the reveal reads it.
+    const guide = isTouch ? getKeyboardLayoutGuide(window) : null;
     const contentAnimator = (): Animator | null => {
       const content = body.firstElementChild;
-      return content instanceof HTMLElement ? animatorFor(content) : null;
+      return guide != null && content instanceof HTMLElement
+        ? animatorFor(content)
+        : null;
     };
     // How far a ride has the content from where its layout puts it, as the
     // page draws it now: the same frame a control's rect is read in.
@@ -802,8 +804,9 @@ export function useMobileKeyboard({
     };
     // The keyboard's show the guide plays on its slide right now, if any.
     const showOnSlide = (): KeyboardTransition | null => {
-      const transition = guide.transition;
-      return transition.kind === 'show' &&
+      const transition = guide?.transition;
+      return transition != null &&
+        transition.kind === 'show' &&
         transition.animated &&
         transition.curve != null &&
         performance.now() < transition.start + transition.curve.durationMs
@@ -875,13 +878,10 @@ export function useMobileKeyboard({
         body.scrollTop += distance;
         return;
       }
-      // Reduce Motion, on any pointer (design:reduced-motion): the motion
-      // module's own queries, never a local spelling.
+      // Reduce Motion, on any pointer (design:reduced-motion).
       const reduceMotion =
         typeof window.matchMedia === 'function' &&
-        [REDUCED_MOTION_FADE_QUERY, REDUCED_MOTION_INSTANT_QUERY].some(
-          query => window.matchMedia(query).matches,
-        );
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const behavior = smoothly && !reduceMotion ? 'smooth' : 'instant';
       if (behavior === 'smooth') {
         smoothTarget = body.scrollTop + distance;
@@ -1097,7 +1097,7 @@ export function useMobileKeyboard({
         void handle.finished.then(commit);
       }
     };
-    const unsubscribeGuide = guide.subscribe(transition => {
+    const unsubscribeGuide = guide?.subscribe(transition => {
       // Safari's keyboard keeps the reveal below: only a slide rides.
       if (transition.curve == null) {
         return;
@@ -1306,7 +1306,7 @@ export function useMobileKeyboard({
       cancelAnimationFrame(animationFrame);
       stopClaiming?.();
       unsubscribe();
-      unsubscribeGuide();
+      unsubscribeGuide?.();
       heldHide?.release();
       contentAnimator()?.set({y: 0});
       revealPan.stop();
@@ -1326,6 +1326,7 @@ export function useMobileKeyboard({
     isEnabled,
     isPageScrollLocked,
     isPresented,
+    isTouch,
     sheetRef,
   ]);
   return keyboardInset;

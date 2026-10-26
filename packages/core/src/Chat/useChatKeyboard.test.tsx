@@ -25,6 +25,7 @@ import {act, fireEvent, render, screen} from '@testing-library/react';
 import {ChatComposer} from './ChatComposer';
 import {ChatLayout} from './ChatLayout';
 import {editableToClaim, focusAtPoint} from './useChatKeyboard';
+import {getKeyboardLayoutGuide} from '../keyboard';
 
 type FakeViewport = EventTarget & {
   height: number;
@@ -103,7 +104,18 @@ function renderLayout() {
 }
 
 describe('ChatLayout and the software keyboard', () => {
+  // A phone: its primary pointer is a coarse finger.
+  const stubPointer = (pointer: 'coarse' | 'fine') => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === `(pointer: ${pointer})`,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+  };
+
   beforeEach(() => {
+    stubPointer('coarse');
     viewport = Object.assign(new EventTarget(), {
       height: window.innerHeight,
       offsetTop: 0,
@@ -126,6 +138,21 @@ describe('ChatLayout and the software keyboard', () => {
   afterEach(() => {
     Reflect.deleteProperty(window, 'visualViewport');
     Reflect.deleteProperty(window, 'CSS');
+    vi.unstubAllGlobals();
+  });
+
+  it('attaches nothing of the ride under a fine pointer: the layout follows the height alone', async () => {
+    stubPointer('fine');
+    const guide = getKeyboardLayoutGuide(window);
+    const subscribe = vi.spyOn(guide, 'subscribe');
+    const {container} = renderLayout();
+    report(window.innerHeight - 300);
+    await settle();
+    expect(layoutLift(dockOf(container))).toBe(300);
+    expect(dockOf(container).style.translate).toBe('');
+    // Nothing subscribed the keyboard layout guide.
+    expect(subscribe).not.toHaveBeenCalled();
+    subscribe.mockRestore();
   });
 
   it('lays the dock and the room after the messages out from the keyboard height', async () => {

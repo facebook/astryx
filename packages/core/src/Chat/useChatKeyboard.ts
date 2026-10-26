@@ -305,8 +305,10 @@ export function useChatKeyboard({
   const scrollBeforeRef = useRef(0);
   const commitRef = useRef<() => void>(() => {});
   // Touch listeners only where the primary pointer is coarse (spec:AST-094
-  // FR19): under a mouse the transcript registers none.
-  const {isTouch} = useTouchPresentation();
+  // FR19): under a mouse the transcript registers none, and nothing of the
+  // ride on the keyboard's own motion attaches.
+  const touchPresentation = useTouchPresentation();
+  const isTouch = touchPresentation.isTouch;
 
   useIsomorphicLayoutEffect(() => {
     const root = rootRef.current;
@@ -458,12 +460,15 @@ export function useChatKeyboard({
       root.addEventListener('touchcancel', onTouches, passive);
     }
     scrollTarget?.addEventListener('scroll', onScroll, passive);
-    const guide = getKeyboardLayoutGuide(win);
-    const unsubscribe = guide.subscribe(follow);
+    // The ride on the keyboard's own motion attaches only under a coarse
+    // primary pointer; under a fine one the layout follows the height alone.
+    const unsubscribe = isTouch
+      ? getKeyboardLayoutGuide(win).subscribe(follow)
+      : undefined;
     // Mounted under a keyboard that is already up: take its place at once.
     commit();
     return () => {
-      unsubscribe();
+      unsubscribe?.();
       ridingRef.current = false;
       clearTimeout(settleTimer);
       root.removeEventListener('touchstart', onTouches);
@@ -475,10 +480,10 @@ export function useChatKeyboard({
     rootRef,
     scrollRef,
     isSelfScrolling,
+    isTouch,
     dock.animator,
     messages.animator,
     liftStore,
-    isTouch,
   ]);
 
   // Synchronizes the layout with the keyboard module's height (the visual
