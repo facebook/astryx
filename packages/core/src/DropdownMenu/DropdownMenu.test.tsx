@@ -19,7 +19,14 @@ import {
   afterEach,
 } from 'vitest';
 import {readFileSync} from 'node:fs';
-import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+  cleanup,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -39,6 +46,7 @@ import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation
 import {MENU_PRESS_LONG_PRESS_MS} from '../hooks/useMenuPress';
 import {MENU_PRESS_SETTLE_MS} from '../hooks/menuPressGesture';
 import {COMPACT_QUERY, TOUCH_QUERY} from '../utils/touchPresentation';
+import {getGestureHost} from '../gestures/GestureHost';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
@@ -3071,6 +3079,41 @@ describe('DropdownMenu press model', () => {
     } finally {
       add.mockRestore();
       remove.mockRestore();
+    }
+  });
+
+  it('where the primary pointer is fine, an open menu joins no gesture system and adds no touch listener, and a finger\u2019s tap acts once through the press model; where it is coarse, it joins one (spec:AST-094 FR19, FR24)', async () => {
+    const attach = vi.spyOn(getGestureHost(document), 'attach');
+    const add = vi.spyOn(document, 'addEventListener');
+    const touchListeners = () =>
+      add.mock.calls.filter(([type]) => type.startsWith('touch')).length;
+    try {
+      const user = userEvent.setup();
+      // jsdom's primary pointer is fine: the released finger rules apply.
+      expect(window.matchMedia(TOUCH_QUERY).matches).toBe(false);
+      const onPick = vi.fn();
+      const trigger = renderMenu(onPick);
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      expect(attach).not.toHaveBeenCalled();
+      expect(touchListeners()).toBe(0);
+      // A finger's tap there acts at its release; the browser's own click
+      // that follows is swallowed, so the row acts once.
+      fireEvent.pointerDown(item('Edit'), touch);
+      fireEvent.pointerUp(item('Edit'), touch);
+      fireEvent.click(item('Edit'), {detail: 1});
+      expect(onPick).toHaveBeenCalledTimes(1);
+      expect(onPick).toHaveBeenCalledWith('Edit');
+      cleanup();
+      // A phone: the menu's finger tracking attaches while it shows.
+      stubCoarsePointer();
+      const coarseTrigger = renderMenu();
+      await user.click(coarseTrigger);
+      expect(attach).toHaveBeenCalledTimes(1);
+      expect(touchListeners()).toBeGreaterThan(0);
+    } finally {
+      attach.mockRestore();
+      add.mockRestore();
     }
   });
 
