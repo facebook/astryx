@@ -1,0 +1,384 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file animatedLayout.test.ts
+ * @input vitest (jsdom), the animated-layout module, a recording stand-in for
+ *   Element.animate and stubbed layout rectangles (jsdom lays nothing out)
+ * @output Checks the handle (`spec:AST-105` FR1), that nothing runs without
+ *   one (FR2), which elements the walk takes and how it moves them (FR3),
+ *   the shared `springs.settle` motion and Reduce Motion by pointer (FR4),
+ *   and the indicator's transition
+ * @position Testing; the real geometry is proven in
+ *   __tests__/animatedLayout.interaction.browser.spec.ts
+ */
+
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {
+  applyLayoutChangeTransition,
+  createAnimatedLayout,
+  playLayoutChange,
+  reportLayoutChange,
+} from './animatedLayout';
+
+interface Played {
+  element: Element;
+  keyframes: Keyframe[];
+  options: KeyframeAnimationOptions;
+}
+
+let played: Played[] = [];
+let media: Record<string, boolean> = {};
+const originalAnimate = Element.prototype.animate;
+const originalMatchMedia = window.matchMedia;
+
+beforeEach(() => {
+  played = [];
+  media = {};
+  Element.prototype.animate = function (
+    this: Element,
+    keyframes: Keyframe[] | PropertyIndexedKeyframes | null,
+    options?: number | KeyframeAnimationOptions,
+  ) {
+    played.push({
+      element: this,
+      keyframes: keyframes as Keyframe[],
+      options: options as KeyframeAnimationOptions,
+    });
+    return {} as Animation;
+  };
+  window.matchMedia = (query: string) =>
+    ({
+      matches: media[query] === true,
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+    }) as unknown as MediaQueryList;
+});
+
+afterEach(() => {
+  Element.prototype.animate = originalAnimate;
+  window.matchMedia = originalMatchMedia;
+  document.body.innerHTML = '';
+});
+
+/** Gives `element` a rectangle that follows `phase` (before or after). */
+function placeAt(
+  element: Element,
+  rects: {
+    before: [number, number, number, number];
+    after?: [number, number, number, number];
+  },
+  phase: {current: 'before' | 'after'},
+) {
+  vi.spyOn(element, 'getBoundingClientRect').mockImplementation(() => {
+    const [x, y, w, h] =
+      phase.current === 'before' || rects.after == null
+        ? rects.before
+        : rects.after;
+    return new DOMRect(x, y, w, h);
+  });
+}
+
+const flushMicrotasks = async () => {
+  await Promise.resolve();
+  await Promise.resolve();
+};
+
+/**
+ * An area with a changed element and the given followers after it, each
+ * shifted by `shift` px down after the change unless it says otherwise.
+ */
+function setUp(html: string) {
+  document.body.innerHTML = html;
+  const area = document.getElementById('area') as HTMLElement;
+  const changed = document.getElementById('changed') as HTMLElement;
+  const phase: {current: 'before' | 'after'} = {current: 'before'};
+  placeAt(area, {before: [0, 0, 400, 600]}, phase);
+  placeAt(changed, {before: [0, 0, 400, 0], after: [0, 0, 400, 80]}, phase);
+  return {area, changed, phase};
+}
+
+function translateOf(entry: Played): {x: number; y: number} {
+  const first = String(entry.keyframes[0].transform ?? '');
+  const match = /translate\(([-\d.e]+)px,\s*([-\d.e]+)px\)/.exec(first);
+  return match == null
+    ? {x: 0, y: 0}
+    : {x: Number(match[1]), y: Number(match[2])};
+}
+
+async function runChange(
+  layout: ReturnType<typeof createAnimatedLayout> | null,
+  changed: Element,
+  phase: {current: 'before' | 'after'},
+) {
+  const report = reportLayoutChange(layout, () => changed);
+  report.measureBefore();
+  phase.current = 'after';
+  report.animate();
+  playLayoutChange(layout, changed);
+  await flushMicrotasks();
+}
+
+describe('the handle (spec:AST-105 FR1)', () => {
+  it('has no public members', () => {
+    const area = document.createElement('div');
+    const handle = createAnimatedLayout(() => area);
+    expect(Object.keys(handle)).toEqual([]);
+    expect(Object.getOwnPropertyNames(handle)).toEqual([]);
+    expect(Object.isFrozen(handle)).toBe(true);
+  });
+});
+
+describe('without a handle (spec:AST-105 FR2)', () => {
+  it('measures nothing and plays nothing', async () => {
+    const {changed, phase} = setUp(
+      '<div id="area"><div id="changed"></div><div id="a"></div></div>',
+    );
+    const a = document.getElementById('a') as HTMLElement;
+    placeAt(a, {before: [0, 0, 400, 40], after: [0, 80, 400, 40]}, phase);
+    await runChange(null, changed, phase);
+    expect(played).toEqual([]);
+  });
+});
+
+describe('the walk (spec:AST-105 FR3, Coverage)', () => {
+  it('moves following siblings at every level up to the area, by their layout change, and nothing past it', async () => {
+    const {area, changed, phase} = setUp(
+      `<div id="area"><section id="l1"><div id="l2"><div id="changed"></div><div id="s2"></div></div><div id="s1"></div></section><div id="s0"></div></div>
+       <div id="outside"></div>`,
+    );
+    for (const [id, y] of [
+      ['s2', 0],
+      ['s1', 50],
+      ['s0', 100],
+      ['outside', 700],
+    ] as const) {
+      placeAt(
+        document.getElementById(id) as HTMLElement,
+        {before: [0, y, 400, 40], after: [0, y + 80, 400, 40]},
+        phase,
+      );
+    }
+    await runChange(
+      createAnimatedLayout(() => area),
+      changed,
+      phase,
+    );
+    const moved = played
+      .filter(p => p.keyframes[0].transform != null)
+      .map(p => (p.element as HTMLElement).id);
+    expect(moved.sort()).toEqual(['s0', 's1', 's2']);
+    for (const entry of played.filter(p => p.keyframes[0].transform != null)) {
+      expect(translateOf(entry).y).toBeCloseTo(-80);
+      expect(entry.options.composite).toBe('add');
+      expect(entry.options.easing).toBe('linear');
+      // Lands where layout put it.
+      expect(String(entry.keyframes.at(-1)?.transform)).toBe(
+        'translate(0px, 0px)',
+      );
+    }
+  });
+
+  it('takes the children of a display: contents wrapper and skips absolute, fixed, hidden and display: none elements', async () => {
+    const {area, changed, phase} = setUp(
+      `<div id="area"><div id="changed"></div>
+        <div id="wrap" style="display: contents"><div id="c1"></div><div id="c2"></div></div>
+        <div id="abs" style="position: absolute"></div>
+        <div id="fixed" style="position: fixed"></div>
+        <div id="hidden" style="visibility: hidden"></div>
+        <div id="none" style="display: none"></div></div>`,
+    );
+    for (const id of ['c1', 'c2', 'abs', 'fixed', 'hidden', 'none']) {
+      placeAt(
+        document.getElementById(id) as HTMLElement,
+        {before: [0, 10, 400, 40], after: [0, 90, 400, 40]},
+        phase,
+      );
+    }
+    await runChange(
+      createAnimatedLayout(() => area),
+      changed,
+      phase,
+    );
+    const moved = played
+      .filter(p => p.keyframes[0].transform != null)
+      .map(p => (p.element as HTMLElement).id);
+    expect(moved.sort()).toEqual(['c1', 'c2']);
+  });
+
+  it('leaves an element whose rectangle did not change, and one outside the visible part before and after', async () => {
+    const {area, changed, phase} = setUp(
+      '<div id="area"><div id="changed"></div><div id="still"></div><div id="far"></div></div>',
+    );
+    placeAt(
+      document.getElementById('still') as HTMLElement,
+      {before: [0, 10, 400, 40]},
+      phase,
+    );
+    placeAt(
+      document.getElementById('far') as HTMLElement,
+      {before: [0, 2000, 400, 40], after: [0, 2080, 400, 40]},
+      phase,
+    );
+    await runChange(
+      createAnimatedLayout(() => area),
+      changed,
+      phase,
+    );
+    expect(played.filter(p => p.keyframes[0].transform != null)).toEqual([]);
+  });
+
+  it('moves each element once for two changes in one frame, by the total', async () => {
+    document.body.innerHTML =
+      '<div id="area"><div id="g1"></div><div id="g2"></div><div id="after"></div></div>';
+    const area = document.getElementById('area') as HTMLElement;
+    const phase: {current: 'before' | 'after'} = {current: 'before'};
+    placeAt(area, {before: [0, 0, 400, 600]}, phase);
+    placeAt(
+      document.getElementById('after') as HTMLElement,
+      {before: [0, 0, 400, 40], after: [0, 160, 400, 40]},
+      phase,
+    );
+    const layout = createAnimatedLayout(() => area);
+    const one = reportLayoutChange(layout, () => document.getElementById('g1'));
+    const two = reportLayoutChange(layout, () => document.getElementById('g2'));
+    one.measureBefore();
+    two.measureBefore();
+    phase.current = 'after';
+    one.animate();
+    two.animate();
+    await flushMicrotasks();
+    const moves = played.filter(p => (p.element as HTMLElement).id === 'after');
+    expect(moves).toHaveLength(1);
+    expect(translateOf(moves[0]).y).toBeCloseTo(-160);
+  });
+
+  it('never scrolls the area', async () => {
+    const {area, changed, phase} = setUp(
+      '<div id="area"><div id="changed"></div><div id="a"></div></div>',
+    );
+    area.scrollTop = 0;
+    placeAt(
+      document.getElementById('a') as HTMLElement,
+      {before: [0, 0, 400, 40], after: [0, 80, 400, 40]},
+      phase,
+    );
+    const scrollTo = vi.fn();
+    area.scrollTo = scrollTo;
+    await runChange(
+      createAnimatedLayout(() => area),
+      changed,
+      phase,
+    );
+    expect(scrollTo).not.toHaveBeenCalled();
+    expect(area.scrollTop).toBe(0);
+  });
+});
+
+describe('one shared motion (spec:AST-105 FR4)', () => {
+  async function changeOnce(style = '') {
+    const {area, changed, phase} = setUp(
+      `<div id="area" style="${style}"><div id="changed"></div><div id="a"></div></div>`,
+    );
+    placeAt(
+      document.getElementById('a') as HTMLElement,
+      {before: [0, 0, 400, 40], after: [0, 80, 400, 40]},
+      phase,
+    );
+    await runChange(
+      createAnimatedLayout(() => area),
+      changed,
+      phase,
+    );
+  }
+
+  it('plays the changed element and its followers on springs.settle, with one duration', async () => {
+    await changeOnce();
+    const follower = played.find(p => (p.element as HTMLElement).id === 'a');
+    const own = played.find(p => (p.element as HTMLElement).id === 'changed');
+    expect(follower).toBeDefined();
+    expect(own).toBeDefined();
+    expect(own?.options.duration).toBe(follower?.options.duration);
+    // SwiftUI's smooth spring (0.5 s, no bounce) settles in about 0.6 s.
+    expect(Number(follower?.options.duration)).toBeGreaterThan(400);
+    expect(Number(follower?.options.duration)).toBeLessThan(900);
+  });
+
+  it("reads a theme's springs.settle from the area", async () => {
+    await changeOnce('--motion-springs-settle: 0.2s 0');
+    const follower = played.find(p => (p.element as HTMLElement).id === 'a');
+    expect(Number(follower?.options.duration)).toBeLessThan(400);
+  });
+
+  it('cross-fades with no travel under Reduce Motion on a coarse pointer', async () => {
+    media['(prefers-reduced-motion: reduce)'] = true;
+    media['(pointer: coarse)'] = true;
+    await changeOnce();
+    expect(played).toHaveLength(2);
+    for (const entry of played) {
+      expect(entry.keyframes[0].transform).toBeUndefined();
+      expect(entry.keyframes[0].opacity).toBe(0);
+      expect(Number(entry.options.duration)).toBeLessThanOrEqual(200);
+    }
+  });
+
+  it('changes at once under Reduce Motion on a fine pointer', async () => {
+    media['(prefers-reduced-motion: reduce)'] = true;
+    await changeOnce();
+    expect(played).toEqual([]);
+  });
+
+  it('falls back when an engine rejects composite', async () => {
+    const accept = Element.prototype.animate;
+    Element.prototype.animate = function (
+      this: Element,
+      keyframes: Keyframe[] | PropertyIndexedKeyframes | null,
+      options?: number | KeyframeAnimationOptions,
+    ) {
+      if (typeof options === 'object' && options.composite != null) {
+        throw new TypeError('composite unsupported');
+      }
+      return accept.call(this, keyframes, options);
+    };
+    await changeOnce();
+    const follower = played.find(p => (p.element as HTMLElement).id === 'a');
+    expect(follower).toBeDefined();
+    expect(follower?.options.composite).toBeUndefined();
+  });
+});
+
+describe('the indicator transition', () => {
+  it('takes the spring as a linear() easing with a handle, and clears without one', () => {
+    document.body.innerHTML = '<div id="area"><svg id="chevron"></svg></div>';
+    const area = document.getElementById('area') as HTMLElement;
+    const chevron = document.getElementById(
+      'chevron',
+    ) as unknown as SVGSVGElement;
+    applyLayoutChangeTransition(
+      createAnimatedLayout(() => area),
+      chevron,
+    );
+    expect(
+      chevron.style.getPropertyValue('transition-timing-function'),
+    ).toMatch(/^linear\(0 0%, .*1 100%\)$/);
+    expect(chevron.style.getPropertyValue('transition-duration')).toMatch(
+      /^\d+ms$/,
+    );
+    applyLayoutChangeTransition(null, chevron);
+    expect(chevron.style.getPropertyValue('transition-duration')).toBe('');
+  });
+
+  it('is immediate under Reduce Motion', () => {
+    media['(prefers-reduced-motion: reduce)'] = true;
+    document.body.innerHTML = '<div id="area"><svg id="chevron"></svg></div>';
+    const area = document.getElementById('area') as HTMLElement;
+    const chevron = document.getElementById(
+      'chevron',
+    ) as unknown as SVGSVGElement;
+    applyLayoutChangeTransition(
+      createAnimatedLayout(() => area),
+      chevron,
+    );
+    expect(chevron.style.getPropertyValue('transition-duration')).toBe('0s');
+  });
+});

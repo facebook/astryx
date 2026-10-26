@@ -249,11 +249,11 @@ export function TreeList({
         `[data-tree-id="${CSS.escape(id)}"]`,
       );
       if (row != null) {
-        // The row's own chevron (the first toggle in it; its children's come
-        // after) turns on the glide's motion.
+        // The row's own chevron (the Icon in its toggle, the first one in the
+        // row; its children's come after) turns on the glide's motion.
         applyLayoutChangeTransition(
           animatedLayout,
-          row.querySelector<SVGSVGElement>('[data-tree-toggle] svg'),
+          row.querySelector<HTMLElement>('[data-tree-toggle] > .astryx-icon'),
         );
         const change = reportLayoutChange(animatedLayout, () => row);
         change.measureBefore();

@@ -76,7 +76,7 @@ function useReportedChange(animatedLayout: AnimatedLayoutHandle, dep: unknown) {
     }
     change.animate();
     if (ref.current != null) {
-      playLayoutChange(animatedLayout, ref.current, 'enter');
+      playLayoutChange(animatedLayout, ref.current);
     }
   }, [dep, change, animatedLayout]);
   return {ref, before: () => change.measureBefore()};
@@ -363,4 +363,72 @@ function PanelDemo() {
 export const AppPanel: Story = {
   name: 'App panel',
   render: () => <PanelDemo />,
+};
+
+const COMPARE_TREE: TreeListItemData[] = [
+  {
+    id: 'src',
+    label: 'src',
+    children: [
+      {id: 'app', label: 'App.tsx'},
+      {id: 'index', label: 'index.ts'},
+      {id: 'styles', label: 'styles.css'},
+    ],
+  },
+  {id: 'readme', label: 'README.md'},
+];
+
+function CompareColumn({
+  title,
+  isAnimated,
+}: {
+  title: string;
+  isAnimated: boolean;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const handle = useAnimatedLayout({containerRef});
+  const animatedLayout = isAnimated ? handle : undefined;
+  return (
+    <div style={{flex: '1 1 0', minWidth: 0}}>
+      <div style={{fontWeight: 600, marginBottom: 8}}>{title}</div>
+      <div
+        ref={containerRef}
+        data-compare={isAnimated ? 'after' : 'before'}
+        style={{
+          padding: 12,
+          border: '2px dashed var(--color-border-emphasized)',
+          borderRadius: 16,
+        }}>
+        <div style={card}>
+          <Collapsible
+            trigger="Advanced settings"
+            defaultIsOpen={false}
+            animatedLayout={animatedLayout}>
+            <p style={{margin: '4px 0'}}>Cache size, retries and timeouts.</p>
+            <p style={{margin: '4px 0'}}>Changes apply on the next sync.</p>
+          </Collapsible>
+        </div>
+        <div style={plain}>Content after the Collapsible</div>
+        <div style={card}>
+          <TreeList items={COMPARE_TREE} animatedLayout={animatedLayout} />
+        </div>
+        <div style={plain}>Content after the tree</div>
+        <div style={plain}>More content</div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The same Collapsible and TreeList without a handle (content after them
+ * jumps) and with one (it glides), side by side, for any pointer.
+ */
+export const BeforeAndAfter: Story = {
+  name: 'Before and after',
+  render: () => (
+    <div style={{display: 'flex', gap: 24, maxWidth: 880}}>
+      <CompareColumn title="Without animatedLayout" isAnimated={false} />
+      <CompareColumn title="With animatedLayout" isAnimated />
+    </div>
+  ),
 };

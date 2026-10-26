@@ -365,7 +365,6 @@ export function Collapsible({
   // (`architecture:react-component-runtime` INV12). Without one, nothing
   // changes.
   const contentRef = useRef<HTMLDivElement>(null);
-  const chevronRef = useRef<SVGSVGElement>(null);
   const layoutChange = useMemo(
     () => reportLayoutChange(animatedLayout, contentRef),
     [animatedLayout],
@@ -382,13 +381,17 @@ export function Collapsible({
     }
   }, [isOpen, layoutChange, animatedLayout]);
 
-  const handleToggle = () => {
+  const handleToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (isDisabled) {
       return;
     }
     // Before the change commits: the chevron turns on the glide's motion,
     // and the content after this Collapsible is measured where it is now.
-    applyLayoutChangeTransition(animatedLayout, chevronRef.current);
+    // The chevron is the trigger's Icon (its `icon` theming target).
+    applyLayoutChangeTransition(
+      animatedLayout,
+      event.currentTarget.querySelector<HTMLElement>(':scope > .astryx-icon'),
+    );
     layoutChange.measureBefore();
     toggle();
   };
@@ -407,7 +410,6 @@ export function Collapsible({
 
   const chevron = (
     <Icon
-      ref={chevronRef}
       // The glyph is part of the placement, not a separate choice: a trailing
       // indicator points down and flips up, a leading one points into the row
       // and turns down. Rotating `chevronDown` by a quarter turn would leave
