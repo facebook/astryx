@@ -417,11 +417,19 @@ describe('the taps the composer claims', () => {
     expect(editableToClaim(document.getElementById('label'))).toBeNull();
   });
 
-  it('leaves a text control to put its own caret under the finger', () => {
+  it('claims an unfocused text control too, whose own tap focus the browser would reveal (FR4)', () => {
     document.body.innerHTML =
-      '<textarea id="draft">A long draft</textarea><input id="line" value="One line">';
-    expect(editableToClaim(document.getElementById('draft'))).toBeNull();
-    expect(editableToClaim(document.getElementById('line'))).toBeNull();
+      '<textarea id="draft">A long draft</textarea><input id="line" value="One line"><input id="box" type="checkbox"><textarea id="still" inputmode="none"></textarea>';
+    const draft = document.getElementById('draft');
+    expect(editableToClaim(draft)).toBe(draft);
+    const line = document.getElementById('line');
+    expect(editableToClaim(line)).toBe(line);
+    // Nothing that brings up no keyboard.
+    expect(editableToClaim(document.getElementById('box'))).toBeNull();
+    expect(editableToClaim(document.getElementById('still'))).toBeNull();
+    // A focused one keeps its own taps: the browser moves the caret.
+    draft?.focus();
+    expect(editableToClaim(draft)).toBeNull();
   });
 
   it('claims nothing that already has focus', () => {
@@ -429,6 +437,67 @@ describe('the taps the composer claims', () => {
       '<div contenteditable="true" id="editor"><p id="text">Hello</p></div>';
     document.getElementById('editor')!.focus();
     expect(editableToClaim(document.getElementById('text'))).toBeNull();
+  });
+});
+
+describe('a text control composer tapped with nothing focused (spec:AST-099 FR4)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(pointer: coarse)',
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      value: Object.assign(new EventTarget(), {
+        height: window.innerHeight,
+        offsetTop: 0,
+        scale: 1,
+      }),
+    });
+  });
+
+  afterEach(() => {
+    Reflect.deleteProperty(window, 'visualViewport');
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('is focused without the browser\u2019s reveal, as a contenteditable composer is', () => {
+    render(
+      <ChatLayout
+        composer={
+          <ChatComposer
+            onSubmit={() => {}}
+            input={<textarea aria-label="Message" />}
+          />
+        }>
+        <p>Hello</p>
+      </ChatLayout>,
+    );
+    const textarea = screen.getByRole('textbox', {name: 'Message'});
+    expect(document.activeElement).not.toBe(textarea);
+    const focus = vi.spyOn(textarea, 'focus');
+    const touch = (type: string, touches: {x: number; y: number}[]) => {
+      const event = new Event(type, {bubbles: true, cancelable: true});
+      const list = touches.map((p, identifier) => ({
+        identifier,
+        clientX: p.x,
+        clientY: p.y,
+      }));
+      Object.assign(event, {
+        touches: type === 'touchend' ? [] : list,
+        changedTouches: list,
+      });
+      return event;
+    };
+    textarea.dispatchEvent(touch('touchstart', [{x: 10, y: 10}]));
+    const end = touch('touchend', [{x: 10, y: 10}]);
+    textarea.dispatchEvent(end);
+    expect(end.defaultPrevented).toBe(true);
+    expect(focus).toHaveBeenCalledWith({preventScroll: true});
+    expect(document.activeElement).toBe(textarea);
   });
 });
 
@@ -554,6 +623,29 @@ describe('the caret a claimed tap places', () => {
     expect(selection?.anchorNode).toBe(text);
     expect(selection?.anchorOffset).toBe(3);
     expect(selection?.isCollapsed).toBe(true);
+  });
+
+  it('puts a text control\u2019s caret where the browser maps the point into it, or after its text', () => {
+    const textarea = document.createElement('textarea');
+    textarea.value = 'A long draft';
+    document.body.append(textarea);
+    const focus = vi.spyOn(textarea, 'focus');
+    stubCaretApi(
+      'caretPositionFromPoint',
+      vi.fn(() => ({offsetNode: textarea, offset: 3})),
+    );
+    focusAtPoint(textarea, 20, 10);
+    expect(focus).toHaveBeenCalledWith({preventScroll: true});
+    expect(document.activeElement).toBe(textarea);
+    expect([textarea.selectionStart, textarea.selectionEnd]).toEqual([3, 3]);
+
+    textarea.blur();
+    stubCaretApi(
+      'caretPositionFromPoint',
+      vi.fn(() => null),
+    );
+    focusAtPoint(textarea, 20, 10);
+    expect([textarea.selectionStart, textarea.selectionEnd]).toEqual([12, 12]);
   });
 
   it('falls back to caretRangeFromPoint where only WebKit\u2019s exists', () => {
