@@ -53,7 +53,7 @@ import {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer
 import {lockSelection} from '../gestures/selectionLock';
 import type {GestureTouch, PointerKind} from '../gestures/types';
 import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
-import {UIKIT_GESTURES} from '../motion/uikit/gestures';
+import {UIKIT_PRESS} from '../motion/uikit/gestures';
 import {
   createActionGroupTracker,
   type ActionGroupTracker,
@@ -95,7 +95,7 @@ export interface ActionGroupTrackingOptions {
   onActivate?: (item: HTMLElement) => void;
 }
 
-const PRESS = UIKIT_GESTURES.press;
+const PRESS = UIKIT_PRESS;
 
 /** The ref handed to the recognizer while tracking is off: no element. */
 const DETACHED: RefObject<Element | null> = {current: null};

@@ -7,7 +7,7 @@
  * @input menuSurfaceMotion.ts (UIMenu's grow and collapse on the animator),
  *   menuTouchPlacement.ts (the menu over its trigger on a compact touch
  *   screen), MenuActionSheetCard.tsx (iOS 26's alert-style action sheet),
- *   and the menu and springs tables' register functions
+ *   and the springs table's register function
  * @output DropdownMenu's touch layer: createMenuSurfaceMotion and its type,
  *   COVER_TRIGGER_STYLE, placeOverTrigger, MenuActionSheetCard and
  *   isActionSheetCardEligible
@@ -15,13 +15,12 @@
  *   its only import site is DropdownMenu.tsx. The mouse paths stay outside
  *   it, so a desktop build can swap it for a no-op (AST-080 FR8).
  *
- * The motion tables register here, before the first animation: nothing
+ * The springs table registers here, before the first animation: nothing
  * registers on import.
  *
  * SYNC: When modified, keep every touch-only import of DropdownMenu.tsx here.
  */
 
-import {registerMenuTable} from '../motion/uikit/menu';
 import {registerSpringsTable} from '../motion/uikit/springs';
 import {
   createMenuSurfaceMotion as createSurfaceMotion,
@@ -31,15 +30,15 @@ import {
 export type {MenuSurfaceMotion};
 
 /**
- * UIMenu's grow and collapse for a menu surface. Registers the tables it
- * animates with (the springs and the menu's) with the theme first;
- * registering again is a no-op.
+ * UIMenu's grow and collapse for a menu surface. Registers the springs table
+ * first, whose internal motion roles the motion reads (`springs.menuOpen`,
+ * `springs.menuClose`, `spec:AST-094` FR4); registering again is a no-op.
+ * The menu table's values are constants, read directly.
  */
 export function createMenuSurfaceMotion(
   ...args: Parameters<typeof createSurfaceMotion>
 ): MenuSurfaceMotion {
   registerSpringsTable();
-  registerMenuTable();
   return createSurfaceMotion(...args);
 }
 
