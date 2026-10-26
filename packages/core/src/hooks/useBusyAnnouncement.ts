@@ -25,7 +25,11 @@
  */
 
 import {useCallback, useEffect, useRef, type RefObject} from 'react';
-import {useAnnounce} from './useAnnounce';
+import {
+  takeJoinedAnnouncement,
+  useAnnounce,
+  withdrawPendingAnnouncement,
+} from './useAnnounce';
 
 const REGION_ATTR = 'data-astryx-modal-busy-region';
 const VISUALLY_HIDDEN_CSS =
@@ -79,9 +83,13 @@ export function useBusyAnnouncement(
   const announce = useAnnounce();
   const hasAnnouncedRef = useRef(false);
   const frameRef = useRef<number | null>(null);
+  // This busy start's share of the shared channel's pending text, until it
+  // settles.
+  const channelMessageRef = useRef<object | null>(null);
   useEffect(() => {
     if (!isBusy) {
       hasAnnouncedRef.current = false;
+      channelMessageRef.current = null;
       return;
     }
     if (hasAnnouncedRef.current) {
@@ -97,6 +105,7 @@ export function useBusyAnnouncement(
         announceInModal(dialog, message);
       } else {
         announce(message, 'polite');
+        channelMessageRef.current = takeJoinedAnnouncement();
       }
     });
     frameRef.current = frame;
@@ -112,6 +121,11 @@ export function useBusyAnnouncement(
       frameRef.current = null;
       // Still busy until the settled state commits; do not schedule again.
       hasAnnouncedRef.current = true;
+    }
+    // Written to the channel but not yet exposed: withdraw it too.
+    if (channelMessageRef.current != null) {
+      withdrawPendingAnnouncement(channelMessageRef.current, 'polite');
+      channelMessageRef.current = null;
     }
   }, []);
 }

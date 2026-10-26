@@ -1276,7 +1276,12 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
                     aria-selected={isSelected}
                     tabIndex={-1}
                     onClick={() => handleSelect(item)}
-                    onMouseEnter={() => highlightOnHover(index)}
+                    // Highlight follows pointer movement, not pointer
+                    // presence: a menu that opens or reflows under a resting
+                    // pointer keeps its keyboard highlight, so Enter acts on
+                    // the option the user was shown, not the one that
+                    // happened to appear under the cursor.
+                    onMouseMove={() => highlightOnHover(index)}
                     {...stylex.props(
                       styles.item,
                       itemSizeStyles[size],

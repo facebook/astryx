@@ -7,12 +7,14 @@ import Foundation
 /// or a known one with a value its enums lack or a required prop missing. An older
 /// app then keeps drawing the rest of a newer core's tree.
 public enum AstryxNode: Decodable, Equatable, Sendable {
+  case avatar(AvatarNode)
   case badge(BadgeNode)
   case button(ButtonNode)
   case card(CardNode)
   case divider(DividerNode)
   case heading(HeadingNode)
   case hStack(HStackNode)
+  case icon(IconNode)
   case progressBar(ProgressBarNode)
   case selector(SelectorNode)
   case `switch`(SwitchNode)
@@ -23,12 +25,14 @@ public enum AstryxNode: Decodable, Equatable, Sendable {
 
   public var key: String {
     switch self {
+    case .avatar(let node): return node.key
     case .badge(let node): return node.key
     case .button(let node): return node.key
     case .card(let node): return node.key
     case .divider(let node): return node.key
     case .heading(let node): return node.key
     case .hStack(let node): return node.key
+    case .icon(let node): return node.key
     case .progressBar(let node): return node.key
     case .selector(let node): return node.key
     case .`switch`(let node): return node.key
@@ -47,12 +51,14 @@ public enum AstryxNode: Decodable, Equatable, Sendable {
     let key = try container.decode(String.self, forKey: .key)
     do {
       switch component {
+      case "Avatar": self = .avatar(try AvatarNode(from: decoder))
       case "Badge": self = .badge(try BadgeNode(from: decoder))
       case "Button": self = .button(try ButtonNode(from: decoder))
       case "Card": self = .card(try CardNode(from: decoder))
       case "Divider": self = .divider(try DividerNode(from: decoder))
       case "Heading": self = .heading(try HeadingNode(from: decoder))
       case "HStack": self = .hStack(try HStackNode(from: decoder))
+      case "Icon": self = .icon(try IconNode(from: decoder))
       case "ProgressBar": self = .progressBar(try ProgressBarNode(from: decoder))
       case "Selector": self = .selector(try SelectorNode(from: decoder))
       case "Switch": self = .`switch`(try SwitchNode(from: decoder))
