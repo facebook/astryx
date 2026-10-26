@@ -4,6 +4,8 @@
 export const docs = {
   name: 'createReorderable',
   displayName: 'createReorderable',
+  // A factory, not a component: no tile in the components gallery.
+  isHiddenFromOverview: true,
   keywords: [
     'reorder',
     'reorderable',
