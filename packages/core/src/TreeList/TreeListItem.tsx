@@ -353,7 +353,8 @@ export interface TreeListItemInternalProps {
   isExpanded: boolean;
   /**
    * The row collapsed and its child group is playing its exit: the group
-   * stays rendered, inert and hidden from assistive technology, until it ends.
+   * stays rendered (the exit makes it inert) until it ends, and its rows
+   * leave the tree's keyboard order at once.
    */
   isExiting?: boolean;
   onToggle?: (id: string) => void;
@@ -712,8 +713,6 @@ export function TreeListItem({
       {(isExpanded || isExiting) && renderedChildren != null && (
         <ul
           role="group"
-          inert={isExiting ? true : undefined}
-          aria-hidden={isExiting ? true : undefined}
           data-tree-exiting={isExiting ? '' : undefined}
           {...stylex.props(styles.childGroup)}>
           {renderedChildren}

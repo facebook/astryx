@@ -192,6 +192,7 @@ function safeAnimate(
   } catch {
     return null;
   }
+  ours.add(animation);
   // Started on the document timeline's current time, not on the next frame:
   // a retargeted glide keeps moving through the frame it is replaced in, and
   // every animation of one change shares the same start.
@@ -200,6 +201,44 @@ function safeAnimate(
     animation.startTime = now;
   }
   return animation;
+}
+
+/** Every animation this module started, so it can tell the app's apart. */
+const ours = new WeakSet<Animation>();
+
+const TRANSFORM_PROPERTIES = ['transform', 'translate', 'rotate', 'scale'];
+
+/**
+ * Whether the app moves `element` itself: its own `transform`, `translate`,
+ * `rotate` or `scale`, or a running animation of one this module did not
+ * start.
+ */
+function movedByApp(element: Element): boolean {
+  const style = element.ownerDocument.defaultView?.getComputedStyle(element);
+  if (
+    style != null &&
+    TRANSFORM_PROPERTIES.some(property => {
+      const value = style.getPropertyValue(property);
+      return value !== '' && value !== 'none';
+    })
+  ) {
+    return true;
+  }
+  if (typeof element.getAnimations !== 'function') {
+    return false;
+  }
+  return element.getAnimations().some(animation => {
+    if (ours.has(animation)) {
+      return false;
+    }
+    const effect = animation.effect;
+    if (!(effect instanceof KeyframeEffect)) {
+      return false;
+    }
+    return effect
+      .getKeyframes()
+      .some(frame => TRANSFORM_PROPERTIES.some(property => property in frame));
+  });
 }
 
 /** An offset in the element's own px, as a function of ms into a glide. */
@@ -215,21 +254,6 @@ interface Glide {
 }
 
 const glides = new WeakMap<Element, Glide>();
-
-/** A computed `translate` value in px (`none` is 0 0); null for other units. */
-function parseTranslate(value: string): {x: number; y: number} | null {
-  const text = value.trim();
-  if (text === '' || text === 'none') {
-    return {x: 0, y: 0};
-  }
-  const match =
-    /^(-?[\d.e+-]+)px(?:\s+(-?[\d.e+-]+)px)?(?:\s+(-?[\d.e+-]+)px)?$/.exec(
-      text,
-    );
-  return match == null
-    ? null
-    : {x: Number(match[1]), y: match[2] == null ? 0 : Number(match[2])};
-}
 
 // ---------------------------------------------------------------------------
 // Handles
@@ -438,7 +462,6 @@ function flush(batch: Batch): void {
     return;
   }
   const visible = visibleRect(batch.area);
-  const view = batch.area.ownerDocument.defaultView;
   for (const element of followers) {
     const before = batch.before.get(element);
     if (before == null || (before.width === 0 && before.height === 0)) {
@@ -481,12 +504,9 @@ function flush(batch: Batch): void {
       });
       continue;
     }
-    // The element's own `translate`, which the glide plays on top of; a
-    // value in other units cannot be offset in px, so it lands at once.
-    const own = parseTranslate(
-      view?.getComputedStyle(element).getPropertyValue('translate') ?? '',
-    );
-    if (own == null) {
+    if (movedByApp(element)) {
+      // The app moves it itself: it takes its final place at once
+      // (`spec:AST-105` Coverage).
       continue;
     }
     // Where it shows now, against its new place, in its own px; the part the
@@ -507,7 +527,7 @@ function flush(batch: Batch): void {
       element,
       sampleOver(durationMs, t => {
         const offset = offsetAt(t);
-        return {translate: `${own.x + offset.x}px ${own.y + offset.y}px`};
+        return {translate: `${offset.x}px ${offset.y}px`};
       }),
       {duration: durationMs, easing: 'linear'},
     );
@@ -636,21 +656,83 @@ const EXIT_PROPERTIES = [
   'pointer-events',
 ] as const;
 
+/**
+ * The place the layout after `element` takes, along its parent's main axis:
+ * the next element sibling's start edge, or, for the last child, the
+ * parent's end edge.
+ */
+function placeAfter(element: HTMLElement, isRow: boolean): number {
+  const next = element.nextElementSibling;
+  const rtl =
+    element.ownerDocument.defaultView?.getComputedStyle(element).direction ===
+    'rtl';
+  if (next != null) {
+    const rect = next.getBoundingClientRect();
+    return isRow ? (rtl ? -rect.right : rect.left) : rect.top;
+  }
+  const parent = element.parentElement?.getBoundingClientRect();
+  if (parent == null) {
+    return 0;
+  }
+  return isRow ? (rtl ? -parent.left : parent.right) : parent.bottom;
+}
+
+/**
+ * Keeps `element` where it is, in flow (so it scrolls and clips with its
+ * container), while the layout after it takes the place it takes once the
+ * element is hidden: a negative end margin measured against that layout, so
+ * a gap or collapsing margins come out exact. Returns false, setting
+ * nothing, when no margin reaches that place.
+ */
+function giveUpSpace(element: HTMLElement): boolean {
+  const view = element.ownerDocument.defaultView;
+  const parent =
+    element.parentElement == null
+      ? undefined
+      : view?.getComputedStyle(element.parentElement);
+  const isRow =
+    parent != null &&
+    parent.display.includes('flex') &&
+    parent.flexDirection.startsWith('row');
+  const property = isRow ? 'margin-inline-end' : 'margin-block-end';
+  // Where the layout after it goes once it is hidden, and where it is now.
+  const display = element.style.getPropertyValue('display');
+  const priority = element.style.getPropertyPriority('display');
+  element.style.setProperty('display', 'none', 'important');
+  const target = placeAfter(element, isRow);
+  element.style.setProperty('display', display, priority);
+  const before = placeAfter(element, isRow);
+  // A first guess (its box), then one correction from the measured result:
+  // a gap, a collapsed margin or the element's own margins.
+  const size = isRow ? element.offsetWidth : element.offsetHeight;
+  element.style.setProperty(property, `${-size}px`);
+  const guess = placeAfter(element, isRow);
+  const margin = -size + (target - guess);
+  element.style.setProperty(property, `${margin}px`);
+  if (Math.abs(placeAfter(element, isRow) - target) > 1 && before !== target) {
+    element.style.removeProperty(property);
+    return false;
+  }
+  return true;
+}
+
 /** Exits holding an element back, so a release can stop one. */
 const exits = new WeakMap<Element, Animation | null>();
 
 /**
  * The changed element's exit (`spec:AST-105` FR4): content that disappears
- * keeps its place on screen but gives up its space (a negative end margin as
- * large as its box, so the content after it glides up at once and it still
- * scrolls and clips with its container), conceals upward from its bottom
- * edge on the same motion, and then `done` runs, when the component hides or
- * unmounts it. Under Reduce Motion with a coarse primary pointer it
+ * keeps its place on screen but gives up its space (a negative end margin
+ * measured against the layout without it, so the content after it glides up
+ * at once to exactly where it ends, and it still scrolls and clips with its
+ * container), is inert (no focus, no pointer, nothing read), conceals upward
+ * from its bottom edge on the same motion, and then `done` runs, when the
+ * component hides or unmounts it. Under Reduce Motion with a coarse primary pointer it
  * fades instead. Call it in the layout effect of the commit that closes the
  * element, before the change's `animate()`.
  *
  * Returns false, holding nothing, when the exit lands at once: no handle,
- * outside the area or its visible part, or Reduce Motion with a fine pointer.
+ * outside the area or its visible part, Reduce Motion with a fine pointer,
+ * or a layout no end margin can free (a grid track and its gap).
  * The component then hides the element itself.
  */
 export function holdLayoutExit(
@@ -673,36 +755,13 @@ export function holdLayoutExit(
     return false;
   }
   releaseLayoutExit(element);
-  // It gives up the space it takes along its parent's main axis: its border
-  // box plus its start margin, so what follows takes its final place while
-  // it stays where it is, in flow, scrolling and clipping with its container.
-  const view = element.ownerDocument.defaultView;
-  const style = view?.getComputedStyle(element);
-  const parent =
-    element.parentElement == null
-      ? undefined
-      : view?.getComputedStyle(element.parentElement);
-  const isRow =
-    parent != null &&
-    parent.display.includes('flex') &&
-    parent.flexDirection.startsWith('row');
-  if (isRow) {
-    const inlineStart =
-      style?.direction === 'rtl' ? 'margin-right' : 'margin-left';
-    const start =
-      Number.parseFloat(style?.getPropertyValue(inlineStart) ?? '') || 0;
-    element.style.setProperty(
-      'margin-inline-end',
-      `${-(element.offsetWidth + start)}px`,
-    );
-  } else {
-    const start =
-      Number.parseFloat(style?.getPropertyValue('margin-top') ?? '') || 0;
-    element.style.setProperty(
-      'margin-block-end',
-      `${-(element.offsetHeight + start)}px`,
-    );
+  if (!giveUpSpace(element)) {
+    // A layout no end margin can free (a grid track and its gap): it lands
+    // at once rather than jump when it hides.
+    return false;
   }
+  // Out of reach while it conceals: no focus, no pointer, nothing read.
+  element.setAttribute('inert', '');
   element.style.setProperty('pointer-events', 'none');
   const animation =
     motion.kind === 'fade'
@@ -748,6 +807,7 @@ export function releaseLayoutExit(element: HTMLElement): void {
   }
   exits.get(element)?.cancel();
   exits.delete(element);
+  element.removeAttribute('inert');
   for (const property of EXIT_PROPERTIES) {
     element.style.removeProperty(property);
   }

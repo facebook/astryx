@@ -282,7 +282,6 @@ describe("a close plays the content's exit (spec:AST-105 FR4)", () => {
     // Still on screen for the exit, out of reach, giving up its space.
     expect(getComputedStyle(content).display).not.toBe('none');
     expect(content).toHaveAttribute('inert');
-    expect(content).toHaveAttribute('aria-hidden', 'true');
     expect(content.style.getPropertyValue('margin-block-end')).not.toBe('');
     expect(animated).toContain(screen.getByTestId('after'));
     act(() => finishes.get(content)?.());
@@ -326,7 +325,6 @@ describe("a close plays the content's exit (spec:AST-105 FR4)", () => {
     const group = groupOf();
     expect(group).not.toBeNull();
     expect(group).toHaveAttribute('inert');
-    expect(group).toHaveAttribute('aria-hidden', 'true');
     expect(group?.style.getPropertyValue('margin-block-end')).not.toBe('');
     // The tree's keyboard order (the rows its focus model reaches) has only
     // the collapsed row.
