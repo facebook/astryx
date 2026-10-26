@@ -15,7 +15,8 @@
  * UIPickerView's columns: under a finger, on every touch device
  * (useTouchPresentation). Under a mouse or other fine pointer it renders its
  * children as they are: today's scrolling columns, laid out by their
- * container.
+ * container. Under a finger the frame takes its owner's layout (`xstyle`),
+ * so the owner draws no wrapper of its own around it (spec:AST-017 FR60).
  *
  * UIPickerView draws one band under all its columns (inset from the picker's
  * sides) and centres every column's table on the picker, so the dimmed rows
@@ -40,6 +41,7 @@ import {
   type RefObject,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {useTouchPresentation} from '../utils/touchPresentation';
 import {wheelGeometry} from './wheelGeometry.stylex';
@@ -101,6 +103,8 @@ export function useWheelGroup(): WheelGroupContextValue | null {
 export interface WheelGroupProps {
   /** The Wheel columns, side by side. */
   children: ReactNode;
+  /** The owner's layout, on the frame under a finger. */
+  xstyle?: StyleXStyles;
 }
 
 /**
@@ -115,7 +119,7 @@ export interface WheelGroupProps {
  * </WheelGroup>
  * ```
  */
-export function WheelGroup({children}: WheelGroupProps) {
+export function WheelGroup({children, xstyle}: WheelGroupProps) {
   const groupRef = useRef<HTMLDivElement | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const attachGroup = useCallback((node: HTMLDivElement | null) => {
@@ -133,7 +137,7 @@ export function WheelGroup({children}: WheelGroupProps) {
       <div
         ref={attachGroup}
         data-wheel-band=""
-        {...stylex.props(styles.group, styles.band)}>
+        {...stylex.props(styles.group, styles.band, xstyle)}>
         {children}
       </div>
     </WheelGroupContext>

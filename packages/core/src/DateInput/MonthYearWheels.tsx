@@ -27,9 +27,11 @@ import * as stylex from '@stylexjs/stylex';
 import {useLocale} from '../i18n';
 import {DATE_FORMAT_MONTH_ONLY, plainDateFormat} from '../utils';
 import {spacingVars} from '../theme/tokens.stylex';
+import {useTouchPresentation} from '../utils/touchPresentation';
 import {dateInputTouchGeometry} from './tokens.stylex';
 import {Wheel, type WheelOption} from './Wheel';
 import {WheelGroup} from './WheelGroup';
+import {wheelGeometry} from './wheelGeometry.stylex';
 import {fromMonthIndex, toMonthIndex} from './monthGeometry';
 
 const styles = stylex.create({
@@ -37,6 +39,15 @@ const styles = stylex.create({
     display: 'flex',
     blockSize: dateInputTouchGeometry.paneBlockSize,
     gap: spacingVars['--spacing-2'],
+  },
+  /**
+   * Under a finger the picker's frame is the pane itself: the pane's height,
+   * the picker's 216 px centred in it.
+   */
+  touchWheels: {
+    boxSizing: 'border-box',
+    blockSize: dateInputTouchGeometry.paneBlockSize,
+    paddingBlock: `calc((${dateInputTouchGeometry.paneBlockSize} - ${wheelGeometry.pickerHeight}) / 2)`,
   },
 });
 
@@ -123,32 +134,36 @@ export function MonthYearWheels({
     return options;
   }, [minMonthIndex, maxMonthIndex]);
 
-  return (
-    <div {...stylex.props(styles.wheels)}>
-      <WheelGroup>
-        <Wheel
-          label={monthLabel}
-          options={monthOptions}
-          value={month}
-          isActive={isActive}
-          onChange={nextMonth => onChange(toMonthIndex(year, nextMonth))}
-        />
-        <Wheel
-          label={yearLabel}
-          options={yearOptions}
-          value={year}
-          isActive={isActive}
-          onChange={nextYear => {
-            // Jan 31 -> Feb has no equivalent here (months carry no day), but a
-            // year change can still land outside the range; clamp to it.
-            const candidate = toMonthIndex(nextYear, month);
-            onChange(
-              Math.min(Math.max(candidate, minMonthIndex), maxMonthIndex),
-            );
-          }}
-        />
-      </WheelGroup>
-    </div>
+  const {isTouch} = useTouchPresentation();
+  const wheels = (
+    <>
+      <Wheel
+        label={monthLabel}
+        options={monthOptions}
+        value={month}
+        isActive={isActive}
+        onChange={nextMonth => onChange(toMonthIndex(year, nextMonth))}
+      />
+      <Wheel
+        label={yearLabel}
+        options={yearOptions}
+        value={year}
+        isActive={isActive}
+        onChange={nextYear => {
+          // Jan 31 -> Feb has no equivalent here (months carry no day), but a
+          // year change can still land outside the range; clamp to it.
+          const candidate = toMonthIndex(nextYear, month);
+          onChange(Math.min(Math.max(candidate, minMonthIndex), maxMonthIndex));
+        }}
+      />
+    </>
+  );
+  // Under a finger the picker's frame is the pane: no wrapper of its own
+  // around it (spec:AST-017 FR60).
+  return isTouch ? (
+    <WheelGroup xstyle={styles.touchWheels}>{wheels}</WheelGroup>
+  ) : (
+    <div {...stylex.props(styles.wheels)}>{wheels}</div>
   );
 }
 

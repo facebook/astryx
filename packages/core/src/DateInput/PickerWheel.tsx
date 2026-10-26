@@ -210,17 +210,13 @@ const styles = stylex.create({
     },
   },
   /** The options: every row, plain, stacked transparent over the band. */
-  options: {
+  option: {
     position: 'absolute',
     insetInline: 0,
     insetBlockStart: `calc(50% - ${wheelGeometry.bandHeight} / 2)`,
     blockSize: wheelGeometry.bandHeight,
     opacity: 0,
     pointerEvents: 'none',
-  },
-  option: {
-    position: 'absolute',
-    inset: 0,
     overflow: 'hidden',
     whiteSpace: 'nowrap',
   },
@@ -253,10 +249,10 @@ const styles = stylex.create({
   /** A strip row at its position along the wheel. */
   stripRowAt: (top: string) => ({insetBlockStart: top}),
   stripLabel: {
-    display: 'inline-block',
-    scale: wheelGeometry.bandMagnification,
     '::before': {
       content: 'attr(data-label)',
+      display: 'inline-block',
+      scale: wheelGeometry.bandMagnification,
     },
   },
 });
@@ -1048,16 +1044,14 @@ export function PickerWheel({
         group == null && wheelGroupStyles.band,
         focusOutlineStyles.focusVisible,
       )}>
-      <div role="presentation" {...stylex.props(styles.options)}>
-        {options.map((option, index) => (
-          <div
-            key={option.value}
-            {...optionProps(option, index)}
-            {...stylex.props(styles.option)}>
-            {option.label}
-          </div>
-        ))}
-      </div>
+      {options.map((option, index) => (
+        <div
+          key={option.value}
+          {...optionProps(option, index)}
+          {...stylex.props(styles.option)}>
+          {option.label}
+        </div>
+      ))}
       <div
         ref={drumRef}
         aria-hidden="true"
@@ -1094,16 +1088,14 @@ export function PickerWheel({
             return (
               <div
                 key={position}
+                data-label={option.label}
                 {...stylex.props(
                   styles.stripRow,
+                  styles.stripLabel,
                   styles.stripRowAt(`${position * ROW_HEIGHT}px`),
                   option.isDisabled && styles.rowDisabled,
-                )}>
-                <span
-                  data-label={option.label}
-                  {...stylex.props(styles.stripLabel)}
-                />
-              </div>
+                )}
+              />
             );
           })}
         </div>
