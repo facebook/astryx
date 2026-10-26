@@ -115,6 +115,16 @@ Consumer migration instructions belong in consumer docs and release notes.
   and telling the trigger that the click of that gesture is spent.
 - The marker `data-astryx-menu-press` on the menu root.
 
+**Planned convergence (recorded 2026-10-26).** The track-across-items loop
+above (document-level pointer tracking, the highlight under the pointer, the
+row under the release acting, the stray click swallowed) is the same job as
+core's internal action-group tracker (`hooks/actionGroupTracker.ts`), which
+control groups such as a segmented control's segments track through once it
+lands. The change after the in-flight menu press work moves that loop into the
+action-group tracker; this module then keeps only its menu-only parts: opening
+from a trigger press or a held finger, the settle rule, edge autoscroll, and
+the highlight as DOM focus. Until then both exist, and no third copy is added.
+
 **Does not own / non-goals**
 
 - Aggregate menu anatomy, presentation resolution, item rendering, theming
