@@ -1729,7 +1729,10 @@ describe('BottomSheet', () => {
       // reveal scrolls into the room. The body's scroll stays within its
       // range, as a browser keeps it. `scrollBy` records a smooth scroll and
       // moves nothing, unless `instantScrollBy` lands it at once.
-      function renderChromeSheet({instantScrollBy = false} = {}) {
+      function renderChromeSheet({
+        instantScrollBy = false,
+        roomRangeShort = 0,
+      } = {}) {
         mockKeyboardGeometryApi();
         mockPrimaryPointer('coarse');
         mockWindowHeight(800);
@@ -1747,13 +1750,13 @@ describe('BottomSheet', () => {
         const content = body.firstElementChild as HTMLElement;
         const input = screen.getByRole('textbox', {name: 'Comment'});
         let scrollTop = 0;
-        const maxScroll = () => 800 + keyboardInsetOf(body) - 700;
+        // The scroll range the room adds: its height, less `roomRangeShort`.
+        const scrollHeight = () =>
+          800 + Math.max(0, keyboardInsetOf(body) - roomRangeShort);
+        const maxScroll = () => scrollHeight() - 700;
         Object.defineProperties(body, {
           clientHeight: {configurable: true, get: () => 700},
-          scrollHeight: {
-            configurable: true,
-            get: () => 800 + keyboardInsetOf(body),
-          },
+          scrollHeight: {configurable: true, get: scrollHeight},
           scrollTop: {
             configurable: true,
             get: () => Math.min(scrollTop, maxScroll()),
@@ -1831,6 +1834,26 @@ describe('BottomSheet', () => {
         // At rest, in one commit: the room drops, the body's scroll gives
         // back the 148 px, and the translate clears.
         expect(keyboardInsetOf(body)).toBe(0);
+        expect(body.scrollTop).toBe(100);
+        expect(content.style.translate).toBe('');
+      });
+
+      it('rides by the scroll the room\u2019s drop takes back where the room adds less range than its height, as in Chrome 124', async () => {
+        // Chrome 124 added 344 px of scroll range for a 360 px room: here 16
+        // px less than the room's 348.
+        const {body, content, input, report} = renderChromeSheet({
+          instantScrollBy: true,
+          roomRangeShort: 16,
+        });
+        act(() => input.focus());
+        report(500);
+        await afterTheSlide();
+        expect(body.scrollTop).toBe(248);
+        report(800);
+        // The drop takes back 148 px (to the 100 px the content alone
+        // scrolls), not the 164 the room's height would say.
+        expect(content.style.translate).toBe('0px 148px');
+        await afterTheSlide();
         expect(body.scrollTop).toBe(100);
         expect(content.style.translate).toBe('');
       });

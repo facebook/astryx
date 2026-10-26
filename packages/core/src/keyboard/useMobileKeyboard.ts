@@ -753,8 +753,11 @@ export function useMobileKeyboard({
     let keyboardGeometry: KeyboardGeometry | null = null;
     // Where a smooth reveal under way is taking the body's scrollTop.
     let smoothTarget: number | null = null;
-    // The room laid out at the end of the body, CSS px.
+    // The room laid out at the end of the body, and the scroll range it
+    // adds to the body (what its drop takes back), CSS px. The two can
+    // differ: Chrome 124 added 344 px of range for a 360 px room.
     let room = 0;
+    let roomRange = 0;
     // FR8: where the keyboard layout guide publishes the keyboard's own slide
     // (Gboard's, in Chrome on Android), the sheet's content rides it. The
     // guide is subscribed before the keyboard module below, so a report's
@@ -800,9 +803,17 @@ export function useMobileKeyboard({
     // Lays the inset out before anything measures or scrolls the body: the
     // reveal scrolls into the room it adds in the same frame.
     const writeInset = (inset: number) => {
+      const changes = inset !== room;
+      const rangeBefore = changes ? body.scrollHeight : 0;
       room = inset;
       // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- the reveal scrolls into this room in the same frame, so it must be laid out before the reveal measures
       flushSync(() => setKeyboardInset(inset));
+      if (changes) {
+        roomRange =
+          inset === 0
+            ? 0
+            : Math.max(0, roomRange + body.scrollHeight - rangeBefore);
+      }
     };
 
     const clearKeyboardLayout = () => {
@@ -1028,7 +1039,7 @@ export function useMobileKeyboard({
       const animator = contentAnimator();
       const scrolledIntoRoom = Math.max(
         0,
-        body.scrollTop - (body.scrollHeight - room - body.clientHeight),
+        body.scrollTop - (body.scrollHeight - roomRange - body.clientHeight),
       );
       const handle =
         animator != null && scrolledIntoRoom > 0
