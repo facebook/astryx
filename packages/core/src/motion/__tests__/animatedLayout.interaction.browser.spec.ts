@@ -648,12 +648,13 @@ test.describe('spec:AST-105 FR2–FR4', () => {
         () => content,
       );
       report.measureBefore();
-      // The component closes it but keeps it rendered for the exit.
+      // The component closes it but keeps it rendered for the exit, holding
+      // it once the change reports it measured.
+      report.animate();
       let finished = false;
       const held = window.AnimatedLayout.holdLayoutExit(layout, content, () => {
         finished = true;
       });
-      report.animate();
       await new Promise<void>(resolve => {
         queueMicrotask(resolve);
       });
@@ -709,8 +710,8 @@ test.describe('spec:AST-105 FR2–FR4', () => {
         () => content,
       );
       report.measureBefore();
-      window.AnimatedLayout.holdLayoutExit(layout, content, () => {});
       report.animate();
+      window.AnimatedLayout.holdLayoutExit(layout, content, () => {});
       await new Promise<void>(resolve => {
         queueMicrotask(resolve);
       });
@@ -728,26 +729,35 @@ test.describe('spec:AST-105 FR2–FR4', () => {
   for (const layout of [
     {
       name: 'a flex column with a gap',
-      style: 'display: flex; flex-direction: column; gap: 8px',
-      content: 'height: 80px',
+      html: `<div style="display: flex; flex-direction: column; gap: 8px">
+          <div class="row" style="margin: 0"></div>
+          <div id="content" style="height: 80px; background: #fd9">Details</div>
+          <div id="after" class="row" style="margin: 0"></div>
+        </div>`,
     },
     {
       name: 'collapsing margins',
-      style: '',
-      content: 'height: 80px; margin: 10px 0 20px',
+      html: `<div>
+          <div class="row" style="margin: 0"></div>
+          <div id="content" style="height: 80px; margin: 10px 0 20px; background: #fd9">Details</div>
+          <div id="after" class="row" style="margin: 0"></div>
+        </div>`,
+    },
+    {
+      // Collapsible's shape: the content is the last child of a plain block
+      // wrapper, and what follows sits after the wrapper.
+      name: 'a plain wrapper, as its last child',
+      html: `<div>
+          <div class="row" style="margin: 0"></div>
+          <div id="content" style="height: 80px; background: #fd9">Details</div>
+        </div>
+        <p id="after" style="margin: 0; height: 40px">Next</p>`,
     },
   ]) {
     test(`an exiting element frees exactly its space in ${layout.name}: the content after it does not jump when it hides (FR3, FR4)`, async ({
       page,
     }) => {
-      await open(
-        page,
-        `<div id="area" class="area"><div style="${layout.style}">
-          <div class="row" style="margin: 0"></div>
-          <div id="content" style="${layout.content}; background: #fd9">Details</div>
-          <div id="after" class="row" style="margin: 0"></div>
-        </div></div>`,
-      );
+      await open(page, `<div id="area" class="area">${layout.html}</div>`);
       const result = await page.evaluate(async () => {
         const area = document.querySelector('#area');
         const content = document.querySelector('#content') as HTMLElement;
@@ -760,16 +770,17 @@ test.describe('spec:AST-105 FR2–FR4', () => {
           () => content,
         );
         report.measureBefore();
+        const measured = report.animate();
         const held = window.AnimatedLayout.holdLayoutExit(
           layoutHandle,
           content,
           () => {},
         );
         const inert = content.hasAttribute('inert');
-        report.animate();
         await new Promise<void>(resolve => {
           queueMicrotask(resolve);
         });
+        const glides = after.getAnimations().length;
         for (const animation of document.getAnimations()) {
           animation.finish();
         }
@@ -778,10 +789,12 @@ test.describe('spec:AST-105 FR2–FR4', () => {
         content.style.display = 'none';
         window.AnimatedLayout.releaseLayoutExit(content);
         const hidden = after.getBoundingClientRect().top;
-        return {held, inert, settled, hidden};
+        return {measured, held, inert, glides, settled, hidden};
       });
+      expect(result.measured).toBe(true);
       expect(result.held).toBe(true);
       expect(result.inert).toBe(true);
+      expect(result.glides).toBe(1);
       expect(result.settled).toBeCloseTo(result.hidden, 0);
     });
   }

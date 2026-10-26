@@ -657,34 +657,44 @@ const EXIT_PROPERTIES = [
 ] as const;
 
 /**
- * The place the layout after `element` takes, along its parent's main axis:
- * the next element sibling's start edge, or, for the last child, the
- * parent's end edge.
+ * The first element after `element` in the area that takes part in layout:
+ * its next sibling, or its nearest ancestor's below the area. A wrapper's
+ * edge is not used: a negative end margin can collapse through it.
  */
-function placeAfter(element: HTMLElement, isRow: boolean): number {
-  const next = element.nextElementSibling;
-  const rtl =
-    element.ownerDocument.defaultView?.getComputedStyle(element).direction ===
-    'rtl';
-  if (next != null) {
-    const rect = next.getBoundingClientRect();
-    return isRow ? (rtl ? -rect.right : rect.left) : rect.top;
+function nextInFlow(element: Element, area: Element): Element | null {
+  const view = element.ownerDocument.defaultView;
+  let node: Element | null = element;
+  while (node != null && node !== area) {
+    let sibling = node.nextElementSibling;
+    while (sibling != null) {
+      const style = view?.getComputedStyle(sibling);
+      if (style == null || takesPart(sibling, style)) {
+        return sibling;
+      }
+      sibling = sibling.nextElementSibling;
+    }
+    node = node.parentElement;
   }
-  const parent = element.parentElement?.getBoundingClientRect();
-  if (parent == null) {
-    return 0;
+  return null;
+}
+
+/** An element's start edge along the main axis (RTL rows read right to left). */
+function startEdge(element: Element, isRow: boolean, rtl: boolean): number {
+  const rect = element.getBoundingClientRect();
+  if (!isRow) {
+    return rect.top;
   }
-  return isRow ? (rtl ? -parent.left : parent.right) : parent.bottom;
+  return rtl ? -rect.right : rect.left;
 }
 
 /**
  * Keeps `element` where it is, in flow (so it scrolls and clips with its
- * container), while the layout after it takes the place it takes once the
- * element is hidden: a negative end margin measured against that layout, so
- * a gap or collapsing margins come out exact. Returns false, setting
+ * container), while the content after it takes the place it takes once the
+ * element is hidden: a negative end margin measured against that content,
+ * so a gap or collapsing margins come out exact. Returns false, setting
  * nothing, when no margin reaches that place.
  */
-function giveUpSpace(element: HTMLElement): boolean {
+function giveUpSpace(element: HTMLElement, area: Element): boolean {
   const view = element.ownerDocument.defaultView;
   const parent =
     element.parentElement == null
@@ -694,22 +704,28 @@ function giveUpSpace(element: HTMLElement): boolean {
     parent != null &&
     parent.display.includes('flex') &&
     parent.flexDirection.startsWith('row');
+  const rtl = view?.getComputedStyle(element).direction === 'rtl';
   const property = isRow ? 'margin-inline-end' : 'margin-block-end';
-  // Where the layout after it goes once it is hidden, and where it is now.
+  const size = isRow ? element.offsetWidth : element.offsetHeight;
+  const next = nextInFlow(element, area);
+  if (next == null) {
+    // Nothing after it in the area to land anywhere.
+    element.style.setProperty(property, `${-size}px`);
+    return true;
+  }
+  // Where the content after it goes once it is hidden.
   const display = element.style.getPropertyValue('display');
   const priority = element.style.getPropertyPriority('display');
   element.style.setProperty('display', 'none', 'important');
-  const target = placeAfter(element, isRow);
+  const target = startEdge(next, isRow, rtl);
   element.style.setProperty('display', display, priority);
-  const before = placeAfter(element, isRow);
+  const before = startEdge(next, isRow, rtl);
   // A first guess (its box), then one correction from the measured result:
   // a gap, a collapsed margin or the element's own margins.
-  const size = isRow ? element.offsetWidth : element.offsetHeight;
   element.style.setProperty(property, `${-size}px`);
-  const guess = placeAfter(element, isRow);
-  const margin = -size + (target - guess);
-  element.style.setProperty(property, `${margin}px`);
-  if (Math.abs(placeAfter(element, isRow) - target) > 1 && before !== target) {
+  const guess = startEdge(next, isRow, rtl);
+  element.style.setProperty(property, `${-size + (target - guess)}px`);
+  if (Math.abs(startEdge(next, isRow, rtl) - target) > 1 && before !== target) {
     element.style.removeProperty(property);
     return false;
   }
@@ -718,6 +734,13 @@ function giveUpSpace(element: HTMLElement): boolean {
 
 /** Exits holding an element back, so a release can stop one. */
 const exits = new WeakMap<Element, Animation | null>();
+
+/** What an exit replaced on its element, so a release puts back exactly it. */
+interface Replaced {
+  readonly inert: boolean;
+  readonly styles: ReadonlyArray<readonly [string, string, string]>;
+}
+const replaced = new WeakMap<Element, Replaced>();
 
 /**
  * The changed element's exit (`spec:AST-105` FR4): content that disappears
@@ -728,11 +751,13 @@ const exits = new WeakMap<Element, Animation | null>();
  * from its bottom edge on the same motion, and then `done` runs, when the
  * component hides or unmounts it. Under Reduce Motion with a coarse primary pointer it
  * fades instead. Call it in the layout effect of the commit that closes the
- * element, before the change's `animate()`.
+ * element, after the change's `animate()` reported it measured, in the same
+ * task: the glide reads the layout once the element has given up its space.
  *
- * Returns false, holding nothing, when the exit lands at once: no handle,
- * outside the area or its visible part, Reduce Motion with a fine pointer,
- * or a layout no end margin can free (a grid track and its gap).
+ * Returns false, holding nothing, when the exit lands at once: no handle, a
+ * close no change in the area measured, outside the area or its visible part,
+ * Reduce Motion with a fine pointer, or a layout no end margin can free (a
+ * grid track and its gap).
  * The component then hides the element itself.
  */
 export function holdLayoutExit(
@@ -750,16 +775,38 @@ export function holdLayoutExit(
   ) {
     return false;
   }
+  // Only a measured close exits: the content after it glides into its place.
+  const batch = batches.get(area);
+  if (
+    batch == null ||
+    ![...batch.changed].some(
+      changed => changed === element || changed.contains(element),
+    )
+  ) {
+    return false;
+  }
   const motion = layoutMotion(area);
   if (motion.kind === 'instant') {
     return false;
   }
   releaseLayoutExit(element);
-  if (!giveUpSpace(element)) {
+  const prior: Replaced = {
+    inert: element.hasAttribute('inert'),
+    styles: EXIT_PROPERTIES.map(
+      property =>
+        [
+          property,
+          element.style.getPropertyValue(property),
+          element.style.getPropertyPriority(property),
+        ] as const,
+    ),
+  };
+  if (!giveUpSpace(element, area)) {
     // A layout no end margin can free (a grid track and its gap): it lands
     // at once rather than jump when it hides.
     return false;
   }
+  replaced.set(element, prior);
   // Out of reach while it conceals: no focus, no pointer, nothing read.
   element.setAttribute('inert', '');
   element.style.setProperty('pointer-events', 'none');
@@ -797,9 +844,10 @@ export function holdLayoutExit(
 }
 
 /**
- * Puts an element `holdLayoutExit` held back: stops its exit and removes the
- * inline values the exit set. Called once the component has
- * hidden the element, or when the element opens again mid-exit.
+ * Puts an element `holdLayoutExit` held back: stops its exit and puts back
+ * what the exit replaced (its `inert` and inline values as they were). Called
+ * once the component has hidden the element, or when the element opens again
+ * mid-exit.
  */
 export function releaseLayoutExit(element: HTMLElement): void {
   if (!exits.has(element)) {
@@ -807,9 +855,17 @@ export function releaseLayoutExit(element: HTMLElement): void {
   }
   exits.get(element)?.cancel();
   exits.delete(element);
-  element.removeAttribute('inert');
-  for (const property of EXIT_PROPERTIES) {
-    element.style.removeProperty(property);
+  const prior = replaced.get(element);
+  replaced.delete(element);
+  if (prior?.inert !== true) {
+    element.removeAttribute('inert');
+  }
+  for (const [property, value, priority] of prior?.styles ?? []) {
+    if (value === '') {
+      element.style.removeProperty(property);
+    } else {
+      element.style.setProperty(property, value, priority);
+    }
   }
 }
 

@@ -459,8 +459,35 @@ describe('the changed element exits (spec:AST-105 FR4)', () => {
         0;
       return new DOMRect(0, 40 + 80 + 8 + margin, 400, 20);
     });
-    return {area, content, after, layout: createAnimatedLayout(() => area)};
+    const layout = createAnimatedLayout(() => area);
+    // The close is measured: only a measured close exits.
+    const change = reportLayoutChange(layout, () => content);
+    change.measureBefore();
+    change.animate();
+    return {area, content, after, layout};
   }
+
+  it('holds nothing for a close no change measured', () => {
+    const {area, content} = exitSetUp();
+    const unmeasured = createAnimatedLayout(() => area);
+    const other = document.createElement('div');
+    area.append(other);
+    expect(holdLayoutExit(unmeasured, other, vi.fn())).toBe(false);
+    expect(other).not.toHaveAttribute('inert');
+    expect(content).not.toHaveAttribute('inert');
+  });
+
+  it('puts back an inert and inline values the element had before its exit', () => {
+    const {content, layout} = exitSetUp();
+    content.setAttribute('inert', '');
+    content.style.setProperty('pointer-events', 'auto');
+    expect(holdLayoutExit(layout, content, vi.fn())).toBe(true);
+    expect(content.style.pointerEvents).toBe('none');
+    releaseLayoutExit(content);
+    expect(content).toHaveAttribute('inert');
+    expect(content.style.pointerEvents).toBe('auto');
+    expect(content.style.getPropertyValue('margin-block-end')).toBe('');
+  });
 
   it('keeps the content where it is while it gives up its space, conceals it on the spring, then hands it back', () => {
     const {content, layout} = exitSetUp();
