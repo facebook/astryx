@@ -10,8 +10,7 @@
  *   (controlPressLayer.stylex.ts) and the Reduce Motion fade
  * @output `controlPressLayerStyles`: the compositor press layers for a control
  *   on its own surface (`control`: Button) and for a card's `::after`
- *   (`controlOver`), and the strength hold for an owner whose descendant layer
- *   releases the paint (`pressedAlphaLayered`)
+ *   (`controlOver`)
  * @position Internal to core: core's `exports` do not list this module
  *   (`architecture:public-component-api` INV12). Composed by Button, the
  *   cards and Thumbnail after their overlay variant
@@ -109,17 +108,6 @@ const pointerImageArms = {
 };
 
 export const controlPressLayerStyles = stylex.create({
-  /**
-   * Composed after `interactionOverlayStyles.pressedAlpha`, for an owner whose press paint is released by a
-   * descendant's own compositor layer (a switch row: the track's `::before`
-   * fades its opacity on the control clock). Under a coarse primary pointer
-   * the strength holds through the release instead of animating on the main
-   * thread, so the layer's opacity is the one fade. With any other pointer it
-   * is `pressedAlpha` exactly (the desktop rule, `spec:AST-017` FR59/DEC-25).
-   */
-  pressedAlphaLayered: {
-    ...strengthReleaseOutsideCoarse,
-  },
   /**
    * A control whose press lives on its own surface: Button (and the
    * IconButton and ToggleButton built on it), composed after the
