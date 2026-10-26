@@ -32,8 +32,8 @@ system_specs: []
 
 Switch presents a labeled boolean control whose change takes effect immediately.
 Under a touch presentation it follows a finger the way the iOS switch does
-(FR4–FR6); with a mouse, a keyboard or assistive technology its behavior,
-styling and targets are unchanged.
+(FR4–FR6); with a mouse, a keyboard or assistive technology it keeps the
+behavior, styling and targets of FR1–FR3.
 
 ## Compatibility and migration
 
@@ -68,14 +68,14 @@ documented in `Switch.doc.mjs`.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                                         | Basis                                   | Draft review state                                 |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | -------------------------------------------------- |
-| FR1 | The current render places a thumb inside the switch track and arranges that control with its label.                                                                                                                                                                                                                                         | Current source, docs, and focused tests | Verified current behavior; no new behavior decided |
-| FR2 | The field, track, thumb, and label carry their existing local targets.                                                                                                                                                                                                                                                                      | Current source, public docs, and tests  | Verified current behavior; no target change        |
-| FR3 | A busy switch renders Spinner inside the thumb; a status message renders through detached FieldStatus.                                                                                                                                                                                                                                      | Current source, docs, and focused tests | Verified conditional composition                   |
-| FR4 | Where the primary pointer is coarse, the `switch-thumb` target guarantees `aspect-ratio`: it sets the touch thumb's width from its height. The default is a pill (UISwitch's thumb width in proportion to the track); `1` draws a circle. The thumb's lift and its rubber band derive from the box it renders. A mouse keeps today's thumb. | Owner direction, 2026-10-25             | Proposed; pending owner review                     |
-| FR5 | Under a finger the thumb, lifted or banded past either end, paints inside the track, in either writing direction.                                                                                                                                                                                                                           | Owner direction, 2026-10-25             | Proposed; pending owner review                     |
-| FR6 | Under a finger a tap activates the switch through the browser's click (`spec:AST-094` FR11); a drag that flips it commits at the release.                                                                                                                                                                                                   | `spec:AST-094` FR11                     | Proposed; pending owner review                     |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                                               | Basis                                   | Draft review state                                 |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | -------------------------------------------------- |
+| FR1 | The current render places a thumb inside the switch track and arranges that control with its label.                                                                                                                                                                                                                                               | Current source, docs, and focused tests | Verified current behavior; no new behavior decided |
+| FR2 | The field, track, thumb, and label carry their existing local targets.                                                                                                                                                                                                                                                                            | Current source, public docs, and tests  | Verified current behavior; no target change        |
+| FR3 | A busy switch renders Spinner inside the thumb; a status message renders through detached FieldStatus.                                                                                                                                                                                                                                            | Current source, docs, and focused tests | Verified conditional composition                   |
+| FR4 | Where the primary pointer is coarse, the `switch-thumb` target guarantees `aspect-ratio`: it sets the touch thumb's width from its height. The default is a pill (UISwitch's thumb width in proportion to the track); `1` draws a circle. The thumb's lift and its rubber band derive from the box it renders. A mouse keeps the non-touch thumb. | Owner direction, 2026-10-25             | Proposed; pending owner review                     |
+| FR5 | Under a finger the thumb, lifted or banded past either end, paints inside the track, in either writing direction.                                                                                                                                                                                                                                 | Owner direction, 2026-10-25             | Proposed; pending owner review                     |
+| FR6 | Under a finger a tap activates the switch through the browser's click (`spec:AST-094` FR11); a drag that flips it commits at the release.                                                                                                                                                                                                         | `spec:AST-094` FR11                     | Proposed; pending owner review                     |
 
 ### Allowed variation
 
@@ -101,9 +101,9 @@ documented in `Switch.doc.mjs`.
 
 ## Accessibility contract
 
-This draft does not change or extend Switch's existing accessible name, switch
-role, checked state, busy state, description/status association, or disabled
-behavior.
+A touch presentation leaves Switch's accessible name, switch role, checked
+state, busy state, description/status association, and disabled behavior as
+they are under any other pointer.
 
 Switch binds to the shared switch-pattern accessibility contract
 (`internal/a11y-spec`, authored under
@@ -186,8 +186,7 @@ gap.
 
 ## Decision log
 
-None. This draft records current facts and introduces no component-local design
-or API decision.
+None.
 
 ## Open questions
 
