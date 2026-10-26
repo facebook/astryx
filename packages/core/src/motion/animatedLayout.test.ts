@@ -304,10 +304,14 @@ describe('one shared motion (spec:AST-105 FR4)', () => {
     expect(Number(follower?.options.duration)).toBeLessThan(900);
   });
 
-  it("reads a theme's springs.settle from the area", async () => {
+  it("ignores a scope's --motion-springs-settle: the role is internal", async () => {
+    await changeOnce();
+    const shared = played.find(p => (p.element as HTMLElement).id === 'a');
+    played = [];
+    document.body.innerHTML = '';
     await changeOnce('--motion-springs-settle: 0.2s 0');
-    const follower = played.find(p => (p.element as HTMLElement).id === 'a');
-    expect(Number(follower?.options.duration)).toBeLessThan(400);
+    const scoped = played.find(p => (p.element as HTMLElement).id === 'a');
+    expect(scoped?.options.duration).toBe(shared?.options.duration);
   });
 
   it('cross-fades with no travel under Reduce Motion on a coarse pointer', async () => {

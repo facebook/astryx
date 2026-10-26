@@ -478,13 +478,16 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     expect(follower[0].duration).toBeLessThan(1200);
   });
 
-  test("a theme's springs.settle reaches both (FR4)", async ({page}) => {
+  test("a scope's --motion-springs-settle changes nothing: the role is internal (FR4)", async ({
+    page,
+  }) => {
+    await open(page, PAGE);
+    await change(page);
+    const [shared] = await page.evaluate(() => window.motionOf('#a'));
     await open(page, PAGE, '#area { --motion-springs-settle: 0.2s 0; }');
     await change(page);
-    const [follower] = await page.evaluate(() => window.motionOf('#a'));
-    const [grow] = await page.evaluate(() => window.motionOf('#grow'));
-    expect(follower.duration).toBeLessThan(500);
-    expect(grow.duration).toBeCloseTo(follower.duration, 3);
+    const [scoped] = await page.evaluate(() => window.motionOf('#a'));
+    expect(scoped.duration).toBeCloseTo(shared.duration, 3);
   });
 
   test('under Reduce Motion with a coarse pointer, both cross-fade with no travel (FR4)', async ({

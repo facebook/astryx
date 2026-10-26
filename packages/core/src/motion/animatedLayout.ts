@@ -3,7 +3,7 @@
 /**
  * @file animatedLayout.ts
  * @input The DOM (layout rectangles, computed style), Web Animations, the
- *   `springs.settle` motion role (motion/roles.ts) and the Reduce Motion
+ *   internal `springs.settle` motion role (motion/roles.ts) and the Reduce Motion
  *   cross-fade clock (uikit/timing.ts)
  * @output Exports `createAnimatedLayout` and the opaque `AnimatedLayout`
  *   handle, `reportLayoutChange`, `playLayoutChange` and
@@ -41,7 +41,8 @@
  *   (`spec:AST-105` FR2).
  */
 
-import {motionRole, parseMotionRoleValue} from './roles';
+import {motionRole} from './roles';
+import {isSpring} from './roleValue';
 import {solveSpring, toSpring, type SpringDescription} from './spring';
 import {registerSpringsTable, SETTLE_SPRING} from './uikit/springs';
 import {reducedMotionCrossFade} from './uikit/timing';
@@ -84,20 +85,14 @@ function matches(element: Element, query: string): boolean {
 }
 
 /**
- * `springs.settle` as the area's theme sets it: the role's custom property
- * when it holds a spring, the table's value otherwise.
+ * `springs.settle` from the internal role registry: one shared value for the
+ * glide, the changed element and the indicator. Motion roles are internal
+ * (`spec:AST-094` DEC-11): no theme, scope or custom property changes it.
  */
-function settleSpring(area: Element): SpringDescription {
+function settleSpring(): SpringDescription {
   registerSpringsTable();
-  const role = motionRole(ROLE_ID);
-  if (role == null) {
-    return SETTLE_SPRING;
-  }
-  const text =
-    area.ownerDocument.defaultView
-      ?.getComputedStyle(area)
-      .getPropertyValue(role.variable) ?? '';
-  return parseMotionRoleValue('spring', text) ?? SETTLE_SPRING;
+  const value = motionRole(ROLE_ID)?.value;
+  return isSpring(value) ? value : SETTLE_SPRING;
 }
 
 function springProgress(description: SpringDescription): SpringProgress {
@@ -125,7 +120,7 @@ function layoutMotion(area: Element): LayoutMotion {
       easing: `cubic-bezier(${x1}, ${y1}, ${x2}, ${y2})`,
     };
   }
-  return {kind: 'spring', progress: springProgress(settleSpring(area))};
+  return {kind: 'spring', progress: springProgress(settleSpring())};
 }
 
 /** Linear keyframes sampled from the spring, one per frame. */
