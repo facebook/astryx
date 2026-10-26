@@ -160,7 +160,8 @@ those contracts.
   INV5.
 - **INV12 — Size changes inside a container have one module.** **Proposed;
   pending owner decision (OQ3, OQ5).** When something inside an area changes
-  size, the content after it glides to its new place instead of jumping. The
+  size, the changed element animates itself and the content after it follows
+  with matching timing instead of jumping. The
   measuring, the walk, and the translate all live inside one internal module;
   the public hook only marks the area where the walk stops, and the internal
   `reportLayoutChange` only tells the module that a size is about to change. In
@@ -186,7 +187,12 @@ those contracts.
   The walk only collects candidates; an element moves only when its layout
   rectangle changed between the two measurements (OQ5) and it intersects the
   area's visible part, so the setup cost is bounded by what the person can
-  see. Which elements move is listed under Size-change coverage below. Shifted
+  see. Which elements move is listed under Size-change coverage below. The changed element runs its own animation, entering, exiting, or
+  resizing, and the module moves only the content after it. Both use the same
+  timing and easing and start on the same frame, so they move as one: the
+  element passes its spring, or its duration and curve, with
+  `reportLayoutChange(ref, motion)`, from a theme motion role
+  (`spec:AST-094` FR4), and Reduce Motion applies to both. Shifted
   content may mix Astryx components and plain app elements, and none of it
   opts in. Several changes, nested or not, compose without wrappers: changes
   in one area in the same frame are measured together before and after, so
@@ -203,8 +209,8 @@ those contracts.
   and returns nothing, because which container scopes the motion is the
   caller's intent (`spec:AST-002` FR1), and no other API does that job.
   `reportLayoutChange` stays internal. Its documentation reads: "When
-  something inside this area changes size, only the content after it animates
-  to its new place. Fixed and sticky elements stay put, Reduce Motion is
+  something inside this area changes size, the changed element animates
+  itself and the content after it follows with matching timing. Fixed and sticky elements stay put, Reduce Motion is
   respected, ScrollableArea applies it automatically, and List rows use the
   same module."
 
@@ -219,8 +225,9 @@ those contracts.
     <p>Notes</p>
   </div>;
 
-  // Internal: an element whose size changes measures before its commit and animates after it.
-  const change = reportLayoutChange(groupRef);
+  // Internal: an element whose size changes measures before its commit and animates after it,
+  // passing the motion it plays itself so its followers match it.
+  const change = reportLayoutChange(groupRef, springs.settle);
   const toggle = () => {
     change.measureBefore();
     setExpanded(open => !open);
@@ -263,9 +270,9 @@ Out of coverage, each taking its final place at once:
 
 The following are preferred techniques, not independent compatibility promises:
 
-- The size-change hook's documentation states what callers ask about: only
-  content after the change moves, and the changed element's own content is
-  not animated by INV12; fixed elements and stuck sticky elements stay put;
+- The size-change hook's documentation states what callers ask about: the
+  changed element animates itself and the module moves only content after it,
+  with matching timing; fixed elements and stuck sticky elements stay put;
   Reduce Motion is handled; List rows use the same module; nesting stops at
   the nearest area, so nothing animates twice; and the scroll position is
   kept.
@@ -410,6 +417,7 @@ component suite is not blanket conformance with every invariant.
 | INV11            | Source boundary check plus hook tests across StrictMode replay and unmount                                                                                                                                                                                                                                                                                                                                                     | A second keyboard listener or measurement in Core; a consumer reading a CSS custom property on the root or a shared ancestor for the height; an export of the hook; a component outside Core measuring by a rule other than AST-099 FR2, or riding the keyboard; a listener left after unmount; a Core rider driven by JavaScript per frame or by its own transition; or more than one layout read per keyboard change |
 | INV12 (proposed) | Real-browser tests on a throttled phone profile plus a source boundary check, over a disclosure and an inserted item nested several levels inside a parent with following siblings at each level, mixed Astryx and plain elements, a fixed element, an unstuck sticky header, a nested boundary, content outside the boundary, two disclosures toggled in one frame, a 10-level by 50-sibling tree for cost, and Reduce Motion | A per-frame height or layout, a walk past the boundary, a moved out-of-flow element, a following sibling at any level that jumps, an element moved twice for one frame, an added element, or travel under Reduce Motion fails                                                                                                                                                                                          |
 | INV12 coverage   | Real-browser tests, one per Size-change coverage row                                                                                                                                                                                                                                                                                                                                                                           | Any case behaving other than its row says fails                                                                                                                                                                                                                                                                                                                                                                        |
+| INV12 timing     | Real-browser frame capture of a changed element and its followers, with and without Reduce Motion                                                                                                                                                                                                                                                                                                                              | The element and its followers starting on different frames or with different durations or curves, or Reduce Motion applied to one and not the other, fails                                                                                                                                                                                                                                                             |
 
 ## Open questions
 
