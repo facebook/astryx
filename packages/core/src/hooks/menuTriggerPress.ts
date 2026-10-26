@@ -71,9 +71,9 @@ function normalizePointerType(type: string): MenuPressPointerType | null {
 
 /**
  * Whether a control is inside a scroll view (`spec:AST-094` FR11): it sits in
- * a scrollable container (under a sticky ancestor too), or in scrolling page
- * content with no fixed or sticky ancestor. A control in a fixed bar (a top
- * bar, a tab bar, a toolbar, fixed or stuck to the page) is not.
+ * a scrollable container, or in scrolling page content with no fixed
+ * ancestor. A control in a fixed bar (a top bar, a tab bar, a toolbar) is
+ * not. A sticky ancestor does not make a bar: FR11 names only a fixed one.
  */
 function isInScrollView(control: Element): boolean {
   if (!createNativeScrollProbe(control).isInsideScroller) {
@@ -82,10 +82,6 @@ function isInScrollView(control: Element): boolean {
   const doc = control.ownerDocument;
   const view = doc.defaultView;
   const root = doc.scrollingElement ?? doc.documentElement;
-  // A sticky ancestor sticks within the nearest scroller: inside a
-  // scrollable container it is still in a scroll view; stuck to the page it
-  // is a bar.
-  let isStuck = false;
   for (
     let node = control.parentElement;
     node != null && node !== root && node !== doc.body;
@@ -104,11 +100,8 @@ function isInScrollView(control: Element): boolean {
     if (style?.position === 'fixed') {
       return false;
     }
-    if (style?.position === 'sticky') {
-      isStuck = true;
-    }
   }
-  return !isStuck;
+  return true;
 }
 
 /**
