@@ -113,13 +113,16 @@ function createScheduleViewSelectorPlugin<View extends ScheduleViewBase>(
   };
 }
 
-export function useScheduleViewSelectorPlugin<View extends ScheduleViewBase>(
+export function useScheduleViewSelectorPlugin<
+  View extends ScheduleViewBase,
+>(
   options: ReadonlyArray<ScheduleViewSelectorOption<View>>,
   pluginOptions: ScheduleViewSelectorPluginOptions<View> = {},
 ): SchedulePlugin {
   const {onChangeView, position = 'end'} = pluginOptions;
   return useMemo(
-    () => createScheduleViewSelectorPlugin(options, {onChangeView, position}),
+    () =>
+      createScheduleViewSelectorPlugin(options, {onChangeView, position}),
     [onChangeView, options, position],
   );
 }
