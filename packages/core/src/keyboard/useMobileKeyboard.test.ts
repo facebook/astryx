@@ -57,7 +57,9 @@ beforeEach(() => {
 afterEach(() => {
   Reflect.deleteProperty(window, 'visualViewport');
   Reflect.deleteProperty(window.navigator, 'virtualKeyboard');
-  Reflect.deleteProperty(document.documentElement, 'clientWidth');
+  for (const key of ['clientWidth', 'clientHeight', 'scrollWidth']) {
+    Reflect.deleteProperty(document.documentElement, key);
+  }
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -168,6 +170,62 @@ describe('the layout viewport WebKit reports under a pinch zoom (FR2)', () => {
     Object.assign(viewport, {height: 800, scale: 1, width: 1263});
     expect(layoutViewportHeight(window)).toBe(800);
     expect(measureKeyboardHeight(window)).toBe(0);
+  });
+
+  /** The document's root: its client box and how wide its content is. */
+  function root(box: {
+    clientHeight: number;
+    clientWidth: number;
+    scrollWidth: number;
+  }) {
+    for (const [key, value] of Object.entries(box)) {
+      Object.defineProperty(document.documentElement, key, {
+        configurable: true,
+        value,
+      });
+    }
+  }
+
+  /** Scrollbars that take `thickness` px of a scrolling box (0: overlaid). */
+  function scrollbars(thickness: number) {
+    const scrolls = (el: Element) =>
+      el instanceof HTMLElement && el.style.overflow === 'scroll';
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return scrolls(this) ? 100 : 0;
+      },
+    );
+    vi.spyOn(Element.prototype, 'clientHeight', 'get').mockImplementation(
+      function (this: Element) {
+        return scrolls(this) ? 100 - thickness : 0;
+      },
+    );
+  }
+
+  it('reads no keyboard from a desktop page\u2019s classic horizontal scrollbar', () => {
+    // Chromium with classic scrollbars, on a page wider than the window:
+    // innerHeight counts the 15 px scrollbar, the visual viewport and the
+    // document's client height do not.
+    scrollbars(15);
+    vi.stubGlobal('innerHeight', 800);
+    vi.stubGlobal('innerWidth', 1280);
+    root({clientHeight: 785, clientWidth: 1280, scrollWidth: 1600});
+    Object.assign(viewport, {height: 785, scale: 1, width: 1280});
+    expect(layoutViewportHeight(window)).toBe(785);
+    expect(measureKeyboardHeight(window)).toBe(0);
+  });
+
+  it('reads the whole keyboard under a hidden toolbar, which no scrollbar explains', () => {
+    // Chrome on Android sizes the document's client height to the viewport
+    // with its toolbar shown (754 px) and overlays its scrollbars, so the 136
+    // px a hidden toolbar adds to innerHeight is no scrollbar, on a page
+    // wider than the window too.
+    scrollbars(0);
+    vi.stubGlobal('innerHeight', 890);
+    vi.stubGlobal('innerWidth', 411);
+    root({clientHeight: 754, clientWidth: 411, scrollWidth: 1600});
+    Object.assign(viewport, {height: 590, scale: 1, width: 411});
+    expect(measureKeyboardHeight(window)).toBe(300);
   });
 });
 
