@@ -661,7 +661,7 @@ export function useRefreshTouchController({
       const from = content.animator.get('y');
       const element = contentElement.current;
       const duration = resolveMotion(element, refreshControl, 'endMs');
-      const curve = resolveMotion(element, timing.curves.easeInOut);
+      const curve = resolveMotion(element, timing.curves.move);
       // UIKit replaces the spin with the end: the indicator shrinks to almost
       // nothing as it turns, and the title fades out, over the same 0.3 s.
       // Under Reduce Motion the animator cross-fades the slide, fades the
@@ -740,29 +740,67 @@ export function useRefreshTouchController({
 
   // -- The pull -------------------------------------------------------------
 
+  // The pan's vertical translation where the pull starts: null until the
+  // content is at its top under a finger moving down.
+  const anchor = useRef<number | null>(null);
+  const lastTranslation = useRef(0);
+  // A settle a finger caught (it stops where it is on touch-down) resumes
+  // when no pull follows.
+  const resumeSettle = useCallback(() => {
+    if (model.current.isPulling) {
+      return;
+    }
+    const target = releaseTarget(model.current.isRefreshing);
+    if (Math.abs(content.animator.get('y') - target) > 0.05) {
+      settle(model.current.isRefreshing ? 'inset' : 'top');
+    }
+  }, [content.animator, model, settle]);
+
   const recognizer = useGestureRecognizer(
     contentElement,
     () => new RefreshPullRecognizer(),
     pan => {
       const state = model.current;
-      if (pan.state === 'began') {
-        const current = resolveOwner();
-        holdSelection();
-        const shown = content.animator.get('y');
-        stopPlacing();
-        const dimension = heightOf(current);
-        const mode: PullMode = state.isRefreshing ? 'band' : 'reveal';
-        pull.current = {
-          dimension,
-          mode,
-          trigger: triggerDistance(dimension),
-          floor: state.isRefreshing ? REFRESH_HEIGHT : 0,
-          travel0: pullTravel(shown, dimension, mode),
-          scrollTop0: scrollTopOf(current),
-        };
-        dispatch({type: 'pullStart'});
-      }
       if (pan.state === 'began' || pan.state === 'changed') {
+        const translation = pan.translation().y;
+        if (anchor.current == null) {
+          // Not pulling yet: the browser may be scrolling the content (a drag
+          // that began as a scroll). The pull starts where the content is at
+          // its top under a finger moving down, in the same touch: the
+          // browser keeps the finger all along, so nothing changes hands
+          // (AST-094 FR14; the pan only watches, FR20).
+          const current =
+            pan.state === 'began' ? resolveOwner() : owner.current;
+          // At `began` the finger's whole move counts, the threshold's
+          // included (a slow drag begins at a translation of zero).
+          const isMovingDown =
+            pan.state === 'began'
+              ? translation + pan.travelAtBegan.y > 0
+              : translation > lastTranslation.current;
+          lastTranslation.current = translation;
+          if (!isMovingDown || scrollTopOf(current) > 0) {
+            return;
+          }
+          // From rest the travel is the pan's (which leaves out its
+          // hysteresis, as UIKit's does); past a scroll it starts where the
+          // content ran out.
+          anchor.current = pan.state === 'began' ? 0 : translation;
+          holdSelection();
+          const shown = content.animator.get('y');
+          stopPlacing();
+          const dimension = heightOf(current);
+          const mode: PullMode = state.isRefreshing ? 'band' : 'reveal';
+          pull.current = {
+            dimension,
+            mode,
+            trigger: triggerDistance(dimension),
+            floor: state.isRefreshing ? REFRESH_HEIGHT : 0,
+            travel0: pullTravel(shown, dimension, mode),
+            scrollTop0: scrollTopOf(current),
+          };
+          dispatch({type: 'pullStart'});
+        }
+        lastTranslation.current = translation;
         const geometry = pull.current;
         // A browser that scrolls the content back as the finger returns
         // (Chromium) takes over from the pull.
@@ -770,7 +808,7 @@ export function useRefreshTouchController({
           scrollTopOf(owner.current) - geometry.scrollTop0 > 0.5;
         const travel = scrolledBack
           ? 0
-          : geometry.travel0 + pan.translation().y;
+          : geometry.travel0 + (translation - anchor.current);
         const overscroll = Math.max(
           geometry.floor,
           pullOverscroll(travel, geometry.dimension, geometry.mode),
@@ -789,14 +827,19 @@ export function useRefreshTouchController({
         }
         return;
       }
-      if (pan.state === 'ended' || pan.state === 'cancelled') {
-        releaseSelection();
+      if (pan.state !== 'ended' && pan.state !== 'cancelled') {
+        return;
       }
-      if (pan.state === 'ended') {
-        dispatch({type: 'pullEnd'});
-      } else if (pan.state === 'cancelled') {
-        dispatch({type: 'pullCancel'});
+      const wasPulling = anchor.current != null;
+      anchor.current = null;
+      if (!wasPulling) {
+        // A scroll that never reached the top: a settle the finger caught
+        // resumes.
+        resumeSettle();
+        return;
       }
+      releaseSelection();
+      dispatch({type: pan.state === 'ended' ? 'pullEnd' : 'pullCancel'});
     },
   );
   // Syncs whether the pull applies (a finger, not disabled, no scroll lock)
@@ -817,19 +860,22 @@ export function useRefreshTouchController({
       stopPlacing();
     };
     const stopListening = recognizer.addTransitionListener(current => {
-      if (current.state !== 'failed' || model.current.isPulling) {
-        return;
-      }
-      const target = releaseTarget(model.current.isRefreshing);
-      if (Math.abs(content.animator.get('y') - target) > 0.05) {
-        settle(model.current.isRefreshing ? 'inset' : 'top');
+      if (current.state === 'failed') {
+        resumeSettle();
       }
     });
     return () => {
       recognizer.onTouchDown = null;
       stopListening();
     };
-  }, [applyEdge, content.animator, recognizer, resolveOwner, settle]);
+  }, [
+    applyEdge,
+    cancelPendingEnd,
+    recognizer,
+    resolveOwner,
+    resumeSettle,
+    stopPlacing,
+  ]);
 
   const contentRef = useCallback(
     (element: HTMLElement | null) => {

@@ -13,7 +13,8 @@
  * scroll container) or on the page. The content itself is pulled; the
  * indicator stays at the top of the scroll view in the gap a pull opens, as
  * UIRefreshControl does, and the content's edge covers it on the way back.
- * The title (optional) sits under the indicator.
+ * The title (optional) sits under the indicator, a status line for assistive
+ * technology; the spinner is decoration, hidden from it.
  *
  * The indicator is UIRefreshControl's replicator, drawn from the refresh
  * table: eight capsule spokes revealed one after another by the pull (a CSS
@@ -382,7 +383,11 @@ export interface RefreshControlProps
   ref?: Ref<HTMLDivElement>;
   /** The scrolled content (a List, a feed). */
   children: ReactNode;
-  /** Text under the indicator, such as when the content was last updated. */
+  /**
+   * Text under the indicator, such as when the content was last updated.
+   * Assistive technology reads it as a status line, so a new title is
+   * announced.
+   */
   title?: ReactNode;
 }
 
@@ -488,7 +493,7 @@ export function RefreshControl({
       {children}
       {/* After the content: a spinning indicator painted before the rows would
           have WebKit give every row after it a layer of its own. */}
-      <div aria-hidden {...stylex.props(styles.indicatorClip)}>
+      <div {...stylex.props(styles.indicatorClip)}>
         <div
           ref={control.indicatorRef}
           {...stylex.props(
@@ -496,11 +501,19 @@ export function RefreshControl({
             styles.indicatorBand(REFRESH_HEIGHT),
             refreshIndicatorScope,
           )}>
-          <span ref={control.spinnerRef} {...stylex.props(styles.glyph)}>
+          {/* Decoration: the busy state and the announcement carry it. */}
+          <span
+            ref={control.spinnerRef}
+            aria-hidden
+            {...stylex.props(styles.glyph)}>
             {spokes}
           </span>
           {title != null ? (
-            <span ref={control.titleRef} {...stylex.props(styles.title)}>
+            // A status line, so a new title (after a refresh) is announced.
+            <span
+              ref={control.titleRef}
+              role="status"
+              {...stylex.props(styles.title)}>
               {title}
             </span>
           ) : null}

@@ -12,7 +12,14 @@
  *   checked in a real browser (RefreshControl.browser test and storyboards)
  */
 
-import {act, render, screen, waitFor} from '@testing-library/react';
+import {
+  act,
+  isInaccessible,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import {
   afterEach,
   beforeEach,
@@ -110,7 +117,7 @@ describe('RefreshControl', () => {
     document.documentElement.style.overscrollBehaviorY = '';
   });
 
-  it('renders its content with a hidden indicator and no busy state at rest', () => {
+  it('renders its content, a decorative indicator and the title as a status line, with no busy state at rest', () => {
     render(
       <RefreshControl
         data-testid="refresh"
@@ -121,10 +128,28 @@ describe('RefreshControl', () => {
     );
     expect(screen.getByText('Inbox')).toBeInTheDocument();
     expect(content()).not.toHaveAttribute('aria-busy');
-    // The indicator comes after the content, hidden from assistive technology.
+    // The title reaches assistive technology as a status line, so a new one
+    // (after a refresh) is announced.
+    const status = within(content()).getByRole('status');
+    expect(status).toHaveTextContent('Updated now');
+    // The spinner beside it is decoration, hidden from assistive technology.
+    const spinner = status.previousElementSibling as HTMLElement;
+    expect(spinner.childElementCount).toBeGreaterThan(0);
+    expect(isInaccessible(spinner)).toBe(true);
+    expect(isInaccessible(status)).toBe(false);
+  });
+
+  it('has no status line without a title, and its indicator stays hidden', () => {
+    render(
+      <RefreshControl data-testid="refresh" onRefresh={() => {}}>
+        <p>Inbox</p>
+      </RefreshControl>,
+    );
+    expect(within(content()).queryByRole('status')).toBeNull();
     const indicator = content().lastElementChild as HTMLElement;
-    expect(indicator).toHaveAttribute('aria-hidden', 'true');
-    expect(indicator).toHaveTextContent('Updated now');
+    for (const node of indicator.querySelectorAll('span')) {
+      expect(isInaccessible(node)).toBe(true);
+    }
   });
 
   it('triggers with the finger still down, then settles onto the refreshing inset', async () => {

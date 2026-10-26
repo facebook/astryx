@@ -48,7 +48,6 @@
 
 import {registerMotionTable} from '../roles';
 
-/** @experimental */
 export const refreshControl = {
   /**
    * The refreshing inset: while refreshing, the content rests this far below
@@ -204,7 +203,7 @@ export const refreshControl = {
   turnRad: 3.131592653589793,
   /**
    * `endRefreshing()` while the control is visible: the inset leaves (the
-   * content moves up by `height`) over this long, on `timing.curves.easeInOut`.
+   * content moves up by `height`) over this long, on `timing.curves.move`.
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
    *   iPhone 17 Pro, setContentOffset per frame over 0.3 s inside
    *   UIView.animate(withDuration: 0.3), three runs at rest identical to the
@@ -212,7 +211,7 @@ export const refreshControl = {
    */
   endMs: 300,
   /**
-   * With the end, over this long on `timing.curves.easeInOut`, the spin gives
+   * With the end, over this long on `timing.curves.move`, the spin gives
    * way to the indicator shrinking to `exitScale` as it turns by `turnRad`,
    * and the title fades out (1 → 0). The control's own opacity stays 1.
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
@@ -237,7 +236,6 @@ export const refreshControl = {
  * retune (motion/roles.ts). Nothing registers on import: the refresh
  * control's touch layer calls it once before its first animation (it is
  * idempotent), so a page that never pulls ships no registry.
- * @experimental
  */
 export function registerRefreshControlTable(): void {
   registerMotionTable('refreshControl', refreshControl, {
