@@ -112,7 +112,7 @@ announcements are those of FR3 and FR4, and the tree adds no option.
   never from React's `key`: List reads each `ListItem`'s `itemKey`, a string;
   a collection whose items already carry an identity, such as TreeList's `id`
   or Table's `idKey`, uses it; and a data collection without one takes
-  `getKey(item)` (DEC-4). A row without a key shows no handle and cannot be
+  `idKey` in Table's shape, a field name or a function of the item (DEC-4). A row without a key shows no handle and cannot be
   picked up. The
   object is meant to be created once per collection, for example with
   `useMemo`; one created again on each render still works, because the
@@ -270,7 +270,8 @@ Rejected: `onReorder(from, to)` with a pair of positions.
 
 React does not pass `key` to a component, so a collection cannot rely on it.
 A `ListItem` names its item with one `itemKey` prop, and a data collection
-without an identity of its own takes `getKey(item)`. `itemKey` is a new name because no row prop
+without an identity of its own takes `idKey` in Table's shape, a field name
+or a function of the item, so the same job keeps one name. `itemKey` is a new name because no row prop
 carries item identity today: `value` on option-like rows is the selected value
 a form reads, a different job. A collection whose items already carry an
 identity, such as TreeList's `id` or Table's `idKey`, uses it rather than a
