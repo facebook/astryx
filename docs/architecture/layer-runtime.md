@@ -434,7 +434,7 @@ layers use Layer rendering without joining Escape/platform dismissal.
   itself, never by resolving placement through the provider, and a layer with
   no provider renders as one under a provider with the default inset.
 - **INV11 — One viewport gutter.** The gutter, the viewport caps (the
-  software keyboard's cap included, `spec:AST-059` FR9, proposed), and the
+  software keyboard's cap included, `spec:AST-059` FR9), and the
   app-declared inset have one definition in the runtime; every anchor-mode layer
   inherits them, the layer box never exceeds the caps, the toast viewport reads
   the same inset, no consumer defines its own, no size is capped to the span
@@ -444,7 +444,10 @@ layers use Layer rendering without joining Escape/platform dismissal.
   exception. The runtime observes anchor visibility for every layer, the layer's
   box under a software keyboard, and, for a layer that keeps its anchor clear, whether it covers its anchor or
   leaves the viewport and whether its content overflows; each is read before
-  first paint and, while the layer is open, \1 The keyboard's cap is read again\n only when the keyboard moves and once more when an entrance in progress at\n that read ends; the cap is the layer's own style, so a replaced layer element\n keeps it. The exception is a same-size anchor that moves on screen, in
+  first paint and, while the layer is open, from callbacks that run before the frame paints. The keyboard's cap is read again
+  only when the keyboard moves and once more when an entrance in progress at
+  that read ends; the cap is the layer's own style, so a replaced layer element
+  keeps it. The exception is a same-size anchor that moves on screen, in
   layout or by a scroll, which only an intersection observer reports, after
   paint: at most one painted frame shows the layer over its anchor before the
   correction. Otherwise a layer never paints at a geometry it is about to
@@ -534,7 +537,10 @@ Popover builds its own presentation hold for its sheet presentation.
 - A CommandPalette host change preserves native modality, search state, focus
   entry/return, and controlled close behavior.
 - A browser fallback change updates public `useLayer` and Popover docs and tests
-  \1- A keyboard-cap change verifies the cap's timing (a rising keyboard once it\n has arrived, a falling one at once, a press held until its click), a layer\n opened with the keyboard up, and the layers it leaves alone.\n
+  for both the native path and actual fallback.
+- A keyboard-cap change verifies the cap's timing (a rising keyboard once it
+  has arrived, a falling one at once, a press held until its click), a layer
+  opened with the keyboard up, and the layers it leaves alone.
 
 ## Owning code
 
@@ -555,7 +561,11 @@ Popover builds its own presentation hold for its sheet presentation.
 - `Layer/preserveAnimations.ts` owns carrying the CSS animations and
   transitions of a layer and its content across the re-placement's display
   reset.
-  \1- `Layer/useLayerKeyboardClearance.ts`, through `Layer/LayerTouch.ts`, owns the\n software keyboard's cap on an open anchor-mode layer, read from the keyboard\n module's one height.\n- `Layer/layerStack.ts`, `Layer/useLayerDismissal.ts`, and
+- `Layer/gestureCounter.ts` owns physical pointer/key gesture identity.
+- `Layer/useLayerKeyboardClearance.ts`, through `Layer/LayerTouch.ts`, owns the
+  software keyboard's cap on an open anchor-mode layer, read from the keyboard
+  module's one height.
+- `Layer/layerStack.ts`, `Layer/useLayerDismissal.ts`, and
   `Layer/LayerDepthContext.tsx` own current registration, presence, ordering, and
   Escape/platform routing.
 - `Popover/usePopover.tsx` owns focus-trap composition and default native light

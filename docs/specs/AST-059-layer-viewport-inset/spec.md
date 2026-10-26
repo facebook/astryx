@@ -301,7 +301,7 @@ the app reaches every layer instead of the components that happen to read it.
   ends (a box measured mid-entrance is only close), and in the commit that
   brings a layer element the runtime swapped in while the layer is open.
 - **FR9 — The software keyboard caps a layer that would run under it.**
-  **Proposed; pending owner decision (DEC-6).** While
+  While
   a software keyboard covers the bottom of the viewport, an anchor-mode layer
   whose block-end edge would run under it keeps its block-start edge and caps
   its block size so that edge sits 10 px above the keyboard, the clearance
@@ -316,7 +316,7 @@ the app reaches every layer instead of the components that happen to read it.
   carries its own cap on its own element: a layer opened inside a capped
   layer is capped only for its own box, never by its host's.
 - **FR10 — The keyboard cap changes where the keyboard hides the change.**
-  **Proposed; pending owner decision (DEC-6).** A
+  A
   box's height cannot change on the compositor, so the cap changes once per
   keyboard movement: when a rising keyboard has arrived, at once as a falling
   keyboard starts down, and at once for a keyboard that changes without
@@ -562,7 +562,7 @@ clear a control an anchored layer may cover would have no route.
 ### DEC-6 — The runtime caps a layer above the software keyboard, holding its start edge
 
 **Reference:** `spec:AST-059/DEC-6`
-**Decider:** pending owner review
+**Decider:** `cixzhang`, `2026-10-26`
 
 A layer that would run under the software keyboard is capped by the layer
 runtime, for every anchor-mode layer at once, from the keyboard module's one
@@ -577,5 +577,4 @@ fallback order applies a block inset to both block edges (FR4).
 
 ## Open questions
 
-- **OQ1 — Whether the runtime caps layers above the software keyboard.**
-  (`human-design`) Open: DEC-6, FR9, and FR10 await the owner's decision.
+None. Every decision above is the owner's.
