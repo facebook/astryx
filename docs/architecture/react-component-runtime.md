@@ -68,8 +68,8 @@ A component runtime has four distinct roles:
 
 Component and family contracts continue to own public state semantics, controlled
 and optimistic behavior, focus, announcements, gestures, and other user-facing
-outcomes. This record owns only the shared React lifecycle boundary used to fulfill
-those contracts.
+outcomes. This record owns the shared React lifecycle boundary used to fulfill
+those contracts and, for now, INV12's caller-visible hook and prop (OQ7).
 
 ## Boundaries and invariants
 
@@ -166,8 +166,10 @@ those contracts.
   An app opts in with `useAnimatedLayout({containerRef})`, which returns an
   opaque `animatedLayout` handle with no public methods or fields, and passes
   it to a component whose size changes through that component's
-  `animatedLayout` prop; the component reports each change through the handle.
-  Without a handle, content after a change takes its place at once, as before.
+  `animatedLayout` prop. The component reports each change through an
+  internal, non-exported function that takes the handle, so the handle stays
+  member-free. Without a handle, content after a change takes its place at
+  once.
   `containerRef` names the area where the walk stops; ScrollableArea does not
   register itself, and an app passes the ref it already gives ScrollableArea,
   which reaches the native scroll viewport. In `@astryxdesign/core`, the module
@@ -191,8 +193,8 @@ those contracts.
   the setup cost is bounded by what the person can see. Which elements move is
   listed under Size-change coverage below. The changed element plays its own
   animation, entering, exiting, or resizing, and the module moves only the
-  content after it. Both read the same theme motion role
-  (`architecture:theme-tokens` INV3), so the timing is governed centrally and
+  content after it. Both read the same theme motion role (OQ6;
+  `architecture:theme-tokens` INV3), so the timing is governed centrally and
   is themeable there, never per component; both start on the same frame, and
   Reduce Motion reaches both through that role, as `design:reduced-motion`
   DR1–DR3 require: a cross-fade under a coarse primary pointer, an immediate
@@ -200,24 +202,23 @@ those contracts.
   elements, and none of it opts in. Several changes, nested or not, compose
   without wrappers: changes in one area in the same frame are measured
   together before and after, so each element moves once, by its total change.
-  Each moving element is one the page already renders, so the module adds no
+  The area's scroll position does not change. Each moving element is one the
+  page already renders, so the module adds no
   elements (`architecture:component-style-authoring` INV7). The glide applies
-  under every pointer, a mouse included: it fixes a layout jump that people
+  under every pointer, a mouse included: it removes a layout jump that people
   using a fine pointer see too, not a touch gesture, so it is a named
   fine-pointer change under `spec:AST-017` FR59, and adopting pull requests
   show fine-pointer evidence before and after. `useAnimatedLayout` and the
   `animatedLayout` prop are the public pieces. They pass `spec:AST-002` FR5:
   two otherwise identical pages differ in whether content after a size change
   glides or jumps, and in which container bounds it, which only the caller
-  knows. The handle is configuration, not a rendered slot
-  (`architecture:public-component-api` INV18); no other API does this job
-  (INV21); and it is not a visual boolean (INV20). Reporting a change is a
-  method on the handle and is not exported. The hook's documentation reads:
+  knows. The handle is configuration, not a rendered slot; no other API does this
+  job; and it is not a visual boolean. Reporting a change is not exported. The hook's documentation reads:
   "Returns a handle to pass to a component whose size changes, such as
   TreeList or Collapsible. When that component changes size, it and the
   content after it inside `containerRef` animate together on one shared
-  motion role. Fixed and stuck sticky elements stay put, Reduce Motion is
-  respected, and List rows use the same module."
+  motion role. Fixed and stuck sticky elements stay put, the area keeps its scroll
+  position, and Reduce Motion is respected."
 
   Usage:
 
@@ -268,8 +269,7 @@ The following are preferred techniques, not independent compatibility promises:
 - The size-change hook's documentation states what callers ask about: the
   changed component and the content after it animate together on one shared
   motion role; fixed elements and stuck sticky elements stay put;
-  Reduce Motion is handled; List rows use the same module; a change stops at
-  its handle's area, so nothing animates twice; and the scroll position is
+  Reduce Motion is handled; a change stops at its handle's area, so nothing animates twice; and the scroll position is
   kept.
 - Use an Effect Event when an external-system Effect needs a stable callback that
   reads the latest props or state without making those reads reactive. Do not use
@@ -414,3 +414,14 @@ component suite is not blanket conformance with every invariant.
 | INV12 coverage      | Real-browser tests, one per Size-change coverage row                                                                                                                                                                                                                                                                                                                                                                                                      | Any case behaving other than its row says fails                                                                                                                                                                                                                                                                                                                                                                        |
 | INV12 timing        | Real-browser frame capture of a changed element and its visible followers under a coarse and a fine pointer, with and without Reduce Motion, and with a theme overriding the motion role                                                                                                                                                                                                                                                                  | The element and its visible followers starting on different frames or reading different motion, a component-specific timing, Reduce Motion applied to one and not the other, or a fine-pointer Reduce Motion change that is not immediate, fails                                                                                                                                                                       |
 | INV12 pointer scope | Fine-pointer before-and-after evidence on each adopting pull request (`spec:AST-017` FR59), from the demo or a story                                                                                                                                                                                                                                                                                                                                      | A glide missing under a mouse, or an adopting pull request without fine-pointer evidence, fails                                                                                                                                                                                                                                                                                                                        |
+
+## Open questions
+
+- **OQ6 — The motion role INV12 reads.** (`human-design`) No layout role
+  exists yet; the motion scheme will name one. Options until then: (a,
+  recommended) `springs.settle` (`spec:AST-094` FR4), a spring with no bounce
+  that suits a layout settle; or (b) hold INV12 until the scheme lands.
+- **OQ7 — Where `useAnimatedLayout` and `animatedLayout` are owned.**
+  (`human-design`) Options: (a, recommended) this record, beside the module,
+  with each adopting component's record documenting its `animatedLayout` prop;
+  or (b) a system spec that this record's module serves.
