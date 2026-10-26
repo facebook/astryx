@@ -1,55 +1,55 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file resolveDetent.ts
- * @input A release (position and velocity on one axis), the detents it can
+ * @file resolveSnapPoint.ts
+ * @input A release (position and velocity on one axis), the points it can
  *   land on, and the release policy's thresholds
- * @output Exports resolveDetent: the index of the detent a release lands on,
+ * @output Exports resolveSnapPoint: the index of the snap point a release lands on,
  *   and the projected rest position it was judged from
  * @position The release policy of the motion foundation, on
  *   `selectSnapPoint` (projection.ts), which stays the math primitive
  *   (projection + nearest). Pure: no DOM, no React. Internal to core: not
- *   exported from the package or any barrel (resolveDetent.test.ts locks
- *   that). A component's release rule calls it with its own detents and
+ *   exported from the package or any barrel (resolveSnapPoint.test.ts locks
+ *   that). A component's release rule calls it with its own points and
  *   thresholds; this is the one "where does a release land" helper, so a
  *   second one should not be added beside it.
  *
- * - A slow release lands on the detent nearest where it would come to rest:
+ * - A slow release lands on the snap point nearest where it would come to rest:
  *   its position, or, with `projection`, its position plus the distance it
  *   would coast at its velocity (projection.ts). Below
- *   `projection.minSpeed` nothing is projected, so it lands on the detent
+ *   `projection.minSpeed` nothing is projected, so it lands on the snap point
  *   nearest where it was let go. A tie goes the way a projected release
- *   moves, and otherwise to the earlier detent (`selectSnapPoint`).
- * - A flick (`flickSpeed` or faster) lands at least on the next detent
+ *   moves, and otherwise to the earlier snap point (`selectSnapPoint`).
+ * - A flick (`flickThreshold` or faster) lands at least on the next snap point
  *   beyond its position in the direction it moves, or on the nearest
- *   detent to its projection if that is farther. A detent within
+ *   snap point to its projection if that is farther. A snap point within
  *   `tolerance` of the position counts as reached, so the flick goes on to
  *   the one after it.
  * - With `start` (where the drag began), a release moving back toward it
- *   cancels to the detent nearest `start`, whatever its travel so far or its
+ *   cancels to the snap point nearest `start`, whatever its travel so far or its
  *   speed.
  * - With `fromIndex` and `maxSteps`, a release lands at most `maxSteps`
- *   detents away from the one at `fromIndex` (a pager's one page per
+ *   points away from the one at `fromIndex` (a pager's one page per
  *   release).
  *
- * Detents are ascending positions on the axis; velocities are in the same
+ * Snap points are ascending positions on the axis; velocities are in the same
  * units per second, positive toward larger positions.
  *
- * SYNC: When modified, update resolveDetent.test.ts.
+ * SYNC: When modified, update resolveSnapPoint.test.ts.
  */
 
 import {selectSnapPoint} from './projection';
 
 /** Where a release lands. */
-export interface DetentRelease {
-  /** Index into the detents passed in. */
+export interface SnapPointRelease {
+  /** Index into the points passed in. */
   readonly index: number;
   /** The rest position the choice was judged from (the position without a projection). */
   readonly projected: number;
 }
 
 /** A release's projection: how far ahead it is judged, and from what speed. */
-export interface DetentProjection {
+export interface SnapPointProjection {
   /** Seconds of the release velocity the projection reaches. */
   readonly seconds: number;
   /** Below this speed (units/s), nothing is projected (default 0). */
@@ -63,14 +63,11 @@ function rateForProjection(seconds: number): number {
   return ms / (1 + ms);
 }
 
-/** The index of the detent nearest `position` (the first on a tie). */
-function nearestIndex(
-  detents: ReadonlyArray<number>,
-  position: number,
-): number {
+/** The index of the snap point nearest `position` (the first on a tie). */
+function nearestIndex(points: ReadonlyArray<number>, position: number): number {
   let best = 0;
-  for (let i = 1; i < detents.length; i += 1) {
-    if (Math.abs(detents[i] - position) < Math.abs(detents[best] - position)) {
+  for (let i = 1; i < points.length; i += 1) {
+    if (Math.abs(points[i] - position) < Math.abs(points[best] - position)) {
       best = i;
     }
   }
@@ -78,60 +75,60 @@ function nearestIndex(
 }
 
 /**
- * The detent a release lands on.
+ * The snap point a release lands on.
  *
  * @example
  * ```
- * // Detents at 0, 300 and 640 px. Released at 300 px moving toward 640 at
+ * // Snap points at 0, 300 and 640 px. Released at 300 px moving toward 640 at
  * // 1200 px/s, a flick: on to 640, although its projection (420 px) is
  * // nearer 300.
- * resolveDetent({
- *   detents: [0, 300, 640],
+ * resolveSnapPoint({
+ *   points: [0, 300, 640],
  *   position: 300,
  *   velocity: 1200,
- *   flickSpeed: 1008,
+ *   flickThreshold: 1008,
  *   tolerance: 1,
  *   projection: {seconds: 0.1, minSpeed: 250},
  *   start: 0,
  * }); // {index: 2, projected: 420}
  * ```
  */
-export function resolveDetent({
-  detents,
+export function resolveSnapPoint({
+  points,
   position,
   velocity,
-  flickSpeed,
+  flickThreshold,
   tolerance = 0,
   projection,
   start,
   fromIndex,
   maxSteps,
 }: {
-  /** Detent positions, ascending. */
-  detents: ReadonlyArray<number>;
+  /** Snap point positions, ascending. */
+  points: ReadonlyArray<number>;
   position: number;
   velocity: number;
   /** From this speed (units/s) on, a release is a flick. */
-  flickSpeed: number;
-  /** A detent this close to the position counts as reached by a flick. */
+  flickThreshold: number;
+  /** A snap point this close to the position counts as reached by a flick. */
   tolerance?: number;
   /** Judge a slow release where it would coast to; absent, where it was let go. */
-  projection?: DetentProjection;
+  projection?: SnapPointProjection;
   /** Where the drag began: a release moving back toward it cancels to it. */
   start?: number;
-  /** The detent the release starts from, for `maxSteps`. */
+  /** The snap point the release starts from, for `maxSteps`. */
   fromIndex?: number;
-  /** At most this many detents away from `fromIndex`. */
+  /** At most this many points away from `fromIndex`. */
   maxSteps?: number;
-}): DetentRelease {
-  if (detents.length === 0) {
-    throw new RangeError('resolveDetent needs at least one detent');
+}): SnapPointRelease {
+  if (points.length === 0) {
+    throw new RangeError('resolveSnapPoint needs at least one snap point');
   }
   const projectedVelocity =
     projection == null || Math.abs(velocity) < (projection.minSpeed ?? 0)
       ? 0
       : velocity;
-  const choice = selectSnapPoint(detents, {
+  const choice = selectSnapPoint(points, {
     position,
     velocity: projectedVelocity,
     rate:
@@ -140,14 +137,14 @@ export function resolveDetent({
     maxSteps,
   });
   let index = choice.index;
-  if (Math.abs(velocity) >= flickSpeed) {
-    // A flick goes at least to the next detent beyond where it is.
+  if (Math.abs(velocity) >= flickThreshold) {
+    // A flick goes at least to the next snap point beyond where it is.
     let next = -1;
     if (velocity > 0) {
-      next = detents.findIndex(d => d > position + tolerance);
+      next = points.findIndex(d => d > position + tolerance);
     } else {
-      for (let i = detents.length - 1; i >= 0 && next === -1; i -= 1) {
-        if (detents[i] < position - tolerance) {
+      for (let i = points.length - 1; i >= 0 && next === -1; i -= 1) {
+        if (points[i] < position - tolerance) {
           next = i;
         }
       }
@@ -161,11 +158,11 @@ export function resolveDetent({
     velocity !== 0 &&
     Math.sign(velocity) === Math.sign(start - position)
   ) {
-    index = nearestIndex(detents, start);
+    index = nearestIndex(points, start);
   }
   if (fromIndex != null && maxSteps != null) {
-    // A stale index past either end counts from the nearest real detent.
-    const from = Math.min(Math.max(fromIndex, 0), detents.length - 1);
+    // A stale index past either end counts from the nearest real snap point.
+    const from = Math.min(Math.max(fromIndex, 0), points.length - 1);
     index = Math.min(Math.max(index, from - maxSteps), from + maxSteps);
   }
   return {index, projected: choice.projected};

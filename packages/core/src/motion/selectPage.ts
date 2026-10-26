@@ -6,13 +6,13 @@
  *   current page
  * @output Exports `selectPage`: the page a paging release settles on
  * @position UIScrollView paging (`isPagingEnabled`) on the release policy
- *   (resolveDetent.ts). Pure: no DOM, no React
+ *   (resolveSnapPoint.ts). Pure: no DOM, no React
  *
  * SYNC: When modified, update selectPage.test.ts.
  */
 
 import type {SnapSelection} from './projection';
-import {resolveDetent} from './resolveDetent';
+import {resolveSnapPoint} from './resolveSnapPoint';
 import {scroll} from './uikit/scroll';
 
 /**
@@ -40,13 +40,13 @@ export function selectPage({
     {length: Math.max(1, pageCount)},
     (_, i) => i * pageSize,
   );
-  // The release policy (resolveDetent.ts), with the paging rate as the
+  // The release policy (resolveSnapPoint.ts), with the paging rate as the
   // seconds of velocity it projects, no flick and one page per release.
-  const {index, projected} = resolveDetent({
-    detents: points,
+  const {index, projected} = resolveSnapPoint({
+    points,
     position,
     velocity,
-    flickSpeed: Infinity,
+    flickThreshold: Infinity,
     projection: {seconds: rate / (1 - rate) / 1000},
     fromIndex: currentPage,
     maxSteps: 1,

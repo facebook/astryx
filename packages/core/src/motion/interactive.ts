@@ -30,7 +30,7 @@
  *   progress is `position / width`).
  * - Rules are data: pure functions, tested against their UIKit measurements.
  *   Under a finger, a release rule that picks one of a set of rest
- *   positions picks it with `resolveDetent` (resolveDetent.ts), the motion
+ *   positions picks it with `resolveSnapPoint` (resolveSnapPoint.ts), the motion
  *   foundation's release policy, rather than with its own nearest/flick
  *   logic (the sheet's finger path does). A mouse path may keep its own
  *   rule (the sheet's settles with `resolveSettleOffset`).

@@ -3,7 +3,7 @@
 /**
  * @file sheetRelease.ts
  * @input The UIKit constants table (`sheet.release`, the sheet springs) and
- *   the motion foundation's release policy (resolveDetent)
+ *   the motion foundation's release policy (resolveSnapPoint)
  * @output Exports resolveSheetRelease, which says where a released sheet goes
  *   and on which spring under a finger; resolveDefaultRelease, today's rule
  *   everywhere else; and the SheetRelease type
@@ -42,7 +42,7 @@
  * - /packages/core/src/BottomSheet/useSheetGestures.ts
  */
 
-import {resolveDetent} from '../motion/resolveDetent';
+import {resolveSnapPoint} from '../motion/resolveSnapPoint';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import type {ReleaseInput, ReleaseOutcome} from '../motion/interactive';
 import {sheet} from '../motion/uikit/sheet';
@@ -110,14 +110,14 @@ export function resolveSheetRelease({
   }
   const positions =
     dismissedOffset == null ? [...detents] : [...detents, dismissedOffset];
-  // The release policy (motion/resolveDetent.ts): nearest where it projects,
+  // The release policy (motion/resolveSnapPoint.ts): nearest where it projects,
   // a flick on to the next position beyond, and a release moving back
   // toward where the drag began cancels to it (spec:AST-094 FR37).
-  const {index, projected} = resolveDetent({
-    detents: positions,
+  const {index, projected} = resolveSnapPoint({
+    points: positions,
     position,
     velocity,
-    flickSpeed: sheet.release.fastSpeed,
+    flickThreshold: sheet.release.fastSpeed,
     tolerance: sheet.release.detentTolerance,
     projection: {
       seconds: sheet.release.projectionSeconds,

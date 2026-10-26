@@ -59,7 +59,7 @@ export interface SnapSelection {
  * The rest point a release goes to: the one nearest the projected rest
  * position. This is the math primitive (projection + nearest); the release
  * policy on top of it (a flick advances at least one detent, a release moving
- * back toward its start cancels) is `resolveDetent` (resolveDetent.ts), so a
+ * back toward its start cancels) is `resolveSnapPoint` (resolveSnapPoint.ts), so a
  * component's release rule calls that rather than adding its own. `fromIndex` + `maxSteps` limit how many points away from the
  * starting one a single release may travel (by index order; pass points
  * sorted along the axis). Ties go to the point in the direction of travel.
