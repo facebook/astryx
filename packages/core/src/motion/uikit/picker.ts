@@ -7,7 +7,7 @@
  *   sit on, the selection band, the release rule (velocity, target, coast),
  *   the snap at rest, the tap spin and the selection tick
  * @position The picker domain of the UIKit constants table (motion/uikit);
- *   read by DateInput/wheelPhysics.ts, DateInput/wheelDrum.ts and the Wheel
+ *   read by DateInput/wheelPhysics.ts and DateInput/wheelDrum.ts
  *
  * Every leaf carries one `@source` (apple-docs | wwdc | webkit | measured |
  * GUESS); webkit and GUESS values also carry the `@measure` task that will
@@ -29,7 +29,6 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/motion/MEASUREMENTS.md (measurement tasks)
- * - /packages/core/src/DateInput/PickerWheel.tsx (reads the tap spin)
  */
 
 export const picker = {
