@@ -681,10 +681,40 @@ test('a second tap mid-flight retargets from what is on screen, keeping its velo
   expect(Math.abs(fresh.value - old.value)).toBeLessThan(
     Math.max(0.5, Math.abs(old.slope) * 2),
   );
-  // ...and the velocity carries over (px/ms, within 10 %).
-  expect(Math.abs(fresh.slope - old.slope)).toBeLessThan(
-    Math.abs(old.slope) * 0.1 + 0.02,
-  );
+  // ...and the velocity carries over (px/ms, within 10 %), read on both
+  // curves at the instant the second one starts. A segment's slope is the
+  // curve's velocity at the segment's middle (the browser draws straight
+  // lines between keyframes), not at its ends: comparing the two segments'
+  // slopes directly would compare velocities half a segment apart on each
+  // curve, which differ by the spring's acceleration over those spans.
+  const velocityAt = (curve: typeof first, time: number): number => {
+    const k = curve.keyframes;
+    const middles: {t: number; v: number}[] = [];
+    for (let i = 0; i + 1 < k.length; i++) {
+      const span = k[i + 1].offset - k[i].offset;
+      if (span > 0) {
+        middles.push({
+          t:
+            curve.startTime +
+            ((k[i].offset + k[i + 1].offset) / 2) * curve.duration,
+          v: (k[i + 1].x - k[i].x) / (span * curve.duration),
+        });
+      }
+    }
+    // Between the two middles around `time`; before the first one (the second
+    // curve at its own start), extrapolated from the first two.
+    const next = middles.findIndex(middle => middle.t >= time);
+    const j = next === -1 ? middles.length - 1 : Math.max(next, 1);
+    const a = middles[j - 1];
+    const b = middles[j];
+    return a.v + ((b.v - a.v) * (time - a.t)) / (b.t - a.t);
+  };
+  const before = velocityAt(first, second.startTime);
+  const after = velocityAt(second, second.startTime);
+  expect(
+    Math.abs(after - before),
+    JSON.stringify({before, after}),
+  ).toBeLessThan(Math.abs(before) * 0.1 + 0.02);
   // It lands on the second segment's center.
   const list = boxOf(await control.boxes(), 'list');
   expect(second.keyframes.at(-1)?.x).toBeCloseTo(centerOf(list), 1);
