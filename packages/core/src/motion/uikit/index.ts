@@ -3,9 +3,8 @@
 /**
  * @file index.ts
  * @input The domain files of the UIKit constants table
- * @output Re-exports `springs` and one constant per spring (`SHEET_PRESENT_SPRING`,
- *   …), `scroll`, `timing`, `navigation` and the
- *   gesture thresholds (one `UIKIT_*` group per recognizer, their union
+ * @output Re-exports `springs`, `scroll`, `timing`, `navigation`, `picker` and
+ *   the gesture thresholds (one `UIKIT_*` group per recognizer, their union
  *   `UIKIT_GESTURES`, and the haptic tables)
  * @position Entry of the UIKit constants table (motion/uikit). Internal to
  *   core: not exported from the package entry point
@@ -39,6 +38,7 @@ export {
   type HapticFeedbackKind,
 } from './gestures';
 export {navigation, registerNavigationTable} from './navigation';
+export {picker} from './picker';
 export {registerScrollTable, scroll} from './scroll';
 export {
   ACTION_SHEET_DISMISS_SPRING,

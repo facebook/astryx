@@ -19,6 +19,7 @@ so each keeps its measured value; no shipped component reads the roles yet.
 | `uikit/timing.ts`     | Non-spring clocks and curves: press highlight, Core Animation's named curves, keyboard, Reduced Motion cross-fade.      |
 | `uikit/navigation.ts` | UINavigationController: push velocity, parallax, dimming, transition clock, interactive pop finish rule.                |
 | `uikit/gestures.ts`   | Gesture recognizer thresholds, the velocity filter and haptic stand-ins, as `{value, unit}` entries (sources in JSDoc). |
+| `uikit/picker.ts`     | UIPickerView: wheel geometry and band, velocity floor, the coast's stop speed, snap at rest, tap spin, tick.            |
 | `MEASUREMENTS.md`     | The UIKit reference captures each unconfirmed value still needs.                                                        |
 | `spring.ts`           | Closed-form damped spring, every Apple parameterization, settling duration, a spring chasing a moving target.           |
 | `decay.ts`            | UIScrollView's momentum coast.                                                                                          |
