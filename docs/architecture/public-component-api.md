@@ -296,5 +296,8 @@ Known verification gaps:
   `footer`, and `footerIcons`, Tokenizer's `startIcon`, DropdownMenu's
   `header` and `footer`, and the picker option's `action`; no full inventory
   exists yet. Each conforms by naming the part, with no API change.
+- INV18: shipped props that configure a subcomponent's label or target, such
+  as TopNavMegaMenuFeaturedCard's `linkLabel` and `linkHref` and
+  TopNavHeading's `logoLabel`, conform only through replacement under INV9.
 
 These gaps are named here rather than treating partial checks as complete proof.
