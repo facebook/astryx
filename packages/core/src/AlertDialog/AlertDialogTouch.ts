@@ -10,7 +10,9 @@
  *   finger or a pen
  * @position AlertDialog's touch layer, imported once, by AlertDialog.tsx
  *
- * Under a finger or a pen the two actions are tracked as one group, the way
+ * Under a touch presentation (a coarse primary pointer, after hydration;
+ * where it is fine nothing attaches: `spec:AST-094` FR13, FR19), a finger or
+ * a pen tracks the two actions as one group, the way
  * UIKit tracks an alert's actions: the touched action highlights in the
  * touch-down frame, the highlight follows the finger from one action to the
  * other, and the lift runs the action under it (none off both). A touch that
@@ -28,12 +30,7 @@
 import type {RefObject} from 'react';
 import {useActionGroupTracking} from '../hooks/useActionGroupTracking';
 import {useIsScrollable} from '../hooks/useIsScrollable';
-import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import {
-  alertController,
-  registerAlertControllerTable,
-} from '../motion/uikit/alert';
-import {registerSpringsTable} from '../motion/uikit/springs';
+import {alertController} from '../motion/uikit/alert';
 import {useAlertMotion, type AlertMotion} from './useAlertMotion';
 
 export interface AlertDialogTouchOptions {
@@ -41,7 +38,11 @@ export interface AlertDialogTouchOptions {
   isOpen: boolean;
   /** The inline preview: nothing is tracked and nothing moves. */
   isInline: boolean;
-  /** The primary pointer is coarse (useTouchPresentation): UIKit's motion. */
+  /**
+   * The touch presentation (a coarse primary pointer, after hydration):
+   * UIKit's motion and the action-group tracking; without it nothing
+   * attaches (`spec:AST-094` FR13, FR19).
+   */
   isTouch: boolean;
   /** Selects the actions the tracking hit-tests. */
   itemSelector: string;
@@ -68,21 +69,11 @@ export function useAlertDialogTouch(
   {isOpen, isInline, isTouch, itemSelector, bodyRef}: AlertDialogTouchOptions,
 ): AlertDialogTouch {
   const isDriving = isTouch && !isInline;
-  // The alert's motion roles (its springs, and its presentation and dismissal
-  // durations) resolve under the dialog's theme once their tables are
-  // registered: here, before the alert first animates (this layout effect is
-  // declared ahead of useAlertMotion, so it runs before its effects), and only
-  // by touch code, so nothing registers on import.
-  useIsomorphicLayoutEffect(() => {
-    if (isDriving) {
-      registerSpringsTable();
-      registerAlertControllerTable();
-    }
-  }, [isDriving]);
   const motion = useAlertMotion({isOpen, isEnabled: isDriving});
-  // Tracked while presented, leaving included: a touch then is taken and
-  // dropped (isInert) rather than reaching the button under it.
-  const isTracking = motion.isPresented && !isInline;
+  // Tracked while presented under a touch presentation, leaving included: a
+  // touch then is taken and dropped (isInert) rather than reaching the button
+  // under it.
+  const isTracking = isDriving && motion.isPresented;
   const isBodyScrollable = useIsScrollable(bodyRef, isTracking);
   useActionGroupTracking(surfaceRef, {
     itemSelector,
@@ -92,7 +83,8 @@ export function useAlertDialogTouch(
     isInert: () => !motion.acceptsTouches(),
     isEnabled: isTracking,
     // A mouse keeps selecting the alert's text: the host's permanent
-    // long-press styles stay off, and its selection lock covers a finger.
+    // long-press styles stay off. A held finger selects nothing, since the
+    // group's hold does something (`spec:AST-094` FR41).
     manageStyle: false,
   });
   return {isTracking, isBodyScrollable, motion};

@@ -12,7 +12,9 @@
  *   off both; a touch that lands on the message can slide onto an action; a
  *   tap and a mouse click still run their action once; a held finger starts
  *   no text selection; the tracking is the same under a finger in Chrome's
- *   engine; a storyboard of the slide from Delete to Cancel.
+ *   engine; with `presentation="dialog"` a finger keeps each button's own
+ *   press, so the slide from Delete to Cancel runs no Cancel; a storyboard of
+ *   the slide from Delete to Cancel.
  * @position Touch lane of AlertDialog, beside the accessibility bindings in
  *   this folder. Run with `pnpm test:interaction AlertDialog`.
  */
@@ -55,8 +57,11 @@ const centerOf = async (locator: Locator): Promise<Point> => {
  * to rest, and starts a page-side log: every click an action receives, and
  * every write of the press attribute with the animation frame it landed in.
  */
-async function openAlert(page: Page): Promise<OpenAlert> {
-  await openStory(page, storybook(), 'core-alertdialog--delete');
+async function openAlert(
+  page: Page,
+  story = 'core-alertdialog--delete',
+): Promise<OpenAlert> {
+  await openStory(page, storybook(), story);
   const driver = await touchDriver(page);
   await driver.tap(
     await centerOf(page.getByRole('button', {name: 'Delete item'})),
@@ -291,6 +296,22 @@ test('a touch that lands on the message can slide onto Cancel and run it', async
   expect((await readLog(page)).clicks).toEqual(['Cancel']);
 });
 
+test('with presentation="dialog" a finger keeps each button\'s own press: no group tracking, so the slide from Delete to Cancel runs no Cancel', async ({
+  page,
+}) => {
+  const {driver, dialog, centers} = await openAlert(
+    page,
+    'core-alertdialog--dialog-presentation',
+  );
+  // The dialog a mouse gets: its surface keeps the browser's pan.
+  expect(await dialog.evaluate(el => getComputedStyle(el).touchAction)).toBe(
+    'auto',
+  );
+  await driver.play(slide(centers.del, centers.cancel));
+  await page.waitForTimeout(300);
+  expect((await readLog(page)).clicks).not.toContain('Cancel');
+});
+
 test('a tap runs its action exactly once', async ({page}) => {
   const {driver, dialog, centers} = await openAlert(page);
   await driver.play(tap(centers.cancel, {holdMs: 80}));
@@ -306,8 +327,9 @@ test.describe('with a mouse', () => {
   test('the dialog keeps its base styles: its text stays selectable', async ({
     page,
   }) => {
-    // The selection lock is a finger's or a pen's, never a mouse's: with a
-    // mouse the dialog keeps what it had before.
+    // A held finger's suppressed selection (`spec:AST-094` FR41) is a
+    // finger's or a pen's, never a mouse's: with a mouse the dialog keeps what
+    // it had before.
     await openStory(page, storybook(), 'core-alertdialog--delete');
     // A fine pointer in this context, before anything is checked.
     expect(

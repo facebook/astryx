@@ -20,6 +20,7 @@
  */
 
 import React, {
+  use,
   useCallback,
   useEffect,
   useId,
@@ -72,7 +73,7 @@ import {
   getSelectableOptions,
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
-import {useMenuPress} from '../hooks/useMenuPress';
+import {useMenuSurfacePress} from '../hooks/useMenuPress';
 import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
@@ -93,8 +94,9 @@ import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {groupStyles} from '../InputGroup/groupStyles';
+import {groupStyles, inputGroupItemProps} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {InputGroupInternalContext} from '../InputGroup/InputGroupInternalContext';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useTranslator} from '../i18n';
 import type {AdaptivePresentation} from '../hooks/useAdaptivePresentation';
@@ -951,7 +953,7 @@ export function Selector<T extends SelectorOptionType>(
     description,
     isOptional = false,
     isRequired = false,
-    isDisabled = false,
+    isDisabled: isDisabledProp = false,
     isReadOnly = false,
     disabledMessage,
     options,
@@ -992,6 +994,9 @@ export function Selector<T extends SelectorOptionType>(
     id,
     ...restProps
   } = props as SelectorPropsClearable<T>;
+  const inputGroup = useInputGroup();
+  const inputGroupState = use(InputGroupInternalContext);
+  const isDisabled = isDisabledProp || inputGroupState.isDisabled;
   const {rest, container} = useFieldInputStyling('Selector', restProps, {
     containerXstyle,
     containerClassName,
@@ -1035,7 +1040,6 @@ export function Selector<T extends SelectorOptionType>(
     ref,
   );
   const searchRef = useRef<HTMLInputElement>(null);
-  const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
   // Mirrors searchQuery for the seed path, which runs before focus reaches the
@@ -1385,7 +1389,7 @@ export function Selector<T extends SelectorOptionType>(
     filteredItems.length,
     surface.isOpen,
   );
-  const listboxPress = useMenuPress({
+  const listboxPress = useMenuSurfacePress({
     menuRef: listboxRef,
     itemSelector: '[role="option"]:not([aria-disabled="true"])',
     onHighlight: row => {
@@ -1950,6 +1954,7 @@ export function Selector<T extends SelectorOptionType>(
         }}
         onClick={onTriggerClick}
         {...pressable}
+        {...(inputGroup ? inputGroupItemProps : undefined)}
         {...mergeProps(
           themeProps('selector', {
             variant,

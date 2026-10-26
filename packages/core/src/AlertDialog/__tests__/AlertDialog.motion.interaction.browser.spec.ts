@@ -15,12 +15,15 @@
  *   viewport (UIKit's 320 pt width); closed mid-presentation it fades from
  *   where it is: from the presented value at the close, with its velocity,
  *   never above that fade; both run on the
- *   compositor (frames keep coming through a blocked main thread, no Layout or
- *   Paint per frame); a tap during either transition reaches nothing; under
+ *   compositor (frames keep coming through a blocked main thread, judged
+ *   with the backdrop blur off because this rig composites in software; no
+ *   Layout or Paint per frame); a tap during either transition reaches
+ *   nothing; under
  *   reduced motion the alert and the dimming cross-fade in and out, opacity
  *   only, settled within 200 ms (design:reduced-motion DR1, DR2); a finger in
  *   Chrome's engine gets the same presentation; a mouse keeps the theme's
- *   entrance and closes at once; storyboards of the
+ *   entrance and closes at once, and so does a finger with
+ *   `presentation="dialog"` (Dialog's 400 width too); storyboards of the
  *   present and the dismiss.
  * @position Motion lane of AlertDialog, beside the touch-tracking spec. Run
  *   with `pnpm test:interaction AlertDialog`.
@@ -386,21 +389,47 @@ async function sampleAlert(
 const channel = (samples: AlertSample[], key: 'scale' | 'opacity' | 'dim') =>
   samples.map(s => ({t: s.t, value: s[key]}));
 
-/** Frames the compositor presented inside a window, and the longest gap. */
+/**
+ * Frames the screencast delivered inside a window, judged at its own cadence,
+ * as the harness's busy-window verdict judges them: the median interval
+ * between the frames around the window (a loaded machine's screencast can
+ * deliver one frame in several), the frames that cadence makes room for, and
+ * the longest gap in those intervals. A main-thread animation delivers no
+ * frame for the whole block.
+ */
 function cadence(
   frameTimes: ReadonlyArray<number>,
   window: {from: number; to: number},
-): {frames: number; expected: number; longestGapMs: number} {
+): {
+  frames: number;
+  expected: number;
+  cadenceMs: number;
+  longestGapMs: number;
+  longestGapFrames: number;
+} {
   const inside = frameTimes.filter(t => t >= window.from && t <= window.to);
   const edges = [window.from, ...inside, window.to];
   let longestGapMs = 0;
   for (let i = 1; i < edges.length; i += 1) {
     longestGapMs = Math.max(longestGapMs, edges[i] - edges[i - 1]);
   }
+  const around = frameTimes.filter(
+    t => t >= window.from - 250 && t <= window.to + 250,
+  );
+  const intervals = around
+    .slice(1)
+    .map((t, i) => t - around[i])
+    .sort((a, b) => a - b);
+  const cadenceMs =
+    intervals.length >= 4
+      ? intervals[Math.floor(intervals.length / 2)]
+      : 1000 / 60;
   return {
     frames: inside.length,
-    expected: Math.floor((window.to - window.from) / (1000 / 60)),
+    expected: Math.floor((window.to - window.from) / cadenceMs),
+    cadenceMs,
     longestGapMs,
+    longestGapFrames: Math.round(longestGapMs / cadenceMs),
   };
 }
 
@@ -702,6 +731,16 @@ test.describe('under a finger', () => {
       'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
     );
     const {driver, trigger, dialog} = await openPage(page);
+    // This rig composites in software (no GPU), where Dialog's backdrop blur
+    // alone takes most of every frame: Chromium's DrawFrame costs 9.0 ms with
+    // it and 1.3 ms without, on an idle core. On a busy runner that drops
+    // frames inside the block and around it alike (3 CPU hogs on the test's 4
+    // cores: 18 of 20 runs at about 30 fps with the blur, 0 of 20 without),
+    // while what this proves, which thread runs the motion, does not depend
+    // on it. The blur stays in every other proof and in the storyboard.
+    await page.addStyleTag({
+      content: 'dialog::backdrop { backdrop-filter: none !important; }',
+    });
     const proofs: Record<string, ReturnType<typeof cadence>> = {};
     for (const phase of ['present', 'dismiss'] as const) {
       const cast = await startScreencast(page, {format: 'jpeg', quality: 40});
@@ -723,6 +762,11 @@ test.describe('under a finger', () => {
         {from: block.from + 20, to: Math.min(block.to, curveEnd) - 20},
       );
       if (phase === 'present') {
+        expect(
+          await dialog.evaluate(
+            el => getComputedStyle(el, '::backdrop').backdropFilter,
+          ),
+        ).toBe('none');
         await waitForRest(dialog);
         await page.waitForTimeout(100);
       } else {
@@ -734,11 +778,18 @@ test.describe('under a finger', () => {
       {[`${testInfo.project.name}.json`]: JSON.stringify(proofs, null, 1)},
       testInfo,
     );
+    // Judged at the screencast's own cadence (the harness's verdict, from
+    // #8045): something to judge, nearly every frame that cadence makes room
+    // for, and no gap over three of its intervals. No bound is absolute.
     for (const proof of Object.values(proofs)) {
+      expect(proof.expected, JSON.stringify(proofs)).toBeGreaterThanOrEqual(4);
       expect(proof.frames, JSON.stringify(proofs)).toBeGreaterThanOrEqual(
         proof.expected - 2,
       );
-      expect(proof.longestGapMs, JSON.stringify(proofs)).toBeLessThan(40);
+      expect(
+        proof.longestGapFrames,
+        JSON.stringify(proofs),
+      ).toBeLessThanOrEqual(3);
     }
   });
 
@@ -880,6 +931,57 @@ test.describe('under a finger', () => {
       expect(Number(last?.opacity)).toBeLessThan(0.01);
     },
   );
+});
+
+test.describe('under a finger with presentation="dialog"', () => {
+  test("keeps the dialog a mouse gets: the theme entrance, Dialog's 400 width, and a close at once", async ({
+    page,
+  }) => {
+    await openStory(page, storybook(), 'core-alertdialog--dialog-presentation');
+    const driver = await touchDriver(page);
+    const trigger = page.getByRole('button', {name: 'Delete item'});
+    const dialog = page.getByRole('alertdialog', {name: 'Delete item?'});
+    // A coarse pointer in this context, before anything is checked.
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(true);
+    // Recorded as it starts, as with a mouse: a short entrance can end before
+    // a poll after the tap first reads the page.
+    await page.evaluate(() => {
+      const record = window as unknown as {__entrance: number};
+      record.__entrance = 0;
+      document.addEventListener(
+        'animationstart',
+        event => {
+          const {target, pseudoElement} = event;
+          if (
+            target instanceof Element &&
+            target.tagName === 'DIALOG' &&
+            !pseudoElement
+          ) {
+            record.__entrance += 1;
+          }
+        },
+        {capture: true},
+      );
+    });
+    await driver.tap(await centerOf(trigger));
+    await expect(dialog).toBeVisible();
+    await waitForRest(dialog);
+    // The theme's CSS entrance ran on the alert, not UIKit's motion.
+    expect(
+      await page.evaluate(
+        () => (window as unknown as {__entrance: number}).__entrance,
+      ),
+    ).toBeGreaterThan(0);
+    expect(await dialog.getAttribute('style')).toContain('--x-width: 400px');
+    const element = await dialog.elementHandle();
+    await driver.tap(
+      await centerOf(dialog.getByRole('button', {name: 'Cancel'})),
+    );
+    // No exit: the dialog is closed by the next frame.
+    await expect.poll(async () => openOnNextFrame(element)).toBe(false);
+  });
 });
 
 /**

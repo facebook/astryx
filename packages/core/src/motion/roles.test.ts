@@ -9,14 +9,13 @@
  * @position Testing for /packages/core/src/motion/roles.ts
  */
 
+import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {describe, expect, it} from 'vitest';
-import {MOTION_ROLE_KINDS} from './roleKinds.generated';
 import {
   formatMotionRoleValue,
   isMotionRoleId,
   listMotionRoles,
-  motionRole,
   motionRoleIn,
   motionRoleOf,
   motionRoleVariable,
@@ -48,82 +47,174 @@ const DISCOVERED = new Set(
 describe('motion roles', () => {
   it('names a role by its table path, and its CSS variable in kebab case', () => {
     expect(isMotionRoleId('sheet.present')).toBe(true);
-    expect(isMotionRoleId('timing.curves.easeInOut')).toBe(true);
+    expect(isMotionRoleId('timing.curves.move')).toBe(true);
     expect(isMotionRoleId('sheet')).toBe(false);
     expect(isMotionRoleId('Sheet.present')).toBe(false);
     expect(motionRoleVariable('springs.sheetDetent')).toBe(
       '--motion-springs-sheet-detent',
     );
-    expect(motionRoleVariable('timing.curves.easeInOut')).toBe(
-      '--motion-timing-curves-ease-in-out',
+    expect(motionRoleVariable('timing.curves.move')).toBe(
+      '--motion-timing-curves-move',
     );
     expect(() => motionRoleVariable('sheet')).toThrow(/dotted table path/);
   });
 
-  it('registers springs, …Ms durations and curves, skipping exclusions and other numbers', () => {
+  it('leaves a table value FR4 does not name an internal constant', () => {
     const shared = {response: 0.4, dampingRatio: 0.9};
     const table = {
       present: shared,
       dismiss: shared,
       fadeMs: 200,
-      holdMs: 150,
-      threshold: 48,
       curves: {out: [0, 0, 0.58, 1] as const},
     };
-    registerMotionTable('fixture', table, {exclude: ['holdMs']});
-    expect(motionRoleOf(table.present)?.id).toBe('fixture.present');
-    // A shared object becomes one copy per role, equal in value.
-    expect(table.dismiss).not.toBe(table.present);
-    expect(table.dismiss).toEqual(shared);
-    expect(motionRoleOf(table.dismiss)?.id).toBe('fixture.dismiss');
-    expect(motionRoleIn(table, 'fadeMs')).toMatchObject({
-      id: 'fixture.fadeMs',
-      kind: 'duration',
-      variable: '--motion-fixture-fade-ms',
-    });
-    expect(motionRoleIn(table, 'holdMs')).toBeUndefined();
-    expect(motionRoleIn(table, 'threshold')).toBeUndefined();
-    expect(motionRoleOf(table.curves.out)).toMatchObject({
-      id: 'fixture.curves.out',
-      kind: 'curve',
-    });
-    expect(motionRoleIn(table.curves, 'out')?.id).toBe('fixture.curves.out');
+    registerMotionTable('fixture', table);
+    // No role, no CSS variable, and the table is untouched.
+    expect(motionRoleOf(table.present)).toBeUndefined();
+    expect(table.dismiss).toBe(table.present);
+    expect(motionRoleIn(table, 'fadeMs')).toBeUndefined();
+    expect(motionRoleOf(table.curves.out)).toBeUndefined();
+    expect(listMotionRoles().some(role => role.id.startsWith('fixture.'))).toBe(
+      false,
+    );
   });
 
-  it('makes the shared tables roles, without their thresholds and arbitration timings', () => {
-    expect(motionRoleOf(springs.sheetPresent)?.id).toBe('springs.sheetPresent');
-    expect(motionRoleOf(springs.uikitDefault)?.id).toBe('springs.uikitDefault');
-    expect(springs.sheetPresent).toEqual(springs.uikitDefault);
-    expect(motionRoleOf(scroll.bounce)?.kind).toBe('spring');
-    expect(motionRoleOf(timing.curves.easeInOut)?.kind).toBe('curve');
-    expect(motionRoleIn(timing.press, 'flashMs')?.kind).toBe('duration');
-    // The Reduced Motion fade is not a role: no theme lengthens it.
-    expect(motionRoleIn(timing, 'reducedMotionCrossFadeMs')).toBeUndefined();
-    expect(motionRoleIn(navigation, 'transitionMs')?.id).toBe(
-      'navigation.transitionMs',
+  it('has exactly the roles spec:AST-094 FR4 names', () => {
+    const spec = readFileSync(
+      resolve(
+        __dirname,
+        '../../../../docs/specs/AST-094-touch-presentations/spec.md',
+      ),
+      'utf8',
     );
+    const fr4 = spec.slice(spec.indexOf('**FR4'), spec.indexOf('**FR5'));
+    const named = [...fr4.matchAll(/^\s*\| `([a-z][\w.]*)`\s*\|/gm)].map(
+      match => match[1],
+    );
+    expect(named.length).toBeGreaterThan(0);
+    // Every table registered, the roles are exactly FR4's (other tests
+    // here register a fixture, which lists none).
+    expect(new Set(listMotionRoles().map(role => role.id))).toEqual(
+      new Set(named),
+    );
+  });
+
+  it('names the shared roles for their use, as spec:AST-094 FR4 does', () => {
+    expect(
+      [
+        springs.fingerTracking,
+        springs.emphasis,
+        springs.settle,
+        springs.quickChange,
+        springs.viewChange,
+        springs.timedChange,
+        springs.stateChange,
+        springs.directChange,
+        springs.menuOpen,
+        springs.menuClose,
+        timing.curves.viewChange,
+        timing.curves.exit,
+        timing.curves.entrance,
+        timing.curves.move,
+      ].map(leaf => motionRoleOf(leaf)?.id),
+    ).toEqual([
+      'springs.fingerTracking',
+      'springs.emphasis',
+      'springs.settle',
+      'springs.quickChange',
+      'springs.viewChange',
+      'springs.timedChange',
+      'springs.stateChange',
+      'springs.directChange',
+      'springs.menuOpen',
+      'springs.menuClose',
+      'timing.curves.viewChange',
+      'timing.curves.exit',
+      'timing.curves.entrance',
+      'timing.curves.move',
+    ]);
+    expect(motionRoleIn(timing, 'stateChangeMs')?.id).toBe(
+      'timing.stateChangeMs',
+    );
+    // A preset or curve-shape name is no role id.
+    for (const old of [
+      'springs.smooth',
+      'springs.bouncy',
+      'timing.curves.easeInOut',
+      'timing.implicitAnimationMs',
+    ]) {
+      expect(listMotionRoles().map(role => role.id)).not.toContain(old);
+    }
+  });
+
+  it("leaves the keyboard's motion out: it rides the keyboard (FR4)", () => {
+    expect(motionRoleOf(springs.keyboard)).toBeUndefined();
+    expect(motionRoleIn(timing, 'keyboardNotificationMs')).toBeUndefined();
+  });
+
+  it('refuses a spring that never settles', () => {
+    expect(() =>
+      formatMotionRoleValue('spring', {duration: 0.5, bounce: 1}),
+    ).toThrow(/must settle/);
+    expect(() =>
+      formatMotionRoleValue('spring', {response: 0.5, dampingRatio: 0}),
+    ).toThrow(/must settle/);
+    expect(parseMotionRoleValue('spring', '0.5s 1')).toBeNull();
+  });
+
+  it('makes the roles of the shared tables, and keeps every other value internal', () => {
+    expect(motionRoleOf(springs.viewChange)?.id).toBe('springs.viewChange');
+    expect(motionRoleOf(timing.curves.move)?.kind).toBe('curve');
+    expect(motionRoleIn(timing, 'stateChangeMs')?.kind).toBe('duration');
+    // A component's measured value is an internal constant, not a role.
+    expect(motionRoleOf(springs.sheetPresent)).toBeUndefined();
+    expect(springs.sheetPresent).toEqual(springs.viewChange);
+    expect(motionRoleOf(scroll.bounce)).toBeUndefined();
+    expect(motionRoleIn(timing.press, 'flashMs')).toBeUndefined();
+    expect(motionRoleIn(navigation, 'transitionMs')).toBeUndefined();
+    // The Reduced Motion fade, UIKit's menu spring under Reduce Motion, the
+    // thresholds and the arbitration timings are not motion roles either.
+    expect(motionRoleIn(timing, 'reducedMotionCrossFadeMs')).toBeUndefined();
+    expect(motionRoleIn(springs, 'menuReducedMotion')).toBeUndefined();
+    // Nor is the keyboard's motion: it rides the keyboard's own spring and
+    // notification duration, not a role (spec:AST-094 FR4).
+    expect(motionRoleIn(springs, 'keyboard')).toBeUndefined();
+    expect(motionRoleIn(timing, 'keyboardNotificationMs')).toBeUndefined();
     expect(motionRoleIn(timing.press, 'scrollBrakeMs')).toBeUndefined();
     expect(motionRoleIn(scroll, 'delaysContentTouchesMs')).toBeUndefined();
     expect(motionRoleIn(navigation, 'parallax')).toBeUndefined();
-    expect(motionRole('springs.navigationPush')?.value).toBe(
-      springs.navigationPush,
-    );
     const ids = listMotionRoles().map(role => role.id);
-    expect(ids).toContain('scroll.paging.snap');
     expect(ids.some(id => id.startsWith('gestures.'))).toBe(false);
     // Every role has its own CSS variable.
     const variables = listMotionRoles().map(role => role.variable);
     expect(new Set(variables).size).toBe(variables.length);
   });
 
-  it('lists every registered role, and its kind, in the generated role kinds', () => {
+  it('registers exactly the roles spec:AST-094 FR4 names, internally', () => {
     // Every table discovery registered (other tests here add fixtures).
     const discovered = listMotionRoles().filter(role =>
       DISCOVERED.has(role.id.split('.')[0]),
     );
     expect(
       Object.fromEntries(discovered.map(role => [role.id, role.kind])),
-    ).toEqual(MOTION_ROLE_KINDS);
+    ).toEqual({
+      'springs.directChange': 'spring',
+      'springs.emphasis': 'spring',
+      'springs.fingerTracking': 'spring',
+      'springs.menuClose': 'spring',
+      'springs.menuOpen': 'spring',
+      'springs.quickChange': 'spring',
+      'springs.settle': 'spring',
+      'springs.stateChange': 'spring',
+      'springs.subMenuBack': 'spring',
+      'springs.subMenuOpen': 'spring',
+      'springs.timedChange': 'spring',
+      'springs.viewChange': 'spring',
+      'timing.curves.entrance': 'curve',
+      'timing.curves.exit': 'curve',
+      'timing.curves.move': 'curve',
+      'timing.curves.viewChange': 'curve',
+      'timing.stateChangeMs': 'duration',
+    });
   });
 
   it('writes every table value in CSS form and reads back the same motion', () => {
@@ -157,6 +248,18 @@ describe('motion roles', () => {
     expect(() => formatMotionRoleValue('spring', {response: 0.5})).toThrow(
       /spring is/,
     );
+    // A spring with no damping never settles.
+    for (const never of [
+      {duration: 0.5, bounce: 1},
+      {duration: 0.5, bounce: 1.5},
+      {response: 0.5, dampingRatio: 0},
+      {mass: 1, stiffness: 100, damping: 0},
+    ]) {
+      expect(() => formatMotionRoleValue('spring', never)).toThrow(
+        /must settle/,
+      );
+    }
+    expect(parseMotionRoleValue('spring', '0.5s 1')).toBeNull();
     expect(parseMotionRoleValue('spring', '')).toBeNull();
     expect(parseMotionRoleValue('spring', 'fast')).toBeNull();
     expect(parseMotionRoleValue('spring', '0.4s 0.2')).toEqual({

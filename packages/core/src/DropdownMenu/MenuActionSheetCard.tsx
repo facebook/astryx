@@ -54,12 +54,7 @@ import {Stack} from '../Stack';
 import {Text} from '../Text/Text';
 import {useActionGroupTracking} from '../hooks/useActionGroupTracking';
 import {useMergedRefs} from '../hooks/useMergedRefs';
-import {
-  alertController,
-  registerAlertControllerTable,
-} from '../motion/uikit/alert';
-import {registerSpringsTable} from '../motion/uikit/springs';
-import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {alertController} from '../motion/uikit/alert';
 import {spacingVars} from '../theme/tokens.stylex';
 import {useTouchPresentation} from '../utils/touchPresentation';
 import type {
@@ -187,15 +182,6 @@ export function MenuActionSheetCard({
   // UIKit's alert motion under a finger; the card only renders on a compact
   // touch screen, so a mouse reaching it (a docked tablet) keeps the theme's.
   const isMotionEnabled = useTouchPresentation().isTouch;
-  // The alert's motion roles resolve under the card's theme once their tables
-  // are registered: here, before the card first animates (this layout effect
-  // runs ahead of useAlertMotion's), and only by touch code.
-  useIsomorphicLayoutEffect(() => {
-    if (isMotionEnabled) {
-      registerSpringsTable();
-      registerAlertControllerTable();
-    }
-  }, [isMotionEnabled]);
   const motion = useAlertMotion({isOpen, isEnabled: isMotionEnabled});
   const surfaceRef = useRef<HTMLDialogElement>(null);
   const mergedRef = useMergedRefs(surfaceRef, motion.ref);
