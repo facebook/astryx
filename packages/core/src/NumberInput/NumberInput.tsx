@@ -979,6 +979,14 @@ export function NumberInput({
     stepperTouch.pointer.onPointerDown(event);
   };
 
+  // iOS Safari follows the second tap of a quick double tap with a
+  // compatibility mousedown even though its pointerdown was prevented; that
+  // mousedown's default would focus the stepper (or, in the column's reach,
+  // blur the field), so the column prevents it too.
+  const handleStepperMouseDown = (event: React.MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+  };
+
   const pressStepper = (
     direction: StepDirection,
     event: React.MouseEvent<HTMLButtonElement>,
@@ -1194,6 +1202,7 @@ export function NumberInput({
         <div
           ref={stepperColumnRef}
           onPointerDown={handleStepperPointerDown}
+          onMouseDown={handleStepperMouseDown}
           onPointerMove={stepperTouch.pointer.onPointerMove}
           onPointerUp={stepperTouch.pointer.onPointerUp}
           onPointerCancel={stepperTouch.pointer.onPointerCancel}

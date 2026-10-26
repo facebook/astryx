@@ -2448,6 +2448,31 @@ describe('NumberInput stepping', () => {
       expect(input).toHaveFocus();
     });
 
+    it('keeps an editing field focused through a quick double tap: its second tap’s mousedown is default-prevented too', async () => {
+      // iOS Safari follows the second tap of a quick double tap with a
+      // compatibility mousedown even though its pointerdown was prevented;
+      // that mousedown's default would focus the stepper and blur the field.
+      const user = userEvent.setup();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={2}
+          onChange={() => {}}
+          hasNumberSteppers
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      for (const name of ['Increment Quantity', 'Decrement Quantity']) {
+        const stepper = screen.getByRole('button', {name});
+        expect(fireEvent.pointerDown(stepper, {pointerType: 'touch'})).toBe(
+          false,
+        );
+        expect(fireEvent.mouseDown(stepper, {detail: 2})).toBe(false);
+      }
+      expect(input).toHaveFocus();
+    });
+
     it('does nothing for a tap on the stepper at its bound', () => {
       const onChange = vi.fn();
       render(
