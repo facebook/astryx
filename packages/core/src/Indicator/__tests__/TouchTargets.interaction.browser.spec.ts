@@ -9,8 +9,9 @@
  *   by default, Apple's control size): the checkbox's input is at least
  *   44 × 44 px and centred on its box, its row at least 44 px; each radio row
  *   is at least 44 px and the rows touch; a tap at the edge of those targets
- *   picks the option; a theme's value tunes every target; a list whose gap
- *   already gives each option 44 px keeps its spacing; a composer's rows (a
+ *   picks the option; a theme's value tunes every target, and 24px keeps
+ *   the old touch layout; a list whose gap already gives each option 44 px
+ *   keeps its spacing; a composer's rows (a
  *   Markdown task list, a table's selection column, a MultiSelector option)
  *   keep their pitch; a mouse keeps the drawn sizes (the control)
  * @position Real-engine layer of Indicator/touchTarget.stylex.ts; the
@@ -240,6 +241,45 @@ test.describe('selection controls under a finger', () => {
       );
     for (const row of await radioRows(page)) {
       expect(row.height).toBeCloseTo(36, 0);
+    }
+  });
+
+  test('a theme that sets the touch target to 24px keeps the old touch layout', async ({
+    page,
+  }) => {
+    // The escape the changeset names (spec:AST-017 FR3): a labelled checkbox
+    // is back to a 24 px row and target with its box at the row's top, and
+    // a vertical RadioList keeps its 32 px pitch (24 px rows, 8 px gap).
+    const applyOldSize = async () =>
+      page.evaluate(() =>
+        document.documentElement.style.setProperty(
+          '--size-touch-target',
+          '24px',
+        ),
+      );
+    await openStory(page, storybook(), 'core-checkboxinput--default');
+    await applyOldSize();
+    const checkbox = await checkboxGeometry(page);
+    expect(checkbox.input.width).toBeCloseTo(24, 0);
+    expect(checkbox.input.height).toBeCloseTo(24, 0);
+    expect(checkbox.row.height).toBeCloseTo(24, 0);
+    await openStory(page, storybook(), 'core-radiolist--default');
+    await applyOldSize();
+    const centers = await page.getByRole('radio').evaluateAll(inputs =>
+      inputs.map(input => {
+        const circle = input.parentElement?.querySelector(
+          '.astryx-radio-indicator',
+        );
+        if (circle == null) {
+          throw new Error('no radio circle');
+        }
+        const r = circle.getBoundingClientRect();
+        return r.y + r.height / 2;
+      }),
+    );
+    expect(centers.length).toBeGreaterThan(2);
+    for (let i = 1; i < centers.length; i++) {
+      expect(centers[i] - centers[i - 1]).toBeCloseTo(32, 0);
     }
   });
 

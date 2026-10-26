@@ -35,6 +35,7 @@ import {touchTargetStyles} from '../Indicator/touchTarget.stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {themeProps} from '../utils/themeProps';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {RadioListOrientationContext} from './RadioListOrientationContext';
 
 // The touch press's paint, declared by the shared overlay styles on the
 // element the controller writes to (`pressedAlpha`) at the press's strength,
@@ -284,6 +285,7 @@ export function RadioListItem({
   // the touch press controller (pressableCoverage.test.ts).
   const pressable = usePressFeedback();
   const context = use(RadioListContext);
+  const orientation = use(RadioListOrientationContext);
   if (!context) {
     throw new Error('RadioListItem must be used within an RadioList');
   }
@@ -430,7 +432,7 @@ export function RadioListItem({
           // so the rows touch, the whole column is target, and a row grows
           // only by what the gap does not already give it.
           touchTargetStyles.row,
-          context.orientation !== 'horizontal' && rowStyles.stackedTouch,
+          orientation !== 'horizontal' && rowStyles.stackedTouch,
           xstyle,
         ] as StyleXStyles
       }
