@@ -20,7 +20,7 @@
  * found and the values below do not need: no lift (a held or dragged row
  * changes neither scale, opacity, z position nor shadow), the dragged row
  * follows the finger one to one with the grab offset kept, the drop goes to
- * the current proposed slot with no velocity projection, and no haptic plays.
+ * the current drop position with no velocity projection, and no haptic plays.
  *
  * Every leaf carries one or more `@source` (apple-docs | wwdc | webkit |
  * measured | GUESS); GUESS values also carry the `@measure` task that will
@@ -82,7 +82,7 @@ export const reorder = {
   },
   settle: {
     /**
-     * The drop: the row springs from where it is to its slot, from rest
+     * The drop: the row springs from where it is to its position, from rest
      * (initialSpringVelocity 0, even after a 600 pt/s release), bounce 0, in a
      * springDuration of this much times min(1, remaining distance / half the
      * dragged row's height).
