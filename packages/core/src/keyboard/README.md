@@ -87,7 +87,7 @@ Each transition is
 `{kind, from, to, start, velocity, animated, predicted, spring}`: heights in
 CSS px, `start` on the document timeline (in the past for a show Safari
 reported late, slightly ahead for a hide that starts after a blur), and the
-curve the keyboard moves on (`keyboard.spring`, its own and no theme's). Move
+curve the keyboard moves on (`keyboard.spring`, its own and no motion role). Move
 your own elements on the compositor with the animator, from `start`, on that
 curve, and hand the translate back to the layout once the ride ends
 (ChatLayout does). Under Reduce Motion nothing travels with the keyboard

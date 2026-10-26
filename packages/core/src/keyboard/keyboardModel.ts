@@ -69,8 +69,8 @@ export interface KeyboardTransition {
   /** True until the visual viewport confirms a transition the guide inferred. */
   readonly predicted: boolean;
   /**
-   * The curve the keyboard moves on (the system's own spring, never a
-   * theme's): what a surface riding the keyboard plays from `start`
+   * The curve the keyboard moves on (the system's own spring, no motion
+   * role): what a surface riding the keyboard plays from `start`
    * (architecture:react-component-runtime INV11).
    */
   readonly spring: SpringDescription;
