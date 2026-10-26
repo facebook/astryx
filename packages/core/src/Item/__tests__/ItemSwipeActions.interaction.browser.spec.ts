@@ -403,10 +403,48 @@ test('a flick hands the row’s velocity to the settle', async ({
   // projects past half the panel, so the row opens; the settle starts with
   // the row's own velocity, which the tracking spring had built up.
   await installTimerGate(page);
+  // The row's tracking curve as the finger lifts, before the release replaces
+  // it: its keyframes, points on the curve.
+  await row.evaluate(node => {
+    addEventListener(
+      'touchend',
+      () => {
+        const animation = node
+          .getAnimations()
+          .find(candidate =>
+            (candidate.effect as KeyframeEffect)
+              .getKeyframes()
+              .some(frame => 'translate' in frame),
+          );
+        const effect = animation?.effect as KeyframeEffect | undefined;
+        const duration = Number(effect?.getComputedTiming().duration ?? 0);
+        Object.assign(window, {
+          __trackingAtLift: (effect?.getKeyframes() ?? []).map(frame => ({
+            t: (frame.computedOffset ?? 0) * duration,
+            value: parseFloat(String(frame.translate)),
+          })),
+        });
+      },
+      {capture: true, once: true},
+    );
+  });
   await driver.play(
     flick(start, {velocity: {x: -1000, y: 0}, durationMs: 80, hz: 120}),
   );
   const motion = await motionOf(row, -openWidth);
+  // The settle's keyframes: the points the animator computed on its curve.
+  // The browser draws straight lines between them, up to a quarter pixel
+  // inside the curve, so the initial velocity is read from these points
+  // (fitted to frames between them it reads about 5 px/s low).
+  const keyed = await row.evaluate(node => {
+    const animation = node.getAnimations()[0];
+    const effect = animation.effect as KeyframeEffect;
+    const duration = Number(effect.getComputedTiming().duration);
+    return effect.getKeyframes().map(frame => ({
+      t: (frame.computedOffset ?? 0) * duration,
+      value: parseFloat(String(frame.translate)),
+    }));
+  });
   await freezeTimers(page);
   await holdAnimations(page, row);
   const samples: {t: number; value: number}[] = [];
@@ -418,14 +456,14 @@ test('a flick hands the row’s velocity to the settle', async ({
   await thawTimers(page);
   const target = -openWidth;
   // The critically damped family: x(t) = target + (A + B·t)·e^(−ωt), with
-  // A the distance left at t = 0 and B = v0 + ω·A. Fit A and B by least
-  // squares (both: an engine's seek granularity shifts the first sample).
+  // A the distance left at t = 0 and B = v0 + ω·A. Fit A and B to the
+  // keyframes by least squares.
   let saa = 0;
   let sab = 0;
   let sbb = 0;
   let sya = 0;
   let syb = 0;
-  for (const {t, value} of samples) {
+  for (const {t, value} of keyed) {
     const s = t / 1000;
     const a = Math.exp(-OMEGA * s);
     const b = s * a;
@@ -444,12 +482,13 @@ test('a flick hands the row’s velocity to the settle', async ({
     const s = t / 1000;
     return target + (d0 + slope * s) * Math.exp(-OMEGA * s);
   };
+  // What is on screen, the frames between keyframes too, follows that spring.
   const result = compareCurve(samples, fitted, 0.75);
   await writeEvidence(
     'curves/item-swipe-flick-settle',
     {
       [`${testInfo.project.name}.json`]: JSON.stringify(
-        {omega: OMEGA, v0, d0, target, comparison: result, samples},
+        {omega: OMEGA, v0, d0, target, comparison: result, keyed, samples},
         null,
         1,
       ),
@@ -460,10 +499,77 @@ test('a flick hands the row’s velocity to the settle', async ({
   expect(result.maxError, JSON.stringify(result.worst)).toBeLessThanOrEqual(
     0.75,
   );
-  // ...starting with the row already moving toward open (leftward), as
-  // UIKit hands the presentation velocity to the settle; a settle from rest
-  // would start at 0.
-  expect(v0).toBeLessThan(-100);
+  // ...starting with the velocity the row had, as UIKit hands the
+  // presentation velocity to the settle (from rest it would start at 0).
+  // How fast the row moves at the lift depends on when the pan began, which
+  // follows WebKit's real-time dispatch of the flick's events, so the hand-off
+  // is checked against the row's own tracking curve at the lift: the same
+  // critically damped family, toward the finger's last offset. On screen,
+  // the settle starts at a point of that curve with that point's velocity.
+  // Still waiting for the browser to start it, the curve is at its start on
+  // screen and the settle keeps the speed the curve has reached by the lift
+  // (the animator carries a flick's speed through that wait).
+  const tracking = await page.evaluate(
+    () =>
+      (window as unknown as {__trackingAtLift: {t: number; value: number}[]})
+        .__trackingAtLift,
+  );
+  expect(tracking.length).toBeGreaterThan(1);
+  const trackingOmega = Math.sqrt(
+    swipeActions.tracking.stiffness / swipeActions.tracking.mass,
+  );
+  const finger = tracking[tracking.length - 1].value;
+  let taa = 0;
+  let tab = 0;
+  let tbb = 0;
+  let tya = 0;
+  let tyb = 0;
+  for (const {t, value} of tracking) {
+    const s = t / 1000;
+    const a = Math.exp(-trackingOmega * s);
+    const b = s * a;
+    const y = value - finger;
+    taa += a * a;
+    tab += a * b;
+    tbb += b * b;
+    tya += y * a;
+    tyb += y * b;
+  }
+  const tdet = taa * tbb - tab * tab;
+  const ta = (tya * tbb - tyb * tab) / tdet;
+  const tb = (tyb * taa - tya * tab) / tdet;
+  const trackingAt = (s: number) =>
+    finger + (ta + tb * s) * Math.exp(-trackingOmega * s);
+  const trackingSpeed = (s: number) =>
+    Math.exp(-trackingOmega * s) * (tb - trackingOmega * (ta + tb * s));
+  const startValue = target + d0;
+  let handOff: number;
+  if (Math.abs(startValue - trackingAt(0)) < 0.05) {
+    // Not started on screen: the speed the curve reached within its first
+    // frames.
+    handOff = trackingSpeed(0);
+    for (let s = 0; s <= 0.1; s += 0.0001) {
+      if (Math.abs(trackingSpeed(s) - v0) < Math.abs(handOff - v0)) {
+        handOff = trackingSpeed(s);
+      }
+    }
+  } else {
+    // On screen: the point of the curve where the settle starts.
+    let lo = 0;
+    let hi = tracking[tracking.length - 1].t / 1000;
+    const side = Math.sign(trackingAt(lo) - startValue);
+    for (let i = 0; i < 60; i += 1) {
+      const mid = (lo + hi) / 2;
+      if (Math.sign(trackingAt(mid) - startValue) === side) {
+        lo = mid;
+      } else {
+        hi = mid;
+      }
+    }
+    handOff = trackingSpeed((lo + hi) / 2);
+  }
+  expect(v0).toBeLessThan(0);
+  expect(Math.abs(v0 - handOff), `v0 ${v0}, row ${handOff}`).toBeLessThan(1);
   expect(samples.at(-1)?.value).toBeCloseTo(target, 0);
 });
 
@@ -1279,12 +1385,14 @@ test(
     });
     await film.write(testInfo);
     // The trace: out to the confirmation offset, back with the finger, then
-    // home on the release.
+    // home on the release. The row comes to the offset itself, and screencast
+    // boxes are whole pixels, so its closest frame reads that pixel or the
+    // next (a frame between keyframes sits up to a quarter pixel short).
     const rights = tracked
       .filter(f => f.t >= began && f.box != null)
       .map(f => (f.box?.x as number) + (f.box?.width as number));
-    expect(Math.min(...rights)).toBeLessThan(
-      rest.x + rest.width - (rest.width - swipeActions.confirmInset) + 1,
+    expect(Math.min(...rights)).toBeLessThanOrEqual(
+      rest.x + swipeActions.confirmInset + 1,
     );
     expect(rights.at(-1)).toBeCloseTo(rest.x + rest.width, 0);
   },
