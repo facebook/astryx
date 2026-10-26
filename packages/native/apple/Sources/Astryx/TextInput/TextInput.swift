@@ -415,7 +415,7 @@ public struct TextInput: View {
   @ViewBuilder private var statusIcon: some View {
     if let status = props.status, statusVariant != .detached {
       if statusVariant == .tooltip, let message = status.message {
-        tipIcon(message, icon: status.type.rawValue, label: AstryxStrings.statusButton(status.type), inField: true)
+        tipIcon(message, icon: status.type.rawValue, label: AstryxStrings.statusButton(status.type), inField: true, isButton: true)
           .foregroundStyle(statusColor(status.type))
       } else {
         icon(status.type.rawValue)
@@ -491,14 +491,36 @@ public struct TextInput: View {
   /// core's tooltip icon does. VoiceOver reads it as `label` with `text` as
   /// the hint. In the field row it lays out across its whole 44-point target;
   /// beside the label it reaches 44 points without growing the row.
-  private func tipIcon(_ text: String, icon name: String, label: String, inField: Bool = false) -> some View {
-    icon(name)
+  /// A status tip is a button, as core's status icon is a `<button>`:
+  /// activating it with VoiceOver speaks its message.
+  private func tipIcon(_ text: String, icon name: String, label: String, inField: Bool = false, isButton: Bool = false) -> some View {
+    let tip = TipAccessibility(text: text, label: label, isButton: isButton)
+    return icon(name)
       .frame(minWidth: inField ? 44 : nil, minHeight: inField ? 44 : nil)
       .contentShape(Rectangle())
       .astryxMinimumHitArea(inField ? 44 : iconSide)
       .accessibilityElement()
-      .accessibilityLabel(SwiftUI.Text(label))
-      .astryxTooltip(text, hint: label == text ? nil : text, focus: .tabStop, touch: .tap)
+      .accessibilityLabel(SwiftUI.Text(tip.label))
+      .accessibilityAddTraits(tip.isButton ? .isButton : [])
+      .accessibilityAction {
+        if tip.isButton { AccessibilityNotification.Announcement(tip.text).post() }
+      }
+      .astryxTooltip(text, hint: tip.hint, focus: .tabStop, touch: .tap)
+  }
+
+  /// What VoiceOver gets for a tip icon: its name, whether it is a button, and
+  /// its words as the hint unless they are the name.
+  struct TipAccessibility: Equatable {
+    var text: String
+    var label: String
+    var isButton: Bool
+    var hint: String? { label == text ? nil : text }
+  }
+
+  /// The tooltip-variant status tip's accessibility, for the current status.
+  var statusTipAccessibility: TipAccessibility? {
+    guard statusVariant == .tooltip, let status = props.status, let message = status.message else { return nil }
+    return TipAccessibility(text: message, label: AstryxStrings.statusButton(status.type), isButton: true)
   }
 
   /// A shared icon at the supporting text size: the theme's SF Symbol or app

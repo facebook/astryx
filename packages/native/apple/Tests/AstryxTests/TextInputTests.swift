@@ -261,3 +261,18 @@ import Testing
   ).accessibleFieldDescription
   #expect(field.label == "Email, Enter a full address")
 }
+
+@MainActor
+@Test func theTooltipStatusTipIsAButtonThatSpeaksItsMessage() {
+  let field = Astryx.TextInput(
+    label: "Email", value: "you@", status: TextInputStatus(type: .error, message: "Enter a full address"),
+    statusVariant: .tooltip)
+  let tip = field.statusTipAccessibility
+  #expect(tip?.isButton == true)
+  #expect(tip?.label == AstryxStrings.statusButton(.error))
+  #expect(tip?.text == "Enter a full address")
+  #expect(tip?.hint == "Enter a full address")
+  // Attached and detached statuses have no tip.
+  let attached = Astryx.TextInput(label: "Email", value: "", status: TextInputStatus(type: .error, message: "Required"))
+  #expect(attached.statusTipAccessibility == nil)
+}
