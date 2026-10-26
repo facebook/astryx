@@ -37,6 +37,13 @@
  * - Each element gets the `touch-action` its recognizers leave the browser
  *   (touchAction.ts), set inline when they attach and restored when they
  *   detach.
+ * - While a finger or a pen is down, text selection and the touch callout
+ *   are off only where the hold does something (`spec:AST-094` FR41): on the
+ *   elements of recognizers that bring a `selectionLock`, and on a non-text
+ *   input under the finger inside them (WebKit's own style makes every
+ *   input selectable); restored when the contact ends. Only where the
+ *   primary pointer is coarse: a mouse never takes this lock, nor a finger
+ *   or a pen where the primary pointer is fine.
  * - Each element with a recognizer that can claim a touch while it moves (a
  *   pan, a swipe, a long press that then drags, a pinch, a rotation) gets a
  *   NON-passive `touchmove` listener that cancels the event only while a
@@ -70,16 +77,12 @@ import {
   type GestureArenaOptions,
   type GestureClock,
 } from './GestureArena';
-import type {GestureRecognizer} from './GestureRecognizer';
+import type {GestureRecognizer, SelectionLock} from './GestureRecognizer';
 import {HAPTIC_SWITCH_ATTRIBUTE} from './haptics';
 import {HoverGestureRecognizer} from './HoverGestureRecognizer';
 import {TapGestureRecognizer} from './TapGestureRecognizer';
 import {createNativeScrollProbe, parentAcrossShadow} from './nativeScroll';
-import {
-  gestureHostStyle,
-  holdSelectionStyle,
-  type GestureHostStyle,
-} from './touchAction';
+import {gestureHostStyle, type GestureHostStyle} from './touchAction';
 import type {
   GestureEnvironment,
   GestureTouch,
@@ -89,6 +92,7 @@ import type {
   TouchInput,
   TouchSample,
 } from './types';
+import {locksSelectionFor} from './selectionLock';
 
 interface Registration {
   readonly recognizers: GestureRecognizer[];
@@ -144,21 +148,6 @@ function claimsWhileMoving(recognizer: GestureRecognizer): boolean {
 
 const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
 
-/** The inline properties a held press sets to none (holdSelectionStyle). */
-const HOLD_SELECTION_PROPERTIES = [
-  '-webkit-touch-callout',
-  '-webkit-user-select',
-  'user-select',
-] as const;
-
-/** Elements a held press turned selection off on, and what to restore. */
-const heldSelection = new WeakMap<
-  HTMLElement,
-  {
-    count: number;
-    saved: ReadonlyArray<{name: string; value: string; priority: string}>;
-  }
->();
 const ACTIVE_CAPTURE = {capture: true, passive: false} as const;
 
 type StylusTouch = Touch & {touchType?: string};
@@ -207,6 +196,8 @@ export class GestureHost {
   readonly arena: GestureArena;
   private readonly doc: Document;
   private readonly registry = new Map<Element, Registration>();
+  /** The selection lock each contact holds, by host contact id. */
+  private readonly lockedBy = new Map<number, () => void>();
   /** Touch.identifier → arena id, for live fingers. */
   private readonly touchIds = new Map<number, number>();
   /** Touch.identifier → the element the finger landed on. */
@@ -242,8 +233,6 @@ export class GestureHost {
   /** Fingers still waiting for their pointerdown, by arena id. */
   private readonly unpairedTouches = new Map<number, PlacedContact>();
   /** The last position fed per contact, so one channel's echo is dropped. */
-  /** The elements each held contact turned selection off on. */
-  private readonly heldSelectionBy = new Map<number, HTMLElement[]>();
   private readonly isPrimaryPointerCoarse: () => boolean;
   private readonly coarseQuery: MediaQueryList | null;
   private isWatchingPointer = false;
@@ -642,6 +631,55 @@ export class GestureHost {
     return {recognizers, consumer, hovers};
   }
 
+  /**
+   * Turn text selection and the touch callout off, for as long as this
+   * finger or pen is down, only on the elements whose hold does something:
+   * a long press's (a menu, a hold-repeat) and those of recognizers created
+   * with a `selectionLock` (a slider's thumb, a switch's drag, a tab bar's
+   * zero-delay lens). Anything whose hold does nothing, a press-tracked
+   * control or row included, keeps the browser's long-press selection
+   * (`spec:AST-094` FR41). Restored when the contact ends. Callers lock only
+   * where the primary pointer is coarse (locksSelectionFor), so desktop
+   * selection is untouched, and only once the arena has admitted the
+   * contact: `recognizers` are the ones that took it.
+   */
+  private lockSelection(
+    id: number,
+    recognizers: ReadonlyArray<GestureRecognizer>,
+    target: EventTarget | null,
+  ): void {
+    // Each recognizer whose hold does something brings its lock; the host
+    // never imports one (a component without such a hold does not bundle
+    // it). Only one that took this contact locks for it: a recognizer that
+    // declined it (its pointer, or its own shouldReceiveTouch) has no hold
+    // here.
+    const byLock = new Map<SelectionLock, Set<Element>>();
+    for (const recognizer of recognizers) {
+      const lock = recognizer.selectionLock;
+      if (lock != null && recognizer.view instanceof Element) {
+        const elements = byLock.get(lock) ?? new Set<Element>();
+        elements.add(recognizer.view);
+        byLock.set(lock, elements);
+      }
+    }
+    if (byLock.size > 0) {
+      const undo = [...byLock].map(([lock, elements]) =>
+        lock(elements, target),
+      );
+      this.lockedBy.set(id, () => {
+        for (const release of undo) {
+          release();
+        }
+      });
+    }
+  }
+
+  /** Undo `lockSelection` for a contact that ended; idempotent. */
+  private unlockSelection(id: number): void {
+    this.lockedBy.get(id)?.();
+    this.lockedBy.delete(id);
+  }
+
   // --- Touch events ----------------------------------------------------------
 
   /** Whether this event is new to the host (and mark it handled). */
@@ -661,6 +699,8 @@ export class GestureHost {
     const inputs: ArenaBeganInput[] = [];
     const untracked: TouchBeganInput[] = [];
     const stale: number[] = [];
+    // Locked once the arena knows which recognizers took each finger.
+    const toLock: {id: number; target: EventTarget | null}[] = [];
     for (const touch of touchesOf(event.changedTouches)) {
       if ((touch as StylusTouch).touchType === 'stylus') {
         continue;
@@ -689,7 +729,9 @@ export class GestureHost {
       }
       const id = this.nextId++;
       this.touchIds.set(touch.identifier, id);
-      this.holdSelection(id, recognizers);
+      if (locksSelectionFor('touch', this.doc.defaultView)) {
+        toLock.push({id, target});
+      }
       this.watchTarget(
         touch.identifier,
         target,
@@ -713,6 +755,9 @@ export class GestureHost {
       this.arena.cancelled(stale, time);
     }
     this.arena.began(inputs);
+    for (const {id, target} of toLock) {
+      this.lockSelection(id, this.arena.participantsOf(id), target);
+    }
     for (const input of untracked) {
       this.arena.untrackedBegan(input);
     }
@@ -1058,80 +1103,9 @@ export class GestureHost {
     }
   }
 
-  /**
-   * For one held press by a finger or a pen: text selection and the touch
-   * callout off on the elements whose hold does something (a long press),
-   * as `holdSelectionStyle` decides (`spec:AST-094` FR41, DEC-9).
-   * Everything else keeps the browser's long-press selection. Restored when
-   * the contact ends; refcounted across contacts on one element.
-   */
-  private holdSelection(
-    id: number,
-    recognizers: ReadonlyArray<GestureRecognizer>,
-  ): void {
-    const elements = new Set<HTMLElement>();
-    for (const recognizer of recognizers) {
-      if (
-        recognizer.view instanceof HTMLElement &&
-        recognizer.isEnabled &&
-        holdSelectionStyle([recognizer]) != null
-      ) {
-        elements.add(recognizer.view);
-      }
-    }
-    if (elements.size === 0) {
-      return;
-    }
-    const held = [...elements];
-    for (const element of held) {
-      const entry = heldSelection.get(element);
-      if (entry != null) {
-        entry.count += 1;
-        continue;
-      }
-      const saved = HOLD_SELECTION_PROPERTIES.map(name => ({
-        name,
-        value: element.style.getPropertyValue(name),
-        priority: element.style.getPropertyPriority(name),
-      }));
-      for (const name of HOLD_SELECTION_PROPERTIES) {
-        element.style.setProperty(name, 'none');
-      }
-      heldSelection.set(element, {count: 1, saved});
-    }
-    this.heldSelectionBy.set(id, held);
-  }
-
-  /** Undo `holdSelection` for a contact that ended; idempotent. */
-  private releaseSelection(id: number): void {
-    const held = this.heldSelectionBy.get(id);
-    if (held == null) {
-      return;
-    }
-    this.heldSelectionBy.delete(id);
-    for (const element of held) {
-      const entry = heldSelection.get(element);
-      if (entry == null) {
-        continue;
-      }
-      entry.count -= 1;
-      if (entry.count > 0) {
-        continue;
-      }
-      heldSelection.delete(element);
-      for (const {name, value, priority} of entry.saved) {
-        if (value === '') {
-          element.style.removeProperty(name);
-        } else {
-          element.style.setProperty(name, value, priority);
-        }
-      }
-    }
-  }
-
   /** Forget a contact's pairing and echo state. */
   private forgetContact(id: number): void {
-    this.releaseSelection(id);
+    this.unlockSelection(id);
     this.lastFed.delete(id);
     this.judgedUncancelable.delete(id);
     this.unpairedTouches.delete(id);
@@ -1171,9 +1145,6 @@ export class GestureHost {
     }
     const id = this.nextId++;
     this.pointerIds.set(event.pointerId, id);
-    if (event.pointerType !== 'mouse') {
-      this.holdSelection(id, recognizers);
-    }
     this.arena.began([
       {
         id,
@@ -1187,6 +1158,9 @@ export class GestureHost {
         consumer,
       },
     ]);
+    if (locksSelectionFor(event.pointerType, this.doc.defaultView)) {
+      this.lockSelection(id, this.arena.participantsOf(id), event.target);
+    }
   };
 
   private readonly onPointerMove = (event: PointerEvent): void => {
@@ -1235,7 +1209,7 @@ export class GestureHost {
       return;
     }
     this.pointerIds.delete(event.pointerId);
-    this.releaseSelection(id);
+    this.unlockSelection(id);
     const dispositions = this.arena.ended([
       {id, x: event.clientX, y: event.clientY, time: eventTime(event)},
     ]);
@@ -1259,7 +1233,7 @@ export class GestureHost {
     const id = this.pointerIds.get(event.pointerId);
     if (id != null) {
       this.pointerIds.delete(event.pointerId);
-      this.releaseSelection(id);
+      this.unlockSelection(id);
       this.arena.cancelled([id], eventTime(event));
     }
   };
@@ -1475,7 +1449,7 @@ export class GestureHost {
   private cancelEverything(time: number): void {
     const ids = [...this.pointerIds.values()];
     for (const id of ids) {
-      this.releaseSelection(id);
+      this.unlockSelection(id);
     }
     for (const identifier of [...this.touchIds.keys()]) {
       const id = this.forgetFinger(identifier);
