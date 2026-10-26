@@ -8,7 +8,7 @@
  *   (gestures/PressTracker.ts, PRESS_PROFILES)
  * @output Interaction proofs for the control press profile: outside a
  *   scroller a finger's press highlights in the frame it lands and releases
- *   on UIButton's clock; inside one it waits UIScrollView's content-touch
+ *   on the shared release clock; inside one it waits UIScrollView's content-touch
  *   delay, a flick paints nothing, and a scroll that takes a held press
  *   cancels it with no fade and no click; a quick tap highlights at the lift;
  *   the engine's own tap paints and activates once; a storyboard of a press,
@@ -35,7 +35,6 @@ import {scroll} from '../../motion/uikit/scroll';
 
 const storybook = withStorybook(test);
 
-/** The control profile's release clock: UIButton's. */
 /**
  * A control's release clock: `PRESS_PROFILES.control.releaseMs` in
  * utils/pressFeedback.ts, which this runner cannot import (it compiles
@@ -113,7 +112,7 @@ const first = (entries: LogEntry[], kind: string, value?: string | null) =>
     ([k, , v]) => k === kind && (value === undefined || v === value),
   );
 
-test('outside a scroller, a finger’s press highlights in the frame it lands, and the lift fades it on UIButton’s clock', async ({
+test('outside a scroller, a finger’s press highlights in the frame it lands, and the lift fades it on the shared release clock', async ({
   page,
 }) => {
   const opened = await openSurface(page, BUTTONS, secondaryButton);
@@ -136,7 +135,7 @@ test('outside a scroller, a finger’s press highlights in the frame it lands, a
   }
   expect(on[1] - down[1]).toBeLessThan(SAME_FRAME_MS);
   expect(fading[1] - up[1]).toBeLessThan(SAME_FRAME_MS);
-  // The attribute leaves when UIButton's release clock runs out.
+  // The attribute leaves when the shared release clock runs out.
   expect(gone[1] - fading[1]).toBeGreaterThanOrEqual(RELEASE_MS - 5);
   expect(gone[1] - fading[1]).toBeLessThan(RELEASE_MS + 80);
   // WebKit synthesises a click only from its own tap path, not from a raw

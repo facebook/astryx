@@ -589,8 +589,9 @@ export function Item({
   role,
   ...restProps
 }: ItemProps) {
-  // A row's press is a cell's: it waits UIScrollView's content-touch delay,
-  // yields to the pan, and releases on the deselect clock.
+  // A row's press is a cell's: it waits UIScrollView's content-touch delay
+  // only inside a scroll view (FR11), yields to the pan, and releases on the
+  // deselect clock.
   usePressFeedback();
   // The cell profile (utils/pressFeedback.ts), internal to core.
   const pressable = cellPressableProps;
