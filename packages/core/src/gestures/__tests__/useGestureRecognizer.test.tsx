@@ -75,6 +75,14 @@ afterEach(() => {
   restorePointer();
 });
 
+/** Wait for the next animation frame, where the host writes touch-action. */
+async function nextFrame(): Promise<void> {
+  await act(async () => {
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => resolve());
+    });
+  });
+}
 describe('useGestureRecognizer', () => {
   afterEach(() => {
     renders = 0;
@@ -268,12 +276,14 @@ describe('useGestureRecognizer', () => {
     expect(onSingle).not.toHaveBeenCalled();
   });
 
-  it('attaches nothing while disabled: no touch-action, no gesture (FR24)', () => {
+  it('attaches nothing while disabled: no touch-action, no gesture (FR24)', async () => {
     const states: string[] = [];
     const {getByTestId, rerender} = render(
       <Draggable onPan={r => states.push(r.state)} />,
     );
     const surface = getByTestId('surface');
+    // The host writes its touch-action in the next frame (FR18).
+    await nextFrame();
     const remove = vi.spyOn(surface.style, 'removeProperty');
     act(() => {
       rerender(
@@ -295,10 +305,34 @@ describe('useGestureRecognizer', () => {
     touch('touchend', surface, {id: 8, x: 30, y: 0}, 132, true);
   });
 
-  it('detaches on unmount', () => {
+  it('follows the element behind the ref when it is replaced (INV6)', () => {
+    const states: string[] = [];
+    function Swapped({id}: {id: string}) {
+      const ref = useRef<HTMLDivElement>(null);
+      useGestureRecognizer(
+        ref,
+        () => new PanGestureRecognizer({direction: 'horizontal'}),
+        r => states.push(r.state),
+      );
+      return <div key={id} data-testid={id} ref={ref} />;
+    }
+    const {getByTestId, rerender} = render(<Swapped id="first" />);
+    act(() => {
+      rerender(<Swapped id="second" />);
+    });
+    const second = getByTestId('second');
+    touch('touchstart', second, {id: 9, x: 0, y: 0}, 0);
+    touch('touchmove', second, {id: 9, x: 30, y: 0}, 16);
+    expect(states).toContain('began');
+    touch('touchend', second, {id: 9, x: 30, y: 0}, 32, true);
+  });
+
+  it('detaches on unmount', async () => {
     const onPan = vi.fn();
     const {getByTestId, unmount} = render(<Draggable onPan={onPan} />);
     const surface = getByTestId('surface');
+    // The host writes its touch-action in the next frame (FR18).
+    await nextFrame();
     const remove = vi.spyOn(surface.style, 'removeProperty');
     unmount();
     expect(remove).toHaveBeenCalledWith('touch-action');
@@ -355,6 +389,55 @@ describe('usePressTracker', () => {
     unmount();
     add.mockRestore();
     remove.mockRestore();
+  });
+
+  it('ends a press whose control, the only enabled one, is disabled under the finger: nothing reports from the commit or at the lift', () => {
+    const events: ControlEvent[] = [];
+    const onEvent = (event: ControlEvent) => events.push(event);
+    const {getByTestId, rerender} = render(<Button onEvent={onEvent} />);
+    const button = getByTestId('button');
+    touch('touchstart', button, {id: 11, x: 1, y: 1}, 0);
+    expect(events).toEqual(['touchDown']);
+    act(() => {
+      rerender(<Button onEvent={onEvent} isDisabled />);
+    });
+    // The commit that disables it ends the press and calls back nothing.
+    expect(events).toEqual(['touchDown']);
+    touch('touchend', button, {id: 11, x: 1, y: 1}, 50, true);
+    expect(events).toEqual(['touchDown']);
+  });
+
+  it('ends a press whose control is disabled under the finger while another control keeps the host listening: the lift reports nothing', () => {
+    const events: ControlEvent[] = [];
+    const onEvent = (event: ControlEvent) => events.push(event);
+    function Other() {
+      const ref = useRef<HTMLButtonElement>(null);
+      usePressTracker(ref);
+      return (
+        <button data-testid="other" ref={ref} type="button">
+          Other
+        </button>
+      );
+    }
+    function Pair({isDisabled}: {isDisabled: boolean}) {
+      return (
+        <>
+          <Button onEvent={onEvent} isDisabled={isDisabled} />
+          <Other />
+        </>
+      );
+    }
+    const {getByTestId, rerender} = render(<Pair isDisabled={false} />);
+    const button = getByTestId('button');
+    touch('touchstart', button, {id: 12, x: 1, y: 1}, 0);
+    expect(events).toEqual(['touchDown']);
+    act(() => {
+      rerender(<Pair isDisabled />);
+    });
+    expect(events).toEqual(['touchDown']);
+    // A disabled control tracks no touch: the lift is no touchUpInside.
+    touch('touchend', button, {id: 12, x: 1, y: 1}, 50, true);
+    expect(events).toEqual(['touchDown']);
   });
 
   it('reports UIControl events for a tap', () => {
@@ -512,6 +595,23 @@ describe('usePressTracker', () => {
     touch('touchstart', button, {id: 8, x: 1, y: 1}, 0);
     touch('touchend', button, {id: 8, x: 1, y: 1}, 50, true);
     expect(events).toEqual([]);
+  });
+
+  it('tracks the element behind the ref when it is replaced (INV6)', () => {
+    const events: ControlEvent[] = [];
+    function Swapped({id}: {id: string}) {
+      const ref = useRef<HTMLButtonElement>(null);
+      usePressTracker(ref, {onControlEvent: event => events.push(event)});
+      return <button key={id} data-testid={id} ref={ref} type="button" />;
+    }
+    const {getByTestId, rerender} = render(<Swapped id="first" />);
+    act(() => {
+      rerender(<Swapped id="second" />);
+    });
+    const second = getByTestId('second');
+    touch('touchstart', second, {id: 10, x: 1, y: 1}, 0);
+    touch('touchend', second, {id: 10, x: 1, y: 1}, 50, true);
+    expect(events).toEqual(['touchDown', 'touchUpInside']);
   });
 
   it('presses nothing for a touch that brakes a scroll', () => {
