@@ -176,9 +176,7 @@ guidance owns the process used to propose and test APIs.
   picking a specific prop or label of a subcomponent). Build compositions
   instead. Compositions must follow the component's anatomy; never expose a way
   to compose or render a slot not described in the anatomy; and slots must have
-  components. Released APIs that predate this rule keep their recorded
-  shape until deliberately changed (INV9), such as `spec:AST-057`'s
-  `swipeActions` data and `spec:AST-058`'s option `action` node. This extends INV3's rule that a parent does not duplicate a
+  components. Config objects are fine: plain data that describes actions or options (for example `swipeActions`' array of `{label, icon, onActivate}`) is not a slot. 'Slots must have components' applies to rendered content slots, places that accept arbitrary nodes; such a slot must be a part named in the component's anatomy, and the caller fills it with a component. This extends INV3's rule that a parent does not duplicate a
   composed child's state; a slot's styling follows INV15 and
   `architecture:component-theming-surface`. See
   [Slots and composition](../contributing/api-conventions.md#slots-and-composition).
