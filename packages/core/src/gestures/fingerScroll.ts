@@ -7,7 +7,8 @@
  *   finger record
  * @output Exports watchFingerScrolls and isFingerScroll
  * @position Finger-scroll watch of packages/core/src/gestures (useFingerScroll
- *   reads it), in its own module so a page that never asks never ships it
+ *   reads it), in its own module so a page that never asks never ships it;
+ *   internal to the touch module, not in the gestures barrel
  *
  * A watched scroller's scroll is a finger's from a scroll event while a
  * finger that landed inside it is down, until the scroller's own `scrollend`
@@ -152,7 +153,7 @@ function start(host: GestureHost, watch: Watch): () => void {
  * Keep track of whether the scrolls of `scroller` (an element in `host`'s
  * document, or the document itself) are a finger's, for isFingerScroll,
  * until the returned function runs.
- * Proposed; pending owner review.
+ * Internal: not exported from the package.
  */
 export function watchFingerScrolls(
   host: GestureHost,
@@ -194,7 +195,7 @@ export function watchFingerScrolls(
 
 /**
  * Whether the scroll now moving a watched `scroller` is a finger's.
- * Proposed; pending owner review.
+ * Internal: not exported from the package.
  */
 export function isFingerScroll(host: GestureHost, scroller: Node): boolean {
   return watches.get(host)?.fingerScrollers.has(scroller) === true;

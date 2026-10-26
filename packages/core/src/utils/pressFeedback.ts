@@ -36,7 +36,7 @@
  * A finger held on a surface does nothing more than press it, so the surface
  * keeps the browser's long-press text selection (`spec:AST-094` FR41); only
  * an element whose hold does something suppresses it, through the gesture
- * host (gestures/selectionLock.ts).
+ * host (utils/selectionLock.ts).
  *
  * Its touch-only listeners, the finger's `touchend` and `touchcancel`, are on
  * only while a press is tracked and the primary pointer is coarse
