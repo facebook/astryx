@@ -38,6 +38,10 @@ updates:
       # Without it, the SHA-pinned pnpm/action-setup in the setup composite
       # (which runs inside the npm publish jobs) would never get bump PRs.
       - "/.github/actions/setup"
+      # The artifact wrappers pin actions/upload-artifact and
+      # actions/download-artifact for every gate transfer in ci.yml.
+      - "/.github/actions/upload-artifact"
+      - "/.github/actions/download-artifact"
     schedule:
       interval: "monthly"
     labels:

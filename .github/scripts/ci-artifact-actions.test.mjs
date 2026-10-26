@@ -2,10 +2,11 @@
 
 /**
  * @file ci-artifact-actions.test.mjs
- * @input .github/workflows/ci.yml
+ * @input .github/workflows/ci.yml, .github/dependabot.yml, .github/actions
  * @output Proof that every job checking out the pull request head takes the
  *   retried artifact actions from the workflow's own commit before it uses
- *   them, so a head older than the actions keeps its jobs working
+ *   them, so a head older than the actions keeps its jobs working, and that
+ *   Dependabot scans every local composite action for bumps
  * @position Guards the two local composite actions under .github/actions
  *   (upload-artifact, download-artifact) and the jobs that load them
  */
@@ -52,6 +53,33 @@ describe('the retried artifact actions', () => {
       expect(steps[load].run, id).toContain(
         'git show "$WORKFLOW_SHA:.github/actions/$action/action.yml"',
       );
+    }
+  });
+});
+
+describe('the local composite actions', () => {
+  it('each get Dependabot bump pull requests', () => {
+    // Dependabot's "/" covers workflows only: a composite action's pins get
+    // bumps only from a directory of their own in the github-actions entry.
+    const dependabot = yaml.parse(
+      fs.readFileSync(path.join(root, '.github/dependabot.yml'), 'utf8'),
+    );
+    const entry = dependabot.updates.find(
+      update => update['package-ecosystem'] === 'github-actions',
+    );
+    const actions = fs
+      .readdirSync(path.join(root, '.github/actions'), {withFileTypes: true})
+      .filter(
+        dirent =>
+          dirent.isDirectory() &&
+          fs.existsSync(
+            path.join(root, '.github/actions', dirent.name, 'action.yml'),
+          ),
+      )
+      .map(dirent => `/.github/actions/${dirent.name}`);
+    expect(actions.length).toBeGreaterThan(0);
+    for (const action of actions) {
+      expect(entry.directories, action).toContain(action);
     }
   });
 });
