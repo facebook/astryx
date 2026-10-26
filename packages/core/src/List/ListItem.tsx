@@ -441,6 +441,8 @@ export function ListItem({
         label={label}
         itemKey={itemKey}
         isDisabled={isDisabled}
+        rowLabel={restProps['aria-label']}
+        rowLabelledBy={restProps['aria-labelledby']}
       />
     ) : null;
   const density = ctx?.density ?? 'balanced';
