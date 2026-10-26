@@ -386,14 +386,21 @@ describe('useActionGroupTracking', () => {
     const view = mount();
     const {cancel} = view;
     // The gesture host reads the surface's touch-action in the frame after it
-    // attaches (spec:AST-094 FR18): that frame runs first, so only the fade's
-    // own timers are counted below.
+    // attaches (spec:AST-094 FR18): that frame runs first. Only the fade's
+    // own timer is counted below: other timers a lift may arm outlive the
+    // group on purpose (a click guard must still swallow the lift's click
+    // after the alert closes), so each check counts the timers that go.
     runAttachFrame();
     const f = finger();
+    const beforeFade = vi.getTimerCount();
     f.down(cancel, centerOf(CANCEL));
     f.up(cancel, centerOf(CANCEL));
     expect(paintOf(cancel)).toBe('fading');
-    // The lift closed the alert: tracking stops before the fade ends.
+    const fading = vi.getTimerCount();
+    // The fade's timer is running.
+    expect(fading).toBeGreaterThan(beforeFade);
+    // The lift closed the alert: tracking stops before the fade ends, and
+    // the fade's timer goes with it.
     view.rerender(
       <Group
         onCancel={view.onCancel}
@@ -402,16 +409,17 @@ describe('useActionGroupTracking', () => {
       />,
     );
     expect(paintOf(cancel)).toBeNull();
-    expect(vi.getTimerCount()).toBe(0);
+    expect(vi.getTimerCount()).toBe(fading - 1);
     view.rerender(<Group onCancel={view.onCancel} onDelete={view.onDelete} />);
     runAttachFrame();
     const g = finger();
     g.down(cancel, centerOf(CANCEL));
     g.up(cancel, centerOf(CANCEL));
     expect(paintOf(cancel)).toBe('fading');
+    const fadingAgain = vi.getTimerCount();
     view.unmount();
     expect(paintOf(cancel)).toBeNull();
-    expect(vi.getTimerCount()).toBe(0);
+    expect(vi.getTimerCount()).toBe(fadingAgain - 1);
   });
 
   it('drops its highlight when tracking turns off mid-touch, and the lift runs nothing', () => {
