@@ -104,10 +104,10 @@
  *   release on any pointer (`touchRelease`), it becomes (DR2) an
  *   opacity-only cross-fade of `timing.reducedMotionCrossFadeMs` (200 ms)
  *   on `timing.curves.move`:
- *   - entering (opacity rises in the same call, or `crossfadeAs:
+ *   - entering (opacity rises from 0 in the same call, or `crossfadeAs:
  *     'entrance'`): lands in its new place at once and fades in;
- *   - leaving (opacity falls, or `crossfadeAs: 'exit'`): fades out in place,
- *     then lands;
+ *   - leaving (opacity falls to 0, or `crossfadeAs: 'exit'`): fades out in
+ *     place, then lands;
  *   - an opacity change alone: fades to its value;
  *   - otherwise: dips (fades out, lands, fades back in);
  *   travel lands with a plain style write while the element is transparent,
@@ -131,7 +131,10 @@
  *
  * A pseudo-element (`options.pseudoElement`, a dialog's `::backdrop`) has no
  * inline style: its end value is held by a static filling animation (after a
- * curve ends, and after `set`) until the next animation replaces it.
+ * curve ends, and after `set`) until the next animation replaces it, and for
+ * as long as the pseudo-element exists. The browser makes a `::backdrop`
+ * again each time its dialog opens, without the hold, so a presentation
+ * calls `set` with its starting value in the task that opens the dialog.
  *
  * SSR-safe: nothing touches `window` or `document` at module scope, and an
  * animator created without an element only keeps state until one is attached.
