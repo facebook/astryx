@@ -179,10 +179,16 @@ export function declaresPressPaint(el: Element): boolean {
 
 /** `.2s`, `200ms`, `0.2s` → 200. */
 export function durationToMs(value: string): number {
+  const text = value.trim();
+  // Under reduced motion the clock is capped: `min(<clock>, 200ms)`.
+  const capped = /^min\((.+),\s*([\d.]+m?s)\)$/.exec(text);
+  if (capped != null) {
+    return Math.min(durationToMs(capped[1]), durationToMs(capped[2]));
+  }
   // A theme motion role, `var(--motion-…, 200ms)`, reads as the table's
   // value it falls back to.
-  const role = value.trim().match(/^var\(\s*--[\w-]+\s*,\s*(.+)\)$/);
-  const match = (role == null ? value : role[1])
+  const role = text.match(/^var\(\s*--[\w-]+\s*,\s*(.+)\)$/);
+  const match = (role == null ? text : role[1])
     .trim()
     .match(/^([\d.]+)(ms|s)$/);
   if (match == null) {
@@ -214,8 +220,8 @@ export function hasReleaseFade(el: Element): boolean {
   );
   return (
     named &&
-    durations.length === 1 &&
-    durations[0] === PRESS_FADE_MS &&
+    durations.length > 0 &&
+    durations.every(duration => duration === PRESS_FADE_MS) &&
     !onArmAnimates
   );
 }
