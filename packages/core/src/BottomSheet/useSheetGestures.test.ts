@@ -383,6 +383,21 @@ describe('useSheetGestures', () => {
       expect(onDismiss).toHaveBeenCalledTimes(1);
     });
 
+    it('cancels a release moving back toward where the drag began, whatever the travel so far (spec:AST-094 FR37)', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      // From the tallest detent down past the midpoint to 150 px ...
+      down(hook, 0, 0, t);
+      stream(hook, t, {from: 0, to: 150, t0: 0, t1: 300});
+      // ... then back up at 50 px/s and let go at 146 px, nearest the 200 px
+      // detent: the drag cancels to where it began.
+      move(hook, 148, 340, t);
+      move(hook, 146, 380, t);
+      up(hook, 146, 382, t);
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(hook.result.current.settledOffset).toBe(0);
+    });
+
     it('releases no throw from a finger held still for longer than 40 ms before the lift', () => {
       // UIKit would keep the last motion through a silent rest; the release
       // filter reads 0 after its stillness interval, as Android's does, so a
