@@ -153,10 +153,10 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     overflow: 'hidden',
     outline: 'none',
-    // The backdrop dims the page without blurring it, as the modal backdrops
-    // do: a full-viewport backdrop-filter is costly to repaint, and the touch
-    // paths fade the backdrop every frame. The dim is the theme's overlay
-    // colour.
+    // The backdrop dims the page without blurring it, on every pointer, as the
+    // owners decided for modal backdrops (#8120): a full-viewport
+    // backdrop-filter is costly to repaint, and the touch paths fade the
+    // backdrop every frame. The dim is the theme's overlay colour.
     '::backdrop': {
       backgroundColor: colorVars['--color-overlay'],
     },
