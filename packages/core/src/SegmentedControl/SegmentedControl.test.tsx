@@ -858,7 +858,7 @@ describe('pressed state', () => {
 });
 
 describe('selection motion', () => {
-  /** A finger is the primary pointer (any touch screen). */
+  /** A finger is the primary pointer: a touch device. */
   function mockCoarsePointer() {
     return vi.spyOn(window, 'matchMedia').mockImplementation(
       (query: string) =>
