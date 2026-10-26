@@ -10,7 +10,10 @@
  *
  * Navigation item with icon, selected state, row-level actions, and nesting.
  * Collapsed icon-only controls use a meaningful consumer `aria-label` when
- * provided and fall back to `label` when it is missing or blank.
+ * provided and fall back to `label` when it is missing or blank. Their tooltip
+ * wraps the interactive control, so hover, focus, and `aria-describedby` land
+ * on the control from the first collapsed render. A disabled control takes
+ * neither pointer nor focus, so its tooltip stays on the row, which does.
  *
  * Collapsed items with children open their submenu flyout through
  * `useMenuHover`, the shared hover-intent hook (same one `SideNavHeading` and
@@ -701,10 +704,25 @@ export function SideNavItem({
       </NavItemElement>
     );
 
+    // A disabled control takes no pointer (`navItemStyles.disabled`) and no
+    // focus, so the row anchors the tooltip and takes the hover instead.
+    if (isDisabled) {
+      return (
+        <div ref={itemRef} {...stylex.props(styles.root, xstyle)}>
+          {collapsedElement}
+          <Tooltip content={label} placement="end" anchorRef={itemRef} />
+        </div>
+      );
+    }
+
+    // The tooltip wraps the control, so the element that takes focus is the
+    // one it describes. Wrapped mode binds its first child once; the key
+    // re-binds it when the control switches between link and button.
     return (
-      <div ref={itemRef} {...stylex.props(styles.root, xstyle)}>
-        {collapsedElement}
-        <Tooltip content={label} placement="end" anchorRef={itemRef} />
+      <div {...stylex.props(styles.root, xstyle)}>
+        <Tooltip key={href ? 'link' : 'button'} content={label} placement="end">
+          {collapsedElement}
+        </Tooltip>
       </div>
     );
   }

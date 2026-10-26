@@ -3760,32 +3760,118 @@ describe('SideNav collapse conflict warning', () => {
 // =============================================================================
 
 describe('SideNavItem collapsed-from-mount rail tooltip', () => {
-  // #7692: a childless item that mounts inside an already-collapsed SideNav
-  // renders its Tooltip inside the very element anchorRef points at. React
-  // attaches that ref only after the tooltip's layout effect has run, so the
-  // tooltip never attached and a persisted collapsed rail lost all tooltips
-  // on page load.
-  it('anchors the rail tooltip when the nav is collapsed at mount', async () => {
-    render(
+  // #7435 / #7692: a childless item that mounts inside an already-collapsed
+  // SideNav (the persisted-collapse case) must attach its tooltip on the first
+  // render, and the tooltip must describe the control that takes focus — the
+  // link or button — not the row around it.
+  function railTooltipFor(trigger: HTMLElement) {
+    const id = trigger.getAttribute('aria-describedby');
+    return id == null ? null : document.getElementById(id);
+  }
+
+  function renderRail(item: ReactNode) {
+    return render(
       <SideNav
         aria-label="Main"
         collapsible={{isCollapsed: true, hasButton: false}}>
-        <SideNavItem label="Dashboard" icon={StubIcon} href="/dashboard" />
+        {item}
       </SideNav>,
     );
-    const link = screen.getByRole('link', {name: 'Dashboard'});
-    const anchor = link.parentElement as HTMLElement;
+  }
 
-    // The tooltip attaches despite mounting inside its own anchor: the item
-    // row is described by the tooltip layer.
-    await waitFor(() => {
-      expect(anchor.getAttribute('aria-describedby')).not.toBe('');
-    });
-    const layer = document.getElementById(
-      anchor.getAttribute('aria-describedby') as string,
+  let showPopover: ReturnType<typeof vi.spyOn> | undefined;
+
+  afterEach(() => {
+    showPopover?.mockRestore();
+    showPopover = undefined;
+    vi.useRealTimers();
+  });
+
+  it('describes the rail link by its tooltip when the nav is collapsed at mount', () => {
+    renderRail(
+      <SideNavItem label="Dashboard" icon={StubIcon} href="/dashboard" />,
     );
+    const link = screen.getByRole('link', {name: 'Dashboard'});
+
+    const layer = railTooltipFor(link);
     expect(layer).not.toBeNull();
     expect(layer).toHaveAttribute('role', 'tooltip');
     expect(layer).toHaveTextContent('Dashboard');
+  });
+
+  it('shows a disabled item its label when the pointer rests on its row', async () => {
+    // The disabled control is `pointer-events: none`, so in a browser the
+    // pointer lands on the row; the tooltip has to listen there.
+    vi.useFakeTimers();
+    const spy = vi.spyOn(HTMLElement.prototype, 'showPopover');
+    showPopover = spy;
+    renderRail(
+      <SideNavItem
+        label="Analytics (Coming Soon)"
+        icon={StubIcon}
+        href="/analytics"
+        isDisabled
+      />,
+    );
+    // Let the row's tooltip attach after the commit.
+    await act(async () => {});
+    const button = screen.getByRole('button', {
+      name: 'Analytics (Coming Soon)',
+    });
+    const row = button.parentElement as HTMLElement;
+    const layer = screen.getByRole('tooltip', {hidden: true});
+    expect(layer).toHaveTextContent('Analytics (Coming Soon)');
+
+    fireEvent.mouseEnter(row);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(spy.mock.contexts).toContain(layer);
+  });
+
+  it('describes the link once a disabled item is enabled in the rail', () => {
+    const item = (isDisabled: boolean) => (
+      <SideNavItem
+        label="Dashboard"
+        icon={StubIcon}
+        href="/dashboard"
+        isDisabled={isDisabled}
+      />
+    );
+    const {rerender} = renderRail(item(true));
+    rerender(
+      <SideNav
+        aria-label="Main"
+        collapsible={{isCollapsed: true, hasButton: false}}>
+        {item(false)}
+      </SideNav>,
+    );
+
+    const link = screen.getByRole('link', {name: 'Dashboard'});
+    expect(railTooltipFor(link)).toHaveTextContent('Dashboard');
+  });
+
+  it('describes the new control when a rail item gains an href', () => {
+    const item = (href?: string) => (
+      <SideNavItem
+        label="Dashboard"
+        icon={StubIcon}
+        href={href}
+        onClick={() => {}}
+      />
+    );
+    const {rerender} = renderRail(item());
+    const button = screen.getByRole('button', {name: 'Dashboard'});
+    expect(railTooltipFor(button)).toHaveTextContent('Dashboard');
+
+    rerender(
+      <SideNav
+        aria-label="Main"
+        collapsible={{isCollapsed: true, hasButton: false}}>
+        {item('/dashboard')}
+      </SideNav>,
+    );
+    const link = screen.getByRole('link', {name: 'Dashboard'});
+    expect(railTooltipFor(link)).toHaveTextContent('Dashboard');
   });
 });
