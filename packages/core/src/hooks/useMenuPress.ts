@@ -176,36 +176,6 @@ function armStrayClick(doc: Document): void {
   swallower.timer = setTimeout(disarmStrayClick, MENU_PRESS_STRAY_CLICK_MS);
 }
 
-/**
- * A finger's gesture the window's blur ended may still hold its pointer: the
- * browser can keep a touch alive across the blur. That pointer's release is
- * still the gesture's, so the click it reports is swallowed as a tracked
- * release's is (FR5, `spec:AST-094` FR28): the swallower arms at that
- * release, or not at all once another press begins.
- */
-function armStrayClickAtRelease(doc: Document, pointerId: number): void {
-  const stop = () => {
-    doc.removeEventListener('pointerup', onRelease, true);
-    doc.removeEventListener('pointercancel', onRelease, true);
-    doc.removeEventListener('pointerdown', stop, true);
-  };
-  const onRelease = (event: PointerEvent) => {
-    if (event.pointerId !== pointerId) {
-      return;
-    }
-    stop();
-    if (event.type === 'pointerup') {
-      armStrayClick(doc);
-    }
-  };
-  doc.addEventListener('pointerup', onRelease, true);
-  doc.addEventListener('pointercancel', onRelease, true);
-  // A release the page never sees (the finger lifted after a switch to
-  // another tab) ends the wait at the next press, as the swallower itself
-  // disarms there: that press's click must act (FR5).
-  doc.addEventListener('pointerdown', stop, true);
-}
-
 /** Test-only: forget an armed swallower between cases. */
 export function __resetMenuPressForTest(): void {
   disarmStrayClick();
@@ -697,6 +667,23 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
           }
           return;
         }
+        case 'withdraw': {
+          // The window's blur withdrew a finger's gesture: it stays tracked to
+          // its release, but nothing drives the menu any more (the hold, the
+          // autoscroll, the page lock). A row it lit clears where the primary
+          // pointer is coarse (spec:AST-094 FR28, FR19).
+          longPressApiRef.current?.cancel();
+          stopAutoscroll();
+          touchMovePreventerRef.current?.();
+          touchMovePreventerRef.current = null;
+          if (
+            effect.clear === true &&
+            optionsRef.current.touchModel === 'uikit'
+          ) {
+            highlight(null);
+          }
+          return;
+        }
         case 'settle': {
           // A finger's lit row clears on a cancel only where the primary
           // pointer is coarse (the 'uikit' touch model); elsewhere the
@@ -718,7 +705,7 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
         }
       }
     },
-    [activate, endGesture, getDocument, highlight],
+    [activate, endGesture, getDocument, highlight, stopAutoscroll],
   );
 
   const step = useCallback(
@@ -870,6 +857,12 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
         stepRef.current({type: 'cancel'});
       };
       const onOtherPointerDown = (event: PointerEvent) => {
+        // Any press ends a withdrawn gesture: its finger lifted where the
+        // page could not see it, and the new press's click must act (FR5).
+        if (gestureRef.current.phase === 'withdrawn') {
+          stepRef.current({type: 'cancel'});
+          return;
+        }
         // A second pointer ends the gesture: two fingers are a pinch or a
         // scroll, never a pick.
         if (event.pointerId !== pointerIdRef.current) {
@@ -878,16 +871,12 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
         }
       };
       const onBlur = () => {
-        const blurredPointerId = pointerIdRef.current;
-        const gesture = gestureRef.current;
-        // A finger or pen (`spec:AST-094` FR28); a mouse press keeps its
-        // click, as before (`spec:AST-017` FR59).
-        const isFingerPress =
-          gesture.phase !== 'idle' && gesture.pointerType !== 'mouse';
-        stepRef.current({type: 'cancel'});
-        if (blurredPointerId != null && isFingerPress) {
-          armStrayClickAtRelease(doc, blurredPointerId);
-        }
+        // A finger's or pen's gesture is withdrawn, not ended: the browser can
+        // keep the touch alive past the blur, so the gesture stays tracked on
+        // these listeners until its release, which acts on nothing and whose
+        // click is swallowed (`spec:AST-094` FR28, module FR5). A mouse press
+        // ends as a cancel and keeps its click (`spec:AST-017` FR59).
+        stepRef.current({type: 'withdraw'});
       };
 
       doc.addEventListener('pointermove', onMove, true);

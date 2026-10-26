@@ -417,6 +417,78 @@ describe('useMenuPress — release outside and cancellation', () => {
     expect(onOutside).toHaveBeenCalledTimes(1);
   });
 
+  it('a blurred finger\u2019s gesture keeps no document listener past its end: the menu unmounting before the lift takes them all off (module PR1)', () => {
+    // The document's live pointer listeners, as [type, listener] pairs.
+    const live: [string, unknown][] = [];
+    const types = new Set(['pointerup', 'pointercancel', 'pointermove']);
+    const add = vi.spyOn(document, 'addEventListener');
+    const remove = vi.spyOn(document, 'removeEventListener');
+    add.mockImplementation(function (
+      this: Document,
+      type: string,
+      listener: EventListenerOrEventListenerObject | null,
+      options?: boolean | AddEventListenerOptions,
+    ) {
+      if (types.has(type)) {
+        live.push([type, listener]);
+      }
+      EventTarget.prototype.addEventListener.call(
+        this,
+        type,
+        listener,
+        options,
+      );
+    });
+    remove.mockImplementation(function (
+      this: Document,
+      type: string,
+      listener: EventListenerOrEventListenerObject | null,
+      options?: boolean | EventListenerOptions,
+    ) {
+      const index = live.findIndex(([t, l]) => t === type && l === listener);
+      if (index >= 0) {
+        live.splice(index, 1);
+      }
+      EventTarget.prototype.removeEventListener.call(
+        this,
+        type,
+        listener,
+        options,
+      );
+    });
+    try {
+      const {unmount} = render(<Harness />);
+      fireEvent.pointerDown(row('A'), touch(1));
+      fireEvent.pointerMove(row('B'), touch(1));
+      act(() => {
+        window.dispatchEvent(new FocusEvent('blur'));
+      });
+      // The menu closes and unmounts before the finger lifts.
+      unmount();
+      expect(live.map(([type]) => type)).toEqual([]);
+    } finally {
+      add.mockRestore();
+      remove.mockRestore();
+    }
+  });
+
+  it('a blurred finger\u2019s release ends its gesture: the next press in the menu acts as usual', () => {
+    const onSelect = vi.fn();
+    render(<Harness onSelect={onSelect} />);
+    fireEvent.pointerDown(row('A'), touch(1));
+    act(() => {
+      window.dispatchEvent(new FocusEvent('blur'));
+    });
+    fireEvent.pointerUp(row('A'), touch(1));
+    fireEvent.click(row('A'), {detail: 1});
+    expect(onSelect).not.toHaveBeenCalled();
+    // A later tap is a gesture of its own.
+    fireEvent.pointerDown(row('B'), touch(2));
+    fireEvent.pointerUp(row('B'), touch(2));
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith('B');
+  });
+
   it('a mouse press the window\u2019s blur interrupts keeps its click, as before (spec:AST-017 FR59)', () => {
     const onSelect = vi.fn();
     render(<Harness onSelect={onSelect} />);
