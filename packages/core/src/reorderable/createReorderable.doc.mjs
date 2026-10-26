@@ -51,7 +51,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Give each row a stable key from your data (`itemKey={item.id}`), and apply each move by rendering the items in their new order in the same task.',
+          'Give each row a stable string key from your data (`itemKey={item.id}`), and apply each move by rendering the items in their new order in the same task.',
       },
       {
         guidance: true,

@@ -20,6 +20,7 @@ import {expect, test, type Page} from '@playwright/test';
 import {
   flick,
   holdThenDrag,
+  toTouchEvents,
   touchDriver,
   withStorybook,
 } from '@astryxdesign/interaction-harness';
@@ -130,15 +131,35 @@ test.describe('under a finger', () => {
     );
     const before = await settledTops(page);
     const {at, rowHeight} = await handleOf(page, 'Inbox');
-    const driver = await touchDriver(page);
-    // The drag without its lift: the finger stays down.
-    const script = holdThenDrag(
-      at,
-      {x: at.x, y: at.y + rowHeight * 2},
-      {holdMs: HOLD_MS, durationMs: 400, restMs: 120},
+    // The drag without its lift, sent through CDP on the script's own clock:
+    // the harness's player takes only scripts that end with every finger
+    // lifted. The cancel comes when the lift would have.
+    const events = toTouchEvents(
+      holdThenDrag(
+        at,
+        {x: at.x, y: at.y + rowHeight * 2},
+        {holdMs: HOLD_MS, durationMs: 400, restMs: 120},
+      ),
     );
-    await driver.play(script.slice(0, -1));
+    const lift = events[events.length - 1];
     const cdp = await page.context().newCDPSession(page);
+    let now = 0;
+    for (const step of events.slice(0, -1)) {
+      await page.waitForTimeout(step.t - now);
+      now = step.t;
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: step.type,
+        touchPoints: step.fingers.map(f => ({
+          x: f.x,
+          y: f.y,
+          id: f.id,
+          radiusX: 1,
+          radiusY: 1,
+          force: 1,
+        })),
+      });
+    }
+    await page.waitForTimeout(lift.t - now);
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchCancel',
       touchPoints: [],
@@ -210,6 +231,10 @@ test('a flick on a handle scrolls the page and moves nothing', async ({
   const order = await labels(page);
   const {at} = await handleOf(page, 'Item 8');
   const driver = await touchDriver(page);
+  test.skip(
+    !driver.drivesNativeGestures,
+    "this engine's injected touches drive no native scroll (the harness's drivesNativeGestures)",
+  );
   const scrolled = await page.evaluate(() => window.scrollY);
   await driver.play(flick(at, {velocity: {x: 0, y: -1500}}));
   await page.waitForTimeout(SETTLE_MS);

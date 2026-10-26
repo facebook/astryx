@@ -22,6 +22,7 @@ verified_by:
     packages/core/src/CommandPalette/CommandPalette.test.tsx,
     packages/core/src/Popover/Popover.test.tsx,
     packages/core/src/Popover/__tests__/PopoverSecondDocument.a11y.chromium.spec.ts,
+    packages/core/src/List/__tests__/ListReorder.test.tsx,
   ]
 members:
   [
@@ -62,6 +63,7 @@ members:
     component:TourStep,
     component:ChatEmojiPicker,
     component:Table,
+    component:List,
   ]
 architecture: [architecture:public-component-api]
 contributing: []
@@ -115,7 +117,7 @@ this record's current membership snapshot must be updated with it.
   for supporting or disabled text does not make the input itself a member.
 - **Other component-owned popups:** BreadcrumbItem, SideNavHeading,
   SideNavItem, TabMenu, TopNavHeading, TopNavMenu, TopNavMegaMenu, Table filtering,
-  Lab TourStep, and Lab ChatEmojiPicker.
+  List's reorder-mode hint, Lab TourStep, and Lab ChatEmojiPicker.
 - **Collaborators:** `useLayerDismissal`, `layerStack`, `LayerDepthProvider`,
   and `useFocusTrap` own or adapt the shared protocol.
 - **Nonparticipating layers:** A layer that has no dismissal behavior is not a
@@ -228,6 +230,7 @@ this record's current membership snapshot must be updated with it.
 | Focus traps with `onEscape`                                                                                                                                                                                                                                                                        | shared owner through `useFocusTrap`                           | They provide DOM containment, not descendant depth                                                                                                                      |
 | BreadcrumbItem, ChatComposerInput, ComplexSelector, DateInput, DateRangeInput, DateTimeInput, Selector, MultiSelector, PowerSearch, BaseTypeahead, Typeahead, Tokenizer, SideNavHeading, SideNavItem, TabMenu, TopNavHeading, TopNavMenu, TopNavMegaMenu, Table, Lab TourStep, Lab ChatEmojiPicker | shared owner through `usePopover` or a composed Popover owner | Table filtering owns controlled Popover state and discards its draft on close; TourStep routes Popover close to the Tour; ChatEmojiPicker owns controlled Popover state |
 | BottomSheet, BottomSheetSwitcher                                                                                                                                                                                                                                                                   | shared owner                                                  | none                                                                                                                                                                    |
+| List's reorder-mode hint                                                                                                                                                                                                                                                                           | shared owner, registered while reorder mode is on             | none                                                                                                                                                                    |
 | DropdownMenuSubMenu, PowerSearchEditPopover                                                                                                                                                                                                                                                        | local only                                                    | Must migrate from component-specific listeners or registries to the shared owner                                                                                        |
 
 The rows marked partial or local are current adoption gaps against FR1. They are
@@ -242,6 +245,7 @@ modality, positioning, outside-dismissal, and open-state contracts.
 | FR2, FR3, FR4, FR6 | `layerDismissalInvariants.test.tsx`                                                                             | nested same-DOM Dialogs, Lightbox over Dialog, Dialog in BottomSheet, platform cancel, IME                                                                                                     | One request closes two surfaces, closes a host before its child, or dismisses during composition  |
 | FR1, FR2, FR3, FR7 | `layerDismissalFamilies.test.tsx`                                                                               | Dialog, Lightbox, MobileNav, BottomSheet, Tooltip, HoverCard; controlled and blocking states                                                                                                   | A family bypasses the stack, a lower member handles a request, or controlled ownership is ignored |
 | FR1                | `useFocusTrap.test.tsx`                                                                                         | active, nested, and deactivated traps with `onEscape`                                                                                                                                          | A dismissible trap stays off the shared stack or nested traps respond together                    |
+| FR1, FR2           | `ListReorder.test.tsx`                                                                                          | List's reorder-mode hint holding the focus, above an open layer                                                                                                                                | Escape reaches the layer below, or reorder mode outlives the Escape                               |
 | FR8                | `useLayerDismissal.test.tsx`; `Popover.test.tsx`                                                                | members in the page and a same-origin iframe; a Popover alone and inside a Dialog, in an iframe                                                                                                | A press in one document dismisses a member of another, or a host closes over its nested layer     |
 | FR8                | `PopoverSecondDocument.a11y.chromium.spec.ts`                                                                   | a Popover in an iframe and in a Picture-in-Picture window, alone and with one open in the page                                                                                                 | A press in the second document misses its own layer or dismisses the page's                       |
 
