@@ -291,8 +291,9 @@ test('the AM/PM turn keeps advancing every frame through a blocked main thread',
 test('Reduced Motion: the AM/PM column cross-fades onto PM instead of turning', async ({
   page,
 }) => {
-  // design:reduced-motion DR2: the Wheel's turn becomes an opacity-only dip
-  // of 200 ms or less (C21's Wheel on F1's policy), with no travel.
+  // design:reduced-motion DR2: nothing travels. The column's drawing dips in
+  // opacity for 200 ms or less, and its rows hold where they are until the
+  // dip's middle, then step onto their rows (the wheel's landing).
   await page.emulateMedia({reducedMotion: 'reduce'});
   const {driver, hour, meridiem} = await openWheels(
     page,
@@ -304,30 +305,41 @@ test('Reduced Motion: the AM/PM column cross-fades onto PM instead of turning', 
     root.getAnimations({subtree: true}).map(animation => {
       const effect = animation.effect as KeyframeEffect;
       return {
-        properties: [
-          ...new Set(
-            effect
-              .getKeyframes()
-              .flatMap(frame =>
-                Object.keys(frame).filter(
-                  key =>
-                    ![
-                      'offset',
-                      'easing',
-                      'composite',
-                      'computedOffset',
-                    ].includes(key),
-                ),
+        keyframes: effect.getKeyframes().map(frame => ({
+          offset: frame.computedOffset,
+          transform: frame.transform == null ? null : String(frame.transform),
+          properties: Object.keys(frame).filter(
+            key =>
+              !['offset', 'easing', 'composite', 'computedOffset'].includes(
+                key,
               ),
           ),
-        ],
+        })),
         duration: Number(effect.getTiming().duration),
       };
     }),
   );
-  for (const animation of animations) {
-    expect(animation.properties).toEqual(['opacity']);
-    expect(animation.duration).toBeLessThanOrEqual(200);
+  const fades = animations.filter(animation =>
+    animation.keyframes.every(frame => !frame.properties.includes('transform')),
+  );
+  expect(fades.length).toBeGreaterThan(0);
+  for (const fade of fades) {
+    expect([
+      ...new Set(fade.keyframes.flatMap(frame => frame.properties)),
+    ]).toEqual(['opacity']);
+    expect(fade.duration).toBeLessThanOrEqual(200);
+  }
+  const fadeMs = Math.max(...fades.map(fade => fade.duration));
+  for (const landing of animations.filter(
+    animation => !fades.includes(animation),
+  )) {
+    // The origin held, then the destination, stepping at the dip's middle.
+    expect(landing.keyframes).toHaveLength(4);
+    const [origin, held, landed, end] = landing.keyframes;
+    expect(held.transform).toBe(origin.transform);
+    expect(landed.offset).toBe(held.offset);
+    expect(end.transform).toBe(landed.transform);
+    expect(held.offset * landing.duration).toBeCloseTo(fadeMs / 2, 0);
   }
   await expect.poll(async () => restingLabel(meridiem)).toBe('PM');
 });

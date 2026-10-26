@@ -22,6 +22,23 @@
 
 import type {CDPSession, Page} from '@playwright/test';
 
+/**
+ * The mark a harness function puts on its own page-side work
+ * (`console.timeStamp('harness-read')` at the start of the function it
+ * evaluates in the page), so a trace can tell the harness's reads from page
+ * code a test's own evaluate runs.
+ */
+export const HARNESS_READ = 'harness-read';
+
+/** Trace events that run page script: a listener, a timer, a frame callback. */
+const PAGE_SCRIPT_EVENTS = new Set([
+  'EventDispatch',
+  'FunctionCall',
+  'TimerFire',
+  'FireAnimationFrame',
+  'FireIdleCallback',
+]);
+
 /** Main-thread trace events that are rendering work, by their trace names. */
 export const RENDERING_EVENTS = [
   'UpdateLayoutTree', // style recalculation
@@ -44,8 +61,23 @@ export interface RenderingTrace {
   readonly prePaint: number;
   /** Window length, ms. */
   readonly durationMs: number;
-  /** Main-thread `RunTask`s longer than 50 ms inside the window (long tasks), epoch ms. */
+  /**
+   * The page's own main-thread tasks longer than 50 ms inside the window (long
+   * tasks), epoch ms. A task that ran a test's own DevTools command (a
+   * `page.evaluate`) is one, whether it calls page code directly or sets it
+   * off; only the harness's own marked reads are in `devtoolsTasks`.
+   */
   readonly longTasks: readonly {
+    readonly start: number;
+    readonly durationMs: number;
+  }[];
+  /**
+   * Main-thread tasks longer than 50 ms inside the window that ran a DevTools
+   * command the harness marked as its own read (`HARNESS_READ`) and no page
+   * script, epoch ms: `waitForAnimation` describing every animation's
+   * keyframes, or `blockMainThread(page, ms)` without `during`.
+   */
+  readonly devtoolsTasks: readonly {
     readonly start: number;
     readonly durationMs: number;
   }[];
@@ -84,8 +116,9 @@ interface TraceEvent {
 /**
  * Traces the page while `body` runs and counts the rendering work its main
  * thread did between a start mark (placed just before `body`) and an end mark
- * (just after). The harness's animation recorder and `waitForRest` stand down
- * meanwhile, so a body may wait with either and add no frame of its own.
+ * (just after). The harness's animation recorder, `waitForRest`,
+ * `waitForAnimation` and a watch's `started()` stand down meanwhile, so a body
+ * may wait with any of them and add no frame of its own.
  */
 export async function traceRendering(
   page: Page,
@@ -173,9 +206,42 @@ export async function traceRendering(
       counted.push({name: e.name, t: toEpochMs(e.ts)});
     }
   }
-  const longTasks = events
-    .filter(e => onMain(e) && e.name === 'RunTask' && (e.dur ?? 0) > 50_000)
-    .map(e => ({start: toEpochMs(e.ts), durationMs: (e.dur ?? 0) / 1000}));
+  // A task that ran a DevTools command received it over the DevTools
+  // session's pipe; page script it set off shows as its listener, timer or
+  // frame callback.
+  const main = events.filter(e => onMain(e) && e.ph !== 'E');
+  const longTasks: {start: number; durationMs: number}[] = [];
+  const devtoolsTasks: {start: number; durationMs: number}[] = [];
+  for (const task of main) {
+    if (task.name !== 'RunTask' || (task.dur ?? 0) <= 50_000) {
+      continue;
+    }
+    const end = task.ts + (task.dur ?? 0);
+    const inside = main.filter(
+      e => e !== task && e.ts >= task.ts && e.ts <= end,
+    );
+    const devtools = inside.some(
+      e =>
+        e.name === 'Receive mojo message' &&
+        (
+          e.args?.chrome_mojo_event_info as
+            {mojo_interface_tag?: unknown} | undefined
+        )?.mojo_interface_tag === 'blink.mojom.DevToolsSession',
+    );
+    // Only the harness's own reads are set apart: a test's evaluate may call
+    // page code directly, which leaves no listener or timer in the trace.
+    const harnessRead = inside.some(
+      e =>
+        e.name === 'TimeStamp' &&
+        (e.args?.data as {message?: unknown} | undefined)?.message ===
+          HARNESS_READ,
+    );
+    const pageScript = inside.some(e => PAGE_SCRIPT_EVENTS.has(e.name));
+    (devtools && harnessRead && !pageScript ? devtoolsTasks : longTasks).push({
+      start: toEpochMs(task.ts),
+      durationMs: (task.dur ?? 0) / 1000,
+    });
+  }
   return {
     counts,
     layout: counts.Layout ?? 0,
@@ -184,6 +250,7 @@ export async function traceRendering(
     prePaint: counts.PrePaint ?? 0,
     durationMs: (end.ts - start.ts) / 1000,
     longTasks,
+    devtoolsTasks,
     events: counted,
     window: {from: fromEpoch, to: toEpoch},
   };
@@ -262,8 +329,8 @@ const LONG_TASK_SCRIPT = `(() => {
  * Chromium), through the Long Tasks API. That sees the tasks of the page's own
  * event loop: a timer, an event handler, `blockMainThread(page, ms, {during})`.
  * A DevTools `page.evaluate`, such as `blockMainThread(page, ms)` without
- * `during`, is not one of them and is never recorded here; the trace's
- * `longTasks` (`traceRendering`) counts every main-thread task over 50 ms.
+ * `during`, is not one of them and is never recorded here; `traceRendering`
+ * reports it in `devtoolsTasks`, apart from the page's `longTasks`.
  */
 export async function installLongTaskLog(page: Page): Promise<void> {
   await page.addInitScript(LONG_TASK_SCRIPT);
