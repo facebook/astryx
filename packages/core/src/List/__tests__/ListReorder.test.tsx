@@ -29,7 +29,7 @@
  */
 
 import {readFileSync} from 'node:fs';
-import {useState, type Key} from 'react';
+import {useState, type Key, type ReactNode} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {
   act,
@@ -50,6 +50,8 @@ import {
 } from '../../reorderable';
 import {DRAG_SLOP} from '../../DateInput/usePointerDragScroll';
 import {useAnnounce} from '../../hooks/useAnnounce';
+import {LayerDepthProvider} from '../../Layer/LayerDepthContext';
+import {useLayerDismissal} from '../../Layer/useLayerDismissal';
 import {motionRole} from '../../motion/roles';
 import {getGestureHost} from '../../gestures/GestureHost';
 import {pointerQuery} from '../../gestures/__tests__/pointerQuery';
@@ -808,6 +810,33 @@ describe('List reorderable', () => {
     expect(down).toHaveAttribute('tabindex', '-1');
     await user.keyboard('{Escape}');
     expect(hintButton('Move down')).toBeNull();
+  });
+
+  it('takes an Escape that reaches the dismissal stack with the focus in the hint: the mode ends, and a layer below stays open', async () => {
+    const user = userEvent.setup();
+    const outer = vi.fn();
+    // A layer the list sits in, such as a Dialog.
+    function OuterLayer({children}: {children: ReactNode}) {
+      useLayerDismissal({isActive: true, onDismiss: outer});
+      return <LayerDepthProvider>{children}</LayerDepthProvider>;
+    }
+    render(
+      <OuterLayer>
+        <ReorderableRows initial={['Inbox', 'Sent', 'Drafts']} />
+      </OuterLayer>,
+    );
+    handleOf('Sent').focus();
+    await user.keyboard(' ');
+    expect(handleOf('Sent')).toHaveAttribute('aria-pressed', 'true');
+    // A screen reader moved into the hint: its Escape goes past the handle,
+    // to the stack, whose top-most layer is the hint.
+    fireEvent.keyDown(hintButton('Move up') as HTMLElement, {key: 'Escape'});
+    expect(handleOf('Sent')).toHaveAttribute('aria-pressed', 'false');
+    expect(hintButton('Move up')).toBeNull();
+    expect(outer).not.toHaveBeenCalled();
+    // The next Escape is the layer below's.
+    fireEvent.keyDown(document, {key: 'Escape'});
+    expect(outer).toHaveBeenCalledTimes(1);
   });
 
   it("reorders by taps alone: the handle, the hint's moves, then Done, the focus staying on the handle", async () => {
