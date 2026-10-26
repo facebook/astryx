@@ -2366,6 +2366,28 @@ describe('useSheetGestures: the release on the compositor', () => {
     }
   });
 
+  it('keeps a finger let go above fully open, still moving up, within the reserve below the screen', () => {
+    const {hook} = setup({
+      snapHeights: () => [200],
+      offscreenBlockEndInset: 48,
+    });
+    const t = makeTarget();
+    const played = recordAnimations(t);
+    downFinger(hook, 400, 0, t);
+    // Up past fully open until the band holds the sheet at the 48 px wall,
+    // the finger still moving up at 1500 px/s when it lifts.
+    stream(hook, t, {from: 400, to: 100, t0: 0, t1: 200, finger: true});
+    expect(liveOffset(hook)).toBe(-48);
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(fingerEvent(100, 201, t)),
+    );
+    expect(hook.result.current.settledOffset).toBe(0);
+    const release = played.at(-1) as Played;
+    for (let ms = 0; ms <= 600; ms += 4) {
+      expect(travelAt(release, ms)).toBeGreaterThanOrEqual(-48.5);
+    }
+  });
+
   it('plays the measured fast release whatever a `--motion-…` variable says, within the reserve (spec:AST-094 FR4 names no sheet role)', () => {
     // A theme scope that sets the fast release's variable to a bouncier
     // spring: the sheet's springs are not theme roles, so the release plays
