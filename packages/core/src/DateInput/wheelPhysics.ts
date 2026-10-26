@@ -35,8 +35,8 @@
  * - A release without velocity eases onto the nearest row at `snapRate`.
  * - A release past an end returns on the bounce spring.
  * - A spring that has not settled by the animator's limit (an undamped
- *   `scroll.bounce` a theme set) snaps onto its end there, as the animator's
- *   own motion does (motion/animator.ts).
+ *   bounce spring) snaps onto its end there, as the animator's own motion
+ *   does (motion/animator.ts).
  *
  * SYNC: When modified, update:
  * - /packages/core/src/DateInput/wheelPhysics.test.ts
@@ -225,7 +225,7 @@ export function coastCurve(
 
 /**
  * The bounce spring, from `from` with `velocity`, onto `to`. `bounce` is
- * the spring a theme resolved for `scroll.bounce` (motion/resolveMotion.ts).
+ * `scroll.bounce`'s spring as the wheel resolves it (motion/resolveMotion.ts).
  */
 export function bounceCurve(
   from: number,
@@ -309,8 +309,8 @@ export function projectRelease(
 
 /**
  * What the wheel does when the finger lifts at `offset` with `velocity`
- * (px/s, positive when the rows move up). `bounce` is the spring a theme
- * resolved for `scroll.bounce`.
+ * (px/s, positive when the rows move up). `bounce` is `scroll.bounce`'s
+ * spring as the wheel resolves it.
  *
  * @example
  * ```
