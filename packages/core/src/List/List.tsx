@@ -43,7 +43,11 @@ import {keepPresentation, useListUpdateMotion} from './useListUpdateMotion';
 import {themeProps} from '../utils/themeProps';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import {REORDER_ENGINE, type ReorderableInternals} from './listReorderContext';
+import {
+  REORDER_ENGINE,
+  type ListReorderOptions,
+  type ReorderableInternals,
+} from './listReorderContext';
 
 export {
   type ListDensity,
@@ -321,10 +325,11 @@ export function List({
       edge,
       listStyle,
       keepRowPresentation: hasAnimatedChanges ? keepPresentation : undefined,
-      reorder:
-        reorderSession && reorderOptions
-          ? {session: reorderSession, options: reorderOptions}
-          : null,
+      // With a session there is an object, so its options too.
+      reorder: reorderSession && {
+        session: reorderSession,
+        options: reorderOptions as ListReorderOptions,
+      },
     }),
     [
       density,

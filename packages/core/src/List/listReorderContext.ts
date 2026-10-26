@@ -23,8 +23,11 @@
 import type {ComponentType, Key, ReactNode, RefObject} from 'react';
 import type {StyleXStyles} from '@stylexjs/stylex';
 
-/** The key a reorderable object carries its machinery under. */
-export const REORDER_ENGINE: unique symbol = Symbol('astryx.reorderEngine');
+/**
+ * The key a reorderable object carries its machinery under. No description:
+ * it would ship in every List (spec:AST-103 FR2).
+ */
+export const REORDER_ENGINE: unique symbol = Symbol();
 
 /** On the list root while a drag session owns its rows. */
 export const REORDERING_ATTRIBUTE = 'data-astryx-reordering';
