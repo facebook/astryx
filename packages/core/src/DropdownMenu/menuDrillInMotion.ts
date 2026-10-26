@@ -6,9 +6,9 @@
  * @file menuDrillInMotion.ts
  * @input The menu's box (the popover frame that paints it) and its
  *   role="menu" list, the parent's rows and the shown view's card that
- *   useMenuDrillIn lays out, the motion animator, the theme's sub-menu
- *   springs (`springs.subMenuOpen`, `springs.subMenuBack`) and UIMenu's
- *   sub-menu values from the UIKit constants table
+ *   useMenuDrillIn lays out, the motion animator, the sub-menu springs
+ *   (`springs.subMenuOpen`, `springs.subMenuBack`, internal motion roles)
+ *   and UIMenu's sub-menu values from the UIKit constants table
  * @output Exports createMenuDrillInMotion and MenuDrillInMotion: UIMenu's
  *   in-place sub-menu, played around DropdownMenu's drill-in (push and pop of
  *   a view as a card), and the attributes it sets while it plays
