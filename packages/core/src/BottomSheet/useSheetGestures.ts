@@ -1173,6 +1173,10 @@ export function useSheetGestures({
   );
 
   useEffect(() => {
+    // Only an open sheet can be dragged; a closed one listens to nothing.
+    if (!isOpen) {
+      return;
+    }
     const handleWindowBlur = () => cancelDrag();
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
@@ -1185,7 +1189,7 @@ export function useSheetGestures({
       window.removeEventListener('blur', handleWindowBlur);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [cancelDrag]);
+  }, [cancelDrag, isOpen]);
 
   const settleFromDrag = useCallback(
     (
