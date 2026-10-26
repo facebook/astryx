@@ -175,7 +175,6 @@ export const switchControl = {
  * may retune (motion/roles.ts). Nothing registers on import: Switch's touch
  * presentation calls it once before its first animation (it is idempotent),
  * so a page that never shows it ships none of the table's roles.
- * @experimental
  */
 export function registerSwitchTable(): void {
   registerMotionTable('switchControl', switchControl);
