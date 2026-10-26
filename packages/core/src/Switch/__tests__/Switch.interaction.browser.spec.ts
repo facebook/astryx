@@ -657,7 +657,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     page,
   }) => {
     const {driver, input, thumb, center} = await openSwitch(page);
-    const read = () =>
+    const read = async () =>
       page.evaluate(() => {
         const t = document.querySelector<HTMLElement>(
           '#storybook-root .astryx-switch-thumb',
