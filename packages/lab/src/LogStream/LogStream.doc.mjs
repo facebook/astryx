@@ -11,7 +11,7 @@ export const docs = {
 
   usage: {
     description:
-      'Experimental streaming log viewer: mono grid rows (timestamp | level | source | message) with token-derived level accents, expandable per-row detail panels, follow-scroll live tailing with a "Jump to latest" affordance, and an always-dark terminal variant. Appended rows fade in via @starting-style. Live announcements follow the pinning state: the role="log" region is aria-live="polite" only while following the tail, and aria-live="off" while unfollowed, so a busy stream never floods assistive tech.',
+      'Experimental streaming log viewer: mono grid rows (timestamp | level | source | message) with token-derived level accents, expandable per-row detail panels, follow-scroll live tailing with a "Jump to latest" affordance, and an always-dark terminal variant. In the default variant, warning and error labels use their plain-surface status foreground roles. Appended rows fade in via @starting-style. Live announcements follow the pinning state: the role="log" region is aria-live="polite" only while following the tail, and aria-live="off" while unfollowed, so a busy stream never floods assistive tech.',
   },
 
   props: [
@@ -24,13 +24,15 @@ export const docs = {
     {
       name: 'variant',
       type: "'default' | 'terminal'",
-      description: "Visual variant style: 'default' uses theme surface background, 'terminal' uses fixed dark background.",
+      description:
+        "Visual variant style: 'default' uses theme surface background, 'terminal' uses fixed dark background.",
       default: "'default'",
     },
     {
       name: 'isFollowing',
       type: 'boolean',
-      description: 'Controlled follow-pinning state to auto-scroll to the newest entry.',
+      description:
+        'Controlled follow-pinning state to auto-scroll to the newest entry.',
     },
     {
       name: 'onFollowChange',
@@ -57,7 +59,8 @@ export const docs = {
     {
       name: 'renderEntry',
       type: '(entry: LogEntry) => ReactNode',
-      description: 'Custom render function for replacing individual row layout.',
+      description:
+        'Custom render function for replacing individual row layout.',
     },
     {
       name: 'xstyle',
