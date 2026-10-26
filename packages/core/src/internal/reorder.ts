@@ -7,9 +7,11 @@
  *   with, for a Lab collection that adapts an owner's object (a staged
  *   selector aims the moves at its draft and keeps the owner's
  *   `isReorderable`)
- * @position `@astryxdesign/core/internal/reorder`. Reserved for Astryx's own
- *   packages; undocumented; outside the compatibility promise (spec:AST-017
- *   FR21). Only Core and Lab may import it (@astryx/no-core-internal-import).
+ * @position `@astryxdesign/core/internal/reorder`: an internal entry reserved
+ *   for Astryx's own packages, undocumented, outside the public API and its
+ *   compatibility promise (spec:AST-017 FR21), versioned in lockstep with
+ *   Core, and allowed by lint only in Core and Lab
+ *   (architecture:react-component-runtime INV13).
  */
 
 import type {Key} from 'react';
