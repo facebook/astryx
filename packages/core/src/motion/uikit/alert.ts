@@ -2,12 +2,11 @@
 
 /**
  * @file alert.ts
- * @input The motion role registry (registerMotionTable)
+ * @input Nothing: plain data
  * @output Exports `alertController`: how UIAlertController (`.alert`)
- *   appears and leaves, and how it tracks a finger across its actions; and
- *   `registerAlertControllerTable`, which makes its presentation and
- *   dismissal durations motion roles a theme may retune
- *   (`alertController.present.durationMs`, `alertController.dismiss.durationMs`)
+ *   appears and leaves, and how it tracks a finger across its actions. None
+ *   of it is a motion role: its timings decide when a touch acts, which stays
+ *   internal (`spec:AST-094` FR4, DEC-3)
  * @position The alert domain of the UIKit constants table (motion/uikit);
  *   its springs are `springs.alertPresent` and `springs.alertDismiss`
  *
@@ -21,11 +20,8 @@
  * `@measure` task that will confirm or replace them. uikit.test.ts enforces
  * both.
  *
- * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md and
- * run `pnpm generate:motion-roles`
+ * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md
  */
-
-import {registerMotionTable} from '../roles';
 
 export const alertController = {
   /**
@@ -56,9 +52,11 @@ export const alertController = {
     /**
      * How long the presentation runs, in ms: the duration UIKit gives the
      * Core Animation spring of `springs.alertPresent` (cut there, 0.1 % from
-     * rest). Touches come back this long after the start, plus the frame or
-     * two UIKit takes to complete it (`ignoresTouchesForMs`); a theme that
-     * retunes `springs.alertPresent` sets this to its new spring's length.
+     * rest), which is that spring's settling duration. Touches come back
+     * this long after the start, plus the frame or two UIKit takes to
+     * complete it (`ignoresTouchesForMs`). AlertDialog derives that window
+     * from the spring's length, so it follows the spring; this value is the
+     * measurement, not a role.
      * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
      *   iPhone 17 Pro, `UIView.animate(withDuration:usingSpringWithDamping:…)`
      *   hooked and CASpringAnimation dumped (duration 0.404), Oct 23 2026
@@ -82,8 +80,9 @@ export const alertController = {
      * 1 to 0, its scale stays 1) and the dimming view fades out, both on
      * `springs.alertDismiss`. No touch is delivered until it ends, to the
      * alert or to the content behind it. A dialog whose fade never reports
-     * its end closes this long after it started (and a frame budget); a
-     * theme that retunes `springs.alertDismiss` sets this to its length.
+     * its end closes this long after it started (and a frame budget),
+     * derived from the spring's length; this value is the measurement
+     * (`springs.alertDismiss`'s settling duration), not a role.
      * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
      *   iPhone 17 Pro, CAAnimation dump of the alert and dimming views on a
      *   tap on an action (opacity only, duration 0.404); second taps 50, 150
@@ -131,22 +130,3 @@ export const alertController = {
     haptic: 'none',
   },
 } as const;
-
-/**
- * Makes the alert's presentation and dismissal durations motion roles a theme
- * may retune (motion/roles.ts). The timings that decide when a touch acts
- * (when input comes back, when a touched action highlights) are not motion,
- * and the cut on leaving an action is not tunable until the press release
- * takes a duration. Nothing registers on import: AlertDialog's touch layer
- * calls it once before the alert first animates (it is idempotent), so a page
- * that never presents one ships no registry.
- */
-export function registerAlertControllerTable(): void {
-  registerMotionTable('alertController', alertController, {
-    exclude: [
-      'present.ignoresTouchesForMs',
-      'actions.highlightOnsetMs',
-      'actions.leaveFadeMs',
-    ],
-  });
-}
