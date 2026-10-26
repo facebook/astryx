@@ -103,9 +103,9 @@ function leavesFrom(file: string, lines: string[], start: number): Leaf[] {
     if (trimmed.startsWith('} as const')) {
       break;
     }
-    // A group exported on its own and read back by name (`press,`): its
-    // leaves are checked where it is declared.
-    if (/^\w+,$/.test(trimmed)) {
+    // A group exported on its own and read back by name (`press,` or
+    // `tap: UIKIT_TAP,`): its leaves are checked where it is declared.
+    if (/^\w+,$/.test(trimmed) || /^\w+: UIKIT_[A-Z_]+,$/.test(trimmed)) {
       doc = '';
       continue;
     }
