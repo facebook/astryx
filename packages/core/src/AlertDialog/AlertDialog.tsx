@@ -73,6 +73,12 @@ const styles = stylex.create({
   },
 });
 
+/**
+ * How AlertDialog presents under a finger: `'adaptive'` follows the device,
+ * `'dialog'` keeps the dialog a mouse gets on every device.
+ */
+export type AlertDialogPresentation = 'adaptive' | 'dialog';
+
 export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
   ref?: React.Ref<HTMLDialogElement>;
   /**
@@ -139,6 +145,14 @@ export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
    * @default 400
    */
   width?: number | string;
+  /**
+   * How the alert presents under a finger. `'adaptive'` gives a touch screen
+   * the native alert's touch model: a finger is tracked across both actions
+   * as one group and runs the action it lifts on. `'dialog'` keeps the dialog
+   * a mouse gets on every device, with each button's own press and click.
+   * @default 'adaptive'
+   */
+  presentation?: AlertDialogPresentation;
 }
 
 /**
@@ -180,6 +194,7 @@ export function AlertDialog({
   isActionLoading,
   onAction,
   width = 400,
+  presentation = 'adaptive',
   xstyle,
   className,
   style,
@@ -209,8 +224,11 @@ export function AlertDialog({
   const bodyRef = useRef<HTMLDivElement>(null);
   // Only under a touch presentation (a coarse primary pointer, after
   // hydration): where the primary pointer is fine nothing attaches, and a
-  // finger keeps the browser's click (`spec:AST-094` FR13, FR19).
-  const {isTouch} = useTouchPresentation();
+  // finger keeps the browser's click (`spec:AST-094` FR13, FR19). A caller's
+  // `presentation="dialog"` keeps the fine-pointer dialog on every device
+  // (`architecture:public-component-api` INV16).
+  const touch = useTouchPresentation();
+  const isTouch = presentation !== 'dialog' && touch.isTouch;
   const {isTracking, isBodyScrollable} = useAlertDialogTouch(surfaceRef, {
     isOpen,
     isInline: isInline === true,

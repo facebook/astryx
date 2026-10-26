@@ -468,7 +468,9 @@ describe('AlertDialog touch tracking', () => {
     element.getBoundingClientRect = () => rect;
   }
 
-  function renderOpen(props: {isInline?: boolean} = {}) {
+  function renderOpen(
+    props: {isInline?: boolean; presentation?: 'adaptive' | 'dialog'} = {},
+  ) {
     stubAlertDialogMedia({
       smallScreen: true,
       coarsePointer: true,
@@ -480,6 +482,7 @@ describe('AlertDialog touch tracking', () => {
       <AlertDialog
         isOpen
         isInline={props.isInline}
+        presentation={props.presentation}
         onOpenChange={onOpenChange}
         title="Delete item?"
         description="This cannot be undone."
@@ -536,6 +539,23 @@ describe('AlertDialog touch tracking', () => {
     touch('touchend', cancel, {x: 60, y: 116}, id);
     expect(onAction).toHaveBeenCalledTimes(1);
     expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it('keeps each button its own press under a finger with presentation="dialog": no group, and a slide from the action to Cancel cancels nothing', () => {
+    const {onOpenChange, onAction, cancel, action} = renderOpen({
+      presentation: 'dialog',
+    });
+    // The document press controller keeps each button, as with a mouse.
+    for (const button of [cancel, action]) {
+      expect(button).toHaveAttribute('data-astryx-pressable');
+    }
+    const id = touchId++;
+    touch('touchstart', action, {x: 60, y: 116}, id);
+    touch('touchmove', action, {x: 60, y: 156}, id);
+    expect(cancel).not.toHaveAttribute('data-astryx-press');
+    touch('touchend', action, {x: 60, y: 156}, id);
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(onAction).not.toHaveBeenCalled();
   });
 
   it('does not track a touch that starts on the backdrop', () => {
