@@ -230,13 +230,13 @@ export const docs = {
       name: 'header',
       type: 'ReactNode',
       description:
-        'Content above the rows and outside the menu itself — a filter field, a toggle. A menu holds only its rows, so a control that is not a row goes here or in `footer`, never among the rows. It keeps its own keys and presses. With a header or footer the popover is a modal dialog around the menu: Tab and Shift+Tab move through the header, the menu and the footer and wrap at either end, and Escape closes. The bottom sheet shows it above the actions.',
+        'Content above the rows and outside the menu itself — a filter field, a toggle. A menu holds only its rows, so a control that is not a row goes here or in `footer`, never among the rows. It keeps its own keys and presses. With a header or footer the popover is a modal dialog around the menu: Tab and Shift+Tab move through the header, the menu and the footer and wrap at either end, and Escape closes. The bottom sheet shows it above the actions, except on a level whose own `header` or `footer` replaces it.',
     },
     {
       name: 'footer',
       type: 'ReactNode',
       description:
-        'Content below the rows and outside the menu itself — a "Create" button. Tab from the menu moves into it, and Tab past its last control wraps to the start of the dialog (see `header`). The bottom sheet shows it below the actions.',
+        'Content below the rows and outside the menu itself — a "Create" button. Tab from the menu moves into it, and Tab past its last control wraps to the start of the dialog (see `header`). The bottom sheet shows it below the actions, except on a level whose own `header` or `footer` replaces it.',
     },
     {
       name: 'placement',
@@ -276,7 +276,7 @@ export const docs = {
   usage: {
     anatomy,
     description:
-      'A dropdown menu that displays a list of actionable items in a popup triggered by a button. Use to present action options as a next step in a process, or to offer contextual actions without cluttering the interface. Like the menus of macOS and iOS, the row under the pointer when it is released is the row that acts, the highlight follows a held mouse or finger, a mouse opens it on press and can drag straight into it, and a finger held on the trigger opens it with the finger down. Under a finger it behaves like UIMenu on iOS: a finger resting on the trigger for 150 ms opens the menu, the finger that opened it picks a row only once it has moved 10 px (so the row that appears under it is never picked by accident), the menu grows out of its trigger and collapses back into it on UIKit\u2019s springs, and a pan that starts outside it dismisses it as the page scrolls. On a phone the popover menu sits over its trigger as UIMenu does: centered on it, top-aligned with it (bottom-aligned when the trigger is in the lower half of the viewport), 8 px from the viewport\u2019s sides.',
+      'A dropdown menu that displays a list of actionable items in a popup triggered by a button. Use to present action options as a next step in a process, or to offer contextual actions without cluttering the interface. Like the menus of macOS and iOS, the row under the pointer when it is released is the row that acts, the highlight follows a held mouse or finger, a mouse opens it on press and can drag straight into it, and a finger held on the trigger opens it with the finger down. Under a finger it behaves like UIMenu on iOS: the menu opens as the finger presses the trigger (inside a scroll view, once the 150 ms content-touch delay passes with no scroll), the finger that opened it picks a row only once it has moved 10 px (so the row that appears under it is never picked by accident), the menu grows out of its trigger and collapses back into it on UIKit\u2019s springs, and a pan that starts outside it dismisses it as the page scrolls. On a phone the popover menu sits over its trigger as UIMenu does: centered on it, top-aligned with it (bottom-aligned when the trigger is in the lower half of the viewport), 8 px from the viewport\u2019s sides.',
     bestPractices: [
       {
         guidance: true,

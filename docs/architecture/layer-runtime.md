@@ -531,11 +531,12 @@ Current gaps are observable facts, not current target behavior:
 migration, verification, and completion criteria for these gaps. This record must
 be updated only as that work ships.
 
-INV14 and INV15 are not met yet, and `spec:AST-003` does not cover them: no
-shared presentation hold, exit copy, runtime backdrop tint, or lift module
-exists, and Dialog, Drawer, BottomSheet, Lightbox, MobileNav, ToastViewport,
-and Selector each build their own top-layer mounting, exit, or backdrop, and
-Popover builds its own presentation hold for its sheet presentation.
+INV14 and INV15 are not met yet, and `spec:AST-003` does not cover them. The
+runtime owns the shared exit copy (INV13, `placeLayerExitCopy`); no shared
+presentation hold, runtime backdrop tint or lift module exists, Dialog, Drawer,
+BottomSheet, Lightbox, MobileNav, ToastViewport, and Selector each build their
+own top-layer mounting, exit, or backdrop, and Popover builds its own
+presentation hold for its sheet presentation.
 
 ## Change coupling
 
@@ -562,10 +563,12 @@ Popover builds its own presentation hold for its sheet presentation.
   entry/return, and controlled close behavior.
 - A browser fallback change updates public `useLayer` and Popover docs and tests
   for both the native path and actual fallback.
-- An exit-copy change verifies the copy's reach and accessibility, its top-layer
-  show (from script and by light dismiss), the refused show's wait, its place
-  mid-entrance, and that a layer keeps one copy, in jsdom and in Chromium and
-  WebKit.
+- An exit-copy change verifies, where each can be observed: the copy's reach,
+  accessibility and form exclusion in jsdom; its top-layer show (from script
+  and by light dismiss), its place mid-entrance, and that a layer keeps one
+  copy, in jsdom and in Chromium and WebKit; and the refused show's wait in
+  jsdom and on Android Chromium, the engine that refuses a show during another
+  popover's toggle.
 
 ## Owning code
 
