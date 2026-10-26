@@ -113,7 +113,7 @@ import {
 import {rubberBand} from '../motion/rubberBand';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {sheet as sheetTable} from '../motion/uikit/sheet';
-import {springs} from '../motion/uikit/springs';
+import {SHEET_DETENT_SPRING} from '../motion/uikit/springs';
 import {
   readReleaseMotion,
   themeCurve,
@@ -1355,7 +1355,7 @@ export function useSheetGestures({
         springTravel(
           state.baseOffset,
           state.committedLayoutOffset,
-          springs.sheetDetent,
+          SHEET_DETENT_SPRING,
           undefined,
           cancelDimFor,
         );
@@ -1572,7 +1572,7 @@ export function useSheetGestures({
     const handle = springTravel(
       settledOffset,
       settledLayoutOffsetRef.current,
-      springs.sheetDetent,
+      SHEET_DETENT_SPRING,
       undefined,
       lastDimForRef.current ?? undefined,
     );
