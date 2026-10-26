@@ -22,6 +22,7 @@ import {
   type WheelHandle,
   type WheelOption,
 } from './Wheel';
+import {WheelGroup} from './WheelGroup';
 
 const ROW = 28;
 
@@ -393,13 +394,15 @@ describe('Wheel — by pointer', () => {
     const ref = createRef<WheelHandle>();
     const onChange = vi.fn();
     const view = render(
-      <Wheel
-        ref={ref}
-        label="Hour"
-        options={HOURS}
-        value={12}
-        onChange={onChange}
-      />,
+      <WheelGroup>
+        <Wheel
+          ref={ref}
+          label="Hour"
+          options={HOURS}
+          value={12}
+          onChange={onChange}
+        />
+      </WheelGroup>,
     );
     return {...view, ref, onChange};
   }
@@ -407,15 +410,16 @@ describe('Wheel — by pointer', () => {
   it.each([
     ['iOS WebKit', true],
     ['Android Chrome', false],
-  ])('draws the touch column under a finger, on %s', (_, ios) => {
-    stubDevice({ios, coarse: true});
-    const {container} = renderPicker();
-    expect(container.querySelector('[data-wheel]')).not.toBeNull();
-    // Each option is a drawn row, once.
-    expect(container.querySelectorAll('[data-wheel-row]')).toHaveLength(
-      HOURS.length,
-    );
-  });
+  ])(
+    'draws the UIPickerView column and band under a finger, on %s',
+    (_, ios) => {
+      stubDevice({ios, coarse: true});
+      const {container} = renderPicker();
+      expect(container.querySelector('[data-wheel]')).not.toBeNull();
+      // One band across the group, none of the column's own.
+      expect(container.querySelectorAll('[data-wheel-band]')).toHaveLength(1);
+    },
+  );
 
   it.each([
     ['a mouse', false],
@@ -424,6 +428,7 @@ describe('Wheel — by pointer', () => {
     stubDevice({ios, coarse: false});
     const {container} = renderPicker();
     expect(container.querySelector('[data-wheel]')).toBeNull();
+    expect(container.querySelector('[data-wheel-band]')).toBeNull();
     // Today's column, straight in its container: no group frame around it.
     expect(
       screen.getByRole('listbox', {name: 'Hour'}).parentElement?.parentElement,

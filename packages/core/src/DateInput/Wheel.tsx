@@ -13,8 +13,8 @@
  *
  * Wheel picks its column by the primary pointer (useTouchPresentation): one
  * touch model on every touch device, iOS and Android alike. Under a finger
- * it moves like UIPickerView in today's look: PickerWheel.tsx, the touch
- * layer, imported here alone. Under a mouse or other fine pointer it is the snap-scrolling
+ * it is UIPickerView's wheel: PickerWheel.tsx, the touch layer, imported
+ * here alone. Under a mouse or other fine pointer it is the snap-scrolling
  * column below, today's Astryx wheel. A wheel draws only on a sheet, so a caller who
  * pins the fine surface (`presentation="popover"` on its input) gets no
  * sheet and no wheel (architecture:public-component-api INV16).
@@ -242,7 +242,7 @@ const styles = stylex.create({
 });
 
 /**
- * One picker column: UIPickerView's motion in today's look under a finger, today's
+ * One picker column: UIPickerView's wheel under a finger, today's
  * snap-scrolling column under a fine pointer.
  *
  * @example
@@ -257,7 +257,7 @@ const styles = stylex.create({
  */
 export function Wheel(props: WheelProps) {
   // One touch model on every touch device: a finger gets UIPickerView's
-  // motion in today's look, a fine pointer today's column.
+  // wheel, a fine pointer today's column.
   const {isTouch} = useTouchPresentation();
   return isTouch ? <PickerWheel {...props} /> : <TodayWheel {...props} />;
 }

@@ -5,13 +5,18 @@
  * @input The built DateInput stories "BottomSheetWideRange" (200 years) and
  *   "BottomSheetNarrowRange" (2 years), real touch input, CPU throttling
  * @output Proof that showing a touch wheel (a finger gets it on every engine)
- *   costs no more per year than today's column: the month and year wheels
- *   open about as fast for two centuries as for two years, each year is
- *   drawn once, and only the rows in sight tip. Under a mouse the year wheel
+ *   costs the same for a long list as for a short one: the month and year
+ *   wheels open as fast for two centuries as for two years, and the year
+ *   wheel draws only the rows around its band. Under a mouse the year wheel
  *   is today's column, every year listed natively.
- * @position Browser proof for DateInput/PickerWheel.tsx's rows, run by
+ * @position Browser proof for DateInput/PickerWheel.tsx's row window, run by
  *   playwright.interaction.config.ts (Chromium: CPU throttling and long-task
  *   timing come from the DevTools protocol)
+ *
+ * The year wheel used to draw every year twice (the cylinder and the band's
+ * copy), so opening the month and year wheels cost more with each year of
+ * the range: with 101 years, 120 to 180 ms of main thread in Mobile Safari
+ * on the iOS 26.2 simulator, against 58 ms for one year.
  */
 
 import {expect, test, type Page} from '@playwright/test';
@@ -95,15 +100,12 @@ async function openMonthYearWheels(
     const years = page.getByRole('listbox', {name: 'Year'});
     return {
       yearOptions: await years.getByRole('option').count(),
-      // Rows in sight: every row the wheel draws, copies included, with
-      // some opacity (a row out of sight is transparent and upright).
+      // Rows on the cylinder: every element the wheel turns with rotateX.
       yearRowsDrawn: await years.evaluate(
         list =>
-          [
-            ...list.querySelectorAll<HTMLElement>(
-              '[data-wheel-row], [data-wheel-copy]',
-            ),
-          ].filter(row => Number(row.style.opacity) > 0).length,
+          [...list.querySelectorAll<HTMLElement>('*')].filter(element =>
+            element.style.transform.startsWith('rotateX'),
+          ).length,
       ),
       worstFrameMs,
     };
@@ -112,7 +114,7 @@ async function openMonthYearWheels(
   }
 }
 
-test('the month and year wheels tip the same rows for 200 years as for 2, and open about as fast', async ({
+test('the month and year wheels draw the same rows for 200 years as for 2, and open as fast', async ({
   page,
   browserName,
 }, testInfo) => {
@@ -149,12 +151,12 @@ test('the month and year wheels tip the same rows for 200 years as for 2, and op
   // The touch column.
   await expect(page.locator('[data-wheel]')).toHaveCount(2);
   expect(narrow.yearRowsDrawn).toBe(2);
-  // The rows in sight: the same for any range; every other year is drawn
-  // once, flat and transparent.
+  // The cylinder's front half and a buffer: the same rows for any range
+  // (before, every one of the 200).
   expect(wide.yearRowsDrawn).toBeLessThanOrEqual(15);
   if (throttle) {
     // A guard, not a measure: the long range may cost its plain options
-    // (and the frame clock is coarse), never a cost per tipped year.
+    // (and the frame clock is coarse), never a cost per drawn year again.
     expect(wide.worstFrameMs).toBeLessThanOrEqual(
       narrow.worstFrameMs * 1.5 + 50,
     );

@@ -12,8 +12,8 @@
  *   thread; it does no Layout or Paint per frame; a finger landing on the
  *   coasting wheel stops it where it is and the wheel then eases onto the
  *   nearest row; a storyboard of a flick and its coast; under reduced motion
- *   (design:reduced-motion DR2), a flick that still coasts as momentum with
- *   its rows flat, and a tap that cross-fades onto its row (opacity only,
+ *   (design:reduced-motion DR2), a flick that still coasts as momentum, and
+ *   a tap that cross-fades onto its row (opacity only,
  *   200 ms or less). Under a mouse, a drag scrolls today's column onto a
  *   row.
  * @position Browser proof for DateInput/PickerWheel.tsx and the Wheel switch,
@@ -153,8 +153,8 @@ function translateYOf(transform: string): number {
 type WheelAnimation = Awaited<ReturnType<typeof waitForAnimation>>[number];
 
 /**
- * The strip's own animation among those under it (each row also animates its
- * tip and fade): the one whose keyframes are all translations.
+ * The strip's own animation among those under it (each row on the drum
+ * also animates its turn): the one whose keyframes are all translations.
  */
 function stripAnimationOf(animations: WheelAnimation[]): WheelAnimation {
   const strip = animations.find(
@@ -307,12 +307,13 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
   expect(blockTo - blockFrom, 'the block covers the coast').toBeGreaterThan(
     200,
   );
-  const marked = minutes.getByRole('option', {
-    name: String(Math.round(rest / ROW)).padStart(2, '0'),
-  });
-  // Today's rows fade toward the edges, which washes out the marker chip's
-  // colour; this one row is drawn opaque for the evidence (its coast keeps
-  // its keyframes' movement and tip, without their fade).
+  // The row as drawn on the cylinder (the options are transparent, over the
+  // band).
+  const marked = minutes.locator(
+    `[data-wheel-drum] [data-label="${String(Math.round(rest / ROW)).padStart(2, '0')}"]`,
+  );
+  // The dimmed copy's rows are 44.7 % opaque, which washes out the marker
+  // chip's colour; this one row is drawn opaque for the evidence.
   await marked.evaluate(element => {
     for (const animation of element.getAnimations()) {
       const effect = animation.effect;
@@ -560,12 +561,11 @@ async function recordAnimations(column: Locator) {
     ]);
 }
 
-test('under reduced motion, a flick still coasts as momentum, its rows flat', async ({
+test('under reduced motion, a flick still coasts as momentum', async ({
   page,
 }) => {
   // design:reduced-motion DR2: the momentum that continues a throw is direct
-  // movement, not a transition, so it coasts as scrolling does; only the
-  // rows' tip gives way to their fade.
+  // movement, not a transition, so it coasts as scrolling does.
   await page.emulateMedia({reducedMotion: 'reduce'});
   const {driver, field, minutes, start} = await openWheel(page);
   const read = await recordAnimations(minutes);
@@ -584,12 +584,6 @@ test('under reduced motion, a flick still coasts as momentum, its rows flat', as
   expect(
     Math.max(...coasts.map(animation => animation.duration)),
   ).toBeGreaterThan(200);
-  // No row tips: every row stays upright and full size.
-  for (const animation of seen) {
-    for (const transform of animation.transforms) {
-      expect(transform).not.toMatch(/rotateX\((?!0deg)|scale\((?!1\))/);
-    }
-  }
 });
 
 test('under reduced motion, a tap cross-fades onto its row: opacity only, 200 ms or less', async ({

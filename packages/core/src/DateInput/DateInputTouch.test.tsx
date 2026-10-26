@@ -54,7 +54,7 @@ import {
   rowsIn,
   DEFAULT_MONTH_REACH,
 } from './monthGeometry';
-import {WHEEL_ROW_PITCH} from './wheelLook';
+import {picker} from '../motion/uikit';
 import {SWIPE_DISTANCE} from './useOwnScrollGesture';
 import {DRAG_SLOP} from './usePointerDragScroll';
 import {SCROLL_QUIET_MS} from './useScrollSettle';
@@ -1430,6 +1430,26 @@ describe('DateInput — month/year wheels', () => {
   const ONE_YEAR = {min: '2026-01-01', max: '2026-12-31'} as const;
   const FIVE_YEARS = {min: '2024-01-01', max: '2028-12-31'} as const;
 
+  it('draws the month and year wheels as one picker, with one band, under a finger', () => {
+    renderAndOpen();
+    openWheels();
+    expect(panel('wheels').querySelectorAll('[data-wheel-band]')).toHaveLength(
+      1,
+    );
+  });
+
+  it('keeps the scrolling month and year columns, with no shared band, under a mouse', () => {
+    // A desktop whose field asks for the sheet: today's columns.
+    setViewport('desktop');
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    renderAndOpen(
+      <Controlled initial="2026-03-21" presentation="bottom-sheet" />,
+    );
+    openWheels();
+    expect(panel('wheels').querySelector('[data-wheel-band]')).toBeNull();
+    expect(panel('wheels').querySelector('[data-wheel]')).toBeNull();
+  });
+
   it('the header title opens them, and says so', () => {
     renderAndOpen();
     expect(title()).toHaveAttribute('aria-expanded', 'false');
@@ -2591,17 +2611,36 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     ]);
   });
 
-  it('sizes the touch wheels as today’s column, with the large text of the theme', () => {
-    // The player's row pitch and column height are today's tokens, in
-    // numbers: a row is `wheelItemSize`, the column six day rows.
-    const tokens = read('tokens.stylex.ts');
-    expect(tokens).toContain(`wheelItemSize: '${WHEEL_ROW_PITCH}px'`);
-    expect(tokens).toContain("daySize: '44px'");
-    expect(tokens).toContain('export const WEEKS_PER_PANE = 6;');
-    const source = read('PickerWheel.tsx');
-    expect(source).toContain('const COLUMN_HEIGHT = 6 * 44;');
-    expect(source).toContain('blockSize: dateInputTouchGeometry.paneBlockSize');
-    expect(source).toContain("fontSize: typeScaleVars['--text-large-size']");
+  it('sizes the touch wheels as UIPickerView, with the large text of the theme', () => {
+    // StyleX inlines only literals, so the picker's geometry is repeated in
+    // its constants; they must stay the UIKit table's.
+    const tokens = read('wheelGeometry.stylex.ts');
+    const {geometry} = picker;
+    expect(tokens).toContain(`pickerHeight: '${geometry.height}px'`);
+    expect(tokens).toContain(`rowHeight: '${geometry.rowHeight}px'`);
+    expect(tokens).toContain(`rowHalfHeight: '${geometry.rowHeight / 2}px'`);
+    expect(tokens).toContain(`rowOriginDepth: '-${geometry.cylinderRadius}px'`);
+    expect(tokens).toContain(`perspective: '${geometry.perspective}px'`);
+    expect(tokens).toContain(`bandHeight: '${geometry.bandHeight}px'`);
+    expect(tokens).toContain(`bandInset: '${geometry.bandInset}px'`);
+    expect(tokens).toContain(
+      `bandMagnification: '${geometry.bandMagnification.toFixed(3)}'`,
+    );
+    expect(tokens).toContain(`outerOpacity: '${geometry.outerOpacity}'`);
+    expect(read('PickerWheel.tsx')).toContain(
+      "fontSize: typeScaleVars['--text-large-size']",
+    );
+  });
+
+  it('draws the dimmed rows on the cylinder, in perspective, with the band cut out', () => {
+    const drum = declarations(read('PickerWheel.tsx'), 'drum');
+    expect(drum).toContain('perspective: wheelGeometry.perspective');
+    expect(drum.join(' ')).toContain('polygon(evenodd');
+    const row = declarations(read('PickerWheel.tsx'), 'row');
+    expect(row).toContain(
+      'transformOrigin: `50% 50% ${wheelGeometry.rowOriginDepth}`',
+    );
+    expect(row).toContain("backfaceVisibility: 'hidden'");
   });
 
   it('insets the sheet content equally on every edge', () => {

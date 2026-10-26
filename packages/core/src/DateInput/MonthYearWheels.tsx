@@ -29,6 +29,7 @@ import {DATE_FORMAT_MONTH_ONLY, plainDateFormat} from '../utils';
 import {spacingVars} from '../theme/tokens.stylex';
 import {dateInputTouchGeometry} from './tokens.stylex';
 import {Wheel, type WheelOption} from './Wheel';
+import {WheelGroup} from './WheelGroup';
 import {fromMonthIndex, toMonthIndex} from './monthGeometry';
 
 const styles = stylex.create({
@@ -124,25 +125,29 @@ export function MonthYearWheels({
 
   return (
     <div {...stylex.props(styles.wheels)}>
-      <Wheel
-        label={monthLabel}
-        options={monthOptions}
-        value={month}
-        isActive={isActive}
-        onChange={nextMonth => onChange(toMonthIndex(year, nextMonth))}
-      />
-      <Wheel
-        label={yearLabel}
-        options={yearOptions}
-        value={year}
-        isActive={isActive}
-        onChange={nextYear => {
-          // Jan 31 -> Feb has no equivalent here (months carry no day), but a
-          // year change can still land outside the range; clamp to it.
-          const candidate = toMonthIndex(nextYear, month);
-          onChange(Math.min(Math.max(candidate, minMonthIndex), maxMonthIndex));
-        }}
-      />
+      <WheelGroup>
+        <Wheel
+          label={monthLabel}
+          options={monthOptions}
+          value={month}
+          isActive={isActive}
+          onChange={nextMonth => onChange(toMonthIndex(year, nextMonth))}
+        />
+        <Wheel
+          label={yearLabel}
+          options={yearOptions}
+          value={year}
+          isActive={isActive}
+          onChange={nextYear => {
+            // Jan 31 -> Feb has no equivalent here (months carry no day), but a
+            // year change can still land outside the range; clamp to it.
+            const candidate = toMonthIndex(nextYear, month);
+            onChange(
+              Math.min(Math.max(candidate, minMonthIndex), maxMonthIndex),
+            );
+          }}
+        />
+      </WheelGroup>
     </div>
   );
 }

@@ -38,8 +38,11 @@ afterEach(() => {
 
 describe('WheelMotion', () => {
   it('leaves the rows where they are shown when it is disposed mid-motion', () => {
-    const rows = Array.from({length: LAYOUT.rowCount}, () =>
-      document.createElement('div'),
+    const rows = new Map(
+      Array.from({length: LAYOUT.rowCount}, (_, index) => [
+        index,
+        document.createElement('div'),
+      ]),
     );
     const strip = document.createElement('div');
     const motion = new WheelMotion(LAYOUT);
@@ -57,13 +60,16 @@ describe('WheelMotion', () => {
     // Not the motion's end state: the offset it had reached.
     expect(motion.offset()).toBeCloseTo(shown, 6);
     expect(strip.style.transform).toBe(
-      `translateY(${stripTranslation(shown, LAYOUT)}px)`,
+      `translateY(${stripTranslation(shown)}px)`,
     );
   });
 
   it('cross-fades onto an offset: opacity only, the rows landing at the midpoint', () => {
-    const rows = Array.from({length: LAYOUT.rowCount}, () =>
-      document.createElement('div'),
+    const rows = new Map(
+      Array.from({length: LAYOUT.rowCount}, (_, index) => [
+        index,
+        document.createElement('div'),
+      ]),
     );
     const strip = document.createElement('div');
     const drawing = document.createElement('div');
@@ -93,15 +99,13 @@ describe('WheelMotion', () => {
     // Nothing travels: the rows stay put while they fade out...
     expect(motion.isMoving()).toBe(true);
     expect(motion.target()).toBe(640);
-    expect(strip.style.transform).toBe(
-      `translateY(${stripTranslation(0, LAYOUT)}px)`,
-    );
+    expect(strip.style.transform).toBe(`translateY(${stripTranslation(0)}px)`);
     vi.advanceTimersByTime(100);
     // ...land at the midpoint...
     expect(onMidpoint).toHaveBeenCalledTimes(1);
     expect(motion.offset()).toBe(640);
     expect(strip.style.transform).toBe(
-      `translateY(${stripTranslation(640, LAYOUT)}px)`,
+      `translateY(${stripTranslation(640)}px)`,
     );
     expect(onEnd).not.toHaveBeenCalled();
     vi.advanceTimersByTime(100);
@@ -112,8 +116,11 @@ describe('WheelMotion', () => {
   });
 
   it('is stopped by a finger before its midpoint with the rows unmoved', () => {
-    const rows = Array.from({length: LAYOUT.rowCount}, () =>
-      document.createElement('div'),
+    const rows = new Map(
+      Array.from({length: LAYOUT.rowCount}, (_, index) => [
+        index,
+        document.createElement('div'),
+      ]),
     );
     const strip = document.createElement('div');
     const motion = new WheelMotion(LAYOUT);
@@ -124,9 +131,7 @@ describe('WheelMotion', () => {
     vi.advanceTimersByTime(50);
     expect(motion.stop()).toBe(64);
     expect(onEnd).toHaveBeenCalledWith('stopped', 64);
-    expect(strip.style.transform).toBe(
-      `translateY(${stripTranslation(64, LAYOUT)}px)`,
-    );
+    expect(strip.style.transform).toBe(`translateY(${stripTranslation(64)}px)`);
     vi.advanceTimersByTime(500);
     expect(onEnd).toHaveBeenCalledTimes(1);
   });
