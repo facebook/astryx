@@ -76,20 +76,20 @@ describe('MenuSelectionGestureRecognizer', () => {
     expect(h.log.filter(entry => entry.includes('began'))).toEqual([]);
   });
 
-  it('in a menu that fits, a finger that travels before the onset begins at once, from where it landed', () => {
+  it('in a menu that fits, the row under the finger lights at once, and the press follows the finger from where it landed (spec:AST-094 FR11)', () => {
     const h = createHarness();
     const recognizer = select(false);
-    h.finger(1)
-      .down(100, 100, 1000, {recognizers: [recognizer]})
-      .move(100, 100 + SLOP + 1, 1050);
-    expect(recognizer.state).toBe('began');
+    h.finger(1).down(100, 100, 1000, {recognizers: [recognizer]});
+    expect(h.log).toEqual(['select:began@1000']);
+    h.finger(1).move(100, 100 + SLOP + 1, 1050);
+    expect(recognizer.state).toBe('changed');
     expect(recognizer.landingLocation()).toEqual({x: 100, y: 100});
     expect(recognizer.location()).toEqual({x: 100, y: 100 + SLOP + 1});
   });
 
-  it('within the slop, the finger waits for the onset', () => {
+  it('in a menu that scrolls, a finger within the slop waits for the onset', () => {
     const h = createHarness();
-    const recognizer = select(false);
+    const recognizer = select(true);
     h.finger(1)
       .down(100, 100, 1000, {recognizers: [recognizer]})
       .move(100, 100 + SLOP - 1, 1050);

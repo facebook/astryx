@@ -13,8 +13,10 @@
  * finger that lands in a menu behaves as measured on the iOS 26.2 simulator
  * (a 3-row and a 30-row menu from a pull-down button):
  *
- * - held still, the row under it highlights after the content-touch delay
- *   (about 160 ms), in a short menu as in a long one;
+ * - held still in a menu that scrolls, the row under it highlights after
+ *   the content-touch delay (about 160 ms); in a menu that fits, where
+ *   there is no scroll to wait for, it highlights at once (spec:AST-094
+ *   FR11);
  * - lifted before that (a tap), the row under it highlights and acts at the
  *   lift;
  * - travelling past the press slop before that: in a menu that scrolls, the
@@ -130,6 +132,13 @@ export class MenuSelectionGestureRecognizer extends GestureRecognizer {
   ): void {
     const [touch] = touches;
     this.landing = {x: touch.startX, y: touch.startY};
+    // A menu that cannot scroll when the finger lands has no scroll to tell
+    // the press from, so its row lights at once; one that can waits the
+    // content-touch delay (spec:AST-094 FR11).
+    if (!this.scrolls()) {
+      this.setState('began');
+      return;
+    }
     this.setTimer(event.time + this.onsetMs, () => {
       if (this.state === 'possible' && this.numberOfTouches === 1) {
         this.setState('began');

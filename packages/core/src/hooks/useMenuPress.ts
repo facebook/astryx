@@ -583,6 +583,10 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
           return 0;
         }
         const before = running.scroller.scrollTop;
+        // The menu's own scroll, not the browser taking the finger.
+        getGestureHost(running.scroller.ownerDocument).ownScroll(
+          running.scroller,
+        );
         running.scroller.scrollTop = before + delta;
         const moved = running.scroller.scrollTop - before;
         if (moved === 0) {
