@@ -95,6 +95,14 @@ async function openControl(
   if (direction == null) {
     await openStory(page, storybook(), storyId);
   } else {
+    // Storybook's highlight module reads the style of every element on each
+    // DOM insertion; openStory turns it off, and this navigation does the
+    // same, so frame and long-task proofs measure the control alone.
+    await page.addInitScript(() => {
+      (
+        globalThis as unknown as {__STORYBOOK_HIGHLIGHT_INITIALIZED?: boolean}
+      ).__STORYBOOK_HIGHLIGHT_INITIALIZED = true;
+    });
     // Storybook's direction toolbar (a global, not an arg).
     await page.goto(
       `${storybook()}/iframe.html?id=${storyId}&viewMode=story&globals=direction:${direction}`,
