@@ -193,6 +193,24 @@ describe.each([
     ).toEqual(['none']);
   });
 
+  it('under a finger, nothing of the layer applies at rest: every rule of it waits for a press', () => {
+    const row = mount();
+    const coarse = rulesIn(row, COARSE);
+    // The layer's box, and the stacking context it needs, exist only while
+    // a press is on or releasing: at rest a row's own `::before` and its
+    // children's stacking are as they were.
+    const layer = coarse.filter(rule => !isHost(rule));
+    expect(layer.length).toBeGreaterThan(0);
+    for (const rule of layer) {
+      expect(selectorOf(rule), rule).toMatch(/data-astryx-press=/);
+    }
+    const isolation = coarse.filter(
+      rule => isHost(rule) && rule.includes('isolation:'),
+    );
+    expect(isolation).toHaveLength(1);
+    expect(selectorOf(isolation[0] ?? '')).toMatch(/data-astryx-press=/);
+  });
+
   it('leaves a fine pointer’s row as it was: the overlay’s own paint and release, no layer, no stacking context', () => {
     const row = mount();
     const outside = rulesIn(row, null);

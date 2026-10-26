@@ -20,7 +20,7 @@ registerSearchTable();
 
 describe('UIKit search table', () => {
   it('activates on UIKit’s ease-in-ease-out over 383 ms', () => {
-    expect(search.activationCurve).toEqual(timing.curves.easeInOut);
+    expect(search.activationCurve).toEqual(timing.curves.move);
     expect(search.activationMs).toBeCloseTo(383.3, 1);
   });
 

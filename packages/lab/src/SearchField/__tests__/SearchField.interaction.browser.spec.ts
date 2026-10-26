@@ -571,9 +571,10 @@ test('the activation keeps advancing every frame while the main thread is blocke
     data: t => ({y: tracked.find(f => f.t === t)?.box?.y ?? -1}),
   });
   await film.write(testInfo, {block, slide});
+  // The verdict judges the motion: enough judged frames
+  // (`minJudgedFrames`), no long stall, nearly every frame moved. The
+  // screencast's own delivery rate is not the animation's.
   expect(proof.verdict.failures).toEqual([]);
-  expect(proof.expectedFrames).toBeGreaterThan(10);
-  expect(proof.medianFrameMs).toBeLessThan(20);
   expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
   expect(proof.changed).toBeGreaterThanOrEqual(proof.frames - 1);
   expect(proof.longestStallMs).toBeLessThan(40);

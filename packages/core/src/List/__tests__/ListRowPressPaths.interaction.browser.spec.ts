@@ -30,8 +30,14 @@ const storybook = withStorybook(test);
 
 const RELEASE_MS: number = list.highlight.releaseMs;
 
+/** The press layer's strength: 0 while the row has no layer box (at rest). */
 const layerOpacity = async (row: Locator) =>
-  row.evaluate(el => Number(getComputedStyle(el, '::before').opacity));
+  row.evaluate(el => {
+    const before = getComputedStyle(el, '::before');
+    return before.content === 'none' || before.content === 'normal'
+      ? 0
+      : Number(before.opacity);
+  });
 
 const pressState = async (row: Locator) =>
   row.evaluate(el => el.getAttribute('data-astryx-press'));
@@ -279,4 +285,76 @@ test('a radio row under a finger paints its circle’s press, and keeps its bare
   );
   // Only the circle paints, as with a mouse: the row has no layer.
   expect(look.layer).toBe('none');
+});
+
+test('under a finger, a row at rest is as it was: its own ::before keeps its look and it is no stacking context; the press layer takes the ::before only while pressed', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'the held touch is driven with Chromium touch events (CDP)',
+  );
+  await openStory(page, storybook(), 'core-list--interactive');
+  await touchOnly(page);
+  const row = page
+    .locator('[data-astryx-pressable]')
+    .filter({hasText: 'Sent'})
+    .first();
+  await expect(row).toBeVisible();
+  const look = async () =>
+    row.evaluate(el => {
+      const before = getComputedStyle(el, '::before');
+      return {
+        content: before.content,
+        opacity: before.opacity,
+        position: before.position,
+        zIndex: before.zIndex,
+        pointerEvents: before.pointerEvents,
+        isolation: getComputedStyle(el).isolation,
+      };
+    });
+  // A caller's own decoration on the row's `::before` (a page rule beats
+  // the components' layered styles for what it sets; the rest is theirs).
+  await row.evaluate(el => {
+    const style = document.createElement('style');
+    style.textContent = '[data-test-own]::before{content:"•"}';
+    document.head.append(style);
+    el.setAttribute('data-test-own', '');
+  });
+  const own = {
+    content: '"•"',
+    opacity: '1',
+    position: 'static',
+    zIndex: 'auto',
+    pointerEvents: 'auto',
+    isolation: 'auto',
+  };
+  expect(await look()).toEqual(own);
+  // A press: the layer takes the `::before`, in its own stacking context.
+  const box = await row.boundingBox();
+  if (box == null) {
+    throw new Error('no row');
+  }
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{x: box.x + box.width / 2, y: box.y + box.height / 2}],
+  });
+  await expect.poll(async () => pressState(row)).toBe('on');
+  // The layer's box (with the caller's content), painted, in its own
+  // stacking context.
+  const pressed = await look();
+  expect(pressed.content).toBe('"•"');
+  expect(pressed.position).toBe('absolute');
+  expect(pressed.zIndex).toBe('-1');
+  expect(pressed.opacity).toBe('1');
+  expect(pressed.isolation).toBe('isolate');
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchCancel',
+    touchPoints: [],
+  });
+  // The press over, the row's own decoration is back as it was.
+  await expect.poll(async () => pressState(row)).toBeNull();
+  expect(await look()).toEqual(own);
 });

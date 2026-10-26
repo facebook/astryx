@@ -392,23 +392,28 @@ describe('build-css astryx.css', () => {
       );
     });
 
-    it('shows the layer at once on the on arm, over its resting opacity of 0', () => {
+    it('shows the layer at once on the on arm, and rests it at 0 on the fading arm under its release', () => {
       const on = layerLines('[data-astryx-press="on"]');
-      const shown = on.find(line => /\{opacity:1;?\}/.test(line));
-      expect(shown).toBeDefined();
+      expect(on.some(line => /\{opacity:1;?\}/.test(line))).toBe(true);
       expect(on.some(line => line.includes('animation'))).toBe(false);
-      // Both rules share the base layer here, so the arm must outrank the
-      // resting value by specificity, or the press would never show.
-      const resting = astryxCss
+      // Nothing of the layer at rest (a row's own `::before` is untouched):
+      // its opacity is only ever a press arm's.
+      const fading = layerLines('[data-astryx-press="fading"]');
+      expect(fading.some(line => /\{opacity:0;?\}/.test(line))).toBe(true);
+    });
+  });
+
+  describe('Layout header/footer padding collapse (Layout/layoutEdges.stylex.ts)', () => {
+    it('ships no :has() on the layout followed by a descendant * for the header or footer', () => {
+      // `.anchor:has(…) *` makes engines restyle everything inside the layout
+      // on any change in it; the collapse uses sibling markers instead.
+      const costly = astryxCss
         .split('\n')
-        .find(
+        .filter(
           line =>
-            line.includes('::before{opacity:0') &&
-            !line.includes('data-astryx-press'),
+            /astryx-layout-(header|footer)/.test(line) && /:has\(/.test(line),
         );
-      expect(resting).toBeDefined();
-      const weight = line => (line.match(/:not\(#\\#\)/g) ?? []).length;
-      expect(weight(shown)).toBeGreaterThan(weight(resting));
+      expect(costly).toEqual([]);
     });
   });
 

@@ -38,7 +38,6 @@ import {registerMotionTable} from '../roles';
 /**
  * UISearchController's search bar: activation, cancel, geometry and
  * placements.
- * @experimental
  */
 export const search = {
   /**
@@ -53,7 +52,7 @@ export const search = {
   activationMs: 383.3,
   /**
    * The activation's curve: the animator's UICubicTimingParameters control
-   * points, UIKit's ease-in-ease-out (`timing.curves.easeInOut`).
+   * points, UIKit's ease-in-ease-out (`timing.curves.move`).
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
    *   iPhone 17 Pro, UICubicTimingParameters read at setup, Oct 24 2026
    */
@@ -201,7 +200,6 @@ export const search = {
  * springs or curves, so they never become roles. Nothing registers on
  * import: SearchField's touch layer calls it once before its first motion
  * (it is idempotent), so a page that never shows it ships no registry.
- * @experimental
  */
 export function registerSearchTable(): void {
   registerMotionTable('search', search);

@@ -60,8 +60,14 @@ const expectedHighlight = (t: number) =>
 const row = (page: Page) =>
   page.locator('[data-astryx-pressable]').filter({hasText: 'Sent'}).first();
 
+/** The press layer's strength: 0 while the row has no layer box (at rest). */
 const layerOpacity = async (target: Locator) =>
-  target.evaluate(el => Number(getComputedStyle(el, '::before').opacity));
+  target.evaluate(el => {
+    const before = getComputedStyle(el, '::before');
+    return before.content === 'none' || before.content === 'normal'
+      ? 0
+      : Number(before.opacity);
+  });
 
 const pressState = async (target: Locator) =>
   target.evaluate(el => el.getAttribute('data-astryx-press'));
