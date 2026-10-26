@@ -4,7 +4,7 @@
 
 import {cleanup, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {describe, expect, it} from 'vitest';
+import {beforeAll, describe, expect, it} from 'vitest';
 import {
   COMBOBOX_PATTERN,
   expectAccessibilitySpec,
@@ -17,6 +17,12 @@ import {
   type SelectorComboboxScenario,
 } from './Combobox.a11y.states';
 import {SELECTOR_COMBOBOX_KNOWN_FAILURES} from './Combobox.a11y.known-failures';
+
+// SelectorBottomSheet loads the sheet lazily. Load it here, untimed, so the sheet scenario's
+// findByRole waits only for the render, never for a cold import.
+beforeAll(async () => {
+  await import('../../BottomSheet/BottomSheet');
+});
 
 installListboxDialogStubs();
 
