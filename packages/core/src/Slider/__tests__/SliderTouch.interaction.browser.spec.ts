@@ -387,9 +387,16 @@ test('a release coasts on UIKit’s spring to 0.4 of the momentum projection, th
     [lastMove],
     value,
   );
-  const [held] = await holdAnimations(page, thumb);
-  expect(held, 'the coast plays on the compositor').toBeDefined();
-  const times = Array.from({length: 31}, (_, i) => i * 20);
+  // The thumb runs two animations from the lift: the drop's scale and the
+  // coast's translate, which starts a few ms later (2–3 ms here, more under
+  // load). The harness counts sample times from the earliest held start, so
+  // the samples are taken at the coast's own times: its offset plus 0, 20, …
+  const coast = (await holdAnimations(page, thumb)).find(held =>
+    held.keyframes.some(keyframe => 'translate' in keyframe),
+  );
+  expect(coast, 'the coast plays on the compositor').toBeDefined();
+  const coastOffset = coast?.offsetMs ?? 0;
+  const times = Array.from({length: 31}, (_, i) => coastOffset + i * 20);
   const samples = await sampleCurve(thumb, times);
   await releaseAnimations(page);
   await waitForRest(thumb);
@@ -411,7 +418,10 @@ test('a release coasts on UIKit’s spring to 0.4 of the momentum projection, th
       ? 0
       : ((velocity / length) * range * pxPerValue) / (toPx - fromPx);
   const comparison = compareCurve(
-    samples.map(sample => ({t: sample.t, value: sample.transform.translateX})),
+    samples.map(sample => ({
+      t: sample.t - coastOffset,
+      value: sample.transform.translateX,
+    })),
     ms =>
       fromPx +
       (toPx - fromPx) *
