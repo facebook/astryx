@@ -177,24 +177,33 @@ function armStrayClick(doc: Document): void {
 }
 
 /**
- * A gesture the window's blur ended may still hold its pointer: the browser
- * can keep a touch alive across the blur. That pointer's release is still the
- * gesture's, so the click it reports is swallowed as a tracked release's is
- * (FR5, `spec:AST-094` FR28): the swallower arms at that release.
+ * A finger's gesture the window's blur ended may still hold its pointer: the
+ * browser can keep a touch alive across the blur. That pointer's release is
+ * still the gesture's, so the click it reports is swallowed as a tracked
+ * release's is (FR5, `spec:AST-094` FR28): the swallower arms at that
+ * release, or not at all once another press begins.
  */
 function armStrayClickAtRelease(doc: Document, pointerId: number): void {
+  const stop = () => {
+    doc.removeEventListener('pointerup', onRelease, true);
+    doc.removeEventListener('pointercancel', onRelease, true);
+    doc.removeEventListener('pointerdown', stop, true);
+  };
   const onRelease = (event: PointerEvent) => {
     if (event.pointerId !== pointerId) {
       return;
     }
-    doc.removeEventListener('pointerup', onRelease, true);
-    doc.removeEventListener('pointercancel', onRelease, true);
+    stop();
     if (event.type === 'pointerup') {
       armStrayClick(doc);
     }
   };
   doc.addEventListener('pointerup', onRelease, true);
   doc.addEventListener('pointercancel', onRelease, true);
+  // A release the page never sees (the finger lifted after a switch to
+  // another tab) ends the wait at the next press, as the swallower itself
+  // disarms there: that press's click must act (FR5).
+  doc.addEventListener('pointerdown', stop, true);
 }
 
 /** Test-only: forget an armed swallower between cases. */
@@ -870,8 +879,13 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
       };
       const onBlur = () => {
         const blurredPointerId = pointerIdRef.current;
+        const gesture = gestureRef.current;
+        // A finger or pen (`spec:AST-094` FR28); a mouse press keeps its
+        // click, as before (`spec:AST-017` FR59).
+        const isFingerPress =
+          gesture.phase !== 'idle' && gesture.pointerType !== 'mouse';
         stepRef.current({type: 'cancel'});
-        if (blurredPointerId != null) {
+        if (blurredPointerId != null && isFingerPress) {
           armStrayClickAtRelease(doc, blurredPointerId);
         }
       };

@@ -399,6 +399,37 @@ describe('useMenuPress — release outside and cancellation', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
+  it('after a blur, a finger whose release the page never sees leaves the next press\u2019s click to act (FR5)', () => {
+    const onOutside = vi.fn();
+    render(<Harness />);
+    const outside = screen.getByTestId('outside');
+    outside.addEventListener('click', onOutside);
+    fireEvent.pointerDown(row('A'), touch(1));
+    fireEvent.pointerMove(row('B'), touch(1));
+    act(() => {
+      window.dispatchEvent(new FocusEvent('blur'));
+    });
+    // The finger lifted where the page could not see it. A mouse, with the
+    // same pointer id, then clicks a control outside the menu.
+    fireEvent.pointerDown(outside, mouse(1));
+    fireEvent.pointerUp(outside, mouse(1));
+    fireEvent.click(outside, {detail: 1});
+    expect(onOutside).toHaveBeenCalledTimes(1);
+  });
+
+  it('a mouse press the window\u2019s blur interrupts keeps its click, as before (spec:AST-017 FR59)', () => {
+    const onSelect = vi.fn();
+    render(<Harness onSelect={onSelect} />);
+    fireEvent.pointerDown(row('A'), mouse(1));
+    act(() => {
+      window.dispatchEvent(new FocusEvent('blur'));
+    });
+    fireEvent.pointerUp(row('B'), mouse(1));
+    fireEvent.click(row('B'), {detail: 1});
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith('B');
+  });
+
   it('a pointercancel ends the gesture without acting', () => {
     const onSelect = vi.fn();
     render(<Harness onSelect={onSelect} />);
