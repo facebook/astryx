@@ -1314,12 +1314,14 @@ test(
     });
     await film.write(testInfo);
     // The trace: out to the confirmation offset, back with the finger, then
-    // home on the release.
+    // home on the release. The row comes to the offset itself, and screencast
+    // boxes are whole pixels, so its closest frame reads that pixel or the
+    // next (a frame between keyframes sits up to a quarter pixel short).
     const rights = tracked
       .filter(f => f.t >= began && f.box != null)
       .map(f => (f.box?.x as number) + (f.box?.width as number));
-    expect(Math.min(...rights)).toBeLessThan(
-      rest.x + rest.width - (rest.width - swipeActions.confirmInset) + 1,
+    expect(Math.min(...rights)).toBeLessThanOrEqual(
+      rest.x + swipeActions.confirmInset + 1,
     );
     expect(rights.at(-1)).toBeCloseTo(rest.x + rest.width, 0);
   },
