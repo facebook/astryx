@@ -1,13 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file interactionOverlay.pressedAlphaLayered.test.ts
+ * @file switchPressLayer.test.ts
  * @input vitest and the shared press styles (`interactionOverlayStyles`)
  * @output Asserts that `pressedAlphaLayered` carries `pressedAlpha`'s
  *   strength and paint, keeps its release with any pointer but a coarse
  *   primary one, and drops only the strength's own release under a coarse
  *   primary pointer, where a descendant's compositor layer fades instead
- * @position Unit test beside utils/interactionOverlay.stylex.ts
+ * @position Unit test beside Switch/switchPressLayer.ts
  */
 
 import {createElement} from 'react';
@@ -15,8 +15,8 @@ import {render, screen} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
 import {describe, expect, it} from 'vitest';
 import {rulesDeclaredFor} from '../__tests__/pressState';
-import {interactionOverlayStyles} from './interactionOverlay.stylex';
-import {controlPressLayerStyles} from './controlPressLayer';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {switchPressLayerStyles} from './switchPressLayer';
 
 const FADING = '[data-astryx-press="fading"]';
 /** Rules under a coarse primary pointer, Reduce Motion's arms left out. */
@@ -54,7 +54,7 @@ function renderOwners(): {alpha: HTMLElement; layered: HTMLElement} {
         'data-testid': 'layered',
         ...stylex.props(
           interactionOverlayStyles.pressedAlpha,
-          controlPressLayerStyles.pressedAlphaLayered,
+          switchPressLayerStyles.pressedAlphaLayered,
         ),
       }),
     ),
@@ -65,7 +65,7 @@ function renderOwners(): {alpha: HTMLElement; layered: HTMLElement} {
   };
 }
 
-describe('controlPressLayerStyles.pressedAlphaLayered after pressedAlpha', () => {
+describe('switchPressLayerStyles.pressedAlphaLayered after pressedAlpha', () => {
   it('declares pressedAlpha’s strength and paint for the descendant’s layer', () => {
     const {alpha, layered} = renderOwners();
     const strengthAndPaint = (el: HTMLElement) =>

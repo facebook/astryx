@@ -43,6 +43,7 @@ const MODEL_FILES = new Set([
   'utils/interactionOverlay.stylex.ts',
   'utils/rowPressLayer.ts',
   'utils/controlPressLayer.ts',
+  'Switch/switchPressLayer.ts',
   'utils/pressFeedback.ts',
   'utils/pressGesture.ts',
 ]);

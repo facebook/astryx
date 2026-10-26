@@ -57,10 +57,10 @@ import {useTranslator} from '../i18n';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
-import {controlPressLayerStyles} from '../utils/controlPressLayer';
 import {controlPressConsts} from '../utils/controlPressLayer.stylex';
 import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 import {PRESS_HOLDS_DRAG_ATTRIBUTE} from '../utils/pressFeedback';
+import {switchPressLayerStyles} from './switchPressLayer';
 import {useSwitchTouch, type SwitchTouchParts} from './useSwitchTouch';
 
 /**
@@ -1092,7 +1092,7 @@ export function Switch({
           // The touch press's strength and release live on the row the
           // controller writes to; the track and thumb inherit and paint it.
           !isDisabled && interactionOverlayStyles.pressedAlpha,
-          !isDisabled && controlPressLayerStyles.pressedAlphaLayered,
+          !isDisabled && switchPressLayerStyles.pressedAlphaLayered,
         )}>
         {' '}
         {labelPosition === 'start' ? (
