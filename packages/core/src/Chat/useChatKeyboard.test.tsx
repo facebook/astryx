@@ -659,6 +659,24 @@ describe('the caret a claimed tap places', () => {
   });
 });
 
+describe('the ChatLayout stories', () => {
+  it('give a full-page layout the dynamic viewport\u2019s height, so the composer starts on screen', () => {
+    // Where a phone browser's toolbar collapses, 100vh is the viewport with
+    // the toolbar hidden (Firefox for Android: 859 px for 796 visible), which
+    // puts the composer under the window's bottom edge.
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const stories = fs.readFileSync(
+      path.join(
+        here,
+        '../../../../apps/storybook/stories/ChatLayout.stories.tsx',
+      ),
+      'utf8',
+    );
+    expect(stories).not.toMatch(/height: '100vh'/);
+    expect(stories).toMatch(/height: '100dvh'/);
+  });
+});
+
 describe('what ChatLayout loads for the keyboard', () => {
   it('imports no gesture recognizer: the composer tap is the keyboard module\u2019s focus route, and the dismissal reads only the shared velocity tracker', () => {
     const here = path.dirname(fileURLToPath(import.meta.url));

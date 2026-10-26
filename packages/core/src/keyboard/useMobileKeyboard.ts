@@ -22,10 +22,11 @@
  * visual viewport's height times its scale, in CSS px: a page pan is not a
  * smaller keyboard, and a pinch zoom is not a keyboard. The layout viewport's
  * height is read in layout px in every engine (utils/layoutViewport.ts):
- * WebKit reports `innerHeight` in the zoomed visual viewport's px. It is 0 where the
- * platform has its own keyboard geometry API (`navigator.virtualKeyboard`,
- * Android's path, FR6, FR8), without a visual viewport, and inside an iframe,
- * whose visual viewport never shrinks for the keyboard (FR7). One set of
+ * WebKit reports `innerHeight` in the zoomed visual viewport's px. A browser
+ * with its own keyboard geometry API (`navigator.virtualKeyboard`, Chrome on
+ * Android) is measured the same way (FR6, DEC-4). It is 0 without a visual
+ * viewport, and inside an iframe, whose visual viewport never shrinks for the
+ * keyboard (FR7). One set of
  * listeners per window reads it (the visual viewport's resize and scroll, the
  * window's resize, and focus moves), however many components subscribe.
  *
@@ -84,15 +85,18 @@ const NON_TEXT_INPUT_TYPES = new Set([
 
 /**
  * Whether this window measures the keyboard: a top-level document (FR7) with
- * a visual viewport and no keyboard geometry API of its own (FR6). Decided
- * from capabilities, never from the user agent.
+ * a visual viewport (FR6). Decided from capabilities, never from the user
+ * agent or the pointer. A browser with its own keyboard geometry API (the
+ * VirtualKeyboard API, Chrome on Android) is measured the same way: its
+ * visual viewport shrinks for the keyboard while the layout viewport keeps its
+ * height, as everywhere else (`spec:AST-099` DEC-4). A desktop browser's
+ * visual viewport never shrinks for a keyboard, so it reads 0; where the app
+ * sets `interactive-widget=resizes-content`, Chrome shrinks the layout
+ * viewport with the keyboard, so the height is 0 there too and nothing rides:
+ * the browser has made the room itself (FR8).
  */
 export function isKeyboardMeasurable(win: Window): boolean {
-  return (
-    win.visualViewport != null &&
-    !('virtualKeyboard' in win.navigator) &&
-    win.self === win.top
-  );
+  return win.visualViewport != null && win.self === win.top;
 }
 
 /**
