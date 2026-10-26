@@ -756,7 +756,10 @@ export class SegmentedSelectionMotion {
       ) ?? null;
     const carriesLens = origin != null && origin === selected;
     const selectedTitle = selected != null ? titleOf(selected) : null;
-    const other = segments.find(segment => segment !== selected);
+    // An enabled segment's unselected face: a disabled title has its own.
+    const other = segments.find(
+      segment => segment !== selected && isEnabledSegment(segment),
+    );
     const otherTitle = other != null ? titleOf(other) : null;
     const faces =
       selectedTitle != null && otherTitle != null

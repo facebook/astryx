@@ -190,6 +190,9 @@ const STYLES = `
     color: rgb(10, 10, 10);
     font-weight: 600;
   }
+  [role="radio"][aria-disabled="true"] [data-segment-title] {
+    color: rgb(200, 200, 200);
+  }
 `;
 
 /** What a selection does to the DOM: the checked state moves. */
@@ -1069,6 +1072,20 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
       expect(faceOf(segment)).toEqual(NO_FACE);
     }
     expect(recorded).toHaveLength(0);
+  });
+
+  it('the segment a lifted drag leaves wears an enabled segment’s unselected face, never a disabled one’s', async () => {
+    const ctx = setup('list');
+    // The first segment in DOM order is disabled: its title has its own colour.
+    ctx.segments.grid.setAttribute('aria-disabled', 'true');
+    press(ctx, clientCenterOf('list'));
+    drag(ctx, clientCenterOf('table'));
+    await advance(400);
+    expect(faceOf(ctx.segments.table).color).toBe('rgb(10, 10, 10)');
+    expect(faceOf(ctx.segments.list)).toEqual({
+      weight: '',
+      color: 'rgb(110, 110, 110)',
+    });
   });
 
   it('the face crosses a boundary only once the lens is a quarter segment past it, so a ±3 px dither changes it at most once', async () => {
