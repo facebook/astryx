@@ -39,6 +39,8 @@ export {
   type HapticFeedbackKind,
 } from './gestures';
 export {navigation, registerNavigationTable} from './navigation';
+// ProgressBar's touch presentation: UIProgressView.
+export {progressBar, registerProgressBarTable} from './progressBar';
 export {registerScrollTable, scroll} from './scroll';
 export {
   ACTION_SHEET_DISMISS_SPRING,

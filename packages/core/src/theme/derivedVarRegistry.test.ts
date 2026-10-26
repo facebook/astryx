@@ -100,6 +100,10 @@ const STRUCTURAL_VARS = new Set([
   // every render and read by the fill's transform. Runtime state, never
   // authored by a theme.
   '--_progress-bar-fill',
+  // How long the touch fill takes to reach a new value, written inline from
+  // the size of the change (UIKit's 1 s per whole track). Runtime state too.
+  '--_progress-bar-change',
+  '--_progress-bar-flip',
 ]);
 
 /**
