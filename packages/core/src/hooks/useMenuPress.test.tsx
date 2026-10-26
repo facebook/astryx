@@ -391,6 +391,21 @@ describe('useMenuPress — release outside and cancellation', () => {
     expect(onDismiss).not.toHaveBeenCalled();
   });
 
+  it('after the window loses focus mid-press, the finger\u2019s later lift acts on nothing: its click is still the gesture\u2019s (FR5, spec:AST-094 FR28)', () => {
+    const onSelect = vi.fn();
+    render(<Harness onSelect={onSelect} />);
+    fireEvent.pointerDown(row('A'), touch(1));
+    fireEvent.pointerMove(row('B'), touch(1));
+    act(() => {
+      window.dispatchEvent(new FocusEvent('blur'));
+    });
+    // The browser kept the touch alive across the blur: it lifts on a row,
+    // and the click it reports for that tap reaches the row.
+    fireEvent.pointerUp(row('B'), touch(1));
+    fireEvent.click(row('B'), {detail: 1});
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
   it('a pointercancel ends the gesture without acting', () => {
     const onSelect = vi.fn();
     render(<Harness onSelect={onSelect} />);

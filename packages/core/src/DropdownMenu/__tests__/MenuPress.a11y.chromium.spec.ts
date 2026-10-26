@@ -359,13 +359,13 @@ test.describe('DropdownMenu press model (Chromium)', () => {
     await expect(menu).toBeVisible();
     const edit = await center(page, 'menuitem', 'Edit');
     await touch.start(cdp, edit);
-    await expect.poll(() => activeRowName(page)).toBe('Edit');
+    await expect.poll(async () => activeRowName(page)).toBe('Edit');
     // The browser takes the touch.
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchCancel',
       touchPoints: [],
     });
-    await expect.poll(() => activeRowName(page)).toBeNull();
+    await expect.poll(async () => activeRowName(page)).toBeNull();
     await page.waitForTimeout(300);
     await expect(menu).toBeVisible();
     expect(activations).toEqual([]);
@@ -382,13 +382,13 @@ test.describe('DropdownMenu press model (Chromium)', () => {
     await expect(menu).toBeVisible();
     const edit = await center(page, 'menuitem', 'Edit');
     await touch.start(cdp, edit);
-    await expect.poll(() => activeRowName(page)).toBe('Edit');
+    await expect.poll(async () => activeRowName(page)).toBe('Edit');
     // The window loses focus with the finger down (a headless page keeps
     // focus, so the blur is dispatched to the window).
     await page.evaluate(() => {
       window.dispatchEvent(new FocusEvent('blur'));
     });
-    await expect.poll(() => activeRowName(page)).toBeNull();
+    await expect.poll(async () => activeRowName(page)).toBeNull();
     await touch.end(cdp);
     await page.waitForTimeout(300);
     await expect(menu).toBeVisible();
