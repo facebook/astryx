@@ -248,7 +248,12 @@ const styles = stylex.create({
     outlineOffset: {default: null, '@media (forced-colors: active)': '-1px'},
     borderRadius: radiusVars['--radius-full'],
     transitionProperty: 'width',
-    transitionDuration: durationVars['--duration-medium'],
+    // A resize, so under reduced motion the fill jumps to its new value
+    // (design:reduced-motion DR1).
+    transitionDuration: {
+      default: durationVars['--duration-medium'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   indeterminateFill: {
