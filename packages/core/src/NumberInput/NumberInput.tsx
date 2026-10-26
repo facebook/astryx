@@ -183,11 +183,10 @@ const styles = stylex.create({
       insetInlineStart: 0,
       insetInlineEnd: `min(0px, calc(50% - ${TOUCH_TARGET} / 2))`,
     },
-    // `manipulation` keeps rapid taps from double-tap zooming the page while
-    // pans and pinch-zoom stay the browser's: FR18's value for the press
-    // tracker on the column. A held stepper's text selection and callout are
-    // the press tracker's selection lock (`spec:AST-094` FR41).
-    touchAction: 'manipulation',
+    // No touch-action or selection style of its own: where the primary
+    // pointer is coarse the gesture host gives the column's kept press
+    // `touch-action: manipulation` (`spec:AST-094` FR18) and its selection
+    // lock (FR41); a fine pointer keeps the browser's defaults (FR19).
   },
   numberStepperButton: {
     boxSizing: 'border-box',

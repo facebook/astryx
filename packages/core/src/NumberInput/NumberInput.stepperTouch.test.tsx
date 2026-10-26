@@ -310,6 +310,30 @@ describe('NumberInput steppers under a finger', () => {
     expect(shown(input)).toBe('5');
   });
 
+  it('the column takes touch-action manipulation from the gesture host for its kept press (spec:AST-094 FR18)', () => {
+    // jsdom drops touch-action, so the host's writes are observed.
+    const writes: {style: CSSStyleDeclaration; value: string | null}[] = [];
+    const setProperty = CSSStyleDeclaration.prototype.setProperty;
+    vi.spyOn(CSSStyleDeclaration.prototype, 'setProperty').mockImplementation(
+      function (
+        this: CSSStyleDeclaration,
+        name: string,
+        value: string | null,
+        priority?: string,
+      ) {
+        if (name === 'touch-action') {
+          writes.push({style: this, value});
+        }
+        setProperty.call(this, name, value, priority);
+      },
+    );
+    const {increment} = setup();
+    const column = increment.parentElement as HTMLElement;
+    expect(
+      writes.filter(({style}) => style === column.style).map(w => w.value),
+    ).toEqual(['manipulation']);
+  });
+
   it('a held finger turns text selection and the callout off on the column for that press only (spec:AST-094 FR41)', () => {
     const {increment} = setup();
     const column = increment.parentElement as HTMLElement;

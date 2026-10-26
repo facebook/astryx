@@ -44,7 +44,9 @@ async function open(page: Page): Promise<void> {
   await page.getByRole('spinbutton', {name: 'Quantity'}).waitFor();
 }
 
-test('the stepper column keeps touch-action manipulation, and the field stays pannable', async ({
+// The gesture host writes it inline for the column's kept press where the
+// primary pointer is coarse (`spec:AST-094` FR18); the column declares none.
+test('under a finger the stepper column takes touch-action manipulation, and the field stays pannable', async ({
   page,
 }) => {
   await open(page);
@@ -88,6 +90,27 @@ test('a held finger turns text selection off on the stepper column', async ({
     touchPoints: [],
   });
   await expect.poll(lock).toBe('');
+});
+
+test("with a mouse the stepper column keeps the browser's own touch-action (spec:AST-094 FR19)", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    viewport: {width: 1024, height: 768},
+    hasTouch: false,
+    isMobile: false,
+  });
+  const page = await context.newPage();
+  await open(page);
+  // A fine pointer: this context has no coarse pointer.
+  expect(
+    await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+  ).toBe(false);
+  const column = page
+    .getByRole('button', {name: 'Increment Quantity'})
+    .locator('..');
+  await expect(column).toHaveCSS('touch-action', 'auto');
+  await context.close();
 });
 
 test('a vertical drag that starts on a stepper scrolls the page and steps nothing', async ({

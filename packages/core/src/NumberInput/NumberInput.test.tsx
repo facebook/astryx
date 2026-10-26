@@ -2708,25 +2708,30 @@ describe('NumberInput stepper padding coupling', () => {
 });
 
 describe('NumberInput stepper column under a held finger', () => {
-  it('leaves selection to the gesture host and keeps touch-action manipulation', () => {
-    // A held stepper's text selection and callout are the press tracker's
-    // selection lock (`spec:AST-094` FR41); the column itself declares only
-    // touch-action.
+  it('declares no touch-action or selection style of its own: the gesture host writes them for its kept press', () => {
+    // Where the primary pointer is coarse the host gives the column's kept
+    // press `touch-action: manipulation` (`spec:AST-094` FR18) and the
+    // selection lock (FR41); a fine pointer keeps the browser's (FR19).
     const source = readFileSync(
       'packages/core/src/NumberInput/NumberInput.tsx',
       'utf8',
     );
     const start = source.indexOf('  numberSteppers: {');
     const column = source.slice(start, source.indexOf('\n  },', start));
-    expect(column).toContain("touchAction: 'manipulation',");
-    expect(
-      readFileSync(
-        'packages/core/src/NumberInput/NumberInputTouch.tsx',
-        'utf8',
-      ),
-      // The column's press tracker attaches only where the primary pointer is
-      // coarse (`spec:AST-094` FR19, FR24).
-    ).toMatch(/usePressTracker\(\s*isCoarse \? columnRef : noColumnRef,/);
+    expect(column).not.toContain('touchAction');
+    expect(column).not.toContain('userSelect');
+    expect(column).not.toContain('WebkitTouchCallout');
+    const touchSource = readFileSync(
+      'packages/core/src/NumberInput/NumberInputTouch.tsx',
+      'utf8',
+    );
+    expect(touchSource).toContain('keepsTouch: true,');
+    expect(touchSource).toContain('selectionLock: lockSelection,');
+    // The column's press tracker attaches only where the primary pointer is
+    // coarse (`spec:AST-094` FR19, FR24).
+    expect(touchSource).toMatch(
+      /usePressTracker\(\s*isCoarse \? columnRef : noColumnRef,/,
+    );
   });
 
   it("keys its touch target on the resolver's TOUCH_QUERY, spelled as a literal", () => {
