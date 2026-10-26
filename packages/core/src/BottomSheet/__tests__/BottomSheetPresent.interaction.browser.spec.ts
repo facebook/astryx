@@ -318,10 +318,14 @@ test('the entrance keeps advancing every frame while the main thread is blocked'
     data: t => ({y: tracked.find(f => f.t === t)?.box?.y ?? -1}),
   });
   await film.write(testInfo, {block, entrance});
-  expect(proof.medianFrameMs).toBeLessThan(20);
-  expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
-  expect(proof.changed).toBeGreaterThanOrEqual(proof.frames - 3);
-  expect(proof.longestStallMs).toBeLessThan(40);
+  testInfo.annotations.push({
+    type: 'busy-main-thread',
+    description: proof.summary,
+  });
+  // Judged per delivered frame, whatever the screencast's rate: frames
+  // presented, no long stall, nearly every frame moving, over at least the
+  // harness's fewest judged frames.
+  expect(proof.verdict.failures, proof.summary).toEqual([]);
   expect(proof.monotonic).toBe(true);
 });
 
