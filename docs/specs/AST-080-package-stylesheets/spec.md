@@ -276,18 +276,18 @@ uses, so one component's tuning does not ride along with every other import.
 Rejected: splitting touch-only CSS into a separate stylesheet, because it
 breaks the one-import setup DEC-3 keeps.
 
-### DEC-5 — Touch JavaScript comes from the global touch module
+### DEC-5 — Touch JavaScript comes from the shared internal touch modules
 
 **Reference:** `spec:AST-080/DEC-5`
-**Decider:** `cixzhang`, `2026-10-25`
+**Decider:** `cixzhang`, `2026-10-26`
 
-Touch-only JavaScript over the budget comes from the one global touch and
-gesture module an app installs (`architecture:react-component-runtime`
-INV13), not from a lazy load inside a component, so a component ships one
-build and a page without the module loads none of it. This supersedes DEC-4's
-lazy-load remedy; its reporting and budget stand.
+Touch primitives over the budget come from the shared internal touch modules
+components import (`architecture:react-component-runtime` INV13), which a
+page carries once, or the cost is justified; a component does not lazy-load
+its own. There is no install step: the modules are always present. This
+supersedes DEC-4's lazy-load remedy; its reporting and budget stand.
 
-Rejected: lazy loading inside each component.
+Rejected: lazy loading inside each component, and an app-installed module.
 
 ## Open questions
 

@@ -108,9 +108,9 @@ not evidence of conformance or violation.
   its package stylesheet (`spec:AST-080` FR8). A feature that runs only on a
   coarse pointer and adds more than 2 KB gzip of JavaScript or 1 KB gzip of CSS
   to one component is flagged. Its pull request either takes that JavaScript
-  from the global touch and gesture module (`architecture:react-component-runtime`
-  INV13), so the component's import does not carry it, or justifies
-  the cost. For flagged CSS, its pull request
+  from the shared internal touch modules (`architecture:react-component-runtime`
+  INV13), which a page carries once however many components use them, or
+  justifies the cost. For flagged CSS, its pull request
   justifies the cost, because that CSS stays in the package stylesheet
   (`spec:AST-080` FR1, FR8). Sizes are gzip at the default compression level,
   and 1 KB is 1,024 bytes; measured as `spec:AST-080` FR8 measures CSS, a

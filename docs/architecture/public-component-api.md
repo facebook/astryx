@@ -157,10 +157,8 @@ guidance owns the process used to propose and test APIs.
   such as touch tracking in an open list, takes one `presentation` prop, and a
   value of it, such as `presentation="popover"`, keeps the surface and input
   mode the component uses with a fine pointer on every device. Touch behavior
-  is the component's default where it serves touch users, on pages that
-  install TouchSupport (`architecture:react-component-runtime` INV13), with
-  module-free behavior such as press feedback working without it, and a
-  caller's explicit choice always wins over that default. Every internal touch mode of
+  is the component's default where it serves touch users, and a caller's
+  explicit choice always wins over that default. Every internal touch mode of
   that kind is reachable by callers through a public prop or value; none is
   hard-coded beyond a caller's reach. Touch styling, such as press paint or a
   text-size floor, and touch-only behavior that its own record defines, such as

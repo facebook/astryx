@@ -29,9 +29,7 @@ A person using an Astryx product on a phone or tablet gets controls, sheets,
 menus, lists and navigation with native-feeling touch behavior: measured
 physics, timings and gesture thresholds instead of desktop motion stretched to
 a finger. This behavior is the default on every touch device, iOS and Android
-alike, on pages that install TouchSupport
-(`architecture:react-component-runtime` INV13); behavior that does not run on
-that module, such as press feedback, works without it (DEC-12). Its motion keeps running at display rate while the
+alike, with no opt-in, and its motion keeps running at display rate while the
 page's JavaScript is busy.
 
 The behavior comes from one measured table. Its values are measured from UIKit
@@ -339,8 +337,7 @@ FR33 apply to menus only. A mouse keeps today's behavior.
   The scrolling stops when the finger leaves the edge, the menu reaches its
   end, or the gesture ends.
 - **FR31 — Menus and popovers grow from their trigger and shrink back.**
-  Under a finger, on every touch device whose page installs TouchSupport
-  (DEC-12), an anchored menu or a Popover MUST
+  Under a finger, on every touch device, an anchored menu or a Popover MUST
   open by growing out of its trigger and close by shrinking back into it, on
   its motion roles (FR4; a menu on `springs.menuOpen` and
   `springs.menuClose`). The shrink plays in full after the surface has
@@ -355,13 +352,12 @@ FR33 apply to menus only. A mouse keeps today's behavior.
   WCAG 2.2 SC 1.4.4). Listening for that outside touch costs nothing once it ends (FR24). A menu
   whose caller passes `presentation="popover"` keeps its released outside
   dismissal (FR25).
-- **FR33 — A ContextMenu under a finger.** On a page that installs
-  TouchSupport (DEC-12), with a finger or pen, the long
+- **FR33 — A ContextMenu under a finger.** With a finger or pen, the long
   press that opens a ContextMenu MUST NOT close it at the lift, and a press
   outside it follows FR32. After a held
   finger opens it, nothing is lit and a lift acts on nothing until that finger
   has travelled the handoff distance (FR2) from the first position the open
-  menu sees; from then on FR26–FR28 apply. On every touch device whose page installs TouchSupport, a ContextMenu that a held
+  menu sees; from then on FR26–FR28 apply. On every touch device, a ContextMenu that a held
   finger opens on a block trigger MUST lift the trigger above the page and
   show the menu beside it, with no row lit. A tap outside closes the menu and
   reaches nothing beneath it, and closing returns the trigger to its place.
@@ -668,19 +664,6 @@ separately, so no component-specific role becomes a public token first.
 This defers DEC-1's and DEC-3's theme retuning until that set exists.
 
 Rejected: publishing the per-component roles as theme tokens.
-
-### DEC-12 — Module-driven touch behavior needs the app's one install
-
-**Reference:** `spec:AST-094/DEC-12`
-**Decider:** `cixzhang`, `2026-10-25`
-
-Touch behavior that runs on the global touch and gesture module is on by
-default on pages that install TouchSupport, and module-free behavior such as
-press feedback works without it, following the owner's 2026-10-25 decisions
-that components use the module when it is present and that an app installs it
-with `TouchSupport.install()`. This supersedes DEC-1's "without an opt-in".
-
-Rejected: keeping every touch behavior on without an install.
 
 ## Open questions
 
