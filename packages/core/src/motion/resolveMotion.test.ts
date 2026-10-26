@@ -30,11 +30,24 @@ let reads: number;
 
 beforeEach(() => {
   reads = 0;
+  // A computed style that answers custom properties the way the cascade
+  // would (inherited from the nearest inline value), so a read of a role's
+  // variable would see what a scope sets; every read is counted.
   vi.spyOn(window, 'getComputedStyle').mockImplementation(
-    () =>
+    element =>
       ({
-        getPropertyValue: () => {
+        getPropertyValue: (name: string) => {
           reads += 1;
+          for (
+            let node: Element | null = element;
+            node != null;
+            node = node.parentElement
+          ) {
+            const value = (node as HTMLElement).style?.getPropertyValue(name);
+            if (value) {
+              return value;
+            }
+          }
           return '';
         },
       }) as unknown as CSSStyleDeclaration,
