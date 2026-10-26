@@ -42,6 +42,7 @@ import {
   PRESS_FADE_MS,
   PRESS_FLASH_MS,
   PRESS_ONSET_MS,
+  PRESS_SCROLL_BRAKE_MS,
   PRESS_SLOP_PX,
 } from './pressGesture';
 import {pointerQuery} from '../gestures/__tests__/pointerQuery';
@@ -126,9 +127,12 @@ beforeEach(() => {
   });
   document.body.innerHTML = '';
   scroller = document.createElement('div');
+  // The rows sit in a scroll view, as a list's do.
+  makeScroller(scroller);
   rows = [];
   for (let index = 0; index < 4; index += 1) {
-    // List rows are cells: they wait the content-touch delay wherever they are.
+    // List rows are cells: inside the scroll view they wait the content-touch
+    // delay (FR11).
     const row = pressable('div', 'cell');
     const label = document.createElement('span');
     label.textContent = `row ${index}`;
@@ -389,6 +393,28 @@ describe('a scroll takes it away and nothing brings it back', () => {
     press(rows[1], 'pointerdown', 10, 100);
     vi.advanceTimersByTime(PRESS_ONSET_MS * 2);
     expect(pressedRow()).toBe(-1);
+  });
+
+  it('without scrollend (Safari 17, 18), still brakes a moving list, and presses once its scroll events stop', () => {
+    // A touch device: the brake and the finger's lift are coarse-pointer
+    // work (spec:AST-094 FR24).
+    coarsePrimaryPointer();
+    delete (window as {onscrollend?: unknown}).onscrollend;
+    press(rows[0], 'pointerdown', 10, 10);
+    press(rows[0], 'pointerup', 10, 10);
+    scroller.dispatchEvent(new Event('scroll'));
+    lift(rows[0]);
+    // A finger lands while the list still glides: a brake, no paint.
+    press(rows[1], 'pointerdown', 10, 100);
+    vi.advanceTimersByTime(PRESS_ONSET_MS * 2);
+    expect(pressedRow()).toBe(-1);
+    press(rows[1], 'pointerup', 10, 100);
+    lift(rows[1]);
+    // No scroll event for the brake window: the list has come to rest.
+    vi.advanceTimersByTime(PRESS_SCROLL_BRAKE_MS + 1);
+    press(rows[2], 'pointerdown', 10, 190);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    expect(pressedRow()).toBe(2);
   });
 
   it('presses normally once the list has come to rest, at its scrollend', () => {
@@ -1206,6 +1232,17 @@ describe('a control is tracked like UIControl', () => {
     expect(control.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
   });
 
+  it('in a fixed bar above a scrolling page, paints in the frame the finger lands', () => {
+    makeScroller(scroller);
+    const bar = document.createElement('div');
+    bar.style.position = 'fixed';
+    const control = pressable('button');
+    bar.appendChild(control);
+    scroller.appendChild(bar);
+    press(control, 'pointerdown', 10, 10);
+    expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
+  });
+
   it('fades at the lift on its profile’s clock under a coarse primary pointer', () => {
     vi.stubGlobal('matchMedia', coarsePointer);
     try {
@@ -1239,13 +1276,19 @@ describe('a control is tracked like UIControl', () => {
     expect(control.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
   });
 
-  it('a cell waits the delay even with no scroller above it', () => {
+  it('a cell outside a scroll view highlights at once (FR11)', () => {
     const cell = pressable('div', 'cell');
     document.body.appendChild(cell);
     press(cell, 'pointerdown', 10, 10);
-    expect(cell.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
-    vi.advanceTimersByTime(PRESS_ONSET_MS);
     expect(cell.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
+  });
+
+  it('a cell inside a scroll view waits the content-touch delay (FR11)', () => {
+    makeScroller(scroller);
+    press(rows[0], 'pointerdown', 10, 10);
+    expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
   });
 
   it('marks a control with an empty marker and a cell with `cell`', () => {
