@@ -132,10 +132,11 @@ const OWN_TAPS =
   '[contenteditable="false"], button, a, [role="button"], [data-astryx-token]';
 
 /**
- * The contenteditable text a touch landed in, when tapping it would bring up
- * the keyboard and it does not have focus yet. A text control (`<textarea>`,
- * `<input>`) is never claimed: the browser puts its caret under the finger.
- * Exported for its tests.
+ * The composer's text a touch landed in, when tapping it would bring up the
+ * keyboard and it does not have focus yet: contenteditable text, or a text
+ * control (`<textarea>`, `<input>`) passed as the composer's input, whose own
+ * tap focus the browser would reveal by scrolling the page just the same
+ * (spec:AST-099 FR4). Exported for its tests.
  */
 export function editableToClaim(target: unknown): HTMLElement | null {
   let node = target as Node | null;
@@ -145,6 +146,12 @@ export function editableToClaim(target: unknown): HTMLElement | null {
   const element = node as HTMLElement | null;
   if (element == null || typeof element.closest !== 'function') {
     return null;
+  }
+  if (isTextControl(element)) {
+    return bringsUpKeyboard(element) &&
+      element.ownerDocument.activeElement !== element
+      ? element
+      : null;
   }
   const editable = element.closest<HTMLElement>(
     '[contenteditable]:not([contenteditable="false"])',
@@ -175,12 +182,47 @@ function caretRangeAt(doc: Document, x: number, y: number): Range | null {
   return doc.caretRangeFromPoint?.(x, y) ?? null;
 }
 
+function isTextControl(
+  element: Element,
+): element is HTMLTextAreaElement | HTMLInputElement {
+  return (
+    element instanceof HTMLTextAreaElement ||
+    element instanceof HTMLInputElement
+  );
+}
+
+/**
+ * A text control's caret for a tap at (x, y): where the standard
+ * `caretPositionFromPoint` maps the point inside the control, or after its
+ * text where the browser maps none (the composer's convention for a focus
+ * without a point). A control with no text selection is left as it is.
+ */
+function placeTextControlCaret(
+  control: HTMLTextAreaElement | HTMLInputElement,
+  x: number,
+  y: number,
+) {
+  if (control.selectionStart == null) {
+    return;
+  }
+  const position = control.ownerDocument.caretPositionFromPoint?.(x, y);
+  const offset =
+    position != null && position.offsetNode === control
+      ? position.offset
+      : control.value.length;
+  control.setSelectionRange(offset, offset);
+}
+
 /**
  * Focuses without Safari's reveal and puts the caret under the finger.
  * Exported for its tests.
  */
 export function focusAtPoint(editable: HTMLElement, x: number, y: number) {
   editable.focus({preventScroll: true});
+  if (isTextControl(editable)) {
+    placeTextControlCaret(editable, x, y);
+    return;
+  }
   const doc = editable.ownerDocument;
   const range = caretRangeAt(doc, x, y);
   if (
