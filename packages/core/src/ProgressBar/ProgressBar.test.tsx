@@ -1235,6 +1235,152 @@ describe('ProgressBar under a finger: UIProgressView', () => {
   });
 });
 
+describe('ProgressBar indeterminate under a finger: Safari\u2019s <progress>', () => {
+  const web = progressBar.indeterminateWebProgress;
+  // A finger (the resolver's touch query, on every touch device), with and
+  // without Reduce Motion, and a mouse.
+  const TOUCH = {coarse: true, reduce: false};
+  const MOUSE = {coarse: false, reduce: false};
+  /**
+   * A property's block of `indeterminateFill` (or another style) in the
+   * source: the jsdom StyleX runtime injects only some of the negated
+   * conditions written for these keys, so the keys and values are read here
+   * and the Chromium spec checks what a browser does with them.
+   */
+  const sourceBlock = (style: string, property: string) => {
+    const source = readFileSync(
+      path.resolve(__dirname, 'ProgressBar.tsx'),
+      'utf8',
+    );
+    const body = source.slice(source.indexOf(`  ${style}: {`));
+    const start = body.indexOf(`    ${property}: {`);
+    return body.slice(start, body.indexOf('\n    },', start));
+  };
+  const keyed = (block: string, query: string) => {
+    const at = block.indexOf(`'@media ${query}':`);
+    return at < 0
+      ? undefined
+      : block
+          .slice(at + `'@media ${query}':`.length)
+          .split(',\n')[0]
+          .trim()
+          .replace(/,$/, '');
+  };
+  /**
+   * A duration in ms from ProgressBar's own constants
+   * (progressBarTouch.stylex.ts): the table's values are internal, so the
+   * stylesheet reads no motion variable for them and plays no literal
+   * (`spec:AST-094` FR4).
+   */
+  const constantMs = (source: string | undefined) => {
+    const name = /^progressBarTouchConsts\.(\w+)$/.exec(source ?? '')?.[1];
+    expect(name, source).toBeDefined();
+    const value =
+      progressBarTouchConsts[name as keyof typeof progressBarTouchConsts];
+    expect(value ?? '').not.toContain('var(');
+    const match = /^([\d.]+)(m?s)$/.exec(value ?? '');
+    return (
+      Number.parseFloat(match?.[1] ?? '') * (match?.[2] === 'ms' ? 1 : 1000)
+    );
+  };
+  const keyframesText = () =>
+    Array.from(document.styleSheets)
+      .flatMap(sheet => {
+        try {
+          return Array.from(sheet.cssRules).map(rule => rule.cssText);
+        } catch {
+          return [];
+        }
+      })
+      .filter(text => text.startsWith('@keyframes'));
+
+  it('sweeps a quarter of the track end to end in the table\u2019s 1 s each way, linearly', () => {
+    render(<ProgressBar isIndeterminate label="Processing" />);
+    const fill = screen.getByRole('progressbar')
+      .firstElementChild as HTMLElement;
+    expect(valueUnder(fill, 'width', TOUCH)).toBe(
+      `${web.segmentFraction * 100}%`,
+    );
+    const durations = sourceBlock('indeterminateFill', 'animationDuration');
+    expect(constantMs(keyed(durations, TOUCH_QUERY))).toBe(web.sweepMs);
+    expect(
+      keyed(
+        sourceBlock('indeterminateFill', 'animationTimingFunction'),
+        TOUCH_QUERY,
+      ),
+    ).toBe('progressBarTouchConsts.easing');
+    expect(valueUnder(fill, 'animation-timing-function', TOUCH)).toBe('linear');
+    expect(valueUnder(fill, 'animation-direction', TOUCH)).toBe('alternate');
+    // From the track's start to its end: the segment travels three of its
+    // own widths when it is a quarter of the track.
+    const travel = ((1 - web.segmentFraction) / web.segmentFraction) * 100;
+    const frames = keyframesText();
+    expect(frames.some(f => f.includes(`translateX(${travel}%)`))).toBe(true);
+    expect(frames.some(f => f.includes(`translateX(-${travel}%)`))).toBe(true);
+    // A mouse or trackpad keeps the 40% slide, and Reduce Motion's 3 s
+    // slowdown there.
+    expect(valueUnder(fill, 'width', MOUSE)).toBe('40%');
+    expect(keyed(durations, REDUCED_MOTION_INSTANT_QUERY)).toBe("'3s'");
+  });
+
+  it('keeps the track color on an indeterminate bar, like a determinate one', () => {
+    render(
+      <>
+        <ProgressBar value={40} label="Determinate" />
+        <ProgressBar isIndeterminate label="Indeterminate" />
+      </>,
+    );
+    const [determinate, indeterminate] = screen.getAllByRole('progressbar');
+    const trackColor = (el: Element) =>
+      valueOf(rulesOf(el, null), 'background-color');
+    expect(trackColor(determinate)).not.toEqual([]);
+    // Only a finger with Reduce Motion clears it (for Safari's pulse);
+    // everywhere else the indeterminate bar sweeps over the same track.
+    expect(trackColor(indeterminate)).toEqual(trackColor(determinate));
+    expect(valueUnder(indeterminate, 'background-color', TOUCH)).toBe(
+      trackColor(determinate)[0],
+    );
+  });
+
+  it('pulses the whole bar in the table\u2019s 1 s instead of travelling under reduced motion', () => {
+    render(<ProgressBar isIndeterminate label="Processing" />);
+    expect(
+      keyed(
+        sourceBlock('indeterminateFill', 'width'),
+        REDUCED_MOTION_FADE_QUERY,
+      ),
+    ).toBe("'100%'");
+    expect(
+      constantMs(
+        keyed(
+          sourceBlock('indeterminateFill', 'animationDuration'),
+          REDUCED_MOTION_FADE_QUERY,
+        ),
+      ),
+    ).toBe(web.reducedMotionPulseMs);
+    // Safari draws the whole bar in the fill color at that alpha, over the
+    // page: the track's own color steps aside.
+    expect(
+      keyed(
+        sourceBlock('trackIndeterminate', 'backgroundColor'),
+        REDUCED_MOTION_FADE_QUERY,
+      ),
+    ).toBe("'transparent'");
+    // Safari's measured 0.30 to 0.60 reaches only 1.52:1 to 2.42:1 against a
+    // light page; the pulse runs from 0.74 to full so it holds AST-020's 3:1.
+    expect(web.reducedMotionAlpha).toEqual([0.3, 0.6]);
+    const pulse = keyframesText().find(
+      f => /opacity:\s*0?\.74/.test(f) && /opacity:\s*1\b/.test(f),
+    );
+    expect(pulse).toBeDefined();
+    expect(
+      keyframesText().some(
+        f => /opacity:\s*0?\.3\b/.test(f) && /opacity:\s*0?\.6\b/.test(f),
+      ),
+    ).toBe(false);
+  });
+});
+
 // jsdom cannot emulate forced colors, so this asserts the compiled rule the
 // status fill relies on (architecture:theme-tokens INV11).
 describe('ProgressBar forced colors', () => {

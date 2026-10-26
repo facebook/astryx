@@ -4,7 +4,8 @@
  * @file progressBar.ts
  * @input Nothing; data only
  * @output Exports `progressBar`: UIProgressView's fill (minimum width, empty
- *   alpha, animated timing)
+ *   alpha, animated timing) and iOS Safari's indeterminate `<progress>`
+ *   (segment, sweep, the Reduce Motion pulse)
  * @position ProgressBar's rows of the UIKit constants table's progress domain
  *   (motion/uikit); read by ProgressBar's touch presentation
  *
@@ -18,14 +19,17 @@
  * theme retunes it (`spec:AST-094` FR4).
  *
  * SYNC: When modified, update /packages/core/src/ProgressBar/ProgressBar.tsx
- * (its minimum fill, a literal) and
+ * (its minimum fill and indeterminate keyframes, literals) and
  * /packages/core/src/ProgressBar/progressBarTouch.stylex.ts (the touch
  * timing's constants); ProgressBar.test.tsx checks both against this file.
  */
 
 import {registerMotionTable} from '../roles';
 
-/** UIProgressView's values, for ProgressBar. */
+/**
+ * UIProgressView's and iOS Safari's indeterminate `<progress>`'s values, for
+ * ProgressBar.
+ */
 export const progressBar = {
   progressView: {
     /**
@@ -69,6 +73,42 @@ export const progressBar = {
      *   linear), with Reduce Motion off and on, Oct 23 2026
      */
     animatedCurveIsLinear: true,
+  },
+  indeterminateWebProgress: {
+    /**
+     * iOS Safari's own `<progress>` with no value (UIKit has no indeterminate
+     * bar): the moving segment's width, as a fraction of the track; a capsule
+     * of its own that meets the track's round ends without clipping.
+     * @source measured: WebKit's iOS RenderTheme in a WKWebView (Mobile
+     *   Safari's renderer), iOS 26.2 simulator, iPhone 17 Pro, a
+     *   `<progress>` 300 pt wide: the segment is 74.5 of the 298 pt track,
+     *   Oct 24 2026
+     */
+    segmentFraction: 0.25,
+    /**
+     * One sweep of the segment from one end of the track to the other, in
+     * ms; it then sweeps back (a ping-pong), linearly.
+     * @source measured: WebKit's iOS RenderTheme in a WKWebView, iOS 26.2
+     *   simulator, iPhone 17 Pro: turns 1.0 s apart, a linear fit within
+     *   0.013 of the travel, Oct 24 2026
+     */
+    sweepMs: 1000,
+    /**
+     * With Reduce Motion the segment does not travel: the whole bar is drawn
+     * in the fill color at an alpha pulsing between these values, linearly,
+     * starting at the first.
+     * @source measured: WebKit's iOS RenderTheme in a WKWebView, iOS 26.2
+     *   simulator, iPhone 17 Pro, Reduce Motion on: 0.303 and 0.601 from the
+     *   composite, starting at the low one, Oct 24 2026
+     */
+    reducedMotionAlpha: [0.3, 0.6],
+    /**
+     * Each direction of that pulse, in ms.
+     * @source measured: WebKit's iOS RenderTheme in a WKWebView, iOS 26.2
+     *   simulator, iPhone 17 Pro, Reduce Motion on: 1.0 s each way,
+     *   Oct 24 2026
+     */
+    reducedMotionPulseMs: 1000,
   },
 } as const;
 

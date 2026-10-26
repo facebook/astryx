@@ -160,7 +160,7 @@ export const docs = {
   usage: {
     anatomy,
     description:
-      "A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can't be calculated. Supports semantic color variants, value labels, and custom formatting. Under a finger a new value animates as on iOS: linearly, one second per full track of change, and the fill keeps a minimum visible length above zero.",
+      "A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can't be calculated. Supports semantic color variants, value labels, and custom formatting. Under a finger a new value animates as on iOS: linearly, one second per full track of change, and the fill keeps a minimum visible length above zero; the indeterminate bar is iOS Safari's own, a quarter of the track sweeping back and forth (a pulse with reduced motion).",
     bestPractices: [
       {
         guidance: true,
@@ -304,7 +304,7 @@ export const docsZh = {
   usage: {
     anatomy,
     description:
-      "A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can't be calculated. Supports semantic color variants, value labels, and custom formatting. Under a finger a new value animates as on iOS: linearly, one second per full track of change, and the fill keeps a minimum visible length above zero.",
+      "A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can't be calculated. Supports semantic color variants, value labels, and custom formatting. Under a finger a new value animates as on iOS: linearly, one second per full track of change, and the fill keeps a minimum visible length above zero; the indeterminate bar is iOS Safari's own, a quarter of the track sweeping back and forth (a pulse with reduced motion).",
     bestPractices: [
       {
         guidance: true,
@@ -347,7 +347,7 @@ export const docsDense = {
   usage: {
     anatomy,
     description:
-      "A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can't be calculated. Supports semantic color variants, value labels, and custom formatting. Under a finger a new value animates as on iOS: linearly, one second per full track of change, and the fill keeps a minimum visible length above zero.",
+      "A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can't be calculated. Supports semantic color variants, value labels, and custom formatting. Under a finger a new value animates as on iOS: linearly, one second per full track of change, and the fill keeps a minimum visible length above zero; the indeterminate bar is iOS Safari's own, a quarter of the track sweeping back and forth (a pulse with reduced motion).",
     bestPractices: [
       {
         guidance: true,
