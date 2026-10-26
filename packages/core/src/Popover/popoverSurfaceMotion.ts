@@ -311,7 +311,7 @@ export function createPopoverSurfaceMotion(
     );
     presentHandle = null;
     // The copy stands where the surface is drawn, the presentation's frame
-    // included (the layer runtime's exit copy, INV13).
+    // included (the layer runtime's shared exit copy, INV14).
     const copy = placeLayerExitCopy(element, POPOVER_EXIT_COPY_ATTRIBUTE);
     if (copy == null) {
       // No top layer for a copy: the close is immediate.

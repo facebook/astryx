@@ -21,6 +21,17 @@
  * height itself; the guide's transitions only time the optional ride on top
  * (README.md).
  *
+ * Two browsers report the keyboard on different schedules, so the model reads
+ * them through two measured profiles (keyboardModel.ts): Mobile Safari
+ * reports a show after the keyboard starts to move and a hide only once it is
+ * down; Chrome reports each slide just after it starts (spec:AST-099 FR8).
+ * The profile is a capability: a browser with the VirtualKeyboard API reports
+ * the keyboard itself (Chrome); every other one reads Safari's profile. When
+ * focus moves from one field to another through something that brings up no
+ * keyboard (a popover's container), Chrome reports the keyboard gone for a
+ * moment and then back; a hide reported while a field that just got focus
+ * still has it waits until the move settles.
+ *
  * SYNC: When modified, update /packages/core/src/keyboard/README.md
  */
 
@@ -33,8 +44,20 @@ import {
 import {
   createKeyboardModel,
   type KeyboardModel,
+  type KeyboardProfile,
   type KeyboardTransition,
 } from './keyboardModel';
+
+/**
+ * Whose keyboard schedule the guide reads: `chromium` in a browser that has
+ * the VirtualKeyboard API (Chrome, which reports the keyboard as each slide
+ * starts), `webkit` (Mobile Safari's) everywhere else. A capability, never
+ * the user agent (spec:AST-013 FR6); the timing difference is measured in
+ * motion/uikit/keyboard.ts and motion/android/keyboard.ts.
+ */
+export function keyboardProfileOf(win: Window): KeyboardProfile {
+  return 'virtualKeyboard' in win.navigator ? 'chromium' : 'webkit';
+}
 
 /** A window's keyboard layout guide. */
 export interface KeyboardLayoutGuide {
@@ -49,12 +72,17 @@ export interface KeyboardLayoutGuide {
    * it, until the returned function is called.
    */
   subscribe(listener: (transition: KeyboardTransition) => void): () => void;
+  /** Whose keyboard schedule the guide reads (keyboardProfileOf). */
+  readonly profile: KeyboardProfile;
 }
 
 // Extra time after a predicted transition's end before checking it.
 const VERIFY_SLACK_MS = 150;
 // How long after a focus the guide watches frames for a keyboard to rise.
 const FRAME_WATCH_MS = 1000;
+// How long after a field gains focus Chrome may still report the keyboard
+// gone for a moment (measured: back within 50 ms of the move).
+const FOCUS_HANDOFF_MS = 150;
 
 // Input types that never bring up a keyboard.
 const KEYLESS_INPUT_TYPES = new Set([
@@ -129,7 +157,10 @@ export function getKeyboardLayoutGuide(win: Window): KeyboardLayoutGuide {
 
 function createGuide(win: Window): KeyboardLayoutGuide {
   const listeners = new Set<(transition: KeyboardTransition) => void>();
-  let model: KeyboardModel = createKeyboardModel(getMobileKeyboardHeight(win));
+  let profile = keyboardProfileOf(win);
+  let model: KeyboardModel = createKeyboardModel(getMobileKeyboardHeight(win), {
+    profile,
+  });
   let verifyTimer: ReturnType<typeof setTimeout> | null = null;
   let detach: (() => void) | null = null;
   // While a keyboard may be about to rise (a control that brings one up has
@@ -188,21 +219,52 @@ function createGuide(win: Window): KeyboardLayoutGuide {
   };
 
   const attach = () => {
-    model = createKeyboardModel(getMobileKeyboardHeight(win));
+    profile = keyboardProfileOf(win);
+    model = createKeyboardModel(getMobileKeyboardHeight(win), {profile});
+    // When a field that brings up a keyboard last gained focus.
+    let keyboardFocusAt = -Infinity;
+    let handoffTimer: ReturnType<typeof setTimeout> | null = null;
+    const report = (
+      height: number,
+      time: number,
+      frameBefore?: number,
+    ): KeyboardTransition | null => {
+      if (handoffTimer != null) {
+        clearTimeout(handoffTimer);
+        handoffTimer = null;
+      }
+      const settled = keyboardFocusAt + FOCUS_HANDOFF_MS;
+      if (
+        profile === 'chromium' &&
+        height < 0.5 &&
+        model.inset >= 0.5 &&
+        time < settled &&
+        bringsUpKeyboard(win.document.activeElement)
+      ) {
+        // Focus just moved to another field: Chrome reports the keyboard
+        // gone before it reports it back. Hold the hide until the move
+        // settles, then believe whatever the keyboard is doing.
+        handoffTimer = setTimeout(() => {
+          handoffTimer = null;
+          publish(model.report(getMobileKeyboardHeight(win), settled));
+        }, settled - time);
+        return null;
+      }
+      return model.report(height, time, frameBefore);
+    };
     const onReport = (event: MobileKeyboardEvent) => {
       if (event.type === 'viewport') {
-        const transition = model.report(
-          event.height,
-          event.timeStamp,
-          lastFrame,
-        );
+        const transition = report(event.height, event.timeStamp, lastFrame);
         if (transition?.kind === 'show') {
           stopWatchingFrames();
         }
         publish(transition);
       } else if (event.type === 'focusin') {
         if (bringsUpKeyboard(event.target)) {
-          if (model.inset <= 0) {
+          keyboardFocusAt = event.timeStamp;
+          // Safari holds a show's report back behind a busy main thread;
+          // Chrome's arrives as the slide starts.
+          if (profile === 'webkit' && model.inset <= 0) {
             watchFrames();
           }
           publish(model.focused(event.timeStamp));
@@ -218,6 +280,10 @@ function createGuide(win: Window): KeyboardLayoutGuide {
     return () => {
       unsubscribe();
       stopWatchingFrames();
+      if (handoffTimer != null) {
+        clearTimeout(handoffTimer);
+        handoffTimer = null;
+      }
       if (verifyTimer != null) {
         clearTimeout(verifyTimer);
         verifyTimer = null;
@@ -226,6 +292,9 @@ function createGuide(win: Window): KeyboardLayoutGuide {
   };
 
   return {
+    get profile() {
+      return profile;
+    },
     get inset() {
       return model.inset;
     },

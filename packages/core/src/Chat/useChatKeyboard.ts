@@ -5,9 +5,11 @@
 /**
  * @file useChatKeyboard.ts
  * @input React refs, the keyboard module (useKeyboardHeight,
- *   claimTapFocus, refuseFocusReveal), the keyboard layout guide (each
- *   transition's start, resting value and curve), the animator, the touch
- *   query, the layout viewport's height (utils/layoutViewport.ts)
+ *   claimTapFocus, refuseFocusReveal, watchRevealPan, rideKeyboard), the
+ *   keyboard layout guide (each transition's start, resting value and
+ *   curve), the animator, the keyboard's own motion (`keyboard.spring` on
+ *   iOS, Gboard's slides in Chrome on Android), the touch query, the layout
+ *   viewport's height (utils/layoutViewport.ts)
  * @output Exports useChatKeyboard: the lift ChatLayout lays its dock and
  *   message area out with, and the refs it puts on its dock, message area
  *   and composer region so the composer rides the software keyboard
@@ -26,7 +28,8 @@
  *   the layout is right with no animation.
  * - The ride is polish on top, timed by the keyboard layout guide: the dock
  *   moves on the compositor (`translate`) on the curve the guide publishes
- *   (the keyboard's own spring, no motion role) from the
+ *   (the keyboard's own motion: `keyboard.spring` on iOS, Gboard's slides in
+ *   Chrome on Android, spec:AST-099 FR8; no motion role) from the
  *   keyboard's own start, so it is where the keyboard is from its first
  *   frame, and a transcript at its newest message rides with it. The layout
  *   catches up once the ride ends, with the translate handed back in the
@@ -65,11 +68,14 @@ import {
   getMobileKeyboardHeight,
   isKeyboardMeasurable,
   refuseFocusReveal,
+  rideKeyboard,
+  subscribeMobileKeyboard,
   useKeyboardHeight,
+  watchRevealPan,
   type KeyboardTransition,
 } from '../keyboard';
 import {layoutViewportHeight} from '../utils/layoutViewport';
-import {TOUCH_QUERY} from '../utils/touchPresentation';
+import {TOUCH_QUERY, useTouchPresentation} from '../utils/touchPresentation';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 
 export interface UseChatKeyboardOptions {
@@ -327,8 +333,9 @@ export function useChatKeyboard({
     commitRef.current = commit;
 
     // The ride plays the curve the guide publishes with each transition
-    // (INV11): the keyboard's own spring, a value and not a motion role,
-    // since the system moves the keyboard on it whatever the page does.
+    // (INV11): the keyboard's own motion (UIKit's spring, or Gboard's slides
+    // in Chrome), values and not motion roles, since the system moves the
+    // keyboard on them whatever the page does.
     const follow = (transition: KeyboardTransition) => {
       // The ride: the dock goes where the guide says the keyboard will be,
       // from the keyboard's start, relative to the layout it rests in now.
@@ -348,19 +355,19 @@ export function useChatKeyboard({
       }
       // Under Reduce Motion the animator's default applies: no travel, a
       // cross-fade on a touch screen (design:reduced-motion DR1, DR2).
-      const timing = {at: transition.start};
       const shown = {y: target};
       ridingRef.current = true;
       rideRef.current += 1;
       const ride = rideRef.current;
+      // On the keyboard's own motion: UIKit's spring, or Gboard's slide.
       const rides = [
-        dock.animator.animate(shown, {spring: transition.spring}, timing)
-          .finished,
+        rideKeyboard(dock.animator, shown, transition)?.finished ??
+          Promise.resolve(true),
       ];
       if (atEnd) {
         rides.push(
-          messages.animator.animate(shown, {spring: transition.spring}, timing)
-            .finished,
+          rideKeyboard(messages.animator, shown, transition)?.finished ??
+            Promise.resolve(true),
         );
       }
       void Promise.all(rides)
@@ -468,6 +475,45 @@ export function useChatKeyboard({
       deliver: focusAtPoint,
     });
   }, []);
+
+  // A browser that reveals the composer itself pans the visual viewport after
+  // the keyboard's report while the composer is still riding up (Chrome 124
+  // on Android pans by the keyboard's whole height): the keyboard module's
+  // reveal-pan watch puts the pan back, so the composer rests on the keyboard
+  // and the page does not move (spec:AST-099 FR4). Synchronizes the keyboard
+  // module's reports, under a finger only (spec:AST-094 FR24).
+  const touchPresentation = useTouchPresentation();
+  useIsomorphicLayoutEffect(() => {
+    const composer = composerRef.current;
+    const win = composer?.ownerDocument.defaultView;
+    if (
+      !touchPresentation.isTouch ||
+      composer == null ||
+      win == null ||
+      !isKeyboardMeasurable(win)
+    ) {
+      return undefined;
+    }
+    const watch = watchRevealPan(win, {
+      owns: focused => composer.contains(focused),
+    });
+    let reportedHeight = getMobileKeyboardHeight(win);
+    const unsubscribe = subscribeMobileKeyboard(win, event => {
+      if (event.type !== 'viewport') {
+        return;
+      }
+      if (event.height !== reportedHeight) {
+        reportedHeight = event.height;
+        watch.report();
+      } else if (watch.isRevealPan(event.height)) {
+        watch.putBack();
+      }
+    });
+    return () => {
+      unsubscribe();
+      watch.stop();
+    };
+  }, [touchPresentation.isTouch]);
 
   // Every other move into the composer's text is the keyboard module's focus
   // takeover (spec:AST-099 FR4), where the keyboard is measured (FR6). A

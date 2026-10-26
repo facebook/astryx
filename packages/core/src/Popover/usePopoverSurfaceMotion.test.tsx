@@ -48,7 +48,16 @@ function layerAndTrigger() {
     listeners.push(type);
     return (add as (type: string, ...rest: unknown[]) => void)(type, ...rest);
   };
-  return {layer, trigger, listeners};
+  const removed: string[] = [];
+  const remove = layer.removeEventListener.bind(layer);
+  layer.removeEventListener = (type: string, ...rest: unknown[]) => {
+    removed.push(type);
+    return (remove as (type: string, ...rest: unknown[]) => void)(
+      type,
+      ...rest,
+    );
+  };
+  return {layer, trigger, listeners, removed};
 }
 
 describe('usePopoverSurfaceMotion', () => {
@@ -67,5 +76,17 @@ describe('usePopoverSurfaceMotion', () => {
     const {result} = renderHook(() => usePopoverSurfaceMotion());
     result.current(layer, trigger);
     expect(listeners).toContain('beforetoggle');
+  });
+
+  it('a fine-pointer open after a touch one keeps no touch listener (FR24)', () => {
+    isTouch = true;
+    const {layer, trigger, removed} = layerAndTrigger();
+    const {result} = renderHook(() => usePopoverSurfaceMotion());
+    result.current(layer, trigger);
+    // The pointer turns fine (a keyboard attached): the next open releases
+    // the touch presentation's listener, not only its motion.
+    isTouch = false;
+    result.current(layer, trigger);
+    expect(removed).toContain('beforetoggle');
   });
 });

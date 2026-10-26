@@ -15,7 +15,10 @@ import path from 'node:path';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, renderHook} from '@testing-library/react';
 import {getKeyboardLayoutGuide} from './keyboardLayoutGuide';
-import {layoutViewportHeight} from '../utils/layoutViewport';
+import {
+  __resetLayoutViewportForTest,
+  layoutViewportHeight,
+} from '../utils/layoutViewport';
 import {
   claimTapFocus,
   getMobileKeyboardHeight,
@@ -24,6 +27,7 @@ import {
   refuseFocusReveal,
   subscribeMobileKeyboard,
   useKeyboardHeight,
+  watchRevealPan,
 } from './useMobileKeyboard';
 
 type FakeViewport = EventTarget & {
@@ -60,8 +64,10 @@ afterEach(() => {
   for (const key of ['clientWidth', 'clientHeight', 'scrollWidth']) {
     Reflect.deleteProperty(document.documentElement, key);
   }
+  __resetLayoutViewportForTest();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe('the keyboard height (spec:AST-099 FR2)', () => {
@@ -186,13 +192,21 @@ describe('the layout viewport WebKit reports under a pinch zoom (FR2)', () => {
     }
   }
 
-  /** Scrollbars that take `thickness` px of a scrolling box (0: overlaid). */
-  function scrollbars(thickness: number) {
+  /**
+   * Scrollbars that take `thickness` px of a scrolling box (0: overlaid).
+   * `probes` counts the scrolling boxes measured.
+   */
+  function scrollbars(thickness: number): {probes: number} {
+    const counter = {probes: 0};
     const scrolls = (el: Element) =>
       el instanceof HTMLElement && el.style.overflow === 'scroll';
     vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(
       function (this: HTMLElement) {
-        return scrolls(this) ? 100 : 0;
+        if (scrolls(this)) {
+          counter.probes += 1;
+          return 100;
+        }
+        return 0;
       },
     );
     vi.spyOn(Element.prototype, 'clientHeight', 'get').mockImplementation(
@@ -200,6 +214,7 @@ describe('the layout viewport WebKit reports under a pinch zoom (FR2)', () => {
         return scrolls(this) ? 100 - thickness : 0;
       },
     );
+    return counter;
   }
 
   it('reads no keyboard from a desktop page\u2019s classic horizontal scrollbar', () => {
@@ -213,6 +228,20 @@ describe('the layout viewport WebKit reports under a pinch zoom (FR2)', () => {
     Object.assign(viewport, {height: 785, scale: 1, width: 1280});
     expect(layoutViewportHeight(window)).toBe(785);
     expect(measureKeyboardHeight(window)).toBe(0);
+  });
+
+  it('measures the scrollbar once, however many keyboard changes read the height (INV11)', () => {
+    // The probe writes to the document and forces a layout: it runs once,
+    // and every later measurement reuses the thickness.
+    const counter = scrollbars(15);
+    vi.stubGlobal('innerHeight', 800);
+    vi.stubGlobal('innerWidth', 1280);
+    root({clientHeight: 785, clientWidth: 1280, scrollWidth: 1600});
+    Object.assign(viewport, {height: 785, scale: 1, width: 1280});
+    for (let i = 0; i < 3; i += 1) {
+      expect(measureKeyboardHeight(window)).toBe(0);
+    }
+    expect(counter.probes).toBe(1);
   });
 
   it('reads the whole keyboard under a hidden toolbar, which no scrollbar explains', () => {
@@ -241,6 +270,11 @@ describe('where the keyboard is measured (FR6, FR7)', () => {
       configurable: true,
       value: {overlaysContent: false},
     });
+    vi.stubGlobal(
+      'matchMedia',
+      (query: string) =>
+        ({matches: false, media: query}) as unknown as MediaQueryList,
+    );
     viewport.height = window.innerHeight - 300;
     expect(isKeyboardMeasurable(window)).toBe(true);
     expect(measureKeyboardHeight(window)).toBe(300);
@@ -493,6 +527,108 @@ describe('the focus refusal (FR4)', () => {
     stop();
     first.remove();
     second.remove();
+  });
+});
+
+describe('the browser\u2019s own reveal pan (FR4)', () => {
+  function setup() {
+    const region = document.createElement('div');
+    const field = document.createElement('textarea');
+    const outside = document.createElement('textarea');
+    region.append(field);
+    document.body.append(region, outside);
+    const watch = watchRevealPan(window, {
+      owns: focused => region.contains(focused),
+    });
+    field.focus();
+    viewport.height = window.innerHeight - 300;
+    watch.report();
+    return {region, field, outside, watch};
+  }
+
+  afterEach(() => {
+    document.body.replaceChildren();
+  });
+
+  it('sees the visual viewport moving down after the report as a reveal pan of an owned field', () => {
+    const {watch} = setup();
+    expect(watch.isRevealPan(300)).toBe(false);
+    viewport.offsetTop = 300;
+    expect(watch.isRevealPan(300)).toBe(true);
+    expect(watch.isRevealPan(0)).toBe(false);
+    watch.stop();
+  });
+
+  it('leaves alone a reader\u2019s own pan, a document scroll, a zoom, and a field it does not own', () => {
+    const touched = setup();
+    document.dispatchEvent(new Event('touchstart'));
+    viewport.offsetTop = 300;
+    expect(touched.watch.isRevealPan(300)).toBe(false);
+    touched.watch.stop();
+    document.body.replaceChildren();
+    viewport.offsetTop = 0;
+
+    const scrolled = setup();
+    vi.stubGlobal('scrollY', 120);
+    viewport.offsetTop = 300;
+    expect(scrolled.watch.isRevealPan(300)).toBe(false);
+    scrolled.watch.stop();
+    vi.unstubAllGlobals();
+    document.body.replaceChildren();
+    viewport.offsetTop = 0;
+
+    const zoomed = setup();
+    Object.assign(viewport, {offsetTop: 300, scale: 1.5});
+    expect(zoomed.watch.isRevealPan(300)).toBe(false);
+    zoomed.watch.stop();
+    document.body.replaceChildren();
+    Object.assign(viewport, {offsetTop: 0, scale: 1});
+
+    const elsewhere = setup();
+    elsewhere.outside.focus();
+    viewport.offsetTop = 300;
+    expect(elsewhere.watch.isRevealPan(300)).toBe(false);
+    elsewhere.watch.stop();
+  });
+
+  it('puts the pan back by scrolling a fixed probe at the report\u2019s offset into view, or a given anchor', () => {
+    const {watch} = setup();
+    const scrolled: {element: HTMLElement; position: string; top: string}[] =
+      [];
+    // jsdom has no scrollIntoView.
+    Object.defineProperty(Element.prototype, 'scrollIntoView', {
+      configurable: true,
+      value(this: HTMLElement) {
+        scrolled.push({
+          element: this,
+          position: this.style.position,
+          top: this.style.top,
+        });
+      },
+    });
+    viewport.offsetTop = 300;
+    watch.putBack();
+    expect(scrolled).toHaveLength(1);
+    expect(scrolled[0].position).toBe('fixed');
+    expect(scrolled[0].top).toBe('0px');
+    // The probe is gone once the pan is put back.
+    expect(scrolled[0].element.isConnected).toBe(false);
+
+    const anchor = document.createElement('dialog');
+    document.body.append(anchor);
+    watch.putBack(anchor);
+    expect(scrolled.at(-1)?.element).toBe(anchor);
+    watch.stop();
+    Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
+  });
+
+  it('listens for touches only while it watches', () => {
+    const add = vi.spyOn(document, 'addEventListener');
+    const remove = vi.spyOn(document, 'removeEventListener');
+    const watch = watchRevealPan(window, {owns: () => true});
+    expect(add.mock.calls.map(([type]) => type)).toEqual(['touchstart']);
+    watch.stop();
+    expect(remove.mock.calls.map(([type]) => type)).toEqual(['touchstart']);
   });
 });
 

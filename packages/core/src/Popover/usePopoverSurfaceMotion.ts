@@ -113,8 +113,9 @@ export function usePopoverSurfaceMotion(): (
         // it: no `beforetoggle` listener that outlives the open, and no
         // compositor promotion or its timer (spec:AST-094 FR24). A motion
         // this layer already has (the pointer changed, or a touch
-        // presentation is on screen) is reset, which is what undoes them.
-        motionRef.current?.motion.reset();
+        // presentation is on screen) is released with its listener.
+        motionRef.current?.detach();
+        motionRef.current = null;
         return;
       }
       motionFor(layer).enter(() => ({
