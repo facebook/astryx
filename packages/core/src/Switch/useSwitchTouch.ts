@@ -72,8 +72,9 @@
  *   and the colour layer fades on the same fade. The thumb under a dragging
  *   finger still follows it (direct manipulation). UISwitch itself keeps its
  *   springs; the record decides here.
- * - The springs are motion roles a theme can retune: the animator resolves
- *   each spring it is handed.
+ * - The springs and the minimum lift time are the switch table's measured
+ *   constants, read directly: no theme retunes a component's springs
+ *   (`spec:AST-094` FR4).
  *
  * SYNC: When modified, update switchTouch.ts, Switch.tsx
  * and __tests__/Switch.interaction.browser.spec.ts.
@@ -90,7 +91,6 @@ import {
   type Animator,
   type MotionCurve,
 } from '../motion/animator';
-import {resolveMotion} from '../motion/resolveMotion';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 import {switchControl} from '../motion/uikit/switch';
@@ -908,17 +908,11 @@ export class SwitchTouchController {
       return;
     }
     this.liftTime = null;
-    const scope = this.elements?.thumb;
-    const lift = resolveMotion(scope, switchControl.lift);
-    const settle = resolveMotion(scope, switchControl.settle);
-    const hold =
-      (settleTime(
-        time,
-        liftTime,
-        resolveMotion(scope, switchControl, 'minimumLiftMs'),
-      ) -
-        time) /
-      1000;
+    // The switch's measured values, read as the table's constants: no theme
+    // retunes a component's springs (spec:AST-094 FR4).
+    const lift = switchControl.lift;
+    const settle = switchControl.settle;
+    const hold = (settleTime(time, liftTime) - time) / 1000;
     const play = (
       animator: Animator | null,
       property: 'scaleX' | 'scaleY' | 'opacity',
