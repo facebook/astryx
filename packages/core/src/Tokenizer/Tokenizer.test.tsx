@@ -20,7 +20,7 @@ import {
   afterEach,
 } from 'vitest';
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
-import {createRef, Profiler} from 'react';
+import {createRef, Profiler, useState} from 'react';
 import userEvent from '@testing-library/user-event';
 import {Tokenizer} from './Tokenizer';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -121,6 +121,17 @@ const userSource: SearchSource = {
     users.filter(u => u.label.toLowerCase().includes(query.toLowerCase())),
   bootstrap: () => users.slice(0, 3),
 };
+
+/**
+ * The search Spinner: named but not live (family:input-fields FR7,
+ * spec:AST-086 FR8), so it is found as an image named "Loading".
+ */
+function queryBusySpinner(): Element | null {
+  return screen.queryByRole('img', {name: 'Loading'});
+}
+function getBusySpinner(): Element {
+  return screen.getByRole('img', {name: 'Loading'});
+}
 
 describe('Tokenizer minQueryLength', () => {
   it('forwards the threshold to the typeahead engine', async () => {
@@ -920,6 +931,93 @@ describe('Tokenizer', () => {
       expect(screen.queryByText('Create "existing"')).not.toBeInTheDocument();
     });
 
+    it('does not show Create option for an already-selected label whose id differs from it', async () => {
+      // Real selections usually carry an opaque id (`u1` under the label
+      // "Alice"). The duplicate check used to compare the typed text against
+      // selected ids only, and the search results could not catch the match
+      // because filteredSource had already removed the selected item — so
+      // typing the label of an existing token offered "Create", which added a
+      // duplicate token under a new id.
+      const source: SearchSource = {
+        search: (query: string) =>
+          [{id: 'u1', label: 'Alice'}].filter(u =>
+            u.label.toLowerCase().includes(query.toLowerCase()),
+          ),
+        bootstrap: () => [],
+      };
+      const onChange = vi.fn();
+      render(
+        <Tokenizer
+          label="Tags"
+          searchSource={source}
+          value={[{id: 'u1', label: 'Alice'}]}
+          onChange={onChange}
+          hasCreate
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'Alice'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      expect(screen.queryByText('Create "Alice"')).not.toBeInTheDocument();
+    });
+
+    it('does not add a duplicate token when a stale Create entry is committed', async () => {
+      // The guard in handleAdd must apply the same label check: a Create
+      // entry rendered before the selection changed still commits through
+      // here, and an opaque id must not let a same-label token through.
+      const source: SearchSource = {
+        search: (query: string) =>
+          // A label that contains the query but is not exactly it, so the
+          // Create entry for the query itself is legitimately offered.
+          [{id: 'u2', label: 'Alice Smith'}].filter(u =>
+            u.label.toLowerCase().includes(query.toLowerCase()),
+          ),
+        bootstrap: () => [],
+      };
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <Tokenizer
+          label="Tags"
+          searchSource={source}
+          value={[]}
+          onChange={onChange}
+          hasCreate
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'Alice'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+      // The Create entry exists while the selection is empty...
+      expect(screen.queryByText('Create "Alice"')).toBeInTheDocument();
+      // ...then the selection gains Alice (under an opaque id) before the
+      // entry is committed.
+      rerender(
+        <Tokenizer
+          label="Tags"
+          searchSource={source}
+          value={[{id: 'u1', label: 'Alice'}]}
+          onChange={onChange}
+          hasCreate
+          debounceMs={0}
+        />,
+      );
+      fireEvent.click(screen.getByText('Create "Alice"'));
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
     it('does not show Create option when hasCreate is false', async () => {
       render(
         <Tokenizer
@@ -1198,14 +1296,48 @@ describe('Tokenizer', () => {
       expect(input.getAttribute('aria-describedby')).toContain(tooltip.id);
     });
 
-    it('blocks input while focusable-disabled', async () => {
+    it('blocks typing, Backspace, and supplied token removal while disabled', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
-      renderTokenizer({onChange});
-      const input = screen.getByRole('combobox');
-      input.focus();
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0]]}
+          onChange={onChange}
+          isDisabled
+          disabledMessage="Editing is unavailable"
+          renderToken={(item, onRemove) => (
+            <button type="button" onClick={onRemove}>
+              Remove {item.label}
+            </button>
+          )}
+        />,
+      );
+      await user.tab();
       await user.keyboard('Ali');
-      expect((input as HTMLInputElement).value).toBe('');
+      expect(screen.getByRole('combobox')).toHaveValue('');
+      await user.keyboard('{Backspace}');
+      await user.click(screen.getByRole('button', {name: 'Remove Alice'}));
+      expect(onChange).not.toHaveBeenCalled();
+      expect(politeRegion()).toBeNull();
+    });
+
+    it('does not commit an open result after becoming disabled', async () => {
+      const onChange = vi.fn();
+      const props = {
+        label: 'Members',
+        searchSource: userSource,
+        value: [],
+        onChange,
+        hasEntriesOnFocus: true,
+        disabledMessage: 'Editing is unavailable',
+      };
+      const {rerender} = render(<Tokenizer {...props} />);
+      fireEvent.focus(screen.getByRole('combobox'));
+      const result = await screen.findByText('Alice');
+      rerender(<Tokenizer {...props} isDisabled />);
+      fireEvent.click(result);
       expect(onChange).not.toHaveBeenCalled();
     });
 
@@ -1380,13 +1512,15 @@ describe('Tokenizer', () => {
             searchSource={userSource}
             value={[users[0]]}
             onChange={() => {}}
+            isRequired
             isDisabled
           />
         </form>,
       );
-      expect([
-        ...new FormData(container.querySelector('form')!).keys(),
-      ]).toEqual([]);
+      const form = container.querySelector('form')!;
+      expect([...new FormData(form).keys()]).toEqual([]);
+      expect(form.querySelector('input[type="hidden"]')).toBeNull();
+      expect(form.checkValidity()).toBe(true);
     });
   });
 });
@@ -1588,9 +1722,30 @@ describe('Tokenizer end-lane reserve', () => {
       fireEvent.change(screen.getByRole('combobox'), {target: {value: 'Al'}});
     });
 
-    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(getBusySpinner()).toBeInTheDocument();
     expect(reserveOf(container)).toBe(
       `calc(var(--spacing-2) + ${LANE_LOCAL_WIDTH}px)`,
+    );
+  });
+
+  it('keeps token rows, not only the input, short of the lane', () => {
+    // The lane is out of flow, so a token reaching the end of the first row
+    // ran under the clear button. The field's own inline-end padding spends
+    // the reserve, and every row of tokens wraps inside it. Real geometry is
+    // proved in TokenizerEndLane.a11y.chromium.spec.ts.
+    const {container} = render(
+      <Tokenizer
+        label="Users"
+        searchSource={userSource}
+        value={[users[0]]}
+        onChange={() => {}}
+        hasClear
+      />,
+    );
+    const field = laneHost(container);
+    expect(field).not.toBeNull();
+    expect(getComputedStyle(field!).paddingInlineEnd).toContain(
+      '--_tokenizer-end-lane-reserve',
     );
   });
 
@@ -1609,16 +1764,13 @@ describe('Tokenizer end-lane reserve', () => {
         tokenOverflowBehavior="unfocusedInline"
       />,
     );
+    // The collapsed row keeps the Spinner's slot, so the lane is up and
+    // publishing; the input still must not spend the reserve.
+    expect(reserveOf(container)).toBeTruthy();
     const input = screen.getByRole('combobox');
-    expect(input.className).not.toBe('');
-    // The reserve is the only rule that reads the lane variable; the
-    // collapsed input must not carry it.
-    const reserveClasses = new Set(
-      (laneHost(container)?.className ?? '').split(' '),
+    expect(getComputedStyle(input).paddingInlineEnd).not.toContain(
+      '--_tokenizer-end-lane-reserve',
     );
-    expect(
-      [...input.classList].some(c => reserveClasses.has(c) && c !== ''),
-    ).toBe(false);
   });
 
   it('costs no commit of its own across a whole search', async () => {
@@ -1687,7 +1839,7 @@ describe('Tokenizer end-lane reserve', () => {
     // The indicator is up, so the transition really did happen. Scoped by
     // name: the announcer for result counts is a role="status" live region
     // too, and it is not the indicator.
-    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    expect(getBusySpinner()).toBeInTheDocument();
     // ...and it cost no token a render.
     expect(renderedTokens).toEqual([]);
 
@@ -1696,11 +1848,58 @@ describe('Tokenizer end-lane reserve', () => {
       await Promise.resolve();
     });
     await waitFor(() => {
-      expect(
-        screen.queryByRole('status', {name: 'Loading'}),
-      ).not.toBeInTheDocument();
+      expect(queryBusySpinner()).not.toBeInTheDocument();
     });
     expect(renderedTokens).toEqual([]);
+  });
+
+  it('clears the busy spinner when a token is added while a bootstrap load is in flight', async () => {
+    let settle: (items: SearchableItem[]) => void = () => {};
+    const bootstrap = vi.fn(
+      async () =>
+        new Promise<SearchableItem[]>(resolve => {
+          settle = resolve;
+        }),
+    );
+    const source: SearchSource = {search: () => [], bootstrap};
+
+    function Harness() {
+      const [value, setValue] = useState<SearchableItem[]>([]);
+      return (
+        <>
+          <Tokenizer
+            label="Items"
+            searchSource={source}
+            value={value}
+            onChange={setValue}
+            hasEntriesOnFocus
+          />
+          <button type="button" onClick={() => setValue([users[0]])}>
+            Add Token
+          </button>
+        </>
+      );
+    }
+
+    render(<Harness />);
+    const input = screen.getByRole('combobox');
+
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(getBusySpinner()).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', {name: 'Add Token'}));
+
+    await waitFor(() => {
+      expect(queryBusySpinner()).not.toBeInTheDocument();
+    });
+
+    await act(async () => {
+      settle([]);
+      await Promise.resolve();
+    });
+    expect(queryBusySpinner()).not.toBeInTheDocument();
   });
 
   it('shares one observer across every field on the page', () => {

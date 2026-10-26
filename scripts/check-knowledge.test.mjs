@@ -10,15 +10,18 @@ import {
   collectGlobalReviewMatches,
   discoverKnowledgeRecords,
   extractKnowledgeClaims,
+  matchesPathPattern,
   parseAnatomyThemingBlock,
   parseDesignDecisionsBlock,
   parseKnowledgeDocument,
+  parsePathApplicabilityBlock,
   parseReviewApplicabilityBlock,
   routeGlobalReviewBaselinesAtRevision,
   validateAnatomyThemingMap,
   validateDesignDecisionsBlock,
   validateDelegations,
   validateKnowledgeRoot,
+  validatePathApplicability,
   validateReviewApplicability,
   validateSchemaEvolution,
 } from './check-knowledge.mjs';
@@ -1991,6 +1994,85 @@ describe('knowledge validation', () => {
     );
   });
 
+  describe('repository owner eligibility', () => {
+    const records = [
+      ['architecture', 'architecture.md', 'docs/architecture/approval.md'],
+      [
+        'component',
+        'component-spec.md',
+        'packages/core/src/Button/Button.spec.md',
+      ],
+      [
+        'module',
+        'module-spec.md',
+        'packages/core/src/Button/hooks/useButtonThing.spec.md',
+      ],
+      ['family', 'family-contract.md', 'docs/families/approval.md'],
+      ['system-spec', 'system-spec.md', 'docs/specs/AST-900/spec.md'],
+      ['design', 'design-spec.md', 'docs/design/approval.md'],
+      ['theme', 'theme-spec.md', 'packages/themes/neutral/neutral.spec.md'],
+    ];
+
+    function writeApprovalRecord(root, templateName, filePath, approvedBy) {
+      const template = fs.readFileSync(
+        path.join(root, 'docs/templates/knowledge', templateName),
+        'utf8',
+      );
+      const content = template
+        .replace('authority: draft', 'authority: current')
+        .replace('approved_by: null', `approved_by: ${approvedBy}`)
+        .replace('approved_at: null', 'approved_at: 2026-10-13');
+      fs.mkdirSync(path.dirname(path.join(root, filePath)), {recursive: true});
+      fs.writeFileSync(path.join(root, filePath), content);
+    }
+
+    function approvalProblems(problems, filePath) {
+      return problems.filter(problem =>
+        problem.startsWith(`${filePath}: current records require approved_by`),
+      );
+    }
+
+    it.each(records)(
+      'accepts an ENGOWNER for %s records',
+      async (_kind, templateName, filePath) => {
+        const root = fixtureRoot();
+        writeApprovalRecord(root, templateName, filePath, 'nynexman4464');
+        expect(
+          approvalProblems(await validateKnowledgeRoot(root), filePath),
+        ).toEqual([]);
+      },
+    );
+
+    it.each(records)(
+      'does not inherit the legacy schema approver list for %s',
+      async (_kind, templateName, filePath) => {
+        const root = fixtureRoot();
+        for (const ownerFile of ['ENGOWNERS', 'DESIGNOWNERS']) {
+          const ownerPath = path.join(root, '.github', ownerFile);
+          fs.writeFileSync(
+            ownerPath,
+            fs.readFileSync(ownerPath, 'utf8').replace(/@cixzhang\b/g, ''),
+          );
+        }
+        writeApprovalRecord(root, templateName, filePath, 'cixzhang');
+        expect(
+          approvalProblems(await validateKnowledgeRoot(root), filePath),
+        ).toHaveLength(1);
+      },
+    );
+
+    it.each(records)(
+      'limits DESIGNOWNER eligibility to design/theme for %s',
+      async (kind, templateName, filePath) => {
+        const root = fixtureRoot();
+        writeApprovalRecord(root, templateName, filePath, 'rubyycheung');
+        expect(
+          approvalProblems(await validateKnowledgeRoot(root), filePath),
+        ).toHaveLength(kind === 'design' || kind === 'theme' ? 0 : 1);
+      },
+    );
+  });
+
   it('requires explicit approval for a current record', async () => {
     const root = fixtureRoot();
     const directory = path.join(root, 'packages/core/src/Button');
@@ -2145,5 +2227,156 @@ describe('knowledge validation', () => {
     expect((await validateKnowledgeRoot(root)).join('\n')).toMatch(
       /duplicate id component:Button/,
     );
+  });
+});
+
+describe('path-applicability:v1', () => {
+  it('matches ** across whole segments, * and ? within one segment', () => {
+    const cases = [
+      ['apps/docsite/**', 'apps/docsite/src/a.ts', true],
+      ['apps/docsite/**', 'apps/docsite', false],
+      ['apps/docsite/**', 'apps/docsite-old/a.ts', false],
+      [
+        'packages/**/*.doc.mjs',
+        'packages/core/src/Button/Button.doc.mjs',
+        true,
+      ],
+      ['packages/**/*.doc.mjs', 'packages/Button.doc.mjs', true],
+      [
+        'packages/**/*.doc.mjs',
+        'packages/core/src/Button/Button.doc.zh.mjs',
+        false,
+      ],
+      ['packages/*/src/index.ts', 'packages/core/src/index.ts', true],
+      ['packages/*/src/index.ts', 'packages/core/nested/src/index.ts', false],
+      ['scripts/check-?.mjs', 'scripts/check-a.mjs', true],
+      ['scripts/check-?.mjs', 'scripts/check-ab.mjs', false],
+      ['docs/a.b.md', 'docs/aXb.md', false],
+      ['README.md', 'README.md', true],
+      ['README.md', 'packages/core/README.md', false],
+    ];
+    for (const [pattern, filePath, expected] of cases) {
+      expect([
+        pattern,
+        filePath,
+        matchesPathPattern(pattern, filePath),
+      ]).toEqual([pattern, filePath, expected]);
+    }
+  });
+
+  it('accepts a valid block and rejects malformed, unsafe, repeated, or stale patterns', () => {
+    const files = ['apps/docsite/src/a.ts', 'README.md'];
+    const content = [
+      '# Record',
+      '',
+      '<!-- path-applicability:v1 -->',
+      '',
+      '```json',
+      '{"paths": ["apps/docsite/**", "README.md"]}',
+      '```',
+    ].join('\n');
+    const parsed = parsePathApplicabilityBlock(content, 'r.md');
+    expect(parsed.problems).toEqual([]);
+    expect(validatePathApplicability(parsed.config, 'r.md', files)).toEqual([]);
+
+    const problems = config => validatePathApplicability(config, 'r.md', files);
+    expect(problems({paths: []})).toEqual([
+      'r.md: path-applicability:v1 requires a non-empty paths list.',
+    ]);
+    expect(problems({paths: ['README.md'], scope: 'global'})).toEqual([
+      'r.md: path-applicability:v1 requires exactly paths.',
+    ]);
+    expect(
+      problems({
+        paths: [
+          'README.md',
+          'README.md',
+          '/abs/**',
+          'a/../b',
+          'a/b**',
+          '**',
+          'docs/{a,b}.md',
+          'apps/missing/**',
+          '**/*',
+          '**/**',
+          '**/?*',
+          '*/src/a.ts',
+        ],
+      }),
+    ).toEqual([
+      'r.md: path-applicability:v1 pattern "README.md" is repeated.',
+      'r.md: path-applicability:v1 pattern "/abs/**" must be repository-relative with no empty, "." or ".." segments.',
+      'r.md: path-applicability:v1 pattern "a/../b" must be repository-relative with no empty, "." or ".." segments.',
+      'r.md: path-applicability:v1 pattern "a/b**" may use ** only as a whole segment.',
+      'r.md: path-applicability:v1 pattern "**" covers the whole repository; name the paths.',
+      'r.md: path-applicability:v1 pattern "docs/{a,b}.md" may use only letters, digits, _ . @ - / and the wildcards * ** ?.',
+      'r.md: path-applicability:v1 pattern "apps/missing/**" matches no repository file.',
+      'r.md: path-applicability:v1 pattern "**/*" must start with a literal path segment; a leading wildcard covers the whole repository.',
+      'r.md: path-applicability:v1 pattern "**/**" must start with a literal path segment; a leading wildcard covers the whole repository.',
+      'r.md: path-applicability:v1 pattern "**/?*" must start with a literal path segment; a leading wildcard covers the whole repository.',
+      'r.md: path-applicability:v1 pattern "*/src/a.ts" must start with a literal path segment; a leading wildcard covers the whole repository.',
+    ]);
+    expect(
+      validatePathApplicability({paths: ['apps/**']}, 'r.md', [
+        'apps/a.ts',
+        'apps/b/c.ts',
+      ]),
+    ).toEqual([
+      'r.md: path-applicability:v1 pattern "apps/**" matches every repository file; name the paths.',
+    ]);
+    expect(
+      validatePathApplicability({paths: ['apps/missing/**']}, 'r.md', null),
+    ).toEqual([]);
+  });
+
+  it('reports duplicate blocks through the shared overlay parser', () => {
+    const block =
+      '<!-- path-applicability:v1 -->\n```json\n{"paths": ["README.md"]}\n```\n';
+    expect(
+      parsePathApplicabilityBlock(`${block}\n${block}`, 'r.md').problems,
+    ).toEqual(['r.md: duplicate path-applicability:v1 blocks.']);
+  });
+});
+
+describe('INV25 record reachability', () => {
+  function gitFixture(root) {
+    execFileSync('git', ['init', '-q'], {cwd: root});
+    execFileSync('git', ['add', '-A'], {cwd: root});
+  }
+
+  it('fails a current record no tracked non-record path reaches, and passes once a pattern reaches it', async () => {
+    const root = fixtureRoot();
+    writeSystemSpec(root, 'AST-900', systemSpecRecord());
+    fs.mkdirSync(path.join(root, 'apps/site'), {recursive: true});
+    fs.writeFileSync(path.join(root, 'apps/site/index.md'), '# Site\n');
+    gitFixture(root);
+    expect(await validateKnowledgeRoot(root)).toEqual([
+      'docs/specs/AST-900/spec.md: current record spec:AST-900 is not reached from any repository path that is not itself a record (INV25). Link it through placement, applies_to, verified_by, a membership or consumer-doc id, a cited spec number, or a path-applicability:v1 block.',
+    ]);
+
+    fs.writeFileSync(
+      path.join(root, 'docs/specs/AST-900/spec.md'),
+      systemSpecRecord().replace(
+        '# Fixture system spec\n',
+        '# Fixture system spec\n\n<!-- path-applicability:v1 -->\n\n```json\n{"paths": ["apps/site/**"]}\n```\n',
+      ),
+    );
+    gitFixture(root);
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('skips reachability when the root has no tracked file list', async () => {
+    const root = fixtureRoot();
+    writeSystemSpec(root, 'AST-900', systemSpecRecord());
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('runs from the command line without deadlocking on its own import', () => {
+    const output = execFileSync(
+      process.execPath,
+      [path.join(repoRoot, 'scripts/check-knowledge.mjs')],
+      {cwd: repoRoot, encoding: 'utf8'},
+    );
+    expect(output).toContain('Knowledge templates and records are aligned.');
   });
 });

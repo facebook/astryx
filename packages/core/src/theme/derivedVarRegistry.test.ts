@@ -91,6 +91,11 @@ const STRUCTURAL_VARS = new Set([
   // Private counterpart of the public token above: one ancestor Section's
   // padding, propagated down the tree. Structural, never authored by a theme.
   '--_section-padding-propagated',
+  // Layout's middle row tells LayoutContent that a divider-less header or
+  // footer sits beside it (Layout/layoutEdges.stylex.ts). Structural, never
+  // authored by a theme.
+  '--_layout-flush-block-start',
+  '--_layout-flush-block-end',
 ]);
 
 /**
@@ -224,9 +229,6 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
   Chat: 'chat',
   ContextMenu: 'context-menu',
   Dialog: 'dialog',
-  // The Drawer doc file lives in packages/lab/src/Drawer, outside this
-  // package's scan; the mapping keeps the registry orphan check honest and
-  // defineTheme.test.ts pins the expansion.
   Drawer: 'drawer',
   DropdownMenu: 'dropdown-menu',
   Field: 'field',
@@ -264,6 +266,9 @@ const CROSS_COMPONENT_VARS: Record<string, string[]> = {
   // The destructive item variant recolors the Item it renders; Item owns,
   // documents and reads both slots.
   DropdownMenu: ['--_item-label-color', '--_item-description-color'],
+  // List's edge="flush" zeroes the inline inset of the Item each ListItem
+  // renders; Item owns, documents and reads it.
+  List: ['--_item-inset-inline'],
   // A layer content root stops an outer Stepper's connector gap; Stepper owns,
   // documents and reads it.
   Layer: ['--step-connector-gap'],
@@ -292,12 +297,11 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   // properties a theme author sets on the component.
   '--_thumbnail-hit-inset',
   '--_input-clear-hit-inset',
-  // The interaction overlay's fill and its transition on the ::after layer of
-  // the cards: written by the component's own hover / pressed arms (mouse
-  // `:active`, touch `data-astryx-press`), never a value a theme author sets; the
-  // overlay colours themselves are the shared interaction tokens.
+  // The interaction overlay's colour on the ::after layer of the cards:
+  // written by the component's own hover and mouse `:active` arms, never a
+  // value a theme author sets; the overlay colours themselves are the shared
+  // interaction tokens.
   '--_press-overlay',
-  '--_press-overlay-transition',
   // The touch press's paint at its current strength, declared once by the
   // shared overlay styles on the element the controller writes to and read
   // by whatever paints it. A theme sets `--color-overlay-pressed`, not this.
@@ -319,6 +323,10 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   '--tree-list-indent',
   '--_tree-indent',
   '--tree-list-row-gap',
+  // Published by each treeitem while it has keyboard focus and read as its
+  // row's z-index, so the focused row paints above the guide lines. Focus
+  // state, not a value a theme author sets.
+  '--_tree-focus-z',
   // Clipped on the ONE side each on-track connector segment faces the
   // indicator from — trailing above the node, leading below it, mirrored
   // again per axis. No standard property maps onto this purpose-based seam:

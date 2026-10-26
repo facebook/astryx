@@ -98,7 +98,7 @@ export const docs = {
       name: 'triggers',
       type: 'ChatComposerTrigger[]',
       description:
-        'Trigger definitions for typeahead menus. Each trigger specifies a character (@ or /), a search source, and an onSelect handler that returns the token to insert. Per-trigger emptySearchText (ReactNode) is the message when the query matched nothing.',
+        'Trigger definitions for typeahead menus. Each trigger specifies a character (@ or /), a search source, and an onSelect handler that returns the token to insert. Set hasMultiWordQuery: true when suggestions contain spaces (people, topics): the query then runs to a line break or about 64 characters instead of ending at the first space. Per-trigger emptySearchText (ReactNode) is the message when the query matched nothing.',
     },
     {
       name: 'debounceMs',

@@ -10,6 +10,7 @@
 import {describe, it, expect, beforeAll} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import {ProgressBar} from './ProgressBar';
+import {getForcedColorsRules} from '../__tests__/forcedColors';
 
 // A labeled mark wraps the tick in a lazily-loaded Tooltip (React.lazy +
 // Suspense). Preload that chunk once so the Tooltip (and its
@@ -565,21 +566,6 @@ describe('ProgressBar', () => {
       expect(styleClasses(accentMarks[1])).toBe(styleClasses(errorMarks[1]));
     });
 
-    it('keeps tabbable target marks outside the progressbar subtree', () => {
-      const {container} = render(
-        <ProgressBar
-          value={50}
-          label="Progress"
-          marks={[{value: 80, label: 'Goal'}]}
-        />,
-      );
-      const progressbar = screen.getByRole('progressbar', {name: 'Progress'});
-      const mark = container.querySelector(MARK)!;
-      expect(mark).toHaveAttribute('tabindex', '0');
-      expect(progressbar.querySelector('[tabindex="0"]')).toBeNull();
-      expect(mark.closest('[role="progressbar"]')).toBeNull();
-    });
-
     it('renders every mark as a focusable trigger (label is required, never decorative)', () => {
       const {container} = render(
         <ProgressBar
@@ -637,7 +623,6 @@ describe('ProgressBar', () => {
         />,
       );
       const progressbar = screen.getByRole('progressbar');
-      expect(progressbar.querySelector(MARK)).toBeNull();
       expect(progressbar.querySelector('[role="img"]')).toBeNull();
       expect(progressbar.querySelector('[aria-label]')).toBeNull();
       expect(container.querySelectorAll(MARK)).toHaveLength(1);
@@ -655,9 +640,10 @@ describe('ProgressBar', () => {
       expect(progressbar.getAttribute('aria-valuetext')).toBe('50%');
     });
 
-    it('preserves the fill inside the progressbar when marks are rendered outside it', () => {
-      // Only the fill belongs to the semantic track; the focusable marks
-      // remain independently available outside its presentational subtree.
+    it('keeps the fill as the progressbar child when marks are rendered', () => {
+      // Only the fill belongs to the semantic track. That the focusable marks
+      // stay outside its presentational subtree is the progressbar contract's
+      // target-marks state (progressbar.subtree.no-focusable-descendants).
       const {container} = render(
         <ProgressBar
           value={50}
@@ -669,8 +655,6 @@ describe('ProgressBar', () => {
       const fill = progressbar.firstElementChild as HTMLElement;
       expect(fill.style.width).toBe('50%');
       expect(fill.classList.contains('astryx-progress-bar-mark')).toBe(false);
-      const mark = container.querySelector<HTMLElement>(MARK)!;
-      expect(progressbar).not.toContainElement(mark);
       expect(container.querySelectorAll(MARK)).toHaveLength(1);
     });
 
@@ -853,5 +837,16 @@ describe('ProgressBar theme target names', () => {
     expect(container.querySelector('.astryx-progressbar-track')).toBeNull();
     expect(container.querySelector('.astryx-progressbar-fill')).toBeNull();
     expect(container.querySelector('.astryx-progressbar-mark')).toBeNull();
+  });
+});
+
+// jsdom cannot emulate forced colors, so this asserts the compiled rule the
+// status fill relies on (architecture:theme-tokens INV11).
+describe('ProgressBar forced colors', () => {
+  it('keeps a visible boundary on the status fill', () => {
+    render(<ProgressBar value={40} variant="error" label="Upload" />);
+    const css = getForcedColorsRules();
+    expect(css).toContain('outline-style: solid;');
+    expect(css).toContain('outline-color: canvastext;');
   });
 });

@@ -170,6 +170,15 @@ export type ChatComposerTrigger = {
   loadingText?: string;
   /** Accessible label for the menu. @default 'Suggestions' */
   menuLabel?: string;
+  /**
+   * Whether the query continues past spaces, for suggestions whose names have
+   * spaces (e.g. "@María José García", "@Design Review: Q4"). The query then
+   * runs until a line break or about 64 characters, and when nothing matches
+   * the menu hides unless `emptySearchText` is set. When false, the query ends
+   * at the first space.
+   * @default false
+   */
+  hasMultiWordQuery?: boolean;
 };
 
 export interface ChatComposerInputProps extends Omit<
@@ -685,6 +694,10 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
           currentDraftRef.current = '';
         }
 
+        // Submitting ends any trigger query, including one dismissed with
+        // Escape: no menu stays open, and no dismissal carries into the next
+        // message.
+        triggerMenu.reset();
         onSubmit?.(text);
         editableRef.current.textContent = '';
         setIsEmpty(true);

@@ -77,7 +77,8 @@ form value through a labeled field surface with a content lane. Members use
   models without this content/end-lane geometry. PowerSearch and ChatComposer
   are higher-level compositions that consume member behavior rather than define
   another field primitive. BaseTypeahead is a combobox engine without a field
-  surface.
+  surface. RichTextEditor stays outside this family until a family adoption is
+  recorded.
 
 FR10 and DEC-7 also bind CheckboxList, RadioList, and Slider. They stay
 outside this family's geometry rules, but they compose Field, and every
@@ -97,7 +98,8 @@ another implementation helper.
   owns the group label and supporting text.
 - `FormLayout` owns outer arrangement, spacing, direction, and form-level
   optionality. It does not redefine a member's internal control geometry.
-- `InputGroup` owns the fixed row height, connected outer surface, edge alignment,
+- `InputGroup` owns the row height (fixed today; it grows with a set text size
+  under `spec:AST-102` FR4, and the fixed height is a gap), connected outer surface, edge alignment,
   and group-level focus presentation for admitted children. Admission follows the
   capability contract in FR3, not a permanent component allowlist; input-family
   membership alone does not imply support.
@@ -116,20 +118,20 @@ another implementation helper.
 
 ## Canonical concepts
 
-| Concept           | Values or states                                               | Default semantics                                                                                                                    | Stability                                            |
-| ----------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
-| field shell       | standalone Field or supported InputGroup path                  | One label/status owner surrounds the control                                                                                         | shipped pattern                                      |
-| field size        | `sm`, `md`, `lg` where supported                               | Same-size single-line controls align without one state changing the row                                                              | approved family rule                                 |
-| inline size       | intrinsic, explicit `Field.width`, or containing layout        | A member keeps its available inline size across value and busy-state changes                                                         | approved rule; Selector exception below              |
-| end controls      | absent, clear, busy, status, disclosure, or component content  | Every rendered control has non-overlapping space; absent controls leave no unexplained reserve                                       | approved family rule                                 |
-| grouped row       | standalone or admitted InputGroup child                        | InputGroup owns fixed height, connected edges, and group focus; the child owns its grouped adaptation                                | approved capability contract; shipped adoption below |
-| disabled reason   | absent or component-supported `disabledMessage`                | The reason remains keyboard- and assistive-technology-reachable while mutation stays blocked                                         | approved family rule where exposed                   |
-| input busy        | explicit `isLoading` or pending `changeAction` where exposed   | The field value is resolving or being saved                                                                                          | approved by DEC-2 and AST-001                        |
-| focus-zoom floor  | iOS or non-iOS text entry                                      | iOS text-entry controls floor rendered text at 16 CSS px to prevent focus zoom; other platforms retain theme sizing                  | approved family rule                                 |
-| source busy       | component-owned async search or option loading                 | Supporting data work is separate from input `isLoading`                                                                              | component/system-spec owned                          |
-| Transition Action | absent or component-supported `changeAction`                   | Callback first, optimistic value next, Action in a transition, one busy presentation                                                 | approved family rule where exposed                   |
-| status placement  | `attached`, `detached`, or `tooltip` at the input-family layer | Attached is the default where the member supports safe overlap; detached and tooltip remain available to every input                 | approved family rule                                 |
-| prop targets      | base props, `container*`, `control*`                           | Base props reach the primary semantic control; `container*` reaches Field; `control*` reaches the control box; no root styling input | approved by DEC-7                                    |
+| Concept           | Values or states                                               | Default semantics                                                                                                                                         | Stability                                            |
+| ----------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| field shell       | standalone Field or supported InputGroup path                  | One label/status owner surrounds the control                                                                                                              | shipped pattern                                      |
+| field size        | `sm`, `md`, `lg` where supported                               | Same-size single-line controls align without one state changing the row                                                                                   | approved family rule                                 |
+| inline size       | intrinsic, explicit `Field.width`, or containing layout        | A member keeps its available inline size across value and busy-state changes                                                                              | approved rule; Selector exception below              |
+| end controls      | absent, clear, busy, status, disclosure, or component content  | Every rendered control has non-overlapping space; absent controls leave no unexplained reserve                                                            | approved family rule                                 |
+| grouped row       | standalone or admitted InputGroup child                        | InputGroup owns row height (grows with a set text size under `spec:AST-102` FR4), connected edges, and group focus; the child owns its grouped adaptation | approved capability contract; shipped adoption below |
+| disabled reason   | absent or component-supported `disabledMessage`                | The reason remains keyboard- and assistive-technology-reachable while mutation stays blocked                                                              | approved family rule where exposed                   |
+| input busy        | explicit `isLoading` or pending `changeAction` where exposed   | The field value is resolving or being saved                                                                                                               | approved by DEC-2 and AST-001                        |
+| focus-zoom floor  | iOS or non-iOS text entry                                      | iOS text-entry controls floor rendered text at 16 CSS px to prevent focus zoom; other platforms retain theme sizing                                       | approved family rule                                 |
+| source busy       | component-owned async search or option loading                 | Supporting data work is separate from input `isLoading`                                                                                                   | component/system-spec owned                          |
+| Transition Action | absent or component-supported `changeAction`                   | Callback first, optimistic value next, Action in a transition, one busy presentation                                                                      | approved family rule where exposed                   |
+| status placement  | `attached`, `detached`, or `tooltip` at the input-family layer | Attached is the default where the member supports safe overlap; detached and tooltip remain available to every input                                      | approved family rule                                 |
+| prop targets      | base props, `container*`, `control*`                           | Base props reach the primary semantic control; `container*` reaches Field; `control*` reaches the control box; no root styling input                      | approved by DEC-7                                    |
 
 ## Cross-component invariants
 
@@ -157,8 +159,9 @@ another implementation helper.
   capabilities rather than a permanent allowlist. Family membership or context
   consumption alone is insufficient.
 - **FR4 — Disabled reasons remain reachable where supported.** When a member
-  exposes `disabledMessage`, the inactive field remains focusable enough to
-  expose the reason while editing, selection, and activation stay blocked.
+  exposes `disabledMessage`, the inactive field remains focusable
+  (`spec:AST-085`) and exposes the reason while editing, selection, and
+  activation stay blocked.
   Components without that public concept are not required to add it.
 - **FR5 — Input loading describes the value, not supporting data.** Where a
   member exposes `isLoading`, it means the field value is resolving or being
@@ -177,7 +180,8 @@ another implementation helper.
   FR2, and FR3 where grouped.
 - **FR8 — Status placement follows member capability.** Every input MUST offer
   `detached` and `tooltip`. A member supports `attached` only when its direct
-  control is opaque, bordered, fixed-height, and its owning root reliably
+  control is opaque, bordered, fixed-height (a height set by its resolved size,
+  which grows with a set text size under `spec:AST-102` FR4), and its owning root reliably
   reflects the resolved size used for overlap. Where supported, `attached` is
   the default. Wrapped, custom, tall, or translucent surfaces normally use
   `detached` or a component-owned placement. Direct FieldStatus continues to
@@ -217,9 +221,19 @@ another implementation helper.
      `control*` to Field.
 
   Component-owned value callbacks (`onChange(value)`) are typed out of base
-  props and keep their value signature. A consumer DOM handler composes with the
-  component's own handler through the shared composition helper, component-first
-  unless the API promises cancellation. No member and no layout may vary this.
+  props and keep their value signature. Retargeting a base prop changes the
+  element a consumer DOM handler reaches, not its order or cancellation behavior:
+  a component keeps the order and cancellation it released and states any order
+  that differs from component-first composition in its docs and JSDoc. A handler
+  a component forwards for the first time composes component-first through the
+  shared composition helper. No component and no layout may vary the prop
+  targets.
+
+- **FR11 — The clear control's tooltip names the action, not the field.**
+  Every member's clear control MUST show the localized generic tooltip "Clear"
+  on hover and keyboard focus, whatever the field's label or the scope of the
+  clear. Its accessible name stays contextual and member-owned, such as "Clear
+  Search" or "Clear all Countries", and contains the visible word.
 
 ## Allowed component variation
 
@@ -347,7 +361,6 @@ DEC-6 does not require unrelated components to add a new floor.
 
   | Component                          | Root styling reaches | Base props reach                       | Primary semantic control    | Root styling migrates to |
   | ---------------------------------- | -------------------- | -------------------------------------- | --------------------------- | ------------------------ |
-  | TextInput                          | control box          | native input                           | native input                | `control*`               |
   | TextArea                           | control box          | native textarea                        | native textarea             | `control*`               |
   | NumberInput                        | control box          | native input                           | native input                | `control*`               |
   | FileInput                          | control box          | native file input                      | native file input           | `control*`               |
@@ -392,6 +405,7 @@ The exhaustive coverage obligation follows the membership and adoption tables.
 | FR8      | Representative member tests plus real-browser overlap/opacity/height checks                                                                                                                                                                   | eligible single-line direct controls; wrapped, custom, tall, and translucent controls; all three placements                       | Attached is missing where supported, appears where unsafe, or tooltip reaches direct FieldStatus                                                                                                                         |
 | FR9      | `inputFontFloor.test.ts`, focused computed-style checks, and real iOS Safari focus evidence                                                                                                                                                   | iOS touch, non-iOS coarse pointer, and desktop fine pointer                                                                       | iOS renders below 16 CSS px or focus zooms, or a non-iOS coarse pointer receives the iOS-only floor                                                                                                                      |
 | FR10     | A type test over every Field-composed component's props that fails if one accepts root `xstyle`, `className`, or `style`; per-component render tests for every base prop, `container*`, and `control*` prop and for both development warnings | every Field-composed component standalone, in horizontal-label FormLayout, and inside InputGroup where admitted                   | A component type-checks with root styling, a base prop lands off the primary semantic control, `container*` lands off the Field box or on the control box, `control*` lands off the control box, or a warning is missing |
+| FR11     | `InputClearButton.test.tsx` tooltip and accessible-name assertions, plus real-Chromium hover captures                                                                                                                                         | a long field label; a locale override; light and dark                                                                             | The tooltip repeats the field label, or the accessible name loses the field label                                                                                                                                        |
 
 ## Decision links
 
@@ -436,7 +450,9 @@ Every input offers detached and tooltip status placement. A member offers
 attached only when its direct control is opaque, bordered, fixed-height, and its
 owning root reliably reflects the resolved size used for overlap. Attached is the
 default whenever it is supported. Wrapped, custom, tall, or translucent surfaces
-normally use detached or retain component-owned placement.
+normally use detached or retain component-owned placement. A fixed height is
+one set by the resolved size, which grows with a set text size under
+`spec:AST-102` FR4.
 
 Direct FieldStatus remains limited to attached and detached presentation. Tooltip
 is an input-family composition that Field consumes before rendering FieldStatus.
@@ -501,6 +517,34 @@ member and layout; where its element does not render, the part has no effect
 rather than moving to another element.
 
 Rejected: keeping root `xstyle` and routing it to Field; spreads and wrappers would move styling silently.
+
+### DEC-8 — Prop retargeting keeps each component's handler order
+
+**Decider:** `cixzhang`, `2026-10-11`
+
+When a consumer handler runs relative to the component's own, and whether it can
+cancel built-in behavior, are released interaction behavior that
+`architecture:public-component-api` INV9 keeps stable. Moving base props to the
+semantic control changes which element a consumer handler reaches, not that
+behavior, so a component keeps the order and cancellation it released and
+documents any order that differs from component-first composition.
+Component-first cancelling composition applies only to handlers a component
+forwards for the first time.
+
+Rejected: composing every retargeted handler component-first; a consumer that
+cancels built-in behavior, or that observes events the component cancels, would
+change behavior with no API change to signal it.
+
+### DEC-9 — The clear tooltip names only the action
+
+**Decider:** `cixzhang`, `2026-10-13`
+
+The field's label already sits beside the clear glyph, so a sighted person
+needs only the action. Repeating the label makes long or noun-phrase labels
+read as awkward copy. A screen-reader user does not see the field around the
+button, so the accessible name keeps the label.
+
+Rejected: a tooltip that repeats the accessible name; it doubles the label on screen.
 
 ## Open questions
 

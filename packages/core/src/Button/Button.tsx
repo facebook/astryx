@@ -4,7 +4,7 @@
 
 /**
  * @file Button.tsx
- * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator)
+ * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator), group contexts
  * @output Exports Button component, ButtonProps, ButtonVariant types
  * @position Core implementation; consumed by index.ts, tested by Button.test.tsx
  *
@@ -18,7 +18,14 @@
  * Last synced props: label, variant, size, isDisabled, isLoading, isInterruptible, clickAction, icon, isIconOnly, width, children, tooltip, endContent, href, as, target, rel
  */
 
-import {useRef, useTransition, type ReactNode} from 'react';
+import {
+  use,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from 'react';
 import type {BaseProps} from '../BaseProps';
 import type {Elevation, SizeValue} from '../utils/types';
 import * as stylex from '@stylexjs/stylex';
@@ -44,6 +51,12 @@ import {iconBoxSizeStyles, type IconSize} from '../Icon/IconSize.stylex';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useSize} from '../SizeContext/SizeContext';
 import {useButtonGroup} from '../ButtonGroup/ButtonGroupContext';
+import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {InputGroupInternalContext} from '../InputGroup/InputGroupInternalContext';
+import {
+  groupStyles as inputGroupStyles,
+  inputGroupItemProps,
+} from '../InputGroup/groupStyles';
 import {mergeProps} from '../utils';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useLinkComponent} from '../Link/useLinkComponent';
@@ -227,10 +240,22 @@ const variants = stylex.create({
   destructive: {
     backgroundColor: colorVars['--color-error'],
     color: colorVars['--color-on-error'],
+    // Forced colors replace the fill with ButtonFace; a border keeps the
+    // destructive fill's shape visible (architecture:theme-tokens INV11). A
+    // border, not an outline, leaves the shared focus ring intact.
+    borderWidth: {default: 0, '@media (forced-colors: active)': '1px'},
+    borderStyle: {default: 'none', '@media (forced-colors: active)': 'solid'},
+    borderColor: {
+      default: null,
+      '@media (forced-colors: active)': 'CanvasText',
+    },
     // The ring matches the variant it rings: an accent-colored outline on a
     // red button reads as another control's focus. Only the color differs —
     // width, style and offset come from the shared outline.
-    outlineColor: {default: null, ':focus-visible': colorVars['--color-error']},
+    outlineColor: {
+      default: null,
+      ':focus-visible': colorVars['--color-error'],
+    },
   },
 });
 
@@ -576,6 +601,7 @@ export function Button({
   const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const buttonGroup = useButtonGroup();
+  const inputGroup = useInputGroup();
 
   const [isPending, startTransition] = useTransition();
   // clickAction is normally fire-once (submit/save/pay), so a same-tick
@@ -584,6 +610,21 @@ export function Button({
   // re-click can land and interrupt the in-flight action with a fresh one.
   const actionInFlightRef = useRef(false);
   const isLoadingState = isLoading || isPending;
+  // The loading live region must exist empty before it receives "Loading":
+  // many screen readers skip a live region that mounts already holding its
+  // text, which is what a Button first rendered loading did (spec:AST-086
+  // FR3). Only that case holds the text back, until the frame after the
+  // region mounts; a Button mounted idle never re-renders for this.
+  const [isLiveRegionReady, setIsLiveRegionReady] = useState(
+    () => !isLoadingState,
+  );
+  useEffect(() => {
+    if (isLiveRegionReady) {
+      return;
+    }
+    const frame = requestAnimationFrame(() => setIsLiveRegionReady(true));
+    return () => cancelAnimationFrame(frame);
+  }, [isLiveRegionReady]);
   // Delay the spinner reveal for action-driven loading (clickAction's own
   // transition) so a fast action that settles within the delay does not flash
   // a spinner. Interruptible loading is delayed too, so rapid re-clicks settle
@@ -591,26 +632,39 @@ export function Button({
   // the consumer is deliberately showing it.
   const delaySpinner = isPending || isInterruptible;
   const groupDisabled = buttonGroup?.isDisabled ?? false;
-  // When interruptible, the loading state drives the spinner and aria-busy but
-  // not disabled, so clicks keep landing and can interrupt the in-flight action.
-  const buttonDisabled =
-    isDisabled || groupDisabled || (isLoadingState && !isInterruptible);
-  // A loading button remains non-interactive, but its spinner communicates an
-  // active state and must retain contrast. Only explicitly disabled controls
-  // receive the visually dimmed treatment.
-  const visuallyDisabled = isDisabled || groupDisabled;
+  const inputGroupState = use(InputGroupInternalContext);
+  const isTrueDisabled =
+    isDisabled || groupDisabled || inputGroupState.isDisabled;
+  // Busy-only: the button can't fire again purely because an action is in
+  // flight, not because it's genuinely isDisabled/group-disabled. Per the API
+  // Conventions "Disabled vs Busy" rule, busy is visual-only (aria-busy +
+  // spinner) and must never take focusability away — the click-handler ref
+  // guard (actionInFlightRef) is what actually makes a fire-once action fire
+  // once, so the native disabled attribute adds nothing but a focus loss
+  // here. When interruptible, the loading state drives the spinner and
+  // aria-busy but not disabled at all, so clicks keep landing and can
+  // interrupt the in-flight action.
+  const isBusyOnlyDisabled =
+    !isTrueDisabled && isLoadingState && !isInterruptible;
+  const buttonDisabled = isTrueDisabled || isBusyOnlyDisabled;
   // isIconOnly prop is the source of truth for icon-only rendering.
   // When false (default), label is always rendered as visible text.
 
   const LinkComponent = useLinkComponent(as);
 
-  // Render as link when href is provided and button is not disabled.
-  // Disabled links are an accessibility anti-pattern — fall back to <button>.
-  const renderAsLink = href != null && !buttonDisabled;
+  // Render as link when href is provided and the button is not TRULY
+  // disabled. Disabled links are an accessibility anti-pattern, so a
+  // genuinely isDisabled/group-disabled button falls back to <button>.
+  // Busy-only does NOT fall back: swapping <a> for a disabled <button>
+  // mid-action would drop focus the same way the native attribute does
+  // (credit @AKnassa, #4879), which is exactly the bug this PR fixes.
+  const renderAsLink = href != null && !isTrueDisabled;
 
-  // Use aria-disabled when tooltip is present so the button remains focusable
-  // for keyboard users to reach the tooltip. Otherwise use native disabled.
-  const useAriaDisabled = tooltip != null && buttonDisabled;
+  // Use aria-disabled (button stays focusable) when busy-only, or when a
+  // tooltip is present so keyboard users can still reach it. A genuinely
+  // isDisabled/group-disabled button (not busy) keeps native disabled.
+  const useAriaDisabled =
+    buttonDisabled && (isBusyOnlyDisabled || tooltip != null);
 
   // Attach tooltip behavior via the hook rather than wrapping the button in a
   // <Tooltip> element. The hook adds hover/focus triggers to the button itself,
@@ -627,6 +681,16 @@ export function Button({
     // a re-click while pending starts a fresh action that interrupts the prior.
     if (buttonDisabled || (actionInFlightRef.current && !isInterruptible)) {
       e.preventDefault();
+      // A native `disabled` element never dispatches a click at all, so it
+      // never reaches a wrapping element's own handler either. An
+      // aria-disabled button (busy-only, or with a tooltip) is still a real,
+      // interactive element the DOM keeps dispatching clicks on —
+      // preventDefault alone only cancels the button's OWN default action
+      // (form submit, link navigation), not propagation. Without this, an
+      // unavailable Button inside a clickable row/card/backdrop still
+      // triggers that ancestor's action, which the previously native-disabled
+      // control never did.
+      e.stopPropagation();
       return;
     }
     props.onClick?.(e);
@@ -666,7 +730,7 @@ export function Button({
     isIconOnly && styles.iconOnly,
     interactionOverlayStyles.backgroundImage,
     buttonDisabled && styles.inactive,
-    visuallyDisabled && styles.disabled,
+    isTrueDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
     renderAsLink && styles.link,
     !buttonGroup && styles.pressable,
@@ -674,6 +738,7 @@ export function Button({
       (buttonGroup.orientation === 'horizontal'
         ? groupStyles.horizontal
         : groupStyles.vertical),
+    inputGroup != null && buttonGroup == null && inputGroupStyles.buttonAddon,
     buttonGroup &&
       (variant === 'primary' || variant === 'destructive') &&
       (buttonGroup.orientation === 'horizontal'
@@ -742,7 +807,7 @@ export function Button({
       </span>
       {/* Live region for loading state announcements */}
       <VisuallyHidden role="status" aria-live="polite">
-        {isLoadingState ? t('@astryx.button.loading') : ''}
+        {isLoadingState && isLiveRegionReady ? t('@astryx.button.loading') : ''}
       </VisuallyHidden>
     </>
   );
@@ -786,14 +851,21 @@ export function Button({
         href={href}
         target={target}
         rel={rel}
+        {...(inputGroup != null && buttonGroup == null
+          ? inputGroupItemProps
+          : undefined)}
         {...sharedMergedProps}
         {...pressFeedback}
         {...props}
         {...ariaLabelProp}
         {...describedByProp}
         {...edgeCompAttr}
-        aria-busy={isLoadingState || undefined}
-        onClick={handleClick}>
+        // A caller's own busy or disabled state is kept, so a component that
+        // hands these props to a Button (a caller-rendered trigger) is heard.
+        aria-busy={isLoadingState || props['aria-busy'] || undefined}
+        aria-disabled={useAriaDisabled || props['aria-disabled'] || undefined}
+        onClick={handleClick}
+        {...(handleKeyDown ? {onKeyDown: handleKeyDown} : null)}>
         {buttonContent}
       </LinkComponent>
     );
@@ -803,14 +875,19 @@ export function Button({
         ref={mergedButtonRef}
         type={type}
         disabled={useAriaDisabled ? undefined : buttonDisabled}
+        {...(inputGroup != null && buttonGroup == null
+          ? inputGroupItemProps
+          : undefined)}
         {...sharedMergedProps}
         {...pressFeedback}
         {...props}
         {...ariaLabelProp}
         {...describedByProp}
         {...edgeCompAttr}
-        aria-busy={isLoadingState || undefined}
-        aria-disabled={useAriaDisabled || undefined}
+        // A caller's own busy or disabled state is kept, so a component that
+        // hands these props to a Button (a caller-rendered trigger) is heard.
+        aria-busy={isLoadingState || props['aria-busy'] || undefined}
+        aria-disabled={useAriaDisabled || props['aria-disabled'] || undefined}
         onClick={handleClick}
         {...(handleKeyDown ? {onKeyDown: handleKeyDown} : null)}>
         {buttonContent}

@@ -13,6 +13,7 @@
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect, userEvent, waitFor, within} from 'storybook/test';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -52,6 +53,9 @@ const meta: Meta<typeof ComplexSelector> = {
           'A high-level selector shell for rich custom content. The component owns the field, trigger, popover, focus restore, and async changeAction flow while consumers render the content. Its sm, md, and lg triggers use the 28px, 32px, and 36px element-height tokens. Custom content should use Astryx focus hooks where appropriate and be evaluated against WCAG 2.2.',
       },
     },
+  },
+  argTypes: {
+    variant: {control: 'radio', options: ['input', 'secondary', 'ghost']},
   },
 };
 
@@ -398,9 +402,18 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-container'],
     backgroundColor: colorVars['--color-background-muted'],
   },
+  toolbarDemoIntrinsic: {
+    width: 'max-content',
+  },
   toolbarContent: {
     width: 280,
     padding: spacingVars['--spacing-3'],
+  },
+  auditMatrix: {
+    width: 'min(720px, calc(100vw - 32px))',
+  },
+  auditPopupContent: {
+    width: 220,
   },
 });
 
@@ -760,6 +773,94 @@ export const CategoryTreeSelector: Story = {
 
 type ViewDensity = 'Comfortable' | 'Compact';
 
+export const SecondaryVariant: Story = {
+  name: 'Secondary toolbar trigger',
+  render: () => {
+    const [density, setDensity] = useState<ViewDensity>('Comfortable');
+
+    return (
+      <div {...stylex.props(styles.toolbarDemo, styles.toolbarDemoIntrinsic)}>
+        <Button
+          label="Reset view"
+          variant="secondary"
+          size="sm"
+          onClick={() => setDensity('Comfortable')}
+        />
+        <ComplexSelector<ViewDensity>
+          label="View density"
+          isLabelHidden
+          value={density}
+          onChange={setDensity}
+          triggerLabel={`Density: ${density}`}
+          variant="secondary"
+          size="sm"
+          width={190}
+          startIcon="viewColumns"
+          alignment="end"
+          contentXstyle={styles.toolbarContent}>
+          {(selectedDensity, onChange, close) => (
+            <VStack gap={3}>
+              <Text type="supporting" color="secondary">
+                Choose how densely rows are displayed.
+              </Text>
+              <HStack gap={2}>
+                {(['Comfortable', 'Compact'] as const).map(option => (
+                  <Button
+                    key={option}
+                    label={option}
+                    size="sm"
+                    variant={
+                      selectedDensity === option ? 'primary' : 'secondary'
+                    }
+                    onClick={() => {
+                      onChange(option);
+                      close();
+                    }}
+                  />
+                ))}
+              </HStack>
+            </VStack>
+          )}
+        </ComplexSelector>
+        <Button label="Share" variant="secondary" size="sm" />
+      </div>
+    );
+  },
+  play: async ({canvasElement}) => {
+    await document.fonts.ready;
+    const canvas = within(canvasElement);
+    const root = canvasElement.querySelector<HTMLElement>(
+      '.astryx-complex-selector[data-variant="secondary"]',
+    );
+    if (root == null) {
+      throw new Error('Secondary ComplexSelector root not found');
+    }
+    const widthBefore = root.getBoundingClientRect().width;
+    expect(widthBefore).toBeCloseTo(190, 0);
+
+    const trigger = canvas.getByRole('combobox', {name: 'View density'});
+    await userEvent.click(trigger);
+    const dialog = within(document.body).getByRole('dialog', {
+      name: 'View density',
+    });
+    await userEvent.click(
+      within(dialog).getByRole('button', {name: 'Compact'}),
+    );
+    await waitFor(() =>
+      expect(root.getBoundingClientRect().width).toBeCloseTo(widthBefore, 0),
+    );
+    trigger.blur();
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A compact toolbar composition where ComplexSelector uses the same neutral-filled treatment as adjacent secondary buttons.',
+      },
+    },
+  },
+};
+
 export const ControlledToolbarTrigger: Story = {
   name: 'Controlled toolbar trigger',
   render: () => {
@@ -825,6 +926,102 @@ export const ControlledToolbarTrigger: Story = {
       description: {
         story:
           'A compact toolbar composition using the ghost trigger, a leading icon, end-aligned content, and an external control that opens the selector imperatively through its handleRef. The selector still owns its own visibility, focus restoration, and light dismiss.',
+      },
+    },
+  },
+};
+
+export const AuditMatrix: Story = {
+  name: 'Audit matrix',
+  tags: ['no-visual'],
+  render: () => {
+    const content = () => <Button label="Apply selection" size="sm" />;
+
+    return (
+      <VStack gap={4} xstyle={styles.auditMatrix} data-testid="audit-matrix">
+        <ComplexSelector label="Empty small" value="" size="sm">
+          {content}
+        </ComplexSelector>
+        <ComplexSelector
+          label="Selected medium"
+          value="Design systems"
+          triggerLabel="Design systems"
+          data-testid="rtl-trigger">
+          {content}
+        </ComplexSelector>
+        <ComplexSelector
+          label="Long large"
+          value="A long selected destination"
+          triggerLabel="A long selected destination that must truncate without widening the field"
+          size="lg">
+          {content}
+        </ComplexSelector>
+        <ComplexSelector
+          label="Ghost trigger"
+          value="Compact"
+          triggerLabel="Compact"
+          variant="ghost"
+          startIcon="viewColumns">
+          {content}
+        </ComplexSelector>
+        <ComplexSelector
+          label="Loading value"
+          value="Saving"
+          triggerLabel="Saving destination"
+          isLoading>
+          {content}
+        </ComplexSelector>
+        <ComplexSelector
+          label="Disabled value"
+          value="Unavailable"
+          triggerLabel="Unavailable"
+          isDisabled>
+          {content}
+        </ComplexSelector>
+        <ComplexSelector
+          label="Invalid required value"
+          value="Needs attention"
+          triggerLabel="Needs attention"
+          isRequired
+          status={{type: 'error', message: 'Choose an available destination.'}}>
+          {content}
+        </ComplexSelector>
+        <ComplexSelector
+          label="Warning value"
+          value="Draft destination"
+          triggerLabel="Draft destination"
+          status={{type: 'warning', message: 'This destination is archived.'}}>
+          {content}
+        </ComplexSelector>
+        <ComplexSelector
+          label="Successful value"
+          value="Ready"
+          triggerLabel="Ready"
+          status={{type: 'success', message: 'Destination is available.'}}>
+          {content}
+        </ComplexSelector>
+        <ComplexSelector
+          label="Custom trigger selector"
+          value="Custom"
+          contentXstyle={styles.auditPopupContent}
+          renderTrigger={props => (
+            <Button
+              data-testid="rtl-custom-trigger"
+              label="Custom trigger"
+              variant="secondary"
+              {...props}
+            />
+          )}>
+          {content}
+        </ComplexSelector>
+      </VStack>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A bounded audit fixture for the built-in sizes, variants, busy, disabled, validation, overflow, and caller-rendered trigger paths. Browser evidence drives this one fixture through light, dark, RTL, interaction, and 320px states.',
       },
     },
   },

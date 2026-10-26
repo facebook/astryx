@@ -252,6 +252,12 @@ export const categories: SandboxCategory[] = [
           'Compare complete Markdown rendering with bursty streaming performance and animation',
       },
       {
+        name: 'DiffViewer Perf',
+        href: '/pages/diffviewer-perf/',
+        description:
+          'Render and scroll many files and lines; compare unified and split',
+      },
+      {
         name: 'Table Lab',
         href: '/pages/table-lab/',
         description:

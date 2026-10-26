@@ -10,6 +10,7 @@ import {useStepperContext} from './StepperContext';
 import {useLayer} from '../Layer/useLayer';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
+import {getForcedColorsRules} from '../__tests__/forcedColors';
 
 describe('Stepper', () => {
   it('renders an ordered list of steps (not a nav landmark)', () => {
@@ -2014,5 +2015,54 @@ describe('step-label and step-description theme targets', () => {
     expect(container.querySelectorAll('.astryx-step-description')).toHaveLength(
       2,
     );
+  });
+});
+
+describe('clickable step text reading', () => {
+  // axe-core's Label in Name rule joins a button's text nodes with nothing
+  // between them, aria-hidden ones included, so a number badge next to a label
+  // reads as one word ("1Account") that the step's name does not contain.
+  // Whitespace between them changes nothing on screen (the rows are flex
+  // containers) and keeps the two words apart.
+  it.each([
+    ['vertical', 'separated'],
+    ['horizontal', 'separated'],
+    ['vertical', 'on-track'],
+    ['horizontal', 'on-track'],
+  ] as const)(
+    'keeps the number and label apart in a %s %s step',
+    (orientation, indicatorPosition) => {
+      render(
+        <Stepper
+          orientation={orientation}
+          indicatorPosition={indicatorPosition}
+          activeStep={0}
+          label="Steps"
+          onStepClick={() => {}}>
+          <Step step={0} label="Account" indicator="number" />
+          <Step step={1} label="Payment" indicator="number" />
+        </Stepper>,
+      );
+
+      const button = screen.getByRole('button', {name: /Account/});
+      expect(button.textContent).toMatch(/1\s+Account/);
+      expect(button.textContent).not.toMatch(/1Account/);
+    },
+  );
+});
+
+// jsdom cannot emulate forced colors, so this asserts the compiled rule the
+// number badge fill relies on (architecture:theme-tokens INV11).
+describe('Step number badge forced colors', () => {
+  it('keeps a visible boundary on the badge fill', () => {
+    render(
+      <Stepper activeStep={0}>
+        <Step step={0} label="First" indicator="number" />
+        <Step step={1} label="Second" indicator="number" />
+      </Stepper>,
+    );
+    const css = getForcedColorsRules();
+    expect(css).toContain('outline-style: solid;');
+    expect(css).toContain('outline-color: canvastext;');
   });
 });

@@ -18,13 +18,21 @@ import {
   beforeEach,
   afterAll,
 } from 'vitest';
-import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
+import {
+  render,
+  renderHook,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import {renderToString} from 'react-dom/server';
 import {hydrateRoot} from 'react-dom/client';
 import {StrictMode} from 'react';
 import {Button} from '../Button/Button';
 import {Theme, defineTheme} from '../theme';
 import {HoverCard} from './HoverCard';
+import {useHoverCard} from './useHoverCard';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 
 // Store original matches to restore later
@@ -62,6 +70,101 @@ afterAll(() => {
 beforeEach(() => {
   vi.mocked(HTMLElement.prototype.showPopover).mockClear();
   vi.mocked(HTMLElement.prototype.hidePopover).mockClear();
+});
+
+describe('useHoverCard identity', () => {
+  it('keeps callback refs stable across unchanged rerenders', () => {
+    const {result, rerender} = renderHook(() => useHoverCard());
+    const firstRef = result.current.ref;
+    const firstInteractionRef = result.current.interactionRef;
+
+    rerender();
+
+    expect(result.current.ref).toBe(firstRef);
+    expect(result.current.interactionRef).toBe(firstInteractionRef);
+  });
+
+  it('does not rebind trigger listeners on rerender', () => {
+    function Harness() {
+      const card = useHoverCard();
+      return (
+        <div>
+          <span ref={card.ref}>Trigger</span>
+          {card.renderHoverCard(<div>Card</div>)}
+        </div>
+      );
+    }
+    const {getByText, rerender} = render(<Harness />);
+    const trigger = getByText('Trigger');
+    const added: string[] = [];
+    const add = trigger.addEventListener.bind(trigger);
+    trigger.addEventListener = ((type: string, ...rest: unknown[]) => {
+      added.push(type);
+      return (add as (...args: unknown[]) => void)(type, ...rest);
+    }) as typeof trigger.addEventListener;
+
+    rerender(<Harness />);
+
+    expect(added).toEqual([]);
+  });
+});
+
+// A card closed while the pointer rests on it unmounts without a mouseleave,
+// so the hook must not keep believing the pointer is over the card: if it
+// does, the next open of the same trigger never closes on leave.
+describe('useHoverCard closing while the pointer is on the card', () => {
+  function Harness() {
+    const card = useHoverCard({delay: 0, hideDelay: 0});
+    return (
+      <div>
+        <span ref={card.ref}>Trigger</span>
+        <output data-testid="state">{card.isOpen ? 'open' : 'closed'}</output>
+        {card.renderHoverCard(
+          <button type="button" onClick={card.hide}>
+            Pick
+          </button>,
+        )}
+      </div>
+    );
+  }
+
+  async function openThenRestOnCard() {
+    const state = screen.getByTestId('state');
+    fireEvent.mouseEnter(screen.getByText('Trigger'));
+    await waitFor(() => expect(state).toHaveTextContent('open'));
+    const pick = screen.getByRole('button', {name: 'Pick', hidden: true});
+    fireEvent.mouseLeave(screen.getByText('Trigger'));
+    fireEvent.mouseEnter(pick.parentElement!);
+    return {state, pick};
+  }
+
+  async function expectNextOpenClosesOnLeave(state: HTMLElement) {
+    const trigger = screen.getByText('Trigger');
+    fireEvent.mouseEnter(trigger);
+    await waitFor(() => expect(state).toHaveTextContent('open'));
+    fireEvent.mouseLeave(trigger);
+    await waitFor(() => expect(state).toHaveTextContent('closed'));
+  }
+
+  it('closes the next open on leave after hide() from inside the card', async () => {
+    render(<Harness />);
+    const {state, pick} = await openThenRestOnCard();
+
+    fireEvent.click(pick);
+    await waitFor(() => expect(state).toHaveTextContent('closed'));
+
+    await expectNextOpenClosesOnLeave(state);
+  });
+
+  it('closes the next open on leave after Escape dismisses the card', async () => {
+    render(<Harness />);
+    const {state} = await openThenRestOnCard();
+
+    fireEvent.keyDown(document.body, {key: 'Escape'});
+    await waitFor(() => expect(state).toHaveTextContent('closed'));
+
+    await expectNextOpenClosesOnLeave(state);
+  });
 });
 
 describe('HoverCard', () => {
@@ -946,7 +1049,11 @@ describe('HoverCard', () => {
       __resetInteractionModalityForTest();
     });
 
-    /** A tap: the pointer sequence a finger produces before hover is faked. */
+    /**
+     * A tap, in the order a browser dispatches it: the finger's pointer events,
+     * then the hover it synthesizes, then the `click` that says the touch was a
+     * tap and not the start of a scroll.
+     */
     const tap = (element: HTMLElement) => {
       // A finger's arrival fires pointerenter too, and that is the path a pen
       // must not take — cover it here rather than starting at pointerdown.
@@ -955,6 +1062,7 @@ describe('HoverCard', () => {
       fireEvent.pointerUp(element, {pointerType: 'touch'});
       // Touch synthesizes hover after the press; the card must not act on it.
       fireEvent.mouseEnter(element);
+      fireEvent.click(element);
     };
 
     it('opens on a tap when the trigger performs no action', async () => {
@@ -1038,6 +1146,8 @@ describe('HoverCard', () => {
         hidden: true,
       });
       fireEvent.pointerDown(action, {pointerType: 'touch'});
+      fireEvent.pointerUp(action, {pointerType: 'touch'});
+      fireEvent.click(action);
 
       await new Promise(resolve => setTimeout(resolve, 50));
       expect(onOpenChange).not.toHaveBeenCalledWith(false);
@@ -1063,10 +1173,93 @@ describe('HoverCard', () => {
         expect(onOpenChange).toHaveBeenCalledWith(true);
       });
 
-      fireEvent.pointerDown(screen.getByRole('button', {name: 'Elsewhere'}), {
-        pointerType: 'touch',
-      });
+      const elsewhere = screen.getByRole('button', {name: 'Elsewhere'});
+      fireEvent.pointerDown(elsewhere, {pointerType: 'touch'});
+      // Not yet: a popover closes when the outside tap lifts.
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(onOpenChange).not.toHaveBeenCalledWith(false);
 
+      fireEvent.pointerUp(elsewhere, {pointerType: 'touch'});
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+    });
+
+    it('opens when the finger lifts, not when it lands', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <HoverCard
+          content={<span>Card content</span>}
+          onOpenChange={onOpenChange}
+          delay={0}>
+          Ruby Cheung
+        </HoverCard>,
+      );
+
+      const trigger = screen.getByText('Ruby Cheung');
+      fireEvent.pointerEnter(trigger, {pointerType: 'touch'});
+      fireEvent.pointerDown(trigger, {pointerType: 'touch'});
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(onOpenChange).not.toHaveBeenCalled();
+
+      fireEvent.pointerUp(trigger, {pointerType: 'touch'});
+      fireEvent.click(trigger);
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+    });
+
+    it('never opens for a touch that turns into a scroll', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <HoverCard
+          content={<span>Card content</span>}
+          onOpenChange={onOpenChange}
+          delay={0}>
+          Ruby Cheung
+        </HoverCard>,
+      );
+
+      const trigger = screen.getByText('Ruby Cheung');
+      fireEvent.pointerEnter(trigger, {pointerType: 'touch'});
+      fireEvent.pointerDown(trigger, {pointerType: 'touch'});
+      fireEvent.pointerCancel(trigger, {pointerType: 'touch'});
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(onOpenChange).not.toHaveBeenCalled();
+    });
+
+    it('closes when a scroll starts outside, but not for one inside the card', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <>
+          <HoverCard
+            content={<p>Card content</p>}
+            onOpenChange={onOpenChange}
+            delay={0}
+            hideDelay={0}>
+            Ruby Cheung
+          </HoverCard>
+          <p>Page content</p>
+        </>,
+      );
+
+      tap(screen.getByText('Ruby Cheung'));
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+      onOpenChange.mockClear();
+
+      // Scrolling the card's own content keeps it.
+      const inside = await screen.findByText('Card content');
+      fireEvent.pointerDown(inside, {pointerType: 'touch'});
+      fireEvent.pointerCancel(inside, {pointerType: 'touch'});
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(onOpenChange).not.toHaveBeenCalledWith(false);
+
+      const page = screen.getByText('Page content');
+      fireEvent.pointerDown(page, {pointerType: 'touch'});
+      fireEvent.pointerCancel(page, {pointerType: 'touch'});
       await waitFor(() => {
         expect(onOpenChange).toHaveBeenCalledWith(false);
       });

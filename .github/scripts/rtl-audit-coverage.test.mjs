@@ -490,6 +490,7 @@ describe('audited package and story routing', () => {
       'core-',
       'lab-',
       'charts-',
+      'richtext-',
       'vega-',
     ]);
   });
@@ -518,20 +519,20 @@ describe('audited package and story routing', () => {
           title: 'Charts/Chrome/Tooltip',
         },
         {
-          id: 'lab-richtexteditor--default',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--default',
+          title: 'RichText/RichTextEditor',
         },
         {
-          id: 'lab-richtexteditor--with-toolbar',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--with-toolbar',
+          title: 'RichText/RichTextEditor',
         },
         {
-          id: 'lab-richtexteditor--with-auto-link',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--with-auto-link',
+          title: 'RichText/RichTextEditor',
         },
         {
-          id: 'lab-richtexteditor--markdown-serializers',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--markdown-serializers',
+          title: 'RichText/RichTextEditor',
         },
         {
           id: 'vega-vegachart--radial-plot',
@@ -549,19 +550,19 @@ describe('audited package and story routing', () => {
         },
         {
           component: 'richtext/RichTextEditor',
-          storyId: 'lab-richtexteditor--default',
+          storyId: 'richtext-richtexteditor--default',
         },
         {
           component: 'richtext/RichTextEditorToolbar',
-          storyId: 'lab-richtexteditor--with-toolbar',
+          storyId: 'richtext-richtexteditor--with-toolbar',
         },
         {
           component: 'richtext/RichTextEditorAutoLinkPlugin',
-          storyId: 'lab-richtexteditor--with-auto-link',
+          storyId: 'richtext-richtexteditor--with-auto-link',
         },
         {
           component: 'richtext/RichTextView',
-          storyId: 'lab-richtexteditor--markdown-serializers',
+          storyId: 'richtext-richtexteditor--markdown-serializers',
         },
       ],
       publicComponentsByPackage,
@@ -593,19 +594,19 @@ describe('audited package and story routing', () => {
         component: 'charts/ChartTooltip',
       },
       {
-        id: 'lab-richtexteditor--default',
+        id: 'richtext-richtexteditor--default',
         component: 'richtext/RichTextEditor',
       },
       {
-        id: 'lab-richtexteditor--with-toolbar',
+        id: 'richtext-richtexteditor--with-toolbar',
         component: 'richtext/RichTextEditorToolbar',
       },
       {
-        id: 'lab-richtexteditor--with-auto-link',
+        id: 'richtext-richtexteditor--with-auto-link',
         component: 'richtext/RichTextEditorAutoLinkPlugin',
       },
       {
-        id: 'lab-richtexteditor--markdown-serializers',
+        id: 'richtext-richtexteditor--markdown-serializers',
         component: 'richtext/RichTextView',
       },
       {
@@ -628,10 +629,10 @@ describe('audited package and story routing', () => {
     const assigned = Object.values(shardRoutes).flat().map(routeKey).sort();
     expect(assigned).toEqual(routesWithUnknown.map(routeKey).sort());
     expect(shardRoutes.richtext.map(routeKey)).toContain(
-      'lab-richtexteditor--with-toolbar::richtext/RichTextEditorToolbar',
+      'richtext-richtexteditor--with-toolbar::richtext/RichTextEditorToolbar',
     );
     expect(shardRoutes.lab.map(routeKey)).not.toContain(
-      'lab-richtexteditor--with-toolbar::richtext/RichTextEditorToolbar',
+      'richtext-richtexteditor--with-toolbar::richtext/RichTextEditorToolbar',
     );
     expect(shardRoutes.core.map(routeKey)).toContain(
       'core-mystery--default::unknown/mystery',
@@ -652,9 +653,9 @@ describe('audited package and story routing', () => {
       'charts-chrome-axes-grids--playground',
       'charts-chrome-swatch--gallery',
       'charts-chrome-tooltip--default',
-      'lab-richtexteditor--with-toolbar',
-      'lab-richtexteditor--with-auto-link',
-      'lab-richtexteditor--markdown-serializers',
+      'richtext-richtexteditor--with-toolbar',
+      'richtext-richtexteditor--with-auto-link',
+      'richtext-richtexteditor--markdown-serializers',
     ]);
     expect(unresolvedComponentFilters(routes, groupedOwners)).toEqual([]);
     expect(unresolvedComponentFilters(routes, ['charts/MissingOwner'])).toEqual(
@@ -708,20 +709,20 @@ describe('audited package and story routing', () => {
     const routes = buildStoryComponentRoutes({
       stories: [
         {
-          id: 'lab-richtexteditor--default',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--default',
+          title: 'RichText/RichTextEditor',
         },
         {
-          id: 'lab-richtexteditor--with-toolbar',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--with-toolbar',
+          title: 'RichText/RichTextEditor',
         },
         {
-          id: 'lab-richtexteditor--with-auto-link',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--with-auto-link',
+          title: 'RichText/RichTextEditor',
         },
         {
-          id: 'lab-richtexteditor--markdown-serializers',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--markdown-serializers',
+          title: 'RichText/RichTextEditor',
         },
       ],
       targets,
@@ -730,10 +731,10 @@ describe('audited package and story routing', () => {
     const owners = richTextComponents.map(component => `richtext/${component}`);
     expect(unresolvedComponentFilters(routes, owners)).toEqual([]);
     expect(storyIdsForComponentFilters(routes, owners)).toEqual([
-      'lab-richtexteditor--default',
-      'lab-richtexteditor--with-toolbar',
-      'lab-richtexteditor--with-auto-link',
-      'lab-richtexteditor--markdown-serializers',
+      'richtext-richtexteditor--default',
+      'richtext-richtexteditor--with-toolbar',
+      'richtext-richtexteditor--with-auto-link',
+      'richtext-richtexteditor--markdown-serializers',
     ]);
   });
 
@@ -779,12 +780,12 @@ describe('audited package and story routing', () => {
       curatedResults: [
         {
           component: 'richtext/RichTextEditor',
-          storyId: 'lab-richtexteditor--error-status',
+          storyId: 'richtext-richtexteditor--error-status',
           rollup: 'RTL-ready',
         },
         {
           component: 'richtext/RichTextEditorToolbar',
-          storyId: 'lab-richtexteditor--with-toolbar',
+          storyId: 'richtext-richtexteditor--with-toolbar',
           rollup: 'RTL-ready',
         },
       ],

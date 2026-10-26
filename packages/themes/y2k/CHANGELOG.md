@@ -1,5 +1,52 @@
 # @xds/theme-y2k
 
+# 0.7.4
+
+#### New Features
+
+- Keep Y2K's released `y2kPalettes` object byte-identical while moving the maintained Light/Dark theme to reviewed named palette stops. Periwinkle `#CCCFFA` and Neon Green `#C5E17A` remain exact; syntax becomes brighter, the dark code background moves from `#190F00` to `#0E0F1A`, and dark Gray background moves from `#EDE0D4` to `#DFE2F3`. The necessary dark input and unchecked-selection outline moves from the released `#3A3F5E` to Neutral Dark 45 `#636889`, raising contrast on the input surface from 1.71:1 to 3.23:1. Consumers that need the former appearance can extend `y2kTheme` and override the affected color, syntax, shadow, and component values with their previous values. The CLI template ships the same private palette request, receipt, and runtime-sized references. (#7675)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @rubyycheung
+
+---
+
+# 0.7.3
+
+#### Fixes
+
+- The butter, stone, and y2k themes no longer show the secondary hover fill on a disabled `ComplexSelector` trigger, whether the trigger is natively disabled or exposes `aria-disabled="true"`, the focusable form every disabled control now uses. Before, the guard only recognized a natively disabled trigger. The themes `astryx theme eject` copies carry the same guard.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+
+---
+
+# 0.7.2
+
+---
+
+# 0.7.1
+
+#### Fixes
+
+- Stone, Y2K, and Gothic set `CodeBlock`'s diff row slots in their own syntax palettes, so a reader of a diff on those themes gets added and removed rows whose code, line numbers, and `+`/`-` glyphs stay readable: every syntax token keeps at least 4.5:1 on the tinted rows in Stone (light and dark) and Y2K (light and dark), and in Gothic the rows take a deep green and a deep red at the background's own luminance, so every token keeps the contrast it has on the plain background. Line numbers and glyphs on changed rows use each theme's own green and red. The CLI's bundled copies of the three themes (`astryx theme eject`) carry the same palettes. (#7428)
+- A `secondary` Selector, MultiSelector, or ComplexSelector now matches the theme's secondary Button: under butter, chocolate, gothic, stone, and y2k it takes that Button's border, fill, text color, and hover instead of the default borderless neutral fill, so a toolbar mixing secondary buttons and selectors reads as one set of controls. Disabled and read-only triggers keep a still fill on hover, as a disabled Button does, and a Selector or MultiSelector inside an InputGroup keeps the group's neutral fill and edges. The default theme is unchanged, the selector docs now say `secondary` follows the theme's secondary Button, and themes added with the CLI get the same parity. (#7548)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+
+---
+
 # 0.7.0
 
 #### Breaking Changes

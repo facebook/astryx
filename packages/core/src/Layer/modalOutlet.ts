@@ -4,7 +4,7 @@
 
 /**
  * @file modalOutlet.ts
- * @input The open Dialog `<dialog>` elements
+ * @input The open Dialog and scrim BottomSheet `<dialog>` elements
  * @output Exports useModalOutlet (a modal supplies its outlet),
  *   getActiveModalOutlet, and subscribeModalOutlets (a global host follows
  *   the latest one)

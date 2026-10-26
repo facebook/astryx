@@ -92,15 +92,15 @@ and usage remain documented in `Pagination.doc.mjs`.
 
 ### Representative states
 
-| State                         | Required invariant                                                                | Allowed variation                                  |
-| ----------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------- |
-| Numbered, known page count    | Page number buttons render; Ellipsis appears only where pages are omitted.        | Page count, sibling range, and active page.        |
-| Count with known item total   | Count readout renders between Previous/next buttons.                              | Range and total text.                              |
-| Compact with known page count | Compact readout renders between Previous/next buttons.                            | Current and total page text.                       |
-| Dots with known page count    | One Dot renders for each page and active state stays on the Dot target.           | Dot count and active Dot.                          |
-| Input with known page count   | Page input label, Page input, and Page input total render; First/last may render. | Label text and first/last opt-out.                 |
-| Input with unknown page count | Page input label and disabled Page input remain; total and First/last are absent. | Cursor-backed current page.                        |
-| None                          | Previous/next buttons remain without a presentation-specific part between them.   | Enabled state follows current paging availability. |
+| State                         | Required invariant                                                                           | Allowed variation                                  |
+| ----------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Numbered, known page count    | Page number buttons render; Ellipsis appears only where pages are omitted.                   | Page count, sibling range, and active page.        |
+| Count with known item total   | Count readout renders between Previous/next buttons.                                         | Range and total text.                              |
+| Compact with known page count | Compact readout renders between Previous/next buttons; First/last render only when opted in. | Current and total page text and first/last opt-in. |
+| Dots with known page count    | One Dot renders for each page and active state stays on the Dot target.                      | Dot count and active Dot.                          |
+| Input with known page count   | Page input label, Page input, and Page input total render; First/last may render.            | Label text and first/last opt-out.                 |
+| Input with unknown page count | Page input label and disabled Page input remain; total and First/last are absent.            | Cursor-backed current page.                        |
+| None                          | Previous/next buttons remain without a presentation-specific part between them.              | Enabled state follows current paging availability. |
 
 The optional Page-size selector may precede the paging controls in any current
 presentation when page-size options are provided.

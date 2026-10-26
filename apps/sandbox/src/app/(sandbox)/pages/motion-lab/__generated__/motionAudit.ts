@@ -405,8 +405,8 @@ export const HARDCODED_SITES: ReadonlyArray<HardcodedSite> = [
     ms: null,
   },
   {
-    file: 'lab/Drawer/Drawer.tsx',
-    package: 'lab',
+    file: 'core/Drawer/Drawer.tsx',
+    package: 'core',
     component: 'Drawer',
     line: 121,
     kind: 'duration',
@@ -415,8 +415,8 @@ export const HARDCODED_SITES: ReadonlyArray<HardcodedSite> = [
     ms: 10,
   },
   {
-    file: 'lab/Drawer/Drawer.tsx',
-    package: 'lab',
+    file: 'core/Drawer/Drawer.tsx',
+    package: 'core',
     component: 'Drawer',
     line: 194,
     kind: 'duration',
@@ -725,8 +725,8 @@ export const DURATION_WITHOUT_CURVE: ReadonlyArray<SiteRef> = [
     decl: "transitionDuration: '150ms'",
   },
   {
-    file: 'lab/Drawer/Drawer.tsx',
-    package: 'lab',
+    file: 'core/Drawer/Drawer.tsx',
+    package: 'core',
     component: 'Drawer',
     line: 192,
     decl: "transitionDuration: '0.01s'",
@@ -966,8 +966,8 @@ export const TRANSFORM_TRANSITIONS: ReadonlyArray<SiteRef> = [
     decl: "transitionProperty: 'transform'",
   },
   {
-    file: 'lab/Drawer/Drawer.tsx',
-    package: 'lab',
+    file: 'core/Drawer/Drawer.tsx',
+    package: 'core',
     component: 'Drawer',
     line: 117,
     decl: "transitionProperty: 'transform'",

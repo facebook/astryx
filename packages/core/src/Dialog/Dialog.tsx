@@ -16,6 +16,10 @@
  * while preserving explicit prop/theme padding overrides, and fade in without
  * the centered-dialog translate/scale motion.
  *
+ * Under reduced motion the entrance never travels or scales
+ * (docs/design/reduced-motion.md): on a touch screen the dialog fades in
+ * where it lands, in 200 ms or less; with a mouse it appears at once.
+ *
  * Initial focus and the focus returned on close follow the last input
  * (docs/architecture/interaction-modality.md INV1): the shared focus indicator
  * is hidden after a pointer press and shown after a key press.
@@ -32,6 +36,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   type ReactNode,
@@ -185,8 +190,19 @@ const styles = stylex.create({
     height: 'fit-content',
     overscrollBehavior: 'contain',
     opacity: 0,
-    animationDuration: durationVars['--duration-medium-max'],
-    animationTimingFunction: easeVars['--ease-standard'],
+    // Under reduced motion on a touch screen the entrance is the shared
+    // reduced-motion cross-fade, 200 ms on easeInOut whatever the theme's
+    // duration (design:reduced-motion DR2, DR4). Moves to
+    // reducedMotionFadeConsts once that is on main.
+    animationDuration: {
+      default: durationVars['--duration-medium-max'],
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': '200ms',
+    },
+    animationTimingFunction: {
+      default: easeVars['--ease-standard'],
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+        'cubic-bezier(0.42, 0, 0.58, 1)',
+    },
     animationFillMode: 'backwards' as const,
   },
   // Applied via isOpen prop — avoids :where([open]) attribute selectors
@@ -195,12 +211,15 @@ const styles = stylex.create({
   open: {
     display: 'flex',
     opacity: 1,
-    // Disable the entry keyframe animation under
-    // `prefers-reduced-motion: reduce` so the dialog appears instantly
-    // instead of translating/scaling in (same pattern as layerAnimations).
+    // Under `prefers-reduced-motion: reduce` the dialog never travels or
+    // scales in (design:reduced-motion DR1): on a touch screen it fades in
+    // where it lands (DR2), and with a mouse it appears at once (DR3).
     animationName: {
       default: enterDirectional,
-      '@media (prefers-reduced-motion: reduce)': 'none',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+        enterFullscreen,
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        'none',
     },
   },
   // Backdrop using ::backdrop pseudo-element
@@ -222,7 +241,10 @@ const styles = stylex.create({
   fullscreenOpen: {
     animationName: {
       default: enterFullscreen,
-      '@media (prefers-reduced-motion: reduce)': 'none',
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+        enterFullscreen,
+      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
+        'none',
     },
   },
   fullscreenSafeArea: {
@@ -505,11 +527,25 @@ export function Dialog({
 
   const mergedDialogRef = useMergedRefs(ref, attachDialog);
 
-  // Capture the element that was focused when the dialog opened,
-  // for directional animation origin and focus restoration on close.
+  // Capture the element that was focused when the dialog opened, for
+  // directional animation origin and focus restoration on close.
   const triggerElementRef = useRef<HTMLElement | null>(null);
 
   useInteractionModalityTracking();
+
+  // This runs in a layout effect so the capture lands before any descendant's
+  // passive mount effect: all layout effects run before any passive effect,
+  // while a child's passive effect runs before this parent's passive effect.
+  // Content that mounts in the open commit — e.g. a DialogHeader focusing its
+  // own title on mount — would otherwise move document.activeElement inside
+  // the dialog before the capture ran, and closing would then restore focus
+  // to a detached node, stranding the user's focus on <body>.
+  useLayoutEffect(() => {
+    if (isInline || !isOpen) {
+      return;
+    }
+    triggerElementRef.current = document.activeElement as HTMLElement | null;
+  }, [isOpen, isInline]);
 
   // Derive dismissal behavior from purpose
   const allowEscape = purpose !== 'required';
@@ -526,11 +562,9 @@ export function Dialog({
     }
 
     if (isOpen) {
-      // Capture the currently focused element as the trigger — used for
-      // directional animation origin and focus restoration on close.
-      triggerElementRef.current = document.activeElement as HTMLElement | null;
-
-      // Set directional CSS custom properties before opening
+      // Set directional CSS custom properties before opening. The trigger was
+      // captured by the layout effect above, before any descendant effect
+      // could move focus.
       const trigger = triggerElementRef.current;
       if (trigger && trigger !== document.body) {
         const dir = getDialogDirection(trigger);
@@ -589,6 +623,9 @@ export function Dialog({
     onDismiss: () => {
       onOpenChange(false);
     },
+    // The dialog's document is this layer's: rendered into an iframe or a
+    // Picture-in-Picture window, it ranks with the layers opened inside it.
+    getContainer: () => dialogRef.current,
   });
 
   // Dev-time guardrail: an open modal should always have an accessible name.
@@ -630,11 +667,16 @@ export function Dialog({
   // Escape presses the stack owns never arrive here — it preventDefault()s
   // those, which suppresses the close watcher.
   //
-  // Always preventDefault so the browser cannot close a controlled <dialog>
-  // behind React's back, then answer the request with the stack's own rules:
-  // only the top-most layer dismisses, a `required` dialog swallows it, and
-  // nothing dismisses while an IME composition is in progress.
+  // A `cancel` that bubbles up from inside is not a close request for this
+  // dialog: a file input fires one when its picker is dismissed. It is left
+  // alone. Otherwise always preventDefault so the browser cannot close a
+  // controlled <dialog> behind React's back, then answer the request with the
+  // stack's own rules: only the top-most layer dismisses, a `required` dialog
+  // swallows it, and nothing dismisses while an IME composition is in progress.
   const handleCancel = (event: React.SyntheticEvent<HTMLDialogElement>) => {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
     event.preventDefault();
     if (!shouldDismissOnCloseRequest()) {
       return;

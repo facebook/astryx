@@ -39,6 +39,15 @@
     }
   },
   {
+    "component": "CommandPaletteInput",
+    "storyId": "core-commandpaletteinput--standalone",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": ".astryx-command-palette-input > span:first-child",
+      "next": "[data-testid=\"input-end-content\"]"
+    }
+  },
+  {
     "component": "Center",
     "storyId": "core-center--padding-per-edge",
     "dims": ["D8"],
@@ -189,6 +198,15 @@
     }
   },
   {
+    "component": "ChatMessage",
+    "storyId": "core-chatmessage--default",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": "section[aria-label=\"Density precedence\"] article[data-sender=\"assistant\"] .astryx-chat-message-bubble",
+      "next": "section[aria-label=\"Density precedence\"] article[data-sender=\"user\"] .astryx-chat-message-bubble"
+    }
+  },
+  {
     "component": "ChatSendButton",
     "storyId": "core-chatcomposer--with-streaming",
     "dims": []
@@ -203,6 +221,15 @@
     }
   },
   {
+    "component": "DropdownMenuCheckboxItem",
+    "storyId": "core-dropdownmenu--lab-checkbox-items",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": ".astryx-dropdown-menu-item .astryx-icon",
+      "next": "[data-testid=\"dropdown-menu-checkbox-item-end-content\"]"
+    }
+  },
+  {
     "component": "DropdownMenu",
     "storyId": "core-dropdownmenu--alignment-end",
     "dims": ["D4"],
@@ -212,6 +239,18 @@
     "selectors": {
       "overlay": ".astryx-dropdown-menu",
       "overlayRoot": "body"
+    }
+  },
+  {
+    "component": "DropdownMenuSubMenu",
+    "storyId": "core-dropdownmenusubmenu--row-states",
+    "dims": ["D4"],
+    "setup": {
+      "click": "[role=\"menuitem\"]:has-text(\"Share\")"
+    },
+    "selectors": {
+      "overlay": "[data-testid=\"dropdown-menu-submenu-flyout\"]",
+      "overlayRoot": "[role=\"menu\"]"
     }
   },
   {
@@ -377,6 +416,24 @@
     }
   },
   {
+    "component": "CodeBlock",
+    "storyId": "core-codeblock--end-content",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": "[aria-label=\"Run in terminal\"]",
+      "next": ".astryx-code-block-copy-button"
+    }
+  },
+  {
+    "component": "CodeBlock",
+    "storyId": "core-codeblock--end-content-headerless",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": "[aria-label=\"Run in terminal\"]",
+      "next": ".astryx-code-block-copy-button"
+    }
+  },
+  {
     "component": "FileInput",
     "storyId": "core-fileinput--with-error-status",
     "dims": ["D2"],
@@ -431,6 +488,18 @@
     }
   },
   {
+    "component": "ComplexSelector",
+    "storyId": "core-complexselector--controlled-toolbar-trigger",
+    "dims": ["D4"],
+    "setup": {
+      "click": "button[aria-haspopup=\"dialog\"]"
+    },
+    "selectors": {
+      "overlay": ".astryx-complex-selector-popup",
+      "overlayRoot": "button[aria-haspopup=\"dialog\"]"
+    }
+  },
+  {
     "component": "SideNav",
     "storyId": "core-sidenav--default",
     "dims": ["D2"],
@@ -473,7 +542,7 @@
   },
   {
     "component": "Drawer",
-    "storyId": "lab-drawer--sides",
+    "storyId": "core-drawer--sides",
     "dims": ["D4"],
     "setup": {
       "click": "button:has-text(\"Open from end\")"
@@ -485,7 +554,7 @@
   },
   {
     "component": "richtext/RichTextEditor",
-    "storyId": "lab-richtexteditor--error-status",
+    "storyId": "richtext-richtexteditor--error-status",
     "dims": ["D4"],
     "selectors": {
       "overlay": ".astryx-rich-text-editor > div:first-child > div:last-child",
@@ -494,7 +563,7 @@
   },
   {
     "component": "richtext/RichTextEditorToolbar",
-    "storyId": "lab-richtexteditor--with-toolbar",
+    "storyId": "richtext-richtexteditor--with-toolbar",
     "dims": ["D2"],
     "selectors": {
       "prev": "[role=\"group\"][aria-label=\"Formatting actions\"] button:first-of-type",
@@ -503,12 +572,12 @@
   },
   {
     "component": "richtext/RichTextEditorAutoLinkPlugin",
-    "storyId": "lab-richtexteditor--with-auto-link",
+    "storyId": "richtext-richtexteditor--with-auto-link",
     "dims": []
   },
   {
     "component": "richtext/RichTextView",
-    "storyId": "lab-richtexteditor--markdown-serializers",
+    "storyId": "richtext-richtexteditor--markdown-serializers",
     "dims": []
   },
   {
@@ -519,6 +588,11 @@
       "prev": ".astryx-avatar-group > .astryx-avatar:first-child",
       "next": ".astryx-avatar-group-overflow"
     }
+  },
+  {
+    "component": "CommandPaletteItem",
+    "storyId": "core-commandpaletteitem--states",
+    "dims": []
   },
   {
     "component": "CommandPaletteFooter",

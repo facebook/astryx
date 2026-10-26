@@ -5,7 +5,7 @@
 /**
  * @file ComplexSelector.tsx
  * @input Uses React, StyleX, Field, Icon slots, Layer positioning, and usePopover
- * @output Exports a rich-selector shell with exact token-sized input and ghost triggers, plus an imperative open/close handle
+ * @output Exports a rich-selector shell with exact token-sized input, secondary, and ghost triggers, plus an imperative open/close handle
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
@@ -20,6 +20,7 @@ import React, {
   useCallback,
   useId,
   useImperativeHandle,
+  useInsertionEffect,
   useOptimistic,
   useRef,
   useTransition,
@@ -35,6 +36,7 @@ import {
 import {useDevWarning} from '../hooks/useDevWarning';
 import {mergeRefs} from '../utils/mergeRefs';
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {Field, inputWrapperStyles, type FieldStatusVariant} from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
@@ -151,6 +153,31 @@ const styles = stylex.create({
       '[data-astryx-press="on"]': 'scale(0.98)',
     },
   },
+  // Keep the input-family width contract while reusing ghost's borderless paint
+  // and the neutral resting fill used by secondary buttons.
+  triggerSecondary: {
+    borderWidth: 0,
+    backgroundColor: colorVars['--color-neutral'],
+    boxShadow: {
+      default: 'none',
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': 'none',
+        },
+      ':focus-within': 'none',
+    },
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    transitionProperty:
+      'background-image, background-color, color, opacity, transform',
+    transform: {
+      default: 'scale(1)',
+      ':active': {
+        default: 'scale(0.98)',
+        '@media (pointer: coarse)': 'scale(1)',
+      },
+      '[data-astryx-press="on"]': 'scale(0.98)',
+    },
+  },
   triggerGhostDisabled: {
     backgroundImage: 'none',
     transform: {
@@ -202,7 +229,7 @@ const styles = stylex.create({
   },
 });
 
-export type ComplexSelectorVariant = 'input' | 'ghost';
+export type ComplexSelectorVariant = 'input' | 'secondary' | 'ghost';
 
 export type ComplexSelectorSize = 'sm' | 'md' | 'lg';
 
@@ -222,10 +249,14 @@ export interface ComplexSelectorRenderTriggerProps extends Omit<
   | 'id'
   | 'onClick'
   | 'onKeyDown'
+  | 'role'
+  | 'aria-label'
   | 'aria-haspopup'
   | 'aria-expanded'
   | 'aria-controls'
   | 'aria-busy'
+  | 'aria-required'
+  | 'aria-disabled'
 > {
   /**
    * Attaches the control as the popup's anchor and focus-return target, and
@@ -241,6 +272,24 @@ export interface ComplexSelectorRenderTriggerProps extends Omit<
   'aria-expanded': boolean;
   'aria-controls': string;
   'aria-busy': boolean | undefined;
+  /**
+   * The control is the selector's field: a combobox whose popup is a dialog,
+   * as on the built-in trigger.
+   */
+  role: 'combobox';
+  /**
+   * The field's `label`, unless the selector was given `aria-label` or
+   * `aria-labelledby`: a combobox takes no name from its content, so the
+   * label names the control as it names the built-in trigger.
+   */
+  'aria-label': string | undefined;
+  /** `'true'` when the field is required. */
+  'aria-required': 'true' | undefined;
+  /**
+   * `'true'` when the selector is disabled. The control keeps its tab stop
+   * and the popup does not open (`spec:AST-085`).
+   */
+  'aria-disabled': 'true' | undefined;
 }
 
 export interface ComplexSelectorRenderState {
@@ -330,7 +379,7 @@ export interface ComplexSelectorProps<Value> extends Omit<
   isOptional?: boolean;
   /** Marks the field required. */
   isRequired?: boolean;
-  /** Disables the selector. */
+  /** Blocks opening and value commits, including from an already-open popup. */
   isDisabled?: boolean;
   /** Shows loading state on the trigger. */
   isLoading?: boolean;
@@ -338,17 +387,20 @@ export interface ComplexSelectorProps<Value> extends Omit<
   status?: ComplexSelectorStatus;
   /**
    * How the status message is placed relative to the input.
-   * - 'attached': message overlaps directly below the input (bordered treatment; detached when variant is ghost)
+   * - 'attached': message overlaps directly below the input (bordered treatment; detached when variant is secondary or ghost)
    * - 'detached': message floats below as a separate element with spacing
    * - 'tooltip': no message box; the status icon becomes a focusable info-tip button that reveals the message on hover, keyboard focus, or tap
-   * @default 'attached'
+   * @default 'attached' for input selectors; 'detached' for secondary and ghost selectors
    */
   statusVariant?: FieldStatusVariant;
   /** Tooltip text displayed next to the label. */
   labelTooltip?: string;
   /** Trigger and field size. */
   size?: ComplexSelectorSize;
-  /** Visual trigger style. Ghost matches toolbar buttons. */
+  /**
+   * Visual trigger style. Secondary matches secondary buttons; ghost matches
+   * ghost buttons.
+   */
   variant?: ComplexSelectorVariant;
   /** Icon displayed at the start of the trigger. */
   startIcon?: ReactNode | IconType;
@@ -494,7 +546,7 @@ export function ComplexSelector<Value>({
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder = placeholderFromProps ?? t('@astryx.selector.placeholder');
   const effectiveStatusVariant =
-    variant === 'ghost' && statusVariant === 'attached'
+    variant !== 'input' && statusVariant === 'attached'
       ? 'detached'
       : statusVariant;
 
@@ -519,6 +571,9 @@ export function ComplexSelector<Value>({
   const [isPending, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || isPending;
+  // The busy Spinner is decorative; this control announces its busy start
+  // (spec:AST-086 FR8).
+  useBusyAnnouncement(isBusy, t('@astryx.spinner.loading'), triggerRef);
 
   const handlePopoverShow = useCallback(() => {
     onOpenChange?.(true);
@@ -581,10 +636,24 @@ export function ComplexSelector<Value>({
     event: React.KeyboardEvent<HTMLElement>,
   ) => {
     handleTriggerKeyDown(event);
-    onKeyDownProp?.(event);
+    // A disabled trigger keeps its tab stop but invokes no callback
+    // (`spec:AST-085` FR2).
+    if (!isDisabled) {
+      onKeyDownProp?.(event);
+    }
+  };
+  // A press on a disabled control reaches no handler, the component's or an
+  // ancestor's, as with a natively disabled button (`spec:AST-085` FR2).
+  const swallowDisabledPress = (event: React.MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
   };
   const handleControlBoxClick = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
+      if (isDisabled) {
+        event.stopPropagation();
+        return;
+      }
       if (triggerRef.current?.contains(event.target as Node)) {
         return;
       }
@@ -592,7 +661,7 @@ export function ComplexSelector<Value>({
       // press on the trigger itself, caller `onClick` included.
       triggerRef.current?.click();
     },
-    [],
+    [isDisabled],
   );
 
   useImperativeHandle(
@@ -619,8 +688,24 @@ export function ComplexSelector<Value>({
     [isDisabled, popover],
   );
 
+  // The helper reads the selector's availability when it runs, not the
+  // render it came from: content may keep a helper from an earlier render
+  // (after an await, say) across a change either way. The insertion effect
+  // runs before any layout effect of the content, so a commit from the
+  // content's own layout effect in the render that changes it sees the new
+  // availability too.
+  const isDisabledRef = useRef(isDisabled);
+  useInsertionEffect(() => {
+    isDisabledRef.current = isDisabled;
+  }, [isDisabled]);
+
   const commitValue = useCallback(
     (nextValue: Value) => {
+      // Caller-owned popup controls may remain mounted after disablement.
+      // Guard the supplied commit boundary, not just the trigger.
+      if (isDisabledRef.current) {
+        return;
+      }
       onChange?.(nextValue);
       if (changeAction) {
         startTransition(async () => {
@@ -673,12 +758,29 @@ export function ComplexSelector<Value>({
       id: triggerId,
       // This path never forwarded caller handlers before, so the newly
       // forwarded ones compose component first and cannot cancel opening.
-      onClick: composeEventHandlers(handleTriggerClick, onClickProp),
-      onKeyDown: composeEventHandlers(handleTriggerKeyDown, onKeyDownProp),
+      // A disabled control keeps its tab stop but invokes no callback
+      // (`spec:AST-085` FR2), as on the built-in trigger.
+      onClick: isDisabled
+        ? swallowDisabledPress
+        : composeEventHandlers(handleTriggerClick, onClickProp),
+      onKeyDown: isDisabled
+        ? handleTriggerKeyDown
+        : composeEventHandlers(handleTriggerKeyDown, onKeyDownProp),
+      // The caller's control is the field, so it carries the field's role
+      // and state as the built-in trigger does.
+      role: 'combobox',
+      // A combobox takes no name from its content, so the field's label
+      // names the control, as it names the built-in trigger and the popup.
+      // A name passed to the selector wins.
+      'aria-label':
+        rest['aria-label'] ??
+        (rest['aria-labelledby'] != null ? undefined : label),
       'aria-haspopup': 'dialog',
       'aria-expanded': isOpen,
       'aria-controls': contentId,
       'aria-busy': isBusy || undefined,
+      'aria-required': isEffectivelyRequired ? 'true' : undefined,
+      'aria-disabled': isDisabled ? 'true' : undefined,
     };
     return (
       <>
@@ -709,10 +811,11 @@ export function ComplexSelector<Value>({
             // matched a mouse click on the trigger and drew the outline for
             // pointer users too. `focusWithin` here is `:has(:focus-visible)`.
             focusOutlineStyles.focusWithin,
+            variant === 'secondary' && styles.triggerSecondary,
             variant === 'ghost' && styles.triggerGhost,
-            variant === 'ghost' && interactionOverlayStyles.backgroundImage,
+            variant !== 'input' && interactionOverlayStyles.backgroundImage,
             isDisabled && inputWrapperStyles.disabled,
-            variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
+            variant !== 'input' && isDisabled && styles.triggerGhostDisabled,
             isDisabled && styles.disabled,
             triggerLabel == null && styles.placeholder,
             controlXstyle,
@@ -726,6 +829,9 @@ export function ComplexSelector<Value>({
           ref={triggerButtonRef}
           id={triggerId}
           type="button"
+          // The trigger is the field's control: a combobox whose popup is a
+          // dialog, so required and disabled state are valid on it.
+          role="combobox"
           aria-haspopup="dialog"
           aria-expanded={isOpen}
           aria-controls={contentId}
@@ -738,13 +844,16 @@ export function ComplexSelector<Value>({
           aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
-          disabled={isDisabled}
-          onClick={handleTriggerButtonClick}
+          // A disabled trigger keeps its tab stop and says so through
+          // aria-disabled (`spec:AST-085` FR1). Its press runs neither the
+          // caller's handler nor the toggle (FR2).
+          aria-disabled={isDisabled ? 'true' : undefined}
+          onClick={isDisabled ? swallowDisabledPress : handleTriggerButtonClick}
           onKeyDown={handleTriggerButtonKeyDown}
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>
         </button>
-        {isBusy && <Spinner size="sm" />}
+        {isBusy && <Spinner size="sm" aria-hidden="true" />}
         <Icon
           icon="chevronDown"
           size="sm"

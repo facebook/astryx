@@ -22,6 +22,7 @@
  * SYNC: When Switch.tsx changes, update tests to match new behavior
  */
 
+import {StrictMode} from 'react';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -417,6 +418,61 @@ describe('Switch', () => {
     });
   });
 
+  it('announces one busy start once under StrictMode, from the switch alone', async () => {
+    // Count every message the shared polite region is given. Each announce
+    // writes its text in a later frame, so two announces add it twice.
+    const written: string[] = [];
+    const observer = new MutationObserver(records => {
+      for (const record of records) {
+        const target = record.target as Element;
+        if (target.getAttribute?.('data-astryx-live-region') !== 'polite') {
+          continue;
+        }
+        for (const node of record.addedNodes) {
+          if (node.textContent) {written.push(node.textContent);}
+        }
+      }
+    });
+    observer.observe(document.body, {childList: true, subtree: true});
+
+    const {container} = render(
+      <StrictMode>
+        <Switch
+          label="Sync photos"
+          value={false}
+          onChange={() => {}}
+          isLoading
+        />
+      </StrictMode>,
+    );
+    await waitFor(() => {
+      expect(written).toContain('Loading');
+    });
+    await new Promise(resolve => setTimeout(resolve, 50));
+    observer.disconnect();
+
+    expect(written.filter(text => text === 'Loading')).toHaveLength(1);
+    // The thumb's spinner is a silent indicator: no live role reaches
+    // assistive technology from inside the switch.
+    for (const status of container.querySelectorAll('[role="status"]')) {
+      expect(status.closest('[aria-hidden="true"]')).not.toBeNull();
+    }
+    expect(container.querySelector('[aria-live]')).toBeNull();
+  });
+
+  it('announces again when the switch becomes busy again after settling', async () => {
+    const polite = () =>
+      document.querySelector('[data-astryx-live-region="polite"]');
+    const props = {label: 'Sync photos', value: false, onChange: () => {}};
+    const {rerender} = render(<Switch {...props} isLoading />);
+    await waitFor(() => expect(polite()).toHaveTextContent('Loading'));
+
+    rerender(<Switch {...props} />);
+    polite()!.textContent = '';
+    rerender(<Switch {...props} isLoading />);
+    await waitFor(() => expect(polite()).toHaveTextContent('Loading'));
+  });
+
   it('localizes the loading announcement through the i18n catalog', async () => {
     render(
       <InternationalizationProvider
@@ -624,16 +680,37 @@ describe('Switch', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('remains natively disabled when disabled without a reason', () => {
+    it('stays focusable via aria-disabled when disabled without a reason', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      const onClick = vi.fn();
       render(
-        <Switch
-          label="Enable notifications"
-          value={false}
-          onChange={() => {}}
-          isDisabled
-        />,
+        <form>
+          <Switch
+            label="Enable notifications"
+            value={false}
+            onChange={onChange}
+            onClick={onClick}
+            htmlName="notifications"
+            isRequired
+            isDisabled
+          />
+        </form>,
       );
-      expect(screen.getByRole('switch')).toBeDisabled();
+      const control = screen.getByRole('switch');
+      expect(control).not.toHaveAttribute('disabled');
+      expect(control).toHaveAttribute('aria-disabled', 'true');
+      await user.tab();
+      expect(control).toHaveFocus();
+      await user.keyboard(' ');
+      await user.click(control);
+      await user.click(screen.getByText('Enable notifications'));
+      expect(onChange).not.toHaveBeenCalled();
+      expect(onClick).not.toHaveBeenCalled();
+      expect(control).not.toBeChecked();
+      const form = control.closest('form')!;
+      expect(form.checkValidity()).toBe(true);
+      expect([...new FormData(form).keys()]).toEqual([]);
     });
   });
   describe('labelSpacing', () => {
@@ -833,6 +910,55 @@ describe('Switch', () => {
       expect(root).not.toBeNull();
       expect(root).toHaveAttribute('id', 'switch-1');
       expect(root).toHaveAttribute('aria-label', 'Toggle notifications');
+    });
+
+    it('composes a caller aria-describedby onto the switch control', () => {
+      const {container} = render(
+        <>
+          <p id="external-hint">Applies to every repository</p>
+          <Switch
+            label="Notifications"
+            description="Sends a daily digest"
+            value={false}
+            onChange={() => {}}
+            data-testid="my-switch"
+            aria-describedby="external-hint"
+          />
+        </>,
+      );
+      const control = screen.getByRole('switch');
+      const description = screen.getByText('Sends a daily digest');
+      expect(control.getAttribute('aria-describedby')?.split(' ')).toEqual([
+        'external-hint',
+        description.id,
+      ]);
+      expect(control).toHaveAccessibleDescription(
+        'Applies to every repository Sends a daily digest',
+      );
+      // The id reference lives on the control only, not on the field wrapper.
+      const root = container.querySelector('[data-testid="my-switch"]');
+      expect(root).not.toHaveAttribute('aria-describedby');
+    });
+
+    it('names the switch control from a caller aria-labelledby', () => {
+      const {container} = render(
+        <>
+          <span id="row-title">Release notes</span>
+          <Switch
+            label="Pin Release notes"
+            isLabelHidden
+            value={false}
+            onChange={() => {}}
+            data-testid="my-switch"
+            aria-labelledby="row-title"
+          />
+        </>,
+      );
+      const control = screen.getByRole('switch', {name: 'Release notes'});
+      expect(control).toHaveAttribute('aria-labelledby', 'row-title');
+      // The id reference lives on the control only, not on the field wrapper.
+      const root = container.querySelector('[data-testid="my-switch"]');
+      expect(root).not.toHaveAttribute('aria-labelledby');
     });
   });
 

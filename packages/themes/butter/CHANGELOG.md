@@ -1,5 +1,51 @@
 # @xds/theme-butter
 
+# 0.7.4
+
+#### New Features
+
+- Keep Butter's released `butterPalettes` object byte-identical while moving the maintained Light/Dark theme to reviewed named palette stops. Signature Blue `#225BFF`, Butter Yellow `#FDEE8C`, and warm body surfaces remain exact; status fills move from success `#91D143` to `#7BBF7A`, warning `#FFC502` to `#DFCF5B`, error `#FC473B` to `#E56241`, and info `#4883FD` to `#4D82FF`. Info and error content changes from white to warm Neutral `#1D1C11`, the neutral Badge uses Blue `#194CE8`, and light TopNav items use Blue `#225BFF` / `#194CE8`; these palette-first pairs clear normal-text AA. Consumers that need the former appearance can extend `butterTheme` and override the affected color, syntax, shadow, and component values with their previous values. The CLI template ships the same private palette request, receipt, and runtime-sized references. (#7672)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @rubyycheung
+
+---
+
+# 0.7.3
+
+#### Fixes
+
+- The butter, stone, and y2k themes no longer show the secondary hover fill on a disabled `ComplexSelector` trigger, whether the trigger is natively disabled or exposes `aria-disabled="true"`, the focusable form every disabled control now uses. Before, the guard only recognized a natively disabled trigger. The themes `astryx theme eject` copies carry the same guard.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+
+---
+
+# 0.7.2
+
+---
+
+# 0.7.1
+
+#### Fixes
+
+- A `secondary` Selector, MultiSelector, or ComplexSelector now matches the theme's secondary Button: under butter, chocolate, gothic, stone, and y2k it takes that Button's border, fill, text color, and hover instead of the default borderless neutral fill, so a toolbar mixing secondary buttons and selectors reads as one set of controls. Disabled and read-only triggers keep a still fill on hover, as a disabled Button does, and a Selector or MultiSelector inside an InputGroup keeps the group's neutral fill and edges. The default theme is unchanged, the selector docs now say `secondary` follows the theme's secondary Button, and themes added with the CLI get the same parity. (#7548)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+
+---
+
 # 0.7.0
 
 #### Breaking Changes

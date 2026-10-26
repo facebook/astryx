@@ -62,6 +62,7 @@ import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
 import {clampInlineSize} from '../Layer/clampInlineSize';
 // =============================================================================
@@ -561,6 +562,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // A wrapper that owns the inline-end lane subscribes through context; see
   // busyIndicatorLane.tsx for why this is not a prop.
   const busyLane = useBusyIndicatorLane();
+  // Without a wrapper that took the indicator over, this input announces each
+  // search's busy start (spec:AST-086 FR8); its Spinner stays named but is not
+  // a live region (family:input-fields FR7).
+  const settleBusyAnnouncement = useBusyAnnouncement(
+    isLoading && busyLane == null,
+    t('@astryx.typeahead.loading'),
+    inputRef,
+  );
   const onLoadingChangeRef = useRef(busyLane?.onBusyChange);
   useIsomorphicLayoutEffect(() => {
     onLoadingChangeRef.current = busyLane?.onBusyChange;
@@ -623,6 +632,32 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     prevSearchSourceRef.current = searchSource;
     sourceGenRef.current = ++searchGenRef.current;
   }
+
+  // The previous source is remembered in state, not a ref, so a render React
+  // discards cannot consume the comparison without its state updates.
+  const [sourceOfState, setSourceOfState] = useState(searchSource);
+  if (sourceOfState !== searchSource) {
+    setSourceOfState(searchSource);
+    if (isLoading) {
+      setIsLoading(false);
+      setHasSearched(false);
+    }
+    loadingRef.current = false;
+  }
+
+  // When the search source is replaced, any in-flight load from the previous
+  // source is abandoned (generation bumped above). Notify the wrapper's busy lane
+  // in an effect so external store listeners run safely after commit.
+  const isInitialMountRef = useRef(true);
+  useEffect(() => {
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
+    }
+    if (!loadingRef.current) {
+      onLoadingChangeRef.current?.(false);
+    }
+  }, [searchSource]);
 
   // Layer for dropdown
   const handleLayerShow = useCallback(() => {
@@ -700,6 +735,12 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         }
         // Announce the outcome only for an active query (not the initial
         // focus-open), so screen-reader users hear result counts / no-results.
+        if (searchQuery.length > 0) {
+          // This query's outcome is announced now (a count) or from the
+          // rendered row (an empty result); a busy start not yet announced
+          // would follow it, so it is dropped (spec:AST-086 FR8).
+          settleBusyAnnouncement();
+        }
         if (searchQuery.length > 0 && shown.length > 0) {
           announce(t('@astryx.typeahead.resultCount', {count: shown.length}));
         }
@@ -724,6 +765,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       announce,
       __queryEntries,
       setLoading,
+      settleBusyAnnouncement,
       t,
     ],
   );
@@ -1192,7 +1234,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       />
       {isLoading && busyLane == null && (
         <span {...stylex.props(styles.loadingStatus)}>
-          <Spinner size="sm" aria-label={t('@astryx.typeahead.loading')} />
+          <Spinner
+            size="sm"
+            aria-label={t('@astryx.typeahead.loading')}
+            role="img"
+          />
         </span>
       )}
       {popover.render(
@@ -1230,7 +1276,12 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
                     aria-selected={isSelected}
                     tabIndex={-1}
                     onClick={() => handleSelect(item)}
-                    onMouseEnter={() => highlightOnHover(index)}
+                    // Highlight follows pointer movement, not pointer
+                    // presence: a menu that opens or reflows under a resting
+                    // pointer keeps its keyboard highlight, so Enter acts on
+                    // the option the user was shown, not the one that
+                    // happened to appear under the cursor.
+                    onMouseMove={() => highlightOnHover(index)}
                     {...stylex.props(
                       styles.item,
                       itemSizeStyles[size],

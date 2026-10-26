@@ -733,8 +733,8 @@ export function PowerSearch({
       } else if (change.type === 'remove' && change.item) {
         const auxData = change.item.auxiliaryData as PowerSearchAuxData;
         if (auxData?.filterIndex != null) {
-          const newFilters = filters.filter(
-            (_, i) => i !== auxData.filterIndex,
+          const newFilters = filters.filter((_, i) =>
+            _items.some(item => item.auxiliaryData?.filterIndex === i),
           );
           onChange(newFilters, 'remove', auxData.filterIndex);
         }
@@ -900,6 +900,15 @@ export function PowerSearch({
           size={size}
           icon={tokenIcon}
           endContent={valueContent}
+          onMouseDown={
+            handleClick
+              ? e => {
+                  // Keep a token press from entering Tokenizer's input-focus
+                  // redirect. Click still edits/removes; Tab entry is unchanged.
+                  e.preventDefault();
+                }
+              : undefined
+          }
           onClick={
             handleClick
               ? (e: React.MouseEvent) => {

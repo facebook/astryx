@@ -9,6 +9,11 @@
 # approver requests changes or their review is dismissed. It never creates a
 # gate for a head that review-signal did not mark as code-gated.
 #
+# Entitled approvals: any ENGOWNER, or — only when the PR author has write or
+# admin permission — the review app named in vars.REVIEW_APP, judged by its
+# latest exact-head verdict. Statuses are written with this workflow's own
+# token.
+#
 # The mutation cannot run on the raw pull_request_review event for fork PRs
 # (read-only token → 403). It therefore runs on workflow_run after Review signal
 # anchors approved, changes_requested, and dismissed review events from the base
@@ -43,6 +48,7 @@ jobs:
         uses: actions/github-script@v9
         env:
           ENG_OWNERS: ${{ vars.ENGOWNERS }}
+          REVIEW_APP: ${{ vars.REVIEW_APP }}
         with:
           # See review-signal.yml — a transient 503 on the status POST must not
           # be the last word on whether the gate clears.
@@ -51,6 +57,8 @@ jobs:
             const { owner, repo } = context.repo;
             const run = context.payload.workflow_run;
             const CODE = 'needs:code-review';
+            const OWNER_CLEARED = 'Cleared by code-owner approval.';
+            const APP_CLEARED = 'Cleared by review-app approval for a write-access author.';
 
             // Resolve the PR the review belonged to.
             //
@@ -137,23 +145,45 @@ jobs:
               return;
             }
 
+            // A write- or admin-permission author's gate also follows the review
+            // app's (vars.REVIEW_APP) latest exact-head verdict. Permission is
+            // read live; an unset app or a failed read leaves the app's reviews
+            // without effect.
+            const reviewApp = decision.normalizeReviewApp(process.env.REVIEW_APP);
+            let authorHasWrite = false;
+            if (reviewApp) {
+              try {
+                const { data: permission } =
+                  await github.rest.repos.getCollaboratorPermissionLevel({
+                    owner, repo, username: full.user.login,
+                  });
+                authorHasWrite = decision.hasWritePermission(permission);
+              } catch (e) {
+                core.warning(`Could not read author permission; review-app approval does not apply: ${e.message}`);
+              }
+            }
+
             // Resolve the effective exact-head review state with the same
             // dependency-free helper review-signal uses. Also read this head's
             // latest review-required status: only the existing label or a latest
             // status emitted by this gate proves that review-signal owned it.
             let codeApproved = false;
+            let codeApprovedBy = null;
             let codeWithdrawn = false;
             let gateOwned = false;
+            let appClearedStatus = false;
             try {
               const reviews = await github.paginate(github.rest.pulls.listReviews, {
                 owner, repo, pull_number: prNumber, per_page: 100,
               });
-              ({codeApproved, codeWithdrawn} =
+              ({codeApproved, codeApprovedBy, codeWithdrawn} =
                 decision.resolveReviewApprovals({
                   reviews,
                   headSha,
                   engOwners: [...codeApprovers],
                   designOwners: [],
+                  reviewApp,
+                  authorHasWrite,
                 }));
 
               const statuses = await github.paginate(
@@ -166,13 +196,17 @@ jobs:
               const trustedStatus =
                 latestGateStatus?.creator?.login === 'github-actions[bot]';
               const description = latestGateStatus?.description || '';
+              appClearedStatus =
+                trustedStatus &&
+                latestGateStatus.state === 'success' &&
+                description === APP_CLEARED;
               const statusOwnsGate =
                 trustedStatus &&
                 ((latestGateStatus.state === 'pending' &&
                   (description.startsWith('Waiting on code review:') ||
                     description === 'Waiting on code review after approval withdrawal.')) ||
                   (latestGateStatus.state === 'success' &&
-                    description === 'Cleared by code-owner approval.'));
+                    (description === OWNER_CLEARED || appClearedStatus)));
               gateOwned =
                 full.labels.some((label) => label.name === CODE) || statusOwnsGate;
             } catch (e) {
@@ -184,8 +218,13 @@ jobs:
               core.info(`PR #${prNumber}: current head was not marked as code-gated; leaving it as-is.`);
               return;
             }
+            // A gate the review app cleared stays clear only while the app path
+            // still approves this head. If it no longer does — the author lost
+            // write access, the permission could not be read, or REVIEW_APP was
+            // unset — restore the pending gate (fail closed).
+            if (!codeApproved && appClearedStatus) codeWithdrawn = true;
             if (!codeApproved && !codeWithdrawn) {
-              core.info(`PR #${prNumber}: no effective ENGOWNER review-state change; leaving gate as-is.`);
+              core.info(`PR #${prNumber}: no effective review-state change; leaving gate as-is.`);
               return;
             }
 
@@ -231,7 +270,8 @@ jobs:
             }
             await github.rest.repos.createCommitStatus({
               owner, repo, sha: headSha, context: 'review-required',
-              state: 'success', description: 'Cleared by code-owner approval.',
+              state: 'success',
+              description: codeApprovedBy === 'review-app' ? APP_CLEARED : OWNER_CLEARED,
             });
             core.info(`review-required status → success on #${prNumber}.`);
             // Neutralize stale check-run(s) of the same name so the rollup isn't
@@ -245,7 +285,7 @@ jobs:
                   await github.rest.checks.update({
                     owner, repo, check_run_id: cr.id,
                     conclusion: 'neutral',
-                    output: { title: 'Superseded by review-required status', summary: 'Cleared by code-owner approval; see the review-required status.' },
+                    output: { title: 'Superseded by review-required status', summary: 'Cleared by an entitled approval; see the review-required status.' },
                   });
                   core.info(`Neutralized stale check-run ${cr.id} on #${prNumber}.`);
                 }

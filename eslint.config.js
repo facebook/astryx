@@ -794,7 +794,7 @@ export default defineConfig(
   // still fails there.
   {
     files: [
-      'packages/cli/clients/cli/commands/build-theme.mjs',
+      'packages/cli/clients/cli/commands/theme.mjs',
       'packages/cli/clients/cli/commands/docs.mjs',
     ],
     rules: {

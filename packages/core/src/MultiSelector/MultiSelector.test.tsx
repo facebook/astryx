@@ -25,7 +25,7 @@ import {
   type MultiSelectorHandle,
   type MultiSelectorChange,
 } from './MultiSelector';
-import {useRef} from 'react';
+import {useRef, useState} from 'react';
 import {Icon} from '../Icon';
 import {InternationalizationProvider} from '../i18n';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -33,6 +33,24 @@ import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {selectorPresentationStyles} from '../Selector/selectorPresentation.stylex';
+import {groupStyles} from '../InputGroup/groupStyles';
+import {InputGroup, InputGroupText} from '../InputGroup';
+import {colorVars, focusVars} from '../theme/tokens.stylex';
+import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
+
+/**
+ * Enters a search query as one change. Typing it key by key can land several
+ * keystrokes in one frame, whose result announcements are then joined into
+ * one (spec:AST-086 FR9), so a test of what one query announces pastes it.
+ */
+async function enterQuery(
+  user: ReturnType<typeof userEvent.setup>,
+  input: HTMLElement,
+  query: string,
+): Promise<void> {
+  await user.click(input);
+  await user.paste(query);
+}
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -102,6 +120,14 @@ afterEach(() => {
 // "visible" in the accessibility tree. Use hidden: true to find it.
 const h = {hidden: true} as const;
 
+/** A busy control's Spinner is decorative and silent (spec:AST-086 FR8). */
+function expectSilentBusySpinner() {
+  const spinner = document.querySelector('.astryx-spinner');
+  expect(spinner).not.toBeNull();
+  expect(spinner).toHaveAttribute('aria-hidden', 'true');
+  expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
+}
+
 describe('MultiSelector', () => {
   const defaultOptions = ['Apple', 'Banana', 'Orange'];
 
@@ -135,7 +161,7 @@ describe('MultiSelector', () => {
     vi.stubGlobal(
       'matchMedia',
       vi.fn().mockImplementation((query: string) => ({
-        matches: query === '(max-width: 768px) and (pointer: coarse)',
+        matches: query === COMPACT_TOUCH_PRESENTATION_QUERY,
         media: query,
         onchange: null,
         addEventListener: vi.fn(),
@@ -207,6 +233,45 @@ describe('MultiSelector', () => {
     );
   });
 
+  it('shows no disabled focus ring after a pointer pick (spec:AST-085 FR6)', async () => {
+    const field = (isDisabled: boolean) => (
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        presentation="bottom-sheet"
+        isDisabled={isDisabled}
+      />
+    );
+    const {rerender} = render(field(false));
+    const trigger = screen.getByRole('combobox');
+    fireEvent.pointerDown(trigger, {pointerType: 'touch'});
+    fireEvent.click(trigger, {detail: 1});
+    const dialog = await screen.findByRole('dialog', {name: 'Fruit'});
+    fireEvent.pointerDown(dialog, {pointerType: 'touch'});
+    fireEvent.click(dialog, {detail: 1});
+    rerender(field(true));
+    const ring = stylex
+      .props(
+        stylex.create({
+          ring: {
+            boxShadow: {
+              default: null,
+              ':has(> [aria-disabled="true"]:focus-visible)': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+            },
+          },
+        }).ring,
+      )
+      .className!.split(' ')
+      .pop()!;
+    const wrapper = screen.getByRole('combobox').parentElement!;
+    expect(wrapper).toHaveClass(
+      stylex.props(selectorPresentationStyles.pointerRestoredFocus).className!,
+    );
+    expect(wrapper).not.toHaveClass(ring);
+  });
+
   it('renders with label', () => {
     render(
       <MultiSelector
@@ -217,6 +282,54 @@ describe('MultiSelector', () => {
       />,
     );
     expect(screen.getByLabelText('Fruit')).toBeInTheDocument();
+  });
+
+  it('applies distinct trigger chrome to the secondary variant', () => {
+    // data-testid reaches the native control; the variant is on the trigger root.
+    const triggerRoot = () =>
+      screen
+        .getByTestId('selector')
+        .closest('.astryx-multi-selector') as HTMLElement;
+    const {rerender} = render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        variant="input"
+        data-testid="selector"
+      />,
+    );
+    const inputClasses = triggerRoot().className;
+
+    rerender(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        variant="secondary"
+        data-testid="selector"
+      />,
+    );
+    const secondary = triggerRoot();
+    const secondaryClasses = secondary.className;
+    expect(secondary).toHaveAttribute('data-variant', 'secondary');
+
+    rerender(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        variant="ghost"
+        data-testid="selector"
+      />,
+    );
+    const ghostClasses = triggerRoot().className;
+
+    expect(secondaryClasses).not.toBe(inputClasses);
+    expect(secondaryClasses).not.toBe(ghostClasses);
   });
 
   it('renders custom option content with renderOption', async () => {
@@ -464,7 +577,9 @@ describe('MultiSelector', () => {
         isDisabled
       />,
     );
-    expect(screen.getByRole('combobox')).toBeDisabled();
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).not.toHaveAttribute('disabled');
+    expect(trigger).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('has correct ARIA attributes', () => {
@@ -1072,7 +1187,7 @@ describe('MultiSelector', () => {
     );
 
     await user.click(screen.getByRole('button', {name: 'Fruit'}));
-    await user.type(screen.getByRole('combobox', h), 'xyz');
+    await enterQuery(user, screen.getByRole('combobox', h), 'xyz');
 
     // The panel message is role="presentation", so the live region is the
     // only thing a screen reader gets — it has to say the same words.
@@ -1104,7 +1219,7 @@ describe('MultiSelector', () => {
     );
 
     await user.click(screen.getByRole('button', {name: 'Fruit'}));
-    await user.type(screen.getByRole('combobox', h), 'xyz');
+    await enterQuery(user, screen.getByRole('combobox', h), 'xyz');
 
     await waitFor(() =>
       expect(politeRegion()?.textContent).toBe(
@@ -1158,7 +1273,7 @@ describe('MultiSelector', () => {
     );
 
     await user.click(screen.getByRole('button', {name: 'Fruit'}));
-    await user.type(screen.getByRole('combobox', h), 'xyz');
+    await enterQuery(user, screen.getByRole('combobox', h), 'xyz');
 
     await waitFor(() =>
       expect(politeRegion()?.textContent).toBe('Nothing like that here'),
@@ -1211,7 +1326,10 @@ describe('MultiSelector', () => {
     // component cannot make; the trigger's spinner carries the state.
     const listbox = screen.getByRole('listbox', h);
     expect(within(listbox).queryByText('No options')).not.toBeInTheDocument();
-    expect(politeRegion()?.textContent ?? '').toBe('');
+    // Only the busy start is spoken (spec:AST-086 FR8), never an empty or
+    // no-results message the panel is suppressing.
+    // (The channel clears its text on a timer, so it may already be empty.)
+    expect(['', 'Loading']).toContain(politeRegion()?.textContent ?? '');
   });
 
   it('announces nothing while isLoading, matching the silent panel', async () => {
@@ -1245,7 +1363,10 @@ describe('MultiSelector', () => {
     expect(
       within(listbox).queryByText('Nothing like that here'),
     ).not.toBeInTheDocument();
-    expect(politeRegion()?.textContent ?? '').toBe('');
+    // Only the busy start is spoken (spec:AST-086 FR8), never an empty or
+    // no-results message the panel is suppressing.
+    // (The channel clears its text on a timer, so it may already be empty.)
+    expect(['', 'Loading']).toContain(politeRegion()?.textContent ?? '');
   });
 
   it('renders emptyText when there are no options and no search input', async () => {
@@ -1290,7 +1411,7 @@ describe('MultiSelector', () => {
       );
       await user.click(screen.getByRole('button', {name: 'Fruit'}));
       // "an" matches Banana and Orange.
-      await user.type(screen.getByRole('combobox', h), 'an');
+      await enterQuery(user, screen.getByRole('combobox', h), 'an');
       await waitFor(() => {
         // The plural branch of a message no catalog supplies.
         expect(politeRegion()?.textContent).toBe('2 résultats');
@@ -1319,7 +1440,7 @@ describe('MultiSelector', () => {
       );
       await user.click(screen.getByRole('button', {name: 'Fruit'}));
       // "app" matches only Apple. Exact match, so "1 résultats" would fail.
-      await user.type(screen.getByRole('combobox', h), 'app');
+      await enterQuery(user, screen.getByRole('combobox', h), 'app');
       await waitFor(() => {
         expect(politeRegion()?.textContent).toBe('1 résultat');
       });
@@ -1343,7 +1464,7 @@ describe('MultiSelector', () => {
         </InternationalizationProvider>,
       );
       await user.click(screen.getByRole('button', {name: 'Fruit'}));
-      await user.type(screen.getByRole('combobox', h), 'xyz');
+      await enterQuery(user, screen.getByRole('combobox', h), 'xyz');
       await waitFor(() => {
         expect(politeRegion()?.textContent).toBe('Aucun résultat');
       });
@@ -1373,7 +1494,7 @@ describe('MultiSelector', () => {
       );
       await user.click(screen.getByRole('button', {name: 'Fruit'}));
       // "an" matches Banana and Orange.
-      await user.type(screen.getByRole('combobox', h), 'an');
+      await enterQuery(user, screen.getByRole('combobox', h), 'an');
       await waitFor(() => {
         // Same key through the catalog path rather than `overrides`.
         expect(politeRegion()?.textContent).toBe('2 résultats');
@@ -1463,7 +1584,7 @@ describe('MultiSelector', () => {
       />,
     );
     expect(screen.getByRole('combobox')).toHaveAttribute('aria-busy', 'true');
-    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    expectSilentBusySpinner();
   });
 
   it('renders with custom selectAllLabel', async () => {
@@ -1551,7 +1672,7 @@ describe('MultiSelector', () => {
       expect(screen.getByRole('combobox')).toHaveFocus();
     });
 
-    it('trigger is not focusable when disabled', () => {
+    it('trigger keeps its tab stop when disabled (spec:AST-085 FR1)', () => {
       render(
         <MultiSelector
           label="Fruit"
@@ -1561,7 +1682,7 @@ describe('MultiSelector', () => {
           isDisabled
         />,
       );
-      expect(screen.getByRole('combobox')).toHaveAttribute('tabIndex', '-1');
+      expect(screen.getByRole('combobox')).toHaveAttribute('tabIndex', '0');
     });
 
     it('opens the listbox with ArrowDown from a focused trigger', async () => {
@@ -1593,6 +1714,55 @@ describe('MultiSelector', () => {
       );
       const clear = screen.getByRole('button', {name: 'Clear all Fruit'});
       expect(clear).not.toHaveAttribute('tabIndex', '-1');
+    });
+
+    it('returns focus to the trigger when the clear button is activated by keyboard', async () => {
+      function Controlled() {
+        const [value, setValue] = useState(['Apple', 'Banana']);
+        return (
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={value}
+            onChange={setValue}
+            hasClear
+          />
+        );
+      }
+      const user = userEvent.setup();
+      render(<Controlled />);
+      screen.getByRole('button', {name: 'Clear all Fruit'}).focus();
+      await user.keyboard('{Enter}');
+      expect(
+        screen.queryByRole('button', {name: 'Clear all Fruit'}),
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole('combobox')).toHaveFocus();
+    });
+
+    it('leaves focus in the search input when the clear button is clicked with the list open', async () => {
+      function Controlled() {
+        const [value, setValue] = useState(['Apple', 'Banana']);
+        return (
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={value}
+            onChange={setValue}
+            hasClear
+            hasSearch
+          />
+        );
+      }
+      const user = userEvent.setup();
+      const {container} = render(<Controlled />);
+      await user.click(container.querySelector('[aria-haspopup]') as Element);
+      const search = screen.getByRole('combobox', h);
+      search.focus();
+      await user.click(screen.getByRole('button', {name: 'Clear all Fruit'}));
+      expect(
+        screen.queryByRole('button', {name: 'Clear all Fruit'}),
+      ).not.toBeInTheDocument();
+      expect(search).toHaveFocus();
     });
 
     it('scrolls the highlighted option into view during arrow navigation', async () => {
@@ -1976,7 +2146,7 @@ describe('MultiSelector', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('remains non-focusable when disabled without a reason', () => {
+    it('stays focusable when disabled without a reason (spec:AST-085 FR1)', () => {
       render(
         <MultiSelector
           label="Fruit"
@@ -1987,8 +2157,9 @@ describe('MultiSelector', () => {
         />,
       );
       const trigger = screen.getByRole('combobox');
-      expect(trigger).toBeDisabled();
-      expect(trigger).toHaveAttribute('tabIndex', '-1');
+      expect(trigger).not.toHaveAttribute('disabled');
+      expect(trigger).toHaveAttribute('aria-disabled', 'true');
+      expect(trigger).toHaveAttribute('tabIndex', '0');
     });
   });
   describe('isReadOnly', () => {
@@ -2027,7 +2198,7 @@ describe('MultiSelector', () => {
       vi.mocked(matchMedia).mockImplementation(
         (query: string) =>
           ({
-            matches: query === '(max-width: 768px) and (pointer: coarse)',
+            matches: query === COMPACT_TOUCH_PRESENTATION_QUERY,
             media: query,
             onchange: null,
             addEventListener: vi.fn(),
@@ -2108,7 +2279,7 @@ describe('MultiSelector', () => {
 
       const trigger = screen.getByRole('combobox', {name: 'Fruit'});
       expect(trigger).toHaveAttribute('aria-busy', 'true');
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+      expectSilentBusySpinner();
 
       await user.click(trigger);
       expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();
@@ -2396,26 +2567,29 @@ describe('MultiSelector statusVariant forwarding', () => {
     ).not.toBeNull();
   });
 
-  it('detaches attached status by default for the ghost variant', () => {
-    const {container} = render(
-      <MultiSelector
-        label="Fruit"
-        options={['Apple', 'Banana']}
-        value={[]}
-        onChange={() => {}}
-        variant="ghost"
-        status={{type: 'error', message: 'Required'}}
-      />,
-    );
-    expect(container.querySelector('.astryx-multi-selector')).toHaveAttribute(
-      'data-variant',
-      'ghost',
-    );
-    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
-      'data-variant',
-      'detached',
-    );
-  });
+  it.each(['secondary', 'ghost'] as const)(
+    'detaches attached status by default for the %s variant',
+    variant => {
+      const {container} = render(
+        <MultiSelector
+          label="Fruit"
+          options={['Apple', 'Banana']}
+          value={[]}
+          onChange={() => {}}
+          variant={variant}
+          status={{type: 'error', message: 'Required'}}
+        />,
+      );
+      expect(container.querySelector('.astryx-multi-selector')).toHaveAttribute(
+        'data-variant',
+        variant,
+      );
+      expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+        'data-variant',
+        'detached',
+      );
+    },
+  );
 
   it('uses a status tooltip for ghost multi-selectors when requested', () => {
     const {container} = render(
@@ -3725,7 +3899,7 @@ describe('MultiSelector hasCreate', () => {
       />,
     );
     await user.click(screen.getByRole('button', {name: 'Labels'}));
-    await user.type(screen.getByRole('combobox', h), 'Urgent');
+    await enterQuery(user, screen.getByRole('combobox', h), 'Urgent');
     // The empty-state message is role="presentation", so the live region is
     // what a screen reader gets — it must say what is on screen: a row.
     await waitFor(() => {
@@ -3981,6 +4155,164 @@ describe('MultiSelector option actions (grid)', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('draws the standard focus ring on the active action cell, from the focus tokens', async () => {
+    // jsdom resolves no custom property, so the ring is read from StyleX
+    // classes: a class name hashes one property and its value, and the same
+    // declaration yields the same class wherever it is written.
+    const ring = stylex.create({
+      active: {
+        outlineWidth: focusVars['--focus-outline-width'],
+        outlineStyle: focusVars['--focus-outline-style'],
+        outlineColor: focusVars['--focus-outline-color'],
+        outlineOffset: focusVars['--focus-outline-offset'],
+      },
+    });
+    const ringClasses = stylex
+      .props(ring.active)
+      .className!.split(' ')
+      .filter(token => /^x[a-z0-9]+$/.test(token));
+    expect(ringClasses).toHaveLength(4);
+
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    await user.click(trigger);
+    const bug = screen.getByRole('row', {name: 'Bug', ...h});
+    const actionCell = bug.children[1] as HTMLElement;
+    for (const token of ringClasses) {
+      expect(actionCell).not.toHaveClass(token);
+    }
+    fireEvent.keyDown(trigger, {key: 'ArrowRight'});
+    expect(trigger).toHaveAttribute('aria-activedescendant', actionCell.id);
+    for (const token of ringClasses) {
+      expect(actionCell).toHaveClass(token);
+    }
+  });
+
+  it('draws no focus ring on an action cell highlighted after pointer input, until a key moves the highlight', async () => {
+    const ring = stylex.create({
+      active: {
+        outlineWidth: focusVars['--focus-outline-width'],
+        outlineStyle: focusVars['--focus-outline-style'],
+        outlineColor: focusVars['--focus-outline-color'],
+        outlineOffset: focusVars['--focus-outline-offset'],
+      },
+    });
+    const ringClasses = stylex
+      .props(ring.active)
+      .className!.split(' ')
+      .filter(token => /^x[a-z0-9]+$/.test(token));
+    expect(ringClasses).toHaveLength(4);
+
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    await user.click(trigger);
+    const bug = screen.getByRole('row', {name: 'Bug', ...h});
+    const actionCell = bug.children[1] as HTMLElement;
+    fireEvent.mouseEnter(actionCell);
+    // The hover moved the highlight onto the action cell, without the ring.
+    expect(trigger).toHaveAttribute('aria-activedescendant', actionCell.id);
+    for (const token of ringClasses) {
+      expect(actionCell).not.toHaveClass(token);
+    }
+    // Keyboard navigation back onto the cell draws it.
+    fireEvent.keyDown(trigger, {key: 'ArrowLeft'});
+    fireEvent.keyDown(trigger, {key: 'ArrowRight'});
+    expect(trigger).toHaveAttribute('aria-activedescendant', actionCell.id);
+    for (const token of ringClasses) {
+      expect(actionCell).toHaveClass(token);
+    }
+  });
+
+  describe('ring under mixed input', () => {
+    const ringClasses = () => {
+      const ring = stylex.create({
+        active: {
+          outlineWidth: focusVars['--focus-outline-width'],
+          outlineStyle: focusVars['--focus-outline-style'],
+          outlineColor: focusVars['--focus-outline-color'],
+          outlineOffset: focusVars['--focus-outline-offset'],
+        },
+      });
+      return stylex
+        .props(ring.active)
+        .className!.split(' ')
+        .filter(token => /^x[a-z0-9]+$/.test(token));
+    };
+    const hasRing = (cell: HTMLElement) =>
+      ringClasses().every(token => cell.classList.contains(token));
+
+    async function openWithKeyboardOnBugAction() {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Labels"
+          options={OPTIONS}
+          value={[]}
+          onChange={() => {}}
+        />,
+      );
+      const trigger = screen.getByRole('combobox', {name: 'Labels'});
+      await user.click(trigger);
+      const row = (name: string) => screen.getByRole('row', {name, ...h});
+      fireEvent.keyDown(trigger, {key: 'ArrowRight'});
+      const bugAction = row('Bug').children[1] as HTMLElement;
+      expect(trigger).toHaveAttribute('aria-activedescendant', bugAction.id);
+      expect(hasRing(bugAction)).toBe(true);
+      return {trigger, row, bugAction};
+    }
+
+    it('keeps the ring when the pointer crosses a disabled option the highlight ignores', async () => {
+      const {trigger, row, bugAction} = await openWithKeyboardOnBugAction();
+      fireEvent.mouseEnter(row('Docs').children[0]);
+      expect(trigger).toHaveAttribute('aria-activedescendant', bugAction.id);
+      expect(hasRing(bugAction)).toBe(true);
+    });
+
+    it('follows the keyboard modality when a hover moves the highlight to another action', async () => {
+      const {trigger, row} = await openWithKeyboardOnBugAction();
+      const docsAction = row('Docs').children[1] as HTMLElement;
+      fireEvent.mouseEnter(docsAction);
+      expect(trigger).toHaveAttribute('aria-activedescendant', docsAction.id);
+      expect(hasRing(docsAction)).toBe(true);
+    });
+
+    it('draws no ring for a modifier chord after pointer input', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Labels"
+          options={OPTIONS}
+          value={[]}
+          onChange={() => {}}
+        />,
+      );
+      const trigger = screen.getByRole('combobox', {name: 'Labels'});
+      await user.click(trigger);
+      const bugAction = screen.getByRole('row', {name: 'Bug', ...h})
+        .children[1] as HTMLElement;
+      fireEvent.mouseEnter(bugAction);
+      expect(hasRing(bugAction)).toBe(false);
+      fireEvent.keyDown(trigger, {key: 'ArrowRight', ctrlKey: true});
+      expect(hasRing(bugAction)).toBe(false);
+    });
+  });
+
   it('the inline-end arrow reaches the action cell, Enter fires it, inline-start returns', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -4204,5 +4536,70 @@ describe('MultiSelector create row inside a grid', () => {
       type: 'create',
       query: 'Urgent',
     });
+  });
+});
+
+describe('MultiSelector in an InputGroup', () => {
+  const groupClasses = () =>
+    stylex.props(groupStyles.inGroup).className!.split(' ');
+  const triggerBox = (name: RegExp) =>
+    screen
+      .getByRole('combobox', {name})
+      .closest('.astryx-multi-selector') as HTMLElement;
+
+  it.each(['input', 'secondary'] as const)(
+    'gives a grouped %s trigger the connected group geometry in every position',
+    variant => {
+      const selector = (label: string) => (
+        <MultiSelector
+          label={label}
+          isLabelHidden
+          variant={variant}
+          options={['Apple', 'Banana', 'Cherry']}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+        />
+      );
+      render(
+        <>
+          <InputGroup label="First">
+            {selector('Fruit first')}
+            <InputGroupText>kg</InputGroupText>
+          </InputGroup>
+          <InputGroup label="Middle">
+            <InputGroupText>#</InputGroupText>
+            {selector('Fruit middle')}
+            <InputGroupText>kg</InputGroupText>
+          </InputGroup>
+          <InputGroup label="Last">
+            <InputGroupText>#</InputGroupText>
+            {selector('Fruit last')}
+          </InputGroup>
+        </>,
+      );
+
+      // Row height, seam radii, and focus stacking come from these classes;
+      // a secondary trigger keeps its fill but not its standalone edges.
+      for (const position of ['first', 'middle', 'last']) {
+        const classes = new Set(
+          triggerBox(new RegExp(`Fruit ${position}`)).className.split(' '),
+        );
+        expect(groupClasses().every(c => classes.has(c))).toBe(true);
+      }
+    },
+  );
+
+  it('keeps a standalone secondary trigger out of the group geometry', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        variant="secondary"
+        options={['Apple', 'Banana', 'Cherry']}
+        value={EMPTY_VALUE}
+        onChange={() => {}}
+      />,
+    );
+    const classes = new Set(triggerBox(/Fruit/).className.split(' '));
+    expect(groupClasses().some(c => classes.has(c))).toBe(false);
   });
 });
