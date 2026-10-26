@@ -696,9 +696,17 @@ jobs:
       - name: Run this shard of the UI tests
         env:
           SCOPED: ${{ github.event_name == 'pull_request' && needs.check-scope.outputs.full_suite == 'false' }}
+          GUARD_PATTERN: "node:fs|from 'fs'|from \"fs\"|require\\('fs'\\)"
         run: |
           if [ "$SCOPED" = true ]; then
             pnpm test:ui --changed=HEAD^1 --passWithNoTests --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+            # Tests that read sources through the file system (guards over
+            # every component's files) see changes no import reaches: they
+            # all run too.
+            mapfile -t GUARDS < <(git grep -l -E "$GUARD_PATTERN" -- '*.test.ts' '*.test.tsx' '*.test.mjs' '*.test.js' '*.test.cjs')
+            if [ "${#GUARDS[@]}" -gt 0 ]; then
+              pnpm test:ui --passWithNoTests --shard=${{ matrix.shard }}/${{ strategy.job-total }} "${GUARDS[@]}"
+            fi
           else
             pnpm test:ui --shard=${{ matrix.shard }}/${{ strategy.job-total }}
           fi
@@ -750,9 +758,17 @@ jobs:
       - name: Run this shard of the Node tests
         env:
           SCOPED: ${{ github.event_name == 'pull_request' && needs.check-scope.outputs.full_suite == 'false' }}
+          GUARD_PATTERN: "node:fs|from 'fs'|from \"fs\"|require\\('fs'\\)"
         run: |
           if [ "$SCOPED" = true ]; then
             pnpm test:node --changed=HEAD^1 --passWithNoTests --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+            # Tests that read sources through the file system (guards over
+            # every component's files) see changes no import reaches: they
+            # all run too.
+            mapfile -t GUARDS < <(git grep -l -E "$GUARD_PATTERN" -- '*.test.ts' '*.test.tsx' '*.test.mjs' '*.test.js' '*.test.cjs')
+            if [ "${#GUARDS[@]}" -gt 0 ]; then
+              pnpm test:node --passWithNoTests --shard=${{ matrix.shard }}/${{ strategy.job-total }} "${GUARDS[@]}"
+            fi
           else
             pnpm test:node --shard=${{ matrix.shard }}/${{ strategy.job-total }}
           fi
@@ -2108,7 +2124,7 @@ jobs:
         run: |
           set -eu
           # Component names are not globally unique; use their package identity.
-          COMPONENTS=$(jq -r '. as $root | [(.newComponents + .modifiedComponents)[] | select($root.componentStats[.].package == "@astryxdesign/core")] | unique | join(",")' analysis.json)
+          COMPONENTS=$(jq -r '. as $root | [(.newComponents + .modifiedComponents + (.dependentComponents // []))[] | select($root.componentStats[.].package == "@astryxdesign/core")] | unique | join(",")' analysis.json)
           THEMES=$(jq -r '(.changedStableThemes // []) | join(",")' analysis.json)
           COMMAND=check
           if [ "$BROAD_STABLE_VISUAL" = 'true' ]; then

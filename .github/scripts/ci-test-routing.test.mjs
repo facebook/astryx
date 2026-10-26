@@ -172,6 +172,13 @@ describe.each(Object.entries(WORKFLOWS))(
           [
             'if [ "$SCOPED" = true ]; then',
             `  pnpm test:ui --changed=HEAD^1 --passWithNoTests ${SHARD_ARG}`,
+            '  # Tests that read sources through the file system (guards over',
+            "  # every component's files) see changes no import reaches: they",
+            '  # all run too.',
+            `  mapfile -t GUARDS < <(git grep -l -E "$GUARD_PATTERN" -- '*.test.ts' '*.test.tsx' '*.test.mjs' '*.test.js' '*.test.cjs')`,
+            '  if [ "${#GUARDS[@]}" -gt 0 ]; then',
+            `    pnpm test:ui --passWithNoTests ${SHARD_ARG} "\${GUARDS[@]}"`,
+            '  fi',
             'else',
             `  pnpm test:ui ${SHARD_ARG}`,
             'fi',

@@ -593,7 +593,10 @@ function sizeTargets(changedFiles, reached = null) {
       if (changedTops.has(top) || reachedModules.length > 0) targets.push(target);
       if (reached != null) {
         for (const module of reachedModules) reached.paths.add(prefix + module);
-        if (changedTops.has(top)) reached.paths.add(prefix + top);
+        if (changedTops.has(top)) {
+          reached.paths.add(prefix + top);
+          reached.ownFolder.add(target.key);
+        }
       }
     }
     if (reached != null && reach != null && reach.size > 0) reached.measured.add(prefix);
@@ -805,7 +808,7 @@ function analyze() {
   // Components a change can affect, by reach in the head build and, when the
   // merge base is built, in the base build too: CI's size-base job builds only
   // the base, and a module change can add or remove reach.
-  const reachedSources = { paths: new Set(), measured: new Set() };
+  const reachedSources = { paths: new Set(), measured: new Set(), ownFolder: new Set() };
   const headTargets = sizeTargets(changedFiles, reachedSources);
   let targets = headTargets;
   let baseComponentSizes = null;
@@ -832,10 +835,12 @@ function analyze() {
   }
   const componentSizes = baseOnly ? null : measureSizes(targets);
 
-  // Reverse dependents: a changed module outside every component folder (a
-  // shared hook, the animator) owns the components whose head bundle reaches
-  // it, or whose family folder it is; in a package whose bundles were read, a
-  // module no bundle holds owns none. One in a package whose bundles could
+  // A changed family folder owns each component it holds (modified owners).
+  // A changed module outside every component folder (a shared hook, the
+  // animator) adds the components whose head bundle reaches it as reverse
+  // dependents: visual and RTL audits run them, PR accessibility stays with
+  // changed owners (spec:AST-030 FR12). In a package whose bundles were read,
+  // a module no bundle holds adds none. One in a package whose bundles could
   // not be read stays unresolved and asks for full audits, as does
   // --force-full.
   const isDecided = (file) =>
@@ -847,12 +852,15 @@ function analyze() {
   const unreachedSources = unresolvedComponentSources.filter((source) =>
     unresolvedFiles.some((entry) => entry.source === source && !isDecided(entry.file)),
   );
+  const dependentComponentOwners = [];
+  const dependentComponents = [];
   if (!baseOnly && unreachedSources.length < unresolvedComponentSources.length) {
     for (const target of headTargets) {
       const owner = `${target.pkg.packageName}/${target.name}`;
       if (newComponentOwners.includes(owner) || modifiedComponentOwners.includes(owner)) continue;
-      modifiedComponentOwners.push(owner);
-      // The legacy bare-name list carries component folders only, as above.
+      const isOwnFolder = reachedSources.ownFolder.has(target.key);
+      (isOwnFolder ? modifiedComponentOwners : dependentComponentOwners).push(owner);
+      // The legacy bare-name lists carry component folders only, as above.
       if (
         componentStats[target.name] ||
         !getComponentNames(target.pkg).includes(target.name) ||
@@ -861,9 +869,9 @@ function analyze() {
         continue;
       }
       componentStats[target.name] = getComponentStats(target.pkg, target.name);
-      modifiedComponents.push(target.name);
+      (isOwnFolder ? modifiedComponents : dependentComponents).push(target.name);
     }
-    console.log(`Reverse dependents: ${modifiedComponentOwners.join(', ') || 'none'}`);
+    console.log(`Reverse dependents: ${dependentComponentOwners.join(', ') || 'none'}`);
   }
 
   if (baseOnly) {
@@ -885,6 +893,8 @@ function analyze() {
     modifiedComponents,
     newComponentOwners,
     modifiedComponentOwners,
+    dependentComponents,
+    dependentComponentOwners,
     unresolvedComponentSources: unreachedSources,
     forceFullComponentAudits: forceFull || unreachedSources.length > 0,
     newExports,

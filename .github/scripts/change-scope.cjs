@@ -85,6 +85,8 @@ const SCOPABLE_SURFACES = new Set([
 ]);
 
 function isSharedInfraPath(filePath) {
+  // A Changeset records release notes; no test or build reads it.
+  if (CHANGESET_PATTERN.test(filePath)) return false;
   return (
     PACKAGE_INFRA_PATTERNS.some(pattern => pattern.test(filePath)) ||
     surfacesForPath(filePath).some(surface => !SCOPABLE_SURFACES.has(surface))

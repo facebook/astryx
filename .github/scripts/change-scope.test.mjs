@@ -369,6 +369,13 @@ describe('full-suite scope', () => {
     expect(full(['apps/docsite/src/app/page.tsx'])).toBe(false);
     expect(full(['docs/specs/AST-001-overlay-policy/spec.md'])).toBe(false);
     expect(full(['apps/storybook/stories/Button.stories.tsx'])).toBe(false);
+    // A Changeset beside the change is release notes, not infrastructure.
+    expect(
+      full([
+        'packages/core/src/Layer/useLayer.tsx',
+        '.changeset/layer-slot-second-render.md',
+      ]),
+    ).toBe(false);
   });
 
   it('runs everything for shared infrastructure', () => {

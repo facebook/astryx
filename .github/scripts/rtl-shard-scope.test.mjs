@@ -219,6 +219,24 @@ describe('RTL shard scope artifact handling', () => {
     }
   });
 
+  it('adds the reverse dependents of a changed shared module', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rtl-analysis-'));
+    const file = path.join(dir, 'analysis.json');
+    try {
+      fs.writeFileSync(
+        file,
+        JSON.stringify({
+          newComponentOwners: [],
+          modifiedComponentOwners: ['core/Button'],
+          dependentComponentOwners: ['core/Card'],
+        }),
+      );
+      expect(readAnalysis(file).owners).toEqual(['core/Button', 'core/Card']);
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  });
+
   it.each([
     ['missing', null, 'Could not read analysis artifact'],
     ['malformed', '{not json', 'Could not read analysis artifact'],

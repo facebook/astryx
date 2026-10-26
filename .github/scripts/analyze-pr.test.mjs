@@ -329,10 +329,12 @@ describe('analyze-pr base and head sizes', () => {
       );
       const analysis = JSON.parse(fs.readFileSync(path.join(repo, 'analysis.json'), 'utf8'));
       expect(Object.keys(analysis.componentSizes)).toEqual(['core/Card']);
-      // The shared hook's reverse dependent owns the browser audits, not the
-      // whole roster.
-      expect(analysis.modifiedComponentOwners).toEqual(['core/Card']);
-      expect(analysis.modifiedComponents).toEqual(['Card']);
+      // The shared hook's reverse dependent is audited, not the whole roster.
+      // A reverse dependent, kept apart from the changed owners: visual and
+      // RTL audits run it, PR accessibility stays with changed owners.
+      expect(analysis.modifiedComponentOwners).toEqual([]);
+      expect(analysis.dependentComponentOwners).toEqual(['core/Card']);
+      expect(analysis.dependentComponents).toEqual(['Card']);
       expect(analysis.unresolvedComponentSources).toEqual([]);
       expect(analysis.forceFullComponentAudits).toBe(false);
 
@@ -358,7 +360,7 @@ describe('analyze-pr base and head sizes', () => {
         {cwd: repo, encoding: 'utf8'},
       );
       const orphan = JSON.parse(fs.readFileSync(path.join(repo, 'analysis.json'), 'utf8'));
-      expect(orphan.modifiedComponentOwners).toEqual(['core/Card']);
+      expect(orphan.dependentComponentOwners).toEqual(['core/Card']);
       expect(orphan.forceFullComponentAudits).toBe(false);
 
       // Without a build to read reach from, a shared module stays unresolved:
