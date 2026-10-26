@@ -4,9 +4,9 @@
  * @file index.ts
  * @input The domain files of the UIKit constants table
  * @output Re-exports `springs` and one constant per spring (`SHEET_PRESENT_SPRING`,
- *   …), `scroll`, `timing`, `navigation` and the
- *   gesture thresholds (one `UIKIT_*` group per recognizer, their union
- *   `UIKIT_GESTURES`, and the haptic tables)
+ *   …), `scroll`, `timing`, `navigation`, the gesture thresholds (one
+ *   `UIKIT_*` group per recognizer, their union `UIKIT_GESTURES`, and the
+ *   haptic tables) and the switch domain (`switchControl`)
  * @position Entry of the UIKit constants table (motion/uikit). Internal to
  *   core: not exported from the package entry point
  *
@@ -71,10 +71,10 @@ export {
   SUB_MENU_BACK_SPRING,
   SUB_MENU_OPEN_SPRING,
   SWITCH_THUMB_MOVE_SPRING,
-  SWITCH_THUMB_STRETCH_SPRING,
   TIMED_CHANGE_SPRING,
   VIEW_CHANGE_SPRING,
   registerSpringsTable,
   springs,
 } from './springs';
+export {switchControl} from './switch';
 export {registerTimingTable, timing} from './timing';
