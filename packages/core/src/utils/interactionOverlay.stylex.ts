@@ -127,8 +127,21 @@ export const cellPressConsts = stylex.defineConsts({
   cellReleaseEase: 'cubic-bezier(0, 0, 0.2, 1)',
 });
 
-/** The release's clock as CSS. */
-const PRESS_RELEASE_DURATION = `${pressConsts.releaseMs}ms`;
+/**
+ * The theme motion roles the release plays (`spec:AST-094` FR4): its clock,
+ * `timing.press.highlightOutMs`, and its curve,
+ * `timing.press.highlightOutCurve`. A theme writes a role's variable only
+ * when it retunes it, so the table's value is each one's fallback;
+ * interactionOverlay.cell.test.ts holds the names to motion/roles.ts and the
+ * controller reads the same clock role (pressFeedback.ts).
+ */
+export const pressReleaseRoles = stylex.defineConsts({
+  duration: '--motion-timing-press-highlight-out-ms',
+  curve: '--motion-timing-press-highlight-out-curve',
+});
+
+/** The release's clock as CSS: the role, or the table's value. */
+const PRESS_RELEASE_DURATION = `var(${pressReleaseRoles.duration}, ${pressConsts.releaseMs}ms)`;
 
 const ENABLED = ':where(:not(:disabled,[aria-disabled="true"]))';
 const HOVER_HOVER = '@media (hover: hover)';
@@ -182,8 +195,8 @@ const pressRelease = stylex.keyframes({
   to: {[PRESS_ALPHA]: 0},
 });
 
-/** The row layer's clock as CSS. */
-const CELL_RELEASE = `${cellPressConsts.cellReleaseMs}ms`;
+/** The row layer's clock as CSS: the same role as the strength's release. */
+const CELL_RELEASE = `var(${pressReleaseRoles.duration}, ${cellPressConsts.cellReleaseMs}ms)`;
 
 /** Opacity 1 → 0: the row layer leaves; its fading arm runs it. */
 const cellRelease = stylex.keyframes({
@@ -198,7 +211,7 @@ const cellRelease = stylex.keyframes({
  * and is so front-loaded (strength 0.05 at the midpoint) that the release
  * would read as half its clock.
  */
-const RELEASE_EASE = 'cubic-bezier(0, 0, 0.2, 1)';
+const RELEASE_EASE = `var(${pressReleaseRoles.curve}, ${cellPressConsts.cellReleaseEase})`;
 
 /**
  * The touch press's strength and its release, on the element the controller
@@ -471,7 +484,7 @@ export const interactionOverlayStyles = stylex.create({
         default: null,
         [COARSE]: {
           default: null,
-          [PRESSED_FADING]: cellPressConsts.cellReleaseEase,
+          [PRESSED_FADING]: RELEASE_EASE,
         },
       },
       animationFillMode: {
