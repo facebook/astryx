@@ -254,6 +254,13 @@ const pressReleaseAnimation = {
           '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
             reducedMotionFadeConsts.duration,
         },
+        // A mouse or Space press the controller paints on a touch-first
+        // device keeps the fine pointer's clock (PRESS_INPUT_ATTRIBUTE).
+        '[data-astryx-press-input]': {
+          default: PRESS_RELEASE_DURATION,
+          '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+            reducedMotionFadeConsts.duration,
+        },
         '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
           reducedMotionFadeConsts.duration,
       },
@@ -266,6 +273,11 @@ const pressReleaseAnimation = {
       '@media (pointer: coarse)': {
         default: CONTROL_RELEASE_EASE,
         '[data-astryx-pressable="cell"]': {
+          default: RELEASE_EASE,
+          '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+            reducedMotionFadeConsts.easing,
+        },
+        '[data-astryx-press-input]': {
           default: RELEASE_EASE,
           '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
             reducedMotionFadeConsts.easing,

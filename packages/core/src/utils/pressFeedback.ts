@@ -89,6 +89,14 @@ export const PRESSABLE_ATTRIBUTE = 'data-astryx-pressable';
  */
 export const PRESSED_ATTRIBUTE = 'data-astryx-press';
 
+/**
+ * Marks a press the controller paints for a mouse button (`mouse`) or the
+ * Space key (`key`) on a touch-first device, beside {@link PRESSED_ATTRIBUTE}:
+ * its release keeps the 200 ms fade a fine pointer has, while a finger's
+ * press releases on its surface's profile (Cindy's DECIDED #5; `spec:AST-094`).
+ */
+export const PRESS_INPUT_ATTRIBUTE = 'data-astryx-press-input';
+
 /** Spread onto the element that paints the press: a control. */
 export const pressableProps: {readonly [PRESSABLE_ATTRIBUTE]: ''} = {
   [PRESSABLE_ATTRIBUTE]: '',
@@ -362,6 +370,7 @@ function paintElement(element: HTMLElement, paint: PressPaint): void {
   }
   if (paint === 'none') {
     element.removeAttribute(PRESSED_ATTRIBUTE);
+    element.removeAttribute(PRESS_INPUT_ATTRIBUTE);
     return;
   }
   // A pass-through step repeats the paint it already wrote: writing it again
@@ -508,6 +517,7 @@ function finish(slot: Slot): void {
   if (!ownedElsewhere(live.element)) {
     live.element.removeAttribute(PRESSED_ATTRIBUTE);
   }
+  live.element.removeAttribute(PRESS_INPUT_ATTRIBUTE);
   slot.live = null;
   if (slot === button) {
     holdKey(false);
@@ -581,13 +591,19 @@ function pressButton(
   }
   takeOver(finger, element);
   track();
+  // A mouse or a key keeps the fine pointer's 200 ms release on any surface;
+  // the marker tells the stylesheet's release arms the same.
   button.live = {
     element,
     gesture: idlePressGesture(),
     pointerId,
-    ...releaseOf(profileOf(element)),
+    releaseMs: PRESS_PROFILES.cell.releaseMs,
     timer: null,
   };
+  element.setAttribute(
+    PRESS_INPUT_ATTRIBUTE,
+    pointerId == null ? 'key' : 'mouse',
+  );
   holdKey(pointerId == null);
   apply(button, pressGestureStep(button.live.gesture, {kind: 'buttonDown'}));
 }

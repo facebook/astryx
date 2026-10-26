@@ -33,6 +33,7 @@ import {
   PRESS_PROFILES,
   PRESSABLE_ATTRIBUTE,
   PRESSED_ATTRIBUTE,
+  PRESS_INPUT_ATTRIBUTE,
   pressableProps,
 } from './pressFeedback';
 import {
@@ -440,6 +441,20 @@ describe('a phone or tablet paints a mouse or Space press itself', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("keeps a mouse or Space press on the fine pointer's 200 ms release, even on a control", () => {
+    const control = document.createElement('button');
+    control.setAttribute(PRESSABLE_ATTRIBUTE, '');
+    rows[1].appendChild(control);
+    press(control, 'pointerdown', 10, 100, 'mouse');
+    expect(control.getAttribute(PRESS_INPUT_ATTRIBUTE)).toBe('mouse');
+    press(control, 'pointerup', 10, 100, 'mouse');
+    expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+    vi.advanceTimersByTime(PRESS_FADE_MS);
+    expect(control.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    expect(control.hasAttribute(PRESS_INPUT_ATTRIBUTE)).toBe(false);
+    control.remove();
   });
 
   it('paints a mouse press at once, holds it, and fades it at the release', () => {

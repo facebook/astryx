@@ -23,6 +23,7 @@ import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {controlPressConsts} from './controlPressLayer.stylex';
 import {pressVars} from './interactionOverlay.stylex';
+import {cellPressConsts} from './rowPressLayer.stylex';
 
 // The overlay's arm selectors (interactionOverlay.stylex.ts), restated here:
 // StyleX resolves a style's keys within its own file.
@@ -61,6 +62,14 @@ const controlRelease = stylex.keyframes({
 const CONTROL_RELEASE_DURATION = `${controlPressConsts.controlReleaseMs}ms`;
 /** A control's release curve: UIButton's, UIKit's easeInEaseOut. */
 const CONTROL_RELEASE_EASE = controlPressConsts.controlReleaseEase;
+/**
+ * A mouse or Space press the controller paints on a touch-first device
+ * (pressFeedback.ts `PRESS_INPUT_ATTRIBUTE`): it keeps the fine pointer's
+ * 200 ms deselect clock and curve.
+ */
+const PRESS_INPUT = '[data-astryx-press-input]';
+const INPUT_RELEASE_DURATION = `${cellPressConsts.cellReleaseMs}ms`;
+const INPUT_RELEASE_EASE = cellPressConsts.cellReleaseEase;
 /** Reduce Motion on a coarse primary pointer: the policy's cross-fade. */
 const REDUCED_MOTION_RELEASE_DURATION = reducedMotionFadeConsts.duration;
 
@@ -221,6 +230,12 @@ export const controlPressLayerStyles = stylex.create({
           default: null,
           [PRESSED_FADING]: {
             default: CONTROL_RELEASE_DURATION,
+            // A mouse or Space press keeps the fine pointer's clock.
+            [PRESS_INPUT]: {
+              default: INPUT_RELEASE_DURATION,
+              '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+                REDUCED_MOTION_RELEASE_DURATION,
+            },
             '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
               REDUCED_MOTION_RELEASE_DURATION,
           },
@@ -232,6 +247,11 @@ export const controlPressLayerStyles = stylex.create({
           default: null,
           [PRESSED_FADING]: {
             default: CONTROL_RELEASE_EASE,
+            [PRESS_INPUT]: {
+              default: INPUT_RELEASE_EASE,
+              '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+                reducedMotionFadeConsts.easing,
+            },
             '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
               reducedMotionFadeConsts.easing,
           },
@@ -268,6 +288,12 @@ export const controlPressLayerStyles = stylex.create({
           default: null,
           [PRESSED_FADING]: {
             default: CONTROL_RELEASE_DURATION,
+            // A mouse or Space press keeps the fine pointer's clock.
+            [PRESS_INPUT]: {
+              default: INPUT_RELEASE_DURATION,
+              '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+                REDUCED_MOTION_RELEASE_DURATION,
+            },
             '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
               REDUCED_MOTION_RELEASE_DURATION,
           },
@@ -279,6 +305,11 @@ export const controlPressLayerStyles = stylex.create({
           default: null,
           [PRESSED_FADING]: {
             default: CONTROL_RELEASE_EASE,
+            [PRESS_INPUT]: {
+              default: INPUT_RELEASE_EASE,
+              '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+                reducedMotionFadeConsts.easing,
+            },
             '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
               reducedMotionFadeConsts.easing,
           },

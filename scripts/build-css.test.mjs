@@ -328,9 +328,17 @@ describe('build-css astryx.css', () => {
       // controller removes the attribute on: a control's by default, a
       // cell's where the marker says `cell`.
       const clocks = await readReleaseClocks();
+      // A mouse or Space press the controller paints on a touch-first device
+      // keeps the deselect clock (`[data-astryx-press-input]`).
+      const input = line => line.includes('[data-astryx-press-input]');
       expect(
-        [...durationsOf(fading.filter(coarse))].sort((a, b) => a - b),
+        [
+          ...durationsOf(fading.filter(line => coarse(line) && !input(line))),
+        ].sort((a, b) => a - b),
       ).toEqual([clocks.cell, clocks.control].sort((a, b) => a - b));
+      expect(
+        durationsOf(fading.filter(line => coarse(line) && input(line))),
+      ).toEqual([clocks.cell]);
       // With any other pointer, the one clock it always had: the deselect's
       // (the desktop rule, `spec:AST-017` FR59/DEC-25).
       expect(durationsOf(fading.filter(line => !coarse(line)))).toEqual([
