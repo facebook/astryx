@@ -216,11 +216,6 @@ export default function PreviewsPage() {
           ]}
         />
         <DemoBody>
-          <TokenSlider
-            token="--duration-medium-min"
-            label="enter and exit"
-            max={700}
-          />
           <Text type="supporting" color="secondary">
             Both panes are core&rsquo;s real <code>TopNav</code>. The right one
             carries the missing reduced-motion branch as a sandbox prototype in
