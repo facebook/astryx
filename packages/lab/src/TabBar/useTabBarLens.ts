@@ -96,7 +96,7 @@ import {
   UIKIT_GESTURES,
 } from '@astryxdesign/core/motion/uikit';
 import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
-import {isRtlElement} from '@astryxdesign/core/hooks/isRtlElement';
+import {isRtlElement} from '../utils/isRtlElement';
 import {
   copyTransform,
   itemCenters,
