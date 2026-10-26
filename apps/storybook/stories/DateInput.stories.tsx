@@ -835,8 +835,8 @@ export const StylingParts: Story = {
 
 /**
  * The bottom sheet with two centuries of years: the year wheel has 200 rows.
- * Opening the month and year wheels costs the same as for two years: a wheel
- * draws only the rows around its band.
+ * Under a finger, opening the month and year wheels costs about the same as
+ * for two years: each year is drawn once, and only the rows in sight tip.
  */
 export const BottomSheetWideRange: Story = {
   render: args => {
