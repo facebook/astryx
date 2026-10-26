@@ -34,7 +34,7 @@ export const docs = {
       name: 'onChange',
       type: '(page: number) => void',
       description:
-        'Called with the page a tap, a click, a scrub, an arrow key, Home, End or an assistive technology asks for; a scrub calls it once per page it passes. Update the paging view and value together.',
+        'Called with the page a tap, a click, a scrub, an arrow key, Home, End or an assistive technology asks for; a scrub calls it each time the page under the finger changes, so a quick sweep can skip a page. Update the paging view and value together.',
       required: true,
     },
     {
