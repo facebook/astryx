@@ -2029,7 +2029,7 @@ describe('BaseTypeahead paste behavior', () => {
 
       scrollIntoView.mockClear();
       const options = screen.getAllByRole('option', {hidden: true});
-      fireEvent.mouseEnter(options[1]);
+      fireEvent.mouseMove(options[1]);
 
       expect(input.getAttribute('aria-activedescendant')).toBe(options[1].id);
       expect(scrollIntoView).not.toHaveBeenCalled();
@@ -2040,6 +2040,39 @@ describe('BaseTypeahead paste behavior', () => {
       delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
         .scrollIntoView;
     }
+  });
+});
+
+describe('BaseTypeahead highlight under a resting pointer', () => {
+  it('keeps the keyboard highlight when an option appears under the pointer, and follows pointer movement', async () => {
+    // A menu that opens or reflows under a pointer the user is not moving
+    // fires mouseenter on the option that lands beneath it. Taking the
+    // highlight from that would make Enter pick an option the user never
+    // pointed at; only real pointer movement moves the highlight.
+    const user = userEvent.setup();
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    await user.click(input);
+    await user.paste('e'); // matches Cherry, Date, Elderberry
+    await waitFor(() => {
+      expect(screen.getByRole('listbox', {hidden: true})).toBeInTheDocument();
+    });
+    const options = screen.getAllByRole('option', {hidden: true});
+    expect(input.getAttribute('aria-activedescendant')).toBe(options[0].id);
+
+    fireEvent.mouseEnter(options[2]);
+    expect(input.getAttribute('aria-activedescendant')).toBe(options[0].id);
+
+    fireEvent.mouseMove(options[2]);
+    expect(input.getAttribute('aria-activedescendant')).toBe(options[2].id);
   });
 });
 

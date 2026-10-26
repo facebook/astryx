@@ -19,7 +19,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import {useContainerReveal} from '@astryxdesign/core/hooks';
+import {useAnnounce, useContainerReveal} from '@astryxdesign/core/hooks';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {
   ListInput,
@@ -206,6 +206,13 @@ function mockMutationAnimations(events: string[] = []) {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  // The shared live regions outlive each test, and a test that stubs
+  // requestAnimationFrame can strand an announcement's frame. An empty
+  // announcement clears what is still waiting, so it is not joined into the
+  // next test's announcements (spec:AST-086 FR9).
+  const announcer = renderHook(() => useAnnounce());
+  announcer.result.current('');
+  announcer.unmount();
   if (originalAnimateDescriptor == null) {
     Reflect.deleteProperty(HTMLElement.prototype, 'animate');
   } else {
@@ -653,10 +660,13 @@ describe('ListInput', () => {
     expect(animate).not.toHaveBeenCalled();
     expect(screen.queryByDisplayValue('Ada')).not.toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Add guest'})).toHaveFocus();
+    // The removal and the empty state that appears join in one frame (FR9).
     await waitFor(() => {
       expect(
         Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
-          node => node.textContent === 'Removed guest 1.',
+          node =>
+            node.textContent ===
+            'Removed guest 1. No guests yet Add a guest to get started.',
         ),
       ).toBe(true);
     });
@@ -1299,10 +1309,14 @@ describe('ListInput', () => {
     fireEvent.pointerUp(handle, {pointerId: 9, clientX: 15, clientY: 10});
 
     expect(onChange).not.toHaveBeenCalled();
+    // The grab and the return land in the same frame, so they are spoken
+    // together, in order (spec:AST-086 FR9).
     await waitFor(() => {
       expect(
         Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
-          node => node.textContent === 'guest returned to position 1.',
+          node =>
+            node.textContent ===
+            'guest 1 grabbed. Use arrow keys to move, Space or Enter to drop, and Escape to cancel. guest returned to position 1.',
         ),
       ).toBe(true);
     });
