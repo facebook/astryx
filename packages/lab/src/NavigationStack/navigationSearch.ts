@@ -2,9 +2,9 @@
 
 /**
  * @file navigationSearch.ts
- * @input The UIKit search table (`search`: the activation's duration
- *   and curve, and the bar's fade fractions) and the cubic-Bézier solver,
- *   from `@astryxdesign/core/motion/experimental`
+ * @input The UIKit search table (`search`: the activation's duration and
+ *   the bar's fade fractions), the activation's curve (`timing.curves.move`)
+ *   and the cubic-Bézier solver, from core's internal motion modules
  * @output The bar side of a search activation, as pure functions of its
  *   progress: the back button's and inline title's opacity, the large
  *   title's, the large title's return on cancel; `searchClock`, the
@@ -26,7 +26,7 @@
 import type {MotionCurve} from '@astryxdesign/core/motion/animator';
 import {cubicBezier, type BezierPoints} from '@astryxdesign/core/motion/bezier';
 import {resolveMotion} from '@astryxdesign/core/motion/resolveMotion';
-import {search} from '@astryxdesign/core/motion/uikit';
+import {search, timing} from '@astryxdesign/core/motion/uikit';
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
@@ -37,16 +37,16 @@ export interface SearchClock {
 }
 
 /**
- * The activation's clock under `element`'s theme, read when a move starts:
- * the motion roles `search.activationMs` and `search.activationCurve`
- * (UIKit's UIViewPropertyAnimator curve by default). SearchField reads the
- * same roles, so a theme's retune moves the field and the bar together.
+ * The activation's clock, read when a move starts: the search table's
+ * `search.activationMs` on UIKit's ease-in-ease-out, the `timing.curves.move`
+ * role (`spec:AST-094` FR4; the UIViewPropertyAnimator curve). SearchField
+ * plays the same clock and curve, so the field and the bar move together.
  */
 export function searchClock(element: Element | null | undefined): SearchClock {
   return {
     durationS: resolveMotion(element, search, 'activationMs') / 1000,
     ease: cubicBezier(
-      resolveMotion(element, search.activationCurve) as BezierPoints,
+      resolveMotion(element, timing.curves.move) as BezierPoints,
     ),
   };
 }
