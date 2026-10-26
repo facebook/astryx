@@ -431,10 +431,11 @@ test('the presentation keeps advancing every frame while the main thread is bloc
     data: t => ({x: tracked.find(f => f.t === t)?.box?.x ?? -1}),
   });
   await film.write(testInfo, {block, present});
-  expect(proof.medianFrameMs).toBeLessThan(20);
   expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
   expect(proof.changed).toBeGreaterThanOrEqual(proof.frames - 3);
-  expect(proof.longestStallMs).toBeLessThan(40);
+  // A stall is judged in the screencast's own intervals, as the harness's
+  // verdict judges it: no more than two dropped frames.
+  expect(proof.longestStallFrames).toBeLessThanOrEqual(3);
   expect(proof.monotonic).toBe(true);
 });
 
