@@ -378,7 +378,10 @@ public struct TextInput: View {
     let shown = showsReadOnlyPlaceholder
       ? SwiftUI.Text(props.placeholder ?? "").foregroundStyle(astryx.tokens.color.textSecondary)
       : SwiftUI.Text(readOnlyText)
+    // One line, as the field it stands in for: it stays laid out under the
+    // editable field, so a long value must not make that field grow taller.
     let text = shown
+      .lineLimit(1)
       .frame(maxWidth: .infinity, alignment: .leading)
       .onKeyPress(.return) {
         guard isReadOnly else { return .ignored }

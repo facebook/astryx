@@ -283,3 +283,11 @@ import Testing
   #expect(Astryx.TextInput(label: "Email", value: "", isReadOnly: true).isDrawn)
   #expect(Astryx.TextInput(label: "Email", value: "", isDisabled: true).isDrawn)
 }
+
+@MainActor
+@Test func aLongValueDoesNotGrowTheField() {
+  let long = String(repeating: "A long value that would wrap ", count: 8)
+  let short = Pixels(Astryx.TextInput(label: "Notes", value: "Hi", isReadOnly: true).frame(width: 240))
+  let wrapped = Pixels(Astryx.TextInput(label: "Notes", value: long, isReadOnly: true).frame(width: 240))
+  #expect(wrapped.height == short.height)
+}
