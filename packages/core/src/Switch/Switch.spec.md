@@ -63,8 +63,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-No new public concept is introduced. Consumer props, states, and usage remain
-documented in `Switch.doc.mjs`.
+Switch has no public concept beyond the props, states, and usage documented in
+`Switch.doc.mjs`. The `switch-thumb` target's guaranteed `aspectRatio` (FR4) is
+a theming capability of an existing target.
 
 ## Behavioral and layout contract
 
@@ -93,11 +94,12 @@ documented in `Switch.doc.mjs`.
 
 ### Transformation and precedence order
 
-- No new state, event, layout, or styling precedence rule is introduced.
+- Switch has no state, event, layout, or styling precedence rule of its own.
 
 ### Performance and resources
 
-- No new performance or resource rule is introduced.
+- Switch has no performance or resource rule of its own; its touch layer's
+  loading follows `architecture:component-style-authoring` INV6.
 
 ## Accessibility contract
 
@@ -186,7 +188,9 @@ gap.
 
 ## Decision log
 
-None.
+FR4 and FR5 rest on owner direction of 2026-10-25: under a finger the thumb is
+a pill by default, and a theme reshapes it through the `switch-thumb` target's
+`aspectRatio`. No other component-local design or API decision is recorded.
 
 ## Open questions
 
