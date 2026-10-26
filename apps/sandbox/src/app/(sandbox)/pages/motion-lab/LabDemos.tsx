@@ -40,6 +40,12 @@ import {
 } from './proposed/TabList';
 import {Skeleton} from '@astryxdesign/core/Skeleton';
 import {Token} from '@astryxdesign/core/Token';
+import {
+  TopNav,
+  TopNavHeading,
+  TopNavMegaMenu,
+  TopNavMegaMenuItem,
+} from '@astryxdesign/core/TopNav';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 import {useMotionLab} from './MotionLabStore';
@@ -892,6 +898,87 @@ export function OriginRig({kind}: {kind: 'zero' | 'centre' | 'anchored'}) {
           : kind === 'centre'
             ? 'Right scale value, wrong origin: the surface grows out of its own middle rather than out of the control that opened it.'
             : 'Anchored to the trigger corner, which is what the published page already asks for.'}
+      </Hint>
+    </VStack>
+  );
+}
+
+// --- TopNav mega-menu exit ----------------------------------------------------
+
+const MEGA_MENU_LOOP_MS = 3200;
+const MEGA_MENU_OPEN_MS = 1200;
+
+/**
+ * The real TopNav mega-menu, opened and closed on a loop through its own
+ * trigger. Before is core as it ships: the panel rises 4px and fades on open
+ * and close, and does the same under Reduce Motion. After is the same
+ * component with the missing branch as a sandbox prototype
+ * (MotionLab.module.css `.megaMenuProposed`): under Reduce Motion, or the
+ * lab's Degrade, the panel only fades, within 200 ms; under Delete it cuts.
+ * The two panes open half a loop apart: opening one auto popover closes any
+ * other, so in step they would close each other.
+ */
+export function TopNavExitRig({mode}: {mode: Mode}) {
+  const {reducedMotion} = useMotionLab();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const timersRef = useRef<number[]>([]);
+  const setOpen = useCallback((isOpen: boolean) => {
+    const trigger = rootRef.current?.querySelector<HTMLButtonElement>(
+      'button[aria-expanded]',
+    );
+    if (trigger != null && (trigger.ariaExpanded === 'true') !== isOpen) {
+      trigger.click();
+    }
+  }, []);
+  useLoop(() => {
+    timersRef.current.forEach(window.clearTimeout);
+    const offset = mode === 'before' ? 0 : MEGA_MENU_LOOP_MS / 2;
+    timersRef.current = [
+      window.setTimeout(() => setOpen(true), offset),
+      window.setTimeout(() => setOpen(false), offset + MEGA_MENU_OPEN_MS),
+    ];
+  }, MEGA_MENU_LOOP_MS);
+  useEffect(() => () => timersRef.current.forEach(window.clearTimeout), []);
+
+  return (
+    <VStack gap={2} {...stylex.props(sx.full)}>
+      <div
+        ref={rootRef}
+        className={mode === 'after' ? styles.megaMenuProposed : undefined}
+        data-reduced-motion={mode === 'after' ? reducedMotion : undefined}>
+        <TopNav
+          label={mode === 'before' ? 'Today' : 'Proposed'}
+          heading={<TopNavHeading heading="Acme" />}
+          startContent={
+            <TopNavMegaMenu
+              label="Products"
+              items={
+                <>
+                  <TopNavMegaMenuItem
+                    title="Analytics"
+                    description="Track behavior across your apps"
+                    href="#analytics"
+                  />
+                  <TopNavMegaMenuItem
+                    title="Security"
+                    description="Protection for your data"
+                    href="#security"
+                  />
+                  <TopNavMegaMenuItem
+                    title="Automation"
+                    description="Workflows that run themselves"
+                    href="#automation"
+                  />
+                </>
+              }
+            />
+          }
+        />
+      </div>
+      <Hint>
+        {mode === 'before'
+          ? 'The only popover exit in core, and the proof the pattern works: the panel rises 4px and fades on open and close. Under Reduce Motion it does exactly the same.'
+          : 'The same exit with the missing branch: under Reduce Motion (or the lab\u2019s Degrade) the panel only fades, within 200 ms; under Delete it cuts. Turn either on to compare.'}
       </Hint>
     </VStack>
   );

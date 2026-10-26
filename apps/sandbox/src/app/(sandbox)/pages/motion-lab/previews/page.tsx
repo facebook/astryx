@@ -30,6 +30,7 @@ import {
   SkeletonSwapRig,
   StatCountRig,
   TabIndicatorRig,
+  TopNavExitRig,
 } from '../LabDemos';
 
 export default function PreviewsPage() {
@@ -193,6 +194,39 @@ export default function PreviewsPage() {
         />
         <DemoBody>
           <TokenSlider token="--duration-state" label="crossfade" max={400} />
+        </DemoBody>
+      </DemoCard>
+
+      <DemoCard
+        title="TopNav mega-menu exit"
+        question="The only component in core that animates a popover exit, and it never checks Reduce Motion."
+        badges={<Badge variant="warning" label="PARTIAL" />}>
+        <ComparePanes
+          panes={[
+            {
+              tone: 'before',
+              label: 'Today — the same rise under Reduce Motion',
+              content: <TopNavExitRig mode="before" />,
+            },
+            {
+              tone: 'after',
+              label: 'Proposed — Reduce Motion only fades',
+              content: <TopNavExitRig mode="after" />,
+            },
+          ]}
+        />
+        <DemoBody>
+          <TokenSlider
+            token="--duration-medium-min"
+            label="enter and exit"
+            max={700}
+          />
+          <Text type="supporting" color="secondary">
+            Both panes are core&rsquo;s real <code>TopNav</code>. The right one
+            carries the missing reduced-motion branch as a sandbox prototype in
+            CSS. Animator retargeting lands with <code>useAnimator</code>{' '}
+            (public, AST-107, #8600).
+          </Text>
         </DemoBody>
       </DemoCard>
 

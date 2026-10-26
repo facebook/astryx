@@ -753,6 +753,30 @@
   }
 }
 
+/* ------------------------------------------------- TopNav mega-menu ---- */
+
+/* A sandbox prototype of the reduced-motion branch TopNav's mega-menu panel
+   lacks: under Reduce Motion it drops the 4px rise and only fades, no longer
+   than the 200 ms cross-fade (design:reduced-motion DR2). The panel stays a
+   DOM descendant in the top layer, so the scope reaches it. The lab's
+   Degrade applies the same branch; Delete cuts. */
+@media (prefers-reduced-motion: reduce) {
+  .megaMenuProposed [popover] {
+    transform: none !important;
+    transition-duration: min(var(--duration-medium-min), 200ms) !important;
+  }
+}
+
+.megaMenuProposed[data-reduced-motion='degrade'] [popover] {
+  transform: none !important;
+  transition-duration: min(var(--duration-medium-min), 200ms) !important;
+}
+
+.megaMenuProposed[data-reduced-motion='delete'] [popover] {
+  transform: none !important;
+  transition-duration: 0s !important;
+}
+
 /* ---------------------------------------------------------------- tint ---- */
 
 /* The Table hover tint, at whatever duration and curve is being argued over.
