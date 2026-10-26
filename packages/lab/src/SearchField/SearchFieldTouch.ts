@@ -21,7 +21,7 @@
  */
 
 import {useCallback, useLayoutEffect, useRef, type RefObject} from 'react';
-import {isRtlElement} from '@astryxdesign/core/hooks';
+import {isRtlElement} from '../utils/isRtlElement';
 import {
   activationTiming,
   easedCurve,
