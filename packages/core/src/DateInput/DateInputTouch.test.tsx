@@ -2234,6 +2234,22 @@ describe('DateInput — a mouse can drag a wheel', () => {
    * yanked back to a snap position, so the wheel stuck to a row and then
    * jumped a whole one.
    */
+  it('suspends snapping for the drag, and restores it after', () => {
+    renderAndOpen();
+    fireEvent.click(title());
+    withWheelLayout(() => {
+      const el = wheel();
+      trackable(el);
+      expect(el.style.scrollSnapType).toBe('');
+      el.dispatchEvent(pointer('pointerdown', {y: 200}));
+      el.dispatchEvent(pointer('pointermove', {y: 160}));
+      expect(el.style.scrollSnapType).toBe('none');
+      el.dispatchEvent(pointer('pointerup', {y: 160}));
+      el.dispatchEvent(new Event('scrollend'));
+      expect(el.style.scrollSnapType).toBe('');
+    });
+  });
+
   /**
    * Every `scrollTop` the drag assigns ends in its own `scrollend` in
    * Chromium, and the hand can rest with the button still down. Neither is
@@ -2276,22 +2292,6 @@ describe('DateInput — a mouse can drag a wheel', () => {
     } finally {
       vi.useRealTimers();
     }
-  });
-
-  it('suspends snapping for the drag, and restores it after', () => {
-    renderAndOpen();
-    fireEvent.click(title());
-    withWheelLayout(() => {
-      const el = wheel();
-      trackable(el);
-      expect(el.style.scrollSnapType).toBe('');
-      el.dispatchEvent(pointer('pointerdown', {y: 200}));
-      el.dispatchEvent(pointer('pointermove', {y: 160}));
-      expect(el.style.scrollSnapType).toBe('none');
-      el.dispatchEvent(pointer('pointerup', {y: 160}));
-      el.dispatchEvent(new Event('scrollend'));
-      expect(el.style.scrollSnapType).toBe('');
-    });
   });
 
   /**
