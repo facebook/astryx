@@ -379,7 +379,10 @@ export function Thumbnail({
   );
   const showPlaceholder = (!isLoading && !hasSrc) || hasError;
   const isInteractive = onClick != null && !isDisabled && !isLoading;
-  const hasRemove = onRemove != null && !isDisabled;
+  // Open and Remove stay mounted while they cannot act, inert and announced
+  // as disabled, so a focused one keeps focus (spec:AST-085 FR1, FR4, FR6).
+  const hasOpen = onClick != null;
+  const hasRemove = onRemove != null;
   const isHoverReveal = hasRemove && showRemoveOn === 'hover';
   const {getContainerProps, getContentRevealProps} = useContainerReveal({
     isEnabled: isHoverReveal,
@@ -449,9 +452,12 @@ export function Thumbnail({
         variant="secondary"
         size="sm"
         isIconOnly
+        aria-disabled={isDisabled ? 'true' : undefined}
         onClick={e => {
           e.stopPropagation();
-          onRemove(e);
+          if (!isDisabled) {
+            onRemove(e);
+          }
         }}
         xstyle={styles.removeButtonOverrides}
       />
@@ -484,11 +490,12 @@ export function Thumbnail({
           ),
           isHoverReveal ? getContainerProps() : {},
         )}>
-        {isInteractive ? (
+        {hasOpen ? (
           <button
             type="button"
-            onClick={onClick}
+            onClick={isInteractive ? onClick : undefined}
             aria-label={t('@astryx.thumbnail.open', {accessibleName})}
+            aria-disabled={isInteractive ? undefined : 'true'}
             {...stylex.props(styles.interactiveButton)}>
             {imageContent}
           </button>

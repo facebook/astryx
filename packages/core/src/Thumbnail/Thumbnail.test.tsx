@@ -149,24 +149,62 @@ describe('Thumbnail', () => {
     expect(onClick).toHaveBeenCalledOnce();
   });
 
-  it('does not render remove button when disabled', () => {
+  it('keeps a disabled Remove mounted, focusable and announced as disabled, without calling onRemove', async () => {
+    const user = userEvent.setup();
     const onRemove = vi.fn();
     render(<Thumbnail label="file.png" onRemove={onRemove} isDisabled />);
-    expect(screen.queryByRole('button', {name: /Remove/})).toBeNull();
+    const remove = screen.getByRole('button', {name: /Remove/});
+    expect(remove).toHaveAttribute('aria-disabled', 'true');
+    expect(remove).not.toBeDisabled();
+    remove.focus();
+    await user.keyboard('{Enter}');
+    expect(onRemove).not.toHaveBeenCalled();
   });
 
-  it('does not render onClick button when disabled', () => {
+  it('keeps a disabled Open mounted, focusable and announced as disabled, without calling onClick', async () => {
+    const user = userEvent.setup();
     const onClick = vi.fn();
     render(
       <Thumbnail src="/img.jpg" alt="Test" onClick={onClick} isDisabled />,
     );
-    expect(screen.queryByRole('button')).toBeNull();
+    const open = screen.getByRole('button', {name: 'Open Test'});
+    expect(open).toHaveAttribute('aria-disabled', 'true');
+    open.focus();
+    await user.keyboard('{Enter}');
+    expect(onClick).not.toHaveBeenCalled();
   });
 
-  it('is not interactive when isLoading', () => {
+  it('keeps Open mounted but inert while loading', async () => {
+    const user = userEvent.setup();
     const onClick = vi.fn();
     render(<Thumbnail src="/img.jpg" alt="Test" onClick={onClick} isLoading />);
-    expect(screen.queryByRole('button')).toBeNull();
+    const open = screen.getByRole('button', {name: 'Open Test'});
+    expect(open).toHaveAttribute('aria-disabled', 'true');
+    await user.click(open);
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('keeps focus on Open and Remove when the thumbnail becomes loading or disabled (spec:AST-085 FR4)', () => {
+    const props = {
+      src: '/img.jpg',
+      alt: 'Test',
+      onClick: vi.fn(),
+      onRemove: vi.fn(),
+    };
+    const {rerender} = render(<Thumbnail {...props} />);
+    const open = screen.getByRole('button', {name: 'Open Test'});
+    open.focus();
+    rerender(<Thumbnail {...props} isLoading />);
+    expect(document.activeElement).toBe(open);
+    rerender(<Thumbnail {...props} isDisabled />);
+    expect(document.activeElement).toBe(open);
+
+    rerender(<Thumbnail {...props} />);
+    const remove = screen.getByRole('button', {name: /Remove/});
+    remove.focus();
+    rerender(<Thumbnail {...props} isDisabled />);
+    expect(document.activeElement).toBe(remove);
+    expect(remove).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('forwards ref to root element', () => {
