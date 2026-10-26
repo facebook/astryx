@@ -2,17 +2,15 @@
 
 /**
  * @file search.ts
- * @input registerMotionTable (motion/roles.ts)
+ * @input Measurements of UIKit's search bar on the iOS 26.2 simulator
  * @output Exports `search`: UISearchController's activation and cancel clock,
  *   the stacked search field's geometry and its close button's entrance, the
  *   clear button, the navigation bar's fades over an activation, the field
  *   that scrolls away with the content, and the bottom placement's rest above
- *   the keyboard; and registerSearchTable, which makes its clock, curve and
- *   snap motion roles (SearchField's touch layer calls it)
- * @position The search domain of the UIKit constants table (motion/uikit);
- *   read by lab's SearchField, and by the navigation stack's bar and the tab
- *   bar's search tab that host it. The keyboard's own spring is
- *   `springs.keyboard`
+ *   the keyboard
+ * @position The search domain of the UIKit constants table (motion/uikit).
+ *   Its planned readers are lab's SearchField and the bars that host it (a
+ *   navigation stack's bar, a tab bar's search tab)
  *
  * On iOS 26.2 a search bar in a navigation item activates on one
  * UIViewPropertyAnimator: the field rises into the bar and narrows, a glass
@@ -24,16 +22,16 @@
  * the `@measure` task that will confirm or replace them. uikit.test.ts
  * enforces both.
  *
- * Its clock, curve and scroll-away snap are motion roles a theme may retune
- * (motion/roles.ts): `search.activationMs`, `search.activationCurve` and
- * `search.scrollAway.snapMs`. Thresholds and geometry are not motion, so
- * they are not roles.
+ * The activation plays the `timing.curves.move` motion role: the search
+ * bar's own UICubicTimingParameters, read at setup, are its control points
+ * (`spec:AST-094` FR4). The clock (`activationMs`) and the scroll-away snap
+ * (`scrollAway.snapMs`) are not roles: the touch tables register only the
+ * roles FR4 names, so a component's measured value stays an internal constant
+ * in its own table, and moves to a role if the record names one. The
+ * thresholds and the geometry are not motion.
  *
- * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md and
- * run `pnpm generate:motion-roles`
+ * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md
  */
-
-import {registerMotionTable} from '../roles';
 
 /**
  * UISearchController's search bar: activation, cancel, geometry and
@@ -42,21 +40,16 @@ import {registerMotionTable} from '../roles';
 export const search = {
   /**
    * The activation's clock, in ms: one UIViewPropertyAnimator moves the
-   * field, its width, the close button and the large title. Cancel runs the
-   * same animator backwards over the same time.
+   * field, its width, the close button and the large title, on UIKit's
+   * ease-in-ease-out (the `timing.curves.move` role: the animator's
+   * UICubicTimingParameters, read at setup, are its control points). Cancel
+   * runs the same animator backwards over the same time.
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, UIViewPropertyAnimator duration read at setup and the
-   *   field's frame per frame (rms 1.5 % against this clock and curve),
-   *   Oct 24 2026
+   *   iPhone 17 Pro, UIViewPropertyAnimator duration and
+   *   UICubicTimingParameters read at setup and the field's frame per frame
+   *   (rms 1.5 % against this clock and curve), Oct 24 2026
    */
   activationMs: 383.3,
-  /**
-   * The activation's curve: the animator's UICubicTimingParameters control
-   * points, UIKit's ease-in-ease-out (`timing.curves.move`).
-   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, UICubicTimingParameters read at setup, Oct 24 2026
-   */
-  activationCurve: [0.42, 0, 0.58, 1],
   // Reduce Motion: UIKit keeps the activation's travel with or without
   // Prefer Cross-Fade Transitions (measured in the same UIKit lab, iOS 26.2
   // simulator, iPhone 17 Pro, Oct 24 2026); Astryx follows
@@ -164,8 +157,9 @@ export const search = {
     fieldHeight: 38,
     /**
      * While active, the field's centre rests this far above the keyboard's
-     * top edge, pt (a 17 pt gap), and follows the keyboard; a tab bar's
-     * search field rides the keyboard the same way.
+     * top edge, pt (a 17 pt gap), and follows the keyboard. Only the bottom
+     * field was measured: a tab bar's search field is not, so this value
+     * makes no claim about it.
      * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
      *   iPhone 17 Pro, the field pinned to keyboardLayoutGuide (centre y 503
      *   with the keyboard's top at 539), Oct 24 2026
@@ -192,15 +186,3 @@ export const search = {
     size: 20,
   },
 } as const;
-
-/**
- * Makes each duration and curve above a motion role a theme may retune
- * (motion/roles.ts). The thresholds (`scrollAway.hysteresisPt`,
- * `scrollAway.collapseThresholdPt`) and the geometry are not durations,
- * springs or curves, so they never become roles. Nothing registers on
- * import: SearchField's touch layer calls it once before its first motion
- * (it is idempotent), so a page that never shows it ships no registry.
- */
-export function registerSearchTable(): void {
-  registerMotionTable('search', search);
-}

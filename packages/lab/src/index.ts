@@ -345,8 +345,8 @@ export {
 } from './MobilePowerSearch';
 
 // SearchField — the phone search field of iOS 26's UISearchController: it
-// activates into its host's bar with a glass close button, on UIKit's clock
-// (core's experimental motion subpath).
+// activates into its host's bar with a glass close button, on UIKit's clock,
+// read from core's internal motion modules.
 export {
   SearchField,
   type SearchFieldHandle,

@@ -29,15 +29,15 @@
  * its own tap so the keyboard rises) activates it. Under a finger (a coarse
  * primary pointer, iOS and Android alike) the field then plays UIKit's
  * activation, all on one clock
- * (`search.activationMs`, 383 ms on `search.activationCurve`, the
- * UIViewPropertyAnimator UIKit uses; both are motion roles a theme may
- * retune, read when each move starts): it rises by the host's `lift`, it
- * narrows to make room for the close button, and the glass close button
- * slides in from 44 px past its place while it fades in. Every part moves
- * on the compositor (translate, scale, opacity), so the activation keeps
- * moving while the page's script runs. The field narrows without
- * re-laying out: its background is three pieces, two rounded ends and a
- * middle that scales, and the trailing end slides.
+ * (`search.activationMs`, 383 ms on UIKit's ease-in-ease-out, the
+ * `timing.curves.move` role, as the UIViewPropertyAnimator UIKit uses; the
+ * clock is the search table's internal constant, `spec:AST-094` FR4): it
+ * rises by the host's `lift`, it narrows to make room for the close button,
+ * and the glass close button slides in from 44 px past its place while it
+ * fades in. Every part moves on the compositor (translate, scale, opacity),
+ * so the activation keeps moving while the page's script runs. The field
+ * narrows without re-laying out: its background is three pieces, two
+ * rounded ends and a middle that scales, and the trailing end slides.
  *
  * The close button cancels: it clears the text, ends editing (the keyboard
  * leaves) and plays the activation back to rest, the button sliding out at

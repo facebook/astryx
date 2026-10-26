@@ -13,8 +13,7 @@
  *   mid-activation turns around from where the parts are; the activation
  *   keeps advancing every frame through a blocked main thread and does no
  *   Layout or Paint; right to left it narrows from the left; under a mouse
- *   every part takes its place at once;
- *   a theme's search.activationMs role times the activation; in the Lifted
+ *   every part takes its place at once; in the Lifted
  *   story the results rise with the field and the title fades as UIKit's
  *   does (the story stands in for the navigation bar); all of that under a
  *   finger, one touch model on every touch device (an Android finger, with
@@ -50,6 +49,8 @@ import {
   withStorybook,
   writeEvidence,
 } from '@astryxdesign/interaction-harness';
+
+import {readFades, recordFades} from './fadeRecorder';
 
 const storybook = withStorybook(test);
 
@@ -631,25 +632,6 @@ test('right to left: the field narrows from the left and the close button slides
   expect(await translateX(close(page))).toBeCloseTo(0, 1);
 });
 
-test('a theme’s activation clock (the search.activationMs role) times the activation', async ({
-  page,
-}) => {
-  const {driver, field} = await openField(page);
-  // A theme writes the role's variable on its scope; it inherits from here.
-  await page.evaluate(() =>
-    document.documentElement.style.setProperty(
-      '--motion-search-activation-ms',
-      '600ms',
-    ),
-  );
-  await driver.tap(await centerOf(field));
-  const [activation] = await waitForAnimation(end(page));
-  await waitForRest(end(page));
-  expect(activation.to - activation.from).toBeGreaterThan(595);
-  expect(activation.to - activation.from).toBeLessThan(605);
-  expect(await translateX(end(page))).toBeCloseTo(-NARROWING, 1);
-});
-
 test('the waiting close button does not widen the page: nothing scrolls sideways', async ({
   page,
 }) => {
@@ -738,59 +720,6 @@ test('under a finger the close button is glass', async ({page}) => {
   expect(style.shadow).not.toBe('none');
 });
 
-/**
- * Every property the field's running animations change, and when the last
- * opacity change settles, ms after the animations start (reduced-motion
- * proofs).
- */
-async function animatedProperties(page: Page) {
-  return page.evaluate(() => {
-    const root = document.querySelector('[role="search"]') as HTMLElement;
-    const SKIP = ['offset', 'computedOffset', 'easing', 'composite'];
-    const animations = root.getAnimations({subtree: true});
-    const startedAt = Math.min(
-      ...animations.map(animation => Number(animation.startTime ?? 0)),
-    );
-    const properties = new Set<string>();
-    let fadeMs = 0;
-    for (const animation of animations) {
-      const effect = animation.effect as KeyframeEffect | null;
-      if (effect == null) {
-        continue;
-      }
-      const frames = effect.getKeyframes();
-      const timing = effect.getComputedTiming();
-      const start =
-        Number(animation.startTime ?? 0) + Number(timing.delay ?? 0);
-      const duration = Number(timing.activeDuration ?? 0);
-      const timeOf = (i: number) =>
-        start + Number(frames[i].computedOffset) * duration;
-      for (const key of Object.keys(frames[0] ?? {})) {
-        if (SKIP.includes(key)) {
-          continue;
-        }
-        const values = new Set(frames.map(frame => String(frame[key])));
-        // A property held at one value does not move anything.
-        if (values.size > 1) {
-          properties.add(key);
-        }
-        if (key === 'opacity') {
-          // When the opacity reaches the value it ends on, for good.
-          const final = String(frames[frames.length - 1].opacity);
-          let settles = timeOf(0);
-          for (let i = 0; i < frames.length; i++) {
-            if (String(frames[i].opacity) !== final) {
-              settles = timeOf(Math.min(i + 1, frames.length - 1));
-            }
-          }
-          fadeMs = Math.max(fadeMs, settles - startedAt);
-        }
-      }
-    }
-    return {properties: [...properties].sort(), fadeMs};
-  });
-}
-
 test('on Android (Chromium under a finger, no iOS signals) it plays the same activation, with the glass close button', async ({
   page,
   browserName,
@@ -854,22 +783,31 @@ test.describe('with Reduce Motion', () => {
   }) => {
     await page.emulateMedia({reducedMotion: 'reduce'});
     const {driver, field} = await openField(page);
+    // design:reduced-motion DR1 and DR2: opacity only, 200 ms or less. The
+    // page records each animation as it starts, so a busy runner cannot make
+    // the proof miss one. Each part's travel lands while it is transparent,
+    // then it fades back in: the proof reads once the travel has landed and
+    // every part has come to rest.
+    await recordFades(page);
     await driver.tap(await centerOf(field));
-    await waitForAnimation(end(page));
-    // design:reduced-motion DR1 and DR2: opacity only, 200 ms or less.
-    const activation = await animatedProperties(page);
+    await expect
+      .poll(async () => translateX(end(page)))
+      .toBeCloseTo(-NARROWING, 1);
+    await waitForRest(end(page));
+    await waitForRest(close(page));
+    const activation = await readFades(page);
     expect(activation.properties).toEqual(['opacity']);
     expect(activation.fadeMs).toBeLessThanOrEqual(200);
-    await waitForRest(end(page));
-    expect(await translateX(end(page))).toBeCloseTo(-NARROWING, 1);
-    await waitForRest(close(page));
+    await recordFades(page);
     await driver.tap(await centerOf(close(page)));
-    await waitForAnimation(end(page));
-    const cancel = await animatedProperties(page);
+    await expect
+      .poll(async () => Math.abs(await translateX(end(page))))
+      .toBeLessThan(0.5);
+    await waitForRest(end(page));
+    await waitForRest(close(page));
+    const cancel = await readFades(page);
     expect(cancel.properties).toEqual(['opacity']);
     expect(cancel.fadeMs).toBeLessThanOrEqual(200);
-    await waitForRest(end(page));
-    expect(Math.abs(await translateX(end(page)))).toBeLessThan(0.5);
   });
 
   test.describe('and a mouse', () => {
@@ -886,13 +824,15 @@ test.describe('with Reduce Motion', () => {
       ).toBe(false);
       const field = page.getByRole('searchbox', {name: 'Search'});
       await expect(field).toBeVisible();
+      await recordFades(page);
       await field.click();
       await expect(root(page)).toHaveAttribute(
         'data-search-field-active',
         'true',
       );
-      // design:reduced-motion DR3.
-      expect((await animatedProperties(page)).properties).toEqual([]);
+      await waitForRest(end(page));
+      // design:reduced-motion DR3: nothing animates.
+      expect((await readFades(page)).properties).toEqual([]);
       expect(await translateX(end(page))).toBeCloseTo(-NARROWING, 1);
     });
   });

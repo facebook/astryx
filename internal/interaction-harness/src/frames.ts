@@ -36,6 +36,12 @@ export interface CastFrame {
 }
 
 export interface Screencast {
+  /**
+   * Frames captured so far: wait for the first one to know the cast saw the
+   * page before an animation starts (`busyWindowProof` then knows its at-rest
+   * position).
+   */
+  frameCount(): number;
   /** Stops and returns every frame captured, in order. */
   stop(): Promise<CastFrame[]>;
 }
@@ -111,6 +117,7 @@ async function chromiumScreencast(
     everyNthFrame,
   });
   return {
+    frameCount: () => frames.length,
     async stop() {
       await cdp.send('Page.stopScreencast');
       cdp.off('Page.screencastFrame', onFrame);
@@ -163,6 +170,7 @@ async function webkitScreencast(
   // by however long that frame took to come, 60–100 ms on a busy page.)
   const wallMinusMonotonic = Date.now() - Number(process.hrtime.bigint()) / 1e6;
   return {
+    frameCount: () => frames.length,
     async stop() {
       await session.send('Screencast.stopScreencast');
       session.off?.('Screencast.screencastFrame', onFrame);
@@ -419,6 +427,16 @@ export async function sampleRects(
           opacity: number;
         }[]
       >(resolve => {
+        // The harness's own waits run on the real timers: a frozen timer gate
+        // (story.ts) holds only the page's.
+        const gate = (
+          window as unknown as {
+            __harnessTimerGate?: {
+              frame?: typeof requestAnimationFrame;
+            };
+          }
+        ).__harnessTimerGate;
+        const frame = gate?.frame ?? window.requestAnimationFrame.bind(window);
         const samples: {
           t: number;
           box: {x: number; y: number; width: number; height: number} | null;
@@ -436,12 +454,12 @@ export async function sampleRects(
             opacity: Number(style.opacity),
           });
           if (now < end) {
-            requestAnimationFrame(tick);
+            frame(tick);
           } else {
             resolve(samples);
           }
         };
-        requestAnimationFrame(tick);
+        frame(tick);
       }),
     durationMs,
   );

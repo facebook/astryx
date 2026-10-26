@@ -3,8 +3,7 @@
 /**
  * @file searchFieldModel.ts
  * @input The UIKit search table (`search` from
- *   `@astryxdesign/core/motion/uikit`), core's cubic-bézier curves and
- *   `resolveMotion` (a theme's retuned clock and curve)
+ *   `@astryxdesign/core/motion/uikit`) and core's cubic-bézier curves
  * @output Pure math for SearchField: the active field's width, the targets
  *   of every animated part at rest and while active, and the timed curves
  *   that move them (a UIViewPropertyAnimator's cubic-bézier clock, started
@@ -18,20 +17,22 @@
  * rest, the close button sliding out at the opacity it has. A change of
  * mind mid-flight adds the turn to the curves on screen, on the whole clock,
  * as UIKit's animations do (the animator's `additive`).
- * The clock and the curve are motion roles (`search.activationMs`,
- * `search.activationCurve`): a theme may retune them, and each activation
- * reads them for the field's theme when it starts.
+ * The curve is the `timing.curves.move` motion role (`spec:AST-094` FR4); the
+ * clock is the search table's internal constant, which moves to a role if the
+ * record names one. No theme retunes either (DEC-11).
  *
  * SYNC: When modified, update searchFieldModel.test.ts and SearchField.tsx.
  */
 
 import {type MotionCurve} from '@astryxdesign/core/motion/animator';
 import {cubicBezier} from '@astryxdesign/core/motion/bezier';
-import {resolveMotion} from '@astryxdesign/core/motion/resolveMotion';
-import {search} from '@astryxdesign/core/motion/uikit';
+import {search, timing} from '@astryxdesign/core/motion/uikit';
 
-/** The UIKit activation curve as a function of the clock's fraction. */
-export const activationEase = cubicBezier(search.activationCurve);
+/**
+ * The activation's curve, UIKit's ease-in-ease-out (the `timing.curves.move`
+ * role), as a function of the clock's fraction.
+ */
+export const activationEase = cubicBezier(timing.curves.move);
 
 /** The activation's length, s. */
 export const ACTIVATION_S = search.activationMs / 1000;
@@ -44,21 +45,9 @@ export interface ActivationTiming {
   readonly ease: (x: number) => number;
 }
 
-/**
- * The activation's clock and curve under `element`'s theme: the table's
- * (UIKit's 383 ms ease-in-ease-out) unless the theme retunes the
- * `search.activationMs` or `search.activationCurve` role.
- */
-export function activationTiming(
-  element: Element | null | undefined,
-): ActivationTiming {
-  const ms = resolveMotion(element, search, 'activationMs');
-  const curve = resolveMotion(element, search.activationCurve);
-  return {
-    seconds: ms / 1000,
-    ease:
-      curve === search.activationCurve ? activationEase : cubicBezier(curve),
-  };
+/** The activation's clock and curve: UIKit's 383 ms ease-in-ease-out. */
+export function activationTiming(): ActivationTiming {
+  return {seconds: ACTIVATION_S, ease: activationEase};
 }
 
 /**

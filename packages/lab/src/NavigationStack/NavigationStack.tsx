@@ -4,10 +4,10 @@
 
 /**
  * @file NavigationStack.tsx
- * @input React, StyleX, core's holdSelection (the pushing row's selection),
- *   core's compositor animator and the UIKit table
- *   (`@astryxdesign/core/motion/experimental`), navigationTransition.ts for
- *   the math, NavigationStackTouch.ts for the back swipes (the touch layer)
+ * @input React, StyleX, selectionHold.ts (the pushing row's selection, a
+ *   copy of List's internal hold), core's compositor animator and the UIKit
+ *   table (core's internal motion modules), navigationTransition.ts for the
+ *   math, NavigationStackTouch.ts for the back swipes (the touch layer)
  * @output Exports NavigationStack (a push/pop navigator with UIKit's
  *   transitions and back gestures), NavigationScreen (one screen: its bar
  *   title, back title, trailing items and content) and useNavigationStack
@@ -55,10 +55,10 @@
  * starts fades on any pointer.
  *
  * A list row (Item, ListItem, TreeList) that pushes a screen stays
- * selected while that screen covers it and deselects as it pops (core's
- * holdSelection): over the pop's first 0.35 s, linearly, on the same clock
- * as the cards, or with a back swipe's progress; a cancelled swipe selects
- * it again.
+ * selected while that screen covers it and deselects as it pops
+ * (selectionHold.ts, which mirrors List's internal hold): over the pop's
+ * first 0.35 s, linearly, on the same clock as the cards, or with a back
+ * swipe's progress; a cancelled swipe selects it again.
  *
  * Accessibility: covered screens are `inert`. A push moves focus to the new
  * screen's title; a pop returns it to the control that pushed the screen.
@@ -103,7 +103,6 @@ import {TOUCH_QUERY} from '@astryxdesign/core/utils/touchPresentation';
 import {isRtlElement} from '@astryxdesign/core/hooks';
 import {useTranslator} from '@astryxdesign/core/i18n';
 import {focusOutlineStyles, observeResize} from '@astryxdesign/core/utils';
-import {holdSelection, type SelectionHold} from '@astryxdesign/core/List';
 import {Icon} from '@astryxdesign/core/Icon';
 import {
   colorVars,
@@ -124,6 +123,7 @@ import {
   searchLargeTitleOpacity,
   searchLargeTitleReturnOpacity,
 } from './navigationSearch';
+import {holdSelection, type SelectionHold} from './selectionHold';
 
 // =============================================================================
 // Types

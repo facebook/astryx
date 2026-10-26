@@ -5,8 +5,7 @@
 /**
  * @file SearchFieldTouch.ts
  * @input The animator (`@astryxdesign/core/motion/useAnimator`), the
- *   search table and its roles' registration
- *   (`@astryxdesign/core/motion/uikit`), the touch resolver
+ *   search table (`@astryxdesign/core/motion/uikit`), the touch resolver
  *   (`@astryxdesign/core/utils/touchPresentation`) and searchFieldModel.ts
  * @output useSearchFieldMotion: SearchField's touch layer. It places the
  *   field's parts (the lift, the narrowing middle, the trailing end, the close
@@ -22,7 +21,7 @@
  */
 
 import {useCallback, useLayoutEffect, useRef, type RefObject} from 'react';
-import {isRtlElement} from '@astryxdesign/core/hooks';
+import {isRtlElement} from '../utils/isRtlElement';
 import {
   activationTiming,
   easedCurve,
@@ -37,7 +36,7 @@ import {
   type MotionCurve,
   type MotionHandle,
 } from '@astryxdesign/core/motion/animator';
-import {registerSearchTable, search} from '@astryxdesign/core/motion/uikit';
+import {search} from '@astryxdesign/core/motion/uikit';
 import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
 import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
 
@@ -132,10 +131,8 @@ export function useSearchFieldMotion({
     const shape = geometry();
     const to = poseFor(target, shape);
     const current = presented();
-    // The clock and curve under the field's theme, read as the move starts
-    // (the search table's roles, registered once before the first move).
-    registerSearchTable();
-    const timing = activationTiming(rootAnimator.animator.element);
+    // UIKit's clock and curve, the search table's.
+    const timing = activationTiming();
     const duration = timing.seconds;
     // From rest the move waits for the frame that presents the parts at rest
     // (`start: 'presented'`): Mobile Safari brings the keyboard up with no

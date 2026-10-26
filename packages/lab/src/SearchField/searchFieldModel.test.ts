@@ -2,7 +2,7 @@
 
 /**
  * @file searchFieldModel.test.ts
- * @input vitest, searchFieldModel.ts and the UIKit search table
+ * @input vitest, searchFieldModel.ts and the UIKit timing table
  * @output The model's geometry and clock: the active width on an iPhone 17
  *   Pro, every part's pose at rest and active (both directions), the eased
  *   curve's ends, symmetry and velocities
@@ -18,15 +18,18 @@ import {
   heldCurve,
   poseFor,
 } from './searchFieldModel';
-import {search, timing} from '@astryxdesign/core/motion/uikit';
+import {timing} from '@astryxdesign/core/motion/uikit';
 
 const IPHONE = {restWidth: 370, height: 44, lift: 99, isRtl: false};
 
 describe('searchFieldModel', () => {
   it('runs on the UIKit activation clock and curve', () => {
     expect(ACTIVATION_S).toBeCloseTo(0.3833, 4);
-    expect(search.activationCurve).toEqual(timing.curves.move);
+    // UIKit's ease-in-ease-out (the `timing.curves.move` role): symmetric,
+    // slow at the start.
+    expect(timing.curves.move).toEqual([0.42, 0, 0.58, 1]);
     expect(activationEase(0.5)).toBeCloseTo(0.5, 6);
+    expect(activationEase(0.25)).toBeLessThan(0.2);
   });
 
   it('narrows the field to 315 px beside the close button on a 402 px screen', () => {
