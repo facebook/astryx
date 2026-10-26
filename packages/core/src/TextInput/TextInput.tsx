@@ -17,6 +17,7 @@
  */
 
 import {
+  use,
   useId,
   useOptimistic,
   useTransition,
@@ -94,7 +95,7 @@ const sizeStyles = stylex.create({
 
 export type TextInputSize = keyof typeof sizeStyles;
 
-import {groupStyles} from '../InputGroup/groupStyles';
+import {groupStyles, inputGroupItemProps} from '../InputGroup/groupStyles';
 
 // Re-export shared types for convenience
 
@@ -108,6 +109,7 @@ import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {InputGroupInternalContext} from '../InputGroup/InputGroupInternalContext';
 import type {BaseProps} from '../BaseProps';
 import {
   type FieldInputBaseProps,
@@ -297,7 +299,7 @@ export function TextInput({
   description,
   isOptional = false,
   isRequired = false,
-  isDisabled = false,
+  isDisabled: isDisabledProp = false,
   isReadOnly = false,
   disabledMessage,
   startIcon,
@@ -327,6 +329,9 @@ export function TextInput({
   'aria-describedby': ariaDescribedByProp,
   ...restProps
 }: TextInputProps) {
+  const inputGroup = useInputGroup();
+  const inputGroupState = use(InputGroupInternalContext);
+  const isDisabled = isDisabledProp || inputGroupState.isDisabled;
   const {rest, container} = useFieldInputStyling('TextInput', restProps, {
     containerXstyle,
     containerClassName,
@@ -352,7 +357,6 @@ export function TextInput({
   const statusMessageID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const inputGroup = useInputGroup();
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -422,11 +426,12 @@ export function TextInput({
       if (!e || e.detail === 0) {
         inputRef.current?.focus();
       } else {
-        // Defer focus restoration past the button's unmount task so iOS Safari
-        // and touch browsers don't jump the page scroll to 0 on tap.
-        requestAnimationFrame(() => {
-          inputRef.current?.focus({preventScroll: true});
-        });
+        // Focus inside the tap: iOS Safari brings up its keyboard only for a
+        // focus made while handling the touch, so a field the tap reaches
+        // unfocused gets its keyboard, as UIKit's clear button makes the
+        // field first responder. `preventScroll` keeps a scrolled page where
+        // it is.
+        inputRef.current?.focus({preventScroll: true});
       }
     },
     [onChange],
@@ -451,6 +456,7 @@ export function TextInput({
       }}
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
+      {...(inputGroup ? inputGroupItemProps : undefined)}
       {...mergeProps(
         themeProps('text-input', {
           size,

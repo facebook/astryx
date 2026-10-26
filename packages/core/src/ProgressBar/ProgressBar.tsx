@@ -247,6 +247,15 @@ const styles = stylex.create({
   fill: {
     width: '100%',
     height: '100%',
+    // Forced colors replace status fills with Canvas; this boundary keeps the
+    // fill's shape visible (architecture:theme-tokens INV11).
+    outlineWidth: {default: null, '@media (forced-colors: active)': '1px'},
+    outlineStyle: {default: null, '@media (forced-colors: active)': 'solid'},
+    outlineColor: {
+      default: null,
+      '@media (forced-colors: active)': 'CanvasText',
+    },
+    outlineOffset: {default: null, '@media (forced-colors: active)': '-1px'},
     borderRadius: radiusVars['--radius-full'],
     transform: {
       default: 'translateX(calc(var(--_progress-bar-fill, 0%) - 100%))',
@@ -269,6 +278,15 @@ const styles = stylex.create({
   },
   indeterminateFill: {
     height: '100%',
+    // Forced colors replace status fills with Canvas; this boundary keeps the
+    // fill's shape visible (architecture:theme-tokens INV11).
+    outlineWidth: {default: null, '@media (forced-colors: active)': '1px'},
+    outlineStyle: {default: null, '@media (forced-colors: active)': 'solid'},
+    outlineColor: {
+      default: null,
+      '@media (forced-colors: active)': 'CanvasText',
+    },
+    outlineOffset: {default: null, '@media (forced-colors: active)': '-1px'},
     width: '40%',
     borderRadius: radiusVars['--radius-full'],
     animationName: {
