@@ -52,7 +52,7 @@ import {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer
 import {lockSelection} from '../gestures/selectionLock';
 import type {GestureTouch, PointerKind} from '../gestures/types';
 import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
-import {UIKIT_GESTURES} from '../motion/uikit/gestures';
+import {UIKIT_PRESS} from '../motion/uikit/gestures';
 import {PRESSED_ATTRIBUTE} from '../utils/pressFeedback';
 import {PRESS_FADE_MS} from '../utils/pressGesture';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
@@ -108,7 +108,7 @@ interface TrackingState {
   highlighted: HTMLElement | null;
 }
 
-const PRESS = UIKIT_GESTURES.press;
+const PRESS = UIKIT_PRESS;
 
 /** The ref handed to the recognizer while tracking is off: no element. */
 const DETACHED: RefObject<Element | null> = {current: null};
