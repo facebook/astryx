@@ -110,7 +110,7 @@ import {
   type MotionHandle,
 } from '../motion/animator';
 import type {SpringDescription} from '../motion/spring';
-import {springs} from '../motion/uikit/springs';
+import {SHEET_DETENT_SPRING} from '../motion/uikit/springs';
 import {
   readReleaseMotion,
   themeCurve,
@@ -1111,7 +1111,7 @@ export function useSheetGestures({
         springTravel(
           state.baseOffset,
           state.committedLayoutOffset,
-          springs.sheetDetent,
+          SHEET_DETENT_SPRING,
         );
       }
 
@@ -1303,7 +1303,7 @@ export function useSheetGestures({
     const handle = springTravel(
       settledOffset,
       settledLayoutOffsetRef.current,
-      springs.sheetDetent,
+      SHEET_DETENT_SPRING,
     );
     return () => {
       if (travelHandleRef.current === handle) {
