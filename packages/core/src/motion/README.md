@@ -18,6 +18,7 @@ so each keeps its measured value; no shipped component reads the roles yet.
 | `uikit/scroll.ts`     | UIScrollView: deceleration rates, rubber band, bounce-back spring, paging, `delaysContentTouches`, scroll to top.       |
 | `uikit/timing.ts`     | Non-spring clocks and curves: press highlight, Core Animation's named curves, keyboard, Reduced Motion cross-fade.      |
 | `uikit/navigation.ts` | UINavigationController: push velocity, parallax, dimming, transition clock, interactive pop finish rule.                |
+| `uikit/datePicker.ts` | UIDatePicker: the inline calendar’s selection, month paging and chevrons, the month/year toggle, and the wheels’ rules. |
 | `uikit/gestures.ts`   | Gesture recognizer thresholds, the velocity filter and haptic stand-ins, as `{value, unit}` entries (sources in JSDoc). |
 | `MEASUREMENTS.md`     | The UIKit reference captures each unconfirmed value still needs.                                                        |
 | `spring.ts`           | Closed-form damped spring, every Apple parameterization, settling duration, a spring chasing a moving target.           |
