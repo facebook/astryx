@@ -79,8 +79,10 @@ defineTheme({
 - **FR3 — The animator's tables derive from the same knobs.** The animator's
   base tables, every role in `spec:AST-094` FR4, derive from the theme's
   `tempo` and `character` at their source: a spring's duration scales by
-  `tempo` and its bounce is the character's bounce amount times the role's
-  fixed weight, so exits, fades, and full-screen moves never overshoot. With
+  `tempo`, and `character` offsets the role's measured bounce by an amount
+  times the role's fixed weight: `'standard'` adds nothing, and `'crisp'` and
+  `'expressive'` shift it down and up, so exits, fades, and full-screen moves,
+  whose weight is zero, never overshoot. With
   `tempo` 1 and `character` `'standard'`, every role plays its measured value
   exactly. A spring keeps its measured physics, scaled by `tempo` and shaped
   by `character`; it does not follow a CSS duration or easing twin. The roles
@@ -92,7 +94,8 @@ defineTheme({
   glide around it (`spec:AST-105`'s one shared timing), `presence`'s enter and
   exit, a sheet and its scrim, a menu's grow and its content, and a CSS fade
   paired with a JavaScript spring, such as MobileNav's close timed from its
-  computed duration.
+  computed duration and BottomSheet's scrim, whose fade lasts the sheet's
+  computed settle time.
 - **FR4 — Some motion is fixed on purpose.** The knobs do not move
   finger-following and drag motion, scroll momentum and decay, the rubber
   band, the on-screen keyboard's motion (`spec:AST-099` FR8), press and hover
@@ -125,6 +128,8 @@ defineTheme({
 - `defineTheme`'s `motion` widens to accept the three knobs beside the existing
   `MotionScaleConfig`; existing themes render exactly as before.
 - Core gains `--ease-entrance`, `--ease-move`, and `--ease-exit`.
+- BottomSheet's scrim fades over `--duration-medium` while the sheet settles
+  on its spring; it moves to the spring's settle time (FR4a).
 - `spec:AST-094` FR4 and `design:reduced-motion` DR2 and the draft
   `design:motion` DR3 and `spec:AST-090` are amended to match.
 
