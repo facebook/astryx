@@ -76,6 +76,8 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent,
+  type MouseEvent,
+  type PointerEvent,
   type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -88,13 +90,9 @@ import {
 } from '@astryxdesign/core/utils';
 import {isRtlElement} from '@astryxdesign/core/hooks';
 import {colorVars, focusVars} from '@astryxdesign/core/theme/tokens.stylex';
-import {
-  TapGestureRecognizer,
-  useGestureRecognizer,
-} from '@astryxdesign/core/gestures';
 import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
 import {animatorFor} from '@astryxdesign/core/motion/animator';
-import {pageControl} from '@astryxdesign/core/motion/uikit';
+import {UIKIT_TAP, pageControl} from '@astryxdesign/core/motion/uikit';
 import {usePageControlTouch} from './PageControlTouch';
 import {
   BOX,
@@ -235,6 +233,8 @@ function PageControlRow({
   'data-testid': testId,
   ref,
   onKeyDown: onKeyDownProp,
+  onClick: onClickProp,
+  onPointerDown: onPointerDownProp,
   ...htmlProps
 }: PageControlProps) {
   const t = useTranslator();
@@ -312,37 +312,49 @@ function PageControlRow({
     isInteracting,
   });
 
-  // With a mouse: a tap steps one page toward its side of the current
-  // indicator when the finger lifts; a drag is not a tap and pages nothing.
-  useGestureRecognizer(
-    rootRef,
-    () => new TapGestureRecognizer(),
-    recognizer => {
-      if (recognizer.state !== 'ended') {
-        return;
-      }
-      const root = rootRef.current;
-      const latest = latestRef.current;
-      const dot = stripRef.current?.querySelector(
-        `[data-page="${latest.current}"]`,
-      );
-      if (root == null || dot == null || latest.pages < 2) {
-        return;
-      }
-      const box = dot.getBoundingClientRect();
-      request(
-        tapTarget(
-          recognizer.location().x,
-          box.left + box.width / 2,
-          latest.current,
-          latest.pages,
-          isRtlElement(root),
-        ),
-        'tap',
-      );
-    },
-    {isEnabled: !isTouch},
-  );
+  // With a mouse (a fine primary pointer, where the gesture host listens to
+  // nothing: spec:AST-094 FR19, FR24): the browser's click steps one page
+  // toward its side of the current indicator, by UIKit's tap rule, so a
+  // press that travels more than `UIKIT_TAP.allowableMovement` is a drag and
+  // pages nothing. Under a finger the touch layer reads the tap, and the click
+  // that follows it is ignored.
+  const pressRef = useRef<{x: number; y: number} | null>(null);
+  const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    pressRef.current = {x: event.clientX, y: event.clientY};
+  };
+  const onClick = (event: MouseEvent<HTMLDivElement>) => {
+    const press = pressRef.current;
+    pressRef.current = null;
+    const root = rootRef.current;
+    const latest = latestRef.current;
+    if (isTouch || root == null || latest.pages < 2) {
+      return;
+    }
+    if (
+      press != null &&
+      Math.hypot(event.clientX - press.x, event.clientY - press.y) >
+        UIKIT_TAP.allowableMovement.value
+    ) {
+      return;
+    }
+    const dot = stripRef.current?.querySelector(
+      `[data-page="${latest.current}"]`,
+    );
+    if (dot == null) {
+      return;
+    }
+    const box = dot.getBoundingClientRect();
+    request(
+      tapTarget(
+        event.clientX,
+        box.left + box.width / 2,
+        latest.current,
+        latest.pages,
+        isRtlElement(root),
+      ),
+      'tap',
+    );
+  };
 
   // With a mouse: the cropped row, every page at full size, shifted at once to
   // keep the current indicator in view.
@@ -457,7 +469,9 @@ function PageControlRow({
         total: pages,
       })}
       // The caller's handler first: its preventDefault keeps the page.
-      onKeyDown={composeEventHandlers(onKeyDownProp, onKeyDown)}>
+      onKeyDown={composeEventHandlers(onKeyDownProp, onKeyDown)}
+      onClick={composeEventHandlers(onClickProp, onClick)}
+      onPointerDown={composeEventHandlers(onPointerDownProp, onPointerDown)}>
       <span
         ref={platterRef}
         aria-hidden="true"

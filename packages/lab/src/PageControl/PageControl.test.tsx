@@ -88,6 +88,15 @@ function tap(target: Element, x: number) {
   }
 }
 
+/**
+ * A mouse's click at `x` (a fine primary pointer: the gesture host listens to
+ * nothing there, spec:AST-094 FR19, FR24), pressed at `fromX`.
+ */
+function click(target: Element, x: number, fromX = x) {
+  fireEvent.pointerDown(target, {clientX: fromX, clientY: 10});
+  fireEvent.click(target, {clientX: x, clientY: 10});
+}
+
 /** WCAG contrast of `fg` at `alpha` over `bg` against `bg`. */
 function contrastOver(fg: number[], bg: number[], alpha: number): number {
   const luminance = (rgb: number[]) => {
@@ -277,29 +286,50 @@ describe('PageControl', () => {
     }
   });
 
-  it('with a mouse, a tap on the trailing side of the current dot asks for the next page', () => {
+  it('with a mouse, a click on the trailing side of the current dot asks for the next page, on the leading side for the previous', () => {
     asMouse();
     const {onChange} = renderControl();
-    tap(screen.getByRole('slider'), 50);
+    click(screen.getByRole('slider'), 50);
+    expect(onChange).toHaveBeenLastCalledWith(3);
+    click(screen.getByRole('slider'), -50);
+    expect(onChange).toHaveBeenLastCalledWith(1);
+  });
+
+  it("with a mouse, a press that travels more than 45 px is a drag and pages nothing (UIKit's tap rule)", () => {
+    asMouse();
+    const {onChange} = renderControl();
+    click(screen.getByRole('slider'), 46, 0);
+    expect(onChange).not.toHaveBeenCalled();
+    click(screen.getByRole('slider'), 44, 0);
     expect(onChange).toHaveBeenCalledWith(3);
   });
 
-  it('taps work when the control first renders with no pages and the pages arrive later', () => {
+  it('under a finger, the click the browser sends after a tap does not page again', () => {
+    asTouch();
+    const {onChange} = renderControl();
+    const slider = screen.getByRole('slider');
+    tap(slider, 50);
+    fireEvent.click(slider, {clientX: 50, clientY: 10});
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith(3);
+  });
+
+  it('clicks work when the control first renders with no pages and the pages arrive later', () => {
     const onChange = vi.fn();
     const view = render(
       <PageControl count={0} value={0} onChange={onChange} />,
     );
     view.rerender(<PageControl count={5} value={2} onChange={onChange} />);
-    tap(screen.getByRole('slider'), 50);
+    click(screen.getByRole('slider'), 50);
     expect(onChange).toHaveBeenCalledWith(3);
   });
 
   it('a page the app declines can be asked for again', async () => {
     // The app keeps its value: no render follows onChange.
     const {onChange} = renderControl();
-    tap(screen.getByRole('slider'), 50);
+    click(screen.getByRole('slider'), 50);
     await new Promise(resolve => setTimeout(resolve, 0));
-    tap(screen.getByRole('slider'), 50);
+    click(screen.getByRole('slider'), 50);
     expect(onChange).toHaveBeenCalledTimes(2);
     fireEvent.keyDown(screen.getByRole('slider'), {key: 'ArrowRight'});
     expect(onChange).toHaveBeenCalledTimes(2);
@@ -324,12 +354,12 @@ describe('PageControl', () => {
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
-  it('forwards ref to the slider, and taps still page with a ref passed', () => {
+  it('forwards ref to the slider, and clicks still page with a ref passed', () => {
     const ref = createRef<HTMLDivElement>();
     const onChange = vi.fn();
     render(<PageControl ref={ref} count={5} value={2} onChange={onChange} />);
     expect(ref.current).toBe(screen.getByRole('slider'));
-    tap(screen.getByRole('slider'), 50);
+    click(screen.getByRole('slider'), 50);
     expect(onChange).toHaveBeenCalledWith(3);
   });
 
