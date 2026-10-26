@@ -58,9 +58,11 @@ export interface PageRelease {
  * The page a release settles on, UIKit's rule: faster than
  * `paging.release.advanceSpeed`, the next page in the direction of the
  * velocity from wherever the content is; slower, the page nearest the
- * content (past `commitFraction` of a page, the next one). Never more than
- * `maxPagesFromStart` from the page the drag started on; clamped to the
- * pages unless looping.
+ * content (past `commitFraction` of a page, the next one). A release whose
+ * velocity points back toward the page the drag started on settles there,
+ * whatever the travel (`spec:AST-094` FR37; UIKit, slower than the advance
+ * speed, takes the nearest page). Never more than `maxPagesFromStart` from
+ * the start page; clamped to the pages unless looping.
  *
  * @example
  * ```
@@ -97,6 +99,14 @@ export function selectPage({
   // A stale start page past either end (the count shrank, an overscrolled
   // track) counts from the nearest real page, as selectSnapPoint does.
   const from = loop ? startIndex : Math.min(Math.max(startIndex, 0), count - 1);
+  // Moving back cancels (FR37).
+  const travel = page - from;
+  if (
+    (travel > epsilon && velocity < 0) ||
+    (travel < -epsilon && velocity > 0)
+  ) {
+    target = from;
+  }
   target = Math.max(from - reach, Math.min(from + reach, target));
   if (!loop) {
     target = Math.max(0, Math.min(count - 1, target));
@@ -180,33 +190,53 @@ export function solvePaging({
 /**
  * `setContentOffset(_:animated:)`: `paging.animatedScroll.durationMs` on its
  * curve (the sinusoidal ease-in-out as a cubic bézier), whatever the
- * distance. UIKit starts it from the current offset and drops any velocity,
- * as here. A theme's duration and curve (resolveMotion) replace the table's.
+ * distance, from the current offset. A theme's duration and curve
+ * (resolveMotion) replace the table's.
+ *
+ * `velocity` (px/s) is that of a move this one retargets: the new curve
+ * starts at it and still ends on `to`, at rest, on time (`spec:AST-094` FR6:
+ * a new target keeps the current velocity; UIKit drops it). The carry is a
+ * Hermite term, v × duration × u(1 − u)², less the curve's own starting
+ * slope, so a move from rest is the curve itself.
  */
 export function solveAnimatedPageScroll({
   from,
   to,
   durationMs = paging.animatedScroll.durationMs,
   curve = paging.animatedScroll.curve,
+  velocity,
 }: {
   from: number;
   to: number;
   durationMs?: number;
   curve?: BezierPoints;
+  velocity?: number;
 }): MotionCurve {
   const duration = durationMs / 1000;
   const distance = to - from;
   const ease = cubicBezier(curve);
-  const progress = (t: number) => ease(Math.min(1, Math.max(0, t / duration)));
+  const progress = (u: number) => ease(Math.min(1, Math.max(0, u)));
+  // The carry, in px: the retargeted velocity over the whole duration, less
+  // what the curve's own starting slope already gives.
+  const startSlope = progress(1e-4) / 1e-4;
+  const carry =
+    velocity == null ? 0 : velocity * duration - distance * startSlope;
+  const at = (t: number) => {
+    const u = Math.min(1, Math.max(0, t / duration));
+    return from + distance * progress(u) + carry * u * (1 - u) * (1 - u);
+  };
   return {
     duration,
-    at: t => from + distance * progress(t),
+    at,
     velocity: t => {
-      if (t <= 0 || t >= duration) {
+      if (t <= 0) {
+        return velocity ?? 0;
+      }
+      if (t >= duration) {
         return 0;
       }
       const h = Math.min(1e-4, t / 2, (duration - t) / 2);
-      return (distance * (progress(t + h) - progress(t - h))) / (2 * h);
+      return (at(t + h) - at(t - h)) / (2 * h);
     },
   };
 }

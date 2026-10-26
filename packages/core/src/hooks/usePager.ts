@@ -5,8 +5,8 @@
 /**
  * @file usePager.ts
  * @input A viewport element (the gesture surface) and a track element (the
- *   row of pages it translates), a page count and gap, the gesture system and
- *   the motion animator
+ *   row of pages it translates), a page count and gap (or the track's children
+ *   as the pages), the gesture system and the motion animator
  * @output Exports `createPager` (the framework-free pager), `usePager` (its
  *   React face) and their types
  * @position Shared hook for core components that page like a UIKit paging
@@ -23,8 +23,8 @@
  *   layout read and no React render; past the first or last page it follows
  *   UIKit's rubber band with d = the page width. Which drags are the pager's
  *   follows UIKit: inside a scroll view, the dominant axis
- *   (`paging.nestedPanAxisRatio`, the tie to the pager), claimed early so
- *   Safari never scrolls the page for a drag the pager took; inside a sheet
+ *   (`paging.nestedPanAxisRatio`, the tie to the pager), claimed when the pan
+ *   begins (its 10 pt hysteresis; nothing claims a pan earlier); inside a sheet
  *   (an enclosing vertical pan takes part in the touch), within
  *   atan(1 ÷ `paging.panAxisRatio`) of horizontal, and neither between that
  *   and 45°.
@@ -37,19 +37,23 @@
  * - `goTo` runs `setContentOffset(_:animated:)`'s curve and cancels a drag
  *   in progress.
  * - Reduce Motion (design:reduced-motion): the drag still follows the
- *   finger; after the lift nothing travels. A release's settle is a touch
- *   release (a 200 ms cross-fade on any pointer); `goTo` cross-fades on a
- *   coarse pointer and lands at once on any other.
+ *   finger; after the lift nothing travels. A touch's release cross-fades in
+ *   200 ms on any pointer (a touch release, DR2); `goTo`, and a mouse's or a
+ *   pen's release, cross-fade on a coarse pointer and land at once on any
+ *   other (DR3).
  * - Callbacks: `onIndexChange` when the target page changes: for a release,
  *   once its settle runs on the compositor (two frames after the frame it
  *   started in, so
  *   the owner's render cannot freeze the hand-off in Mobile Safari); for
- *   `goTo`, at once; never for a controlled change (the owner's own).
- *   `onSettle` when the track rests.
+ *   `goTo`, at once; never for a controlled change (the owner's own). A
+ *   release's report still waiting when the pager detaches, or when a
+ *   controlled move replaces its page, is dropped: no callback runs from an
+ *   unmount or from the owner's own update. `onSettle` when the track rests.
  *
  * Positions are content offsets in px, 0 at page 0 and growing toward later
  * pages; the track is translated by −position, or +position when the
- * viewport is right-to-left. Pages sit at index × (page width + gap); how
+ * viewport is right-to-left. Pages sit at index × (page width + gap), or,
+ * with `pages: 'children'`, at each child's start edge (see that option); how
  * they are rendered (all of them, a window, a wrapped copy for looping) is
  * the owner's. With `loop`, indexes are unbounded ("virtual"); `index` wraps
  * them into [0, count).
@@ -69,6 +73,7 @@
 import {useEffect, useRef, useState, type RefObject} from 'react';
 import {getGestureHost, type GestureHost} from '../gestures/GestureHost';
 import {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer';
+import {lockSelection, locksSelectionFor} from '../gestures/selectionLock';
 import {
   PanGestureRecognizer,
   type PanGestureRecognizerOptions,
@@ -109,6 +114,21 @@ export interface PagerOptions {
   gap?: number;
   /** Pages wrap around; indexes become unbounded. @default false */
   loop?: boolean;
+  /**
+   * What a page is. `'viewport'`: every page is the viewport's width, at
+   * index × (width + `gap`). `'children'`: each child of the track is a page
+   * at its own start edge, as `scroll-snap-align: start` places it in a
+   * scroll container: the viewport's padding stays an inset, and a child
+   * whose start lies past the point where the track's end meets the end of
+   * the viewport's content box rests at that point, so the last children can
+   * share one page. The count is then the number of distinct pages measured
+   * (`pageCount`); `count` and `gap` serve only before the first measure, and
+   * children pages do not loop. The pager measures the children when it
+   * attaches, when the viewport or the track resizes, when the options
+   * change and when a drag begins, never while a finger moves.
+   * @default 'viewport'
+   */
+  pages?: 'viewport' | 'children';
   /** Starting page. @default 0 */
   defaultIndex?: number;
   /**
@@ -123,6 +143,13 @@ export interface PagerOptions {
    * `goTo`), having last rested on `previous` (equal when it returned).
    */
   onSettle?: (index: number, previous: number) => void;
+  /**
+   * With `pages: 'children'`: a measure found different pages (how many, or
+   * where they rest) after the viewport or the track resized or the options
+   * changed. Not called for the measure an attach makes: read `pageCount`
+   * after attaching.
+   */
+  onPagesChange?: (pageCount: number) => void;
   /**
    * Called when the pan would begin, with the drag's initial physical
    * direction on screen (the same in RTL); return false to leave the touch
@@ -147,12 +174,21 @@ export interface Pager {
   readonly index: number;
   /** The target page, unbounded when looping. */
   readonly virtualIndex: number;
+  /**
+   * How many pages there are: `count`, or with `pages: 'children'` the
+   * distinct pages last measured.
+   */
+  readonly pageCount: number;
   /** Whether the track is moving on its own (a settle or a `goTo`). */
   readonly isSettling: boolean;
   /** Whether a finger is dragging the track. */
   readonly isDragging: boolean;
   /** The content offset on screen right now, from the curve (px). */
   presentation(): number;
+  /** Where page `index` rests (px). */
+  pageOffset(index: number): number;
+  /** The page whose rest is nearest content offset `position` (px). */
+  nearestPage(position: number): number;
   /** Move to a page (wrapped to the nearest copy when looping). */
   goTo(index: number, options?: GoToOptions): void;
   /** Update options; a smaller count clamps the target page. */
@@ -161,6 +197,39 @@ export interface Pager {
   attach(viewport: HTMLElement, track: HTMLElement): () => void;
   /** Detach and stop everything (attaching again restarts it). */
   dispose(): void;
+}
+
+/**
+ * The copy of page `index` nearest virtual page `from` in a loop of `count`
+ * pages; of two copies equally near (two pages, or half an even count away),
+ * `index` itself when it is one of them, so a step to `from + 1` always goes
+ * forward.
+ */
+export function nearestLoopCopy(
+  index: number,
+  from: number,
+  count: number,
+): number {
+  if (Math.abs(index - from) * 2 <= count) {
+    return index;
+  }
+  return Math.round(
+    from +
+      (((mod(index, count) - mod(from, count) + count + count / 2) % count) -
+        count / 2),
+  );
+}
+
+/** Whether two measured page lists are the same to within half a pixel. */
+function sameOffsets(
+  a: ReadonlyArray<number>,
+  b: ReadonlyArray<number> | null,
+): boolean {
+  return (
+    b != null &&
+    a.length === b.length &&
+    a.every((offset, i) => Math.abs(offset - b[i]) < 0.5)
+  );
 }
 
 function mod(value: number, count: number): number {
@@ -196,21 +265,14 @@ export interface PagerEnvironment {
  * layout while a finger moves.
  */
 /**
- * The distance a drag travels before the pager claims it, under the 10–11 px
- * at which WebKit claims a slow drag for the page (the gesture system's early
- * claim, PanGestureRecognizer `claimDistance`).
- */
-const PAGER_CLAIM_DISTANCE = 5;
-
-/**
  * The pager's pan: its release is a pan's `scrollVelocity()`, the one
  * UIScrollView hands `scrollViewWillEndDragging`
  * (but after a silent hold; spec:AST-100 FR2).
  * Inside a scroll view it takes UIKit's rule: a drag is the
  * pager's when its dominant axis is horizontal (`paging.nestedPanAxisRatio`,
- * the tie included) and the page's otherwise, and the pager cancels its moves
- * from `PAGER_CLAIM_DISTANCE`, since Safari gives the page no scroll for a
- * touch once one of its moves was cancelled. Inside a sheet, which the arena
+ * the tie included) and the page's otherwise. Its moves are cancelled from
+ * the moment it begins, at the pan's 10 pt hysteresis, as every pan's are:
+ * nothing claims a touch earlier. Inside a sheet, which the arena
  * shows as an enclosing vertical pan taking part in the touch, it keeps the
  * sheet's rule (`axisRatio`, `paging.panAxisRatio`): neither moves between
  * atan(1 ÷ that) and 45°.
@@ -319,12 +381,127 @@ export function createPager(
   let animator: Animator | null = null;
   let pageWidth = 0;
   let isRtl = false;
+  // With `pages: 'children'`, each page's offset (px, ascending), once
+  // measured.
+  let childOffsets: ReadonlyArray<number> | null = null;
 
-  const count = () => Math.max(1, Math.floor(options.count));
+  const isChildPages = () => options.pages === 'children';
+  const isLooping = () => options.loop === true && !isChildPages();
+  const count = () =>
+    isChildPages() && childOffsets != null
+      ? childOffsets.length
+      : Math.max(1, Math.floor(options.count));
   const stride = () => pageWidth + (options.gap ?? 0);
   const sign = () => (isRtl ? 1 : -1);
   const clampIndex = (index: number) =>
-    options.loop === true ? index : Math.max(0, Math.min(count() - 1, index));
+    isLooping() ? index : Math.max(0, Math.min(count() - 1, index));
+
+  /** Where page `index` rests (px). */
+  function offsetOf(index: number): number {
+    if (isChildPages() && childOffsets != null) {
+      return childOffsets[
+        Math.max(0, Math.min(childOffsets.length - 1, index))
+      ];
+    }
+    return index * stride();
+  }
+
+  /**
+   * Where `position` falls, in pages: an index plus the fraction of the way
+   * to the next page (past either end, in the end page's spacing).
+   */
+  function pageAt(position: number): number {
+    if (!(isChildPages() && childOffsets != null)) {
+      return position / stride();
+    }
+    const at = childOffsets;
+    const n = at.length;
+    if (n === 1) {
+      return (position - at[0]) / (pageWidth > 0 ? pageWidth : 1);
+    }
+    if (position < at[0]) {
+      return (position - at[0]) / (at[1] - at[0]);
+    }
+    for (let i = 0; i < n - 1; i++) {
+      if (position < at[i + 1]) {
+        return i + (position - at[i]) / (at[i + 1] - at[i]);
+      }
+    }
+    return n - 1 + (position - at[n - 1]) / (at[n - 1] - at[n - 2]);
+  }
+
+  /** The page nearest `position`, or the target before anything is measured. */
+  function nearestPage(position: number): number {
+    if (!isChildPages() && !(stride() > 0)) {
+      return target;
+    }
+    return Math.round(pageAt(position));
+  }
+
+  /**
+   * The page a release from `position` at `velocity` settles on (UIKit's
+   * rule, motion/paging.ts), in children pages' own spacing.
+   */
+  function releasePage(
+    position: number,
+    velocity: number,
+    startIndex: number,
+  ): number {
+    const pages = isChildPages() && childOffsets != null;
+    return selectPage({
+      position: pages ? pageAt(position) : position,
+      velocity,
+      stride: pages ? 1 : stride(),
+      count: count(),
+      startIndex,
+      loop: isLooping(),
+    });
+  }
+
+  /**
+   * Children pages: each child's start edge from the track's start (the
+   * track's own translate moves both alike, so it cancels), clamped to the
+   * travel that keeps the track's end at or past the end of the viewport's
+   * content box; children clamped onto one offset share its page. Rects are
+   * read in the track's own CSS pixels, the ones its `translate` moves in:
+   * an ancestor's `zoom` scales them, so its scale (the rect's width over the
+   * track's used width) is divided out.
+   */
+  function measureChildOffsets(): ReadonlyArray<number> {
+    const track = trackElement;
+    if (viewport == null || track == null || track.children.length === 0) {
+      return [0];
+    }
+    const box = track.getBoundingClientRect();
+    const used = Number.parseFloat(getComputedStyle(track).width);
+    const scale = used > 0 && box.width > 0 ? box.width / used : 1;
+    const style = getComputedStyle(viewport);
+    const inner =
+      viewport.clientWidth -
+      (Number.parseFloat(style.paddingLeft) || 0) -
+      (Number.parseFloat(style.paddingRight) || 0);
+    const starts: number[] = [];
+    let extent = 0;
+    for (const child of Array.from(track.children)) {
+      const rect = child.getBoundingClientRect();
+      starts.push(
+        (isRtl ? box.right - rect.right : rect.left - box.left) / scale,
+      );
+      extent = Math.max(
+        extent,
+        (isRtl ? box.right - rect.left : rect.right - box.left) / scale,
+      );
+    }
+    const end = Math.max(0, extent - inner);
+    const offsets: number[] = [];
+    for (const start of starts) {
+      const offset = Math.min(Math.max(start, 0), end);
+      if (offsets.length === 0 || offset > offsets[offsets.length - 1] + 0.5) {
+        offsets.push(offset);
+      }
+    }
+    return offsets.length > 0 ? offsets : [0];
+  }
 
   // The page the track rests on or is heading for (unbounded when looping),
   // and the one it last rested on.
@@ -345,7 +522,6 @@ export function createPager(
   let caughtSettle = false;
 
   const pan = new PagerPanGestureRecognizer({
-    claimDistance: PAGER_CLAIM_DISTANCE,
     ...options.panOptions,
     // Published, so app code can relate its own recognizers to the paging
     // pan (gesture delegates); instances are told apart by their element.
@@ -378,7 +554,7 @@ export function createPager(
 
   function presentation(): number {
     if (animator == null) {
-      return target * stride();
+      return offsetOf(target);
     }
     return sign() * animator.get('x');
   }
@@ -401,7 +577,49 @@ export function createPager(
   }
 
   function wrapped(index: number): number {
-    return options.loop === true ? mod(index, count()) : index;
+    return isLooping() ? mod(index, count()) : index;
+  }
+
+  // Callbacks caused by the owner's own update (setOptions, a controlled
+  // goTo), which the owner passes from an Effect, run from a frame callback,
+  // never from inside that Effect (architecture:react-component-runtime
+  // INV2). A detach drops those still waiting.
+  let deferDepth = 0;
+  let deferred: (() => void)[] = [];
+  let deferredToken = 0;
+
+  function deliver(callback: () => void): void {
+    if (deferDepth > 0) {
+      deferred.push(callback);
+    } else {
+      callback();
+    }
+  }
+
+  function deferringCallbacks(work: () => void): void {
+    deferDepth += 1;
+    try {
+      work();
+    } finally {
+      deferDepth -= 1;
+      if (deferDepth === 0 && deferred.length > 0) {
+        const calls = deferred;
+        deferred = [];
+        const token = deferredToken;
+        requestFrame(() => {
+          if (token === deferredToken) {
+            for (const call of calls) {
+              call();
+            }
+          }
+        });
+      }
+    }
+  }
+
+  function dropDeferred(): void {
+    deferred = [];
+    deferredToken += 1;
   }
 
   // The page last reported through onIndexChange, and a report that waits
@@ -419,7 +637,7 @@ export function createPager(
       // A controlled move (the owner's `index`, or a `count` that clamps the
       // page) is the owner's own change: it is not reported back.
       if (reason !== 'controlled') {
-        options.onIndexChange?.(index, reason);
+        deliver(() => options.onIndexChange?.(index, reason));
       }
     }
   }
@@ -428,6 +646,16 @@ export function createPager(
     if (pendingReport != null) {
       report(pendingReport);
     }
+  }
+
+  /**
+   * Forgets a release's report still waiting: the pager is detaching, or the
+   * owner's own (controlled) move replaces the page it chose. The page last
+   * reported stays as it was.
+   */
+  function dropReport(): void {
+    pendingReport = null;
+    reportToken += 1;
   }
 
   /**
@@ -483,9 +711,10 @@ export function createPager(
 
   function rest(): void {
     flushReport();
-    const previous = settled;
+    const previous = wrapped(settled);
     settled = target;
-    options.onSettle?.(wrapped(settled), wrapped(previous));
+    const index = wrapped(settled);
+    deliver(() => options.onSettle?.(index, previous));
   }
 
   /**
@@ -558,7 +787,7 @@ export function createPager(
     velocity: number,
     touchRelease: boolean,
   ): void {
-    const to = target * stride();
+    const to = offsetOf(target);
     // A theme that retunes the settle hands it a spring; without one the
     // settle runs UIKit's integrator itself.
     const spring = resolveMotion(viewport, paging, 'settle');
@@ -586,15 +815,31 @@ export function createPager(
     }
     const width = viewport.clientWidth;
     isRtl = isRtlElement(viewport);
-    if (width === pageWidth) {
+    let changed = width !== pageWidth;
+    pageWidth = width;
+    if (isChildPages()) {
+      const offsets = measureChildOffsets();
+      if (!sameOffsets(offsets, childOffsets)) {
+        childOffsets = offsets;
+        changed = true;
+        const pageCount = offsets.length;
+        deliver(() => options.onPagesChange?.(pageCount));
+      }
+    }
+    if (!changed) {
       return;
     }
-    pageWidth = width;
+    if (!isDragging && target > count() - 1) {
+      // Fewer pages (children clamped onto one): the last one, as a smaller
+      // count clamps.
+      goTo(count() - 1, {animated: false, reason: 'controlled'});
+      return;
+    }
     // A resize lands on the target page at its new offset (a settle in
     // flight ends there), as a paging scroll view does on rotation.
     if (!isDragging) {
       stopSettle();
-      animator?.set({x: positionToX(target * stride())});
+      animator?.set({x: positionToX(offsetOf(target))});
       if (settled !== target) {
         rest();
       }
@@ -612,28 +857,30 @@ export function createPager(
       // A track caught past an end is shown rubber-banded: the drag starts
       // from its unbanded position, so the first move keeps it under the
       // finger.
-      dragStart =
-        options.loop === true
-          ? current
-          : rubberBandUnclamp(
-              current,
-              0,
-              (count() - 1) * stride(),
-              pageWidth > 0 ? pageWidth : 1,
-            );
+      dragStart = isLooping()
+        ? current
+        : rubberBandUnclamp(
+            current,
+            offsetOf(0),
+            offsetOf(count() - 1),
+            pageWidth > 0 ? pageWidth : 1,
+          );
       dragPosition = current;
-      dragStartIndex = stride() > 0 ? Math.round(current / stride()) : target;
+      dragStartIndex = nearestPage(current);
       return;
     }
     if (state === 'changed') {
       const dx = recognizer.translation().x;
       // Finger right (dx > 0) moves content toward earlier pages in LTR.
       const raw = dragStart + sign() * dx;
-      const max = (count() - 1) * stride();
-      dragPosition =
-        options.loop === true
-          ? raw
-          : rubberBandClamp(raw, 0, max, pageWidth > 0 ? pageWidth : 1);
+      dragPosition = isLooping()
+        ? raw
+        : rubberBandClamp(
+            raw,
+            offsetOf(0),
+            offsetOf(count() - 1),
+            pageWidth > 0 ? pageWidth : 1,
+          );
       animator?.set({x: positionToX(dragPosition)});
       return;
     }
@@ -649,14 +896,7 @@ export function createPager(
       // content moves against the finger in LTR (sign()).
       const velocity =
         state === 'ended' ? sign() * recognizer.scrollVelocity().x : 0;
-      const next = selectPage({
-        position: dragPosition,
-        velocity,
-        stride: stride(),
-        count: count(),
-        startIndex: dragStartIndex,
-        loop: options.loop === true,
-      });
+      const next = releasePage(dragPosition, velocity, dragStartIndex);
       setTarget(next, 'drag', true);
       settleFrom(
         dragPosition,
@@ -668,29 +908,24 @@ export function createPager(
 
   // While a finger holds a caught track, the browser's long-press text
   // selection and callout stay off: in UIKit the touch that stops a scroll
-  // view does not reach its content.
-  let savedSelection: [string, string, string] | null = null;
+  // view does not reach its content. The gesture system's shared lock,
+  // counted per element, so the gesture host's own lock for the same
+  // contact and this one release in either order.
+  let releaseSelection: (() => void) | null = null;
 
   function holdSelection(on: boolean): void {
-    const style = trackElement?.style;
-    if (style == null) {
-      return;
-    }
-    if (on && savedSelection == null) {
-      savedSelection = [
-        style.getPropertyValue('user-select'),
-        style.getPropertyValue('-webkit-user-select'),
-        style.getPropertyValue('-webkit-touch-callout'),
-      ];
-      style.setProperty('user-select', 'none');
-      style.setProperty('-webkit-user-select', 'none');
-      style.setProperty('-webkit-touch-callout', 'none');
-    } else if (!on && savedSelection != null) {
-      const [userSelect, webkitUserSelect, callout] = savedSelection;
-      style.setProperty('user-select', userSelect);
-      style.setProperty('-webkit-user-select', webkitUserSelect);
-      style.setProperty('-webkit-touch-callout', callout);
-      savedSelection = null;
+    if (on && releaseSelection == null && trackElement != null) {
+      if (
+        locksSelectionFor(
+          catcher.pointerType ?? 'touch',
+          trackElement.ownerDocument.defaultView,
+        )
+      ) {
+        releaseSelection = lockSelection([trackElement], null);
+      }
+    } else if (!on && releaseSelection != null) {
+      releaseSelection();
+      releaseSelection = null;
     }
   }
 
@@ -725,14 +960,7 @@ export function createPager(
       ) {
         // Held, then lifted without dragging: settle on the nearest page.
         const position = presentation();
-        const next = selectPage({
-          position,
-          velocity: 0,
-          stride: stride(),
-          count: count(),
-          startIndex: stride() > 0 ? Math.round(position / stride()) : target,
-          loop: options.loop === true,
-        });
+        const next = releasePage(position, 0, nearestPage(position));
         setTarget(next, 'drag', true);
         settleFrom(position, 0, catcher.pointerType === 'touch');
       }
@@ -740,14 +968,15 @@ export function createPager(
   }
 
   function goTo(index: number, goToOptions: GoToOptions = {}): void {
+    if (goToOptions.reason === 'controlled' && deferDepth === 0) {
+      // The owner's own move: what it calls back waits for a frame.
+      deferringCallbacks(() => goTo(index, goToOptions));
+      return;
+    }
     const {animated = true, reason = 'goTo'} = goToOptions;
     let next = Math.round(index);
-    if (options.loop === true) {
-      // The copy of `index` nearest the current target.
-      const n = count();
-      next =
-        target + (((mod(next, n) - mod(target, n) + n + n / 2) % n) - n / 2);
-      next = Math.round(next);
+    if (isLooping()) {
+      next = nearestLoopCopy(next, target, count());
     } else {
       next = clampIndex(next);
     }
@@ -757,9 +986,18 @@ export function createPager(
       pan.cancel();
     }
     const from = presentation();
+    // A move this one retargets hands on its velocity, from its curve
+    // (spec:AST-094 FR6).
+    const velocity =
+      settleHandle != null && animator != null
+        ? sign() * animator.getVelocity('x')
+        : undefined;
+    if (reason === 'controlled') {
+      dropReport();
+    }
     stopSettle();
     setTarget(next, reason);
-    const to = next * stride();
+    const to = offsetOf(next);
     if (!animated || animator == null || from === to) {
       animator?.set({x: positionToX(to)});
       rest();
@@ -775,25 +1013,40 @@ export function createPager(
           'durationMs',
         ),
         curve: resolveMotion(viewport, paging.animatedScroll, 'curve'),
+        velocity,
       }),
     );
   }
 
   function setOptions(update: Partial<PagerOptions>): void {
-    const wasLooping = options.loop === true;
-    const previousStride = stride();
+    deferringCallbacks(() => applyOptions(update));
+  }
+
+  function applyOptions(update: Partial<PagerOptions>): void {
+    const wasLooping = isLooping();
+    const previousOffset = offsetOf(target);
     options = {...options, ...update};
-    if (options.loop !== true && (target < 0 || target > count() - 1)) {
+    if (isChildPages() && viewport != null && !isDragging) {
+      // The children may have changed with the options (a count, a gap).
+      const offsets = measureChildOffsets();
+      if (!sameOffsets(offsets, childOffsets)) {
+        childOffsets = offsets;
+        const pageCount = offsets.length;
+        deliver(() => options.onPagesChange?.(pageCount));
+      }
+    }
+    if (!isLooping() && (target < 0 || target > count() - 1)) {
       // Turning `loop` off keeps the page shown; a smaller `count` clamps.
       const shown = wasLooping ? mod(target, count()) : target;
       goTo(clampIndex(shown), {animated: false, reason: 'controlled'});
       return;
     }
-    if (stride() !== previousStride && !isDragging) {
-      // A new gap: the target page at its new offset (a settle ends there).
+    if (offsetOf(target) !== previousOffset && !isDragging) {
+      // A new gap (or children): the target page at its new offset (a settle
+      // ends there).
       const wasSettling = settleHandle != null;
       stopSettle();
-      animator?.set({x: positionToX(target * stride())});
+      animator?.set({x: positionToX(offsetOf(target))});
       if (wasSettling || settled !== target) {
         rest();
       }
@@ -810,7 +1063,12 @@ export function createPager(
     pageWidth = 0;
     isRtl = isRtlElement(nextViewport);
     pageWidth = nextViewport.clientWidth;
-    animator.set({x: positionToX(target * stride())});
+    if (isChildPages()) {
+      childOffsets = measureChildOffsets();
+      target = clampIndex(target);
+      settled = target;
+    }
+    animator.set({x: positionToX(offsetOf(target))});
     const removePanListener = pan.addListener(onPan);
     const removeCatchListener = catcher.addListener(onCatch);
     const host = environment.host ?? getGestureHost(nextViewport.ownerDocument);
@@ -820,13 +1078,21 @@ export function createPager(
     // already covers the touches that land on the track.
     const detachCatch = host.attach(nextTrack, catcher, {manageStyle: false});
     const unobserve = observeResize(nextViewport, measure);
+    // Children pages also move when the track's own size changes (a child
+    // added, removed or resized).
+    const unobserveTrack = isChildPages()
+      ? observeResize(nextTrack, measure)
+      : () => {};
     detachAll = () => {
       unobserve();
+      unobserveTrack();
       detachCatch();
       detachPan();
       removeCatchListener();
       removePanListener();
+      dropReport();
       stopSettle();
+      dropDeferred();
       holdSelection(false);
       isDragging = false;
       detachAll = null;
@@ -842,6 +1108,9 @@ export function createPager(
     get virtualIndex() {
       return target;
     },
+    get pageCount() {
+      return count();
+    },
     get isSettling() {
       return settleHandle != null;
     },
@@ -849,6 +1118,8 @@ export function createPager(
       return isDragging;
     },
     presentation,
+    pageOffset: offsetOf,
+    nearestPage: (position: number) => clampIndex(Math.round(pageAt(position))),
     goTo,
     setOptions,
     attach,
@@ -907,10 +1178,10 @@ export function usePager({
 
   // Synchronizes the pager (the track's animation and the gesture host) with
   // these props. A clamp it causes is not reported back (reason 'controlled').
-  const {count, gap, loop} = options;
+  const {count, gap, loop, pages} = options;
   useIsomorphicLayoutEffect(() => {
-    pager.setOptions({count, gap, loop});
-  }, [pager, count, gap, loop]);
+    pager.setOptions({count, gap, loop, pages});
+  }, [pager, count, gap, loop, pages]);
 
   // Attaches the pager to the viewport and track nodes, and again whenever
   // either node is replaced: it runs after every commit and does nothing while

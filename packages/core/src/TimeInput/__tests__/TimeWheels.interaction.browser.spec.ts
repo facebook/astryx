@@ -47,6 +47,7 @@ import {
   type TrackedFrame,
 } from '@astryxdesign/interaction-harness';
 import {datePicker} from '../../motion/uikit/datePicker';
+import {WHEEL_ROW_PITCH} from '../../DateInput/wheelLook';
 
 const storybook = withStorybook(test);
 
@@ -100,13 +101,17 @@ async function turnOneRowDown(driver: TouchDriver, column: Locator) {
     throw new Error('no column');
   }
   const from = {x: box.x + box.width / 2, y: box.y + box.height / 2};
-  // One 32 px row plus the pan's hysteresis.
+  // One row plus the pan's hysteresis.
   await driver.play(
-    drag(from, {x: from.x, y: from.y - 42}, {durationMs: 300, restMs: 150}),
+    drag(
+      from,
+      {x: from.x, y: from.y - (WHEEL_ROW_PITCH + 10)},
+      {durationMs: 300, restMs: 150},
+    ),
   );
 }
 
-/** The strip of the band's copy moves by one row pitch per row. */
+/** The strip holding a column's rows moves by one row pitch per row. */
 const stripOf = (column: Locator) => column.locator('[data-wheel-strip]');
 
 test('the AM/PM column follows the hour from 11 to 12 on UIDatePicker’s turn', async ({
@@ -133,7 +138,7 @@ test('the AM/PM column follows the hour from 11 to 12 on UIDatePicker’s turn',
   const ys = curveOf(samples, 'translateY');
   const start = ys[0].value;
   const end = ys[ys.length - 1].value;
-  expect(Math.abs(end - start)).toBeCloseTo(32, 0);
+  expect(Math.abs(end - start)).toBeCloseTo(WHEEL_ROW_PITCH, 0);
   const progress = ys.map(({t, value}) => ({
     t,
     value: (value - start) / (end - start),

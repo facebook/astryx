@@ -37,7 +37,6 @@ import {spacingVars} from '../theme/tokens.stylex';
 import {dateInputTouchGeometry} from './tokens.stylex';
 import {datePicker, registerDatePickerTable} from '../motion/uikit/datePicker';
 import {Wheel, type WheelHandle, type WheelOption} from './Wheel';
-import {WheelGroup} from './WheelGroup';
 import {fromMonthIndex, toMonthIndex} from './monthGeometry';
 
 /**
@@ -151,42 +150,40 @@ export function MonthYearWheels({
 
   return (
     <div ref={rootRef} {...stylex.props(styles.wheels)}>
-      <WheelGroup>
-        <Wheel
-          ref={monthWheelRef}
-          label={monthLabel}
-          options={monthOptions}
-          value={month}
-          isLooping={isTouch && datePicker.calendar.monthYearWheels.monthLoops}
-          isActive={isActive}
-          onChange={nextMonth => onChange(toMonthIndex(year, nextMonth))}
-        />
-        <Wheel
-          label={yearLabel}
-          options={yearOptions}
-          value={year}
-          isActive={isActive}
-          onChange={nextYear => {
-            // A year change can land outside the range: it goes on to the
-            // nearest reachable month and selects it there, the month wheel
-            // turning onto it rather than jumping (UIDatePicker's
-            // `restPastBound`; a year with no reachable month is a disabled
-            // row the Wheel itself leaves for the nearest enabled one).
-            const candidate = toMonthIndex(nextYear, month);
-            const clamped = Math.min(
-              Math.max(candidate, minMonthIndex),
-              maxMonthIndex,
+      <Wheel
+        ref={monthWheelRef}
+        label={monthLabel}
+        options={monthOptions}
+        value={month}
+        isLooping={isTouch && datePicker.calendar.monthYearWheels.monthLoops}
+        isActive={isActive}
+        onChange={nextMonth => onChange(toMonthIndex(year, nextMonth))}
+      />
+      <Wheel
+        label={yearLabel}
+        options={yearOptions}
+        value={year}
+        isActive={isActive}
+        onChange={nextYear => {
+          // A year change can land outside the range: it goes on to the
+          // nearest reachable month and selects it there, the month wheel
+          // turning onto it rather than jumping (UIDatePicker's
+          // `restPastBound`; a year with no reachable month is a disabled
+          // row the Wheel itself leaves for the nearest enabled one).
+          const candidate = toMonthIndex(nextYear, month);
+          const clamped = Math.min(
+            Math.max(candidate, minMonthIndex),
+            maxMonthIndex,
+          );
+          if (isTouch && clamped !== candidate) {
+            void monthWheelRef.current?.spinTo(
+              fromMonthIndex(clamped).month - 1,
+              columnTurn(rootRef.current),
             );
-            if (isTouch && clamped !== candidate) {
-              void monthWheelRef.current?.spinTo(
-                fromMonthIndex(clamped).month - 1,
-                columnTurn(rootRef.current),
-              );
-            }
-            onChange(clamped);
-          }}
-        />
-      </WheelGroup>
+          }
+          onChange(clamped);
+        }}
+      />
     </div>
   );
 }

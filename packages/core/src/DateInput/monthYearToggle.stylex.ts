@@ -27,9 +27,9 @@ export const monthYearToggleMotion = stylex.defineConsts({
   /** Every fade of the toggle and the chevron's turn: fadeMs. */
   duration:
     'var(--motion-date-picker-calendar-month-year-toggle-fade-ms, 250ms)',
-  /** `UIView.animate`'s default curve: timing.curves.easeInOut. */
+  /** `UIView.animate`'s default curve: timing.curves.move. */
   curve:
-    'var(--motion-timing-curves-ease-in-out, cubic-bezier(0.42, 0, 0.58, 1))',
+    'var(--motion-timing-curves-move, cubic-bezier(0.42, 0, 0.58, 1))',
   /** The title chevron's quarter turn: chevronTurnDegrees. */
   chevronTurn: '90deg',
 });

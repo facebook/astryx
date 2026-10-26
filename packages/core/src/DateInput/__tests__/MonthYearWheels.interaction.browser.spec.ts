@@ -23,6 +23,7 @@ import {
   withStorybook,
   type TouchDriver,
 } from '@astryxdesign/interaction-harness';
+import {WHEEL_ROW_PITCH} from '../wheelLook';
 
 const storybook = withStorybook(test);
 
@@ -56,11 +57,11 @@ async function turnRows(driver: TouchDriver, column: Locator, rows: number) {
     throw new Error('no column');
   }
   const from = {x: box.x + box.width / 2, y: box.y + box.height / 2};
-  // 32 px rows plus the pan's hysteresis.
+  // Whole rows plus the pan's hysteresis.
   await driver.play(
     drag(
       from,
-      {x: from.x, y: from.y - rows * 32 - 10},
+      {x: from.x, y: from.y - rows * WHEEL_ROW_PITCH - 10},
       {durationMs: 250 + rows * 100, restMs: 150},
     ),
   );

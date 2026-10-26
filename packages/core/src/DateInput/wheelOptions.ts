@@ -34,7 +34,7 @@ export interface WheelSpinOptions {
   duration?: number;
   /**
    * Cubic-bézier control points.
-   * @default the theme's `timing.curves.easeInOut`
+   * @default the theme's `timing.curves.move`
    */
   curve?: BezierPoints;
 }
@@ -68,7 +68,7 @@ export interface WheelProps {
   /**
    * The rows repeat without end, as UIDatePicker's minutes and hours do: the
    * last row is followed by the first. Under a finger only, and ignored for a
-   * list too short to hide the seam behind the cylinder (fewer than 11 rows).
+   * list too short to fill the column past its seam (fewer than 11 rows).
    */
   isLooping?: boolean;
   /**
