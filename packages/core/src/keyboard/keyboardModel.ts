@@ -108,7 +108,7 @@ export interface KeyboardTransition {
   readonly curve: KeyboardCurve | null;
   /**
    * The spring the keyboard moves on where `curve` is null (UIKit's keyboard
-   * spring: the system's own, never a theme's). A surface riding the keyboard
+   * spring: the system's own, no motion role). A surface riding the keyboard
    * plays `curve` when it is set and this spring otherwise, from `start`
    * (architecture:react-component-runtime INV11; rideKeyboard does).
    */

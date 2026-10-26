@@ -29,7 +29,7 @@
  * - The ride is polish on top, timed by the keyboard layout guide: the dock
  *   moves on the compositor (`translate`) on the curve the guide publishes
  *   (the keyboard's own motion: `keyboard.spring` on iOS, Gboard's slides in
- *   Chrome on Android, spec:AST-099 FR8; never a theme's) from the
+ *   Chrome on Android, spec:AST-099 FR8; no motion role) from the
  *   keyboard's own start, so it is where the keyboard is from its first
  *   frame, and a transcript at its newest message rides with it. The layout
  *   catches up once the ride ends, with the translate handed back in the
@@ -290,8 +290,8 @@ export function useChatKeyboard({
 
     // The ride plays the curve the guide publishes with each transition
     // (INV11): the keyboard's own motion (UIKit's spring, or Gboard's slides
-    // in Chrome), values and not theme roles, since the system moves the
-    // keyboard on them whatever the theme says.
+    // in Chrome), values and not motion roles, since the system moves the
+    // keyboard on them whatever the page does.
     const follow = (transition: KeyboardTransition) => {
       // The ride: the dock goes where the guide says the keyboard will be,
       // from the keyboard's start, relative to the layout it rests in now.

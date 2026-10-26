@@ -85,7 +85,7 @@ heights in CSS px, `start` on the document timeline (in the past for a show
 reported after the keyboard started, slightly ahead for a hide that starts
 after a blur), and the curve the keyboard moves on: `curve`, Gboard's slide in
 Chrome on Android, or else `spring`, UIKit's keyboard spring
-(`keyboard.spring`), values no theme retunes
+(`keyboard.spring`), values and no motion role
 (architecture:react-component-runtime INV11). `rideKeyboard` moves your
 element on the compositor from `start` on that curve, or at once when the
 transition is not animated. Hand the translate back to the layout once the
