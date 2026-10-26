@@ -16,7 +16,9 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   applyLayoutChangeTransition,
   createAnimatedLayout,
+  holdLayoutExit,
   playLayoutChange,
+  releaseLayoutExit,
   reportLayoutChange,
 } from './animatedLayout';
 
@@ -25,6 +27,7 @@ interface Played {
   keyframes: Keyframe[];
   options: KeyframeAnimationOptions;
   cancel: ReturnType<typeof vi.fn>;
+  finish?: () => void;
 }
 
 let played: Played[] = [];
@@ -48,9 +51,14 @@ beforeEach(() => {
       cancel,
     });
     // Every glide reads as 100 ms in when a later change retargets it.
+    const entry = played[played.length - 1];
     return {
       cancel,
-      addEventListener() {},
+      addEventListener(type: string, listener: () => void) {
+        if (type === 'finish') {
+          entry.finish = listener;
+        }
+      },
       currentTime: 100,
     } as unknown as Animation;
   };
@@ -459,5 +467,70 @@ describe('the indicator transition', () => {
       chevron,
     );
     expect(chevron.style.getPropertyValue('transition-duration')).toBe('0s');
+  });
+});
+
+describe('the changed element exits (spec:AST-105 FR4)', () => {
+  function exitSetUp() {
+    document.body.innerHTML =
+      '<div id="area"><div id="content">Details</div><p id="after">Next</p></div>';
+    const area = document.getElementById('area') as HTMLElement;
+    const content = document.getElementById('content') as HTMLElement;
+    vi.spyOn(area, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 0, 400, 600),
+    );
+    vi.spyOn(content, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 40, 400, 80),
+    );
+    return {area, content, layout: createAnimatedLayout(() => area)};
+  }
+
+  it('holds the content out of flow where it is, conceals it on the spring, then hands it back', () => {
+    const {content, layout} = exitSetUp();
+    const done = vi.fn();
+    expect(holdLayoutExit(layout, content, done)).toBe(true);
+    expect(content.style.position).toBe('absolute');
+    expect(content.style.pointerEvents).toBe('none');
+    const exit = played.find(p => p.element === content);
+    expect(exit?.keyframes[0].opacity).toBe(1);
+    expect(String(exit?.keyframes.at(-1)?.clipPath)).toBe('inset(0 0 100% 0)');
+    expect(exit?.options.fill).toBe('forwards');
+    expect(done).not.toHaveBeenCalled();
+    exit?.finish?.();
+    expect(done).toHaveBeenCalledTimes(1);
+    releaseLayoutExit(content);
+    expect(content.style.position).toBe('');
+    expect(content.style.pointerEvents).toBe('');
+  });
+
+  it('stops an exit when the content opens again', () => {
+    const {content, layout} = exitSetUp();
+    const done = vi.fn();
+    holdLayoutExit(layout, content, done);
+    const exit = played.find(p => p.element === content);
+    releaseLayoutExit(content);
+    expect(exit?.cancel).toHaveBeenCalledTimes(1);
+    expect(content.style.position).toBe('');
+    exit?.finish?.();
+    expect(done).not.toHaveBeenCalled();
+  });
+
+  it('lands at once without a handle, and under Reduce Motion with a fine pointer', () => {
+    const {content, layout} = exitSetUp();
+    expect(holdLayoutExit(null, content, vi.fn())).toBe(false);
+    media['(prefers-reduced-motion: reduce)'] = true;
+    expect(holdLayoutExit(layout, content, vi.fn())).toBe(false);
+    expect(content.style.position).toBe('');
+    expect(played).toEqual([]);
+  });
+
+  it('fades under Reduce Motion with a coarse pointer', () => {
+    const {content, layout} = exitSetUp();
+    media['(prefers-reduced-motion: reduce)'] = true;
+    media['(pointer: coarse)'] = true;
+    expect(holdLayoutExit(layout, content, vi.fn())).toBe(true);
+    const exit = played.find(p => p.element === content);
+    expect(exit?.keyframes.map(k => k.opacity)).toEqual([1, 0]);
+    expect(exit?.keyframes[0].clipPath).toBeUndefined();
   });
 });

@@ -465,8 +465,9 @@ test.describe('architecture:react-component-runtime INV12', () => {
       `<div id="area" class="area" style="height: 700px">${level(0)}</div>
        <div id="outside" class="row"></div>`,
     );
-    // Two changes in one frame.
-    await page.evaluate(async () => {
+    // Two changes in one frame, read in the same task: on a throttled page a
+    // second round trip can outlast the glide.
+    const report = await page.evaluate(async () => {
       const area = document.querySelector('#area');
       const layout = window.AnimatedLayout.createAnimatedLayout(() => area);
       const one = window.AnimatedLayout.reportLayoutChange(layout, () =>
@@ -484,8 +485,6 @@ test.describe('architecture:react-component-runtime INV12', () => {
       await new Promise<void>(resolve => {
         queueMicrotask(resolve);
       });
-    });
-    const report = await page.evaluate(() => {
       const animations = document.getAnimations();
       const targets = animations.map(
         a => (a.effect as KeyframeEffect).target as Element,
@@ -601,6 +600,59 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     // it settles within a second.
     expect(follower[0].duration).toBeGreaterThan(300);
     expect(follower[0].duration).toBeLessThan(1200);
+  });
+
+  test('a closing element exits on the same motion while the content after it glides up at once (FR4)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area"><div id="content" style="height: 80px; background: #fd9">Details</div>
+        <div id="a" class="row"></div><div id="b" class="row"></div></div>`,
+    );
+    const result = await page.evaluate(async () => {
+      const area = document.querySelector('#area');
+      const content = document.querySelector('#content') as HTMLElement;
+      const layout = window.AnimatedLayout.createAnimatedLayout(() => area);
+      const report = window.AnimatedLayout.reportLayoutChange(
+        layout,
+        () => content,
+      );
+      report.measureBefore();
+      // The component closes it but keeps it rendered for the exit.
+      let finished = false;
+      const held = window.AnimatedLayout.holdLayoutExit(layout, content, () => {
+        finished = true;
+      });
+      report.animate();
+      await new Promise<void>(resolve => {
+        queueMicrotask(resolve);
+      });
+      const exit = content.getAnimations()[0];
+      const timing = exit?.effect?.getTiming();
+      const followerStart = window.motionOf('#a')[0]?.first ?? null;
+      const visible = getComputedStyle(content).display !== 'none';
+      await exit?.finished;
+      // The finish event follows the finished promise.
+      await new Promise(resolve => {
+        setTimeout(resolve, 50);
+      });
+      return {
+        held,
+        visible,
+        position: getComputedStyle(content).position,
+        followerStart,
+        exitDuration: Number(timing?.duration),
+        followerDuration: window.motionOf('#a')[0]?.duration ?? null,
+        finished,
+      };
+    });
+    expect(result.held).toBe(true);
+    expect(result.visible).toBe(true);
+    expect(result.position).toBe('absolute');
+    // The row below starts 80 px lower, where it was, and glides up.
+    expect(startOffset(result.followerStart).y).toBeCloseTo(80, 0);
+    expect(result.finished).toBe(true);
   });
 
   test("a scope's --motion-springs-settle changes nothing: the role is internal (FR4)", async ({
