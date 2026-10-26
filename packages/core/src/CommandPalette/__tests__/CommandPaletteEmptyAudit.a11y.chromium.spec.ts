@@ -149,6 +149,15 @@ function expectedAnnouncement(item: AuditCase): string | null {
   return expectedTexts(item)[0];
 }
 
+/**
+ * The root color scheme: `html[data-theme]` maps the mode to `color-scheme`,
+ * and forced colors mode forces `color-scheme: light dark` (CSS Color
+ * Adjustment Module Level 1).
+ */
+function expectedColorScheme(item: AuditCase) {
+  return item.forcedColors ? 'light dark' : item.mode;
+}
+
 test.describe.configure({mode: 'serial', retries: 0});
 let server: StaticServer;
 let checkoutSha: string;
@@ -604,7 +613,7 @@ for (const item of cases) {
         forcedColors: item.forcedColors,
         viewport: item.viewport,
         dpr: 1,
-        colorScheme: item.mode,
+        colorScheme: expectedColorScheme(item),
         runningAnimationsInSubject: 0,
         geometryStable: true,
         texts: wantTexts,
@@ -646,7 +655,7 @@ for (const item of cases) {
         !observed.storybookError &&
         observed.theme === item.theme &&
         observed.mode === item.mode &&
-        observed.colorScheme === item.mode &&
+        observed.colorScheme === expectedColorScheme(item) &&
         observed.dpr === 1 &&
         settled.runningAnimations.subject === 0 &&
         settled.geometryStable &&
