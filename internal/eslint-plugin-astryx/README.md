@@ -203,6 +203,12 @@ never a wildcard), listed with the file-module subpaths in
 is. The rule reports every way to reach one:
 `import`, `export … from`, `import()`, `require()` and `typeof import()`.
 
+The gesture core, motion and touch support have no entry of their own
+(`architecture:react-component-runtime` INV13), so the rule also reports a deep
+import of them outside Core and Lab, by package path
+(`@astryxdesign/core/gestures`, `@astryxdesign/core/motion/animator`) or by a
+path into Core's source (`…/core/src/{gestures,motion,touch-support}/…`).
+
 It is a custom rule, not a `no-restricted-imports` block: flat config overrides
 a same-named rule per file, so a repo-wide block would undo the layer blocks
 that already use `no-restricted-imports`.
