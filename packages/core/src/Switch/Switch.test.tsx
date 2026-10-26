@@ -1019,12 +1019,6 @@ describe('Switch', () => {
             /background-color:[^;}]*--color-overlay-pressed/.test(rule),
           ),
         ).toBe(true);
-        // The release reads the `timing.press.buttonReleaseMs` motion role.
-        expect(
-          layer.some(rule =>
-            rule.includes('--motion-timing-press-button-release-ms'),
-          ),
-        ).toBe(true);
       }
       const on = rulesWithSelector(track, '[data-astryx-press="on"]', coarse);
       expect(on.some(rule => /opacity:\s*1\b/.test(rule))).toBe(true);

@@ -368,9 +368,7 @@ const styles = stylex.create({
         [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
           default: null,
           [TOUCH]: {
-            // The `timing.press.buttonReleaseMs` motion role, UIButton's
-            // measured 250 ms by default (spec:AST-094 FR4).
-            default: `var(--motion-timing-press-button-release-ms, ${pressConsts.controlReleaseMs}ms)`,
+            default: `${pressConsts.controlReleaseMs}ms`,
             '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
               reducedMotionFadeConsts.duration,
           },
@@ -551,9 +549,7 @@ const styles = stylex.create({
         [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
           default: null,
           [TOUCH]: {
-            // The `timing.press.buttonReleaseMs` motion role, UIButton's
-            // measured 250 ms by default (spec:AST-094 FR4).
-            default: `var(--motion-timing-press-button-release-ms, ${pressConsts.controlReleaseMs}ms)`,
+            default: `${pressConsts.controlReleaseMs}ms`,
             '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
               reducedMotionFadeConsts.duration,
           },
