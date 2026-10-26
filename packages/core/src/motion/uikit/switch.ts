@@ -26,10 +26,10 @@
  * `@measure` task that will confirm or replace them. uikit.test.ts enforces
  * both.
  *
- * Every value here stays an internal constant: no public API retunes a
- * component's measured spring (`spec:AST-094` FR4's roles are the shared
- * ones), and the geometry, rubber band, flip distance, shadow and haptic are
- * not motion.
+ * Every value here is an internal constant. The springs and the minimum lift
+ * stay plain constants until `component:Switch` names its motion roles
+ * (`spec:AST-094` FR4, DEC-5; DEC-11 keeps every role from themes); the
+ * geometry, rubber band, flip distance, shadow and haptic are not motion.
  *
  * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md.
  */
