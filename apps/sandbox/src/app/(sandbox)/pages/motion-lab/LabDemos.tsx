@@ -973,6 +973,73 @@ export function TintRig({mode}: {mode: Mode}) {
   );
 }
 
+// --- nav item hover tint ----------------------------------------------------
+
+const NAV_ITEMS = ['Overview', 'Projects', 'Settings'];
+const FINE_HOVER = '(hover: hover) and (pointer: fine)';
+
+/** Whether this device hovers with a fine pointer, as the gate reads it. */
+function useFineHover(): boolean | null {
+  const [matches, setMatches] = useState<boolean | null>(null);
+  useEffect(() => {
+    const query = window.matchMedia(FINE_HOVER);
+    setMatches(query.matches);
+    const update = () => setMatches(query.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+  return matches;
+}
+
+/**
+ * NavItem's hover tint. Before: today's item, which tints at once on any
+ * hover, a tap's false hover on a touch screen included. After: the tint
+ * fades on Astryx's state token (`--duration-fast`, 175 ms, on the shipped
+ * `--ease-standard` curve), and only where the device hovers with a fine
+ * pointer, so a tap leaves no tint behind.
+ */
+export function NavTintRig({mode}: {mode: Mode}) {
+  const {speed, reducedMotion} = useMotionLab();
+  const isFineHover = useFineHover();
+  const after =
+    mode === 'after'
+      ? {
+          // The system token, stretched by the rail's slow motion; the
+          // Delete policy removes the fade, Degrade keeps it (colour is not
+          // movement).
+          ['--tint-duration' as string]:
+            reducedMotion === 'delete'
+              ? '0ms'
+              : `calc(var(--duration-fast, 175ms) * ${speed})`,
+          ['--tint-ease' as string]: 'var(--ease-standard-today)',
+        }
+      : {['--tint-duration' as string]: '0ms'};
+  return (
+    <VStack gap={1} {...stylex.props(sx.full)}>
+      {NAV_ITEMS.map(item => (
+        <div
+          key={item}
+          className={mode === 'after' ? styles.navTintFine : styles.navTint}
+          style={after}>
+          <Text type="supporting">{item}</Text>
+        </div>
+      ))}
+      <Hint>
+        {mode === 'before'
+          ? 'Today: the tint snaps on at any hover, including the false hover a tap leaves on a touch screen.'
+          : 'The state token (--duration-fast, 175ms, --ease-standard), only on a fine pointer that hovers.'}
+      </Hint>
+      {mode === 'after' && isFineHover != null && (
+        <Hint>
+          {isFineHover
+            ? 'This device hovers with a fine pointer: the tint is on.'
+            : 'This device has no fine hover: a tap leaves no tint.'}
+        </Hint>
+      )}
+    </VStack>
+  );
+}
+
 // --- press / library compatibility -------------------------------------------
 
 export function PressRig({
