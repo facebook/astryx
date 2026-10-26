@@ -593,7 +593,7 @@ describe('List reorderable', () => {
     );
   });
 
-  it('leaves reorder mode when its handle loses focus, keeping its moves', async () => {
+  it('keeps reorder mode when its handle loses focus: only Escape, Done, the handle or the row going ends it (spec:AST-103 FR4a)', async () => {
     const user = userEvent.setup();
     const onReorder = vi.fn();
     render(
@@ -606,12 +606,17 @@ describe('List reorderable', () => {
     handle.focus();
     await user.keyboard(' {ArrowDown}');
     await user.tab();
-    expect(handle).toHaveAttribute('aria-pressed', 'false');
+    expect(handle).not.toHaveFocus();
+    expect(handle).toHaveAttribute('aria-pressed', 'true');
     expect(onReorder).toHaveBeenCalledTimes(1);
     expect(labels()).toEqual(['Sent', 'Inbox', 'Drafts']);
-    // Leaving without a word: the focus is elsewhere now.
-    await new Promise(resolve => setTimeout(resolve, 50));
-    expect(document.body).not.toHaveTextContent('Done,');
+    // Back on the handle, its arrows move the row again; Escape ends it.
+    handle.focus();
+    await user.keyboard('{ArrowDown}');
+    expect(onReorder).toHaveBeenCalledTimes(2);
+    expect(labels()).toEqual(['Sent', 'Drafts', 'Inbox']);
+    await user.keyboard('{Escape}');
+    expect(handle).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('ignores arrows with a modifier: they are shortcuts', async () => {
@@ -735,7 +740,8 @@ describe('List reorderable', () => {
     await user.keyboard('{ArrowDown}');
     expect(onReorder).toHaveBeenLastCalledWith({key: 'b1', to: 1});
     act(() => handleOf('A2').focus());
-    expect(handleOf('B1')).toHaveAttribute('aria-pressed', 'false');
+    // Focus leaving B1's handle does not end its list's mode (FR4a).
+    expect(handleOf('B1')).toHaveAttribute('aria-pressed', 'true');
     await user.keyboard(' {ArrowUp}');
     expect(onReorder).toHaveBeenLastCalledWith({key: 'a2', to: 0});
   });
