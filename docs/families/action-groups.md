@@ -24,13 +24,11 @@ members:
     component:MultiSelector,
     component:DateInput,
     component:AlertDialog,
-    component:Dialog,
     component:ButtonGroup,
     component:ToggleButtonGroup,
     component:Toolbar,
     component:Banner,
     component:Toast,
-    component:Card,
   ]
 architecture: [architecture:interaction-modality]
 contributing: []
@@ -67,12 +65,14 @@ today:
 - menus: DropdownMenu, ContextMenu, and their sub-menus;
 - option lists: Selector's and MultiSelector's options, and the date wheels of
   DateInput and DateTimeInput;
-- AlertDialog's actions, and Dialog's actions and footer area, not arbitrary
-  dialog content;
+- AlertDialog's actions;
 - ButtonGroup and ToggleButtonGroup;
 - Toolbar's buttons; a field inside a toolbar is skipped;
-- the action rows of Banner, Toast, and Card when a row has two or more
-  sibling actions.
+- the action rows of Banner and Toast when a row has two or more sibling
+  actions.
+
+Action rows that products compose, such as a Dialog's or a Card's footer in a
+`LayoutFooter`, get the behavior by using ButtonGroup.
 
 A component built later that matches the rule joins by the rule, including an
 action sheet, a tab bar or navigation bar, a filter-chip group, and a rating.
@@ -142,12 +142,12 @@ it. It is internal and unexported (`spec:AST-017` FR21).
 
 ## Adoption and exceptions
 
-| Components or surface                         | Required adoption                                                              |
-| --------------------------------------------- | ------------------------------------------------------------------------------ |
-| Menus, Selector, MultiSelector, date wheels   | Track through `actionGroupTracker`; `useMenuPress` converges onto it.          |
-| AlertDialog, Dialog's actions and footer area | Track the actions only; dialog content outside the action area is not a group. |
-| ButtonGroup, ToggleButtonGroup, Toolbar       | Track sibling buttons; a field inside is skipped; toggles follow FR4.          |
-| Banner, Toast, and Card action rows           | Track only a row with two or more sibling actions.                             |
+| Components or surface                       | Required adoption                                                     |
+| ------------------------------------------- | --------------------------------------------------------------------- |
+| Menus, Selector, MultiSelector, date wheels | Track through `actionGroupTracker`; `useMenuPress` converges onto it. |
+| AlertDialog's actions                       | Track the actions only.                                               |
+| ButtonGroup, ToggleButtonGroup, Toolbar     | Track sibling buttons; a field inside is skipped; toggles follow FR4. |
+| Banner and Toast action rows                | Track only a row with two or more sibling actions.                    |
 
 These are required outcomes, not a claim of completed adoption. The excluded
 components listed under the membership rule are not exceptions to approve;
