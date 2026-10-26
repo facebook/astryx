@@ -418,7 +418,7 @@ test('without scrollend (Safari 17, 18), a finger landing on a gliding list brak
       attributeFilter: ['data-astryx-press'],
     });
   });
-  const readLog = () =>
+  const readLog = async () =>
     page.evaluate(() =>
       (window as unknown as {__pressLog: string[]}).__pressLog.splice(0),
     );
