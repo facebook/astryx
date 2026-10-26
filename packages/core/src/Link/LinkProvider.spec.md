@@ -136,7 +136,9 @@ LinkProvider has no visual output. No design record governs it.
 - `family:navigation-destinations` names LinkProvider a collaborator; the
   shared link boundary applies the family's destination rules before
   `component` sees a destination.
-- `component:Link` and `component:Button` link mode consume it.
+- Every component that renders a link through the shared link boundary
+  consumes it, including the `family:navigation-destinations` members; for
+  example `component:Link` and `component:Button` link mode.
 
 ## Verification map
 
