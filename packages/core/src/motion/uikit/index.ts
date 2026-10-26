@@ -81,5 +81,4 @@ export {
   registerSpringsTable,
   springs,
 } from './springs';
-export {registerSpringsTable, springs} from './springs';
 export {registerTimingTable, timing} from './timing';
