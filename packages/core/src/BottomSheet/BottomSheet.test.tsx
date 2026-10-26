@@ -16,7 +16,7 @@ import {BottomSheet} from './BottomSheet';
 import {BottomSheetEscapeContext} from './bottomSheetEscape';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
-import {__resetRevealsAtReportForTest} from '../keyboard/useMobileKeyboard';
+import {__resetRevealsAtReportForTest} from '../keyboard/keyboardHeight';
 import {getKeyboardLayoutGuide} from '../keyboard/keyboardLayoutGuide';
 
 // A sheet has no stops unless its host asks for them, so the tests that

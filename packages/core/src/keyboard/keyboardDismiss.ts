@@ -3,7 +3,7 @@
 /**
  * @file keyboardDismiss.ts
  * @input A scroller element, the keyboard module's height
- *   (getMobileKeyboardHeight) and its dismissal blur (blurAsDismissal), the
+ *   (getKeyboardHeight) and its dismissal blur (blurAsDismissal), the
  *   layout viewport's height (utils/layoutViewport.ts), bringsUpKeyboard
  *   and the shared release velocity (gestures/VelocityTracker)
  * @output Exports observeKeyboardDismiss and KeyboardDismissMode: dismisses
@@ -52,7 +52,7 @@
 
 import {VelocityTracker} from '../gestures/VelocityTracker';
 import {bringsUpKeyboard} from './keyboardLayoutGuide';
-import {blurAsDismissal, getMobileKeyboardHeight} from './useMobileKeyboard';
+import {blurAsDismissal, getKeyboardHeight} from './keyboardHeight';
 import {layoutViewportHeight} from '../utils/layoutViewport';
 
 /** UIScrollView's `keyboardDismissMode`, the modes that decide at a release. */
@@ -104,7 +104,7 @@ export function observeKeyboardDismiss(
   }
   // The keyboard's height over the layout viewport: 0 with no software
   // keyboard up (a hardware keyboard), or where nothing is measured.
-  const keyboardHeight = () => getMobileKeyboardHeight(win);
+  const keyboardHeight = () => getKeyboardHeight(win);
   // The touch being followed: only one, the first finger down while a field
   // that brings up the keyboard has focus; null between touches.
   let touchId: number | null = null;
