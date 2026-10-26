@@ -77,8 +77,6 @@ import {
   type MenuPressPointerType,
 } from './menuPressGesture';
 import {useMenuTriggerPress, type MenuTriggerContext} from './menuTriggerPress';
-import {TOUCH_QUERY} from '../utils/touchPresentation';
-import {useMediaQuery} from './useMediaQuery';
 import type {UseLongPressHandlers} from './useLongPress';
 import {edgeAutoscroll} from '../utils/edgeAutoscroll';
 import {focusForLastInput} from '../utils/focusReturn';
@@ -239,10 +237,7 @@ export interface UseMenuPressOptions {
   hitTest?: (x: number, y: number) => Element | null;
   /**
    * How long a finger rests on the trigger before the menu opens under it.
-   * Unset, the wait follows `spec:AST-094` FR29 where the primary pointer is
-   * coarse (none in a fixed bar, 150 ms in a scroll view, the opening finger
-   * picking after UIMenu's handoff) and is 500 ms where it is fine. Set, it
-   * is that wait everywhere, as released (`spec:AST-094` FR25).
+   * @default 500
    */
   longPressDelayMs?: number;
   /** Whether the model is live. @default true */
@@ -429,17 +424,7 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
   // `touchModel` does not reach the model.
   const {touchModel: _touchModel, ...publicOptions} =
     options as DropdownMenuPressOptions;
-  // An unset delay follows FR29 where the primary pointer is coarse
-  // (spec:AST-094 FR25); a set one, or a fine primary pointer, keeps the
-  // released wait.
-  const isCoarsePrimary = useMediaQuery(TOUCH_QUERY, false);
-  const press = useDropdownMenuPress({
-    ...publicOptions,
-    touchModel:
-      publicOptions.longPressDelayMs === undefined && isCoarsePrimary
-        ? 'uikit'
-        : 'pointer',
-  });
+  const press = useDropdownMenuPress({...publicOptions, touchModel: 'pointer'});
   // Neither is the continuation: the public return is the public contract.
   return useMemo(() => {
     const {continueGesture: _continueGesture, ...publicPress} = press;
