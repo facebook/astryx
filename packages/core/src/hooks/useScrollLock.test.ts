@@ -226,6 +226,47 @@ describe('useScrollLock', () => {
       expect(pan(scrim, 300, 200)).toBe(true);
     });
 
+    it('lets a one-finger drag through on a pinch-zoomed page, so a zoomed-in reader can pan around the overlay', () => {
+      const scrim = document.createElement('div');
+      document.body.append(scrim);
+      const zoom = {scale: 2};
+      Object.defineProperty(window, 'visualViewport', {
+        value: zoom,
+        configurable: true,
+      });
+      try {
+        renderHook(() => useScrollLock(true));
+
+        expect(pan(scrim, 300, 200)).toBe(false);
+
+        // Read per touch: back at 1x, the same lock holds the page again.
+        zoom.scale = 1;
+        expect(pan(scrim, 300, 200)).toBe(true);
+      } finally {
+        // @ts-expect-error -- jsdom has no visualViewport of its own
+        delete window.visualViewport;
+      }
+    });
+
+    it('lets a drag on a native range input through, so the slider follows the finger', () => {
+      const dialog = document.createElement('dialog');
+      const slider = document.createElement('input');
+      slider.type = 'range';
+      dialog.append(slider);
+      document.body.append(dialog);
+      renderHook(() => useScrollLock(true));
+
+      // Along the slider, and along the page's axis alike: the input takes
+      // the drag, so it never scrolls the page (spec:AST-094 FR19).
+      touch(slider, 'touchstart', 100, 200);
+      expect(touch(slider, 'touchmove', 240, 200).defaultPrevented).toBe(false);
+      expect(pan(slider, 300, 200)).toBe(false);
+
+      // A disabled slider takes nothing: the drag is the page's, and held.
+      slider.disabled = true;
+      expect(pan(slider, 300, 200)).toBe(true);
+    });
+
     it('lets a pan through when a scroller under the finger can move that way', () => {
       const list = scroller(400, 100);
       const row = document.createElement('div');
