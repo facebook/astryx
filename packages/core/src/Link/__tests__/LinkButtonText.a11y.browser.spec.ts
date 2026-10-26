@@ -8,8 +8,8 @@
  *   a Link with one
  * @position Link integration proof. A Link without href renders a <button>,
  *   and a browser's stylesheet sets letter-spacing, word-spacing,
- *   text-transform and text-shadow on a <button>; only a shipping engine
- *   computes what its text then inherits.
+ *   text-transform, text-shadow and text-align on a <button>; only a shipping
+ *   engine computes what its text then inherits and how its lines wrap.
  */
 
 import {expect, test} from '@playwright/test';
@@ -25,6 +25,7 @@ const TEXT_PROPERTIES = [
   'wordSpacing',
   'textTransform',
   'textShadow',
+  'textAlign',
 ] as const;
 
 let storybook: StaticServer;
@@ -74,4 +75,35 @@ test('a Link without href renders its text like a Link with one', async ({
   expect(Math.abs(buttonWords.width - anchorWords.width)).toBeLessThanOrEqual(
     0.5,
   );
+});
+
+test('a Link without href starts its wrapped lines like a Link with one', async ({
+  page,
+}) => {
+  await page.goto(`${storybook.origin}/iframe.html?id=${STORY}&viewMode=story`);
+  const anchor = page.locator('[data-styled-text-link="anchor"]');
+  const button = page.locator('[data-styled-text-link="button"]');
+  await expect(button).toHaveJSProperty('tagName', 'BUTTON');
+  await page.evaluate(async () => document.fonts.ready);
+  // A narrow column wraps each link's words onto more than one line.
+  await page.addStyleTag({
+    content: '[data-styled-text-link] { max-width: 70px; }',
+  });
+
+  // Where each line of a link's words starts, from the link's own left edge.
+  const lineStarts = async (link: typeof anchor) =>
+    link.evaluate(element => {
+      const box = element.getBoundingClientRect();
+      const range = document.createRange();
+      range.selectNodeContents(element.querySelector('span') ?? element);
+      return Array.from(range.getClientRects(), line => line.left - box.left);
+    });
+  const anchorLines = await lineStarts(anchor);
+  const buttonLines = await lineStarts(button);
+
+  expect(anchorLines.length).toBeGreaterThan(1);
+  expect(buttonLines).toHaveLength(anchorLines.length);
+  buttonLines.forEach((start, line) => {
+    expect(Math.abs(start - anchorLines[line])).toBeLessThanOrEqual(0.5);
+  });
 });
