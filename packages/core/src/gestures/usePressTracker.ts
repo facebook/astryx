@@ -27,17 +27,32 @@ import {useAttachment, useIsUnmountedRef} from './useAttachment';
 export type UsePressTrackerOptions = Omit<
   PressTrackerOptions,
   'getBounds' | 'view'
->;
+> & {
+  /**
+   * The control paints press feedback per event, so its tracker attaches
+   * even where the primary pointer is fine, with no warning (an FR19
+   * exception for press feedback only, pending in `spec:AST-094`'s
+   * amendment): there a finger's press never keeps its touch from the
+   * browser. @default false
+   */
+  perEventPointer?: boolean;
+};
 
 /**
  * Track presses on the element behind `ref` with UIControl semantics. The
- * callbacks are read through a ref, like a recognizer's listener.
+ * callbacks are read through a ref, like a recognizer's listener. Releasing
+ * the element (unmount, or a replaced node) ends any press without calling
+ * them: that release runs in an Effect, which never calls a caller's
+ * callback (react-component-runtime INV2, INV3).
  */
 export function usePressTracker(
   ref: RefObject<Element | null>,
   options: UsePressTrackerOptions = {},
 ): PressTracker {
   const optionsRef = useRef(options);
+  // True while an Effect releases the tracker, so the press it ends reaches
+  // no caller callback.
+  const isReleasingRef = useRef(false);
   useIsomorphicLayoutEffect(() => {
     optionsRef.current = options;
   });
@@ -48,6 +63,7 @@ export function usePressTracker(
     cancelTravel,
     quickTapFlash,
     keepsTouch,
+    perEventPointer = false,
   } = options;
   // A profile change after mount takes effect from the next touch: the
   // tracker is rebuilt with the new values.
@@ -59,12 +75,12 @@ export function usePressTracker(
           return ref.current;
         },
         onControlEvent: (event, touch) => {
-          if (!isUnmountedRef.current) {
+          if (!isReleasingRef.current && !isUnmountedRef.current) {
             optionsRef.current.onControlEvent?.(event, touch);
           }
         },
         onHighlightChange: isHighlighted => {
-          if (!isUnmountedRef.current) {
+          if (!isReleasingRef.current && !isUnmountedRef.current) {
             optionsRef.current.onHighlightChange?.(isHighlighted);
           }
         },
@@ -104,20 +120,31 @@ export function usePressTracker(
 
   // Synchronizes the document's gesture host with the element behind `ref`
   // (see useGestureRecognizer); a tracker replaced by an option change is
-  // disposed, which un-highlights a control it was holding.
+  // disposed, which un-highlights a control it was holding, and a changed
+  // perEventPointer re-attaches it.
+  const attachment = useMemo(
+    () => ({tracker, perEventPointer}),
+    [tracker, perEventPointer],
+  );
   useAttachment(
     ref,
     element => {
       const detach = getGestureHost(element.ownerDocument).attachConsumer(
         element,
-        tracker,
+        attachment.tracker,
+        {perEventPointer: attachment.perEventPointer},
       );
       return () => {
-        detach();
-        tracker.dispose();
+        isReleasingRef.current = true;
+        try {
+          detach();
+          tracker.dispose();
+        } finally {
+          isReleasingRef.current = false;
+        }
       };
     },
-    tracker,
+    attachment,
   );
 
   return tracker;
