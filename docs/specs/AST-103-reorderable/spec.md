@@ -72,13 +72,10 @@ const reorderable = useMemo(
   [],
 );
 
+<Button label="Move" onClick={() => reorderable.start(selectedId)} />
 <List reorderable={reorderable}>
   {items.map(item => (
-    <ContextMenu
-      key={item.id}
-      items={[{label: 'Move', onActivate: () => reorderable.start(item.id)}]}>
-      <ListItem itemKey={item.id} label={item.name} />
-    </ContextMenu>
+    <ListItem key={item.id} itemKey={item.id} label={item.name} />
   ))}
 </List>;
 ```
@@ -126,8 +123,8 @@ announcements are those of FR3 and FR4, and the tree adds no option.
 - **FR2 — Present means enabled.** A collection that accepts reordering takes
   the object through one `reorderable` prop; there is no separate boolean.
   With the prop absent the collection renders no handle, registers no reorder
-  listener, and loads no reorder code: the machinery ships in the factory's
-  own module, and a collection imports only its type.
+  listener, and loads no reorder code: a collection imports none of
+  it until the object is passed.
 - **FR3 — Every collection drags the same way.** Each adopting collection
   wires the object to its own internal drag, keyboard, and
   assistive-technology paths, and the behavior is the same in every one:
@@ -157,7 +154,7 @@ announcements are those of FR3 and FR4, and the tree adds no option.
   - each move commits at once through `onReorder({ key, to })`, so the data,
     the screen, and the announcement always agree;
   - each move is announced once, after it renders, through the shared polite
-    announcement channel, naming the item, its position and count, and its
+    announcement channel, inside a modal as `spec:AST-086` FR14 requires, naming the item, its position and count, and its
     neighbors, such as "Milk, position 3 of 5, after Eggs, before Bread";
     the first and last positions say "at the top" and "at the end", a
     two-dimensional layout adds the row and column, such as "Milk, row 2,
@@ -165,7 +162,9 @@ announcements are those of FR3 and FR4, and the tree adds no option.
   - a move past a row `isReorderable` rejects is refused and announced, such
     as "Can't move past Pinned";
   - focus stays on the handle, and the row scrolls into view;
-    \1
+  - Escape, or activating the handle again, leaves reorder mode and keeps
+    every move, announcing "Done" with the item's position, such as "Done,
+    Milk at position 3 of 5";
   - while the item is in reorder mode, a hint anchored to it shows the moves
     for its axis and a Done control, with the same layer, anchoring, and
     theme roles as Core's keyboard hint, and stays until the mode ends; each
@@ -173,12 +172,12 @@ announcements are those of FR3 and FR4, and the tree adds no option.
     the same announcement and focus on the handle, and Done leaves the mode
     as Escape does, so a pointer or a finger can reorder by tapping the
     handle, then the move buttons, then Done;
-  - the hint is the mode's one added part, inside the open-layer element
-    allowance (`spec:AST-017` FR60), and it shares the keyboard hint's
-    internal anchored-hint layer, whose public API is unchanged.
+  - the hint is a part named in each adopting collection's anatomy, and it
+    looks and behaves like Core's keyboard hint, whose public API is
+    unchanged.
 - **FR4a — An app can start reorder mode.** The object exposes one method,
   `start(key)`, which enters FR4's reorder mode for that item from the app's
-  own UI, such as a Move item in the row's context menu or a toolbar button.
+  own UI, such as a toolbar button or a Move item in a menu.
   Focus moves to that item's handle, which scrolls into view, the hint
   appears, and the announcements and exits are FR4's. A key that is not
   reorderable, not mounted, or not found does nothing and warns in
@@ -206,8 +205,9 @@ announcements are those of FR3 and FR4, and the tree adds no option.
 ## Current-state impact
 
 - `component:List` gains `reorderable` as the first adopter.
-- No collection in Core reorders today, and no Core component has a public
-  reorder API. A Lab collection that reorders adopts this object.
+- No collection in Core reorders by drag today. Tokenizer reports a
+  `reorder` change (`spec:AST-056`); bringing it onto this object is
+  follow-up work. A Lab collection that reorders adopts this object.
 
 ## Verification
 
@@ -271,8 +271,7 @@ without an identity of its own takes `getKey(item)`. `itemKey` is a new name bec
 carries item identity today: `value` on option-like rows is the selected value
 a form reads, a different job. A collection whose items already carry an
 identity, such as TreeList's `id` or Table's `idKey`, uses it rather than a
-second one, since no new API shares a job with an existing one
-(`architecture:public-component-api` INV21).
+second one, since no new API shares a job with an existing one.
 
 Rejected: reading each direct child's React `key`.
 
