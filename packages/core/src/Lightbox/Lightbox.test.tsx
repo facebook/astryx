@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {Profiler} from 'react';
 import {Lightbox} from './Lightbox';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -684,24 +684,25 @@ describe('Lightbox', () => {
       const dialog = document.querySelector('dialog')!;
       fireEvent.keyDown(zoomTarget(), {key: 'Enter'});
       const img = screen.getByAltText('Image B');
-      // Zoomed about the stage's centre until the photo fills the stage's
-      // height (3×): 1200 × 600, its centre on the stage's centre.
+      // Lightbox's released zoom (spec:AST-017 FR59): 2× about the stage's
+      // centre, 800 × 400, its centre on the stage's centre, whatever aspect
+      // fill would give (3× for this photo).
       expect(photoTransform(img)).toEqual({
-        translate: '-400px -200px',
-        scale: '3 3',
+        translate: '-200px -100px',
+        scale: '2 2',
       });
       // ArrowRight reveals content to the right (image shifts left) and must
       // not fall through to gallery navigation.
       fireEvent.keyDown(dialog, {key: 'ArrowRight'});
       expect(onIndexChange).not.toHaveBeenCalled();
-      expect(photoTransform(img).translate).toBe('-450px -200px');
-      // The photo fills the stage's height exactly, so it cannot move
-      // vertically.
+      expect(photoTransform(img).translate).toBe('-250px -100px');
+      // At 400 px the photo is shorter than the 600 px stage, so it stays
+      // centred vertically.
       fireEvent.keyDown(dialog, {key: 'ArrowDown'});
-      expect(photoTransform(img).translate).toBe('-450px -200px');
+      expect(photoTransform(img).translate).toBe('-250px -100px');
       fireEvent.keyDown(dialog, {key: 'ArrowLeft'});
       fireEvent.keyDown(dialog, {key: 'ArrowUp'});
-      expect(photoTransform(img).translate).toBe('-400px -200px');
+      expect(photoTransform(img).translate).toBe('-200px -100px');
       expect(onIndexChange).not.toHaveBeenCalled();
     });
 
@@ -720,13 +721,14 @@ describe('Lightbox', () => {
       for (let i = 0; i < 12; i++) {
         fireEvent.keyDown(dialog, {key: 'ArrowLeft'});
       }
-      // The photo's left edge rests on the stage's left edge, no gap.
-      expect(photoTransform(img).translate).toBe('0px -200px');
+      // The photo's left edge rests on the stage's left edge, no gap: on main
+      // the arrows could carry the photo out of view.
+      expect(photoTransform(img).translate).toBe('0px -100px');
       for (let i = 0; i < 24; i++) {
         fireEvent.keyDown(dialog, {key: 'ArrowRight'});
       }
-      // 1200 px wide on a 400 px stage: its right edge on the stage's.
-      expect(photoTransform(img).translate).toBe('-800px -200px');
+      // 800 px wide on a 400 px stage: its right edge on the stage's.
+      expect(photoTransform(img).translate).toBe('-400px -100px');
     });
 
     it('navigates the gallery with arrows when not zoomed, even with hasZoom', () => {
@@ -764,7 +766,7 @@ describe('Lightbox', () => {
       const img = screen.getByAltText('Image B');
       // ArrowRight still reveals what is to the right of the photo.
       fireEvent.keyDown(dialog, {key: 'ArrowRight'});
-      expect(photoTransform(img).translate).toBe('-450px -200px');
+      expect(photoTransform(img).translate).toBe('-250px -100px');
       expect(onIndexChange).not.toHaveBeenCalled();
     });
 
@@ -877,6 +879,123 @@ describe('Lightbox', () => {
   });
 });
 
+describe('Lightbox mouse and pen zoom where the primary pointer is fine', () => {
+  // Touch work leaves fine-pointer behavior alone (spec:AST-017 FR59): with no
+  // touch layer, a double-click from any pointer keeps Lightbox's released
+  // zoom, 2× about the centre, whatever the photo or the clicked point.
+  let restoreLayout: () => void = () => {};
+  beforeEach(() => {
+    restoreLayout = stubStageLayout();
+  });
+  afterEach(() => {
+    restoreLayout();
+  });
+
+  /** A press then a double-click as a browser sends them, from `pointerType`. */
+  function doubleClick(
+    target: Element,
+    pointerType: 'mouse' | 'pen' | 'touch',
+    x: number,
+    y: number,
+  ): void {
+    const down = new Event('pointerdown', {bubbles: true, cancelable: true});
+    Object.defineProperty(down, 'pointerType', {value: pointerType});
+    Object.defineProperty(down, 'button', {value: 0});
+    Object.defineProperty(down, 'pointerId', {value: 1});
+    Object.defineProperty(down, 'clientX', {value: x});
+    Object.defineProperty(down, 'clientY', {value: y});
+    act(() => {
+      target.dispatchEvent(down);
+      target.dispatchEvent(
+        new MouseEvent('dblclick', {bubbles: true, clientX: x, clientY: y}),
+      );
+    });
+  }
+
+  function renderPhoto() {
+    render(
+      <Lightbox
+        isOpen={true}
+        onOpenChange={() => {}}
+        media={{src: '/photo.jpg', alt: 'Photo'}}
+        hasZoom
+      />,
+    );
+    return {
+      stage: screen.getByRole('button', {name: 'Zoom'}),
+      img: screen.getByAltText('Photo'),
+    };
+  }
+
+  it('zooms a mouse double-click 2× about the centre and back, whatever point was clicked', () => {
+    const {stage, img} = renderPhoto();
+    // Near the photo's top-left corner: Photos' double tap would centre that
+    // point at 3×; the released zoom ignores it.
+    doubleClick(stage, 'mouse', 20, 220);
+    expect(photoTransform(img)).toEqual({
+      translate: '-200px -100px',
+      scale: '2 2',
+    });
+    expect(stage).toHaveAttribute('aria-pressed', 'true');
+    doubleClick(stage, 'mouse', 20, 220);
+    expect(stage).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('zooms a pen double-click too, since no touch layer takes it', () => {
+    const {stage, img} = renderPhoto();
+    doubleClick(stage, 'pen', 200, 300);
+    expect(photoTransform(img)).toEqual({
+      translate: '-200px -100px',
+      scale: '2 2',
+    });
+    expect(stage).toHaveAttribute('aria-pressed', 'true');
+  });
+});
+
+describe('Lightbox double-click under the touch layer', () => {
+  let restoreLayout: () => void = () => {};
+  const originalMatchMedia = window.matchMedia;
+  beforeEach(() => {
+    restoreLayout = stubStageLayout();
+    window.matchMedia = (query: string) => ({
+      matches: query === '(pointer: coarse)',
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    });
+  });
+  afterEach(() => {
+    restoreLayout();
+    window.matchMedia = originalMatchMedia;
+  });
+
+  it("leaves a finger's double-click to the touch layer's recognizers", () => {
+    render(
+      <Lightbox
+        isOpen={true}
+        onOpenChange={() => {}}
+        media={{src: '/photo.jpg', alt: 'Photo'}}
+        hasZoom
+      />,
+    );
+    const stage = screen.getByRole('button', {name: 'Zoom'});
+    const down = new Event('pointerdown', {bubbles: true, cancelable: true});
+    Object.defineProperty(down, 'pointerType', {value: 'touch'});
+    Object.defineProperty(down, 'button', {value: 0});
+    act(() => {
+      stage.dispatchEvent(down);
+      stage.dispatchEvent(
+        new MouseEvent('dblclick', {bubbles: true, clientX: 200, clientY: 300}),
+      );
+    });
+    expect(stage).toHaveAttribute('aria-pressed', 'false');
+  });
+});
+
 describe('Lightbox touch zoom (synthetic touches)', () => {
   let restoreLayout: () => void = () => {};
   const originalMatchMedia = window.matchMedia;
@@ -923,7 +1042,9 @@ describe('Lightbox touch zoom (synthetic touches)', () => {
     Object.defineProperty(event, 'touches', {value: down.map(entry)});
     Object.defineProperty(event, 'changedTouches', {value: changed.map(entry)});
     Object.defineProperty(event, 'timeStamp', {value: time});
-    target.dispatchEvent(event);
+    act(() => {
+      target.dispatchEvent(event);
+    });
   }
 
   it('keeps panning with the finger left down after a pinch, without a jump', () => {
