@@ -184,6 +184,8 @@ function settledHandle(finished: Promise<boolean>): MotionHandle {
     started: Promise.resolve(performance.now()),
     value: () => 0,
     velocity: () => 0,
+    // It played nothing: no curve for a companion to follow.
+    curve: () => null,
     retarget: () => handle,
     stop: () => {},
   };
