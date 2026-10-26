@@ -13,6 +13,7 @@ review_triggers: [theming]
 verified_by:
   [
     packages/core/src/NavIcon/NavIcon.test.tsx,
+    packages/core/src/theme/themingTargets.test.ts,
     apps/storybook/stories/NavIcon.stories.tsx,
     scripts/check-knowledge.mjs,
   ]
@@ -133,14 +134,13 @@ No component-local concept beyond the consumer props.
 
 ## Verification map
 
-| Contract            | Verification                                        | Representative states                | Mutation or failure expectation                                                       | Audit section           |
-| ------------------- | --------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------- | ----------------------- |
-| FR1, FR3            | `NavIcon.test.tsx` content, ref, and test-id suites | Caller-supplied icon                 | Removing the container, content, ref, or test id fails.                               | `audit:NavIcon/anatomy` |
-| FR2                 | `NavIcon.test.tsx` target-name suite                | Canonical target class               | A missing, renamed, or extra target fails the target assertion.                       | `audit:NavIcon/theming` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                       | Canonical anatomy and current target | Missing, extra, prefixed, stale, or alias-backed mappings fail repository validation. | `audit:NavIcon/theming` |
+| Contract            | Verification                                                   | Representative states                | Mutation or failure expectation                                                                                                                    | Audit section           |
+| ------------------- | -------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| FR1, FR3            | `NavIcon.test.tsx` content, ref, and test-id suites            | Caller-supplied icon                 | Removing the container, content, ref, or test id fails.                                                                                            | `audit:NavIcon/anatomy` |
+| FR2                 | `NavIcon.test.tsx` target-name suite; `themingTargets.test.ts` | Canonical target class               | A missing or renamed canonical target, or the removed `navicon` alias, fails the target assertion; an extra target fails `themingTargets.test.ts`. | `audit:NavIcon/theming` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                  | Canonical anatomy and current target | Missing, extra, prefixed, stale, or alias-backed mappings fail repository validation.                                                              | `audit:NavIcon/theming` |
 
-Read from source, with no focused test yet: the `<span>` element, its circular
-shape, size, and accent colors (FR1); and other DOM props, the `className`,
+Read from source, with no focused test yet: the container's circular shape, size, and accent colors (FR1); and other DOM props, the `className`,
 `style`, and `xstyle` merge, and the absence of a role, name, or focus stop
 (FR3).
 
