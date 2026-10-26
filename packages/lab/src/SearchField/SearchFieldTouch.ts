@@ -5,8 +5,7 @@
 /**
  * @file SearchFieldTouch.ts
  * @input The animator (`@astryxdesign/core/motion/useAnimator`), the
- *   search table and its roles' registration
- *   (`@astryxdesign/core/motion/uikit`), the touch resolver
+ *   search table (`@astryxdesign/core/motion/uikit`), the touch resolver
  *   (`@astryxdesign/core/utils/touchPresentation`), the tap recognizer
  *   (`@astryxdesign/core/gestures`), searchFieldModel.ts and lab's
  *   keyboard listener (keyboard/useKeyboardHeight.ts)
@@ -38,7 +37,7 @@ import {
   TapGestureRecognizer,
   useGestureRecognizer,
 } from '@astryxdesign/core/gestures';
-import {isRtlElement} from '@astryxdesign/core/hooks';
+import {isRtlElement} from '../utils/isRtlElement';
 import {
   activationTiming,
   bottomEdges,
@@ -60,7 +59,7 @@ import {
   type MotionCurve,
   type MotionHandle,
 } from '@astryxdesign/core/motion/animator';
-import {registerSearchTable, search} from '@astryxdesign/core/motion/uikit';
+import {search} from '@astryxdesign/core/motion/uikit';
 import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
 import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
 import {
@@ -189,10 +188,8 @@ export function useSearchFieldMotion({
     const shape = geometry();
     const to = poseFor(target, shape);
     const current = presented();
-    // The clock and curve under the field's theme, read as the move starts
-    // (the search table's roles, registered once before the first move).
-    registerSearchTable();
-    const timing = activationTiming(rootAnimator.animator.element);
+    // UIKit's clock and curve, the search table's.
+    const timing = activationTiming();
     const duration = timing.seconds;
     // From rest the move waits for the frame that presents the parts at rest
     // (`start: 'presented'`): Mobile Safari brings the keyboard up with no
@@ -348,9 +345,6 @@ export function useSearchFieldMotion({
       return;
     }
     settledRef.current = target;
-    // The search table's roles (the activation's clock and curve, for a
-    // change of mind), registered once before the first move.
-    registerSearchTable();
     // iOS changes the field's frame each frame with no animation object:
     // play the measured frames, every part on one clock, from the frame that
     // presents the field at rest (as the stacked field starts). A change of
@@ -360,7 +354,7 @@ export function useSearchFieldMotion({
     const continuesMotion = isAnimating.current;
     const motion = continuesMotion
       ? (() => {
-          const timing = activationTiming(rootAnimator.animator.element);
+          const timing = activationTiming();
           return bottomRedirect(
             presentedBottom(),
             target,
