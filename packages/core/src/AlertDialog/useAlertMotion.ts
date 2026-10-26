@@ -12,7 +12,7 @@
  * @position Internal hook of AlertDialog; the touch presentation's motion
  *
  * UIKit's alert motion (measured on iOS 26.2; numbers in
- * motion/uikit/alert.ts, the `springs.alertPresent` and `springs.alertDismiss` roles):
+ * motion/uikit/alert.ts, the `alert.present` and `alert.dismiss` roles):
  *
  * - presenting, the alert scales from 1.2 to 1 and fades in, and the dimming
  *   fades in, all on one critically damped spring (0.404 s); nothing moves
@@ -41,9 +41,10 @@
  * at once; if the exit never reports its end (animations disabled) the
  * dialog closes anyway once its duration and a frame budget have passed. The
  * touch window and that backstop derive from the lengths of the springs the
- * animator plays, so they follow the springs. Neither the springs nor the
- * timings are motion roles (`spec:AST-094` FR4, DEC-3): they are read from the
- * alert's tables, and no theme variable changes them.
+ * animator plays, so they follow the springs. The springs are internal
+ * motion roles (`alert.present`, `alert.dismiss`; `spec:AST-094` FR4), which
+ * no theme variable changes while the roles stay internal (DEC-11); the
+ * timings are measured values, not roles.
  *
  * When `isEnabled` is false (a mouse, the inline preview) nothing here
  * acts: the Dialog opens and closes with the theme's motion.
@@ -65,21 +66,25 @@ import {
   type SpringDescription,
 } from '../motion/spring';
 import {holdInput, isInHeldLayer} from '../Layer/inputHold';
-import {alertController} from '../motion/uikit/alert';
-import {registerSpringsTable, springs} from '../motion/uikit/springs';
+import {
+  alertController,
+  alertMotion,
+  registerAlertTable,
+} from '../motion/uikit/alert';
 
 /**
  * The alert's springs, played through their internal motion roles
- * (`springs.alertPresent`, `springs.alertDismiss`; `spec:AST-094` FR4, kept
- * internal by DEC-11). Registering is idempotent and happens only when the
+ * (`alert.present`, `alert.dismiss`; `spec:AST-094` FR4, kept internal by
+ * DEC-11). Registering only the alert's own table keeps every other spring
+ * out of AlertDialog's bundle; it is idempotent and happens only when the
  * touch motion first runs.
  */
 function alertSprings(): {
   present: SpringDescription;
   dismiss: SpringDescription;
 } {
-  registerSpringsTable();
-  return {present: springs.alertPresent, dismiss: springs.alertDismiss};
+  registerAlertTable();
+  return {present: alertMotion.present, dismiss: alertMotion.dismiss};
 }
 
 /** A dialog that misses its exit's end still closes this long after it. */
