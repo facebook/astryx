@@ -11,12 +11,9 @@
  *
  * UISwitch on iOS 26.2 is the reference (see motion/uikit/switch.ts):
  *
- * - The thumb is a capsule of constant size. Its box is measured where it
- *   renders: its height is UIKit's proportion of the track (24 of 28) and its
- *   width follows the `switch-thumb` target's aspect ratio, which defaults
- *   to UIKit's proportion of the track (37 of 63) and which a theme may set
- *   (1 draws a circle). Without a measured box, UIKit's proportions are
- *   applied to the track.
+ * - The thumb's box is measured where it renders (the switch draws one
+ *   circle at each state's size). Without a measured box, UIKit's
+ *   proportions are applied to the track (a 37 × 24 thumb in 63 × 28).
  * - The lift grows the thumb about its center, but only into half of the gap
  *   between the thumb and the track's edges; the drag's rubber band takes the
  *   other half. So a lifted, banded thumb still paints inside the track.
@@ -74,7 +71,7 @@ const [LIFTED_WIDTH, LIFTED_HEIGHT] = switchControl.liftedThumbSize;
 
 /**
  * The thumb geometry in a track of this size: the thumb's measured box when
- * given (a theme may set its aspect ratio), UIKit's proportions otherwise.
+ * given, UIKit's proportions otherwise.
  */
 export function switchTouchGeometry(
   trackWidth: number,

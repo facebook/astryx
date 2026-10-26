@@ -246,6 +246,8 @@ export class SwitchTouchController {
   private shadow: Animator | null = null;
   /** When the thumb lifted (document timeline, ms); null while at rest. */
   private liftTime: number | null = null;
+  /** When the running settle leaves the lift (settleTime), ms. */
+  private settleAt: number | null = null;
   private otherTrack: TrackState | null = null;
   /**
    * A change landed mid-fade, the fade already heading to it: the track's own
@@ -449,10 +451,10 @@ export class SwitchTouchController {
   }
 
   /**
-   * The thumb geometry from the track's rendered box, so a theme that resizes
-   * the track moves the thumb by its own size (the thumb's CSS is in the
-   * track's container units). The track has no padding under a finger; its
-   * client box is the box its container units resolve against.
+   * The thumb geometry from the rendered boxes: the track's, so a theme that
+   * resizes the track moves the thumb by its own size, and the thumb's, the
+   * circle of the current value (it rests by insets from the track's padding
+   * box, so the track's padding does not move it).
    */
   private measureGeometry(): void {
     const track = this.elements?.track;
@@ -462,8 +464,7 @@ export class SwitchTouchController {
     }
     // Fractional boxes: the track's border box less its border (it has no
     // transform), and the thumb's used size from its computed style (its
-    // scale does not change that). The thumb's width follows the
-    // `switch-thumb` target's aspect ratio, which a theme may set.
+    // scale does not change that): the circle of the current value.
     const box = track.getBoundingClientRect();
     const trackWidth = box.width - 2 * track.clientLeft;
     const trackHeight = box.height - 2 * track.clientTop;
@@ -508,6 +509,14 @@ export class SwitchTouchController {
       {x: this.direction * (this.rest(previous) - this.rest(isOn))},
       {at: time},
     );
+    // Each state has its own thumb size (the circle a mouse sees, Switch
+    // FR4): the box the CSS now renders is the new value's, so its scale
+    // takes the old size over and grows or shrinks it from there.
+    const before = this.geometry;
+    this.measureGeometry();
+    if (springs) {
+      this.rescaleThumb(before, this.geometry, time);
+    }
     // The track now shows the new value's fill: the fade layer swaps to the
     // other fill and to the complement of its opacity, so nothing changes on
     // screen, and keeps heading where the visuals head.
@@ -903,7 +912,8 @@ export class SwitchTouchController {
     // resolves each one it is handed.
     const lift = switchControl.lift;
     const settle = switchControl.settle;
-    const hold = (settleTime(time, liftTime) - time) / 1000;
+    this.settleAt = settleTime(time, liftTime);
+    const hold = (this.settleAt - time) / 1000;
     const play = (
       animator: Animator | null,
       property: 'scaleX' | 'scaleY' | 'opacity',
@@ -933,6 +943,53 @@ export class SwitchTouchController {
     play(this.thumb, 'scaleX', this.geometry.liftScaleX, 1, 1e-4);
     play(this.thumb, 'scaleY', this.geometry.liftScaleY, 1, 1e-4);
     play(this.shadow, 'opacity', 1, 0, 1e-3);
+  }
+
+  /**
+   * The thumb's box changed size with the value (the on circle is larger):
+   * its scale carries the size it showed, so nothing jumps, and heads for
+   * the new box: back to it through the settle, or to the lift a held press
+   * keeps.
+   */
+  private rescaleThumb(
+    before: SwitchTouchGeometry,
+    after: SwitchTouchGeometry,
+    time: number,
+  ): void {
+    const thumb = this.thumb;
+    if (
+      thumb == null ||
+      !(before.thumbWidth > 0 && before.thumbHeight > 0) ||
+      !(after.thumbWidth > 0 && after.thumbHeight > 0) ||
+      (before.thumbWidth === after.thumbWidth &&
+        before.thumbHeight === after.thumbHeight)
+    ) {
+      return;
+    }
+    const held = this.liftTime != null;
+    const hold =
+      this.settleAt == null ? 0 : Math.max(0, this.settleAt - time) / 1000;
+    for (const [property, factor, lifted] of [
+      ['scaleX', before.thumbWidth / after.thumbWidth, before.liftScaleX],
+      ['scaleY', before.thumbHeight / after.thumbHeight, before.liftScaleY],
+    ] as const) {
+      const keep = lifted * factor;
+      thumb.play(
+        {
+          [property]: liftThenSettle({
+            from: thumb.get(property, time) * factor,
+            velocity: thumb.getVelocity(property, time) * factor,
+            lifted: keep,
+            rest: held ? keep : 1,
+            holdSeconds: held ? 0 : hold,
+            threshold: 1e-4,
+            lift: switchControl.lift,
+            settle: switchControl.settle,
+          }),
+        },
+        {at: time},
+      );
+    }
   }
 
   private clearTimers(): void {

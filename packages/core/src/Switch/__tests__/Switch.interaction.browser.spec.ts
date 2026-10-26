@@ -74,17 +74,20 @@ const storybook = withStorybook(test);
 // UISwitch on iOS 26.2 (motion/uikit/switch.ts), restated here as the oracle.
 const TRAVEL = {response: 0.3, dampingFraction: 1};
 const WELL_ON = {response: 0.68, dampingFraction: 1};
-/** The md track is 40 × 24: thumb 37/63 of the width, 24/28 of the height. */
+/** The md track is 40 × 24. */
 const TRACK = {width: 40, height: 24};
-const THUMB_WIDTH = (TRACK.width * 37) / 63;
-const INSET = (TRACK.height - (TRACK.height * 24) / 28) / 2;
-const TRAVEL_PX = TRACK.width - THUMB_WIDTH - 2 * INSET;
-const FLIP_DISTANCE = (TRACK.width * 26) / 63;
+/** The md thumb, a circle at the size a mouse sees: 16 off, 20 on (Switch FR4). */
+const THUMB_OFF = 16;
+const THUMB_ON = 20;
+/** The off thumb's inset in the track, on every side. */
+const INSET = (TRACK.height - THUMB_OFF) / 2;
+/** How far the thumb's center travels: each circle centered in the track's height at its end. */
+const TRAVEL_PX = TRACK.width - TRACK.height;
+/** The flip rule: the track minus the thumb past where the finger landed. */
+const FLIP_DISTANCE = TRACK.width - THUMB_OFF;
+const FLIP_FROM_ON = TRACK.width - THUMB_ON;
 /** The lift grows the thumb into half the gap on each side (switchTouch.ts). */
-const LIFT_SCALE = Math.min(
-  1 + INSET / THUMB_WIDTH,
-  1 + INSET / ((TRACK.height * 24) / 28),
-);
+const LIFT_SCALE = 1 + INSET / THUMB_OFF;
 /**
  * design:reduced-motion DR2: under reduced motion a touch change is an
  * opacity-only cross-fade of this many ms or less.
@@ -101,7 +104,10 @@ interface ChangeSample {
   t: number;
   /** The thumb's scale as presented. */
   scale: number;
-  /** The thumb's left edge from the track's. */
+  /**
+   * The thumb's center from the track's left edge (each state has its own
+   * circle size, so the center is where it is).
+   */
   left: number;
   /** How opaque the thumb shows. */
   opacity: number;
@@ -143,7 +149,9 @@ async function sampleChange(
         t,
         scale: scaleOf(thumb),
         left:
-          thumb.getBoundingClientRect().left -
+          (thumb.getBoundingClientRect().left +
+            thumb.getBoundingClientRect().right) /
+            2 -
           track.getBoundingClientRect().left,
         opacity: Number(getComputedStyle(thumb).opacity),
         on: input.checked ? 1 - faded : faded,
@@ -376,19 +384,16 @@ async function presented(page: Page): Promise<Presented> {
  * about the center does not move it) less half its unscaled width.
  */
 async function thumbOffset(page: Page): Promise<number> {
-  return page.evaluate(() => {
+  // The thumb's center from the inline-start rest's: 0 off, TRAVEL_PX on (in
+  // LTR). The center, since each state has its own circle size.
+  return page.evaluate(height => {
     const box = document.querySelector<HTMLElement>(
       '#storybook-root .astryx-switch-thumb',
     )!;
     const rect = box.getBoundingClientRect();
     const track = box.parentElement!.getBoundingClientRect();
-    return (
-      rect.left +
-      rect.width / 2 -
-      track.left -
-      parseFloat(getComputedStyle(box).width) / 2
-    );
-  });
+    return rect.left + rect.width / 2 - track.left - height / 2;
+  }, TRACK.height);
 }
 
 /**
@@ -526,7 +531,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
   }) => {
     const {driver, input, thumb, center} = await openSwitch(page);
     await expect(input).not.toBeChecked();
-    expect(await thumbOffset(page)).toBeCloseTo(INSET, 0);
+    expect(await thumbOffset(page)).toBeCloseTo(0, 0);
     await driver.play(tap(center, {holdMs: 50}));
     await expect(input).toBeChecked();
     await waitForSwitchRest(page, thumb);
@@ -534,7 +539,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     expect(rest.scaleX).toBeCloseTo(1, 2);
     expect(rest.on).toBeCloseTo(1, 2);
     expect(rest.fill).toBeCloseTo(1, 2);
-    expect(await thumbOffset(page)).toBeCloseTo(INSET + TRAVEL_PX, 0);
+    expect(await thumbOffset(page)).toBeCloseTo(TRAVEL_PX, 0);
   });
 
   test('P2 · a hold lifts the thumb inside the track and shows the pressed overlay, and the release toggles', async ({
@@ -619,9 +624,13 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
         expect(thumb.bottom).toBeLessThanOrEqual(track.bottom + 0.01);
       }
       // It did reach both ends.
-      const lefts = boxes.map(b => b.thumb.left - b.track.left);
-      expect(Math.min(...lefts)).toBeLessThan(INSET);
-      expect(Math.max(...lefts)).toBeGreaterThan(INSET + TRAVEL_PX - 0.5);
+      const centers = boxes.map(
+        b => (b.thumb.left + b.thumb.right) / 2 - b.track.left,
+      );
+      expect(Math.min(...centers)).toBeLessThan(TRACK.height / 2 + 0.5);
+      expect(Math.max(...centers)).toBeGreaterThan(
+        TRACK.width - TRACK.height / 2 - 0.5,
+      );
     });
   }
 
@@ -644,34 +653,81 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     expect(clicks).toEqual([true]);
   });
 
-  test('a theme’s circle thumb (switch-thumb aspect-ratio 1) travels to the far inset and stays inside the track', async ({
+  test('under a finger the thumb is the circle a mouse sees, at each state’s size (Switch FR4)', async ({
     page,
   }) => {
-    await page.addInitScript(() => {
-      document.addEventListener('DOMContentLoaded', () => {
-        const style = document.createElement('style');
-        style.textContent =
-          '@media (pointer: coarse) { .astryx-switch-thumb { aspect-ratio: 1 } }';
-        document.head.append(style);
-      });
-    });
     const {driver, input, thumb, center} = await openSwitch(page);
-    const box = await thumb.boundingBox();
-    expect(box!.width).toBeCloseTo(box!.height, 1);
+    const read = () =>
+      page.evaluate(() => {
+        const t = document.querySelector<HTMLElement>(
+          '#storybook-root .astryx-switch-thumb',
+        )!;
+        const style = getComputedStyle(t);
+        return {
+          width: parseFloat(style.width),
+          height: parseFloat(style.height),
+          radius: style.borderTopLeftRadius,
+        };
+      });
+    // Off: the md thumb is 16 × 16, as with a mouse.
+    expect(await read()).toEqual({
+      width: THUMB_OFF,
+      height: THUMB_OFF,
+      radius: expect.stringMatching(/px$/),
+    });
     await driver.play(tap(center, {holdMs: 50}));
     await expect(input).toBeChecked();
     await waitForSwitchRest(page, thumb);
-    const placed = await page.evaluate(() => {
-      const t = document.querySelector<HTMLElement>(
-        '#storybook-root .astryx-switch-thumb',
+    // On: 20 × 20, as with a mouse; the touch layer moves it, never reshapes it.
+    const on = await read();
+    expect(on.width).toBe(THUMB_ON);
+    expect(on.height).toBe(THUMB_ON);
+  });
+
+  test('under a coarse pointer the switch’s hit area is at least 44 × 44 px, centered on the track, with nothing visible added', async ({
+    page,
+  }) => {
+    const {driver, input, center} = await openSwitch(page);
+    const boxes = await page.evaluate(() => {
+      const i = document.querySelector<HTMLElement>(
+        '#storybook-root [role="switch"]',
       )!;
-      const r = t.getBoundingClientRect();
-      const k = t.parentElement!.getBoundingClientRect();
-      return {gapEnd: k.right - r.right, gapStart: r.left - k.left};
+      const k = document.querySelector<HTMLElement>(
+        '#storybook-root .astryx-switch',
+      )!;
+      const r = i.getBoundingClientRect();
+      const t = k.getBoundingClientRect();
+      return {
+        hit: {
+          width: r.width,
+          height: r.height,
+          cx: r.left + r.width / 2,
+          cy: r.top + r.height / 2,
+        },
+        track: {
+          width: t.width,
+          height: t.height,
+          cx: t.left + t.width / 2,
+          cy: t.top + t.height / 2,
+        },
+        opacity: getComputedStyle(i).opacity,
+      };
     });
-    // On: the circle rests at the far inset, the same gap as its top.
-    expect(placed.gapEnd).toBeCloseTo(INSET, 0);
-    expect(placed.gapStart).toBeGreaterThan(INSET);
+    expect(boxes.hit.width).toBeGreaterThanOrEqual(44);
+    expect(boxes.hit.height).toBeGreaterThanOrEqual(44);
+    expect(Math.abs(boxes.hit.cx - boxes.track.cx)).toBeLessThan(0.5);
+    expect(Math.abs(boxes.hit.cy - boxes.track.cy)).toBeLessThan(0.5);
+    // Nothing visible changes: the track keeps its size and the input stays
+    // invisible.
+    expect(boxes.track).toMatchObject({
+      width: TRACK.width,
+      height: TRACK.height,
+    });
+    expect(boxes.opacity).toBe('0');
+    // A tap 18 px above the thumb's center, outside the 24 px track but
+    // inside the hit area, toggles the switch.
+    await tapForClick(driver, {x: center.x, y: center.y - 18});
+    await expect(input).toBeChecked();
   });
 
   test('the touch press is a layer on the track, absent at rest, released on UIButton’s clock and curve on the compositor', async ({
@@ -816,7 +872,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     ).toBe('');
   });
 
-  test('P3 · a drag flips once the finger is 26/63 of the track past where it landed, and the release commits it', async ({
+  test('P3 · a drag flips once the finger is the track minus the thumb past where it landed, and the release commits it', async ({
     page,
   }) => {
     const {driver, input, onLayer, center} = await openSwitch(page);
@@ -919,7 +975,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     await driver.play(script);
     await waitForSwitchRest(page, thumb);
     await expect(input).not.toBeChecked();
-    expect(await thumbOffset(page)).toBeCloseTo(INSET, 0);
+    expect(await thumbOffset(page)).toBeCloseTo(0, 0);
   });
 
   test('P5 · a drag shorter than the flip distance toggles at the release, like a tap', async ({
@@ -1089,7 +1145,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     await driver.play(
       drag(
         center,
-        {x: center.x - FLIP_DISTANCE - 6, y: center.y},
+        {x: center.x - FLIP_FROM_ON - 6, y: center.y},
         {durationMs: 400, holdMs: 200, restMs: 150},
       ),
     );
@@ -1234,7 +1290,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     await expect(input).toBeChecked();
     expectCrossFade(samples);
     // It lands at the on end, not a travel past it (iOS 26.2 simulator).
-    expect(await thumbOffset(page)).toBeCloseTo(INSET + TRAVEL_PX, 0);
+    expect(await thumbOffset(page)).toBeCloseTo(TRAVEL_PX, 0);
   });
 
   test('P12 · with Reduce Motion a programmatic change cross-fades too (design:reduced-motion DR2)', async ({
@@ -1246,7 +1302,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
       await page.getByRole('button', {name: 'Turn on remotely'}).click();
     });
     expectCrossFade(samples);
-    expect(await thumbOffset(page)).toBeCloseTo(INSET + TRAVEL_PX, 0);
+    expect(await thumbOffset(page)).toBeCloseTo(TRAVEL_PX, 0);
   });
 
   test('P12 · with Reduce Motion a drag still moves the thumb under the finger, unlifted (direct manipulation)', async ({
@@ -1287,14 +1343,11 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     expect(await input.evaluate(el => getComputedStyle(el).direction)).toBe(
       'rtl',
     );
-    expect(await thumbOffset(page)).toBeCloseTo(
-      TRACK.width - THUMB_WIDTH - INSET,
-      0,
-    );
+    expect(await thumbOffset(page)).toBeCloseTo(TRAVEL_PX, 0);
     await driver.play(tap(center, {holdMs: 50}));
     await expect(input).toBeChecked();
     await waitForSwitchRest(page, thumb);
-    expect(await thumbOffset(page)).toBeCloseTo(INSET, 0);
+    expect(await thumbOffset(page)).toBeCloseTo(0, 0);
     expect((await presented(page)).on).toBeCloseTo(1, 2);
   });
 
@@ -1407,7 +1460,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     }
     await waitForSwitchRest(page, thumb);
     await expect(input).not.toBeChecked();
-    expect(await thumbOffset(page)).toBeCloseTo(INSET, 0);
+    expect(await thumbOffset(page)).toBeCloseTo(0, 0);
     const xs = await page.evaluate(
       () => (window as unknown as {__thumbXs: number[]}).__thumbXs,
     );
@@ -1864,9 +1917,9 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
       await thawTimers(page);
       await storyboard.write(testInfo);
       const offsets = storyboard.frames.map(f => f.data.offset as number);
-      expect(offsets.at(-1)).toBeCloseTo(INSET + TRAVEL_PX, 0);
+      expect(offsets.at(-1)).toBeCloseTo(TRAVEL_PX, 0);
       // Critically damped travel: never past the on end.
-      expect(Math.max(...offsets)).toBeLessThanOrEqual(INSET + TRAVEL_PX + 0.1);
+      expect(Math.max(...offsets)).toBeLessThanOrEqual(TRAVEL_PX + 0.1);
     },
   );
 

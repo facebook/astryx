@@ -108,36 +108,33 @@ const trackSizeStyles = stylex.create({
   sm: {
     width: 32,
     height: 20,
-    // Container units resolve against the content box: no padding.
-    padding: {default: 2, [TOUCH]: 0},
+    padding: 2,
   },
   md: {
     width: 40,
     height: 24,
-    padding: {default: 4, [TOUCH]: 0},
+    padding: 4,
   },
 });
 
-// Under a finger the thumb is UISwitch's height in the track's container
-// units (24 of 28, motion/uikit/switch.ts) and its width follows its aspect
-// ratio: by default UISwitch's width in proportion to the track (37 of 63,
-// which is 185/162 of its height in the md track and 148/135 in the sm),
-// a pill. The `switch-thumb` target's `aspect-ratio` reshapes it (1 draws a
-// circle); useSwitchTouch measures the box it renders and moves it.
+// The thumb is one circle under any pointer, at each state's size (Switch
+// FR4). Under a finger it rests by insets instead of a transform, centered in
+// the track's height at each end, so the compositor moves and lifts it with
+// translate and scale alone (useSwitchTouch measures the box it renders).
 const thumbOffSizeStyles = stylex.create({
   sm: {
-    width: {default: 14, [TOUCH]: 'auto'},
-    height: {default: 14, [TOUCH]: '85.7143cqh'},
-    aspectRatio: {default: null, [TOUCH]: '148 / 135'},
+    width: 14,
+    height: 14,
+    insetInlineStart: {default: null, [TOUCH]: 3},
     transform: {
       default: 'translateX(0)',
       [TOUCH]: 'none',
     },
   },
   md: {
-    width: {default: 16, [TOUCH]: 'auto'},
-    height: {default: 16, [TOUCH]: '85.7143cqh'},
-    aspectRatio: {default: null, [TOUCH]: '185 / 162'},
+    width: 16,
+    height: 16,
+    insetInlineStart: {default: null, [TOUCH]: 4},
     transform: {
       default: 'translateX(0)',
       [TOUCH]: 'none',
@@ -147,9 +144,10 @@ const thumbOffSizeStyles = stylex.create({
 
 const thumbOnSizeStyles = stylex.create({
   sm: {
-    width: {default: 16, [TOUCH]: 'auto'},
-    height: {default: 16, [TOUCH]: '85.7143cqh'},
-    aspectRatio: {default: null, [TOUCH]: '148 / 135'},
+    width: 16,
+    height: 16,
+    insetInlineStart: {default: null, [TOUCH]: 'auto'},
+    insetInlineEnd: {default: null, [TOUCH]: 2},
     // The thumb rests at the inline-start edge (flex-start, which flexbox
     // already mirrors under RTL). The on-state travel toward the inline-end
     // edge is a physical translateX, so it must flip sign under RTL — right
@@ -165,9 +163,10 @@ const thumbOnSizeStyles = stylex.create({
     },
   },
   md: {
-    width: {default: 20, [TOUCH]: 'auto'},
-    height: {default: 20, [TOUCH]: '85.7143cqh'},
-    aspectRatio: {default: null, [TOUCH]: '185 / 162'},
+    width: 20,
+    height: 20,
+    insetInlineStart: {default: null, [TOUCH]: 'auto'},
+    insetInlineEnd: {default: null, [TOUCH]: 2},
     transform: {
       default: 'translateX(14px)',
       ':is([dir="rtl"] *)': {
@@ -251,10 +250,12 @@ const styles = stylex.create({
     },
     zIndex: 1,
   },
+  // Under a coarse pointer the invisible input, centered on the track, is the
+  // 44 × 44 px hit area a finger needs (Switch FR4); nothing visible grows.
   inputCoarse: {
     '@media (pointer: coarse)': {
-      minInlineSize: 24,
-      minBlockSize: 24,
+      minInlineSize: 44,
+      minBlockSize: 44,
     },
   },
   inputDisabled: {
@@ -267,10 +268,8 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     // Under a finger the press layer (::before), the colour fade (::after)
-    // and the thumb sit in the track, the thumb sized in its container units,
-    // stacked in a context of the track's own.
+    // and the thumb sit in the track, stacked in a context of the track's own.
     position: {default: null, [TOUCH]: 'relative'},
-    containerType: {default: null, [TOUCH]: 'size'},
     isolation: {default: null, [TOUCH]: 'isolate'},
     borderRadius: radiusVars['--radius-full'],
     transitionProperty: 'background-color',
@@ -482,12 +481,13 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radiusVars['--radius-full'],
-    // Under a finger it sits in the track at UISwitch's inset, above the
+    // Under a finger it sits in the track, centered in its height, above the
     // track's colour fade (::after) and press layer (::before), and
     // useSwitchTouch moves and lifts it on the compositor: nothing of its
     // own transitions.
     position: {default: null, [TOUCH]: 'absolute'},
-    top: {default: null, [TOUCH]: '7.1429cqh'},
+    insetBlock: {default: null, [TOUCH]: 0},
+    marginBlock: {default: null, [TOUCH]: 'auto'},
     zIndex: {default: null, [TOUCH]: 2},
     pointerEvents: {default: null, [TOUCH]: 'none'},
     transitionProperty: {
@@ -627,37 +627,17 @@ const styles = stylex.create({
   // over it fades the outgoing fill out on the compositor. The thumb is a
   // constant-size capsule in a box that useSwitchTouch moves and lifts on the
   // compositor (translate / scale / opacity only), as UISwitch's (iOS 26.2).
-  // Its geometry is UIKit's (a 37 × 24 thumb in a 63 × 28 track) in
-  // proportion to the track, in container units so it follows the track's
-  // box. Where a touch value shares a property with the mouse (the track's
-  // padding and fade; the thumb's size, travel and transition) it is a nested
-  // condition of that property above; the parts below exist only under a
-  // finger.
+  // The thumb is the circle a mouse sees, at each state's size, resting at
+  // its inset from its own end (the size styles above). Where a touch value
+  // shares a property with the mouse (the fade; the thumb's place, travel and
+  // transition) it is a nested condition of that property above; the parts
+  // below exist only under a finger.
   // ---------------------------------------------------------------------
   // The fade layer: over the track's own fill (themed in both states), it
   // shows the fill the track is leaving (or, mid-drag, the one it is heading
   // to) and fades it on the compositor. Its colour is the theme's, read from
   // the track (switchFill.ts) and set inline; at rest it is clear. The
   // animator owns its opacity, so it has no transition of its own.
-  // The thumb's resting place under a finger: the inset from its own end
-  // (inline-start off, inline-end on), so the steady state needs no script,
-  // holds for any thumb width, and mirrors under RTL by itself.
-  thumbPlaceOff: {
-    insetInlineStart: {
-      default: null,
-      [TOUCH]: '7.1429cqh',
-    },
-  },
-  thumbPlaceOn: {
-    insetInlineStart: {
-      default: null,
-      [TOUCH]: 'auto',
-    },
-    insetInlineEnd: {
-      default: null,
-      [TOUCH]: '7.1429cqh',
-    },
-  },
   labelWrapper: {
     display: 'flex',
     flexDirection: 'column',
@@ -1029,7 +1009,6 @@ export function Switch({
               styles.thumb,
               isOn ? thumbOnSizeStyles[size] : thumbOffSizeStyles[size],
               isOn ? styles.thumbOn : styles.thumbOff,
-              isOn ? styles.thumbPlaceOn : styles.thumbPlaceOff,
             ),
           )}>
           {isBusy && <Spinner size="sm" />}

@@ -201,11 +201,6 @@ export const docs = {
         className: 'astryx-switch-thumb',
         visualProps: ['size'],
         states: ['checked'],
-        // Under a coarse pointer, `aspectRatio` sets the touch thumb's width
-        // from its height (the default is a pill; `1` draws a circle), and the
-        // lift and rubber band follow the box it renders. A mouse keeps its
-        // thumb. A target-specific addition outside the shared catalog.
-        guaranteedProperties: ['aspectRatio'],
       },
       {
         className: 'astryx-switch-field',
@@ -228,7 +223,7 @@ export const docs = {
     ],
     anatomy,
     description:
-      'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead. Under a finger it moves like the iOS switch on every touch screen: a press lifts the thumb, a drag across flips it, lifting the finger commits, and a tap toggles through the browser’s click. Under a finger the thumb is a pill; a theme reshapes it with `aspect-ratio` on the `switch-thumb` target (`1` draws a circle). With reduced motion on, a change cross-fades on a touch screen and is immediate with a mouse.',
+      'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead. Under a finger it moves like the iOS switch on every touch screen: a press lifts the thumb, a drag across flips it, lifting the finger commits, and a tap toggles through the browser’s click. The thumb keeps its circle and size on every device, and under a coarse pointer the invisible hit area is at least 44 × 44 px. With reduced motion on, a change cross-fades on a touch screen and is immediate with a mouse.',
     bestPractices: [
       {
         guidance: true,
@@ -390,7 +385,6 @@ export const docsZh = {
         className: 'astryx-switch-thumb',
         visualProps: ['size'],
         states: ['checked'],
-        guaranteedProperties: ['aspectRatio'],
       },
       {
         className: 'astryx-switch-field',
@@ -401,7 +395,7 @@ export const docsZh = {
   },
   usage: {
     description:
-      'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead. Under a finger it moves like the iOS switch on every touch screen: a press lifts the thumb, a drag across flips it, lifting the finger commits, and a tap toggles through the browser’s click. Under a finger the thumb is a pill; a theme reshapes it with `aspect-ratio` on the `switch-thumb` target (`1` draws a circle). With reduced motion on, a change cross-fades on a touch screen and is immediate with a mouse.',
+      'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead. Under a finger it moves like the iOS switch on every touch screen: a press lifts the thumb, a drag across flips it, lifting the finger commits, and a tap toggles through the browser’s click. The thumb keeps its circle and size on every device, and under a coarse pointer the invisible hit area is at least 44 × 44 px. With reduced motion on, a change cross-fades on a touch screen and is immediate with a mouse.',
     bestPractices: [
       {
         guidance: true,
@@ -437,7 +431,7 @@ export const docsDense = {
   description: 'Toggle switch for boolean values w/ integrated label support.',
   usage: {
     description:
-      'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead. Under a finger it moves like the iOS switch on every touch screen: a press lifts the thumb, a drag across flips it, lifting the finger commits, and a tap toggles through the browser’s click. Under a finger the thumb is a pill; a theme reshapes it with `aspect-ratio` on the `switch-thumb` target (`1` draws a circle). With reduced motion on, a change cross-fades on a touch screen and is immediate with a mouse.',
+      'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead. Under a finger it moves like the iOS switch on every touch screen: a press lifts the thumb, a drag across flips it, lifting the finger commits, and a tap toggles through the browser’s click. The thumb keeps its circle and size on every device, and under a coarse pointer the invisible hit area is at least 44 × 44 px. With reduced motion on, a change cross-fades on a touch screen and is immediate with a mouse.',
     bestPractices: [
       {
         guidance: true,

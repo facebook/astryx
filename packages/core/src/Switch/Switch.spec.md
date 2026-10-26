@@ -39,9 +39,9 @@ behavior, styling and targets of FR1–FR3.
 
 - Released default preserved: `yes`
 - Compatibility class: additive; a touch presentation adds the finger
-  behavior (FR4–FR6) and the `switch-thumb` target's guaranteed
-  `aspectRatio` (FR4); mouse, keyboard and assistive-technology behavior,
-  the DOM, and the public props remain unchanged
+  behavior (FR4–FR6), with a 44 × 44 px hit area under a coarse pointer
+  (FR4); mouse, keyboard and assistive-technology behavior, the thumb's
+  shape and size, the DOM, and the public props remain unchanged
 - Controlled/uncontrolled behavior: unchanged; Switch remains controlled
 - Migration decision: none
 
@@ -64,8 +64,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 ## Public concepts
 
 Switch has no public concept beyond the props, states, and usage documented in
-`Switch.doc.mjs`. The `switch-thumb` target's guaranteed `aspectRatio` (FR4) is
-a theming capability of an existing target.
+`Switch.doc.mjs`.
 
 ## Behavioral and layout contract
 
@@ -74,7 +73,7 @@ a theming capability of an existing target.
 | FR1 | Switch renders a thumb inside the switch track and arranges that control with its label.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Current source, docs, and focused tests       | Verified current behavior; no new behavior decided |
 | FR2 | The field, track, thumb, and label carry their existing local targets.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Current source, public docs, and tests        | Verified current behavior; no target change        |
 | FR3 | A busy switch renders Spinner inside the thumb; a status message renders through detached FieldStatus.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Current source, docs, and focused tests       | Verified conditional composition                   |
-| FR4 | Where the primary pointer is coarse, the `switch-thumb` target guarantees `aspect-ratio`: it sets the touch thumb's width from its height. The default is a pill (UISwitch's thumb width in proportion to the track); `1` draws a circle. The thumb's lift and its rubber band derive from the box it renders. A mouse keeps the non-touch thumb.                                                                                                                                                                                                                                                                                                                                                                                                                              | Owner direction, 2026-10-25                   | Proposed; pending owner review                     |
+| FR4 | The thumb is one circle under any pointer, at each state's size: a touch presentation moves and lifts it and never reshapes it. Where the primary pointer is coarse, the switch's hit area is at least 44 × 44 px, centered on the track, with nothing visible added. The thumb's lift and its rubber band derive from the box it renders.                                                                                                                                                                                                                                                                                                                                                                                                                                     | Owner direction, 2026-10-26                   | Proposed; pending owner review                     |
 | FR5 | Under a finger the thumb, lifted or banded past either end, paints inside the track, in either writing direction.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Owner direction, 2026-10-25                   | Proposed; pending owner review                     |
 | FR6 | Under a finger the switch matches UISwitch (iOS 26.2), a stated departure from `spec:AST-094` FR11: a tap, a hold of any length or a short drag toggles it at the lift (a tap through the browser's click; where the browser sends no click for the lift, as for a hold, the switch clicks its input itself); a press slid off and lifted outside without a flip toggles it too (`spec:AST-020` FR9/DEC-5, the reversible-toggle exception); and a drag commits the side the finger flipped it to, which it shows once the finger is the track width less the thumb width from where it landed, toward the other end, and leaves again once the finger comes back past that point, wherever the finger lifts (measured in `motion/uikit/switch.ts`: `travel`, `flipDistance`). | `spec:AST-094` FR11; `spec:AST-020` FR9/DEC-5 | Proposed; pending owner review                     |
 
@@ -205,9 +204,10 @@ gap.
 
 ## Decision log
 
-FR4 and FR5 rest on owner direction of 2026-10-25: under a finger the thumb is
-a pill by default, and a theme reshapes it through the `switch-thumb` target's
-`aspectRatio`. No other component-local design or API decision is recorded.
+FR4 rests on owner direction of 2026-10-26: the thumb keeps its circle and its
+size on every device, and a coarse pointer gets a 44 × 44 px hit area with
+nothing visible added. FR5 rests on owner direction of 2026-10-25. No other
+component-local design or API decision is recorded.
 
 ## Open questions
 

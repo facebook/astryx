@@ -41,7 +41,6 @@ import {
 import {button as uikitButton} from '../motion/uikit/button';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
-import {defineTheme, generateThemeRules} from '../theme';
 import {docs as switchDocs} from './Switch.doc.mjs';
 
 afterEach(() => {
@@ -1233,25 +1232,6 @@ describe('touch listeners (spec:AST-094 FR24)', () => {
     expect(touchListenersWhileRendering(true)).toBe(baseline);
     // Busy stays attached, so the change that made it busy keeps its motion.
     expect(touchListenersWhileRendering('busy')).toBeGreaterThan(baseline);
-  });
-});
-
-describe('switch-thumb guaranteed properties', () => {
-  it('declares aspectRatio, and a theme value compiles onto the thumb target', () => {
-    // Typed locally: the authoring type gains the field in this change.
-    const thumb = switchDocs.theming?.targets?.find(
-      target => target.className === 'astryx-switch-thumb',
-    ) as {guaranteedProperties?: string[]} | undefined;
-    expect(thumb?.guaranteedProperties).toEqual(['aspectRatio']);
-    const rules = generateThemeRules(
-      defineTheme({
-        name: 'circle-thumb',
-        components: {'switch-thumb': {base: {aspectRatio: '1'}}},
-      }),
-    );
-    const rule = rules.find(r => r.includes('.astryx-switch-thumb'));
-    expect(rule).toBeDefined();
-    expect(rule).toMatch(/aspect-ratio:\s*1\b/);
   });
 });
 
