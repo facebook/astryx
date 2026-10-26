@@ -1421,7 +1421,11 @@ describe('one pointer per drag', () => {
     // replacing the control node while the drag holds it. The browser then
     // fires lostpointercapture at the document, not at the removed node.
     const onChangeEnd = vi.fn();
-    function InLayout({direction}: {direction: 'vertical' | 'horizontal'}) {
+    function InLayout({
+      direction,
+    }: {
+      direction: 'vertical' | 'horizontal-labels';
+    }) {
       return (
         <FormLayout direction={direction}>
           <ControlledSlider id="Volume" onChangeEnd={onChangeEnd} />
@@ -1432,7 +1436,7 @@ describe('one pointer per drag', () => {
     const before = trackOf(screen.getByRole('slider'));
     fireEvent.pointerDown(before, {clientX: 136, clientY: 10, pointerId: 1});
 
-    rerender(<InLayout direction="horizontal" />);
+    rerender(<InLayout direction="horizontal-labels" />);
     fireEvent.lostPointerCapture(document, {pointerId: 1});
     expect(onChangeEnd).toHaveBeenCalledOnce();
 
@@ -1441,6 +1445,31 @@ describe('one pointer per drag', () => {
     const after = trackOf(thumb);
     fireEvent.pointerDown(after, {clientX: 28, clientY: 10, pointerId: 3});
     expect(thumb).toHaveAttribute('aria-valuenow', '10');
+  });
+
+  it('holds a document listener only while a drag is in progress', () => {
+    const add = vi.spyOn(document, 'addEventListener');
+    const remove = vi.spyOn(document, 'removeEventListener');
+    const lostCapture = (spy: typeof add) =>
+      spy.mock.calls.filter(([type]) => type === 'lostpointercapture');
+    const {unmount} = render(<ControlledSlider id="Volume" />);
+    const track = trackOf(screen.getByRole('slider'));
+    // Idle: no document listener.
+    expect(lostCapture(add)).toHaveLength(0);
+
+    fireEvent.pointerDown(track, {clientX: 136, clientY: 10, pointerId: 1});
+    expect(lostCapture(add)).toHaveLength(1);
+    const listener = lostCapture(add)[0][1];
+    fireEvent.pointerUp(track, {clientX: 136, clientY: 10, pointerId: 1});
+    expect(lostCapture(remove).map(([, fn]) => fn)).toEqual([listener]);
+
+    // A slider unmounted mid-drag removes its listener too.
+    fireEvent.pointerDown(track, {clientX: 28, clientY: 10, pointerId: 2});
+    const second = lostCapture(add)[1][1];
+    unmount();
+    expect(lostCapture(remove).map(([, fn]) => fn)).toEqual([listener, second]);
+    add.mockRestore();
+    remove.mockRestore();
   });
 
   it('lets two fingers drag two sliders at once', () => {

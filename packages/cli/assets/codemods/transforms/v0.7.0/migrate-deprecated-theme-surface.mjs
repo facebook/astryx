@@ -27,6 +27,12 @@ import {
   importedComponents,
   resolveImportedComponent,
 } from '../../transform-prop.mjs';
+import {
+  isCodemodParseError,
+  markParseError,
+  parseCss,
+  processSelector,
+} from '../../parse.mjs';
 import {migrateAstryxThemeSelectors} from '../v0.6.0/migrate-astryx-theme-selectors-to-data-attrs.mjs';
 import {
   V06_THEME_SELECTOR_DYNAMIC_AXES,
@@ -204,7 +210,7 @@ function ownerScope(owner) {
 function unclassifiedBareClasses(selectorText) {
   /** @type {Set<string>} */
   const found = new Set();
-  selectorParser(selectors => {
+  processSelector(selectorText, selectors => {
     selectors.walk((/** @type {any} */ node) => {
       if (node.type !== 'selector') return;
       /** @type {any[][]} */
@@ -232,19 +238,23 @@ function unclassifiedBareClasses(selectorText) {
         }
       }
     });
-  }).processSync(selectorText, {lossless: true});
+  });
   return [...found].sort();
 }
 
-/** @param {string} selector */
+/** @param {string | import('postcss').Rule} selector selector text, or the rule that holds it */
 function finishSelectorText(selector) {
-  return selectorParser(selectors => {
+  return processSelector(selector, selectors => {
     selectors.each(finishSelectorMigration);
-  }).processSync(selector, {lossless: true});
+  });
 }
 
-/** @param {string} params */
-function finishScopeParams(params) {
+/**
+ * Migrate each parenthesized selector group of an `@scope` prelude.
+ * @param {string} params
+ * @param {(selector: string, start: number) => string} [finish] migrates one group; `start` is its offset in `params`
+ */
+function finishScopeParams(params, finish = finishSelectorText) {
   let result = '';
   let last = 0;
   let depth = 0;
@@ -281,7 +291,7 @@ function finishScopeParams(params) {
     if (char === ')' && depth > 0) {
       depth--;
       if (depth === 0 && groupStart >= 0) {
-        result += finishSelectorText(params.slice(groupStart, index));
+        result += finish(params.slice(groupStart, index), groupStart);
         result += ')';
         last = index + 1;
         groupStart = -1;
@@ -293,15 +303,39 @@ function finishScopeParams(params) {
 
 /** @param {string} source @param {string} from */
 function migrateCss(source, from) {
+  // Parse every selector of the stylesheet as written first, so one the
+  // selector parser rejects is reported at its line and column in the file,
+  // not in the migrated text below.
+  const original = parseCss(source, {from});
+  original.walkRules(rule => {
+    processSelector(rule, () => {});
+  });
+  original.walkAtRules('scope', atRule => {
+    const offset =
+      `@${atRule.name}`.length + (atRule.raws.afterName ?? '').length;
+    finishScopeParams(atRule.params, (selector, start) => {
+      try {
+        processSelector(selector, () => {});
+      } catch (err) {
+        if (!isCodemodParseError(err)) throw err;
+        throw markParseError(
+          atRule.error(/** @type {Error} */ (err).message, {
+            index: offset + start,
+          }),
+        );
+      }
+      return selector;
+    });
+  });
   const migrated = migrateAstryxThemeSelectors(source, from, SELECTOR_DATA);
-  const root = postcss.parse(migrated, {from});
+  const root = parseCss(migrated, {from});
   /** @type {Set<string>} */
   const existingComments = new Set();
   root.walkComments(comment => {
     existingComments.add(comment.text.trim());
   });
   root.walkRules(rule => {
-    rule.selector = finishSelectorText(rule.selector);
+    rule.selector = finishSelectorText(rule);
     const tokens = unclassifiedBareClasses(rule.selector);
     if (tokens.length === 0) return;
     const list = tokens.map(token => `.${token}`).join(', ');
