@@ -21,11 +21,12 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 // The press dim plays for real; the spy records which fades were asked for.
 vi.mock('../utils/pressDim', async importOriginal => {
-  const actual = await importOriginal<typeof import('../utils/pressDim')>();
+  const actual = await importOriginal<typeof PressDimModule>();
   return {...actual, fadePressDim: vi.fn(actual.fadePressDim)};
 });
 import {animatorFor, createAnimator, type Animator} from '../motion/animator';
 import {fadePressDim} from '../utils/pressDim';
+import type * as PressDimModule from '../utils/pressDim';
 import {solveSpring, toSpring} from '../motion/spring';
 import {segmentedControl, springs} from '../motion/uikit';
 import {measureSegments, segmentTargetAt} from './useSegmentedTouchTracking';
