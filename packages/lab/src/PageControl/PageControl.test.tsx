@@ -89,6 +89,44 @@ function tap(target: Element, x: number) {
 }
 
 /**
+ * A finger's swipe on `target` from `from` to `to` through the gesture host's
+ * touch path, in `steps` moves. Returns whether any move was cancelled: a
+ * cancelled move is one the page cannot scroll with.
+ */
+function swipe(
+  target: Element,
+  from: {x: number; y: number},
+  to: {x: number; y: number},
+  steps = 10,
+): boolean {
+  let cancelled = false;
+  const send = (
+    type: 'touchstart' | 'touchmove' | 'touchend',
+    point: {x: number; y: number},
+  ) => {
+    const event = new Event(type, {bubbles: true, cancelable: true});
+    const contact = {identifier: 1, clientX: point.x, clientY: point.y, target};
+    Object.defineProperty(event, 'changedTouches', {value: [contact]});
+    Object.defineProperty(event, 'touches', {
+      value: type === 'touchend' ? [] : [contact],
+    });
+    target.dispatchEvent(event);
+    if (type === 'touchmove' && event.defaultPrevented) {
+      cancelled = true;
+    }
+  };
+  send('touchstart', from);
+  for (let i = 1; i <= steps; i++) {
+    send('touchmove', {
+      x: from.x + ((to.x - from.x) * i) / steps,
+      y: from.y + ((to.y - from.y) * i) / steps,
+    });
+  }
+  send('touchend', to);
+  return cancelled;
+}
+
+/**
  * A mouse's click at `x` (a fine primary pointer: the gesture host listens to
  * nothing there, spec:AST-094 FR19, FR24), pressed at `fromX`.
  */
@@ -302,6 +340,17 @@ describe('PageControl', () => {
     expect(onChange).not.toHaveBeenCalled();
     click(screen.getByRole('slider'), 44, 0);
     expect(onChange).toHaveBeenCalledWith(3);
+  });
+
+  // spec:AST-094 FR19: a recognizer that competes with the page's scroll
+  // decides within 10 px, so a swipe that starts vertical is the page's.
+  it("under a finger, a vertical swipe that starts on the dots pages nothing and leaves every move to the page's scroll", () => {
+    asTouch();
+    const {onChange} = renderControl();
+    const slider = screen.getByRole('slider');
+    const cancelled = swipe(slider, {x: 50, y: 10}, {x: 52, y: -290}, 30);
+    expect(cancelled).toBe(false);
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it('under a finger, the click the browser sends after a tap does not page again', () => {

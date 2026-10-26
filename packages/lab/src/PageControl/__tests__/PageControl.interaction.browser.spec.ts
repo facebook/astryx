@@ -270,12 +270,13 @@ test('a held finger shows the platter, the pressed overlay, and dims the other i
   }> = [];
   const read = async (t: number) => {
     const state = await slider.evaluate(el => {
-      const platter = el.firstElementChild as HTMLElement;
+      // The platter is the root's ::before (no element of its own).
+      const platter = getComputedStyle(el, '::before');
       const other = el.querySelector('[data-page="0"]') as HTMLElement;
       const touched = el.querySelector('[data-page="3"]') as HTMLElement;
       return {
         interacting: el.hasAttribute('data-interacting'),
-        platter: Number(getComputedStyle(platter).opacity),
+        platter: Number(platter.opacity),
         other: Number(other.style.opacity),
         touchedScale: getComputedStyle(touched).scale,
       };
@@ -307,8 +308,7 @@ test('a held finger shows the platter, the pressed overlay, and dims the other i
     const expected = getComputedStyle(probe).backgroundColor;
     probe.remove();
     return {
-      platter: getComputedStyle(el.firstElementChild as HTMLElement)
-        .backgroundColor,
+      platter: getComputedStyle(el, '::before').backgroundColor,
       expected,
     };
   });
@@ -367,13 +367,13 @@ test('a windowed control slides one slot 50 ms after the change, on a critically
   // 25) is in its last full slot.
   const translateX = () =>
     slider.evaluate(el => {
-      const strip = el.children[1] as HTMLElement;
+      const strip = el.children[0] as HTMLElement;
       return Number.parseFloat(getComputedStyle(strip).translate) || 0;
     });
   expect(await translateX()).toBeCloseTo(-18 * PITCH, 0);
   const current = await indicatorCenter(slider, 25);
   await slider.evaluate(el => {
-    const strip = el.children[1] as HTMLElement;
+    const strip = el.children[0] as HTMLElement;
     const trace: Array<{t: number; x: number; page: number}> = [];
     (window as unknown as {slide: typeof trace}).slide = trace;
     const start = performance.now();
@@ -438,7 +438,7 @@ test('RTL: a scrub toward the left goes forward and the window slides the other 
   const stripX = () =>
     slider.evaluate(el =>
       Number.parseFloat(
-        getComputedStyle(el.children[1] as HTMLElement).translate,
+        getComputedStyle(el.children[0] as HTMLElement).translate,
       ),
     );
   // Page 26: the window starts at page 18, shifted toward the right in RTL.
@@ -490,7 +490,7 @@ test('under Reduce Motion nothing slides or scales, and no fade runs over 200 ms
   const stripX = () =>
     slider.evaluate(el =>
       Number.parseFloat(
-        getComputedStyle(el.children[1] as HTMLElement).translate,
+        getComputedStyle(el.children[0] as HTMLElement).translate,
       ),
     );
   const longestFade = () =>
@@ -538,7 +538,7 @@ test('under Reduce Motion nothing slides or scales, and no fade runs over 200 ms
   );
   const platterFade = await slider.evaluate(el =>
     Math.max(
-      ...getComputedStyle(el.children[0] as HTMLElement)
+      ...getComputedStyle(el, '::before')
         .transitionDuration.split(',')
         .map(d =>
           d.trim().endsWith('ms') ? parseFloat(d) : parseFloat(d) * 1000,
@@ -563,14 +563,14 @@ test('busy main thread: a window slide finishes on time through a 600 ms block',
   await expect
     .poll(async () =>
       slider.evaluate(
-        el => (el.children[1] as HTMLElement).getAnimations().length,
+        el => (el.children[0] as HTMLElement).getAnimations().length,
       ),
     )
     .toBeGreaterThan(0);
   // Block the main thread right after the slide starts, for longer than the
   // slide lasts.
   const afterBlock = await slider.evaluate(el => {
-    const strip = el.children[1] as HTMLElement;
+    const strip = el.children[0] as HTMLElement;
     const end = performance.now() + 600;
     while (performance.now() < end) {
       // busy
@@ -655,9 +655,54 @@ test.describe('with a mouse', () => {
 
 test('the page can scroll under the control (touch-action)', async ({page}) => {
   const {slider} = await open(page);
+  // The scrub's horizontal pan keeps the vertical axis for the page.
   expect(await slider.evaluate(el => getComputedStyle(el).touchAction)).toBe(
-    'manipulation',
+    'pan-y pinch-zoom',
   );
+});
+
+// spec:AST-094 FR19: a recognizer that competes with the page's scroll
+// decides within 10 px, so a swipe that starts vertical on the dots is the
+// page's: it scrolls, and the page indicator does not change.
+test("a vertical swipe that starts on the dots pages nothing and leaves every move to the page's scroll", async ({
+  page,
+  browserName,
+}) => {
+  const {slider, driver} = await open(page);
+  // Room to scroll, the control well inside the viewport, and whether each
+  // move reached the page cancelled (read after every listener).
+  await page.evaluate(() => {
+    const above = document.createElement('div');
+    above.style.height = '420px';
+    document.body.insertBefore(above, document.body.firstChild);
+    const below = document.createElement('div');
+    below.style.height = '3000px';
+    document.body.appendChild(below);
+    window.scrollTo(0, 0);
+    const log = window as unknown as {cancelledMoves: boolean[]};
+    log.cancelledMoves = [];
+    addEventListener(
+      'touchmove',
+      event => log.cancelledMoves.push(event.defaultPrevented),
+      {passive: true},
+    );
+  });
+  const pageBefore = await slider.getAttribute('aria-valuenow');
+  const from = await indicatorCenter(slider, 3);
+  await driver.play(
+    drag(from, {x: from.x + 2, y: from.y - 300}, {durationMs: 500, hz: 60}),
+  );
+  await page.waitForTimeout(400);
+  expect(await slider.getAttribute('aria-valuenow')).toBe(pageBefore);
+  const cancelled = await page.evaluate(
+    () => (window as unknown as {cancelledMoves: boolean[]}).cancelledMoves,
+  );
+  expect(cancelled.length).toBeGreaterThan(5);
+  expect(cancelled.some(Boolean)).toBe(false);
+  if (browserName === 'chromium') {
+    // Injected touches scroll natively only in Chromium (harness README).
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
+  }
 });
 
 /**
@@ -813,7 +858,7 @@ test('storyboard: the window slides one slot @storyboard', async ({page}) => {
   await expect
     .poll(async () =>
       slider.evaluate(
-        el => (el.children[1] as HTMLElement).getAnimations().length,
+        el => (el.children[0] as HTMLElement).getAnimations().length,
       ),
     )
     .toBeGreaterThan(0);
@@ -829,7 +874,7 @@ test('storyboard: the window slides one slot @storyboard', async ({page}) => {
     measure: async () =>
       slider.evaluate(el => ({
         x: Number.parseFloat(
-          getComputedStyle(el.children[1] as HTMLElement).translate,
+          getComputedStyle(el.children[0] as HTMLElement).translate,
         ),
         grow: Number.parseFloat(
           getComputedStyle(el.querySelector('[data-page="26"]') as HTMLElement)

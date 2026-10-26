@@ -190,16 +190,23 @@ export const pageControl = {
    */
   switchCurve: [0.42, 0, 0.58, 1],
   /**
-   * Past the window's edge while scrubbing, the control steps pages on its
-   * own, faster the further the finger is past the edge of the control's
-   * content: this many pages per second per point.
+   * Past the window's edge while scrubbing toward the last page, the control
+   * steps pages on its own, faster the further the finger is past the edge
+   * of the control's content: this many pages per second per point.
    * @source measured: UIKit lab, iOS 26.2 simulator, iPhone 17 Pro, a
    *   50-page control scrubbed right at 40 pt/s: intervals from 266 ms 19 pt
    *   past the content edge to 66 ms at 76 pt, least squares 0.173 pages/s
-   *   per pt; a run to the left settled at 10 pages/s 77 pt past it
-   *   (2026-10-24)
+   *   per pt (2026-10-24)
    */
   jogRatePerPoint: 0.173,
+  /**
+   * The same toward the first page, where the run is slower.
+   * @source measured: UIKit lab, iOS 26.2 simulator, iPhone 17 Pro, a
+   *   50-page control scrubbed left: the steps settled at 10 pages/s 77 pt
+   *   past the content edge, where the rightward rate gives 13.3
+   *   (2026-10-24)
+   */
+  jogRatePerPointBackward: 0.13,
   /**
    * The fastest the control steps pages past the window's edge, pages per
    * second.

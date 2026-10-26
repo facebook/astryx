@@ -21,6 +21,8 @@ import {useEffect, useLayoutEffect, useRef, type RefObject} from 'react';
 import {isRtlElement} from '@astryxdesign/core/hooks';
 import {
   LongPressGestureRecognizer,
+  PanGestureRecognizer,
+  TapGestureRecognizer,
   useGestureRecognizer,
 } from '@astryxdesign/core/gestures';
 import {animatorFor} from '@astryxdesign/core/motion/animator';
@@ -63,7 +65,6 @@ export interface PageControlTouch {
   readonly isTouch: boolean;
   readonly rootRef: RefObject<HTMLDivElement | null>;
   readonly stripRef: RefObject<HTMLSpanElement | null>;
-  readonly platterRef: RefObject<HTMLSpanElement | null>;
   /** The control's state after each render, for gestures and timers. */
   readonly latestRef: RefObject<Latest>;
   /** The page last asked for and what asked (a tap fades faster). */
@@ -86,7 +87,6 @@ export function usePageControlTouch({
   isTouch,
   rootRef,
   stripRef,
-  platterRef,
   latestRef,
   requestRef,
   request,
@@ -163,8 +163,9 @@ export function usePageControlTouch({
     }
     const beyond = geo.past(g.lastX);
     const direction = Math.sign(beyond);
-    const interval = jogInterval(Math.abs(beyond));
-    if (direction === 0 || !Number.isFinite(interval)) {
+    const interval =
+      direction === 0 ? Infinity : jogInterval(Math.abs(beyond), direction);
+    if (!Number.isFinite(interval)) {
       stopJog();
       return;
     }
@@ -222,72 +223,139 @@ export function usePageControlTouch({
     setInteracting(false);
   };
 
+  // A finger on the control (spec:AST-094 FR19: decided within 10 px, so a
+  // swipe that starts vertical stays the page's scroll):
+  // - a horizontal pan, from 10 px, scrubs once the finger is 16 px from
+  //   where it landed; a drag that starts vertical fails it;
+  // - a finger held still for 155 ms (UIPageControl's interaction delay)
+  //   shows the platter and scrubs the same way from there;
+  // - a tap steps one page.
+  // Whichever begins first holds the touch and fails the others. The scrub's
+  // 16 px count from where the finger landed, as UIKit counts them.
+  const landingX = (
+    recognizer: {trackedTouches: ReadonlyArray<{startX: number}>},
+    fallback: number,
+  ) => recognizer.trackedTouches[0]?.startX ?? fallback;
+  const begin = (startX: number) => {
+    const g = gestureRef.current;
+    g.startX = startX;
+    g.lastX = startX;
+    g.isScrubbing = false;
+  };
+  const track = (x: number) => {
+    const g = gestureRef.current;
+    g.lastX = x;
+    if (
+      !g.isScrubbing &&
+      Math.abs(x - g.startX) >= PC.scrubStartDistance &&
+      latestRef.current.pages > 1
+    ) {
+      g.isScrubbing = true;
+      g.geo = geometry();
+      setInteracting(true);
+    }
+    if (g.isScrubbing) {
+      scrubTo(x);
+    }
+  };
+  // A tap, or a pan or hold that lifts before it scrubs: one page toward the
+  // finger's side of the current indicator.
+  const step = (x: number) => {
+    const geo = geometry();
+    const latest = latestRef.current;
+    if (geo == null || latest.pages < 2) {
+      return;
+    }
+    const slot =
+      latest.current -
+      (pageControlLayout(latest.pages).isWindowed ? latest.windowStart : 0);
+    request(
+      tapTarget(
+        geo.along(x),
+        slot * PITCH,
+        latest.current,
+        latest.pages,
+        false,
+      ),
+      'tap',
+    );
+  };
+  const lift = (x: number) => {
+    if (!gestureRef.current.isScrubbing) {
+      step(x);
+    }
+    finish();
+  };
+
   useGestureRecognizer(
     rootRef,
-    () =>
-      new LongPressGestureRecognizer({
-        minimumPressDuration: 0,
-        allowableMovement: Infinity,
-      }),
-    recognizer => {
-      const g = gestureRef.current;
-      const {x} = recognizer.location();
-      switch (recognizer.state) {
-        case 'began':
-          g.startX = x;
-          g.lastX = x;
-          g.isScrubbing = false;
+    () => new PanGestureRecognizer({direction: 'horizontal'}),
+    pan => {
+      const {x} = pan.location();
+      switch (pan.state) {
+        case 'began': {
+          begin(landingX(pan, x - pan.travelAtBegan.x));
+          const g = gestureRef.current;
           g.interactTimer = setTimeout(() => {
             g.interactTimer = 0;
             setInteracting(true);
           }, PC.interactionDelayMs);
-          break;
-        case 'changed':
-          g.lastX = x;
-          if (
-            !g.isScrubbing &&
-            Math.abs(x - g.startX) >= PC.scrubStartDistance &&
-            latestRef.current.pages > 1
-          ) {
-            g.isScrubbing = true;
-            g.geo = geometry();
-            setInteracting(true);
-          }
-          if (g.isScrubbing) {
-            scrubTo(x);
-          }
-          break;
-        case 'ended': {
-          if (!g.isScrubbing) {
-            const geo = geometry();
-            const latest = latestRef.current;
-            if (geo != null && latest.pages > 1) {
-              const slot =
-                latest.current -
-                (pageControlLayout(latest.pages).isWindowed
-                  ? latest.windowStart
-                  : 0);
-              request(
-                tapTarget(
-                  geo.along(x),
-                  slot * PITCH,
-                  latest.current,
-                  latest.pages,
-                  false,
-                ),
-                'tap',
-              );
-            }
-          }
-          finish();
+          track(x);
           break;
         }
+        case 'changed':
+          track(x);
+          break;
+        case 'ended':
+          lift(x);
+          break;
         case 'cancelled':
         case 'failed':
           finish();
           break;
         default:
           break;
+      }
+    },
+    {isEnabled: isTouch},
+  );
+
+  useGestureRecognizer(
+    rootRef,
+    () =>
+      new LongPressGestureRecognizer({
+        minimumPressDuration: PC.interactionDelayMs,
+      }),
+    hold => {
+      const {x} = hold.location();
+      switch (hold.state) {
+        case 'began':
+          begin(landingX(hold, x));
+          setInteracting(true);
+          break;
+        case 'changed':
+          track(x);
+          break;
+        case 'ended':
+          lift(x);
+          break;
+        case 'cancelled':
+        case 'failed':
+          finish();
+          break;
+        default:
+          break;
+      }
+    },
+    {isEnabled: isTouch},
+  );
+
+  useGestureRecognizer(
+    rootRef,
+    () => new TapGestureRecognizer(),
+    tap => {
+      if (tap.state === 'ended') {
+        step(tap.location().x);
       }
     },
     {isEnabled: isTouch},
@@ -345,7 +413,8 @@ export function usePageControlTouch({
     }
     let resizeTimer: ReturnType<typeof setTimeout> | undefined;
     const timer = setTimeout(() => {
-      // A table spring: the animator plays the theme's value of the role.
+      // The table's measured spring, an internal constant (touch motion
+      // stays internal: no theme role).
       const transition = {spring: PC.windowSlide};
       const stripAnimator = animatorFor(strip);
       stripAnimator.animate({x: offsetFor(windowStart)}, transition);
@@ -432,9 +501,8 @@ export function usePageControlTouch({
     if (reduced == null) {
       return;
     }
-    if (platterRef.current != null) {
-      platterRef.current.style.transition = reduced;
-    }
+    // The platter is the root's ::before: its fade is a custom property.
+    root.style.setProperty('--_page-control-platter-transition', reduced);
     for (const dot of Array.from(
       stripRef.current?.children ?? [],
     ) as HTMLElement[]) {

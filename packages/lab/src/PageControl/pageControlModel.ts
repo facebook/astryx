@@ -213,11 +213,15 @@ export function scrubTarget(
 
 /**
  * Seconds until the next page while a scrubbing finger is `distance` px past
- * the edge of the control's content (Infinity when it is not past it).
+ * the edge of the control's content (Infinity when it is not past it), on a
+ * run toward the last page (`direction` 1) or the first (-1): UIKit's run
+ * toward the first page is slower (spec:AST-094 FR1).
  */
-export function jogInterval(distance: number): number {
+export function jogInterval(distance: number, direction = 1): number {
   if (!(distance > 0)) {
     return Infinity;
   }
-  return 1 / Math.min(PC.jogMaxRate, PC.jogRatePerPoint * distance);
+  const perPoint =
+    direction < 0 ? PC.jogRatePerPointBackward : PC.jogRatePerPoint;
+  return 1 / Math.min(PC.jogMaxRate, perPoint * distance);
 }

@@ -154,4 +154,10 @@ describe('jogInterval', () => {
     expect(jogInterval(76)).toBeCloseTo(0.076, 2);
     expect(jogInterval(110)).toBeCloseTo(1 / 15, 5);
   });
+
+  it('a run toward the first page steps at the measured 10 pages a second 77 pt past the edge, where the run toward the last steps at 13.3 (spec:AST-094 FR1)', () => {
+    expect(1 / jogInterval(77, -1)).toBeCloseTo(10, 0);
+    expect(1 / jogInterval(77, 1)).toBeCloseTo(13.3, 1);
+    expect(jogInterval(150, -1)).toBeCloseTo(1 / 15, 5);
+  });
 });

@@ -169,13 +169,24 @@ const styles = stylex.create({
     overflow: 'hidden',
   },
   // The held look: a held or scrubbing finger's platter paints the system
-  // pressed overlay (design:user-states DR1).
+  // pressed overlay (design:user-states DR1), on the root under
+  // `data-interacting`: no element of its own.
   platter: {
-    position: 'absolute',
-    inset: 0,
-    borderRadius: 9999,
-    backgroundColor: colorVars['--color-overlay-pressed'],
-    pointerEvents: 'none',
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      borderRadius: 9999,
+      backgroundColor: colorVars['--color-overlay-pressed'],
+      pointerEvents: 'none',
+      opacity: 0,
+      transition: 'var(--_page-control-platter-transition, none)',
+    },
+  },
+  platterShown: {
+    '::before': {
+      opacity: 1,
+    },
   },
   strip: {
     position: 'absolute',
@@ -240,7 +251,6 @@ function PageControlRow({
   const t = useTranslator();
   const rootRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLSpanElement>(null);
-  const platterRef = useRef<HTMLSpanElement>(null);
   const pages = Math.max(0, Math.floor(count));
   const current = pages === 0 ? 0 : clampPage(value, pages);
   const layout = pageControlLayout(pages);
@@ -301,7 +311,6 @@ function PageControlRow({
     isTouch,
     rootRef,
     stripRef,
-    platterRef,
     latestRef,
     requestRef,
     request,
@@ -449,12 +458,19 @@ function PageControlRow({
       {...htmlProps}
       ref={mergedRef}
       {...mergeProps(
-        stylex.props(styles.root, !isTouch && styles.cropped, xstyle),
+        stylex.props(
+          styles.root,
+          !isTouch && styles.cropped,
+          isTouch && styles.platter,
+          isTouch && isInteracting && styles.platterShown,
+          xstyle,
+        ),
         className,
         {
           ...style,
           width: layout.width,
           height: PC.height,
+          ['--_page-control-platter-transition' as string]: transition,
         },
       )}
       role="slider"
@@ -472,12 +488,6 @@ function PageControlRow({
       onKeyDown={composeEventHandlers(onKeyDownProp, onKeyDown)}
       onClick={composeEventHandlers(onClickProp, onClick)}
       onPointerDown={composeEventHandlers(onPointerDownProp, onPointerDown)}>
-      <span
-        ref={platterRef}
-        aria-hidden="true"
-        {...stylex.props(styles.platter)}
-        style={{opacity: isInteracting ? 1 : 0, transition}}
-      />
       <span
         ref={stripRef}
         aria-hidden="true"
