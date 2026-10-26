@@ -69,8 +69,8 @@ A component runtime has four distinct roles:
 Component and family contracts continue to own public state semantics, controlled
 and optimistic behavior, focus, announcements, gestures, and other user-facing
 outcomes. This record owns the shared React lifecycle boundary used to fulfill
-those contracts and INV12's caller-visible hook and prop; each adopting component's record
-documents its `animatedLayout` prop.
+those contracts and INV12's caller-visible hook and prop and the glide they produce; each
+adopting component's record documents its `animatedLayout` prop.
 
 ## Boundaries and invariants
 
@@ -174,8 +174,8 @@ documents its `animatedLayout` prop.
   `containerRef` names the area where the walk stops; ScrollableArea does not
   register itself, and an app passes the ref it already gives ScrollableArea,
   which reaches the native scroll viewport. In `@astryxdesign/core`, the module
-  animates the layout shift around any element whose size changes inside an
-  area: a disclosure opening, content loading in, a message appearing, an item
+  animates the layout shift around any change that a component holding the
+  handle reports: a disclosure opening, content loading in, a message appearing, an item
   inserted or removed. It measures the layout before and after the change and
   moves the shifted content with a compositor-only translate from its old
   place to its new one, played through the shared rectangle morph
@@ -185,9 +185,7 @@ documents its `animatedLayout` prop.
   sibling moves by the distance layout moved it, measured before and after.
   The walk visits only the following element siblings at each ancestor level,
   through `parentElement` and `nextElementSibling`, and descends into a subtree
-  only for an element with `display: contents`, which has no box; its cost
-  grows with depth plus following siblings and it needs no TreeWalker, which
-  visits subtrees and text nodes. It stops at the area and never passes it, so
+  only for an element with `display: contents`, which has no box; its cost grows with depth plus following siblings. It stops at the area and never passes it, so
   content outside the area takes its final place at once. The walk only
   collects candidates; an element moves only when its layout rectangle changed
   between the two measurements and it intersects the area's visible part, so
@@ -195,7 +193,7 @@ documents its `animatedLayout` prop.
   listed under Size-change coverage below. The changed element plays its own
   animation, entering, exiting, or resizing, and the module moves only the
   content after it. Both read the same theme motion role, `springs.settle`
-  (`spec:AST-094` FR4), until the motion scheme names a public layout role, so the timing is governed centrally and
+  (`spec:AST-094` FR4), so the timing is governed centrally and
   is themeable there, never per component; both start on the same frame, and
   Reduce Motion reaches both through that role, as `design:reduced-motion`
   DR1–DR3 require: a cross-fade under a coarse primary pointer, an immediate
@@ -203,7 +201,7 @@ documents its `animatedLayout` prop.
   elements, and none of it opts in. Several changes, nested or not, compose
   without wrappers: changes in one area in the same frame are measured
   together before and after, so each element moves once, by its total change.
-  The area's scroll position does not change. Each moving element is one the
+  The module never scrolls the area. Each moving element is one the
   page already renders, so the module adds no
   elements (`architecture:component-style-authoring` INV7). The glide applies
   under every pointer, a mouse included: it removes a layout jump that people
@@ -218,8 +216,7 @@ documents its `animatedLayout` prop.
   "Returns a handle to pass to a component whose size changes, such as
   TreeList or Collapsible. When that component changes size, it and the
   content after it inside `containerRef` animate together on one shared
-  motion role. Fixed and stuck sticky elements stay put, the area keeps its scroll
-  position, and Reduce Motion is respected."
+  motion role. Fixed and stuck sticky elements stay put, the module never scrolls the area, and Reduce Motion is respected."
 
   Usage:
 
@@ -270,8 +267,7 @@ The following are preferred techniques, not independent compatibility promises:
 - The size-change hook's documentation states what callers ask about: the
   changed component and the content after it animate together on one shared
   motion role; fixed elements and stuck sticky elements stay put;
-  Reduce Motion is handled; a change stops at its handle's area, so nothing animates twice; and the scroll position is
-  kept.
+  Reduce Motion is handled; a change stops at its handle's area, so nothing animates twice; and the module never scrolls the area.
 - Use an Effect Event when an external-system Effect needs a stable callback that
   reads the latest props or state without making those reads reactive. Do not use
   an Effect Event to hide a value whose change should resynchronize the system.
@@ -413,5 +409,5 @@ component suite is not blanket conformance with every invariant.
 | INV11               | Source boundary check plus hook tests across StrictMode replay and unmount                                                                                                                                                                                                                                                                                                                                                                                | A second keyboard listener or measurement in Core; a consumer reading a CSS custom property on the root or a shared ancestor for the height; an export of the hook; a component outside Core measuring by a rule other than AST-099 FR2, or riding the keyboard; a listener left after unmount; a Core rider driven by JavaScript per frame or by its own transition; or more than one layout read per keyboard change |
 | INV12               | Real-browser tests on a throttled phone profile plus a source boundary check, with and without a handle, over a disclosure and an inserted item nested several levels inside a parent with following siblings at each level, mixed Astryx and plain elements, a fixed element, an unstuck sticky header, a nested boundary, content outside the boundary, two disclosures toggled in one frame, a 10-level by 50-sibling tree for cost, and Reduce Motion | A per-frame height or layout, a walk past the boundary, a moved out-of-flow element, a visible following sibling at any level that jumps, an element moved twice for one frame, an added element, or travel under Reduce Motion fails                                                                                                                                                                                  |
 | INV12 coverage      | Real-browser tests, one per Size-change coverage row                                                                                                                                                                                                                                                                                                                                                                                                      | Any case behaving other than its row says fails                                                                                                                                                                                                                                                                                                                                                                        |
-| INV12 timing        | Real-browser frame capture of a changed element and its visible followers under a coarse and a fine pointer, with and without Reduce Motion, with a theme overriding the motion role, and with the area scrolled mid-list                                                                                                                                                                                                                                 | The element and its visible followers starting on different frames or reading different motion, a component-specific timing, Reduce Motion applied to one and not the other, a fine-pointer Reduce Motion change that is not immediate, or a change in the area's scroll position, fails                                                                                                                               |
+| INV12 timing        | Real-browser frame capture of a changed element and its visible followers under a coarse and a fine pointer, with and without Reduce Motion, with a theme overriding the motion role, and with the area scrolled mid-list                                                                                                                                                                                                                                 | The element and its visible followers starting on different frames or reading different motion, a component-specific timing, Reduce Motion applied to one and not the other, a fine-pointer Reduce Motion change that is not immediate, or the module scrolling the area, fails                                                                                                                                        |
 | INV12 pointer scope | Fine-pointer before-and-after evidence on each adopting pull request (`spec:AST-017` FR59), from the demo or a story                                                                                                                                                                                                                                                                                                                                      | A glide missing under a mouse, or an adopting pull request without fine-pointer evidence, fails                                                                                                                                                                                                                                                                                                                        |
