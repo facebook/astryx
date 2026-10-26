@@ -311,7 +311,26 @@ describe('NumberInput steppers under a finger', () => {
     expect(shown(input)).toBe('5');
   });
 
-  it('the column takes touch-action manipulation from the gesture host for its kept press (spec:AST-094 FR18)', () => {
+  it('the column takes touch-action manipulation from the gesture host for its kept press (spec:AST-094 FR18)', async () => {
+    // The document's host outlives a test: a frame read an earlier test
+    // scheduled runs first, on a real frame.
+    vi.useRealTimers();
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => resolve());
+    });
+    // The host reads an author's touch-action in the next frame and writes
+    // its own then (FR18): fake the frame as well.
+    vi.useFakeTimers({
+      toFake: [
+        'setTimeout',
+        'clearTimeout',
+        'performance',
+        'Date',
+        'requestAnimationFrame',
+        'cancelAnimationFrame',
+      ],
+    });
+    vi.advanceTimersByTime(epoch);
     // jsdom drops touch-action, so the host's writes are observed.
     const writes: {style: CSSStyleDeclaration; value: string | null}[] = [];
     const setProperty = CSSStyleDeclaration.prototype.setProperty;
@@ -329,6 +348,7 @@ describe('NumberInput steppers under a finger', () => {
       },
     );
     const {increment} = setup();
+    wait(16);
     const column = increment.parentElement as HTMLElement;
     // The host may write it more than once (at attach and as it re-applies);
     // every write is manipulation.
