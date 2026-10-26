@@ -9,9 +9,9 @@
  * @output Exports ItemSwipeLayer (default) — the panels of a row's swipe
  *   actions and the gesture that uncovers them — and the ItemSwipeBridge type
  *   through which the root reaches the gesture's key handler
- * @position Internal to Item, reached only through a dynamic import from
- *   Item.tsx when `swipeActions` is set, so a row without them never loads
- *   the gesture. Tested through Item.test.tsx and Item.source-build.test.mjs.
+ * @position Internal to Item, imported by Item.tsx with the row (no lazy
+ *   chunk: a row's first swipe never waits for one). Tested through
+ *   Item.test.tsx and Item.source-build.test.mjs.
  *
  * The row's root stays Item's: it carries the swipe root styles and forwards
  * its key events into the bridge this layer fills; the gesture attaches to
@@ -243,7 +243,7 @@ export default function ItemSwipeLayer({
     },
   });
   // The root forwards its key events into what this publishes. The Effect
-  // installs this lazily loaded layer's key handler on Item's root, which
+  // installs this layer's key handler on Item's root, which
   // lives outside the layer, and releases it when the layer leaves. React
   // flushes effects before it delivers a discrete event, so a handler never
   // meets a stale bridge.
