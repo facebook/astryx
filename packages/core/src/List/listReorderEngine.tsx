@@ -10,7 +10,8 @@
  *   (List/ListReorderTouch.ts: the hold and UIKit's motion), the row moves
  *   of utils/rowMotion.ts, the shared edge autoscroll
  *   (utils/edgeAutoscroll.ts), the touch presentation
- *   (utils/touchPresentation.ts) and the shared announcer
+ *   (utils/touchPresentation.ts), the shared announcer, and the anchored hint
+ *   Core's keyboard hints share (hooks/anchoredHint.tsx)
  * @output `listReorderEngine`, the machinery a reorderable object carries:
  *   the reorder session of a List, its Host and its handle. A drag from a
  *   handle moves the row with the finger, the rows it passes slide out of its
@@ -19,7 +20,8 @@
  *   a drag (a click, Space or Enter) turns on reorder mode for its row: each
  *   arrow moves it a place at once (one report each), announced with its
  *   place and neighbours, and Escape or another activation ends the mode,
- *   keeping the moves
+ *   keeping the moves. While the mode is on, a hint anchored to the handle
+ *   shows the moves and Done as buttons that do what the keys do
  * @position Internal to the reorder (spec:AST-103): only createReorderable
  *   imports it, so a List without `reorderable` loads none of it (FR2);
  *   ListReorderHandle drives it from each row's handle
@@ -61,7 +63,14 @@
  * List/ListReorderHandle.tsx and List/ListReorderTouch.ts.
  */
 
-import type {Key, KeyboardEvent} from 'react';
+import {
+  useRef,
+  useSyncExternalStore,
+  type Key,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {
   useAnnounce,
@@ -69,6 +78,11 @@ import {
   type AnnouncePoliteness,
 } from '../hooks/useAnnounce';
 import {useTranslator, type TranslatorFn} from '../i18n/useTranslator';
+import {useLayer} from '../Layer/useLayer';
+import {Kbd} from '../Kbd';
+import {anchoredHintStyles, renderAnchoredHint} from '../hooks/anchoredHint';
+import {colorVars, fontWeightVars, spacingVars} from '../theme/tokens.stylex';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import type {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer';
 import {reorder} from '../motion/uikit/reorder';
 import type {DurationBounce} from '../motion/spring';
@@ -443,6 +457,8 @@ export class ListReorderController implements ListReorderSession {
   /** The handle whose row is in reorder mode, if any. */
   private modeHandle: HTMLElement | null = null;
   private readonly modeListeners = new Set<() => void>();
+  /** Reorder mode's hint, while it shows: focus in it keeps the mode. */
+  private hintElement: HTMLElement | null = null;
   /** The handle whose press became a drag, until its click is read. */
   private draggedHandle: Element | null = null;
   /** A reorder mode move, whose rows slide once it commits (under a finger). */
@@ -589,9 +605,26 @@ export class ListReorderController implements ListReorderSession {
     }
   }
 
-  /** Ends reorder mode, keeping its moves. */
+  /**
+   * Ends reorder mode, keeping its moves. Focus that a screen reader moved
+   * into the hint goes back to the handle.
+   */
   endMode(): void {
+    const handle = this.modeHandle;
+    const active = handle?.ownerDocument.activeElement;
+    if (
+      handle != null &&
+      active != null &&
+      this.hintElement?.contains(active)
+    ) {
+      handle.focus({preventScroll: true});
+    }
     this.setMode(null);
+  }
+
+  /** Records reorder mode's hint element (null once it goes). */
+  setHintElement(element: HTMLElement | null): void {
+    this.hintElement = element;
   }
 
   /**
@@ -1508,6 +1541,10 @@ export class ListReorderController implements ListReorderSession {
    * nowhere while it does).
    */
   blur(handle: HTMLElement | null, next: EventTarget | null): void {
+    // Focus a screen reader moves into the mode's hint keeps the mode.
+    if (next instanceof Node && this.hintElement?.contains(next)) {
+      return;
+    }
     // The UI that started the mode handing its focus back (a closing menu
     // restoring its trigger's) at once: the handle takes it again.
     if (
@@ -1544,11 +1581,14 @@ export class ListReorderController implements ListReorderSession {
     this.focusRow = null;
     const handle = this.handleIn(row);
     const active = row.ownerDocument.activeElement;
-    // Focus that went elsewhere meanwhile stays there.
+    // Focus that went elsewhere meanwhile stays there; focus in the hint
+    // (a screen reader's) goes back to the handle.
     if (
       handle instanceof HTMLElement &&
       handle === this.modeHandle &&
-      (active == null || active === row.ownerDocument.body)
+      (active == null ||
+        active === row.ownerDocument.body ||
+        this.hintElement?.contains(active) === true)
     ) {
       handle.focus({preventScroll: true});
     }
@@ -1624,9 +1664,148 @@ function ListReorderHost({reorder}: {reorder: ListReorderContextValue}) {
     [controller, isTouch],
   );
   return (
-    <span id={controller.hintId} hidden>
-      {t('@astryx.list.reorderHint')}
-    </span>
+    <>
+      <span id={controller.hintId} hidden>
+        {t('@astryx.list.reorderHint')}
+      </span>
+      <ListReorderModeHint controller={controller} />
+    </>
+  );
+}
+
+const hintStyles = stylex.create({
+  // A glyph or Done: the hint's text, with nothing of a button's own. Under
+  // a finger its target reaches past the glyph to 44 px, without growing
+  // the hint.
+  button: {
+    position: 'relative',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: 0,
+    padding: 0,
+    borderWidth: 0,
+    borderRadius: 4,
+    backgroundColor: 'transparent',
+    color: 'inherit',
+    fontFamily: 'inherit',
+    fontSize: 'inherit',
+    lineHeight: 'inherit',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      insetBlock: {
+        default: 0,
+        '@media (pointer: coarse)': 'min(0px, calc((100% - 44px) / 2))',
+      },
+      insetInline: {
+        default: 0,
+        '@media (pointer: coarse)': 'min(0px, calc((100% - 44px) / 2))',
+      },
+    },
+  },
+  done: {
+    paddingInline: spacingVars['--spacing-1'],
+    color: colorVars['--color-text-primary'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+  },
+});
+
+/**
+ * One of the hint's buttons: it never takes the focus from the handle (a
+ * press does not move it), and does what its key does.
+ */
+function HintButton({
+  label,
+  onPress,
+  isText = false,
+  children,
+}: {
+  label?: string;
+  onPress: () => void;
+  isText?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      tabIndex={-1}
+      aria-label={label}
+      onPointerDown={event => event.preventDefault()}
+      onMouseDown={event => event.preventDefault()}
+      onClick={onPress}
+      {...focusOutlineProps.focusVisible([
+        hintStyles.button,
+        isText && hintStyles.done,
+      ])}>
+      {children}
+    </button>
+  );
+}
+
+/**
+ * Reorder mode's hint (spec:AST-103 FR4): anchored below the start of the
+ * handle whose row is in the mode, in Core's keyboard hint's layer and
+ * theme roles, it shows the moves for the list's axis and Done until the
+ * mode ends. Each move is a button that does what its key does, with the
+ * same announcement and the focus left on the handle, and Done ends the
+ * mode as Escape does, so a pointer or a finger can reorder by tapping the
+ * handle, the moves, then Done.
+ */
+function ListReorderModeHint({
+  controller,
+}: {
+  controller: ListReorderController;
+}): ReactNode {
+  const t = useTranslator();
+  const target = useSyncExternalStore(
+    controller.subscribeMode,
+    () => controller.modeTarget,
+    () => null,
+  );
+  const layer = useLayer({mode: 'context'});
+  const layerRef = useRef(layer);
+  useIsomorphicLayoutEffect(() => {
+    layerRef.current = layer;
+  });
+  useIsomorphicLayoutEffect(() => {
+    if (target == null) {
+      return undefined;
+    }
+    const shown = layerRef.current;
+    shown.ref(target);
+    shown.show();
+    return () => {
+      shown.hide();
+      shown.ref(null);
+    };
+  }, [target]);
+  return renderAnchoredHint(
+    layer,
+    target == null ? null : (
+      <span
+        ref={element => controller.setHintElement(element)}
+        {...stylex.props(anchoredHintStyles.keys)}>
+        <HintButton
+          label={t('@astryx.list.reorderMoveUp')}
+          onPress={() => controller.step(target, -1)}>
+          <Kbd keys="up" aria-hidden />
+        </HintButton>
+        <HintButton
+          label={t('@astryx.list.reorderMoveDown')}
+          onPress={() => controller.step(target, 1)}>
+          <Kbd keys="down" aria-hidden />
+        </HintButton>
+        <HintButton isText onPress={() => controller.endMode()}>
+          {t('@astryx.list.reorderDone')}
+        </HintButton>
+      </span>
+    ),
+    {isInteractive: true},
   );
 }
 

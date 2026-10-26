@@ -13,11 +13,13 @@
  *   index after the move, announced with its place and neighbours once it
  *   lands, a move into a row that stays at either end is refused and
  *   announced, and Escape, another activation or a lost focus ends the mode,
- *   keeping the moves; the object's start(key) enters the same mode from the
- *   app's own UI, keeping it when that UI hands its focus back, and does
- *   nothing but warn for a key that cannot move or is not mounted, or in the
- *   list mounted last for an object on two; a mouse drags past the slop,
- *   and a drag's click
+ *   keeping the moves; while the mode is on, a hint shows the moves and
+ *   Done as buttons that do what the keys do and leave the focus on the
+ *   handle; the object's start(key) enters the same mode from the app's own
+ *   UI, keeping it when that UI hands its focus back, and does nothing but
+ *   warn for a key that cannot move or is not mounted, or in the list
+ *   mounted last for an object on two; a mouse drags past the slop, and a
+ *   drag's click
  *   leaves the mode alone; a new object keeps the mode and the next move
  *   calls the latest callback; one object serves two lists apart; the
  *   reorder adds one element to a row and no listener to a row or handle,
@@ -144,6 +146,13 @@ const labels = () =>
 
 const handleOf = (label: string) =>
   screen.getByRole('button', {name: `Reorder ${label}`});
+
+/**
+ * A button of reorder mode's hint. jsdom never opens a popover, so the hint
+ * layer stays `display: none` there: the query includes hidden elements.
+ */
+const hintButton = (name: string) =>
+  screen.queryByRole('button', {name, hidden: true});
 
 describe('List reorderable', () => {
   // The live region outlives each test: clear it, so one test's message is
@@ -746,6 +755,90 @@ describe('List reorderable', () => {
       ),
     ).toBe(true);
     warn.mockRestore();
+  });
+
+  it('shows a hint with the moves and Done while a row is in reorder mode', async () => {
+    const user = userEvent.setup();
+    render(<ReorderableRows initial={['Inbox', 'Sent', 'Drafts']} />);
+    expect(hintButton('Move down')).toBeNull();
+    handleOf('Sent').focus();
+    await user.keyboard(' ');
+    const down = hintButton('Move down') as HTMLElement;
+    expect(hintButton('Move up')).toBeInTheDocument();
+    expect(hintButton('Done')).toBeInTheDocument();
+    // In the anchored hint layer, outside the list; never a tab stop.
+    expect(down.closest('[popover]')).not.toBeNull();
+    expect(down.closest('ul')).toBeNull();
+    expect(down).toHaveAttribute('tabindex', '-1');
+    await user.keyboard('{Escape}');
+    expect(hintButton('Move down')).toBeNull();
+  });
+
+  it("reorders by taps alone: the handle, the hint's moves, then Done, the focus staying on the handle", async () => {
+    const user = userEvent.setup();
+    const onReorder = vi.fn();
+    render(
+      <ReorderableRows
+        initial={['Inbox', 'Sent', 'Drafts']}
+        onReorder={onReorder}
+      />,
+    );
+    const handle = handleOf('Inbox');
+    await user.click(handle);
+    await user.click(hintButton('Move down') as HTMLElement);
+    expect(onReorder).toHaveBeenCalledTimes(1);
+    expect(onReorder).toHaveBeenLastCalledWith({key: 'Inbox', to: 1});
+    expect(labels()).toEqual(['Sent', 'Inbox', 'Drafts']);
+    expect(handle).toHaveFocus();
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent(
+        'Inbox, position 2 of 3, after Sent, before Drafts',
+      ),
+    );
+    await user.click(hintButton('Move down') as HTMLElement);
+    expect(onReorder).toHaveBeenLastCalledWith({key: 'Inbox', to: 2});
+    await user.click(hintButton('Move up') as HTMLElement);
+    expect(onReorder).toHaveBeenCalledTimes(3);
+    expect(onReorder).toHaveBeenLastCalledWith({key: 'Inbox', to: 1});
+    expect(handle).toHaveFocus();
+    expect(handle).toHaveAttribute('aria-pressed', 'true');
+    await user.click(hintButton('Done') as HTMLElement);
+    expect(handle).toHaveAttribute('aria-pressed', 'false');
+    expect(hintButton('Done')).toBeNull();
+    expect(handle).toHaveFocus();
+    // Kept: nothing undone.
+    expect(onReorder).toHaveBeenCalledTimes(3);
+    expect(labels()).toEqual(['Sent', 'Inbox', 'Drafts']);
+  });
+
+  it("refuses the hint's move into a row that keeps its place, as the key does", async () => {
+    const user = userEvent.setup();
+    const onReorder = vi.fn();
+    render(
+      <ReorderableRows
+        initial={['Pinned', 'Inbox', 'Sent']}
+        fixed={['Pinned']}
+        onReorder={onReorder}
+      />,
+    );
+    await user.click(handleOf('Inbox'));
+    await user.click(hintButton('Move up') as HTMLElement);
+    expect(onReorder).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent("Can't move past Pinned"),
+    );
+  });
+
+  it('shows the same hint when start(key) enters reorder mode', async () => {
+    const user = userEvent.setup();
+    render(
+      <StartableRows initial={['Inbox', 'Sent', 'Drafts']} start="Drafts" />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Move Drafts'}));
+    await user.click(hintButton('Move up') as HTMLElement);
+    expect(labels()).toEqual(['Inbox', 'Drafts', 'Sent']);
+    expect(handleOf('Drafts')).toHaveFocus();
+    expect(handleOf('Drafts')).toHaveAttribute('aria-pressed', 'true');
   });
 
   it("keeps the mouse drag slop equal to the date wheel's", () => {

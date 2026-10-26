@@ -43,7 +43,7 @@ export const docs = {
   ],
   usage: {
     description:
-      "Makes a collection's rows reorderable the way an iOS table's edit mode does. On a touch screen a finger held still on a row's handle for a moment picks it up (a flick on the handle still scrolls); the row follows the finger, the rows it passes slide out of its way, the page scrolls near its edges, and on release the row settles into its new place. A mouse drags a handle at once, and the rows take their places without motion. Without a drag, the handle toggles reorder mode for its row (a click, Space or Enter): each arrow key moves the row a place at once, and Escape or another activation ends the mode, keeping the moves; screen readers hear each move with the row's place and neighbours. The reorder code ships with this function: a collection without the prop loads none of it.",
+      "Makes a collection's rows reorderable the way an iOS table's edit mode does. On a touch screen a finger held still on a row's handle for a moment picks it up (a flick on the handle still scrolls); the row follows the finger, the rows it passes slide out of its way, the page scrolls near its edges, and on release the row settles into its new place. A mouse drags a handle at once, and the rows take their places without motion. Without a drag, the handle toggles reorder mode for its row (a click, Space or Enter): each arrow key moves the row a place at once, and Escape or another activation ends the mode, keeping the moves; screen readers hear each move with the row's place and neighbours, and a hint shows the moves and Done as buttons, for taps alone. The reorder code ships with this function: a collection without the prop loads none of it.",
     bestPractices: [
       {
         guidance: true,

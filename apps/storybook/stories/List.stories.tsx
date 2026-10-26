@@ -681,8 +681,9 @@ export const Reorderable: Story = {
           'for a moment, then drag: the rows you pass slide out of the way ' +
           'and the row settles into its new place on release. A mouse drags ' +
           'a handle at once. Or activate a handle (click it, or press Space ' +
-          'or Enter) to turn on reorder mode for its row: each arrow key ' +
-          'moves it a place, and Escape ends the mode.',
+          'or Enter) to turn on reorder mode for its row: each arrow key, or ' +
+          'each move in the hint below the handle, moves it a place, and ' +
+          'Escape or Done ends the mode.',
       },
     },
   },

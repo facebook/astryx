@@ -104,7 +104,8 @@ export interface ListProps extends BaseProps<
    * handle (a click, Space or Enter) turns on reorder mode for its row: each
    * arrow key moves it a place at once, reported and announced with its place
    * and neighbours, and Escape or another activation ends the mode, keeping
-   * the moves.
+   * the moves. While it is on, a hint anchored to the handle shows the moves
+   * and Done as buttons, so taps alone can reorder.
    */
   reorderable?: Reorderable;
 
