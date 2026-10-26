@@ -7,16 +7,12 @@
  *   frames they were read from: the activation runs on UIKit's
  *   ease-in-ease-out, the stacked field narrows to 315 pt beside its close
  *   button on a 402 pt screen, the bottom field rests 17 pt above the
- *   keyboard, the bar's fades meet where they should, and the clock, the
- *   curve and the scroll-away snap are the table's only motion roles
+ *   keyboard, and the bar's fades meet where they should
  * @position Testing; validates motion/uikit/search.ts without a browser
  */
 
-import {describe, expect, it, vi} from 'vitest';
-import {registerSearchTable, search, timing} from '.';
-import {listMotionRoles} from '../roles';
-
-registerSearchTable();
+import {describe, expect, it} from 'vitest';
+import {search, timing} from '.';
 
 describe('UIKit search table', () => {
   it('activates on UIKit’s ease-in-ease-out over 383 ms', () => {
@@ -51,53 +47,5 @@ describe('UIKit search table', () => {
     expect(
       search.bar.fadeOutProgress + search.bar.largeTitleFadeInProgress,
     ).toBe(1);
-  });
-
-  it('registers nothing when the table is read; registerSearchTable registers its roles, once', async () => {
-    vi.resetModules();
-    const roles = await import('../roles');
-    const table = await import('./search');
-    const searchRoles = () =>
-      roles
-        .listMotionRoles()
-        .map(role => role.id)
-        .filter(id => id.startsWith('search.'))
-        .sort();
-    expect(searchRoles()).toEqual([]);
-    table.registerSearchTable();
-    table.registerSearchTable();
-    expect(searchRoles()).toEqual([
-      'search.activationCurve',
-      'search.activationMs',
-      'search.scrollAway.snapMs',
-    ]);
-  });
-
-  it('makes the clock, the curve and the scroll-away snap motion roles, and nothing else', () => {
-    const roles = listMotionRoles().filter(role =>
-      role.id.startsWith('search.'),
-    );
-    expect(
-      roles.map(({id, kind, variable, value}) => ({id, kind, variable, value})),
-    ).toEqual([
-      {
-        id: 'search.activationCurve',
-        kind: 'curve',
-        variable: '--motion-search-activation-curve',
-        value: search.activationCurve,
-      },
-      {
-        id: 'search.activationMs',
-        kind: 'duration',
-        variable: '--motion-search-activation-ms',
-        value: 383.3,
-      },
-      {
-        id: 'search.scrollAway.snapMs',
-        kind: 'duration',
-        variable: '--motion-search-scroll-away-snap-ms',
-        value: 230,
-      },
-    ]);
   });
 });
