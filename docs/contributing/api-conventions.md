@@ -434,7 +434,7 @@ out of architecture records.
   clobbered by spread order.
 - A parent wraps slot content or mirrors props that belong to the slotted child.
 - A prop reaches into a subcomponent's anatomy, a composition renders a slot
-  the anatomy does not describe, or a slot has no component of its own
+  the anatomy does not describe, or a rendered content slot is not a part named in the anatomy
   ([INV18](../architecture/public-component-api.md#boundaries-and-invariants)).
 - A feature with a large resource cost loads for every caller, with no plug-in
   path or named feature prop (INV19).
