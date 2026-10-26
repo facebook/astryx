@@ -12,6 +12,7 @@ import {
   type RichTextEditorRef,
 } from '@astryxdesign/richtext';
 import type {EditorState} from 'lexical';
+import {thrift} from '@astryxdesign/core/CodeBlock/languages/thrift';
 import {BOLD_STAR, ITALIC_STAR, UNORDERED_LIST} from '@lexical/markdown';
 import {$getRoot} from 'lexical';
 import {
@@ -592,4 +593,25 @@ export const MarkdownParityLongDocument: MarkdownParityStory = {
     hasPlugins: true,
     hostWidth: '680px',
   },
+};
+
+const THRIFT_FENCE = markdownToEditorStateJSON(
+  '```thrift\n# A user record\nstruct User {\n  1: required string name;\n}\n```',
+);
+
+/**
+ * Code blocks colour a fence named by a value in `codeLanguages`, as Markdown
+ * does, and label it with the value's name; without it the fence stays plain.
+ */
+export const CodeLanguageModules: Story = {
+  render: () => (
+    <div style={{display: 'grid', gap: 16, maxWidth: 520}}>
+      <div data-testid="listed">
+        <RichTextView value={THRIFT_FENCE} codeLanguages={[thrift]} />
+      </div>
+      <div data-testid="unlisted">
+        <RichTextView value={THRIFT_FENCE} />
+      </div>
+    </div>
+  ),
 };
