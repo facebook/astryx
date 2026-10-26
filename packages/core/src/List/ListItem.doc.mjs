@@ -104,14 +104,15 @@ export const docs = {
     {
       name: 'isSelected',
       type: 'boolean',
-      description: 'Selected state; marks the item as the current one with aria-current="true" (a list item cannot carry aria-selected).',
+      description:
+        'Selected state; marks the item as the current one with aria-current="true" (a list item cannot carry aria-selected).',
       default: 'false',
     },
     {
       name: 'itemKey',
-      type: 'string | number | bigint',
+      type: 'string',
       description:
-        "The row's item key in a reorderable List (List reorderable): the key the reorderable object's onReorder reports and isReorderable is asked about. A row without one has no reorder handle and keeps its place. Separate from React's key. No effect elsewhere.",
+        "The row's item key in a reorderable List (List reorderable), a string from the data: the key the reorderable object's onReorder reports and isReorderable is asked about. A row without one has no reorder handle and keeps its place. Separate from React's key. No effect elsewhere.",
     },
     {
       name: 'swipeActions',
@@ -202,7 +203,8 @@ export const docsZh = {
     {
       name: 'isSelected',
       type: 'boolean',
-      description: '选中状态；在项目上设置 aria-current="true"，将其标为当前项（列表项不能使用 aria-selected）。',
+      description:
+        '选中状态；在项目上设置 aria-current="true"，将其标为当前项（列表项不能使用 aria-selected）。',
       default: 'false',
     },
     {
