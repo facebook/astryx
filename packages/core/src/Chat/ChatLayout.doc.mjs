@@ -87,6 +87,11 @@ export const docs = {
           'Use scrollRef when the chat is embedded in a page where a parent element handles scrolling.',
       },
       {
+        guidance: true,
+        description:
+          "Give a full-page ChatLayout a container 100dvh tall, not 100vh: where a phone browser's toolbar collapses, 100vh is the viewport with the toolbar hidden, so the composer would start below the screen's edge.",
+      },
+      {
         guidance: false,
         description:
           "Don't apply a fixed height on the layout; let it fill its container with flex: 1.",
@@ -160,6 +165,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Pass ChatMessageList as children and ChatComposer as composer prop for complete chat.',
+      },
+      {
+        guidance: true,
+        description:
+          'full-page: container 100dvh not 100vh (100vh = viewport w/ phone toolbar hidden; composer starts below screen edge)',
       },
       {
         guidance: true,
