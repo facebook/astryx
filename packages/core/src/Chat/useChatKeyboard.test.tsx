@@ -275,7 +275,7 @@ describe('ChatLayout and the software keyboard', () => {
         ...args: Parameters<typeof addEventListener>
       ) {
         if (this.getAttribute('data-testid') === 'layout') {
-          added.push(String(args[0]));
+          added.push(args[0]);
         }
         return addEventListener.apply(this, args);
       },

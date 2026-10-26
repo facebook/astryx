@@ -939,7 +939,9 @@ test(
       name: 'chatlayout-keyboard-dismiss-ride',
       clip,
       scope: chat.dock,
-      times: timeline(400, 400 / 12),
+      // From the hold's origin: the composer's own blur transition can start
+      // before the ride, so the samples run past the ride's 383 ms.
+      times: timeline(480, 480 / 12),
       columns: 6,
       cellScale: 0.4,
       measure: async () => ({dockY: await dockY(chat.dock)}),
@@ -947,8 +949,9 @@ test(
     await drag.write(testInfo);
     await ride.write(testInfo);
     const steps = drag.frames.map(f => f.data as {focused: boolean});
-    // Focus holds while the finger is over the conversation, and the move
-    // that reaches the composer blurs it.
+    // Focus holds while the finger is over the conversation and in the
+    // composer, and the lift there blurs it: the drag decides once, at the
+    // release (spec:AST-094 FR36).
     expect(steps.slice(0, 5).every(f => f.focused)).toBe(true);
     expect(steps.at(-1)?.focused).toBe(false);
     const trace = ride.frames.map(f => f.data as {dockY: number});
