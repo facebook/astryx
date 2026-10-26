@@ -888,7 +888,7 @@ describe('List reorderable', () => {
     },
   );
 
-  it("registers the slides' motion role only for a touch presentation's drag, before its first slide", () => {
+  it("keeps the slides' spring an internal constant: touch motion has no theme surface", () => {
     const drag = (coarse: boolean) => {
       stubPrimaryPointer(coarse);
       const {unmount} = render(<ReorderableRows initial={['A', 'B', 'C']} />);
@@ -899,13 +899,13 @@ describe('List reorderable', () => {
       fireEvent.pointerCancel(handle, {...MOUSE, clientY: 322});
       unmount();
     };
-    // A mouse's rows take their places at once: nothing registers.
+    // A mouse's rows take their places at once; under a finger they slide
+    // on the measured spring, which stays internal: no motion role either
+    // way (spec:AST-094 FR4 as ruled: touch motion stays internal).
     drag(false);
     expect(motionRole('reorder.slide.spring')).toBeUndefined();
-    // Under a finger's presentation the rows slide on a role a theme may
-    // retune.
     drag(true);
-    expect(motionRole('reorder.slide.spring')).toBeDefined();
+    expect(motionRole('reorder.slide.spring')).toBeUndefined();
   });
 
   it('puts its listeners on the list: none on a row or a handle', () => {
