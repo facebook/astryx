@@ -14,9 +14,10 @@
  *   coasting wheel stops it where it is and the wheel then eases onto the
  *   nearest row; a storyboard of a flick and its coast; under reduced motion
  *   (design:reduced-motion DR2), a flick that still coasts as momentum with
- *   its rows flat, and a tap that cross-fades onto its row (opacity only,
- *   200 ms or less). Under a mouse, a drag scrolls today's column onto a
- *   row.
+ *   its rows flat, and a tap that cross-fades onto its row (nothing
+ *   travels, in 200 ms or less) and lands it on the compositor through a
+ *   blocked main thread. Under a mouse, a drag scrolls today's column onto
+ *   a row.
  * @position Browser proof for DateInput/PickerWheel.tsx and the Wheel switch,
  *   run by
  *   `pnpm test:interaction`; jsdom runs no animations, and wheelPhysics.test.ts
@@ -537,12 +538,17 @@ test(
   },
 );
 
-/** Records every animation under `column`, every frame: its animated properties, length and transforms. */
+/** Records every animation under `column`, every frame: its animated properties, length, transforms and keyframe offsets. */
 async function recordAnimations(column: Locator) {
   await column.evaluate(element => {
     const seen = new Map<
       Animation,
-      {props: string[]; duration: number; transforms: string[]}
+      {
+        props: string[];
+        duration: number;
+        transforms: string[];
+        offsets: number[];
+      }
     >();
     (window as unknown as {wheelAnimations: typeof seen}).wheelAnimations =
       seen;
@@ -562,7 +568,9 @@ async function recordAnimations(column: Locator) {
         }
         const props = new Set<string>();
         const transforms: string[] = [];
+        const offsets: number[] = [];
         for (const frame of effect.getKeyframes()) {
+          offsets.push(frame.computedOffset);
           for (const key of Object.keys(frame)) {
             if (
               !['offset', 'computedOffset', 'easing', 'composite'].includes(key)
@@ -578,6 +586,7 @@ async function recordAnimations(column: Locator) {
           props: [...props],
           duration: Number(effect.getTiming().duration),
           transforms,
+          offsets,
         });
       }
       requestAnimationFrame(sample);
@@ -590,7 +599,12 @@ async function recordAnimations(column: Locator) {
         window as unknown as {
           wheelAnimations: Map<
             unknown,
-            {props: string[]; duration: number; transforms: string[]}
+            {
+              props: string[];
+              duration: number;
+              transforms: string[];
+              offsets: number[];
+            }
           >;
         }
       ).wheelAnimations.values(),
@@ -629,11 +643,12 @@ test('under reduced motion, a flick still coasts as momentum, its rows flat', as
   }
 });
 
-test('under reduced motion, a tap cross-fades onto its row: opacity only, 200 ms or less', async ({
+test('under reduced motion, a tap cross-fades onto its row: nothing travels, in 200 ms or less', async ({
   page,
 }) => {
   // design:reduced-motion DR2: a transition the wheel starts, here a tap's
-  // turn, changes opacity only and finishes in 200 ms or less.
+  // turn, fades in 200 ms or less and moves nothing on screen: the rows land
+  // at the fade's midpoint, a step while the drawing is faded out.
   await page.emulateMedia({reducedMotion: 'reduce'});
   const {driver, field, minutes} = await openWheel(page);
   const read = await recordAnimations(minutes);
@@ -648,10 +663,101 @@ test('under reduced motion, a tap cross-fades onto its row: opacity only, 200 ms
   });
   await expect(field).toHaveValue('02', {timeout: 3000});
   const seen = await read();
-  expect(seen.length).toBeGreaterThan(0);
-  for (const animation of seen) {
-    expect(animation.props).toEqual(['opacity']);
-    expect(animation.duration).toBeLessThanOrEqual(200);
+  const fades = seen.filter(
+    animation => !animation.props.includes('transform'),
+  );
+  expect(fades.length).toBeGreaterThan(0);
+  for (const fade of fades) {
+    expect(fade.props).toEqual(['opacity']);
+    expect(fade.duration).toBeLessThanOrEqual(200);
+  }
+  const fadeMs = Math.max(...fades.map(fade => fade.duration));
+  for (const landing of seen.filter(animation =>
+    animation.props.includes('transform'),
+  )) {
+    // The origin held, then the destination: two values, no travel...
+    const [origin, held, landed, end] = landing.transforms;
+    expect(landing.transforms).toHaveLength(4);
+    expect(held).toBe(origin);
+    expect(end).toBe(landed);
+    // ...stepping at the fade's midpoint.
+    expect(landing.offsets[1]).toBe(landing.offsets[2]);
+    expect(landing.offsets[1] * landing.duration).toBeCloseTo(fadeMs / 2, 0);
+  }
+});
+
+test('under reduced motion, a tap lands its row on the compositor while the main thread is blocked', async ({
+  page,
+  browserName,
+}) => {
+  // design:reduced-motion DR2 with spec:AST-094 FR5: the rows land at the
+  // fade's midpoint on the compositor, so a main thread blocked across it
+  // never brings the fade back in on the old row.
+  test.skip(
+    browserName !== 'chromium',
+    'the screencast proof runs on Chromium; WebKit runs the landing case above',
+  );
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const {driver, field, minutes, strip} = await openWheel(page);
+  const box = await minutes.boundingBox();
+  if (box == null) {
+    throw new Error('no minute column');
+  }
+  const target = minutes.getByRole('option', {name: '01'});
+  await markElement(target);
+  const chip = page.locator('[data-harness-marker-chip]');
+  const from = await chip.boundingBox();
+  const cast = await startScreencast(page);
+  // The row below the band, minute 01, in sight before and after (today’s
+  // rows fade toward the edges). The block starts once the tap’s
+  // cross-fade plays on the compositor, and covers its midpoint and its end.
+  await driver.tap({
+    x: Math.round(box.x + box.width / 2),
+    y: Math.round(box.y + box.height / 2 + ROW),
+  });
+  const fade = (await waitForAnimation(strip, {minProgressMs: 16})).find(
+    animation => animation.durationMs <= 200,
+  );
+  if (fade == null) {
+    throw new Error('no cross-fade');
+  }
+  const block = await blockMainThread(page, 700);
+  await page.waitForTimeout(150);
+  const frames = await cast.stop();
+  await expect(field).toHaveValue('01', {timeout: 3000});
+  const to = await chip.boundingBox();
+  if (from == null || to == null) {
+    throw new Error('no marker');
+  }
+  expect(Math.abs(to.y - from.y), 'the row moved to the band').toBeGreaterThan(
+    ROW / 2,
+  );
+  // The screencast sends a frame for each change on screen: the fade coming
+  // back in from its midpoint, while the main thread is still blocked. Each
+  // frame of it with the row in sight has the row at the band.
+  const fadeMs = 200;
+  const tracked = await trackMarker(page, frames);
+  const fadingIn = tracked.filter(
+    frame =>
+      frame.box != null &&
+      frame.t >= fade.from + fadeMs / 2 + 10 &&
+      frame.t < block.to,
+  );
+  const timeline = tracked
+    .map(
+      frame =>
+        `+${Math.round(frame.t - block.from)}:${frame.box == null ? '-' : Math.round(frame.box.y)}`,
+    )
+    .join(' ');
+  expect(
+    fadingIn.length,
+    `frames with the row in sight (${timeline})`,
+  ).toBeGreaterThan(0);
+  for (const frame of fadingIn) {
+    expect(
+      Math.abs((frame.box?.y ?? Infinity) - to.y),
+      `the row at +${Math.round(frame.t - block.from)} ms, at rest y ${Math.round(to.y)} (${timeline})`,
+    ).toBeLessThan(3);
   }
 });
 

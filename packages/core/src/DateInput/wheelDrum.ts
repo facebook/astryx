@@ -8,7 +8,8 @@
  *   its CSS transform, the band copy's translation, which row is under a
  *   point, and the curve baked into keyframes per row so a motion runs on the
  *   compositor
- * @position Rendering math of the Wheel (Wheel.tsx); pure, no DOM
+ * @position Rendering math of the touch picker wheel (PickerWheel.tsx); pure,
+ *   no DOM
  *
  * UIPickerView draws each row on a cylinder: a row whose centre is d px from
  * the band's (along the list) is turned about x by θ = d ÷ R and moved onto
@@ -26,7 +27,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/DateInput/wheelDrum.test.ts
- * - /packages/core/src/DateInput/Wheel.tsx
+ * - /packages/core/src/DateInput/PickerWheel.tsx
  */
 
 import {picker} from '../motion/uikit/picker';
