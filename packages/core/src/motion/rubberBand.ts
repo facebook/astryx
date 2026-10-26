@@ -15,9 +15,10 @@
  * displayed overflow b approaches d but never reaches it, and its slope at
  * the edge is c: the first points of overflow move at 55 % of the finger.
  *
- * The inverse matters for M2 (grab anything mid-flight): a finger that lands
- * on content still bouncing back has to resume the drag from the finger
- * position that would produce the overflow on screen, or the content jumps.
+ * The inverse matters for spec:AST-094 FR6 (a finger catches any animation
+ * mid-flight): a finger that lands on content still bouncing back has to
+ * resume the drag from the finger position that would produce the overflow
+ * on screen, or the content jumps.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/motion/rubberBand.test.ts
@@ -29,7 +30,6 @@ import {scroll} from './uikit/scroll';
 /**
  * Displayed overflow for a finger `overflow` past the edge (signed: the sign
  * is kept). `dimension` is the scroll view's size on the axis.
- * @experimental
  */
 export function rubberBand(
   overflow: number,
@@ -44,10 +44,7 @@ export function rubberBand(
   return overflow < 0 ? -banded : banded;
 }
 
-/**
- * The finger overflow that displays `displayed`; ±Infinity at ±dimension.
- * @experimental
- */
+/** The finger overflow that displays `displayed`; ±Infinity at ±dimension. */
 export function rubberBandInverse(
   displayed: number,
   dimension: number,

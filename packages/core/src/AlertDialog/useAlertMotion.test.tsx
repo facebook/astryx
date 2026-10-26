@@ -21,15 +21,14 @@
 import {act, render} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
-  alertController,
-  registerAlertControllerTable,
-} from '../motion/uikit/alert';
+  settlingDuration,
+  toSpring,
+  type SpringDescription,
+} from '../motion/spring';
+import {alertController} from '../motion/uikit/alert';
 import {springs} from '../motion/uikit/springs';
+import type * as SpringsModule from '../motion/uikit/springs';
 import {useAlertMotion, type AlertMotion} from './useAlertMotion';
-
-// AlertDialog's touch layer registers the table before the alert first
-// animates; this hook is tested on its own, so the test does.
-registerAlertControllerTable();
 
 type RecordedCall =
   | {kind: 'attach'; target: unknown}
@@ -54,10 +53,34 @@ interface Recorded {
   readonly starts: ((time: number) => void)[];
 }
 
-const {recorded, reducedMotion} = vi.hoisted(() => ({
+const {recorded, reducedMotion, alertSprings} = vi.hoisted(() => ({
   recorded: [] as Recorded[],
   reducedMotion: {matches: false},
+  // The alert's springs as the hook reads them: the table's own, unless a
+  // test changes one.
+  alertSprings: {
+    present: null as SpringDescription | null,
+    dismiss: null as SpringDescription | null,
+  },
 }));
+
+vi.mock('../motion/uikit/springs', async importOriginal => {
+  const actual = await importOriginal<typeof SpringsModule>();
+  const table = Object.defineProperties(
+    {...actual.springs},
+    {
+      alertPresent: {
+        get: () => alertSprings.present ?? actual.springs.alertPresent,
+        enumerable: true,
+      },
+      alertDismiss: {
+        get: () => alertSprings.dismiss ?? actual.springs.alertDismiss,
+        enumerable: true,
+      },
+    },
+  );
+  return {...actual, springs: table};
+});
 
 vi.mock('../motion/animator', () => ({
   createAnimator: (
@@ -144,20 +167,6 @@ function Alert({isOpen, isEnabled}: {isOpen: boolean; isEnabled: boolean}) {
   return <div ref={motion.ref} data-testid="alert" />;
 }
 
-/** The alert under a theme that retunes both of its durations. */
-function ThemedAlert({isOpen}: {isOpen: boolean}) {
-  return (
-    <div
-      data-astryx-theme="slow"
-      style={{
-        ['--motion-alert-controller-present-duration-ms' as string]: '600ms',
-        ['--motion-alert-controller-dismiss-duration-ms' as string]: '800ms',
-      }}>
-      <Alert isOpen={isOpen} isEnabled />
-    </div>
-  );
-}
-
 const motion = (): AlertMotion => {
   if (latest == null) {
     throw new Error('not rendered');
@@ -178,10 +187,20 @@ function animators(): {panel: Recorded; backdrop: Recorded} {
 const moves = (record: Recorded) =>
   record.calls.filter(call => call.kind !== 'attach');
 
+/** Slower springs than the alert's, both critically damped. */
+const SLOW_PRESENT = {mass: 1, stiffness: 240, damping: 31} as const;
+const SLOW_DISMISS = {mass: 1, stiffness: 150, damping: 24.5} as const;
+
+/** A spring's length in whole ms: its settling duration (0.1 % from rest). */
+const lengthMs = (spring: SpringDescription) =>
+  Math.round(settlingDuration(toSpring(spring)) * 1000);
+
 let now = 1000;
 beforeEach(() => {
   recorded.length = 0;
   reducedMotion.matches = false;
+  alertSprings.present = null;
+  alertSprings.dismiss = null;
   latest = null;
   now = 1000;
   vi.spyOn(performance, 'now').mockImplementation(() => now);
@@ -450,10 +469,16 @@ describe('useAlertMotion', () => {
     expect(motion().acceptsTouches()).toBe(true);
   });
 
-  it('follows a theme that retunes the durations: the touch window and the exit backstop', async () => {
+  it("derives the touch window and the exit backstop from the springs' lengths: slower springs move both", async () => {
+    alertSprings.present = SLOW_PRESENT;
+    alertSprings.dismiss = SLOW_DISMISS;
     vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
-    const view = render(<ThemedAlert isOpen />);
+    const view = render(<Alert isOpen isEnabled />);
     const {panel} = animators();
+    // The animator plays the spring the window is timed from.
+    expect(panel.calls.find(call => call.kind === 'animate')).toMatchObject({
+      spring: SLOW_PRESENT,
+    });
     await act(async () => {
       panel.starts.at(-1)?.(2000);
     });
@@ -461,19 +486,56 @@ describe('useAlertMotion', () => {
     const lag =
       alertController.present.ignoresTouchesForMs -
       alertController.present.durationMs;
-    now = 2000 + 600 + lag - 1;
+    const present = lengthMs(SLOW_PRESENT);
+    expect(present).toBeGreaterThan(alertController.present.durationMs + 100);
+    now = 2000 + present + lag - 1;
     expect(motion().acceptsTouches()).toBe(false);
-    now = 2000 + 600 + lag;
+    now = 2000 + present + lag;
     expect(motion().acceptsTouches()).toBe(true);
-    view.rerender(<ThemedAlert isOpen={false} />);
+    view.rerender(<Alert isOpen={false} isEnabled />);
     act(() => {
-      vi.advanceTimersByTime(800 + 99);
+      vi.advanceTimersByTime(lengthMs(SLOW_DISMISS) + 99);
     });
     expect(motion().isPresented).toBe(true);
     act(() => {
       vi.advanceTimersByTime(1);
     });
     expect(motion().isPresented).toBe(false);
+  });
+
+  it('takes no theme variable: `--motion-springs-alert-*` on its theme changes neither the spring it plays nor the touch window', async () => {
+    render(
+      <div
+        data-astryx-theme="slow"
+        style={{
+          ['--motion-springs-alert-present' as string]: '0.8s 0',
+          ['--motion-springs-alert-dismiss' as string]: '0.8s 0',
+        }}>
+        <Alert isOpen isEnabled />
+      </div>,
+    );
+    const {panel} = animators();
+    expect(panel.calls.find(call => call.kind === 'animate')).toMatchObject({
+      spring: springs.alertPresent,
+    });
+    await act(async () => {
+      panel.starts.at(-1)?.(2000);
+    });
+    now = 2000 + alertController.present.ignoresTouchesForMs - 1;
+    expect(motion().acceptsTouches()).toBe(false);
+    now = 2000 + alertController.present.ignoresTouchesForMs;
+    expect(motion().acceptsTouches()).toBe(true);
+  });
+
+  it("measures UIKit's durations as its springs' lengths, so the alert keeps UIKit's 435 ms window", () => {
+    for (const [spring, measured] of [
+      [springs.alertPresent, alertController.present.durationMs],
+      [springs.alertDismiss, alertController.dismiss.durationMs],
+    ] as const) {
+      expect(Math.round(settlingDuration(toSpring(spring)) * 1000)).toBe(
+        measured,
+      );
+    }
   });
 
   it('keeps refusing touches when the presentation reports its start after the alert began to leave', async () => {

@@ -19,7 +19,14 @@ import {
   afterEach,
 } from 'vitest';
 import {readFileSync} from 'node:fs';
-import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+  cleanup,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -39,6 +46,7 @@ import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation
 import {MENU_PRESS_LONG_PRESS_MS} from '../hooks/useMenuPress';
 import {MENU_PRESS_SETTLE_MS} from '../hooks/menuPressGesture';
 import {COMPACT_QUERY, TOUCH_QUERY} from '../utils/touchPresentation';
+import {getGestureHost} from '../gestures/GestureHost';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
@@ -181,16 +189,48 @@ describe('DropdownMenu', () => {
 
     const heading = screen.getByRole('heading', {name: 'Project actions'});
     expect(heading).toHaveStyle({marginInlineStart: 'var(--spacing-3)'});
-    expect(heading.closest('.astryx-section')).toHaveStyle({
-      paddingInlineStart: 'var(--spacing-1)',
-      paddingInlineEnd: 'var(--spacing-1)',
+    // The menu's content element takes the sheet's content padding itself,
+    // with no wrapper: 16px above the first row, 4px at the sides.
+    const content = heading.closest('.astryx-dropdown-menu');
+    expect(content?.parentElement?.closest('.astryx-section')).toBeNull();
+    expect(content).toHaveStyle({
+      paddingTop: 'var(--spacing-4)',
+      paddingInline: 'var(--spacing-1)',
     });
+    // The root heading stands alone, with no row wrapper.
+    expect(heading.parentElement).toBe(content);
     expect(
       screen.getByRole('button', {name: 'Edit project'}).closest('li'),
     ).toHaveStyle({
       paddingInline: 'var(--_item-inset-inline)',
       '--_item-inset-inline': 'var(--spacing-3)',
     });
+  });
+
+  it('renders nothing of the sheet at rest and keeps it through its exit', async () => {
+    await warmMenuBottomSheet();
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Project actions'}}
+        presentation="bottom-sheet"
+        items={[{label: 'Edit project'}]}
+      />,
+    );
+    expect(document.querySelector('dialog')).toBeNull();
+
+    await user.click(screen.getByRole('button', {name: /Project actions/}));
+    const dialog = document.querySelector('dialog');
+    expect(dialog).not.toBeNull();
+
+    await user.keyboard('{Escape}');
+    // Closed, the sheet stays until its dialog has closed (its exit).
+    expect(document.querySelector('dialog')).toBe(dialog);
+    act(() => {
+      dialog?.removeAttribute('open');
+      dialog?.dispatchEvent(new Event('close'));
+    });
+    expect(document.querySelector('dialog')).toBeNull();
   });
 
   it('keeps bottom-sheet section groups inside semantic list items', async () => {
@@ -3056,6 +3096,41 @@ describe('DropdownMenu press model', () => {
     place(menu, {left: 0, top: 0, width: 200, height: 140});
   }
 
+  it('where the primary pointer is fine, an open menu joins no gesture system and adds no touch listener, and a finger\u2019s tap acts once through the press model; where it is coarse, it joins one (spec:AST-094 FR19, FR24)', async () => {
+    const attach = vi.spyOn(getGestureHost(document), 'attach');
+    const add = vi.spyOn(document, 'addEventListener');
+    const touchListeners = () =>
+      add.mock.calls.filter(([type]) => type.startsWith('touch')).length;
+    try {
+      const user = userEvent.setup();
+      // jsdom's primary pointer is fine: the released finger rules apply.
+      expect(window.matchMedia(TOUCH_QUERY).matches).toBe(false);
+      const onPick = vi.fn();
+      const trigger = renderMenu(onPick);
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      expect(attach).not.toHaveBeenCalled();
+      expect(touchListeners()).toBe(0);
+      // A finger's tap there acts at its release; the browser's own click
+      // that follows is swallowed, so the row acts once.
+      fireEvent.pointerDown(item('Edit'), touch);
+      fireEvent.pointerUp(item('Edit'), touch);
+      fireEvent.click(item('Edit'), {detail: 1});
+      expect(onPick).toHaveBeenCalledTimes(1);
+      expect(onPick).toHaveBeenCalledWith('Edit');
+      cleanup();
+      // A phone: the menu's finger tracking attaches while it shows.
+      stubCoarsePointer();
+      const coarseTrigger = renderMenu();
+      await user.click(coarseTrigger);
+      expect(attach).toHaveBeenCalledTimes(1);
+      expect(touchListeners()).toBeGreaterThan(0);
+    } finally {
+      attach.mockRestore();
+      add.mockRestore();
+    }
+  });
+
   it('a finger that lands on one row and lifts on another acts on the second, once', async () => {
     stubCoarsePointer();
     const onPick = vi.fn();
@@ -3556,6 +3631,157 @@ describe('DropdownMenu press model', () => {
     fireEvent.pointerUp(trigger, touch);
     fireEvent.click(trigger, {detail: 1});
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  // spec:AST-094 FR19 and module:DropdownMenu/useMenuPress FR9: the touch
+  // rules follow the PRIMARY pointer. On a touchscreen whose primary pointer
+  // is fine (a laptop), a finger keeps the released finger behavior; finger
+  // or mouse is still read per gesture on both devices.
+  describe('the primary pointer picks the rules; each gesture is still a finger or a mouse', () => {
+    function stubFinePointer() {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn().mockImplementation((query: string) => ({
+          matches: false,
+          media: query,
+          onchange: null,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      );
+      expect(window.matchMedia(TOUCH_QUERY).matches).toBe(false);
+    }
+    const touchmoveIsPrevented = () => {
+      const event = new Event('touchmove', {bubbles: true, cancelable: true});
+      document.body.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+
+    it('fine primary pointer: a finger\u2019s press does not open the menu; its tap opens it through the click', () => {
+      stubFinePointer();
+      const trigger = renderMenu();
+      fireEvent.pointerDown(trigger, {...touch, clientX: 0, clientY: 0});
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      fireEvent.pointerUp(trigger, {...touch, clientX: 0, clientY: 0});
+      fireEvent.click(trigger, {detail: 1});
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('fine primary pointer: a finger held for the 500 ms delay opens the menu with the finger down, holds the page still until the lift, and picks under the released rules', () => {
+      stubFinePointer();
+      vi.useFakeTimers();
+      try {
+        const onPick = vi.fn<(label: string) => void>();
+        const trigger = renderMenu(onPick);
+        fireEvent.pointerDown(trigger, {...touch, clientX: 0, clientY: 0});
+        act(() => {
+          vi.advanceTimersByTime(MENU_PRESS_LONG_PRESS_MS - 1);
+        });
+        expect(trigger).toHaveAttribute('aria-expanded', 'false');
+        act(() => {
+          vi.advanceTimersByTime(1);
+        });
+        expect(trigger).toHaveAttribute('aria-expanded', 'true');
+        // The finger's later touchmoves are the menu's, not a scroll.
+        expect(touchmoveIsPrevented()).toBe(true);
+        // A release before the settle time acts on nothing (FR8's rule).
+        fireEvent.pointerMove(item('Edit'), {...touch, clientX: 0, clientY: 2});
+        // No handoff distance: once settled, a finger that barely moved
+        // lights the row under it and its lift picks it.
+        act(() => {
+          vi.advanceTimersByTime(MENU_PRESS_SETTLE_MS);
+        });
+        fireEvent.pointerMove(item('Delete'), {
+          ...touch,
+          clientX: 0,
+          clientY: 3,
+        });
+        expect(item('Delete')).toHaveFocus();
+        fireEvent.pointerUp(item('Delete'), {...touch, clientX: 0, clientY: 3});
+        expect(onPick).toHaveBeenCalledWith('Delete');
+        expect(touchmoveIsPrevented()).toBe(false);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('fine primary pointer: a finger that lifts outside the menu leaves it open; a mouse released outside closes it', async () => {
+      stubFinePointer();
+      const user = userEvent.setup();
+      const trigger = renderMenu();
+      await user.click(trigger);
+      fireEvent.pointerDown(item('Edit'), touch);
+      fireEvent.pointerUp(document.body, touch);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      fireEvent.pointerDown(item('Edit'), mouse);
+      fireEvent.pointerUp(document.body, mouse);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    function renderCountingMenu() {
+      const onOpenChange = vi.fn<(isOpen: boolean) => void>();
+      const onPick = vi.fn<(label: string) => void>();
+      render(
+        <DropdownMenu button={{label: 'Actions'}} onOpenChange={onOpenChange}>
+          <DropdownMenuItem label="Edit" onClick={() => onPick('Edit')} />
+          <DropdownMenuItem label="Delete" onClick={() => onPick('Delete')} />
+        </DropdownMenu>,
+      );
+      return {
+        trigger: screen.getByRole('button', {name: /Actions/}),
+        onOpenChange,
+        onPick,
+      };
+    }
+
+    it('coarse primary pointer: a finger opens the menu once, as it presses, and it closes once at a pick (module AR5)', () => {
+      stubCoarsePointer();
+      const {trigger, onOpenChange, onPick} = renderCountingMenu();
+      fireEvent.pointerDown(trigger, {...touch, clientX: 0, clientY: 0});
+      fireEvent.pointerUp(trigger, {...touch, clientX: 0, clientY: 0});
+      // The tap's own click comes after the lift; it must not toggle.
+      fireEvent.click(trigger, {detail: 1});
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      expect(onOpenChange.mock.calls).toEqual([[true]]);
+      // In the open menu the gesture system tracks the finger: a tap on a
+      // row with a layout box acts at the lift.
+      placeRows([item('Edit'), item('Delete')]);
+      const contact = finger();
+      contact.down(item('Delete'), rowCenter(1));
+      contact.up(item('Delete'), rowCenter(1));
+      expect(onPick).toHaveBeenCalledWith('Delete');
+      expect(onOpenChange.mock.calls).toEqual([[true], [false]]);
+    });
+
+    it('fine primary pointer: a finger opens the menu once, through its tap\u2019s click, and it closes once at a pick (module AR5)', () => {
+      stubFinePointer();
+      const {trigger, onOpenChange, onPick} = renderCountingMenu();
+      fireEvent.pointerDown(trigger, {...touch, clientX: 0, clientY: 0});
+      fireEvent.pointerUp(trigger, {...touch, clientX: 0, clientY: 0});
+      fireEvent.click(trigger, {detail: 1});
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      expect(onOpenChange.mock.calls).toEqual([[true]]);
+      fireEvent.pointerDown(item('Delete'), touch);
+      fireEvent.pointerUp(item('Delete'), touch);
+      expect(onPick).toHaveBeenCalledWith('Delete');
+      expect(onOpenChange.mock.calls).toEqual([[true], [false]]);
+    });
+
+    it('coarse primary pointer: a mouse keeps the mouse path: it opens on its press, and a press in the menu released outside closes it', () => {
+      stubCoarsePointer();
+      const trigger = renderMenu();
+      fireEvent.pointerDown(trigger, mouse);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      fireEvent.pointerUp(trigger, mouse);
+      fireEvent.click(trigger, {detail: 1});
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      fireEvent.pointerDown(item('Edit'), mouse);
+      fireEvent.pointerUp(document.body, mouse);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
   });
 });
 

@@ -4,12 +4,13 @@
  * @file index.ts
  * @input The domain files of the UIKit constants table
  * @output Re-exports `springs`, `scroll`, `timing`, `navigation`, the
- *   gesture thresholds (`UIKIT_GESTURES` and the haptic tables) and the
- *   component domains (`menu`)
+ *   gesture thresholds (one `UIKIT_*` group per recognizer, their union
+ *   `UIKIT_GESTURES`, and the haptic tables) and the component domains
+ *   (`menu`)
  * @position Entry of the UIKit constants table (motion/uikit). Internal to
  *   core: not exported from the package entry point
  *
- * THE table (law P1): every spring, duration, deceleration rate, rubber-band
+ * THE table (`spec:AST-094` FR1, FR2): every spring, duration, deceleration rate, rubber-band
  * constant, timing curve and gesture threshold a touch presentation uses
  * comes from here, with its source next to it. Components never carry their
  * own numbers.
@@ -21,13 +22,22 @@
 export {
   HAPTIC_FEEDBACK_KINDS,
   HAPTIC_VIBRATION_PATTERNS,
-  isGuess,
+  UIKIT_CLICK,
+  UIKIT_CONTROL,
   UIKIT_GESTURES,
+  UIKIT_LONG_PRESS,
+  UIKIT_MENU_PRESS,
+  UIKIT_PAN,
+  UIKIT_PINCH,
+  UIKIT_PRESS,
+  UIKIT_ROTATION,
+  UIKIT_SCREEN_EDGE_PAN,
+  UIKIT_SWIPE,
+  UIKIT_TAP,
+  UIKIT_VELOCITY,
   type GestureConstant,
   type GestureConstantUnit,
-  type GuessedGestureConstant,
   type HapticFeedbackKind,
-  type SourcedGestureConstant,
 } from './gestures';
 export {menu, registerMenuTable} from './menu';
 export {navigation, registerNavigationTable} from './navigation';

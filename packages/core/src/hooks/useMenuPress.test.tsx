@@ -20,11 +20,18 @@ import {
   __resetMenuPressForTest,
   useDropdownMenuPress,
   useMenuPress,
+  type DropdownMenuPressReturn,
   type UseMenuPressReturn,
 } from './useMenuPress';
 import {MENU_PRESS_SETTLE_MS} from './menuPressGesture';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 import {scroll} from '../motion/uikit/scroll';
+import {coarsePrimaryPointer} from '../gestures/__tests__/pointerQuery';
+import {
+  finger,
+  placeRows,
+  rowCenter,
+} from '../DropdownMenu/__tests__/fingerTouch';
 
 /**
  * The page under a finger (a coarse primary pointer), as WebKit on iOS when
@@ -84,7 +91,7 @@ interface HarnessProps {
   longPressDelayMs?: number;
   isInClosedPopover?: boolean;
   /** Receives the hook's return, for calls the trigger does not make. */
-  pressRef?: {current: UseMenuPressReturn | null};
+  pressRef?: {current: DropdownMenuPressReturn | null};
 }
 
 function Harness({
@@ -406,14 +413,29 @@ describe('useMenuPress — release outside and cancellation', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
-  it('a pointercancel clears the row the press lit (the browser took it for a scroll)', () => {
+  it('where the primary pointer is coarse, a cancelled touch clears the row the press lit (the browser took it for a scroll); where it is fine, the highlight stays as before', () => {
+    // Under 'uikit' the gesture system tracks a finger in the menu: touch
+    // events over rows with a layout box, where the primary pointer is coarse.
+    const restorePointer = coarsePrimaryPointer();
     const onHighlight = vi.fn();
-    render(<Harness onHighlight={onHighlight} />);
+    const {unmount} = render(
+      <Harness touchModel="uikit" onHighlight={onHighlight} />,
+    );
+    placeRows([row('A'), row('B'), row('C')]);
+    const contact = finger();
+    contact.down(row('A'), rowCenter(0));
+    contact.move(row('A'), rowCenter(1));
+    expect(onHighlight).toHaveBeenLastCalledWith(row('B'));
+    contact.cancel(row('A'), rowCenter(1));
+    expect(onHighlight).toHaveBeenLastCalledWith(null);
+    unmount();
+    restorePointer();
+    const onFineHighlight = vi.fn();
+    render(<Harness onHighlight={onFineHighlight} />);
     fireEvent.pointerDown(row('A'), touch());
     fireEvent.pointerMove(row('B'), touch());
-    expect(onHighlight).toHaveBeenLastCalledWith(row('B'));
     fireEvent.pointerCancel(row('B'), touch());
-    expect(onHighlight).toHaveBeenLastCalledWith(null);
+    expect(onFineHighlight).toHaveBeenLastCalledWith(row('B'));
   });
 
   it('a second pointer ends the gesture and does not start another', () => {
@@ -601,6 +623,135 @@ describe('useMenuPress — the trigger', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 
+  describe('a pointer that went down elsewhere is the opening press (continueGesture, module FR11)', () => {
+    /** Hand pointer 7 to the menu, as a context menu's long press does. */
+    const continueAt = (
+      press: {current: DropdownMenuPressReturn | null},
+      pointerType: 'touch' | 'mouse',
+    ) => {
+      act(() => {
+        press.current?.continueGesture({
+          pointerId: 7,
+          pointerType,
+          time: Date.now(),
+        });
+      });
+    };
+    const finger = {pointerType: 'touch', pointerId: 7};
+
+    it('where the primary pointer is coarse, a finger picks only after the handoff distance from the first position the menu sees', () => {
+      const onSelect = vi.fn();
+      const press: {current: DropdownMenuPressReturn | null} = {current: null};
+      render(
+        <Harness
+          touchModel="uikit"
+          onSelect={onSelect}
+          pressRef={press}
+          // The row under the finger by an injected hit test: the machine's
+          // handoff decides when it may light (the rect tracker is the
+          // DropdownMenu suite's).
+          hitTest={() => row('B')}
+        />,
+      );
+      continueAt(press, 'touch');
+      fireEvent.pointerMove(row('B'), {...finger, clientX: 0, clientY: 4});
+      expect(row('B')).not.toHaveFocus();
+      fireEvent.pointerMove(row('B'), {...finger, clientX: 0, clientY: 20});
+      expect(row('B')).toHaveFocus();
+      fireEvent.pointerUp(row('B'), {...finger, clientX: 0, clientY: 20});
+      expect(onSelect).toHaveBeenCalledTimes(1);
+      expect(onSelect).toHaveBeenCalledWith('B');
+    });
+
+    it('where the primary pointer is fine, a handed-off finger is the opening press under the settle rule: no handoff distance', () => {
+      const onSelect = vi.fn();
+      const press: {current: DropdownMenuPressReturn | null} = {current: null};
+      render(<Harness onSelect={onSelect} pressRef={press} />);
+      // Released at once, it acts on nothing and the menu stays.
+      continueAt(press, 'touch');
+      fireEvent.pointerUp(row('A'), {...finger, clientX: 0, clientY: 0});
+      expect(onSelect).not.toHaveBeenCalled();
+      // Moved onto a row, however little, it lights it and its lift picks it.
+      continueAt(press, 'touch');
+      fireEvent.pointerMove(row('B'), {...finger, clientX: 0, clientY: 4});
+      expect(row('B')).toHaveFocus();
+      fireEvent.pointerUp(row('B'), {...finger, clientX: 0, clientY: 4});
+      expect(onSelect).toHaveBeenCalledTimes(1);
+      expect(onSelect).toHaveBeenCalledWith('B');
+    });
+
+    it('the distance counts from the first position the menu sees, not from where the finger was as it opened', () => {
+      const press: {current: DropdownMenuPressReturn | null} = {current: null};
+      render(
+        <Harness
+          touchModel="uikit"
+          pressRef={press}
+          // The row under the finger by an injected hit test, as above.
+          hitTest={() => row('C')}
+        />,
+      );
+      continueAt(press, 'touch');
+      const handoff = UIKIT_GESTURES.menuPress.handoff.value;
+      // However far it went before the menu saw it, the first sample only
+      // marks where the distance starts.
+      fireEvent.pointerMove(row('C'), {...finger, clientX: 0, clientY: 40});
+      expect(row('C')).not.toHaveFocus();
+      fireEvent.pointerMove(row('C'), {
+        ...finger,
+        clientX: 0,
+        clientY: 40 + handoff - 1,
+      });
+      expect(row('C')).not.toHaveFocus();
+      fireEvent.pointerMove(row('C'), {
+        ...finger,
+        clientX: 0,
+        clientY: 40 + handoff,
+      });
+      expect(row('C')).toHaveFocus();
+    });
+
+    it('a finger lifted before the handoff acts on nothing, and its click is spent', () => {
+      const onSelect = vi.fn();
+      const press: {current: DropdownMenuPressReturn | null} = {current: null};
+      render(
+        <Harness touchModel="uikit" onSelect={onSelect} pressRef={press} />,
+      );
+      continueAt(press, 'touch');
+      fireEvent.pointerMove(row('B'), {...finger, clientX: 0, clientY: 3});
+      fireEvent.pointerUp(row('B'), {...finger, clientX: 0, clientY: 3});
+      fireEvent.click(row('B'), {detail: 1});
+      expect(onSelect).not.toHaveBeenCalled();
+    });
+
+    it('a mouse follows the settle rule: released at once it acts on nothing; moved onto a row it picks it', () => {
+      const onSelect = vi.fn();
+      const press: {current: DropdownMenuPressReturn | null} = {current: null};
+      render(<Harness onSelect={onSelect} pressRef={press} />);
+      const pointer = {pointerType: 'mouse', pointerId: 7, button: 0};
+      continueAt(press, 'mouse');
+      fireEvent.pointerUp(row('A'), pointer);
+      expect(onSelect).not.toHaveBeenCalled();
+      continueAt(press, 'mouse');
+      fireEvent.pointerMove(row('B'), pointer);
+      expect(row('B')).toHaveFocus();
+      fireEvent.pointerUp(row('B'), pointer);
+      expect(onSelect).toHaveBeenCalledWith('B');
+    });
+
+    it('is ignored while another gesture is live', () => {
+      const onSelect = vi.fn();
+      const press: {current: DropdownMenuPressReturn | null} = {current: null};
+      render(<Harness onSelect={onSelect} pressRef={press} />);
+      fireEvent.pointerDown(row('A'), touch(1));
+      continueAt(press, 'touch');
+      fireEvent.pointerMove(row('C'), {...finger, clientX: 0, clientY: 40});
+      expect(row('C')).not.toHaveFocus();
+      fireEvent.pointerUp(row('A'), touch(1));
+      expect(onSelect).toHaveBeenCalledTimes(1);
+      expect(onSelect).toHaveBeenCalledWith('A');
+    });
+  });
+
   it('the pointer model (the default) keeps the released trigger: a held finger opens at 500 ms, or longPressDelayMs, and its opening press follows the settle rule', () => {
     vi.useFakeTimers();
     const opensAt = (props: Partial<HarnessProps>) => {
@@ -771,6 +922,46 @@ describe('useMenuPress — the trigger', () => {
     }
   });
 
+  it('a trigger under a sticky ancestor in scrolling page content is in a scroll view and waits for the content-touch delay; under a fixed one it opens as the finger presses (spec:AST-094 FR11)', () => {
+    vi.useFakeTimers();
+    const root = document.documentElement;
+    Object.defineProperty(root, 'scrollHeight', {
+      configurable: true,
+      value: 4000,
+    });
+    Object.defineProperty(root, 'clientHeight', {
+      configurable: true,
+      value: 800,
+    });
+    try {
+      const opensAt = (position: 'sticky' | 'fixed') => {
+        const onOpenChange = vi.fn();
+        const {unmount} = render(
+          <div style={{position, top: 0}}>
+            <Harness touchModel="uikit" onOpenChange={onOpenChange} />
+          </div>,
+        );
+        const trigger = screen.getByRole('button', {name: 'Open'});
+        fireEvent.pointerDown(trigger, {...touch(), clientX: 0, clientY: 0});
+        let elapsed = 0;
+        while (onOpenChange.mock.calls.length === 0 && elapsed < 1000) {
+          act(() => {
+            vi.advanceTimersByTime(10);
+          });
+          elapsed += 10;
+        }
+        fireEvent.pointerUp(trigger, {...touch(), clientX: 0, clientY: 0});
+        unmount();
+        return elapsed;
+      };
+      expect(opensAt('sticky')).toBe(scroll.delaysContentTouchesMs);
+      expect(opensAt('fixed')).toBe(0);
+    } finally {
+      delete (root as unknown as Record<string, unknown>).scrollHeight;
+      delete (root as unknown as Record<string, unknown>).clientHeight;
+    }
+  });
+
   it('a finger that travels on the trigger is a scroll, not a held press', () => {
     vi.useFakeTimers();
     const onOpenChange = vi.fn();
@@ -864,11 +1055,13 @@ describe('useMenuPress — edge autoscroll', () => {
   });
 });
 
-describe('useMenuPress — the public hook has no touch model', () => {
+describe('useMenuPress — the public hook takes no touch model option', () => {
   function PublicHarness({
     onOpenChange,
+    longPressDelayMs,
   }: {
     onOpenChange: (open: boolean) => void;
+    longPressDelayMs?: number;
   }) {
     const menuRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
@@ -880,9 +1073,10 @@ describe('useMenuPress — the public hook has no touch model', () => {
         onOpenChange(true);
         return true;
       },
+      longPressDelayMs,
       // An untyped caller passing DropdownMenu's own option gets nothing
       // from it: the touch model is not part of the public hook.
-      ...({touchModel: 'uikit'} as object),
+      ...({touchModel: 'pointer'} as object),
     });
     return (
       <>
@@ -893,6 +1087,53 @@ describe('useMenuPress — the public hook has no touch model', () => {
       </>
     );
   }
+
+  it('returns no continuation: continueGesture is core-internal', () => {
+    const seen: {current: UseMenuPressReturn | null} = {current: null};
+    function Probe() {
+      const menuRef = useRef<HTMLDivElement>(null);
+      seen.current = useMenuPress({menuRef, itemSelector: ITEM_SELECTOR});
+      return <div ref={menuRef} role="menu" />;
+    }
+    render(<Probe />);
+    expect(seen.current).not.toBeNull();
+    expect('continueGesture' in (seen.current as object)).toBe(false);
+  });
+
+  it('with no delay set, a finger opens the menu as it presses where the primary pointer is coarse (spec:AST-094 FR25, FR29)', () => {
+    emulateTouch({ios: false});
+    const onOpenChange = vi.fn();
+    render(<PublicHarness onOpenChange={onOpenChange} />);
+    fireEvent.pointerDown(screen.getByRole('button', {name: 'Open'}), {
+      pointerType: 'touch',
+      pointerId: 1,
+      button: 0,
+      clientX: 0,
+      clientY: 0,
+    });
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+  });
+
+  it('with a delay set, a finger waits for it on a touch screen too, as released', () => {
+    vi.useFakeTimers();
+    emulateTouch({ios: false});
+    const onOpenChange = vi.fn();
+    render(
+      <PublicHarness onOpenChange={onOpenChange} longPressDelayMs={500} />,
+    );
+    fireEvent.pointerDown(screen.getByRole('button', {name: 'Open'}), {
+      pointerType: 'touch',
+      pointerId: 1,
+      button: 0,
+      clientX: 0,
+      clientY: 0,
+    });
+    expect(onOpenChange).not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+  });
 
   it('a finger press on the trigger does not open the menu by itself', () => {
     const onOpenChange = vi.fn();

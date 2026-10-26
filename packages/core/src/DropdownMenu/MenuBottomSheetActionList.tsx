@@ -15,7 +15,7 @@ import {Divider} from '../Divider';
 import {Heading} from '../Heading';
 import {Icon, renderIconSlot} from '../Icon';
 import {List, ListItem} from '../List';
-import {useMenuPress} from '../hooks/useMenuPress';
+import {useMenuSurfacePress} from '../hooks/useMenuPress';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {rtlStyles} from '../utils';
 import {getInteractionModality} from '../utils/interactionModality';
@@ -33,9 +33,9 @@ const styles = stylex.create({
     userSelect: 'none',
   },
   destructiveAction: {
-    '--_item-label-color': colorVars['--color-error'],
-    '--_item-description-color': colorVars['--color-error'],
-    color: colorVars['--color-error'],
+    '--_item-label-color': colorVars['--color-text-error'],
+    '--_item-description-color': colorVars['--color-text-error'],
+    color: colorVars['--color-text-error'],
   },
   structuralItem: {
     listStyleType: 'none',
@@ -70,7 +70,7 @@ export function MenuBottomSheetActionList({
   // The press model: the row under a finger's RELEASE acts, and the
   // highlight (focus) follows the finger across the rows. The sheet is modal,
   // so a release outside it is the scrim's, not a dismissal of ours.
-  const menuPress = useMenuPress({
+  const menuPress = useMenuSurfacePress({
     menuRef: listRef,
     itemSelector: SHEET_ROW_SELECTOR,
   });

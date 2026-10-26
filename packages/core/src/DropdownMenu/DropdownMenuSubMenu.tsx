@@ -74,7 +74,7 @@ import {useMenuHover} from '../hooks/useMenuHover';
 import {
   isMenuPressActivation,
   MENU_PRESS_SURFACE_ATTR,
-  useDropdownMenuPress,
+  useMenuSurfacePress,
 } from '../hooks/useMenuPress';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useMenuOverflow} from './useMenuOverflow';
@@ -1033,14 +1033,15 @@ export function DropdownMenuSubMenu(
 
   // The press model for this flyout: the row under a release acts, the
   // highlight follows a held pointer. A mouse released outside every level
-  // dismisses the whole menu; a finger leaves it open.
-  const menuPress = useDropdownMenuPress({
+  // dismisses the whole menu; a finger leaves it open. It takes the root's
+  // touch model, so a finger here follows the root's rules (spec:AST-094
+  // FR26-FR28 apply to sub-menus too): under its touch modes a finger is
+  // tracked as UIMenu's list tracks it.
+  const menuPress = useMenuSurfacePress({
     menuRef,
     itemSelector: MENU_ITEM_SELECTOR,
     onDismiss: nestedMenuContext.closeMenu,
-    // As the root menu: under its touch modes a finger is tracked as UIMenu's
-    // list tracks it.
-    touchModel: rootSurface?.touchModes === true ? 'uikit' : 'pointer',
+    touchModel: rootSurface?.touchModel,
     isOpen,
   });
 
