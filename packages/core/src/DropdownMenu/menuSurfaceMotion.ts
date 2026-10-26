@@ -138,8 +138,8 @@ export function menuSpring(direction: 'open' | 'close'): SpringDescription {
 
 /**
  * How long the close stays on screen, in ms: the close spring as the
- * element's theme sets it (motion roles; the table's value otherwise), or
- * the reduced-motion fade the animator plays instead.
+ * animator reads it (`springs.menuClose`, an internal motion role, so its
+ * table value), or the reduced-motion fade the animator plays instead.
  */
 export function menuExitDurationMs(element: Element | null): number {
   const fade = reducedMotionFade(element);
