@@ -994,9 +994,9 @@ function useFineHover(): boolean | null {
 /**
  * NavItem's hover tint. Before: today's item, which tints at once on any
  * hover, a tap's false hover on a touch screen included. After: the tint
- * fades on Astryx's state token (`--duration-fast`, 175 ms, on the shipped
- * `--ease-standard` curve), and only where the device hovers with a fine
- * pointer, so a tap leaves no tint behind.
+ * fades on Astryx's state token (`--duration-fast`, whatever the theme sets,
+ * on the shipped `--ease-standard` curve), and only where the device hovers
+ * with a fine pointer, so a tap leaves no tint behind.
  */
 export function NavTintRig({mode}: {mode: Mode}) {
   const {speed, reducedMotion} = useMotionLab();
@@ -1010,7 +1010,7 @@ export function NavTintRig({mode}: {mode: Mode}) {
           ['--tint-duration' as string]:
             reducedMotion === 'delete'
               ? '0ms'
-              : `calc(var(--duration-fast, 175ms) * ${speed})`,
+              : `calc(var(--duration-fast) * ${speed})`,
           ['--tint-ease' as string]: 'var(--ease-standard-today)',
         }
       : {['--tint-duration' as string]: '0ms'};
@@ -1027,7 +1027,7 @@ export function NavTintRig({mode}: {mode: Mode}) {
       <Hint>
         {mode === 'before'
           ? 'Today: the tint snaps on at any hover, including the false hover a tap leaves on a touch screen.'
-          : 'The state token (--duration-fast, 175ms, --ease-standard), only on a fine pointer that hovers.'}
+          : "The theme's state token (--duration-fast on --ease-standard), only on a fine pointer that hovers."}
       </Hint>
       {mode === 'after' && isFineHover != null && (
         <Hint>
