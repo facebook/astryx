@@ -315,6 +315,10 @@ condition; FR34 applies to menus;
 FR31 and FR35 apply to anchored menus and to Popover under a finger; FR32 and
 FR33 apply to menus only. A mouse keeps today's behavior.
 
+FR26–FR28 are the shared rule of `family:action-groups`: every member, not
+only menus, follows them under the family's scope, governed by the one
+internal `actionGroupTracker` (DEC-17).
+
 - **FR26 — The lift decides.** A menu row MUST act when the finger lifts over
   it, never because the press began on it; a press that never left its row is
   a tap and acts on that row. One gesture acts at most once: the browser's
@@ -701,6 +705,18 @@ rows likewise highlight on touch-down is a guess until a short UIMenu on the
 iOS 26.2 simulator measures it.
 
 Rejected: the 150 ms delay on every menu row.
+
+### DEC-17 — Every group of sibling actions tracks a held pointer the same way
+
+**Reference:** `spec:AST-094/DEC-17`
+**Decider:** `cixzhang`, `2026-10-26`
+
+A person who presses one action and slides to another expects the same result
+in a menu, a segmented control, an alert's buttons, or a button group. One
+internal tracker governs every group of sibling actions, so the behavior is
+consistent and built once (`family:action-groups`).
+
+Rejected: a tracking rule for menus only.
 
 ## Open questions
 

@@ -1,0 +1,176 @@
+---
+schema_version: 1
+template_version: 1
+kind: family
+id: family:action-groups
+authority: current
+archive_reason: null
+superseded_by: null
+approved_by: cixzhang
+approved_at: 2026-10-26
+owners: [cixzhang]
+review_triggers: [behavior, interaction, accessibility]
+verified_by:
+  [
+    packages/core/src/hooks/useMenuPress.test.tsx,
+    packages/core/src/hooks/menuPressGesture.test.ts,
+  ]
+members:
+  [
+    component:DropdownMenu,
+    component:DropdownMenuSubMenu,
+    component:ContextMenu,
+    component:Selector,
+    component:MultiSelector,
+    component:DateInput,
+    component:SegmentedControl,
+    component:AlertDialog,
+    component:Dialog,
+    component:ButtonGroup,
+    component:ToggleButtonGroup,
+    component:Toolbar,
+    component:Banner,
+    component:Toast,
+    component:Card,
+  ]
+architecture: [architecture:interaction-modality]
+contributing: []
+deciding_specs: [spec:AST-094/DEC-17]
+---
+
+# Action groups contract
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "interaction": ["FR1", "FR2", "FR3", "FR4", "FR5"]
+  }
+}
+```
+
+## Intent
+
+A person can press one action in a group of sibling actions, slide across the
+others while the highlight follows, and act on the one they lift on, the same
+way in every group. One internal module, `actionGroupTracker`, gives every
+member the same behavior, so no member builds its own.
+
+## Membership rule
+
+A component is a member when it renders a set of two or more sibling
+momentary, toggle, or option actions that a person chooses one of. Members
+today:
+
+- menus: DropdownMenu, ContextMenu, and their sub-menus;
+- option lists: Selector's and MultiSelector's options, and the date wheels of
+  DateInput and DateTimeInput;
+- SegmentedControl;
+- AlertDialog's actions, and Dialog's actions and footer area, not arbitrary
+  dialog content;
+- ButtonGroup and ToggleButtonGroup;
+- Toolbar's buttons; a field inside a toolbar is skipped;
+- the action rows of Banner, Toast, and Card when a row has two or more
+  sibling actions.
+
+A component built later that matches the rule joins by the rule, including an
+action sheet, a tab bar or navigation bar, a filter-chip group, and a rating.
+
+These are not members:
+
+- text inputs and InputGroup's input, which keep the caret and selection;
+- TabList, whose scrollable rows need a drag to scroll and whose tabs switch
+  views;
+- Pagination and Stepper, whose items are navigation destinations;
+- RadioList, CheckboxList, and SelectableCard, whose rows and cards sit in
+  scrolling lists;
+- Token chips, which are removable and have no group control.
+
+## Shared owner
+
+`actionGroupTracker` is the one internal module that tracks a held pointer
+across a group's actions. `module:DropdownMenu/useMenuPress` converges onto
+it. It is internal and unexported (`spec:AST-017` FR21).
+
+## Canonical concepts
+
+- **Action group:** two or more sibling actions a person chooses one of.
+- **Held pointer:** a press that has not lifted, tracked across the group.
+- **Lifted action:** the enabled action under the pointer when it lifts.
+
+## Cross-component invariants
+
+- **FR1 — The lift decides.** In a member, a press on an action that slides
+  across its siblings acts on the action the pointer lifts on, through that
+  action's own activation; a press that never leaves its action acts on it.
+  One gesture acts at most once (`spec:AST-094` FR26).
+- **FR2 — The highlight follows the pointer.** While the pointer is held, the
+  enabled action under it is highlighted, at most one at a time, and nothing
+  is highlighted over a disabled action, a gap, or outside the group
+  (`spec:AST-094` FR27).
+- **FR3 — Sliding off cancels.** A press that lifts outside the group acts on
+  nothing; a cancelled pointer, a second finger, or the window losing focus
+  ends the gesture with nothing acting (`spec:AST-094` FR28).
+- **FR4 — A toggle group toggles only the lifted action.** In a toggle group,
+  only the action lifted on toggles; sliding across never toggles the actions
+  passed over.
+- **FR5 — Every pointer, one target rule.** The behavior applies to every web
+  pointer, mouse and pen as well as a finger. The 44 px target applies under a
+  coarse pointer only. Keyboard and assistive-technology behavior is
+  unchanged.
+
+## Allowed component variation
+
+- What an action does on activation, and how a member shows its highlight,
+  stay with the member.
+- Menus keep their own opening and handoff (`spec:AST-094` FR29) and their
+  scrolling rules.
+
+## Representative matrix
+
+| Member and state                       | Shared invariant                                    | Deliberate variation                            |
+| -------------------------------------- | --------------------------------------------------- | ----------------------------------------------- |
+| DropdownMenu / slide from row to row   | the lifted row acts; one row lit at a time          | opening and handoff stay the menu's (FR29)      |
+| SegmentedControl / slide across        | the lifted segment is selected                      | the selected surface's look stays the control's |
+| AlertDialog / slide from Cancel        | the lifted action runs; a lift outside does nothing | the actions' order and stacking stay local      |
+| ToggleButtonGroup / slide across three | only the lifted toggle changes                      | single or multiple selection stays the group's  |
+| Toolbar with a field / slide across    | buttons track; the field is skipped                 | which controls a toolbar holds stays local      |
+
+## Adoption and exceptions
+
+| Components or surface                         | Required adoption                                                              |
+| --------------------------------------------- | ------------------------------------------------------------------------------ |
+| Menus, Selector, MultiSelector, date wheels   | Track through `actionGroupTracker`; `useMenuPress` converges onto it.          |
+| SegmentedControl                              | Track through `actionGroupTracker`.                                            |
+| AlertDialog, Dialog's actions and footer area | Track the actions only; dialog content outside the action area is not a group. |
+| ButtonGroup, ToggleButtonGroup, Toolbar       | Track sibling buttons; a field inside is skipped; toggles follow FR4.          |
+| Banner, Toast, and Card action rows           | Track only a row with two or more sibling actions.                             |
+
+These are required outcomes, not a claim of completed adoption. The excluded
+components listed under the membership rule are not exceptions to approve;
+they are outside the family.
+
+## Verification map
+
+| Contract | Verification                                                                  | Representative members and states                                                               |
+| -------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| FR1–FR3  | `actionGroupTracker` tests and each member's pointer-stream tests             | a slide across a menu, a SegmentedControl, AlertDialog's actions, a ButtonGroup; a lift outside |
+| FR4      | ToggleButtonGroup pointer-stream tests                                        | a slide across three toggles; only the lifted one toggles                                       |
+| FR5      | Member tests with a mouse, a pen, a finger, the keyboard, and a screen reader | a 44 px target under a coarse pointer only; unchanged keyboard and screen-reader paths          |
+
+## Decision links
+
+- `spec:AST-094/DEC-17` — every group of sibling actions tracks a held
+  pointer the same way.
+
+## Open questions
+
+None.
+
+## Content boundary
+
+This file owns action-group membership and the shared press, slide, and lift
+behavior. It does not duplicate component prop tables, what each action does,
+menu opening, or the tracker's thresholds.
