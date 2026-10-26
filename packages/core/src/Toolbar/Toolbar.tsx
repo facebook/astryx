@@ -27,6 +27,7 @@ import {spacingVars, sizeVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {Section} from '../Section/Section';
 import {useListFocus} from '../hooks/useListFocus';
+import {useSiblingActionTracking} from '../hooks/useSiblingActionTracking';
 import {useKeyboardHint} from '../hooks/useKeyboardHint';
 import {SizeProvider} from '../SizeContext/SizeContext';
 import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
@@ -254,6 +255,10 @@ export function Toolbar({
     hasRovingTabIndex: true,
     hasCaretGuard: true,
   });
+
+  // The toolbar's buttons track a held pointer as one group; a field in it is
+  // skipped and keeps a mouse's text selection (family:action-groups).
+  useSiblingActionTracking(listRef, {manageStyle: false});
 
   const {
     hintElement,

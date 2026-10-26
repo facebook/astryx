@@ -21,6 +21,7 @@ import {useCallback, useEffect, useRef} from 'react';
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '../Button';
+import {useSiblingActionTracking} from '../hooks/useSiblingActionTracking';
 import {Icon} from '../Icon';
 import {
   colorVars,
@@ -273,6 +274,11 @@ export function ToastSurface({
     shouldIgnoreTarget: isInteractiveTarget,
   });
 
+  // The action and the dismiss button track a held pointer as one group
+  // (family:action-groups).
+  const endContentRef = useRef<HTMLDivElement | null>(null);
+  useSiblingActionTracking(endContentRef);
+
   const handleDismiss = useCallback(() => {
     onDismiss('manual');
   }, [onDismiss]);
@@ -317,7 +323,7 @@ export function ToastSurface({
           <div {...stylex.props(styles.inner)}>
             <div {...stylex.props(styles.content)}>{body}</div>
 
-            <div {...stylex.props(styles.endContent)}>
+            <div ref={endContentRef} {...stylex.props(styles.endContent)}>
               {endContent}
               <Button
                 variant="ghost"

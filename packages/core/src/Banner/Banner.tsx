@@ -74,6 +74,7 @@ import type {Elevation} from '../utils/types';
 import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import {useSiblingActionTracking} from '../hooks/useSiblingActionTracking';
 import type {BannerStatusMap, BannerContainerMap} from './index';
 
 // =============================================================================
@@ -553,6 +554,10 @@ export function Banner({
   // the browser drops focus to <body> and a keyboard user loses their place.
   // ToastViewport makes the same handoff when a focused toast is dismissed.
   const focusOriginRef = useRef<HTMLElement | null>(null);
+  // The end area's actions track a held pointer as one group when there are
+  // two or more (family:action-groups).
+  const endAreaRef = useRef<HTMLDivElement | null>(null);
+  useSiblingActionTracking(endAreaRef);
   // Links the expand/collapse toggle to the content region it shows/hides so
   // assistive tech can move from the button to its controlled content
   // (disclosure pattern). The region is conditionally rendered, so aria-controls
@@ -713,6 +718,7 @@ export function Banner({
         </div>
         {showEndArea && (
           <div
+            ref={endAreaRef}
             {...stylex.props(
               styles.endArea,
               edgeCompSlot.inset(spacingVars['--spacing-2']),
