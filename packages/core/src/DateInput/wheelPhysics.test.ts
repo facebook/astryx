@@ -2,19 +2,17 @@
 
 /**
  * @file wheelPhysics.test.ts
- * @input wheelPhysics.ts, the gesture system's velocity tracker, and touch
- *   streams and per-frame offsets recorded from a UIPickerView
+ * @input wheelPhysics.ts and per-frame offsets recorded from a UIPickerView,
+ *   with the release velocity UIKit handed its delegate
  * @output Proves the Wheel's curves reproduce UIKit's measured picker: the
- *   release velocity, the projected target, the coast onto the row, the coast
- *   into an end, the snap, the rubber band, the tap spin and the ticks
- * @position Unit coverage for DateInput/wheelPhysics.ts; the browser specs
- *   prove the same curves on screen
+ *   projected target, the coast onto the row, the coast into an end, the
+ *   snap, the rubber band, the tap spin and the ticks
+ * @position Unit coverage for DateInput/wheelPhysics.ts
  *
  * The recordings: a 216 pt UIPickerView column of 60 rows, 32 pt each, on the
  * iOS 26.2 simulator (iPhone 17 Pro) driven by real HID touches, Oct 23 2026.
  * Offsets are converted to this file's convention (row k centred at k × 32):
- * UIKit's contentOffset + 129.67. Touch streams are [ms, y in pt], the lift
- * left out (it updates no velocity); frames are [ms after the lift, offset].
+ * UIKit's contentOffset + 129.67. Frames are [ms after the lift, offset].
  */
 
 import {describe, expect, it} from 'vitest';
@@ -37,7 +35,6 @@ import {
 const MINUTES: WheelLayout = {rowHeight: 32, rowCount: 60};
 
 interface Recording {
-  readonly stream: ReadonlyArray<readonly [number, number]>;
   /** Offset at the lift. */
   readonly offset: number;
   /** The velocity UIKit handed scrollViewWillEndDragging, px/s. */
@@ -51,11 +48,6 @@ interface Recording {
 }
 
 const SWIPE_200_IN_50MS: Recording = {
-  stream: [
-    [0, 368],
-    [46.48, 334.67],
-    [72.92, 201.33],
-  ],
   offset: 1093.33,
   velocity: 933.4,
   targetIn: 1554.67,
@@ -65,14 +57,6 @@ const SWIPE_200_IN_50MS: Recording = {
 };
 
 const SWIPE_200_IN_100MS: Recording = {
-  stream: [
-    [0, 368],
-    [49.2, 351.33],
-    [65.27, 301.33],
-    [88.47, 251.33],
-    [104.68, 218],
-    [129.4, 168],
-  ],
   offset: 1143.33,
   velocity: 2114,
   targetIn: 1888,
@@ -82,19 +66,6 @@ const SWIPE_200_IN_100MS: Recording = {
 };
 
 const SWIPE_200_IN_200MS: Recording = {
-  stream: [
-    [0, 368],
-    [46.01, 359.67],
-    [63.5, 334.67],
-    [81.36, 318],
-    [97.69, 301.33],
-    [120.12, 276.33],
-    [137.2, 259.67],
-    [171.83, 226.33],
-    [196.13, 201.33],
-    [212.66, 184.67],
-    [230.83, 168],
-  ],
   offset: 1110,
   velocity: 1016.2,
   targetIn: 1612.67,
@@ -141,11 +112,6 @@ const SWIPE_200_IN_200MS: Recording = {
 };
 
 const FLICK_90: Recording = {
-  stream: [
-    [0, 353],
-    [41.5, 335],
-    [62.02, 281],
-  ],
   offset: 1014,
   velocity: 543.6,
   targetIn: 1280.67,
@@ -189,7 +155,6 @@ const FLICK_90: Recording = {
 
 /** A slow drag up, held still 300 ms: no velocity, 6 px past row 31. */
 const STILL_6PX_PAST: Recording = {
-  stream: [],
   offset: 998,
   velocity: 0,
   targetIn: 998,
