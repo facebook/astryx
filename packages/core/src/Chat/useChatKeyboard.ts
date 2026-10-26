@@ -9,8 +9,7 @@
  *   keyboard layout guide (each transition's start, resting value and
  *   curve), observeKeyboardDismiss, the animator, the keyboard's own motion
  *   (`keyboard.spring` on iOS, Gboard's slides in Chrome on Android), the
- *   touch query, the layout viewport's height
- *   (utils/layoutViewport.ts)
+ *   touch query, the layout viewport's height (utils/layoutViewport.ts)
  * @output Exports useChatKeyboard: the lift ChatLayout lays its dock and
  *   message area out with, and the refs it puts on its dock, message area
  *   and composer region so the composer rides the software keyboard
