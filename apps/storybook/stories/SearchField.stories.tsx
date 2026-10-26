@@ -5,7 +5,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {SearchField, type SearchFieldHandle} from '@astryxdesign/lab';
 import {type MotionCurve} from '@astryxdesign/core/motion/animator';
 import {cubicBezier} from '@astryxdesign/core/motion/bezier';
-import {search} from '@astryxdesign/core/motion/uikit';
+import {search, timing} from '@astryxdesign/core/motion/uikit';
 import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
 import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
 
@@ -121,7 +121,7 @@ function useLiftedHost(isActive: boolean, lift: number) {
       return;
     }
     const seconds = search.activationMs / 1000;
-    const ease = cubicBezier(search.activationCurve);
+    const ease = cubicBezier(timing.curves.move);
     const progress = (t: number) =>
       ease(seconds > 0 ? Math.min(1, Math.max(0, t / seconds)) : 1);
     // `p` is the activation's progress (1 = active), whichever way it runs.

@@ -17,8 +17,9 @@
  * rest, the close button sliding out at the opacity it has. A change of
  * mind mid-flight adds the turn to the curves on screen, on the whole clock,
  * as UIKit's animations do (the animator's `additive`).
- * The clock and the curve are the search table's internal constants: no
- * theme retunes them (touch motion has no theme surface).
+ * The curve is the `timing.curves.move` motion role (`spec:AST-094` FR4); the
+ * clock is the search table's internal constant, which moves to a role if the
+ * record names one. No theme retunes either (DEC-11).
  *
  * The bottom (toolbar) placement moves differently: SwiftUI changes the
  * field's frame every frame with no animation object, so its swell and
@@ -32,12 +33,15 @@
 
 import {type MotionCurve} from '@astryxdesign/core/motion/animator';
 import {cubicBezier} from '@astryxdesign/core/motion/bezier';
-import {search} from '@astryxdesign/core/motion/uikit';
+import {search, timing} from '@astryxdesign/core/motion/uikit';
 
 const {bottom} = search;
 
-/** The UIKit activation curve as a function of the clock's fraction. */
-export const activationEase = cubicBezier(search.activationCurve);
+/**
+ * The activation's curve, UIKit's ease-in-ease-out (the `timing.curves.move`
+ * role), as a function of the clock's fraction.
+ */
+export const activationEase = cubicBezier(timing.curves.move);
 
 /** The activation's length, s. */
 export const ACTIVATION_S = search.activationMs / 1000;

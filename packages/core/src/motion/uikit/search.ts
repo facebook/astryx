@@ -8,9 +8,9 @@
  *   clear button, the navigation bar's fades over an activation, the field
  *   that scrolls away with the content, and the bottom placement's rest above
  *   the keyboard
- * @position The search domain of the UIKit constants table (motion/uikit);
- *   read by lab's SearchField, and by the navigation stack's bar and the tab
- *   bar's search tab that host it
+ * @position The search domain of the UIKit constants table (motion/uikit).
+ *   Its planned readers are lab's SearchField and the bars that host it (a
+ *   navigation stack's bar, a tab bar's search tab)
  *
  * On iOS 26.2 a search bar in a navigation item activates on one
  * UIViewPropertyAnimator: the field rises into the bar and narrows, a glass
@@ -22,9 +22,13 @@
  * the `@measure` task that will confirm or replace them. uikit.test.ts
  * enforces both.
  *
- * Every value here is an internal constant, the clock and curve included:
- * none is a motion role (`spec:AST-094` FR4 names the roles, and touch motion
- * has no theme surface), so every reader plays the measured values.
+ * The activation plays the `timing.curves.move` motion role: the search
+ * bar's own UICubicTimingParameters, read at setup, are its control points
+ * (`spec:AST-094` FR4). The clock (`activationMs`) and the scroll-away snap
+ * (`scrollAway.snapMs`) are not roles: the touch tables register only the
+ * roles FR4 names, so a component's measured value stays an internal constant
+ * in its own table, and moves to a role if the record names one. The
+ * thresholds and the geometry are not motion.
  *
  * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md
  */
@@ -36,21 +40,16 @@
 export const search = {
   /**
    * The activation's clock, in ms: one UIViewPropertyAnimator moves the
-   * field, its width, the close button and the large title. Cancel runs the
-   * same animator backwards over the same time.
+   * field, its width, the close button and the large title, on UIKit's
+   * ease-in-ease-out (the `timing.curves.move` role: the animator's
+   * UICubicTimingParameters, read at setup, are its control points). Cancel
+   * runs the same animator backwards over the same time.
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, UIViewPropertyAnimator duration read at setup and the
-   *   field's frame per frame (rms 1.5 % against this clock and curve),
-   *   Oct 24 2026
+   *   iPhone 17 Pro, UIViewPropertyAnimator duration and
+   *   UICubicTimingParameters read at setup and the field's frame per frame
+   *   (rms 1.5 % against this clock and curve), Oct 24 2026
    */
   activationMs: 383.3,
-  /**
-   * The activation's curve: the animator's UICubicTimingParameters control
-   * points, UIKit's ease-in-ease-out (`timing.curves.move`).
-   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, UICubicTimingParameters read at setup, Oct 24 2026
-   */
-  activationCurve: [0.42, 0, 0.58, 1],
   // Reduce Motion: UIKit keeps the activation's travel with or without
   // Prefer Cross-Fade Transitions (measured in the same UIKit lab, iOS 26.2
   // simulator, iPhone 17 Pro, Oct 24 2026); Astryx follows
@@ -159,8 +158,9 @@ export const search = {
     /**
      * While active, the field's centre stays this far above the keyboard's
      * top edge, pt (a 17 pt gap), on every frame: the bar rides the
-     * keyboard's own spring (`springs.keyboard`). A tab bar's search field
-     * rests at the same height.
+     * keyboard's own spring (`springs.keyboard`). Only the bottom field was
+     * measured: a tab bar's search field is not, so this value makes no
+     * claim about it.
      * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
      *   iPhone 17 Pro, the bar container's additive CASpringAnimation on
      *   position (the keyboard's spring) and the field's centre against the
