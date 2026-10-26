@@ -221,8 +221,59 @@ describe('List reorderable', () => {
       </List>,
     );
     expect(handleOf('Sent mail')).toBeInTheDocument();
+    // An icon with its own name names the row through the label element.
     expect(
-      await screen.findByRole('button', {name: 'Reorder item 3'}),
+      await screen.findByRole('button', {name: 'Reorder Starred'}),
+    ).toBeInTheDocument();
+  });
+
+  it('names the handle "Reorder" then the row label element, for a component label too (spec:AST-103 FR4)', async () => {
+    function FieldName({name}: {name: string}) {
+      return <span>{name}</span>;
+    }
+    render(
+      <List reorderable={createReorderable({onReorder: () => {}})}>
+        <ListItem itemKey="inbox" label="Inbox" />
+        <ListItem itemKey="custom" label={<FieldName name="Custom Name" />} />
+      </List>,
+    );
+    expect(handleOf('Inbox')).toBeInTheDocument();
+    const custom = await screen.findByRole('button', {
+      name: 'Reorder Custom Name',
+    });
+    // Named by the label element ListItem renders, not by a copied string.
+    expect(custom.getAttribute('aria-labelledby')?.split(' ')).toHaveLength(2);
+  });
+
+  it("names the handle after the row's own aria-label or aria-labelledby when its caller gave one", async () => {
+    render(
+      <>
+        <span id="row-name">Billing address</span>
+        <List reorderable={createReorderable({onReorder: () => {}})}>
+          <ListItem itemKey="a" label={<span>A</span>} aria-label="Account" />
+          <ListItem
+            itemKey="b"
+            label={<span>B</span>}
+            aria-labelledby="row-name"
+          />
+        </List>
+      </>,
+    );
+    expect(handleOf('Account')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', {name: 'Reorder Billing address'}),
+    ).toBeInTheDocument();
+  });
+
+  it('names the handle of a row that shows no text and has no name after its place', async () => {
+    render(
+      <List reorderable={createReorderable({onReorder: () => {}})}>
+        <ListItem itemKey="inbox" label="Inbox" />
+        <ListItem itemKey="dot" label={<svg aria-hidden="true" />} />
+      </List>,
+    );
+    expect(
+      await screen.findByRole('button', {name: 'Reorder item 2'}),
     ).toBeInTheDocument();
   });
 
