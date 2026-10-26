@@ -126,10 +126,13 @@ in `BottomSheet.doc.mjs`.
     Safari's toolbar the sheet's color;
   - the grabber bar is the drag handle, and its `::before` draws the handle;
   - the body is the scroll area;
-  - the content box carries the padding and is the observed content box (FR3).
-- The handle's pill and the toolbar tint are pseudo-elements and the dialog
-  holds the panel in place, so the frame has no positioner, pill or tint
-  element of its own.
+  - the content box carries the padding and is the observed content box (FR3);
+  - in a BottomSheetSwitcher, each sheet's positioner holds its panel at the
+    block end and hides a sheet that is not presented, so one dialog can
+    switch between sheets.
+- The handle's pill and the toolbar tint are pseudo-elements and a standalone
+  sheet's dialog holds the panel in place, so a standalone sheet's frame has
+  no positioner, pill or tint element of its own.
 - Elements a presenting component adds beyond this frame are its own to
   justify.
 
