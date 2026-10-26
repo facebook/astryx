@@ -1183,6 +1183,9 @@ export function useSheetGestures({
             dismissedOffset: canDismissRef.current ? dismissedOffset : null,
             position: offset,
             velocity,
+            // A release moving back toward where the drag began cancels
+            // (spec:AST-094 FR37).
+            start: baseOffset,
           })
         : resolveDefaultRelease({
             detents: offsets,
