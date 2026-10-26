@@ -16,9 +16,14 @@ import {existsSync, readdirSync, readFileSync, statSync} from 'node:fs';
 import {dirname, join, relative, resolve} from 'node:path';
 import {describe, expect, it} from 'vitest';
 
-/** The tables every touch module may share: the animator and gestures read them. */
+/**
+ * The tables every touch module may share: the animator, gestures and the
+ * on-screen keyboard module (keyboard/, spec:AST-099's one module, which times
+ * the keyboard for every keyboard-aware component) read them.
+ */
 const SHARED_TABLES = new Set([
   'motion/uikit/gestures.ts',
+  'motion/uikit/keyboard.ts',
   'motion/uikit/navigation.ts',
   'motion/uikit/scroll.ts',
   'motion/uikit/springs.ts',

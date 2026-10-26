@@ -24,6 +24,7 @@
  */
 
 import React, {
+  use,
   useState,
   useCallback,
   useRef,
@@ -51,6 +52,10 @@ import {ChatComposerInput} from './ChatComposerInput';
 import {ChatComposerContext} from './ChatContext';
 import type {ChatComposerInputControl} from './ChatContext';
 import {ChatSendButton} from './ChatSendButton';
+import {
+  KeyboardSurfaceContext,
+  focusInKeyboardSurface,
+} from './keyboardSurface';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
@@ -429,31 +434,40 @@ export function ChatComposer(props: ChatComposerProps) {
   // drive it without knowing its DOM shape. Stable ref — safe in the memoized
   // context value.
   const inputControlRef = useRef<ChatComposerInputControl | null>(null);
+  // Inside ChatLayout's keyboard-aware region, under a finger, focus refuses
+  // the browser's reveal (spec:AST-099 FR4); elsewhere, and under a mouse
+  // (spec:AST-017 FR59), it is the browser's own.
+  const isKeyboardSurface = use(KeyboardSurfaceContext);
 
-  const handleBodyClick = useCallback((e: MouseEvent<HTMLDivElement>) => {
-    // Focus the input when clicking empty space in the body.
-    // Skip if the click target is a button, link, or interactive element.
-    const target = e.target as HTMLElement;
-    if (
-      target.closest(
-        'button, a, [role="button"], [contenteditable="true"], [data-astryx-token]',
-      )
-    ) {
-      return;
-    }
-    // Prefer the input's registered control (works for any input shape,
-    // including editors whose focusable node isn't a bare
-    // contenteditable/textarea). Fall back to a DOM query so uninstrumented
-    // custom inputs still get click-to-focus.
-    if (inputControlRef.current) {
-      inputControlRef.current.focus();
-      return;
-    }
-    const editable = bodyRef.current?.querySelector<HTMLElement>(
-      '[contenteditable="true"], textarea',
-    );
-    editable?.focus();
-  }, []);
+  const handleBodyClick = useCallback(
+    (e: MouseEvent<HTMLDivElement>) => {
+      // Focus the input when clicking empty space in the body.
+      // Skip if the click target is a button, link, or interactive element.
+      const target = e.target as HTMLElement;
+      if (
+        target.closest(
+          'button, a, [role="button"], [contenteditable="true"], [data-astryx-token]',
+        )
+      ) {
+        return;
+      }
+      // Prefer the input's registered control (works for any input shape,
+      // including editors whose focusable node isn't a bare
+      // contenteditable/textarea). Fall back to a DOM query so uninstrumented
+      // custom inputs still get click-to-focus.
+      if (inputControlRef.current) {
+        inputControlRef.current.focus();
+        return;
+      }
+      const editable = bodyRef.current?.querySelector<HTMLElement>(
+        '[contenteditable="true"], textarea',
+      );
+      if (editable) {
+        focusInKeyboardSurface(editable, isKeyboardSurface);
+      }
+    },
+    [isKeyboardSurface],
+  );
 
   const handleBodyFocusCapture = useCallback(
     (event: FocusEvent<HTMLDivElement>) => {
