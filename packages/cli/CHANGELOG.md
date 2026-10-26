@@ -1,5 +1,96 @@
 # @xds/cli
 
+# 0.7.5
+
+#### Experimental APIs
+
+- New command `astryx experimental render <page>`: renders a page with your installed Astryx components to ONE self-contained HTML file. The file inlines only the Core CSS rules the page uses plus the page's own StyleX styles and local images, runs no script, loads nothing from the network, follows light and dark mode, and carries the page's source. `astryx experimental render --reverse <file.html>` writes that source back byte for byte, rebuilds a page from Astryx markup when the source was removed, and refuses other HTML. Warnings flag what may not look as meant, such as a `ListItem` given children instead of `label`. Experimental commands live under `astryx experimental`, are marked `[experimental]` in help and the manifest, and may change or be removed in any patch release. Guide: `astryx docs cli/experimental/render-pages`.
+
+- Icon sets: authoring a set from a library takes fewer steps and fewer guesses. Only the experimental icon commands, the icon-set guide, and `astryx template` in a project that sets `experimental.iconSet` change; without the opt-in, every stable command reads as before except the `experimental` group's summary in `astryx help` and `astryx manifest`, which now names icon sets: "Try features that may change in a patch release: icon sets (find icons, build an icon-set package)" (it read "Try features that may change or be removed in a patch release").
+
+  - **`experimental icon new-set`.** `--from` maps a definition only when an icon has its exact name and lists those entries for review; other likely icons come back as at most three suggestions per definition, never written. It records the library and version as `source`, copies the library's license notices and takes its license, keeps `--exclude` in the data file's `exclude` for every refresh, and names the exports it left out as not icons. It writes only the set's own files: its receipt names, as text to copy, the entry change that makes the set's icons import from the package by name (never editing a built or CommonJS entry), the `react` and optional `@types/react` and `@astryxdesign/cli` peers, and the `typecheck` script the package is missing, and `integration check` names the same entry change, once, until it is made. `--variants` and `--default-variant` declare variants; `--display-name` and `--description` fill the descriptor, on a refresh too; a refresh that first records the library also copies its license notices and takes its license, and a refresh changes only the icons the refreshed library supplies (your own `./` artwork and other libraries' icons keep their map entries and variants, and `add --all` leaves them alone), knows an existing icon by the library export it re-exports, so the icon keeps its export name exactly, its map entries, variants, and words when its id changes, and the change is listed under `renamed`. Ids keep a dimension as one word (`squares-2x2`), a library's other names for an icon become its words, and `…Provider` and `…Context` exports are never icons. A library of 1,600 icons is read in about two seconds.
+  - **`experimental icon add` and `map`.** `add --variant <name> --from <module> --all` adds a variant for every icon at once; a `./` file is named as written, and the receipt names the package.json `files` that publishes it. `map --pairs a=b,c=d` writes many entries in one checked write, and both accept a definition's kebab id; `map` names an icon by its id, its export name in any case, or another name its library exports it as, never by one word of its id.
+  - **Options decided in pairs.** Every icon command refuses two options it would not both honor, with `ERR_INVALID_OPTION` (such as `--list --definitions`, `--definitions --limit 3`, `--all-icons` with a query, `add --all --id`, or `new-set --exclude` without `--from`), instead of ignoring one.
+  - **All or nothing.** When `new-set`, `add`, `map`, or `new-definition` fails partway, every file is as it was and the error is `ERR_WRITE_FAILED`.
+  - **Sets named consistently.** Every icon command that names a set (`--set` with a query or `--all-icons`, `<set>/<id>`, `use`, and `add`, `map`, `new-definition` in the package) reports a set that is not there as missing and an invalid one as withdrawn, with why, both `ERR_NOT_FOUND`.
+  - **Listing.** `experimental icon --set <set> --all-icons` lists every icon of a set (`icon.setIcons`) and `--definitions` lists every Astryx definition, built in or optional (`icon.definitions`). Search shows partial matches only when nothing better matches.
+  - **Templates.** A mapped icon drops the library's sizing props (`size`, `strokeWidth`, `absoluteStrokeWidth`), reported as `dropped`, and comments on a rewritten import line are kept.
+  - **Definitions.** Thirteen new icon definitions (`rotate`, `flipHorizontal`, `flipVertical`, `alignStart`, `alignCenter`, `alignEnd`, `panelLeft`, `panelRight`, `gitBranch`, `gitFork`, `scale`, `cpu`, `textCase`), declared by the templates that draw them. Built-in and optional definitions gain common glyph names as words; seven optional definitions lose a word that named a different thing, so a search for that word no longer finds a set's icon through them: `star` (`bookmark`), `database` (`table`), `raiseHand` (`stop`), `redo` (`forward`), `activity` (`monitor`), `archive` (`store`), `mobile` (`device`).
+  - **Checks.** `integration check` suggests icons by the same rule and lists each optional definition with its description and words; the version-drift warning gives the refresh command.
+
+#### New Features
+
+- CodeBlock's `tokenizer` prop is deprecated in favour of a custom language value: pass `language={createCodeLanguage({name, identifiers, tokenize})}` with the same function. The prop still works exactly as released. `astryx upgrade` rewrites it when it sits beside a static `language`. A function literal becomes `language={createCodeLanguage({name: 'zig', identifiers: ['zig'], tokenize: (code) => …})}`. A name or call-free property becomes `language={fn ? createCodeLanguage({…, tokenize: fn}) : 'zig'}`, since it may be undefined. Uses it cannot prove are left unchanged, with a TODO comment: a computed, missing, or `plaintext` language, any other tokenizer value, or a block that spreads props.
+
+- Status colours now have a role for each surface, and Info is a new status. For each of info, success, warning, and error: `--color-<status>` is the strong fill and `--color-on-<status>` is content on it, at 4.5:1 or more; `--color-<status>-muted` is the pale fill, with `--color-on-<status>-muted` content; and `--color-text-<status>` is readable status text on the page and cards, with `--color-icon-<status>` and `--color-border-<status>` (status icons and borders) defaulting to it. `--color-info`, `--color-on-info`, `--color-info-muted`, and the other Info roles are new and independent of the accent. Tailwind gains `bg-info`, `bg-info-muted`, `text-on-<status>`, `text-on-<status>-muted`, and `text-status-<status>` (the status text role). Introduced in [#7657](https://github.com/facebook/astryx/pull/7657).
+
+  `--color-success`, `--color-warning`, and `--color-error` and `bg-<status>` keep their meaning as the strong fills. Tailwind now projects each status by paint property: `text-`, `decoration-`, `placeholder-`, and `caret-<status>` read the status text role, and `border-`, `divide-`, `outline-`, and `ring-<status>` read the status border role, so status text and lines are readable on the page; `bg-`, `accent-`, `fill-`, `stroke-<status>`, shadow colours, and gradients keep the strong fill. for example, Core's light `text-warning` is now `#753F07` instead of `#E9AF08`, and `text-success` is `#09441F` instead of `#0D8626`. To keep the fill colour on text, use `text-[var(--color-warning)]`.
+
+  What changes on screen:
+
+  - Core's dark Error content (`--color-on-error`) is now `#0A1317` instead of white, so text on dark-mode error fills reaches 4.5:1. Core's Info Badge uses `--color-info` (`#0064E0`) instead of the accent; in dark mode the accent was `#2694FE`.
+  - Icon `color="info|success|warning|error"`, Stepper status glyphs, and Chat tool-call status icons use the icon roles, which are the readable text colours. For example, Core's success icon is now `#09441F` (light) instead of `#0D8626`.
+  - Input and FileInput status borders use the border roles. Core's light warning border is now `#753F07` instead of `#E9AF08`. Butter's light success and warning input rims are now mid-ramp stops that reach 3:1.
+  - Banner paints its built-in title, description, icon, and controls with the on-muted roles, and fills Info with `--color-info-muted`.
+  - Status fills keep a visible boundary in forced-colors mode.
+  - Chocolate and Matcha's `--color-on-success` and `--color-on-error` are now a dark ink instead of white, and Stone's `--color-on-success`, `--color-on-warning` and `--color-on-error` are white in light mode and near-black in dark mode instead of the status hue, so content on those fills reaches 4.5:1.
+  - Neutral's `--color-success`, `--color-warning`, and `--color-error` are now its status fills, the colours its Badges already showed: success `#00490B` to `#198100` (dark `#A4D6A3` to `#64AF4C`), warning `#4B3900` to `#FFCE2F` (dark `#F8D36A` to `#FFCE2F`), and error `#76000C` to `#C9303A` (dark `#FFC4BE` to `#FF705D`); `--color-info` is `#0074E2` (dark `#6D9CFE`). Its Badges, StatusDots, progress fills, and Stepper badges look the same, and its `text-<status>` utilities read its status text roles.
+  - Neutral drops its own status overrides and uses the standard roles: the accent variants of ProgressBar, StatusDot, and Stepper now paint Neutral's accent instead of blue, and Banner and the pale destructive Button use the standard overlays. Neutral no longer defines its proposed and undocumented local tokens; use the standard roles instead: `--astryx-theme-neutral-color-status-fill-success`, `-status-fill-warning`, and `-status-fill-error` → `--color-success`, `--color-warning`, `--color-error`; `-status-muted-accent` → `--color-info-muted`; `-on-tint-neutral` → `--color-neutral`; `-on-tint-overlay-hover`, `-on-tint-overlay-pressed`, `-destructive-overlay-hover`, and `-destructive-overlay-pressed` → `--color-overlay-hover` and `--color-overlay-pressed`. `--astryx-theme-neutral-color-status-fill-accent` keeps its value for Neutral extensions but is deprecated and no longer used by Neutral.
+  - Every first-party theme sets a blue `--color-info`; Chocolate and Matcha Info Badges move from the accent to that blue (Butter keeps its own Info Badge colours).
+
+  Custom themes get the content and text roles they don't set: theme generation derives `--color-on-<status>` (light or dark content, whichever contrasts more), readable status text, and on-muted content from the theme's status fills. To keep a component's previous colour, set the matching role in your theme; for example, set `--color-icon-success` to your old `--color-success` value.
+
+- `astryx upgrade` now reports stale generated files in a new `regenerate` receipt field, and reports code a codemod can identify but not migrate safely in the existing `declinedCandidates` list instead of failing. A manual migration is a `declinedCandidates` row with the file, its line as `location` when known, and a `reason` that starts with `manual migration needed (<codemod>):` followed by what to change (a file with several declined findings keeps one row listing each, with its own prefix, joined by `; `); it is printed after the run, does not fail the upgrade, and the run completes and exits 0. A generated file that must be rebuilt, such as stale theme CSS that `validate-data-token-ownership` reports and `astryx theme build` regenerates, is listed in `regenerate` with its rebuild command until it is rebuilt; a `hooks.postCodemod` command that rebuilds it clears it. When the project protects the file (for example an `@generated` header), the run is incomplete exactly as for a protected file (`complete: false`, `errorCode: "ERR_CODEMOD_PROTECTED"`, exit 1); when nothing protects it, it stays a codemod error (`ERR_CODEMOD_FAILED`, as before), now with the rebuild command in `regenerate`. Protected generated files also appear in `regenerate` with their header's `Command:`, and a reported file the project marks generated also appears in `protectedFiles` with the rule that protects it. A real codemod failure keeps its `ERR_CODEMOD_FAILED` error, and the `receipt` it carries lists both too.
+
+#### Fixes
+
+- `astryx integration verify` starts npm the way the rest of the CLI does: npm's own entry file, run with the Node that runs the CLI, when one is found. An `npm` earlier on the PATH that is not npm itself, such as a wrapper that refuses npm commands, no longer fails the check with "npm pack failed".
+
+- `astryx upgrade` no longer fails when a protected file (vendored, generated, or ignored) does not parse, such as a vendored bundle written for another toolchain. It skips the file, lists it under `declinedCandidates` with the parse error's location, and completes the rest of the upgrade. A file upgrade owns that does not parse still fails the run, and protected files that parse are still checked and reported.
+
+- `astryx upgrade` no longer scans through a symbolic link into installed dependencies or version-control metadata, such as a symlinked `node_modules` or a link into a package store. Those trees were already never written; skipping them stops a run from the project root spending minutes reading them. Other symbolically linked folders are still scanned so their required changes are reported.
+
+- `astryx upgrade --from` a version before 0.7.0 no longer fails on `var(--color-data-*)` uses without a fallback. Prebuilt `@astryxdesign/core/astryx.css` defines all 56 data-color defaults, and source builds read data colors through `dataVars`, so the upgrade no longer asks for fallbacks. A graph-based source build, such as `@astryxdesign/build/vite`, that reads raw `var(--color-data-*)` strings without a `dataVars` import should import `dataVars` from `@astryxdesign/core/theme/dataTokens.stylex`; the upgrade no longer reports those uses. Stale generated theme CSS that still emits the defaults at `:root` still fails the upgrade.
+
+- A process that calls the CLI API more than once, such as a docs site's search or an agent harness, now sees an edit to a doc file it already read: `search()`, `docs()` and `component()` read the edited file's new content on their next call, instead of what the process first imported. An unchanged doc file is still imported once and shared, so readers keep getting the module's own doc.
+
+- A component family lists the same members whether or not its package has been built. When the package's `exports` give a `source` condition and that file is in the package, the CLI reads the family's members from it instead of from the built output. Before, a member that only the package's entry exports, such as Lab's `TourStep`, was listed only after a local build. The official package list now includes `TourStep`.
+
+- `astryx upgrade` no longer reports an error on an `astryx.config` written as `const config = {...}; export default config;`, the shape generated configs use. The `migrate-layout-components-to-experimental` codemod now follows a default-exported identifier to its top-level `const` binding when the binding is not exported any other way and nothing else references it, so a config without `layout` is left unchanged and one with `layout.components` is migrated.
+
+- `astryx component <name>` now suggests a component whose whole name is part of the typed name (a wrapper or prefixed name) when nothing else matches, instead of no suggestions.
+
+- When `astryx component`, `astryx template` or `astryx docs` names nothing, the suggestions now stop where the matches get weaker, so a strong first suggestion is no longer followed by unrelated entries. A component list keeps its first two suggestions and, after them, only suggestions about as close as the first or a close spelling of the whole typed name. In a template list, and in the docs list for an unknown topic that is not a route, when the closest entry carries every typed word, only entries that carry every typed word stay; when it carries some of them, entries that carry none are left out. One-letter words do not count. A name that shares no word with any entry still gets the full list, and an unknown route still suggests every child of its namespace. Lists only get shorter, and every suggestion still names a real entry.
+
+- `astryx upgrade` to 0.7 no longer rewrites an app's own class on MetadataList, such as `.astryx-metadata-list.app-compact-list`, into a `[data-columns="app-compact-list"]` selector that never matches. Only the column values MetadataList emitted (`single`, `multi`, and `columns-<n>`) become `data-columns` selectors. (#7982)
+
+- `astryx discover` lists the experimental MobilePowerSearch component from `@astryxdesign/lab`. (#7983)
+
+- `astryx upgrade` to 0.7 no longer renames component keys in a look-alike theme object that is not an Astryx theme, such as another library's `{name, components: {checkbox, radio, textarea}}` theme. A theme object with no `defineTheme()` call or Astryx theme type is migrated only when it is the binding a same-stem theme descriptor declares (`brandTheme` exported from `brandTheme.ts` beside `brandTheme.doc.mjs`). (#7980)
+
+- A failed `astryx upgrade` now says which files it already changed. When a codemod or post-codemod hook fails, the upgrade still writes every other change; the `--json` error (`{"error", "code": "ERR_CODEMOD_FAILED"}`) now adds a `receipt` with the same fields a finished run returns (`modifiedFiles`, `errors`, `protectedFiles`, `complete: false`, `errorCode`), and the error `upgrade()` rejects with carries it as `receipt`. The change is additive: the error code, the error shape, `isError()`, the rejection and exit code 1 are unchanged. An error that stops the run after codemods have written files, such as an astryx.config that fails validation, carries a `receipt` too.
+
+#### Documentation
+
+- The Tokenizer block templates (`Tokenizer`, `Clear`, `Creatable`, `End Content`, `Icon`, `Max Entries`, `Overflow`, `States`) size their field through a column that is 400px wide where there is room and shrinks with its container, instead of a fixed 400px width, so the live examples fit a phone-sized screen without clipping.
+
+- The CodeBlock "Code — Snippet" example shows one-line commands with no header. Copy sits beside the code in its own column, so each command reads as a single row. A third block shows a long first line that ends before the button.
+
+- TabList's description no longer promises a built-in "more" menu: a strip narrower than its tabs scrolls horizontally and keeps the selected tab in view (`TabMenu` stays the way to group extra options). The library page template describes `MobileNav` as the slide-out navigation drawer it is, not as a bottom tab bar.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @ejhammond
+- @imdreamrunner
+- @josephfarina
+- @rubyycheung
+- @vjeux
+
+---
+
 # 0.7.4
 
 #### Experimental APIs
