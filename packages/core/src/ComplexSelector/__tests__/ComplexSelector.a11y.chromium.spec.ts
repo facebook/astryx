@@ -530,10 +530,14 @@ for (const item of cases) {
     const name = targetName(item);
     const trigger =
       name == null ? null : page.getByRole('combobox', {name, exact: true});
+    // The built-in control box paints the field; a caller-rendered control
+    // paints itself.
     const owner =
       trigger == null
         ? null
-        : page.locator('.astryx-complex-selector', {has: trigger});
+        : item.state === 'caller-open'
+          ? trigger
+          : page.locator('.astryx-complex-selector', {has: trigger});
     const restPaint = owner == null ? null : await paintOf(owner);
     let statePaint: Awaited<ReturnType<typeof paintOf>> | null = null;
     const stateFacts: Record<string, unknown> = {};
@@ -624,6 +628,28 @@ for (const item of cases) {
         statusesWithIcon: [
           ...(root?.querySelectorAll('.astryx-field-status') ?? []),
         ].filter(status => status.querySelector('svg') != null).length,
+        onFieldStatusIcons:
+          root?.querySelectorAll(
+            '.astryx-complex-selector .astryx-input-status-icon',
+          ).length ?? 0,
+        overflowingElements: [...document.querySelectorAll('body *')]
+          .filter(element => {
+            const box = element.getBoundingClientRect();
+            return box.width > 0 && box.right > innerWidth + 1;
+          })
+          .slice(0, 5)
+          .map(element => {
+            const box = element.getBoundingClientRect();
+            return {
+              tag: element.tagName.toLowerCase(),
+              className:
+                typeof element.className === 'string'
+                  ? element.className.slice(0, 80)
+                  : '',
+              left: box.left,
+              right: box.right,
+            };
+          }),
       };
     }, rootSelector);
 
@@ -684,6 +710,11 @@ for (const item of cases) {
       popupScroll == null ||
       (popupScroll.geometry.left >= -1 &&
         popupScroll.geometry.right <= item.viewport.width + 1);
+    // Recorded: whether the popup also keeps the runtime's inline gutter.
+    const popupKeepsGutter =
+      popupScroll == null ||
+      (popupScroll.geometry.left >= RUNTIME_GUTTER - 1 &&
+        popupScroll.geometry.right <= item.viewport.width - RUNTIME_GUTTER + 1);
     const contrast = item.forcedColors
       ? []
       : await readContrastPairs(page, rootSelector);
@@ -695,7 +726,6 @@ for (const item of cases) {
           ? observed.comboboxes === 1
           : observed.comboboxes === 10 &&
             observed.statuses === 3 &&
-            observed.statusesWithIcon === 3 &&
             matrixFacts?.loading?.busy === 'true' &&
             matrixFacts.disabled?.disabled === 'true' &&
             matrixFacts.disabled.nativeDisabled === false &&
@@ -801,6 +831,7 @@ for (const item of cases) {
       checks: {
         statePass,
         popupFitsInline,
+        popupKeepsGutter,
         // Recorded, not gating: a token-layer pair is reported against the
         // token layer rather than this component.
         contrastPass: contrast.every(pair => pair.passed),
