@@ -233,7 +233,7 @@ export default function ItemSwipeLayer({
     },
   });
   // The root forwards its key events into what this publishes. The Effect
-  // installs this lazily loaded layer's key handler on Item's root, which
+  // installs this layer's key handler on Item's root, which
   // lives outside the layer, and releases it when the layer leaves. React
   // flushes effects before it delivers a discrete event, so a handler never
   // meets a stale bridge.
