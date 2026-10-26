@@ -25,8 +25,10 @@ import {
   CheckTickRig,
   ChipRig,
   DisclosureRig,
+  DrawerExitRig,
   ListReorderRig,
   RailRig,
+  RealDrawerProbe,
   SkeletonSwapRig,
   StatCountRig,
   TabIndicatorRig,
@@ -295,6 +297,39 @@ export default function PreviewsPage() {
           />
         </DemoCard>
       </Grid>
+
+      <DemoCard
+        title="Drawer exit"
+        question="The preview plan says Drawer hides 250ms into its 410ms slide. Is that cut visible at 1×, and does Core still do it?"
+        badges={<Badge variant="success" label="FIXED" />}>
+        <ComparePanes
+          panes={[
+            {
+              tone: 'before',
+              label: 'The described close \u2014 hidden at 250ms',
+              content: <DrawerExitRig close="cut" />,
+            },
+            {
+              tone: 'after',
+              label: 'Today \u2014 hidden when the slide ends',
+              content: <DrawerExitRig close="awaited" />,
+            },
+          ]}
+        />
+        <DemoBody>
+          <Text type="supporting" color="secondary">
+            Neither. Core&rsquo;s Drawer already waits for its transform
+            transition, with a backstop past the computed duration (Drawer FR9);
+            250ms is only the fallback when the duration cannot be read. And the
+            cut was a cut in time, not distance: 250ms into the slide, the
+            decelerating curve has the panel about 97% out, so hiding it then
+            takes away a few pixels that are not visible at 1&times;. It was
+            code hygiene, and it is fixed. Open the real Drawer to check its
+            close, at 1&times; and with the rail slowed down.
+          </Text>
+          <RealDrawerProbe />
+        </DemoBody>
+      </DemoCard>
 
       <VStack gap={2}>
         <Heading level={2}>What is not here</Heading>

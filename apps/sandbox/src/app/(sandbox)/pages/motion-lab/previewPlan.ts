@@ -372,21 +372,21 @@ export const PREVIEW_PLAN: ReadonlyArray<PreviewRow> = [
     id: 'drawer',
     component: 'Drawer',
     group: 'Overlays & layers',
-    verdict: 'PARTIAL',
+    verdict: 'GOOD',
     motionCost: 'idle',
     dirs: [],
     today: 'Slide plus backdrop.',
-    gap: 'Closes after a hardcoded 250ms while the slide is 410ms, so the exit is cut at ~60%.',
+    gap: 'None now. The close waits for the slide\u2019s transform transition, with a backstop past its computed duration (Drawer FR9); 250ms is only the fallback when the duration cannot be read. The 250ms cut the audit found was in time, not distance: on the decelerating curve the panel is about 97% out by then, so it was not visible at 1x.',
     shows:
       'The cut, at 1x and slowed down, beside the same close awaiting its transition.',
     hardCase:
       'Proving the bug is visible at 1x. If it is not, the finding is a code-hygiene issue rather than a user-facing one, and it should be scheduled as such.',
     controls: ['slide duration', 'unmount delay', 'slow-mo'],
-    status: 'specified',
-    rig: null,
+    status: 'built',
+    rig: 'DrawerExitRig',
     priority: 2,
     measurementNote:
-      'Measured: lab is a workspace package here, so this row is checked rather than assumed.',
+      'Measured in Chromium at desktop and 390px: Core\u2019s Drawer hides 268-285ms into its 300ms slide, fully out; the 250ms cut leaves the panel 97% out on --ease-standard.',
   },
 
   // --- Disclosure & expansion ------------------------------------------------
