@@ -2,7 +2,8 @@
 
 /**
  * @file Wheel.interaction.browser.spec.ts
- * @input The built TimeInput "BottomSheetWithMinMax" story, real touch input
+ * @input The built "Internal/Wheel" story (the Wheel alone, so the proofs
+ *   hold whatever rules the sheets add to their columns), real touch input
  *   (Chromium CDP / WebKit's input command), the interaction harness, and the
  *   Wheel's own physics as the oracle of UIKit's measured picker
  * @output Interaction and animation proofs for the touch picker wheel, which
@@ -77,28 +78,15 @@ interface OpenWheel {
 }
 
 async function openWheel(page: Page): Promise<OpenWheel> {
-  await openStory(
-    page,
-    storybook(),
-    'core-timeinput--bottom-sheet-with-min-max',
-  );
+  await openStory(page, storybook(), 'internal-wheel--minutes');
   const driver = await touchDriver(page);
-  const field = page.getByRole('combobox', {name: 'Appointment time'});
-  await expect(field).toHaveValue('10:00 AM');
-  const box = await field.boundingBox();
-  if (box == null) {
-    throw new Error('no field');
-  }
-  await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+  const field = page.getByRole('textbox', {name: 'Committed minute'});
+  await expect(field).toHaveValue('00');
   const minutes = page.getByRole('listbox', {name: 'Minute'});
   await expect(minutes).toBeVisible();
-  const dialog = page.getByRole('dialog', {name: 'Appointment time'});
-  await waitForRest(dialog.locator('.astryx-bottom-sheet').first()).catch(
-    () => {},
-  );
   await page.waitForTimeout(600);
   // The touch column: a finger gets it on every engine.
-  await expect(page.locator('[data-wheel]')).toHaveCount(3);
+  await expect(page.locator('[data-wheel]')).toHaveCount(1);
   const column = await minutes.boundingBox();
   if (column == null) {
     throw new Error('no minute column');
@@ -273,7 +261,7 @@ test('a flick coasts on UIKit’s curve onto the row it projects, and commits it
   // Committed on arrival, not before.
   await waitForRest(strip);
   await expect(field).toHaveValue(
-    `10:${String(Math.round(rest / ROW)).padStart(2, '0')} AM`,
+    String(Math.round(rest / ROW)).padStart(2, '0'),
   );
 });
 
@@ -440,9 +428,7 @@ test('a finger landing on the coasting wheel stops it where it is, then it eases
   const rested = await stripOffset(strip);
   expect(rested % ROW).toBe(0);
   expect(Math.abs(rested - caught)).toBeLessThanOrEqual(ROW / 2);
-  await expect(field).toHaveValue(
-    `10:${String(rested / ROW).padStart(2, '0')} AM`,
-  );
+  await expect(field).toHaveValue(String(rested / ROW).padStart(2, '0'));
 });
 
 test(
@@ -570,7 +556,7 @@ test('under reduced motion, a flick still coasts as momentum', async ({
   const {driver, field, minutes, start} = await openWheel(page);
   const read = await recordAnimations(minutes);
   await driver.play(flickUp(start).script);
-  await expect(field).not.toHaveValue('10:00 AM', {timeout: 4000});
+  await expect(field).not.toHaveValue('00', {timeout: 4000});
   const seen = await read();
   // The strip coasts: a translation longer than any cross-fade.
   const coasts = seen.filter(
@@ -603,7 +589,7 @@ test('under reduced motion, a tap cross-fades onto its row: opacity only, 200 ms
     x: Math.round(box.x + box.width / 2),
     y: Math.round(box.y + box.height / 2 + 2 * ROW),
   });
-  await expect(field).toHaveValue('10:02 AM', {timeout: 3000});
+  await expect(field).toHaveValue('02', {timeout: 3000});
   const seen = await read();
   expect(seen.length).toBeGreaterThan(0);
   for (const animation of seen) {
@@ -613,7 +599,7 @@ test('under reduced motion, a tap cross-fades onto its row: opacity only, 200 ms
 });
 
 test.describe('under a mouse', () => {
-  // A desktop: today's column, in the sheet the story asks for.
+  // A desktop: today's column.
   test.use({hasTouch: false, isMobile: false});
 
   test('a drag scrolls today’s column onto a row and commits it', async ({
@@ -624,18 +610,13 @@ test.describe('under a mouse', () => {
       browserName !== 'chromium',
       'one engine is enough for the fine-pointer path, which is main’s column',
     );
-    await openStory(
-      page,
-      storybook(),
-      'core-timeinput--bottom-sheet-with-min-max',
-    );
+    await openStory(page, storybook(), 'internal-wheel--minutes');
     // A mouse case runs under a fine primary pointer: the page agrees.
     expect(
       await page.evaluate(() => window.matchMedia('(pointer: coarse)').matches),
     ).toBe(false);
-    const field = page.getByRole('combobox', {name: 'Appointment time'});
-    await expect(field).toHaveValue('10:00 AM');
-    await field.click();
+    const field = page.getByRole('textbox', {name: 'Committed minute'});
+    await expect(field).toHaveValue('00');
     const minutes = page.getByRole('listbox', {name: 'Minute'});
     await expect(minutes).toBeVisible();
     // Today's column, not the touch one.
@@ -661,7 +642,7 @@ test.describe('under a mouse', () => {
     await page.waitForTimeout(200);
     await page.mouse.up();
     // The column snaps onto a row and commits it.
-    await expect(field).not.toHaveValue('10:00 AM', {timeout: 5000});
+    await expect(field).not.toHaveValue('00', {timeout: 5000});
     await expect
       .poll(
         async () =>
