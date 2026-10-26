@@ -38,7 +38,7 @@ export {
   type HapticFeedbackKind,
 } from './gestures';
 export {navigation, registerNavigationTable} from './navigation';
-export {picker, registerPickerTable} from './picker';
+export {picker} from './picker';
 export {registerScrollTable, scroll} from './scroll';
 export {
   ACTION_SHEET_DISMISS_SPRING,
