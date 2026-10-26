@@ -4,22 +4,7 @@
 export const docs = {
   name: 'useScrollLock',
   displayName: 'useScrollLock',
-  keywords: [
-    'scroll',
-    'lock',
-    'modal',
-    'dialog',
-    'body',
-    'prevent',
-    'background',
-    'ios',
-    'safari',
-    'fixed',
-    'scrollbar',
-    'gutter',
-    'layout shift',
-    'reflow',
-  ],
+  keywords: ['scroll', 'lock', 'modal', 'dialog', 'body', 'prevent', 'background', 'ios', 'safari', 'fixed', 'scrollbar', 'gutter', 'layout shift', 'reflow'],
   params: [
     {
       name: 'isLocked',
@@ -33,21 +18,9 @@ export const docs = {
     description:
       'Locks body scroll when active by pinning the body with position: fixed. This prevents background scrolling behind modals and dialogs, which is necessary for iOS Safari where overscroll-behavior: contain does not work. Restores the original scroll position when unlocked. Pinning hides the document scrollbar, so where that scrollbar takes layout space (desktop) the hook holds its gutter open with scrollbar-gutter: stable for the duration of the lock. The page, including any position: fixed chrome, does not shift sideways.',
     bestPractices: [
-      {
-        guidance: true,
-        description:
-          'Use when opening full-screen modals or dialogs to prevent background content from scrolling.',
-      },
-      {
-        guidance: true,
-        description:
-          'Pass the same boolean that controls dialog visibility (e.g., isOpen) as the isLocked parameter.',
-      },
-      {
-        guidance: false,
-        description:
-          'Use for non-modal overlays like popovers or tooltips; users should be able to scroll away from those.',
-      },
+      { guidance: true, description: 'Use when opening full-screen modals or dialogs to prevent background content from scrolling.' },
+      { guidance: true, description: 'Pass the same boolean that controls dialog visibility (e.g., isOpen) as the isLocked parameter.' },
+      { guidance: false, description: 'Use for non-modal overlays like popovers or tooltips; users should be able to scroll away from those.' },
     ],
   },
   relatedComponents: ['Dialog'],
@@ -59,29 +32,17 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
-    "Locks body scroll when active by pinning body w/ position: fixed. Prevents background scrolling behind modals + dialogs, necessary for iOS Safari where overscroll-behavior: contain does not work. Restores original scroll position when unlocked. Holds the hidden scrollbar's gutter open (scrollbar-gutter: stable) so the page (incl. position: fixed chrome) does not shift sideways.",
+    'Locks body scroll when active by pinning body w/ position: fixed. Prevents background scrolling behind modals + dialogs, necessary for iOS Safari where overscroll-behavior: contain does not work. Restores original scroll position when unlocked. Holds the hidden scrollbar\'s gutter open (scrollbar-gutter: stable) so the page (incl. position: fixed chrome) does not shift sideways.',
   paramDescriptions: {
     isLocked: 'whether body scroll should be locked.',
   },
   usage: {
     description:
-      "Locks body scroll when active by pinning body w/ position: fixed. Prevents background scrolling behind modals + dialogs, necessary for iOS Safari where overscroll-behavior: contain does not work. Restores original scroll position when unlocked. Holds the hidden scrollbar's gutter open (scrollbar-gutter: stable) so the page (incl. position: fixed chrome) does not shift sideways.",
+      'Locks body scroll when active by pinning body w/ position: fixed. Prevents background scrolling behind modals + dialogs, necessary for iOS Safari where overscroll-behavior: contain does not work. Restores original scroll position when unlocked. Holds the hidden scrollbar\'s gutter open (scrollbar-gutter: stable) so the page (incl. position: fixed chrome) does not shift sideways.',
     bestPractices: [
-      {
-        guidance: true,
-        description:
-          'Use when opening full-screen modals / dialogs to prevent background content from scrolling.',
-      },
-      {
-        guidance: true,
-        description:
-          'Pass same boolean that controls dialog visibility (e.g. isOpen) as isLocked parameter.',
-      },
-      {
-        guidance: false,
-        description:
-          'Use for non-modal overlays like popovers / tooltips; users should be able to scroll away from those.',
-      },
+      { guidance: true, description: 'Use when opening full-screen modals / dialogs to prevent background content from scrolling.' },
+      { guidance: true, description: 'Pass same boolean that controls dialog visibility (e.g. isOpen) as isLocked parameter.' },
+      { guidance: false, description: 'Use for non-modal overlays like popovers / tooltips; users should be able to scroll away from those.' },
     ],
   },
 };
