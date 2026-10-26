@@ -21,6 +21,11 @@
  * browser that does not understand `animation-timeline` would otherwise run
  * the same keyframes on the document timeline and simply play them once.
  *
+ * Reduced motion (design:reduced-motion): the wheel's own scrolls (a step
+ * from a key or a click, the travel to the nearest enabled row) land without
+ * travel, cross-fading on a touch screen and at once otherwise. A finger's
+ * scroll and its momentum are the platform's.
+ *
  * Accessibility: this is a listbox, not a novel widget. It is one tab stop
  * with arrow/Home/End/PageUp/PageDown keys, `aria-activedescendant` tracking
  * the active row, and every row reachable by tap — none of which depends on
@@ -44,6 +49,7 @@ import {
   durationVars,
 } from '../theme/tokens.stylex';
 import {focusOutlineStyles} from '../utils';
+import {reducedMotionFade} from '../motion/reducedMotion';
 import {dateInputTouchSizes, dateInputTouchGeometry} from './tokens.stylex';
 import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {usePointerDragScroll} from './usePointerDragScroll';
@@ -209,7 +215,10 @@ export interface WheelOption {
   value: number;
   /** Row text. */
   label: string;
-  /** Rows outside min/max stay visible but cannot be committed. */
+  /**
+   * Rows outside min/max stay visible but cannot be committed: a wheel that
+   * stops on one travels on to the nearest enabled row.
+   */
   isDisabled?: boolean;
 }
 
@@ -227,6 +236,46 @@ export interface WheelProps {
    * scroller are meaningless, so listeners and the initial scroll wait.
    */
   isActive?: boolean;
+}
+
+/**
+ * The enabled row nearest `index`: `index` itself when it is enabled,
+ * otherwise the closest enabled row on either side. A tie goes to the side of
+ * `towardIndex` (the committed row), and a wheel with no enabled row stays on
+ * `towardIndex`.
+ *
+ * @example
+ * ```
+ * // Hours 0-23 with 09:00-17:00 bounds: stopping on 7 rests on 9.
+ * nearestEnabledIndex(hourOptions, 7, 10); // 9
+ * ```
+ */
+export function nearestEnabledIndex(
+  options: ReadonlyArray<WheelOption>,
+  index: number,
+  towardIndex: number,
+): number {
+  const isEnabled = (i: number) =>
+    i >= 0 && i < options.length && !options[i].isDisabled;
+  if (isEnabled(index)) {
+    return index;
+  }
+  for (let distance = 1; distance < options.length; distance++) {
+    const below = index - distance;
+    const above = index + distance;
+    const isBelowEnabled = isEnabled(below);
+    const isAboveEnabled = isEnabled(above);
+    if (isBelowEnabled && isAboveEnabled) {
+      return towardIndex < index ? below : above;
+    }
+    if (isBelowEnabled) {
+      return below;
+    }
+    if (isAboveEnabled) {
+      return above;
+    }
+  }
+  return towardIndex;
 }
 
 /**
@@ -268,20 +317,89 @@ export function Wheel({
       : 0;
   }, []);
 
+  // What last started a scroll of the wheel: a pointer's type, or 'wheel'
+  // for a mouse wheel or trackpad. Under reduced motion the release of a
+  // touch drag cross-fades whatever the primary pointer (design:reduced-motion
+  // DR2); a key step, a row tap or a trackpad's scroll follows the primary
+  // pointer (DR2 on a coarse one, at once otherwise, DR3).
+  const lastPointerRef = useRef<string | null>(null);
+
+  // A reduced-motion dip whose rows have not landed yet: its timer and the
+  // row it lands on. While one is pending the rows stay put for it, so they
+  // never move at full opacity, and a further step retargets it.
+  const pendingFadeRef = useRef<{timer: number; top: number} | null>(null);
+  useEffect(
+    () => () => {
+      if (pendingFadeRef.current != null) {
+        window.clearTimeout(pendingFadeRef.current.timer);
+        pendingFadeRef.current = null;
+      }
+    },
+    [],
+  );
+
   const scrollToIndex = useCallback(
-    (index: number, behavior: ScrollBehavior) => {
+    (
+      index: number,
+      behavior: ScrollBehavior,
+      {touchRelease = false}: {touchRelease?: boolean} = {},
+    ) => {
       const scroller = scrollerRef.current;
       const size = itemBlockSize();
       if (scroller == null || size === 0) {
         return;
       }
-      scroller.scrollTo({top: index * size, behavior});
+      const top = index * size;
+      // Under reduced motion (design:reduced-motion) the wheel's own scroll
+      // lands without travel: a dip on a touch screen or for a touch drag's
+      // release, at once otherwise.
+      const fadeTiming =
+        behavior === 'smooth'
+          ? reducedMotionFade(scroller, {touchRelease})
+          : null;
+      const pending = pendingFadeRef.current;
+      if (fadeTiming == null) {
+        if (pending != null) {
+          window.clearTimeout(pending.timer);
+          pendingFadeRef.current = null;
+        }
+        scroller.scrollTo({top, behavior});
+        return;
+      }
+      if (fadeTiming.duration === 0 || typeof scroller.animate !== 'function') {
+        if (pending != null) {
+          window.clearTimeout(pending.timer);
+          pendingFadeRef.current = null;
+        }
+        scroller.scrollTo({top, behavior: 'auto'});
+        return;
+      }
+      if (pending != null) {
+        // The dip is still fading out: its rows land here instead.
+        pending.top = top;
+        return;
+      }
+      const {duration, easing} = fadeTiming;
+      scroller.animate(
+        [{opacity: 1, easing}, {opacity: 0, easing}, {opacity: 1}],
+        {duration, easing: 'linear'},
+      );
+      const landing = {top, timer: 0};
+      landing.timer = window.setTimeout(() => {
+        pendingFadeRef.current = null;
+        scroller.scrollTo({top: landing.top, behavior: 'auto'});
+      }, duration / 2);
+      pendingFadeRef.current = landing;
     },
     [itemBlockSize],
   );
 
-  // Commit on rest. A disabled row is bounced back to the committed one
-  // rather than silently keeping a value the wheel is not showing.
+  // Commit on rest. A wheel that stopped on a disabled row (one outside the
+  // bounds) travels on to the nearest enabled row, as UIDatePicker does, and
+  // that second rest commits it. Resting on the committed row itself is not a
+  // stop to correct: the park after the sheet opens settles there with no
+  // touch, and a committed value outside the bounds stays until a person
+  // moves the wheel.
   //
   // Declared here, above the park effect, because that effect consults the
   // `isAtRestRef` this returns before it repositions anything.
@@ -296,12 +414,18 @@ export function Wheel({
         options.length - 1,
         Math.max(0, Math.round(scroller.scrollTop / size)),
       );
-      const option = options[index];
-      if (option == null || option.isDisabled) {
-        scrollToIndex(selectedIndex, 'smooth');
+      const restIndex =
+        index === selectedIndex
+          ? index
+          : nearestEnabledIndex(options, index, selectedIndex);
+      if (restIndex !== index) {
+        scrollToIndex(restIndex, 'smooth', {
+          touchRelease: lastPointerRef.current === 'touch',
+        });
         return;
       }
-      if (option.value !== value) {
+      const option = options[index];
+      if (option != null && !option.isDisabled && option.value !== value) {
         onChange(option.value);
       }
     },
@@ -318,7 +442,9 @@ export function Wheel({
   // useScrollSettle. The settle handler re-checks the position afterwards, so
   // a correction that is genuinely needed still happens, just at rest.
   useEffect(() => {
-    if (!isActive || !isAtRestRef.current) {
+    // Nor while a reduced-motion dip is still to land its rows: they land
+    // under it, on this row.
+    if (!isActive || !isAtRestRef.current || pendingFadeRef.current != null) {
       return;
     }
     const size = itemBlockSize();
@@ -443,6 +569,12 @@ export function Wheel({
         aria-activedescendant={`${id}-${options[activeIndex]?.value}`}
         tabIndex={0}
         onKeyDown={handleKeyDown}
+        onPointerDown={event => {
+          lastPointerRef.current = event.pointerType;
+        }}
+        onWheel={() => {
+          lastPointerRef.current = 'wheel';
+        }}
         {...stylex.props(styles.scroller, focusOutlineStyles.focusVisible)}>
         {options.map((option, index) => (
           <div
