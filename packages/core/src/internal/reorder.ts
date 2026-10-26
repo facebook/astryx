@@ -10,9 +10,9 @@
  *   finds its list. Neither loads the reorder engine: it comes with the
  *   owner's object (spec:AST-103 FR2).
  * @position `@astryxdesign/core/internal/reorder`: an internal entry reserved
- *   for Astryx's own packages, undocumented, outside the public API and its
- *   compatibility promise (spec:AST-017 FR21), versioned in lockstep with
- *   Core, and allowed by lint only in Core and Lab.
+ *   for Core and Lab, undocumented, outside the public API and its
+ *   compatibility promise (spec:AST-017 FR21), and versioned in lockstep
+ *   with Core.
  */
 
 import type {Key} from 'react';

@@ -302,7 +302,7 @@ export const docs = {
           name: 'onChange',
           type: '(nextValue: readonly T[]) => void',
           description:
-            'Called immediately after a permitted option is added, removed, bulk changed, or reordered.',
+            'Called immediately after a permitted option is added, removed, or bulk changed. Moves go to the reorderable object\'s onReorder instead.',
           required: true,
         },
         {
@@ -393,7 +393,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Start with immediate behavior. Add, remove, bulk, and reorder changes call onChange as they occur, and closing or dismissing the popover keeps those committed changes.',
+          'Start with immediate behavior. Add, remove, and bulk changes call onChange as they occur and moves call the reorderable object\'s onReorder, and closing or dismissing the popover keeps those committed changes.',
       },
       {
         guidance: true,
@@ -418,7 +418,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Commit add, remove, bulk, and reorder changes immediately. A drag reorders the way an iOS table does: the row follows the finger or pointer, the rows it passes move out of its way, and onChange runs once on release.',
+          'Commit add, remove, and bulk changes immediately. A drag reorders the way an iOS table does: the row follows the finger or pointer, the rows it passes move out of its way, and the reorderable object\'s onReorder runs once on release.',
       },
       {
         guidance: false,
@@ -750,7 +750,7 @@ export const docsDense = {
         description: 'Supporting control guidance.',
         options: 'Full pool with metadata, groups, and transfer constraints.',
         value: 'Selected values in display order.',
-        onChange: 'Called after each add/remove/bulk/reorder change.',
+        onChange: 'Called after each add/remove/bulk change; moves go to onReorder.',
         selectedLabel: 'Selected-list heading and name.',
         availableLabel: 'Available-list heading and name.',
         hasSearch: 'Shared list filter; default false.',
