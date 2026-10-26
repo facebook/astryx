@@ -403,6 +403,31 @@ describe('useOverflow on the single-line path', () => {
   });
 });
 
+describe('useOverflow leaving the multi-row path', () => {
+  it('reports rows 1 and rowHeight 0 once maxRows drops to the single-line path', () => {
+    const {result, rerender} = renderHook(
+      ({maxRows}: {maxRows: number | undefined}) =>
+        useOverflow(6, {gap: 10, maxRows}),
+      {initialProps: {maxRows: 2}},
+    );
+
+    act(() => {
+      result.current.measureRef(mockMeasure([50, 50, 50, 50, 50, 50], 40, 24));
+      result.current.containerRef(mockContainer(170));
+    });
+    expect(result.current.visibleCount).toBe(6);
+    expect(result.current.rows).toBe(2);
+    expect(result.current.rowHeight).toBe(24);
+
+    rerender({maxRows: undefined});
+    // The single-line path's values, not the state the multi-row
+    // measurements left behind; the count is re-measured for one row.
+    expect(result.current.rows).toBe(1);
+    expect(result.current.rowHeight).toBe(0);
+    expect(result.current.visibleCount).toBeLessThan(6);
+  });
+});
+
 describe('useOverflow with maxRows (multi-row)', () => {
   it('exposes rows and rowHeight', () => {
     const {result} = renderHook(() => useOverflow(6, {gap: 10, maxRows: 2}));

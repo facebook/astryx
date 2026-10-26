@@ -287,7 +287,9 @@ export function useOverflow(
     measureRef,
     visibleCount,
     hasOverflow,
-    rows,
-    rowHeight,
+    // A host whose `maxRows` dropped to the single-line path keeps the state
+    // its multi-row measurements wrote; the path's own values are reported.
+    rows: tracksRows ? rows : 1,
+    rowHeight: tracksRows ? rowHeight : 0,
   };
 }
