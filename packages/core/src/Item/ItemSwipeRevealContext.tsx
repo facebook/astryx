@@ -19,8 +19,8 @@
  * something no caller decides on its own.
  *
  * `null` wherever the row has no swipe to reveal: on a row without swipe
- * actions, on a `commit` row (it rests nothing open, `spec:AST-057` FR5), and
- * until the swipe layer's first effect has run. The swipe is there
+ * actions, and on a `commit` row (it rests nothing open, `spec:AST-057` FR5).
+ * Elsewhere it is there from the row's first render. The swipe is there
  * whatever the primary pointer (a finger swipes on every device), so what a
  * control offers under a mouse is the control's own decision.
  */

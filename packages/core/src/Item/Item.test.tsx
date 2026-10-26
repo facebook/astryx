@@ -2091,6 +2091,8 @@ describe('swipeActions', () => {
   describe('a reveal from a control in the row (List’s edit-mode delete control)', () => {
     /** What the control in the row's marker read at its last render. */
     let latest: ItemSwipeReveal | null = null;
+    /** What it read at each of its renders, in order. */
+    let seen: (ItemSwipeReveal | null)[] = [];
 
     /**
      * UIKit's delete control: its tap opens the row's trailing actions, and a
@@ -2099,6 +2101,7 @@ describe('swipeActions', () => {
     function DeleteControl() {
       const swipe = useItemSwipeReveal();
       latest = swipe;
+      seen.push(swipe);
       return (
         <button
           type="button"
@@ -2138,6 +2141,7 @@ describe('swipeActions', () => {
 
     beforeEach(() => {
       latest = null;
+      seen = [];
     });
 
     it('opens the row on the trailing side as a swipe does: the panel’s width, the live panel, the side reported from the call', async () => {
@@ -2232,6 +2236,13 @@ describe('swipeActions', () => {
       expect(latest?.side).toBeNull();
       await settled();
       expect(xOf(row)).toBe(0);
+    });
+
+    it('is there from the row’s first render, with no Effect to run first (react-component-runtime INV1)', () => {
+      renderEditRow();
+      expect(seen.length).toBeGreaterThan(0);
+      expect(seen[0]).not.toBeNull();
+      expect(seen[0]?.side).toBeNull();
     });
 
     it('is null on a row without swipe actions', () => {
