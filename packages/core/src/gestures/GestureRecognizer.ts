@@ -24,7 +24,7 @@
  * event, so a listener that writes a transform writes it in the same frame
  * as the input, with no React render in between.
  *
- * SYNC: When modified, update GestureArena.ts and README.md.
+ * SYNC: When modified, update GestureArena.ts.
  */
 
 import type {GestureArena} from './GestureArena';
@@ -69,9 +69,10 @@ export interface GestureRecognizerOptions<R = GestureRecognizer> {
    * the host calls it and never imports it, so a component without such a
    * hold does not bundle it. Content under a sheet's or a pager's pan stays
    * selectable, so there is none by default; a mouse keeps desktop selection
-   * either way. A long press always brings its own.
+   * either way. A long press brings its own when it has a hold (a
+   * `minimumPressDuration` above 0); `null` brings none.
    */
-  selectionLock?: SelectionLock;
+  selectionLock?: SelectionLock | null;
   /**
    * Hold the view's touch-ended (and the browser's click) while this
    * recognizer may still recognize. @default true
@@ -594,12 +595,19 @@ export abstract class GestureRecognizer {
     }
   }
 
+  /** @internal The host's hook: listeners follow whether anything is enabled. */
+  onEnabledChange: (() => void) | null = null;
+
   /**
    * UIKit's `isEnabled` setter: turning a recognizer off mid-gesture cancels
    * the gesture (an active one) or fails it (a possible one).
    */
   setEnabled(value: boolean): void {
+    const changed = this.isEnabled !== value;
     this.isEnabled = value;
+    if (changed) {
+      this.onEnabledChange?.();
+    }
     if (!value && (this.state !== 'possible' || this.isInvolved())) {
       this.cancel();
     }
