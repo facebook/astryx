@@ -72,8 +72,6 @@ import {
   type MenuPressPointerType,
 } from './menuPressGesture';
 import {useMenuTriggerPress, type MenuTriggerContext} from './menuTriggerPress';
-import {TOUCH_QUERY} from '../utils/touchPresentation';
-import {useMediaQuery} from './useMediaQuery';
 import type {UseLongPressHandlers} from './useLongPress';
 import {edgeAutoscroll} from '../utils/edgeAutoscroll';
 import {focusForLastInput} from '../utils/focusReturn';
@@ -234,10 +232,7 @@ export interface UseMenuPressOptions {
   hitTest?: (x: number, y: number) => Element | null;
   /**
    * How long a finger rests on the trigger before the menu opens under it.
-   * Unset, the wait follows `spec:AST-094` FR29 where the primary pointer is
-   * coarse (none in a fixed bar, 150 ms in a scroll view, the opening finger
-   * picking after UIMenu's handoff) and is 500 ms where it is fine. Set, it
-   * is that wait everywhere, as released (`spec:AST-094` FR25).
+   * @default 500
    */
   longPressDelayMs?: number;
   /** Whether the model is live. @default true */
@@ -307,7 +302,7 @@ function normalizePointerType(type: string): MenuPressPointerType | null {
 /**
  * Where a pointer is, for a finger's handoff distance: given with
  * `touchModel: 'uikit'`, the primary pointer being coarse, for the trigger's
- * opening finger and a continued one alike (`spec:AST-094` FR29, FR33). Without
+ * opening finger (`spec:AST-094` FR29, FR33). Without
  * it the machine keeps the settle rule.
  */
 function handoffPosition(
@@ -398,17 +393,7 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
   // `touchModel` does not reach the model.
   const {touchModel: _touchModel, ...publicOptions} =
     options as DropdownMenuPressOptions;
-  // An unset delay follows FR29 where the primary pointer is coarse
-  // (spec:AST-094 FR25); a set one, or a fine primary pointer, keeps the
-  // released wait.
-  const isCoarsePrimary = useMediaQuery(TOUCH_QUERY, false);
-  return useDropdownMenuPress({
-    ...publicOptions,
-    touchModel:
-      publicOptions.longPressDelayMs === undefined && isCoarsePrimary
-        ? 'uikit'
-        : 'pointer',
-  });
+  return useDropdownMenuPress({...publicOptions, touchModel: 'pointer'});
 }
 
 /**
