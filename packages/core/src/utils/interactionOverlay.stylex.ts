@@ -84,8 +84,7 @@
  * clock), hooks/usePressFeedback.doc.mjs, the components that paint the touch
  * press off an ancestor scope or a pseudo-element (Switch, Tab,
  * CheckboxInput, RadioListItem, ClickableCard, SelectableCard, Thumbnail)
- * selectionHold.ts (the held state on the row layer) and
- * scripts/build-css.test.mjs.
+ * and scripts/build-css.test.mjs.
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -142,7 +141,6 @@ const COARSE = '@media (pointer: coarse)';
 const PRESSED_ON = '[data-astryx-press="on"]';
 /** Written by the touch press controller for the release's exit. */
 const PRESSED_FADING = '[data-astryx-press="fading"]';
-
 const PRESS_ALPHA = pressVars['--astryx-press-alpha'];
 
 const hoverImage = `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`;

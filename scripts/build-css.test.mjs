@@ -558,7 +558,7 @@ describe('build-css astryx.css', () => {
     });
   });
 
-  describe('the compositor press layer (interactionOverlay.stylex.ts `cell`)', () => {
+  describe('the compositor press layer (rowPressLayer.ts `cell`)', () => {
     /** The cell clock and curve, read off their one stylesheet source. */
     async function readLayerConsts() {
       const source = await fs.readFile(
