@@ -1240,11 +1240,17 @@ describe('review fixes', () => {
   // long-press selection; stopping a settle does something.
   it('a finger on a resting track leaves its text selectable; one that catches a settle locks it until the lift', async () => {
     const f = setup({defaultIndex: 0});
-    // jsdom keeps only the unprefixed property.
-    const selection = () => f.track.style.getPropertyValue('user-select');
+    // Whether a selection starting on the page's text is refused: where iOS
+    // WebKit does not run (jsdom), the shared lock cancels `selectstart` and
+    // writes no style.
+    const refuses = () => {
+      const event = new Event('selectstart', {bubbles: true, cancelable: true});
+      f.page.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
     touch('touchstart', f.page, 200, 100, now);
     await advance(16, f.clock);
-    expect(selection()).toBe('');
+    expect(refuses()).toBe(false);
     touch('touchend', f.page, 200, 100, now);
     await advance(16, f.clock);
     f.pager.goTo(3);
@@ -1253,11 +1259,12 @@ describe('review fixes', () => {
     expect(f.pager.isSettling).toBe(true);
     touch('touchstart', f.page, 200, 100, now);
     await advance(16, f.clock);
-    expect(selection()).toBe('none');
+    expect(refuses()).toBe(true);
     await advance(120, f.clock);
     touch('touchend', f.page, 200, 100, now);
     await advance(16, f.clock);
-    expect(selection()).toBe('');
+    expect(refuses()).toBe(false);
+    expect(f.track.style.getPropertyValue('user-select')).toBe('');
   });
 
   // spec:AST-094 FR6.
