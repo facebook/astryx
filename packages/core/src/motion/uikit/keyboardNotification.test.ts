@@ -43,6 +43,9 @@ describe('keyboardNotification', () => {
     // not the Reduce Motion fade that shares the table's composition.
     expect(code).not.toContain('navigationBarHideShowMs');
     expect(code).not.toContain('buttonReleaseMs');
-    expect(code).not.toContain('durationMs:500');
+    // The fade's length and curve, however esbuild prints them: inline in its
+    // group or through a shared constant.
+    expect(code).not.toMatch(/\b500\b/);
+    expect(code).not.toContain('.42,0,.58,1');
   });
 });
