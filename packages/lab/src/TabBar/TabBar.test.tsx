@@ -657,6 +657,24 @@ describe('TabBar search tab, selected', () => {
     );
   });
 
+  it('leaving search from the circle with the keys moves focus on to the tab it returns to', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    render(<Searching />);
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    const circle = document.querySelector(
+      '[data-tab-bar-circle]',
+    ) as HTMLElement;
+    act(() => {
+      circle.focus();
+    });
+    fireEvent.click(circle);
+    // Expanded, the circle is hidden and holds no tab stop: focus cannot
+    // stay on it (WCAG 2.4.3).
+    const browse = screen.getByRole('tab', {name: 'Browse'});
+    expect(browse).toHaveAttribute('aria-selected', 'true');
+    expect(document.activeElement).toBe(browse);
+  });
+
   it('keeps the field mounted but inert until the search tab is chosen', () => {
     render(<Searching />);
     const field = screen.getByLabelText('Search query', {selector: 'input'});
