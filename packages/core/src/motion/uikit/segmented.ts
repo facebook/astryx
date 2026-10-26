@@ -6,7 +6,9 @@
  * @output Exports `segmentedControl`: UISegmentedControl's selection slide
  *   spring and what a finger does to the lens: the lift (size and spring),
  *   how long a tap keeps it lifted, how far past the end segments it follows
- *   a dragging finger, and the pressed title's dim, all internal constants
+ *   a dragging finger, and the pressed title's dim; and
+ *   `registerSegmentedTable`, which registers its springs, durations and
+ *   curves as internal motion roles (`spec:AST-094` FR4, DEC-11)
  * @position The segmented-control domain of the UIKit constants table
  *   (motion/uikit); read by SegmentedControl's touch presentation
  *
@@ -31,8 +33,9 @@
  *
  * Every leaf carries one or more `@source`; uikit.test.ts enforces it.
  * Durations are in ms; curves are cubic-bézier control points
- * [x1, y1, x2, y2]. The values are internal constants: `spec:AST-094` FR4
- * names no segmented-control motion role, so no theme retunes them. The lens
+ * [x1, y1, x2, y2]. Its springs, durations and curves are internal motion
+ * roles (`registerSegmentedTable`; `spec:AST-094` FR4), which no theme
+ * retunes while the roles stay internal (DEC-11). The lens
  * chases a dragging finger on the shared role `springs.fingerTracking`, the
  * values UIKit reports for this control too (trackingResponse 0.15,
  * trackingDampingRatio 0.86, read during a drag; per-frame chase rms 0.51 /
@@ -42,6 +45,8 @@
  * - /packages/core/src/SegmentedControl/useSegmentedSelectionMotion.ts
  * - /packages/core/src/motion/README.md (domain list)
  */
+
+import {registerMotionTable} from '../roles';
 
 export const segmentedControl = {
   /**
@@ -161,3 +166,25 @@ export const segmentedControl = {
     liftCurve: [0.25, 0.1, 0.25, 1],
   },
 } as const;
+
+/**
+ * Registers this table with the motion registry (motion/roles.ts): the
+ * springs, durations and curves SegmentedControl's touch presentation plays
+ * become internal motion roles (`spec:AST-094` FR4, kept internal by DEC-11),
+ * named in FR4's role table. The lift's size, the drag overshoot and the
+ * pressed opacity are not motion and stay internal constants. Nothing
+ * registers on import, and a second call does nothing.
+ */
+export function registerSegmentedTable(): void {
+  registerMotionTable('segmented', segmentedControl, {
+    roles: [
+      'selectionSpring',
+      'liftSpring',
+      'tapLiftHangMs',
+      'pressedTitle.fadeMs',
+      'pressedTitle.fadeCurve',
+      'pressedTitle.liftMs',
+      'pressedTitle.liftCurve',
+    ],
+  });
+}

@@ -112,7 +112,11 @@ import {
 } from '../motion/animator';
 import {reducedMotionFade} from '../motion/reducedMotion';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
-import {segmentedControl} from '../motion/uikit/segmented';
+import {resolveMotion} from '../motion/resolveMotion';
+import {
+  registerSegmentedTable,
+  segmentedControl,
+} from '../motion/uikit/segmented';
 import {registerSpringsTable, springs} from '../motion/uikit/springs';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {observeResize} from '../utils/sharedResizeObserver';
@@ -659,9 +663,12 @@ export class SegmentedSelectionMotion {
     }),
     options: SegmentedSelectionMotionOptions = {},
   ) {
-    // The chase plays the shared role `springs.fingerTracking`: registered
-    // before the first animation (idempotent; nothing registers on import).
+    // The chase plays the shared role `springs.fingerTracking`, and the
+    // slide, the lift and the pressed title play the segmented roles
+    // (`spec:AST-094` FR4): registered before the first animation
+    // (idempotent; nothing registers on import).
     registerSpringsTable();
+    registerSegmentedTable();
     this.now = options.now ?? defaultNow;
     this.after =
       options.afterAnimator ??
@@ -1411,10 +1418,11 @@ export class SegmentedSelectionMotion {
     // Up on the lift spring and, after the hang, back down on it: one curve
     // known in advance, so the compositor brings the lens down on time even
     // while the main thread is busy. The lift's spring and hang are UIKit's
-    // measured values (internal constants).
+    // measured values, read through their internal roles.
     const peak = lifted(box, liftGrowthOf(this.track));
     const liftSpring = segmentedControl.liftSpring;
-    const hang = segmentedControl.tapLiftHangMs / 1000;
+    const hang =
+      resolveMotion(this.track, segmentedControl, 'tapLiftHangMs') / 1000;
     const velocityX = this.velocity.scaleX ?? 0;
     const velocityY = this.velocity.scaleY ?? 0;
     this.velocity = {};
@@ -1704,13 +1712,21 @@ export class SegmentedSelectionMotion {
     if (typeof segment.animate !== 'function') {
       return;
     }
-    // UIKit's measured clock and curve (internal constants); under Reduced
-    // Motion the animator's fade (design:reduced-motion DR4).
+    // UIKit's measured clock and curve, read through their internal roles
+    // (`segmented.pressedTitle.*`); under Reduced Motion the animator's fade
+    // (design:reduced-motion DR4).
     const {pressedTitle} = segmentedControl;
     const timing = this.reducedFade(segment, clock === 'lift') ?? {
-      duration: clock === 'fade' ? pressedTitle.fadeMs : pressedTitle.liftMs,
+      duration: resolveMotion(
+        segment,
+        pressedTitle,
+        clock === 'fade' ? 'fadeMs' : 'liftMs',
+      ),
       easing: cssCubicBezier(
-        clock === 'fade' ? pressedTitle.fadeCurve : pressedTitle.liftCurve,
+        resolveMotion(
+          segment,
+          clock === 'fade' ? pressedTitle.fadeCurve : pressedTitle.liftCurve,
+        ),
       ),
     };
     const animations = targets.map(target => {

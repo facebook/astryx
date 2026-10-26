@@ -19,6 +19,7 @@
  */
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {motionRoleIn, motionRoleOf} from '../motion/roles';
 import {createAnimator, type Animator} from '../motion/animator';
 import {solveSpring, toSpring} from '../motion/spring';
 import {segmentedControl, springs} from '../motion/uikit';
@@ -249,6 +250,32 @@ async function advance(ms: number): Promise<void> {
   clock += ms;
   await vi.advanceTimersByTimeAsync(ms);
 }
+
+describe('the motion roles (spec:AST-094 FR4)', () => {
+  it('plays the slide, the lift and the pressed title through internal segmented roles', () => {
+    setup('grid');
+    const {pressedTitle} = segmentedControl;
+    expect(
+      [
+        segmentedControl.selectionSpring,
+        segmentedControl.liftSpring,
+        pressedTitle.fadeCurve,
+        pressedTitle.liftCurve,
+      ].map(leaf => motionRoleOf(leaf)?.id),
+    ).toEqual([
+      'segmented.selectionSpring',
+      'segmented.liftSpring',
+      'segmented.pressedTitle.fadeCurve',
+      'segmented.pressedTitle.liftCurve',
+    ]);
+    expect(motionRoleIn(pressedTitle, 'fadeMs')?.id).toBe(
+      'segmented.pressedTitle.fadeMs',
+    );
+    expect(motionRoleIn(segmentedControl, 'tapLiftHangMs')?.id).toBe(
+      'segmented.tapLiftHangMs',
+    );
+  });
+});
 
 describe('the selection slide', () => {
   it('paints the lens (the radiogroup’s ::before) with the selected surface and hides it on the segment: no element is added', () => {
