@@ -79,10 +79,10 @@ const reorderable = createReorderable({
   onReorder: ({key, to}) => setTree(tree => moveNode(tree, key, to)),
 });
 
-<TreeList reorderable={reorderable} items={tree} getKey={node => node.id} />;
+<TreeList reorderable={reorderable} items={tree} />;
 ```
 
-Here `to` is `{ parent, index }`; the handle, keys, actions, and
+Here `to` is `{ parent, index }` and keys are the nodes' existing `id`s; the handle, keys, actions, and
 announcements are those of FR3 and FR4, and the tree adds no option.
 
 ## Requirements
@@ -100,8 +100,11 @@ announcements are those of FR3 and FR4, and the tree adds no option.
   collection also bounds the drop range: nothing drops beyond it, and a
   keyboard or assistive-technology move past it is not offered.
   Each item's key comes from the data,
-  never from React's `key`: List reads each `ListItem`'s `itemKey`, and a
-  collection built from data, such as TreeList, takes `getKey(item)` (DEC-4). The
+  never from React's `key`: List reads each `ListItem`'s `itemKey`, a string;
+  a collection whose items already carry an identity, such as TreeList's `id`
+  or Table's `idKey`, uses it; and a data collection without one takes
+  `getKey(item)` (DEC-4). A row without a key shows no handle and cannot be
+  picked up. The
   object may be created again on each render: the collection uses the latest
   callbacks when a move commits, and a new object during a drag does not
   cancel the drag. One object passed to two collections reorders each on its
@@ -110,8 +113,7 @@ announcements are those of FR3 and FR4, and the tree adds no option.
   the object through one `reorderable` prop; there is no separate boolean.
   With the prop absent the collection renders no handle, registers no reorder
   listener, and loads no reorder code: the machinery ships in the factory's
-  own module, and a collection imports only its type
-  (`architecture:public-component-api` INV19).
+  own module, and a collection imports only its type.
 - **FR3 — Every collection behaves the same.** Each adopting collection wires
   the object to its own internal drag, keyboard, and assistive-technology
   paths, and the behavior is the same in every one:
@@ -123,9 +125,13 @@ announcements are those of FR3 and FR4, and the tree adds no option.
     Space or Enter picks it up and drops it, and Escape cancels;
   - the order commits once, at the drop (DR4), and `onReorder` is called once
     per committed move; a cancel calls nothing;
-  - under Reduce Motion nothing travels (`design:reduced-motion` DR2).
-- **FR4 — Assistive technology can reorder.** Each reorderable row's handle
-  exposes "Move before" and "Move after" actions with their keyboard equivalents,
+  - under Reduce Motion the dragged row still follows the finger or pointer,
+    and the other rows and the drop take their places without travel
+    (`design:reduced-motion` DR2).
+- **FR4 — Every input can reorder without a drag.** Each reorderable row's
+  handle is a button named "Reorder" and the row's label. It exposes "Move
+  before" and "Move after" actions with their keyboard equivalents, and a
+  mouse reaches the same actions without dragging (`spec:AST-094` FR39; OQ1),
   and a pick-up, each move, a drop, and a cancel are announced once, after
   they render, through the shared announcement channel. Focus stays on the
   handle throughout.
@@ -145,8 +151,7 @@ announcements are those of FR3 and FR4, and the tree adds no option.
   own canonical descriptor and each adopting collection's descriptor documents
   `reorderable` (`spec:AST-039` FR1, FR3).
 - **FR8 — One public shape for the job.** A collection that reorders uses
-  this object and no other public reorder API (`architecture:public-component-api`
-  INV21).
+  this object and no other public reorder API.
 
 ## Current-state impact
 
@@ -208,13 +213,19 @@ Rejected: `onReorder(from, to)` with a pair of positions.
 **Decider:** `cixzhang`, `2026-10-25`
 
 React does not pass `key` to a component, so a collection cannot rely on it.
-A `ListItem` names its item with one `itemKey` prop, and a collection built
-from data takes `getKey(item)`. `itemKey` is a new name because no row prop
+A `ListItem` names its item with one `itemKey` prop, and a data collection
+without an identity of its own takes `getKey(item)`. `itemKey` is a new name because no row prop
 carries item identity today: `value` on option-like rows is the selected value
-a form reads, a different job (`architecture:public-component-api` INV21).
+a form reads, a different job. A collection whose items already carry an
+identity, such as TreeList's `id` or Table's `idKey`, uses it rather than a
+second one.
 
 Rejected: reading each direct child's React `key`.
 
 ## Open questions
 
-None.
+- **OQ1 — Reordering with a mouse without dragging.** (`human-design`)
+  `spec:AST-094` FR39 requires a path without a drag. Options: (a,
+  recommended) a click on the handle opens a small menu with "Move before"
+  and "Move after"; or (b) a click on the handle picks the row up as Space
+  does, and the next click on a row drops it there.

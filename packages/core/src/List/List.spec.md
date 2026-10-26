@@ -184,7 +184,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 - `spec:AST-103` owns reordering. List is its first adopter: it
   takes the `reorderable` object, a row's key is its `ListItem`'s `itemKey`
   and its position is its index, and the
-  handle is drawn in the row's existing trailing element.
+  handle is the one element reordering adds to a row, at its trailing edge
+  (`spec:AST-103` FR5).
 
 ## Verification map
 
