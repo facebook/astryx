@@ -18,7 +18,7 @@
  * - /packages/core/src/BottomSheet/BottomSheet.tsx
  * - /packages/core/src/BottomSheet/BottomSheetPanel.test.tsx
  * - /packages/core/src/BottomSheet/snapOffsets.ts
- * - /packages/core/src/keyboard/useMobileKeyboard.ts
+ * - /packages/core/src/keyboard/keyboardHeight.ts
  * - /packages/core/src/BottomSheet/useSheetGestures.ts
  * - /packages/core/src/Layout/container.stylex.ts (bottom-sheet padding chain)
  */
@@ -68,7 +68,7 @@ import {
   resolveSnapPoints,
   type BottomSheetSnapPoint,
 } from './snapOffsets';
-import {useMobileKeyboard} from '../keyboard/useMobileKeyboard';
+import {useSheetKeyboard} from '../keyboard/keyboardHeight';
 import {useSheetGestures} from './useSheetGestures';
 
 const HEIGHT_BUDGETS = {
@@ -94,7 +94,7 @@ const HANDLE_BAR_HEIGHT = spacingVars['--spacing-6'];
 // `dvh`, which the virtual keyboard does not shrink, so reading
 // `visualViewport` here would make the two disagree by exactly the keyboard's
 // height: every detent would move while the sheet it measures did not. A
-// keyboard is `useMobileKeyboard`'s business — it holds the sheet still and
+// keyboard is `useSheetKeyboard`'s business — it holds the sheet still and
 // scrolls the body — and it does not redefine the sheet's detents.
 function layoutViewportHeight(): number {
   return typeof window === 'undefined' ? 0 : window.innerHeight;
@@ -268,7 +268,7 @@ const styles = stylex.create({
     scrollPaddingBlockEnd: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
   },
   // The room the keyboard takes at the end of a Tall sheet's content
-  // (useMobileKeyboard), so its last control can scroll above the keyboard.
+  // (useSheetKeyboard), so its last control can scroll above the keyboard.
   // It is the content box's last in-flow box, after the content's own
   // children, not a box after the content: Firefox resolves the content's
   // `min-height: min-content` as `auto` in the block axis, so the content box
@@ -593,7 +593,7 @@ export function BottomSheetPanel({
     isPresentedRef.current = isPresented;
     sheetRef(isPresented ? elementRef.current : null);
   }, [isPresented, sheetRef]);
-  const keyboardInset = useMobileKeyboard({
+  const keyboardInset = useSheetKeyboard({
     bodyRef: bodyElementRef,
     bottomClearance: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
     isEnabled: height === 'tall',

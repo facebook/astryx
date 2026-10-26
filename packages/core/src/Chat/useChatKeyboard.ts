@@ -65,11 +65,11 @@ import {
   claimTapFocus,
   findTextEntryControl,
   getKeyboardLayoutGuide,
-  getMobileKeyboardHeight,
+  getKeyboardHeight,
   isKeyboardMeasurable,
   refuseFocusReveal,
   rideKeyboard,
-  subscribeMobileKeyboard,
+  subscribeKeyboardHeight,
   useKeyboardHeight,
   watchRevealPan,
   type KeyboardTransition,
@@ -324,7 +324,7 @@ export function useChatKeyboard({
       if (ridingRef.current) {
         return;
       }
-      const next = liftFor(getMobileKeyboardHeight(win));
+      const next = liftFor(getKeyboardHeight(win));
       if (Math.abs(next - liftRef.current) < 0.5) {
         return;
       }
@@ -502,8 +502,8 @@ export function useChatKeyboard({
     const watch = watchRevealPan(win, {
       owns: focused => composer.contains(focused),
     });
-    let reportedHeight = getMobileKeyboardHeight(win);
-    const unsubscribe = subscribeMobileKeyboard(win, event => {
+    let reportedHeight = getKeyboardHeight(win);
+    const unsubscribe = subscribeKeyboardHeight(win, event => {
       if (event.type !== 'viewport') {
         return;
       }

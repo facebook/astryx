@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file useMobileKeyboard.test.ts
- * @input useMobileKeyboard.ts, the keyboard layout guide, a stand-in visual
+ * @file keyboardHeight.test.ts
+ * @input keyboardHeight.ts, the keyboard layout guide, a stand-in visual
  *   viewport
  * @output Tests for the on-screen keyboard module (spec:AST-099): the height
  *   (FR2), where it measures (FR6, FR7), its one set of listeners (FR1,
@@ -21,14 +21,14 @@ import {
 } from '../utils/layoutViewport';
 import {
   claimTapFocus,
-  getMobileKeyboardHeight,
+  getKeyboardHeight,
   isKeyboardMeasurable,
   measureKeyboardHeight,
   refuseFocusReveal,
-  subscribeMobileKeyboard,
+  subscribeKeyboardHeight,
   useKeyboardHeight,
   watchRevealPan,
-} from './useMobileKeyboard';
+} from './keyboardHeight';
 
 type FakeViewport = EventTarget & {
   height: number;
@@ -338,8 +338,8 @@ describe('one set of listeners per window (FR1, INV11)', () => {
     const remove = vi.spyOn(viewport, 'removeEventListener');
     const first = vi.fn();
     const second = vi.fn();
-    const stopFirst = subscribeMobileKeyboard(window, first);
-    const stopSecond = subscribeMobileKeyboard(window, second);
+    const stopFirst = subscribeKeyboardHeight(window, first);
+    const stopSecond = subscribeKeyboardHeight(window, second);
     expect(add.mock.calls.map(([type]) => type)).toEqual(['resize', 'scroll']);
 
     report({height: window.innerHeight - 300});
@@ -362,7 +362,7 @@ describe('one set of listeners per window (FR1, INV11)', () => {
   it('feeds the keyboard layout guide, which adds no listener of its own', () => {
     const add = vi.spyOn(viewport, 'addEventListener');
     const windowAdd = vi.spyOn(window, 'addEventListener');
-    const stopHook = subscribeMobileKeyboard(window, () => {});
+    const stopHook = subscribeKeyboardHeight(window, () => {});
     const guide = getKeyboardLayoutGuide(window);
     const transitions: number[] = [];
     const stopGuide = guide.subscribe(transition => {
@@ -398,12 +398,12 @@ describe('one set of listeners per window (FR1, INV11)', () => {
     const seen: number[] = [];
     const stopGuide = guide.subscribe(transition => {
       // A rider reads the height again as it commits its layout.
-      seen.push(getMobileKeyboardHeight(window));
+      seen.push(getKeyboardHeight(window));
       seen.push(transition.to);
     });
-    const stopListener = subscribeMobileKeyboard(window, event => {
+    const stopListener = subscribeKeyboardHeight(window, event => {
       if (event.type === 'viewport') {
-        seen.push(getMobileKeyboardHeight(window));
+        seen.push(getKeyboardHeight(window));
       }
     });
     const first = renderHook(() => useKeyboardHeight());
@@ -433,7 +433,7 @@ describe('one set of listeners per window (FR1, INV11)', () => {
     expect(renders).toBe(before);
     report({height: window.innerHeight - 300});
     expect(result.current).toBe(300);
-    expect(getMobileKeyboardHeight(window)).toBe(300);
+    expect(getKeyboardHeight(window)).toBe(300);
     unmount();
   });
 
@@ -462,7 +462,7 @@ describe('one set of listeners per window (FR1, INV11)', () => {
     expect(removed.filter(type => type === 'resize').length).toBeGreaterThan(0);
     // Every add was matched by a remove.
     const add = vi.spyOn(viewport, 'addEventListener');
-    const stop = subscribeMobileKeyboard(window, () => {});
+    const stop = subscribeKeyboardHeight(window, () => {});
     expect(add).toHaveBeenCalledTimes(2);
     stop();
   });
@@ -496,7 +496,7 @@ describe('one set of listeners per window (FR1, INV11)', () => {
           /visualViewport\??\.addEventListener|viewport\??\.addEventListener\(\s*'(resize|scroll)'/.test(
             source,
           ) &&
-          relative !== 'keyboard/useMobileKeyboard.ts' &&
+          relative !== 'keyboard/keyboardHeight.ts' &&
           !visibleViewportReaders.has(relative)
         ) {
           offenders.push(relative);

@@ -3,17 +3,17 @@
 'use client';
 
 /**
- * @file useMobileKeyboard.ts
+ * @file keyboardHeight.ts
  * @input The window's visual viewport, focus events, React effects and refs,
  *   the Reduce Motion media query, the touch query, the layout viewport's
  *   height (utils/layoutViewport.ts), and for BottomSheet's ride the
  *   compositor animator, the keyboard layout guide's transitions and
  *   rideKeyboard
  * @output Exports the on-screen keyboard module: measureKeyboardHeight,
- *   isKeyboardMeasurable, subscribeMobileKeyboard, getMobileKeyboardHeight,
+ *   isKeyboardMeasurable, subscribeKeyboardHeight, getKeyboardHeight,
  *   useKeyboardHeight, isTextEntryControl, findTextEntryControl,
  *   refuseFocusReveal, claimTapFocus, watchRevealPan, and BottomSheet's
- *   useMobileKeyboard hook
+ *   useSheetKeyboard hook
  * @position Core's one source for the on-screen keyboard (spec:AST-099,
  *   architecture:react-component-runtime INV11). Internal to core: nothing
  *   here is exported from the package. BottomSheet, ChatLayout and the
@@ -41,7 +41,7 @@
  * programmatic focus()) passes through that one transition. A tap on a field
  * when nothing has focus raises no blur; `claimTapFocus` takes that route.
  *
- * BottomSheet's hook (`useMobileKeyboard`) gives a fully expanded, explicitly
+ * BottomSheet's hook (`useSheetKeyboard`) gives a fully expanded, explicitly
  * Tall sheet a keyboard-aware internal scroll range while leaving the sheet
  * itself stationary: it returns the room the keyboard takes at the end of the
  * body, which the sheet lays out through a functional style on its own body,
@@ -122,7 +122,7 @@ export function measureKeyboardHeight(win: Window): number {
 }
 
 /** A report from the keyboard module, in the order the window raised them. */
-export type MobileKeyboardEvent =
+export type KeyboardHeightEvent =
   | {
       /** The visual viewport or the window changed size or position. */
       type: 'viewport';
@@ -142,7 +142,7 @@ export type MobileKeyboardEvent =
 
 interface KeyboardStore {
   height: number;
-  listeners: Set<(event: MobileKeyboardEvent) => void>;
+  listeners: Set<(event: KeyboardHeightEvent) => void>;
   detach: (() => void) | null;
 }
 
@@ -161,7 +161,7 @@ function attach(win: Window, store: KeyboardStore): () => void {
   const viewport = win.visualViewport;
   const doc = win.document;
   store.height = measureKeyboardHeight(win);
-  const emit = (event: MobileKeyboardEvent) => {
+  const emit = (event: KeyboardHeightEvent) => {
     for (const listener of [...store.listeners]) {
       listener(event);
     }
@@ -199,14 +199,14 @@ function attach(win: Window, store: KeyboardStore): () => void {
  *
  * @example
  * ```
- * const stop = subscribeMobileKeyboard(window, event => {
+ * const stop = subscribeKeyboardHeight(window, event => {
  *   if (event.type === 'viewport') layout(event.height);
  * });
  * ```
  */
-export function subscribeMobileKeyboard(
+export function subscribeKeyboardHeight(
   win: Window,
-  listener: (event: MobileKeyboardEvent) => void,
+  listener: (event: KeyboardHeightEvent) => void,
 ): () => void {
   const store = storeOf(win);
   store.listeners.add(listener);
@@ -230,7 +230,7 @@ export function subscribeMobileKeyboard(
  * between two reports sees the current height. With nothing listening yet,
  * the height is measured now.
  */
-export function getMobileKeyboardHeight(win: Window): number {
+export function getKeyboardHeight(win: Window): number {
   const store = stores.get(win);
   return store?.detach != null ? store.height : measureKeyboardHeight(win);
 }
@@ -252,15 +252,15 @@ export function useKeyboardHeight(win?: Window | null): number {
       if (target == null) {
         return () => {};
       }
-      let last = getMobileKeyboardHeight(target);
-      return subscribeMobileKeyboard(target, event => {
+      let last = getKeyboardHeight(target);
+      return subscribeKeyboardHeight(target, event => {
         if (event.type === 'viewport' && event.height !== last) {
           last = event.height;
           onChange();
         }
       });
     },
-    () => (target == null ? 0 : getMobileKeyboardHeight(target)),
+    () => (target == null ? 0 : getKeyboardHeight(target)),
     () => 0,
   );
 }
@@ -625,7 +625,7 @@ export function claimTapFocus(
   };
 }
 
-interface UseMobileKeyboardOptions {
+interface UseSheetKeyboardOptions {
   bodyRef: RefObject<HTMLElement | null>;
   bottomClearance: number;
   isEnabled: boolean;
@@ -643,7 +643,7 @@ interface KeyboardGeometry {
 
 // Where the keyboard's top is in the layout viewport.
 function getObstructionTop(): number {
-  return layoutViewportHeight(window) - getMobileKeyboardHeight(window);
+  return layoutViewportHeight(window) - getKeyboardHeight(window);
 }
 
 // Windows whose browser revealed a focused field itself right after the
@@ -672,7 +672,7 @@ function overlapOf(bodyBottom: number, obstructionTop: number): number {
 
 // The keyboard is gone once its height is back to 0.
 function isVisualViewportRecovered(): boolean {
-  return getMobileKeyboardHeight(window) <= 0.5;
+  return getKeyboardHeight(window) <= 0.5;
 }
 
 /**
@@ -680,7 +680,7 @@ function isVisualViewportRecovered(): boolean {
  * moves and its dismissal (see the file header). Returns the room the
  * keyboard takes at the end of the body, CSS px (0 without a keyboard).
  */
-export function useMobileKeyboard({
+export function useSheetKeyboard({
   bodyRef,
   bottomClearance,
   isEnabled,
@@ -690,7 +690,7 @@ export function useMobileKeyboard({
   isOpen,
   isPresented,
   sheetRef,
-}: UseMobileKeyboardOptions): number {
+}: UseSheetKeyboardOptions): number {
   // The room the keyboard takes at the end of the body, CSS px: the sheet lays
   // it out through a functional style on its own body (spec:AST-099 FR3).
   const [keyboardInset, setKeyboardInset] = useState(0);
@@ -1211,7 +1211,7 @@ export function useMobileKeyboard({
     // no zoom) is put back by scrolling the full-viewport dialog's top into
     // view once the sheet lands the field itself, and the field lands at once
     // on every later report.
-    let lastHeight = getMobileKeyboardHeight(window);
+    let lastHeight = getKeyboardHeight(window);
     const revealPan = watchRevealPan(window, {
       owns: focused => hasKeyboardLayoutRef.current && body.contains(focused),
       // The reader's own scroll may stop a smooth reveal short: forget where
@@ -1222,7 +1222,7 @@ export function useMobileKeyboard({
     });
     // Every keyboard report reaches the reveal through the keyboard module's
     // one set of listeners.
-    const unsubscribe = subscribeMobileKeyboard(window, event => {
+    const unsubscribe = subscribeKeyboardHeight(window, event => {
       if (event.type !== 'viewport') {
         return;
       }
