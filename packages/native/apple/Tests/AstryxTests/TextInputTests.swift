@@ -219,3 +219,45 @@ import Testing
   #expect(field.props.base.id == "email")
   #expect(TextInputProps.baseTarget == .control)
 }
+
+// What VoiceOver reads for the drawn read-only and disabled field (record FR2).
+// The rendered accessibility tree is not measured until an app-hosted test
+// target exists; these assert what the view gives `accessibilityRepresentation`.
+
+@MainActor
+@Test func aReadOnlyFieldReadsAsAnUndimmedTextFieldWithItsValue() {
+  let field = Astryx.TextInput(label: "Account", value: "ID 12345", isReadOnly: true).accessibleFieldDescription
+  #expect(field.kind == .text)
+  #expect(!field.isDimmed)
+  #expect(field.label == "Account")
+  #expect(field.value == "ID 12345")
+  #expect(field.hint == AstryxStrings.inputReadOnly)
+}
+
+@MainActor
+@Test func aReadOnlyPasswordReadsAsASecureField() {
+  let field = Astryx.TextInput(label: "Password", value: "hunter2", type: .password, isReadOnly: true).accessibleFieldDescription
+  #expect(field.kind == .secure)
+  #expect(!field.isDimmed)
+}
+
+@MainActor
+@Test func aDisabledFieldReadsAsADimmedTextFieldWithItsReason() {
+  let field = Astryx.TextInput(
+    label: "Plan", value: "Team", isDisabled: true, disabledMessage: "Managed by your admin"
+  ).accessibleFieldDescription
+  #expect(field.kind == .text)
+  #expect(field.isDimmed)
+  #expect(field.hint == "Managed by your admin")
+  let password = Astryx.TextInput(label: "Password", value: "x", type: .password, isDisabled: true).accessibleFieldDescription
+  #expect(password.kind == .secure)
+  #expect(password.isDimmed)
+}
+
+@MainActor
+@Test func aDrawnFieldWithAnErrorCarriesItInItsLabel() {
+  let field = Astryx.TextInput(
+    label: "Email", value: "you@", isReadOnly: true, status: TextInputStatus(type: .error, message: "Enter a full address")
+  ).accessibleFieldDescription
+  #expect(field.label == "Email, Enter a full address")
+}

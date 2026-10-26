@@ -373,18 +373,39 @@ public struct TextInput: View {
     }
   }
 
+  /// What VoiceOver reads for a read-only or disabled field: which platform
+  /// field, whether it is dimmed, and its label, value, and description.
+  struct AccessibleField: Equatable {
+    enum Kind: Equatable { case text, secure }
+    var kind: Kind
+    var isDimmed: Bool
+    var label: String
+    var value: String
+    var hint: String
+  }
+
+  var accessibleFieldDescription: AccessibleField {
+    AccessibleField(
+      kind: props.type == .password ? .secure : .text,
+      isDimmed: isDisabled,
+      label: accessibilityLabelText,
+      value: props.value,
+      hint: accessibilityDescription
+    )
+  }
+
   /// The platform text field VoiceOver reads for a read-only or disabled field.
   @ViewBuilder private var accessibleField: some View {
-    let value = Binding.constant(props.value)
+    let field = accessibleFieldDescription
+    let value = Binding.constant(field.value)
     Group {
-      if props.type == .password {
-        SecureField(accessibilityLabelText, text: value)
-      } else {
-        TextField(accessibilityLabelText, text: value)
+      switch field.kind {
+      case .secure: SecureField(field.label, text: value)
+      case .text: TextField(field.label, text: value)
       }
     }
-    .disabled(isDisabled)
-    .accessibilityHint(SwiftUI.Text(accessibilityDescription))
+    .disabled(field.isDimmed)
+    .accessibilityHint(SwiftUI.Text(field.hint))
   }
 
   // MARK: Status
