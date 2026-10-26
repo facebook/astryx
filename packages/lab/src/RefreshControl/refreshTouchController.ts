@@ -41,10 +41,10 @@
  * With a mouse or a trackpad nothing pulls, and a programmatic refresh only
  * reports busy and announces itself: no inset, no indicator.
  *
- * Motion goes through the theme: the settle and the trigger turn hand their
- * table springs to the animator, which plays each as the element's theme sets
- * it; the end and the retracting indicator, timed here, read theirs with
- * `resolveMotion`.
+ * The settle and the trigger turn hand their table springs to the animator.
+ * The end's curve is `timing.curves.move`, one of spec:AST-094 FR4's internal
+ * roles, read with `resolveMotion` the way the animator reads roles; every
+ * other value is a table constant, read as it is.
  *
  * Main-thread note: finger tracking runs on the main thread here (the browser
  * has no refresh pull of its own to ride); every release, settle, spin and
@@ -72,14 +72,8 @@ import type {MotionCurve} from '@astryxdesign/core/motion/animator';
 import {cubicBezier} from '@astryxdesign/core/motion/bezier';
 import {resolveMotion} from '@astryxdesign/core/motion/resolveMotion';
 import {solveSpring, toSpring} from '@astryxdesign/core/motion/spring';
-import {
-  refreshControl,
-  registerRefreshControlTable,
-} from '@astryxdesign/core/motion/uikit/refresh';
-import {
-  registerScrollTable,
-  scroll,
-} from '@astryxdesign/core/motion/uikit/scroll';
+import {refreshControl} from '@astryxdesign/core/motion/uikit/refresh';
+import {scroll} from '@astryxdesign/core/motion/uikit/scroll';
 import {
   registerTimingTable,
   timing,
@@ -229,11 +223,8 @@ export function useRefreshTouchController({
   model,
   dispatchRef,
 }: RefreshTouchControllerOptions): RefreshTouchController {
-  // The motion roles of every table this layer animates with (its own, the
-  // scroll view's bounce and the timing curves), so the theme's values reach
-  // the first animation. Idempotent; no table registers on import.
-  registerRefreshControlTable();
-  registerScrollTable();
+  // The timing table's FR4 roles, so the end's curve resolves the way the
+  // animator resolves roles. Idempotent; no table registers on import.
   registerTimingTable();
   const dispatch = useCallback(
     (event: RefreshEvent) => dispatchRef.current(event),
@@ -545,10 +536,7 @@ export function useRefreshTouchController({
       if (to === 'top' && !model.current.isRefreshing && from > 0) {
         // The spokes retract with the content: started in the same task, the
         // two start on the same compositor frame.
-        const curve = solveSpring(
-          toSpring(resolveMotion(contentElement.current, scroll.bounce)),
-          {from, to: 0},
-        );
+        const curve = solveSpring(toSpring(scroll.bounce), {from, to: 0});
         const {dimension} = pull.current;
         const start = revealProgress(from, dimension) || 1;
         const duration = Math.max(0.016, curve.settleTime(0.05));
@@ -627,14 +615,14 @@ export function useRefreshTouchController({
       // (UIKit holds it at opacity 1 for nearly the whole end).
       const from = content.animator.get('y');
       const element = contentElement.current;
-      const duration = resolveMotion(element, refreshControl, 'endMs');
+      const duration = refreshControl.endMs;
       const curve = resolveMotion(element, timing.curves.move);
       // UIKit replaces the spin with the end: the indicator shrinks to almost
       // nothing as it turns, and the title fades out, over the same 0.3 s.
       // Under Reduce Motion the animator cross-fades the slide, fades the
       // spinner out where it is and shortens the title's fade
       // (design:reduced-motion DR2, DR3).
-      const exit = resolveMotion(element, refreshControl, 'exitMs');
+      const exit = refreshControl.exitMs;
       stopSpin();
       turn.animator.play(
         {
