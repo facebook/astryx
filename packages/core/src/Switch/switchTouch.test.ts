@@ -17,7 +17,7 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {listMotionRoles, motionRole, motionRoleOf} from '../motion/roles';
+import {listMotionRoles, motionRoleOf} from '../motion/roles';
 import {solveSpring, toSpring} from '../motion/spring';
 import {registerSwitchTable, switchControl} from '../motion/uikit/switch';
 import {
@@ -323,40 +323,22 @@ describe('the switch springs against UIKit frames (iOS 26.2)', () => {
   });
 });
 
-describe('switch motion roles', () => {
-  it('registers its springs and its minimum lift time, and nothing else, as roles a theme may retune', () => {
+describe('switch table registration', () => {
+  it('registers no motion role: the switch\u2019s values stay internal constants', () => {
     const switchRoles = () =>
       listMotionRoles()
         .map(role => role.id)
-        .filter(id => id.startsWith('switchControl.'))
-        .sort();
+        .filter(id => id.startsWith('switchControl.'));
     // Nothing registers on import; the touch presentation registers the
     // table, and doing it twice changes nothing.
     expect(switchRoles()).toEqual([]);
     registerSwitchTable();
     registerSwitchTable();
-    const ids = switchRoles();
-    expect(ids).toEqual([
-      'switchControl.lift',
-      'switchControl.minimumLiftMs',
-      'switchControl.settle',
-      'switchControl.tracking',
-      'switchControl.travel',
-      'switchControl.wellOff',
-      'switchControl.wellOn',
-    ]);
-    expect(motionRole('switchControl.minimumLiftMs')).toMatchObject({
-      kind: 'duration',
-      variable: '--motion-switch-control-minimum-lift-ms',
-      value: 235,
-    });
-    expect(motionRole('switchControl.wellOn')).toMatchObject({
-      kind: 'spring',
-      variable: '--motion-switch-control-well-on',
-      value: switchControl.wellOn,
-    });
-    // The animator resolves a role from the very object it is handed.
-    expect(motionRoleOf(switchControl.lift)?.id).toBe('switchControl.lift');
-    expect(motionRoleOf(switchControl.travel)?.id).toBe('switchControl.travel');
+    // No public API retunes a component's measured spring (spec:AST-094
+    // FR4): the springs and the minimum lift time play as measured.
+    expect(switchRoles()).toEqual([]);
+    expect(motionRoleOf(switchControl.lift)).toBeUndefined();
+    expect(motionRoleOf(switchControl.travel)).toBeUndefined();
+    expect(settleTime(0, 0)).toBe(switchControl.minimumLiftMs);
   });
 });

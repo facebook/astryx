@@ -6,7 +6,7 @@
  * @output Exports `switchControl`: UISwitch's geometry, the springs of its
  *   Liquid Glass thumb and of its track color, the drag's rubber band and
  *   flip distance, and the release timing; and `registerSwitchTable`, which
- *   makes its springs and minimum lift time motion roles
+ *   registers the table with the motion role registry
  * @position The switch domain of the UIKit constants table (motion/uikit)
  *
  * The reference is UISwitch on iOS 26.2 (style `.sliding`): a white capsule
@@ -27,12 +27,12 @@
  * `@measure` task that will confirm or replace them. uikit.test.ts enforces
  * both.
  *
- * Its springs (the lift, settle, travel and tracking, and the well's on and
- * off) and the minimum lift time are motion roles a theme may retune; the
- * geometry, rubber band, flip distance, shadow and haptic are not motion.
+ * Every value here stays an internal constant: no public API retunes a
+ * component's measured spring (`spec:AST-094` FR4's roles are the shared
+ * ones), and the geometry, rubber band, flip distance, shadow and haptic are
+ * not motion.
  *
- * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md
- * and run `pnpm generate:motion-roles`
+ * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md.
  */
 
 import {registerMotionTable} from '../roles';
@@ -171,10 +171,11 @@ export const switchControl = {
 } as const;
 
 /**
- * Makes the switch's springs and its minimum lift time motion roles a theme
- * may retune (motion/roles.ts). Nothing registers on import: Switch's touch
- * presentation calls it once before its first animation (it is idempotent),
- * so a page that never shows it ships none of the table's roles.
+ * Registers the switch's table with the motion role registry
+ * (motion/roles.ts), as the other domain tables do. It lists no role: the
+ * switch's springs and minimum lift time stay internal constants. Nothing
+ * registers on import: Switch's touch presentation calls it once before its
+ * first animation (it is idempotent).
  */
 export function registerSwitchTable(): void {
   registerMotionTable('switchControl', switchControl);
