@@ -39,11 +39,10 @@
  * the `@measure` task that will confirm or replace them. uikit.test.ts
  * enforces both.
  *
- * Each spring, duration and curve is a motion role a theme may retune
+ * Each spring, duration and curve registers as an internal motion role
  * (motion/roles.ts), except the leaves registered below as not motion.
  *
- * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md and
- * the generated motion roles (`pnpm generate:motion-roles`)
+ * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md
  */
 
 import {registerMotionTable} from '../roles';
@@ -182,8 +181,8 @@ export const refreshControl = {
 } as const;
 
 /**
- * Makes each spring, duration and curve above a motion role a theme may
- * retune (motion/roles.ts). Nothing registers on import: the refresh
+ * Registers the springs, durations and curves above as internal motion roles
+ * (motion/roles.ts). Nothing registers on import: the refresh
  * control's touch layer calls it once before its first animation (it is
  * idempotent), so a page that never pulls ships no registry.
  */
