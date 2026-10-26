@@ -148,6 +148,13 @@ const PRESSED_FADING = '[data-astryx-press="fading"]';
  * selected through a navigation push; the controller never overwrites it.
  */
 const PRESSED_HELD = '[data-astryx-press="held"]';
+/**
+ * A press in any of its states (on, releasing, or held by a selection hold):
+ * the row layer (`cell`) exists only then, so at rest a row's own `::before`
+ * and its stacking are untouched.
+ */
+const PRESSED_ANY =
+  ':is([data-astryx-press="on"],[data-astryx-press="fading"],[data-astryx-press="held"])';
 
 const PRESS_ALPHA = pressVars['--astryx-press-alpha'];
 
@@ -381,11 +388,14 @@ export const interactionOverlayStyles = stylex.create({
    * variant keeps the hover and a mouse's `:active`. The row must be
    * positioned (the layer is placed absolutely); `isolation: isolate` keeps
    * the layer above the row's background (a selected fill) and below its
-   * content. Under a finger, a row's own `::before` from `xstyle` merges with
-   * the layer property by property and is hidden at rest: decorate with
-   * `::after` or a child. A selection hold (selectionHold.ts) writes `held`
-   * on the row it keeps selected through a navigation push: the layer shows
-   * at full strength, and the hold's own Web Animations move it from there.
+   * content. The layer exists only while a press is on or releasing, or a
+   * selection hold keeps the row: at rest a row's own `::before` and its
+   * stacking are as they were; during a press the layer is the row's
+   * `::before`, so a caller's decoration there is replaced for that time
+   * (decorate with `::after` or a child). A selection hold (selectionHold.ts)
+   * writes `held` on the row it keeps selected through a navigation push: the
+   * layer shows at full strength, and the hold's own Web Animations move it
+   * from there.
    *
    * Under a finger only (a coarse primary pointer): a fine pointer keeps the
    * variant exactly, with no layer, no stacking context and its own touch
@@ -415,19 +425,42 @@ export const interactionOverlayStyles = stylex.create({
       default: null,
       [PRESSED_FADING]: {default: pressRelease, [COARSE]: 'none'},
     },
-    isolation: {default: null, [COARSE]: 'isolate'},
-    // The whole layer is under a finger only: with a fine pointer none of
-    // these apply, so a row's own `::before` is exactly as it was.
+    // The stacking context the layer needs, for a press only.
+    isolation: {
+      default: null,
+      [COARSE]: {default: null, [PRESSED_ANY]: 'isolate'},
+    },
+    // The whole layer is under a finger only, and only while a press is on
+    // or releasing: with a fine pointer none of it applies, and at rest a
+    // row's own `::before` is exactly as it was.
     '::before': {
-      content: {default: null, [COARSE]: '""'},
-      position: {default: null, [COARSE]: 'absolute'},
-      inset: {default: null, [COARSE]: 0},
-      zIndex: {default: null, [COARSE]: -1},
-      borderRadius: {default: null, [COARSE]: 'inherit'},
-      pointerEvents: {default: null, [COARSE]: 'none'},
+      content: {
+        default: null,
+        [COARSE]: {
+          default: null,
+          [ENABLED]: {default: null, [PRESSED_ANY]: '""'},
+        },
+      },
+      position: {
+        default: null,
+        [COARSE]: {default: null, [PRESSED_ANY]: 'absolute'},
+      },
+      inset: {default: null, [COARSE]: {default: null, [PRESSED_ANY]: 0}},
+      zIndex: {default: null, [COARSE]: {default: null, [PRESSED_ANY]: -1}},
+      borderRadius: {
+        default: null,
+        [COARSE]: {default: null, [PRESSED_ANY]: 'inherit'},
+      },
+      pointerEvents: {
+        default: null,
+        [COARSE]: {default: null, [PRESSED_ANY]: 'none'},
+      },
       backgroundColor: {
         default: null,
-        [COARSE]: colorVars['--color-overlay-pressed'],
+        [COARSE]: {
+          default: null,
+          [PRESSED_ANY]: colorVars['--color-overlay-pressed'],
+        },
       },
       // On at once while the press is believed, and while a selection hold
       // keeps the row selected (its own animations move it from there);
@@ -435,8 +468,10 @@ export const interactionOverlayStyles = stylex.create({
       opacity: {
         default: null,
         [COARSE]: {
-          default: 0,
-          [ENABLED]: {default: null, [PRESSED_ON]: 1, [PRESSED_HELD]: 1},
+          default: null,
+          [PRESSED_ON]: 1,
+          [PRESSED_HELD]: 1,
+          [PRESSED_FADING]: 0,
         },
       },
       animationName: {
@@ -467,7 +502,10 @@ export const interactionOverlayStyles = stylex.create({
       // animation running through a busy main thread only on a layer.
       willChange: {
         default: null,
-        [COARSE]: 'var(--astryx-motion-will-change-before, auto)',
+        [COARSE]: {
+          default: null,
+          [PRESSED_ANY]: 'var(--astryx-motion-will-change-before, auto)',
+        },
       },
     },
   },

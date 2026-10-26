@@ -180,8 +180,8 @@ test.describe('a divided list under a touch press', () => {
     // The layer covers the pressed row down through its hidden divider.
     expect(pressed[1].layerOpacity).toBe('1');
     expect(pressed[1].layerBottom).toBe(`-${rest[1].dividerWidth}`);
-    // Rows that are not pressed keep their layer inside their padding box.
-    expect(pressed[0].layerBottom).toBe('0px');
+    // Rows that are not pressed have no layer at all.
+    expect(pressed[0].layerBottom).toBe('auto');
 
     // The first frame of the release: both dividers are back while the
     // press is still at full strength, and the layer is back inside the row.
