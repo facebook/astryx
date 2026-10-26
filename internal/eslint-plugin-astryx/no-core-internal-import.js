@@ -4,8 +4,9 @@
  * @file no-core-internal-import.js
  * @description Reports imports of Core's internal subpaths and of its
  * gesture, motion and touch-support source. The repo config turns it on for
- * every file outside packages/core and packages/lab, so only Core and Lab may
- * import them.
+ * every linted file outside packages/core and packages/lab (the global
+ * ignores still leave some scripts unlinted), so only Core and Lab may import
+ * them.
  *
  * Reported, by `import`, `export … from`, `import()`, `require()` and
  * `typeof import()`:
