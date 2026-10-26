@@ -234,20 +234,20 @@ those contracts.
 
 What INV12 moves inside an area, each case with its test:
 
-| Case                                                                                        | Behavior                                                                                           | Test                                                                 |
-| ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Normal-flow block siblings after the changed element, at each ancestor level up to the area | Moves when its rectangle changed                                                                   | Nested changed element with block siblings at three levels           |
-| An element with `display: contents`                                                         | Has no box; its children are taken in its place                                                    | A following `display: contents` wrapper with two children            |
-| Absolutely positioned or fixed elements                                                     | Skipped and take their final place; an absolute child of a moving element rides with it            | One of each, plus an absolute badge on a moving row                  |
-| Sticky elements                                                                             | In flow while unstuck, so moves when its rectangle changed; a stuck element takes its final place  | A sticky header above and below its stuck point                      |
-| Floats                                                                                      | Moves when its rectangle changed                                                                   | A float after the changed element                                    |
-| Flex and grid items after the changed element, including wrap and row direction             | Moves when its rectangle changed                                                                   | A wrapping flex row and a row-direction neighbor that does not shift |
-| Hidden, `display: none`, or zero-size elements                                              | Skipped                                                                                            | One of each after the changed element                                |
-| Changed elements outside the area's visible part                                            | Take their final place without animation                                                           | A long list with changed rows above and below the fold               |
-| Elements under a scaled or transformed ancestor                                             | Moves by its layout change, corrected for the ancestor's scale                                     | A moving row inside a scaled panel                                   |
-| Portals and top-layer content                                                               | Never moved                                                                                        | A popover open from a following row                                  |
-| Elements already moving                                                                     | Keep their running motion and add the new move to it                                               | Two changes 100 ms apart                                             |
-| Nested registered areas                                                                     | The change stops at its nearest registered area; an inner area moves as one unit of the outer walk | An area inside an area, changed in the inner one                     |
+| Case                                                                                        | Behavior                                                                                                               | Test                                                                 |
+| ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Normal-flow block siblings after the changed element, at each ancestor level up to the area | Moves when its rectangle changed                                                                                       | Nested changed element with block siblings at three levels           |
+| An element with `display: contents`                                                         | Has no box; its children are taken in its place                                                                        | A following `display: contents` wrapper with two children            |
+| Absolutely positioned or fixed elements                                                     | Skipped and take their final place; an absolute child of a moving element rides with it                                | One of each, plus an absolute badge on a moving row                  |
+| Sticky elements                                                                             | In flow while unstuck, so moves when its rectangle changed; a stuck element takes its final place                      | A sticky header above and below its stuck point                      |
+| Floats                                                                                      | Moves when its rectangle changed                                                                                       | A float after the changed element                                    |
+| Flex and grid items after the changed element, including wrap and row direction             | Moves when its rectangle changed                                                                                       | A wrapping flex row and a row-direction neighbor that does not shift |
+| Hidden, `display: none`, or zero-size elements                                              | Skipped                                                                                                                | One of each after the changed element                                |
+| Changed elements outside the area's visible part                                            | Take their final place without animation                                                                               | A long list with changed rows above and below the fold               |
+| Elements under a scaled or transformed ancestor                                             | Moves by its layout change, corrected for the ancestor's scale                                                         | A moving row inside a scaled panel                                   |
+| Portals and top-layer content                                                               | Never moved                                                                                                            | A popover open from a following row                                  |
+| Elements already moving                                                                     | Keep their running motion and add the new move to it                                                                   | Two changes 100 ms apart                                             |
+| Nested areas                                                                                | The walk stops at the area of the handle the changed component holds; an inner area moves as one unit of an outer walk | An area inside an area, changed in the inner one                     |
 
 Out of coverage, each taking its final place at once:
 
@@ -268,8 +268,8 @@ The following are preferred techniques, not independent compatibility promises:
 - The size-change hook's documentation states what callers ask about: the
   changed component and the content after it animate together on one shared
   motion role; fixed elements and stuck sticky elements stay put;
-  Reduce Motion is handled; List rows use the same module; nesting stops at
-  the nearest area, so nothing animates twice; and the scroll position is
+  Reduce Motion is handled; List rows use the same module; a change stops at
+  its handle's area, so nothing animates twice; and the scroll position is
   kept.
 - Use an Effect Event when an external-system Effect needs a stable callback that
   reads the latest props or state without making those reads reactive. Do not use
