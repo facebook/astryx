@@ -86,8 +86,9 @@ export const WithContentBelow: Story = {
     docs: {
       description: {
         story:
-          'Under a finger, expanding or collapsing a folder moves the ' +
-          'content below the tree along with the rows.',
+          'Content after the tree takes its new place by layout when a ' +
+          "folder expands or collapses; under a finger only the tree's own " +
+          'rows animate.',
       },
     },
   },
