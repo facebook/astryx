@@ -17,6 +17,8 @@ verified_by:
     packages/core/src/DateInput/DateInputTouch.test.tsx,
     packages/core/src/DateInput/NativeDateField.test.tsx,
     packages/core/src/DateInput/Presentation.test.tsx,
+    packages/core/src/DateInput/Wheel.test.tsx,
+    packages/core/src/DateInput/__tests__/WheelRest.a11y.chromium.spec.ts,
     packages/core/src/__tests__/BusyOwnerAnnouncement.test.tsx,
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
@@ -85,6 +87,8 @@ Consumer migration instructions belong in consumer docs and release notes.
   focus handoff between those controls and the selected picker surface.
 - DateInput-specific composition of Field, Calendar, Popover, BottomSheet, and the
   browser/OS date control.
+- The bottom-sheet picker wheel (`Wheel`): its month and year wheels here, and the
+  wheels DateTimeInput and TimeInput render in their sheets.
 
 **Does not own / non-goals**
 
@@ -135,6 +139,7 @@ approved policy.
 | FR10 | Standalone mode MUST compose Field; admitted InputGroup mode MUST remove competing Field chrome while preserving name, description, value, keyboard, focus, and editing semantics.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | `family:input-fields/FR3`; current source and InputGroup tests                                                | Settled shared rule and verified adoption |
 | FR11 | Clear MUST emit `undefined` through the ordinary change pipeline. The pointer and bottom-sheet surfaces restore field focus using their shipped timing; the native surface MUST NOT reclaim focus because doing so reopens the OS picker. Implementation gap: when the field becomes disabled or busy while its clear control holds focus, the control unmounts and focus falls to the document body; `spec:AST-085/FR4` requires focus to stay or move to a destination this record names.                                                                                                                                                                                                                                                 | Current source and focused clear tests; `spec:AST-085/FR4`                                                    | Verified shipped behavior                 |
 | FR12 | No surface renders native `disabled`. A disabled field MUST stay focusable with `aria-disabled`, block typing, picking, clearing, and opening, describe its disabled reason when one is given, and take disabled paint. While busy (`isLoading` or a pending Action) the pointer and bottom-sheet surfaces expose `aria-disabled` and `aria-busy`, stay focusable, and block new commits; the native surface does the same for `isLoading`, and during a pending Action stays editable so the OS picker remains attached but rejects additional commits until the Action settles. A busy field that is not disabled keeps its ordinary paint and Spinner, shows no hover ring while commits are blocked, and keeps its keyboard focus ring. | `spec:AST-085/FR1–FR6`; `family:input-fields/FR4–FR6`; `family:buttons/FR4`; current source and focused tests | Settled shared rule and verified adoption |
+| FR13 | A bottom-sheet picker wheel that comes to rest on a disabled row (outside `min`/`max`) MUST continue to the nearest enabled row, a tie going toward the committed row, and select it there. A wheel resting on its committed row MUST NOT select or commit, so opening a bounded sheet never changes an untouched value: a committed value outside the bounds stays, and an empty field stays empty.                                                                                                                                                                                                                                                                                                                                        | DEC-1; UIDatePicker on the iOS 26.2 simulator; wheel unit and real-browser tests                              | Settled by DEC-1                          |
 
 ### Allowed variation
 
@@ -302,11 +307,28 @@ clear-glyph target of its own.
 | FR8; AR2                                             | `apps/storybook/stories/DateInput.stories.tsx`, component-scoped axe                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | open Calendar dialog plus closed field states                                                            | Important popup semantics stay unreachable to the browser audit                                                                                         | `audit:DateInput/a11y`          |
 | AR7                                                  | `apps/storybook/rtl-audit/targets.json`, component RTL audit                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | calendar and clear controls in LTR and RTL                                                               | DateInput-owned controls fail to exchange logical inline order                                                                                          | `audit:DateInput/rtl`           |
 | AR8                                                  | `DateInputTouch.test.tsx` calendar-surface suite ("mounts a window of months around the visible one, not the whole century" for the named grids, "moves keyboard focus by date, across the month boundary", "moves a week at a time with the vertical arrows", "leaves exactly one day per month tab-reachable", "gives a spilled date no tab stop in the pane that borrows it", "disables days outside min/max and refuses to commit them", "follows the reading direction under RTL: ArrowLeft moves to the next day", "moves keyboard focus by date, across the month boundary" (the real day, not the spill copy)); ArrowUp, Home/End, Page and activation keys under the Grid accessibility contract (`internal/a11y-spec`, pending) | LTR and RTL; month boundary; selected day; today                                                         | A day loses its gridcell role or selection, two days in one pane hold a Tab stop, or an arrow, Home/End, Page or activation key stops moving or picking | `audit:DateInput/accessibility` |
+| FR13                                                 | `Wheel.test.tsx` ("stopping below the minimum travels on to the minimum and commits it there", "breaks a tie toward the committed row", "opening on a value outside the bounds parks on it without travelling or committing"); `WheelRest.a11y.chromium.spec.ts` (real touch drags below the minimum and inside the bounds)                                                                                                                                                                                                                                                                                                                                                                                                               | below the minimum, above the maximum, on another disabled row; opened on a value outside the bounds      | A wheel that returns to its previous row, skips the nearest enabled row, breaks a tie away from the committed row, or commits on opening fails          | `audit:DateInput/touch`         |
 
 ## Decision log
 
-No component-local decision is created by this observational draft. The governing
-presentation decisions remain in `spec:AST-043/DEC-1` through `DEC-3`.
+The governing presentation decisions remain in `spec:AST-043/DEC-1` through
+`DEC-3`.
+
+### DEC-1 — A wheel resting on a disabled row continues to the nearest enabled row
+
+**Reference:** `component:DateInput/DEC-1`
+**Decider:** cixzhang, 2026-10-25
+
+The bottom-sheet picker wheel rests as UIDatePicker's does: a wheel that stops on
+a disabled row (outside `min`/`max`) continues to the nearest enabled row, a tie
+going toward the committed row, and selects it there. It applies wherever the
+wheel is rendered: DateInput's month and year wheels and the wheels of
+DateTimeInput and TimeInput. Opening a bounded sheet never changes an untouched
+value: a controlled value outside the bounds stays, and an empty field stays
+empty.
+
+Rejected: returning to the previous row, which makes the person scroll again to
+reach the bound.
 
 ## Open questions
 

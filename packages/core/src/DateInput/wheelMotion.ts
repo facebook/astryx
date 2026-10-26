@@ -41,7 +41,9 @@ import {
   stripTranslation,
   type DrumGeometry,
 } from './wheelDrum';
+import {lookKeyframes, rowFrameAt, type WheelLook} from './wheelLook';
 import {
+  nearestIndex,
   reachesRow,
   tickTimes,
   type WheelCurve,
@@ -117,8 +119,13 @@ export class WheelMotion {
   private strip: HTMLElement | null = null;
   private restingOffset = 0;
   private motion: RunningMotion | null = null;
-  /** Last angle written per row, so a frame writes only what changed. */
-  private written: (number | null)[] = [];
+  /** Last angle (or look frame) written per row, so a frame writes only what changed. */
+  private written: (number | string | null)[] = [];
+  /** The look the rows are drawn in, or null for the drum (wheelDrum.ts). */
+  private look: WheelLook | null = null;
+  /** Told the row nearest the band whenever it changes. */
+  private nearestListener: ((position: number) => void) | null = null;
+  private lastNearest: number | null = null;
   private lastTick = -Infinity;
   /** Last offset a drag frame showed, for its ticks. */
   private dragPrevious: number | null = null;
@@ -146,7 +153,31 @@ export class WheelMotion {
     this.written = rows.map(() => null);
     if (this.motion == null) {
       this.render(this.restingOffset);
+      this.reportNearest(nearestIndex(this.restingOffset, this.layout));
     }
+  }
+
+  /**
+   * Draw the rows in `look` (wheelLook.ts) instead of on the drum: each row
+   * gets its look frame's transform and opacity. Null draws the drum.
+   */
+  setLook(look: WheelLook | null): void {
+    this.look = look;
+    this.written = this.rows.map(() => null);
+    if (this.motion == null) {
+      this.render(this.restingOffset, true);
+    }
+  }
+
+  /**
+   * Tell `listener` the position of the row nearest the band whenever it
+   * changes: on a drag frame, where a motion stops or ends, and at rest. A
+   * motion itself reports nothing until it ends, so the compositor plays it
+   * without the main thread laying out or painting a mark per row.
+   */
+  onNearestChange(listener: ((position: number) => void) | null): void {
+    this.nearestListener = listener;
+    this.lastNearest = null;
   }
 
   /** Update the rows (a new option list); keeps the offset. */
@@ -203,6 +234,7 @@ export class WheelMotion {
     this.dragPrevious = offset;
     this.restingOffset = offset;
     this.render(offset);
+    this.reportNearest(nearestIndex(offset, this.layout));
   }
 
   /** Forget the previous drag frame (a new gesture starts). */
@@ -223,6 +255,7 @@ export class WheelMotion {
     this.finish(motion);
     this.restingOffset = offset;
     this.render(offset, true);
+    this.reportNearest(nearestIndex(offset, this.layout));
     motion.onEnd?.('stopped', offset);
     return offset;
   }
@@ -234,6 +267,7 @@ export class WheelMotion {
     if (!(curve.duration > 0)) {
       this.restingOffset = curve.to;
       this.render(curve.to);
+      this.reportNearest(nearestIndex(curve.to, this.layout));
       onEnd?.('arrived', curve.to);
       return;
     }
@@ -248,7 +282,57 @@ export class WheelMotion {
     this.restingOffset = curve.to;
     this.render(curve.to);
     const animated = this.rows.length > 0 && canAnimate(this.rows[0]);
+    const look = this.look;
+    // The strip first: the browser starts animations created in one task
+    // together, and the wheel's offset is the strip's.
     if (animated) {
+      if (this.strip != null && canAnimate(this.strip)) {
+        const frames = stripKeyframes(samples, curve.duration, this.layout);
+        const keyframes: Keyframe[] = frames.map(frame => ({
+          offset: frame.offset * scale,
+          transform: frame.transform,
+        }));
+        keyframes.push({
+          offset: 1,
+          transform: frames[frames.length - 1].transform,
+        });
+        this.strip.style.willChange = 'transform';
+        promoted.push(this.strip);
+        animations.push(
+          this.strip.animate(keyframes, {duration: totalMs, easing: 'linear'}),
+        );
+      }
+    }
+    if (animated && look != null) {
+      this.rows.forEach((row, index) => {
+        const frames = lookKeyframes(
+          index,
+          samples,
+          curve.duration,
+          this.layout,
+          look,
+        );
+        if (frames == null) {
+          return;
+        }
+        row.style.willChange = 'transform, opacity';
+        promoted.push(row);
+        const keyframes: Keyframe[] = frames.map(frame => ({
+          offset: frame.offset * scale,
+          transform: frame.transform,
+          opacity: frame.opacity,
+        }));
+        const last = frames[frames.length - 1];
+        keyframes.push({
+          offset: 1,
+          transform: last.transform,
+          opacity: last.opacity,
+        });
+        animations.push(
+          row.animate(keyframes, {duration: totalMs, easing: 'linear'}),
+        );
+      });
+    } else if (animated) {
       this.rows.forEach((row, index) => {
         const frames = rowKeyframes(
           index,
@@ -274,22 +358,6 @@ export class WheelMotion {
           row.animate(keyframes, {duration: totalMs, easing: 'linear'}),
         );
       });
-      if (this.strip != null && canAnimate(this.strip)) {
-        const frames = stripKeyframes(samples, curve.duration, this.layout);
-        const keyframes: Keyframe[] = frames.map(frame => ({
-          offset: frame.offset * scale,
-          transform: frame.transform,
-        }));
-        keyframes.push({
-          offset: 1,
-          transform: frames[frames.length - 1].transform,
-        });
-        this.strip.style.willChange = 'transform';
-        promoted.push(this.strip);
-        animations.push(
-          this.strip.animate(keyframes, {duration: totalMs, easing: 'linear'}),
-        );
-      }
     }
     const motion: RunningMotion = {
       curve,
@@ -333,6 +401,7 @@ export class WheelMotion {
       onMidpoint?.();
       this.restingOffset = to;
       this.render(to, true);
+      this.reportNearest(nearestIndex(to, this.layout));
       onEnd?.('arrived', to);
       return;
     }
@@ -366,6 +435,7 @@ export class WheelMotion {
         if (this.motion === motion) {
           onMidpoint?.();
           this.render(to, true);
+          this.reportNearest(nearestIndex(to, this.layout));
         }
       }, durationMs / 2),
       window.setTimeout(() => {
@@ -430,6 +500,7 @@ export class WheelMotion {
           this.finish(motion);
           this.restingOffset = motion.curve.to;
           this.render(motion.curve.to, true);
+          this.reportNearest(nearestIndex(motion.curve.to, this.layout));
           motion.onEnd?.('arrived', motion.curve.to);
         },
         Math.max(0, durationMs - elapsed),
@@ -464,9 +535,35 @@ export class WheelMotion {
     playHaptic('selection');
   }
 
+  /** Tell the listener the row nearest the band, if it changed. */
+  private reportNearest(position: number): void {
+    if (position === this.lastNearest) {
+      return;
+    }
+    this.lastNearest = position;
+    this.nearestListener?.(position);
+  }
+
   /** Write every row (and the strip) for `offset`; only what changed. */
   private render(offset: number, force = false): void {
-    const {layout, geometry} = this;
+    const {layout, geometry, look} = this;
+    if (look != null) {
+      for (let index = 0; index < this.rows.length; index++) {
+        const frame = rowFrameAt(index, offset, layout, look);
+        const key = `${frame.transform}|${frame.opacity}`;
+        if (!force && this.written[index] === key) {
+          continue;
+        }
+        this.written[index] = key;
+        const style = this.rows[index].style;
+        style.transform = frame.transform;
+        style.opacity = String(frame.opacity);
+      }
+      if (this.strip != null) {
+        this.strip.style.transform = `translateY(${stripTranslation(offset, layout)}px)`;
+      }
+      return;
+    }
     for (let index = 0; index < this.rows.length; index++) {
       const angle = rowAngle(rowDistance(index, offset, layout), geometry);
       if (!force && this.written[index] === angle) {

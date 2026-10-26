@@ -18,7 +18,9 @@
  */
 
 import {describe, expect, it} from 'vitest';
+import {sampleCurve} from './wheelDrum';
 import {
+  MAX_PLAN_SECONDS,
   coastCurve,
   dragOffset,
   nearestIndex,
@@ -415,5 +417,38 @@ describe('the bounce spring a theme resolved', () => {
     expect(stiff.kind).toBe('return');
     expect(stiff.curve.to).toBe(0);
     expect(stiff.curve.duration).toBeLessThan(table.curve.duration);
+  });
+
+  // A theme may set an undamped scroll.bounce (bounce 1, or a physical
+  // spring with no damping): it never settles, and a plan that never ends
+  // cannot be baked. It snaps onto its end at the animator's limit, as the
+  // animator's own motion does.
+  it('ends a plan whose bounce never settles at the animator limit', () => {
+    const springs = [
+      {duration: 0.5, bounce: 1},
+      {stiffness: 300, damping: 0},
+      {duration: 0.5, bounce: 0.999},
+    ];
+    for (const bounce of springs) {
+      const back = planRelease(-60, 0, MINUTES, bounce);
+      const into = planRelease(
+        SWIPE_200_IN_100MS.offset,
+        SWIPE_200_IN_100MS.velocity,
+        MINUTES,
+        bounce,
+      );
+      expect([back.kind, into.kind]).toEqual(['return', 'edge']);
+      for (const {curve} of [back, into]) {
+        expect(curve.duration, JSON.stringify(bounce)).toBeLessThanOrEqual(
+          MAX_PLAN_SECONDS,
+        );
+        expect(curve.value(curve.duration)).toBe(curve.to);
+        expect(curve.velocity(curve.duration)).toBe(0);
+        expect(sampleCurve(curve).at(-1)).toEqual({
+          t: curve.duration,
+          value: curve.to,
+        });
+      }
+    }
   });
 });

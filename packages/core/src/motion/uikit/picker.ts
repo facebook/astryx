@@ -25,7 +25,7 @@
  *
  * The tap spin's duration is a motion role a theme may retune
  * (`picker.tapSpin.durationMs`, motion/roles.ts); its curve is
- * `timing.curves.easeInOut` and the bounce at an end `scroll.bounce`. The
+ * `timing.curves.move` and the bounce at an end `scroll.bounce`. The
  * geometry, the release rule, the snap and the tick are UIKit's mechanics,
  * not roles.
  *
@@ -153,7 +153,7 @@ export const picker = {
     /**
      * A tap on a row turns the wheel onto it (setContentOffset animated) in
      * this long, on Core Animation's ease-in-ease-out
-     * (timing.curves.easeInOut), and selects it on arrival; a tap on the
+     * (timing.curves.move), and selects it on arrival; a tap on the
      * band's row does nothing.
      * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
      *   iPhone 17 Pro, per-frame offsets after a tap two rows below the band

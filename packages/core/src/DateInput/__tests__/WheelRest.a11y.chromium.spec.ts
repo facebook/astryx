@@ -1,4 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
+// @pr-a11y always
 
 /**
  * @file WheelRest.a11y.chromium.spec.ts
@@ -7,10 +8,8 @@
  * @output Browser evidence that a wheel dragged onto a row outside the bounds
  *   comes to rest on the nearest row inside them and commits it, on the touch
  *   column under a finger and on today's column under a mouse; that a
- *   downward drag on the touch column leaves the sheet where it is; that the
- *   touch sheet draws its wheels as one picker while today's stay separate;
- *   and that today's column under Reduce Motion fades its rows without
- *   tipping them
+ *   downward drag on the touch column leaves the sheet where it is; and that
+ *   today's column under Reduce Motion fades its rows without tipping them
  * @position Real-engine proof for the rest rule: on the touch column, real
  *   touch input through the gesture system; on today's column, native
  *   scrolling, CSS snapping and the browser's own end-of-scroll signal. None
@@ -23,7 +22,8 @@ import {
   serveStorybook,
   type StaticServer,
 } from '@astryxdesign/a11y-spec/storybook';
-import {picker, UIKIT_GESTURES} from '../../motion/uikit';
+import {UIKIT_GESTURES} from '../../motion/uikit';
+import {WHEEL_ROW_PITCH} from '../wheelLook';
 
 let storybook: StaticServer;
 test.beforeAll(async () => {
@@ -97,8 +97,8 @@ async function drag(page: Page, wheel: Locator, dy: number, steps = 30) {
 const selectedHour = (hours: Locator) =>
   hours.locator('[role="option"][aria-selected="true"]');
 
-/** UIPickerView's row pitch: the touch column's. */
-const ROW = picker.geometry.rowHeight;
+/** The touch column's row pitch: today's row. */
+const ROW = WHEEL_ROW_PITCH;
 /**
  * A drag begins only once the finger has travelled the pan's hysteresis,
  * which the rows never show, so each drag adds that and a little more and
@@ -140,14 +140,6 @@ test('a downward drag on a wheel moves its rows and leaves the sheet where it is
   );
 });
 
-test('the time wheels draw as one picker, with one band across them', async ({
-  page,
-}) => {
-  await openHourWheel(page);
-  await expect(page.locator('[data-wheel]')).toHaveCount(3);
-  await expect(page.locator('[data-wheel-band]')).toHaveCount(1);
-});
-
 test('a wheel dragged below the minimum comes to rest on the minimum', async ({
   page,
 }) => {
@@ -169,6 +161,55 @@ test('a wheel dragged onto a row inside the bounds commits that row', async ({
   await drag(page, hours, -(ROW + SLOP_ALLOWANCE), SLOW_STEPS);
 
   await expect(selectedHour(hours)).toHaveText('11', {timeout: 3000});
+  await expect(field).toHaveValue('11:00 AM');
+});
+
+test('under reduced motion an arrow key step lands under its cross-fade, never at full opacity', async ({
+  page,
+}) => {
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const {field, hours} = await openHourWheel(page);
+  await hours.focus();
+  // Every frame from before the key until well after the 200 ms dip: where
+  // the committed row (10) is drawn and how opaque its rows are (the scroller
+  // or the touch column's rows, whichever holds the options).
+  const frames = hours.evaluate(
+    async column =>
+      new Promise<{at: number; opacity: number}[]>(resolve => {
+        const seen: {at: number; opacity: number}[] = [];
+        const row = column.querySelector<HTMLElement>(
+          '[role="option"][aria-selected="true"]',
+        );
+        const faded = row?.parentElement ?? column;
+        const sample = () => {
+          seen.push({
+            at: Math.round(
+              (row?.getBoundingClientRect().top ?? 0) -
+                column.getBoundingClientRect().top,
+            ),
+            opacity: Number(getComputedStyle(faded).opacity),
+          });
+          if (seen.length < 45) {
+            requestAnimationFrame(sample);
+          } else {
+            resolve(seen);
+          }
+        };
+        requestAnimationFrame(sample);
+      }),
+  );
+  await sleep(50);
+  await page.keyboard.press('ArrowDown');
+  const seen = await frames;
+
+  // The rows never move while they are fully visible: they land under the
+  // dip (design:reduced-motion DR2), then fade back in on 11.
+  const start = seen[0].at;
+  const moved = seen.find(frame => frame.at !== start);
+  expect(moved, JSON.stringify(seen)).toBeDefined();
+  expect(moved?.opacity, JSON.stringify(seen)).toBeLessThan(1);
+  expect(seen.at(-1)?.opacity).toBe(1);
+  await expect(selectedHour(hours)).toHaveText('11');
   await expect(field).toHaveValue('11:00 AM');
 });
 
@@ -255,41 +296,6 @@ test.describe('under a mouse', () => {
 
     await expect(selectedHour(hours)).toHaveText('11', {timeout: 3000});
     await expect(field).toHaveValue('11:00 AM');
-  });
-
-  test('the time wheels stay separate scrolling columns, with no shared band', async ({
-    page,
-  }) => {
-    await openHourWheelWithMouse(page);
-    await expectFinePointer(page);
-    await expect(page.locator('[data-wheel-band]')).toHaveCount(0);
-    await expect(page.locator('[data-wheel]')).toHaveCount(0);
-  });
-
-  test('the DateTimeInput time wheels keep their gutter', async ({page}) => {
-    await page.goto(
-      `${storybook.origin}/iframe.html?id=core-datetimeinput--default&args=presentation:bottom-sheet&viewMode=story`,
-    );
-    await expectFinePointer(page);
-    await page.getByRole('combobox').first().click();
-    await page.getByRole('radio', {name: 'Time'}).click();
-    const hour = page.getByRole('listbox', {name: 'Hour'});
-    await expect(hour).toBeVisible();
-    await expect(page.locator('[data-wheel]')).toHaveCount(0);
-    // Each column's box, left to right: today's columns sit a gutter apart,
-    // so their bands never touch.
-    const boxes = await page
-      .locator('[data-panel="time"] [role="listbox"]')
-      .evaluateAll(lists =>
-        lists
-          .map(list => list.getBoundingClientRect())
-          .map(box => ({left: box.left, right: box.right}))
-          .sort((a, b) => a.left - b.left),
-      );
-    expect(boxes.length).toBeGreaterThanOrEqual(2);
-    for (let i = 1; i < boxes.length; i++) {
-      expect(boxes[i].left - boxes[i - 1].right).toBeGreaterThanOrEqual(8);
-    }
   });
 
   test('under Reduce Motion, the rows fade toward the edges without tipping', async ({

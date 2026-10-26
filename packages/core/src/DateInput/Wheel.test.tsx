@@ -17,11 +17,11 @@ import {createRef} from 'react';
 import {afterEach, beforeAll, describe, expect, it, vi} from 'vitest';
 import {
   nearestEnabledIndex,
+  ScrollWheel,
   Wheel,
   type WheelHandle,
   type WheelOption,
 } from './Wheel';
-import {WheelGroup} from './WheelGroup';
 
 const ROW = 28;
 
@@ -75,7 +75,7 @@ describe('Wheel — where it comes to rest', () => {
    * jsdom has no layout: rows get a height, and the scroller's scrollTop
    * and scrollTo are recorded so a test can stop the wheel on any row.
    */
-  function renderWheel(value: number) {
+  function renderWheel(value: number, Column: typeof ScrollWheel = Wheel) {
     Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
       configurable: true,
       get(this: HTMLElement) {
@@ -85,7 +85,7 @@ describe('Wheel — where it comes to rest', () => {
     const onChange = vi.fn();
     const scrollTo = vi.fn();
     const {rerender} = render(
-      <Wheel label="Hour" options={HOURS} value={value} onChange={onChange} />,
+      <Column label="Hour" options={HOURS} value={value} onChange={onChange} />,
     );
     const scroller = screen.getByRole('listbox', {name: 'Hour'});
     let top = value * ROW;
@@ -233,6 +233,102 @@ describe('Wheel — where it comes to rest', () => {
         behavior: 'auto',
       });
     });
+
+    /** Steps the wheel down one row with the keyboard. */
+    function pressArrowDown() {
+      const scroller = screen.getByRole('listbox', {name: 'Hour'});
+      act(() => {
+        scroller.dispatchEvent(
+          new KeyboardEvent('keydown', {key: 'ArrowDown', bubbles: true}),
+        );
+      });
+    }
+
+    it('lands an arrow key step on a coarse pointer under its cross-fade, not before', () => {
+      // A finger gets the touch column (PickerWheel.test.tsx); today's
+      // column keeps its dip for a coarse pointer wherever it is rendered.
+      stubReducedMotion('coarse');
+      vi.useFakeTimers();
+      const {onChange, scrollTo, rerender} = renderWheel(10, ScrollWheel);
+      const scroller = screen.getByRole('listbox', {name: 'Hour'});
+      const animate = vi.fn();
+      scroller.animate = animate as HTMLElement['animate'];
+      pressArrowDown();
+      expect(onChange).toHaveBeenCalledWith(11);
+      // The parent takes the step. The new value must not move the rows
+      // while they are still fully visible: they land under the dip.
+      rerender(
+        <ScrollWheel
+          label="Hour"
+          options={HOURS}
+          value={11}
+          onChange={onChange}
+        />,
+      );
+      expect(animate).toHaveBeenCalledTimes(1);
+      expect(scrollTo).not.toHaveBeenCalled();
+      const [, timing] = animate.mock.calls[0];
+      act(() => {
+        vi.advanceTimersByTime(timing.duration / 2);
+      });
+      expect(scrollTo.mock.calls).toEqual([
+        [{top: 11 * ROW, behavior: 'auto'}],
+      ]);
+    });
+
+    it('changes at once after an earlier touch on a fine pointer, for a key or a tap', () => {
+      // A touch screen whose primary pointer is fine (a laptop's): only a
+      // touch drag's release fades (DR2); a key step or a row tap is
+      // immediate (DR3).
+      stubReducedMotion('fine');
+      const {scrollTo} = renderWheel(10);
+      const scroller = screen.getByRole('listbox', {name: 'Hour'});
+      const animate = vi.fn();
+      scroller.animate = animate as HTMLElement['animate'];
+      fireEvent.pointerDown(scroller, {pointerType: 'touch'});
+      pressArrowDown();
+      expect(scrollTo).toHaveBeenLastCalledWith({
+        top: 11 * ROW,
+        behavior: 'auto',
+      });
+      fireEvent.pointerDown(scroller, {pointerType: 'touch'});
+      fireEvent.click(screen.getByRole('option', {name: '13'}));
+      expect(scrollTo).toHaveBeenLastCalledWith({
+        top: 13 * ROW,
+        behavior: 'auto',
+      });
+      expect(animate).not.toHaveBeenCalled();
+    });
+
+    it('cross-fades the travel after a touch drag on a fine pointer', () => {
+      stubReducedMotion('fine');
+      vi.useFakeTimers();
+      const {scrollTo, stopOn} = renderWheel(10);
+      const scroller = screen.getByRole('listbox', {name: 'Hour'});
+      const animate = vi.fn();
+      scroller.animate = animate as HTMLElement['animate'];
+      fireEvent.pointerDown(scroller, {pointerType: 'touch'});
+      stopOn(7);
+      expect(animate).toHaveBeenCalledTimes(1);
+      expect(scrollTo).not.toHaveBeenCalled();
+      act(() => {
+        vi.advanceTimersByTime(animate.mock.calls[0][1].duration / 2);
+      });
+      expect(scrollTo).toHaveBeenCalledWith({top: 9 * ROW, behavior: 'auto'});
+    });
+
+    it('travels at once after a trackpad scroll that follows a touch, on a fine pointer', () => {
+      stubReducedMotion('fine');
+      const {scrollTo, stopOn} = renderWheel(10);
+      const scroller = screen.getByRole('listbox', {name: 'Hour'});
+      const animate = vi.fn();
+      scroller.animate = animate as HTMLElement['animate'];
+      fireEvent.pointerDown(scroller, {pointerType: 'touch'});
+      fireEvent.wheel(scroller, {deltaY: -120});
+      stopOn(7);
+      expect(animate).not.toHaveBeenCalled();
+      expect(scrollTo).toHaveBeenCalledWith({top: 9 * ROW, behavior: 'auto'});
+    });
   });
 
   it('never commits a disabled row, even with nowhere valid to go', () => {
@@ -297,15 +393,13 @@ describe('Wheel — by pointer', () => {
     const ref = createRef<WheelHandle>();
     const onChange = vi.fn();
     const view = render(
-      <WheelGroup>
-        <Wheel
-          ref={ref}
-          label="Hour"
-          options={HOURS}
-          value={12}
-          onChange={onChange}
-        />
-      </WheelGroup>,
+      <Wheel
+        ref={ref}
+        label="Hour"
+        options={HOURS}
+        value={12}
+        onChange={onChange}
+      />,
     );
     return {...view, ref, onChange};
   }
@@ -313,16 +407,15 @@ describe('Wheel — by pointer', () => {
   it.each([
     ['iOS WebKit', true],
     ['Android Chrome', false],
-  ])(
-    'draws the UIPickerView column and band under a finger, on %s',
-    (_, ios) => {
-      stubDevice({ios, coarse: true});
-      const {container} = renderPicker();
-      expect(container.querySelector('[data-wheel]')).not.toBeNull();
-      // One band across the group, none of the column's own.
-      expect(container.querySelectorAll('[data-wheel-band]')).toHaveLength(1);
-    },
-  );
+  ])('draws the touch column under a finger, on %s', (_, ios) => {
+    stubDevice({ios, coarse: true});
+    const {container} = renderPicker();
+    expect(container.querySelector('[data-wheel]')).not.toBeNull();
+    // Each option is a drawn row, once.
+    expect(container.querySelectorAll('[data-wheel-row]')).toHaveLength(
+      HOURS.length,
+    );
+  });
 
   it.each([
     ['a mouse', false],
@@ -331,7 +424,6 @@ describe('Wheel — by pointer', () => {
     stubDevice({ios, coarse: false});
     const {container} = renderPicker();
     expect(container.querySelector('[data-wheel]')).toBeNull();
-    expect(container.querySelector('[data-wheel-band]')).toBeNull();
     // Today's column, straight in its container: no group frame around it.
     expect(
       screen.getByRole('listbox', {name: 'Hour'}).parentElement?.parentElement,

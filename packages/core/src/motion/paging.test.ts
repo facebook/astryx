@@ -355,6 +355,19 @@ describe("selectPage: UIKit's measured page choices (402 pt pages)", () => {
     expect(page(-0.4, 600)).toBe(1);
   });
 
+  // spec:AST-094 FR37, where UIKit, slower than the advance speed, takes the
+  // nearest page.
+  it('a release whose velocity points back toward the start page cancels, whatever the travel', () => {
+    expect(page(0.7, -50)).toBe(1);
+    expect(page(0.95, -299)).toBe(1);
+    expect(page(-0.7, 50)).toBe(1);
+    expect(page(-0.95, 299)).toBe(1);
+    // At rest, or moving on, the travel decides as before.
+    expect(page(0.7, 0)).toBe(2);
+    expect(page(0.7, 50)).toBe(2);
+    expect(page(-0.7, -50)).toBe(0);
+  });
+
   it('clamps to the pages, or leaves the range when looping', () => {
     expect(page(0.3, 600, 5)).toBe(5);
     expect(page(-0.3, -600, 0)).toBe(0);
@@ -525,6 +538,20 @@ describe('solveAnimatedPageScroll: setContentOffset(_:animated:)', () => {
       expect(curve.at(0.3)).toBe(distance);
       expect(curve.velocity(0.3)).toBe(0);
       expect(curve.velocity(0)).toBe(0);
+    }
+  });
+
+  // spec:AST-094 FR6: a new target keeps the current velocity (UIKit's
+  // setContentOffset drops it).
+  it('a retarget starts at the velocity it was handed and still ends on the target, at rest, on time', () => {
+    for (const velocity of [900, -900, 0]) {
+      const curve = solveAnimatedPageScroll({from: 100, to: 804, velocity});
+      expect(curve.at(0)).toBe(100);
+      expect(curve.velocity(0)).toBe(velocity);
+      expect(curve.velocity(1e-4)).toBeCloseTo(velocity, -1);
+      expect(curve.at(0.3)).toBe(804);
+      expect(curve.velocity(0.3)).toBe(0);
+      expect(curve.velocity(0.2999)).toBeCloseTo(0, -1);
     }
   });
 

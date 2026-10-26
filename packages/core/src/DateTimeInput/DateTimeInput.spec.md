@@ -16,6 +16,7 @@ verified_by:
     packages/core/src/DateTimeInput/DateTimeInputTouch.test.tsx,
     packages/core/src/DateTimeInput/NativePickerSegments.test.tsx,
     packages/core/src/DateTimeInput/Presentation.test.tsx,
+    packages/core/src/DateInput/Wheel.test.tsx,
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
@@ -107,6 +108,7 @@ intentional decision.
 | FR5 | The two pointer segments share one row while each retains its intrinsic basis; when the container is narrower, flex wrapping moves them into separate full-width rows.                                                                    | Public docs, current source, focused layout tests                     | Verify rendered geometry; class-level behavior covered |
 | FR6 | Date-time bounds and date constraints MUST prevent invalid commits. Native controls MAY receive platform hints, but JavaScript validation remains the final commit boundary; calendar-only options MAY be unavailable on native surfaces. | Public docs, current source, focused presentation tests               | Verified observation; owner approval pending           |
 | FR7 | A preset-time listbox MUST remain optional, preserve typed entry, expose one selected option independently from keyboard highlight, and limit offered values to the selected date's effective minimum and maximum.                        | Public docs, current source, focused interaction tests                | Verified observation; owner approval pending           |
+| FR8 | Its bottom-sheet date and time wheels rest as `component:DateInput/FR13` requires: a wheel stopping on a disabled row continues to the nearest enabled row and selects it, and opening a bounded sheet never changes an untouched value.  | `component:DateInput/DEC-1`; wheel unit tests                         | Settled by `component:DateInput/DEC-1`                 |
 
 ### Allowed variation
 
@@ -227,12 +229,14 @@ leading clock glyph uses `date-time-input-clock-icon`.
 | FR4, AR4            | `DateTimeInput.test.tsx`, `DateTimeInputTouch.test.tsx`                                 | pending, loading, disabled reason                             | Mutation during busy/disabled state or stale optimistic output makes a state test fail.                                              | `audit:DateTimeInput/state`       |
 | FR5                 | `DateTimeInput.test.tsx`                                                                | intrinsic row, narrow-container wrap classes                  | Removing the intrinsic basis or wrap styles makes the class-level layout assertions fail; rendered geometry remains review evidence. | `audit:DateTimeInput/layout`      |
 | FR7, AR1–AR3        | `DateTimeInput.test.tsx`, `DateTimeInputTouch.test.tsx`                                 | popovers, time options, keyboard/focus                        | Wrong role, name, state, keyboard behavior, or focus behavior makes a focused interaction test fail.                                 | `audit:DateTimeInput/interaction` |
+| FR8                 | `Wheel.test.tsx` (the shared wheel's rest), `DateTimeInputTouch.test.tsx`               | a stop on a disabled row; opened on a value out of bounds     | A wheel that returns to its previous row, or a sheet that commits on opening, fails                                                  | `audit:DateTimeInput/interaction` |
 | Theming anatomy map | `scripts/check-knowledge.mjs`, `themingTargets.test.ts`                                 | root, segments, icons, listbox, options                       | Missing, undocumented, or wrongly placed targets fail knowledge or target checks.                                                    | `audit:DateTimeInput/theming`     |
 
 ## Decision log
 
 No component-local decision is asserted by this draft. Current cross-component
-picker decisions remain in `spec:AST-043`.
+picker decisions remain in `spec:AST-043`; the bottom-sheet wheels' rest is
+`component:DateInput/DEC-1`.
 
 ## Open questions
 
