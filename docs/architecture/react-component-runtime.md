@@ -165,8 +165,8 @@ those contracts.
   change and moves shifted content with a compositor-only translate played
   through the shared rectangle morph (`architecture:layer-runtime` INV15;
   `spec:AST-094` FR5) once Core has that morph; until then, the module plays
-  its own compositor translate. It never animates height. Its walk visits only the
-  following element siblings at each ancestor level up to the area, through
+  its own compositor translate. It never animates height. Its walk visits only
+  the following element siblings at each ancestor level up to the area, through
   `parentElement` and `nextElementSibling`, descending only into an element
   with `display: contents`, so its cost grows with depth plus following
   siblings. Changes in one area in the same frame are measured together. A
