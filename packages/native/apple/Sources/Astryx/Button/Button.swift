@@ -81,7 +81,7 @@ public struct Button: View {
   /// Control characters are removed and whitespace trimmed; the scheme is
   /// compared in lowercase without the spaces after its colon, which a data
   /// URL's media type ignores (`data: text/html` is HTML).
-  static func safeDestination(_ href: String) -> String? {
+  nonisolated static func safeDestination(_ href: String) -> String? {
     let normalized = String(String.UnicodeScalarView(
       href.unicodeScalars.filter { $0.value > 0x1F && $0.value != 0x7F }
     )).trimmingCharacters(in: .whitespacesAndNewlines)
