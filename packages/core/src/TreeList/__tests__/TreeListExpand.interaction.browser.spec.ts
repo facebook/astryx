@@ -261,22 +261,19 @@ test('a mouse: a click expands and collapses in one frame, as before', async ({
   }
 });
 
-test("a theme's outline spring (a motion role) times the expansion", async ({
+test('the expansion keeps its own outline spring, whatever a theme writes', async ({
   page,
 }) => {
   await open(page);
-  // A theme that slows the outline spring to 0.8 s with no bounce, written
-  // the way a theme writes a role: its CSS variable, here on the root.
+  // The outline spring is an internal constant: a variable written the way a
+  // theme would write one (0.8 s, no bounce, on the root) changes nothing.
   await page.evaluate(() =>
     document.documentElement.style.setProperty(
       '--motion-list-update-outline-spring',
       '0.8s 0',
     ),
   );
-  const themed = solveSpring(toSpring({duration: 0.8, bounce: 0}), {
-    from: 0,
-    to: 1,
-  });
+  const table = solveSpring(SPRING, {from: 0, to: 1});
   const {group, child, below} = parts(page);
   await tapToggle(page);
   await expect(child).toBeVisible();
@@ -284,12 +281,10 @@ test("a theme's outline spring (a motion role) times the expansion", async ({
   const height = await group.evaluate(el => (el as HTMLElement).offsetHeight);
   for (const t of [SETTLE_MS / 2, SETTLE_MS]) {
     await seekAnimations(page, t);
-    const expected = -height * (1 - themed.value(t / 1000));
+    const expected = -height * (1 - table.value(t / 1000));
     expect(await translateY(child)).toBeCloseTo(expected, 0);
     expect(await translateY(below)).toBeCloseTo(expected, 0);
   }
-  // Where the table's spring has arrived, the theme's is still on its way.
-  expect(1 - themed.value(SETTLE_MS / 1000)).toBeGreaterThan(0.1);
   await releaseAnimations(page, {finish: true});
   await expect.poll(async () => translateY(below)).toBe(0);
 });

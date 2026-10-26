@@ -36,17 +36,9 @@ describe('the list table’s motion roles', () => {
     });
   });
 
-  it('makes the outline and table update springs roles', () => {
-    expect(motionRoleOf(list.update.outlineSpring)).toMatchObject({
-      id: 'list.update.outlineSpring',
-      kind: 'spring',
-      variable: '--motion-list-update-outline-spring',
-    });
-    expect(motionRoleOf(list.update.tableSpring)).toMatchObject({
-      id: 'list.update.tableSpring',
-      kind: 'spring',
-      variable: '--motion-list-update-table-spring',
-    });
+  it('keeps the outline and table update springs internal constants: no motion role', () => {
+    expect(motionRoleOf(list.update.outlineSpring)).toBeUndefined();
+    expect(motionRoleOf(list.update.tableSpring)).toBeUndefined();
   });
 
   it('leaves the row heights out: lengths, not motion', () => {
