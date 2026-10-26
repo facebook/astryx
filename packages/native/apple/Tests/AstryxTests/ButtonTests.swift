@@ -120,7 +120,11 @@ import Testing
 
 @MainActor
 @Test func aButtonNeverOpensAScriptOrHTMLDocumentDestination() {
-  for href in ["javascript:alert(1)", "JavaScript:void(0)", "vbscript:msgbox", "data:text/html,<p>hi</p>"] {
+  for href in [
+    "javascript:alert(1)", "JavaScript:void(0)", "vbscript:msgbox", "data:text/html,<p>hi</p>",
+    "  javascript:alert(1)", "java\u{09}script:alert(1)", "\u{01}javascript:alert(1)",
+    "data: text/html,<p>hi</p>", "DATA:  TEXT/HTML,<p>hi</p>", "javascript:\n alert(1)",
+  ] {
     let button = Astryx.Button(label: "Go", href: href)
     #expect(button.link == nil, "\(href)")
     // It stays an enabled button, not a disabled one.
@@ -140,4 +144,13 @@ import Testing
   #expect(presses == 0)
   #expect(Astryx.Button(label: "Save", isDisabled: true) {}.keepsFocusWhileDisabled)
   #expect(!Astryx.Button(label: "Save") {}.keepsFocusWhileDisabled)
+}
+
+@Test func aSafeDestinationIsNormalizedAsCoresRule() {
+  // Accepted destinations come back trimmed and without control characters.
+  #expect(Astryx.Button.safeDestination("  https://example.com/a \n") == "https://example.com/a")
+  #expect(Astryx.Button.safeDestination("https://exa\u{0}mple.com") == "https://example.com")
+  #expect(Astryx.Button.safeDestination("/settings") == "/settings")
+  #expect(Astryx.Button.safeDestination("data:image/png;base64,AAAA") != nil)
+  #expect(Astryx.Button.safeDestination(" data: text/html,x") == nil)
 }

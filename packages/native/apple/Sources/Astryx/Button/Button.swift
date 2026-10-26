@@ -71,18 +71,30 @@ public struct Button: View {
   /// disabled button, as core draws a disabled `<button>`.
   /// A destination a link never opens leaves an enabled button.
   var link: URL? {
-    guard !isDisabled, let href = props.href, let url = URL(string: href) else { return nil }
-    return Self.opensAsLink(url) ? url : nil
+    guard !isDisabled, let href = props.href, let safe = Self.safeDestination(href) else { return nil }
+    return URL(string: safe)
   }
 
-  /// Whether a link may open a destination: not a script URL or an HTML
-  /// document in a `data:` URL, which core's navigation destinations refuse.
-  static func opensAsLink(_ url: URL) -> Bool {
-    switch url.scheme?.lowercased() {
-    case "javascript", "vbscript": return false
-    case "data": return !url.absoluteString.lowercased().hasPrefix("data:text/html")
-    default: return true
+  /// A destination a link may open, normalized as core's shared rule does, or
+  /// nil for a script URL or an HTML document in a `data:` URL, which core's
+  /// navigation destinations refuse (`family:navigation-destinations` FR4).
+  /// Control characters are removed and whitespace trimmed; the scheme is
+  /// compared in lowercase without the spaces after its colon, which a data
+  /// URL's media type ignores (`data: text/html` is HTML).
+  static func safeDestination(_ href: String) -> String? {
+    let normalized = String(String.UnicodeScalarView(
+      href.unicodeScalars.filter { $0.value > 0x1F && $0.value != 0x7F }
+    )).trimmingCharacters(in: .whitespacesAndNewlines)
+    var comparable = normalized.lowercased()
+    if let colon = comparable.firstIndex(of: ":"),
+       comparable[..<colon].range(of: "^[a-z][a-z0-9+.-]*$", options: .regularExpression) != nil {
+      let rest = comparable[comparable.index(after: colon)...].drop { $0 == " " }
+      comparable = String(comparable[...colon]) + rest
     }
+    for blocked in ["javascript:", "vbscript:", "data:text/html"] where comparable.hasPrefix(blocked) {
+      return nil
+    }
+    return normalized
   }
 
   public var body: some View {
