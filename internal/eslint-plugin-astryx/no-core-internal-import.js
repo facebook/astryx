@@ -16,6 +16,8 @@
  *     import {x} from '@astryxdesign/core/internal/reorder';
  *     export {x} from '@astryxdesign/core/internal/reorder';
  *     await import('@astryxdesign/core/internal/reorder');
+ *     require('@astryxdesign/core/internal/reorder');
+ *     type T = typeof import('@astryxdesign/core/internal/reorder');
  *
  * A custom rule rather than a `no-restricted-imports` block, because flat
  * config overrides a same-named rule per file: a repo-wide block would undo
@@ -43,6 +45,11 @@ const rule = {
         context.report({node, messageId: 'internal', data: {source}});
       }
     }
+    function checkLiteral(node) {
+      if (node != null && node.type === 'Literal') {
+        check(node, node.value);
+      }
+    }
     return {
       ImportDeclaration(node) {
         check(node.source, node.source.value);
@@ -56,9 +63,27 @@ const rule = {
         check(node.source, node.source.value);
       },
       ImportExpression(node) {
-        if (node.source.type === 'Literal') {
-          check(node.source, node.source.value);
+        checkLiteral(node.source);
+      },
+      // `require('…')` in CommonJS files.
+      CallExpression(node) {
+        if (
+          node.callee.type === 'Identifier' &&
+          node.callee.name === 'require' &&
+          node.arguments.length > 0
+        ) {
+          checkLiteral(node.arguments[0]);
         }
+      },
+      // `typeof import('…')` in TypeScript types. typescript-eslint wraps
+      // the specifier in a TSLiteralType.
+      TSImportType(node) {
+        const argument = node.argument;
+        checkLiteral(
+          argument != null && argument.type === 'TSLiteralType'
+            ? argument.literal
+            : argument,
+        );
       },
     };
   },
