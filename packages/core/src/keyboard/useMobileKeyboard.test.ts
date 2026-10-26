@@ -15,7 +15,10 @@ import path from 'node:path';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, renderHook} from '@testing-library/react';
 import {getKeyboardLayoutGuide} from './keyboardLayoutGuide';
-import {layoutViewportHeight} from '../utils/layoutViewport';
+import {
+  __resetLayoutViewportForTest,
+  layoutViewportHeight,
+} from '../utils/layoutViewport';
 import {
   claimTapFocus,
   getMobileKeyboardHeight,
@@ -60,6 +63,7 @@ afterEach(() => {
   for (const key of ['clientWidth', 'clientHeight', 'scrollWidth']) {
     Reflect.deleteProperty(document.documentElement, key);
   }
+  __resetLayoutViewportForTest();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -186,13 +190,21 @@ describe('the layout viewport WebKit reports under a pinch zoom (FR2)', () => {
     }
   }
 
-  /** Scrollbars that take `thickness` px of a scrolling box (0: overlaid). */
-  function scrollbars(thickness: number) {
+  /**
+   * Scrollbars that take `thickness` px of a scrolling box (0: overlaid).
+   * `probes` counts the scrolling boxes measured.
+   */
+  function scrollbars(thickness: number): {probes: number} {
+    const counter = {probes: 0};
     const scrolls = (el: Element) =>
       el instanceof HTMLElement && el.style.overflow === 'scroll';
     vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(
       function (this: HTMLElement) {
-        return scrolls(this) ? 100 : 0;
+        if (scrolls(this)) {
+          counter.probes += 1;
+          return 100;
+        }
+        return 0;
       },
     );
     vi.spyOn(Element.prototype, 'clientHeight', 'get').mockImplementation(
@@ -200,6 +212,7 @@ describe('the layout viewport WebKit reports under a pinch zoom (FR2)', () => {
         return scrolls(this) ? 100 - thickness : 0;
       },
     );
+    return counter;
   }
 
   it('reads no keyboard from a desktop page\u2019s classic horizontal scrollbar', () => {
@@ -213,6 +226,20 @@ describe('the layout viewport WebKit reports under a pinch zoom (FR2)', () => {
     Object.assign(viewport, {height: 785, scale: 1, width: 1280});
     expect(layoutViewportHeight(window)).toBe(785);
     expect(measureKeyboardHeight(window)).toBe(0);
+  });
+
+  it('measures the scrollbar once, however many keyboard changes read the height (INV11)', () => {
+    // The probe writes to the document and forces a layout: it runs once,
+    // and every later measurement reuses the thickness.
+    const counter = scrollbars(15);
+    vi.stubGlobal('innerHeight', 800);
+    vi.stubGlobal('innerWidth', 1280);
+    root({clientHeight: 785, clientWidth: 1280, scrollWidth: 1600});
+    Object.assign(viewport, {height: 785, scale: 1, width: 1280});
+    for (let i = 0; i < 3; i += 1) {
+      expect(measureKeyboardHeight(window)).toBe(0);
+    }
+    expect(counter.probes).toBe(1);
   });
 
   it('reads the whole keyboard under a hidden toolbar, which no scrollbar explains', () => {
