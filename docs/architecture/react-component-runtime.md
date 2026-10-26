@@ -35,7 +35,8 @@ deciding_specs: [spec:AST-086/DEC-2, spec:AST-099/DEC-1]
       "INV6",
       "INV8",
       "INV10",
-      "INV11"
+      "INV11",
+      "INV12"
     ]
   }
 }
@@ -158,85 +159,75 @@ those contracts.
   does, blurs as FR5 does, applies the height through a functional style on
   its own elements, and follows INV3 and INV5. The hook follows INV3 and
   INV5.
-- **INV12 — Size changes inside a container have one module.** When something inside an area changes
-  size, the changed element and the content after it animate together on one
-  shared motion role instead of jumping. The
-  measuring, the walk, and the translate all live inside one internal module;
-  the public hook only marks the area where the walk stops, and the internal
-  `reportLayoutChange` only triggers the walk and lines up the start frame. In
-  `@astryxdesign/core`, the module animates the layout shift around any
-  element whose size changes inside a container: a disclosure opening, content
-  loading in, a message appearing, an item inserted or removed. It measures the
-  layout before and after the change and moves the shifted content with a
-  compositor-only translate from its old place to its new one, played through
-  the shared rectangle morph (`architecture:layer-runtime` INV15;
-  `spec:AST-094` FR5); it never animates height, which lays out every frame.
-  An area is any container element registered by ref: ScrollableArea
-  registers its scrolling element itself, and an app registers its own scroll
-  container or panel with `useAnimatedLayout(containerRef)`. An element whose
-  size changes reports the change, around its commit, to its nearest
-  registered ancestor area. From that element, the module walks up each
-  ancestor to the area: at every level, each following in-flow sibling moves
-  by the distance layout moved it, measured before and after. The walk visits
-  only the following element siblings at each ancestor level, through
-  `parentElement` and `nextElementSibling`, never descending into a subtree,
-  so its cost grows with depth plus following siblings and it needs no
-  TreeWalker, which visits subtrees and text nodes. It stops at the area and
-  never passes it, so content outside the area takes its final place at once.
-  The walk only collects candidates; an element moves only when its layout
-  rectangle changed between the two measurements and it intersects the
-  area's visible part, so the setup cost is bounded by what the person can
-  see. Which elements move is listed under Size-change coverage below. The changed element plays its own animation, entering, exiting, or
-  resizing, and the module moves only the content after it. Both read the
-  same generic theme motion role, the layout-change role of the motion scheme
-  (`spec:AST-094` FR4), so the timing is governed centrally and is themeable
-  there, never per component; both start on the same frame, and Reduce Motion
-  reaches both through that role. Shifted
-  content may mix Astryx components and plain app elements, and none of it
-  opts in. Several changes, nested or not, compose without wrappers: changes
-  in one area in the same frame are measured together before and after, so
-  each element moves once, by its total change. Each moving element is one
-  the page already renders, so the module adds no elements
-  (`architecture:component-style-authoring` INV7). Under Reduce Motion,
-  shifted content changes as `design:reduced-motion` DR1–DR3 require: a
-  cross-fade under a coarse primary pointer, an immediate change otherwise.
-  The glide applies under every pointer, a mouse included: it fixes a layout
-  jump that people using a fine pointer see too, not a touch gesture, so it is
-  a named fine-pointer change under `spec:AST-017` FR59, and its adopting pull
-  requests show fine-pointer evidence before and after. The container area,
-  the bounded walk, the changed-and-visible rule, every-pointer scope, the
-  shared motion role, and the name `useAnimatedLayout` are decided by
-  `cixzhang`, 2026-10-25. TreeList
-  and Collapsible adopt the module first, and any Core component whose size
-  changes in place uses it rather than its own layout animation.
-  `useAnimatedLayout` is the one public piece: it takes the container's ref
-  and returns nothing, because which container scopes the motion is the
-  caller's intent (`spec:AST-002` FR1), and no other API does that job.
-  `reportLayoutChange` stays internal. Its documentation reads: "When
-  something inside this area changes size, the changed element and the content
-  after it animate together on one shared motion token. Fixed and sticky elements stay put, Reduce Motion is
-  respected, ScrollableArea applies it automatically, and List rows use the
-  same module."
+- **INV12 — Size changes inside a container have one module.** When
+  something inside an area changes size, the changed element and the content
+  after it animate together on one shared motion role instead of jumping. The
+  measuring, the walk, and the translate all live inside one internal module.
+  An app opts in with `useAnimatedLayout({containerRef})`, which returns an
+  opaque `animatedLayout` handle with no public methods or fields, and passes
+  it to a component whose size changes through that component's
+  `animatedLayout` prop; the component reports each change through the handle.
+  Without a handle, content after a change takes its place at once, as before.
+  `containerRef` names the area where the walk stops; ScrollableArea does not
+  register itself, and an app passes the ref it already gives ScrollableArea,
+  which reaches the native scroll viewport. In `@astryxdesign/core`, the module
+  animates the layout shift around any element whose size changes inside an
+  area: a disclosure opening, content loading in, a message appearing, an item
+  inserted or removed. It measures the layout before and after the change and
+  moves the shifted content with a compositor-only translate from its old
+  place to its new one, played through the shared rectangle morph
+  (`architecture:layer-runtime` INV15; `spec:AST-094` FR5); it never animates
+  height, which lays out every frame. From the changed element, the module
+  walks up each ancestor to the area: at every level, each following in-flow
+  sibling moves by the distance layout moved it, measured before and after.
+  The walk visits only the following element siblings at each ancestor level,
+  through `parentElement` and `nextElementSibling`, and descends into a subtree
+  only for an element with `display: contents`, which has no box; its cost
+  grows with depth plus following siblings and it needs no TreeWalker, which
+  visits subtrees and text nodes. It stops at the area and never passes it, so
+  content outside the area takes its final place at once. The walk only
+  collects candidates; an element moves only when its layout rectangle changed
+  between the two measurements and it intersects the area's visible part, so
+  the setup cost is bounded by what the person can see. Which elements move is
+  listed under Size-change coverage below. The changed element plays its own
+  animation, entering, exiting, or resizing, and the module moves only the
+  content after it. Both read the same theme motion role
+  (`architecture:theme-tokens` INV3), so the timing is governed centrally and
+  is themeable there, never per component; both start on the same frame, and
+  Reduce Motion reaches both through that role, as `design:reduced-motion`
+  DR1–DR3 require: a cross-fade under a coarse primary pointer, an immediate
+  change otherwise. Shifted content may mix Astryx components and plain app
+  elements, and none of it opts in. Several changes, nested or not, compose
+  without wrappers: changes in one area in the same frame are measured
+  together before and after, so each element moves once, by its total change.
+  Each moving element is one the page already renders, so the module adds no
+  elements (`architecture:component-style-authoring` INV7). The glide applies
+  under every pointer, a mouse included: it fixes a layout jump that people
+  using a fine pointer see too, not a touch gesture, so it is a named
+  fine-pointer change under `spec:AST-017` FR59, and adopting pull requests
+  show fine-pointer evidence before and after. `useAnimatedLayout` and the
+  `animatedLayout` prop are the public pieces. They pass `spec:AST-002` FR5:
+  two otherwise identical pages differ in whether content after a size change
+  glides or jumps, and in which container bounds it, which only the caller
+  knows. The handle is configuration, not a rendered slot
+  (`architecture:public-component-api` INV18); no other API does this job
+  (INV21); and it is not a visual boolean (INV20). Reporting a change is a
+  method on the handle and is not exported. The hook's documentation reads:
+  "Returns a handle to pass to a component whose size changes, such as
+  TreeList or Collapsible. When that component changes size, it and the
+  content after it inside `containerRef` animate together on one shared
+  motion role. Fixed and stuck sticky elements stay put, Reduce Motion is
+  respected, and List rows use the same module."
 
   Usage:
 
   ```tsx
-  // Public: an app container opts in as a boundary. ScrollableArea does this itself.
-  const panelRef = useRef(null);
-  useAnimatedLayout(panelRef);
-  <div ref={panelRef}>
-    <TreeList items={items} />
+  const scrollRef = useRef(null);
+  const animatedLayout = useAnimatedLayout({containerRef: scrollRef});
+  <ScrollableArea ref={scrollRef}>
+    <TreeList items={items} animatedLayout={animatedLayout} />
     <p>Notes</p>
-  </div>;
-
-  // Internal: an element whose size changes measures before its commit and starts the
-  // walk after it; it plays its own animation on the same shared motion role.
-  const change = reportLayoutChange(groupRef);
-  const toggle = () => {
-    change.measureBefore();
-    setExpanded(open => !open);
-  };
-  useLayoutEffect(() => change.animate(), [expanded]);
+  </ScrollableArea>;
   ```
 
 ### Size-change coverage
@@ -275,7 +266,7 @@ Out of coverage, each taking its final place at once:
 The following are preferred techniques, not independent compatibility promises:
 
 - The size-change hook's documentation states what callers ask about: the
-  changed element and the content after it animate together on one shared
+  changed component and the content after it animate together on one shared
   motion role; fixed elements and stuck sticky elements stay put;
   Reduce Motion is handled; List rows use the same module; nesting stops at
   the nearest area, so nothing animates twice; and the scroll position is
@@ -409,17 +400,17 @@ observable-behavior predicates require review or runtime evidence. Likewise, a
 focused test proves only its named behavior and mutation expectation; a green
 component suite is not blanket conformance with every invariant.
 
-| Invariant           | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                       | Failure signal                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| INV1–INV2           | Initial-render and interaction tests                                                                                                                                                                                                                                                                                                                                                                                           | Output flashes a known-wrong state, or one action is delayed or repeated through an Effect                                                                                                                                                                                                                                                                                                                             |
-| INV3, INV5          | StrictMode setup/cleanup and dependency-change tests                                                                                                                                                                                                                                                                                                                                                                           | Duplicate callback, leaked work, stale subscription, or missing resynchronization                                                                                                                                                                                                                                                                                                                                      |
-| INV1, INV4, INV6    | Ref attach/null/replacement, DOM-in-state rejection, and old-node cleanup-before-new-attach mutations                                                                                                                                                                                                                                                                                                                          | A DOM node or collection enters state, old node remains active, cleanup misses replacement, or ref mutation changes semantics silently                                                                                                                                                                                                                                                                                 |
-| INV7                | Real-browser geometry plus N-consumer observer-instance/subscription mutations                                                                                                                                                                                                                                                                                                                                                 | Geometry is invalid, observer instances grow with repeated consumers, one unsubscribe silences peers, or cleanup removes another subscriber                                                                                                                                                                                                                                                                            |
-| INV8                | Owner-observable behavior across documented composition replacement; optional focused internal mechanism tests                                                                                                                                                                                                                                                                                                                 | Behavior disappears or changes owner when a documented subpart is replaced                                                                                                                                                                                                                                                                                                                                             |
-| INV9                | Provider/external-store identity and render-count tests                                                                                                                                                                                                                                                                                                                                                                        | Unchanged semantic payload changes identity, or snapshot identity creates a render loop                                                                                                                                                                                                                                                                                                                                |
-| INV10               | Shared test over every adopter of the announcement module                                                                                                                                                                                                                                                                                                                                                                      | An adopter holding its own Effect, observer, timer, or listener for its own-content announcement                                                                                                                                                                                                                                                                                                                       |
-| INV11               | Source boundary check plus hook tests across StrictMode replay and unmount                                                                                                                                                                                                                                                                                                                                                     | A second keyboard listener or measurement in Core; a consumer reading a CSS custom property on the root or a shared ancestor for the height; an export of the hook; a component outside Core measuring by a rule other than AST-099 FR2, or riding the keyboard; a listener left after unmount; a Core rider driven by JavaScript per frame or by its own transition; or more than one layout read per keyboard change |
-| INV12               | Real-browser tests on a throttled phone profile plus a source boundary check, over a disclosure and an inserted item nested several levels inside a parent with following siblings at each level, mixed Astryx and plain elements, a fixed element, an unstuck sticky header, a nested boundary, content outside the boundary, two disclosures toggled in one frame, a 10-level by 50-sibling tree for cost, and Reduce Motion | A per-frame height or layout, a walk past the boundary, a moved out-of-flow element, a following sibling at any level that jumps, an element moved twice for one frame, an added element, or travel under Reduce Motion fails                                                                                                                                                                                          |
-| INV12 coverage      | Real-browser tests, one per Size-change coverage row                                                                                                                                                                                                                                                                                                                                                                           | Any case behaving other than its row says fails                                                                                                                                                                                                                                                                                                                                                                        |
-| INV12 timing        | Real-browser frame capture of a changed element and its followers, with and without Reduce Motion, and with a theme overriding the layout-change motion role                                                                                                                                                                                                                                                                   | The element and its followers starting on different frames or reading different motion, a component-specific timing, or Reduce Motion applied to one and not the other, fails                                                                                                                                                                                                                                          |
-| INV12 pointer scope | Fine-pointer before-and-after evidence on each adopting pull request (`spec:AST-017` FR59), from the demo or a story                                                                                                                                                                                                                                                                                                           | A glide missing under a mouse, or an adopting pull request without fine-pointer evidence, fails                                                                                                                                                                                                                                                                                                                        |
+| Invariant           | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Failure signal                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1–INV2           | Initial-render and interaction tests                                                                                                                                                                                                                                                                                                                                                                                                                      | Output flashes a known-wrong state, or one action is delayed or repeated through an Effect                                                                                                                                                                                                                                                                                                                             |
+| INV3, INV5          | StrictMode setup/cleanup and dependency-change tests                                                                                                                                                                                                                                                                                                                                                                                                      | Duplicate callback, leaked work, stale subscription, or missing resynchronization                                                                                                                                                                                                                                                                                                                                      |
+| INV1, INV4, INV6    | Ref attach/null/replacement, DOM-in-state rejection, and old-node cleanup-before-new-attach mutations                                                                                                                                                                                                                                                                                                                                                     | A DOM node or collection enters state, old node remains active, cleanup misses replacement, or ref mutation changes semantics silently                                                                                                                                                                                                                                                                                 |
+| INV7                | Real-browser geometry plus N-consumer observer-instance/subscription mutations                                                                                                                                                                                                                                                                                                                                                                            | Geometry is invalid, observer instances grow with repeated consumers, one unsubscribe silences peers, or cleanup removes another subscriber                                                                                                                                                                                                                                                                            |
+| INV8                | Owner-observable behavior across documented composition replacement; optional focused internal mechanism tests                                                                                                                                                                                                                                                                                                                                            | Behavior disappears or changes owner when a documented subpart is replaced                                                                                                                                                                                                                                                                                                                                             |
+| INV9                | Provider/external-store identity and render-count tests                                                                                                                                                                                                                                                                                                                                                                                                   | Unchanged semantic payload changes identity, or snapshot identity creates a render loop                                                                                                                                                                                                                                                                                                                                |
+| INV10               | Shared test over every adopter of the announcement module                                                                                                                                                                                                                                                                                                                                                                                                 | An adopter holding its own Effect, observer, timer, or listener for its own-content announcement                                                                                                                                                                                                                                                                                                                       |
+| INV11               | Source boundary check plus hook tests across StrictMode replay and unmount                                                                                                                                                                                                                                                                                                                                                                                | A second keyboard listener or measurement in Core; a consumer reading a CSS custom property on the root or a shared ancestor for the height; an export of the hook; a component outside Core measuring by a rule other than AST-099 FR2, or riding the keyboard; a listener left after unmount; a Core rider driven by JavaScript per frame or by its own transition; or more than one layout read per keyboard change |
+| INV12               | Real-browser tests on a throttled phone profile plus a source boundary check, with and without a handle, over a disclosure and an inserted item nested several levels inside a parent with following siblings at each level, mixed Astryx and plain elements, a fixed element, an unstuck sticky header, a nested boundary, content outside the boundary, two disclosures toggled in one frame, a 10-level by 50-sibling tree for cost, and Reduce Motion | A per-frame height or layout, a walk past the boundary, a moved out-of-flow element, a visible following sibling at any level that jumps, an element moved twice for one frame, an added element, or travel under Reduce Motion fails                                                                                                                                                                                  |
+| INV12 coverage      | Real-browser tests, one per Size-change coverage row                                                                                                                                                                                                                                                                                                                                                                                                      | Any case behaving other than its row says fails                                                                                                                                                                                                                                                                                                                                                                        |
+| INV12 timing        | Real-browser frame capture of a changed element and its visible followers under a coarse and a fine pointer, with and without Reduce Motion, and with a theme overriding the motion role                                                                                                                                                                                                                                                                  | The element and its visible followers starting on different frames or reading different motion, a component-specific timing, Reduce Motion applied to one and not the other, or a fine-pointer Reduce Motion change that is not immediate, fails                                                                                                                                                                       |
+| INV12 pointer scope | Fine-pointer before-and-after evidence on each adopting pull request (`spec:AST-017` FR59), from the demo or a story                                                                                                                                                                                                                                                                                                                                      | A glide missing under a mouse, or an adopting pull request without fine-pointer evidence, fails                                                                                                                                                                                                                                                                                                                        |
