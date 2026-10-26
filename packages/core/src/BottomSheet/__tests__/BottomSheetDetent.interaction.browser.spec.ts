@@ -12,7 +12,8 @@
  *   velocity (critically damped below `sheet.release.fastSpeed`, 80 % damped
  *   above); a finger catches the settling sheet where it is; the settle keeps
  *   advancing every frame through a blocked main thread; it does no Layout or
- *   Paint per frame; storyboards of the drag, the settle and a flick. A finger
+ *   Paint per frame; a finger's drag on Android re-rasters none of the sheet
+ *   (pending a fix at its origin); storyboards of the drag, the settle and a flick. A finger
  *   on Android gets the same (one touch model, AST-094); a mouse keeps today's
  *   rule and the theme's timing (unit tests). Under reduced motion a touch release cross-fades in place
  *   in 200 ms or less (design:reduced-motion DR2).
@@ -70,6 +71,7 @@ import {
   type TouchDriver,
 } from '@astryxdesign/interaction-harness';
 import {END_HOLD_MS} from './specConstants';
+import {PROMOTION_LINGER_MS} from '../../motion/animator';
 import {sheet as sheetTable} from '../../motion/uikit/sheet';
 import {springs} from '../../motion/uikit/springs';
 import {emulateIosWebKit} from './emulateIosWebKit';
@@ -146,6 +148,25 @@ function slowDragTo(from: {x: number; y: number}, dy: number) {
   );
 }
 const slowDragSpeed = (dy: number) => (dy * 1000) / SLOW_DRAG_MS;
+
+/**
+ * A finger that holds 100 ms, drags 80 px down and most of the way back, and
+ * lifts still, 16 px below where it started: the sheet settles back on the
+ * tallest detent and keeps its size, so nothing about its layout changes.
+ */
+function outAndBack(from: {x: number; y: number}) {
+  return drag(
+    from,
+    {x: from.x, y: from.y + 80},
+    {
+      durationMs: SLOW_DRAG_MS,
+      hz: 60,
+      holdMs: 100,
+      restMs: 60,
+      easing: p => (p <= 0.5 ? 2 * p : 1 - 1.6 * (p - 0.5)),
+    },
+  );
+}
 
 /**
  * The sheet's vertical translation at each time (ms from the held
@@ -786,6 +807,118 @@ test('the settle does no Layout or Paint per frame', async ({
   expect(during.Layout ?? 0, JSON.stringify(during)).toBe(0);
   expect(during.Paint ?? 0, JSON.stringify(during)).toBe(0);
   expect(trace.longTasks).toEqual([]);
+});
+
+/**
+ * Tiles Chromium's compositor schedules for raster in the page's renderer
+ * (cc's `TileManager::ScheduleTasks`), per window between the marks `body`
+ * places: `{[mark]: tiles until the next mark}`. A transform or an opacity on
+ * a composited layer rasters nothing; a style change that repaints content,
+ * or gives an element a layer or takes it away, re-rasters its tiles.
+ */
+async function traceRasterTiles(
+  page: Page,
+  body: (mark: (name: string) => Promise<void>) => Promise<void>,
+): Promise<Record<string, number>> {
+  const cdp = await page.context().newCDPSession(page);
+  const events: {
+    name: string;
+    ts: number;
+    pid: number;
+    args?: {count?: number};
+  }[] = [];
+  cdp.on('Tracing.dataCollected', ({value}) => {
+    events.push(...(value as unknown as typeof events));
+  });
+  const complete = new Promise<void>(resolve =>
+    cdp.once('Tracing.tracingComplete', () => resolve()),
+  );
+  await cdp.send('Tracing.start', {
+    transferMode: 'ReportEvents',
+    traceConfig: {
+      includedCategories: ['cc', 'blink.user_timing'],
+      excludedCategories: ['*'],
+    },
+  });
+  const tag = `raster-${Math.random().toString(36).slice(2, 8)}`;
+  const names: string[] = [];
+  const mark = async (name: string) => {
+    names.push(name);
+    await page.evaluate(n => void performance.mark(n), `${tag}:${name}`);
+  };
+  try {
+    await body(mark);
+    await mark('end');
+  } finally {
+    await cdp.send('Tracing.end');
+    await complete;
+    await cdp.detach().catch(() => {});
+  }
+  const marks = names.map(name => {
+    const event = events.find(e => e.name === `${tag}:${name}`);
+    if (event == null) {
+      throw new Error(`traceRasterTiles: the mark "${name}" was not traced`);
+    }
+    return {name, ts: event.ts, pid: event.pid};
+  });
+  const tiles: Record<string, number> = {};
+  for (let i = 0; i < marks.length - 1; i++) {
+    const {name, ts, pid} = marks[i];
+    tiles[name] = events
+      .filter(
+        e =>
+          e.name === 'TileManager::ScheduleTasks' &&
+          e.pid === pid &&
+          e.ts >= ts &&
+          e.ts < marks[i + 1].ts,
+      )
+      .reduce((sum, e) => sum + (e.args?.count ?? 0), 0);
+  }
+  return tiles;
+}
+
+test('a finger dragging the open sheet re-rasters none of it', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'raster traces are Chromium-only');
+  test.fail(
+    true,
+    'Pending a fix at its origin: the motion animator promotes the sheet by ' +
+      "replacing its stylesheet's will-change (transform, opacity) with " +
+      'translate, a layer change that re-rasters the whole sheet when the ' +
+      'gesture starts and again once it ends; on a software GPU (the ' +
+      'Android emulator) that is 40-115 ms a frame.',
+  );
+  // A finger on Android: its selection lock changes no style. On iOS WebKit
+  // the lock still turns user-select off on the sheet (the only refusal iOS
+  // honors, sheetSelectionLock.ts), which repaints it at the catch and the
+  // lift.
+  const {driver, sheet, tallTop, handle} = await openSheet(page, {
+    idiom: 'android',
+  });
+  // The presentation's own layer goes this long after it settles.
+  await page.waitForTimeout(PROMOTION_LINGER_MS + 100);
+  let moving = false;
+  const tiles = await traceRasterTiles(page, async mark => {
+    await mark('touch-down');
+    await driver.play(outAndBack(handle), {
+      onEvent: async step => {
+        if (step.type === 'touchMove' && !moving) {
+          moving = true;
+          await mark('moving');
+        }
+      },
+    });
+    await waitForRest(sheet);
+    // The animator lets the sheet's layer go this long after the settle.
+    await page.waitForTimeout(PROMOTION_LINGER_MS + 200);
+  });
+  expect(await sheetTop(sheet)).toBeCloseTo(tallTop, 0);
+  // The touch-down's own frame is excluded: it pins the sheet's height for
+  // the drag, as it did before the release rule. From the first move through
+  // the settle and its layer's release, nothing may re-raster.
+  expect(tiles.moving, JSON.stringify(tiles)).toBe(0);
 });
 
 test(
