@@ -22,6 +22,16 @@
  * A sub-menu drills in on a phone through the view stack useMenuDrillIn
  * keeps; the root shows the drilled view in place of its rows.
  *
+ * Under a finger (a coarse primary pointer, the shared touch resolver; one
+ * touch model on every touch device) the popover opens and closes the way
+ * UIMenu does: it grows out of its trigger on UIKit's open spring and
+ * collapses back into it on the close spring (menuSurfaceMotion.ts), and a
+ * pan that begins outside closes it. On a compact touch screen it also sits
+ * where UIMenu does: over its trigger, centered on it, top-aligned
+ * (bottom-aligned when the trigger is in the lower half of the viewport),
+ * 8 px from the viewport's sides. Under a mouse it keeps the layer's own
+ * entrance and placement and the theme's motion tokens (D-01).
+ *
  * Initial focus on open follows the input modality: a keyboard open
  * (Enter / Space / ArrowDown on the trigger) focuses the first enabled item
  * (APG menu-button); a pointer open focuses the menu container itself so no
@@ -68,7 +78,7 @@ import {
 } from './DropdownMenuContext';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useListFocus} from '../hooks/useListFocus';
-import {useMenuPress} from '../hooks/useMenuPress';
+import {useDropdownMenuPress} from '../hooks/useMenuPress';
 import type {MenuPressPointerType} from '../hooks/menuPressGesture';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
@@ -80,10 +90,15 @@ import {useDevWarning} from '../hooks/useDevWarning';
 import {useMenuDrillIn} from './useMenuDrillIn';
 import {resolveMenuWidth} from './menuWidth';
 import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
+import type {AdaptivePresentation} from '../hooks/useAdaptivePresentation';
+import {usePresentation} from '../utils/presentation';
+import {useTouchPresentation} from '../utils/touchPresentation';
 import {
-  useAdaptivePresentation,
-  type AdaptivePresentation,
-} from '../hooks/useAdaptivePresentation';
+  COVER_TRIGGER_STYLE,
+  createMenuSurfaceMotion,
+  placeOverTrigger,
+  type MenuSurfaceMotion,
+} from './DropdownMenuTouch';
 // Loaded on demand: only the bottom-sheet presentation renders the sheet.
 import {
   MenuBottomSheet,
@@ -430,7 +445,9 @@ interface DropdownMenuBaseProps extends BaseProps {
   hasChevron?: boolean;
   /**
    * Popover position relative to the trigger. Ignored by bottom-sheet
-   * presentation.
+   * presentation, and on a compact touch screen under the touch modes (unless
+   * `presentation` is `'popover'`), where the menu sits over its trigger as
+   * UIMenu does.
    * Uses the same placement values as other Astryx layer-based components.
    * @default 'below'
    */
@@ -438,7 +455,9 @@ interface DropdownMenuBaseProps extends BaseProps {
 
   /**
    * Popover alignment along the placement axis. Ignored by bottom-sheet
-   * presentation.
+   * presentation, and on a compact touch screen under the touch modes (unless
+   * `presentation` is `'popover'`), where the menu is centered on its trigger
+   * as UIMenu is.
    * Uses the same alignment values as other Astryx layer-based components.
    * @default 'start'
    */
@@ -463,7 +482,10 @@ interface DropdownMenuDataProps extends DropdownMenuBaseProps {
    * Surface used to present the actions. Pass a value selected by product
    * policy (for example, a compact-touch media query) when the presentation
    * should adapt. Bottom-sheet presentation is intended for short action sets.
-   * @default 'popover'
+   * Omitted, the menu is the anchored popover with the touch modes under a
+   * finger: its trigger opens as UIMenu's pull-down button does. `'popover'`
+   * pins the anchored popover with the pointer behavior on every device (a
+   * finger held for 500 ms opens it, as before).
    */
   presentation?: DropdownMenuPresentation;
   items: DropdownMenuOption[];
@@ -471,6 +493,11 @@ interface DropdownMenuDataProps extends DropdownMenuBaseProps {
 }
 
 interface DropdownMenuCompoundProps extends DropdownMenuBaseProps {
+  /**
+   * `'popover'` pins the pointer behavior on every device (a finger held for
+   * 500 ms opens the menu, as before). Omitted, a finger gets the touch modes:
+   * the trigger opens as UIMenu's pull-down button does.
+   */
   presentation?: 'popover';
   items?: undefined;
   children: ReactNode;
@@ -913,6 +940,7 @@ function DropdownMenuPopover({
   placement = 'below',
   alignment = 'start',
   presentation: _presentation,
+  touchModes,
   header,
   footer,
   className,
@@ -920,7 +948,10 @@ function DropdownMenuPopover({
   xstyle,
   'data-testid': testId,
   ...props
-}: DropdownMenuProps) {
+}: DropdownMenuProps & {
+  /** Whether the touch input modes apply (the resolved presentation). */
+  touchModes?: boolean;
+}) {
   const t = useTranslator();
   const button = buttonFromProps ?? {label: t(DEFAULT_BUTTON_I18N_KEY)};
 
@@ -973,6 +1004,64 @@ function DropdownMenuPopover({
   // The press model is mounted below (it needs the popover); the hide path
   // above it ends the gesture in flight through this ref.
   const cancelMenuPressRef = useRef<() => void>(() => {});
+
+  // The touch presentation's open and close (menuSurfaceMotion.ts), created
+  // for the popover element the first time the menu opens, with the
+  // `beforetoggle` listener that plays the close.
+  const surfaceMotionRef = useRef<{
+    element: HTMLElement;
+    motion: MenuSurfaceMotion;
+    detach: () => void;
+  } | null>(null);
+  // Whether the open in progress is under a finger: it then runs UIMenu's
+  // motion and the pan-outside dismissal.
+  const isTouchPresentationRef = useRef(false);
+  const isUikitMotionRef = useRef(false);
+  // On a compact touch screen, under the touch modes, the popover covers its
+  // trigger as UIMenu does (iOS 26.2): centered on it, kept off the
+  // viewport's sides by CSS, with its vertical edge chosen as it opens
+  // (placeOverTrigger). Elsewhere, and with a pinned 'popover', it opens
+  // below it.
+  const {isTouch, isCompact} = useTouchPresentation();
+  const coversTrigger = touchModes === true && isTouch && isCompact;
+  const coversTriggerRef = useRef(coversTrigger);
+  coversTriggerRef.current = coversTrigger;
+  const getSurfaceMotion = useCallback(
+    (element: HTMLElement): MenuSurfaceMotion => {
+      const current = surfaceMotionRef.current;
+      if (current?.element === element) {
+        return current.motion;
+      }
+      current?.detach();
+      const motion = createMenuSurfaceMotion(element);
+      const handleBeforeToggle = (event: Event) => {
+        if (
+          (event as ToggleEvent).newState === 'closed' &&
+          isUikitMotionRef.current
+        ) {
+          motion.exit();
+        }
+      };
+      element.addEventListener('beforetoggle', handleBeforeToggle);
+      surfaceMotionRef.current = {
+        element,
+        motion,
+        detach: () => {
+          element.removeEventListener('beforetoggle', handleBeforeToggle);
+          motion.dispose();
+        },
+      };
+      return motion;
+    },
+    [],
+  );
+  useEffect(
+    () => () => {
+      surfaceMotionRef.current?.detach();
+      surfaceMotionRef.current = null;
+    },
+    [],
+  );
 
   // Submenu flyouts are `popover="manual"` elements nested inside the menu's
   // `popover="auto"` element, so the browser's light dismiss of the menu never
@@ -1079,6 +1168,38 @@ function DropdownMenuPopover({
   const handleLayerShow = useCallback(() => {
     acceptedOpenRef.current = true;
     resetFocusReturn();
+    // UIKit's motion under a finger, decided as the menu opens: the touch
+    // modes of the resolved presentation (a pinned 'popover' keeps the
+    // layer's own entrance).
+    const surface = contentRef.current;
+    isTouchPresentationRef.current = touchModes === true;
+    const isUikitMotion = touchModes === true;
+    isUikitMotionRef.current = isUikitMotion;
+    const trigger = buttonRef.current;
+    if (surface != null && trigger != null) {
+      placeOverTrigger(surface, trigger, coversTriggerRef.current);
+      const motion = getSurfaceMotion(surface);
+      if (isUikitMotion) {
+        motion.enter(() => {
+          const triggerBox = trigger.getBoundingClientRect();
+          const surfaceBox = surface.getBoundingClientRect();
+          return {
+            surface: {
+              left: surfaceBox.left,
+              top: surfaceBox.top,
+              width: surfaceBox.width,
+              height: surfaceBox.height,
+            },
+            anchor: {
+              x: triggerBox.left + triggerBox.width / 2,
+              y: triggerBox.top + triggerBox.height / 2,
+            },
+          };
+        });
+      } else {
+        motion.reset();
+      }
+    }
     if (renderTrigger != null) {
       setTriggerName(readAccessibleName(buttonRef.current));
     }
@@ -1090,7 +1211,15 @@ function DropdownMenuPopover({
     if (!isControlled) {
       setInternalIsOpen(true);
     }
-  }, [isControlled, onClick, onOpenChange, renderTrigger, resetFocusReturn]);
+  }, [
+    getSurfaceMotion,
+    isControlled,
+    onClick,
+    onOpenChange,
+    renderTrigger,
+    resetFocusReturn,
+    touchModes,
+  ]);
 
   // The menu's name: the dialog around it with a header or footer, and the
   // Back row of a drilled-in view ("Back to <this>"), both read it.
@@ -1129,6 +1258,68 @@ function DropdownMenuPopover({
   const closeMenu = useCallback(() => {
     popover.hide();
   }, [popover]);
+  // usePopover returns a new object each render, so closeMenu changes too:
+  // the pan-outside tracking below reads it through a ref, so a re-render
+  // between an outside pointerdown and its pointercancel keeps the pointer.
+  const closeMenuRef = useRef(closeMenu);
+  closeMenuRef.current = closeMenu;
+
+  // A pan that starts outside the open menu, in its touch presentation,
+  // dismisses it as the pan begins, and the same touch goes on to scroll the
+  // page; a tap or a hold outside dismisses at the lift (the browser's light
+  // dismiss already acts there). UIKit's popovers on iOS 26.2 behave this
+  // way. The browser announces that it took the touch for a pan with a
+  // pointercancel, which its light dismiss ignores.
+  const isPopoverOpen = popover.isOpen;
+  useEffect(() => {
+    if (!isPopoverOpen || !isTouchPresentationRef.current) {
+      return;
+    }
+    const doc = contentRef.current?.ownerDocument ?? document;
+    const outside = new Set<number>();
+    const isInsideMenu = (target: EventTarget | null) => {
+      const node = target instanceof Node ? target : null;
+      return (
+        node != null &&
+        (contentRef.current?.contains(node) === true ||
+          buttonRef.current?.contains(node) === true)
+      );
+    };
+    // The press's end listeners are held only while an outside press is live
+    // (react-component-runtime INV5).
+    const release = () => {
+      doc.removeEventListener('pointerup', handleEnd, true);
+      doc.removeEventListener('pointercancel', handleCancel, true);
+    };
+    const handleEnd = (event: PointerEvent) => {
+      if (outside.delete(event.pointerId) && outside.size === 0) {
+        release();
+      }
+    };
+    const handleCancel = (event: PointerEvent) => {
+      if (outside.delete(event.pointerId)) {
+        if (outside.size === 0) {
+          release();
+        }
+        closeMenuRef.current();
+      }
+    };
+    const handleDown = (event: PointerEvent) => {
+      if (event.pointerType !== 'mouse' && !isInsideMenu(event.target)) {
+        if (outside.size === 0) {
+          doc.addEventListener('pointerup', handleEnd, true);
+          doc.addEventListener('pointercancel', handleCancel, true);
+        }
+        outside.add(event.pointerId);
+      }
+    };
+    doc.addEventListener('pointerdown', handleDown, true);
+    return () => {
+      doc.removeEventListener('pointerdown', handleDown, true);
+      doc.removeEventListener('pointerup', handleEnd, true);
+      doc.removeEventListener('pointercancel', handleCancel, true);
+    };
+  }, [isPopoverOpen]);
 
   // Single keyboard navigation path for both modes.
   // The selector matches plain items plus selectable items
@@ -1394,12 +1585,15 @@ function DropdownMenuPopover({
   // The press model: the row under a release acts, the highlight follows a
   // held pointer. A mouse released outside the menu dismisses it; a finger
   // released outside leaves it open, so the hook never calls onDismiss then.
-  const menuPress = useMenuPress({
+  const menuPress = useDropdownMenuPress({
     menuRef: listRef,
     triggerRef: buttonRef,
     itemSelector: MENU_ITEM_SELECTOR,
     onTriggerPress: handleTriggerPress,
     onDismiss: closeMenu,
+    // Under a finger the trigger is UIMenu's pull-down button (spec:AST-094);
+    // `presentation="popover"` pins the pointer model, today's included.
+    touchModel: touchModes ? 'uikit' : 'pointer',
   });
   cancelMenuPressRef.current = menuPress.cancel;
 
@@ -1539,8 +1733,9 @@ function DropdownMenuPopover({
       host: surfaceHost,
       ownerId: menuId,
       menuMaxHeight: resolvedMaxHeight ?? undefined,
+      touchModel: touchModes ? 'uikit' : 'pointer',
     }),
-    [surfaceHost, menuId, resolvedMaxHeight],
+    [surfaceHost, menuId, resolvedMaxHeight, touchModes],
   );
 
   // Resolve menu content: data-driven items become components
@@ -1740,18 +1935,29 @@ function DropdownMenuPopover({
             </MenuRegionsContext>
           </div>,
         ),
-        {
-          placement,
-          alignment,
-          offset: spacingVars['--spacing-1'],
-          xstyle: [
-            styles.popoverViewport,
-            resolvedMaxHeight != null &&
-              dynamicStyles.popoverViewportMaxBlockSize(resolvedMaxHeight),
-            popoverXstyle,
-            layerAnimations[placement],
-          ],
-        },
+        coversTrigger
+          ? {
+              positioning: 'custom',
+              style: COVER_TRIGGER_STYLE,
+              xstyle: [
+                styles.popoverViewport,
+                resolvedMaxHeight != null &&
+                  dynamicStyles.popoverViewportMaxBlockSize(resolvedMaxHeight),
+                popoverXstyle,
+              ],
+            }
+          : {
+              placement,
+              alignment,
+              offset: spacingVars['--spacing-1'],
+              xstyle: [
+                styles.popoverViewport,
+                resolvedMaxHeight != null &&
+                  dynamicStyles.popoverViewportMaxBlockSize(resolvedMaxHeight),
+                popoverXstyle,
+                layerAnimations[placement],
+              ],
+            },
       )}
     </>
   );
@@ -1766,9 +1972,12 @@ export function DropdownMenu(props: DropdownMenuProps) {
       'control. `trigger` wins; drop `button`.',
     props.button != null && props.renderTrigger != null,
   );
-  const requestedPresentation =
-    'items' in props ? (props.presentation ?? 'popover') : 'popover';
-  const resolvedPresentation = useAdaptivePresentation(requestedPresentation);
+  // The touch modes are the default under a finger (spec:AST-094);
+  // `presentation="popover"` pins the fine-pointer surface and modes.
+  const {surface: resolvedPresentation, touchModes} = usePresentation(
+    props.presentation,
+    {whenOmitted: 'touch'},
+  );
   const isControlled = props.isMenuOpen !== undefined;
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isOpen = isControlled ? props.isMenuOpen : internalIsOpen;
@@ -1800,7 +2009,13 @@ export function DropdownMenu(props: DropdownMenuProps) {
     );
   }
 
-  return <DropdownMenuPopover {...sharedProps} presentation="popover" />;
+  return (
+    <DropdownMenuPopover
+      {...sharedProps}
+      presentation="popover"
+      touchModes={touchModes}
+    />
+  );
 }
 
 DropdownMenu.displayName = 'DropdownMenu';
