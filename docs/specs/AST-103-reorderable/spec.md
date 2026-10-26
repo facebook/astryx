@@ -159,8 +159,9 @@ announcements are those of FR3 and FR4, and the tree adds no option.
     the first and last positions say "at the top" and "at the end", a
     two-dimensional layout adds the row and column, such as "Milk, row 2,
     column 3, position 8 of 12", and a tree adds the parent;
-  - a move past a row `isReorderable` rejects is refused and announced, such
-    as "Can't move past Pinned";
+  - a move past a row `isReorderable` rejects at either end of the
+    collection is refused and announced, such as "Can't move past Pinned";
+    a rejected row in the middle is passed over, as a drag passes it (FR1);
   - focus stays on the handle, and the row scrolls into view;
   - Escape, or activating the handle again, leaves reorder mode and keeps
     every move, announcing "Done" with the item's position, such as "Done,
