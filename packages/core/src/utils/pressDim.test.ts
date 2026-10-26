@@ -15,7 +15,7 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {MotionCurve} from '../motion/animator';
 import {cubicBezier} from '../motion/bezier';
-import {fadePressDim, shownPressDim, stopPressDim} from './pressDim';
+import {fadePressDim, isPressDimReleased, stopPressDim} from './pressDim';
 
 const {animator} = vi.hoisted(() => ({
   animator: {
@@ -70,8 +70,15 @@ describe('fadePressDim', () => {
     expect(animator.set).toHaveBeenCalledWith({opacity: 1}, {promote: false});
   });
 
-  it('shownPressDim reads the opacity the dim shows now', () => {
+  it('isPressDimReleased waits until the animator shows 1 and holds no inline opacity', () => {
+    const element = document.createElement('div');
     animator.opacity = 0.6;
-    expect(shownPressDim(document.createElement('div'))).toBe(0.6);
+    expect(isPressDimReleased(element)).toBe(false);
+    animator.opacity = 1;
+    // A finished return still holds its inline value until it retires.
+    element.style.opacity = '1';
+    expect(isPressDimReleased(element)).toBe(false);
+    element.style.removeProperty('opacity');
+    expect(isPressDimReleased(element)).toBe(true);
   });
 });

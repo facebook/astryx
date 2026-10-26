@@ -116,7 +116,11 @@ import {registerSpringsTable, springs} from '../motion/uikit/springs';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {spacingVars} from '../theme/tokens.stylex';
-import {fadePressDim, shownPressDim, stopPressDim} from '../utils/pressDim';
+import {
+  fadePressDim,
+  isPressDimReleased,
+  stopPressDim,
+} from '../utils/pressDim';
 import {useSegmentedTouchTracking} from './useSegmentedTouchTracking';
 
 /** The segments, in DOM order. */
@@ -1676,15 +1680,15 @@ export class SegmentedSelectionMotion {
   }
 
   /**
-   * The opacity `segment`'s pressed state sets: read from its style while its
-   * dim is at rest, where nothing of the animator's covers it; a segment whose
-   * dim is still moving keeps the reading from before, since the animator's
-   * opacity is on screen then. Once a return finishes the next press reads
-   * again, so a theme change reaches it.
+   * The opacity `segment`'s pressed state sets: read from its style once its
+   * dim has let go of it (nothing of the animator's covers it); until then
+   * the segment keeps the reading from before, since the animator's opacity
+   * is on screen. Once a return is over the next press reads again, so a
+   * theme change reaches it.
    */
   private pressedOpacity(segment: HTMLElement): number {
     const kept = this.pressedOpacities.get(segment);
-    if (kept !== undefined && shownPressDim(segment) < 1) {
+    if (kept !== undefined && !isPressDimReleased(segment)) {
       return kept;
     }
     const read = pressedOpacityOf(segment);

@@ -1052,12 +1052,15 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
           return style;
         }
         const shown = animatorFor(element).get('opacity');
+        const inline = element.style.getPropertyValue('opacity');
         const opacity =
           shown < 1
             ? String(shown)
-            : element.getAttribute('data-pressed') === 'pressed'
-              ? pressed()
-              : style.opacity;
+            : inline !== ''
+              ? inline
+              : element.getAttribute('data-pressed') === 'pressed'
+                ? pressed()
+                : style.opacity;
         return new Proxy(style, {
           get: (target, key) => {
             if (key === 'opacity') {
@@ -1099,6 +1102,21 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
     vi.mocked(window.getComputedStyle).mockRestore();
     expect(lastFadeOf(ctx.segments.list).keyframes.at(-1)).toEqual({
       opacity: 0.5,
+    });
+  });
+
+  it('a press between a return’s end and the animator letting go still dims to the pressed state', async () => {
+    const ctx = setup('grid');
+    showOpacityAsABrowserDoes(() => '0.2');
+    press(ctx, clientCenterOf('list'));
+    ctx.motion.cancel();
+    await advance(520);
+    // The return's curve is over, but its inline 1 is still held.
+    ctx.segments.list.style.opacity = '1';
+    press(ctx, clientCenterOf('list'));
+    vi.mocked(window.getComputedStyle).mockRestore();
+    expect(lastFadeOf(ctx.segments.list).keyframes.at(-1)).toEqual({
+      opacity: 0.2,
     });
   });
 

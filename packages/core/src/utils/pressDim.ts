@@ -71,9 +71,29 @@ export function fadePressDim(
   );
 }
 
-/** The opacity `element`'s dim shows now: 1 when it is at rest or undimmed. */
-export function shownPressDim(element: HTMLElement): number {
-  return animatorFor(element).get('opacity');
+/**
+ * Whether `element`'s dim has let go of it entirely: the animator shows 1 and
+ * holds nothing on the element, neither an inline opacity nor a running
+ * opacity animation (a finished return keeps both until the animator retires
+ * them). Only then does the element's computed opacity read its own style.
+ */
+export function isPressDimReleased(element: HTMLElement): boolean {
+  if (animatorFor(element).get('opacity') < 1) {
+    return false;
+  }
+  if (element.style.getPropertyValue('opacity') !== '') {
+    return false;
+  }
+  if (typeof element.getAnimations !== 'function') {
+    return true;
+  }
+  return !element
+    .getAnimations()
+    .some(
+      animation =>
+        animation.effect instanceof KeyframeEffect &&
+        animation.effect.getKeyframes().some(frame => 'opacity' in frame),
+    );
 }
 
 /** Drops `element`'s dim at once; its own style shows again. */
