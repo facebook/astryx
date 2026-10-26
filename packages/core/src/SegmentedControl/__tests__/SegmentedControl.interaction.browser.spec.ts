@@ -2301,22 +2301,38 @@ test('a busy main thread cannot hold the lens up: a tap’s lift comes down on t
   expect(Math.max(...heights)).toBeGreaterThan(
     rest.height + LIFT_GROWTH.height * 0.75,
   );
-  // ...came down frame by frame after the hang...
+  // ...came down frame by frame after the hang, judged on the frames the
+  // screencast delivered (its cadence, not a frame count): a frame part-way
+  // down, each one no higher than the last, and none missing...
+  const peak = Math.max(...heights);
+  const descentFrom = lens.from + TAP_LIFT_HANG_MS + 20;
   const descent = inBlock.filter(
-    f =>
-      f.t >= lens.from + TAP_LIFT_HANG_MS + 20 &&
-      (f.box?.height ?? 0) > rest.height + 1,
+    f => f.t >= descentFrom && (f.box?.height ?? 0) > rest.height + 1,
   );
-  expect(descent.length).toBeGreaterThan(3);
+  const landed = inBlock.find(
+    f => f.t >= descentFrom && (f.box?.height ?? 0) <= rest.height + 1,
+  );
+  expect(landed, proof.summary).toBeDefined();
+  expect(
+    descent.some(f => (f.box?.height ?? 0) < peak - 1),
+    'a frame part-way down',
+  ).toBe(true);
+  expect(descent.length).toBeGreaterThanOrEqual(
+    Math.floor(((landed?.t ?? descentFrom) - descentFrom) / proof.cadenceMs) -
+      2,
+  );
   for (let i = 1; i < descent.length; i++) {
     expect(descent[i].box?.height ?? 0).toBeLessThanOrEqual(
       descent[i - 1].box?.height ?? 0,
     );
   }
-  // ...and was back at the segment's size well before the block ended
-  // (the lift spring settles within about 0.2 s of the hang).
-  const late = inBlock.filter(f => f.t >= block.from + TAP_LIFT_HANG_MS + 250);
-  expect(late.length).toBeGreaterThan(3);
+  // ...and was back at the segment's size well before the block ended (the
+  // lift spring settles within about 0.2 s of the hang), on every frame
+  // delivered from then on. Nothing moves there, so the screencast sends
+  // frames only now and then: no cadence applies, only something to judge.
+  const lateFrom = block.from + TAP_LIFT_HANG_MS + 250;
+  const late = inBlock.filter(f => f.t >= lateFrom);
+  expect(late.length, proof.summary).toBeGreaterThan(0);
   for (const frame of late) {
     expect(Math.abs((frame.box?.height ?? 0) - rest.height)).toBeLessThan(1);
   }

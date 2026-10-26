@@ -51,9 +51,10 @@
  * the slide settles without it.
  * Mouse, keyboard and assistive technology keep the click.
  *
- * While a finger is down, the gesture host turns text selection and the
- * touch callout off on the track (`preventsTextSelection`), so a hold lifts
- * the lens and never starts a selection; a mouse keeps desktop selection.
+ * While a finger is down, text selection and the touch callout are off on
+ * the track: the drag recognizer brings the selection lock (`lockSelection`,
+ * `spec:AST-094` FR41), so a hold lifts the lens and never starts a
+ * selection; a mouse keeps desktop selection.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/SegmentedControl/useSegmentedSelectionMotion.ts
@@ -71,6 +72,7 @@ import {
   type ActionGroupTarget,
   type ActionGroupTracker,
 } from '../hooks/actionGroupTracker';
+import {lockSelection} from '../gestures/selectionLock';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {
   SEGMENT_SELECTOR,
@@ -310,10 +312,11 @@ export function useSegmentedTouchTracking(
         name: 'segmented-control-drag',
         direction: 'horizontal',
         cancelsTouchesInView: false,
-        // No title is selectable under a held finger, as in UIKit: the host
-        // turns text selection and the callout off on the track while a
-        // finger is down (the press tracker's element gets the same lock).
-        preventsTextSelection: true,
+        // No title is selectable under a held finger, as in UIKit: a hold on
+        // the track does something (it lifts the lens), so this recognizer
+        // brings the lock, and the host turns text selection and the callout
+        // off on the track while a finger is down.
+        selectionLock: lockSelection,
       }),
     recognizer => {
       if (recognizer.state === 'began') {
