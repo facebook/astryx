@@ -17,6 +17,20 @@
  * `performance.mark` calls, and to the time between the start and end marks,
  * so other pages, the browser process and setup work are excluded.
  *
+ * With `{invalidations: true}` the trace also records why each style
+ * recalculation happened, which elements animations ran on and whether they
+ * ran on the compositor, and when script ran. `countBetween` can then leave
+ * out the one rendering pass Chrome makes on its own for a compositor
+ * animation (its start time arriving from the compositor, late on a loaded
+ * machine): a pass whose style recalculations all have the reason
+ * `Animation`, on elements with an animation on the compositor at the time
+ * (one entry per animation, as Chrome reuses an animation's trace id once it
+ * is gone), with no script since the previous pass. A pseudo-element's
+ * `Conditional ::backdrop` restyle on such an element counts with the
+ * element's own, in that pass or the one before. Anything the page causes (a
+ * style write, a layout read, an animation the compositor cannot run) is
+ * still counted.
+ *
  * SYNC: Keep RENDERING_EVENTS equal to the README's list.
  */
 
@@ -85,6 +99,129 @@ export interface RenderingTrace {
   readonly events: readonly {readonly name: string; readonly t: number}[];
   /** The window, epoch ms on the page's clock. */
   readonly window: {readonly from: number; readonly to: number};
+  /**
+   * With `invalidations`: each style recalculation Chrome scheduled, with its
+   * reason (`Animation`, `Inline CSS style declaration was mutated`, …) and
+   * the element's trace node id, epoch ms.
+   */
+  readonly styleInvalidations?: readonly {
+    readonly t: number;
+    readonly reason: string;
+    readonly nodeId?: number;
+  }[];
+  /**
+   * With `invalidations`: one entry per animation that ran, with the element
+   * it ran on, whether it ran on the compositor (Chrome reported no reason it
+   * could not) and when it ran, epoch ms (`to` absent while it still runs).
+   */
+  readonly animations?: readonly TraceAnimation[];
+  /**
+   * With `invalidations`: when script started on the main thread (function
+   * calls, animation frame callbacks, timers, event dispatch), epoch ms.
+   */
+  readonly scripts?: readonly number[];
+}
+
+/** An animation as a trace shows it (see `traceAnimations`). */
+export interface TraceAnimation {
+  readonly nodeId: number;
+  readonly composited: boolean;
+  readonly from?: number;
+  readonly to?: number;
+}
+
+export interface TraceRenderingOptions {
+  /**
+   * Also record style recalculation reasons, the animations and whether they
+   * ran on the compositor, and script, for
+   * `countBetween(…, {skipCompositorAnimationUpdates: true})`.
+   */
+  invalidations?: boolean;
+}
+
+export interface CountBetweenOptions {
+  /**
+   * Leave out a rendering pass Chrome makes on its own for compositor
+   * animations: every style recalculation since the previous pass has the
+   * reason `Animation` (or is a pseudo-element's `Conditional ::…` restyle
+   * following that element's) and is on an element with an animation on the
+   * compositor at the time, and no script ran in between. Needs a trace
+   * recorded with `{invalidations: true}`.
+   */
+  skipCompositorAnimationUpdates?: boolean;
+}
+
+// Rendering events closer than this belong to one pass (one frame's style,
+// layout and paint); passes are a frame apart.
+const PASS_GAP_MS = 4;
+
+/**
+ * The times of the rendering events that belong to passes Chrome made on its
+ * own for compositor animations (see `CountBetweenOptions`).
+ */
+function compositorAnimationUpdates(trace: RenderingTrace): Set<number> {
+  const {styleInvalidations, animations, scripts} = trace;
+  if (styleInvalidations == null || animations == null || scripts == null) {
+    throw new Error(
+      'countBetween: skipCompositorAnimationUpdates needs traceRendering(…, {invalidations: true})',
+    );
+  }
+  // An element counts as composited at a time when an animation on it runs
+  // on the compositor then and none on the main thread does.
+  const alive = (a: TraceAnimation, t: number) =>
+    (a.from == null || a.from <= t) && (a.to == null || t <= a.to);
+  const compositedAt = (nodeId: number | undefined, t: number) =>
+    nodeId != null &&
+    animations.some(a => a.nodeId === nodeId && a.composited && alive(a, t)) &&
+    !animations.some(a => a.nodeId === nodeId && !a.composited && alive(a, t));
+  const events = [...trace.events].sort((a, b) => a.t - b.t);
+  const skipped = new Set<number>();
+  let previousEnd = -Infinity;
+  // The elements Chrome restyled on its own in the previous pass.
+  let ownBefore = new Set<number>();
+  let i = 0;
+  while (i < events.length) {
+    let j = i;
+    while (
+      j + 1 < events.length &&
+      events[j + 1].t - events[j].t <= PASS_GAP_MS
+    ) {
+      j += 1;
+    }
+    const start = events[i].t;
+    const end = events[j].t;
+    const causes = styleInvalidations.filter(
+      inv => inv.t > previousEnd && inv.t <= end,
+    );
+    // A pseudo-element (`::backdrop`) restyles after the element it belongs
+    // to: `Conditional ::backdrop` is Chrome's own when that element's
+    // restyle is, in this pass or the one before.
+    const own = new Set(
+      causes
+        .filter(inv => inv.reason === 'Animation' && inv.nodeId != null)
+        .map(inv => inv.nodeId as number),
+    );
+    const isAnimationUpdate =
+      causes.length > 0 &&
+      causes.every(
+        inv =>
+          (inv.reason === 'Animation' ||
+            (inv.reason.startsWith('Conditional ::') &&
+              inv.nodeId != null &&
+              (own.has(inv.nodeId) || ownBefore.has(inv.nodeId)))) &&
+          compositedAt(inv.nodeId, start),
+      ) &&
+      !scripts.some(t => t > previousEnd && t <= start);
+    if (isAnimationUpdate) {
+      for (let k = i; k <= j; k += 1) {
+        skipped.add(events[k].t);
+      }
+    }
+    ownBefore = isAnimationUpdate ? own : new Set();
+    previousEnd = end;
+    i = j + 1;
+  }
+  return skipped;
 }
 
 /** Counts rendering events by name inside `[from, to]` (epoch ms). */
@@ -92,10 +229,14 @@ export function countBetween(
   trace: RenderingTrace,
   from: number,
   to: number,
+  {skipCompositorAnimationUpdates = false}: CountBetweenOptions = {},
 ): Record<string, number> {
+  const skipped = skipCompositorAnimationUpdates
+    ? compositorAnimationUpdates(trace)
+    : new Set<number>();
   const counts: Record<string, number> = {};
   for (const e of trace.events) {
-    if (e.t >= from && e.t <= to) {
+    if (e.t >= from && e.t <= to && !skipped.has(e.t)) {
       counts[e.name] = (counts[e.name] ?? 0) + 1;
     }
   }
@@ -113,6 +254,76 @@ interface TraceEvent {
   args?: Record<string, unknown>;
 }
 
+/** A trace event as `traceAnimations` reads it. */
+export interface AnimationTraceEvent {
+  readonly name: string;
+  readonly ph: string;
+  readonly ts: number;
+  readonly id?: string;
+  readonly id2?: {readonly local?: string};
+  readonly args?: Record<string, unknown>;
+}
+
+/**
+ * The animations a trace shows, one entry each, from Chrome's `Animation`
+ * events: the element (`nodeId`), whether it ran on the compositor and when.
+ * Chrome names an animation's events by an id it reuses once that animation
+ * is gone (a popover's exit copy gets its present's ids), so a begin event
+ * opens a new entry under its id and later events for the id add to it.
+ * `toMs` turns a trace timestamp into the times the trace reports.
+ */
+export function traceAnimations(
+  events: readonly AnimationTraceEvent[],
+  toMs: (ts: number) => number,
+): TraceAnimation[] {
+  const open = new Map<
+    string,
+    {nodeId?: number; composited?: boolean; from: number; to?: number}
+  >();
+  const all: {
+    nodeId?: number;
+    composited?: boolean;
+    from: number;
+    to?: number;
+  }[] = [];
+  for (const e of [...events].sort((a, b) => a.ts - b.ts)) {
+    if (e.name !== 'Animation') {
+      continue;
+    }
+    const id = e.id2?.local ?? e.id ?? '';
+    const d = ((e.args as {data?: Record<string, unknown>} | undefined)?.data ??
+      {}) as Record<string, unknown>;
+    let entry = open.get(id);
+    if (e.ph === 'b' || entry == null) {
+      entry = {from: toMs(e.ts)};
+      open.set(id, entry);
+      all.push(entry);
+    }
+    if (typeof d.nodeId === 'number') {
+      entry.nodeId = d.nodeId;
+    }
+    if (typeof d.compositeFailed === 'number') {
+      entry.composited = (entry.composited ?? true) && d.compositeFailed === 0;
+    }
+    if (e.ph === 'e') {
+      entry.to = toMs(e.ts);
+      open.delete(id);
+    }
+  }
+  return all.flatMap(({nodeId, composited, from, to}) =>
+    nodeId == null
+      ? []
+      : [
+          {
+            nodeId,
+            composited: composited ?? false,
+            from,
+            ...(to == null ? {} : {to}),
+          },
+        ],
+  );
+}
+
 /**
  * Traces the page while `body` runs and counts the rendering work its main
  * thread did between a start mark (placed just before `body`) and an end mark
@@ -127,6 +338,7 @@ interface TraceEvent {
 export async function traceRendering(
   page: Page,
   body: () => Promise<unknown>,
+  {invalidations = false}: TraceRenderingOptions = {},
 ): Promise<RenderingTrace> {
   const cdp: CDPSession = await page.context().newCDPSession(page);
   const events: TraceEvent[] = [];
@@ -144,6 +356,9 @@ export async function traceRendering(
         'disabled-by-default-devtools.timeline',
         'blink.user_timing',
         'toplevel',
+        ...(invalidations
+          ? ['disabled-by-default-devtools.timeline.invalidationTracking']
+          : []),
       ],
       excludedCategories: ['*'],
     },
@@ -210,6 +425,42 @@ export async function traceRendering(
       counted.push({name: e.name, t: toEpochMs(e.ts)});
     }
   }
+  const extra: {
+    -readonly [
+      K in 'styleInvalidations' | 'animations' | 'scripts'
+    ]?: RenderingTrace[K];
+  } = {};
+  if (invalidations) {
+    const data = (e: TraceEvent) =>
+      ((e.args as {data?: Record<string, unknown>} | undefined)?.data ??
+        {}) as Record<string, unknown>;
+    extra.animations = traceAnimations(
+      events.filter(e => e.pid === start.pid),
+      toEpochMs,
+    );
+    extra.styleInvalidations = events
+      .filter(e => onMain(e) && e.name === 'StyleRecalcInvalidationTracking')
+      .map(e => {
+        const d = data(e);
+        return {
+          t: toEpochMs(e.ts),
+          reason: String(d.reason ?? ''),
+          nodeId: typeof d.nodeId === 'number' ? d.nodeId : undefined,
+        };
+      });
+    extra.scripts = events
+      .filter(
+        e =>
+          onMain(e) &&
+          [
+            'FunctionCall',
+            'FireAnimationFrame',
+            'TimerFire',
+            'EventDispatch',
+          ].includes(e.name),
+      )
+      .map(e => toEpochMs(e.ts));
+  }
   // A task that ran a DevTools command received it over the DevTools
   // session's pipe; page script it set off shows as its listener, timer or
   // frame callback.
@@ -257,6 +508,7 @@ export async function traceRendering(
     devtoolsTasks,
     events: counted,
     window: {from: fromEpoch, to: toEpoch},
+    ...extra,
   };
 }
 
