@@ -259,6 +259,18 @@ export default defineConfig(
       '@typescript-eslint/switch-exhaustiveness-check': reactSeverity,
     },
   },
+  // Core's internal subpaths (`@astryxdesign/core/internal/*`) are reserved
+  // for Astryx's own packages: only Core and Lab may import them.
+  {
+    files: ['**/*.{ts,tsx,js,jsx,mjs,cjs}'],
+    ignores: ['packages/core/**', 'packages/lab/**', '**/dist/**'],
+    plugins: {
+      '@astryx': astryxEslintPlugin,
+    },
+    rules: {
+      '@astryx/no-core-internal-import': 'error',
+    },
+  },
   // Copyright header — all source files must have the Meta copyright notice
   {
     files: ['**/*.{ts,tsx}'],

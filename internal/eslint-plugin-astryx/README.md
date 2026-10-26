@@ -185,6 +185,25 @@ function useSortedNames(names: string[]) {
 }
 ```
 
+### `@astryx/no-core-internal-import`
+
+Core exports a few undocumented modules under `@astryxdesign/core/internal/<name>`
+(for example `internal/reorder`, the engine behind `createReorderable`) so Lab
+can build on machinery that has no public API of its own. They are reserved for
+Astryx's own packages and sit outside the compatibility promise
+(`spec:AST-017` FR21). The repo config turns this rule on for every file outside
+`packages/core` and `packages/lab`, so an import of an internal subpath from an
+app, a template or another package is an error.
+
+Each internal subpath is its own explicit entry in Core's `package.json`
+`exports` (`"./internal/<name>": {source, types, default}`), never a wildcard,
+and its `src/internal/<name>/index.ts` header says it is reserved for Astryx's
+own packages, undocumented, and outside the compatibility promise.
+
+It is a custom rule, not a `no-restricted-imports` block: flat config overrides
+a same-named rule per file, so a repo-wide block would undo the layer blocks
+that already use `no-restricted-imports`.
+
 ### `@astryx/no-hardcoded-styles`
 
 Detects hardcoded CSS values in `stylex.create()` that should use Astryx tokens:
