@@ -680,18 +680,21 @@ describe('List reorderable', () => {
     expect(handle).toHaveFocus();
   });
 
-  it('reports the item key as given: a number stays a number', async () => {
+  it('takes the item key as a string (spec:AST-103 FR1)', async () => {
     const user = userEvent.setup();
     const onReorder = vi.fn();
     render(
-      <List reorderable={createReorderable<number>({onReorder})}>
-        <ListItem itemKey={7} label="Seven" />
-        <ListItem itemKey={8} label="Eight" />
+      <List reorderable={createReorderable<string>({onReorder})}>
+        <ListItem itemKey="7" label="Seven" />
+        <ListItem itemKey="8" label="Eight" />
       </List>,
     );
     handleOf('Seven').focus();
     await user.keyboard(' {ArrowDown}');
-    expect(onReorder).toHaveBeenCalledWith({key: 7, to: 1});
+    expect(onReorder).toHaveBeenCalledWith({key: '7', to: 1});
+    // A number is no item key.
+    // @ts-expect-error: ListItem's itemKey is a string.
+    void (<ListItem itemKey={7} label="Seven" />);
   });
 
   it('keeps reorder mode when the object is made anew, and calls the latest onReorder', async () => {
