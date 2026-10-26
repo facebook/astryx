@@ -14,6 +14,7 @@ import fs from 'node:fs';
 import {createRequire} from 'node:module';
 import path from 'node:path';
 import {describe, expect, it} from 'vitest';
+import astryxPlugin from '../internal/eslint-plugin-astryx/index.js';
 
 const REPO = path.resolve(import.meta.dirname, '..');
 const require = createRequire(path.join(REPO, 'package.json'));
@@ -22,15 +23,18 @@ const tseslint = require('typescript-eslint');
 
 const eslint = new ESLint({cwd: REPO});
 
+const RULE = '@astryx/no-core-internal-import';
+
 /**
- * The `no-restricted-imports` messages the repository's config reports for
- * `source` at `file`: the rule's options as the config resolves them for that
+ * The `@astryx/no-core-internal-import` messages the repository's config
+ * reports for `source` at `file`: the rule as the config resolves it for that
  * path, run on the import alone, so no type information is needed.
  */
 async function restrictedImports(file, source) {
   const config = await eslint.calculateConfigForFile(path.join(REPO, file));
-  const rule = config.rules?.['no-restricted-imports'];
-  if (rule == null || rule === 'off' || rule[0] === 'off' || rule[0] === 0) {
+  const rule = config.rules?.[RULE];
+  const severity = Array.isArray(rule) ? rule[0] : rule;
+  if (severity == null || severity === 'off' || severity === 0) {
     return [];
   }
   const linter = new Linter({configType: 'flat'});
@@ -41,7 +45,8 @@ async function restrictedImports(file, source) {
         {
           files: ['**/*.{ts,tsx}'],
           languageOptions: {parser: tseslint.parser},
-          rules: {'no-restricted-imports': rule},
+          plugins: {'@astryx': astryxPlugin},
+          rules: {[RULE]: rule},
         },
       ],
       {filename: path.join(REPO, file)},
