@@ -290,35 +290,39 @@ test('a finger held on the card takes no callout or text selection, and the dial
   await expect(card).toBeVisible();
   // Input comes back once the presentation completes.
   await page.waitForTimeout(alertController.present.ignoresTouchesForMs + 100);
-  const read = async () =>
-    card.evaluate(el => {
-      const computed = getComputedStyle(el);
-      return {
-        userSelect:
-          computed.getPropertyValue('-webkit-user-select') ||
-          computed.userSelect,
-        callout: computed.getPropertyValue('-webkit-touch-callout'),
-        position: computed.position,
-      };
-    });
   // Hold a finger on the card's title, away from the actions.
   const box = await card.boundingBox();
   if (box == null) {
     throw new Error('no card box');
   }
+  const point = {x: box.x + box.width / 2, y: box.y + 24};
+  const read = async () =>
+    card.evaluate((el, {x, y}) => {
+      const computed = getComputedStyle(el);
+      const userSelect =
+        computed.getPropertyValue('-webkit-user-select') || computed.userSelect;
+      // The lock refuses a selection one of two ways (spec:AST-094 FR41):
+      // where iOS WebKit runs, `user-select: none` on the held surface;
+      // elsewhere a cancelled `selectstart` on the text under the finger, with
+      // no style write.
+      const start = new Event('selectstart', {bubbles: true, cancelable: true});
+      (document.elementFromPoint(x, y) ?? el).dispatchEvent(start);
+      return {
+        refusesSelection: userSelect === 'none' || start.defaultPrevented,
+        callout: computed.getPropertyValue('-webkit-touch-callout'),
+        position: computed.position,
+      };
+    }, point);
   const held: Awaited<ReturnType<typeof read>>[] = [];
-  await driver.play(
-    tap({x: box.x + box.width / 2, y: box.y + 24}, {holdMs: 400}),
-    {
-      onEvent: async (_step, index) => {
-        if (index === 0) {
-          held.push(await read());
-        }
-      },
+  await driver.play(tap(point, {holdMs: 400}), {
+    onEvent: async (_step, index) => {
+      if (index === 0) {
+        held.push(await read());
+      }
     },
-  );
+  });
   expect(held).toHaveLength(1);
-  expect(held[0].userSelect).toBe('none');
+  expect(held[0].refusesSelection).toBe(true);
   // Only WebKit implements the callout property; elsewhere it reads empty.
   expect(['none', '']).toContain(held[0].callout);
   // The lock adds to the dialog's base; it replaces none of it.
