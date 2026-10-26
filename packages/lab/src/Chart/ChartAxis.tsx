@@ -61,7 +61,8 @@ export function ChartAxis({
       }));
     } else {
       const linearScale = scale as
-        ScaleLinear<number, number> | ScaleTime<number, number>;
+        | ScaleLinear<number, number>
+        | ScaleTime<number, number>;
       allTicks = linearScale.ticks(tickCount).map(d => ({
         value: d,
         offset: linearScale(d as number & Date),

@@ -109,7 +109,13 @@ export interface XIFSlot {
 export interface XIFPath {
   /** SVG element type. Default: 'path' */
   type?:
-    'path' | 'circle' | 'rect' | 'line' | 'polyline' | 'ellipse' | 'polygon';
+    | 'path'
+    | 'circle'
+    | 'rect'
+    | 'line'
+    | 'polyline'
+    | 'ellipse'
+    | 'polygon';
 
   /** SVG geometry attributes (d, cx, cy, r, x, y, width, height, etc.) */
   attrs: Record<string, string | number>;

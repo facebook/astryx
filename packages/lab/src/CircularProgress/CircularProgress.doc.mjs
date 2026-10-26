@@ -6,18 +6,7 @@ export const docs = {
   name: 'CircularProgress',
   displayName: 'Circular Progress',
   category: 'Feedback & Status',
-  keywords: [
-    'circular',
-    'progress',
-    'radial',
-    'ring',
-    'arc',
-    'determinate',
-    'indeterminate',
-    'gauge',
-    'meter',
-    'donut',
-  ],
+  keywords: ["circular","progress","radial","ring","arc","determinate","indeterminate","gauge","meter","donut"],
   props: [
     {
       name: 'value',
@@ -40,28 +29,24 @@ export const docs = {
     {
       name: 'isLabelHidden',
       type: 'boolean',
-      description:
-        'Visually hide the label (remains accessible). Defaults to true since circular progress typically shows center content instead.',
+      description: 'Visually hide the label (remains accessible). Defaults to true since circular progress typically shows center content instead.',
       default: 'true',
     },
     {
       name: 'hasValueLabel',
       type: 'boolean',
-      description:
-        'Show the formatted value (e.g. "75%") in the center of the ring. Ignored when isIndeterminate is true or when children provide custom center content.',
+      description: 'Show the formatted value (e.g. "75%") in the center of the ring. Ignored when isIndeterminate is true or when children provide custom center content.',
       default: 'false',
     },
     {
       name: 'formatValueLabel',
       type: '(value: number, max: number) => string',
-      description:
-        'Custom value label formatter; defaults to a percentage string.',
+      description: 'Custom value label formatter; defaults to a percentage string.',
     },
     {
       name: 'children',
       type: 'ReactNode',
-      description:
-        'Content displayed in the center of the ring: percentage, icon, or custom content. Takes precedence over hasValueLabel.',
+      description: 'Content displayed in the center of the ring: percentage, icon, or custom content. Takes precedence over hasValueLabel.',
     },
     {
       name: 'size',
@@ -78,15 +63,13 @@ export const docs = {
     {
       name: 'isIndeterminate',
       type: 'boolean',
-      description:
-        'Animated spinning indicator for unknown progress. Respects prefers-reduced-motion by slowing the animation.',
+      description: 'Animated spinning indicator for unknown progress. Respects prefers-reduced-motion by slowing the animation.',
       default: 'false',
     },
     {
       name: 'isDisabled',
       type: 'boolean',
-      description:
-        'Visually disabled: grays out the ring and text. Use for canceled or inactive operations.',
+      description: 'Visually disabled: grays out the ring and text. Use for canceled or inactive operations.',
       default: 'false',
     },
     {
@@ -107,31 +90,11 @@ export const docs = {
     description:
       'A circular progress indicator that shows completion as a ring or arc. Use it for upload progress, score displays, dashboard gauges, or compact progress where horizontal space is limited. Complements ProgressBar for radial layouts.',
     bestPractices: [
-      {
-        guidance: true,
-        description:
-          'Pass a value for determinate progress; set isIndeterminate when the duration is unknown.',
-      },
-      {
-        guidance: true,
-        description:
-          'Show the value with hasValueLabel, or pass children for custom center content: an icon or short label.',
-      },
-      {
-        guidance: true,
-        description:
-          'Always provide a label, even though it is visually hidden by default; screen readers need it.',
-      },
-      {
-        guidance: false,
-        description:
-          'Use circular progress for long text labels; use ProgressBar instead, which has more room for label and value display.',
-      },
-      {
-        guidance: false,
-        description:
-          'Use an indeterminate CircularProgress for small inline loading states; Spinner is the inline indicator.',
-      },
+      { guidance: true, description: 'Pass a value for determinate progress; set isIndeterminate when the duration is unknown.' },
+      { guidance: true, description: 'Show the value with hasValueLabel, or pass children for custom center content: an icon or short label.' },
+      { guidance: true, description: 'Always provide a label, even though it is visually hidden by default; screen readers need it.' },
+      { guidance: false, description: 'Use circular progress for long text labels; use ProgressBar instead, which has more room for label and value display.' },
+      { guidance: false, description: 'Use an indeterminate CircularProgress for small inline loading states; Spinner is the inline indicator.' },
     ],
   },
   examples: [
@@ -180,15 +143,13 @@ export const docsZh = {
     {
       name: 'isLabelHidden',
       type: 'boolean',
-      description:
-        '视觉上隐藏标签（仍保持无障碍可访问性）。默认为 true，因为圆形进度条通常显示中心内容。',
+      description: '视觉上隐藏标签（仍保持无障碍可访问性）。默认为 true，因为圆形进度条通常显示中心内容。',
       default: 'true',
     },
     {
       name: 'hasValueLabel',
       type: 'boolean',
-      description:
-        '在环形中心显示格式化的值（如 "75%"）。当 isIndeterminate 为 true 或提供了 children 自定义中心内容时忽略。',
+      description: '在环形中心显示格式化的值（如 "75%"）。当 isIndeterminate 为 true 或提供了 children 自定义中心内容时忽略。',
       default: 'false',
     },
     {
@@ -199,8 +160,7 @@ export const docsZh = {
     {
       name: 'children',
       type: 'ReactNode',
-      description:
-        '在环形中心显示的内容：百分比、图标或自定义内容。优先于 hasValueLabel。',
+      description: '在环形中心显示的内容：百分比、图标或自定义内容。优先于 hasValueLabel。',
     },
     {
       name: 'size',
@@ -217,8 +177,7 @@ export const docsZh = {
     {
       name: 'isIndeterminate',
       type: 'boolean',
-      description:
-        '用于未知进度的旋转动画指示器。遵循 prefers-reduced-motion，减速播放动画。',
+      description: '用于未知进度的旋转动画指示器。遵循 prefers-reduced-motion，减速播放动画。',
       default: 'false',
     },
     {
@@ -230,8 +189,7 @@ export const docsZh = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description:
-        '用于布局自定义的 StyleX 样式。必须是 stylex.create() 的值。',
+      description: '用于布局自定义的 StyleX 样式。必须是 stylex.create() 的值。',
     },
   ],
   theming: {
@@ -245,31 +203,11 @@ export const docsZh = {
     description:
       'A circular progress indicator that shows completion as a ring or arc. Use it for upload progress, score displays, dashboard gauges, or compact progress where horizontal space is limited. Complements ProgressBar for radial layouts.',
     bestPractices: [
-      {
-        guidance: true,
-        description:
-          'Pass a value for determinate progress; set isIndeterminate when the duration is unknown.',
-      },
-      {
-        guidance: true,
-        description:
-          'Show the value with hasValueLabel, or pass children for custom center content: an icon or short label.',
-      },
-      {
-        guidance: true,
-        description:
-          'Always provide a label, even though it is visually hidden by default; screen readers need it.',
-      },
-      {
-        guidance: false,
-        description:
-          'Use circular progress for long text labels; use ProgressBar instead, which has more room for label and value display.',
-      },
-      {
-        guidance: false,
-        description:
-          'Use an indeterminate CircularProgress for small inline loading states; Spinner is the inline indicator.',
-      },
+      { guidance: true, description: 'Pass a value for determinate progress; set isIndeterminate when the duration is unknown.' },
+      { guidance: true, description: 'Show the value with hasValueLabel, or pass children for custom center content: an icon or short label.' },
+      { guidance: true, description: 'Always provide a label, even though it is visually hidden by default; screen readers need it.' },
+      { guidance: false, description: 'Use circular progress for long text labels; use ProgressBar instead, which has more room for label and value display.' },
+      { guidance: false, description: 'Use an indeterminate CircularProgress for small inline loading states; Spinner is the inline indicator.' },
     ],
   },
 };
@@ -282,50 +220,25 @@ export const docsDense = {
     description:
       'A circular progress indicator that shows completion as a ring or arc. Use it for upload progress, score displays, dashboard gauges, or compact progress where horizontal space is limited. Complements ProgressBar for radial layouts.',
     bestPractices: [
-      {
-        guidance: true,
-        description:
-          'Pass a value for determinate progress; set isIndeterminate when the duration is unknown.',
-      },
-      {
-        guidance: true,
-        description:
-          'Show the value with hasValueLabel, or pass children for custom center content: an icon or short label.',
-      },
-      {
-        guidance: true,
-        description:
-          'Always provide a label, even though it is visually hidden by default; screen readers need it.',
-      },
-      {
-        guidance: false,
-        description:
-          'Use circular progress for long text labels; use ProgressBar instead, which has more room for label and value display.',
-      },
-      {
-        guidance: false,
-        description:
-          'Use an indeterminate CircularProgress for small inline loading states; Spinner is the inline indicator.',
-      },
+      { guidance: true, description: 'Pass a value for determinate progress; set isIndeterminate when the duration is unknown.' },
+      { guidance: true, description: 'Show the value with hasValueLabel, or pass children for custom center content: an icon or short label.' },
+      { guidance: true, description: 'Always provide a label, even though it is visually hidden by default; screen readers need it.' },
+      { guidance: false, description: 'Use circular progress for long text labels; use ProgressBar instead, which has more room for label and value display.' },
+      { guidance: false, description: 'Use an indeterminate CircularProgress for small inline loading states; Spinner is the inline indicator.' },
     ],
   },
   propDescriptions: {
     value: 'Current value. Ignored when indeterminate.',
     max: 'Maximum value.',
     label: 'Accessible label for screen readers.',
-    isLabelHidden:
-      'Visually hide label (remains accessible). Defaults to true.',
-    hasValueLabel:
-      'Show formatted value in the ring center (ignored when indeterminate or children given).',
-    formatValueLabel:
-      'Custom value label formatter; defaults to percentage string.',
-    children:
-      'Center content: percentage, icon, or custom. Wins over hasValueLabel.',
+    isLabelHidden: 'Visually hide label (remains accessible). Defaults to true.',
+    hasValueLabel: 'Show formatted value in the ring center (ignored when indeterminate or children given).',
+    formatValueLabel: 'Custom value label formatter; defaults to percentage string.',
+    children: 'Center content: percentage, icon, or custom. Wins over hasValueLabel.',
     size: 'Ring diameter (32px, 48px, 64px).',
     variant: 'Semantic color variant for the fill.',
     isIndeterminate: 'Animated spinning indicator for unknown progress.',
     isDisabled: 'Visually disabled: grays out ring and text.',
-    xstyle:
-      'StyleX styles for layout customization. Must be stylex.create() value.',
+    xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
   },
 };
