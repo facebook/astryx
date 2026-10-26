@@ -201,6 +201,11 @@ export const docs = {
         className: 'astryx-switch-thumb',
         visualProps: ['size'],
         states: ['checked'],
+        // Under a coarse pointer, `aspectRatio` sets the touch thumb's width
+        // from its height (the default is a pill; `1` draws a circle), and the
+        // lift and rubber band follow the box it renders. A mouse keeps its
+        // thumb. A target-specific addition outside the shared catalog.
+        guaranteedProperties: ['aspectRatio'],
       },
       {
         className: 'astryx-switch-field',
@@ -385,6 +390,7 @@ export const docsZh = {
         className: 'astryx-switch-thumb',
         visualProps: ['size'],
         states: ['checked'],
+        guaranteedProperties: ['aspectRatio'],
       },
       {
         className: 'astryx-switch-field',

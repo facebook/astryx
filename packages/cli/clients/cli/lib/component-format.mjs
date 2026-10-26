@@ -211,6 +211,22 @@ function formatTargetsTable(docs, themeData) {
     );
   }
 
+  const guaranteed = docs.theming.targets.filter(
+    (/** @type {any} */ target) => target.guaranteedProperties?.length,
+  );
+  if (guaranteed.length > 0) {
+    lines.push('');
+    lines.push(
+      'Guaranteed properties (any other property on a target is best effort):',
+    );
+    for (const target of guaranteed) {
+      const properties = target.guaranteedProperties
+        .map((/** @type {string} */ p) => `\`${p}\``)
+        .join(', ');
+      lines.push(`- \`${target.className}\`: ${properties}`);
+    }
+  }
+
   return lines.join('\n');
 }
 
