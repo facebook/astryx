@@ -234,9 +234,8 @@ const FILE_MODULE_SUBPATH_EXPORTS = [
   'CodeBlock/languages/thrift',
   'CodeBlock/languages/toml',
   'Markdown/remark',
-  // Internal entries for Astryx's own packages: undocumented, outside the
-  // public API, and allowed by lint only in Core and Lab
-  // (architecture:react-component-runtime INV13, spec:AST-017 FR21).
+  // Internal entries for Astryx's own packages: undocumented and outside the
+  // public API and its compatibility promise (spec:AST-017 FR21).
   'internal/reorder',
 ];
 
