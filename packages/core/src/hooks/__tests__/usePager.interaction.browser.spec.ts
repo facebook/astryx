@@ -51,6 +51,9 @@ declare global {
     pager: ReturnType<typeof PagerBundle.createPager>;
     pagerLog: string[];
     cancelledMoves: boolean[];
+    /** Each move's position, and where the touch started (CSS px). */
+    moves: [number, number][];
+    touchStart: [number, number];
   }
 }
 
@@ -97,7 +100,9 @@ async function open(
   window.pagerLog = [];
   // Whether each move reached the page cancelled (read after every listener).
   window.cancelledMoves = [];
-  addEventListener('touchmove', e => window.cancelledMoves.push(e.defaultPrevented), {passive: true});
+  window.moves = [];
+  addEventListener('touchstart', e => { window.touchStart = [e.touches[0].clientX, e.touches[0].clientY]; }, {passive: true});
+  addEventListener('touchmove', e => { window.cancelledMoves.push(e.defaultPrevented); window.moves.push([e.touches[0].clientX, e.touches[0].clientY]); }, {passive: true});
   window.pager = Pager.createPager({
     count: ${COUNT},
     defaultIndex: ${startIndex},
@@ -187,13 +192,22 @@ for (const degrees of [35, 45]) {
     await driver.play(angled(degrees));
     await waitForRest(track);
     expect(await page.evaluate(() => window.pager.index)).toBe(2);
-    const cancelled = await page.evaluate(() => window.cancelledMoves);
+    const {cancelled, moves, start} = await page.evaluate(() => ({
+      cancelled: window.cancelledMoves,
+      moves: window.moves,
+      start: window.touchStart,
+    }));
     expect(cancelled.length).toBeGreaterThan(3);
-    // Nothing is claimed before the pan begins at its 10 pt hysteresis; from
-    // its first cancelled move on, every move is.
-    const first = cancelled.indexOf(true);
-    expect(first).toBeGreaterThan(0);
-    expect(cancelled.slice(first).every(Boolean)).toBe(true);
+    // Nothing is claimed before the pan begins at its 10 pt hysteresis; every
+    // move from the first one past it is. (Chromium holds back moves inside
+    // its own touch slop, so its first move may already be past 10 pt.)
+    const past = moves.findIndex(
+      ([x, y]) =>
+        Math.max(Math.abs(x - start[0]), Math.abs(y - start[1])) >= 10,
+    );
+    expect(past).toBeGreaterThanOrEqual(0);
+    expect(cancelled.slice(0, past).some(Boolean)).toBe(false);
+    expect(cancelled.slice(past).every(Boolean)).toBe(true);
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
   });
 }
