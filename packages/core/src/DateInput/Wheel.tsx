@@ -4,8 +4,7 @@
 
 /**
  * @file Wheel.tsx
- * @input Option list, selected value, change callback; under a finger also
- *   looping, a rest rule and a ref for programmatic turns
+ * @input Option list, selected value and change callback
  * @output Exports Wheel — one picker column — ScrollWheel (today's column),
  *   and the shared types of wheelOptions.ts
  * @position Internal component; consumed by MonthYearWheels.tsx,
@@ -51,14 +50,7 @@
  * - /packages/core/src/DateInput/DateInputTouch.test.tsx
  */
 
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from 'react';
+import {useCallback, useEffect, useId, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -80,10 +72,8 @@ import {nearestEnabledIndex, type WheelProps} from './wheelOptions';
 
 export {
   nearestEnabledIndex,
-  type WheelHandle,
   type WheelOption,
   type WheelProps,
-  type WheelSpinOptions,
 } from './wheelOptions';
 
 const ITEM_BLOCK_SIZE = dateInputTouchSizes.wheelItemSize;
@@ -259,50 +249,10 @@ export function Wheel(props: WheelProps) {
   // One touch model on every touch device: a finger gets UIPickerView's
   // motion in today's look, a fine pointer today's column.
   const {isTouch} = useTouchPresentation();
-  return isTouch ? <PickerWheel {...props} /> : <TodayWheel {...props} />;
+  return isTouch ? <PickerWheel {...props} /> : <ScrollWheel {...props} />;
 }
 
 Wheel.displayName = 'Wheel';
-
-/**
- * The scrolling column with the handle the touch wheel offers: `spinTo`
- * commits its row at once, and the new value scrolls the column there as any
- * new value does. `isLooping` and `resolveRest` are the touch wheel's alone.
- */
-function TodayWheel({
-  ref,
-  label,
-  options,
-  value,
-  onChange,
-  isActive,
-}: WheelProps) {
-  useImperativeHandle(
-    ref,
-    () => ({
-      spinTo: async index => {
-        const option = options[index];
-        if (option == null || option.isDisabled) {
-          return false;
-        }
-        if (option.value !== value) {
-          onChange(option.value);
-        }
-        return true;
-      },
-    }),
-    [options, value, onChange],
-  );
-  return (
-    <ScrollWheel
-      label={label}
-      options={options}
-      value={value}
-      onChange={onChange}
-      isActive={isActive}
-    />
-  );
-}
 
 /**
  * One snap-scrolling picker column: today's wheel, under a fine pointer.

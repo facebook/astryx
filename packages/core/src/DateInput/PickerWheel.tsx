@@ -4,9 +4,8 @@
 
 /**
  * @file PickerWheel.tsx
- * @input Wheel's props (wheelOptions.ts): option list, selected value,
- *   change callback; optionally looping, a rest rule, and a ref for
- *   programmatic turns
+ * @input Wheel's props (wheelOptions.ts): option list, selected value and
+ *   change callback
  * @output Exports PickerWheel — one picker column that moves like UIPickerView
  * @position Internal component; the Wheel under a finger (Wheel.tsx picks it)
  *
@@ -35,9 +34,10 @@
  *   and the bounce are resolved when their motion starts (internal roles,
  *   motion/resolveMotion.ts).
  * - The value commits when the wheel comes to rest, as UIPickerView's
- *   didSelectRow does. A row `resolveRest` moves away from (by default, a
- *   disabled one: outside the bounds) is followed by a turn onto the row it
- *   names, which then commits.
+ *   didSelectRow does. A rest on a disabled row (outside the bounds) is
+ *   followed by a turn onto the nearest enabled row, which then commits; a
+ *   rest on the committed row commits nothing, even outside the bounds
+ *   (component:DateInput FR13).
  * - Each row reaching the band ticks a selection haptic where the browser
  *   can vibrate (not iOS Safari, which cannot play haptics from script).
  * - Under reduced motion (design:reduced-motion DR2) the drag follows the
@@ -45,7 +45,7 @@
  *   its bounce at an end) plays as is, as scrolling keeps decelerating under
  *   iOS Reduce Motion. Every transition the wheel starts (a slow release's
  *   snap, a return from past an end, the turn on from a disabled row, a tap,
- *   a key, a click, `spinTo`, a scroll wheel's snap) lands without
+ *   a key, a click, a scroll wheel's snap) lands without
  *   travel: the rows cross-fade onto their row, opacity only, on the
  *   animator's Reduce Motion fade (`reducedMotionFade`).
  *
@@ -70,15 +70,7 @@
  * - /packages/core/src/TimeInput/TimeInput.doc.mjs
  */
 
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import {useCallback, useEffect, useId, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {PanGestureRecognizer} from '../gestures/PanGestureRecognizer';
 import {TapGestureRecognizer} from '../gestures/TapGestureRecognizer';
@@ -113,15 +105,10 @@ import {
   planRelease,
   snapCurve,
   spinCurve,
-  wrapIndex,
   type WheelCurve,
   type WheelLayout,
 } from './wheelPhysics';
-import {
-  nearestEnabledIndex,
-  type WheelProps,
-  type WheelSpinOptions,
-} from './wheelOptions';
+import {nearestEnabledIndex, type WheelProps} from './wheelOptions';
 
 /** Today's row pitch, px: the touch column draws today's look (wheelLook.ts). */
 const ROW_HEIGHT = WHEEL_ROW_PITCH;
@@ -219,22 +206,20 @@ function registerWheelTables(): void {
 }
 
 /**
- * A turn onto `to` on the tap spin: `spin`'s duration and curve, or the
- * picker's tap spin (`picker.tapSpin.durationMs`) on `timing.curves.move` as
- * resolved under `column` when the turn starts.
+ * A turn onto `to` on the picker's tap spin (`picker.tapSpin.durationMs`),
+ * on `timing.curves.move` as resolved under `column` when the turn starts.
  */
 function turnCurve(
   column: Element | null,
   from: number,
   to: number,
-  spin: WheelSpinOptions = {},
 ): WheelCurve {
   registerWheelTables();
   return spinCurve(
     from,
     to,
-    spin.duration ?? picker.tapSpin.durationMs / 1000,
-    spin.curve ?? resolveMotion(column, timing.curves.move),
+    picker.tapSpin.durationMs / 1000,
+    resolveMotion(column, timing.curves.move),
   );
 }
 
@@ -249,29 +234,6 @@ interface MoveOptions extends PlayOptions {
    * Reduce Motion.
    */
   momentum?: boolean;
-}
-
-/** Whether a looping wheel of `rowCount` rows can hide its seam: the list is longer than the column shows. */
-function canLoop(rowCount: number): boolean {
-  return rowCount * ROW_HEIGHT > COLUMN_HEIGHT + ROW_HEIGHT;
-}
-
-/**
- * The position (an index along the drum, any integer when looping) of row
- * `row` nearest `offset`.
- */
-function nearestPosition(
-  row: number,
-  offset: number,
-  layout: WheelLayout,
-): number {
-  if (!layout.looping) {
-    return row;
-  }
-  const cycles = Math.round(
-    (offset / layout.rowHeight - row) / layout.rowCount,
-  );
-  return row + cycles * layout.rowCount;
 }
 
 interface DragState {
@@ -293,19 +255,15 @@ export function PickerWheel({
   value,
   onChange,
   isActive = true,
-  isLooping = false,
-  resolveRest,
-  ref,
 }: WheelProps) {
   const id = useId();
   const columnRef = useRef<HTMLDivElement | null>(null);
   const rowsRef = useRef<HTMLDivElement | null>(null);
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const rowCount = options.length;
-  const loops = isLooping && canLoop(rowCount);
   const layout = useMemo<WheelLayout>(
-    () => ({rowHeight: ROW_HEIGHT, rowCount, looping: loops}),
-    [rowCount, loops],
+    () => ({rowHeight: ROW_HEIGHT, rowCount}),
+    [rowCount],
   );
   const [motion] = useState(() => new WheelMotion(layout));
   const selectedIndex = Math.max(
@@ -316,9 +274,9 @@ export function PickerWheel({
   /** A finger landed on a moving wheel and stopped it. */
   const caughtRef = useRef(false);
 
-  const latestRef = useRef({options, value, onChange, resolveRest, layout});
+  const latestRef = useRef({options, value, onChange, layout});
   useIsomorphicLayoutEffect(() => {
-    latestRef.current = {options, value, onChange, resolveRest, layout};
+    latestRef.current = {options, value, onChange, layout};
   });
 
   // The row under the band is marked as today's column marks it. At rest
@@ -335,10 +293,7 @@ export function PickerWheel({
     }
     const rows = container.children;
     const {options: currentOptions, value: currentValue} = latestRef.current;
-    const active =
-      position == null
-        ? null
-        : (rows[wrapIndex(position, rows.length)] as HTMLElement);
+    const active = position == null ? null : (rows[position] as HTMLElement);
     const painted = paintedRef.current;
     for (const row of painted) {
       row.style.removeProperty('color');
@@ -361,8 +316,7 @@ export function PickerWheel({
     if (active == null || position == null) {
       return;
     }
-    const index = wrapIndex(position, rows.length);
-    active.style.color = currentOptions[index]?.isDisabled
+    active.style.color = currentOptions[position]?.isDisabled
       ? colorVars['--color-text-disabled']
       : colorVars['--color-text-accent'];
     active.style.fontWeight = fontWeightVars['--font-weight-semibold'];
@@ -402,18 +356,19 @@ export function PickerWheel({
   const arrive = useCallback(
     (offset: number) => {
       const current = latestRef.current;
-      const position = nearestIndex(offset, current.layout);
-      const row = wrapIndex(position, current.options.length);
-      const committed = Math.max(
-        0,
-        current.options.findIndex(option => option.value === current.value),
+      const row = nearestIndex(offset, current.layout);
+      const committed = current.options.findIndex(
+        option => option.value === current.value,
       );
-      const resolved = current.resolveRest
-        ? current.resolveRest(row)
-        : nearestEnabledIndex(current.options, row, committed);
+      // Resting on the committed row is not a stop to correct
+      // (component:DateInput FR13): a committed value outside the bounds stays
+      // until a person moves the wheel off it, as in the scrolling column.
+      const resolved =
+        row === committed
+          ? row
+          : nearestEnabledIndex(current.options, row, Math.max(0, committed));
       if (resolved !== row && current.options[resolved] != null) {
-        const target = position + (resolved - row);
-        move(turnCurve(columnRef.current, offset, target * ROW_HEIGHT), {
+        move(turnCurve(columnRef.current, offset, resolved * ROW_HEIGHT), {
           onEnd: (outcome, end) => {
             if (outcome === 'arrived') {
               arrive(end);
@@ -479,8 +434,7 @@ export function PickerWheel({
     if (
       motion.isMoving() ||
       dragRef.current != null ||
-      nearestIndex(motion.offset(), layout) !==
-        nearestPosition(selectedIndex, motion.offset(), layout)
+      nearestIndex(motion.offset(), layout) !== selectedIndex
     ) {
       return;
     }
@@ -500,9 +454,8 @@ export function PickerWheel({
     if (!isActive || dragRef.current != null || motion.isMoving()) {
       return;
     }
-    const position = nearestPosition(selectedIndex, motion.offset(), layout);
-    if (Math.abs(motion.offset() - position * ROW_HEIGHT) > 0.01) {
-      motion.setOffset(position * ROW_HEIGHT);
+    if (Math.abs(motion.offset() - selectedIndex * ROW_HEIGHT) > 0.01) {
+      motion.setOffset(selectedIndex * ROW_HEIGHT);
     }
   }, [isActive, selectedIndex, layout, motion]);
 
@@ -649,15 +602,10 @@ export function PickerWheel({
         offset,
         currentLayout,
       );
-      const restingRow = wrapIndex(
-        nearestIndex(offset, currentLayout),
-        currentLayout.rowCount,
-      );
-      if (row == null || row === restingRow) {
+      if (row == null || row === nearestIndex(offset, currentLayout)) {
         return;
       }
-      const target = nearestPosition(row, offset, currentLayout);
-      move(turnCurve(columnRef.current, offset, target * ROW_HEIGHT), {
+      move(turnCurve(columnRef.current, offset, row * ROW_HEIGHT), {
         onEnd,
       });
     },
@@ -720,36 +668,15 @@ export function PickerWheel({
     };
   }, [isActive, motion, move, onEnd]);
 
-  const spinTo = useCallback(
-    async (index: number, spin: WheelSpinOptions = {}): Promise<boolean> =>
-      new Promise(resolve => {
-        const offset = motion.offset();
-        const target = nearestPosition(index, offset, latestRef.current.layout);
-        move(turnCurve(columnRef.current, offset, target * ROW_HEIGHT, spin), {
-          onEnd: (outcome, end) => {
-            if (outcome === 'arrived') {
-              arrive(end);
-            }
-            resolve(outcome === 'arrived');
-          },
-        });
-      }),
-    [motion, move, arrive],
-  );
-
-  useImperativeHandle(ref, () => ({spinTo}), [spinTo]);
-
-  // A key commits `row` at once and turns the wheel there from `offset`,
-  // onto the copy of the row nearest where it was heading.
+  // A key commits `row` at once and turns the wheel there from `offset`.
   const turnTo = useCallback(
-    (row: number, heading: number, offset: number) => {
+    (row: number, offset: number) => {
       const current = latestRef.current;
       const option = current.options[row];
-      const target = nearestPosition(row, heading, current.layout);
       if (option.value !== current.value) {
         current.onChange(option.value);
       }
-      move(turnCurve(columnRef.current, offset, target * ROW_HEIGHT));
+      move(turnCurve(columnRef.current, offset, row * ROW_HEIGHT));
     },
     [move],
   );
@@ -765,24 +692,19 @@ export function PickerWheel({
       // passing: two quick presses move two rows.
       const heading = motion.target();
       const offset = motion.isMoving() ? motion.stop() : motion.offset();
-      const from = wrapIndex(nearestIndex(heading, current.layout), count);
-      const looping = Boolean(current.layout.looping);
+      const from = nearestIndex(heading, current.layout);
       const isEnabled = (index: number) => {
-        const option =
-          current.options[looping ? wrapIndex(index, count) : index];
+        const option = current.options[index];
         return option != null && !option.isDisabled;
       };
       const step = Math.sign(delta);
-      let next = from + delta;
-      if (!looping) {
-        next = Math.min(count - 1, Math.max(0, next));
-      }
+      const next = Math.min(count - 1, Math.max(0, from + delta));
       // The first enabled row from the target onwards; failing that (the
       // target is past the bounds), the enabled row nearest it on the way
       // back, short of the row it started from.
       let found: number | null = null;
       for (let index = next, tries = 0; tries < count; tries++, index += step) {
-        if (!looping && (index < 0 || index >= count)) {
+        if (index < 0 || index >= count) {
           break;
         }
         if (isEnabled(index)) {
@@ -798,7 +720,7 @@ export function PickerWheel({
       if (found == null) {
         return;
       }
-      turnTo(looping ? wrapIndex(found, count) : found, heading, offset);
+      turnTo(found, offset);
     },
     [motion, turnTo],
   );
@@ -815,9 +737,8 @@ export function PickerWheel({
       if (row == null) {
         return;
       }
-      const heading = motion.target();
       const offset = motion.isMoving() ? motion.stop() : motion.offset();
-      turnTo(row, heading, offset);
+      turnTo(row, offset);
     },
     [motion, turnTo],
   );
@@ -837,8 +758,7 @@ export function PickerWheel({
       if (option.value !== current.value) {
         current.onChange(option.value);
       }
-      const target = nearestPosition(row, offset, current.layout);
-      move(turnCurve(columnRef.current, offset, target * ROW_HEIGHT));
+      move(turnCurve(columnRef.current, offset, row * ROW_HEIGHT));
     },
     [motion, move],
   );
@@ -917,10 +837,9 @@ export function PickerWheel({
 PickerWheel.displayName = 'PickerWheel';
 
 /**
- * The position of the row under a point `dy` px below the band's centre
- * (an option index, or on a looping wheel any integer), or null past either
- * end of a list that does not loop. Today's rows tip about their own
- * centres, so each centre stays where the row is laid out.
+ * The row under a point `dy` px below the band's centre, or null past either
+ * end of the list. Today's rows tip about their own centres, so each centre
+ * stays where the row is laid out.
  */
 function rowAtPoint(
   dy: number,
@@ -928,7 +847,7 @@ function rowAtPoint(
   layout: WheelLayout,
 ): number | null {
   const position = Math.round((offset + dy) / layout.rowHeight);
-  if (!layout.looping && (position < 0 || position >= layout.rowCount)) {
+  if (position < 0 || position >= layout.rowCount) {
     return null;
   }
   return position;
