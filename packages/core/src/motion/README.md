@@ -43,8 +43,9 @@ import {coast} from '../motion/coast';
 import {solveSpringTowardRamp, toSpring} from '../motion/spring';
 
 const animator = createAnimator(sheet);
-// A component takes its spring from its motion role (the theme), not from
-// the UIKit table (spec:AST-094 FR4); a plain description stands in here.
+// A component takes its spring from its internal motion role (`roles.ts`),
+// not from the UIKit table (spec:AST-094 FR4); a plain description stands
+// in here.
 const spring = {response: 0.45, dampingRatio: 0.9};
 
 // A drag writes one style per frame and never renders:
