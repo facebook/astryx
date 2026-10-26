@@ -715,7 +715,11 @@ function onPointerDown(event: PointerEvent): void {
   // question the brake asks is whether a PREVIOUS finger's fling is still
   // running here.
   const braking = element != null && scrollerIsBraking(element);
-  touching = true;
+  // Only a finger: a pen raises no touch events, so nothing would clear it,
+  // and later scrolls would count as finger-driven.
+  if (event.pointerType === 'touch') {
+    touching = true;
+  }
   lastTouchTarget = event.target instanceof Node ? event.target : null;
   if (element == null || braking) {
     settle();

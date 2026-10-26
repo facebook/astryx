@@ -50,9 +50,6 @@ const meta: Meta = {
 export default meta;
 type Story = StoryObj;
 
-const touchNote = (what: string) =>
-  `${what} Hold: paints after 150 ms. Tap: paints at the lift. Drag or scroll: never paints, and stays dark until the finger lifts and lands again.`;
-
 const controlNote = (what: string) =>
   `${what} Touch: paints in the frame the finger lands. Lift: fades out. A scroll that takes the touch: the paint goes at once, with no fade and no click.`;
 
@@ -75,9 +72,8 @@ export const Rows: Story = {
   parameters: {
     docs: {
       description: {
-        story: touchNote(
-          'Item rows, a menu, and a clickable card. The list scrolls: flick it and no row paints; stop it with a finger and that touch is a brake, not a press.',
-        ),
+        story:
+          'Item rows, a menu, and a clickable card. The rows sit in a scroller, so a held row paints after 150 ms, a tap paints at the lift, and a drag or scroll never paints; the card, outside it, paints in the frame the finger lands. Flick the list and no row paints; stop it with a finger and that touch is a brake, not a press.',
       },
     },
   },
@@ -118,7 +114,7 @@ export const Controls: Story = {
   parameters: {
     docs: {
       description: {
-        story: touchNote(
+        story: controlNote(
           'The eight components that gained a pressed state, under a finger.',
         ),
       },

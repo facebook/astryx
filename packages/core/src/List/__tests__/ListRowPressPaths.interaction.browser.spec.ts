@@ -382,6 +382,8 @@ test('without scrollend (Safari 17, 18), a finger landing on a gliding list brak
     ]) {
       delete (proto as {onscrollend?: unknown}).onscrollend;
     }
+    // `onscrollend` is also an own property of `window` itself.
+    delete (window as {onscrollend?: unknown}).onscrollend;
     window.addEventListener(
       'scrollend',
       event => event.stopImmediatePropagation(),

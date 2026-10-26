@@ -273,6 +273,17 @@ describe('a scroll takes it away and nothing brings it back', () => {
     expect(pressedRow()).toBe(2);
   });
 
+  it('a pen press leaves no finger behind: a later programmatic scroll is not a brake', () => {
+    // A pen raises pointer events but no touch events, so no touchend would
+    // ever clear a finger it recorded.
+    press(rows[0], 'pointerdown', 10, 10, 'pen');
+    press(rows[0], 'pointerup', 10, 10, 'pen');
+    scroller.dispatchEvent(new Event('scroll'));
+    press(rows[1], 'pointerdown', 10, 100);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    expect(pressedRow()).toBe(1);
+  });
+
   it('presses normally once the list has come to rest, at its scrollend', () => {
     press(rows[0], 'pointerdown', 10, 10);
     press(rows[0], 'pointerup', 10, 10);
