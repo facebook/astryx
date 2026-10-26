@@ -17,19 +17,17 @@
  * one, as the interactive pop gesture's is.
  */
 
-import {UIKIT_GESTURES} from '../motion/uikit/gestures';
-import type {NativeTouchBehavior} from './GestureRecognizer';
+import {UIKIT_SCREEN_EDGE_PAN} from '../motion/uikit/gestures';
+import {ALL_NATIVE_TOUCH, type NativeTouchBehavior} from './GestureRecognizer';
 import {
   PanGestureRecognizer,
   type PanGestureRecognizerOptions,
 } from './PanGestureRecognizer';
 import type {GestureEventContext, GestureTouch} from './types';
 
-/** @experimental */
 export type ScreenEdge =
   'left' | 'right' | 'top' | 'bottom' | 'leading' | 'trailing';
 
-/** @experimental */
 export interface ScreenEdgePanGestureRecognizerOptions extends Omit<
   PanGestureRecognizerOptions,
   'direction'
@@ -40,7 +38,6 @@ export interface ScreenEdgePanGestureRecognizerOptions extends Omit<
   edgeRegion?: number;
 }
 
-/** @experimental */
 export class ScreenEdgePanGestureRecognizer extends PanGestureRecognizer {
   edges: ReadonlyArray<ScreenEdge>;
   edgeRegion: number;
@@ -50,16 +47,23 @@ export class ScreenEdgePanGestureRecognizer extends PanGestureRecognizer {
   constructor(options: ScreenEdgePanGestureRecognizerOptions = {}) {
     super({
       maximumNumberOfTouches: 1,
-      hysteresis: UIKIT_GESTURES.screenEdgePan.hysteresis.value,
+      hysteresis: UIKIT_SCREEN_EDGE_PAN.hysteresis.value,
       ...options,
     });
     this.edges = options.edges ?? ['leading'];
     this.edgeRegion =
-      options.edgeRegion ?? UIKIT_GESTURES.screenEdgePan.edgeRegion.value;
+      options.edgeRegion ?? UIKIT_SCREEN_EDGE_PAN.edgeRegion.value;
   }
 
-  /** The browser keeps the axis along the edges. */
+  /**
+   * A pan from one edge goes one way, inward, so the browser keeps every
+   * touch behavior and the pan claims its touch as it begins (spec:AST-094
+   * FR18). Pans from several edges keep the browser the axis along them.
+   */
   override get nativeTouchBehavior(): NativeTouchBehavior {
+    if (this.edges.length === 1) {
+      return ALL_NATIVE_TOUCH;
+    }
     const horizontal = this.edges.some(
       edge => edge !== 'top' && edge !== 'bottom',
     );

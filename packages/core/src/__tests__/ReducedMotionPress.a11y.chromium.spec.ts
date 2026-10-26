@@ -1,4 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
+// @pr-a11y scope core/Button core/ClickableCard core/SelectableCard core/Thumbnail ^packages/core/src/(motion/reducedMotion|utils/interactionOverlay)
 
 /**
  * @file ReducedMotionPress.a11y.chromium.spec.ts
