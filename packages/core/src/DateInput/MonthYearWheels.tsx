@@ -13,8 +13,7 @@
  * the month wheel loops (December is followed by January, the year
  * unchanged), and a year that lacks the month shown in the range turns the
  * month wheel onto the nearest reachable month, on the picker's own column
- * turn (the `datePicker.wheels.columnTurn` motion roles, resolved under the
- * wheels' theme), instead of making it jump. With a mouse they are today's: a
+ * turn (`datePicker.wheels.columnTurn`), instead of making it jump. With a mouse they are today's: a
  * finite month list, and a year change clamps the month at once.
  *
  * It occupies exactly the same box as the month pager, so opening it never
@@ -29,30 +28,23 @@
 
 import {useMemo, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {resolveMotion} from '../motion/resolveMotion';
 import {useTouchPresentation} from '../utils/touchPresentation';
 import {useLocale} from '../i18n';
 import {DATE_FORMAT_MONTH_ONLY, plainDateFormat} from '../utils';
 import {spacingVars} from '../theme/tokens.stylex';
 import {dateInputTouchGeometry} from './tokens.stylex';
-import {datePicker, registerDatePickerTable} from '../motion/uikit/datePicker';
+import {datePicker} from '../motion/uikit/datePicker';
 import {Wheel, type WheelHandle, type WheelOption} from './Wheel';
 import {fromMonthIndex, toMonthIndex} from './monthGeometry';
 
 /**
- * UIDatePicker's turn of a column it moves by itself, under the theme of
- * `element` (the `datePicker.wheels.columnTurn` motion roles). Nothing
- * registers on import (motion/roles.ts), so the table registers right before
- * its roles resolve; the call is idempotent.
+ * UIDatePicker's turn of a column it moves by itself
+ * (`datePicker.wheels.columnTurn`).
  */
-function columnTurn(element: Element | null) {
-  registerDatePickerTable();
-  return {
-    duration:
-      resolveMotion(element, datePicker.wheels.columnTurn, 'durationMs') / 1000,
-    curve: resolveMotion(element, datePicker.wheels.columnTurn.curve),
-  };
-}
+const COLUMN_TURN = {
+  duration: datePicker.wheels.columnTurn.durationMs / 1000,
+  curve: datePicker.wheels.columnTurn.curve,
+};
 
 const styles = stylex.create({
   wheels: {
@@ -94,7 +86,6 @@ export function MonthYearWheels({
   const locale = useLocale();
   const {year, month} = fromMonthIndex(monthIndex);
   const monthWheelRef = useRef<WheelHandle | null>(null);
-  const rootRef = useRef<HTMLDivElement | null>(null);
   const {isTouch} = useTouchPresentation();
 
   // Day 15 of a fixed year: no timezone can push it into an adjacent month
@@ -149,7 +140,7 @@ export function MonthYearWheels({
   }, [minMonthIndex, maxMonthIndex]);
 
   return (
-    <div ref={rootRef} {...stylex.props(styles.wheels)}>
+    <div {...stylex.props(styles.wheels)}>
       <Wheel
         ref={monthWheelRef}
         label={monthLabel}
@@ -178,7 +169,7 @@ export function MonthYearWheels({
           if (isTouch && clamped !== candidate) {
             void monthWheelRef.current?.spinTo(
               fromMonthIndex(clamped).month - 1,
-              columnTurn(rootRef.current),
+              COLUMN_TURN,
             );
           }
           onChange(clamped);
