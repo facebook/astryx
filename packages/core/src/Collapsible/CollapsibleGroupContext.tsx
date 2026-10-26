@@ -27,6 +27,12 @@ export interface CollapsibleGroupContextValue {
   isOpen: (value: string) => boolean;
   /** Toggle the open state of a given value. */
   toggle: (value: string) => void;
+  /**
+   * Registers an item's layout-change measurement (it holds an
+   * `animatedLayout` handle). Before a toggle commits, the group measures
+   * every item whose open state the toggle changes. Returns the unregister.
+   */
+  registerLayoutChange?: (value: string, measure: () => void) => () => void;
 }
 
 /**

@@ -15,7 +15,15 @@
  * - /packages/cli/assets/templates/blocks/components/TreeList/ (showcase blocks)
  */
 
-import {useId, useState, useMemo, useCallback, type ReactNode} from 'react';
+import {
+  useId,
+  useState,
+  useMemo,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
@@ -28,6 +36,13 @@ import type {
 } from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
 import {useTreeFocusInternal} from '../hooks/useTreeFocus';
+import {
+  applyLayoutChangeTransition,
+  playLayoutChange,
+  reportLayoutChange,
+  type AnimatedLayout,
+  type LayoutChange,
+} from '../motion/animatedLayout';
 
 // =============================================================================
 // Types
@@ -38,6 +53,13 @@ export {type TreeListDensity, type TreeListVariant} from './TreeListTypes';
 export interface TreeListProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
+
+  /**
+   * The handle from `useAnimatedLayout({containerRef})`. With it, expanding
+   * or collapsing a row glides the rows and content after it, up to that
+   * container, instead of jumping, and the chevron turns on the same timing.
+   */
+  animatedLayout?: AnimatedLayout;
 
   /**
    * Tree items as a recursive data structure.
@@ -196,6 +218,7 @@ export function TreeList({
   'aria-labelledby': ariaLabelledby,
   ref,
   onKeyDown: onKeyDownProp,
+  animatedLayout,
   ...restProps
 }: TreeListProps) {
   const headerId = useId();
@@ -211,8 +234,31 @@ export function TreeList({
     Map<string, boolean>
   >(() => new Map());
 
+  // With an `animatedLayout` handle, a row's size change (its children shown
+  // or hidden) animates up to the handle's container: the rows and content after it glide, and
+  // the shown group plays its own entrance on the same timing
+  // (`architecture:react-component-runtime` INV12). Read through a ref
+  // because the tree element comes from the focus hook below.
+  const treeElementRef = useRef<HTMLUListElement | null>(null);
+  const pendingLayoutRef = useRef<{change: LayoutChange; id: string} | null>(
+    null,
+  );
   const handleToggle = useCallback(
     (id: string) => {
+      const row = treeElementRef.current?.querySelector<HTMLElement>(
+        `[data-tree-id="${CSS.escape(id)}"]`,
+      );
+      if (row != null) {
+        // The row's own chevron (the Icon in its toggle, the first one in the
+        // row; its children's come after) turns on the glide's motion.
+        applyLayoutChangeTransition(
+          animatedLayout,
+          row.querySelector<HTMLElement>('[data-tree-toggle] > .astryx-icon'),
+        );
+        const change = reportLayoutChange(animatedLayout, () => row);
+        change.measureBefore();
+        pendingLayoutRef.current = {change, id};
+      }
       setExpandedKeysOverride(prev => {
         const next = new Map(prev);
         const isCurrentlyExpanded = prev.has(id)
@@ -222,7 +268,7 @@ export function TreeList({
         return next;
       });
     },
-    [expandedKeysFromProps],
+    [expandedKeysFromProps, animatedLayout],
   );
 
   // ---------------------------------------------------------------------------
@@ -259,6 +305,23 @@ export function TreeList({
     return false;
   }, []);
 
+  useLayoutEffect(() => {
+    const pending = pendingLayoutRef.current;
+    if (pending == null) {
+      return;
+    }
+    pendingLayoutRef.current = null;
+    if (!pending.change.animate()) {
+      return;
+    }
+    const group = treeElementRef.current?.querySelector<HTMLElement>(
+      `[data-tree-id="${CSS.escape(pending.id)}"] > [role="group"]`,
+    );
+    if (group != null) {
+      playLayoutChange(animatedLayout, group);
+    }
+  }, [expandedKeysOverride, animatedLayout]);
+
   const {treeRef, handleKeyDown, handleFocus} =
     useTreeFocusInternal<HTMLUListElement>({
       onToggleExpand: handleToggle,
@@ -268,6 +331,9 @@ export function TreeList({
       // the chevron toggle, start content or description.
       matchLabelledBy: true,
     });
+  useLayoutEffect(() => {
+    treeElementRef.current = treeRef.current;
+  });
 
   const handleRootKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {

@@ -27,7 +27,13 @@
  * - /packages/cli/assets/templates/blocks/components/Collapsible/ (showcase blocks)
  */
 
-import React, {useCallback, useMemo, useState, type ReactNode} from 'react';
+import React, {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   CollapsibleGroupContext,
@@ -207,6 +213,22 @@ export function CollapsibleGroup({
     [openValues],
   );
 
+  // Items holding an `animatedLayout` handle register how to measure their
+  // change; a toggle measures every item it changes before it commits.
+  const layoutChangesRef = useRef(new Map<string, () => void>());
+  const registerLayoutChange = useCallback(
+    (itemValue: string, measure: () => void) => {
+      const layoutChanges = layoutChangesRef.current;
+      layoutChanges.set(itemValue, measure);
+      return () => {
+        if (layoutChanges.get(itemValue) === measure) {
+          layoutChanges.delete(itemValue);
+        }
+      };
+    },
+    [],
+  );
+
   const toggle = useCallback(
     (itemValue: string) => {
       let nextValues: string[];
@@ -219,6 +241,12 @@ export function CollapsibleGroup({
         nextValues = openValues.includes(itemValue)
           ? openValues.filter(v => v !== itemValue)
           : [...openValues, itemValue];
+      }
+
+      for (const [value, measure] of layoutChangesRef.current) {
+        if (openValues.includes(value) !== nextValues.includes(value)) {
+          measure();
+        }
       }
 
       if (!isControlled) {
@@ -238,8 +266,8 @@ export function CollapsibleGroup({
   );
 
   const contextValue = useMemo<CollapsibleGroupContextValue>(
-    () => ({isOpen, toggle}),
-    [isOpen, toggle],
+    () => ({isOpen, toggle, registerLayoutChange}),
+    [isOpen, toggle, registerLayoutChange],
   );
 
   const resolvedDensity = density ?? (hasDividers ? 'balanced' : null);

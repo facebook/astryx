@@ -27,7 +27,16 @@
  * - /packages/cli/assets/templates/blocks/components/Collapsible/ (showcase blocks)
  */
 
-import {use, useId, type ReactNode} from 'react';
+import {
+  use,
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   borderVars,
@@ -41,7 +50,16 @@ import {
 } from '../theme/tokens.stylex';
 
 import {useCollapsible} from './useCollapsible';
-import {CollapsibleGroupPresentationContext} from './CollapsibleGroupContext';
+import {
+  applyLayoutChangeTransition,
+  playLayoutChange,
+  reportLayoutChange,
+  type AnimatedLayout,
+} from '../motion/animatedLayout';
+import {
+  CollapsibleGroupContext,
+  CollapsibleGroupPresentationContext,
+} from './CollapsibleGroupContext';
 import type {CollapsibleChevronPosition} from './CollapsibleGroupContext';
 import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
@@ -242,6 +260,12 @@ export interface CollapsibleProps extends BaseProps {
    * CollapsibleGroup owns grouped state and calls its `onChange` instead.
    */
   onOpenChange?: (isOpen: boolean) => void;
+  /**
+   * The handle from `useAnimatedLayout({containerRef})`. With it, opening and
+   * closing glides the content after this Collapsible, up to that container,
+   * instead of jumping, and the chevron turns on the same timing.
+   */
+  animatedLayout?: AnimatedLayout;
 
   /**
    * Logical position of the disclosure chevron.
@@ -317,6 +341,7 @@ export function Collapsible({
   onOpenChange,
   chevronPosition,
   value,
+  animatedLayout,
   ref,
   xstyle,
   className,
@@ -335,6 +360,57 @@ export function Collapsible({
     value,
   });
 
+  // With an `animatedLayout` handle, the content's size change animates: the
+  // content after this Collapsible, up to the handle's container, glides, and
+  // the revealed content plays its own entrance on the same timing
+  // (`architecture:react-component-runtime` INV12). Without one, nothing
+  // changes.
+  const contentRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const layoutChange = useMemo(
+    () => reportLayoutChange(animatedLayout, contentRef),
+    [animatedLayout],
+  );
+  // Before a change commits: the chevron (the trigger's Icon, its `icon`
+  // theming target) turns on the glide's motion, and the content after this
+  // Collapsible is measured where it is now.
+  const measureChange = useCallback(() => {
+    applyLayoutChangeTransition(
+      animatedLayout,
+      triggerRef.current?.querySelector<HTMLElement>(':scope > .astryx-icon') ??
+        null,
+    );
+    layoutChange.measureBefore();
+  }, [animatedLayout, layoutChange]);
+  // In a group, a toggle can change other items too (opening one in single
+  // mode closes the open one): the group measures every item it changes, so
+  // the rows between glide with the rest.
+  const registerLayoutChange = use(
+    CollapsibleGroupContext,
+  )?.registerLayoutChange;
+  useEffect(() => {
+    if (
+      animatedLayout == null ||
+      value == null ||
+      registerLayoutChange == null
+    ) {
+      return undefined;
+    }
+    return registerLayoutChange(value, measureChange);
+  }, [animatedLayout, value, registerLayoutChange, measureChange]);
+  const wasOpenRef = useRef(isOpen);
+  useLayoutEffect(() => {
+    if (wasOpenRef.current === isOpen) {
+      return;
+    }
+    wasOpenRef.current = isOpen;
+    // A change nothing measured (an owner set `isOpen` directly) lands at
+    // once, entrance included, so the content and what follows stay in step.
+    if (layoutChange.animate() && isOpen && contentRef.current != null) {
+      playLayoutChange(animatedLayout, contentRef.current);
+    }
+  }, [isOpen, layoutChange, animatedLayout]);
+
   // Activation is blocked by this guard rather than the native `disabled`
   // attribute, so the trigger keeps `aria-disabled` semantics and stays
   // discoverable. A native `disabled` button would silently swallow events
@@ -343,6 +419,7 @@ export function Collapsible({
     if (isDisabled) {
       return;
     }
+    measureChange();
     toggle();
   };
 
@@ -399,6 +476,7 @@ export function Collapsible({
       )}
       {...props}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={handleToggle}
         aria-disabled={isDisabled || undefined}
@@ -433,6 +511,7 @@ export function Collapsible({
         {!isChevronAtStart && chevron}
       </button>
       <div
+        ref={contentRef}
         id={contentId}
         {...mergeProps(
           themeProps('collapsible-content', {
