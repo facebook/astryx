@@ -10,9 +10,12 @@
  * @position Unit tests for keyboard/keyboardModel.ts
  */
 
+import {execFileSync} from 'node:child_process';
+import path from 'node:path';
 import {describe, expect, it} from 'vitest';
 import {createKeyboardModel} from './keyboardModel';
 import {keyboard, timing} from '../motion/uikit';
+import {keyboardNotification} from '../motion/uikit/timing';
 import {MOTION_ROLE_KINDS} from '../motion/roleKinds.generated';
 import {naturalFrequency, toSpring} from '../motion/spring';
 
@@ -262,10 +265,41 @@ describe('the keyboard\u2019s own timing (spec:AST-099 FR3)', () => {
   it('cuts the spring at the notification duration, which no theme retunes', () => {
     // The system moves the keyboard on its own spring and duration whatever
     // the theme says, so neither is a motion role (spec:AST-094 FR4).
-    expect(timing.keyboardNotificationMs).toBe(383.3);
+    expect(keyboardNotification.durationMs).toBe(383.3);
+    expect(timing.keyboardNotificationMs).toBe(keyboardNotification.durationMs);
     expect(MOTION_ROLE_KINDS).not.toHaveProperty(
       'timing.keyboardNotificationMs',
     );
     expect(MOTION_ROLE_KINDS).not.toHaveProperty('springs.keyboard');
+  });
+});
+
+describe('the keyboard\u2019s bundle', () => {
+  it('ships the notifications\u2019 duration, not the rest of the timing table', () => {
+    // Bundled for a page, the guide and its model read one timing value; the
+    // table's other rows stay out (architecture:component-style-authoring
+    // INV6). esbuild runs in its own process: it needs a native TextEncoder.
+    const script = [
+      "import {build} from 'esbuild';",
+      'const result = await build({',
+      `  entryPoints: ${JSON.stringify(['keyboardLayoutGuide.ts', 'keyboardModel.ts'].map(file => path.resolve(__dirname, file)))},`,
+      '  outdir: "out",',
+      "  bundle: true, write: false, format: 'esm', logLevel: 'silent',",
+      '});',
+      'process.stdout.write(result.outputFiles.map(file => file.text).join("\\n"));',
+    ].join('\n');
+    const bundle = execFileSync(
+      process.execPath,
+      ['--input-type=module', '-e', script],
+      {cwd: path.resolve(__dirname, '../../../..'), encoding: 'utf8'},
+    );
+    expect(bundle).toContain('383.3');
+    for (const row of [
+      'stateChangeMs',
+      'highlightOutMs',
+      'navigationBarHideShowMs',
+    ]) {
+      expect(bundle).not.toContain(row);
+    }
   });
 });

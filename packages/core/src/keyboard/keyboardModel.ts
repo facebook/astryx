@@ -3,7 +3,8 @@
 /**
  * @file keyboardModel.ts
  * @input `keyboard` (its spring and report timings) and
- *   `timing.keyboardNotificationMs` from the UIKit table
+ *   `keyboardNotification` (the notifications' duration, without the rest of
+ *   the timing table) from the UIKit table
  * @output Exports createKeyboardModel (the keyboard layout guide's clock-free
  *   core) and the KeyboardTransition / KeyboardModel types
  * @position The state of the keyboard layout guide (keyboardLayoutGuide.ts):
@@ -37,7 +38,7 @@
  */
 
 import {keyboard} from '../motion/uikit/keyboard';
-import {timing} from '../motion/uikit/timing';
+import {keyboardNotification} from '../motion/uikit/timing';
 import {
   solveSpring,
   toSpring,
@@ -138,7 +139,7 @@ export function createKeyboardModel(
     showReportLagMaxMs = keyboard.showReportLagMaxMs,
     focusToShowMs = keyboard.focusToShowMs,
     hideAfterBlurMs = keyboard.hideAfterBlurMs,
-    durationMs = timing.keyboardNotificationMs,
+    durationMs = keyboardNotification.durationMs,
   }: KeyboardModelOptions = {},
 ): KeyboardModel {
   const spring = toSpring(keyboard.spring);
