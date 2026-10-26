@@ -97,6 +97,7 @@ import {
 import {edgeAutoscroll, type EdgeAutoscroll} from '../utils/edgeAutoscroll';
 import {useTouchPresentation} from '../utils/touchPresentation';
 import {devWarn} from '../utils/devWarning';
+import {GHOST_ATTRIBUTE} from './useListUpdateMotion';
 import {
   ListReorderHandle,
   ListReorderRowName,
@@ -179,9 +180,15 @@ function shownY(element: HTMLElement, at: number): number {
   return animatorFor(element).get('y', at);
 }
 
+/**
+ * The list's rows: its element children, without the ghost of a removed row
+ * still collapsing (the update motion's, `GHOST_ATTRIBUTE`), which holds no
+ * place in the order.
+ */
 function rowsOf(list: HTMLElement): HTMLElement[] {
   return Array.from(list.children).filter(
-    (child): child is HTMLElement => child instanceof HTMLElement,
+    (child): child is HTMLElement =>
+      child instanceof HTMLElement && !child.hasAttribute(GHOST_ATTRIBUTE),
   );
 }
 

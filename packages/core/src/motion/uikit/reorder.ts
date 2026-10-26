@@ -6,8 +6,9 @@
  *   hysteresis)
  * @output Exports `reorder`: the values of a UIKit table's edit-mode reorder
  *   (the reorder control's claim, the rows sliding out of the way, the drop's
- *   settle and the edge autoscroll), and `registerReorderTable`, which makes
- *   the slides' spring a motion role
+ *   settle and the edge autoscroll), and `registerReorderTable`, which
+ *   registers the table, none of whose values is a role (touch motion stays
+ *   internal)
  * @position The reorder domain of the UIKit constants table (motion/uikit);
  *   read by List/reorderModel.ts, List/listReorderEngine.tsx and
  *   List/ListReorderTouch.ts (which registers it)
@@ -29,8 +30,8 @@
  * px each.
  *
  * Plain data, with no side effect on import: `registerReorderTable` registers
- * its motion role (the slides' spring), and the reorder's touch layer
- * (List/ListReorderTouch.ts) calls it before its first motion.
+ * the table (every value an internal constant), and the reorder's touch
+ * layer (List/ListReorderTouch.ts) calls it before its first motion.
  *
  * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md.
  */
@@ -138,10 +139,11 @@ export const reorder = {
 } as const;
 
 /**
- * Registers the reorder table's motion role: the slides' spring, which a theme
- * may retune. The claim's delay is the scroll view's content-touch delay
- * (arbitration) and the autoscroll tick is a clock, not how anything moves;
- * the drop's settle is derived from the distance left (List/reorderModel.ts).
+ * Registers the reorder table. It lists no role: a component's measured
+ * spring stays an internal constant (touch motion has no theme surface).
+ * The claim's delay is the scroll view's content-touch delay (arbitration)
+ * and the autoscroll tick is a clock, not how anything moves; the drop's
+ * settle is derived from the distance left (List/reorderModel.ts).
  * Registering again does nothing.
  */
 export function registerReorderTable(): void {

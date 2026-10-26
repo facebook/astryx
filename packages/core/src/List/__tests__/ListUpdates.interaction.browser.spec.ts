@@ -39,9 +39,7 @@ import {
   releaseAnimations,
   seekAnimations,
   startScreencast,
-  tap,
   timeline,
-  touchDriver,
   trackMarker,
   traceRendering,
   waitForAnimation,
@@ -447,22 +445,19 @@ test('a change while rows still move: no jump, they keep moving to their new pla
   await expect.poll(async () => translateY(row(page, 'Archive'))).toBe(0);
 });
 
-test("a theme's table spring (a motion role) times the update", async ({
+test('the update keeps its own table spring, whatever a theme writes', async ({
   page,
 }) => {
   await open(page);
-  // A theme that slows the table spring to 0.9 s with no bounce, written the
-  // way a theme writes a role: its CSS variable, here on the root.
+  // The table spring is an internal constant: a variable written the way a
+  // theme would write one (0.9 s, no bounce, on the root) changes nothing.
   await page.evaluate(() =>
     document.documentElement.style.setProperty(
       '--motion-list-update-table-spring',
       '0.9s 0',
     ),
   );
-  const themed = solveSpring(toSpring({duration: 0.9, bounce: 0}), {
-    from: 0,
-    to: 1,
-  });
+  const table = solveSpring(SPRING, {from: 0, to: 1});
   const drafts = row(page, 'Drafts');
   await press(page, 'Remove the second row');
   await expect(row(page, 'Sent')).toHaveCount(0);
@@ -480,12 +475,10 @@ test("a theme's table spring (a motion role) times the update", async ({
   for (const t of [SETTLE_MS / 2, SETTLE_MS]) {
     await seekAnimations(page, t);
     expect(await translateY(drafts)).toBeCloseTo(
-      gap * (1 - themed.value(t / 1000)),
+      gap * (1 - table.value(t / 1000)),
       0,
     );
   }
-  // Where the table's spring has arrived, the theme's is still on its way.
-  expect(1 - themed.value(SETTLE_MS / 1000)).toBeGreaterThan(0.1);
   await releaseAnimations(page, {finish: true});
   await expect.poll(async () => translateY(drafts)).toBe(0);
 });
