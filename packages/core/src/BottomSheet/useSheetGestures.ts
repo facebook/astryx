@@ -110,11 +110,10 @@ import {
   type MotionCurve,
   type MotionHandle,
 } from '../motion/animator';
-import {resolveMotion} from '../motion/resolveMotion';
 import {rubberBand} from '../motion/rubberBand';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {sheet as sheetTable} from '../motion/uikit/sheet';
-import {registerSpringsTable, springs} from '../motion/uikit/springs';
+import {springs} from '../motion/uikit/springs';
 import {
   readReleaseMotion,
   themeCurve,
@@ -1188,9 +1187,6 @@ export function useSheetGestures({
       dimFor?: (offset: number) => number,
       crossfadeAs?: 'exit',
     ): MotionHandle => {
-      // The springs table's roles, so a theme's values for them apply: once,
-      // before the sheet's first animation (motion/roles.ts).
-      registerSpringsTable();
       const base = layoutOffset + travelBaseRef.current;
       const to = offset - base;
       const from = animator.get('y');
@@ -1201,10 +1197,6 @@ export function useSheetGestures({
       // travel (design:reduced-motion). A finger started it, so it fades
       // whatever the primary pointer (DR2).
       const touchRelease = dragTouchRef.current;
-      // The spring the release plays: its theme value, read once, so the
-      // overshoot cap, the motion and the dim agree (a theme may retune it,
-      // spec:AST-094 FR4).
-      const played = resolveMotion(sheetElRef.current, spring);
       let handle: MotionHandle;
       if (motion.kind === 'theme') {
         const curve = themeCurve(from, to, motion);
@@ -1226,7 +1218,7 @@ export function useSheetGestures({
         const v =
           offset === 0
             ? limitOvershoot(
-                played,
+                spring,
                 from,
                 to,
                 handed,
@@ -1235,11 +1227,11 @@ export function useSheetGestures({
             : handed;
         handle = animator.animate(
           {y: to},
-          {spring: played, velocity: {y: v}},
+          {spring, velocity: {y: v}},
           {at, crossfadeAs, touchRelease},
         );
         if (dimFor != null) {
-          const curve = solveSpring(toSpring(played), {from, to, velocity: v});
+          const curve = solveSpring(toSpring(spring), {from, to, velocity: v});
           scrimOwnerRef.current = 'release';
           followScrim(
             {
