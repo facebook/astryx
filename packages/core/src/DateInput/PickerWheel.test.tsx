@@ -237,6 +237,30 @@ describe('PickerWheel — at rest', () => {
     expect(column.getAttribute('aria-activedescendant')).toBe(option('08').id);
   });
 
+  it('rests back on a committed value outside the bounds and commits nothing', () => {
+    // component:DateInput FR13: a wheel resting on its committed row commits
+    // nothing, even outside the bounds, as the scrolling column keeps it.
+    const {column, option, onChange} = renderWheel({value: 8});
+    advance(2000);
+    // One gesture: up a row onto 09 (enabled), back down onto 08, held
+    // still, lifted.
+    const away = 10 + ROW;
+    touch('touchstart', column, 100);
+    for (let i = 1; i <= 15; i++) {
+      advance(40);
+      touch('touchmove', column, 100 - (away * i) / 15);
+    }
+    for (let i = 1; i <= 15; i++) {
+      advance(40);
+      touch('touchmove', column, 100 - away + (away * i) / 15);
+    }
+    advance(300);
+    touch('touchend', column, 100);
+    advance(2000);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(option('08').style.transform).toBe(AT_BAND);
+  });
+
   it('shows a value set from outside without motion', () => {
     const {rerender, option, onChange} = renderWheel();
     rerender(
