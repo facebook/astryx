@@ -56,10 +56,9 @@ import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {
-  interactionOverlayStyles,
-  pressConsts,
-} from '../utils/interactionOverlay.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {controlPressLayerStyles} from '../utils/controlPressLayer';
+import {controlPressConsts} from '../utils/controlPressLayer.stylex';
 import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 import {PRESS_HOLDS_DRAG_ATTRIBUTE} from '../utils/pressFeedback';
 import {useSwitchTouch, type SwitchTouchParts} from './useSwitchTouch';
@@ -190,7 +189,7 @@ const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, $
 
 /**
  * The touch press's release: opacity 1 → 0, the same keyframes as a
- * control's release in interactionOverlay.stylex.ts (StyleX emits one rule).
+ * control's release in controlPressLayer.ts (StyleX emits one rule).
  */
 const pressLayerRelease = stylex.keyframes({
   from: {opacity: 1},
@@ -321,7 +320,7 @@ const styles = stylex.create({
     // fade and under the thumb, present only while the row the press
     // controller writes to is pressed or releasing. Its opacity is the
     // press: on at once, then a control's release (UIButton's clock and
-    // curve, shared with interactionOverlay.stylex.ts's `control`) that runs
+    // curve, shared with controlPressLayer.ts's `control`) that runs
     // on the compositor, so it never sticks while the main thread is busy;
     // under reduced motion the system's cross-fade (design:reduced-motion).
     '::before': {
@@ -371,7 +370,7 @@ const styles = stylex.create({
             // UIButton's measured release, the table's internal constant
             // (`button.highlight.releaseMs`, mirrored for the stylesheet and
             // drift-tested): touch motion stays internal (spec:AST-094 DEC-11).
-            default: `${pressConsts.controlReleaseMs}ms`,
+            default: `${controlPressConsts.controlReleaseMs}ms`,
             '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
               reducedMotionFadeConsts.duration,
           },
@@ -382,7 +381,7 @@ const styles = stylex.create({
         [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
           default: null,
           [TOUCH]: {
-            default: pressConsts.controlReleaseEase,
+            default: controlPressConsts.controlReleaseEase,
             '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
               reducedMotionFadeConsts.easing,
           },
@@ -555,7 +554,7 @@ const styles = stylex.create({
             // UIButton's measured release, the table's internal constant
             // (`button.highlight.releaseMs`, mirrored for the stylesheet and
             // drift-tested): touch motion stays internal (spec:AST-094 DEC-11).
-            default: `${pressConsts.controlReleaseMs}ms`,
+            default: `${controlPressConsts.controlReleaseMs}ms`,
             '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
               reducedMotionFadeConsts.duration,
           },
@@ -566,7 +565,7 @@ const styles = stylex.create({
         [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
           default: null,
           [TOUCH]: {
-            default: pressConsts.controlReleaseEase,
+            default: controlPressConsts.controlReleaseEase,
             '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
               reducedMotionFadeConsts.easing,
           },
@@ -1092,7 +1091,8 @@ export function Switch({
           !isDisabled && switchScope,
           // The touch press's strength and release live on the row the
           // controller writes to; the track and thumb inherit and paint it.
-          !isDisabled && interactionOverlayStyles.pressedAlphaLayered,
+          !isDisabled && interactionOverlayStyles.pressedAlpha,
+          !isDisabled && controlPressLayerStyles.pressedAlphaLayered,
         )}>
         {' '}
         {labelPosition === 'start' ? (

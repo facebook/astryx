@@ -39,6 +39,9 @@ const ON_ARM = '[data-astryx-press="on"]';
 const HELD_ARM = '[data-astryx-press="held"]';
 /** The marker's value for a surface whose press is a cell's. */
 const CELL_ARM = '[data-astryx-pressable="cell"]';
+/** A mouse or Space press on a touch-first device: the fine pointer's clock. */
+const INPUT_ARM = '[data-astryx-press-input]';
+const isInputArm = (rule: string) => selectorOf(rule).includes(INPUT_ARM);
 
 const selectorOf = (rule: string) => rule.slice(0, rule.indexOf('{'));
 const onPseudoElement = (rule: string) => selectorOf(rule).includes('::');
@@ -256,12 +259,15 @@ export function releasesOnLayer(
     outsideMedia: REDUCED_MEDIA,
   });
   const layer = fading.filter(rule => selectorOf(rule).includes(pseudo));
-  const durations = durationsOf(layer);
+  const durations = durationsOf(layer.filter(rule => !isInputArm(rule)));
+  // A mouse or Space press on the same layer keeps the deselect clock.
+  const inputDurations = durationsOf(layer.filter(isInputArm));
   const layerReleases =
     layer.some(runsAnimation) &&
     layer.some(rule => /animation-fill-mode:\s*both/.test(rule)) &&
     durations.length === 1 &&
-    durations[0] === releaseMs;
+    durations[0] === releaseMs &&
+    inputDurations.every(ms => ms === list.highlight.releaseMs);
   if (!layerReleases) {
     return false;
   }
@@ -353,7 +359,23 @@ export function declaresPressPaint(el: Element): boolean {
 
 /** `.2s`, `200ms`, `0.2s` → 200. */
 export function durationToMs(value: string): number {
-  const match = value.trim().match(/^([\d.]+)(ms|s)$/);
+  const text = value.trim();
+  // StyleX folds a constant cap into `calc(<time>)`.
+  const folded = /^calc\((.+)\)$/.exec(text);
+  if (folded != null) {
+    return durationToMs(folded[1]);
+  }
+  // Under reduced motion the clock is capped: `min(<clock>, 200ms)`.
+  const capped = /^min\((.+),\s*([\d.]+m?s)\)$/.exec(text);
+  if (capped != null) {
+    return Math.min(durationToMs(capped[1]), durationToMs(capped[2]));
+  }
+  // A theme motion role, `var(--motion-…, 200ms)`, reads as the table's
+  // value it falls back to.
+  const role = text.match(/^var\(\s*--[\w-]+\s*,\s*(.+)\)$/);
+  const match = (role == null ? text : role[1])
+    .trim()
+    .match(/^([\d.]+)(ms|s)$/);
   if (match == null) {
     return Number.NaN;
   }
@@ -409,12 +431,18 @@ export function hasReleaseFade(el: Element): boolean {
     );
   }
   const isCell = (rule: string) => selectorOf(rule).includes(CELL_ARM);
-  const control = durationsOf(coarse.filter(rule => !isCell(rule)));
+  const control = durationsOf(
+    coarse.filter(rule => !isCell(rule) && !isInputArm(rule)),
+  );
   const cell = durationsOf(coarse.filter(isCell));
+  // A mouse or Space press keeps the deselect clock on any surface.
+  const input = durationsOf(coarse.filter(isInputArm));
   return (
     control.length === 1 &&
     control[0] === button.highlight.releaseMs &&
     cell.length === 1 &&
-    cell[0] === list.highlight.releaseMs
+    cell[0] === list.highlight.releaseMs &&
+    input.length === 1 &&
+    input[0] === list.highlight.releaseMs
   );
 }

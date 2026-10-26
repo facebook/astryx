@@ -50,7 +50,7 @@
  *   and the settle are one curve built at the release, so the settle starts
  *   on time on the compositor. The press also shows the shared pressed
  *   overlay (design:user-states), as the track's ::before under the thumb,
- *   released on the compositor (Switch.tsx, interactionOverlay.stylex.ts).
+ *   released on the compositor (Switch.tsx, controlPressLayer.ts).
  * - The track keeps its own fill, the theme's, in both states; the colour
  *   change is a fade layer over it, painted with the track's other fill
  *   (switchFill.ts) and faded on the compositor: clear while the visuals

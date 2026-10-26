@@ -4,9 +4,10 @@
  * @file pressFeedback.ts
  * @input The press state machine (pressGesture.ts) and the document's pointer,
  *   keyboard, scroll and visibility events
- * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, PRESS_PROFILES,
- *   pressableProps, the list row's press profile (CELL_PRESS_PROFILE,
- *   cellPressableProps), installPressFeedback and subscribePressPaint
+ * @output Exports paintPress and readPressPaint (the one writer of the press
+ *   attribute for every painter), PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE,
+ *   PRESS_PROFILES, pressableProps, the list row's press profile
+ *   (CELL_PRESS_PROFILE, cellPressableProps) and installPressFeedback
  * @position The DOM half of the touch press model: one delegated controller
  *   per document that writes `data-astryx-press` on the nearest pressable surface.
  *   Installed by usePressFeedback (hooks/usePressFeedback.ts) on first mount;
@@ -70,7 +71,11 @@
  * pressFeedback.test.ts.
  */
 
-import type {PressGesture, PressPaint, PressStep} from './pressGesture';
+import type {
+  PressGesture,
+  PressPaint as GesturePaint,
+  PressStep,
+} from './pressGesture';
 import {
   idlePressGesture,
   PRESS_FADE_MS,
@@ -78,7 +83,7 @@ import {
   PRESS_ONSET_MS,
   pressGestureStep,
 } from './pressGesture';
-import {pressConsts} from './interactionOverlay.stylex';
+import {controlPressConsts} from './controlPressLayer.stylex';
 import {TOUCH_QUERY} from './touchPresentation';
 import {isCoarsePointer, watchCoarsePointer} from '../gestures/coarsePointer';
 
@@ -97,6 +102,15 @@ export const PRESSABLE_ATTRIBUTE = 'data-astryx-pressable';
  * release's exit.
  */
 export const PRESSED_ATTRIBUTE = 'data-astryx-press';
+
+/**
+ * Marks a press the controller paints for a mouse button (`mouse`) or the
+ * Space key (`key`) on a touch-first device, beside {@link PRESSED_ATTRIBUTE}:
+ * its release keeps the 200 ms fade a fine pointer has, while a finger's
+ * press releases on its surface's profile (`component:Button` FR15,
+ * `spec:AST-094`).
+ */
+export const PRESS_INPUT_ATTRIBUTE = 'data-astryx-press-input';
 
 /**
  * Internal: on a pressable whose own drag the finger moves (a Switch's
@@ -146,14 +160,17 @@ export const PRESS_PROFILES = {
   /**
    * UIControl: highlighted in the frame the finger lands, outside scrollers,
    * and released on UIButton's clock (the stylesheet's own constant) under
-   * a coarse primary pointer (see `releaseMsOf`).
+   * a coarse primary pointer (see `releaseOf`).
    */
   control: {
     highlightDelay: 'inScrollers',
-    releaseMs: pressConsts.controlReleaseMs,
+    releaseMs: controlPressConsts.controlReleaseMs,
   },
   /** A table or collection cell: always inside a scroll view, so it waits. */
-  cell: {highlightDelay: 'always', releaseMs: PRESS_FADE_MS},
+  cell: {
+    highlightDelay: 'always',
+    releaseMs: PRESS_FADE_MS,
+  },
 } as const satisfies Readonly<Record<string, PressProfile>>;
 
 export type PressProfileName = keyof typeof PRESS_PROFILES;
@@ -328,84 +345,132 @@ const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
   onset: PRESS_ONSET_MS,
 };
 
+/**
+ * How long a timer runs on a press. The release's clock is its surface's
+ * press profile's (`releaseOf`: the value the stylesheet's release plays),
+ * capped under reduced motion as the stylesheet caps its fade
+ * (`design:reduced-motion` DR2: a touch transition finishes in 200 ms or
+ * less).
+ */
+function timerMs(
+  kind: NonNullable<PressStep['timer']>,
+  live: {element: Element; releaseMs: number},
+): number {
+  if (kind !== 'fade') {
+    return TIMER_MS[kind];
+  }
+  const ms = live.releaseMs;
+  // design:reduced-motion DR2: under reduced motion a touch transition
+  // finishes in 200 ms or less (the stylesheet caps its fade the same way).
+  const reduced =
+    live.element.ownerDocument.defaultView?.matchMedia?.(
+      '(prefers-reduced-motion: reduce)',
+    ).matches ?? false;
+  return reduced ? Math.min(ms, REDUCED_MOTION_MAX_MS) : ms;
+}
+
+/** The longest a touch transition runs under reduced motion (DR2). */
+const REDUCED_MOTION_MAX_MS = 200;
+
 const TIMER_EVENT = {
   fade: 'fadeEnd',
   flash: 'flashEnd',
   onset: 'onset',
 } as const;
 
-/**
- * A press state the controller did not write is its owner's: a selection
- * hold's `held` (selectionHold.ts) keeps a row selected through a navigation
- * push, so neither a new press nor a release's end overwrites or clears it.
- */
-function ownedElsewhere(element: HTMLElement): boolean {
+/** The press attribute's states: on, held, fading on its release, none. */
+export type PressPaint = 'on' | 'held' | 'fading' | 'none';
+
+export interface PaintPressOptions {
+  /** How long `fading` stays before the attribute goes, ms. @default the press fade */
+  releaseMs?: number;
+  /** The current values this write may replace. @default none, on, fading */
+  onlyFrom?: ReadonlyArray<PressPaint>;
+}
+
+/** What a press may replace: a `held` row is its owner's until released. */
+const PRESS_REPLACES: ReadonlyArray<PressPaint> = ['none', 'on', 'fading'];
+const PAINTS: ReadonlySet<string> = new Set(['on', 'held', 'fading']);
+/** A `fading` paint's own release clock, per element (paintPress). */
+const fadeTimers = new WeakMap<Element, ReturnType<typeof setTimeout>>();
+
+/** The press state painted on `element` now; `null` for a value no painter wrote. */
+export function readPressPaint(element: Element): PressPaint | null {
   const value = element.getAttribute(PRESSED_ATTRIBUTE);
-  return value != null && value !== 'on' && value !== 'fading';
+  if (value == null) {
+    return 'none';
+  }
+  return PAINTS.has(value) ? (value as PressPaint) : null;
 }
-
-/** Who follows the paint of each surface: one registry, no observer. */
-const paintListeners = new WeakMap<Element, Set<(paint: PressPaint) => void>>();
 
 /**
- * Call `listener` with the paint the controller gives `element` each time it
- * changes (`on` once it believes the press, `fading` while the release
- * fades, `none` when it clears), until the returned function runs. One
- * registry serves every surface, so a page of many triggers adds no observer
- * and no listener per trigger. Not exported from the package entry point.
+ * Write `next` on `element` if its state is one of `onlyFrom`: THE ONE
+ * WRITER of the press attribute, for the controller and every other painter
+ * (paintPress), so a fade's clock and the attribute never drift apart. Any
+ * write ends a fade paintPress left running there. Returns whether it wrote.
  */
-export function subscribePressPaint(
+function writePress(
   element: Element,
-  listener: (paint: PressPaint) => void,
-): () => void {
-  let listeners = paintListeners.get(element);
-  if (listeners == null) {
-    listeners = new Set();
-    paintListeners.set(element, listeners);
+  next: PressPaint,
+  onlyFrom: ReadonlyArray<PressPaint> = PRESS_REPLACES,
+): boolean {
+  const current = readPressPaint(element);
+  if (current == null || !onlyFrom.includes(current)) {
+    return false;
   }
-  listeners.add(listener);
-  return () => {
-    const current = paintListeners.get(element);
-    current?.delete(listener);
-    if (current?.size === 0) {
-      paintListeners.delete(element);
-    }
-  };
-}
-
-/** Tell `element`'s subscribers its new paint; one's throw stops no other. */
-function reportPaint(element: Element, paint: PressPaint): void {
-  const listeners = paintListeners.get(element);
-  if (listeners == null) {
-    return;
+  const pending = fadeTimers.get(element);
+  if (pending != null) {
+    clearTimeout(pending);
+    fadeTimers.delete(element);
   }
-  for (const listener of [...listeners]) {
-    try {
-      listener(paint);
-    } catch (error) {
-      queueMicrotask(() => {
-        throw error;
-      });
-    }
-  }
-}
-
-function paintElement(element: HTMLElement, paint: PressPaint): void {
-  if (ownedElsewhere(element)) {
-    return;
-  }
-  const previous = element.getAttribute(PRESSED_ATTRIBUTE) ?? 'none';
-  // A pass-through step repeats the paint it already wrote: writing it again
-  // would only wake every observer of the attribute for nothing.
-  if (previous === paint) {
-    return;
-  }
-  if (paint === 'none') {
+  if (next === 'none') {
     element.removeAttribute(PRESSED_ATTRIBUTE);
-  } else {
-    element.setAttribute(PRESSED_ATTRIBUTE, paint);
+  } else if (current !== next) {
+    element.setAttribute(PRESSED_ATTRIBUTE, next);
   }
-  reportPaint(element, paint);
+  return true;
+}
+
+/**
+ * Paint `next` on `element` if its current press state is in `onlyFrom`
+ * (by default none, on or fading: a hold survives a press, and its owner
+ * releases it with `onlyFrom: ['held']`). A `fading` paint ends on its own
+ * clock. Returns whether it painted. For a painter other than the touch
+ * press controller: a group that tracks its selection, a row that keeps its
+ * selection through a navigation.
+ */
+export function paintPress(
+  element: Element,
+  next: PressPaint,
+  options: PaintPressOptions = {},
+): boolean {
+  if (!writePress(element, next, options.onlyFrom)) {
+    return false;
+  }
+  if (next === 'fading') {
+    fadeTimers.set(
+      element,
+      setTimeout(() => {
+        fadeTimers.delete(element);
+        if (element.getAttribute(PRESSED_ATTRIBUTE) === 'fading') {
+          element.removeAttribute(PRESSED_ATTRIBUTE);
+        }
+      }, options.releaseMs ?? PRESS_FADE_MS),
+    );
+  }
+  return true;
+}
+
+/**
+ * The controller's paint, through the one writer: a state the controller did
+ * not write is its owner's (a `held` row), so neither a new press nor a
+ * release's end overwrites or clears it.
+ */
+function paintElement(element: HTMLElement, paint: GesturePaint): void {
+  // The press is over where its paint goes: its input marker goes with it.
+  if (writePress(element, paint) && paint === 'none') {
+    element.removeAttribute(PRESS_INPUT_ATTRIBUTE);
+  }
 }
 
 function clearTimer(slot: Slot): void {
@@ -468,7 +533,7 @@ function apply(slot: Slot, step: PressStep): void {
           }),
         );
       },
-      kind === 'fade' ? live.releaseMs : TIMER_MS[kind],
+      timerMs(kind, live),
     );
   }
 }
@@ -542,16 +607,9 @@ function finish(slot: Slot): void {
     return;
   }
   clearTimer(slot);
-  const {element} = live;
-  const wasPainted =
-    !ownedElsewhere(element) && element.hasAttribute(PRESSED_ATTRIBUTE);
-  if (wasPainted) {
-    element.removeAttribute(PRESSED_ATTRIBUTE);
-  }
+  writePress(live.element, 'none');
+  live.element.removeAttribute(PRESS_INPUT_ATTRIBUTE);
   slot.live = null;
-  if (wasPainted) {
-    reportPaint(element, 'none');
-  }
   if (slot === button) {
     holdKey(false);
   }
@@ -571,9 +629,10 @@ function takeOver(other: Slot, element: HTMLElement): void {
  * with any other pointer (a finger on a touch screen beside a mouse), as the
  * stylesheet's release arms are (the desktop rule, `spec:AST-017` FR59/DEC-25).
  */
-function releaseMsOf(profile: PressProfile): number {
+function releaseOf(profile: PressProfile): Pick<PressProfile, 'releaseMs'> {
   // The same coarse gate the stylesheet's release arms use.
-  return stylesheetDroppedActive() ? profile.releaseMs : PRESS_FADE_MS;
+  const {releaseMs} = stylesheetDroppedActive() ? profile : PRESS_PROFILES.cell;
+  return {releaseMs};
 }
 
 /**
@@ -623,13 +682,19 @@ function pressButton(
   }
   takeOver(finger, element);
   track();
+  // A mouse or a key keeps the fine pointer's 200 ms release on any surface;
+  // the marker tells the stylesheet's release arms the same.
   button.live = {
     element,
     gesture: idlePressGesture(),
     pointerId,
-    releaseMs: releaseMsOf(profileOf(element)),
+    releaseMs: PRESS_PROFILES.cell.releaseMs,
     timer: null,
   };
+  element.setAttribute(
+    PRESS_INPUT_ATTRIBUTE,
+    pointerId == null ? 'key' : 'mouse',
+  );
   holdKey(pointerId == null);
   apply(button, pressGestureStep(button.live.gesture, {kind: 'buttonDown'}));
 }
@@ -702,7 +767,7 @@ function onPointerDown(event: PointerEvent): void {
     element,
     gesture: idlePressGesture(),
     pointerId: event.pointerId,
-    releaseMs: releaseMsOf(profile),
+    ...releaseOf(profile),
     timer: null,
   };
   apply(

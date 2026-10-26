@@ -34,8 +34,11 @@ const {transformSync} = createRequire(import.meta.url)('@babel/core') as {
   ) => {code?: string; metadata?: unknown} | null;
 };
 
-function compile(): {code: string; rules: Rule[]} {
-  const file = path.resolve(__dirname, 'interactionOverlay.stylex.ts');
+function compile(name = 'interactionOverlay.stylex.ts'): {
+  code: string;
+  rules: Rule[];
+} {
+  const file = path.resolve(__dirname, name);
   const output = transformSync(fs.readFileSync(file, 'utf8'), {
     filename: file,
     babelrc: false,
@@ -96,9 +99,11 @@ describe('press paint under Reduce Motion', () => {
     // The cell redeclares `animationName` for its compositor layer; its own
     // classes must still stop the release under Reduce Motion with a fine
     // pointer, as the shared variant's do.
-    const cell = namespaceClasses(code, 'cell');
+    // The row layer lives in rowPressLayer.ts, off core's published paths.
+    const row = compile('rowPressLayer.ts');
+    const cell = namespaceClasses(row.code, 'cell');
     expect(cell.size).toBeGreaterThan(0);
-    const stop = rules.find(
+    const stop = row.rules.find(
       ([className, {ltr}]) =>
         cell.has(className) &&
         ltr.includes(reducedMotionKeys.instant) &&
@@ -122,12 +127,22 @@ describe('press paint under Reduce Motion', () => {
     expect(curve).toBeDefined();
     // A control's release runs on UIButton's clock; a cell's on the
     // deselect's. The fade outranks both.
-    const controlDuration = control([FADING, 'animation-duration:.25s']);
+    // UIButton's clock: the coarse-pointer clock that is neither the fade nor
+    // a cell's.
+    const controlDuration = rules.find(
+      ([, {ltr}]) =>
+        !ltr.includes(CELL) &&
+        !ltr.includes(fade) &&
+        [FADING, 'animation-duration:', '@media (pointer: coarse)'].every(
+          part => ltr.includes(part),
+        ),
+    );
     expect(duration![2]).toBeGreaterThan(controlDuration![2]);
     const cellFade = rule(rules, [fade, FADING, CELL, 'animation-duration:']);
     const cellDuration = rules.find(
       ([, {ltr}]) =>
         !ltr.includes(fade) &&
+        // The deselect's clock: the table's 200 ms.
         [FADING, CELL, 'animation-duration:.2s'].every(part =>
           ltr.includes(part),
         ),

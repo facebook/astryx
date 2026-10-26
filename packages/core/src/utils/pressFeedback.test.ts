@@ -22,6 +22,7 @@ import {
   rulesDeclaredFor,
   rulesWithSelector,
 } from '../__tests__/pressState';
+import {controlPressConsts} from './controlPressLayer.stylex';
 import {
   interactionOverlayStyles,
   pressConsts,
@@ -29,12 +30,13 @@ import {
 import {
   cellPressableProps,
   installPressFeedback,
+  paintPress,
   PRESS_PROFILES,
   PRESSABLE_ATTRIBUTE,
   PRESSED_ATTRIBUTE,
   PRESS_HOLDS_DRAG_ATTRIBUTE,
+  PRESS_INPUT_ATTRIBUTE,
   pressableProps,
-  subscribePressPaint,
 } from './pressFeedback';
 import {
   PRESS_FADE_MS,
@@ -77,6 +79,23 @@ function pressable(tag = 'div', marker = ''): HTMLElement {
 }
 
 /**
+ * The browser cancels every touch (a real `touchcancel` lists the touches
+ * still down: none).
+ */
+function cancelTouches(): void {
+  const event = new Event('touchcancel');
+  Object.assign(event, {touches: []});
+  window.dispatchEvent(event);
+}
+
+/** The last finger leaves the glass. */
+function lift(element: Element): void {
+  const event = new Event('touchend', {bubbles: true});
+  Object.assign(event, {touches: []});
+  element.dispatchEvent(event);
+}
+
+/**
  * The primary pointer is coarse (a phone, a tablet) until the returned
  * restore runs: jsdom's matchMedia models a desktop, where touch work stays
  * off (`spec:AST-094` FR19).
@@ -96,23 +115,6 @@ function coarsePrimaryPointer(): () => void {
 
 /** Restores every pointer stub a test left, so none leaks into the next. */
 const matchMediaRestorers: (() => void)[] = [];
-
-/**
- * The browser cancels every touch (a real `touchcancel` lists the touches
- * still down: none).
- */
-function cancelTouches(): void {
-  const event = new Event('touchcancel');
-  Object.assign(event, {touches: []});
-  window.dispatchEvent(event);
-}
-
-/** The last finger leaves the glass. */
-function lift(element: Element): void {
-  const event = new Event('touchend', {bubbles: true});
-  Object.assign(event, {touches: []});
-  element.dispatchEvent(event);
-}
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -500,6 +502,25 @@ describe('the release', () => {
     press(rows[0], 'pointercancel', 10, 10);
     expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('held');
   });
+
+  it("another painter's fade never cuts the controller's own release short", () => {
+    // Two writers kept two clocks: a fade another painter left running on
+    // the surface removed the attribute in the middle of the controller's
+    // release. With one writer, any write ends a pending fade.
+    const control = pressable('button');
+    document.body.appendChild(control);
+    paintPress(control, 'fading', {releaseMs: 150});
+    press(control, 'pointerdown', 10, 10);
+    expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
+    vi.advanceTimersByTime(50);
+    press(control, 'pointerup', 10, 10);
+    expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+    // The other painter's clock ran out here: the release is still running.
+    vi.advanceTimersByTime(100);
+    expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+    vi.advanceTimersByTime(PRESS_FADE_MS - 100);
+    expect(control.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+  });
 });
 
 describe('two touches in a row', () => {
@@ -577,6 +598,20 @@ describe('a phone or tablet paints a mouse or Space press itself', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("keeps a mouse or Space press on the fine pointer's 200 ms release, even on a control", () => {
+    const control = document.createElement('button');
+    control.setAttribute(PRESSABLE_ATTRIBUTE, '');
+    rows[1].appendChild(control);
+    press(control, 'pointerdown', 10, 100, 'mouse');
+    expect(control.getAttribute(PRESS_INPUT_ATTRIBUTE)).toBe('mouse');
+    press(control, 'pointerup', 10, 100, 'mouse');
+    expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+    vi.advanceTimersByTime(PRESS_FADE_MS);
+    expect(control.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    expect(control.hasAttribute(PRESS_INPUT_ATTRIBUTE)).toBe(false);
+    control.remove();
   });
 
   it('paints a mouse press at once, holds it, and fades it at the release', () => {
@@ -987,85 +1022,6 @@ describe('what the list pays for it', () => {
     expect(pressedRow()).toBe(1);
   });
 
-  it("reports each change of a surface's paint to its subscribers: on, fading, none", () => {
-    const paints: string[] = [];
-    const stop = subscribePressPaint(rows[0], paint => paints.push(paint));
-    press(rows[0], 'pointerdown', 10, 10);
-    vi.advanceTimersByTime(PRESS_ONSET_MS);
-    press(rows[0], 'pointerup', 10, 10);
-    vi.advanceTimersByTime(PRESS_FADE_MS + 50);
-    expect(paints).toEqual(['on', 'fading', 'none']);
-    stop();
-    press(rows[0], 'pointerdown', 10, 10);
-    vi.advanceTimersByTime(PRESS_ONSET_MS);
-    expect(paints).toHaveLength(3);
-    press(rows[0], 'pointercancel', 10, 10);
-  });
-
-  it('follows 200 subscribed surfaces with no observer and no listener per surface', () => {
-    const observers = vi.fn();
-    vi.stubGlobal('MutationObserver', observers);
-    const added = [
-      vi.spyOn(window, 'addEventListener'),
-      vi.spyOn(document, 'addEventListener'),
-    ];
-    const surfaces = Array.from({length: 200}, () => pressable('button'));
-    const perSurface = surfaces.map(surface =>
-      vi.spyOn(surface, 'addEventListener'),
-    );
-    const stops: (() => void)[] = [];
-    try {
-      for (const surface of surfaces) {
-        stops.push(subscribePressPaint(surface, () => {}));
-      }
-      expect(observers).not.toHaveBeenCalled();
-      for (const spy of [...added, ...perSurface]) {
-        expect(spy).not.toHaveBeenCalled();
-      }
-    } finally {
-      for (const stop of stops) {
-        stop();
-      }
-      for (const spy of [...added, ...perSurface]) {
-        spy.mockRestore();
-      }
-      vi.unstubAllGlobals();
-    }
-  });
-
-  it("keeps reporting to a surface's other subscribers when one throws", () => {
-    const paints: string[] = [];
-    const errors: unknown[] = [];
-    const queued = vi
-      .spyOn(globalThis, 'queueMicrotask')
-      .mockImplementation(callback => {
-        try {
-          callback();
-        } catch (error) {
-          errors.push(error);
-        }
-      });
-    const stops = [
-      subscribePressPaint(rows[1], () => {
-        throw new Error('a broken subscriber');
-      }),
-      subscribePressPaint(rows[1], paint => paints.push(paint)),
-    ];
-    try {
-      press(rows[1], 'pointerdown', 10, 100);
-      vi.advanceTimersByTime(PRESS_ONSET_MS);
-      expect(paints).toEqual(['on']);
-      expect(errors).toHaveLength(1);
-      expect(pressedRow()).toBe(1);
-    } finally {
-      for (const stop of stops) {
-        stop();
-      }
-      queued.mockRestore();
-      press(rows[1], 'pointercancel', 10, 100);
-    }
-  });
-
   it('installs once, however many times it is called, and stays while any holder remains', () => {
     const second = installPressFeedback();
     press(rows[0], 'pointerdown', 10, 10);
@@ -1130,11 +1086,15 @@ describe('the release fades: the arms the controller writes to', () => {
   it("each profile's clock is the stylesheet's constant: one number each", () => {
     expect(PRESS_FADE_MS).toBe(pressConsts.releaseMs);
     expect(PRESS_PROFILES.cell.releaseMs).toBe(pressConsts.releaseMs);
-    expect(pressConsts.controlReleaseMs).toBe(button.highlight.releaseMs);
-    expect(pressConsts.controlReleaseEase).toBe(
+    expect(controlPressConsts.controlReleaseMs).toBe(
+      button.highlight.releaseMs,
+    );
+    expect(controlPressConsts.controlReleaseEase).toBe(
       `cubic-bezier(${button.highlight.releaseCurve.join(', ')})`,
     );
-    expect(PRESS_PROFILES.control.releaseMs).toBe(pressConsts.controlReleaseMs);
+    expect(PRESS_PROFILES.control.releaseMs).toBe(
+      controlPressConsts.controlReleaseMs,
+    );
     expect(hasReleaseFade(surface(interactionOverlayStyles.pressedAlpha))).toBe(
       true,
     );

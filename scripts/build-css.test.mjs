@@ -52,11 +52,18 @@ async function readReleaseClocks() {
     ),
     'utf8',
   );
+  const controlSource = await fs.readFile(
+    path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      '../packages/core/src/utils/controlPressLayer.stylex.ts',
+    ),
+    'utf8',
+  );
   const cell = source.match(/\breleaseMs:\s*(\d+)/);
-  const control = source.match(/\bcontrolReleaseMs:\s*(\d+)/);
+  const control = controlSource.match(/\bcontrolReleaseMs:\s*(\d+)/);
   if (cell == null || control == null) {
     throw new Error(
-      'pressConsts.releaseMs / controlReleaseMs not found in interactionOverlay.stylex.ts',
+      'pressConsts.releaseMs / controlPressConsts.controlReleaseMs not found',
     );
   }
   return {cell: Number(cell[1]), control: Number(control[1])};
@@ -265,7 +272,16 @@ describe('build-css astryx.css', () => {
   describe('the touch press release (utils/interactionOverlay.stylex.ts)', () => {
     /** `.2s`, `200ms`, `0.2s` → 200. */
     const toMs = value => {
-      const match = value.trim().match(/^([\d.]+)(ms|s)$/);
+      // Capped under reduced motion: `min(<clock>, 200ms)`.
+      const capped = /^min\((.+),\s*([\d.]+m?s)\)$/.exec(value.trim());
+      if (capped != null) {
+        return Math.min(toMs(capped[1]), toMs(capped[2]));
+      }
+      // The release plays a theme motion role: `var(--motion-…, 200ms)`.
+      const role = value.trim().match(/^var\(\s*--[\w-]+\s*,\s*(.+)\)$/);
+      const match = (role == null ? value : role[1])
+        .trim()
+        .match(/^([\d.]+)(ms|s)$/);
       return match == null
         ? Number.NaN
         : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
@@ -312,9 +328,17 @@ describe('build-css astryx.css', () => {
       // controller removes the attribute on: a control's by default, a
       // cell's where the marker says `cell`.
       const clocks = await readReleaseClocks();
+      // A mouse or Space press the controller paints on a touch-first device
+      // keeps the deselect clock (`[data-astryx-press-input]`).
+      const input = line => line.includes('[data-astryx-press-input]');
       expect(
-        [...durationsOf(fading.filter(coarse))].sort((a, b) => a - b),
+        [
+          ...durationsOf(fading.filter(line => coarse(line) && !input(line))),
+        ].sort((a, b) => a - b),
       ).toEqual([clocks.cell, clocks.control].sort((a, b) => a - b));
+      expect(
+        durationsOf(fading.filter(line => coarse(line) && input(line))),
+      ).toEqual([clocks.cell]);
       // With any other pointer, the one clock it always had: the deselect's
       // (the desktop rule, `spec:AST-017` FR59/DEC-25).
       expect(durationsOf(fading.filter(line => !coarse(line)))).toEqual([
@@ -399,6 +423,14 @@ describe('build-css astryx.css', () => {
         ? Number.NaN
         : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
     };
+    const durationMs = value => toMs(value);
+    const durationOf = line =>
+      line.match(/animation-duration:\s*([^;}]+)/)?.[1] ?? null;
+    /** A control's release clock: UIButton's, 250 ms (`button.highlight`). */
+    const isControlClock = line => {
+      const duration = durationOf(line);
+      return duration != null && toMs(duration) === 250;
+    };
     const kindOf = line =>
       line.includes('::before')
         ? '::before'
@@ -426,11 +458,11 @@ describe('build-css astryx.css', () => {
 
     it('cross-fades every control release in 200 ms or less where the primary pointer is coarse (DR2)', () => {
       const long = fadingLines().filter(line => {
-        const duration = line.match(/animation-duration:\s*([^;}]+)/);
+        const duration = durationOf(line);
         return (
           duration != null &&
           !line.includes('prefers-reduced-motion') &&
-          toMs(duration[1]) > 200
+          durationMs(duration) > 200
         );
       });
       expect(new Set(long.map(kindOf))).toEqual(
@@ -445,10 +477,7 @@ describe('build-css astryx.css', () => {
         );
         expect(reduced.length, kind).toBeGreaterThan(0);
         for (const line of reduced) {
-          expect(
-            toMs(line.match(/animation-duration:\s*([^;}]+)/)[1]),
-            line,
-          ).toBeLessThanOrEqual(200);
+          expect(durationMs(durationOf(line)), line).toBeLessThanOrEqual(200);
         }
       }
     });
@@ -485,7 +514,7 @@ describe('build-css astryx.css', () => {
         line =>
           kindOf(line) !== 'host' &&
           !line.includes('prefers-reduced-motion') &&
-          /animation-duration:\.25s/.test(line),
+          isControlClock(line),
       );
       expect(layerReleases.length).toBeGreaterThan(0);
       for (const line of layerReleases) {
@@ -498,7 +527,7 @@ describe('build-css astryx.css', () => {
       // it is. UIButton's release clock and curve, and the button's
       // `isolation`, apply only behind the coarse gate.
       const source = await fs.readFile(
-        path.join(ROOT, 'packages/core/src/utils/interactionOverlay.stylex.ts'),
+        path.join(ROOT, 'packages/core/src/utils/controlPressLayer.stylex.ts'),
         'utf8',
       );
       const ms = Number(source.match(/controlReleaseMs:\s*(\d+)/)[1]);
@@ -506,16 +535,22 @@ describe('build-css astryx.css', () => {
         .match(/controlReleaseEase:\s*'([^']+)'/)[1]
         .match(/-?\d*\.?\d+/g)
         .map(point => String(Number(point)).replace(/^0\./, '.'));
-      const clock = `animation-duration:${String(ms / 1000).replace(/^0\./, '.')}s`;
       const curve = `animation-timing-function:cubic-bezier(${points.join(',')})`;
+      const isClock = line =>
+        isControlClock(line) && durationMs(durationOf(line)) === ms;
       const gated = line => /^@media \(pointer: coarse\)\{/.test(line.trim());
       const lines = astryxCss
         .split('\n')
         .filter(line => !line.includes('prefers-reduced-motion'));
-      const control = lines.filter(
-        line => line.includes(clock) || line.includes(curve),
-      );
-      expect(control.length).toBeGreaterThan(0);
+      // The curve as written in the stylesheet, minified or not.
+      const hasCurve = line =>
+        line
+          .replace(/\s+/g, '')
+          .replace(/([(,])0\./g, '$1.')
+          .includes(curve);
+      const control = lines.filter(line => isClock(line) || hasCurve(line));
+      expect(control.some(isClock)).toBe(true);
+      expect(control.some(hasCurve)).toBe(true);
       expect(control.filter(line => !gated(line))).toEqual([]);
       expect(
         lines.some(line => gated(line) && /\{isolation:isolate\}/.test(line)),
@@ -523,19 +558,17 @@ describe('build-css astryx.css', () => {
     });
   });
 
-  describe('the compositor press layer (interactionOverlay.stylex.ts `cell`)', () => {
+  describe('the compositor press layer (rowPressLayer.ts `cell`)', () => {
     /** The cell clock and curve, read off their one stylesheet source. */
     async function readLayerConsts() {
       const source = await fs.readFile(
-        path.join(ROOT, 'packages/core/src/utils/interactionOverlay.stylex.ts'),
+        path.join(ROOT, 'packages/core/src/utils/rowPressLayer.stylex.ts'),
         'utf8',
       );
       const ms = source.match(/cellReleaseMs:\s*(\d+)/);
       const ease = source.match(/cellReleaseEase:\s*'([^']+)'/);
       if (ms == null || ease == null) {
-        throw new Error(
-          'cellPressConsts not found in interactionOverlay.stylex.ts',
-        );
+        throw new Error('cellPressConsts not found in rowPressLayer.stylex.ts');
       }
       return {
         ms: Number(ms[1]),
@@ -543,7 +576,16 @@ describe('build-css astryx.css', () => {
       };
     }
     const toMs = value => {
-      const match = value.trim().match(/^([\d.]+)(ms|s)$/);
+      // Capped under reduced motion: `min(<clock>, 200ms)`.
+      const capped = /^min\((.+),\s*([\d.]+m?s)\)$/.exec(value.trim());
+      if (capped != null) {
+        return Math.min(toMs(capped[1]), toMs(capped[2]));
+      }
+      // The release plays a theme motion role: `var(--motion-…, 200ms)`.
+      const role = value.trim().match(/^var\(\s*--[\w-]+\s*,\s*(.+)\)$/);
+      const match = (role == null ? value : role[1])
+        .trim()
+        .match(/^([\d.]+)(ms|s)$/);
       return match == null
         ? Number.NaN
         : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
@@ -597,14 +639,14 @@ describe('build-css astryx.css', () => {
     /** The control clock and curve, read off the same stylesheet source. */
     async function readControlConsts() {
       const source = await fs.readFile(
-        path.join(ROOT, 'packages/core/src/utils/interactionOverlay.stylex.ts'),
+        path.join(ROOT, 'packages/core/src/utils/controlPressLayer.stylex.ts'),
         'utf8',
       );
       const ms = source.match(/controlReleaseMs:\s*(\d+)/);
       const ease = source.match(/controlReleaseEase:\s*'([^']+)'/);
       if (ms == null || ease == null) {
         throw new Error(
-          'control release not found in interactionOverlay.stylex.ts',
+          'control release not found in controlPressLayer.stylex.ts',
         );
       }
       return {

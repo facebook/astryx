@@ -16,18 +16,15 @@
  * rows). uikit.test.ts enforces both. Durations are in ms; curves are
  * cubic-bézier control points [x1, y1, x2, y2].
  *
- * The deselect's clock and curve are motion roles a theme may retune
- * (motion/roles.ts: `list.deselect.navigationPopMs`,
- * `list.deselect.navigationPopCurve`); the highlight's release is not (see
- * the registration below).
+ * Every value here is a list's own measured motion, an internal constant:
+ * it is no motion role, and no theme variable reaches it.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/motion/MEASUREMENTS.md
- * - /packages/core/src/utils/interactionOverlay.stylex.ts (`cellPressConsts`
+ * - /packages/core/src/utils/rowPressLayer.stylex.ts (`cellPressConsts`
  *   mirrors the cell release; interactionOverlay.cell.test.ts checks it)
  */
 
-import {registerMotionTable} from '../roles';
 import {timing} from './timing';
 
 export const list = {
@@ -51,7 +48,7 @@ export const list = {
      *   the cell's deselect is to be read
      * @measure M-LI01
      */
-    releaseCurve: [0, 0, 0.2, 1],
+    releaseCurve: timing.press.highlightOutCurve,
   },
   deselect: {
     /**
@@ -77,17 +74,3 @@ export const list = {
     navigationPopCurve: [0, 0, 1, 1],
   },
 } as const;
-
-/**
- * Registers the list table's motion roles: each spring, duration and curve
- * above is a role a theme may retune (motion/roles.ts), but for the cell
- * highlight's release, whose clock is the touch press model's
- * (`timing.press.highlightOutMs`, a role of its own) and which the press
- * layer reads at build time (utils/interactionOverlay.stylex.ts
- * `cellPressConsts`), where no theme variable reaches it. Idempotent; the
- * list's touch modules call it before their first motion, so a page that
- * never animates a list ships no list roles.
- */
-export function registerListTable(): void {
-  registerMotionTable('list', list, {exclude: ['highlight']});
-}
