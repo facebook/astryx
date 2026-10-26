@@ -8,6 +8,10 @@
 public struct Button: View {
   public let props: ButtonProps
   @Environment(\.astryx) private var astryx
+  /// Which part of a Button with `href` holds focus: its link, or the button
+  /// it draws while disabled.
+  enum Part: Hashable { case link, button }
+  @FocusState private var focus: Part?
 
   public init(_ props: ButtonProps) {
     self.props = props
@@ -67,13 +71,16 @@ public struct Button: View {
   var isLoading: Bool { props.isLoading == true }
   var isDisabled: Bool { props.isDisabled == true }
 
-  /// The link an enabled button with `href` becomes. A disabled one stays a
-  /// disabled button, as core draws a disabled `<button>`.
-  /// A destination a link never opens leaves an enabled button.
-  var link: URL? {
-    guard !isDisabled, let href = props.href, let safe = Self.safeDestination(href) else { return nil }
+  /// The destination a Button with `href` opens while enabled, or nil when
+  /// it has none or its destination is refused.
+  var destination: URL? {
+    guard let href = props.href, let safe = Self.safeDestination(href) else { return nil }
     return URL(string: safe)
   }
+
+  /// The link an enabled button with `href` becomes. A disabled one draws a
+  /// disabled button, as core draws a disabled `<button>`.
+  var link: URL? { isDisabled ? nil : destination }
 
   /// A destination a link may open, normalized as core's shared rule does, or
   /// nil for a script URL or an HTML document in a `data:` URL, which core's
@@ -112,27 +119,48 @@ public struct Button: View {
   }
 
   @ViewBuilder private var control: some View {
-    if let link {
-      // A link the system opens, read as a link; while loading it stays a
-      // link and opens nothing until loading ends, unless interruptible.
-      SwiftUI.Link(destination: link) { content }
-        .environment(\.openURL, OpenURLAction { _ in
-          let lands = acceptsPress
-          if lands { props.onClick?() }
-          return lands ? .systemAction : .handled
-        })
+    if let destination {
+      // A Button with `href` keeps its link and its disabled button in one
+      // structure; only one is shown and reachable at a time, and focus moves
+      // from the link to the button when it becomes disabled and back, so it
+      // stays inside the component (AST-085 FR4, core Button FR10).
+      ZStack {
+        // A link the system opens, read as a link; while loading it stays a
+        // link and opens nothing until loading ends, unless interruptible.
+        SwiftUI.Link(destination: destination) { content }
+          .environment(\.openURL, OpenURLAction { _ in
+            let lands = acceptsPress
+            if lands { props.onClick?() }
+            return lands ? .systemAction : .handled
+          })
+          .focused($focus, equals: .link)
+          .disabled(isDisabled)
+          .opacity(isDisabled ? 0 : 1)
+          .accessibilityHidden(isDisabled)
+        plainButton
+          .focused($focus, equals: .button)
+          .disabled(!isDisabled)
+          .opacity(isDisabled ? 1 : 0)
+          .accessibilityHidden(!isDisabled)
+      }
+      .onChange(of: isDisabled) { _, disabled in
+        if focus != nil { focus = disabled ? .button : .link }
+      }
     } else {
-      // A disabled Button keeps its focus stop, as core keeps it focusable, so
-      // keyboard users reach it and its tooltip; presses never land. VoiceOver
-      // reads the platform's button, dimmed when disabled, in both states, so
-      // a focused Button that becomes disabled keeps one view structure and
-      // its focus.
-      SwiftUI.Button(action: activate) { content }
-        .accessibilityAddTraits(Self.accessibilityTraits)
-        .accessibilityRepresentation {
-          SwiftUI.Button(accessibilityText, action: activate).disabled(isDisabled)
-        }
+      plainButton
     }
+  }
+
+  /// A disabled Button keeps its focus stop, as core keeps it focusable, so
+  /// keyboard users reach it and its tooltip; presses never land. VoiceOver
+  /// reads the platform's button, dimmed when disabled, in both states, so a
+  /// focused Button that becomes disabled keeps one view structure and focus.
+  private var plainButton: some View {
+    SwiftUI.Button(action: activate) { content }
+      .accessibilityAddTraits(Self.accessibilityTraits)
+      .accessibilityRepresentation {
+        SwiftUI.Button(accessibilityText, action: activate).disabled(isDisabled)
+      }
   }
 
   private var content: some View {

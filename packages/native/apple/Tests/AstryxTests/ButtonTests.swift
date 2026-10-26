@@ -154,3 +154,15 @@ import Testing
   #expect(Astryx.Button.safeDestination("data:image/png;base64,AAAA") != nil)
   #expect(Astryx.Button.safeDestination(" data: text/html,x") == nil)
 }
+
+@MainActor
+@Test func aDisabledButtonWithHrefKeepsItsDestinationForOneStructure() {
+  // The link and the disabled button stay in one structure, so the
+  // destination is known while disabled even though nothing opens.
+  let disabled = Astryx.Button(label: "Docs", isDisabled: true, href: "https://example.com")
+  #expect(disabled.destination == URL(string: "https://example.com"))
+  #expect(disabled.link == nil)
+  #expect(!disabled.acceptsPress)
+  let enabled = Astryx.Button(label: "Docs", href: "https://example.com")
+  #expect(enabled.link == enabled.destination)
+}
