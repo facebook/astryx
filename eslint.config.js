@@ -636,11 +636,12 @@ export default defineConfig(
       '@astryx/copyright-header': 'error',
     },
   },
-  // ── Core's touch module internals ─────────────────────────────────────────
-  // The gesture core, motion, and touch-support's registry and hook are Core's
-  // package-private path: Core and Lab reach the module through
-  // useTouchSupport, and the exports map holds only the public
-  // `@astryxdesign/core/touch-support` entry
+  // ── Core's internal entries ───────────────────────────────────────────────
+  // `@astryxdesign/core/internal/*` (`internal/touch`: useTouchSupport and the
+  // touch module's type) is reserved for Astryx's own packages: undocumented,
+  // outside the public API, and allowed only in Core and Lab. The gesture core
+  // and motion have no entry at all. Apps install the module through the
+  // public `@astryxdesign/core/touch-support` entry
   // (architecture:react-component-runtime INV13). TypeScript files only, so
   // this block stays disjoint from the CLI's `no-restricted-imports` blocks.
   {
@@ -653,7 +654,7 @@ export default defineConfig(
           patterns: [
             {
               group: [
-                '@astryxdesign/core/touch-support/*',
+                '@astryxdesign/core/internal/*',
                 '@astryxdesign/core/gestures',
                 '@astryxdesign/core/gestures/*',
                 '@astryxdesign/core/motion',
@@ -663,7 +664,7 @@ export default defineConfig(
                 '**/core/src/touch-support/**',
               ],
               message:
-                "Core's touch internals are package-private (architecture:react-component-runtime INV13): install the module with `@astryxdesign/core/touch-support`; Core and Lab components reach it through useTouchSupport.",
+                '`@astryxdesign/core/internal/*` is for Core and Lab only, and the gesture core and motion have no entry (architecture:react-component-runtime INV13): install the touch module with `@astryxdesign/core/touch-support`.',
             },
           ],
         },
@@ -797,20 +798,17 @@ export default defineConfig(
             'Register commands with defineCommand(parent, doc, {fn, action}) so --help and the manifest come from the colocated CommandDoc. See CONTRIBUTING > Working on the astryx CLI.',
         },
         {
-          selector:
-            "CallExpression[callee.property.name='padEnd']",
+          selector: "CallExpression[callee.property.name='padEnd']",
           message:
             'Use the formatter kit — record(), records({layout: "inline"}), list() — not .padEnd() (INV23, FR3). See architecture:cli-surface.',
         },
         {
-          selector:
-            "CallExpression[callee.property.name='padStart']",
+          selector: "CallExpression[callee.property.name='padStart']",
           message:
             'Use the formatter kit — record(), records({layout: "inline"}), list() — not .padStart() (INV23, FR3). See architecture:cli-surface.',
         },
         {
-          selector:
-            "CallExpression[callee.property.name='repeat']",
+          selector: "CallExpression[callee.property.name='repeat']",
           message:
             'Use the formatter kit — section(), text(), code() — not .repeat() for layout (INV23, FR3). See architecture:cli-surface.',
         },

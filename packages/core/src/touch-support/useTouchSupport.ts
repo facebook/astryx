@@ -9,7 +9,8 @@
  *   or null
  * @position Internal. The one way a component reaches the global touch and
  *   gesture module (architecture:react-component-runtime INV13); Core imports
- *   it by relative path, and lint keeps it to Core and Lab.
+ *   it by relative path, Lab through `@astryxdesign/core/internal/touch`, an
+ *   entry lint keeps to Core and Lab.
  *
  * Null on the server, in the render that hydrates server HTML (the server
  * snapshot), and on any page that never calls `TouchSupport.install()`: the

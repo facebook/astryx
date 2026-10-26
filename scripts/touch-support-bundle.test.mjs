@@ -9,9 +9,9 @@
  *   boundary claims: Core's public entries carry none of the touch module
  *   until an app installs TouchSupport; a component that reads the module
  *   through useTouchSupport carries none of it, nor the gesture core it
- *   gathers; the install entry carries it;
- *   no export map entry, `.doc.mjs`, or component `import()` reaches the
- *   internals
+ *   gathers, even through the internal `internal/touch` entry; the install
+ *   entry carries it; no other export map entry, `.doc.mjs`, or component
+ *   `import()` reaches the internals
  * @position Node test over source, so it needs no build
  */
 
@@ -135,6 +135,24 @@ export function Glue() {
     expect(bytesOf(bytes, PRIMITIVE_INPUT)).toEqual([]);
   });
 
+  it('is absent from a component that reads useTouchSupport through the internal entry', () => {
+    const glue = entryWith(
+      'internal-glue.tsx',
+      `import {useTouchSupport} from ${JSON.stringify(
+        path.join(CORE_SRC, 'internal/touch.ts'),
+      )};
+export function Glue() {
+  return useTouchSupport() === null ? 'plain' : 'touch';
+}
+`,
+    );
+    const bytes = bytesByInput(glue);
+    expect(
+      bytes['packages/core/src/touch-support/useTouchSupport.ts'],
+    ).toBeGreaterThan(0);
+    expect(bytesOf(bytes, PRIMITIVE_INPUT)).toEqual([]);
+  });
+
   it('is present once the app installs TouchSupport', () => {
     const app = entryWith(
       'app.ts',
@@ -160,13 +178,14 @@ TouchSupport.install();
 });
 
 describe('the touch module internals', () => {
-  it('have no entry in the exports map beside the public TouchSupport entry', () => {
+  it('have no entry in the exports map beside TouchSupport and the internal touch entry', () => {
     const {exports} = JSON.parse(
       fs.readFileSync(path.join(REPO, 'packages/core/package.json'), 'utf8'),
     );
     expect(exports['./touch-support']?.source).toBe(
       './src/touch-support/index.ts',
     );
+    expect(exports['./internal/touch']?.source).toBe('./src/internal/touch.ts');
     const internal = Object.keys(exports).filter(key =>
       /^\.\/(gestures|motion)(\/|$)|^\.\/touch-support\//.test(key),
     );
@@ -179,7 +198,7 @@ describe('the touch module internals', () => {
       ...filesUnder(path.join(REPO, 'packages/cli/assets/docs'), /\.mjs$/),
     ];
     const naming = docs.filter(file =>
-      /\b(GestureArena|GestureRecognizer|useTouchSupport|touchModule|touchSupportRegistry)\b/.test(
+      /\b(GestureArena|GestureRecognizer|useTouchSupport|touchModule|touchSupportRegistry)\b|@astryxdesign\/core\/internal\//.test(
         fs.readFileSync(file, 'utf8'),
       ),
     );
