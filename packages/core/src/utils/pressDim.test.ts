@@ -2,109 +2,71 @@
 
 /**
  * @file pressDim.test.ts
- * @input pressDim.ts with a stubbed Web Animations API and Reduce Motion fade
- * @output Proof that a press dim fades from the opacity on screen on its
- *   clock, takes the Reduce Motion fade when motion is reduced, replaces a
- *   running dim, and hands the element back to its own style at 1
- * @position Unit test beside utils/pressDim.ts (the browser proof is
- *   SegmentedControl's interaction spec, which plays this dim)
+ * @input pressDim.ts with the element's animator stubbed
+ * @output Proof that a press dim plays one opacity curve through the
+ *   element's animator, from the opacity on screen to the target on its clock
+ *   and curve, passes the touch release (the animator's Reduce Motion policy
+ *   decides the rest), and that stopPressDim hands the element back at once
+ * @position Unit test beside utils/pressDim.ts (the animator's own tests
+ *   cover play and Reduce Motion; SegmentedControl's interaction spec plays
+ *   this dim in a browser)
  */
 
-import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import type {MotionCurve} from '../motion/animator';
+import {cubicBezier} from '../motion/bezier';
 import {fadePressDim, stopPressDim} from './pressDim';
 
-const {fade} = vi.hoisted(() => ({
-  fade: vi.fn<() => {duration: number; easing: string} | null>(() => null),
+const {animator} = vi.hoisted(() => ({
+  animator: {
+    opacity: 1,
+    get: vi.fn(() => animator.opacity),
+    play: vi.fn(),
+    set: vi.fn(),
+  },
 }));
-vi.mock('../motion/reducedMotion', () => ({reducedMotionFade: fade}));
+vi.mock('../motion/animator', () => ({animatorFor: () => animator}));
 
-interface FakeAnimation {
-  keyframes: Keyframe[];
-  options: KeyframeAnimationOptions;
-  cancel: ReturnType<typeof vi.fn>;
-  finish: () => void;
-  finished: Promise<unknown>;
-}
-
-let element: HTMLElement;
-let played: FakeAnimation[];
+const CLOCK = {durationMs: 100, curve: [0.25, 0.1, 0.25, 1]} as const;
 
 beforeEach(() => {
-  played = [];
-  element = document.createElement('div');
-  document.body.append(element);
-  element.animate = ((
-    keyframes: Keyframe[],
-    options: KeyframeAnimationOptions,
-  ) => {
-    let finish = () => {};
-    const finished = new Promise(resolve => {
-      finish = () => resolve(undefined);
-    });
-    const animation: FakeAnimation = {
-      keyframes,
-      options,
-      cancel: vi.fn(),
-      finish,
-      finished,
-    };
-    played.push(animation);
-    return animation as unknown as Animation;
-  });
+  animator.opacity = 1;
+  animator.play.mockClear();
+  animator.set.mockClear();
 });
 
-afterEach(() => {
-  fade.mockReset();
-  fade.mockImplementation(() => null);
-  document.body.innerHTML = '';
-});
-
-const CLOCK = {durationMs: 100, curve: [0.25, 0.1, 0.25, 1]};
+function played(): {curve: MotionCurve; options: {touchRelease: boolean}} {
+  const [curves, options] = animator.play.mock.calls.at(-1) as [
+    {opacity: MotionCurve},
+    {touchRelease: boolean},
+  ];
+  return {curve: curves.opacity, options};
+}
 
 describe('fadePressDim', () => {
-  it('fades from the opacity on screen to the target on its clock', () => {
-    element.style.opacity = '0.6';
+  it('plays one opacity curve from the opacity on screen to the target, on the clock and curve', () => {
+    animator.opacity = 0.6;
+    const element = document.createElement('div');
     fadePressDim(element, 0.2, CLOCK);
-    expect(played).toHaveLength(1);
-    expect(played[0].keyframes).toEqual([{opacity: 0.6}, {opacity: 0.2}]);
-    expect(played[0].options).toMatchObject({
-      duration: 100,
-      easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
-      fill: 'forwards',
+    const {curve, options} = played();
+    expect(curve.duration).toBe(0.1);
+    expect(curve.at(0)).toBeCloseTo(0.6, 6);
+    expect(curve.at(0.1)).toBeCloseTo(0.2, 6);
+    const ease = cubicBezier(CLOCK.curve);
+    expect(curve.at(0.05)).toBeCloseTo(0.6 + (0.2 - 0.6) * ease(0.5), 6);
+    expect(curve.velocity(0.05)).toBeLessThan(0);
+    expect(options).toEqual({touchRelease: false});
+  });
+
+  it('passes the touch release to the animator, whose Reduce Motion policy applies', () => {
+    fadePressDim(document.createElement('div'), 1, CLOCK, {
+      touchRelease: true,
     });
+    expect(played().options).toEqual({touchRelease: true});
   });
 
-  it('takes the Reduce Motion fade when motion is reduced, passing the touch release', () => {
-    fade.mockImplementation(() => ({duration: 200, easing: 'ease-in-out'}));
-    fadePressDim(element, 0.2, CLOCK, {touchRelease: true});
-    expect(fade).toHaveBeenCalledWith(element, {touchRelease: true});
-    expect(played[0].options).toMatchObject({
-      duration: 200,
-      easing: 'ease-in-out',
-    });
-  });
-
-  it('replaces a running dim, and stopPressDim drops it', () => {
-    fadePressDim(element, 0.2, CLOCK);
-    fadePressDim(element, 1, CLOCK);
-    expect(played[0].cancel).toHaveBeenCalledTimes(1);
-    stopPressDim(element);
-    expect(played[1].cancel).toHaveBeenCalledTimes(1);
-  });
-
-  it('hands the element back to its own style once a fade to 1 finishes', async () => {
-    fadePressDim(element, 1, CLOCK);
-    played[0].finish();
-    await played[0].finished;
-    await Promise.resolve();
-    expect(played[0].cancel).toHaveBeenCalledTimes(1);
-  });
-
-  it('keeps a dim held (no hand-back below 1)', async () => {
-    fadePressDim(element, 0.2, CLOCK);
-    played[0].finish();
-    await played[0].finished;
-    await Promise.resolve();
-    expect(played[0].cancel).not.toHaveBeenCalled();
+  it('stopPressDim hands the element back to its own style at once', () => {
+    stopPressDim(document.createElement('div'));
+    expect(animator.set).toHaveBeenCalledWith({opacity: 1}, {promote: false});
   });
 });

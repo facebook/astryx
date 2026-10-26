@@ -19,7 +19,13 @@
  */
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {createAnimator, type Animator} from '../motion/animator';
+// The press dim plays for real; the spy records which fades were asked for.
+vi.mock('../utils/pressDim', async importOriginal => {
+  const actual = await importOriginal<typeof import('../utils/pressDim')>();
+  return {...actual, fadePressDim: vi.fn(actual.fadePressDim)};
+});
+import {animatorFor, createAnimator, type Animator} from '../motion/animator';
+import {fadePressDim} from '../utils/pressDim';
 import {solveSpring, toSpring} from '../motion/spring';
 import {segmentedControl, springs} from '../motion/uikit';
 import {measureSegments, segmentTargetAt} from './useSegmentedTouchTracking';
@@ -912,37 +918,26 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
   interface Recorded {
     element: HTMLElement;
     keyframes: Keyframe[];
-    options: KeyframeAnimationOptions;
-    cancel: ReturnType<typeof vi.fn>;
+    options: {duration: number; easing: string; touchRelease: boolean};
   }
-  let recorded: Recorded[] = [];
-  const realAnimate = HTMLElement.prototype.animate;
   const ease = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
+  /** The press dims asked for, as the fade each plays (pressDim.ts). */
+  const recordedCalls = (): Recorded[] =>
+    vi.mocked(fadePressDim).mock.calls.map(([element, to, clock, options]) => ({
+      element,
+      keyframes: [{opacity: to}],
+      options: {
+        duration: clock.durationMs,
+        easing: `cubic-bezier(${clock.curve.join(', ')})`,
+        touchRelease: options?.touchRelease === true,
+      },
+    }));
+  /** The opacity `segment`'s animator shows `ms` from now. */
+  const opacityIn = (segment: HTMLElement, ms: number) =>
+    animatorFor(segment).get('opacity', performance.now() + ms);
 
   beforeEach(() => {
-    recorded = [];
-    HTMLElement.prototype.animate = function (
-      this: HTMLElement,
-      keyframes: Keyframe[] | PropertyIndexedKeyframes | null,
-      options?: number | KeyframeAnimationOptions,
-    ) {
-      const finished = new Promise<void>(() => {});
-      const cancel = vi.fn();
-      if (this.getAttribute('role') !== 'radio') {
-        return {finished, cancel, startTime: null} as unknown as Animation;
-      }
-      recorded.push({
-        element: this,
-        keyframes: keyframes as Keyframe[],
-        options: options as KeyframeAnimationOptions,
-        cancel,
-      });
-      return {finished, cancel} as unknown as Animation;
-    };
-  });
-
-  afterEach(() => {
-    HTMLElement.prototype.animate = realAnimate;
+    vi.mocked(fadePressDim).mockClear();
   });
 
   const titleOf = (segment: HTMLElement): HTMLElement => {
@@ -955,7 +950,7 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
   // A press dims the segment as a whole (an unselected one paints no surface
   // of its own under a finger), into the item target's pressed state.
   const fadesOf = (segment: HTMLElement) =>
-    recorded.filter(r => r.element === segment);
+    recordedCalls().filter(r => r.element === segment);
   const lastFadeOf = (segment: HTMLElement): Recorded => {
     const fade = fadesOf(segment).at(-1);
     if (fade == null) {
@@ -973,22 +968,26 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
     reduceMotion = true;
     const ctx = setup('grid');
     press(ctx, clientCenterOf('list'));
-    const dim = lastFadeOf(ctx.segments.list);
-    expect(dim.keyframes.at(-1)).toEqual({opacity: 0.2});
-    expect(dim.options.duration).toBeGreaterThan(0);
-    expect(dim.options.duration).toBeLessThanOrEqual(200);
-    expect(Object.keys(dim.keyframes[0])).toEqual(['opacity']);
+    expect(lastFadeOf(ctx.segments.list).keyframes.at(-1)).toEqual({
+      opacity: 0.2,
+    });
+    // Mid-fade at 100 ms, done by 200 ms: the animator's fade, not 470 ms.
+    expect(opacityIn(ctx.segments.list, 100)).toBeGreaterThan(0.2);
+    expect(opacityIn(ctx.segments.list, 100)).toBeLessThan(1);
+    expect(opacityIn(ctx.segments.list, 201)).toBeCloseTo(0.2, 3);
     release(ctx, clientCenterOf('list'));
-    const back = lastFadeOf(ctx.segments.list);
-    expect(back.keyframes.at(-1)).toEqual({opacity: 1});
-    expect(back.options.duration).toBeLessThanOrEqual(200);
+    expect(lastFadeOf(ctx.segments.list).keyframes.at(-1)).toEqual({
+      opacity: 1,
+    });
+    expect(lastFadeOf(ctx.segments.list).options.touchRelease).toBe(true);
+    expect(opacityIn(ctx.segments.list, 201)).toBeCloseTo(1, 3);
   });
 
   it('Reduced Motion with any other pointer: the dim changes at once (DR3)', () => {
     reduceMotion = true;
     const ctx = setup('grid', {coarse: false});
     press(ctx, clientCenterOf('list'));
-    expect(lastFadeOf(ctx.segments.list).options.duration).toBe(0);
+    expect(opacityIn(ctx.segments.list, 0)).toBeCloseTo(0.2, 3);
   });
 
   it('a finger on an unselected segment dims its title to 0.2 over 470 ms on CSS ease; the lens stays', () => {
@@ -999,6 +998,8 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
     expect(dim.options.duration).toBe(segmentedControl.pressedTitle.fadeMs);
     expect(dim.options.duration).toBe(470);
     expect(dim.options.easing).toBe(ease);
+    expect(opacityIn(ctx.segments.list, 400)).toBeGreaterThan(0.2);
+    expect(opacityIn(ctx.segments.list, 471)).toBeCloseTo(0.2, 3);
     expect(fadesOf(ctx.segments.grid)).toHaveLength(0);
     expect(ctx.motion.isSliding).toBe(false);
   });
@@ -1006,9 +1007,8 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
   it('the dim moves with the finger into another segment, and never lands on the selected one', () => {
     const ctx = setup('grid');
     press(ctx, clientCenterOf('list'));
-    const first = lastFadeOf(ctx.segments.list);
     drag(ctx, clientCenterOf('table'));
-    expect(first.cancel).toHaveBeenCalled();
+    // A new fade replaces the dim, from the opacity on screen.
     const back = lastFadeOf(ctx.segments.list);
     expect(back.keyframes.at(-1)).toEqual({opacity: 1});
     expect(back.options.duration).toBe(470);
@@ -1031,17 +1031,17 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
     expect(back.options.duration).toBe(segmentedControl.pressedTitle.liftMs);
     expect(back.options.duration).toBe(180);
     expect(back.options.easing).toBe(ease);
-    const fades = recorded.length;
+    const fades = recordedCalls().length;
     select(ctx, 'grid', 'table');
     // The titles take their new faces with the selection: nothing fades.
-    expect(recorded).toHaveLength(fades);
+    expect(recordedCalls()).toHaveLength(fades);
   });
 
   it('a tap on the selected segment dims nothing', () => {
     const ctx = setup('grid');
     press(ctx, clientCenterOf('grid'));
     expect(release(ctx, clientCenterOf('grid'))).toBeNull();
-    expect(recorded).toHaveLength(0);
+    expect(recordedCalls()).toHaveLength(0);
   });
 
   it('during a lifted drag the selected face follows the lens, as a colour only (no weight swap mid-drag)', async () => {
@@ -1060,7 +1060,7 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
       color: 'rgb(110, 110, 110)',
     });
     expect(faceOf(ctx.segments.table)).toEqual(NO_FACE);
-    expect(recorded).toHaveLength(0);
+    expect(recordedCalls()).toHaveLength(0);
     drag(ctx, clientCenterOf('table'));
     await advance(400);
     expect(faceOf(ctx.segments.table).color).toBe('rgb(10, 10, 10)');
@@ -1071,7 +1071,7 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
     for (const segment of Object.values(ctx.segments)) {
       expect(faceOf(segment)).toEqual(NO_FACE);
     }
-    expect(recorded).toHaveLength(0);
+    expect(recordedCalls()).toHaveLength(0);
   });
 
   it('the segment a lifted drag leaves wears an enabled segment’s unselected face, never a disabled one’s', async () => {
@@ -1144,6 +1144,6 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
   it('a programmatic or keyboard change animates no title: the titles switch at once', () => {
     const ctx = setup('grid');
     select(ctx, 'grid', 'table');
-    expect(recorded).toHaveLength(0);
+    expect(recordedCalls()).toHaveLength(0);
   });
 });
