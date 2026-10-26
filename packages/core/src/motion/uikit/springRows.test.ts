@@ -64,7 +64,9 @@ describe('spring rows', () => {
     );
     expect(roles).toContain(FINGER_TRACKING);
     expect(roles).toContain(DIRECT_CHANGE);
-    for (const other of [KEYBOARD, ALERT, SHEET_DETENT]) {
+    // The alert's springs are roles (spec:AST-094 FR4).
+    expect(roles).toContain(ALERT);
+    for (const other of [KEYBOARD, SHEET_DETENT]) {
       expect(roles).not.toContain(other);
     }
   });
