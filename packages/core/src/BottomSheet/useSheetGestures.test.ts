@@ -2494,16 +2494,19 @@ describe('useSheetGestures: the release on the compositor', () => {
     }
   });
 
-  it("keeps a fast throw within the reserve on the theme's release spring too (spec:AST-094 FR4)", () => {
-    // A theme retunes the fast release to a bouncier spring: the cap reads
-    // the spring the release plays, not the table's.
+  it('plays the measured fast release whatever a `--motion-…` variable says, within the reserve (spec:AST-094 FR4 names no sheet role)', () => {
+    // A theme scope that sets the fast release's variable to a bouncier
+    // spring: the sheet's springs are not theme roles, so the release plays
+    // the measured spring and the overshoot cap holds on it.
     const scope = document.createElement('div');
     scope.setAttribute('data-astryx-theme', 'bouncy-release');
-    document.body.append(scope);
+    const plain = document.createElement('div');
+    document.body.append(scope, plain);
     const computed = window.getComputedStyle.bind(window);
     vi.spyOn(window, 'getComputedStyle').mockImplementation(
+      // Custom properties inherit: anything inside the scope reads its value.
       (element: Element, pseudo?: string | null) =>
-        element === scope
+        scope.contains(element)
           ? ({
               getPropertyValue: (name: string) =>
                 name === '--motion-springs-sheet-release-fast'
@@ -2512,22 +2515,27 @@ describe('useSheetGestures: the release on the compositor', () => {
             } as CSSStyleDeclaration)
           : computed(element, pseudo),
     );
-    const {hook} = setup({
-      snapHeights: () => [200],
-      offscreenBlockEndInset: 48,
-    });
-    const t = makeTarget();
-    scope.append(t);
-    const played = recordAnimations(t);
-    down(hook, 0, 0, t);
-    stream(hook, t, {from: 0, to: 150, t0: 0, t1: 600});
-    // Thrown back up at 3000 px/s, released 5 px below fully open.
-    stream(hook, t, {from: 150, to: 5, t0: 600, t1: 648});
-    lift(hook, 5, 650, t);
-    expect(hook.result.current.settledOffset).toBe(0);
-    const release = played.at(-1) as Played;
+    const throwIn = (parent: HTMLElement): Played => {
+      const {hook} = setup({
+        snapHeights: () => [200],
+        offscreenBlockEndInset: 48,
+      });
+      const t = makeTarget();
+      parent.append(t);
+      const played = recordAnimations(t);
+      down(hook, 0, 0, t);
+      stream(hook, t, {from: 0, to: 150, t0: 0, t1: 600});
+      // Thrown back up at 3000 px/s, released 5 px below fully open.
+      stream(hook, t, {from: 150, to: 5, t0: 600, t1: 648});
+      lift(hook, 5, 650, t);
+      expect(hook.result.current.settledOffset).toBe(0);
+      return played.at(-1) as Played;
+    };
+    const themed = throwIn(scope);
+    const measured = throwIn(plain);
     for (let ms = 0; ms <= 600; ms += 4) {
-      expect(travelAt(release, ms)).toBeGreaterThanOrEqual(-48.5);
+      expect(travelAt(themed, ms)).toBeCloseTo(travelAt(measured, ms), 6);
+      expect(travelAt(themed, ms)).toBeGreaterThanOrEqual(-48.5);
     }
   });
 
