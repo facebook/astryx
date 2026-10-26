@@ -13,12 +13,11 @@
  *   this table.
  */
 
-import {describe, expect, it, vi} from 'vitest';
+import {describe, expect, it} from 'vitest';
 import {projectDistance} from '../projection';
-import {listMotionRoles, motionRole, motionRoleOf} from '../roles';
 import {solveSpring, toSpring} from '../spring';
 import {UIKIT_GESTURES} from './gestures';
-import {registerSliderTable, slider} from './slider';
+import {slider} from './slider';
 
 /** The lab's slider: 300 pt long, value 0…1. */
 const TRACK = 300;
@@ -111,51 +110,6 @@ function rms(errors: ReadonlyArray<number>): number {
 describe('slider under Reduce Motion', () => {
   it('keeps no motion of its own under Reduce Motion (design:reduced-motion DR4)', () => {
     expect(Object.keys(slider)).not.toContain('reducedMotion');
-  });
-});
-
-describe('slider table registration', () => {
-  it('registers nothing on import: its roles appear once registerSliderTable runs', async () => {
-    vi.resetModules();
-    const roles = await import('../roles');
-    const table = await import('./slider');
-    const sliderRoles = () =>
-      roles
-        .listMotionRoles()
-        .map(role => role.id)
-        .filter(id => id.startsWith('slider.'))
-        .sort();
-    expect(sliderRoles()).toEqual([]);
-    table.registerSliderTable();
-    // Idempotent: every touch module that animates with it may call it.
-    table.registerSliderTable();
-    expect(sliderRoles()).toEqual([
-      'slider.dropSpring',
-      'slider.liftSpring',
-      'slider.releaseSpring',
-    ]);
-  });
-});
-
-describe('slider motion roles', () => {
-  registerSliderTable();
-
-  it('registers its three springs, and nothing else, as roles a theme may retune', () => {
-    const ids = listMotionRoles()
-      .map(role => role.id)
-      .filter(id => id.startsWith('slider.'));
-    expect(ids).toEqual([
-      'slider.dropSpring',
-      'slider.liftSpring',
-      'slider.releaseSpring',
-    ]);
-    expect(motionRole('slider.releaseSpring')).toMatchObject({
-      kind: 'spring',
-      variable: '--motion-slider-release-spring',
-      value: slider.releaseSpring,
-    });
-    // The animator resolves a role from the very object it is handed.
-    expect(motionRoleOf(slider.liftSpring)?.id).toBe('slider.liftSpring');
   });
 });
 

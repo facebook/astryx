@@ -3,9 +3,7 @@
 /**
  * @file slider.ts
  * @input Nothing; data only
- * @output Exports `slider` and `registerSliderTable` (its motion roles,
- *   registered by the touch module that animates with it): UISlider's thumb
- *   hit target, its tracking rule
+ * @output Exports `slider`: UISlider's thumb hit target, its tracking rule
  *   (the value follows the pan's translation over the track's length), the
  *   release coast (spring, projection rate and share), the thumb's lift and
  *   drop springs and scale, and the end-of-track haptic. It sets no Reduce
@@ -40,15 +38,11 @@
  * `@measure` task that will confirm or replace them. uikit.test.ts enforces
  * both.
  *
- * The three springs are motion roles a theme may retune
- * (`slider.releaseSpring`, `slider.liftSpring`, `slider.dropSpring`); the
- * hit target, tracking gain, projection, scale and haptic are not motion.
+ * Every value is an internal constant: touch motion has no theme surface,
+ * and `spec:AST-094` FR4 names no slider role.
  *
  * SYNC: When modified, update /packages/core/src/motion/uikit/slider.test.ts
- * and run `pnpm generate:motion-roles`
  */
-
-import {registerMotionTable} from '../roles';
 
 /**
  * UISlider's touch values: hit target, tracking, release coast, lift, drop
@@ -157,13 +151,3 @@ export const slider = {
    */
   endHaptic: 'impactMedium',
 } as const;
-
-/**
- * Makes the table's three springs motion roles a theme may retune
- * (motion/roles.ts). Nothing registers on import: the slider's touch module
- * calls it once before its first animation (it is idempotent), so a page that
- * never animates a slider ships no registry.
- */
-export function registerSliderTable(): void {
-  registerMotionTable('slider', slider);
-}
