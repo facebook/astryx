@@ -31,14 +31,17 @@ system_specs: []
 ## Intent
 
 Switch presents a labeled boolean control whose change takes effect immediately.
-This draft records current consumer anatomy and theming ownership without
-changing runtime behavior, styling, targets, or public API.
+Under a touch presentation it follows a finger the way the iOS switch does
+(FR4–FR6); with a mouse, a keyboard or assistive technology its behavior,
+styling and targets are unchanged.
 
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: additive documentation only; runtime, DOM, styling,
-  targets, and public API remain unchanged
+- Compatibility class: additive; a touch presentation adds the finger
+  behavior (FR4–FR6) and the `switch-thumb` target's guaranteed
+  `aspectRatio` (FR4); mouse, keyboard and assistive-technology behavior,
+  the DOM, and the public props remain unchanged
 - Controlled/uncontrolled behavior: unchanged; Switch remains controlled
 - Migration decision: none
 

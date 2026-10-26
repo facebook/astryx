@@ -1173,7 +1173,7 @@ describe('touch listeners (spec:AST-094 FR24)', () => {
 
   // React's root delegates touch events too: count against a plain element.
   const touchListenersWhileRendering = (
-    isDisabled: boolean | 'none',
+    isDisabled: boolean | 'none' | 'busy',
   ): number => {
     vi.spyOn(window, 'matchMedia').mockImplementation(coarseMedia);
     const types: string[] = [];
@@ -1194,7 +1194,8 @@ describe('touch listeners (spec:AST-094 FR24)', () => {
           label="Notifications"
           value={false}
           onChange={() => {}}
-          isDisabled={isDisabled}
+          isDisabled={isDisabled === true}
+          isLoading={isDisabled === 'busy'}
         />
       ),
     );
@@ -1209,6 +1210,8 @@ describe('touch listeners (spec:AST-094 FR24)', () => {
     const baseline = touchListenersWhileRendering('none');
     expect(touchListenersWhileRendering(false)).toBeGreaterThan(baseline);
     expect(touchListenersWhileRendering(true)).toBe(baseline);
+    // Busy stays attached, so the change that made it busy keeps its motion.
+    expect(touchListenersWhileRendering('busy')).toBeGreaterThan(baseline);
   });
 });
 

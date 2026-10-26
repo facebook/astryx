@@ -956,6 +956,7 @@ export function Switch({
   useSwitchTouch(touchParts, {
     isOn,
     isInteractive: !isDisabled && !isBusy,
+    isDisabled,
     trackSize: TRACK_SIZE[size],
     otherTrackProps: trackPropsFor(!isOn),
   });

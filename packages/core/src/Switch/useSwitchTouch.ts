@@ -129,6 +129,12 @@ export interface SwitchTouchOptions {
   readonly isOn: boolean;
   /** False while disabled or busy: no touch is tracked. */
   readonly isInteractive: boolean;
+  /**
+   * Disabled: the touch presentation is off and attaches nothing (FR24). A
+   * busy switch stays attached, so a change that starts a busy state still
+   * plays its release motion.
+   */
+  readonly isDisabled: boolean;
   /** The track's box, px (width × height): the thumb geometry's scale. */
   readonly trackSize: readonly [number, number];
   /**
@@ -963,7 +969,13 @@ export class SwitchTouchController {
  */
 export function useSwitchTouch(
   parts: SwitchTouchParts,
-  {isOn, isInteractive, trackSize, otherTrackProps}: SwitchTouchOptions,
+  {
+    isOn,
+    isInteractive,
+    isDisabled,
+    trackSize,
+    otherTrackProps,
+  }: SwitchTouchOptions,
 ): void {
   const {isTouch} = useTouchPresentation();
   const [trackWidth, trackHeight] = trackSize;
@@ -996,11 +1008,12 @@ export function useSwitchTouch(
     const input = parts.input.current;
     const thumb = parts.thumb.current;
     const track = parts.track.current;
-    // A disabled or busy switch takes no touch: no touch-only listener is
-    // active (spec:AST-094 FR24).
+    // A disabled switch takes no touch: no touch-only listener is active
+    // (spec:AST-094 FR24). A busy one stays attached (setInteractive ignores
+    // its presses), so the change that made it busy keeps its motion.
     if (
       !isTouch ||
-      !isInteractive ||
+      isDisabled ||
       surface == null ||
       input == null ||
       thumb == null ||
@@ -1010,5 +1023,5 @@ export function useSwitchTouch(
     }
     controller.attach({surface, input, thumb, track});
     return () => controller.detach();
-  }, [controller, isTouch, isInteractive, parts]);
+  }, [controller, isTouch, isDisabled, parts]);
 }
