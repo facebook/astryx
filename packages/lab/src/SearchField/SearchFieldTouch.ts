@@ -43,6 +43,7 @@ import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
 /** The refs SearchField puts on the parts the touch layer moves. */
 export interface SearchFieldMotion {
   rootRef: (element: HTMLElement | null) => void;
+  /** The field box: the touch layer scales its ::after, the middle. */
   middleRef: (element: HTMLElement | null) => void;
   endRef: (element: HTMLElement | null) => void;
   closeRef: (element: HTMLElement | null) => void;
@@ -64,7 +65,9 @@ export function useSearchFieldMotion({
   lift: number;
 }): SearchFieldMotion {
   const rootAnimator = useAnimator();
-  const middleAnimator = useAnimator();
+  // The middle is the field's ::after (decoration, so a pseudo-element:
+  // architecture:component-style-authoring INV7).
+  const middleAnimator = useAnimator({pseudoElement: '::after'});
   const endAnimator = useAnimator();
   const closeAnimator = useAnimator();
   const {isTouch} = useTouchPresentation();

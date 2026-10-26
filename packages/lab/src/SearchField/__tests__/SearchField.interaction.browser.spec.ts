@@ -8,7 +8,8 @@
  * @output Proofs that SearchField activates and cancels like UIKit's search
  *   bar on iOS 26.2: a tap narrows the field and slides the glass close
  *   button in on UIKit's 383 ms ease-in-ease-out, every part on one clock,
- *   within half a pixel; the lift rides the same clock; the close button
+ *   within half a pixel (the middle, the field's ::after, read through
+ *   pseudoParts.ts); the lift rides the same clock; the close button
  *   cancels on the same clock, sliding out at full opacity; a cancel
  *   mid-activation turns around from where the parts are; the activation
  *   keeps advancing every frame through a blocked main thread and does no
@@ -51,6 +52,7 @@ import {
 } from '@astryxdesign/interaction-harness';
 
 import {readFades, recordFades} from './fadeRecorder';
+import {MIDDLE, partBox, samplePart, waitForPartRest} from './pseudoParts';
 
 const storybook = withStorybook(test);
 
@@ -103,7 +105,6 @@ async function openField(page: Page, story = 'default') {
 
 const root = (page: Page) => page.getByRole('search');
 const end = (page: Page) => page.locator('[data-search-field-end]');
-const middle = (page: Page) => page.locator('[data-search-field-middle]');
 const close = (page: Page) => page.locator('[data-search-field-close]');
 
 async function centerOf(locator: Locator) {
@@ -198,12 +199,13 @@ test('a tap activates on UIKit’s clock: the field narrows and the close button
   await expect(root(page)).toHaveAttribute('data-search-field-active', 'true');
 
   const ends = await sampleCurve(end(page), times);
-  const middles = await sampleCurve(middle(page), times);
+  // The middle is the field's ::after (pseudoParts.ts).
+  const middles = await samplePart(page, MIDDLE, times);
   const closes = await sampleCurve(close(page), times);
   const samples = times.map((t, i) => ({
     t: +t.toFixed(1),
     endX: ends[i].transform.translateX,
-    middleScale: middles[i].transform.scaleX,
+    middleScale: middles[i].scaleX,
     closeX: closes[i].transform.translateX,
     closeOpacity: closes[i].opacity,
     analytic: {
@@ -665,36 +667,45 @@ test('the CSS form of the active pose, painted before hydration, matches the pla
   await driver.tap(await centerOf(field));
   await expect(root(page)).toHaveAttribute('data-search-field-active', 'true');
   await waitForRest(end(page));
-  await waitForRest(middle(page));
-  const rects = () =>
-    page.evaluate(() => {
-      const read = (selector: string) => {
-        const rect = (
-          document.querySelector(selector) as HTMLElement
-        ).getBoundingClientRect();
-        return {left: rect.left, right: rect.right};
-      };
-      return {
-        end: read('[data-search-field-end]'),
-        middle: read('[data-search-field-middle]'),
-      };
+  await waitForPartRest(page, MIDDLE);
+  // The trailing end is an element; the middle is the field's ::after.
+  const rects = async () => {
+    const endBox = await end(page).evaluate(element => {
+      const rect = element.getBoundingClientRect();
+      return {left: rect.left, right: rect.right};
     });
+    const middleBox = await partBox(page, MIDDLE);
+    return {
+      end: endBox,
+      middle: {left: middleBox.left, right: middleBox.right},
+    };
+  };
   const placed = await rects();
   // As a server render paints it: no placement yet, no held values.
   await page.evaluate(() => {
     const searchRoot = document.querySelector('[role="search"]') as HTMLElement;
     searchRoot.removeAttribute('data-search-field-placed');
-    for (const selector of [
+    const endPart = document.querySelector(
       '[data-search-field-end]',
-      '[data-search-field-middle]',
+    ) as HTMLElement;
+    const fieldBox = document.querySelector('[role="searchbox"]')
+      ?.parentElement as HTMLElement;
+    // The end's own animations, and the field's ::after (the middle), which
+    // the animator holds with a static filling animation.
+    for (const animation of [
+      ...endPart.getAnimations(),
+      ...fieldBox
+        .getAnimations({subtree: true})
+        .filter(
+          animation =>
+            (animation.effect as KeyframeEffect | null)?.pseudoElement ===
+            '::after',
+        ),
     ]) {
-      const element = document.querySelector(selector) as HTMLElement;
-      for (const animation of element.getAnimations()) {
-        animation.cancel();
-      }
-      element.style.removeProperty('translate');
-      element.style.removeProperty('scale');
+      animation.cancel();
     }
+    endPart.style.removeProperty('translate');
+    endPart.style.removeProperty('scale');
   });
   const css = await rects();
   for (const part of ['end', 'middle'] as const) {
@@ -762,13 +773,27 @@ test.describe('with a mouse', () => {
       'data-search-field-active',
       'true',
     );
-    const running = await page.evaluate(
+    // No animation moves anything. (The animator holds the middle, a
+    // pseudo-element with no inline style, by a static filling animation
+    // whose keyframes keep one value.)
+    const moving = await page.evaluate(
       () =>
-        document
-          .querySelector('[role="search"]')
-          ?.getAnimations({subtree: true}).length ?? 0,
+        (
+          document
+            .querySelector('[role="search"]')
+            ?.getAnimations({subtree: true}) ?? []
+        ).filter(animation => {
+          const frames =
+            (animation.effect as KeyframeEffect | null)?.getKeyframes() ?? [];
+          return Object.keys(frames[0] ?? {}).some(
+            key =>
+              !['offset', 'computedOffset', 'easing', 'composite'].includes(
+                key,
+              ) && new Set(frames.map(frame => String(frame[key]))).size > 1,
+          );
+        }).length,
     );
-    expect(running).toBe(0);
+    expect(moving).toBe(0);
     expect(await translateX(end(page))).toBeCloseTo(-NARROWING, 1);
     expect(await translateX(close(page))).toBeCloseTo(0, 1);
     await close(page).click();

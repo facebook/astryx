@@ -36,7 +36,7 @@
  * and the glass close button slides in from 44 px past its place while it
  * fades in. Every part moves on the compositor (translate, scale, opacity),
  * so the activation keeps moving while the page's script runs. The field
- * narrows without re-laying out: its background is three pieces, two
+ * narrows without re-laying out: its background is three pseudo-elements, two
  * rounded ends and a middle that scales, and the trailing end slides.
  *
  * The close button cancels: it clears the text, ends editing (the keyboard
@@ -166,29 +166,49 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     minWidth: 0,
+    // The background pseudo-elements paint under the magnifier and the
+    // text, inside the field's own stacking context.
+    isolation: 'isolate',
   },
   fieldHeight: (height: string) => ({height}),
   // The background: two rounded ends and a middle that scales, so the field
-  // narrows on the compositor without re-laying out.
-  piece: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    backgroundColor: colorVars['--color-background-muted'],
-    pointerEvents: 'none',
-  },
-  start: (cap: string) => ({
-    insetInlineStart: 0,
-    width: cap,
-    borderStartStartRadius: cap,
-    borderEndStartRadius: cap,
-  }),
-  middle: (cap: string) => ({
-    insetInlineStart: cap,
-    insetInlineEnd: cap,
-    transformOrigin: {
-      default: 'left center',
-      ':is([dir="rtl"] *)': 'right center',
+  // narrows on the compositor without re-laying out. They are decoration
+  // with no role and no theme target, so they are pseudo-elements
+  // (architecture:component-style-authoring INV7): the leading end is the
+  // field's ::before, the middle its ::after (the touch layer scales it), and
+  // the trailing end the trailing part's ::before (endCap), which moves with
+  // it.
+  background: (cap: string) => ({
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      insetInlineStart: 0,
+      zIndex: -1,
+      width: cap,
+      borderStartStartRadius: cap,
+      borderEndStartRadius: cap,
+      backgroundColor: colorVars['--color-background-muted'],
+      pointerEvents: 'none',
+    },
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      insetInlineStart: cap,
+      insetInlineEnd: cap,
+      zIndex: -1,
+      backgroundColor: colorVars['--color-background-muted'],
+      pointerEvents: 'none',
+      transformOrigin: {
+        default: 'left center',
+        ':is([dir="rtl"] *)': 'right center',
+      },
+      // The animator promotes the scaling middle through this property on
+      // the field while it moves (motion/animator.ts, "Promotion").
+      willChange: 'var(--astryx-motion-will-change-after, auto)',
     },
   }),
   end: {
@@ -201,17 +221,21 @@ const styles = stylex.create({
     justifyContent: 'flex-end',
     pointerEvents: 'none',
   },
-  // One px wider than the rounded end, reaching under the middle so the two
-  // never show an antialiased seam while they move.
+  // The trailing end's ::before: one px wider than the rounded end, reaching
+  // under the middle so the two never show an antialiased seam while they
+  // move.
   endCap: (cap: string) => ({
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    insetInlineEnd: 0,
-    width: `calc(${cap} + 1px)`,
-    borderStartEndRadius: cap,
-    borderEndEndRadius: cap,
-    backgroundColor: colorVars['--color-background-muted'],
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      insetInlineEnd: 0,
+      width: `calc(${cap} + 1px)`,
+      borderStartEndRadius: cap,
+      borderEndEndRadius: cap,
+      backgroundColor: colorVars['--color-background-muted'],
+    },
   }),
   magnifier: {
     position: 'relative',
@@ -305,14 +329,23 @@ const styles = stylex.create({
   // opacity at 0) and takes no taps.
   // The active pose before the touch layer places the parts (a server
   // render, or the first paint before hydration): the trailing end already
-  // moved in by the close button and its gap, and the middle short by the
-  // same 55 px (`search.stacked.closeGap + closeSize`, kept equal by a test).
-  // The touch layer marks the root placed in its first layout, in the same
-  // task as it sets the parts' held values, which then take over.
+  // moved in by the close button and its gap, and the middle (the field's
+  // ::after) short by the same 55 px (`search.stacked.closeGap +
+  // closeSize`, kept equal by a test). The touch layer marks the root placed
+  // in its first layout, in the same task as it sets the parts' held values,
+  // which then take over.
   beforePlacement: {
     marginInlineEnd: {
       default: null,
       ':is([data-search-field-active]:not([data-search-field-placed]) *)': 55,
+    },
+  },
+  middleBeforePlacement: {
+    '::after': {
+      marginInlineEnd: {
+        default: null,
+        ':is([data-search-field-active]:not([data-search-field-placed]) *)': 55,
+      },
     },
   },
   // The resting (inactive) close button, in CSS so a server-rendered page
@@ -510,19 +543,13 @@ export function SearchField({
         style,
       )}>
       <div
-        ref={fieldRef}
-        {...stylex.props(styles.field, styles.fieldHeight(px(fieldHeight)))}>
-        <span aria-hidden {...stylex.props(styles.piece, styles.start(cap))} />
-        <span
-          ref={motion.middleRef}
-          aria-hidden
-          data-search-field-middle=""
-          {...stylex.props(
-            styles.piece,
-            styles.middle(cap),
-            styles.beforePlacement,
-          )}
-        />
+        ref={useMergedRefs(fieldRef, motion.middleRef)}
+        {...stylex.props(
+          styles.field,
+          styles.fieldHeight(px(fieldHeight)),
+          styles.background(cap),
+          styles.middleBeforePlacement,
+        )}>
         <Icon
           icon="search"
           size="sm"
@@ -552,8 +579,11 @@ export function SearchField({
         <div
           ref={motion.endRef}
           data-search-field-end=""
-          {...stylex.props(styles.end, styles.beforePlacement)}>
-          <span aria-hidden {...stylex.props(styles.endCap(cap))} />
+          {...stylex.props(
+            styles.end,
+            styles.endCap(cap),
+            styles.beforePlacement,
+          )}>
           {showsClear ? (
             <button
               type="button"
