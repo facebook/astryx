@@ -25,7 +25,6 @@ interface Entry {
   x?: number;
   y?: number;
   scale?: number;
-  handoff?: boolean;
   beganAt?: number | null;
   startedAt?: number;
 }
@@ -83,7 +82,6 @@ document.body.innerHTML = `
     </div>
     <div id="passive" style="height: 60px; background: #dfd; touch-action: pan-y pinch-zoom">passive control</div>
     <div id="card" style="height: 80px; background: #def">card (swipe up)</div>
-    <div id="cardLate" style="height: 80px; background: #fed">card, claims only when it begins</div>
     <div style="height: 1600px">page</div>
   </div>`;
 
@@ -138,30 +136,15 @@ const sheet = new PanGestureRecognizer({
   name: 'sheet',
   direction: 'down',
   scrollEdge: true,
-  scrollHandoff: true,
 });
-record(sheet, () => ({
-  y: sheet.translation().y,
-  handoff: sheet.isHandoff,
-}));
+record(sheet, () => ({y: sheet.translation().y}));
 host.attach(element('sheetBody'), sheet);
 
 // A one-way pan over the scrollable page, as a toast's upward swipe is: it
-// claims its direction from 5 px, before WebKit's scroll at 10–11 px.
+// claims its touch as it begins, at UIKit's 10 pt (spec:AST-094 FR19).
 const card = new PanGestureRecognizer({name: 'card', direction: 'up'});
 record(card, () => ({x: card.translation().x, y: card.translation().y}));
 host.attach(element('card'), card);
-// The same pan claiming only when it begins at 10 px, for comparison.
-const cardLate = new PanGestureRecognizer({
-  name: 'cardLate',
-  direction: 'up',
-  claimDistance: null,
-});
-record(cardLate, () => ({
-  x: cardLate.translation().x,
-  y: cardLate.translation().y,
-}));
-host.attach(element('cardLate'), cardLate);
 
 // A control with no recognizer of its own (no blocking listener): only a
 // press consumer, under pan-y, as a passive switch is.

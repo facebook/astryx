@@ -6,7 +6,8 @@
  *   static server over a built Storybook
  * @output `phone` (the touch-phone browser context every interaction proof
  *   runs in), `withStorybook` (serve the built Storybook for a spec file), and
- *   `openStory` (load one story and wait until it has rendered).
+ *   `openStory` (load one story, with Storybook's highlight module off, and
+ *   wait until it has rendered).
  * @position Stories are the reproduction path, as for every other browser
  *   check in this repository: a scenario used for verification is checked in,
  *   not built in a one-off page.
@@ -59,13 +60,47 @@ export function withStorybook(test: TestType<any, any>): () => string {
   };
 }
 
-/** Loads a story in the page and waits for its first render, its fonts and two frames. */
+/** Pages whose Storybook highlight module `openStory` turned off. */
+const highlightOff = new WeakSet<Page>();
+
+export interface OpenStoryOptions {
+  /**
+   * Keeps Storybook's highlight module on. It is off by default: when on, it
+   * observes `#storybook-root` and, on every insertion, reads the computed
+   * style of every element on the page inside the inserting task, so a proof
+   * would measure Storybook as well as the component.
+   */
+  readonly storybookHighlight?: boolean;
+}
+
+/**
+ * Loads a story in the page and waits for its first render, its fonts and two
+ * frames. Storybook's highlight module is off (see `OpenStoryOptions`), and
+ * that is checked: its root element must be absent once the story renders.
+ */
 export async function openStory(
   page: Page,
   origin: string,
   storyId: string,
   args?: Readonly<Record<string, string>>,
+  {storybookHighlight = false}: OpenStoryOptions = {},
 ): Promise<void> {
+  if (storybookHighlight) {
+    if (highlightOff.has(page)) {
+      throw new Error(
+        "openStory: this page already turned Storybook's highlight module off; open the story in a new page to keep it on",
+      );
+    }
+  } else if (!highlightOff.has(page)) {
+    highlightOff.add(page);
+    // Storybook's highlight module returns at once when this is set before
+    // its preview runs.
+    await page.addInitScript(() => {
+      (
+        globalThis as unknown as {__STORYBOOK_HIGHLIGHT_INITIALIZED?: boolean}
+      ).__STORYBOOK_HIGHLIGHT_INITIALIZED = true;
+    });
+  }
   const params = new URLSearchParams({id: storyId, viewMode: 'story'});
   if (args != null) {
     params.set(
@@ -86,6 +121,14 @@ export async function openStory(
       requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
     );
   });
+  if (
+    !storybookHighlight &&
+    (await page.locator('#storybook-highlights-root').count()) > 0
+  ) {
+    throw new Error(
+      "openStory: Storybook's highlight module is on (#storybook-highlights-root exists), so every insertion would also read the style of every element on the page; this Storybook may no longer read __STORYBOOK_HIGHLIGHT_INITIALIZED",
+    );
+  }
 }
 
 /** Resolves after `count` animation frames have been presented in the page. */
@@ -93,26 +136,52 @@ export async function frames(page: Page, count = 2): Promise<void> {
   await page.evaluate(
     n =>
       new Promise<void>(resolve => {
+        // The page's real frames, even while a timer gate holds its callbacks.
+        const frame =
+          (
+            window as unknown as {
+              __harnessTimerGate?: {frame: typeof requestAnimationFrame};
+            }
+          ).__harnessTimerGate?.frame ?? requestAnimationFrame;
         let left = n;
-        const tick = () =>
-          --left <= 0 ? resolve() : requestAnimationFrame(tick);
-        requestAnimationFrame(tick);
+        const tick = () => (--left <= 0 ? resolve() : frame(tick));
+        frame(tick);
       }),
     count,
   );
 }
 
+// A held callback is queued under its timer or frame id, so the page's own
+// clearTimeout and cancelAnimationFrame still cancel it while frozen; a held
+// frame callback gets the time it actually runs at. `frame` and `timeout`
+// stay the real requestAnimationFrame and setTimeout, for the harness's own
+// waits.
 const TIMER_GATE = `(() => {
   if (window.__harnessTimerGate) return;
-  const gate = {frozen: false, queue: []};
-  window.__harnessTimerGate = gate;
   const realTimeout = window.setTimeout.bind(window);
+  const realClearTimeout = window.clearTimeout.bind(window);
   const realInterval = window.setInterval.bind(window);
   const realFrame = window.requestAnimationFrame.bind(window);
-  const hold = run => (gate.frozen ? gate.queue.push(run) : run());
-  window.setTimeout = (fn, ms, ...args) => realTimeout(() => hold(() => (typeof fn === 'function' ? fn(...args) : 0)), ms);
+  const realCancelFrame = window.cancelAnimationFrame.bind(window);
+  const gate = {frozen: false, queue: [], frame: realFrame, timeout: realTimeout};
+  window.__harnessTimerGate = gate;
+  const drop = key => { gate.queue = gate.queue.filter(entry => entry.key !== key); };
+  window.setTimeout = (fn, ms, ...args) => {
+    const id = realTimeout(() => {
+      const run = () => (typeof fn === 'function' ? fn(...args) : 0);
+      if (gate.frozen) gate.queue.push({key: 't' + id, run}); else run();
+    }, ms);
+    return id;
+  };
+  window.clearTimeout = id => { realClearTimeout(id); drop('t' + id); };
   window.setInterval = (fn, ms, ...args) => realInterval(() => { if (!gate.frozen && typeof fn === 'function') fn(...args); }, ms);
-  window.requestAnimationFrame = fn => realFrame(time => hold(() => fn(gate.frozen ? performance.now() : time)));
+  window.requestAnimationFrame = fn => {
+    const id = realFrame(time => {
+      if (gate.frozen) gate.queue.push({key: 'f' + id, run: () => fn(performance.now())}); else fn(time);
+    });
+    return id;
+  };
+  window.cancelAnimationFrame = id => { realCancelFrame(id); drop('f' + id); };
 })()`;
 
 /**
@@ -129,7 +198,8 @@ export async function installTimerGate(page: Page): Promise<void> {
  * Holds every gated timer and frame callback until `thawTimers`, so a
  * component cannot finish an animation behind a held storyboard's back (a
  * transitionend backstop timer, a cleanup render). Callbacks that come due
- * meanwhile run, in order, on thaw; intervals skip their frozen ticks.
+ * meanwhile run, in order, on thaw, unless the page cancels them first
+ * (clearTimeout, cancelAnimationFrame); intervals skip their frozen ticks.
  */
 export async function freezeTimers(page: Page): Promise<void> {
   await page.evaluate(() => {
@@ -149,15 +219,19 @@ export async function thawTimers(page: Page): Promise<void> {
   await page.evaluate(() => {
     const gate = (
       window as unknown as {
-        __harnessTimerGate?: {frozen: boolean; queue: (() => void)[]};
+        __harnessTimerGate?: {
+          frozen: boolean;
+          queue: {key: string; run: () => void}[];
+        };
       }
     ).__harnessTimerGate;
     if (gate == null) {
       return;
     }
     gate.frozen = false;
-    for (const run of gate.queue.splice(0)) {
-      run();
+    // One at a time from the live queue: a callback may cancel a later one.
+    while (gate.queue.length > 0) {
+      gate.queue.shift()?.run();
     }
   });
 }

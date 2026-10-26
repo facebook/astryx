@@ -12,16 +12,20 @@
  * recognizer is silent on touch screens, as UIKit's is on an iPhone. It
  * claims nothing and conflicts with nothing: the host drives it directly,
  * outside the touch arena.
+ *
+ * Governed by architecture:interaction-modality: hover only enhances, so no
+ * behavior may depend on this recognizer alone, and a touch or keyboard
+ * path reaches whatever it reveals.
  */
 
 import {
   GestureRecognizer,
   isActive,
+  isTerminal,
   type GestureRecognizerOptions,
 } from './GestureRecognizer';
 import type {Point, PointerKind} from './types';
 
-/** @experimental */
 export class HoverGestureRecognizer extends GestureRecognizer {
   private point: Point = {x: 0, y: 0};
   /** The kind of pointer hovering: a mouse, or a pen in range. */
@@ -43,6 +47,11 @@ export class HoverGestureRecognizer extends GestureRecognizer {
   hoverEntered(point: Point, pointerType: PointerKind): void {
     if (!this.isEnabled || isActive(this.state)) {
       return;
+    }
+    if (isTerminal(this.state)) {
+      // A hover cancelled mid-way (the recognizer was disabled, or stopped
+      // from code) starts over at the next enter.
+      this.resetToPossible();
     }
     this.point = point;
     this.pointerType = pointerType;

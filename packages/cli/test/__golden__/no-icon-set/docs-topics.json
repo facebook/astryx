@@ -126,7 +126,7 @@
         "usage",
         "best-practices"
       ],
-      "skeleton": "940c5a29904f209dfe36a4c7f19ba5a11e333eabb1f8ea0e66127b7b29337a0a",
+      "skeleton": "904d7bbe31a404b5fc50f7e514f621cd49e51bb32f27e720cd40bd70b85157c2",
       "mentions": []
     },
     "elevation": {
@@ -198,10 +198,9 @@
         "movement-principles",
         "respecting-user-preferences",
         "usage",
-        "touch-motion",
         "best-practices"
       ],
-      "skeleton": "d2f0fea1e87d53e70f4e7f542844d17c6fecf13c25300df0ed1d0cac71aa4023",
+      "skeleton": "e648d618f9141bbd7f15bf970ba9e0d41b59ff9ae89e0cbbb2042e98bd5f0109",
       "mentions": []
     },
     "principles": {
