@@ -113,7 +113,9 @@ import {
   type MotionHandle,
 } from '../motion/animator';
 import {resolveMotion} from '../motion/resolveMotion';
+import {rubberBand} from '../motion/rubberBand';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
+import {sheet as sheetTable} from '../motion/uikit/sheet';
 import {registerSpringsTable, springs} from '../motion/uikit/springs';
 import {
   readReleaseMotion,
@@ -194,6 +196,71 @@ const CONTENT_END_HANDOFF_SLOP = 4;
 // 8px is the conventional tap slop, a shade over iOS's own recognizer, and
 // well under what a real pull covers in its first frames.
 const DRAG_PROMOTION_SLOP = 8;
+// A mouse or pen drag keeps the sheet's pointer behavior (spec:AST-017 FR59):
+// within this many px of a detent the live drag eases toward it, so it
+// "clicks" into place instead of hovering just off the mark. A finger tracks
+// 1:1, as UIKit's sheet does.
+const MAGNET_RANGE = 40;
+// Rubber-band factor for a mouse or pen dragging up past fully open. A
+// finger's stretch is UIKit's rubber band instead (spec:AST-094 FR3).
+const OVERSCROLL_RESISTANCE = 0.35;
+// How far any drag may lift the sheet past fully open: the bottom padding the
+// sheet reserves for the lift to reveal.
+// SYNC: must match OVERSCROLL_PADDING in BottomSheetPanel.tsx.
+const OVERSCROLL_MAX = 48;
+
+// Pull a value toward the nearest of `targets` when within MAGNET_RANGE,
+// easing the last stretch so the surface settles crisply onto a detent while
+// dragging.
+function magnetize(value: number, targets: ReadonlyArray<number>): number {
+  let nearestTarget = targets[0];
+  let nearestDist = Math.abs(value - nearestTarget);
+  for (const target of targets) {
+    const distance = Math.abs(value - target);
+    if (distance < nearestDist) {
+      nearestDist = distance;
+      nearestTarget = target;
+    }
+  }
+  if (nearestDist >= MAGNET_RANGE) {
+    return value;
+  }
+  // Ease-in over the range: the pull grows as the drag nears the detent
+  // (t^2), so it feels magnetic close by without fighting a drag-through.
+  const t = nearestDist / MAGNET_RANGE;
+  const pull = 1 - t * t;
+  return value + (nearestTarget - value) * pull;
+}
+
+// The live offset for a mouse or pen drag at `raw` (spec:AST-017 FR59): a
+// damped, capped stretch up past fully open, 1:1 in the dismiss zone,
+// magnetic between detents.
+function pointerDragOffset(
+  raw: number,
+  offsets: ReadonlyArray<number>,
+): number {
+  if (raw < 0) {
+    return Math.max(-OVERSCROLL_MAX, raw * OVERSCROLL_RESISTANCE);
+  }
+  if (raw > offsets[offsets.length - 1]) {
+    return raw;
+  }
+  return magnetize(raw, offsets);
+}
+
+// The live offset for a finger's drag at `raw`: 1:1 between detents and into
+// the dismiss zone, as UIKit's sheet tracks (the release picks the detent),
+// and past fully open UIKit's rubber band over the sheet's height
+// (spec:AST-094 FR3), no farther than the reserve.
+function fingerDragOffset(raw: number, height: number): number {
+  if (raw >= 0) {
+    return raw;
+  }
+  return Math.max(
+    -OVERSCROLL_MAX,
+    rubberBand(raw, height, sheetTable.rubberBand.coefficient),
+  );
+}
 
 function preservationInsetForOffset(
   baseOffset: number,
@@ -1449,6 +1516,9 @@ export function useSheetGestures({
             dismissedOffset: canDismissRef.current ? dismissedOffset : null,
             position: offset,
             velocity,
+            // A release moving back toward where the drag began cancels
+            // (spec:AST-094 FR37).
+            start: baseOffset,
           })
         : resolveDefaultRelease({
             detents: offsets,
@@ -1938,11 +2008,12 @@ export function useSheetGestures({
       const {offsets, peekOffset} = resolveDetents(state.height);
 
       const raw = state.baseOffset + delta;
-      // 1:1 with the finger between detents and into the dismiss zone, as
-      // UIKit's sheet tracks (the release, not the drag, picks the detent).
-      // Up past fully open it holds: UIKit's sheet doesn't stretch beyond its
-      // largest detent.
-      const next = Math.max(0, raw);
+      // A finger tracks as UIKit's sheet does, with the record's rubber band
+      // past fully open; a mouse or pen keeps the pointer behavior
+      // (spec:AST-094 FR3, spec:AST-017 FR59).
+      const next = dragTouchRef.current
+        ? fingerDragOffset(raw, state.height)
+        : pointerDragOffset(raw, offsets);
       // Dragging above the base restores the full layout height below the
       // viewport; otherwise keep whatever layout the base detent settled with
       // (0 at a peek, so a peek drag stays transform-only).

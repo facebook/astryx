@@ -173,17 +173,20 @@ function stream(
     t0,
     t1,
     step = 1000 / 60,
+    finger = false,
   }: {
     from: number;
     to: number;
     t0: number;
     t1: number;
     step?: number;
+    /** Moves from a finger rather than a mouse. */
+    finger?: boolean;
   },
 ) {
   const count = Math.max(1, Math.round((t1 - t0) / step));
   for (let i = 1; i <= count; i++) {
-    move(
+    (finger ? moveFinger : move)(
       hook,
       from + ((to - from) * i) / count,
       t0 + ((t1 - t0) * i) / count,
@@ -224,6 +227,24 @@ function down(hook: Hook, y: number, t: number, target: HTMLElement) {
     hook.result.current.handleProps.onPointerDown(pointerEvent(y, t, target)),
   );
 }
+// The same press and move from a finger (pointerType "touch").
+function fingerEvent(clientY: number, timeStamp: number, target: HTMLElement) {
+  return {
+    ...pointerEvent(clientY, timeStamp, target),
+    pointerType: 'touch',
+  } as unknown as React.PointerEvent;
+}
+function downFinger(hook: Hook, y: number, t: number, target: HTMLElement) {
+  act(() => hook.result.current.sheetRef(target));
+  act(() =>
+    hook.result.current.handleProps.onPointerDown(fingerEvent(y, t, target)),
+  );
+}
+function moveFinger(hook: Hook, y: number, t: number, target: HTMLElement) {
+  act(() =>
+    hook.result.current.handleProps.onPointerMove(fingerEvent(y, t, target)),
+  );
+}
 function move(hook: Hook, y: number, t: number, target: HTMLElement) {
   act(() =>
     hook.result.current.handleProps.onPointerMove(pointerEvent(y, t, target)),
@@ -255,7 +276,9 @@ describe('useSheetGestures', () => {
     const {hook, onDismiss} = setup({snapHeights: () => [200]});
     const t = makeTarget();
     down(hook, 0, 0, t);
-    // 60px in 20ms = 3px/ms, and 60px > the flick distance floor.
+    // 60px in 20ms = 3px/ms, and 60px > the flick distance floor (two
+    // moves: the release filter needs two moved samples, spec:AST-100 FR2).
+    move(hook, 30, 10, t);
     move(hook, 60, 20, t);
     up(hook, 60, 22, t);
     expect(onDismiss).toHaveBeenCalledTimes(1);
@@ -272,6 +295,7 @@ describe('useSheetGestures', () => {
     });
     const t = makeTarget();
     down(hook, 0, 0, t);
+    move(hook, 30, 10, t);
     move(hook, 60, 20, t);
     up(hook, 60, 22, t);
 
@@ -294,6 +318,7 @@ describe('useSheetGestures', () => {
     onSnap.mockClear();
     // Now flick up fast: 60px in 20ms = 3px/ms, over the distance floor.
     down(hook, 200, 1000, t);
+    move(hook, 170, 1010, t);
     move(hook, 140, 1020, t);
     up(hook, 140, 1022, t);
     expect(onDismiss).not.toHaveBeenCalled();
@@ -373,10 +398,25 @@ describe('useSheetGestures', () => {
       const {hook, onDismiss} = setup({snapHeights: () => [200]});
       const t = makeTarget();
       down(hook, 0, 0, t);
-      stream(hook, t, {from: 0, to: 60, t0: 0, t1: 20}); // 3000 px/s ...
+      stream(hook, t, {from: 0, to: 60, t0: 0, t1: 20, step: 10}); // 3000 px/s ...
       up(hook, 60, 55, t); // ... then 35 ms still, then the lift
       // Projected 60 + 3000 × 0.1 = 360, nearest gone (400).
       expect(onDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('cancels a release moving back toward where the drag began, whatever the travel so far (spec:AST-094 FR37)', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      // From the tallest detent down past the midpoint to 150 px ...
+      down(hook, 0, 0, t);
+      stream(hook, t, {from: 0, to: 150, t0: 0, t1: 300});
+      // ... then back up at 50 px/s and let go at 146 px, nearest the 200 px
+      // detent: the drag cancels to where it began.
+      move(hook, 148, 340, t);
+      move(hook, 146, 380, t);
+      up(hook, 146, 382, t);
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(hook.result.current.settledOffset).toBe(0);
     });
 
     it('releases no throw from a finger held still for longer than 40 ms before the lift', () => {
@@ -464,7 +504,8 @@ describe('useSheetGestures', () => {
       const t = makeTarget();
       down(hook, 0, 0, t);
       move(hook, 0, 250, t); // a still hold on the handle
-      move(hook, 30, 275, t); // then 60px in 50ms
+      move(hook, 20, 270, t); // then 60px in 50ms, the last 40 in 30
+      move(hook, 40, 285, t);
       move(hook, 60, 300, t);
       up(hook, 60, 302, t);
       expect(onDismiss).toHaveBeenCalledTimes(1);
@@ -476,11 +517,11 @@ describe('useSheetGestures', () => {
       down(hook, 0, 0, t);
       move(hook, 60, 300, t); // one sample, 300ms after touch-down
       up(hook, 60, 302, t);
-      // UIKit's filter reads 60 px over the 300 ms since the last sample,
-      // 200 px/s, under a mouse as under a finger: its coast (about 100 px)
-      // ends short of the dismiss line, nearest the 200 px detent.
+      // The release filter reads no velocity from a single move
+      // (spec:AST-100 FR2), under a mouse as under a finger: the sheet settles
+      // where it is nearest.
       expect(onDismiss).not.toHaveBeenCalled();
-      expect(hook.result.current.settledOffset).toBe(200);
+      expect(hook.result.current.settledOffset).toBe(0);
     });
 
     it('throws nothing from a mouse held still for over 40 ms before the lift (spec:AST-100 FR2)', () => {
@@ -538,6 +579,7 @@ describe('useSheetGestures', () => {
     // Fast (2000 px/s) but only 20px of travel: projected 20 + 228 = 248,
     // which lands on the 200 detent; gone (400) is further.
     down(hook, 0, 0, t);
+    move(hook, 10, 5, t);
     move(hook, 20, 10, t);
     up(hook, 20, 12, t);
     expect(onDismiss).not.toHaveBeenCalled();
@@ -800,11 +842,26 @@ describe('useSheetGestures', () => {
     // for a 400px sheet with snaps 300 and 200: [0, 100, 200], gone at 400.
     const {hook} = setup({snapHeights: () => [200, 300]});
     const t = makeTarget();
-    down(hook, 0, 0, t);
+    downFinger(hook, 0, 0, t);
     for (const y of [10, 60, 90, 99, 100, 101, 140, 199, 230, 320]) {
-      move(hook, y, y * 2, t);
+      moveFinger(hook, y, y * 2, t);
       expect(liveOffset(hook)).toBe(y);
     }
+  });
+
+  it('under a mouse, eases the live drag onto a detent within 40 px, as before (spec:AST-017 FR59)', () => {
+    // Offsets [0, 100, 200] for a 400px sheet with snaps 300 and 200. 30 px
+    // short of the 100 detent the pull is 1 - (30 / 40)^2 of the gap.
+    const {hook} = setup({snapHeights: () => [200, 300]});
+    const t = makeTarget();
+    down(hook, 0, 0, t);
+    move(hook, 70, 100, t);
+    expect(liveOffset(hook)).toBeCloseTo(70 + 30 * (1 - (30 / 40) ** 2), 6);
+    // 40 px or more from every detent, and past the shortest one, 1:1.
+    move(hook, 150, 150, t);
+    expect(liveOffset(hook)).toBe(150);
+    move(hook, 320, 200, t);
+    expect(liveOffset(hook)).toBe(320);
   });
 
   it('translates the surface live during a drag', () => {
@@ -1028,18 +1085,32 @@ describe('useSheetGestures', () => {
     expect(hook.result.current.isDragging).toBe(false);
   });
 
-  it('holds at the fully-open position when dragged further up', () => {
-    // UIKit's sheet stops dead at its largest detent (measured on iOS 26.2:
-    // no stretch from a grabber or a content touch, or from medium past it).
+  it('stretches a finger dragged up past the fully-open position by the rubber band, within the reserve (spec:AST-094 FR3)', () => {
+    // (1 - 1 / (x * 0.55 / d + 1)) * d past the tallest detent, d the sheet's
+    // 400 px height, no farther than the 48 px the sheet reserves below.
+    const band = (x: number) =>
+      (1 - 1 / ((x * 0.55) / SHEET_HEIGHT + 1)) * SHEET_HEIGHT;
+    const {hook} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    downFinger(hook, 100, 0, t);
+    moveFinger(hook, 60, 50, t); // 40 px past the top of a rested-at-top sheet
+    expect(liveOffset(hook)).toBeCloseTo(-band(40), 6);
+    moveFinger(hook, 20, 100, t); // 80 px past it
+    expect(liveOffset(hook)).toBeCloseTo(-band(80), 6);
+    moveFinger(hook, -100, 150, t); // 200 px past it: the reserve
+    expect(liveOffset(hook)).toBe(-48);
+    moveFinger(hook, 130, 200, t); // back down: the finger's travel from the press
+    expect(liveOffset(hook)).toBe(30);
+  });
+
+  it('under a mouse, stretches an upward drag past the fully-open position at 0.35, within the reserve, as before (spec:AST-017 FR59)', () => {
     const {hook} = setup({snapHeights: () => [200]});
     const t = makeTarget();
     down(hook, 100, 0, t);
-    move(hook, 60, 50, t);
-    expect(liveOffset(hook)).toBe(0);
-    move(hook, 20, 100, t); // 80px past the top of a rested-at-top sheet
-    expect(liveOffset(hook)).toBe(0);
-    move(hook, 130, 150, t); // back down: the finger's travel from the press, clamped
-    expect(liveOffset(hook)).toBe(30);
+    move(hook, 20, 100, t); // 80 px past the top of a rested-at-top sheet
+    expect(liveOffset(hook)).toBeCloseTo(-80 * 0.35, 6);
+    move(hook, -100, 150, t); // 200 px past it: the reserve
+    expect(liveOffset(hook)).toBe(-48);
   });
 
   it('dismisses a single-height sheet on a slow drag past the floor', () => {
@@ -2211,12 +2282,12 @@ describe('useSheetGestures: the release on the compositor', () => {
     });
     const t = makeTarget();
     const played = recordAnimations(t);
-    down(hook, 0, 0, t);
-    stream(hook, t, {from: 0, to: 150, t0: 0, t1: 600});
+    downFinger(hook, 0, 0, t);
+    stream(hook, t, {from: 0, to: 150, t0: 0, t1: 600, finger: true});
     // Thrown back up at 3000 px/s, released 5 px below fully open.
-    stream(hook, t, {from: 150, to: 5, t0: 600, t1: 648});
+    stream(hook, t, {from: 150, to: 5, t0: 600, t1: 648, finger: true});
     act(() =>
-      hook.result.current.handleProps.onPointerUp(pointerEvent(5, 650, t)),
+      hook.result.current.handleProps.onPointerUp(fingerEvent(5, 650, t)),
     );
     expect(hook.result.current.settledOffset).toBe(0);
     const release = played.at(-1) as Played;
@@ -2251,12 +2322,12 @@ describe('useSheetGestures: the release on the compositor', () => {
     const t = makeTarget();
     scope.append(t);
     const played = recordAnimations(t);
-    down(hook, 0, 0, t);
-    stream(hook, t, {from: 0, to: 150, t0: 0, t1: 600});
+    downFinger(hook, 0, 0, t);
+    stream(hook, t, {from: 0, to: 150, t0: 0, t1: 600, finger: true});
     // Thrown back up at 3000 px/s, released 5 px below fully open.
-    stream(hook, t, {from: 150, to: 5, t0: 600, t1: 648});
+    stream(hook, t, {from: 150, to: 5, t0: 600, t1: 648, finger: true});
     act(() =>
-      hook.result.current.handleProps.onPointerUp(pointerEvent(5, 650, t)),
+      hook.result.current.handleProps.onPointerUp(fingerEvent(5, 650, t)),
     );
     expect(hook.result.current.settledOffset).toBe(0);
     const release = played.at(-1) as Played;

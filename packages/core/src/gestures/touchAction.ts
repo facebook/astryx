@@ -26,10 +26,14 @@
  */
 
 import type {GestureRecognizer, NativeTouchBehavior} from './GestureRecognizer';
-import {LongPressGestureRecognizer} from './LongPressGestureRecognizer';
 import {internals} from './recognizerInternals';
 
-/** The intersection of what each touch recognizer leaves the browser. */
+/**
+ * The intersection of what each touch recognizer leaves the browser. A
+ * watcher (`claimsTouches: false`) never takes a touch, so it leaves the
+ * browser everything: its direction restricts no scroll (`spec:AST-094`
+ * FR20, DEC-7).
+ */
 export function combinedNativeBehavior(
   recognizers: ReadonlyArray<GestureRecognizer>,
 ): NativeTouchBehavior {
@@ -38,7 +42,7 @@ export function combinedNativeBehavior(
   let pinchZoom = true;
   let doubleTapZoom = true;
   for (const recognizer of recognizers) {
-    if (!internals(recognizer).acceptsTouchInput) {
+    if (!internals(recognizer).acceptsTouchInput || !recognizer.claimsTouches) {
       continue;
     }
     const behavior = recognizer.nativeTouchBehavior;
@@ -102,7 +106,7 @@ export function gestureHostStyle(
   if (
     recognizers.some(
       recognizer =>
-        recognizer instanceof LongPressGestureRecognizer &&
+        internals(recognizer).family === 'longPress' &&
         internals(recognizer).acceptsTouchInput,
     )
   ) {

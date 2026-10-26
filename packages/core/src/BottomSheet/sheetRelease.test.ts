@@ -232,17 +232,27 @@ const MEDIUM = 404.32;
 const GONE = 874;
 
 describe('resolveSheetRelease against UIKit', () => {
-  for (const [name, offset, velocity, outcome, zeta] of [
+  // Every measured drag began at the medium detent. A release moving back
+  // toward it cancels there (spec:AST-094 FR37), where UIKit's own sheet
+  // settled 15 of those back-outs where they were nearest (listed below);
+  // on every other release the rule lands where UIKit landed.
+  const movingBack = (offset: number, velocity: number) =>
+    velocity !== 0 && Math.sign(velocity) === Math.sign(MEDIUM - offset);
+  const releases = [
     ...UIKIT_RELEASES,
     ...UIKIT_FLICK_RELEASES,
     ...UIKIT_BACKOUT_RELEASES,
-  ]) {
-    it(`${name}: ${velocity} pt/s from ${offset} pt → ${outcome}`, () => {
+  ];
+  for (const [name, offset, velocity, outcome, zeta] of releases) {
+    const expected = movingBack(offset, velocity) ? 'medium' : outcome;
+    const note = expected === outcome ? '' : ` (UIKit: ${outcome})`;
+    it(`${name}: ${velocity} pt/s from ${offset} pt → ${expected}${note}`, () => {
       const release = resolveSheetRelease({
         detents: [LARGE, MEDIUM],
         dismissedOffset: GONE,
         position: offset,
         velocity,
+        start: MEDIUM,
       });
       const landed =
         release.kind === 'dismiss'
@@ -250,14 +260,41 @@ describe('resolveSheetRelease against UIKit', () => {
           : release.index === 0
             ? 'large'
             : 'medium';
-      expect(landed).toBe(outcome);
-      if (zeta != null) {
+      expect(landed).toBe(expected);
+      if (zeta != null && expected === outcome) {
         expect(release.spring).toBe(
           zeta === 1 ? springs.sheetDetent : springs.sheetReleaseFast,
         );
       }
     });
   }
+
+  it('departs from UIKit only on back-outs, which FR37 cancels', () => {
+    expect(
+      releases
+        .filter(
+          ([, offset, velocity, outcome]) =>
+            movingBack(offset, velocity) && outcome !== 'medium',
+        )
+        .map(([name]) => name),
+    ).toEqual([
+      'zeta.awayFromTarget.v1000',
+      'd0.v-1400',
+      'back.large.v100.r1',
+      'back.large.v250.r1',
+      'back.gone.v100.r1',
+      'back.gone.v250.r1',
+      'back.large.v100.r2',
+      'back.large.v250.r2',
+      'back.gone.v100.r2',
+      'back.gone.v250.r2',
+      'back.large.v100.r3',
+      'back.large.v250.r3',
+      'back.gone.v100.r3',
+      'back.gone.v250.r3',
+      'back.large224.v250.r1',
+    ]);
+  });
 });
 
 describe('resolveSheetRelease', () => {
@@ -365,6 +402,42 @@ describe('resolveSheetRelease', () => {
         velocity: fast,
       }),
     ).toMatchObject({kind: 'detent', index: 1});
+  });
+
+  it('cancels a release moving back toward its start, whatever the travel so far (spec:AST-094 FR37)', () => {
+    // Dragged from the 300 px detent to 600 px (gone at 640 px) and let go
+    // moving back up: back to 300, though the projection is nearest gone.
+    for (const velocity of [-100, -400, -1500]) {
+      expect(
+        resolveSheetRelease({
+          detents: [0, 300],
+          dismissedOffset: 640,
+          position: 600,
+          velocity,
+          start: 300,
+        }),
+      ).toMatchObject({kind: 'detent', index: 1, offset: 300});
+    }
+    // Past the midpoint toward the tallest detent, moving back down: 300.
+    expect(
+      resolveSheetRelease({
+        detents: [0, 300],
+        dismissedOffset: 640,
+        position: 120,
+        velocity: 80,
+        start: 300,
+      }),
+    ).toMatchObject({kind: 'detent', index: 1, offset: 300});
+    // Moving on, away from the start, the projection decides as before.
+    expect(
+      resolveSheetRelease({
+        detents: [0, 300],
+        dismissedOffset: 640,
+        position: 600,
+        velocity: 100,
+        start: 300,
+      }),
+    ).toMatchObject({kind: 'dismiss'});
   });
 
   it('never dismisses a sheet a drag may not dismiss', () => {
