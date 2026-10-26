@@ -63,4 +63,17 @@ describe('placeOverTrigger', () => {
     }
     expect(surface.style.getPropertyValue('top')).toBe('');
   });
+
+  it('keeps a caller’s own inline cap: a menu that does not cover leaves it, and a cleared cover gives it back', () => {
+    const {surface, menu, trigger} = menuAt(94);
+    menu.style.setProperty('max-block-size', '120px');
+    placeOverTrigger(surface, trigger, false, menu);
+    expect(menu.style.getPropertyValue('max-block-size')).toBe('120px');
+    placeOverTrigger(surface, trigger, true, menu);
+    expect(menu.style.getPropertyValue('max-block-size')).toMatch(
+      /^min\(120px, calc\(/,
+    );
+    placeOverTrigger(surface, trigger, false, menu);
+    expect(menu.style.getPropertyValue('max-block-size')).toBe('120px');
+  });
 });
