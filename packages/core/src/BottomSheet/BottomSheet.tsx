@@ -267,7 +267,14 @@ function panelStateForSwitcherPhase(
 // brings the field into view within the sheet instead.
 function focusPanel(panel: HTMLElement | null, isModal: boolean): void {
   const activeElement = document.activeElement;
-  if (activeElement != null && panel?.contains(activeElement)) {
+  // Focus already inside stays put, except on the panel itself: Chromium's
+  // showModal() focuses the first focusable area, the panel, which would
+  // otherwise shadow a `[data-autofocus]` descendant.
+  if (
+    activeElement != null &&
+    activeElement !== panel &&
+    panel?.contains(activeElement)
+  ) {
     return;
   }
   const autofocus = panel?.querySelector<HTMLElement>('[data-autofocus]');
