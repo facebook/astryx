@@ -6,8 +6,8 @@
  *   primary pointer) and real mouse input; in Chromium, pen input
  * @output Browser evidence that touch work leaves fine-pointer zoom alone
  *   (spec:AST-017 FR59, spec:AST-094 FR19): nothing between the photo and
- *   the dialog takes the browser's touch-action (a single photo or a
- *   gallery), a double-click from a mouse or a pen zooms 2x about the
+ *   the dialog takes the browser's touch-action (a photo with or without
+ *   zoom, or a gallery), a double-click from a mouse or a pen zooms 2x about the
  *   centre and back over the released 200 ms ease-out, a drag stops at the
  *   photo's edges, Next and the arrow keys show the next photo at once, and
  *   a click on the dark area closes the viewer
@@ -179,6 +179,27 @@ test('the zoom target keeps the browser’s touch-action where the primary point
     'auto',
   );
   expect(new Set(await touchActionsAbove(img))).toEqual(new Set(['auto']));
+});
+
+test('a photo without zoom leaves the browser its touch-action where the primary pointer is fine', async ({
+  page,
+}) => {
+  // The drag to dismiss is touch work: with a mouse nothing takes the
+  // touches (a touchscreen laptop's one-finger pan still reaches the page).
+  await page.route('https://picsum.photos/**', async route =>
+    route.fulfill({
+      contentType: 'image/svg+xml',
+      body: photoSvg(PHOTO.width, PHOTO.height),
+    }),
+  );
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-lightbox--default&viewMode=story`,
+  );
+  await page.getByRole('button', {name: 'Open lightbox'}).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  const photo = dialog.getByRole('img').first();
+  expect(new Set(await touchActionsAbove(photo))).toEqual(new Set(['auto']));
 });
 
 test('in a gallery, nothing takes the browser’s touch-action where the primary pointer is fine', async ({

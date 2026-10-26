@@ -217,8 +217,8 @@ const styles = stylex.create({
   trackZoomTarget: {
     touchAction: 'none',
   },
-  // A photo without zoom leaves pinch-zoom to the page but takes one-finger
-  // drags: a drag down dismisses it.
+  // Under the touch layer, a photo without zoom leaves pinch-zoom to the page
+  // but takes one-finger drags: a drag down dismisses it.
   imageWrapperDismissTarget: {
     touchAction: 'pinch-zoom',
   },
@@ -726,7 +726,9 @@ export function Lightbox({
     onTapOutside: handleClose,
     onDragStart,
     dismiss: {
-      isEnabled: isOpen && !isVideo,
+      // Touch work, like the zoom's: nothing attaches where the primary
+      // pointer is fine (spec:AST-094 FR19).
+      isEnabled: isOpen && !isVideo && isTouch,
       onDrag: travel => {
         const {backdrop, chrome} = dismissFades();
         fadedRef.current = backdrop == null ? chrome : [backdrop, ...chrome];
@@ -1049,6 +1051,7 @@ export function Lightbox({
                   !isZoomTarget &&
                     !isVideo &&
                     !isGallery &&
+                    isTouch &&
                     styles.imageWrapperDismissTarget,
                   isZoomTarget && focusOutlineStyles.focusVisible,
                   isZoomTarget && !isZoomed && styles.imageWrapperZoomable,
@@ -1067,6 +1070,7 @@ export function Lightbox({
                       isZoomTarget && isTouch && styles.trackZoomTarget,
                       !isZoomTarget &&
                         !isVideo &&
+                        isTouch &&
                         styles.imageWrapperDismissTarget,
                     )}>
                     {pageIndexes.map(i => (

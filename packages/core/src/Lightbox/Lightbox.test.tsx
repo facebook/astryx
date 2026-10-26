@@ -4,6 +4,7 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {Profiler} from 'react';
 import {Lightbox} from './Lightbox';
+import {getGestureHost} from '../gestures/GestureHost';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
 
@@ -991,6 +992,64 @@ describe('Lightbox double-click under the touch layer', () => {
       );
     });
     expect(stage).toHaveAttribute('aria-pressed', 'false');
+  });
+});
+
+describe('Lightbox recognizers follow the touch presentation (spec:AST-094 FR19)', () => {
+  /** Names of the Lightbox recognizers attached while `body` runs. */
+  function lightboxRecognizersAttached(body: () => void): string[] {
+    const attach = vi.spyOn(getGestureHost(document), 'attach');
+    try {
+      body();
+      return attach.mock.calls
+        .map(([, recognizer]) => recognizer.name)
+        .filter(name => /lightbox/i.test(name));
+    } finally {
+      attach.mockRestore();
+    }
+  }
+
+  it('attaches none where the primary pointer is fine: a photo takes no drag to dismiss', () => {
+    expect(
+      lightboxRecognizersAttached(() => {
+        render(
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={{src: '/photo.jpg', alt: 'Photo'}}
+          />,
+        );
+      }),
+    ).toEqual([]);
+  });
+
+  it('attaches the drag to dismiss under the touch layer', () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = (query: string) => ({
+      matches: query === '(pointer: coarse)',
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    });
+    try {
+      expect(
+        lightboxRecognizersAttached(() => {
+          render(
+            <Lightbox
+              isOpen={true}
+              onOpenChange={() => {}}
+              media={{src: '/photo.jpg', alt: 'Photo'}}
+            />,
+          );
+        }),
+      ).toContain('Lightbox.dismissPan');
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
   });
 });
 
