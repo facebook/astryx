@@ -31,6 +31,7 @@ import {
   countBetween,
   curveOf,
   holdAnimations,
+  type HeldAnimation,
   markElement,
   openStory,
   releaseAnimations,
@@ -863,6 +864,20 @@ test.describe('under a finger', () => {
   });
 });
 
+// The dock's ride among what a hold takes on the dock (a CSS transition that
+// starts at the blur comes too): the one script animation that moves
+// `translate`. Its samples count from its own start, `offsetMs` after the
+// held origin (the earliest start the hold took).
+function rideOf(held: ReadonlyArray<HeldAnimation>): HeldAnimation {
+  const ride = held.find(
+    a => a.kind === 'Animation' && a.keyframes.some(k => 'translate' in k),
+  );
+  if (ride == null) {
+    throw new Error(`no ride among ${JSON.stringify(held)}`);
+  }
+  return ride;
+}
+
 test.describe('Chrome on Android (spec:AST-099 FR8)', () => {
   test.use({hasTouch: true, isMobile: true});
   test.skip(
@@ -900,17 +915,23 @@ test.describe('Chrome on Android (spec:AST-099 FR8)', () => {
     expect(
       Math.abs(start - (reported - ANDROID_KEYBOARD.showReportLagMs)),
     ).toBeLessThan(2);
-    const held = await holdAnimations(page, dock);
-    const curveEnd = Math.max(...held.map(a => a.curveEndMs));
+    const ride = rideOf(await holdAnimations(page, dock));
     const samples = curveOf(
-      await sampleCurve(dock, timeline(curveEnd)),
+      await sampleCurve(dock, timeline(ride.offsetMs + ride.curveEndMs)),
       'translateY',
     );
     await releaseAnimations(page);
     const ease = cubicBezier(ANDROID_KEYBOARD.showCurve);
     const result = compareCurve(
       samples,
-      t => -lift * ease(Math.min(1, t / ANDROID_KEYBOARD.showMs)),
+      t =>
+        -lift *
+        ease(
+          Math.min(
+            1,
+            Math.max(0, (t - ride.offsetMs) / ANDROID_KEYBOARD.showMs),
+          ),
+        ),
       0.5,
     );
     expect(result.maxError, JSON.stringify(result.worst)).toBeLessThanOrEqual(
@@ -962,10 +983,9 @@ test.describe('Chrome on Android (spec:AST-099 FR8)', () => {
     expect(
       Math.abs(start - (blurAt + ANDROID_KEYBOARD.hideAfterBlurMs)),
     ).toBeLessThan(8);
-    const held = await holdAnimations(page, dock);
-    const curveEnd = Math.max(...held.map(a => a.curveEndMs));
+    const ride = rideOf(await holdAnimations(page, dock));
     const samples = curveOf(
-      await sampleCurve(dock, timeline(curveEnd)),
+      await sampleCurve(dock, timeline(ride.offsetMs + ride.curveEndMs)),
       'translateY',
     );
     await releaseAnimations(page);
@@ -973,13 +993,20 @@ test.describe('Chrome on Android (spec:AST-099 FR8)', () => {
     const ease = cubicBezier(ANDROID_KEYBOARD.hideCurve);
     const result = compareCurve(
       samples,
-      t => lifted * ease(Math.min(1, t / ANDROID_KEYBOARD.hideMs)),
+      t =>
+        lifted *
+        ease(
+          Math.min(
+            1,
+            Math.max(0, (t - ride.offsetMs) / ANDROID_KEYBOARD.hideMs),
+          ),
+        ),
       0.5,
     );
     expect(result.maxError, JSON.stringify(result.worst)).toBeLessThanOrEqual(
       0.5,
     );
-    expect(curveEnd).toBeCloseTo(ANDROID_KEYBOARD.hideMs, -1);
+    expect(ride.curveEndMs).toBeCloseTo(ANDROID_KEYBOARD.hideMs, -1);
   });
 
   test('Reduce Motion: the dock never travels with Gboard (design:reduced-motion)', async ({
