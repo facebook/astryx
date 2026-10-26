@@ -1095,7 +1095,12 @@ export function TabBar({
             })
           : selectedItem;
       if (back != null) {
-        flushSync(() => choose(back));
+        flushSync(() => {
+          // The field goes with the tab: leaving search ends it, as a
+          // tap on another tab or on Cancel does.
+          search?.onActiveChange?.(false);
+          choose(back);
+        });
       }
       moveFocusOn();
       return;
