@@ -14,7 +14,7 @@ import {execFileSync} from 'node:child_process';
 import path from 'node:path';
 import {describe, expect, it} from 'vitest';
 import {createKeyboardModel} from './keyboardModel';
-import {keyboard, timing} from '../motion/uikit';
+import {keyboard, springs, timing} from '../motion/uikit';
 import {keyboardNotification} from '../motion/uikit/timing';
 import {MOTION_ROLE_KINDS} from '../motion/roleKinds.generated';
 import {naturalFrequency, toSpring} from '../motion/spring';
@@ -271,6 +271,12 @@ describe('the keyboard\u2019s own timing (spec:AST-099 FR3)', () => {
       'timing.keyboardNotificationMs',
     );
     expect(MOTION_ROLE_KINDS).not.toHaveProperty('springs.keyboard');
+  });
+
+  it('plays the same spring as the UIKit table\u2019s keyboard row', () => {
+    // The keyboard module reads its own row so ChatLayout ships no other
+    // spring; the table keeps the measured row too.
+    expect(keyboard.spring).toEqual(springs.keyboard);
   });
 });
 

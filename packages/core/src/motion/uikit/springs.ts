@@ -105,7 +105,7 @@ export const springs = {
    * Overdamped on paper; Core Animation treats overdamping as critical
    * unless told otherwise, so in effect it is a critically
    * damped spring with ω₀ = 18.26 rad/s (response 0.344 s) that settles in
-   * 0.506 s. The keyboard does not use it (see `keyboard.spring`).
+   * 0.506 s. The keyboard does not use it (see `keyboard`).
    * @source apple-docs https://developer.apple.com/documentation/uikit/uispringtimingparameters/init() (damping ratio 4.56)
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
    *   iPhone 17 Pro, CAAnimation read, Oct 23 2026: UISpringTimingParameters()
@@ -350,6 +350,15 @@ export const springs = {
   // System
   // ---------------------------------------------------------------------
 
+  /**
+   * Keyboard frame animation, show and hide alike: critically damped,
+   * response 0.2667 s. The notification reports curve 7 and 0.3833 s
+   * (`timing.keyboardNotificationMs`); Core Animation cuts the spring there.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, CAAnimation read on the keyboard host and a
+   *   keyboardLayoutGuide-pinned view, Oct 23 2026
+   */
+  keyboard: {mass: 1, stiffness: 555.0265, damping: 47.118},
   /**
    * Banner / toast sliding in from the top edge (system notification
    * banner as the reference).
