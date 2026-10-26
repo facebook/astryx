@@ -629,6 +629,25 @@ describe('style reads at a change', () => {
     expect(ctx.layer('lens', 'background-color')).toBe('rgb(255, 255, 255)');
     expect(ctx.layer('after', 'background-color')).toBe('rgb(255, 255, 255)');
   });
+
+  it('a finger’s drag and its lift read before they write: no read follows a write, with or without Reduce Motion', () => {
+    for (const reduced of [false, true]) {
+      reduceMotion = reduced;
+      const ctx = setup('grid');
+      const traffic = recordStyleTraffic(ctx.track);
+      press(ctx, clientCenterOf('grid'));
+      drag(ctx, clientCenterOf('list'));
+      drag(ctx, clientCenterOf('table'));
+      expect(release(ctx, clientCenterOf('table'))).toBe('table');
+      select(ctx, 'grid', 'table');
+      const {reads, forced} = traffic();
+      expect(reads).toBeGreaterThan(0);
+      expect({reduced, forced}).toEqual({reduced, forced: 0});
+      vi.unstubAllGlobals();
+      document.body.innerHTML = '';
+      document.head.innerHTML = '';
+    }
+  });
 });
 
 describe('under a finger', () => {
