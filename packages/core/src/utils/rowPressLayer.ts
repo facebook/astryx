@@ -59,14 +59,20 @@ const pressRelease = stylex.keyframes({
   to: {[PRESS_ALPHA]: 0},
 });
 
-/** The row layer's clock as CSS: the press model's release. */
+/** The row layer's clock as CSS: the table's, as the strength's release. */
 const CELL_RELEASE = `${cellPressConsts.cellReleaseMs}ms`;
+/** The row layer's clock under reduced motion: capped as the strength's is. */
+const CELL_RELEASE_REDUCED = `min(${CELL_RELEASE}, 200ms)`;
+const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
 
 /** Opacity 1 → 0: the row layer leaves; its fading arm runs it. */
 const cellRelease = stylex.keyframes({
   from: {opacity: 1},
   to: {opacity: 0},
 });
+
+/** The release's curve: the table's gentle ease-out. */
+const RELEASE_EASE = cellPressConsts.cellReleaseEase;
 
 export const rowPressLayerStyles = stylex.create({
   /**
@@ -179,13 +185,19 @@ export const rowPressLayerStyles = stylex.create({
       },
       animationDuration: {
         default: null,
-        [COARSE]: {default: null, [PRESSED_FADING]: CELL_RELEASE},
+        [COARSE]: {
+          default: null,
+          [PRESSED_FADING]: {
+            default: CELL_RELEASE,
+            [REDUCED_MOTION]: CELL_RELEASE_REDUCED,
+          },
+        },
       },
       animationTimingFunction: {
         default: null,
         [COARSE]: {
           default: null,
-          [PRESSED_FADING]: cellPressConsts.cellReleaseEase,
+          [PRESSED_FADING]: RELEASE_EASE,
         },
       },
       animationFillMode: {
