@@ -2181,7 +2181,12 @@ describe('useSheetGestures: the release on the compositor', () => {
     expect(liveOffset(hook)).toBeCloseTo(onScreen - 20, 0);
   });
 
-  it('turns text selection off on the sheet while a finger holds or drags it, and back on at the lift', () => {
+  it('on iOS, turns text selection and the callout off on the whole sheet while a finger holds or drags it, and back on at the lift', () => {
+    // iOS WebKit fires no selectstart for a long-press selection (iOS 26.2
+    // simulator), so only user-select refuses one there, and only on the whole
+    // sheet: on the element under the finger alone, the long press selected a
+    // word beside it (4 of 4 takes).
+    stubIosIdiom();
     const {hook} = setup({snapHeights: () => [200]});
     const t = makeTarget();
     t.style.setProperty('user-select', 'text');
@@ -2213,6 +2218,56 @@ describe('useSheetGestures: the release on the compositor', () => {
     // ... and the sheet's own value is back when it lets go.
     act(() => hook.result.current.handleProps.onPointerUp(touch(500, 1600)));
     expect(t.style.getPropertyValue('user-select')).toBe('text');
+  });
+
+  it('elsewhere, cancels the selection a finger holding or dragging the sheet would start, and changes no style', () => {
+    stubCoarsePointer();
+    vi.stubGlobal('CSS', {supports: () => false, escape: (v: string) => v});
+    const {hook} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    const row = document.createElement('span');
+    t.appendChild(row);
+    t.style.setProperty('user-select', 'text');
+    const touch = (y: number, time: number) =>
+      ({
+        ...pointerEvent(y, time, t),
+        target: row,
+        pointerType: 'touch',
+      }) as unknown as React.PointerEvent;
+    // A long press on the row: Chromium fires `selectstart` there first.
+    const longPressSelects = () => {
+      const event = new Event('selectstart', {bubbles: true, cancelable: true});
+      row.dispatchEvent(event);
+      return !event.defaultPrevented;
+    };
+    act(() => hook.result.current.sheetRef(t));
+    const style = t.getAttribute('style');
+    act(() => hook.result.current.handleProps.onPointerDown(touch(0, 0)));
+    expect(longPressSelects()).toBe(false);
+    // No style changes: one would repaint the whole sheet at the touch-down
+    // and again at the lift.
+    expect(t.getAttribute('style')).toBe(style);
+    expect(row.getAttribute('style')).toBeNull();
+    for (const [y, time] of [
+      [20, 33],
+      [40, 66],
+      [60, 100],
+    ]) {
+      act(() => hook.result.current.handleProps.onPointerMove(touch(y, time)));
+    }
+    act(() => hook.result.current.handleProps.onPointerUp(touch(60, 102)));
+    expect(longPressSelects()).toBe(true);
+    act(() => {
+      vi.advanceTimersByTime(80);
+    });
+    // A finger catches it mid-settle and holds still: refused from the
+    // touch-down, before a long press would select, until it lets go.
+    act(() => hook.result.current.handleProps.onPointerDown(touch(500, 1000)));
+    expect(hook.result.current.isDragging).toBe(true);
+    expect(longPressSelects()).toBe(false);
+    expect(t.style.getPropertyValue('user-select')).toBe('text');
+    act(() => hook.result.current.handleProps.onPointerUp(touch(500, 1600)));
+    expect(longPressSelects()).toBe(true);
   });
 
   it('carries a drag-dismissed sheet off screen on the release spring, for the host to wait on', async () => {

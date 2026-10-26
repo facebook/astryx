@@ -12,8 +12,8 @@
  *   velocity (critically damped below `sheet.release.fastSpeed`, 80 % damped
  *   above); a finger catches the settling sheet where it is; the settle keeps
  *   advancing every frame through a blocked main thread; it does no Layout or
- *   Paint per frame; a drag re-rasters none of the sheet (pending two fixes
- *   at their origins); storyboards of the drag, the settle and a flick. A finger
+ *   Paint per frame; a finger's drag on Android re-rasters none of the sheet
+ *   (pending a fix at its origin); storyboards of the drag, the settle and a flick. A finger
  *   on Android gets the same (one touch model, AST-094); a mouse keeps today's
  *   rule and the theme's timing (unit tests). Under reduced motion a touch release cross-fades in place
  *   in 200 ms or less (design:reduced-motion DR2).
@@ -795,15 +795,19 @@ test('a finger dragging the open sheet re-rasters none of it', async ({
   test.skip(browserName !== 'chromium', 'raster traces are Chromium-only');
   test.fail(
     true,
-    'Pending two fixes at their origins. (1) The motion animator promotes ' +
-      "the sheet by replacing its stylesheet's will-change (transform, " +
-      'opacity) with translate, a layer change that re-rasters the sheet ' +
-      "when the gesture starts and again once it ends. (2) The sheet's " +
-      'selection lock toggles user-select, which repaints the sheet at the ' +
-      'lift. Each re-rasters the whole sheet; on a software GPU (the ' +
+    'Pending a fix at its origin: the motion animator promotes the sheet by ' +
+      "replacing its stylesheet's will-change (transform, opacity) with " +
+      'translate, a layer change that re-rasters the whole sheet when the ' +
+      'gesture starts and again once it ends; on a software GPU (the ' +
       'Android emulator) that is 40-115 ms a frame.',
   );
-  const {driver, sheet, tallTop, handle} = await openSheet(page);
+  // A finger on Android: its selection lock changes no style. On iOS WebKit
+  // the lock still turns user-select off on the sheet (the only refusal iOS
+  // honors, sheetSelectionLock.ts), which repaints it at the catch and the
+  // lift.
+  const {driver, sheet, tallTop, handle} = await openSheet(page, {
+    idiom: 'android',
+  });
   // The presentation's own layer goes this long after it settles.
   await page.waitForTimeout(PROMOTION_LINGER_MS + 100);
   let moving = false;

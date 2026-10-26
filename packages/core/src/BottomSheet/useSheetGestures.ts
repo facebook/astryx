@@ -102,6 +102,7 @@ import {
 import {VelocityTracker} from '../gestures/VelocityTracker';
 import {playHaptic} from '../gestures/haptics';
 import {readTouchPresentation} from './sheetTouch';
+import {lockSheetSelection} from './sheetSelectionLock';
 import {TOUCH_QUERY} from '../utils/touchPresentation';
 import {useMediaQuery} from '../hooks';
 import {
@@ -731,52 +732,23 @@ export function useSheetGestures({
     [animator, recordSheetHeight],
   );
   // While a finger drags the sheet, or holds it after catching it mid-settle,
-  // its text is not selectable and the touch callout is off: a finger held
-  // still on a caught sheet would otherwise start iOS's text selection and
-  // its loupe under the drag. Set at the catch (the touch-down), before the
-  // long press would select; the sheet's own values come back at the lift.
-  const selectionLockRef = useRef<{
-    element: HTMLElement;
-    saved: ReadonlyArray<readonly [string, string, string]>;
-  } | null>(null);
-  const lockSelection = useCallback(() => {
+  // no text selection starts under it and the touch callout is off: a finger
+  // held still on a caught sheet would otherwise start a text selection (on
+  // iOS, with its loupe) under the drag. Taken at the catch (the touch-down),
+  // before the long press would select, and released at the lift
+  // (sheetSelectionLock.ts: how each engine refuses one).
+  const selectionLockRef = useRef<(() => void) | null>(null);
+  const lockSelection = useCallback((target: EventTarget | null) => {
     const element = sheetElRef.current;
     if (element == null || selectionLockRef.current != null) {
       return;
     }
-    const names = [
-      '-webkit-user-select',
-      'user-select',
-      '-webkit-touch-callout',
-    ];
-    selectionLockRef.current = {
-      element,
-      saved: names.map(
-        name =>
-          [
-            name,
-            element.style.getPropertyValue(name),
-            element.style.getPropertyPriority(name),
-          ] as const,
-      ),
-    };
-    for (const name of names) {
-      element.style.setProperty(name, 'none');
-    }
+    selectionLockRef.current = lockSheetSelection([element], target);
   }, []);
   const unlockSelection = useCallback(() => {
-    const lock = selectionLockRef.current;
-    if (lock == null) {
-      return;
-    }
+    const release = selectionLockRef.current;
     selectionLockRef.current = null;
-    for (const [name, value, priority] of lock.saved) {
-      if (value === '') {
-        lock.element.style.removeProperty(name);
-      } else {
-        lock.element.style.setProperty(name, value, priority);
-      }
-    }
+    release?.();
   }, []);
 
   // Unmount: the size observer, and the sheet's animator. Stopping it settles
@@ -1322,7 +1294,7 @@ export function useSheetGestures({
       const syntheticTouch = isSyntheticTouch(event);
       dragTouchRef.current = syntheticTouch || event.pointerType === 'touch';
       if (dragTouchRef.current) {
-        lockSelection();
+        lockSelection(event.target);
       }
       // Never capture for a touch drag. The id came from `Touch.identifier`,
       // which on iOS names a live pointer: the capture succeeds, WebKit takes
@@ -1778,6 +1750,8 @@ export function useSheetGestures({
         pointerId: touch.identifier,
         clientY: touch.clientY,
         timeStamp,
+        // Where the finger landed: what the selection lock reads.
+        target: touch.target,
         currentTarget: sheetNode,
         setPointerCapture: () => {},
         releasePointerCapture: () => {},
@@ -1908,6 +1882,8 @@ export function useSheetGestures({
         pointerId: touch.identifier,
         clientY: touch.clientY,
         timeStamp,
+        // Where the finger landed: what the selection lock reads.
+        target: touch.target,
         currentTarget: target,
         setPointerCapture: () => {},
         releasePointerCapture: () => {},
