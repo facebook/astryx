@@ -23,7 +23,7 @@ design_specs: [design:bidirectionality]
 architecture:
   [architecture:component-theming-surface, architecture:public-component-api]
 contributing: []
-system_specs: []
+system_specs: [spec:AST-038]
 ---
 
 # Breadcrumbs component contract
@@ -86,7 +86,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
 | FR1 | Breadcrumbs renders one `<nav>` named by `label`, else the translated `@astryx.breadcrumbs.label` ("Breadcrumb"); a caller `aria-label` or `aria-labelledby` replaces that name. It carries `breadcrumbs` with `variant`, the forwarded `ref`, `data-testid`, and other DOM props. | Current source and tests |
 | FR2 | The `<nav>` contains one `<ol>` that holds `children`; the list has no markers or inset and lays items out in a row that wraps.                                                                                                                                                    | Current source and tests |
-| FR3 | Every descendant BreadcrumbItem receives the trail's `separator` and `variant`.                                                                                                                                                                                                    | Current source and tests |
+| FR3 | Every descendant BreadcrumbItem in the trail's own surface receives the trail's `separator` and `variant`; a crumb rendered inside a layer gets the defaults, as `spec:AST-038` FR7 requires.                                                                                      | Current source and tests |
 | FR4 | `className`, `style`, and `xstyle` merge onto the `<nav>` after component styles.                                                                                                                                                                                                  | Current source           |
 
 ### Allowed variation
@@ -127,8 +127,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 | Icon             | Optional crumb start content.    | `component:BreadcrumbItem`     | Supporting     | —                  |
 
 No anatomy-theming map is recorded yet; the block is optional during migration.
-Mapping the four anatomy parts against the family's four targets, three of which
-BreadcrumbItem owns, by delegation, is deferred.
+Mapping the four anatomy parts against the four targets `Breadcrumbs.doc.mjs`
+lists, three of which BreadcrumbItem owns, by delegation, is deferred.
 
 ## Family and system relationships
 
