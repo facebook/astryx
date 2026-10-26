@@ -9,7 +9,7 @@
  *   programmatic turns
  * @output Exports PickerWheel — one UIPickerView column
  * @position Internal component; the Wheel under a finger (Wheel.tsx picks
- *   it and loads it lazily), drawn standalone or inside a WheelGroup
+ *   it and imports it statically), drawn standalone or inside a WheelGroup
  *
  * This is UIPickerView's column, its look and motion, drawn under a finger
  * on every touch device (one touch model, iOS and Android alike); Wheel.tsx
