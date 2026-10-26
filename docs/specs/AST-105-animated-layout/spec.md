@@ -77,7 +77,7 @@ const animatedLayout = useAnimatedLayout({containerRef: scrollRef});
   the glide.
 - **FR4 — One shared motion.** The changed element plays its own animation,
   entering, exiting, or resizing, and the content after it moves with it.
-  Both read the same theme motion role, `springs.settle` (`spec:AST-094`
+  Both read the same motion role, `springs.settle` (`spec:AST-094`
   FR4), so the timing is governed centrally, never per component; both start
   on the same frame, and Reduce Motion reaches both through that role, as
   `design:reduced-motion` DR1–DR3 require: a cross-fade under a coarse
@@ -136,12 +136,12 @@ Out of coverage, each taking its final place at once:
 
 ## Verification
 
-| Contract      | Verification                                                                                                                              | Representative states                                                                                  | Mutation or failure expectation                                                                                                                      |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1, FR2      | Unit and browser tests with and without a handle                                                                                          | a handle on TreeList; no handle; a ScrollableArea ref                                                  | a handle with public members, behavior that changes without a handle, or ScrollableArea registering itself fails                                     |
-| FR3, Coverage | Real-browser tests, one per Coverage row                                                                                                  | each Coverage row; mixed Astryx and plain content; two changes in one frame; an area scrolled mid-list | an element that behaves other than its row says, an element moved twice for one frame, content past the area that moves, or the area scrolling fails |
-| FR4           | Real-browser frame capture under a coarse and a fine pointer, with and without Reduce Motion, and with a theme overriding the motion role | a changed element and its visible followers                                                            | starting on different frames or reading different motion, a component-specific timing, or Reduce Motion applied to one and not the other fails       |
-| FR5           | Fine-pointer before-and-after evidence on each adopting pull request, from the component's Storybook story                                | a mouse on each adopting component                                                                     | a glide missing under a mouse, or an adopting pull request without that evidence, fails                                                              |
+| Contract      | Verification                                                                                               | Representative states                                                                                  | Mutation or failure expectation                                                                                                                      |
+| ------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1, FR2      | Unit and browser tests with and without a handle                                                           | a handle on TreeList; no handle; a ScrollableArea ref                                                  | a handle with public members, behavior that changes without a handle, or ScrollableArea registering itself fails                                     |
+| FR3, Coverage | Real-browser tests, one per Coverage row                                                                   | each Coverage row; mixed Astryx and plain content; two changes in one frame; an area scrolled mid-list | an element that behaves other than its row says, an element moved twice for one frame, content past the area that moves, or the area scrolling fails |
+| FR4           | Real-browser frame capture under a coarse and a fine pointer, with and without Reduce Motion               | a changed element and its visible followers                                                            | starting on different frames or reading different motion, a component-specific timing, or Reduce Motion applied to one and not the other fails       |
+| FR5           | Fine-pointer before-and-after evidence on each adopting pull request, from the component's Storybook story | a mouse on each adopting component                                                                     | a glide missing under a mouse, or an adopting pull request without that evidence, fails                                                              |
 
 ## Decision log
 
