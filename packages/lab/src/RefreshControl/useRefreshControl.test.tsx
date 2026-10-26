@@ -20,6 +20,7 @@
 import {useState, type ReactNode} from 'react';
 import {act, render, screen, waitFor} from '@testing-library/react';
 import {useScrollLock} from '@astryxdesign/core/hooks';
+import {refreshControl} from '@astryxdesign/core/motion/uikit/refresh';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   useRefreshControl,
@@ -118,11 +119,8 @@ function translateY(element: HTMLElement): number {
   return parseFloat(parts[1] ?? '0');
 }
 
-/**
- * A host whose glyph wrapper holds the drawing's two spoke layers, as
- * RefreshControl's does.
- */
-function LayeredRefreshable({
+/** A host whose glyph holds the drawing's eight spokes, as RefreshControl's. */
+function SpokedRefreshable({
   children,
   ...options
 }: UseRefreshControlOptions & {children: ReactNode}) {
@@ -132,18 +130,11 @@ function LayeredRefreshable({
       data-testid="refresh"
       ref={control.contentRef}
       aria-busy={control.isRefreshing || undefined}>
-      {/* The layers' resting opacities, as RefreshControl's stylesheet sets
-          them (`uniformSet`, `gradientSet`): the animator leaves an opacity
-          of 1 inline only where the stylesheet would otherwise hide it. */}
-      <style>
-        {
-          '[data-testid="reveal-layer"]{opacity:1}[data-testid="spin-layer"]{opacity:0}'
-        }
-      </style>
       <div ref={control.indicatorRef} aria-hidden>
         <span ref={control.spinnerRef}>
-          <span data-testid="reveal-layer" ref={control.revealLayerRef} />
-          <span data-testid="spin-layer" ref={control.spinLayerRef} />
+          {Array.from({length: refreshControl.indicatorSpokes}, (_, index) => (
+            <span key={index} data-testid="spoke" />
+          ))}
         </span>
       </div>
       <button type="button" onClick={control.refresh}>
@@ -154,11 +145,33 @@ function LayeredRefreshable({
   );
 }
 
-/** The two spoke layers' opacities as shown: inline, over the stylesheet. */
-function layers(): {reveal: string; spin: string} {
-  const shown = (testId: string) =>
-    getComputedStyle(screen.getByTestId(testId)).opacity;
-  return {reveal: shown('reveal-layer'), spin: shown('spin-layer')};
+/**
+ * Every element added to or removed from the glyph from now on: the trigger's
+ * transient copy of the spokes.
+ */
+function watchGlyph(): {added: HTMLElement[]; removed: HTMLElement[]} {
+  const glyph = screen.getAllByTestId('spoke')[0].parentElement as HTMLElement;
+  const seen = {added: [] as HTMLElement[], removed: [] as HTMLElement[]};
+  new MutationObserver(records => {
+    for (const record of records) {
+      seen.added.push(...(Array.from(record.addedNodes) as HTMLElement[]));
+      seen.removed.push(...(Array.from(record.removedNodes) as HTMLElement[]));
+    }
+  }).observe(glyph, {childList: true});
+  return seen;
+}
+
+/** Lets the mutation observer and the animator's promises run. */
+async function flush(): Promise<void> {
+  await act(async () => {
+    await Promise.resolve();
+  });
+}
+
+/** The indicator, whose spinning attribute starts the spokes' steps. */
+function indicator(): HTMLElement {
+  return screen.getAllByTestId('spoke')[0].parentElement
+    ?.parentElement as HTMLElement;
 }
 
 function content(): HTMLElement {
@@ -180,6 +193,7 @@ describe('useRefreshControl', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     window.matchMedia = originalMatchMedia;
     if (originalCss) {
       Object.defineProperty(window, 'CSS', originalCss);
@@ -887,57 +901,128 @@ describe('useRefreshControl', () => {
     rerender(<Host hasControl={false} />);
     expect(scroller.style.overscrollBehaviorY).toBe('');
   });
-  it('cross-fades the drawing\u2019s spoke layers at the trigger and resets them at the end', async () => {
+  it('at the trigger steps the spokes at once and fades a transient copy of them out over them', async () => {
+    // The animator settles a call on a timer at the end of its curve.
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
     let resolve: () => void = () => {};
     render(
-      <LayeredRefreshable
+      <SpokedRefreshable
         onRefresh={() =>
           new Promise<void>(done => {
             resolve = done;
           })
         }>
         <p>Inbox</p>
-      </LayeredRefreshable>,
+      </SpokedRefreshable>,
     );
+    const seen = watchGlyph();
     pull(content(), [30, 30, 30, 30]);
-    // On the gradient spring (the animator lands it at once here): the
-    // revealed spokes out, the stepping gradient in.
-    expect(layers()).toEqual({reveal: '0', spin: '1'});
+    // The spokes step from the trigger: no hand-over later.
+    expect(indicator()).toHaveAttribute('data-refresh-spinning');
+    await flush();
+    // One transient copy, holding a copy of each spoke as the pull left it:
+    // full alpha, none of the spinning steps.
+    expect(seen.added).toHaveLength(1);
+    const [copy] = seen.added;
+    expect(copy.children).toHaveLength(refreshControl.indicatorSpokes);
+    for (const spoke of Array.from(copy.children) as HTMLElement[]) {
+      expect(spoke.style.animationName).toBe('none');
+      expect(spoke.style.opacity).toBe('1');
+      expect(spoke.childNodes).toHaveLength(0);
+    }
+    // It fades out (the animator lands it at once here) and stays until the
+    // spring has settled, then it is gone: at rest the glyph holds its eight
+    // spokes alone.
+    expect(copy.style.opacity).toBe('0');
+    expect(seen.removed).toEqual([]);
+    await act(async () => {
+      vi.advanceTimersByTime(10_000);
+    });
+    await flush();
+    expect(seen.removed).toEqual([copy]);
+    expect(screen.getAllByTestId('spoke')).toHaveLength(
+      refreshControl.indicatorSpokes,
+    );
+    vi.useRealTimers();
     await act(async () => {
       resolve();
     });
     expect(content()).not.toHaveAttribute('aria-busy');
-    // Once the end's slide has finished.
-    await waitFor(() => expect(layers()).toEqual({reveal: '1', spin: '0'}));
+    // Once the end's slide has finished, the spokes show the reveal again.
+    await waitFor(() =>
+      expect(indicator()).not.toHaveAttribute('data-refresh-spinning'),
+    );
   });
 
-  it('shows the gradient at once for a refresh begun without a pull', () => {
+  it('under Reduce Motion fades the copy too, with the spokes stepping from the trigger', async () => {
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+    window.matchMedia = (query: string) =>
+      ({
+        matches: COARSE.test(query) || /prefers-reduced-motion/.test(query),
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      }) as MediaQueryList;
     render(
-      <LayeredRefreshable onRefresh={() => new Promise<void>(() => {})}>
+      <SpokedRefreshable onRefresh={() => new Promise<void>(() => {})}>
         <p>Inbox</p>
-      </LayeredRefreshable>,
+      </SpokedRefreshable>,
     );
+    const seen = watchGlyph();
+    pull(content(), [30, 30, 30, 30]);
+    expect(indicator()).toHaveAttribute('data-refresh-spinning');
+    await flush();
+    expect(seen.added).toHaveLength(1);
+    // The animator's 200 ms cross-fade, then the copy is gone.
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    await flush();
+    vi.useRealTimers();
+    expect(seen.removed).toEqual(seen.added);
+  });
+
+  it('shows the gradient at once for a refresh begun without a pull', async () => {
+    render(
+      <SpokedRefreshable onRefresh={() => new Promise<void>(() => {})}>
+        <p>Inbox</p>
+      </SpokedRefreshable>,
+    );
+    const seen = watchGlyph();
     act(() => {
       screen.getByRole('button', {name: 'Refresh'}).click();
     });
     expect(content()).toHaveAttribute('aria-busy', 'true');
-    expect(layers()).toEqual({reveal: '0', spin: '1'});
+    // The stepping keyframes, with no cross-fade.
+    expect(indicator()).toHaveAttribute('data-refresh-spinning');
+    await flush();
+    expect(seen.added).toEqual([]);
   });
 
-  it('brings the revealed spokes back when a refresh ends under the finger', () => {
+  it('brings the revealed spokes back when a refresh ends under the finger', async () => {
     function Controlled({isRefreshing}: {isRefreshing: boolean}) {
       return (
-        <LayeredRefreshable isRefreshing={isRefreshing} onRefresh={() => {}}>
+        <SpokedRefreshable isRefreshing={isRefreshing} onRefresh={() => {}}>
           <p>Inbox</p>
-        </LayeredRefreshable>
+        </SpokedRefreshable>
       );
     }
     const {rerender} = render(<Controlled isRefreshing={false} />);
     // A pull past the trigger, the finger still down.
     pull(content(), [30, 30, 30, 30], false);
     rerender(<Controlled isRefreshing />);
-    expect(layers()).toEqual({reveal: '0', spin: '1'});
+    expect(indicator()).toHaveAttribute('data-refresh-spinning');
     rerender(<Controlled isRefreshing={false} />);
-    expect(layers()).toEqual({reveal: '1', spin: '0'});
+    expect(indicator()).not.toHaveAttribute('data-refresh-spinning');
+    await flush();
+    expect(screen.getAllByTestId('spoke')).toHaveLength(
+      refreshControl.indicatorSpokes,
+    );
+    const glyph = indicator().firstElementChild as HTMLElement;
+    expect(glyph.children).toHaveLength(refreshControl.indicatorSpokes);
   });
 });

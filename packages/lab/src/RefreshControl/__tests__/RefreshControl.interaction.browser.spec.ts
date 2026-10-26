@@ -1393,19 +1393,25 @@ test(
 
 /**
  * For each frame, which of the eight spokes is the darkest (the gradient's
- * head), sampled at the middle of each spoke (10 pt from the center).
+ * head), sampled at the middle of each spoke (10 pt from the center), and
+ * each spoke's darkness there.
  */
 async function spinHeads(
   page: Page,
   castFrames: readonly {t: number; data: string}[],
   glyph: {x: number; y: number; width: number; height: number},
-): Promise<{t: number; head: number; contrast: number}[]> {
+): Promise<{t: number; head: number; contrast: number; dark: number[]}[]> {
   const scratch = await page.context().newPage();
   try {
     const viewport = page.viewportSize() ?? {width: 402, height: 874};
     return await scratch.evaluate(
       async ({items, box, width}) => {
-        const out: {t: number; head: number; contrast: number}[] = [];
+        const out: {
+          t: number;
+          head: number;
+          contrast: number;
+          dark: number[];
+        }[] = [];
         for (const item of items) {
           const bitmap = await createImageBitmap(
             await (await fetch(`data:image/png;base64,${item.data}`)).blob(),
@@ -1437,6 +1443,7 @@ async function spinHeads(
             t: item.t,
             head: dark.indexOf(max),
             contrast: max - sorted[1],
+            dark,
           });
         }
         return out;
@@ -1522,7 +1529,7 @@ test('the spin steps clockwise every eighth of a second while the main thread is
   }
 });
 
-test('the spin does no Layout or Paint per step', async ({
+test('the cross-fade and the spin do no Layout or Paint per frame', async ({
   page,
   browserName,
 }) => {
@@ -1532,16 +1539,34 @@ test('the spin does no Layout or Paint per step', async ({
   });
   await driver.play(slowPull(start, 300, 200));
   await expect.poll(() => isBusy(content)).toBe(true);
-  await page.waitForTimeout(3600);
-  const trace = await traceRendering(page, async () => {
-    // A fixed wait: eight steps of the spin.
+  const glyph = content.locator(':scope > div:last-child > div > span').first();
+  // While the transient copy fades out over the stepping spokes, once the
+  // content holds still (the pull itself repaints: the content's translate).
+  await waitForSettle(content);
+  const copyCount = () => glyph.evaluate(element => element.children.length);
+  expect(await copyCount()).toBe(9);
+  const during = await traceRendering(page, async () => {
+    await page.waitForTimeout(600);
+  });
+  // The copy was still fading the whole time.
+  expect(await copyCount()).toBe(9);
+  expect(during.layout, JSON.stringify(during.counts)).toBe(0);
+  expect(during.paint, JSON.stringify(during.counts)).toBe(0);
+  // Then the spin alone, once the copy is gone: eight steps.
+  await expect
+    .poll(() => glyph.evaluate(element => element.children.length), {
+      timeout: 8000,
+    })
+    .toBe(8);
+  await page.waitForTimeout(200);
+  const after = await traceRendering(page, async () => {
     await page.waitForTimeout(1000);
   });
-  expect(trace.layout, JSON.stringify(trace.counts)).toBe(0);
-  expect(trace.paint, JSON.stringify(trace.counts)).toBe(0);
+  expect(after.layout, JSON.stringify(after.counts)).toBe(0);
+  expect(after.paint, JSON.stringify(after.counts)).toBe(0);
 });
 
-test('at the trigger the gradient cross-fades in, the two sets summing to UIKit\u2019s alpha', async ({
+test('at the trigger each spoke cross-fades into the gradient: UIKit\u2019s two images summed', async ({
   page,
   browserName,
 }) => {
@@ -1553,8 +1578,9 @@ test('at the trigger the gradient cross-fades in, the two sets summing to UIKit\
   await expect.poll(() => isBusy(content)).toBe(true);
   await page.waitForTimeout(1200);
   const glyph = content.locator(':scope > div:last-child > div > span').first();
-  // Hold the glyph at the gradient spring's midpoint (g = 0.5 at 0.755 s of
-  // its 4 s), the trigger turn finished and the spin mid-step 0.
+  // Hold everything 0.755 s after the trigger: the copy's fade at the
+  // gradient spring's midpoint (w = 0.5), the spokes' steps at step 6, the
+  // trigger turn finished.
   const held = await glyph.evaluate(element => {
     const kinds: string[] = [];
     for (const animation of element.getAnimations({subtree: true})) {
@@ -1564,22 +1590,29 @@ test('at the trigger the gradient cross-fades in, the two sets summing to UIKit\
         animation.finish();
         kinds.push('turn');
       } else if (timing?.iterations === Infinity) {
-        animation.currentTime = 62;
+        animation.currentTime = 755;
         kinds.push('spin');
       } else {
         animation.currentTime = 755;
-        kinds.push('spring');
+        kinds.push('cross-fade');
       }
     }
     return {
       kinds,
-      fill: getComputedStyle(element.querySelector('svg') as Element).fill,
+      children: element.children.length,
+      copySpokes: element.lastElementChild?.children.length ?? 0,
+      color: getComputedStyle(element.firstElementChild as Element)
+        .backgroundColor,
     };
   });
-  expect(held.kinds.filter(k => k === 'spring')).toHaveLength(2);
+  // The eight spokes and the transient copy of them, each element with its
+  // one animation: eight steps and one fade.
+  expect(held.children).toBe(9);
+  expect(held.copySpokes).toBe(8);
   expect(held.kinds.filter(k => k === 'spin')).toHaveLength(8);
+  expect(held.kinds.filter(k => k === 'cross-fade')).toHaveLength(1);
   const shot = await glyph.screenshot();
-  const fill = (held.fill.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+  const ink = (held.color.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
   const alphas = await page.evaluate(
     async ({png, color}) => {
       const bitmap = await createImageBitmap(
@@ -1614,28 +1647,155 @@ test('at the trigger the gradient cross-fades in, the two sets summing to UIKit\
           }
         }
         const level = sum / n;
-        const ink = (color[0] + color[1] + color[2]) / 3;
+        const gray = (color[0] + color[1] + color[2]) / 3;
         // The page is white: level = 255 - alpha * (255 - ink).
-        out.push((255 - level) / (255 - ink));
+        out.push((255 - level) / (255 - gray));
       }
       return out;
     },
-    {png: shot.toString('base64'), color: fill},
+    {png: shot.toString('base64'), color: ink},
   );
-  // The revealed spokes at 1 - g plus the stepping spoke at g times its
-  // instance's alpha (spoke p holds instance p at step 0): plus-lighter's
-  // sum, where normal blending would take away (1 - g) g a.
-  const g = 0.5;
+  // Each spoke at 1 - w + w × its instance's alpha (spoke p holds instance
+  // (p - 6) mod 8 at step 6): the copy at 1 - w over the stepping spoke,
+  // UIKit's sum of its two images.
+  const w = 0.5;
   alphas.forEach((alpha, p) => {
-    const instance = 0.08 * p;
-    const sum = 1 - g + g * instance;
+    const instance = 0.08 * ((p + 2) % 8);
+    const sum = 1 - w + w * instance;
     expect(
       Math.abs(alpha - sum),
       `spoke ${p}: ${alpha.toFixed(3)}`,
     ).toBeLessThan(0.03);
   });
-  // The brightest spoke shows the sum, not normal blending's 0.64.
-  expect(alphas[7]).toBeGreaterThan(0.74);
+  // The brightest spoke (instance 7, at spoke 5) shows the sum, not normal
+  // blending's 0.64.
+  expect(alphas[5]).toBeGreaterThan(0.74);
+});
+
+test('the cross-fade keeps moving while the main thread is blocked right after the trigger', async ({
+  page,
+  browserName,
+}, testInfo) => {
+  test.skip(
+    browserName !== 'chromium',
+    'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
+  );
+  const {driver, content, start} = await openRefresh(page, undefined, {
+    refreshMs: '8000',
+  });
+  const cast = await startScreencast(page);
+  await driver.play(slowPull(start, 300, 200));
+  // Blocked from the page itself as soon as the trigger has mounted the
+  // copy, so the block covers the start of its fade.
+  const {block, glyph} = await content.evaluate(async element => {
+    const spinner = element.querySelector(
+      ':scope > div:last-child > div > span',
+    ) as Element;
+    while (spinner.children.length < 9) {
+      await new Promise(requestAnimationFrame);
+    }
+    // A few frames after the lift, so the settle it starts has committed,
+    // then from a task of its own: a block that holds a pending commit makes
+    // the compositor wait for it before drawing on, a startup gap that is
+    // not the cross-fade's.
+    for (let i = 0; i < 3; i += 1) {
+      await new Promise(requestAnimationFrame);
+    }
+    await new Promise(resolve => setTimeout(resolve, 0));
+    const rect = spinner.getBoundingClientRect();
+    const from = performance.timeOrigin + performance.now();
+    const end = performance.now() + 700;
+    while (performance.now() < end) {
+      // Hold the main thread.
+    }
+    return {
+      block: {from, to: performance.timeOrigin + performance.now()},
+      glyph: {x: rect.x, y: rect.y, width: rect.width, height: rect.height},
+    };
+  });
+  await page.waitForTimeout(150);
+  const castFrames = await cast.stop();
+  // The glyph's whole ink, frame by frame: the turn moves the spokes but not
+  // how much they cover, so only the fade changes it.
+  const scratch = await page.context().newPage();
+  const viewport = page.viewportSize() ?? {width: 402, height: 874};
+  const inks = await scratch
+    .evaluate(
+      async ({items, box, width}) => {
+        const out: {t: number; ink: number}[] = [];
+        for (const item of items) {
+          const bitmap = await createImageBitmap(
+            await (await fetch(`data:image/png;base64,${item.data}`)).blob(),
+          );
+          const scale = bitmap.width / width;
+          const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+          const context = canvas.getContext('2d');
+          if (context == null) {
+            throw new Error('no 2d context');
+          }
+          context.drawImage(bitmap, 0, 0);
+          const pad = 2;
+          const x = Math.floor((box.x - pad) * scale);
+          const y = Math.floor((box.y - pad) * scale);
+          const side = Math.ceil((box.width + 2 * pad) * scale);
+          const {data} = context.getImageData(x, y, side, side);
+          let ink = 0;
+          for (let i = 0; i < data.length; i += 4) {
+            ink += 765 - (data[i] + data[i + 1] + data[i + 2]);
+          }
+          out.push({t: item.t, ink: ink / (scale * scale * 765)});
+        }
+        return out;
+      },
+      {
+        items: castFrames.map(f => ({t: f.t, data: f.data})),
+        box: glyph,
+        width: viewport.width,
+      },
+    )
+    .finally(() => scratch.close());
+  const inside = inks.filter(
+    f => f.t >= block.from + 20 && f.t <= block.to - 20,
+  );
+  // The screencast's own cadence, from the frames around the block.
+  const around = inks.filter(
+    f => f.t >= block.from - 300 && f.t <= block.to + 150,
+  );
+  const intervals = around
+    .slice(1)
+    .map((f, i) => f.t - around[i].t)
+    .sort((a, b) => a - b);
+  const cadenceMs = intervals[Math.floor(intervals.length / 2)] ?? 16.7;
+  const expectedFrames = Math.floor((block.to - block.from - 40) / cadenceMs);
+  // The copy fades every frame, so every presented frame shows less ink
+  // than the one before it.
+  let changed = 0;
+  let longestStill = 0;
+  let last = block.from + 20;
+  for (let i = 1; i < inside.length; i += 1) {
+    if (inside[i].ink < inside[i - 1].ink - 0.05) {
+      changed += 1;
+      longestStill = Math.max(longestStill, inside[i].t - last);
+      last = inside[i].t;
+    }
+  }
+  longestStill = Math.max(longestStill, block.to - 20 - last);
+  await writeEvidence(
+    'busy-main-thread/refresh-trigger',
+    {
+      [`${testInfo.project.name}.json`]: JSON.stringify(
+        {block, glyph, cadenceMs, expectedFrames, changed, frames: inside},
+        null,
+        1,
+      ),
+    },
+    testInfo,
+  );
+  expect(inside.length).toBeGreaterThanOrEqual(expectedFrames - 2);
+  expect(changed, JSON.stringify(inside)).toBeGreaterThanOrEqual(
+    inside.length - 3,
+  );
+  expect(longestStill).toBeLessThanOrEqual(3 * cadenceMs);
 });
 
 test('under Reduce Motion the gradient cross-fades in on a touch screen: opacity only, within 200 ms', async ({
@@ -1644,8 +1804,8 @@ test('under Reduce Motion the gradient cross-fades in on a touch screen: opacity
 }) => {
   test.skip(browserName !== 'chromium', 'Chromium proof');
   // design:reduced-motion DR2: the trigger's cross-fade from the revealed
-  // spokes to the stepping ones goes through the animator, which fades it,
-  // opacity only, in 200 ms or less on a touch screen.
+  // spokes to the stepping ones is the shared fade, opacity only, in 200 ms
+  // or less on a touch screen.
   await page.emulateMedia({reducedMotion: 'reduce'});
   await primaryPointer(page, 'coarse');
   const {driver, content, start} = await openRefresh(page, undefined, {
@@ -1656,10 +1816,9 @@ test('under Reduce Motion the gradient cross-fades in on a touch screen: opacity
   await expect.poll(() => isBusy(content)).toBe(true);
   await page.waitForTimeout(400);
   const log = await recordedAnimations(page);
-  // The two layers inside the spinner: the revealed set fades out as the
-  // stepping set fades in.
+  // The transient copy of the spokes inside the spinner fades out over them.
   const fades = log.filter(a => a.part === 'other' && !a.endless);
-  expect(fades.length, JSON.stringify(log)).toBeGreaterThanOrEqual(2);
+  expect(fades.length, JSON.stringify(log)).toBeGreaterThanOrEqual(1);
   for (const fade of fades) {
     expect(fade.properties, JSON.stringify(fade)).toEqual(['opacity']);
     expect(fade.travels).toBe(false);
@@ -1678,10 +1837,15 @@ test(
     });
     await driver.play(slowPull(start, 300, 200));
     await expect.poll(() => isBusy(content)).toBe(true);
-    await page.waitForTimeout(4200);
     const glyph = content
       .locator(':scope > div:last-child > div > span')
       .first();
+    // Once the trigger's cross-fade is over and its copy gone.
+    await expect
+      .poll(() => glyph.evaluate(element => element.children.length), {
+        timeout: 8000,
+      })
+      .toBe(8);
     // Hold the glyph's animations, then show each eighth of a turn mid-hold.
     await glyph.evaluate(element => {
       for (const animation of element.getAnimations({subtree: true})) {

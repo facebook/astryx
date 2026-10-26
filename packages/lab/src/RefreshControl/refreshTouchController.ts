@@ -68,7 +68,10 @@ import {
 } from 'react';
 import {claimRootScrollStyle} from '@astryxdesign/core/gestures';
 import {useGestureRecognizer} from '@astryxdesign/core/gestures/useGestureRecognizer';
-import type {MotionCurve} from '@astryxdesign/core/motion/animator';
+import {
+  createAnimator,
+  type MotionCurve,
+} from '@astryxdesign/core/motion/animator';
 import {cubicBezier} from '@astryxdesign/core/motion/bezier';
 import {resolveMotion} from '@astryxdesign/core/motion/resolveMotion';
 import {solveSpring, toSpring} from '@astryxdesign/core/motion/spring';
@@ -123,8 +126,6 @@ export interface RefreshTouchController {
   readonly indicatorRef: RefCallback<HTMLElement>;
   readonly spinnerRef: RefCallback<HTMLElement>;
   readonly titleRef: RefCallback<HTMLElement>;
-  readonly revealLayerRef: RefCallback<HTMLElement>;
-  readonly spinLayerRef: RefCallback<HTMLElement>;
   /** A pull triggered: the spin starts with the turn; the release settles onto the inset. */
   trigger(): void;
   /** A refresh began without a pull: the inset arrives with no visible motion. */
@@ -224,9 +225,10 @@ export function useRefreshTouchController({
   const title = useAnimator();
   // The spinner turns on its own: the title beside it must not.
   const turn = useAnimator();
-  // The drawing's two spoke layers, cross-faded at the trigger.
-  const revealLayer = useAnimator();
-  const spinLayer = useAnimator();
+  // The spinner's glyph, whose children are the drawing's eight spokes, and
+  // the transient copy of them that fades out over them at the trigger.
+  const spinnerElement = useRef<HTMLElement | null>(null);
+  const crossFadeCopy = useRef<HTMLElement | null>(null);
   const contentElement = useRef<HTMLElement | null>(null);
   const indicatorElement = useRef<HTMLElement | null>(null);
   // Whether the content holds the refreshing inset (only under a finger).
@@ -336,26 +338,69 @@ export function useRefreshTouchController({
     }
   }, [indicator.animator, title.animator, turn.animator]);
 
+  /** Removes the trigger's transient copy of the spokes, if it is there. */
+  const removeCrossFadeCopy = useCallback(() => {
+    crossFadeCopy.current?.remove();
+    crossFadeCopy.current = null;
+  }, []);
+
+  /** Starts the spokes' own stepping keyframes: the spinning attribute. */
+  const startStepping = useCallback(() => {
+    indicatorElement.current?.setAttribute(REFRESH_SPINNING_ATTRIBUTE, '');
+  }, []);
+
   /**
-   * The revealed spokes shown, the stepping gradient hidden. Each layer is
-   * written only when it is not there already, so an idle layer is not
-   * promoted (and released mid-settle) for nothing.
+   * UIKit's cross-fade at the trigger. UIKit fades the revealed spokes out as
+   * the stepping gradient fades in, on one spring, and sums the two: each
+   * spoke at 1 − w + w × g, w the spring's progress and g the spoke's step of
+   * the gradient. Here the spokes step from the trigger, at full, and a
+   * transient copy of them as the pull left them (every one at full alpha)
+   * sits over them and fades out on that spring, under the theme: with normal
+   * blending a copy at 1 − w over a spoke at g shows exactly 1 − w + w × g.
+   * Each element runs one animation (the spokes their steps, the copy its
+   * fade), so the cross-fade runs on the compositor and keeps going while a
+   * script holds the main thread; under Reduce Motion the animator makes the
+   * fade its 200 ms cross-fade. The copy is removed once its fade has ended
+   * (it holds 0 until then), so at rest the indicator draws its spokes once.
    */
-  const showRevealLayer = useCallback(() => {
-    if (revealLayer.animator.get('opacity') !== 1) {
-      revealLayer.animator.set({opacity: 1});
+  const playCrossFade = useCallback(() => {
+    removeCrossFadeCopy();
+    const glyph = spinnerElement.current;
+    if (glyph == null) {
+      return;
     }
-    if (spinLayer.animator.get('opacity') !== 0) {
-      spinLayer.animator.set({opacity: 0});
+    const copy = glyph.ownerDocument.createElement('span');
+    copy.style.position = 'absolute';
+    copy.style.inset = '0';
+    for (const spoke of Array.from(glyph.children)) {
+      const spokeCopy = spoke.cloneNode(false) as HTMLElement;
+      // As the pull left it: full alpha, and none of the spinning steps.
+      spokeCopy.style.animationName = 'none';
+      spokeCopy.style.opacity = '1';
+      copy.append(spokeCopy);
     }
-  }, [revealLayer.animator, spinLayer.animator]);
+    glyph.append(copy);
+    crossFadeCopy.current = copy;
+    const fade = createAnimator(copy);
+    fade.set({opacity: 1});
+    void fade
+      .animate(
+        {opacity: 0},
+        {spring: refreshControl.triggerGradientSpring, velocity: {opacity: 0}},
+      )
+      .finished.then(() => {
+        if (crossFadeCopy.current === copy) {
+          removeCrossFadeCopy();
+        }
+      });
+  }, [removeCrossFadeCopy]);
 
   const resetIndicator = useCallback(() => {
     indicatorElement.current?.removeAttribute(REFRESH_SPINNING_ATTRIBUTE);
     setReveal(0);
     restoreIndicator();
-    showRevealLayer();
-  }, [restoreIndicator, setReveal, showRevealLayer]);
+    removeCrossFadeCopy();
+  }, [removeCrossFadeCopy, restoreIndicator, setReveal]);
 
   const startSpinning = useCallback(
     (withTurn: boolean) => {
@@ -363,7 +408,11 @@ export function useRefreshTouchController({
       if (indicator.animator.get('opacity') !== 1) {
         indicator.animator.set({opacity: 1});
       }
-      indicatorElement.current?.setAttribute(REFRESH_SPINNING_ATTRIBUTE, '');
+      // A trigger while the gradient already steps (a pull during a refresh)
+      // turns the spinner again but leaves the gradient as it is.
+      const isStepping =
+        indicatorElement.current?.hasAttribute(REFRESH_SPINNING_ATTRIBUTE) ===
+        true;
       if (withTurn) {
         // Under Reduce Motion there is no turn: the spinner starts at rest, so
         // nothing moves and nothing changes (design:reduced-motion DR1), where
@@ -375,27 +424,20 @@ export function useRefreshTouchController({
             {spring: refreshControl.triggerTurnSpring, velocity: {rotate: 0}},
           );
         }
-        // UIKit springs the refreshing gradient in at the trigger: the
-        // revealed spokes fade out as the stepping ones fade in, on one
-        // spring, started with the turn so all three share a frame. Under
-        // Reduce Motion the animator fades them instead.
-        const gradient = {
-          spring: refreshControl.triggerGradientSpring,
-          velocity: {opacity: 0},
-        };
-        revealLayer.animator.animate({opacity: 0}, gradient);
-        spinLayer.animator.animate({opacity: 1}, gradient);
-      } else {
-        // A refresh begun without a pull shows the gradient at once.
-        revealLayer.animator.set({opacity: 0});
-        spinLayer.animator.set({opacity: 1});
+        // UIKit springs the refreshing gradient in at the trigger, started
+        // with the turn so they share a frame.
+        if (!isStepping) {
+          playCrossFade();
+        }
       }
+      // A refresh begun without a pull shows the gradient at once.
+      startStepping();
     },
     [
       indicator.animator,
-      revealLayer.animator,
+      playCrossFade,
       setReveal,
-      spinLayer.animator,
+      startStepping,
       turn.animator,
     ],
   );
@@ -588,7 +630,7 @@ export function useRefreshTouchController({
       // indicator retracts with it.
       pull.current.floor = 0;
       indicatorElement.current?.removeAttribute(REFRESH_SPINNING_ATTRIBUTE);
-      showRevealLayer();
+      removeCrossFadeCopy();
       return;
     }
     if (!hadInset) {
@@ -663,7 +705,7 @@ export function useRefreshTouchController({
     place,
     resetIndicator,
     resolveOwner,
-    showRevealLayer,
+    removeCrossFadeCopy,
     stopPlacing,
     title.animator,
     turn.animator,
@@ -806,43 +848,10 @@ export function useRefreshTouchController({
 
   const spinnerRef = useCallback(
     (element: HTMLElement | null) => {
+      spinnerElement.current = element;
       turn.ref(element);
     },
     [turn],
-  );
-
-  // Each layer starts where the drawing shows it: revealed spokes shown and
-  // the gradient hidden, unless the indicator is already spinning (a drawing
-  // mounted mid-refresh). The animator then springs from there; nothing is
-  // written when the layer already holds that value.
-  const attachLayer = useCallback(
-    (
-      layer: typeof revealLayer,
-      element: HTMLElement | null,
-      opacity: (isSpinning: boolean) => number,
-    ) => {
-      layer.ref(element);
-      if (element == null) {
-        return;
-      }
-      const target = opacity(
-        element.closest(`[${REFRESH_SPINNING_ATTRIBUTE}]`) != null,
-      );
-      if (layer.animator.get('opacity') !== target) {
-        layer.animator.set({opacity: target});
-      }
-    },
-    [],
-  );
-  const revealLayerRef = useCallback(
-    (element: HTMLElement | null) =>
-      attachLayer(revealLayer, element, isSpinning => (isSpinning ? 0 : 1)),
-    [attachLayer, revealLayer],
-  );
-  const spinLayerRef = useCallback(
-    (element: HTMLElement | null) =>
-      attachLayer(spinLayer, element, isSpinning => (isSpinning ? 1 : 0)),
-    [attachLayer, spinLayer],
   );
 
   const trigger = useCallback(() => {
@@ -869,8 +878,6 @@ export function useRefreshTouchController({
       indicatorRef,
       spinnerRef,
       titleRef: title.ref,
-      revealLayerRef,
-      spinLayerRef,
       trigger,
       begin,
       settle,
@@ -881,9 +888,7 @@ export function useRefreshTouchController({
       contentRef,
       end,
       indicatorRef,
-      revealLayerRef,
       settle,
-      spinLayerRef,
       spinnerRef,
       title.ref,
       trigger,
