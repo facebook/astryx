@@ -21,7 +21,8 @@
  *   from where they are (closed mid-presentation, or reopened mid-exit, the
  *   fade springs from the presented opacity with its velocity);
  * - input is held during either transition (Layer/inputHold): while
- *   it presents, a touch, a press or a click anywhere reaches nothing until
+ *   it presents, a touch, a pointer press or a click anywhere reaches nothing
+ *   (keys and assistive technology stay live, and nothing is inert) until
  *   the presentation completes (UIKit's touch window, counted from when the
  *   browser started it, `handle.started`); while it leaves, its content is
  *   inert under the same shield until it is hidden;
@@ -209,17 +210,26 @@ export function useAlertMotion({
   // The input hold in place (Layer/inputHold): a touch during
   // either transition reaches nothing.
   const releaseHoldRef = useRef<(() => void) | null>(null);
+  // The action a dismissal's hold blurred (its content turns inert), given
+  // focus back if the alert reopens mid-exit.
+  const blurredByDismissalRef = useRef<HTMLElement | null>(null);
   const acceptsTouches = useCallback(
     () =>
       !isEnabledRef.current ||
       (statusRef.current === 'open' && !isInHeldLayer(elementRef.current)),
     [],
   );
-  // Unmounting lets the alert go at once, hold included.
+  // Unmounting lets the alert go at once, hold included. The alert counts as
+  // hidden again, so an effect replay (StrictMode runs every cleanup once,
+  // then every effect) presents it again and places its hold
+  // (architecture:react-component-runtime INV3).
   useEffect(
     () => () => {
       releaseHoldRef.current?.();
       releaseHoldRef.current = null;
+      statusRef.current = 'hidden';
+      exitRef.current = null;
+      blurredByDismissalRef.current = null;
     },
     [],
   );
@@ -282,6 +292,18 @@ export function useAlertMotion({
       holdWhilePresenting(
         fadeFromHere(panel, backdrop, 1, ALERT_PRESENT_SPRING),
       );
+      // The dismissal's hold is released, its content live again: the action
+      // it blurred gets focus back, unless focus has gone somewhere since.
+      const blurred = blurredByDismissalRef.current;
+      blurredByDismissalRef.current = null;
+      const doc = elementRef.current?.ownerDocument;
+      if (
+        blurred?.isConnected === true &&
+        doc != null &&
+        (doc.activeElement == null || doc.activeElement === doc.body)
+      ) {
+        blurred.focus({preventScroll: true});
+      }
       return;
     }
     if (now === 'leaving') {
@@ -289,6 +311,14 @@ export function useAlertMotion({
       // inert (no click, key or assistive-technology activation reaches an
       // action) and the hold's shield catches every touch.
       const handle = fadeFromHere(panel, backdrop, 0, ALERT_DISMISS_SPRING);
+      const element = elementRef.current;
+      const focused = element?.ownerDocument.activeElement;
+      blurredByDismissalRef.current =
+        focused instanceof HTMLElement &&
+        focused !== element &&
+        element?.contains(focused) === true
+          ? focused
+          : null;
       hold(handle.finished, 'layer');
       exitRef.current = handle;
       void handle.finished.then(isDone => {
@@ -301,6 +331,7 @@ export function useAlertMotion({
     }
     // Hidden: the exit ended and the Dialog closed its modal.
     exitRef.current = null;
+    blurredByDismissalRef.current = null;
     releaseHoldRef.current?.();
     releaseHoldRef.current = null;
   }, [animators, isEnabled, isOpen, isPresented]);

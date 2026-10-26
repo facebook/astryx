@@ -19,6 +19,7 @@
  */
 
 import {act, render} from '@testing-library/react';
+import {StrictMode} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   settlingDuration,
@@ -424,6 +425,57 @@ describe('useAlertMotion', () => {
       exitEnding?.(true);
     });
     expect(motion().isPresented).toBe(true);
+  });
+
+  it('gives focus back to the action the dismissal took it from when reopened mid-exit', () => {
+    const view = render(<Alert isOpen isEnabled />);
+    const action = document.querySelector<HTMLButtonElement>(
+      '[data-testid="alert"] > button',
+    );
+    act(() => action?.focus());
+    expect(document.activeElement).toBe(action);
+    // Leaving: the dismissal's hold makes the content inert and blurs it.
+    view.rerender(<Alert isOpen={false} isEnabled />);
+    expect(document.activeElement).toBe(document.body);
+    // Reopened mid-exit: live again, and focused where it was.
+    view.rerender(<Alert isOpen isEnabled />);
+    expect(action?.hasAttribute('inert')).toBe(false);
+    expect(document.activeElement).toBe(action);
+  });
+
+  it('holds only pointers while it presents: its content stays live for keys and assistive technology', () => {
+    render(<Alert isOpen isEnabled />);
+    const action = document.querySelector<HTMLButtonElement>(
+      '[data-testid="alert"] > button',
+    );
+    // Presenting and held: touches are refused under the shield...
+    expect(motion().acceptsTouches()).toBe(false);
+    expect(document.querySelector('[popover="manual"]')).not.toBeNull();
+    // ...but nothing in the alert is inert or hidden from the accessibility
+    // tree, and it takes focus (a key reaches it).
+    expect(document.querySelector('[data-testid="alert"] [inert]')).toBeNull();
+    // (The shield itself is hidden from it; the content is not.)
+    expect(
+      document.querySelector(
+        '[data-testid="alert"] [aria-hidden="true"]:not([popover])',
+      ),
+    ).toBeNull();
+    expect(
+      document.querySelector('[data-testid="alert"]')?.hasAttribute('inert'),
+    ).toBe(false);
+    act(() => action?.focus());
+    expect(document.activeElement).toBe(action);
+  });
+
+  it('keeps its input hold when mounted open under StrictMode, whose effect replay runs every cleanup once', () => {
+    render(
+      <StrictMode>
+        <Alert isOpen isEnabled />
+      </StrictMode>,
+    );
+    // Presenting: held, with a shield over the viewport.
+    expect(motion().acceptsTouches()).toBe(false);
+    expect(document.querySelector('[popover="manual"]')).not.toBeNull();
   });
 
   it('holds input until the presentation completes, counted from its actual start, and while it leaves', async () => {
