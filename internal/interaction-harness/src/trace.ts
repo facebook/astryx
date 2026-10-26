@@ -84,7 +84,8 @@ interface TraceEvent {
 /**
  * Traces the page while `body` runs and counts the rendering work its main
  * thread did between a start mark (placed just before `body`) and an end mark
- * (just after).
+ * (just after). The harness's animation recorder and `waitForRest` stand down
+ * meanwhile, so a body may wait with either and add no frame of its own.
  */
 export async function traceRendering(
   page: Page,
@@ -185,6 +186,63 @@ export async function traceRendering(
     longTasks,
     events: counted,
     window: {from: fromEpoch, to: toEpoch},
+  };
+}
+
+/**
+ * Records when the compositor presents each frame, for `busyWindowProof`'s
+ * `presented`: a Chromium trace of `Display::FrameDisplayed`, on the page
+ * clock. Start it with the screencast, before the block, and stop it after.
+ * Engines without a CDP trace (WebKit) resolve `stop()` to [], and the
+ * verdict then judges the screencast alone. It runs its own trace, so not
+ * inside `traceRendering`.
+ */
+export async function startCompositorTrace(
+  page: Page,
+): Promise<{stop(): Promise<number[]>}> {
+  let cdp: CDPSession;
+  try {
+    cdp = await page.context().newCDPSession(page);
+  } catch {
+    return {stop: async () => []};
+  }
+  const events: TraceEvent[] = [];
+  cdp.on('Tracing.dataCollected', ({value}) => {
+    events.push(...(value as unknown as TraceEvent[]));
+  });
+  const complete = new Promise<void>(resolve =>
+    cdp.once('Tracing.tracingComplete', () => resolve()),
+  );
+  await cdp.send('Tracing.start', {
+    transferMode: 'ReportEvents',
+    traceConfig: {
+      includedCategories: [
+        'disabled-by-default-display.framedisplayed',
+        'blink.user_timing',
+      ],
+      excludedCategories: ['*'],
+    },
+  });
+  const tag = `harness-compositor-${Math.random().toString(36).slice(2, 8)}`;
+  const epoch = await page.evaluate(
+    n => performance.timeOrigin + performance.mark(n).startTime,
+    tag,
+  );
+  return {
+    async stop() {
+      await cdp.send('Tracing.end');
+      await complete;
+      await cdp.detach().catch(() => {});
+      const mark = events.find(e => e.name === tag);
+      if (mark == null) {
+        throw new Error('startCompositorTrace: the clock mark was not traced');
+      }
+      // Trace time (µs, monotonic) -> epoch ms, anchored on the mark.
+      return events
+        .filter(e => e.name === 'Display::FrameDisplayed')
+        .map(e => epoch + (e.ts - mark.ts) / 1000)
+        .sort((a, b) => a - b);
+    },
   };
 }
 
