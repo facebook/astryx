@@ -158,8 +158,7 @@ those contracts.
   does, blurs as FR5 does, applies the height through a functional style on
   its own elements, and follows INV3 and INV5. The hook follows INV3 and
   INV5.
-- **INV12 — Size changes inside a container have one module.** **Proposed;
-  pending owner decision (OQ5).** When something inside an area changes
+- **INV12 — Size changes inside a container have one module.** When something inside an area changes
   size, the changed element animates itself using timing the area provides,
   and the content after it follows in step instead of jumping. The
   measuring, the walk, and the translate all live inside one internal module;
@@ -185,7 +184,7 @@ those contracts.
   TreeWalker, which visits subtrees and text nodes. It stops at the area and
   never passes it, so content outside the area takes its final place at once.
   The walk only collects candidates; an element moves only when its layout
-  rectangle changed between the two measurements (OQ5) and it intersects the
+  rectangle changed between the two measurements and it intersects the
   area's visible part, so the setup cost is bounded by what the person can
   see. Which elements move is listed under Size-change coverage below. The module owns the shared timing: `reportLayoutChange(ref)` returns the
   motion to use, a spring or a duration and curve, taken from the area's
@@ -205,9 +204,10 @@ those contracts.
   The glide applies under every pointer, a mouse included: it fixes a layout
   jump that people using a fine pointer see too, not a touch gesture, so it is
   a named fine-pointer change under `spec:AST-017` FR59, and its adopting pull
-  requests show fine-pointer evidence before and after. The bounded walk, the
-  name `useAnimatedLayout`, and every-pointer scope are decided by `cixzhang`,
-  2026-10-25. TreeList
+  requests show fine-pointer evidence before and after. The container area,
+  the bounded walk, the changed-and-visible rule, every-pointer scope, the
+  area's shared timing, and the name `useAnimatedLayout` are decided by
+  `cixzhang`, 2026-10-25. TreeList
   and Collapsible adopt the module first, and any Core component whose size
   changes in place uses it rather than its own layout animation.
   `useAnimatedLayout` is the one public piece: it takes the container's ref
@@ -428,13 +428,3 @@ component suite is not blanket conformance with every invariant.
 | INV12 coverage      | Real-browser tests, one per Size-change coverage row                                                                                                                                                                                                                                                                                                                                                                           | Any case behaving other than its row says fails                                                                                                                                                                                                                                                                                                                                                                        |
 | INV12 timing        | Real-browser frame capture of a changed element and its followers, with and without Reduce Motion, and with a theme overriding the area's motion role                                                                                                                                                                                                                                                                          | The element and its followers starting on different frames or with different durations or curves, a component-specific timing, or Reduce Motion applied to one and not the other, fails                                                                                                                                                                                                                                |
 | INV12 pointer scope | Fine-pointer before-and-after evidence on each adopting pull request (`spec:AST-017` FR59), from the demo or a story                                                                                                                                                                                                                                                                                                           | A glide missing under a mouse, or an adopting pull request without fine-pointer evidence, fails                                                                                                                                                                                                                                                                                                                        |
-
-## Open questions
-
-- **OQ5 — How the walk chooses what moves.** (`human-design`) Options: (a,
-  recommended) the walk collects candidates and only those whose layout
-  rectangle changed between the two measurements move, which handles flex
-  order, wrapping, floats, and side-by-side content that does not shift; or
-  (b) every following in-flow sibling the walk finds moves by its offset,
-  which skips one rectangle comparison per element but moves content that did
-  not shift and misses reordered content.
