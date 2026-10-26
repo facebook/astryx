@@ -732,7 +732,7 @@ describe('ProgressBar', () => {
       expect(trackHasOverflowHidden).toBe(true);
     });
 
-    it('moves the determinate fill with a transform, not its width', () => {
+    it('moves the determinate fill with a transform, not its width, except under forced colors', () => {
       // A width transition lays out and repaints on the main thread every
       // frame, so it stalls while a script runs; a transform transition runs
       // on the compositor. The fill spans the track and its leading edge sits
@@ -740,23 +740,43 @@ describe('ProgressBar', () => {
       render(<ProgressBar value={30} label="Progress" />);
       const fill = screen.getByRole('progressbar')
         .firstElementChild as HTMLElement;
+      // The stylesheet's rules, apart and under forced colors.
       let css = '';
-      for (const sheet of Array.from(document.styleSheets)) {
-        try {
-          for (const rule of Array.from(sheet.cssRules)) {
+      let forcedCss = '';
+      const collect = (rules: CSSRuleList, forced: boolean) => {
+        for (const rule of Array.from(rules)) {
+          if ('cssRules' in rule && 'conditionText' in rule) {
+            collect(
+              (rule as CSSMediaRule).cssRules,
+              forced ||
+                /forced-colors:\s*active/.test(
+                  (rule as CSSMediaRule).conditionText,
+                ),
+            );
+          } else if (forced) {
+            forcedCss += rule.cssText + '\n';
+          } else {
             css += rule.cssText + '\n';
           }
+        }
+      };
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          collect(sheet.cssRules, false);
         } catch {
           // ignore cross-origin sheets
         }
       }
-      const declarations = Array.from(fill.classList).flatMap(cls =>
-        Array.from(
-          css.matchAll(new RegExp(`\\.${cls}\\b[^{]*\\{([^}]*)\\}`, 'g')),
-          m => m[1].trim(),
-        ),
-      );
-      const joined = declarations.join('\n');
+      const declarationsIn = (text: string) =>
+        Array.from(fill.classList)
+          .flatMap(cls =>
+            Array.from(
+              text.matchAll(new RegExp(`\\.${cls}\\b[^{]*\\{([^}]*)\\}`, 'g')),
+              m => m[1].trim(),
+            ),
+          )
+          .join('\n');
+      const joined = declarationsIn(css);
       expect(fill.style.width).toBe('');
       expect(fill.style.getPropertyValue('--_progress-bar-fill')).toBe('30%');
       expect(joined).toMatch(/width:\s*100%/);
@@ -770,6 +790,14 @@ describe('ProgressBar', () => {
         // The bar's own direction (`:dir(rtl)`), not any RTL ancestor.
         /:dir\(rtl\)[^{]*\{[^}]*transform:\s*translateX\(calc\(100% - var\(--_progress-bar-fill,\s*0%\)\)\)/,
       );
+      // Under forced colors the fill is sized to the value instead, so the
+      // track's clip never cuts its CanvasText outline (theme-tokens INV11);
+      // the Chromium spec checks the drawn outline.
+      const forced = declarationsIn(forcedCss);
+      expect(forced).toMatch(/width:\s*var\(--_progress-bar-fill,\s*0%\)/);
+      expect(forced).toMatch(/transform:\s*none/);
+      expect(forced).toMatch(/transition-property:\s*width/);
+      expect(forced).toMatch(/will-change:\s*auto/);
     });
 
     it('clips the track in indeterminate mode (the sliding fill must not escape)', () => {
@@ -1168,14 +1196,27 @@ describe('ProgressBar under a finger: UIProgressView', () => {
       valueOf(rulesOf(track, null), 'height')[0],
     );
     const minimum = view.minimumFillHeights * trackHeight;
-    const coarse = rulesOf(fillOf(), TOUCH);
-    expect(valueOf(coarse, 'transform').join(' ')).toContain(
-      `max(var(--_progress-bar-fill,0%),${minimum}px)`,
+    // Read from the source: the touch transform sits under a negated StyleX
+    // condition (the forced-colors key after it), which the jsdom runtime
+    // injects only in part; the Chromium spec checks what a browser draws.
+    const source = readFileSync(
+      path.resolve(__dirname, 'ProgressBar.tsx'),
+      'utf8',
+    ).replace(/\s+/g, '');
+    const fill = source.slice(source.indexOf('fill:{'));
+    const transform = fill.slice(
+      fill.indexOf('transform:{'),
+      fill.indexOf('willChange:'),
     );
+    const coarse = transform.slice(
+      transform.indexOf("'@media(pointer:coarse)':{"),
+    );
+    expect(coarse).toContain(`max(var(--_progress-bar-fill,0%),${minimum}px)`);
     // Mirrored in RTL: the fill stops at the same minimum from the right.
-    expect(valueOf(coarse, 'transform').join(' ')).toContain(
-      `calc(100% - ${minimum}px)`,
-    );
+    expect(coarse).toContain(`calc(100%-${minimum}px)`);
+    // Under forced colors with a finger the sized fill keeps that minimum.
+    const width = fill.slice(fill.indexOf('width:{'), fill.indexOf('height:'));
+    expect(width).toContain(`max(var(--_progress-bar-fill,0%),${minimum}px)`);
     // At zero the fill is transparent under a finger (UIKit's alpha 0)…
     expect(view.emptyFillAlpha).toBe(0);
     expect(valueOf(rulesOf(fillOf(), TOUCH), 'opacity')).toEqual(['0']);
