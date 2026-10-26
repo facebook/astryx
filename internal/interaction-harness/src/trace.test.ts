@@ -29,6 +29,7 @@ function trace(
     prePaint: 0,
     durationMs: 500,
     longTasks: [],
+    devtoolsTasks: [],
     events,
     window: {from: 0, to: 500},
     ...extra,
