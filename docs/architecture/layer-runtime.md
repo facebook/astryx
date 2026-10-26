@@ -459,8 +459,8 @@ layers use Layer rendering without joining Escape/platform dismissal.
   runtime's rather than building its own. Each component still decides when it
   dismisses, how it is hosted, and how it is presented, including the
   backdrop's color and every other visual treatment (INV9;
-  `family:overlay-dismissal` AV3, AV4, AV6; `spec:AST-003` FR10). The public
-  surface stays `useLayer` and `LayerProvider`.
+  `family:overlay-dismissal` AV3, AV4, AV6; `spec:AST-003` FR10). The runtime's
+  public exports are unchanged.
 - **INV15 — One lift-from-trigger module, opt-in per surface.** Lift-from-trigger presentation lives in one
   internal module separate from the layer runtime: the lift from the trigger,
   using the real trigger or a clone, whichever keeps the motion on the
