@@ -182,7 +182,6 @@ export const timing = {
    *   iPhone 17 Pro, read, Oct 23 2026
    */
   navigationBarHideShowMs: 200,
-  // The keyboard notifications' duration, sourced on `keyboardNotification`.
   keyboardNotificationMs,
   /**
    * Core Animation's implicit animation duration
@@ -212,14 +211,6 @@ export function registerTimingTable(): void {
       'reducedMotionCrossFadeMs',
       'keyboardNotificationMs',
     ],
-    // The roles spec:AST-094 FR4 names for their use.
-    rename: {
-      implicitAnimationMs: 'stateChangeMs',
-      'curves.caDefault': 'curves.viewChange',
-      'curves.easeIn': 'curves.exit',
-      'curves.easeOut': 'curves.entrance',
-      'curves.easeInOut': 'curves.move',
-    },
     // The motion roles: only the ones spec:AST-094 FR4 names. The press
     // clocks and every other value are internal measured constants.
     roles: [
