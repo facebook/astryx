@@ -67,7 +67,6 @@ export const segmentedControl = {
  * (motion/roles.ts). Nothing registers on import: the touch code that
  * animates with this table calls it once (it is idempotent), so a page that
  * never does ships no registry.
- * @experimental
  */
 export function registerSegmentedControlTable(): void {
   registerMotionTable('segmentedControl', segmentedControl);
