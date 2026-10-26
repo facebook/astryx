@@ -772,18 +772,28 @@ function giveUpSpace(element: HTMLElement, area: Element): boolean {
       ? null
       : nextInFlow(element.parentElement, area);
   const checked = afterParent == null ? [next] : [next, afterParent];
-  // Where the content after it goes once it is hidden.
-  const display = element.style.getPropertyValue('display');
-  const priority = element.style.getPropertyPriority('display');
-  element.style.setProperty('display', 'none', 'important');
+  // Where the content after it goes once it is hidden, read with it taken
+  // out of flow (not `display: none`, which would restart the CSS animations
+  // inside it).
+  const position = element.style.getPropertyValue('position');
+  const positionPriority = element.style.getPropertyPriority('position');
+  element.style.setProperty('position', 'absolute', 'important');
   const targets = checked.map(box => placeOf(box, rtl));
   const target = targets[0];
-  element.style.setProperty('display', display, priority);
+  if (position === '') {
+    element.style.removeProperty('position');
+  } else {
+    element.style.setProperty('position', position, positionPriority);
+  }
   // A first guess (its box), then one correction from the measured result:
   // a gap, a collapsed margin or the element's own margins.
   element.style.setProperty(property, `${-size}px`);
   const guess = placeOf(next, rtl)[axis];
-  element.style.setProperty(property, `${-size + (target[axis] - guess)}px`);
+  // The reading is in screen px, the margin in the element's own: under a
+  // scaled ancestor the correction is divided by the scale on this axis.
+  const scale = scaleOf(element, element.getBoundingClientRect());
+  const correction = (target[axis] - guess) / (isRow ? scale.x : scale.y);
+  element.style.setProperty(property, `${-size + correction}px`);
   // Everything checked must land on both axes: a flex-row item that sets
   // its row's height frees no block space with an inline margin.
   const missed = checked.some((box, index) => {

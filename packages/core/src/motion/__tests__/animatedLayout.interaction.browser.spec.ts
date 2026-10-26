@@ -793,6 +793,17 @@ test.describe('spec:AST-105 FR2–FR4', () => {
         </div>`,
     },
     {
+      // Under a scaled ancestor: the correction is read in screen px.
+      name: 'a gap stack under a scaled ancestor',
+      html: `<div style="transform: scale(0.5); transform-origin: 0 0">
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <div class="row" style="margin: 0"></div>
+            <div id="content" style="height: 80px; background: #fd9">Details</div>
+            <div id="after" class="row" style="margin: 0"></div>
+          </div>
+        </div>`,
+    },
+    {
       // Collapsible's shape: the content is the last child of a plain block
       // wrapper, and what follows sits after the wrapper.
       name: 'a plain wrapper, as its last child',
@@ -891,6 +902,55 @@ test.describe('spec:AST-105 FR2–FR4', () => {
       };
     });
     expect(result).toEqual({held: false, margin: '', glides: 0});
+  });
+
+  test('holding the exit keeps the CSS animations inside the element running (FR4)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<style>@keyframes spin { to { rotate: 360deg; } }</style>
+      <div id="area" class="area">
+        <div id="content" style="height: 80px"><div id="spinner" style="width: 20px; height: 20px; background: #36c; animation: spin 2s linear infinite"></div></div>
+        <div id="after" class="row"></div>
+      </div>`,
+    );
+    const result = await page.evaluate(async () => {
+      const area = document.querySelector('#area');
+      const content = document.querySelector('#content') as HTMLElement;
+      const spinner = document.querySelector('#spinner') as HTMLElement;
+      await new Promise(resolve => {
+        setTimeout(resolve, 300);
+      });
+      let restarts = 0;
+      spinner.addEventListener('animationstart', () => {
+        restarts += 1;
+      });
+      const before = Number(spinner.getAnimations()[0]?.currentTime);
+      const layoutHandle = window.AnimatedLayout.createAnimatedLayout(
+        () => area,
+      );
+      const report = window.AnimatedLayout.reportLayoutChange(
+        layoutHandle,
+        () => content,
+      );
+      report.measureBefore();
+      report.animate();
+      const held = window.AnimatedLayout.holdLayoutExit(
+        layoutHandle,
+        content,
+        () => {},
+      );
+      const after = Number(spinner.getAnimations()[0]?.currentTime);
+      await new Promise(resolve => {
+        setTimeout(resolve, 100);
+      });
+      return {held, before, after, restarts};
+    });
+    expect(result.held).toBe(true);
+    // The spinner kept its time: no restart from 0.
+    expect(result.after).toBeGreaterThanOrEqual(result.before);
+    expect(result.restarts).toBe(0);
   });
 
   test('a follower the app moves with its own transform takes its final place at once', async ({

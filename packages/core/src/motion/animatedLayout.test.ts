@@ -450,7 +450,10 @@ describe('the changed element exits (spec:AST-105 FR4)', () => {
     // content gives back too, and its end margin pulls the row up.
     const after = document.getElementById('after') as HTMLElement;
     vi.spyOn(after, 'getBoundingClientRect').mockImplementation(() => {
-      if (content.style.display === 'none') {
+      if (
+        content.style.position === 'absolute' ||
+        content.style.display === 'none'
+      ) {
         return new DOMRect(0, 40, 400, 20);
       }
       const margin =
@@ -491,7 +494,14 @@ describe('the changed element exits (spec:AST-105 FR4)', () => {
   it('keeps the content where it is while it gives up its space, conceals it on the spring, then hands it back', () => {
     const {content, layout} = exitSetUp();
     const done = vi.fn();
+    const written = vi.spyOn(content.style, 'setProperty');
     expect(holdLayoutExit(layout, content, done)).toBe(true);
+    // Measured out of flow, never with `display: none` (which would restart
+    // the CSS animations inside it).
+    expect(
+      written.mock.calls.some(([property]) => property === 'display'),
+    ).toBe(false);
+    expect(content.style.position).toBe('');
     // In flow (it scrolls and clips with its container), taking exactly the
     // space it frees when hidden, gap included; out of reach.
     expect(content.style.position).toBe('');
@@ -539,7 +549,15 @@ describe('the changed element exits (spec:AST-105 FR4)', () => {
     // is hidden.
     vi.spyOn(after, 'getBoundingClientRect').mockImplementation(
       () =>
-        new DOMRect(0, content.style.display === 'none' ? 40 : 128, 400, 20),
+        new DOMRect(
+          0,
+          content.style.position === 'absolute' ||
+            content.style.display === 'none'
+            ? 40
+            : 128,
+          400,
+          20,
+        ),
     );
     expect(holdLayoutExit(layout, content, vi.fn())).toBe(false);
     expect(content.style.getPropertyValue('margin-block-end')).toBe('');
@@ -552,7 +570,15 @@ describe('the changed element exits (spec:AST-105 FR4)', () => {
     content.style.setProperty('margin-block-end', '12px');
     vi.spyOn(after, 'getBoundingClientRect').mockImplementation(
       () =>
-        new DOMRect(0, content.style.display === 'none' ? 40 : 128, 400, 20),
+        new DOMRect(
+          0,
+          content.style.position === 'absolute' ||
+            content.style.display === 'none'
+            ? 40
+            : 128,
+          400,
+          20,
+        ),
     );
     expect(holdLayoutExit(layout, content, vi.fn())).toBe(false);
     expect(content.style.getPropertyValue('margin-block-end')).toBe('12px');
