@@ -127,8 +127,8 @@ export type PressEvent =
       y: number;
       /**
        * Whether this touch waits {@link PRESS_ONSET_MS} before it paints:
-       * a cell always does, a control only inside a scroller. Defaults to
-       * `true`.
+       * a cell or a control inside a scroller (`spec:AST-094` FR11).
+       * Defaults to `true`.
        */
       delayed?: boolean;
     }

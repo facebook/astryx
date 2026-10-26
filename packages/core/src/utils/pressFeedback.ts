@@ -22,8 +22,8 @@
  * the frame the finger lands, unless a scroller sits above it, where it waits
  * UIScrollView's content-touch delay like everything else in a scroll view.
  * A cell (`cell`: a list or tree row) waits that delay inside a scroll view
- * and highlights at once outside one (`spec:AST-094` FR11); it differs from a
- * control in what cancels it and in its release. Both are cancelled by travel past
+ * and highlights at once outside one (`spec:AST-094` FR11), like a control.
+ * Both are cancelled by travel past
  * the slop or by the scroll that takes the touch, and both fade at the lift
  * on their profile's clock.
  *
