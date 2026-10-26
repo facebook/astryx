@@ -46,6 +46,8 @@ test.beforeAll(async () => {
     format: 'iife',
     platform: 'browser',
     target: 'es2022',
+    // A development build, as an app's bundler would make one.
+    define: {'process.env.NODE_ENV': '"development"'},
   });
   bundle = result.outputFiles[0].text;
 });
@@ -305,10 +307,22 @@ test('only elements whose recognizers claim a moving touch carry a blocking touc
       .filter(entry => entry.type === 'touchmove' && entry.passive === false)
       .map(entry => entry.id),
   );
-  // Pans (the cards' too), a long press, a pinch and the sheet's pan can take
-  // a moving touch; a tap-only element and a press consumer never wait.
+  // Pans (the cards', the switch's drag and a one-finger pan too), a long
+  // press, a pinch, the sheet's pan and a press that keeps its touch can take
+  // a moving touch; a tap-only element and a plain press consumer never wait.
   expect(new Set(blocking)).toEqual(
-    new Set(['hpan', 'presser', 'pinchable', 'sheetBody', 'card', 'cardLate']),
+    new Set([
+      'hpan',
+      'presser',
+      'pinchable',
+      'sheetBody',
+      'slider',
+      'switchRow',
+      'card',
+      'cardLate',
+      'onePan',
+      'kept',
+    ]),
   );
 });
 
@@ -404,6 +418,238 @@ test('a one-way overlay pan keeps its direction from the page, and leaves the ot
   await driver.play(drag(start, {x: start.x, y: start.y + 60}, 30));
   expect(await page.evaluate(() => window.scrollY)).toBeLessThan(before - 20);
   expect(states(await log(page), 'card')).toEqual(['failed', 'possible']);
+});
+
+test('a held finger turns text selection off only where the hold does something (a pan that asks), until it lifts; a press-tracked control, a mouse and other pans keep native selection (spec:AST-094 FR41)', async ({
+  page,
+  browserName,
+}) => {
+  const driver = await open(page, browserName);
+  const selection = async (id: string) =>
+    page.evaluate(target => {
+      const style = getComputedStyle(
+        document.getElementById(target) ?? document.body,
+      );
+      return (
+        style.getPropertyValue('-webkit-user-select') ||
+        style.getPropertyValue('user-select')
+      );
+    }, id);
+  const held: Record<string, string[]> = {};
+  for (const id of ['passive', 'slider', 'hpan']) {
+    await page.locator(`#${id}`).scrollIntoViewIfNeeded();
+    const at = await center(page, id);
+    const before = await selection(id);
+    await driver.play([{t: 0, down: [{id: 1, ...at}]}]);
+    const during = await selection(id);
+    await driver.play([{t: 0, down: []}]);
+    held[id] = [before, during, await selection(id)];
+  }
+  // The engine's own value otherwise: Chromium computes `auto`, WebKit `text`.
+  const free = held.hpan[0];
+  expect(free).not.toBe('none');
+  // A control whose hold does nothing keeps the browser's long-press
+  // selection.
+  expect(held.passive).toEqual([free, free, free]);
+  expect(held.slider).toEqual([free, 'none', free]);
+  expect(held.hpan).toEqual([free, free, free]);
+
+  const at = await center(page, 'passive');
+  await page.mouse.move(at.x, at.y);
+  await page.mouse.down();
+  const withMouse = await selection('passive');
+  await page.mouse.up();
+  expect(withMouse).toBe(free);
+});
+
+test('a held finger on a checkbox inside an element whose hold does something turns its selection off too, as WebKit makes every input selectable; inside a press-tracked row it stays native (spec:AST-094 FR41)', async ({
+  page,
+  browserName,
+}) => {
+  const driver = await open(page, browserName);
+  const heldSelection = async (id: string) => {
+    const selection = async () =>
+      page.evaluate(target => {
+        const style = getComputedStyle(
+          document.getElementById(target) ?? document.body,
+        );
+        return (
+          style.getPropertyValue('-webkit-user-select') ||
+          style.getPropertyValue('user-select')
+        );
+      }, id);
+    await page.locator(`#${id}`).scrollIntoViewIfNeeded();
+    const at = await center(page, id);
+    const before = await selection();
+    await driver.play([{t: 0, down: [{id: 1, ...at}]}]);
+    const during = await selection();
+    await driver.play([{t: 0, down: []}]);
+    return [before, during, await selection()];
+  };
+  const locked = await heldSelection('switchInput');
+  expect(locked).toEqual([locked[0], 'none', locked[0]]);
+  const native = await heldSelection('check');
+  expect(native).toEqual([native[0], native[0], native[0]]);
+});
+
+test('a scroll the page makes under a still finger keeps the touch and its tap', async ({
+  page,
+  browserName,
+}) => {
+  const driver = await open(page, browserName);
+  await page.locator('#feed').scrollIntoViewIfNeeded();
+  const at = await center(page, 'feedRow');
+  await clearLog(page);
+  await driver.play([{t: 0, down: [{id: 1, ...at}]}]);
+  // The page scrolls the feed under the resting finger (scrollIntoView, a
+  // pinned transcript): the finger never travelled, so the touch stays.
+  await page.evaluate(() => {
+    const feed = document.getElementById('feed');
+    if (feed != null) {
+      feed.scrollTop += 6;
+    }
+  });
+  await page.evaluate(async () => {
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => resolve());
+    });
+  });
+  await driver.play([{t: 0, down: []}]);
+  expect(states(await log(page), 'feedTap')).toEqual(['ended', 'possible']);
+});
+
+test('a drag that scrolls the feed natively is the browser’s: no tap', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName === 'webkit',
+    'needs native scrolling from injected touches (Mobile Safari on the simulator)',
+  );
+  const driver = await open(page, browserName);
+  await page.locator('#feed').scrollIntoViewIfNeeded();
+  await page.evaluate(() => {
+    const feed = document.getElementById('feed');
+    if (feed != null) {
+      feed.scrollTop = 0;
+    }
+  });
+  const start = await center(page, 'feedRow');
+  await clearLog(page);
+  await driver.play(drag(start, {x: start.x, y: start.y - 60}, 30));
+  const scrolled = await page.evaluate(
+    () => document.getElementById('feed')?.scrollTop ?? 0,
+  );
+  expect(scrolled).toBeGreaterThan(20);
+  expect(states(await log(page), 'feedTap')).not.toContain('ended');
+});
+
+test('a second finger before any claim fails a one-finger pan and leaves the pinch to the page', async ({
+  page,
+  browserName,
+}) => {
+  const driver = await open(page, browserName);
+  await page.locator('#onePan').scrollIntoViewIfNeeded();
+  const at = await center(page, 'onePan');
+  await clearLog(page);
+  await logTouchMoves(page);
+  const pair = (spread: number) => [
+    {id: 1, x: at.x - spread, y: at.y},
+    {id: 2, x: at.x + spread, y: at.y},
+  ];
+  await driver.play([
+    {t: 0, down: [{id: 1, x: at.x - 10, y: at.y}]},
+    {t: 30, down: pair(10)},
+    {t: 60, down: pair(30)},
+    {t: 90, down: pair(50)},
+    {t: 120, down: pair(70)},
+    {t: 150, down: []},
+  ]);
+  const pan = states(await log(page), 'onePan');
+  expect(pan).toContain('failed');
+  expect(pan).not.toContain('began');
+  // No move of the pinch is cancelled: the page may zoom.
+  const moves = await readTouchMoves(page);
+  expect(moves.length).toBeGreaterThan(0);
+  expect(moves.some(Boolean)).toBe(false);
+});
+
+test('a page hold keeps the page still under a one-finger pan, and leaves a pinch alone', async ({
+  page,
+  browserName,
+}) => {
+  const driver = await open(page, browserName);
+  await page.locator('#plainArea').scrollIntoViewIfNeeded();
+  await page.evaluate(() => {
+    const own = window as unknown as {
+      __holdPage: () => () => void;
+      __releaseHold: () => void;
+    };
+    own.__releaseHold = own.__holdPage();
+  });
+  await logTouchMoves(page);
+  const start = await center(page, 'plainArea');
+  const before = await page.evaluate(() => window.scrollY);
+  await driver.play(drag(start, {x: start.x, y: start.y - 80}, 30));
+  expect((await readTouchMoves(page)).some(Boolean)).toBe(true);
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+  // A second finger is a pinch: never cancelled.
+  await logTouchMoves(page);
+  await driver.play([
+    {
+      t: 0,
+      down: [
+        {id: 1, x: start.x - 10, y: start.y},
+        {id: 2, x: start.x + 10, y: start.y},
+      ],
+    },
+    {
+      t: 30,
+      down: [
+        {id: 1, x: start.x - 40, y: start.y},
+        {id: 2, x: start.x + 40, y: start.y},
+      ],
+    },
+    {t: 60, down: []},
+  ]);
+  expect((await readTouchMoves(page)).some(Boolean)).toBe(false);
+  await page.evaluate(() =>
+    (window as unknown as {__releaseHold: () => void}).__releaseHold(),
+  );
+});
+
+test('a control that keeps its press through a drag holds the page still and stays pressed', async ({
+  page,
+  browserName,
+}) => {
+  const driver = await open(page, browserName);
+  await page.locator('#kept').scrollIntoViewIfNeeded();
+  await clearLog(page);
+  const start = await center(page, 'kept');
+  const before = await page.evaluate(() => window.scrollY);
+  // The finger rests until the press is delivered: a control in a scroller
+  // waits before it highlights, and a drag that starts sooner is a scroll.
+  await driver.play([{t: 0, down: [{id: 1, ...start}]}]);
+  await page.waitForFunction(() =>
+    window.__gestures.some(
+      entry => entry.name === 'kept' && entry.state === 'highlight',
+    ),
+  );
+  await logTouchMoves(page);
+  await driver.play(drag(start, {x: start.x, y: start.y - 40}, 20, false));
+  let kept = states(await log(page), 'kept');
+  expect(kept).toContain('touchDown');
+  expect(kept).not.toContain('touchCancel');
+  expect(kept).not.toContain('unhighlight');
+  // Its press was delivered, so every move is cancelled: the page stays.
+  const moves = await readTouchMoves(page);
+  expect(moves.length).toBeGreaterThan(0);
+  expect(moves.every(Boolean)).toBe(true);
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+  await driver.play([{t: 0, down: []}]);
+  kept = states(await log(page), 'kept');
+  expect(kept).toContain('touchUpInside');
+  expect(kept).not.toContain('touchCancel');
 });
 
 test('a tap recognizer replaces the click: no ghost click, no compatibility mouse events', async ({
@@ -594,4 +840,44 @@ test('a long press begins at touch-down + 500 ms on the event clock, even when t
   expect((began?.beganAt ?? 0) - (began?.startedAt ?? 0)).toBeCloseTo(500, 6);
   expect(states(entries, 'press')).toEqual(['began', 'ended', 'possible']);
   expect(entries.some(entry => entry.name.startsWith('click:'))).toBe(false);
+});
+
+test.describe('where the primary pointer is fine', () => {
+  test.use({hasTouch: false, isMobile: false});
+
+  test('the host registers no touch listener and writes no style, though the page attaches recognizers (spec:AST-094 FR19)', async ({
+    page,
+  }) => {
+    const warnings: string[] = [];
+    page.on('console', message => {
+      if (message.type() === 'warning') {
+        warnings.push(message.text());
+      }
+    });
+    await page.goto('about:blank');
+    await page.setContent(
+      '<!doctype html><meta name="viewport" content="width=device-width, initial-scale=1"><body></body>',
+    );
+    await page.addScriptTag({content: bundle});
+    const seen = await page.evaluate(() => ({
+      isCoarse: matchMedia('(pointer: coarse)').matches,
+      page: window.__pageTouchListenersAtLoad,
+      elements: window.__listeners.map(entry => entry.id),
+      // What the host would write: none of it, in any engine's spelling.
+      styles: ['hpan', 'presser', 'slider', 'card'].map(id => {
+        const style = document.getElementById(id)?.style;
+        return ['touch-action', '-webkit-user-select', '-webkit-touch-callout']
+          .map(property => style?.getPropertyValue(property) ?? 'missing')
+          .join('|');
+      }),
+    }));
+    expect(seen.isCoarse).toBe(false);
+    expect(seen.page).toEqual([]);
+    expect(seen.elements).toEqual([]);
+    expect(seen.styles).toEqual(['||', '||', '||', '||']);
+    // The page's attaches are named once, in development.
+    expect(
+      warnings.filter(text => text.includes('primary pointer is fine')),
+    ).toHaveLength(1);
+  });
 });
