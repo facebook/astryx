@@ -206,7 +206,7 @@ export default function MotionTokensPage() {
           Drag a control point and every demo in the lab moves with it. Arrow
           keys nudge; hold shift for a bigger step.
         </Text>
-        <Grid columns={{minWidth: 420}} gap={4}>
+        <Grid columns={{minWidth: 420, max: 2}} gap={4}>
           {SEMANTIC_EASES.map(ease => {
             const duration = previewDuration(ease.name);
             const value = rawToken(ease.name);
@@ -265,7 +265,7 @@ export default function MotionTokensPage() {
           Aliases onto the existing primitives, so a theme retunes them for free
           through the motion scale it already has.
         </Text>
-        <Grid columns={{minWidth: 380}} gap={4}>
+        <Grid columns={{minWidth: 380, max: 2}} gap={4}>
           {SEMANTIC_DURATIONS.map(duration => (
             <DemoCard
               key={duration.name}
