@@ -753,6 +753,32 @@
   }
 }
 
+/* ------------------------------------------------------- progress fill ---- */
+
+/* A copy of ProgressBar's track and fill (8px, muted track, accent fill, full
+   radius) whose fill moves with transform instead of width, on the same token
+   and curve core uses, so the pair differs only in technique. */
+.fillTrack {
+  position: relative;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--color-background-muted);
+  overflow: hidden;
+}
+
+.fillScale {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-accent);
+  transform-origin: left center;
+  transition: transform var(--duration-medium) var(--ease-standard);
+}
+
+:dir(rtl) .fillScale {
+  transform-origin: right center;
+}
+
 /* ---------------------------------------------------------------- tint ---- */
 
 /* The Table hover tint, at whatever duration and curve is being argued over.
