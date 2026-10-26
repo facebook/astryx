@@ -158,37 +158,36 @@ those contracts.
   does, blurs as FR5 does, applies the height through a functional style on
   its own elements, and follows INV3 and INV5. The hook follows INV3 and
   INV5.
-- **INV12 — Disclosure height changes have one module and one handle.**
-  **Proposed; pending owner approval of the public hook.** In
-  `@astryxdesign/core`, one shared module animates the content that follows an
-  element whose disclosure changes its height. It measures the layout before
-  and after the change and moves following content with a compositor-only
-  translate from its old place to its new one (`spec:AST-094` FR5); it never
-  animates height, which lays out every frame. What moves is designated, never
-  found by walking siblings. A boundary is any container element registered by
-  ref: ScrollableArea registers its scrolling element itself, and an app registers
+- **INV12 — Disclosure height changes have one module and one boundary.**
+  **Proposed; pending owner decision (OQ3).** In `@astryxdesign/core`, one
+  shared module animates the content that follows an element whose disclosure
+  changes its height. It measures the layout before and after the change and
+  moves following content with a compositor-only translate from its old place
+  to its new one (`spec:AST-094` FR5); it never animates height, which lays
+  out every frame. A boundary is any container element registered by ref:
+  ScrollableArea registers its scrolling element itself, and an app registers
   its own scroll container or panel with `useDisclosureBoundary(containerRef)`.
-  Following content inside a boundary can mix Astryx components and plain app
-  elements; how each moves is OQ2, and INV12 proposes (ii): an Astryx
-  component that can follow a disclosure registers itself as a participant,
-  and an app element registers with `useDisclosureParticipant(elementRef)`. A disclosing element (a TreeList group, Collapsible) reports its
-  change to its nearest registered ancestor boundary, which moves only the
-  participants after it, each by translating an element it already renders,
-  so the module adds no elements: the boundary is the existing container passed
-  by ref, and participants register elements they already render, under
-  either OQ2 option (`architecture:component-style-authoring` INV7). Anything else inside the boundary, fixed or sticky elements, and
-  content outside it take their final place at once; a nested boundary moves
-  as one participant of the boundary around it. Under Reduce Motion, following
-  content changes as `design:reduced-motion` DR1–DR3 require: a cross-fade
-  under a coarse primary pointer, an immediate change otherwise. Whether the
-  travel applies under every pointer is OQ3. The handle (a container boundary with opt-in
-  participants, any container by ref) is decided by `cixzhang`, 2026-10-25.
-  The public pieces are `useDisclosureBoundary(containerRef)` and, under OQ2's
-  (ii), `useDisclosureParticipant(elementRef)`: each takes a ref and returns
-  nothing, because which container scopes the motion and which app content
-  moves with it are the caller's intent (`spec:AST-002` FR1), and no other API
-  does either job. The change hook
-  stays internal.
+  A disclosing element (a TreeList group, Collapsible) reports its change to
+  its nearest registered ancestor boundary. From the disclosing element, the
+  module walks up each ancestor to the boundary: at every level, each
+  following in-flow sibling moves by the distance layout moved it, measured
+  before and after. The walk stops at the boundary and never passes it, so
+  content outside the boundary takes its final place at once. Fixed, sticky,
+  and other out-of-flow elements are skipped and take their final place at
+  once, and a nested boundary moves as one unit of its parent's walk. Following
+  content may mix Astryx components and plain app elements, and none of it
+  opts in. Several disclosures, nested or not, compose without wrappers:
+  toggles in one boundary in the same frame are measured together before and
+  after, so each element moves once, by its total change. Each moving element
+  is one the page already renders, so the module adds no elements
+  (`architecture:component-style-authoring` INV7). Under Reduce Motion,
+  following content changes as `design:reduced-motion` DR1–DR3 require: a
+  cross-fade under a coarse primary pointer, an immediate change otherwise.
+  Whether the travel applies under every pointer is OQ3. The bounded walk is
+  decided by `cixzhang`, 2026-10-25. `useDisclosureBoundary` is the one public
+  piece: it takes the container's ref and returns nothing, because which
+  container scopes the motion is the caller's intent (`spec:AST-002` FR1), and
+  no other API does that job. The change hook stays internal.
 
   Usage:
 
@@ -198,12 +197,8 @@ those contracts.
   useDisclosureBoundary(panelRef);
   <div ref={panelRef}>
     <TreeList items={items} />
-    <p ref={noteRef}>Notes</p>
+    <p>Notes</p>
   </div>;
-
-  // Public under OQ2 (ii): an app element moves with the disclosure.
-  // Astryx components that can follow a disclosure register themselves.
-  useDisclosureParticipant(noteRef);
 
   // Internal: a disclosing element measures before its commit and animates after it.
   const change = useDisclosureChange(groupRef);
@@ -347,31 +342,20 @@ observable-behavior predicates require review or runtime evidence. Likewise, a
 focused test proves only its named behavior and mutation expectation; a green
 component suite is not blanket conformance with every invariant.
 
-| Invariant        | Evidence                                                                                                                                                                                                                      | Failure signal                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| INV1–INV2        | Initial-render and interaction tests                                                                                                                                                                                          | Output flashes a known-wrong state, or one action is delayed or repeated through an Effect                                                                                                                                                                                                                                                                                                                             |
-| INV3, INV5       | StrictMode setup/cleanup and dependency-change tests                                                                                                                                                                          | Duplicate callback, leaked work, stale subscription, or missing resynchronization                                                                                                                                                                                                                                                                                                                                      |
-| INV1, INV4, INV6 | Ref attach/null/replacement, DOM-in-state rejection, and old-node cleanup-before-new-attach mutations                                                                                                                         | A DOM node or collection enters state, old node remains active, cleanup misses replacement, or ref mutation changes semantics silently                                                                                                                                                                                                                                                                                 |
-| INV7             | Real-browser geometry plus N-consumer observer-instance/subscription mutations                                                                                                                                                | Geometry is invalid, observer instances grow with repeated consumers, one unsubscribe silences peers, or cleanup removes another subscriber                                                                                                                                                                                                                                                                            |
-| INV8             | Owner-observable behavior across documented composition replacement; optional focused internal mechanism tests                                                                                                                | Behavior disappears or changes owner when a documented subpart is replaced                                                                                                                                                                                                                                                                                                                                             |
-| INV9             | Provider/external-store identity and render-count tests                                                                                                                                                                       | Unchanged semantic payload changes identity, or snapshot identity creates a render loop                                                                                                                                                                                                                                                                                                                                |
-| INV10            | Shared test over every adopter of the announcement module                                                                                                                                                                     | An adopter holding its own Effect, observer, timer, or listener for its own-content announcement                                                                                                                                                                                                                                                                                                                       |
-| INV11            | Source boundary check plus hook tests across StrictMode replay and unmount                                                                                                                                                    | A second keyboard listener or measurement in Core; a consumer reading a CSS custom property on the root or a shared ancestor for the height; an export of the hook; a component outside Core measuring by a rule other than AST-099 FR2, or riding the keyboard; a listener left after unmount; a Core rider driven by JavaScript per frame or by its own transition; or more than one layout read per keyboard change |
-| INV12 (proposed) | Real-browser tests on a throttled phone profile plus a source boundary check, over a disclosure inside a boundary with participants, non-participants, a sticky header, a nested boundary, content outside, and Reduce Motion | A per-frame height or layout, a sibling walk, a moved non-participant, an added element, or travel under Reduce Motion fails                                                                                                                                                                                                                                                                                           |
+| Invariant        | Evidence                                                                                                                                                                                                                                                                                                                                                                                         | Failure signal                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1–INV2        | Initial-render and interaction tests                                                                                                                                                                                                                                                                                                                                                             | Output flashes a known-wrong state, or one action is delayed or repeated through an Effect                                                                                                                                                                                                                                                                                                                             |
+| INV3, INV5       | StrictMode setup/cleanup and dependency-change tests                                                                                                                                                                                                                                                                                                                                             | Duplicate callback, leaked work, stale subscription, or missing resynchronization                                                                                                                                                                                                                                                                                                                                      |
+| INV1, INV4, INV6 | Ref attach/null/replacement, DOM-in-state rejection, and old-node cleanup-before-new-attach mutations                                                                                                                                                                                                                                                                                            | A DOM node or collection enters state, old node remains active, cleanup misses replacement, or ref mutation changes semantics silently                                                                                                                                                                                                                                                                                 |
+| INV7             | Real-browser geometry plus N-consumer observer-instance/subscription mutations                                                                                                                                                                                                                                                                                                                   | Geometry is invalid, observer instances grow with repeated consumers, one unsubscribe silences peers, or cleanup removes another subscriber                                                                                                                                                                                                                                                                            |
+| INV8             | Owner-observable behavior across documented composition replacement; optional focused internal mechanism tests                                                                                                                                                                                                                                                                                   | Behavior disappears or changes owner when a documented subpart is replaced                                                                                                                                                                                                                                                                                                                                             |
+| INV9             | Provider/external-store identity and render-count tests                                                                                                                                                                                                                                                                                                                                          | Unchanged semantic payload changes identity, or snapshot identity creates a render loop                                                                                                                                                                                                                                                                                                                                |
+| INV10            | Shared test over every adopter of the announcement module                                                                                                                                                                                                                                                                                                                                        | An adopter holding its own Effect, observer, timer, or listener for its own-content announcement                                                                                                                                                                                                                                                                                                                       |
+| INV11            | Source boundary check plus hook tests across StrictMode replay and unmount                                                                                                                                                                                                                                                                                                                       | A second keyboard listener or measurement in Core; a consumer reading a CSS custom property on the root or a shared ancestor for the height; an export of the hook; a component outside Core measuring by a rule other than AST-099 FR2, or riding the keyboard; a listener left after unmount; a Core rider driven by JavaScript per frame or by its own transition; or more than one layout read per keyboard change |
+| INV12 (proposed) | Real-browser tests on a throttled phone profile plus a source boundary check, over a disclosure nested several levels inside a parent with following siblings at each level, mixed Astryx and plain elements, a fixed element, a sticky header, a nested boundary, content outside the boundary, two disclosures toggled in one frame, a 10-level by 50-sibling tree for cost, and Reduce Motion | A per-frame height or layout, a walk past the boundary, a moved out-of-flow element, a following sibling at any level that jumps, an element moved twice for one frame, an added element, or travel under Reduce Motion fails                                                                                                                                                                                          |
 
 ## Open questions
 
-- **OQ2 — Mixed following content.** (`human-design`) Content after a
-  disclosure inside a boundary can be Astryx components or plain app elements.
-  Options: (i) the boundary moves everything after the disclosure in its own
-  flow, by a walk bounded by the container that skips fixed, sticky, and
-  absolutely positioned descendants and moves a nested boundary as one unit,
-  with no app API, but it walks the DOM and measures every element it finds;
-  or (ii, recommended) Astryx components register themselves and an app element
-  opts in with `useDisclosureParticipant(elementRef)`, so only registered
-  content moves, unregistered app content takes its final place at once, and
-  the cost grows with the number of participants. A wrapper around the following content, translated as a block, is
-  rejected: it adds tree layers with several disclosures and does not compose.
 - **OQ3 — Which pointers get the travel.** (`human-design`) Options: (a,
   recommended) every pointer, because a disclosure's following content jumps
   the same way under a mouse; or (b) only a coarse primary pointer, with an
