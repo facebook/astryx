@@ -2304,6 +2304,34 @@ describe('useSheetGestures: the release on the compositor', () => {
     expect(t.style.getPropertyValue('user-select')).toBe('text');
   });
 
+  it('leaves text selection to the browser for a finger where the primary pointer is fine (spec:AST-094 FR19)', () => {
+    // A touchscreen laptop: a finger drags the handle through today's drag,
+    // and selection and the callout stay the browser's.
+    stubPointer({coarse: false});
+    const {hook} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    t.style.setProperty('user-select', 'text');
+    act(() => hook.result.current.sheetRef(t));
+    act(() =>
+      hook.result.current.handleProps.onPointerDown(fingerEvent(0, 0, t)),
+    );
+    for (const [y, time] of [
+      [20, 33],
+      [40, 66],
+      [60, 100],
+    ]) {
+      act(() =>
+        hook.result.current.handleProps.onPointerMove(fingerEvent(y, time, t)),
+      );
+    }
+    expect(hook.result.current.isDragging).toBe(true);
+    expect(t.style.getPropertyValue('user-select')).toBe('text');
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(fingerEvent(60, 102, t)),
+    );
+    expect(t.style.getPropertyValue('user-select')).toBe('text');
+  });
+
   it('carries a drag-dismissed sheet off screen on the release spring, for the host to wait on', async () => {
     // A host that closes when asked.
     const onDismiss = vi.fn();
