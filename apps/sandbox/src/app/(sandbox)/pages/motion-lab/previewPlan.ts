@@ -616,7 +616,7 @@ export const PREVIEW_PLAN: ReadonlyArray<PreviewRow> = [
     today: 'Marker slide plus item tint.',
     gap: 'Animates top and height, which thrashes layout.',
     shows:
-      'The same marker on transform and on top/height, with a paint-cost readout.',
+      'The same marker on transform and on top/height, at reading pace and at a fast scroll rate. Animator retargeting lands with the public useAnimator.',
     hardCase:
       'Scroll-linked movement. The marker moves on every scroll frame, so a layout-triggering property here costs more than anywhere else in the audit.',
     controls: ['duration', 'technique', 'scroll rate'],

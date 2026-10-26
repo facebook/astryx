@@ -737,7 +737,14 @@ const OUTLINE_ITEMS = [
   'Risks',
 ];
 
-export function OutlineMarkerRig({mode}: {mode: Mode}) {
+export function OutlineMarkerRig({
+  mode,
+  intervalMs = 1700,
+}: {
+  mode: Mode;
+  /** How often the marker moves on: 1700 is reading pace, 250 a fast scroll. */
+  intervalMs?: number;
+}) {
   const [index, setIndex] = useState(0);
   const listRef = useRef<HTMLDivElement | null>(null);
   const markerRef = useRef<HTMLSpanElement | null>(null);
@@ -760,7 +767,7 @@ export function OutlineMarkerRig({mode}: {mode: Mode}) {
     }
   }, [index, mode]);
 
-  useLoop(() => setIndex(i => (i + 1) % OUTLINE_ITEMS.length), 1700);
+  useLoop(() => setIndex(i => (i + 1) % OUTLINE_ITEMS.length), intervalMs);
 
   return (
     <VStack gap={2} {...stylex.props(sx.full)}>
