@@ -8,7 +8,10 @@
  * tokenize: fn})}` (`component:CodeBlock` FR13). The custom language paints
  * with the same function, labels `x`, and reflects `data-language="x"`, so the
  * block looks the same. `createCodeLanguage` is imported from
- * `@astryxdesign/core/CodeBlock` when the file does not import it yet.
+ * `@astryxdesign/core/CodeBlock` when the file does not import it yet, under
+ * a free alias when the file already binds the name to something else. A
+ * `tokenizer` that is a name or a call-free property may be undefined at run
+ * time, so it is guarded: `fn ? createCodeLanguage({...}) : 'x'`.
  *
  * Built on the shared `transformProp` helper, so it does not follow
  * variables, helpers, wrappers, or types. Where a CodeBlock writes
@@ -45,6 +48,11 @@ const UNPROVEN_COMMENT =
   'language={createCodeLanguage({name, identifiers, tokenize})} instead, ' +
   'with this function as tokenize; the language here is computed, missing, ' +
   'or plaintext, so it was left unchanged. ';
+const VALUE_COMMENT =
+  ' TODO(astryx upgrade): tokenizer is deprecated. Pass ' +
+  'language={createCodeLanguage({name, identifiers, tokenize})} instead; ' +
+  'this tokenizer value is computed (not a function, a name, or a ' +
+  'call-free property), so it was left unchanged. ';
 const SPREAD_COMMENT =
   ' TODO(astryx upgrade): tokenizer is deprecated, but this CodeBlock also ' +
   'spreads props that may set language or tokenizer, so it was left ' +
@@ -96,6 +104,33 @@ function staticString(node) {
   return null;
 }
 
+/**
+ * A name, or a property chain on one with no call and no computed key other
+ * than a literal: safe to read twice, and narrowed by a `?:` guard.
+ * @param {any} node
+ */
+function isCallFreeChain(node) {
+  const value = unwrap(node);
+  if (value == null) {
+    return false;
+  }
+  if (value.type === 'Identifier' || value.type === 'ThisExpression') {
+    return true;
+  }
+  if (value.type === 'MemberExpression') {
+    const key = value.property;
+    const literalKey =
+      !value.computed ||
+      key.type === 'StringLiteral' ||
+      key.type === 'NumericLiteral' ||
+      key.type === 'Literal';
+    return (
+      literalKey && value.optional !== true && isCallFreeChain(value.object)
+    );
+  }
+  return false;
+}
+
 /** @param {any} j @param {any} node @param {string} text */
 function addComment(j, node, text) {
   node.comments ??= [];
@@ -129,7 +164,16 @@ function ensureCreateImport(j, root) {
   if (local != null) {
     return local;
   }
-  const specifier = j.importSpecifier(j.identifier('createCodeLanguage'));
+  // Any other binding of the name (a local import or function) would clash,
+  // so the import takes the first free alias instead.
+  const name = freeName(j, root, 'createCodeLanguage');
+  const specifier =
+    name === 'createCodeLanguage'
+      ? j.importSpecifier(j.identifier('createCodeLanguage'))
+      : j.importSpecifier(
+          j.identifier('createCodeLanguage'),
+          j.identifier(name),
+        );
   const existing = root.find(j.ImportDeclaration).filter(
     (/** @type {any} */ p) =>
       p.node.source.value === CODEBLOCK_SOURCE &&
@@ -153,7 +197,27 @@ function ensureCreateImport(j, root) {
       root.get().node.program.body.unshift(declaration);
     }
   }
-  return 'createCodeLanguage';
+  return name;
+}
+
+/**
+ * `preferred`, or `preferred` with a numeric suffix, whichever no binding or
+ * reference in the file already uses.
+ * @param {any} j @param {any} root @param {string} preferred
+ */
+function freeName(j, root, preferred) {
+  const used = new Set();
+  root.find(j.Identifier).forEach((/** @type {any} */ p) => {
+    used.add(p.node.name);
+  });
+  if (!used.has(preferred)) {
+    return preferred;
+  }
+  let n = 2;
+  while (used.has(`${preferred}${n}`)) {
+    n++;
+  }
+  return `${preferred}${n}`;
 }
 
 /**
@@ -204,17 +268,13 @@ export default function transformer(file, api) {
       const isFunction =
         tokenizeNode?.type === 'ArrowFunctionExpression' ||
         tokenizeNode?.type === 'FunctionExpression';
-      const isGuardable =
-        tokenizeNode?.type === 'Identifier' ||
-        tokenizeNode?.type === 'MemberExpression' ||
-        tokenizeNode?.type === 'OptionalMemberExpression';
-      if (
-        language == null ||
-        language === '' ||
-        language === 'plaintext' ||
-        !(isFunction || isGuardable)
-      ) {
+      const isGuardable = isCallFreeChain(tokenizeNode);
+      if (language == null || language === '' || language === 'plaintext') {
         hasChanges = addComment(j, prop, UNPROVEN_COMMENT) || hasChanges;
+        return;
+      }
+      if (!(isFunction || isGuardable)) {
+        hasChanges = addComment(j, prop, VALUE_COMMENT) || hasChanges;
         return;
       }
       rewrites.push(() => {

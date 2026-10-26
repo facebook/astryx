@@ -69,6 +69,41 @@ const a = <CodeBlock code={src} language="zig" tokenizer={props.tokenizer} />;`)
     );
   });
 
+  it('imports under a free alias when the file binds the name already', async () => {
+    const fromLocal = flat(
+      await applyTransform(`import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+import {createCodeLanguage} from './my-languages';
+const a = <CodeBlock code={src} language="zig" tokenizer={(c) => t(c)} />;`),
+    );
+    expect(fromLocal).toContain(
+      "import { CodeBlock, createCodeLanguage as createCodeLanguage2 } from '@astryxdesign/core/CodeBlock';",
+    );
+    expect(fromLocal).toContain(
+      "import {createCodeLanguage} from './my-languages';",
+    );
+    expect(fromLocal).toContain("language={createCodeLanguage2({ name: 'zig'");
+
+    const fromFunction = flat(
+      await applyTransform(`import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+function createCodeLanguage() {}
+const a = <CodeBlock code={src} language="zig" tokenizer={(c) => t(c)} />;`),
+    );
+    expect(fromFunction).toContain('createCodeLanguage as createCodeLanguage2');
+    const jscodeshift = (await import('jscodeshift')).default;
+    const parse = jscodeshift.withParser('tsx');
+    expect(() => parse(fromLocal)).not.toThrow();
+  });
+
+  it('reports a tokenizer value it cannot read twice, naming the tokenizer', async () => {
+    const output =
+      await applyTransform(`import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+const a = <CodeBlock code={src} language="zig" tokenizer={registry.get('zig').tokenize} />;
+const b = <CodeBlock code={src} language="zig" tokenizer={enabled ? t : undefined} />;`);
+    expect(output.match(/this tokenizer value is computed/g)).toHaveLength(2);
+    expect(output).not.toContain('the language here is computed');
+    expect(output).toContain("tokenizer={registry.get('zig').tokenize}");
+  });
+
   it('reports what it cannot prove and leaves it unchanged', async () => {
     const source = `import {CodeBlock} from '@astryxdesign/core/CodeBlock';
 const a = <CodeBlock code={src} language={lang} tokenizer={t} />;
