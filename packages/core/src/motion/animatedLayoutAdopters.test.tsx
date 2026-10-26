@@ -17,7 +17,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, render, renderHook, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {useRef, type ReactNode} from 'react';
+import {StrictMode, useRef, type ReactNode} from 'react';
 import {Collapsible} from '../Collapsible/Collapsible';
 import {CollapsibleGroup} from '../Collapsible/CollapsibleGroup';
 import {TreeList} from '../TreeList/TreeList';
@@ -222,7 +222,7 @@ describe('Collapsible changes another component made (spec:AST-105 FR3)', () => 
     expect(animated).toContain(payment);
   });
 
-  it('lands an owner-set isOpen at once, entrance included', async () => {
+  it('glides an owner-set isOpen too (spec:AST-105 FR1: each change is reported)', async () => {
     const {rerender} = render(
       <Area withHandle>
         {layout => (
@@ -232,16 +232,7 @@ describe('Collapsible changes another component made (spec:AST-105 FR3)', () => 
         )}
       </Area>,
     );
-    stubGeometry();
-    // The content is in view, so an entrance would play if one ran.
-    const contentId = screen
-      .getByRole('button', {name: 'Details'})
-      .getAttribute('aria-controls');
-    const content = document.getElementById(contentId ?? '');
-    expect(content).not.toBeNull();
-    vi.spyOn(content as HTMLElement, 'getBoundingClientRect').mockReturnValue(
-      new DOMRect(0, 40, 400, 40),
-    );
+    const after = stubGeometry();
     rerender(
       <Area withHandle>
         {layout => (
@@ -252,6 +243,77 @@ describe('Collapsible changes another component made (spec:AST-105 FR3)', () => 
       </Area>,
     );
     await flush();
+    expect(animated).toContain(after);
+  });
+
+  it("glides a group's controlled value change", async () => {
+    const group = (value: string, layout: AnimatedLayout | undefined) => (
+      <CollapsibleGroup value={value} onChange={() => {}}>
+        <Collapsible trigger="One" value="one" animatedLayout={layout}>
+          First
+        </Collapsible>
+        <Collapsible trigger="Two" value="two" animatedLayout={layout}>
+          Second
+        </Collapsible>
+      </CollapsibleGroup>
+    );
+    const {rerender} = render(
+      <Area withHandle>{layout => group('one', layout)}</Area>,
+    );
+    const after = stubGeometry();
+    rerender(<Area withHandle>{layout => group('two', layout)}</Area>);
+    await flush();
+    expect(animated).toContain(after);
+  });
+
+  it('glides a TreeList row whose isExpanded changed in items', async () => {
+    const tree = (isExpanded: boolean, layout: AnimatedLayout | undefined) => (
+      <TreeList
+        aria-label="Files"
+        items={[
+          {
+            id: 'src',
+            label: 'src',
+            isExpanded,
+            children: [{id: 'index', label: 'index.ts'}],
+          },
+        ]}
+        animatedLayout={layout}
+      />
+    );
+    const {rerender} = render(
+      <Area withHandle>{layout => tree(false, layout)}</Area>,
+    );
+    const after = stubGeometry();
+    rerender(<Area withHandle>{layout => tree(true, layout)}</Area>);
+    await flush();
+    expect(animated).toContain(after);
+  });
+
+  it('measures once in StrictMode, and not at all for a change that never lands', async () => {
+    const user = userEvent.setup();
+    render(
+      <StrictMode>
+        <Area withHandle>
+          {layout => (
+            // An owner that refuses every toggle: nothing changes, so
+            // nothing is measured and no batch is left behind.
+            <Collapsible
+              trigger="Details"
+              isOpen={false}
+              onOpenChange={() => {}}
+              animatedLayout={layout}>
+              Hidden content
+            </Collapsible>
+          )}
+        </Area>
+      </StrictMode>,
+    );
+    const after = screen.getByTestId('after');
+    const reads = vi.spyOn(after, 'getBoundingClientRect');
+    await user.click(screen.getByRole('button', {name: 'Details'}));
+    await flush();
+    expect(reads).not.toHaveBeenCalled();
     expect(animated).toEqual([]);
   });
 });

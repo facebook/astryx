@@ -36,6 +36,7 @@ import type {
 } from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
 import {useTreeFocusInternal} from '../hooks/useTreeFocus';
+import {LayoutChangeSnapshot} from '../motion/LayoutChangeSnapshot';
 import {
   applyLayoutChangeTransition,
   holdLayoutExit,
@@ -207,6 +208,22 @@ function findInitialTabbableId(items: TreeListItemData[]): string | undefined {
  * />
  * ```
  */
+/** Whether two sets of row ids hold the same rows. */
+function sameIds(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
+  if (a === b) {
+    return true;
+  }
+  if (a.size !== b.size) {
+    return false;
+  }
+  for (const id of a) {
+    if (!b.has(id)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export function TreeList({
   items,
   density = 'balanced',
@@ -242,18 +259,52 @@ export function TreeList({
   // (`architecture:react-component-runtime` INV12). Read through a ref
   // because the tree element comes from the focus hook below.
   const treeElementRef = useRef<HTMLUListElement | null>(null);
-  const pendingLayoutRef = useRef<{
-    change: LayoutChange;
-    id: string;
-    isExpanding: boolean;
-  } | null>(null);
-  // Rows whose measured collapse is still playing its exit: their child group
-  // stays rendered (inert, giving up its space) until it finishes (`spec:AST-105` FR4).
+  // The rows expanded now, whatever expanded them (a click, the keyboard, or
+  // `isExpanded` changed in `items`).
+  const expandedIds = useMemo(() => {
+    const out = new Set<string>();
+    const walk = (list: ReadonlyArray<TreeListItemData>) => {
+      for (const item of list) {
+        if (item.children == null || item.children.length === 0) {
+          continue;
+        }
+        const isExpanded = expandedKeysOverride.has(item.id)
+          ? (expandedKeysOverride.get(item.id) ?? false)
+          : expandedKeysFromProps.has(item.id);
+        if (isExpanded) {
+          out.add(item.id);
+          walk(item.children);
+        }
+      }
+    };
+    walk(items);
+    return out;
+  }, [items, expandedKeysOverride, expandedKeysFromProps]);
+  // Rows whose collapse is still playing its exit: their child group stays
+  // rendered (the exit makes it inert and gives up its space) until it ends
+  // (`spec:AST-105` FR4). Derived from the expanded rows as they change,
+  // during render, so the collapsing commit already keeps the group.
   const [exitingIds, setExitingIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
+  const [renderedExpandedIds, setRenderedExpandedIds] = useState(expandedIds);
+  if (!sameIds(renderedExpandedIds, expandedIds)) {
+    setRenderedExpandedIds(expandedIds);
+    if (animatedLayout != null) {
+      const next = new Set(exitingIds);
+      for (const id of renderedExpandedIds) {
+        if (!expandedIds.has(id)) {
+          next.add(id);
+        }
+      }
+      for (const id of expandedIds) {
+        next.delete(id);
+      }
+      setExitingIds(next);
+    }
+  }
   const endExit = useCallback((id: string) => {
-    // eslint-disable-next-line @eslint-react/set-state-in-effect -- the group was kept rendered only to play its exit; an exit that lands at once removes it before the frame paints
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- holdLayoutExit decides from layout read in the collapsing commit (the group's place in the area's visible part, Reduce Motion and the pointer, and whether an end margin frees its space); a group it does not hold goes before the frame paints
     setExitingIds(prev => {
       if (!prev.has(id)) {
         return prev;
@@ -263,47 +314,53 @@ export function TreeList({
       return next;
     });
   }, []);
-  const handleToggle = useCallback(
-    (id: string) => {
-      const isExpanded = expandedKeysOverride.has(id)
-        ? (expandedKeysOverride.get(id) ?? false)
-        : expandedKeysFromProps.has(id);
-      const row = treeElementRef.current?.querySelector<HTMLElement>(
-        `[data-tree-id="${CSS.escape(id)}"]`,
-      );
-      if (row != null) {
-        // The row's own chevron (the Icon in its toggle, the first one in the
-        // row; its children's come after) turns on the glide's motion.
+  // Every expansion change is measured before it lands (`spec:AST-105` FR1):
+  // LayoutChangeSnapshot calls this in the commit, before the DOM changes,
+  // for each row whose expansion changed. The row's own chevron (the Icon in
+  // its toggle, the first one in the row) turns on the glide's motion.
+  const pendingLayoutRef = useRef<
+    {change: LayoutChange; id: string; isExpanding: boolean}[]
+  >([]);
+  const measureChanges = useCallback(
+    (previous: ReadonlySet<string>) => {
+      const changed = [
+        ...[...previous].filter(id => !expandedIds.has(id)),
+        ...[...expandedIds].filter(id => !previous.has(id)),
+      ];
+      for (const id of changed) {
+        const row = treeElementRef.current?.querySelector<HTMLElement>(
+          `[data-tree-id="${CSS.escape(id)}"]`,
+        );
+        if (row == null) {
+          continue;
+        }
         applyLayoutChangeTransition(
           animatedLayout,
           row.querySelector<HTMLElement>('[data-tree-toggle] > .astryx-icon'),
         );
         const change = reportLayoutChange(animatedLayout, () => row);
         change.measureBefore();
-        pendingLayoutRef.current = {change, id, isExpanding: !isExpanded};
-      }
-      if (animatedLayout != null) {
-        // A collapse keeps the group for its exit; expanding mid-exit ends it.
-        setExitingIds(prev => {
-          if (isExpanded === prev.has(id)) {
-            return prev;
-          }
-          const next = new Set(prev);
-          if (isExpanded) {
-            next.add(id);
-          } else {
-            next.delete(id);
-          }
-          return next;
+        pendingLayoutRef.current.push({
+          change,
+          id,
+          isExpanding: expandedIds.has(id),
         });
       }
+    },
+    [animatedLayout, expandedIds],
+  );
+  const handleToggle = useCallback(
+    (id: string) => {
       setExpandedKeysOverride(prev => {
         const next = new Map(prev);
-        next.set(id, !isExpanded);
+        const isCurrentlyExpanded = prev.has(id)
+          ? (prev.get(id) ?? false)
+          : expandedKeysFromProps.has(id);
+        next.set(id, !isCurrentlyExpanded);
         return next;
       });
     },
-    [expandedKeysOverride, expandedKeysFromProps, animatedLayout],
+    [expandedKeysFromProps],
   );
 
   // ---------------------------------------------------------------------------
@@ -341,34 +398,35 @@ export function TreeList({
   }, []);
 
   useLayoutEffect(() => {
-    const pending = pendingLayoutRef.current;
-    if (pending == null) {
-      return;
-    }
-    pendingLayoutRef.current = null;
-    const isMeasured = pending.change.animate();
-    const group = treeElementRef.current?.querySelector<HTMLElement>(
-      `[data-tree-id="${CSS.escape(pending.id)}"] > [role="group"]`,
-    );
-    if (pending.isExpanding) {
-      if (group != null) {
-        // Expanded again mid-exit: the group takes its place in flow.
-        releaseLayoutExit(group);
-        if (isMeasured) {
-          playLayoutChange(animatedLayout, group);
+    const pendings = pendingLayoutRef.current;
+    pendingLayoutRef.current = [];
+    for (const pending of pendings) {
+      const isMeasured = pending.change.animate();
+      const group = treeElementRef.current?.querySelector<HTMLElement>(
+        `[data-tree-id="${CSS.escape(pending.id)}"] > [role="group"]`,
+      );
+      if (pending.isExpanding) {
+        if (group != null) {
+          // Expanded again mid-exit: the group takes its place in flow.
+          releaseLayoutExit(group);
+          if (isMeasured) {
+            playLayoutChange(animatedLayout, group);
+          }
         }
+        continue;
       }
-      return;
+      const isHeld =
+        isMeasured &&
+        group != null &&
+        holdLayoutExit(animatedLayout, group, () => endExit(pending.id));
+      if (!isHeld) {
+        // An exit holdLayoutExit did not hold (out of view, Reduce Motion
+        // with a fine pointer, or no margin frees its space): the group goes
+        // before this frame paints.
+        endExit(pending.id);
+      }
     }
-    const isHeld =
-      isMeasured &&
-      group != null &&
-      holdLayoutExit(animatedLayout, group, () => endExit(pending.id));
-    if (!isHeld) {
-      // An exit that lands at once: the group goes in this commit.
-      endExit(pending.id);
-    }
-  }, [expandedKeysOverride, animatedLayout, endExit]);
+  }, [expandedIds, animatedLayout, endExit]);
 
   const {treeRef, handleKeyDown, handleFocus} =
     useTreeFocusInternal<HTMLUListElement>({
@@ -493,6 +551,12 @@ export function TreeList({
         <div id={headerId} {...stylex.props(styles.header)}>
           {header}
         </div>
+      )}
+      {animatedLayout != null && (
+        <LayoutChangeSnapshot
+          value={expandedIds}
+          onBeforeChange={measureChanges}
+        />
       )}
       <ul
         ref={treeRef}

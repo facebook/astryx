@@ -30,7 +30,6 @@
 import {
   use,
   useCallback,
-  useEffect,
   useId,
   useLayoutEffect,
   useMemo,
@@ -51,6 +50,7 @@ import {
 } from '../theme/tokens.stylex';
 
 import {useCollapsible} from './useCollapsible';
+import {LayoutChangeSnapshot} from '../motion/LayoutChangeSnapshot';
 import {
   applyLayoutChangeTransition,
   holdLayoutExit,
@@ -59,10 +59,7 @@ import {
   reportLayoutChange,
   type AnimatedLayout,
 } from '../motion/animatedLayout';
-import {
-  CollapsibleGroupContext,
-  CollapsibleGroupPresentationContext,
-} from './CollapsibleGroupContext';
+import {CollapsibleGroupPresentationContext} from './CollapsibleGroupContext';
 import type {CollapsibleChevronPosition} from './CollapsibleGroupContext';
 import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
@@ -374,17 +371,11 @@ export function Collapsible({
     () => reportLayoutChange(animatedLayout, contentRef),
     [animatedLayout],
   );
-  // A measured close keeps the content rendered (the exit makes it inert and
-  // gives up its space) while it
-  // plays its exit, then hides it (`spec:AST-105` FR4).
-  const [isExiting, setIsExiting] = useState(false);
-  const endExit = useCallback(() => {
-    // eslint-disable-next-line @eslint-react/set-state-in-effect -- the content was kept rendered only to play its exit; an exit that lands at once hides it before the frame paints
-    setIsExiting(false);
-  }, []);
-  // Before a change commits: the chevron (the trigger's Icon, its `icon`
-  // theming target) turns on the glide's motion, and the content after this
-  // Collapsible is measured where it is now.
+  // Every open-state change, whatever caused it (a click, an owner-set
+  // `isOpen`, a group's value), is measured before it lands (`spec:AST-105`
+  // FR1): LayoutChangeSnapshot calls this in the commit, before the DOM
+  // changes. The chevron (the trigger's Icon, its `icon` theming target)
+  // turns on the glide's motion too.
   const measureChange = useCallback(() => {
     applyLayoutChangeTransition(
       animatedLayout,
@@ -392,27 +383,21 @@ export function Collapsible({
         null,
     );
     layoutChange.measureBefore();
-    if (animatedLayout != null) {
-      // Closing keeps the content for its exit; opening mid-exit ends it.
-      setIsExiting(isOpen);
-    }
-  }, [animatedLayout, layoutChange, isOpen]);
-  // In a group, a toggle can change other items too (opening one in single
-  // mode closes the open one): the group measures every item it changes, so
-  // the rows between glide with the rest.
-  const registerLayoutChange = use(
-    CollapsibleGroupContext,
-  )?.registerLayoutChange;
-  useEffect(() => {
-    if (
-      animatedLayout == null ||
-      value == null ||
-      registerLayoutChange == null
-    ) {
-      return undefined;
-    }
-    return registerLayoutChange(value, measureChange);
-  }, [animatedLayout, value, registerLayoutChange, measureChange]);
+  }, [animatedLayout, layoutChange]);
+  // A close with a handle keeps the content rendered while it plays its exit
+  // (the exit makes it inert and gives up its space), then hides it
+  // (`spec:AST-105` FR4). Derived from the open state as it changes, during
+  // render, so the closing commit already keeps it.
+  const [renderedIsOpen, setRenderedIsOpen] = useState(isOpen);
+  const [isExiting, setIsExiting] = useState(false);
+  if (renderedIsOpen !== isOpen) {
+    setRenderedIsOpen(isOpen);
+    setIsExiting(!isOpen && animatedLayout != null);
+  }
+  const endExit = useCallback(() => {
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- holdLayoutExit decides from layout read in the closing commit (the content's place in the area's visible part, Reduce Motion and the pointer, and whether an end margin frees its space); an exit it does not hold hides the content before the frame paints
+    setIsExiting(false);
+  }, []);
   const wasOpenRef = useRef(isOpen);
   useLayoutEffect(() => {
     if (wasOpenRef.current === isOpen) {
@@ -423,9 +408,8 @@ export function Collapsible({
     if (content == null) {
       return;
     }
-    // A change nothing measured (an owner set `isOpen` directly) lands at
-    // once, entrance and exit included, so the content and what follows stay
-    // in step.
+    // A change that was not measured (no handle) lands at once, entrance and
+    // exit included, so the content and what follows stay in step.
     const isMeasured = layoutChange.animate();
     if (isOpen) {
       // Opened again mid-exit: the content takes its place in flow.
@@ -440,8 +424,9 @@ export function Collapsible({
       isMeasured &&
       holdLayoutExit(animatedLayout, content, endExit);
     if (isExiting && !isHeld) {
-      // An exit that lands at once (unmeasured, out of view, or Reduce Motion
-      // with a fine pointer): hide the content before this frame paints.
+      // An exit holdLayoutExit did not hold (unmeasured, out of view, Reduce
+      // Motion with a fine pointer, or no margin frees its space): hide the
+      // content before this frame paints.
       endExit();
     }
   }, [isOpen, isExiting, layoutChange, animatedLayout, endExit]);
@@ -460,7 +445,6 @@ export function Collapsible({
     if (isDisabled) {
       return;
     }
-    measureChange();
     toggle();
   };
 
@@ -551,6 +535,9 @@ export function Collapsible({
         <span {...stylex.props(styles.triggerLabel)}>{trigger}</span>
         {!isChevronAtStart && chevron}
       </button>
+      {animatedLayout != null && (
+        <LayoutChangeSnapshot value={isOpen} onBeforeChange={measureChange} />
+      )}
       <div
         ref={contentRef}
         id={contentId}
