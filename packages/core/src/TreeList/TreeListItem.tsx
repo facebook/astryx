@@ -411,7 +411,9 @@ export function TreeListItem({
 }: TreeListItemInternalProps) {
   // A row's press is a cell's: it waits UIScrollView's content-touch delay,
   // yields to the pan, and releases on the deselect clock.
-  const pressable = usePressFeedback({profile: 'cell'});
+  usePressFeedback();
+  // The cell profile (utils/pressFeedback.ts), internal to core.
+  const pressable = cellPressableProps;
   // A selection hold returns focus to this row after a pop; its ring follows
   // how the user last interacted (List/selectionHold.ts).
   useInteractionModalityTracking();
