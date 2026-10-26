@@ -362,6 +362,24 @@ export const tabBar = {
    */
   searchSquashVelocity: -3424,
   /**
+   * Active, the search field sits above the software keyboard, its bottom
+   * this far over the keyboard's top (531 over 539).
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, UISearchTab with a UISearchController: the active field
+   *   at (8, 483, 330 × 48) over the keyboard's top at 539, Oct 24 2026
+   */
+  searchKeyboardGap: 8,
+  /**
+   * Active, the search circle is the field's cancel button: at the minimized
+   * circle's place it appears this long after the tap (opacity 0 → 1 within
+   * a frame).
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, the cancel button (a 48 pt UIButton in its own
+   *   platter) at (326, 798) with opacity 0 until 0.12–0.13 s after the
+   *   tap, Oct 24 2026
+   */
+  searchCancelDelay: 0.12,
+  /**
    * The bottom accessory (`UITabBarController.bottomAccessory`, Music's mini
    * player): a capsule this tall, as wide as the bar and this far above it;
    * minimized, it sits inline between the circle and the bar's trailing end,

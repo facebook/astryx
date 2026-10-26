@@ -1413,8 +1413,12 @@ const COLLAPSE_SIZE = {response: 0.6, dampingFraction: 0.85};
 
 const isMinimized = (page: Page) =>
   page
-    .getByRole('tablist')
-    .evaluate(element => element.hasAttribute('data-tab-bar-minimized'));
+    .locator('[data-tab-bar-platter]')
+    .first()
+    .evaluate(
+      element =>
+        element.parentElement?.hasAttribute('data-tab-bar-minimized') === true,
+    );
 const pageScroll = (page: Page) => page.evaluate(() => window.scrollY);
 const circle = (page: Page) => page.locator('[data-tab-bar-circle]');
 
@@ -2383,14 +2387,16 @@ test.describe('search tab', () => {
       await driver.tap(at);
     }
 
-    await expect(tab(page, 'Search')).toHaveAttribute('aria-selected', 'true');
+    // Selected and active at once: the search circle is now the field's
+    // cancel button.
+    await expect(page.getByRole('button', {name: 'Cancel'})).toBeVisible();
     await expect.poll(() => isMinimized(page)).toBe(true);
     await expect(searchHost(page)).toHaveAttribute(
       'data-tab-bar-search-field',
       'active',
     );
     // The tap focused the field itself (iOS raises the keyboard for that).
-    await expect(page.getByRole('textbox', {name: 'Search'})).toBeFocused();
+    await expect(page.getByRole('searchbox', {name: 'Search'})).toBeFocused();
     // The circle holds Home, the tab the search tab was chosen from.
     await expect(circle(page).locator('svg')).toHaveCount(1);
     await waitForRest(searchField(page));
@@ -2484,9 +2490,11 @@ test.describe('search tab', () => {
       'data-tab-bar-search-field',
       'inline',
     );
-    await expect(page.getByRole('textbox', {name: 'Search'})).not.toBeFocused();
+    await expect(
+      page.getByRole('searchbox', {name: 'Search'}),
+    ).not.toBeFocused();
     const field = await page
-      .getByRole('textbox', {name: 'Search'})
+      .getByRole('searchbox', {name: 'Search'})
       .boundingBox();
     if (field == null) {
       throw new Error('no field');
@@ -2499,7 +2507,7 @@ test.describe('search tab', () => {
       'data-tab-bar-search-field',
       'active',
     );
-    await expect(page.getByRole('textbox', {name: 'Search'})).toBeFocused();
+    await expect(page.getByRole('searchbox', {name: 'Search'})).toBeFocused();
   });
 
   test('a main thread blocked 120 ms after the tap still leaves the field focused by the tap itself', async ({
@@ -2510,11 +2518,11 @@ test.describe('search tab', () => {
     // tab is selected; the focus that raises iOS's keyboard happens in the
     // tap, before it.
     await page.evaluate(() => {
-      const target = document.querySelector('[data-tab-bar-search]');
       const log: number[] = [];
       (window as unknown as {__block: number[]}).__block = log;
+      // Selected and active at once, the field gets its Cancel button.
       const observer = new MutationObserver(() => {
-        if (target?.getAttribute('aria-selected') !== 'true') {
+        if (document.querySelector('[data-tab-bar-search-cancel]') == null) {
           return;
         }
         observer.disconnect();
@@ -2531,9 +2539,7 @@ test.describe('search tab', () => {
           log.push(2);
         }, 120);
       });
-      if (target != null) {
-        observer.observe(target, {attributeFilter: ['aria-selected']});
-      }
+      observer.observe(document.body, {childList: true, subtree: true});
     });
     await tapSearch(page, driver);
     await expect
@@ -2541,7 +2547,7 @@ test.describe('search tab', () => {
         page.evaluate(() => (window as unknown as {__block: number[]}).__block),
       )
       .toEqual([1, 2]);
-    await expect(page.getByRole('textbox', {name: 'Search'})).toBeFocused();
+    await expect(page.getByRole('searchbox', {name: 'Search'})).toBeFocused();
     await expect(searchHost(page)).toHaveAttribute(
       'data-tab-bar-search-field',
       'active',
@@ -2596,7 +2602,7 @@ test.describe('search tab', () => {
     );
     // The search tab has faded out.
     await waitForRest(searchCircle(page));
-    await page.getByRole('textbox', {name: 'Search'}).focus();
+    await page.getByRole('searchbox', {name: 'Search'}).focus();
     await page.keyboard.press('Shift+Tab');
     const landed = await page.evaluate(() => {
       const focused = document.activeElement;
@@ -2685,7 +2691,7 @@ test.describe('search tab', () => {
       await expect(page.getByRole('tablist', {name: 'Sections'})).toBeVisible();
       const since = await timelineNow(page);
       await page.getByRole('tab', {name: 'Search'}).click();
-      await expect(page.getByRole('textbox', {name: 'Search'})).toBeFocused();
+      await expect(page.getByRole('searchbox', {name: 'Search'})).toBeFocused();
       await expect(searchHost(page)).toHaveAttribute(
         'data-tab-bar-search-field',
         'above',
@@ -2714,7 +2720,7 @@ test.describe('search tab', () => {
       // The keys choose it too, focus landing in the field.
       await tab(page, 'Search').focus();
       await page.keyboard.press('Enter');
-      await expect(page.getByRole('textbox', {name: 'Search'})).toBeFocused();
+      await expect(page.getByRole('searchbox', {name: 'Search'})).toBeFocused();
     });
   });
 
@@ -2914,4 +2920,212 @@ test('with a search tab, a section opened inside More stays in the search circle
   // Back inside More, on the section it held.
   await expect(tab(page, 'More')).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('heading', {name: 'Settings'})).toBeVisible();
+});
+
+/**
+ * Before the page loads: `window.visualViewport` becomes one the test drives,
+ * `__keyboard(cover)` shrinking it from the bottom with one `resize`, as
+ * Mobile Safari reports a software keyboard (Mobile Safari has no
+ * VirtualKeyboard API, so it is removed), or with `virtualKeyboardApi`
+ * Chrome on Android's `navigator.virtualKeyboard`, `__chromeKeyboard(cover)`
+ * setting its rect with one `geometrychange`. `__listeners()` counts the
+ * keyboard listeners attached to either.
+ */
+async function installKeyboard(
+  page: Page,
+  {virtualKeyboardApi = false}: {virtualKeyboardApi?: boolean} = {},
+) {
+  await page.addInitScript(withApi => {
+    let listeners = 0;
+    const counted = <T extends EventTarget>(target: T, types: string[]): T => {
+      const add = target.addEventListener.bind(target);
+      const remove = target.removeEventListener.bind(target);
+      target.addEventListener = (type: string, ...rest: [never, never?]) => {
+        if (types.includes(type)) {
+          listeners++;
+        }
+        add(type, ...rest);
+      };
+      target.removeEventListener = (type: string, ...rest: [never, never?]) => {
+        if (types.includes(type)) {
+          listeners--;
+        }
+        remove(type, ...rest);
+      };
+      return target;
+    };
+    const w = window as unknown as {
+      __keyboard: (cover: number) => void;
+      __chromeKeyboard: (cover: number) => void;
+      __listeners: () => number;
+    };
+    w.__listeners = () => listeners;
+    if (withApi) {
+      const keyboard = counted(
+        Object.assign(new EventTarget(), {
+          overlaysContent: false,
+          boundingRect: new DOMRect(0, 0, 0, 0),
+        }),
+        ['geometrychange'],
+      );
+      Object.defineProperty(navigator, 'virtualKeyboard', {
+        configurable: true,
+        value: keyboard,
+      });
+      w.__chromeKeyboard = cover => {
+        keyboard.boundingRect = new DOMRect(
+          0,
+          window.innerHeight - cover,
+          window.innerWidth,
+          cover,
+        );
+        keyboard.dispatchEvent(new Event('geometrychange'));
+      };
+    } else {
+      Reflect.deleteProperty(Navigator.prototype, 'virtualKeyboard');
+      Reflect.deleteProperty(navigator, 'virtualKeyboard');
+    }
+    const viewport = counted(
+      Object.assign(new EventTarget(), {
+        height: window.innerHeight,
+        width: window.innerWidth,
+        offsetTop: 0,
+        offsetLeft: 0,
+        pageTop: 0,
+        pageLeft: 0,
+        scale: 1,
+      }),
+      ['resize'],
+    );
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      get: () => viewport,
+    });
+    w.__keyboard = cover => {
+      viewport.height = window.innerHeight - cover;
+      viewport.dispatchEvent(new Event('resize'));
+    };
+  }, virtualKeyboardApi);
+}
+
+/** iPhone 17 Pro's keyboard in Mobile Safari, px of the 874 px screen. */
+const KEYBOARD = 335;
+
+const showKeyboard = async (page: Page, cover = KEYBOARD) =>
+  page.evaluate(
+    c => (window as unknown as {__keyboard: (c: number) => void}).__keyboard(c),
+    cover,
+  );
+const reportChromeKeyboard = async (page: Page, cover = KEYBOARD) =>
+  page.evaluate(
+    c =>
+      (
+        window as unknown as {__chromeKeyboard: (c: number) => void}
+      ).__chromeKeyboard(c),
+    cover,
+  );
+const keyboardListeners = async (page: Page) =>
+  page.evaluate(() =>
+    (window as unknown as {__listeners: () => number}).__listeners(),
+  );
+const overlaysContent = async (page: Page) =>
+  page.evaluate(
+    () =>
+      (navigator as unknown as {virtualKeyboard: {overlaysContent: boolean}})
+        .virtualKeyboard.overlaysContent,
+  );
+
+/** Whether `locator` and its subtree run no animation of `translate`. */
+const translatesInPlace = async (locator: Locator) =>
+  locator.evaluate(element =>
+    element
+      .getAnimations()
+      .every(
+        animation =>
+          !(animation.effect as KeyframeEffect)
+            .getKeyframes()
+            .some(frame => 'translate' in frame || 'transform' in frame),
+      ),
+  );
+
+test.describe('search tab, active above the keyboard', () => {
+  test('under a finger the field and its cancel button sit 8 px above the keyboard, each report committed once with no ride', async ({
+    page,
+  }) => {
+    await installKeyboard(page);
+    const {driver} = await openBar(page, 'search-tab');
+    expect(await keyboardListeners(page)).toBe(0);
+    await tapSearch(page, driver);
+    await expect(page.getByRole('searchbox', {name: 'Search'})).toBeFocused();
+    const cancel = page.getByRole('button', {name: 'Cancel'});
+    await expect(cancel).toHaveAttribute('data-tab-bar-search-cancel', '');
+    // Watching the keyboard only now, while the field is active.
+    expect(await keyboardListeners(page)).toBeGreaterThan(0);
+    await waitForRest(searchFieldEnd(page));
+    await showKeyboard(page);
+    const top = await page.evaluate(k => window.innerHeight - k, KEYBOARD);
+    // One commit: the next frame already shows the resting place.
+    await page.evaluate(
+      () => new Promise(resolve => requestAnimationFrame(() => resolve(null))),
+    );
+    const host = await searchHost(page).boundingBox();
+    const button = await cancel.boundingBox();
+    if (host == null || button == null) {
+      throw new Error('no field');
+    }
+    expect(host.y + host.height).toBeCloseTo(top - 8, 0);
+    // The button's platter (the minimized circle's size) is level with the
+    // field: their centres meet.
+    expect(button.y + button.height / 2).toBeCloseTo(
+      host.y + host.height / 2,
+      0,
+    );
+    // UIKit's cancel button sits 8 px from the screen's edge.
+    const width = await page.evaluate(() => window.innerWidth);
+    const platter = (button.width - 48) / 2;
+    expect(width - (button.x + button.width - platter)).toBeCloseTo(8, 0);
+    expect(await translatesInPlace(searchHost(page))).toBe(true);
+    expect(await translatesInPlace(cancel)).toBe(true);
+    // The keyboard goes down after a cancel: the place holds until it is
+    // reported down, then the bar is back.
+    await cancel.click();
+    await showKeyboard(page, 0);
+    await expect.poll(() => keyboardListeners(page)).toBe(0);
+    await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test("in Chrome on Android the field reads the browser's own keyboard report while it has focus", async ({
+    page,
+  }) => {
+    await installKeyboard(page, {virtualKeyboardApi: true});
+    const {driver} = await openBar(page, 'search-tab');
+    expect(await overlaysContent(page)).toBe(false);
+    await tapSearch(page, driver);
+    await expect(page.getByRole('searchbox', {name: 'Search'})).toBeFocused();
+    expect(await overlaysContent(page)).toBe(true);
+    await reportChromeKeyboard(page, 300);
+    const top = await page.evaluate(() => window.innerHeight - 300);
+    await expect
+      .poll(async () => {
+        const host = await searchHost(page).boundingBox();
+        return host == null ? null : Math.round(host.y + host.height);
+      })
+      .toBe(Math.round(top - 8));
+    await page.getByRole('button', {name: 'Cancel'}).click();
+    await reportChromeKeyboard(page, 0);
+    await expect.poll(() => overlaysContent(page)).toBe(false);
+  });
+
+  test.describe('under a mouse', () => {
+    test.use({hasTouch: false, isMobile: false});
+
+    test('the search tab never watches the keyboard', async ({page}) => {
+      await expectFinePointer(page);
+      await installKeyboard(page);
+      await openStory(page, storybook(), 'lab-tabbar--search-tab');
+      await page.getByRole('tab', {name: 'Search'}).click();
+      await expect(page.getByRole('searchbox', {name: 'Search'})).toBeFocused();
+      expect(await keyboardListeners(page)).toBe(0);
+    });
+  });
 });

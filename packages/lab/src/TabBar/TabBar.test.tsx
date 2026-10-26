@@ -718,6 +718,98 @@ describe('TabBar search tab, selected', () => {
     );
   });
 
+  it('under a finger the active field gets a Cancel button outside the tab list: without a cancel on the handle it blurs the field and reports inactive', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    const onActiveChange = vi.fn();
+    render(<Searching onActiveChange={onActiveChange} />);
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    const field = screen.getByLabelText('Search query', {selector: 'input'});
+    expect(field).toHaveFocus();
+    const cancel = screen.getByRole('button', {name: 'Cancel'});
+    expect(cancel).toHaveAttribute('data-tab-bar-search-cancel');
+    // Not inside the tab list, whose tabs (the search tab's circle included)
+    // stay inert while searching.
+    expect(cancel.closest('[role="tablist"]')).toBeNull();
+    expect(
+      document.querySelector('[data-tab-bar-search]')?.closest('[inert]'),
+    ).not.toBeNull();
+    fireEvent.click(cancel);
+    // The field moves back into the bar: it gives up its focus, so the
+    // keyboard goes with it (spec:AST-099 FR5).
+    expect(field).not.toHaveFocus();
+    expect(onActiveChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('the focus Cancel hands on never pans the page', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    render(<Searching />);
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    const cancel = screen.getByRole('button', {name: 'Cancel'});
+    act(() => {
+      cancel.focus();
+    });
+    const circle = document.querySelector(
+      '[data-tab-bar-circle]',
+    ) as HTMLElement;
+    const focus = vi.spyOn(circle, 'focus');
+    fireEvent.click(cancel);
+    // The bar is fixed over the page: a focus move inside it never scrolls.
+    expect(focus).toHaveBeenCalledWith({preventScroll: true});
+  });
+
+  it('activated from the keys, Cancel hands its focus on to the collapsed bar’s circle when the search tab stays selected', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    render(<Searching />);
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    const cancel = screen.getByRole('button', {name: 'Cancel'});
+    act(() => {
+      cancel.focus();
+    });
+    fireEvent.click(cancel);
+    // Cancel is gone; focus did not fall to the page (WCAG 2.4.3).
+    expect(screen.queryByRole('button', {name: 'Cancel'})).toBeNull();
+    expect(document.activeElement).toBe(
+      document.querySelector('[data-tab-bar-circle]'),
+    );
+  });
+
+  it("the cancel button cancels through the field's handle", () => {
+    restorePointer.push(coarsePrimaryPointer());
+    const cancel = vi.fn();
+    function WithHandle() {
+      const [value, setValue] = useState('home');
+      const [isActive, setIsActive] = useState(false);
+      const handle = useRef({focus: () => {}, blur: () => {}, cancel});
+      return (
+        <TabBar value={value} onChange={setValue} label="Sections">
+          <TabBarItem value="home" label="Home" icon={<Glyph name="home" />} />
+          <TabBarSearchTab
+            value="search"
+            label="Search"
+            icon={<Glyph name="search" />}
+            isActive={isActive}
+            onActiveChange={setIsActive}
+            fieldRef={handle}
+          />
+        </TabBar>
+      );
+    }
+    render(<WithHandle />);
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('under a mouse the search circle stays a tab while its field is active', () => {
+    render(<Searching />);
+    fireEvent.click(screen.getByRole('tab', {name: 'Search'}));
+    expect(screen.getByRole('tab', {name: 'Search'})).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.queryByRole('button', {name: 'Cancel'})).toBeNull();
+  });
+
   it('sets the bottom accessory aside while searching', () => {
     restorePointer.push(coarsePrimaryPointer());
     const {container} = render(

@@ -168,7 +168,7 @@ export const docs = {
       name: 'TabBarSearchTab',
       displayName: 'Tab Bar Search Tab',
       description:
-        'The search tab, as on iOS 26: a circle as tall as the bar at its trailing end, apart from the other tabs, which share a narrower capsule. Choosing it selects it like any tab, collapses the bar to a circle holding the tab it was chosen from (a tap on that circle returns there) and shows its field in the bar; by default the same tap activates the field and focuses it, which raises the keyboard on a phone. Active, the field spans the screen but for a cancel button at its end. Under a mouse it selects in place: the bar stays expanded and the field shows at once above it, focused, where the bottom accessory sits; Escape returns to the tab it was chosen from. TabBar reads its props and draws it; it renders nothing on its own.',
+        'The search tab, as on iOS 26: a circle as tall as the bar at its trailing end, apart from the other tabs, which share a narrower capsule. Choosing it selects it like any tab, collapses the bar to a circle holding the tab it was chosen from (a tap on that circle returns there) and shows its field in the bar; by default the same tap activates the field and focuses it, which raises the keyboard on a phone. Active, the field spans the screen but for the search circle, which becomes its cancel button; on a phone both sit above the keyboard. Under a mouse it selects in place: the bar stays expanded and the field shows at once above it, focused, where the bottom accessory sits; Escape returns to the tab it was chosen from. TabBar reads its props and draws it; it renders nothing on its own.',
       props: [
         {
           name: 'value',
@@ -210,9 +210,9 @@ export const docs = {
         },
         {
           name: 'fieldRef',
-          type: 'RefObject<{focus(): void; blur(): void} | null>',
+          type: 'RefObject<{focus(): void; blur(): void; cancel?(): void} | null>',
           description:
-            "The field's handle, focused by the tap that activates it (an input element works).",
+            "The field's handle, focused by the tap that activates it, and cancelled by the cancel button when it has a cancel method (SearchField's handle does); without one the cancel button calls onActiveChange(false). An input element works.",
         },
         {
           name: 'automaticallyActivates',
