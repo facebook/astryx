@@ -24,6 +24,11 @@ import {rulesDeclaredFor} from '../__tests__/pressState';
 import userEvent from '@testing-library/user-event';
 import {Item} from './Item';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
+// The lazily loaded swipe layer, loaded while this file is collected, which no
+// timeout bounds: its first load brings the gesture system with it and can
+// take seconds on a busy machine. The swipeActions warm-up below then finds it
+// cached.
+import './ItemSwipeLayer';
 
 /**
  * Item in delegation mode: `interactiveRef` points at a nested control that
@@ -678,10 +683,10 @@ describe('Item', () => {
 describe('swipeActions', () => {
   // The panels and the gesture are loaded lazily (React.lazy + Suspense), so
   // the first row with swipe actions renders them once the module has loaded.
-  // Mount one once up front and wait for the module itself, however long its
-  // first load takes on a busy machine (a time window here failed under
-  // parallel runs): the resolved module is cached on the lazy component, and
-  // every row below renders its panels synchronously.
+  // The module is imported at the top of this file, while it is collected, so
+  // no timed hook waits on its first load. Mount one row once up front: its
+  // lazy component resolves from that cached module, and every row below
+  // renders its panels synchronously.
   beforeAll(async () => {
     render(
       <Item
