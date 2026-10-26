@@ -417,7 +417,10 @@ export default function DiffViewerPerfPage() {
         // Looks for a rendered diff now and then once per frame, so a file
         // that renders late is caught at the frame it appears.
         const watchFirstFile = () => {
-          if (surfaceRef.current?.querySelector('table') != null) {
+          // Unified view renders a <table>; split view, a role="table" grid.
+          if (
+            surfaceRef.current?.querySelector('table, [role="table"]') != null
+          ) {
             afterNextPaint(renderStart, ms => {
               firstFileMs = ms;
               // On screen, the files near the viewport mount together with
@@ -557,6 +560,9 @@ export default function DiffViewerPerfPage() {
   };
 
   const controlsDisabled = isBusy || isScrolling;
+  // The list keeps the mount mode its run was measured in, so switching Mount
+  // after a run changes the next run, not the readings on screen.
+  const listMount = run.subject?.mount ?? mount;
   // Badges describe the measured run once there is one, else the selection.
   const shown: RunSubject = run.subject ?? {
     label: workload.label,
@@ -791,7 +797,7 @@ export default function DiffViewerPerfPage() {
                   isCollapsed: collapsed.has(path),
                   onToggle: toggleFile,
                 };
-                return mount === 'visible' ? (
+                return listMount === 'visible' ? (
                   <OnScreenFile
                     key={path}
                     viewportRef={surfaceRef}
