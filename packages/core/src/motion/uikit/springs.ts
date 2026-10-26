@@ -497,6 +497,8 @@ const SPRING_ROLES = {
   menuClose: MENU_CLOSE_SPRING,
   subMenuOpen: SUB_MENU_OPEN_SPRING,
   subMenuBack: SUB_MENU_BACK_SPRING,
+  alertPresent: ALERT_PRESENT_SPRING,
+  alertDismiss: ALERT_DISMISS_SPRING,
 };
 
 /**

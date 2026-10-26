@@ -12,7 +12,7 @@
  * @position Internal hook of AlertDialog; the touch presentation's motion
  *
  * UIKit's alert motion (measured on iOS 26.2; numbers in
- * motion/uikit/alert.ts, ALERT_PRESENT_SPRING and ALERT_DISMISS_SPRING):
+ * motion/uikit/alert.ts, the `springs.alertPresent` and `springs.alertDismiss` roles):
  *
  * - presenting, the alert scales from 1.2 to 1 and fades in, and the dimming
  *   fades in, all on one critically damped spring (0.404 s); nothing moves
@@ -62,10 +62,21 @@ import {
   type SpringDescription,
 } from '../motion/spring';
 import {alertController} from '../motion/uikit/alert';
-import {
-  ALERT_DISMISS_SPRING,
-  ALERT_PRESENT_SPRING,
-} from '../motion/uikit/springs';
+import {registerSpringsTable, springs} from '../motion/uikit/springs';
+
+/**
+ * The alert's springs, played through their internal motion roles
+ * (`springs.alertPresent`, `springs.alertDismiss`; `spec:AST-094` FR4, kept
+ * internal by DEC-11). Registering is idempotent and happens only when the
+ * touch motion first runs.
+ */
+function alertSprings(): {
+  present: SpringDescription;
+  dismiss: SpringDescription;
+} {
+  registerSpringsTable();
+  return {present: springs.alertPresent, dismiss: springs.alertDismiss};
+}
 
 /** A dialog that misses its exit's end still closes this long after it. */
 const EXIT_BACKSTOP_MS = 100;
@@ -124,7 +135,7 @@ function touchWindowMs(): number {
   const {present} = alertController;
   // UIKit's frame or two after the spring, from the measured pair.
   const lag = present.ignoresTouchesForMs - present.durationMs;
-  return springLengthMs(ALERT_PRESENT_SPRING) + lag;
+  return springLengthMs(alertSprings().present) + lag;
 }
 
 type Status = 'hidden' | 'open' | 'leaving';
@@ -264,14 +275,14 @@ export function useAlertMotion({
       // Touches come back a presentation's time after that fade starts.
       exitRef.current = null;
       transitionEndsAtRef.current = Number.POSITIVE_INFINITY;
-      const handle = fadeFromHere(panel, backdrop, 1, ALERT_PRESENT_SPRING);
+      const handle = fadeFromHere(panel, backdrop, 1, alertSprings().present);
       presentRef.current = handle;
       armTouchWindow(handle);
       return;
     }
     if (now === 'leaving') {
       transitionEndsAtRef.current = Number.POSITIVE_INFINITY;
-      const handle = fadeFromHere(panel, backdrop, 0, ALERT_DISMISS_SPRING);
+      const handle = fadeFromHere(panel, backdrop, 0, alertSprings().dismiss);
       exitRef.current = handle;
       void handle.finished.then(isDone => {
         if (isDone && exitRef.current === handle) {
@@ -298,7 +309,7 @@ export function useAlertMotion({
         exitRef.current = null;
         setIsLeaving(false);
       },
-      springLengthMs(ALERT_DISMISS_SPRING) + EXIT_BACKSTOP_MS,
+      springLengthMs(alertSprings().dismiss) + EXIT_BACKSTOP_MS,
     );
     return () => clearTimeout(backstop);
   }, [isLeaving]);
@@ -313,10 +324,8 @@ function present(panel: Animator, backdrop: Animator): MotionHandle {
   // animation at its transaction's commit. Under reduced motion the
   // animator's own policy turns it into an opacity-only cross-fade
   // (design:reduced-motion); the alert passes no curve of its own (DR4).
-  const handle = panel.animate(
-    {opacity: 1, scale: 1},
-    {spring: ALERT_PRESENT_SPRING},
-  );
-  backdrop.animate({opacity: 1}, {spring: ALERT_PRESENT_SPRING});
+  const spring = alertSprings().present;
+  const handle = panel.animate({opacity: 1, scale: 1}, {spring});
+  backdrop.animate({opacity: 1}, {spring});
   return handle;
 }
