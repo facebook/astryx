@@ -77,6 +77,8 @@ export interface StepperTouchState {
   commitValue: (value: number) => void;
   isDisabled: boolean;
   isReadOnly: boolean;
+  /** Whether the steppers are shown (`hasNumberSteppers`). */
+  hasSteppers: boolean;
 }
 
 /** What a stepper click steps: a half, nothing, or its own half. */
@@ -370,6 +372,26 @@ export function useStepperTouch(
       event.clientY <= box.bottom;
     return isInside ? halfAt(event.clientY) : null;
   };
+  // A press whose owner goes away mid-hold lets go at once, as a disabled
+  // field's does: the steppers unmounting (`hasNumberSteppers` turning false),
+  // or the primary pointer changing kind, which hands presses between the
+  // press tracker and the column's own handlers. A detached owner sends no
+  // end, so nothing else would stop the repeat.
+  const ownerKey = `${state.hasSteppers}:${isCoarse}`;
+  const ownerKeyRef = useRef(ownerKey);
+  useIsomorphicLayoutEffect(() => {
+    if (ownerKey !== ownerKeyRef.current && tracking.isTracking) {
+      const press = pressRef.current;
+      press.isReleased = true;
+      press.half = null;
+      pointerIdRef.current = null;
+      liftRef.current = null;
+      tracking.cancel();
+      paint(null);
+      discard();
+    }
+    ownerKeyRef.current = ownerKey;
+  });
   const pointer: StepperTouch['pointer'] = {
     onPointerDown: event => {
       const latest = latestRef.current;

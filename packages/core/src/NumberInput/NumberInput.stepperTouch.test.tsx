@@ -27,6 +27,7 @@ import {act, fireEvent, render, screen} from '@testing-library/react';
 import {useState} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {NumberInput} from './NumberInput';
+import {pointerQuery} from '../gestures/__tests__/pointerQuery';
 
 // The column sits at x 200–224; + is its top half (y 0–16), − the bottom.
 const RECTS: Record<string, {top: number; bottom: number}> = {
@@ -711,6 +712,63 @@ describe('NumberInput steppers under a mouse where the primary pointer is coarse
       increment.dispatchEvent(clickNaming('mouse', 1));
     });
     expect(committed(onChange)).toEqual([9]);
+  });
+});
+
+describe('NumberInput steppers losing a held press', () => {
+  // A press whose owner goes away mid-hold (the steppers unmounting, or the
+  // primary pointer changing kind, which detaches the press tracker or the
+  // column's own handlers) lets go at once, as a disabled field does.
+  it('a hold lets go when the steppers go away: no further step, no commit', () => {
+    coarsePrimaryPointer();
+    const onChange = vi.fn<(value: number | null) => void>();
+    const {rerender} = render(<Controlled onChange={onChange} />);
+    const input = screen.getByRole('spinbutton');
+    const increment = screen.getByRole('button', {name: 'Increment Quantity'});
+    fingerDown(increment, INCREMENT);
+    wait(700);
+    expect(shown(input)).toBe('6');
+    rerender(<Controlled onChange={onChange} hasNumberSteppers={false} />);
+    wait(2000);
+    expect(shown(input)).toBe('5');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('a finger hold lets go when the primary pointer turns fine', () => {
+    const pointer = pointerQuery(true);
+    try {
+      const {onChange, input, increment} = setup();
+      fingerDown(increment, INCREMENT);
+      wait(700);
+      expect(shown(input)).toBe('6');
+      act(() => {
+        pointer.set(false);
+      });
+      wait(2000);
+      expect(shown(input)).toBe('5');
+      expect(onChange).not.toHaveBeenCalled();
+    } finally {
+      pointer.restore();
+    }
+  });
+
+  it('a mouse hold lets go when the primary pointer turns coarse', () => {
+    const pointer = pointerQuery(false);
+    try {
+      const {onChange, input, increment} = setup();
+      const mouse = {pointerType: 'mouse', pointerId: 1, isPrimary: true};
+      fireEvent.pointerDown(increment, {...mouse, clientX: 212, clientY: 8});
+      wait(700);
+      expect(shown(input)).toBe('6');
+      act(() => {
+        pointer.set(true);
+      });
+      wait(2000);
+      expect(shown(input)).toBe('5');
+      expect(onChange).not.toHaveBeenCalled();
+    } finally {
+      pointer.restore();
+    }
   });
 });
 

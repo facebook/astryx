@@ -1020,6 +1020,7 @@ export function NumberInput({
       commitValue,
       isDisabled,
       isReadOnly,
+      hasSteppers: hasNumberSteppers,
     },
     incrementRef,
     decrementRef,
