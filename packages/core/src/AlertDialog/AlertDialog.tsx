@@ -68,10 +68,10 @@ const styles = stylex.create({
   // a long press does: the browser may pinch-zoom there but never pans (Chrome
   // on Android cancels a pointer it pans, which would cancel the group's
   // touch), and a double tap zooms nothing. A long alert's content keeps its
-  // pan (see `isBodyScrollable`). While a finger or a pen is down, the gesture
-  // host's selection lock keeps it from starting a text selection or opening
-  // the callout (useActionGroupTracking); a mouse keeps selecting text, which
-  // is why the host's permanent long-press styles stay off
+  // pan (see `isBodyScrollable`). The group's hold does something, so a held
+  // finger or pen starts no text selection and opens no callout there
+  // (`spec:AST-094` FR41; useActionGroupTracking); a mouse keeps selecting
+  // text, which is why the host's permanent long-press styles stay off
   // (`manageStyle: false`).
   trackingSurface: {
     touchAction: 'pinch-zoom',
@@ -235,6 +235,9 @@ export function AlertDialog({
   // at the lift. Under a finger the alert also appears and leaves the way
   // UIKit's does (the touch layer's useAlertMotion): it stays presented while
   // it fades out, and touches during either transition are taken and dropped.
+  // Only under a touch presentation (a coarse primary pointer, after
+  // hydration): where the primary pointer is fine nothing attaches, and a
+  // finger keeps the browser's click (`spec:AST-094` FR13, FR19).
   const {isTouch, isCompact} = useTouchPresentation();
   // UIKit's action layout needs both a finger and a compact viewport (the
   // active theme's compact definition).

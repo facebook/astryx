@@ -154,7 +154,6 @@ export const alertController = {
  * takes a duration. Nothing registers on import: AlertDialog's touch layer
  * calls it once before the alert first animates (it is idempotent), so a page
  * that never presents one ships no registry.
- * @experimental
  */
 export function registerAlertControllerTable(): void {
   registerMotionTable('alertController', alertController, {

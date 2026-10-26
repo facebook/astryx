@@ -38,7 +38,16 @@ import type {
 } from './types';
 import {DEFAULT_ENVIRONMENT} from './types';
 
-/** @experimental */
+/**
+ * Turns text selection and the touch callout off on `elements` (and on a
+ * non-text input `target` inside one) for one held press; returns the undo.
+ * gestures/selectionLock.ts's `lockSelection` is the one implementation.
+ */
+export type SelectionLock = (
+  elements: Iterable<Element>,
+  target: EventTarget | null,
+) => () => void;
+
 export interface GestureRecognizerOptions<R = GestureRecognizer> {
   /** A name for debugging and test output. */
   name?: string;
@@ -53,14 +62,16 @@ export interface GestureRecognizerOptions<R = GestureRecognizer> {
   /** Hold the view's touch-began until this recognizer fails. @default false */
   delaysTouchesBegan?: boolean;
   /**
-   * While a finger or a pen is down on this recognizer's element, text
-   * selection and the touch callout are off there, as on a UIKit control:
-   * a slider's, a segmented control's or a switch's drag sets it. Content
-   * under a sheet's or a pager's pan stays selectable, so it is off by
-   * default; a mouse keeps desktop selection either way. A long press
-   * always turns them off for its element. @default false
+   * For a hold that does something (a slider's thumb, a switch's or a
+   * segmented control's drag): the lock that turns text selection and the
+   * touch callout off on this recognizer's element for each held press
+   * (`spec:AST-094` FR41). Pass `lockSelection` from gestures/selectionLock.ts;
+   * the host calls it and never imports it, so a component without such a
+   * hold does not bundle it. Content under a sheet's or a pager's pan stays
+   * selectable, so there is none by default; a mouse keeps desktop selection
+   * either way. A long press always brings its own.
    */
-  preventsTextSelection?: boolean;
+  selectionLock?: SelectionLock;
   /**
    * Hold the view's touch-ended (and the browser's click) while this
    * recognizer may still recognize. @default true
@@ -88,10 +99,8 @@ export interface GestureRecognizerOptions<R = GestureRecognizer> {
   ) => boolean;
 }
 
-/** @experimental */
 export type GestureListener<R> = (recognizer: R) => void;
 
-/** @experimental */
 export type GestureTransitionListener<R> = (
   recognizer: R,
   from: GestureState,
@@ -122,19 +131,16 @@ export function isTransitionAllowed(
   return ALLOWED[from].includes(to);
 }
 
-/** @experimental */
 export function isTerminal(state: GestureState): boolean {
   return state === 'ended' || state === 'cancelled' || state === 'failed';
 }
 
-/** @experimental */
 export function isActive(state: GestureState): boolean {
   return state === 'began' || state === 'changed';
 }
 
 /**
  * The browser behaviors `touch-action` can keep or remove.
- * @experimental
  */
 export interface NativeTouchBehavior {
   readonly panX: boolean;
@@ -161,15 +167,14 @@ export const MANIPULATION: NativeTouchBehavior = {
 
 let nextRecognizerId = 1;
 
-/** @experimental */
 export abstract class GestureRecognizer {
   /** Stable id, for ordering and debugging. */
   readonly id = nextRecognizerId++;
   name: string;
   isEnabled: boolean;
   cancelsTouchesInView: boolean;
-  /** See GestureRecognizerOptions.preventsTextSelection. */
-  readonly preventsTextSelection: boolean;
+  /** See GestureRecognizerOptions.selectionLock. */
+  readonly selectionLock: SelectionLock | null;
   delaysTouchesBegan: boolean;
   delaysTouchesEnded: boolean;
   allowedPointerTypes: ReadonlySet<PointerKind> | null;
@@ -211,7 +216,7 @@ export abstract class GestureRecognizer {
     this.name = options.name ?? this.constructor.name;
     this.isEnabled = options.isEnabled ?? true;
     this.cancelsTouchesInView = options.cancelsTouchesInView ?? true;
-    this.preventsTextSelection = options.preventsTextSelection ?? false;
+    this.selectionLock = options.selectionLock ?? null;
     this.delaysTouchesBegan = options.delaysTouchesBegan ?? false;
     this.delaysTouchesEnded = options.delaysTouchesEnded ?? true;
     this.allowedPointerTypes =
@@ -315,12 +320,16 @@ export abstract class GestureRecognizer {
     );
   }
 
-  /** @internal Whether this and `other` may be active together. */
+  /**
+   * @internal Whether this and `other` may be active together: both allow it
+   * (`recognizeSimultaneouslyWith` sets both sides; each delegate answers for
+   * its own recognizer), so one delegate alone keeps them exclusive (FR15).
+   */
   allowsSimultaneous(other: GestureRecognizer): boolean {
     return (
       this.simultaneousWith.has(other) ||
-      this.options.shouldRecognizeSimultaneously?.(this, other) === true ||
-      other.options.shouldRecognizeSimultaneously?.(other, this) === true
+      (this.options.shouldRecognizeSimultaneously?.(this, other) === true &&
+        other.options.shouldRecognizeSimultaneously?.(other, this) === true)
     );
   }
 
@@ -417,6 +426,18 @@ export abstract class GestureRecognizer {
     return false;
   }
 
+  /**
+   * A touch began elsewhere (off this recognizer's hit path) while this
+   * recognizer tracks touches of its own. It is not this recognizer's touch
+   * and is never delivered as one; a recognizer that a foreign finger should
+   * end (a menu's press slide) cancels itself here. By default nothing
+   * happens.
+   */
+  protected touchBeganElsewhere(
+    _touches: ReadonlyArray<GestureTouch>,
+    _event: GestureEventContext,
+  ): void {}
+
   /** Clear per-gesture state before the next attempt. */
   protected reset(): void {}
 
@@ -495,6 +516,17 @@ export abstract class GestureRecognizer {
     }
     this.location();
     this.touchesBegan(touches, event);
+  }
+
+  /** @internal */
+  deliverBeganElsewhere(
+    touches: ReadonlyArray<GestureTouch>,
+    event: GestureEventContext,
+  ): void {
+    if (isTerminal(this.state)) {
+      return;
+    }
+    this.touchBeganElsewhere(touches, event);
   }
 
   /** @internal */
@@ -579,7 +611,8 @@ export abstract class GestureRecognizer {
       this.arena.stop(this);
     } else if (isActive(this.state)) {
       this.applyState('cancelled');
-    } else if (this.state === 'possible') {
+    } else if (this.state === 'possible' && this.isInvolved()) {
+      // An idle recognizer stays `possible`: nothing would ever reset it.
       this.applyState('failed');
     }
   }

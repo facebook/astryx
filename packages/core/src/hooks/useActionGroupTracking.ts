@@ -35,7 +35,10 @@
  * through its own click, inside the lift, so it keeps the user activation
  * and every click handler. A pen is tracked like a finger, as UIKit tracks
  * Apple Pencil on an alert's actions; a mouse keeps the browser's own click.
- * Turning tracking off, or unmounting, ends any release fade still running.
+ * The recognizer is attached only while tracking is on, so a caller that
+ * turns it on under a touch presentation attaches no touch work where the
+ * primary pointer is fine (`spec:AST-094` FR19). Turning tracking off, or
+ * unmounting, ends any release fade still running.
  *
  * Nothing reads layout after the press begins: the actions' rects are read
  * once when it begins, then hit-tested. A move costs at most two attribute
@@ -46,6 +49,7 @@
 
 import {useEffect, useRef, type RefObject} from 'react';
 import {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer';
+import {lockSelection} from '../gestures/selectionLock';
 import type {GestureTouch, PointerKind} from '../gestures/types';
 import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
@@ -70,14 +74,18 @@ export interface ActionGroupTrackingOptions {
    * UIKit drops touches during a presentation transition.
    */
   isInert?: () => boolean;
-  /** @default true */
+  /**
+   * Off, nothing is attached and nothing is tracked: pass the touch
+   * presentation's state, so no touch work attaches where the primary
+   * pointer is fine (`spec:AST-094` FR19). @default true
+   */
   isEnabled?: boolean;
   /**
    * Let the gesture host write a long press's permanent styles on the
    * tracked element (`touch-action`, and no callout and no text selection
-   * for every pointer). Pass false to keep text selectable with a mouse: the
-   * host's selection lock still turns selection and the callout off while a
-   * finger or a pen is down. @default true
+   * for every pointer). Pass false to keep text selectable with a mouse: a
+   * held finger or pen still starts no selection and opens no callout
+   * (the recognizer's `selectionLock`, `spec:AST-094` FR41). @default true
    */
   manageStyle?: boolean;
   /** Runs the action under the finger at the lift. @default its own click */
@@ -101,6 +109,9 @@ interface TrackingState {
 }
 
 const PRESS = UIKIT_GESTURES.press;
+
+/** The ref handed to the recognizer while tracking is off: no element. */
+const DETACHED: RefObject<Element | null> = {current: null};
 
 /**
  * Track touches on the element behind `ref` across the actions inside it,
@@ -207,7 +218,7 @@ export function useActionGroupTracking(
   };
 
   return useGestureRecognizer(
-    ref,
+    isEnabled ? ref : DETACHED,
     () =>
       new LongPressGestureRecognizer({
         name: 'ActionGroupTracking',
@@ -215,11 +226,13 @@ export function useActionGroupTracking(
         allowableMovement: Number.POSITIVE_INFINITY,
         allowedPointerTypes: options.pointerTypes ?? ['touch', 'pen'],
         delaysTouchesBegan: true,
-        // A held finger or pen starts no text selection and opens no
-        // callout on the group, as on UIKit's action rows: the gesture
-        // host's selection lock, for as long as the contact is down. A mouse
-        // keeps selecting text.
-        preventsTextSelection: true,
+        // The group's hold does something (it tracks the finger across the
+        // actions, and the lift picks one), so a held finger or pen starts
+        // no text selection and opens no callout on it while down, as on
+        // UIKit's action rows (`spec:AST-094` FR41). A long press brings
+        // this lock by default; the group names it, since its hold has no
+        // minimum duration. A mouse keeps selecting text.
+        selectionLock: lockSelection,
         shouldReceiveTouch: (recognizer, touch) =>
           receiveTouch(recognizer, touch, optionsRef.current),
       }),

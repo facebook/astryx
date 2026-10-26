@@ -306,8 +306,9 @@ test.describe('with a mouse', () => {
   test('the dialog keeps its base styles: its text stays selectable', async ({
     page,
   }) => {
-    // The selection lock is a finger's or a pen's, never a mouse's: with a
-    // mouse the dialog keeps what it had before.
+    // A held finger's suppressed selection (`spec:AST-094` FR41) is a
+    // finger's or a pen's, never a mouse's: with a mouse the dialog keeps what
+    // it had before.
     await openStory(page, storybook(), 'core-alertdialog--delete');
     // A fine pointer in this context, before anything is checked.
     expect(

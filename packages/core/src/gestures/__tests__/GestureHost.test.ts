@@ -18,6 +18,7 @@ import {GestureHost} from '../GestureHost';
 import {HoverGestureRecognizer} from '../HoverGestureRecognizer';
 import {LongPressGestureRecognizer} from '../LongPressGestureRecognizer';
 import {PanGestureRecognizer} from '../PanGestureRecognizer';
+import {lockSelection} from '../selectionLock';
 import {TapGestureRecognizer} from '../TapGestureRecognizer';
 import {ManualClock, RecordingConsumer} from './harness';
 
@@ -81,6 +82,22 @@ function pointer(
 let host: GestureHost;
 let clock: ManualClock;
 let detachers: (() => void)[];
+
+/**
+ * The primary pointer is coarse (a phone, a tablet) until the returned
+ * restore runs: jsdom's matchMedia models a desktop, where touch work stays
+ * off (`spec:AST-094` FR19).
+ */
+function coarsePrimaryPointer(): () => void {
+  const matchMedia = window.matchMedia;
+  window.matchMedia = (query: string) => ({
+    ...matchMedia(query),
+    matches: query.includes('(pointer: coarse)') || matchMedia(query).matches,
+  });
+  return () => {
+    window.matchMedia = matchMedia;
+  };
+}
 
 /** jsdom computes no layout: give a scroller its metrics. */
 function scrollable(
@@ -792,7 +809,7 @@ describe('GestureHost', () => {
     const drag = new PanGestureRecognizer({
       name: 'drag',
       direction: 'horizontal',
-      preventsTextSelection: true,
+      selectionLock: lockSelection,
     });
     detachers.push(host.attach(slider, drag));
     drag.setEnabled(false);
@@ -802,19 +819,36 @@ describe('GestureHost', () => {
     touch('touchend', slider, [finger], [], 40);
   });
 
-  it('turns text selection off on a press-tracked element while a finger is down, and restores it', () => {
+  it('keeps native long-press selection on a press-tracked element whose hold does nothing (spec:AST-094 FR41)', () => {
+    detachers.push(coarsePrimaryPointer());
     const {row, text} = mount(
       '<div id="row" style="user-select: text"><span id="text">Row</span></div>',
     );
     detachers.push(host.attachConsumer(row, new RecordingConsumer()));
     const finger = {id: 1, x: 5, y: 5};
     touch('touchstart', text, [finger], [finger], 0);
-    expect(row.style.getPropertyValue('user-select')).toBe('none');
+    expect(row.style.getPropertyValue('user-select')).toBe('text');
     touch('touchend', text, [finger], [], 600);
     expect(row.style.getPropertyValue('user-select')).toBe('text');
   });
 
-  it('locks a delegated pressable only when it takes the touch, and holds the lock until the last finger lifts', () => {
+  it('turns text selection and the callout off while a finger holds an element whose hold opens a menu (spec:AST-094 FR41)', () => {
+    detachers.push(coarsePrimaryPointer());
+    const {trigger} = mount(
+      '<div id="trigger" style="user-select: text">Hold for the menu</div>',
+    );
+    detachers.push(
+      host.attach(trigger, new LongPressGestureRecognizer({name: 'menu'})),
+    );
+    const inline = () => trigger.style.getPropertyValue('user-select');
+    const finger = {id: 1, x: 5, y: 5};
+    touch('touchstart', trigger, [finger], [finger], 0);
+    expect(inline()).toBe('none');
+    touch('touchend', trigger, [finger], [], 600);
+  });
+
+  it('keeps native selection on a delegated pressable, whose hold does nothing (spec:AST-094 FR41)', () => {
+    detachers.push(coarsePrimaryPointer());
     const {row, off} = mount(
       '<div id="row" data-test-press></div><div id="off" data-test-press="off"></div>',
     );
@@ -831,8 +865,8 @@ describe('GestureHost', () => {
     const two = {id: 2, x: 9, y: 9};
     touch('touchstart', row, [one], [one], 0);
     touch('touchstart', row, [two], [one, two], 10);
+    expect(row.style.getPropertyValue('user-select')).toBe('');
     touch('touchend', row, [one], [two], 100);
-    expect(row.style.getPropertyValue('user-select')).toBe('none');
     touch('touchend', row, [two], [], 200);
     expect(row.style.getPropertyValue('user-select')).toBe('');
     touch('touchstart', off, [one], [one], 300);
@@ -840,7 +874,8 @@ describe('GestureHost', () => {
     touch('touchend', off, [one], [], 400);
   });
 
-  it('keeps selection for a mouse and for a pan that does not ask, and locks a pan that asks and a pen', () => {
+  it('on a coarse primary pointer, keeps selection for a mouse, a press-tracked row and a pan that does not ask, and locks a pan that asks', () => {
+    detachers.push(coarsePrimaryPointer());
     const {row, sheet, slider} = mount(
       '<div id="row"></div><div id="sheet"></div><div id="slider"></div>',
     );
@@ -851,7 +886,7 @@ describe('GestureHost', () => {
         slider,
         new PanGestureRecognizer({
           direction: 'horizontal',
-          preventsTextSelection: true,
+          selectionLock: lockSelection,
         }),
       ),
     );
@@ -864,13 +899,15 @@ describe('GestureHost', () => {
     });
     expect(row.style.getPropertyValue('user-select')).toBe('');
     pointer('pointerup', row, {pointerType: 'mouse', ...at, time: 50});
+    // A pen on a touch device (an iPad's pencil) on a row whose hold does
+    // nothing keeps native selection too (spec:AST-094 FR41).
     pointer('pointerdown', row, {
       pointerType: 'pen',
       ...at,
       buttons: 1,
       time: 100,
     });
-    expect(row.style.getPropertyValue('user-select')).toBe('none');
+    expect(row.style.getPropertyValue('user-select')).toBe('');
     pointer('pointerup', row, {pointerType: 'pen', ...at, time: 150});
     expect(row.style.getPropertyValue('user-select')).toBe('');
 
@@ -884,11 +921,54 @@ describe('GestureHost', () => {
     expect(slider.style.getPropertyValue('user-select')).toBe('');
   });
 
+  it("keeps selection for every contact where the primary pointer is fine: a touchscreen laptop's finger, a desktop pen and a mouse (spec:AST-094 FR19, spec:AST-017 FR59)", () => {
+    const {row, slider} = mount('<div id="row"></div><div id="slider"></div>');
+    detachers.push(
+      host.attachConsumer(row, new RecordingConsumer()),
+      host.attach(
+        slider,
+        new PanGestureRecognizer({
+          direction: 'horizontal',
+          selectionLock: lockSelection,
+        }),
+      ),
+    );
+    const at = {x: 5, y: 5};
+    for (const [time, pointerType] of [
+      [0, 'mouse'],
+      [100, 'pen'],
+      [200, 'touch'],
+    ] as const) {
+      pointer('pointerdown', row, {
+        pointerType,
+        ...at,
+        buttons: 1,
+        time,
+      });
+      expect(row.style.getPropertyValue('user-select')).toBe('');
+      pointer('pointerup', row, {pointerType, ...at, time: time + 50});
+    }
+    const finger = {id: 1, ...at};
+    touch('touchstart', slider, [finger], [finger], 300);
+    expect(slider.style.getPropertyValue('user-select')).toBe('');
+    touch('touchend', slider, [finger], [], 350);
+  });
+
   it('locks a checkbox under the finger inside a locked element, which WebKit makes selectable, but never a text field', () => {
+    detachers.push(coarsePrimaryPointer());
     const {row, check, field} = mount(
       '<div id="row"><input id="check" type="checkbox"><input id="field"></div>',
     );
-    detachers.push(host.attachConsumer(row, new RecordingConsumer()));
+    // A switch's drag: a hold that does something.
+    detachers.push(
+      host.attach(
+        row,
+        new PanGestureRecognizer({
+          direction: 'horizontal',
+          selectionLock: lockSelection,
+        }),
+      ),
+    );
     const finger = {id: 1, x: 5, y: 5};
     touch('touchstart', check, [finger], [finger], 0);
     expect(check.style.getPropertyValue('user-select')).toBe('none');
