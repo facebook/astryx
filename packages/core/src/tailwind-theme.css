@@ -95,6 +95,17 @@
   --color-status-success: var(--color-text-success);
   --color-status-warning: var(--color-text-warning);
   --color-status-error: var(--color-text-error);
+  /* text-<status> and border-<status> read the readable text and border roles;
+   * bg-<status> stays the strong fill. Tailwind resolves --text-color-* and
+   * --border-color-* before --color-* for those utilities. */
+  --text-color-info: var(--color-text-info);
+  --text-color-success: var(--color-text-success);
+  --text-color-warning: var(--color-text-warning);
+  --text-color-error: var(--color-text-error);
+  --border-color-info: var(--color-border-info);
+  --border-color-success: var(--color-border-success);
+  --border-color-warning: var(--color-border-warning);
+  --border-color-error: var(--color-border-error);
   --color-on-info-muted: var(--color-on-info-muted);
   --color-on-success-muted: var(--color-on-success-muted);
   --color-on-warning-muted: var(--color-on-warning-muted);

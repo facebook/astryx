@@ -114,4 +114,16 @@ describe('Tailwind theme bridge', () => {
     expect(css).toContain('color: var(--color-text-error);');
     expect(css).not.toContain('background-color: var(--color-surface);');
   });
+
+  it('maps text-<status> and border-<status> to the roles and bg-<status> to the fill', async () => {
+    const compiler = await compile(`${bridgeCSS}\n@tailwind utilities;`);
+    for (const status of ['info', 'success', 'warning', 'error']) {
+      const text = compiler.build([`text-${status}`]);
+      const border = compiler.build([`border-${status}`]);
+      const bg = compiler.build([`bg-${status}`]);
+      expect(text).toContain(`color: var(--color-text-${status});`);
+      expect(border).toContain(`border-color: var(--color-border-${status});`);
+      expect(bg).toContain(`background-color: var(--color-${status});`);
+    }
+  });
 });
