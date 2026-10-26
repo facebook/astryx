@@ -4,18 +4,18 @@
  * @file reorderModel.ts
  * @input A list's row geometry (layout tops and heights inside the list) and
  *   the reorder values of the UIKit constants table (motion/uikit/reorder.ts)
- * @output Pure functions of a UIKit table's edit-mode reorder: the slot a
+ * @output Pure functions of a UIKit table's edit-mode reorder: the position a
  *   dragged row proposes, the offsets of the rows that make room, the dragged
- *   row's place in its slot, the movable range between fixed rows, the drop's
+ *   row's place in its position, the movable range between fixed rows, the drop's
  *   and the slides' springs, the autoscroll step and the tracking clamp
  * @position List internals; listReorderEngine.tsx drives a drag with them. No
  *   DOM, no React: unit tested against the UIKit lab measurements
  *
- * UIKit's rules (iOS 26.2, measured): the proposed slot changes when the
+ * UIKit's rules (iOS 26.2, measured): the drop position changes when the
  * dragged row's centre crosses a row boundary of the layout WITHOUT the
  * dragged row, with no hysteresis; the rows between the dragged row's place
- * and its slot each move by the dragged row's height; the drop goes to the
- * current slot, from rest, on a spring whose duration scales with the
+ * and its position each move by the dragged row's height; the drop goes to the
+ * current position, from rest, on a spring whose duration scales with the
  * remaining distance; autoscroll moves a whole number of points per tick,
  * more the deeper the dragged row's edge is past the scroll view's edge.
  */
@@ -53,7 +53,7 @@ export function displacement(
 }
 
 /**
- * The slots `dragged` can take: the rows between the nearest fixed rows above
+ * The positions `dragged` can take: the rows between the nearest fixed rows above
  * and below it (a fixed row is a barrier, as UIKit's retargeting delegate
  * makes one).
  */
@@ -79,7 +79,7 @@ export function movableRange(
 }
 
 /**
- * The slot the dragged row proposes for its centre, in list coordinates. A row
+ * The position the dragged row proposes for its centre, in list coordinates. A row
  * below it changes places once the centre passes that row's far edge less the
  * dragged row's height — for equal rows, the neighbour's near edge, half a row
  * (measured); a short row passing an 88 pt row travels that row's height. A row
@@ -87,14 +87,14 @@ export function movableRange(
  * edge, so a tall row never starts past a short neighbour (its centre travels
  * at least half its own height). Boundaries sit in the middle of a gap.
  */
-export function proposedSlot(
+export function dropPosition(
   geometry: ReorderGeometry,
   dragged: number,
   center: number,
 ): number {
   const {rows, gap} = geometry;
   const height = rows[dragged].height;
-  let slot = 0;
+  let position = 0;
   for (let index = 0; index < rows.length; index += 1) {
     if (index === dragged) {
       continue;
@@ -105,52 +105,52 @@ export function proposedSlot(
         ? Math.min(top + height, top + rowHeight) + gap / 2
         : Math.max(top + rowHeight - height, top) - gap / 2;
     if (boundary < center) {
-      slot += 1;
+      position += 1;
     }
   }
   const {start, end} = movableRange(rows, dragged);
-  return Math.min(end, Math.max(start, slot));
+  return Math.min(end, Math.max(start, position));
 }
 
 /**
- * The offset of every row while `dragged` sits at `slot`: the rows between
- * its place and the slot move by its height plus the gap, toward its place;
+ * The offset of every row while `dragged` sits at `position`: the rows between
+ * its place and the position move by its height plus the gap, toward its place;
  * every other row stays. The dragged row's own entry is 0 (it follows the
  * finger).
  */
 export function offsetsFor(
   geometry: ReorderGeometry,
   dragged: number,
-  slot: number,
+  position: number,
 ): number[] {
   const shift = displacement(geometry, dragged);
   return geometry.rows.map((_, index) => {
     if (index === dragged) {
       return 0;
     }
-    if (slot > dragged && index > dragged && index <= slot) {
+    if (position > dragged && index > dragged && index <= position) {
       return -shift;
     }
-    if (slot < dragged && index < dragged && index >= slot) {
+    if (position < dragged && index < dragged && index >= position) {
       return shift;
     }
     return 0;
   });
 }
 
-/** The dragged row's layout top once it sits at `slot`. */
-export function slotTop(
+/** The dragged row's layout top once it sits at `position`. */
+export function positionTop(
   geometry: ReorderGeometry,
   dragged: number,
-  slot: number,
+  position: number,
 ): number {
   const {rows} = geometry;
-  if (slot <= dragged) {
-    return rows[slot].top;
+  if (position <= dragged) {
+    return rows[position].top;
   }
-  // Below its place: the rows up to the slot moved up by its extent, and it
+  // Below its place: the rows up to the position moved up by its extent, and it
   // sits right after the last of them.
-  const last = rows[slot];
+  const last = rows[position];
   return last.top + last.height - rows[dragged].height;
 }
 
