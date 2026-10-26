@@ -6,8 +6,8 @@
  *   internal `springs.settle` motion role (motion/roles.ts) and the Reduce Motion
  *   cross-fade clock (uikit/timing.ts)
  * @output Exports `createAnimatedLayout` and the opaque `AnimatedLayout`
- *   handle, `reportLayoutChange`, `playLayoutChange` and
- *   `applyLayoutChangeTransition`: the one module that produces the
+ *   handle, `reportLayoutChange`, `playLayoutChange`, `holdLayoutExit` /
+ *   `releaseLayoutExit` and `applyLayoutChangeTransition`: the one module that produces the
  *   size-change glide `spec:AST-105` defines
  *   (`architecture:react-component-runtime` INV12)
  * @position Motion foundation, internal to core. `useAnimatedLayout`
@@ -35,8 +35,9 @@
  *   animates height, and nothing scrolls the area.
  * - A measurement no commit claims by the next frame is dropped.
  * - The changed element plays its own entrance on the same spring, started in
- *   the same frame (`playLayoutChange`), and a disclosure's indicator turns
- *   on it too (`applyLayoutChangeTransition`).
+ *   the same frame (`playLayoutChange`), or its exit: held out of flow where
+ *   it is while it conceals (`holdLayoutExit`). A disclosure's indicator
+ *   turns on the same motion (`applyLayoutChangeTransition`).
  * - Every pointer (`spec:AST-105` FR5). Under Reduce Motion nothing travels
  *   (`design:reduced-motion` DR1–DR3): a cross-fade under a coarse primary
  *   pointer, an immediate change otherwise.
@@ -623,6 +624,111 @@ export function playLayoutChange(
     })),
     {duration: motion.progress.durationMs, easing: 'linear'},
   );
+}
+
+/** The inline properties an exit sets, so a release removes exactly them. */
+const EXIT_PROPERTIES = [
+  'position',
+  'top',
+  'left',
+  'width',
+  'margin',
+  'pointer-events',
+] as const;
+
+/** Exits holding an element out of flow, so a release can stop one. */
+const exits = new WeakMap<Element, Animation | null>();
+
+/**
+ * The changed element's exit (`spec:AST-105` FR4): content that disappears
+ * keeps its place on screen but leaves the flow (absolutely positioned where
+ * it is, so the content after it glides up at once), conceals upward from its
+ * bottom edge on the same motion, and then `done` runs, when the component
+ * hides or unmounts it. Under Reduce Motion with a coarse primary pointer it
+ * fades instead. Call it in the layout effect of the commit that closes the
+ * element, before the change's `animate()`.
+ *
+ * Returns false, holding nothing, when the exit lands at once: no handle,
+ * outside the area or its visible part, or Reduce Motion with a fine pointer.
+ * The component then hides the element itself.
+ */
+export function holdLayoutExit(
+  handle: AnimatedLayout | null | undefined,
+  element: HTMLElement,
+  done: () => void,
+): boolean {
+  if (handle == null) {
+    return false;
+  }
+  const area = areaOf(handle, element);
+  if (
+    area == null ||
+    !intersects(element.getBoundingClientRect(), visibleRect(area))
+  ) {
+    return false;
+  }
+  const motion = layoutMotion(area);
+  if (motion.kind === 'instant') {
+    return false;
+  }
+  releaseLayoutExit(element);
+  // Its border box, against the box an absolute element is placed in.
+  const top = element.offsetTop;
+  const left = element.offsetLeft;
+  const width = element.offsetWidth;
+  element.style.setProperty('position', 'absolute');
+  element.style.setProperty('top', `${top}px`);
+  element.style.setProperty('left', `${left}px`);
+  element.style.setProperty('width', `${width}px`);
+  element.style.setProperty('margin', '0');
+  element.style.setProperty('pointer-events', 'none');
+  const animation =
+    motion.kind === 'fade'
+      ? safeAnimate(element, [{opacity: 1}, {opacity: 0}], {
+          duration: motion.durationMs,
+          easing: motion.easing,
+          fill: 'forwards',
+        })
+      : safeAnimate(
+          element,
+          sampleKeyframes(motion.progress, remaining => ({
+            opacity: remaining,
+            clipPath: `inset(0 0 ${round((1 - remaining) * 100)}% 0)`,
+          })),
+          {
+            duration: motion.progress.durationMs,
+            easing: 'linear',
+            fill: 'forwards',
+          },
+        );
+  exits.set(element, animation);
+  if (animation == null) {
+    // No Web Animations: nothing to wait for.
+    done();
+    return true;
+  }
+  animation.addEventListener?.('finish', () => {
+    if (exits.get(element) === animation) {
+      done();
+    }
+  });
+  return true;
+}
+
+/**
+ * Puts an element `holdLayoutExit` took out of flow back: stops its exit and
+ * removes the inline values the exit set. Called once the component has
+ * hidden the element, or when the element opens again mid-exit.
+ */
+export function releaseLayoutExit(element: HTMLElement): void {
+  if (!exits.has(element)) {
+    return;
+  }
+  exits.get(element)?.cancel();
+  exits.delete(element);
+  for (const property of EXIT_PROPERTIES) {
+    element.style.removeProperty(property);
+  }
 }
 
 /**
