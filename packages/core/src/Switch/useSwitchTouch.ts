@@ -74,8 +74,8 @@
  *   finger still follows it (direct manipulation). UISwitch itself keeps its
  *   springs; the record decides here.
  * - The springs and the minimum lift time are the switch table's measured
- *   constants, read directly: no theme retunes a component's springs
- *   (`spec:AST-094` FR4).
+ *   constants, read directly: plain constants until `component:Switch` names
+ *   its motion roles (`spec:AST-094` FR4, DEC-5).
  *
  * SYNC: When modified, update switchTouch.ts, Switch.tsx
  * and __tests__/Switch.interaction.browser.spec.ts.
@@ -896,8 +896,8 @@ export class SwitchTouchController {
       return;
     }
     this.liftTime = null;
-    // The switch's measured values, read as the table's constants: no theme
-    // retunes a component's springs (spec:AST-094 FR4).
+    // The switch's measured values, read as the table's constants until
+    // Switch's record names its motion roles (spec:AST-094 FR4, DEC-5).
     const lift = switchControl.lift;
     const settle = switchControl.settle;
     const hold = (settleTime(time, liftTime) - time) / 1000;
