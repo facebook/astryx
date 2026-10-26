@@ -26,14 +26,16 @@
  * `@measure` task that will confirm or replace them. uikit.test.ts enforces
  * both.
  *
- * Every value here is an internal constant. The springs and the minimum lift
- * stay plain constants until `component:Switch` names its motion roles
- * (`spec:AST-094` FR4, DEC-5; DEC-11 keeps every role from themes); the
- * geometry, rubber band, flip distance, shadow and haptic are not motion.
+ * The springs and the minimum lift time are the motion roles
+ * `component:Switch` names (`switchControl.lift` and so on: `spec:AST-094`
+ * FR4, DEC-5), registered by registerSwitchTable(); they stay internal, so no
+ * theme overrides them yet (DEC-11). The geometry, rubber band, flip
+ * distance, shadow and haptic are not motion: internal constants.
  *
  * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md.
  */
 
+import {registerMotionTable} from '../roles';
 import {SWITCH_THUMB_MOVE_SPRING} from './springs';
 
 export const switchControl = {
@@ -169,3 +171,23 @@ export const switchControl = {
    */
   haptic: 'none',
 } as const;
+
+/**
+ * Registers the switch table's motion roles, the ones `component:Switch`
+ * names (spec:AST-094 FR4, DEC-5), as internal roles (DEC-11). Nothing
+ * registers on import: Switch's touch presentation calls it once before its
+ * first animation, and a second call does nothing.
+ */
+export function registerSwitchTable(): void {
+  registerMotionTable('switchControl', switchControl, {
+    roles: [
+      'lift',
+      'settle',
+      'travel',
+      'tracking',
+      'wellOn',
+      'wellOff',
+      'minimumLiftMs',
+    ],
+  });
+}

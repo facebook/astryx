@@ -94,7 +94,7 @@ import {
 } from '../motion/animator';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
-import {switchControl} from '../motion/uikit/switch';
+import {registerSwitchTable, switchControl} from '../motion/uikit/switch';
 import {useTouchPresentation} from '../utils/touchPresentation';
 import {
   commitOnRelease,
@@ -295,6 +295,8 @@ export class SwitchTouchController {
   }
 
   attach(elements: Elements): void {
+    // The switch's springs play as its motion roles (spec:AST-094 FR4).
+    registerSwitchTable();
     this.detach();
     this.elements = elements;
     this.measureGeometry();

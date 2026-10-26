@@ -9,7 +9,7 @@
  * @position Testing for /packages/core/src/motion/roles.ts
  */
 
-import {readFileSync} from 'node:fs';
+import {existsSync, readdirSync, readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {describe, expect, it} from 'vitest';
 import {
@@ -78,7 +78,7 @@ describe('motion roles', () => {
     );
   });
 
-  it('has exactly the roles spec:AST-094 FR4 names', () => {
+  it("has exactly the roles spec:AST-094 FR4 and the components' records name", () => {
     const spec = readFileSync(
       resolve(
         __dirname,
@@ -87,10 +87,31 @@ describe('motion roles', () => {
       'utf8',
     );
     const fr4 = spec.slice(spec.indexOf('**FR4'), spec.indexOf('**FR5'));
-    const named = [...fr4.matchAll(/^\s*\| `([a-z][\w.]*)`\s*\|/gm)].map(
-      match => match[1],
-    );
+    const rowIds = (text: string) =>
+      [...text.matchAll(/^\s*\| `([a-z][\w.]*)`\s*\|/gm)].map(
+        match => match[1],
+      );
+    const named = rowIds(fr4);
     expect(named.length).toBeGreaterThan(0);
+    // Further roles a component's own record measures join through the
+    // generated table (DEC-5): its "Motion roles" section.
+    const src = resolve(__dirname, '..');
+    for (const entry of readdirSync(src, {withFileTypes: true})) {
+      if (!entry.isDirectory()) {
+        continue;
+      }
+      const record = resolve(src, entry.name, `${entry.name}.spec.md`);
+      if (!existsSync(record)) {
+        continue;
+      }
+      const text = readFileSync(record, 'utf8');
+      const start = text.indexOf('### Motion roles');
+      if (start === -1) {
+        continue;
+      }
+      const end = text.indexOf('\n#', start + 1);
+      named.push(...rowIds(text.slice(start, end === -1 ? undefined : end)));
+    }
     // Every table registered, the roles are exactly FR4's (other tests
     // here register a fixture, which lists none).
     expect(new Set(listMotionRoles().map(role => role.id))).toEqual(
@@ -189,7 +210,7 @@ describe('motion roles', () => {
     expect(new Set(variables).size).toBe(variables.length);
   });
 
-  it('registers exactly the roles spec:AST-094 FR4 names, internally', () => {
+  it("registers exactly the roles spec:AST-094 FR4 and the components' records name, internally", () => {
     // Every table discovery registered (other tests here add fixtures).
     const discovered = listMotionRoles().filter(role =>
       DISCOVERED.has(role.id.split('.')[0]),
@@ -214,6 +235,14 @@ describe('motion roles', () => {
       'timing.curves.move': 'curve',
       'timing.curves.viewChange': 'curve',
       'timing.stateChangeMs': 'duration',
+      // component:Switch's roles (spec:AST-094 FR4, DEC-5).
+      'switchControl.lift': 'spring',
+      'switchControl.minimumLiftMs': 'duration',
+      'switchControl.settle': 'spring',
+      'switchControl.tracking': 'spring',
+      'switchControl.travel': 'spring',
+      'switchControl.wellOff': 'spring',
+      'switchControl.wellOn': 'spring',
     });
   });
 

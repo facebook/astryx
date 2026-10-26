@@ -19,7 +19,7 @@
 import {describe, expect, it} from 'vitest';
 import {listMotionRoles, motionRoleOf} from '../motion/roles';
 import {solveSpring, toSpring} from '../motion/spring';
-import {switchControl} from '../motion/uikit/switch';
+import {registerSwitchTable, switchControl} from '../motion/uikit/switch';
 import {
   commitOnRelease,
   dragTarget,
@@ -322,14 +322,27 @@ describe('the switch springs against UIKit frames (iOS 26.2)', () => {
 });
 
 describe('switch values', () => {
-  it('are internal constants, not motion roles', () => {
-    // Until Switch's record names its motion roles (spec:AST-094 FR4,
-    // DEC-5), the springs and the minimum lift time are plain constants.
+  it("are the motion roles Switch's record names, registered internally", () => {
+    // spec:AST-094 FR4, DEC-5: the springs and the minimum lift time are
+    // roles; DEC-11: internal, so nothing public writes them.
+    registerSwitchTable();
     expect(
-      listMotionRoles().filter(role => role.id.startsWith('switchControl.')),
-    ).toEqual([]);
-    expect(motionRoleOf(switchControl.lift)).toBeUndefined();
-    expect(motionRoleOf(switchControl.travel)).toBeUndefined();
+      listMotionRoles()
+        .filter(role => role.id.startsWith('switchControl.'))
+        .map(role => [role.id, role.kind]),
+    ).toEqual([
+      ['switchControl.lift', 'spring'],
+      ['switchControl.minimumLiftMs', 'duration'],
+      ['switchControl.settle', 'spring'],
+      ['switchControl.tracking', 'spring'],
+      ['switchControl.travel', 'spring'],
+      ['switchControl.wellOff', 'spring'],
+      ['switchControl.wellOn', 'spring'],
+    ]);
+    expect(motionRoleOf(switchControl.lift)?.id).toBe('switchControl.lift');
+    expect(motionRoleOf(switchControl.travel)?.id).toBe('switchControl.travel');
+    // The geometry and the rubber band are not motion.
+    expect(motionRoleOf(switchControl.rubberBand)).toBeUndefined();
     expect(settleTime(0, 0)).toBe(switchControl.minimumLiftMs);
   });
 });

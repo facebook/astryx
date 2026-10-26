@@ -78,6 +78,23 @@ a theming capability of an existing target.
 | FR5 | Under a finger the thumb, lifted or banded past either end, paints inside the track, in either writing direction.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Owner direction, 2026-10-25                   | Proposed; pending owner review                     |
 | FR6 | Under a finger the switch matches UISwitch (iOS 26.2), a stated departure from `spec:AST-094` FR11: a tap, a hold of any length or a short drag toggles it at the lift, through the browser's click when the finger lifts inside; a press slid off and lifted outside without a flip toggles it too (`spec:AST-020` FR9/DEC-5, the reversible-toggle exception); and a drag commits the side the finger flipped it to, which it shows once the finger is the track width less the thumb width from where it landed, toward the other end, and leaves again once the finger comes back past that point, wherever the finger lifts (measured in `motion/uikit/switch.ts`: `travel`, `flipDistance`). | `spec:AST-094` FR11; `spec:AST-020` FR9/DEC-5 | Proposed; pending owner review                     |
 
+### Motion roles
+
+Under a finger the switch plays these motion roles, which this record names
+and the generated motion role table carries (`spec:AST-094` FR4, DEC-5). They
+are internal, so no theme overrides them yet (DEC-11); each value is
+measured on UISwitch, iOS 26.2 (`motion/uikit/switch.ts`).
+
+| Role                          | Default                                 | Use                                                          |
+| ----------------------------- | --------------------------------------- | ------------------------------------------------------------ |
+| `switchControl.lift`          | response 0.23 s, damping ratio 0.55     | The thumb lifting while a finger presses                     |
+| `switchControl.settle`        | response 0.5 s, damping ratio 0.7       | The lifted thumb settling after the lift                     |
+| `switchControl.minimumLiftMs` | 235 ms                                  | The shortest lift before the settle, so a quick tap shows it |
+| `switchControl.travel`        | response 0.3 s, damping ratio 1         | The thumb travelling to the committed end                    |
+| `switchControl.tracking`      | response 0.36 s, damping ratio 1        | The thumb chasing a dragging finger                          |
+| `switchControl.wellOn`        | mass 1, stiffness 85.38, damping 18.48  | The track colour turning on                                  |
+| `switchControl.wellOff`       | mass 1, stiffness 246.74, damping 31.42 | The track colour turning off                                 |
+
 ### Allowed variation
 
 - Label position and spacing, size, checked state, and disabled state remain
