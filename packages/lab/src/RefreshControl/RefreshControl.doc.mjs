@@ -43,7 +43,7 @@ export const docs = {
       name: 'title',
       type: 'ReactNode',
       description:
-        'Short text under the indicator, such as when the content was last updated. It is revealed with the indicator.',
+        'Short text under the indicator, such as when the content was last updated. It is revealed with the indicator, and assistive technology reads it as a status line, so a new title (after a refresh) is announced.',
     },
     {
       name: 'isDisabled',
@@ -123,7 +123,7 @@ export const docsZh = {
       name: 'title',
       type: 'ReactNode',
       description:
-        '指示器下方的简短文字，例如内容的最后更新时间。随指示器一起显现。',
+        '指示器下方的简短文字，例如内容的最后更新时间。随指示器一起显现；辅助技术将其作为状态行读出，因此刷新后的新标题会被播报。',
     },
     {
       name: 'isDisabled',
