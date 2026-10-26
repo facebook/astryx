@@ -560,27 +560,45 @@ test('the settle keeps advancing every frame while the main thread is blocked', 
   // top-left corner, which a leftward slide would carry out of the list's
   // clip.
   await markElement(row);
-  // The page blocks its main thread for 700 ms, 30 ms after the lift: late
-  // enough for the settle to have started on the compositor, early enough
-  // that its own motion fills the judged window, whatever the runner's
-  // latency (a block started from the test lands wherever the runner is).
+  // The page blocks its main thread for 700 ms as soon as the settle has
+  // started on the compositor: the release's new animations resolve `ready`
+  // once the browser has started them, and the block follows in the next
+  // microtask, so the settle's own motion fills the judged window. A block
+  // started from the test, or on a timer after the lift, lands wherever a
+  // loaded machine runs it, sometimes late in the motion.
   await page.evaluate(ms => {
+    const block = () => {
+      const from = performance.timeOrigin + performance.now();
+      const end = performance.now() + ms;
+      while (performance.now() < end) {
+        // spin
+      }
+      Object.assign(window, {
+        __blockAfterLift: {
+          from,
+          to: performance.timeOrigin + performance.now(),
+        },
+      });
+    };
+    // The release's own animations: the ones that did not exist at the lift.
     addEventListener(
       'touchend',
       () => {
-        setTimeout(() => {
-          const from = performance.timeOrigin + performance.now();
-          const end = performance.now() + ms;
-          while (performance.now() < end) {
-            // spin
+        const before = new Set(document.getAnimations());
+        const watch = () => {
+          const fresh = document
+            .getAnimations()
+            .filter(animation => !before.has(animation));
+          if (fresh.length === 0) {
+            requestAnimationFrame(watch);
+            return;
           }
-          Object.assign(window, {
-            __blockAfterLift: {
-              from,
-              to: performance.timeOrigin + performance.now(),
-            },
-          });
-        }, 30);
+          void Promise.all(fresh.map(async animation => animation.ready)).then(
+            block,
+            block,
+          );
+        };
+        setTimeout(watch, 0);
       },
       {once: true, capture: true},
     );
