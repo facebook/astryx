@@ -40,15 +40,15 @@ system_specs: [spec:AST-020]
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                             |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | `MoreMenu` with `items`, `label` (default "More options"), `variant` (`ghost`), `size` (`md`), `icon`, `isDisabled`, `placement`, `alignment`, `presentation`, `isMenuOpen`, and `onOpenChange`; target `more-menu`. |
-| Behavior                | An icon-only overflow Button with a tooltip that opens a DropdownMenu of `items`; MoreMenu forwards open state, placement, alignment, and presentation to DropdownMenu and adds no menu runtime of its own.          |
-| End-user impact         | Users find secondary actions behind one named "More options" button; keyboard users open it as an APG menu button.                                                                                                   |
-| Builder impact          | None.                                                                                                                                                                                                                |
-| Compatibility/readiness | Records shipped behavior; no public change.                                                                                                                                                                          |
-| Review checks           | Reject moving `more-menu` onto the trigger, a parallel menu runtime, or a trigger that loses its name, `aria-haspopup`, `aria-expanded`, or `aria-controls`.                                                         |
-| Governing rules         | `spec:AST-020` (pattern bindings); `architecture:component-theming-surface`; `architecture:layer-runtime`; `family:overlay-dismissal`.                                                                               |
+| Area                    | Contract                                                                                                                                                                                                                                            |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | `MoreMenu` with `items`, `label` (default "More options"), `variant` (`ghost`), `size` (surrounding size context, else `md`), `icon`, `isDisabled`, `placement`, `alignment`, `presentation`, `isMenuOpen`, and `onOpenChange`; target `more-menu`. |
+| Behavior                | An icon-only overflow Button with a tooltip that opens a DropdownMenu of `items`; MoreMenu forwards open state, placement, alignment, and presentation to DropdownMenu and adds no menu runtime of its own.                                         |
+| End-user impact         | Users find secondary actions behind one named "More options" button; keyboard users open it as an APG menu button.                                                                                                                                  |
+| Builder impact          | None.                                                                                                                                                                                                                                               |
+| Compatibility/readiness | Records shipped behavior; no public change. One implementation gap (see Current-state impact).                                                                                                                                                      |
+| Review checks           | Reject moving `more-menu` onto the trigger, a parallel menu runtime, or a trigger that loses its name, `aria-haspopup`, `aria-expanded`, or `aria-controls`.                                                                                        |
+| Governing rules         | `spec:AST-020` (pattern bindings); `architecture:component-theming-surface`; `architecture:layer-runtime`; `family:overlay-dismissal`.                                                                                                              |
 
 This table is a review projection; the body below is authoritative.
 
@@ -69,6 +69,13 @@ usage lives in `MoreMenu.doc.mjs`.
 - Migration decision: none
 
 Consumer migration instructions belong in consumer docs and release notes.
+
+## Current-state impact
+
+- **The bottom-sheet trigger drops the ref.** With `presentation="bottom-sheet"`,
+  DropdownMenu replaces the `ref` MoreMenu passes to the trigger, so a caller's
+  ref stays empty. `architecture:public-component-api` INV8 has the ref reach
+  the element the contract promises.
 
 ## Ownership boundary
 
@@ -99,13 +106,13 @@ DropdownMenu's; consumer props are documented in `MoreMenu.doc.mjs`.
 
 ## Behavioral and layout contract
 
-| ID  | Invariant                                                                                                                                                                                                                                                                                                                   | Basis                           |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| FR1 | Every render contains one icon-only Trigger button and one DropdownMenu-owned Menu surface. Anchored presentation uses Pointer action rows; BottomSheet presentation uses Touch action rows. The default trigger icon is the active registry's `moreHorizontal` artwork; `icon` replaces it with any React content.         | Current source, docs, and tests |
-| FR2 | The `more-menu` target is applied to the composed DropdownMenu panel as an additional class, before any caller `className`. It is not applied to the Trigger button.                                                                                                                                                        | Current source, docs, and tests |
-| FR3 | Button owns the Trigger button and the Icon registry owns default semantic trigger artwork resolution. DropdownMenu owns Pointer action rows; List owns Touch action rows rendered through DropdownMenu's BottomSheet path.                                                                                                 | Current source and owner docs   |
-| FR4 | MoreMenu forwards open state, placement, alignment, presentation, `xstyle`, `style`, and `data-testid` to DropdownMenu without adding a parallel menu runtime, and shows no chevron. Its default position matches DropdownMenu's.                                                                                           | Current source and tests        |
-| FR5 | The trigger is named by `label` (else the translated `@astryx.moreMenu.label`, "More options"), shows that name as its tooltip, uses `variant` (default `ghost`) and `size` (default from the surrounding size context, else `md`), forwards `ref`, and honors `isDisabled`: a disabled trigger opens from no key or press. | Current source and tests        |
+| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                    | Basis                           |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| FR1 | Every render contains one icon-only Trigger button. The anchored presentation also renders one DropdownMenu-owned Menu surface; the bottom-sheet presentation mounts its Menu surface on first open. Anchored presentation uses Pointer action rows; BottomSheet presentation uses Touch action rows. The default trigger icon is the active registry's `moreHorizontal` artwork; `icon` replaces it with any React content. | Current source, docs, and tests |
+| FR2 | The `more-menu` target is applied to the composed DropdownMenu panel as an additional class, before any caller `className`. It is not applied to the Trigger button.                                                                                                                                                                                                                                                         | Current source, docs, and tests |
+| FR3 | Button owns the Trigger button and the Icon registry owns default semantic trigger artwork resolution. DropdownMenu owns Pointer action rows; List owns Touch action rows rendered through DropdownMenu's BottomSheet path.                                                                                                                                                                                                  | Current source and owner docs   |
+| FR4 | MoreMenu forwards open state, placement, alignment, presentation, `xstyle`, `style`, and `data-testid` to DropdownMenu without adding a parallel menu runtime, and shows no chevron. Its default position matches DropdownMenu's.                                                                                                                                                                                            | Current source and tests        |
+| FR5 | The trigger is named by `label` (else the translated `@astryx.moreMenu.label`, "More options"), shows that name as its tooltip, uses `variant` (default `ghost`) and `size` (default from the surrounding size context, else `md`), forwards `ref` to the trigger in the anchored presentation, and honors `isDisabled`: a disabled trigger opens from no key or press.                                                      | Current source and tests        |
 
 ### Allowed variation
 
@@ -143,8 +150,9 @@ DropdownMenu's; consumer props are documented in `MoreMenu.doc.mjs`.
   presentation MoreMenu's icon-only trigger meets the APG Menu Button pattern's
   required parts: `button` role, its label as the name, `aria-haspopup="menu"`,
   `aria-expanded`, `aria-controls`, and Enter or Space opening with focus on the
-  first enabled row. ArrowDown opens on the first and ArrowUp on the last
-  enabled row. A pointer open focuses the menu container, and the first
+  first enabled row. ArrowDown opening on the first and ArrowUp on the last
+  enabled row go beyond the pattern's required set and are a named exception
+  (`spec:AST-020` FR15), kept because they ship. A pointer open focuses the menu container, and the first
   ArrowDown then moves to the first row. In the bottom-sheet presentation the
   trigger opens a dialog and says `aria-haspopup="dialog"`, outside this
   pattern.
@@ -218,14 +226,15 @@ presentation.
 
 ## Verification map
 
-| Contract            | Verification                                                                                                                                                                               | Representative states                                                           | Mutation or failure expectation                                                                                                                                    | Audit section                  |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
-| FR1, FR4            | `MoreMenu.test.tsx` render, pointer, bottom-sheet, and placement suites                                                                                                                    | Default, custom icon, pointer, touch                                            | Replacing the composition or changing forwarded behavior fails existing render/interaction tests.                                                                  | `audit:MoreMenu/anatomy`       |
-| FR2                 | MoreMenu target test, source inspection, and theming target inventories                                                                                                                    | Closed trigger and composed menu panel                                          | Moving `more-menu` onto the trigger or removing it from the panel fails target evidence.                                                                           | `audit:MoreMenu/theming`       |
-| FR3                 | MoreMenu, DropdownMenu, Button, Icon, and List source/owner tests                                                                                                                          | Trigger, icon branches, pointer rows, touch rows                                | A composed part loses its owner target or is documented as a new MoreMenu-owned descendant.                                                                        | `audit:MoreMenu/theming`       |
-| AR1                 | `MoreMenu.test.tsx` label, popup, and pointer-focus tests; the menu-button pattern binding `MenuButton.a11y.test.tsx` and `MenuButton.a11y.chromium.spec.ts`, which render MoreMenu states | Default and custom-icon triggers; closed/open; Enter, Space, ArrowDown, ArrowUp | The trigger loses its label, `aria-haspopup="menu"`, `aria-expanded` or `aria-controls`, or a keyboard open does not land on the first (ArrowUp: last) enabled row | `audit:MoreMenu/accessibility` |
-| Layer relationships | `MoreMenu.test.tsx`, `DropdownMenu.test.tsx`, and current layer/dismissal records                                                                                                          | Light dismiss, Escape, pointer, touch                                           | Documentation gives MoreMenu a parallel runtime or misstates the current dismissal owner.                                                                          | `audit:MoreMenu/behavior`      |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                                                                              | Canonical anatomy and current target                                            | Missing, extra, prefixed, stale, or unclassified mappings fail repository validation.                                                                              | `audit:MoreMenu/theming`       |
+| Contract            | Verification                                                                                                                                                                               | Representative states                                                           | Mutation or failure expectation                                                                                                                           | Audit section                  |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| FR1, FR4            | `MoreMenu.test.tsx` render, pointer, bottom-sheet, and placement suites                                                                                                                    | Default, custom icon, pointer, touch                                            | Replacing the composition or changing forwarded behavior fails existing render/interaction tests.                                                         | `audit:MoreMenu/anatomy`       |
+| FR2                 | MoreMenu target test, source inspection, and theming target inventories                                                                                                                    | Closed trigger and composed menu panel                                          | Moving `more-menu` onto the trigger or removing it from the panel fails target evidence.                                                                  | `audit:MoreMenu/theming`       |
+| FR3                 | MoreMenu, DropdownMenu, Button, Icon, and List source/owner tests                                                                                                                          | Trigger, icon branches, pointer rows, touch rows                                | A composed part loses its owner target or is documented as a new MoreMenu-owned descendant.                                                               | `audit:MoreMenu/theming`       |
+| FR5                 | `MoreMenu.test.tsx` label, custom-label, ref, disabled-keys, and closed-while-disabled tests                                                                                               | Default and custom label; disabled                                              | A lost name, or a disabled trigger that opens, fails.                                                                                                     | `audit:MoreMenu/behavior`      |
+| AR1                 | `MoreMenu.test.tsx` label, popup, and pointer-focus tests; the menu-button pattern binding `MenuButton.a11y.test.tsx` and `MenuButton.a11y.chromium.spec.ts`, which render MoreMenu states | Default and custom-icon triggers; closed/open; Enter, Space, ArrowDown, ArrowUp | The trigger loses its label, `aria-haspopup="menu"`, `aria-expanded` or `aria-controls`, or an Enter or Space open does not land on the first enabled row | `audit:MoreMenu/accessibility` |
+| Layer relationships | `MoreMenu.test.tsx`, `DropdownMenu.test.tsx`, and current layer/dismissal records                                                                                                          | Light dismiss, Escape, pointer, touch                                           | Documentation gives MoreMenu a parallel runtime or misstates the current dismissal owner.                                                                 | `audit:MoreMenu/behavior`      |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                                                                              | Canonical anatomy and current target                                            | Missing, extra, prefixed, stale, or unclassified mappings fail repository validation.                                                                     | `audit:MoreMenu/theming`       |
 
 Read from source, with no focused test yet:
 
@@ -234,9 +243,10 @@ Read from source, with no focused test yet:
   Trigger button.
 - FR4: forwarding `isMenuOpen`, `onOpenChange`, `xstyle`, and `style`, and the
   absence of a chevron.
-- FR5: the tooltip, the size from the surrounding size context, and the `md`
-  default.
-- AR1: `aria-haspopup="dialog"` in the bottom-sheet presentation.
+- FR5: the tooltip, the `ghost` default, the size from the surrounding size
+  context, the `md` default, and the ref reaching the trigger button.
+- AR1: `aria-haspopup="dialog"` in the bottom-sheet presentation, and the
+  ArrowDown and ArrowUp opening rows, which the binding runs as advisory.
 
 ## Decision log
 
