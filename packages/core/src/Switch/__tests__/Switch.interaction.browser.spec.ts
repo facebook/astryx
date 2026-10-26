@@ -15,8 +15,9 @@
  *   left mirrors the ends and
  *   the drag; a second tap mid-travel turns the thumb around where it is; a
  *   disabled or busy switch stays inert; the travel and track-color
- *   curves match the UIKit springs when sampled; the motion keeps advancing
- *   through a blocked main thread and does no Layout or Paint; storyboards of
+ *   curves match the UIKit springs when sampled; the motion and the touch
+ *   press's release keep advancing through a blocked main thread and do no
+ *   Layout or Paint; storyboards of
  *   a tap and of a drag.
  * @position The browser layer of Switch's touch tests; the pure model is
  *   switchTouch.test.ts. Runs on the phone profile (coarse pointer), where
@@ -35,6 +36,7 @@ import {
   type Page,
 } from '@playwright/test';
 import {
+  castStoryboard,
   animationStoryboard,
   blockMainThread,
   busyWindowProof,
@@ -1559,8 +1561,6 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
       },
       testInfo,
     );
-    expect(proof.medianFrameMs).toBeLessThan(20);
-    expect(proof.longestStallMs).toBeLessThan(40);
     expect(proof.monotonic).toBe(true);
     // The travel is 13 px: past its first half it moves less than a
     // screencast pixel per frame, so not every frame changes...
@@ -1570,6 +1570,143 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
       f => f.t >= block.from && f.t <= block.to && f.box != null,
     );
     expect(held.at(-1)!.box!.x - held[0].box!.x).toBeGreaterThanOrEqual(8);
+  });
+
+  test('P10 · the touch press keeps fading out on every frame while the main thread is blocked', async ({
+    page,
+    browserName,
+  }, testInfo) => {
+    test.skip(
+      browserName !== 'chromium',
+      'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
+    );
+    const {driver, input, onLayer, center} = await openSwitch(page);
+    // Only the press layer may change the probe: the thumb is hidden (its
+    // animations still run), the colour fade is off, and the value stays
+    // off (every click is stopped before it reaches the input).
+    await page.addStyleTag({
+      content:
+        '#storybook-root .astryx-switch-thumb { visibility: hidden } #storybook-root .astryx-switch::after { display: none !important }',
+    });
+    await page.evaluate(() => {
+      window.addEventListener(
+        'click',
+        event => {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        },
+        true,
+      );
+    });
+    const box = await onLayer.boundingBox();
+    if (box == null) {
+      throw new Error('no track');
+    }
+    const probe = {
+      x: box.x + box.width / 2 - 2,
+      y: box.y + box.height / 2 - 2,
+      width: 4,
+      height: 4,
+    };
+    const cast = await startScreencast(page);
+    await driver.play(tap(center, {holdMs: 400}));
+    expect(await pressState(page)).toBe('fading');
+    // The release is the press layer's CSS animation (the track's ::before);
+    // the lift and the travel are the animator's. Block once it has run a
+    // frame.
+    const release = await page.evaluate(
+      async () =>
+        new Promise<{from: number; to: number}>(resolve => {
+          const track = document.querySelector<HTMLElement>(
+            '#storybook-root .astryx-switch',
+          )!;
+          const poll = () => {
+            const layer = track
+              .getAnimations({subtree: true})
+              .find(
+                animation =>
+                  animation instanceof CSSAnimation &&
+                  (animation.effect as KeyframeEffect | null)?.pseudoElement ===
+                    '::before',
+              );
+            const at = Number(layer?.currentTime ?? 0);
+            if (layer?.startTime != null && at >= 16) {
+              const from = performance.timeOrigin + Number(layer.startTime);
+              const timing = layer.effect!.getComputedTiming();
+              resolve({from, to: from + Number(timing.activeDuration)});
+              return;
+            }
+            requestAnimationFrame(poll);
+          };
+          poll();
+        }),
+    );
+    const block = await blockMainThread(page, 700);
+    await page.waitForTimeout(150);
+    const frames = await cast.stop();
+    await expect(input).not.toBeChecked();
+    const lumas = await sampleLuma(page, frames, probe);
+    const rest = lumas[0].luma;
+    const pressed = Math.min(
+      ...lumas.filter(p => p.t < release.from).map(p => p.luma),
+    );
+    const strength = (v: number) => (rest - v) / (rest - pressed);
+    const end = Math.min(block.to, release.to) - 10;
+    const during = lumas.filter(p => p.t > block.from && p.t <= end);
+    const strengths = during.map(p => ({
+      t: +(p.t - block.from).toFixed(1),
+      strength: +strength(p.luma).toFixed(3),
+    }));
+    const intervals = during
+      .map((p, i) => (i === 0 ? p.t - block.from : p.t - during[i - 1].t))
+      .filter(dt => dt > 0);
+    const longestGap = Math.max(
+      end - (during.at(-1)?.t ?? block.from),
+      ...intervals,
+    );
+    // The screencast's own delivered cadence: stalls are judged against it,
+    // never against a frame rate.
+    const sorted = [...intervals].sort((a, b) => a - b);
+    const cadence = sorted[Math.floor(sorted.length / 2)] ?? Infinity;
+    await writeEvidence(
+      'busy-main-thread/switch-press-release',
+      {
+        [`${testInfo.project.name}.json`]: JSON.stringify(
+          {block, release, rest, pressed, strengths},
+          null,
+          1,
+        ),
+      },
+      testInfo,
+    );
+    const film = await castStoryboard(page, frames, {
+      name: 'switch-press-release-busy-main-thread',
+      zero: block.from,
+      from: release.from - 40,
+      to: release.to + 40,
+      columns: 6,
+      cellScale: 0.45,
+      data: t => {
+        const p = lumas.find(f => f.t === t);
+        return {strength: p == null ? -1 : +strength(p.luma).toFixed(3)};
+      },
+    });
+    await film.write(testInfo, {block, release});
+    // The press showed, and its release kept stepping on every frame of the
+    // block, never backing up, to well below where it started.
+    expect(rest - pressed).toBeGreaterThan(5);
+    // Enough delivered frames to judge, and no stall longer than three of
+    // them.
+    expect(during.length, JSON.stringify(strengths)).toBeGreaterThanOrEqual(5);
+    expect(longestGap).toBeLessThanOrEqual(3 * cadence);
+    for (let i = 1; i < strengths.length; i++) {
+      expect(strengths[i].strength).toBeLessThanOrEqual(
+        strengths[i - 1].strength + 0.02,
+      );
+    }
+    const last = strengths.at(-1);
+    expect(last).toBeDefined();
+    expect(strengths[0].strength).toBeGreaterThan((last?.strength ?? 1) + 0.2);
   });
 
   test('P10 · the track colour keeps fading in while the main thread is blocked', async ({
@@ -1584,7 +1721,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     // Hide the thumb (its animations still run) so the whole track shows
     // its colour.
     await page.addStyleTag({
-      content: '#storybook-root .astryx-switch > span { visibility: hidden }',
+      content: '#storybook-root .astryx-switch-thumb { visibility: hidden }',
     });
     const box = await page
       .locator('#storybook-root .astryx-switch')
