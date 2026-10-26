@@ -121,6 +121,7 @@ function Bar({
   bottomAccessory,
   hasSearch = false,
   searchActivates,
+  disabled = [],
 }: {
   sections?: Section[];
   initial?: string;
@@ -134,6 +135,7 @@ function Bar({
   hasSearch?: boolean;
   /** The search tab's `automaticallyActivates`. */
   searchActivates?: boolean;
+  disabled?: string[];
 }) {
   const [value, setValue] = useState(initial);
   const [reselects, setReselects] = useState(0);
@@ -171,6 +173,7 @@ function Bar({
             icon={<Icon icon={section.icon} size="lg" />}
             selectedIcon={<Icon icon={section.selectedIcon} size="lg" />}
             badge={badges[section.value]}
+            isDisabled={disabled.includes(section.value)}
           />
         ))}
         {hasSearch ? (
@@ -452,6 +455,11 @@ export const RemovedOnLift: Story = {
 
 export const Badges: Story = {
   render: () => <BadgesDemo />,
+};
+
+/** Browse is disabled: dimmed, and a tap, the keys or the lens leave it unchosen. */
+export const DisabledTab: Story = {
+  render: () => <Bar disabled={['browse']} />,
 };
 
 /** Five tabs: the items overlap more, as they do on iOS. */

@@ -134,6 +134,8 @@ interface Press {
   isDragging: boolean;
   /** A tab was selected when the finger landed: the lens follows it. */
   hasLens: boolean;
+  /** Landed on a disabled tab: nothing moves until the finger drags. */
+  isIgnored: boolean;
 }
 
 export interface UseTabBarLensOptions {
@@ -146,6 +148,11 @@ export interface UseTabBarLensOptions {
   readonly isMinimized: boolean;
   /** A finger lifted over the item at `index`. */
   readonly onLift: (index: number) => void;
+  /**
+   * Whether the item at `index` is disabled: a finger landing on it is
+   * ignored until it drags (UIKit ignores a tap on a disabled tab).
+   */
+  readonly isDisabled?: (index: number) => boolean;
 }
 
 export interface TabBarLensRefs {
@@ -191,6 +198,7 @@ export function useTabBarLens({
   isTouch,
   isMinimized,
   onLift,
+  isDisabled,
 }: UseTabBarLensOptions): TabBarLensRefs {
   // The table's springs become motion roles (a theme may retune them)
   // before this hook's first animation.
@@ -223,6 +231,8 @@ export function useTabBarLens({
   const selectedRef = useRef(selectedIndex);
   selectedRef.current = selectedIndex;
   const onLiftRef = useRef(onLift);
+  const isDisabledRef = useRef(isDisabled);
+  isDisabledRef.current = isDisabled;
   onLiftRef.current = onLift;
 
   // The copy is drawn from a finger landing, or a slide starting, until
@@ -325,6 +335,30 @@ export function useTabBarLens({
     );
   };
 
+  /**
+   * Where the lens heads for a finger at `x`: after the finger, rubber-banded
+   * past the ends, but held on the nearest enabled tab while the finger is
+   * over a disabled one, which shows no drag affordance (AST-085 FR6).
+   */
+  const chaseTarget = (x: number, centers: number[]) => {
+    const isDisabledAt = isDisabledRef.current;
+    if (isDisabledAt?.(nearestIndex(x, centers)) !== true) {
+      return lensTarget(x, centers);
+    }
+    let nearest = -1;
+    centers.forEach((center, index) => {
+      if (
+        isDisabledAt(index) !== true &&
+        (nearest < 0 || Math.abs(center - x) < Math.abs(centers[nearest] - x))
+      ) {
+        nearest = index;
+      }
+    });
+    return nearest < 0
+      ? centers[Math.max(selectedRef.current, 0)]
+      : centers[nearest];
+  };
+
   const begin = (recognizer: LongPressGestureRecognizer) => {
     const element = capsuleRef.current;
     const selected = selectedRef.current;
@@ -340,6 +374,10 @@ export function useTabBarLens({
     const centers = itemCenters(element.offsetWidth, count, isRtl);
     const size = itemWidth(element.offsetWidth, count);
     const x = recognizer.location().x - left;
+    // A finger landing on a disabled tab: UIKit ignores the tap, so the lens
+    // neither heads for it nor lifts unless the finger then drags.
+    const isIgnored =
+      isDisabledRef.current?.(nearestIndex(x, centers)) === true;
     pressRef.current = {
       centers,
       size,
@@ -348,10 +386,12 @@ export function useTabBarLens({
       lastX: x,
       isDragging: false,
       hasLens: selected >= 0,
+      isIgnored,
     };
-    // No tab selected: there is no lens to move; the lift chooses the tab
-    // nearest the finger.
-    if (selected < 0) {
+    // No tab selected (there is no lens to move: the lift chooses the tab
+    // nearest the finger), or a finger landing on a disabled tab (UIKit
+    // ignores the tap): nothing moves now.
+    if (selected < 0 || isIgnored) {
       return;
     }
     // The lifted lens magnifies the selected look: its copy mounts now, in
@@ -363,7 +403,7 @@ export function useTabBarLens({
     }
     const at = performance.now();
     body.animator.animate(
-      {x: lensTarget(x, centers) - centers[selected]},
+      {x: chaseTarget(x, centers) - centers[selected]},
       {spring: tabBar.lensTravel},
       {at},
     );
@@ -380,12 +420,27 @@ export function useTabBarLens({
     const x = recognizer.location().x - press.left;
     press.lastX = x;
     press.isDragging ||= Math.abs(x - press.startX) > DRAG_SLOP;
+    const at = performance.now();
+    if (press.isIgnored) {
+      if (!press.isDragging) {
+        return;
+      }
+      // A drag from a disabled tab: the press counts from here (the lens,
+      // when there is one, lifts, its copy drawn, and chases).
+      press.isIgnored = false;
+      if (press.hasLens && selected >= 0) {
+        motionRef.current += 1;
+        if (body.animator.reducedMotion({}) === 'off') {
+          flushSync(() => setIsCopyShown(true));
+        }
+        lift(true, at, press.size);
+      }
+    }
     if (!press.hasLens || selected < 0) {
       return;
     }
-    const at = performance.now();
     body.animator.animate(
-      {x: lensTarget(x, press.centers) - press.centers[selected]},
+      {x: chaseTarget(x, press.centers) - press.centers[selected]},
       {spring: press.isDragging ? tabBar.lensTrack : tabBar.lensTravel},
       {at},
     );
@@ -396,23 +451,26 @@ export function useTabBarLens({
     const press = pressRef.current;
     pressRef.current = null;
     const selected = selectedRef.current;
-    if (press == null) {
+    // A tap on a disabled tab moved nothing and chooses nothing.
+    if (press == null || press.isIgnored) {
       return;
     }
     // The app's answer to this lift, as rendered now: the tab the finger
     // chose is the one under it at the lift, whatever renders after.
     const deliver = onLiftRef.current;
+    const nearest = nearestIndex(press.lastX, press.centers);
+    // A disabled tab is never chosen: over one, the lift chooses nothing and
+    // the lens settles straight back.
+    const isChoosable =
+      !isCancelled && isDisabledRef.current?.(nearest) !== true;
     if (!press.hasLens || selected < 0) {
       // No lens moved: the nearest tab is chosen at once.
-      if (!isCancelled) {
-        const nearest = nearestIndex(press.lastX, press.centers);
+      if (isChoosable) {
         flushSync(() => deliver(nearest));
       }
       return;
     }
-    const chosen = isCancelled
-      ? selected
-      : nearestIndex(press.lastX, press.centers);
+    const chosen = isChoosable ? nearest : selected;
     const at = performance.now();
     body.animator.animate(
       {x: press.centers[chosen] - press.centers[selected]},
@@ -422,7 +480,7 @@ export function useTabBarLens({
     lift(false, at, press.size, true);
     playCopy(at);
     dropCopyAtRest();
-    if (isCancelled) {
+    if (!isChoosable) {
       return;
     }
     if (chosen !== selected) {
@@ -632,7 +690,7 @@ export function useTabBarLens({
       body.animator.animate(
         {
           x:
-            lensTarget(press.lastX, press.centers) -
+            chaseTarget(press.lastX, press.centers) -
             press.centers[selectedIndex],
         },
         {

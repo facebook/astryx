@@ -46,7 +46,9 @@ import {
   drag,
   holdAnimations,
   markElement,
+  merge,
   openStory,
+  PARTIAL_LIFT_SKIP,
   releaseAnimations,
   sampleCurve,
   sampleRects,
@@ -59,6 +61,7 @@ import {
   trackMarker,
   waitForAnimation,
   waitForRest,
+  withFinger,
   withStorybook,
   writeEvidence,
 } from '@astryxdesign/interaction-harness';
@@ -675,6 +678,38 @@ test('when the app keeps the old selection, the lens settles back onto it', asyn
   expect(await scaleOf(lensBody(page))).toEqual({x: 1, y: 1});
 });
 
+test('a second finger landing mid-drag never moves the lens or changes the choice', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page);
+  test.skip(!driver.partialLifts, PARTIAL_LIFT_SKIP);
+  const home = await itemCenter(page, 'Home');
+  const browse = await itemCenter(page, 'Browse');
+  const profile = await itemCenter(page, 'Profile');
+  const first = withFinger(
+    drag(home, browse, {durationMs: 500, restMs: 300}),
+    1,
+  );
+  const second = withFinger(tapScript(profile, {holdMs: 100}), 2, 250);
+  // While both fingers are down, the lens stays with the first.
+  let farthest = -Infinity;
+  let twoFingers = 0;
+  await driver.play(merge(first, second), {
+    onEvent: async step => {
+      if (step.fingers.length < 2) {
+        return;
+      }
+      twoFingers += 1;
+      farthest = Math.max(farthest, await lensCenterX(page));
+    },
+  });
+  expect(twoFingers).toBeGreaterThan(0);
+  expect(farthest).toBeLessThan(browse.x + 9);
+  await expect(tab(page, 'Browse')).toHaveAttribute('aria-selected', 'true');
+  await waitForRest(page.getByRole('tablist'));
+  expect(Math.abs((await lensCenterX(page)) - browse.x)).toBeLessThan(0.5);
+});
+
 test('right to left, a drag runs from the first tab leftward and commits where it lifts', async ({
   page,
 }) => {
@@ -687,6 +722,145 @@ test('right to left, a drag runs from the first tab leftward and commits where i
   await expect(tab(page, 'Profile')).toHaveAttribute('aria-selected', 'true');
   await waitForRest(page.getByRole('tablist'));
   expect(Math.abs((await lensCenterX(page)) - profile.x)).toBeLessThan(0.5);
+});
+
+test('a tap on a disabled tab never moves or lifts the lens (UIKit ignores it)', async ({
+  page,
+  browserName,
+}) => {
+  const {driver} = await openBar(page, 'disabled-tab');
+  const home = await itemCenter(page, 'Home');
+  const browse = await itemCenter(page, 'Browse');
+  // Every frame's lens position while the finger lands on Browse and lifts.
+  const sampling = sampleRects(lensBody(page), 900);
+  if (browserName === 'chromium') {
+    let held: unknown = null;
+    await driver.play(tapScript(browse, {holdMs: 200}), {
+      onEvent: async step => {
+        if (step.type === 'touchStart') {
+          await page.waitForTimeout(120);
+          held = await scaleOf(lensBody(page));
+        }
+      },
+    });
+    expect(held).toEqual({x: 1, y: 1});
+  } else {
+    await driver.tap(browse);
+  }
+  const centers = (await sampling).flatMap(sample =>
+    sample.box == null ? [] : [sample.box.x + sample.box.width / 2],
+  );
+  expect(centers.length).toBeGreaterThan(5);
+  expect(
+    Math.max(...centers.map(x => Math.abs(x - home.x))),
+    JSON.stringify(centers),
+  ).toBeLessThan(0.5);
+  await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+});
+
+test('a lift over a disabled tab leaves the selection, and the lens settles back', async ({
+  page,
+}) => {
+  const {driver} = await openBar(page, 'disabled-tab');
+  const home = await itemCenter(page, 'Home');
+  const browse = await itemCenter(page, 'Browse');
+  await driver.play(drag(home, browse, {durationMs: 400, restMs: 200}));
+  // (UIKit's own drag commits a disabled tab; a tap does not. Neither does
+  // here.)
+  await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+  await expect(tab(page, 'Browse')).toHaveAttribute('aria-disabled', 'true');
+  await expect
+    .poll(async () => Math.abs((await lensCenterX(page)) - home.x), {
+      timeout: 3000,
+    })
+    .toBeLessThan(0.5);
+});
+
+test('a drag over a disabled tab holds the lens on the nearest enabled tab, the disabled tab keeping its paint (AST-085 FR6)', async ({
+  page,
+}) => {
+  const {driver, bar} = await openBar(page, 'disabled-tab');
+  const home = await itemCenter(page, 'Home');
+  const library = await itemCenter(page, 'Library');
+  const browse = await itemCenter(page, 'Browse');
+  const box = await bar.boundingBox();
+  if (box == null) {
+    throw new Error('no bar');
+  }
+  // Where Library sits under the press's flex (about the capsule's centre).
+  const center = box.x + box.width / 2;
+  const libraryFlexed = center + (library.x - center) * FLEX_SCALE;
+  // Just short of Browse's centre: over Browse, Library the nearer enabled tab.
+  const over = {x: browse.x - 5, y: browse.y};
+  let held: {
+    lens: number;
+    color: string;
+    weight: string;
+    accent: string;
+  } | null = null;
+  const script = drag(home, over, {durationMs: 500, restMs: 600});
+  await driver.play(script, {
+    onEvent: async (_step, index) => {
+      if (index !== script.length - 2) {
+        return;
+      }
+      await page.waitForTimeout(450);
+      const paint = await page.evaluate(() => {
+        const item = document.querySelector(
+          '[data-tab-bar-copy-item="browse"]',
+        );
+        const label = item?.querySelector(':scope > span:last-child');
+        const enabled = document.querySelector(
+          '[data-tab-bar-copy-item="home"]',
+        );
+        return {
+          color: item == null ? '' : getComputedStyle(item).color,
+          weight: label == null ? '' : getComputedStyle(label).fontWeight,
+          accent: enabled == null ? '' : getComputedStyle(enabled).color,
+        };
+      });
+      held = {lens: await lensCenterX(page), ...paint};
+    },
+  });
+  const atHold = held as {
+    lens: number;
+    color: string;
+    weight: string;
+    accent: string;
+  } | null;
+  expect(atHold).not.toBeNull();
+  // The lens waits on Library while the finger is over Browse.
+  expect(Math.abs((atHold?.lens ?? Infinity) - libraryFlexed)).toBeLessThan(
+    0.5,
+  );
+  // Under the lens Browse keeps its disabled paint, not the selected look.
+  expect(atHold?.color).not.toBe('');
+  expect(atHold?.color).not.toBe(atHold?.accent);
+  expect(atHold?.weight).not.toBe('600');
+  // The lift over a disabled tab chooses nothing.
+  await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+});
+
+test('with Reduce Motion the settle back from a disabled tab cross-fades', async ({
+  page,
+}) => {
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const {driver} = await openBar(page, 'disabled-tab');
+  const home = await itemCenter(page, 'Home');
+  const browse = await itemCenter(page, 'Browse');
+  let released = 0;
+  await driver.play(drag(home, browse, {durationMs: 400, restMs: 300}), {
+    onEvent: async step => {
+      if (step.type === 'touchEnd') {
+        released = await timelineNow(page);
+      }
+    },
+  });
+  // The fade starts with the input; what it changes follows a few
+  // frames later.
+  await expectCrossFade(page, released);
+  await expect(tab(page, 'Home')).toHaveAttribute('aria-selected', 'true');
+  assertOpacityOnly(await runningAnimations(page, released));
 });
 
 test('a lift between two items commits the nearer one (an exact tie goes to the leading one: tabBarModel.test.ts)', async ({

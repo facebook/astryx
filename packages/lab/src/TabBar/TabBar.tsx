@@ -82,9 +82,10 @@
  * Accessibility: a `tablist` of `tab` buttons (`aria-selected`), one tab stop
  * with the arrow keys, Home and End moving between tabs and Enter or Space
  * choosing one. A badge is part of its tab's name, one message with both
- * ("Library, 3"; `badgeLabel`, or the badge itself). Collapsed, the bar is
- * one button for assistive technology, as on iOS: the circle, named after
- * the selected tab and collapsed (`aria-expanded`), the tabs inert until it
+ * ("Library, 3"; `badgeLabel`, or the badge itself). A disabled tab is
+ * dimmed, skipped by the keys and never chosen. Collapsed, the bar is one
+ * button for assistive technology, as on iOS: the circle, named after the
+ * selected tab and collapsed (`aria-expanded`), the tabs inert until it
  * expands; activated from the keys, focus lands on the selected tab.
  *
  * SYNC: When modified, update TabBar.doc.mjs, TabBar.test.tsx,
@@ -155,6 +156,11 @@ export interface TabBarItemProps {
    * ("3 unread"). Defaults to the badge itself.
    */
   badgeLabel?: string;
+  /**
+   * Shows the tab dimmed and keeps it from being chosen: a tap, the keys and
+   * a lift of the lens over it leave the selection as it is.
+   */
+  isDisabled?: boolean;
 }
 
 export interface TabBarProps extends Omit<
@@ -555,6 +561,9 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
+  itemDisabled: {
+    color: colorVars['--color-text-disabled'],
+  },
   item: {
     position: 'absolute',
     top: 0,
@@ -864,7 +873,10 @@ export function TabBar({
     hasRovingTabIndex: true,
   });
   const choose = useCallback(
-    (item: {value: string}) => {
+    (item: {value: string; isDisabled?: boolean}) => {
+      if (item.isDisabled === true) {
+        return;
+      }
       if (item.value === value) {
         onReselect?.(item.value);
       } else {
@@ -935,6 +947,7 @@ export function TabBar({
     isTouch,
     isMinimized: minimize.isCollapsed,
     onLift: index => choose(items[index]),
+    isDisabled: index => items[index]?.isDisabled === true,
   });
   const mergedCapsuleRef = useMergedRefs(capsuleRef, listRef, lens.capsule);
   const mergedCircleRef = useMergedRefs(minimize.circleIcon, circleRef);
@@ -1125,6 +1138,7 @@ export function TabBar({
                       ? 0
                       : -1
                   }
+                  aria-disabled={item.isDisabled === true ? true : undefined}
                   // A badge is part of the name: one message with both.
                   aria-label={
                     hasBadge(item.badge)
@@ -1147,6 +1161,7 @@ export function TabBar({
                       tabBarItemMarker,
                       styles.item,
                       styles.column(start, width),
+                      item.isDisabled === true && styles.itemDisabled,
                     ),
                   )}>
                   <span
@@ -1255,6 +1270,9 @@ export function TabBar({
                             data-tab-bar-copy-item={item.value}
                             {...stylex.props(
                               styles.copyItem,
+                              // A disabled tab keeps its disabled paint under
+                              // the lens (AST-085 FR6).
+                              item.isDisabled === true && styles.itemDisabled,
                               styles.box(
                                 `calc(${center(index, count)} - ${size(count)} / 2)`,
                                 ITEM_TOP,
@@ -1262,7 +1280,11 @@ export function TabBar({
                                 ITEM_HEIGHT,
                               ),
                             )}>
-                            <ItemFace item={item} isSelectedLook isCopy />
+                            <ItemFace
+                              item={item}
+                              isSelectedLook={item.isDisabled !== true}
+                              isCopy
+                            />
                           </span>
                         ))}
                       </div>

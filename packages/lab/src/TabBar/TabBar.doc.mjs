@@ -58,7 +58,7 @@ export const docs = {
           name: 'minimizeBehavior',
           type: "'never' | 'onScrollDown'",
           description:
-            "With 'onScrollDown', scrolling the page down collapses the bar into a small circle at its leading end that holds the selected tab's icon, keeping the content in view, as iOS's tab bar does. Scrolling back up leaves it collapsed; reaching the top of the page, a tap on the circle or moving focus to a tab expands it. Only under a finger: a mouse-driven bar stays expanded.",
+            "With 'onScrollDown', scrolling the page down collapses the bar into a small circle at its leading end that holds the selected tab's icon, keeping the content in view, as iOS's tab bar does. Scrolling back up leaves it collapsed; reaching the top of the page or activating the circle expands it. Collapsed, the circle is the bar's one element for assistive technology, named after the selected tab and collapsed, as on iOS. Only under a finger: a mouse-driven bar stays expanded.",
           default: "'never'",
         },
         {
@@ -119,6 +119,13 @@ export const docs = {
           type: 'string',
           description:
             'What assistive technology reads for the badge after the tab\'s label, such as "3 unread". Defaults to the badge itself.',
+        },
+        {
+          name: 'isDisabled',
+          type: 'boolean',
+          description:
+            'Shows the tab dimmed and keeps it from being chosen: a tap, the arrow keys and a lift of the lens over it leave the selection as it is.',
+          default: 'false',
         },
       ],
     },
@@ -210,6 +217,11 @@ export const docs = {
         guidance: true,
         description:
           'Add a TabBarSearchTab when search is a section of the app on its own; cancel should return to the tab it was chosen from.',
+      },
+      {
+        guidance: false,
+        description:
+          "Don't disable a tab to say its section is empty; show the empty section instead, and keep disabled tabs rare.",
       },
       {
         guidance: false,

@@ -356,7 +356,9 @@ describe('TabBar minimize on scroll', () => {
   }
 
   const isMinimized = () =>
-    screen.getByRole('tablist').hasAttribute('data-tab-bar-minimized');
+    screen
+      .getByRole('tablist', {hidden: true})
+      .hasAttribute('data-tab-bar-minimized');
 
   it('never minimizes by default', () => {
     restorePointer.push(coarsePrimaryPointer());
@@ -763,5 +765,51 @@ describe('TabBar search tab, selected', () => {
     expect(
       screen.getByText('Mini player').closest('[data-tab-bar-accessory]'),
     ).not.toHaveAttribute('inert');
+  });
+});
+
+describe('TabBar disabled tab', () => {
+  function Disabled({onChange}: {onChange?: (value: string) => void}) {
+    const [value, setValue] = useState('home');
+    return (
+      <TabBar
+        value={value}
+        onChange={next => {
+          setValue(next);
+          onChange?.(next);
+        }}
+        label="Sections">
+        <TabBarItem value="home" label="Home" icon={<Glyph name="home" />} />
+        <TabBarItem
+          value="browse"
+          label="Browse"
+          icon={<Glyph name="browse" />}
+          isDisabled
+        />
+        <TabBarItem
+          value="profile"
+          label="Profile"
+          icon={<Glyph name="profile" />}
+        />
+      </TabBar>
+    );
+  }
+
+  it('is marked disabled and ignores a tap', () => {
+    const onChange = vi.fn();
+    render(<Disabled onChange={onChange} />);
+    const browse = screen.getByRole('tab', {name: 'Browse'});
+    expect(browse).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(browse);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(browse).toHaveAttribute('aria-selected', 'false');
+  });
+
+  it('is skipped by the arrow keys', () => {
+    render(<Disabled />);
+    const home = screen.getByRole('tab', {name: 'Home'});
+    home.focus();
+    fireEvent.keyDown(home, {key: 'ArrowRight'});
+    expect(screen.getByRole('tab', {name: 'Profile'})).toHaveFocus();
   });
 });
