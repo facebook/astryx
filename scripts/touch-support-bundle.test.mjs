@@ -8,8 +8,9 @@
  * @output Pins architecture:react-component-runtime INV13's bundle and
  *   boundary claims: Core's public entries carry none of the touch module
  *   until an app installs TouchSupport; a component that reads the module
- *   through useTouchSupport carries none of it, nor the gesture core it
- *   gathers; the install entry carries it;
+ *   through useTouchSupport or useTouchLayer carries none of it, nor the
+ *   gesture core and motion math it gathers; the install entry carries all of
+ *   it;
  *   no export map entry, `.doc.mjs`, or component `import()` reaches the
  *   internals
  * @position Node test over source, so it needs no build
@@ -32,9 +33,9 @@ const esbuild = require('esbuild');
  */
 const MODULE_INPUT = /^packages\/core\/src\/touch-support\/touchModule\.ts$/;
 
-/** The module and the gesture core it gathers. */
+/** The module and what it gathers: the gesture core, the motion math and tables. */
 const PRIMITIVE_INPUT =
-  /^packages\/core\/src\/(gestures\/|touch-support\/touchModule\.ts$)/;
+  /^packages\/core\/src\/(gestures\/|motion\/|touch-support\/touchModule\.ts$)/;
 
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-touch-support-'));
 afterAll(() => {
@@ -117,23 +118,43 @@ describe('the touch module in bundles', () => {
     expect(bytesOf(bytesByInput(path.join(CORE_SRC, entry)))).toEqual([]);
   });
 
-  it('is absent from a component that reads it through useTouchSupport', () => {
-    const glue = entryWith(
-      'glue.tsx',
-      `import {useTouchSupport} from ${JSON.stringify(
-        path.join(CORE_SRC, 'touch-support/useTouchSupport.ts'),
-      )};
-export function Glue() {
+  it.each([
+    [
+      'useTouchSupport',
+      'useTouchSupport.ts',
+      `export function Glue() {
   return useTouchSupport() === null ? 'plain' : 'touch';
-}
-`,
-    );
-    const bytes = bytesByInput(glue);
-    expect(
-      bytes['packages/core/src/touch-support/useTouchSupport.ts'],
-    ).toBeGreaterThan(0);
-    expect(bytesOf(bytes, PRIMITIVE_INPUT)).toEqual([]);
+}`,
+    ],
+    [
+      'useTouchLayer',
+      'useTouchLayer.ts',
+      `export function Glue(props: {target: {current: Element | null}}) {
+  useTouchLayer(props.target, touch => {
+    const recognizer = new touch.TapGestureRecognizer();
+    return recognizer.addListener(() => {});
   });
+  return null;
+}`,
+    ],
+  ])(
+    'is absent from a component that reads it through %s',
+    (name, file, body) => {
+      const glue = entryWith(
+        `glue-${name}.tsx`,
+        `import {${name}} from ${JSON.stringify(
+          path.join(CORE_SRC, 'touch-support', file),
+        )};
+${body}
+`,
+      );
+      const bytes = bytesByInput(glue);
+      expect(bytes[`packages/core/src/touch-support/${file}`]).toBeGreaterThan(
+        0,
+      );
+      expect(bytesOf(bytes, PRIMITIVE_INPUT)).toEqual([]);
+    },
+  );
 
   it('is present once the app installs TouchSupport', () => {
     const app = entryWith(
@@ -153,6 +174,15 @@ TouchSupport.install();
       'packages/core/src/gestures/GestureRecognizer.ts',
       'packages/core/src/gestures/TapGestureRecognizer.ts',
       'packages/core/src/gestures/LongPressGestureRecognizer.ts',
+      'packages/core/src/gestures/PanGestureRecognizer.ts',
+      'packages/core/src/gestures/VelocityTracker.ts',
+      'packages/core/src/motion/spring.ts',
+      'packages/core/src/motion/decay.ts',
+      'packages/core/src/motion/projection.ts',
+      'packages/core/src/motion/rubberBand.ts',
+      'packages/core/src/motion/roles.ts',
+      'packages/core/src/motion/uikit/gestures.ts',
+      'packages/core/src/motion/uikit/springs.ts',
     ]) {
       expect(present[input], input).toBeGreaterThan(0);
     }

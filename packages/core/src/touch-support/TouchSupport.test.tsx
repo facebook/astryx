@@ -23,7 +23,8 @@ async function freshPage() {
   vi.resetModules();
   const {default: TouchSupport} = await import('./index');
   const {useTouchSupport} = await import('./useTouchSupport');
-  const {subscribeTouchModule} = await import('./touchSupportRegistry');
+  const {subscribeTouchModule, resetTouchSupportForTests} =
+    await import('./touchSupportRegistry');
   const {touchModule} = await import('./touchModule');
   /** A component's dependency check: touch behavior with the module only. */
   function Probe() {
@@ -36,6 +37,7 @@ async function freshPage() {
     TouchSupport,
     useTouchSupport,
     subscribeTouchModule,
+    resetTouchSupportForTests,
     touchModule,
     Probe,
   };
@@ -224,5 +226,24 @@ describe('TouchSupport', () => {
     });
     expect(screen.getByTestId('probe').textContent).toBe('touch');
     expect(listeners.size).toBe(0);
+  });
+
+  it('forgets the install on resetTouchSupportForTests(), as on a fresh page', async () => {
+    stubPointers({coarse: true});
+    const {TouchSupport, resetTouchSupportForTests, Probe} = await freshPage();
+    render(<Probe />);
+    act(() => {
+      TouchSupport.install();
+    });
+    expect(screen.getByTestId('probe').textContent).toBe('touch');
+    act(() => {
+      resetTouchSupportForTests();
+    });
+    expect(TouchSupport.isInstalled()).toBe(false);
+    expect(screen.getByTestId('probe').textContent).toBe('plain');
+    act(() => {
+      TouchSupport.install();
+    });
+    expect(screen.getByTestId('probe').textContent).toBe('touch');
   });
 });

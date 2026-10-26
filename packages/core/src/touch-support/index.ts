@@ -12,13 +12,14 @@
  */
 
 import {touchModule} from './touchModule';
-import {installTouchModule} from './touchSupportRegistry';
+import {
+  installRan,
+  installTouchModule,
+  markInstallRan,
+} from './touchSupportRegistry';
 
 /** Whether some input is a coarse pointer, the condition for registering. */
 const ANY_COARSE_POINTER = '(any-pointer: coarse)';
-
-/** Whether `install()` has run on this page. */
-let hasRun = false;
 
 /**
  * Touch support for Astryx components: the gesture core and the animator,
@@ -51,10 +52,9 @@ const TouchSupport = Object.freeze({
    * input is a coarse pointer, or when one appears. Later calls do nothing.
    */
   install(): void {
-    if (typeof window === 'undefined' || hasRun) {
+    if (typeof window === 'undefined' || markInstallRan()) {
       return;
     }
-    hasRun = true;
     if (typeof window.matchMedia !== 'function') {
       return;
     }
@@ -73,7 +73,7 @@ const TouchSupport = Object.freeze({
   },
   /** Whether `install()` has run on this page. */
   isInstalled(): boolean {
-    return hasRun;
+    return installRan();
   },
 });
 
