@@ -161,8 +161,10 @@ export function resolveSheetRelease({
     index = nearestIndex(positions, start);
   }
   if (dismissedOffset != null && index === detents.length) {
-    // A slow dismissal's spring is a stand-in: none of the measured releases
-    // that dismissed recorded a spring, so `springs.sheetDetent` is used.
+    // GUESS (spec:AST-094 FR2): a slow dismissal plays `springs.sheetDetent`.
+    // None of the measured releases that dismissed had its spring read;
+    // MEASUREMENTS.md's M-SH09 (drags released past the dismiss boundary,
+    // their release spring read) will confirm or replace it.
     return {
       kind: 'dismiss',
       index: -1,
