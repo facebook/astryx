@@ -73,10 +73,11 @@ export const sheet = {
      *   iPhone 17 Pro, 134 drag releases, 55 of them with the
      *   CASpringAnimation UIKit attached (29 of the 47 on Oct 23, 26 of the
      *   87 on Oct 24 2026): damping 36.515 (ζ 1) at every read release up to
-     *   997 pt/s and 29.212 (ζ 0.8) at every one from 1147 pt/s on; with the
+     *   996.7 pt/s and 29.212 (ζ 0.8) at every one from 1028.3 pt/s on
+     *   (`d-45.v-1000`, then 1088.7, 1090.0 and 1122.4 pt/s and faster), so
+     *   the spring reads alone bracket the switch to (996.7, 1028.3]; with the
      *   0.1 s projection the outcomes of all 134 fit the flick branch for a
-     *   threshold from 997 to 1028 pt/s, and every read spring follows the
-     *   branch, so the switch lies in (997, 1028]
+     *   threshold from 997 to 1028 pt/s, the same bracket
      */
     fastSpeed: 1008,
     /**

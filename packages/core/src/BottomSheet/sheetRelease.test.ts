@@ -300,6 +300,7 @@ describe('resolveSheetRelease', () => {
       dismissedOffset: 640,
       position: 100,
       velocity: 500,
+      start: 0,
     });
     expect(release.projected).toBeCloseTo(
       100 + 500 * sheet.release.projectionSeconds,
@@ -314,6 +315,7 @@ describe('resolveSheetRelease', () => {
         dismissedOffset: 640,
         position,
         velocity: 0,
+        start: 300,
       }).kind;
     expect(at(469)).toBe('detent');
     expect(at(471)).toBe('dismiss');
@@ -328,6 +330,7 @@ describe('resolveSheetRelease', () => {
         dismissedOffset: 640,
         position: 300,
         velocity: sheet.release.fastSpeed,
+        start: 0,
       }),
     ).toMatchObject({kind: 'dismiss', offset: 640});
     // Just under the threshold, the same release projects back to 300.
@@ -337,6 +340,7 @@ describe('resolveSheetRelease', () => {
         dismissedOffset: 640,
         position: 300,
         velocity: sheet.release.fastSpeed - 1,
+        start: 0,
       }),
     ).toMatchObject({kind: 'detent', offset: 300});
     // Within the tolerance a detent counts as passed; a flick up from just
@@ -347,6 +351,7 @@ describe('resolveSheetRelease', () => {
         dismissedOffset: 640,
         position: 300 + sheet.release.detentTolerance / 2,
         velocity: -sheet.release.fastSpeed,
+        start: 400,
       }),
     ).toMatchObject({kind: 'detent', offset: 0});
   });
@@ -360,6 +365,7 @@ describe('resolveSheetRelease', () => {
         dismissedOffset: 640,
         position: 50,
         velocity: 5000,
+        start: 0,
       }),
     ).toMatchObject({kind: 'dismiss', offset: 640});
   });
@@ -371,15 +377,16 @@ describe('resolveSheetRelease', () => {
       dismissedOffset: 640,
       position: 250,
       velocity: -200,
+      start: 300,
     });
     expect(release).toMatchObject({kind: 'detent', index: 1, offset: 300});
   });
 
   it('projects nothing below sheet.release.minProjectionSpeed', () => {
-    // Past the midpoint toward the tallest detent and let go moving back
-    // toward the shorter one just under the speed: it stays with the
-    // tallest, where it is nearest; just over it, the projection takes it
-    // back.
+    // From the tallest detent, past the midpoint toward the shorter one and
+    // let go moving on toward it just under the speed: it stays with the
+    // tallest, where it is nearest; just over it, the projection takes it on.
+    // (Moving back toward where the drag began, FR37 would cancel instead.)
     const slow = sheet.release.minProjectionSpeed - 1;
     const fast = sheet.release.minProjectionSpeed + 1;
     expect(
@@ -388,6 +395,7 @@ describe('resolveSheetRelease', () => {
         dismissedOffset: 640,
         position: 140,
         velocity: slow,
+        start: 0,
       }),
     ).toMatchObject({kind: 'detent', index: 0, projected: 140});
     expect(
@@ -396,6 +404,7 @@ describe('resolveSheetRelease', () => {
         dismissedOffset: 640,
         position: 140,
         velocity: fast,
+        start: 0,
       }),
     ).toMatchObject({kind: 'detent', index: 1});
   });
@@ -442,6 +451,7 @@ describe('resolveSheetRelease', () => {
       dismissedOffset: null,
       position: 600,
       velocity: 3000,
+      start: 300,
     });
     expect(release).toMatchObject({kind: 'detent', index: 1, offset: 300});
   });
@@ -453,6 +463,8 @@ describe('resolveSheetRelease', () => {
         dismissedOffset: 640,
         position,
         velocity,
+        // Released where the drag began: the cancel never applies.
+        start: position,
       }).spring;
     const fast = sheet.release.fastSpeed;
     expect(spring(fast - 1)).toBe(springs.sheetDetent);
@@ -471,6 +483,7 @@ describe('resolveSheetRelease', () => {
         dismissedOffset: 640,
         position: 0,
         velocity: 0,
+        start: 0,
       }),
     ).toThrow(RangeError);
   });
