@@ -41,6 +41,7 @@ import {
   releaseAnimations,
   releaseVelocity,
   sampleCurve,
+  startCompositorTrace,
   startScreencast,
   tap,
   thawTimers,
@@ -162,6 +163,47 @@ function stripAnimationOf(animations: WheelAnimation[]): WheelAnimation {
 }
 
 /** The strip's translation is minus the wheel's offset. */
+/** The strip's running coast, from and to on the page clock, read without
+ * its keyframes. */
+async function stripCoastTiming(
+  strip: Locator,
+): Promise<{from: number; to: number}> {
+  await expect
+    .poll(
+      async () =>
+        strip.evaluate(element =>
+          element
+            .getAnimations()
+            .some(a => a.playState === 'running' && a.startTime != null),
+        ),
+      {timeout: 5_000},
+    )
+    .toBe(true);
+  return strip.evaluate(element => {
+    const animation = element
+      .getAnimations()
+      .find(a => a.playState === 'running' && a.startTime != null);
+    const effect = animation?.effect as KeyframeEffect | null | undefined;
+    const timing = effect?.getComputedTiming();
+    const start = performance.timeOrigin + Number(animation?.startTime ?? 0);
+    const delay = timing?.delay ?? 0;
+    const active = Number(timing?.activeDuration ?? 0);
+    // The curve's end, as the harness reads it: the first of the frames
+    // that hold the strip's last position (the arrival commits there).
+    const frames = effect?.getKeyframes() ?? [];
+    let first = frames.length - 1;
+    while (
+      first > 0 &&
+      String(frames[first - 1].transform) === String(frames[first].transform)
+    ) {
+      first -= 1;
+    }
+    const linear = (effect?.getTiming().easing ?? 'linear') === 'linear';
+    const end = linear ? (frames[first]?.computedOffset ?? 1) * active : active;
+    return {from: start + delay, to: start + delay + end};
+  });
+}
+
 const stripOffset = async (strip: Locator) =>
   strip.evaluate(element => {
     const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
@@ -272,6 +314,9 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
   test.skip(!driver.scriptedTimestamps, SCRIPTED_RELEASE_SKIP);
   const {script} = flickUp(start);
   const cast = await startScreencast(page);
+  // The compositor's own record of the frames it presents: a frame the
+  // screencast skips under load is not a stall (busyWindowProof).
+  const compositor = await startCompositorTrace(page);
   await driver.play(script);
   const coast = stripAnimationOf(
     await waitForAnimation(strip, {minProgressMs: 16}),
@@ -324,12 +369,13 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
   await page.waitForTimeout(Math.max(0, coast.from + blockFrom - Date.now()));
   const block = await blockMainThread(page, Math.round(blockTo - blockFrom));
   await page.waitForTimeout(150);
+  const presented = await compositor.stop();
   const castFrames = await cast.stop();
   const tracked = await trackMarker(page, castFrames);
   const proof = busyWindowProof(
     tracked,
     {from: block.from, to: Math.min(block.to, coast.to)},
-    {settledWithin: 1},
+    {settledWithin: 1, presented},
   );
   await writeEvidence(
     'busy-main-thread/wheel-coast',
@@ -363,6 +409,8 @@ test('the coast keeps advancing every frame while the main thread is blocked', a
   // The harness's verdict: a new position on at least 90 % of the window's
   // frame intervals, no stall over three of them, a median interval of at
   // most 20 ms; a frozen coast shows one stall the length of the block.
+  // Frames the screencast skipped while the compositor presented them are
+  // recorder skips, not stalls (`presented`, startCompositorTrace).
   expect(
     proof.verdict.pass,
     `${proof.summary}; ${proof.verdict.failures.join('; ')}`,
@@ -386,7 +434,10 @@ test('the coast does no Layout or Paint per frame', async ({
   let coast = {from: 0, to: 0};
   const trace = await traceRendering(page, async () => {
     await driver.play(script);
-    coast = stripAnimationOf(await waitForAnimation(strip));
+    // The strip's own timing only: describing every row's baked keyframes
+    // (waitForAnimation) is itself a DevTools task of nearly 50 ms on the
+    // page's main thread, which the long-task check would count.
+    coast = await stripCoastTiming(strip);
     await waitForRest(strip);
   });
   const during = countBetween(trace, coast.from + 50, coast.to - 50);

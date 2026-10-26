@@ -353,6 +353,9 @@ export function ScrollWheel({
   // row it lands on. While one is pending the rows stay put for it, so they
   // never move at full opacity, and a further step retargets it.
   const pendingFadeRef = useRef<{timer: number; top: number} | null>(null);
+  // The running dip, so a step during its fade-in starts the next one where
+  // the column is.
+  const dipRef = useRef<Animation | null>(null);
   useEffect(
     () => () => {
       if (pendingFadeRef.current != null) {
@@ -405,8 +408,17 @@ export function ScrollWheel({
         return;
       }
       const {duration, easing} = fadeTiming;
-      scroller.animate(
-        [{opacity: 1, easing}, {opacity: 0, easing}, {opacity: 1}],
+      // A step while the last dip still fades back in starts this one where
+      // the column is, not at full opacity: a leaving element fades out where
+      // it is (design:reduced-motion DR2).
+      const shown = Number.parseFloat(getComputedStyle(scroller).opacity);
+      dipRef.current?.cancel();
+      dipRef.current = scroller.animate(
+        [
+          {opacity: Number.isFinite(shown) ? shown : 1, easing},
+          {opacity: 0, easing},
+          {opacity: 1},
+        ],
         {duration, easing: 'linear'},
       );
       const landing = {top, timer: 0};
