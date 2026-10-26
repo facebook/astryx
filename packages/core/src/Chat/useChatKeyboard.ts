@@ -26,7 +26,7 @@
  *   the layout is right with no animation.
  * - The ride is polish on top, timed by the keyboard layout guide: the dock
  *   moves on the compositor (`translate`) on the curve the guide publishes
- *   (the keyboard's own spring, never a theme's) from the
+ *   (the keyboard's own spring, no motion role) from the
  *   keyboard's own start, so it is where the keyboard is from its first
  *   frame, and a transcript at its newest message rides with it. The layout
  *   catches up once the ride ends, with the translate handed back in the
@@ -285,8 +285,8 @@ export function useChatKeyboard({
     commitRef.current = commit;
 
     // The ride plays the curve the guide publishes with each transition
-    // (INV11): the keyboard's own spring, a value and not a theme role, since
-    // the system moves the keyboard on it whatever the theme says.
+    // (INV11): the keyboard's own spring, a value and not a motion role,
+    // since the system moves the keyboard on it whatever the page does.
     const follow = (transition: KeyboardTransition) => {
       // The ride: the dock goes where the guide says the keyboard will be,
       // from the keyboard's start, relative to the layout it rests in now.

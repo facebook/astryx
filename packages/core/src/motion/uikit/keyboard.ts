@@ -9,9 +9,9 @@
  * @position The keyboard domain of the UIKit constants table
  *   (motion/uikit); read by keyboard/keyboardModel.ts and Chat's keyboard
  *   ride. The keyboard's notification duration is
- *   `timing.keyboardNotificationMs`. The spring is not a theme role: the
- *   system moves the keyboard on it whatever the theme says, so content that
- *   rides the keyboard plays this value, never a theme's (spec:AST-099 FR3)
+ *   `timing.keyboardNotificationMs`. The spring is no motion role: the
+ *   system moves the keyboard on it whatever the page does, so content that
+ *   rides the keyboard plays this value (spec:AST-099 FR3)
  *
  * UIKit hands a view the keyboard's end frame before the keyboard moves. A
  * page only learns it from the visual viewport, which Mobile Safari updates
