@@ -6,8 +6,9 @@
  * @output `@astryxdesign/core/internal/touch`: touchModule and its type, for
  *   Lab components
  * @position An internal entry reserved for Astryx's own packages:
- *   undocumented, outside the public API and its compatibility promise,
- *   versioned in lockstep with Core, and allowed by lint only in Core and Lab
+ *   undocumented, outside the public API and its compatibility promise
+ *   (spec:AST-017 FR21), versioned in lockstep with Core, and allowed only in
+ *   Core and Lab by the `@astryx/no-core-internal-import` lint rule
  *   (architecture:react-component-runtime INV13). Core components import the
  *   module by relative path; a bundler keeps one copy per page either way.
  *

@@ -4,9 +4,11 @@
  * @file core-internal-entries.test.mjs
  * @input The repository's ESLint config
  * @output Pins who may import Core's internal entries
- *   (`@astryxdesign/core/internal/*`, architecture:react-component-runtime
- *   INV13): only Core and Lab
- * @position Node test over the lint config, so it needs no build
+ *   (`@astryxdesign/core/internal/*`, spec:AST-017 FR21,
+ *   architecture:react-component-runtime INV13): only Core and Lab, through
+ *   the shared `@astryx/no-core-internal-import` rule
+ * @position Node test over the lint config, so it needs no build; the rule's
+ *   own cases live beside it in internal/eslint-plugin-astryx
  */
 
 import {createRequire} from 'node:module';
@@ -15,48 +17,30 @@ import {describe, expect, it} from 'vitest';
 
 const REPO = path.resolve(import.meta.dirname, '..');
 const require = createRequire(path.join(REPO, 'package.json'));
-const {ESLint, Linter} = require('eslint');
-const tseslint = require('typescript-eslint');
+const {ESLint} = require('eslint');
 
 const eslint = new ESLint({cwd: REPO});
+const RULE = '@astryx/no-core-internal-import';
 
-/**
- * The `no-restricted-imports` messages the repository's config reports for
- * `source` at `file`: the rule's options as the config resolves them for that
- * path, run on the import alone, so no type information is needed.
- */
-async function restrictedImports(file, source) {
+/** The rule's severity as the repository's config resolves it for `file`. */
+async function severityAt(file) {
   const config = await eslint.calculateConfigForFile(path.join(REPO, file));
-  const rule = config.rules?.['no-restricted-imports'];
-  if (rule == null || rule === 'off' || rule[0] === 'off' || rule[0] === 0) {
-    return [];
-  }
-  const linter = new Linter({configType: 'flat'});
-  return linter
-    .verify(
-      source,
-      [
-        {
-          files: ['**/*.{ts,tsx}'],
-          languageOptions: {parser: tseslint.parser},
-          rules: {'no-restricted-imports': rule},
-        },
-      ],
-      {filename: path.join(REPO, file)},
-    )
-    .map(message => message.message);
+  const setting = config.rules?.[RULE];
+  const level = Array.isArray(setting) ? setting[0] : setting;
+  return level === 2 || level === 'error'
+    ? 'error'
+    : level === 1 || level === 'warn'
+      ? 'warn'
+      : 'off';
 }
 
 describe('core internal entries in lint', () => {
   it('are refused outside Core and Lab', async () => {
-    for (const entry of ['internal/touch', 'internal/reorder']) {
-      expect(
-        await restrictedImports(
-          'apps/docsite/src/Example.tsx',
-          `import {x} from '@astryxdesign/core/${entry}';\n`,
-        ),
-        entry,
-      ).toHaveLength(1);
+    for (const file of [
+      'apps/docsite/src/Example.tsx',
+      'packages/charts/src/Example.tsx',
+    ]) {
+      expect(await severityAt(file), file).toBe('error');
     }
   });
 
@@ -65,13 +49,7 @@ describe('core internal entries in lint', () => {
       'packages/lab/src/Example/Example.tsx',
       'packages/core/src/Example/Example.tsx',
     ]) {
-      expect(
-        await restrictedImports(
-          file,
-          "import {x} from '@astryxdesign/core/internal/touch';\n",
-        ),
-        file,
-      ).toEqual([]);
+      expect(await severityAt(file), file).toBe('off');
     }
   });
 });
