@@ -9,7 +9,7 @@
  *   controller's cancel, unchanged by the compositor layer); Reduce
  *   Motion keeps the fade (a fade, not a movement); a mouse press and hover on
  *   a fine pointer leave the press layer out of it; without `scrollend`
- *   (Safari 17 and 18), a finger landing on a gliding list still brakes it,
+ *   (Chromium with it removed), a finger landing on a gliding list still brakes it,
  *   and presses once the list has rested for the brake window
  * @position Interaction evidence for the row press layer (utils/interactionOverlay.stylex.ts `cell`), beside
  *   ListRowPress.interaction.browser.spec.ts
@@ -362,7 +362,7 @@ test('under a finger, a row at rest is as it was: its own ::before keeps its loo
   expect(await look()).toEqual(own);
 });
 
-test('without scrollend (Safari 17, 18), a finger landing on a gliding list brakes it, and presses once the list has rested', async ({
+test('on an engine without scrollend (Chromium with it removed), a finger landing on a gliding list brakes it, and presses once the list has rested', async ({
   page,
   browserName,
 }) => {

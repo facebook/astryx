@@ -254,7 +254,7 @@ describe('a scroll takes it away and nothing brings it back', () => {
     expect(pressedRow()).toBe(-1);
   });
 
-  it('without scrollend (Safari 17, 18), still brakes a moving list, and presses once its scroll events stop', () => {
+  it('on an engine without scrollend, still brakes a moving list, and presses once its scroll events stop', () => {
     delete (window as {onscrollend?: unknown}).onscrollend;
     press(rows[0], 'pointerdown', 10, 10);
     press(rows[0], 'pointerup', 10, 10);
@@ -278,6 +278,29 @@ describe('a scroll takes it away and nothing brings it back', () => {
     // ever clear a finger it recorded.
     press(rows[0], 'pointerdown', 10, 10, 'pen');
     press(rows[0], 'pointerup', 10, 10, 'pen');
+    scroller.dispatchEvent(new Event('scroll'));
+    press(rows[1], 'pointerdown', 10, 100);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    expect(pressedRow()).toBe(1);
+  });
+
+  it('a pen that drags a list still arms the brake: a touch stopping that glide presses nothing', () => {
+    // The browser takes the pen to scroll (pointercancel), and the scroll it
+    // drives follows; a finger landing on the gliding list is a brake.
+    press(rows[0], 'pointerdown', 10, 10, 'pen');
+    press(rows[0], 'pointercancel', 10, 10, 'pen');
+    scroller.dispatchEvent(new Event('scroll'));
+    scroller.dispatchEvent(new Event('scroll'));
+    press(rows[1], 'pointerdown', 10, 100);
+    vi.advanceTimersByTime(PRESS_ONSET_MS * 2);
+    expect(pressedRow()).toBe(-1);
+  });
+
+  it('a pen taken to scroll that never scrolls stops counting after the brake window', () => {
+    press(rows[0], 'pointerdown', 10, 10, 'pen');
+    press(rows[0], 'pointercancel', 10, 10, 'pen');
+    vi.advanceTimersByTime(PRESS_SCROLL_BRAKE_MS + 1);
+    // A programmatic scroll after that is not a brake.
     scroller.dispatchEvent(new Event('scroll'));
     press(rows[1], 'pointerdown', 10, 100);
     vi.advanceTimersByTime(PRESS_ONSET_MS);
