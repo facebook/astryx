@@ -11,8 +11,9 @@
  *   bar's collapse and its search tab, and tabBarModel.ts for the geometry
  * @output Exports TabBar (an iOS 26 floating tab bar: a capsule of items
  *   with a selection lens, badges and a reselect signal), TabBarItem (one
- *   tab: its value, label, icon and badge) and TabBarSearchTab (the search
- *   tab apart at the trailing end, and its field)
+ *   tab: its value, label, icon and badge), TabBarSearchTab (the search
+ *   tab apart at the trailing end, and its field) and overflowItems (the
+ *   tabs a More tab holds, read by TabBarMoreList.tsx)
  * @position Lab component (packages/lab/src/TabBar); the phone presentation
  *   of an app's top-level sections, UITabBarController's counterpart
  *
@@ -66,6 +67,14 @@
  *
  * Badges appear, change and disappear without animating, as UIKit's do.
  *
+ * MORE TAB
+ *
+ * With more than five tabs the bar shows the first four and a More tab, as
+ * UITabBarController does, at the five-tab layout. More is the selected tab
+ * while `value` is `moreValue` or any tab past the fourth (the app shows
+ * that section inside More's own stack, where TabBarMoreList lists them);
+ * More again while it holds a tab is a reselect, back to its list.
+ *
  * SEARCH TAB
  *
  * A TabBarSearchTab (UIKit's `UISearchTab`) is a circle as tall as the bar
@@ -89,8 +98,9 @@
  * expands; activated from the keys, focus lands on the selected tab.
  *
  * SYNC: When modified, update TabBar.doc.mjs, TabBar.test.tsx,
- * useTabBarLens.ts, useTabBarMinimize.ts, useTabBarSearch.ts,
- * tabBarModel.ts and __tests__/TabBar.interaction.browser.spec.ts.
+ * TabBarMoreList.tsx, useTabBarLens.ts, useTabBarMinimize.ts,
+ * useTabBarSearch.ts, tabBarModel.ts and
+ * __tests__/TabBar.interaction.browser.spec.ts.
  */
 
 import {
@@ -108,6 +118,8 @@ import {flushSync} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
 import {useListFocus, useMergedRefs} from '@astryxdesign/core/hooks';
+import {useTranslator} from '@astryxdesign/core/i18n';
+import {Icon} from '@astryxdesign/core/Icon';
 import {tabBar} from '@astryxdesign/core/motion/uikit';
 import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
 import {
@@ -120,7 +132,6 @@ import {
   shadowVars,
   typographyVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
-import {useTranslator} from '@astryxdesign/core/i18n';
 import {mergeProps, themeProps} from '@astryxdesign/core/utils';
 import {tabBarItemMarker} from './tabBar.stylex';
 import {
@@ -183,7 +194,8 @@ export interface TabBarProps extends Omit<
   /**
    * Whether scrolling the page down collapses the bar into a circle holding
    * the selected tab's icon (UIKit's `tabBarMinimizeBehavior`): reaching the
-   * top of the page or activating the circle (a tap, or the keys) expands it. Under a finger only;
+   * top of the page or activating the circle (a tap, or the keys) expands
+   * it. Under a finger only;
    * under a mouse the bar stays expanded.
    * @default 'never'
    */
@@ -195,6 +207,13 @@ export interface TabBarProps extends Omit<
    */
   bottomAccessory?:
     ReactNode | ((placement: TabBarAccessoryPlacement) => ReactNode);
+  /**
+   * The More tab's value, when there are more than five tabs: the bar shows
+   * the first four and a More tab, which `value` selects as this or as any
+   * tab past the fourth (UIKit's `moreNavigationController`).
+   * @default 'more'
+   */
+  moreValue?: string;
   /** The tabs: `TabBarItem` elements, in order. */
   children: ReactNode;
 }
@@ -260,6 +279,18 @@ function readItems(children: ReactNode): TabBarItemProps[] {
       ? [(child as ReactElement<TabBarItemProps>).props]
       : [],
   );
+}
+
+/** More than this many tabs and the bar shows the first four and More. */
+const MAX_TABS = 5;
+
+/**
+ * The tabs past the fourth when there are more than five: the ones a More
+ * tab holds.
+ */
+export function overflowItems(children: ReactNode): TabBarItemProps[] {
+  const items = readItems(children);
+  return items.length > MAX_TABS ? items.slice(MAX_TABS - 1) : [];
 }
 
 function hasBadge(badge: string | number | undefined): boolean {
@@ -847,6 +878,7 @@ export function TabBar({
   label,
   minimizeBehavior = 'never',
   bottomAccessory,
+  moreValue = 'more',
   children,
   xstyle,
   className,
@@ -855,11 +887,30 @@ export function TabBar({
   ...props
 }: TabBarProps) {
   const t = useTranslator();
-  const items = readItems(children);
+  const allItems = readItems(children);
+  const overflow = overflowItems(children);
+  const hasMore = overflow.length > 0;
+  // More than five tabs: the first four and a More tab, as on iOS.
+  const items: TabBarItemProps[] = hasMore
+    ? [
+        ...allItems.slice(0, MAX_TABS - 1),
+        {
+          value: moreValue,
+          label: t('@astryx.tabBar.more'),
+          icon: <Icon icon="moreHorizontal" size="lg" />,
+        },
+      ]
+    : allItems;
   const search = readSearch(children);
   const hasSearch = search != null;
   const count = items.length;
-  const selectedIndex = items.findIndex(item => item.value === value);
+  // A tab past the fourth is shown inside More: More is the selected tab.
+  const isMoreSelected =
+    hasMore &&
+    (value === moreValue || overflow.some(item => item.value === value));
+  const selectedIndex = isMoreSelected
+    ? MAX_TABS - 1
+    : items.findIndex(item => item.value === value);
   const baseId = useId();
 
   // UIKit's motion and gestures belong to a finger (a coarse primary pointer,
@@ -877,13 +928,18 @@ export function TabBar({
       if (item.isDisabled === true) {
         return;
       }
-      if (item.value === value) {
+      // More again while it holds a tab returns its list, as iOS pops More's
+      // navigation stack: a reselect.
+      if (
+        item.value === value ||
+        (item.value === moreValue && isMoreSelected)
+      ) {
         onReselect?.(item.value);
       } else {
         onChange(item.value);
       }
     },
-    [value, onChange, onReselect],
+    [value, onChange, onReselect, moreValue, isMoreSelected],
   );
   const isSearchSelected = search != null && search.value === value;
   // The tab the search tab was chosen from: the leading circle holds it while
@@ -894,7 +950,14 @@ export function TabBar({
   if (!isSearchSelected && selectedIndex >= 0 && lastTabValue !== value) {
     setLastTabValue(value);
   }
-  const previousIndex = items.findIndex(item => item.value === lastTabValue);
+  // A section inside More: the circle holds More.
+  const isLastInMore =
+    hasMore &&
+    (lastTabValue === moreValue ||
+      overflow.some(item => item.value === lastTabValue));
+  const previousIndex = isLastInMore
+    ? MAX_TABS - 1
+    : items.findIndex(item => item.value === lastTabValue);
   // Under a finger, while searching, the leading circle holds the tab search
   // was chosen from; under a mouse the search tab is selected in place.
   const shownIndex =
@@ -987,8 +1050,16 @@ export function TabBar({
       stop?.focus({preventScroll: true});
     };
     if (isSearchSelected) {
-      if (selectedItem != null) {
-        flushSync(() => choose(selectedItem));
+      // Back to the tab search was chosen from (a section inside More, too),
+      // or, for a bar mounted on its search tab, to the tab the circle shows.
+      const back =
+        lastTabValue != null
+          ? (allItems.find(item => item.value === lastTabValue) ?? {
+              value: lastTabValue,
+            })
+          : selectedItem;
+      if (back != null) {
+        flushSync(() => choose(back));
       }
       moveFocusOn();
       return;
