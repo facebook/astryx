@@ -21,7 +21,10 @@ import {seekAnimations} from '@astryxdesign/interaction-harness';
 
 /** One background piece: its host element and its pseudo-element. */
 export interface Part {
-  /** `field`: the box around the input; `end`: the trailing part. */
+  /**
+   * `field`: the box around the input (the search landmark's first child,
+   * in every placement); `end`: the trailing part.
+   */
   readonly host: 'field' | 'end';
   readonly pseudo: '::before' | '::after';
 }
@@ -54,8 +57,8 @@ export interface PartBox {
 export function readPart(page: Page, part: Part): Promise<PartSample> {
   return page.evaluate(
     ({host, pseudo}) => {
-      const field = document.querySelector('[role="searchbox"]')
-        ?.parentElement as HTMLElement | null | undefined;
+      const field = document.querySelector('[role="search"]')
+        ?.firstElementChild as HTMLElement | null | undefined;
       const element =
         host === 'field'
           ? field
@@ -110,8 +113,8 @@ export async function samplePart(
 export function partBox(page: Page, part: Part): Promise<PartBox> {
   return page.evaluate(
     ({host, pseudo}) => {
-      const field = document.querySelector('[role="searchbox"]')
-        ?.parentElement as HTMLElement | null | undefined;
+      const field = document.querySelector('[role="search"]')
+        ?.firstElementChild as HTMLElement | null | undefined;
       const element =
         host === 'field'
           ? field
@@ -163,8 +166,8 @@ export async function waitForPartRest(
   await page.evaluate(
     ({host, pseudo, ms, need}) =>
       new Promise<void>((resolve, reject) => {
-        const field = document.querySelector('[role="searchbox"]')
-          ?.parentElement as HTMLElement | null | undefined;
+        const field = document.querySelector('[role="search"]')
+          ?.firstElementChild as HTMLElement | null | undefined;
         const element =
           host === 'field'
             ? field
