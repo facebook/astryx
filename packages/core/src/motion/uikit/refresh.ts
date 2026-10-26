@@ -39,8 +39,8 @@
  * the `@measure` task that will confirm or replace them. uikit.test.ts
  * enforces both.
  *
- * Each spring, duration and curve registers as an internal motion role
- * (motion/roles.ts), except the leaves registered below as not motion.
+ * Every value is an internal constant: spec:AST-094 FR4 names none of them as
+ * a motion role, so the table registers no role (motion/roles.ts).
  *
  * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md
  */
@@ -181,15 +181,12 @@ export const refreshControl = {
 } as const;
 
 /**
- * Registers the springs, durations and curves above as internal motion roles
- * (motion/roles.ts). Nothing registers on import: the refresh
- * control's touch layer calls it once before its first animation (it is
- * idempotent), so a page that never pulls ships no registry.
+ * Registers the table under `refreshControl` (motion/roles.ts) with no role:
+ * spec:AST-094 FR4 names none of its values, so each stays an internal
+ * constant. Nothing registers on import: the refresh control's touch layer
+ * calls it once before its first animation (it is idempotent), so a page that
+ * never pulls ships no registry.
  */
 export function registerRefreshControlTable(): void {
-  registerMotionTable('refreshControl', refreshControl, {
-    // Scrubbed by the finger's travel, not timed: part of the pull's mapping,
-    // like the rubber band.
-    exclude: ['revealCurve'],
-  });
+  registerMotionTable('refreshControl', refreshControl);
 }
