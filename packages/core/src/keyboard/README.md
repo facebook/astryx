@@ -48,6 +48,19 @@ exported from the package entry.
   sends a held tap's mousedown and click, aimed at whatever is under the
   finger by then, so the route swallows them on the document until the tap's
   click or the next touch, pointer press or key.
+- **The browser's own reveal pan (FR4):** `watchRevealPan(window, {owns})`
+  is the one building block every keyboard-aware surface uses for a browser
+  that pans the visual viewport to a focused field after the keyboard's
+  report. The surface calls `report()` on each report that changes the
+  height; on a later report, `isRevealPan(height)` says the visual viewport
+  has moved down with no touch, document scroll or zoom since, while a text
+  field the surface owns has focus, and `putBack()` pans it back without
+  scrolling the document, by scrolling into view a probe fixed where the
+  visual viewport sat at the report (or the element given, such as a
+  full-viewport dialog). Its one listener, a passive capture-phase
+  `touchstart` on the document, lives only while a surface watches.
+  ChatLayout watches under a finger; BottomSheet's hook watches while its
+  sheet is presented.
 - **BottomSheet's hook (FR4, FR5):** `useMobileKeyboard(options)` gives a
   fully expanded Tall sheet its keyboard scroll range, claims focus moves into
   it, puts back a document scroll while the page is locked, and dismisses the
@@ -75,22 +88,21 @@ guide:
 ```ts
 const guide = getKeyboardLayoutGuide(window);
 const unsubscribe = guide.subscribe(t => {
-  animator.animate(
-    {y: layoutLift - lift(t.to)},
-    {spring: t.spring},
-    {at: t.start},
-  );
+  rideKeyboard(animator, {y: layoutLift - lift(t.to)}, t);
 });
 ```
 
 Each transition is
-`{kind, from, to, start, velocity, animated, predicted, spring}`: heights in
-CSS px, `start` on the document timeline (in the past for a show Safari
-reported late, slightly ahead for a hide that starts after a blur), and the
-curve the keyboard moves on (`keyboard.spring`, its own and no motion role). Move
-your own elements on the compositor with the animator, from `start`, on that
-curve, and hand the translate back to the layout once the ride ends
-(ChatLayout does). Under Reduce Motion nothing travels with the keyboard
+`{kind, from, to, start, velocity, animated, predicted, curve, spring}`:
+heights in CSS px, `start` on the document timeline (in the past for a show
+reported after the keyboard started, slightly ahead for a hide that starts
+after a blur), and the curve the keyboard moves on: `curve`, Gboard's slide in
+Chrome on Android, or else `spring`, UIKit's keyboard spring
+(`keyboard.spring`), values and no motion role
+(architecture:react-component-runtime INV11). `rideKeyboard` moves your
+element on the compositor from `start` on that curve, or at once when the
+transition is not animated. Hand the translate back to the layout once the
+ride ends (ChatLayout does). Under Reduce Motion nothing travels with the keyboard
 (design:reduced-motion): the animator's default cross-fades on a touch screen
 and moves at once otherwise. `presentation(time)` gives the height presented
 at any time, for something that appears while the keyboard moves.
@@ -146,12 +158,49 @@ which starts it at the blur.
 - Firefox for Android reports the keyboard once it is up, and 34 to 104 ms
   later pans the visual viewport to a focused field the keyboard still
   covers. So BottomSheet reveals in the report's own event, and where a
-  browser has panned to the field after a report (the visual viewport moved
-  down with no touch, document scroll or zoom since), it lands the field with
-  its own scroller, leaving a smooth reveal under way to land it, and only
-  then scrolls the dialog's top back into view; a field it cannot bring up
-  keeps the browser's reveal. Every later reveal lands at once in the
-  report's frame. A browser that never pans keeps the smooth reveal.
+  browser has panned to the field after a report (`watchRevealPan`), it
+  lands the field with its own scroller, leaving a smooth reveal under way to
+  land it, and only then scrolls the dialog's top back into view; a field it
+  cannot bring up keeps the browser's reveal. Every later reveal lands at
+  once in the report's frame. A browser that never pans keeps the smooth
+  reveal.
+- Chrome 124 on Android (Gboard) animates its own pan to the focused
+  composer about 150 ms after the report, by the keyboard's whole height,
+  while the composer is still riding up; left alone, the composer ends
+  mid-screen. ChatLayout puts the pan back on its first frame
+  (`watchRevealPan`), so the visual viewport stays where it was and the
+  composer rests on the keyboard. Chromium 158 does not pan.
+
+## What the page sees (Chromium 158 with Gboard, Android 15)
+
+Measured frame by frame on the emulator, with a marker the page paints on each
+report and Gboard's top read from every recorded frame (`../motion/android/
+keyboard.ts` has the numbers and their sources). The guide reads these reports
+in a browser with the VirtualKeyboard API (`keyboardProfileOf`), and the
+keyboard module measures them from the visual viewport, as in every browser
+(`spec:AST-099` FR8, DEC-4).
+
+- Show: Gboard slides up over the page in about 267 ms. Chrome's one `resize`
+  of the visual viewport comes just after the slide starts: its first painted
+  frame trails Gboard's first moved frame by 14 to 35 ms. The guide dates the
+  show back by `androidKeyboard.showReportLagMs` and rides Gboard's show
+  curve, joining the slide where it is, so the composer stays on top of the
+  keyboard instead of being covered until the report.
+- Hide: Gboard starts down about `androidKeyboard.hideAfterBlurMs` after the
+  blur and leaves in about 167 ms; the `resize` comes mid-slide. The guide
+  starts the hide at the blur and takes the `resize` as its confirmation; a
+  hide nothing predicted (Back, which keeps the focus) rides from its report,
+  dated back `hideReportLagMs`.
+- When focus moves from one field to another through something that brings up
+  no keyboard (a popover's container), Chrome reports the keyboard gone and
+  back within about 50 ms. A hide reported while a field that gained focus less
+  than 150 ms ago still has it waits for the move to settle.
+- `navigator.virtualKeyboard` with `overlaysContent`, the keyboard's own
+  geometry, was measured and not used: in 12 shows its `geometrychange` was
+  painted 0 to 67 ms after Gboard started (against 14 to 35 ms for the
+  visual viewport), it failed to show the keyboard in 4 of 12 shows when set
+  on focus (1 of 24 when set as the touch lands), and it hides Chromium's bottom
+  toolbar on the keyboard's frame (+56 px of layout).
 
 ## Consumers
 
@@ -175,14 +224,16 @@ which starts it at the blur.
 
 ## Files
 
-| File                     | What it holds                                                                              |
-| ------------------------ | ------------------------------------------------------------------------------------------ |
-| `useMobileKeyboard.ts`   | The keyboard module: the height, its listeners, the focus routes, BottomSheet's hook.      |
-| `keyboardModel.ts`       | The clock-free core of the guide: transitions from keyboard reports and focus changes.     |
-| `keyboardLayoutGuide.ts` | One guide per window, fed by the keyboard module: the frame watch, the verification timer. |
-| `keyboardDismiss.ts`     | `keyboardDismissMode` for a scroller: dismissing the keyboard from a drag.                 |
-| `index.ts`               | Entry point.                                                                               |
+| File                     | What it holds                                                                                                         |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `useMobileKeyboard.ts`   | The keyboard module: the height, its listeners, the focus routes, BottomSheet's hook.                                 |
+| `keyboardModel.ts`       | The clock-free core of the guide: transitions from keyboard reports and focus changes.                                |
+| `keyboardLayoutGuide.ts` | One guide per window, fed by the keyboard module: the frame watch, the verification timer, the focus handoff.         |
+| `rideKeyboard.ts`        | Moves an element with the keyboard on the curve its transition publishes, or at once (tests: `rideKeyboard.test.ts`). |
+| `keyboardDismiss.ts`     | `keyboardDismissMode` for a scroller: dismissing the keyboard from a drag.                                            |
+| `index.ts`               | Entry point.                                                                                                          |
 
-The timing constants live in `../motion/uikit/keyboard.ts`, the spring in
+The timing constants live in `../motion/uikit/keyboard.ts` (iOS) and
+`../motion/android/keyboard.ts` (Chrome with Gboard), the spring in
 `keyboard.spring`, the duration in `keyboardNotification` (composed into
 `timing` as `keyboardNotificationMs`).

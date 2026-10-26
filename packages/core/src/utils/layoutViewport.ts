@@ -5,7 +5,8 @@
  * @input A window: its innerHeight and innerWidth, its visual viewport's
  *   width and scale, and its document's root box
  * @output layoutViewportHeight: the layout viewport's height in layout px,
- *   pinch zoom included, less a classic horizontal scrollbar
+ *   pinch zoom included, less a classic horizontal scrollbar (its thickness
+ *   measured once per document and zoom); __resetLayoutViewportForTest
  * @position Internal shared measurement (not re-exported from the utils
  *   entry): the keyboard module's height (spec:AST-099 FR2), BottomSheet's
  *   keyboard obstruction, ChatLayout's lift, and any layout that sizes
@@ -35,7 +36,10 @@
  * thickness of a scrollbar that takes room. Where scrollbars overlay the
  * content (every phone) that thickness is 0, so the room a hidden toolbar adds
  * to `innerHeight` (Chrome on Android sizes the root to the viewport with its
- * toolbar shown) is never taken for one.
+ * toolbar shown) is never taken for one. The thickness is measured once per
+ * document and zoom (a probe element writes to the document and forces a
+ * layout), so every later measurement stays one layout read
+ * (architecture:react-component-runtime INV11).
  */
 
 /**
@@ -68,8 +72,27 @@ function horizontalScrollbarHeight(win: Window): number {
   return Math.min(gap, scrollbarThickness(win.document));
 }
 
+// The scrollbar thickness each document measured, at the device pixel ratio
+// it measured it at: a browser zoom changes the ratio, and with it how many
+// CSS px a classic scrollbar takes.
+let thicknesses = new WeakMap<
+  Document,
+  {devicePixelRatio: number; thickness: number}
+>();
+
 /** How much room a scrollbar takes from a scrolling box: 0 where overlaid. */
 function scrollbarThickness(doc: Document): number {
+  const devicePixelRatio = doc.defaultView?.devicePixelRatio ?? 1;
+  const known = thicknesses.get(doc);
+  if (known != null && known.devicePixelRatio === devicePixelRatio) {
+    return known.thickness;
+  }
+  const thickness = measureScrollbarThickness(doc);
+  thicknesses.set(doc, {devicePixelRatio, thickness});
+  return thickness;
+}
+
+function measureScrollbarThickness(doc: Document): number {
   const probe = doc.createElement('div');
   probe.style.position = 'absolute';
   probe.style.top = '-200px';
@@ -81,4 +104,9 @@ function scrollbarThickness(doc: Document): number {
   const thickness = probe.offsetHeight - probe.clientHeight;
   probe.remove();
   return thickness;
+}
+
+/** Forgets every measured scrollbar thickness. Tests only. */
+export function __resetLayoutViewportForTest(): void {
+  thicknesses = new WeakMap();
 }
