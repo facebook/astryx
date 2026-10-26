@@ -21,7 +21,7 @@ theme's motion roles (`spec:AST-094` FR4), not from this table.
 | `MEASUREMENTS.md`     | The UIKit reference captures each unconfirmed value still needs.                                                        |
 | `decay.ts`            | UIScrollView's momentum coast.                                                                                          |
 | `rubberBand.ts`       | UIScrollView's resistance past an edge, and its inverse.                                                                |
-| `projection.ts`       | Release targets: the rest point nearest the projected coast; paging.                                                    |
+| `projection.ts`       | Release targets: the rest point nearest the projected coast.                                                            |
 
 Component-specific values (a sheet's detents, a switch's geometry, a context
 menu's timeline) live in a domain file per component, `uikit/<component>.ts`,
