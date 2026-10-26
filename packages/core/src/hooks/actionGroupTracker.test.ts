@@ -434,6 +434,48 @@ describe('createActionGroupTracker: options for other trackers', () => {
     }
   });
 
+  it('lets an activation with detail 0 (keyboard, assistive technology) through while it waits for the browser\u2019s click (spec:AST-094 FR21)', () => {
+    const add = vi.spyOn(window, 'addEventListener');
+    const remove = vi.spyOn(window, 'removeEventListener');
+    try {
+      const group = tracker({swallowsNativeClick: true});
+      group.begin(50, 10);
+      add.mockClear();
+      group.end();
+      const gone = new Set(remove.mock.calls.map(([, listener]) => listener));
+      const swallow = add.mock.calls.find(
+        ([type, listener, capture]) =>
+          type === 'click' && capture === true && !gone.has(listener),
+      )?.[1] as (event: unknown) => void;
+      remove.mockClear();
+      // A screen reader's or a key's activation is not the touch's click: it
+      // passes, and the swallower keeps waiting for the touch's own.
+      const activation = {
+        isTrusted: true,
+        detail: 0,
+        preventDefault: vi.fn(),
+        stopImmediatePropagation: vi.fn(),
+      };
+      swallow(activation);
+      expect(activation.preventDefault).not.toHaveBeenCalled();
+      expect(activation.stopImmediatePropagation).not.toHaveBeenCalled();
+      expect(remove).not.toHaveBeenCalled();
+      // The touch's own click (detail 1) is still taken once.
+      const touchClick = {
+        isTrusted: true,
+        detail: 1,
+        preventDefault: vi.fn(),
+        stopImmediatePropagation: vi.fn(),
+      };
+      swallow(touchClick);
+      expect(touchClick.preventDefault).toHaveBeenCalled();
+      expect(touchClick.stopImmediatePropagation).toHaveBeenCalled();
+    } finally {
+      add.mockRestore();
+      remove.mockRestore();
+    }
+  });
+
   it('a press or a key before the browser\u2019s click ends the swallowing; without the option nothing stays listening', () => {
     const add = vi.spyOn(window, 'addEventListener');
     const remove = vi.spyOn(window, 'removeEventListener');
