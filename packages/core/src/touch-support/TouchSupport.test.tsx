@@ -5,8 +5,10 @@
  * @input TouchSupport, useTouchSupport, and React's client and server renderers
  * @output INV13's install checks: two installs register once; an install in a
  *   server render leaves the HTML unchanged; a page without it keeps the plain
- *   behavior; isInstalled() before and after; the object exposes nothing else;
- *   an install adds no listeners
+ *   behavior; isInstalled() before and after; a fine-pointer page registers
+ *   nothing and one that gains a coarse pointer later registers then; the
+ *   object exposes nothing else; an install adds no window or document
+ *   listeners
  * @position Unit and server-render tests of packages/core/src/touch-support
  *   (architecture:react-component-runtime INV13)
  */
@@ -39,6 +41,47 @@ async function freshPage() {
   };
 }
 
+/**
+ * The page's pointers as `(any-pointer: coarse)` reports them: a stubbed
+ * `matchMedia` whose query can gain a coarse pointer later, like a tablet
+ * attached to a laptop.
+ */
+function stubPointers({coarse}: {coarse: boolean}) {
+  let matches = coarse;
+  const listeners = new Set<() => void>();
+  const query = {
+    media: '(any-pointer: coarse)',
+    get matches() {
+      return matches;
+    },
+    addEventListener: vi.fn((type: string, listener: () => void) => {
+      if (type === 'change') {
+        listeners.add(listener);
+      }
+    }),
+    removeEventListener: vi.fn((type: string, listener: () => void) => {
+      if (type === 'change') {
+        listeners.delete(listener);
+      }
+    }),
+  };
+  const matchMedia = vi.fn((media: string) => {
+    expect(media).toBe('(any-pointer: coarse)');
+    return query;
+  });
+  vi.stubGlobal('matchMedia', matchMedia);
+  return {
+    query,
+    listeners,
+    gainCoarsePointer() {
+      matches = true;
+      for (const listener of [...listeners]) {
+        listener();
+      }
+    },
+  };
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -54,6 +97,7 @@ describe('TouchSupport', () => {
   });
 
   it('reports isInstalled() before and after install(), and components render once more with the module', async () => {
+    stubPointers({coarse: true});
     const {TouchSupport, useTouchSupport, touchModule, Probe} =
       await freshPage();
     const seen: unknown[] = [];
@@ -80,6 +124,7 @@ describe('TouchSupport', () => {
   });
 
   it('registers once when install() is called twice', async () => {
+    stubPointers({coarse: true});
     const {TouchSupport, subscribeTouchModule} = await freshPage();
     const listener = vi.fn();
     subscribeTouchModule(listener);
@@ -100,6 +145,7 @@ describe('TouchSupport', () => {
   });
 
   it('leaves server HTML unchanged, and the page hydrates without a mismatch', async () => {
+    stubPointers({coarse: true});
     const {TouchSupport, Probe} = await freshPage();
     const before = renderToString(<Probe />);
     TouchSupport.install();
@@ -135,12 +181,48 @@ describe('TouchSupport', () => {
     expect(Object.isFrozen(TouchSupport)).toBe(true);
   });
 
-  it('adds no listeners when it installs', async () => {
+  it('adds no listeners when it installs where a coarse pointer is present', async () => {
+    const {query} = stubPointers({coarse: true});
     const {TouchSupport} = await freshPage();
     const onWindow = vi.spyOn(window, 'addEventListener');
     const onDocument = vi.spyOn(document, 'addEventListener');
     TouchSupport.install();
     expect(onWindow).not.toHaveBeenCalled();
     expect(onDocument).not.toHaveBeenCalled();
+    expect(query.addEventListener).not.toHaveBeenCalled();
+  });
+
+  it('registers nothing on a fine-pointer-only page, and waits with one change listener', async () => {
+    const {query, listeners} = stubPointers({coarse: false});
+    const {TouchSupport, subscribeTouchModule, Probe} = await freshPage();
+    render(<Probe />);
+    const registered = vi.fn();
+    subscribeTouchModule(registered);
+    const onWindow = vi.spyOn(window, 'addEventListener');
+    const onDocument = vi.spyOn(document, 'addEventListener');
+    act(() => {
+      TouchSupport.install();
+      TouchSupport.install();
+    });
+    expect(registered).not.toHaveBeenCalled();
+    expect(screen.getByTestId('probe').textContent).toBe('plain');
+    expect(TouchSupport.isInstalled()).toBe(true);
+    expect(onWindow).not.toHaveBeenCalled();
+    expect(onDocument).not.toHaveBeenCalled();
+    expect(query.addEventListener).toHaveBeenCalledTimes(1);
+    expect(listeners.size).toBe(1);
+  });
+
+  it('registers when a coarse pointer appears later, then stops listening', async () => {
+    const {listeners, gainCoarsePointer} = stubPointers({coarse: false});
+    const {TouchSupport, Probe} = await freshPage();
+    render(<Probe />);
+    TouchSupport.install();
+    expect(screen.getByTestId('probe').textContent).toBe('plain');
+    act(() => {
+      gainCoarsePointer();
+    });
+    expect(screen.getByTestId('probe').textContent).toBe('touch');
+    expect(listeners.size).toBe(0);
   });
 });

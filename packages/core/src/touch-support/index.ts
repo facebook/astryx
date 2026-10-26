@@ -12,7 +12,13 @@
  */
 
 import {touchModule} from './touchModule';
-import {getTouchModule, installTouchModule} from './touchSupportRegistry';
+import {installTouchModule} from './touchSupportRegistry';
+
+/** Whether some input is a coarse pointer, the condition for registering. */
+const ANY_COARSE_POINTER = '(any-pointer: coarse)';
+
+/** Whether `install()` has run on this page. */
+let hasRun = false;
 
 /**
  * Touch support for Astryx components: the gesture core and the animator,
@@ -29,9 +35,10 @@ import {getTouchModule, installTouchModule} from './touchSupportRegistry';
  * - Components with touch behavior use it under a finger. Without it they
  *   keep their plain behavior and stay fully usable, and a tap still acts as
  *   a click.
- * - Motion such as `useAnimatedLayout` works without it.
- * - People using only a mouse pay nothing: on a fine pointer the module
- *   registers nothing.
+ * - Layout and presence motion works without it.
+ * - People using only a mouse pay nothing: `install()` registers the module
+ *   only where some input is a coarse pointer, and registers it when one
+ *   appears later, such as a tablet attached to a laptop.
  * - A swipe-only action still needs a non-touch path, such as a button or a
  *   menu item, for a mouse, a keyboard, or a page without touch support.
  * - Reduce Motion is respected.
@@ -39,16 +46,34 @@ import {getTouchModule, installTouchModule} from './touchSupportRegistry';
  *   server, so server HTML is unchanged.
  */
 const TouchSupport = Object.freeze({
-  /** Installs the touch module for this page; later calls do nothing. */
+  /**
+   * Installs touch support for this page: the module registers now where some
+   * input is a coarse pointer, or when one appears. Later calls do nothing.
+   */
   install(): void {
-    if (typeof window === 'undefined') {
+    if (typeof window === 'undefined' || hasRun) {
       return;
     }
-    installTouchModule(touchModule);
+    hasRun = true;
+    if (typeof window.matchMedia !== 'function') {
+      return;
+    }
+    const query = window.matchMedia(ANY_COARSE_POINTER);
+    if (query.matches) {
+      installTouchModule(touchModule);
+      return;
+    }
+    const onChange = () => {
+      if (query.matches) {
+        query.removeEventListener('change', onChange);
+        installTouchModule(touchModule);
+      }
+    };
+    query.addEventListener('change', onChange);
   },
   /** Whether `install()` has run on this page. */
   isInstalled(): boolean {
-    return getTouchModule() !== null;
+    return hasRun;
   },
 });
 
