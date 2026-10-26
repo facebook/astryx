@@ -227,7 +227,9 @@ a measured, sourced difference exists.
   wins and the others fail, unless both allow simultaneous recognition. A
   recognizer that requires another to fail MUST hold its recognition until
   that one fails, and MUST fail if that one recognizes. When several recognize
-  on the same event, the innermost element's recognizer MUST win.
+  on the same event, the innermost element's recognizer MUST win. Watchers
+  are exempt from this exclusivity: they recognize alongside a claiming winner
+  and are never cancelled (DEC-7).
 - **FR16 — Gestures keep the event clock.** Recognizers MUST read time from the
   input events' timestamps. Durations (a long press, the interval between
   taps) MUST be deadlines on that clock, so a blocked main thread delays the
