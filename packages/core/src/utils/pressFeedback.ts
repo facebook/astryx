@@ -2,9 +2,8 @@
 
 /**
  * @file pressFeedback.ts
- * @input The press state machine (pressGesture.ts), the document's pointer,
- *   scroll and visibility events, and the release clock's theme motion role
- *   variable (interactionOverlay.stylex.ts)
+ * @input The press state machine (pressGesture.ts) and the document's
+ *   pointer, scroll and visibility events
  * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, pressableProps and
  *   installPressFeedback
  * @position The DOM half of the touch press model: one delegated controller
@@ -33,7 +32,6 @@
  * utils/interactionOverlay.stylex.ts and pressFeedback.test.ts.
  */
 
-import {pressReleaseRoles} from './rowPressLayer.stylex';
 import type {PressGesture, PressPaint, PressStep} from './pressGesture';
 import {
   idlePressGesture,
@@ -104,13 +102,10 @@ const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
 };
 
 /**
- * How long a timer runs on `element`. The release's clock is the theme motion
- * role `timing.press.highlightOutMs` (`spec:AST-094` FR4), read off the
- * element's role variable when the release starts: the variable the
- * stylesheet's release plays (interactionOverlay.stylex.ts), so a theme that
- * retunes it moves both and the attribute never leaves before the fade ends.
- * Read directly, not through the motion table, so a pressable component
- * carries no table (`architecture:component-style-authoring` INV6).
+ * How long a timer runs on `element`. The release's clock is the table's
+ * (PRESS_FADE_MS, the value the stylesheet's release plays), capped under
+ * reduced motion as the stylesheet caps its fade (`design:reduced-motion`
+ * DR2: a touch transition finishes in 200 ms or less).
  */
 function timerMs(
   kind: NonNullable<PressStep['timer']>,
@@ -119,23 +114,13 @@ function timerMs(
   if (kind !== 'fade') {
     return TIMER_MS[kind];
   }
-  const value = element.ownerDocument.defaultView
-    ?.getComputedStyle(element)
-    .getPropertyValue(pressReleaseRoles.duration)
-    .trim();
-  const match = value == null ? null : /^([\d.]+)(ms|s)$/.exec(value);
-  const ms =
-    match == null
-      ? TIMER_MS.fade
-      : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
-  // design:reduced-motion DR2: under reduced motion a touch transition
-  // finishes in 200 ms or less, whatever the theme sets (the stylesheet caps
-  // its fade the same way).
   const reduced =
     element.ownerDocument.defaultView?.matchMedia?.(
       '(prefers-reduced-motion: reduce)',
     ).matches ?? false;
-  return reduced ? Math.min(ms, REDUCED_MOTION_MAX_MS) : ms;
+  return reduced
+    ? Math.min(TIMER_MS.fade, REDUCED_MOTION_MAX_MS)
+    : TIMER_MS.fade;
 }
 
 /** The longest a touch transition runs under reduced motion (DR2). */

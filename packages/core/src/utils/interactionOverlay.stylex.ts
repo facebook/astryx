@@ -9,9 +9,8 @@
  * @input Uses StyleX and the semantic interaction-overlay color tokens
  * @output Exports reusable background-color and background-image state styles,
  *   the touch press's registered strength variable (`pressVars`) and its
- *   clock (`pressConsts`). The list row's compositor press layer, its clocks
- *   and the release's theme roles are internal (rowPressLayer.ts,
- *   rowPressLayer.stylex.ts)
+ *   clock (`pressConsts`). The list row's compositor press layer and its
+ *   clocks are internal (rowPressLayer.ts, rowPressLayer.stylex.ts)
  * @position Internal styling utility for interactive core surfaces
  *
  * Every surface that paints a press composes one of these (or carries its own
@@ -86,7 +85,7 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
-import {cellPressConsts, pressReleaseRoles} from './rowPressLayer.stylex';
+import {cellPressConsts} from './rowPressLayer.stylex';
 
 /**
  * The touch press's strength on the surface the controller painted, 0 to 1.
@@ -116,12 +115,13 @@ export const pressConsts = stylex.defineConsts({
   releaseMs: 200,
 });
 
-/** The release's clock as CSS: the role, or the table's value. */
-const PRESS_RELEASE_DURATION = `var(${pressReleaseRoles.duration}, ${pressConsts.releaseMs}ms)`;
+/** The release's clock as CSS: the table's value. */
+const PRESS_RELEASE_DURATION = `${pressConsts.releaseMs}ms`;
 /**
- * Under reduced motion a theme's clock is capped at 200 ms
+ * Under reduced motion the clock is capped at 200 ms
  * (`design:reduced-motion` DR2: a touch transition is opacity only and
- * finishes in 200 ms or less); pressFeedback.ts caps its timer the same way.
+ * finishes in 200 ms or less), so a longer table value never outlasts it;
+ * pressFeedback.ts caps its timer the same way.
  */
 const PRESS_RELEASE_DURATION_REDUCED = `min(${PRESS_RELEASE_DURATION}, 200ms)`;
 
@@ -177,7 +177,7 @@ const pressRelease = stylex.keyframes({
  * and is so front-loaded (strength 0.05 at the midpoint) that the release
  * would read as half its clock.
  */
-const RELEASE_EASE = `var(${pressReleaseRoles.curve}, ${cellPressConsts.cellReleaseEase})`;
+const RELEASE_EASE = cellPressConsts.cellReleaseEase;
 
 /**
  * The touch press's strength and its release, on the element the controller
