@@ -8,6 +8,7 @@
 
 import {describe, it, expect, afterEach} from 'vitest';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {swizzle} from '../swizzle.mjs';
@@ -57,4 +58,35 @@ describe('swizzle.copy — path safety', () => {
     const r2 = await swizzle('Button', {cwd: REPO, output: './' + OUT, overwrite: true});
     expect(r2.data.filesCopied).toBe(r.data.filesCopied);
   }, SLOW);
+});
+
+describe('swizzle.copy — the gh feedback line', () => {
+  afterEach(() => {
+    fs.rmSync(path.join(REPO, OUT), {recursive: true, force: true});
+  });
+
+  it(
+    'offers the gh command when gh is on PATH, without running gh',
+    async () => {
+      // A gh that records each run: a swizzle must not wait on it.
+      const bin = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-swizzle-gh-'));
+      const ran = path.join(bin, 'ran');
+      fs.writeFileSync(
+        path.join(bin, 'gh'),
+        `#!/bin/sh\necho run >> ${JSON.stringify(ran)}\nexit 0\n`,
+      );
+      fs.chmodSync(path.join(bin, 'gh'), 0o755);
+      const original = process.env.PATH;
+      process.env.PATH = [bin, original].join(path.delimiter);
+      try {
+        const r = await swizzle('Button', {cwd: REPO, output: './' + OUT});
+        expect(r.data.feedback?.ghCommand).toMatch(/^gh issue create --repo /);
+        expect(fs.existsSync(ran)).toBe(false);
+      } finally {
+        process.env.PATH = original;
+        fs.rmSync(bin, {recursive: true, force: true});
+      }
+    },
+    SLOW,
+  );
 });
