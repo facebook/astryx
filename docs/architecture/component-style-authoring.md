@@ -17,7 +17,13 @@ verified_by:
     internal/eslint-plugin-astryx/no-stylex-null-override.test.mjs,
     internal/eslint-plugin-astryx/no-style-only-wrapper.test.mjs,
   ]
-deciding_specs: [spec:AST-080/DEC-4, spec:AST-017/DEC-26, spec:AST-017/DEC-29]
+deciding_specs:
+  [
+    spec:AST-080/DEC-4,
+    spec:AST-080/DEC-5,
+    spec:AST-017/DEC-26,
+    spec:AST-017/DEC-29,
+  ]
 ---
 
 # Component style authoring architecture
@@ -101,9 +107,10 @@ not evidence of conformance or violation.
   in, including its transitive modules, and that component's gzip CSS delta in
   its package stylesheet (`spec:AST-080` FR8). A feature that runs only on a
   coarse pointer and adds more than 2 KB gzip of JavaScript or 1 KB gzip of CSS
-  to one component is flagged. Its pull request either loads that JavaScript
-  lazily, only when a coarse pointer needs it, so the component's import does
-  not carry it, or justifies the cost. For flagged CSS, its pull request
+  to one component is flagged. Its pull request either takes that JavaScript
+  from the global touch and gesture module (`architecture:react-component-runtime`
+  INV13), so the component's import does not carry it, or justifies
+  the cost. For flagged CSS, its pull request
   justifies the cost, because that CSS stays in the package stylesheet
   (`spec:AST-080` FR1, FR8). Sizes are gzip at the default compression level,
   and 1 KB is 1,024 bytes; measured as `spec:AST-080` FR8 measures CSS, a

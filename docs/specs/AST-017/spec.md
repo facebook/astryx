@@ -373,7 +373,10 @@ one removal merged ahead of the decision to allow it.
   live inside one optional `experimental` prop object; omitting that object preserves
   the component's stable defaults and behavior. A behavior or utility module without a public
   contract, such as motion, gesture, or keyboard handling, stays internal: it is
-  never exported, as experimental or otherwise. In Core, an experimental public
+  never exported, as experimental or otherwise, except through Core's
+  `./internal/*` subpaths, which are reserved for Astryx's own packages,
+  undocumented, outside the compatibility promise, versioned in lockstep with
+  Core, and limited by lint to Core and Lab (`architecture:react-component-runtime` INV13). In Core, an experimental public
   API's status is
   visible at the call site where it is used, carried by the name the caller
   writes, not only in docs, declarations, or a file path; a component's
