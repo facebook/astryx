@@ -17,10 +17,10 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {cubicBezier} from '../motion/bezier';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {popover, springs, timing} from '../motion/uikit';
+import {isPresentationShield} from '../Layer/presentationHold';
 import {
   createPopoverSurfaceMotion,
   POPOVER_EXIT_COPY_ATTRIBUTE,
-  POPOVER_HOLD_ATTRIBUTE,
   popoverCollapsedState,
   popoverFrame,
   type PopoverSurfaceGeometry,
@@ -521,8 +521,11 @@ describe('createPopoverSurfaceMotion', () => {
       restore('hidePopover', original.hide);
     });
 
+    // The layer runtime's own hold: its shield, inside the layer.
     const holdOf = (element: HTMLElement) =>
-      element.querySelector<HTMLElement>(`[${POPOVER_HOLD_ATTRIBUTE}]`);
+      [...element.children].find((node): node is HTMLElement =>
+        isPresentationShield(node),
+      ) ?? null;
 
     it('takes every touch until the present spring settles, as UIKit ignores touches during the presentation', async () => {
       const {element, motion} = create();
@@ -535,12 +538,10 @@ describe('createPopoverSurfaceMotion', () => {
       expect(hold!.getAttribute('popover')).toBe('manual');
       expect(hold!.getAttribute('aria-hidden')).toBe('true');
       expect(shown.has(hold!)).toBe(true);
-      const style = hold!.getAttribute('style') ?? '';
-      expect(style).toContain('position: fixed');
-      expect(style).toContain('inset: 0');
-      expect(style).toContain('background: transparent');
+      expect(hold!.style.position).toBe('fixed');
+      expect(hold!.style.background).toBe('transparent');
       // No pan starts on it; a pinch still zooms the page.
-      expect(style).toContain('touch-action: pinch-zoom');
+      expect(hold!.style.touchAction).toBe('pinch-zoom');
       // Still there well into the presentation (UIKit ignored a tap 60 ms
       // in), gone once the spring has settled.
       clock += 300;
@@ -554,7 +555,8 @@ describe('createPopoverSurfaceMotion', () => {
       await Promise.resolve();
       await Promise.resolve();
       expect(holdOf(element)).toBeNull();
-      expect(shown.has(hold!)).toBe(false);
+      // Out of the document, so out of the top layer with it.
+      expect(hold!.isConnected).toBe(false);
     });
 
     it('ignores a tap without a trace: it moves no focus and fires no click', () => {
@@ -586,9 +588,7 @@ describe('createPopoverSurfaceMotion', () => {
       reset.motion.reset();
       expect(holdOf(reset.element)).toBeNull();
       // No hold is left in the top layer (the dismissal's copy is, by design).
-      expect(
-        [...shown].filter(node => node.hasAttribute(POPOVER_HOLD_ATTRIBUTE)),
-      ).toEqual([]);
+      expect([...shown].filter(node => isPresentationShield(node))).toEqual([]);
     });
 
     it('holds under Reduce Motion too, for the length of the cross-fade', async () => {
@@ -607,10 +607,16 @@ describe('createPopoverSurfaceMotion', () => {
       expect(holdOf(element)).toBeNull();
     });
 
-    it('places no hold where the browser has no popovers', () => {
+    it('holds where the browser has no popovers too, outside the top layer', () => {
       Reflect.deleteProperty(HTMLElement.prototype, 'showPopover');
       const {element, motion} = create();
       motion.enter(() => GEOMETRY);
+      const hold = holdOf(element);
+      // Not in the top layer, so it covers only what a fixed element can:
+      // the tap it does take is still a tap inside the popover.
+      expect(hold).not.toBeNull();
+      expect(shown.has(hold!)).toBe(false);
+      motion.reset();
       expect(holdOf(element)).toBeNull();
     });
   });

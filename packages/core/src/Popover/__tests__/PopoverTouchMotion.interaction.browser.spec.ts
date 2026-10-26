@@ -57,6 +57,11 @@ import {popoverCollapsedState, popoverFrame} from '../popoverSurfaceFrame';
 
 const storybook = withStorybook(test);
 
+// The layer runtime's presentation hold puts its shield inside the layer: a
+// manual popover, hidden from assistive technology, that is not the exit
+// copy (`holdPresentation`, Layer/presentationHold.ts).
+const SHIELD = '[popover][aria-hidden="true"]:not([data-astryx-popover-exit])';
+
 interface Box {
   x: number;
   y: number;
@@ -210,7 +215,9 @@ async function installTouchLog(page: Page) {
         if (log.down.length > 1) {
           log.held.push(
             event.target instanceof Element &&
-              event.target.closest('[data-astryx-popover-hold]') != null,
+              event.target.closest(
+                '[popover][aria-hidden="true"]:not([data-astryx-popover-exit])',
+              ) != null,
           );
         }
       },
@@ -344,7 +351,7 @@ test('a tap outside during the presentation is ignored: the presentation finishe
   // It was the hold that took the tap, inside the popover's own subtree.
   expect(log.held).toEqual([true]);
   // Once it is in, the hold is gone and a tap outside dismisses it.
-  await expect(page.locator('[data-astryx-popover-hold]')).toHaveCount(0);
+  await expect(page.locator(SHIELD)).toHaveCount(0);
   await story.driver.tap(outside);
   await expect(story.trigger).toHaveAttribute('aria-expanded', 'false');
 });
