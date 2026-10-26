@@ -40,9 +40,9 @@
  * at once; if the exit never reports its end (animations disabled) the
  * dialog closes anyway once its duration and a frame budget have passed. The
  * touch window and that backstop derive from the lengths of the springs the
- * animator plays (resolved as the animator resolves them), so they follow the
- * springs. The timings decide when a touch acts and are not motion roles
- * (`spec:AST-094` FR4, DEC-3).
+ * animator plays, so they follow the springs. Neither the springs nor the
+ * timings are motion roles (`spec:AST-094` FR4, DEC-3): they are read from the
+ * alert's tables, and no theme variable changes them.
  *
  * When `isEnabled` is false (a mouse, the inline preview) nothing here
  * acts: the Dialog opens and closes with the theme's motion.
@@ -64,7 +64,6 @@ import {
   type SpringDescription,
 } from '../motion/spring';
 import {holdPresentation, isInHeldLayer} from '../Layer/presentationHold';
-import {resolveMotion} from '../motion/resolveMotion';
 import {alertController} from '../motion/uikit/alert';
 import {springs} from '../motion/uikit/springs';
 
@@ -121,11 +120,11 @@ function fadeFromHere(
   );
 }
 
-function touchWindowMs(element: Element | null): number {
+function touchWindowMs(): number {
   const {present} = alertController;
   // UIKit's frame or two after the spring, from the measured pair.
   const lag = present.ignoresTouchesForMs - present.durationMs;
-  return springLengthMs(resolveMotion(element, springs.alertPresent)) + lag;
+  return springLengthMs(springs.alertPresent) + lag;
 }
 
 type Status = 'hidden' | 'open' | 'leaving';
@@ -257,9 +256,7 @@ export function useAlertMotion({
         hold(handle.finished, 'viewport');
         return;
       }
-      const window = windowAfterStart(handle.started, () =>
-        touchWindowMs(elementRef.current),
-      );
+      const window = windowAfterStart(handle.started, touchWindowMs);
       hold(window.end, 'viewport', window.cancel);
     };
     if (now === 'open' && was === 'hidden') {
@@ -318,8 +315,7 @@ export function useAlertMotion({
         exitRef.current = null;
         setIsLeaving(false);
       },
-      springLengthMs(resolveMotion(elementRef.current, springs.alertDismiss)) +
-        EXIT_BACKSTOP_MS,
+      springLengthMs(springs.alertDismiss) + EXIT_BACKSTOP_MS,
     );
     return () => clearTimeout(backstop);
   }, [isLeaving]);

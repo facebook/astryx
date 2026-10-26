@@ -535,6 +535,36 @@ describe('useAlertMotion', () => {
     expect(motion().isPresented).toBe(false);
   });
 
+  it('takes no theme variable: `--motion-springs-alert-*` on its theme changes neither the spring it plays nor the touch window', async () => {
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+    render(
+      <div
+        data-astryx-theme="slow"
+        style={{
+          ['--motion-springs-alert-present' as string]: '0.8s 0',
+          ['--motion-springs-alert-dismiss' as string]: '0.8s 0',
+        }}>
+        <Alert isOpen isEnabled />
+      </div>,
+    );
+    const {panel} = animators();
+    expect(panel.calls.find(call => call.kind === 'animate')).toMatchObject({
+      spring: springs.alertPresent,
+    });
+    now = 2000;
+    await act(async () => {
+      panel.starts.at(-1)?.(2000);
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(alertController.present.ignoresTouchesForMs - 1);
+    });
+    expect(motion().acceptsTouches()).toBe(false);
+    await act(async () => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(motion().acceptsTouches()).toBe(true);
+  });
+
   it("measures UIKit's durations as its springs' lengths, so the alert keeps UIKit's 435 ms window", () => {
     for (const [spring, measured] of [
       [springs.alertPresent, alertController.present.durationMs],
