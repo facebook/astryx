@@ -174,6 +174,10 @@ those contracts.
   registered ancestor boundary. From that element, the module walks up each
   ancestor to the boundary: at every level, each following in-flow sibling
   moves by the distance layout moved it, measured before and after. The walk
+  visits only the following element siblings at each ancestor level, through
+  `parentElement` and `nextElementSibling`, never descending into a subtree, so
+  its cost grows with depth plus following siblings and it needs no
+  TreeWalker, which visits subtrees and text nodes. It
   stops at the boundary and never passes it, so content outside the boundary
   takes its final place at once. Fixed, sticky, and other out-of-flow elements
   are skipped and take their final place at once, and a nested boundary moves
