@@ -31,7 +31,7 @@ architecture:
     architecture:public-component-api,
   ]
 contributing: []
-system_specs: [spec:AST-005/DEC-1, spec:AST-085]
+system_specs: [spec:AST-005/DEC-1, spec:AST-020, spec:AST-085]
 ---
 
 # NavHeadingMenu component contract
@@ -41,10 +41,10 @@ system_specs: [spec:AST-005/DEC-1, spec:AST-085]
 | Area                    | Contract                                                                                                                                                                                                                                                              |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Public contract         | `NavHeadingMenu` with `children`, `size` (`sm`, `md`, `lg`; default `md`), and `minWidth`; `NavHeadingMenuItem` with `label`, `description`, `icon`, `href`, `onClick`, and `isDisabled`; targets `nav-heading-menu` and `nav-heading-menu-item` with a `size` state. |
-| Behavior                | A `role="menu"` list of `menuitem` rows inside a heading popover, with arrow, Home, End, typeahead, Enter, Space, and Escape support. Selecting an enabled item runs it and closes the heading menu.                                                                  |
+| Behavior                | A `role="menu"` list of `menuitem` rows inside a heading popover, with arrow, Home, End, typeahead, Enter, Space, and Escape support. Selecting an enabled item runs it and, where the host heading supplies a close action, closes the heading menu.                 |
 | End-user impact         | Users switch products or accounts from the heading menu by pointer or keyboard; disabled rows are skipped by keyboard and typeahead.                                                                                                                                  |
 | Builder impact          | None.                                                                                                                                                                                                                                                                 |
-| Compatibility/readiness | Records shipped behavior; no public change. Four implementation gaps (see Current-state impact).                                                                                                                                                                      |
+| Compatibility/readiness | Records shipped behavior; no public change. Six implementation gaps (see Current-state impact).                                                                                                                                                                       |
 | Review checks           | Reject losing `menu`/`menuitem` roles to caller props, keyboard focus landing on a disabled item, or a caller `onKeyDown` that silently disables the keyboard model.                                                                                                  |
 | Governing rules         | `family:navigation-destinations` FR7; `architecture:interaction-modality`; `architecture:component-theming-surface`; `architecture:layer-runtime`.                                                                                                                    |
 
@@ -74,12 +74,21 @@ Consumer migration instructions belong in consumer docs and release notes.
   `href` keeps its link destination and does not cancel the click, so a pointer
   click navigates even though the item reports `aria-disabled` and skips its
   `onClick`. `family:navigation-destinations` FR7 has members keep their own
-  disabled semantics.
+  disabled semantics, and `spec:AST-085` FR2 has a disabled control block
+  navigation.
 - **The documented composition nests two menus.** Passed as the `menu` of
   SideNavHeading or TopNavHeading, as its consumer doc directs, NavHeadingMenu's
   `role="menu"` sits directly inside the heading's own `role="menu"` wrapper.
   WAI-ARIA 1.2 allows a `menu` to own only `menuitem`-family items and groups,
   so assistive technology meets a menu nested in a menu.
+- **Inside a heading, arrow keys move twice.** Inside SideNavHeading or
+  TopNavHeading, the heading's own list handler also moves focus over every
+  `menuitem`, so one ArrowDown moves two items, and in a two-item menu ArrowDown
+  never moves focus. The APG menu pattern moves focus one item per arrow press.
+- **The menu has no name of its own.** NavHeadingMenu's `menu` carries no
+  accessible name unless the caller passes `aria-label`; inside a heading only
+  the heading's wrapper `menu` is named. The APG menu pattern, which
+  `spec:AST-020` FR15 adopts, names each menu.
 - **A disabled item changes focusability.** A disabled item drops the
   `tabIndex=-1` enabled items carry: a disabled link item becomes a page tab
   stop, and a disabled action item cannot take focus at all. `spec:AST-085` FR1
@@ -125,10 +134,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 | FR1 | NavHeadingMenu renders one Menu `div` carrying `role="menu"`, the current `nav-heading-menu` target with `size`, the forwarded `ref`, `data-testid`, and other DOM props; caller props cannot replace the role. `minWidth` overrides the size's minimum width.                                                                                                                                | Current source, docs, and tests |
 | FR2 | NavHeadingMenuItem renders one Item carrying `role="menuitem"` and the current `nav-heading-menu-item` target with the menu's size, as the `LinkProvider` link (else `<a>`) when `href` is supplied and a `div` otherwise. Caller props cannot replace its role, tab index, or disabled state.                                                                                                | Current source, docs, and tests |
 | FR3 | An optional Icon-rendered icon delegates to Icon's `icon` target. String labels and all descriptions render through Text's `text` target on one line; non-string labels render directly as caller-owned content.                                                                                                                                                                              | Current source and target docs  |
-| FR4 | The parent nav heading supplies the close callback and owns its popup runtime; NavHeadingMenu consumes that callback for Escape and successful Item selection.                                                                                                                                                                                                                                | Current source and tests        |
-| FR5 | Enabled items are focusable but not tab stops. ArrowDown and ArrowUp move between enabled items and wrap; Home and End go to the first and last; typing a character moves to the matching enabled item; Enter or Space activates the focused item.                                                                                                                                            | Current source and tests        |
+| FR4 | The host heading owns the popup runtime. Where it supplies a close callback (TopNavHeading and the collapsed SideNavHeading), NavHeadingMenu calls it on Escape and on successful Item selection; an expanded SideNavHeading supplies none, so the menu stays open after a choice (`component:SideNavHeading` FR7).                                                                           | Current source and tests        |
+| FR5 | Enabled items are focusable but not tab stops. In a standalone menu, ArrowDown and ArrowUp move one enabled item and wrap; Home and End go to the first and last; typing a character moves to the matching enabled item; Enter or Space activates the focused item.                                                                                                                           | Current source and tests        |
 | FR6 | Activating an enabled item runs its `onClick` and then the close callback; a disabled item carries `aria-disabled="true"`, MUST stay focusable outside the tab order as an enabled item is (`spec:AST-085` FR1), is skipped by keyboard movement and typeahead, and does not run `onClick` or close the menu. Implementation gap: a disabled item drops `tabIndex=-1` (Current-state impact). | Current source and tests        |
-| FR7 | A caller `onKeyDown` on the menu runs first; the keyboard model still runs unless that caller calls `preventDefault()`, and an item handler that cancels does not stop arrow navigation.                                                                                                                                                                                                      | Current source and tests        |
+| FR7 | A caller `onKeyDown` on the menu runs first; the keyboard model still runs unless that caller calls `preventDefault()` on an event no item handler has already cancelled; an item handler that cancels does not stop arrow navigation.                                                                                                                                                        | Current source and tests        |
 
 ### Allowed variation
 
@@ -162,8 +171,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Accessibility contract
 
-- **AR1 — Menu semantics.** One `menu` holds `menuitem` rows (FR1, FR2); the
-  heading names the menu.
+- **AR1 — Menu semantics.** One `menu` holds `menuitem` rows (FR1, FR2). It is
+  named only by a caller `aria-label`; inside a heading, the heading names its
+  own wrapper `menu`, not this one (Current-state impact).
 - **AR2 — Keyboard.** FR5 and FR6.
 - **AR3 — Disabled.** Disabled items are exposed as disabled and unreachable by
   keyboard movement.
@@ -239,7 +249,7 @@ Read from source, with no focused test yet:
 - FR3.
 - FR5: that enabled items are focusable but not tab stops.
 - FR6: that a disabled item does not close the menu.
-- FR7: a menu-level caller's `preventDefault()` cancelling the keyboard model.
+- FR4, FR5, and AR1 inside SideNavHeading or TopNavHeading.
 - The Menu and Item target placements in the theming map.
 
 ## Decision log
