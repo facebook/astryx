@@ -50,7 +50,8 @@ export function ChartGrid({
         .map(d => (xScale(d) ?? 0) + xScale.bandwidth() / 2);
     }
     const linear = xScale as
-      ScaleLinear<number, number> | ScaleTime<number, number>;
+      | ScaleLinear<number, number>
+      | ScaleTime<number, number>;
     return linear.ticks(5).map(d => linear(d as number & Date));
   }, [vertical, xScale]);
 
