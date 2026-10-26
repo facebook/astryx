@@ -24,7 +24,7 @@ import {
   registerMotionTable,
 } from './roles';
 import {dampingRatioOf, naturalFrequency, toSpring} from './spring';
-import {navigation, scroll, springs, timing} from './uikit';
+import {keyboard, navigation, scroll, springs, timing} from './uikit';
 import {
   motionTableFiles,
   REGISTER_EXPORT,
@@ -139,7 +139,9 @@ describe('motion roles', () => {
   });
 
   it("leaves the keyboard's motion out: it rides the keyboard (FR4)", () => {
-    expect(motionRoleOf(springs.keyboard)).toBeUndefined();
+    // The keyboard's spring moved to its own table with the keyboard
+    // module; neither it nor the notification's duration is a theme role.
+    expect(motionRoleOf(keyboard.spring)).toBeUndefined();
     expect(motionRoleIn(timing, 'keyboardNotificationMs')).toBeUndefined();
   });
 

@@ -391,9 +391,10 @@ export function registerSpringsTable(): void {
   registerMotionTable('springs', springs, {
     // UIKit's menus under Reduce Motion: nothing springs under reduced
     // motion (design:reduced-motion DR1), and no theme value may change a
-    // reduced-motion animation (DR4). The keyboard's spring rides the
-    // keyboard's own motion and is not a theme role (spec:AST-094 FR4).
-    exclude: ['menuReducedMotion', 'keyboard'],
+    // reduced-motion animation (DR4). The keyboard's spring is no role
+    // either (spec:AST-094 FR4), and it now lives in the keyboard's own
+    // table, which nothing registers.
+    exclude: ['menuReducedMotion'],
     // The roles spec:AST-094 FR4 names for their use; the table keeps the
     // names of the sources the values come from.
     rename: {
