@@ -1215,12 +1215,15 @@ describe("the drag's axis: UIKit's rule for a pager inside a scroll view", () =>
   }
 
   for (const degrees of [35, 45]) {
-    it(`a ${degrees}° drag is the pager's (|dx| ≥ |dy|, the tie included): it pages, and its moves are cancelled from 5 px so the page never scrolls`, async () => {
+    it(`a ${degrees}° drag is the pager's (|dx| ≥ |dy|, the tie included): it pages, and its moves are cancelled from the pan's start at 10 pt, not before`, async () => {
       const f = setup();
       const cancelled = await angledDrag(f, degrees);
-      // The second move (8 px) is past the 5 px claim; every move from it on
-      // is cancelled.
-      expect(cancelled.slice(1).every(Boolean)).toBe(true);
+      // 4 px steps: the horizontal part reaches the pan's 10 pt hysteresis on
+      // the fourth move. Nothing claims the touch before the pan begins
+      // (no earlier committed claim); every move from then on is cancelled.
+      const start = 3;
+      expect(cancelled.slice(0, start).some(Boolean)).toBe(false);
+      expect(cancelled.slice(start).every(Boolean)).toBe(true);
       await frames(f, 40);
       expect(f.calls).toContain('index:1:drag');
     });

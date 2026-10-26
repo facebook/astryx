@@ -180,7 +180,7 @@ function angled(degrees: number) {
 }
 
 for (const degrees of [35, 45]) {
-  test(`in a scrolling page, a ${degrees}° drag is the pager's: it pages, its moves are cancelled from the claim, and the page stays at scrollY 0`, async ({
+  test(`in a scrolling page, a ${degrees}° drag is the pager's: it pages, its moves are cancelled from the pan's start at 10 pt, and the page stays at scrollY 0`, async ({
     page,
   }) => {
     const {track, driver} = await open(page, {tall: true});
@@ -189,8 +189,11 @@ for (const degrees of [35, 45]) {
     expect(await page.evaluate(() => window.pager.index)).toBe(2);
     const cancelled = await page.evaluate(() => window.cancelledMoves);
     expect(cancelled.length).toBeGreaterThan(3);
-    // Every move after the first (past the 5 px claim) is cancelled.
-    expect(cancelled.slice(1).every(Boolean)).toBe(true);
+    // Nothing is claimed before the pan begins at its 10 pt hysteresis; from
+    // its first cancelled move on, every move is.
+    const first = cancelled.indexOf(true);
+    expect(first).toBeGreaterThan(0);
+    expect(cancelled.slice(first).every(Boolean)).toBe(true);
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
   });
 }
