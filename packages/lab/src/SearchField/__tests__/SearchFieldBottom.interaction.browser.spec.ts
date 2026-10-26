@@ -397,6 +397,67 @@ async function waitForNewAnimation(locator: Locator, after: number) {
   }
 }
 
+/**
+ * The trailing end's samples from its own start. The parts' turns start a few
+ * ms apart (each is created after the one before it), and a hold samples from
+ * the earliest start among them: until the end's own start it reads its first
+ * keyframe, the same presented frame again. On a slow runner that gap passes a
+ * sample step (24 ms at 8x CPU throttling), so the repeats are dropped and
+ * every sample left is a new frame.
+ */
+function fromOwnStart(xs: number[]): number[] {
+  let first = 0;
+  while (first + 1 < xs.length && xs[first + 1] === xs[first]) {
+    first += 1;
+  }
+  return xs.slice(first);
+}
+
+/** When a frame table column reaches its largest or smallest value, ms. */
+function extremeMs(
+  table: readonly (readonly number[])[],
+  column: number,
+  pick: 'max' | 'min',
+): number {
+  let best = table[0];
+  for (const row of table) {
+    if (
+      pick === 'max' ? row[column] > best[column] : row[column] < best[column]
+    ) {
+      best = row;
+    }
+  }
+  return best[0];
+}
+
+/** When the activation's trailing edge narrows furthest: the gel's peak, ms. */
+const ACTIVATION_PEAK_MS = extremeMs(bottom.activationFrames, 2, 'max');
+/** When the cancel's trailing edge widens furthest, past rest, ms. */
+const CANCEL_PEAK_MS = extremeMs(bottom.cancelFrames, 2, 'min');
+
+/** One frame at 60 Hz, ms: the step between samples. */
+const FRAME_MS = 1000 / 60;
+
+/**
+ * Whether a turn started at least two frames before the first motion's peak,
+ * so that "keeps going for a moment, then turns once" can be checked: the gel
+ * slows to a stop over the frames before its peak, where a first step no
+ * longer shows it going. A slow runner's tap can land there or past the
+ * peak, where the field already moves back and a turn that adds to it reads
+ * like one that does not; then the test records, as an annotation naming the
+ * measured start and the peak, that it checked only the rest.
+ */
+function turnsBeforePeak(turnAtMs: number, peakMs: number, motion: string) {
+  if (turnAtMs < peakMs - 2 * FRAME_MS) {
+    return true;
+  }
+  test.info().annotations.push({
+    type: 'reduced',
+    description: `the turn started ${Math.round(turnAtMs)} ms into the ${motion}, not two frames before its peak at ${peakMs} ms: "keeps going, then turns once" not checked`,
+  });
+  return false;
+}
+
 /** The largest step between neighbouring samples, px. */
 const largestStep = (xs: number[]) =>
   Math.max(...xs.slice(1).map((x, i) => Math.abs(x - xs[i])));
@@ -446,8 +507,10 @@ test('a cancel mid-activation turns around from where the field is, without a sn
   await holdAnimations(page);
   await expect(root(page)).not.toHaveAttribute('data-search-field-active');
   const times = timeline(reverse.to - reverse.from);
-  const xs = (await sampleCurve(end(page), times)).map(
-    sample => sample.transform.translateX,
+  const xs = fromOwnStart(
+    (await sampleCurve(end(page), times)).map(
+      sample => sample.transform.translateX,
+    ),
   );
   await releaseAnimations(page, {finish: true});
   // The measured cancel starts from the settled active field, so replaying
@@ -455,12 +518,23 @@ test('a cancel mid-activation turns around from where the field is, without a sn
   // screen). The turn adds to the curves on screen instead, as UIKit's
   // animations do: it starts where the activation had brought the field
   // (further along than before the second tap; the gel itself overshoots
-  // the end), keeps narrowing for a moment, turns once and widens back to
-  // rest, never stepping faster than the measured gel itself.
-  const detail = JSON.stringify({before, xs});
-  expect(xs[0], detail).toBeLessThanOrEqual(before + 0.5);
-  expect(xs[1], detail).toBeLessThan(xs[0]);
-  expect(turnsOf(xs), detail).toBe(1);
+  // the end), keeps narrowing for a moment if the turn starts before the
+  // gel's peak, turns once and widens back to rest, never stepping faster
+  // than the measured gel itself.
+  const turnAtMs = reverse.from - forward.from;
+  const detail = JSON.stringify({before, turnAtMs, xs});
+  if (turnsBeforePeak(turnAtMs, ACTIVATION_PEAK_MS, 'activation')) {
+    expect(xs[0], detail).toBeLessThanOrEqual(before + 0.5);
+    expect(xs[1], detail).toBeLessThan(xs[0]);
+    expect(turnsOf(xs), detail).toBe(1);
+  } else {
+    // Past the peak the field has moved back since `before`: the turn
+    // starts where the measured activation is at that time.
+    const there =
+      edgesAt(bottom.activationFrames, turnAtMs).trailing - REST.trailing;
+    expect(Math.abs(xs[0] - there), detail).toBeLessThan(1);
+    expect(turnsOf(xs), detail).toBeLessThanOrEqual(1);
+  }
   expect(largestStep(xs), detail).toBeLessThan(GEL_PEAK_STEP + 0.5);
   await waitForRest(end(page));
   expect(Math.abs((await translate(end(page)))[0])).toBeLessThan(0.5);
@@ -482,17 +556,30 @@ test('focusing the field early in a cancel re-activates from where the field is,
   await holdAnimations(page);
   await expect(root(page)).toHaveAttribute('data-search-field-active', 'true');
   const times = timeline(again.to - again.from);
-  const xs = (await sampleCurve(end(page), times)).map(
-    sample => sample.transform.translateX,
+  const xs = fromOwnStart(
+    (await sampleCurve(end(page), times)).map(
+      sample => sample.transform.translateX,
+    ),
   );
   await releaseAnimations(page, {finish: true});
   // From where the cancel had brought it (further toward rest than before
-  // the tap), it keeps widening for a moment, turns once and narrows again,
-  // never stepping faster than the measured gel itself.
-  const detail = JSON.stringify({before, xs});
-  expect(xs[0], detail).toBeGreaterThanOrEqual(before - 0.5);
-  expect(xs[1], detail).toBeGreaterThan(xs[0]);
-  expect(turnsOf(xs), detail).toBe(1);
+  // the tap), it keeps widening for a moment if the turn starts before the
+  // cancel's peak, turns once and narrows again, never stepping faster than
+  // the measured gel itself.
+  const turnAtMs = again.from - cancel.from;
+  const detail = JSON.stringify({before, turnAtMs, xs});
+  if (turnsBeforePeak(turnAtMs, CANCEL_PEAK_MS, 'cancel')) {
+    expect(xs[0], detail).toBeGreaterThanOrEqual(before - 0.5);
+    expect(xs[1], detail).toBeGreaterThan(xs[0]);
+    expect(turnsOf(xs), detail).toBe(1);
+  } else {
+    // Past the peak the field has moved back since `before`: the turn
+    // starts where the measured cancel is at that time.
+    const there =
+      edgesAt(bottom.cancelFrames, turnAtMs).trailing - REST.trailing;
+    expect(Math.abs(xs[0] - there), detail).toBeLessThan(1);
+    expect(turnsOf(xs), detail).toBeLessThanOrEqual(1);
+  }
   expect(largestStep(xs), detail).toBeLessThan(GEL_PEAK_STEP + 0.5);
   await waitForRest(end(page));
   expect((await translate(end(page)))[0]).toBeCloseTo(
