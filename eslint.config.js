@@ -637,12 +637,10 @@ export default defineConfig(
     },
   },
   // ── Core's internal entries ───────────────────────────────────────────────
-  // `@astryxdesign/core/internal/*` (`internal/touch`: useTouchSupport and the
-  // touch module's type) is reserved for Astryx's own packages: undocumented,
-  // outside the public API, and allowed only in Core and Lab. The gesture core
-  // and motion have no entry at all. Apps install the module through the
-  // public `@astryxdesign/core/touch-support` entry
-  // (architecture:react-component-runtime INV13). TypeScript files only, so
+  // `@astryxdesign/core/internal/*` (`internal/touch`: the touch and gesture
+  // module) is reserved for Astryx's own packages: undocumented, outside the
+  // public API, and allowed only in Core and Lab. The gesture core and motion
+  // have no entry of their own (architecture:react-component-runtime INV13). TypeScript files only, so
   // this block stays disjoint from the CLI's `no-restricted-imports` blocks.
   {
     files: ['**/*.{ts,tsx}'],
@@ -664,7 +662,7 @@ export default defineConfig(
                 '**/core/src/touch-support/**',
               ],
               message:
-                '`@astryxdesign/core/internal/*` is for Core and Lab only, and the gesture core and motion have no entry (architecture:react-component-runtime INV13): install the touch module with `@astryxdesign/core/touch-support`.',
+                '`@astryxdesign/core/internal/*` is for Core and Lab only, and the gesture core and motion have no entry of their own (architecture:react-component-runtime INV13).',
             },
           ],
         },
