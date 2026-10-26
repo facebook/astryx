@@ -347,6 +347,47 @@ describe('one set of listeners per window (FR1, INV11)', () => {
     stopHook();
   });
 
+  it('reads the layout once per keyboard change, however many read the height (INV11)', () => {
+    // Count every read of the visual viewport's height: one per measurement.
+    let height = viewport.height;
+    let reads = 0;
+    Object.defineProperty(viewport, 'height', {
+      configurable: true,
+      get: () => {
+        reads += 1;
+        return height;
+      },
+      set: (value: number) => {
+        height = value;
+      },
+    });
+    const guide = getKeyboardLayoutGuide(window);
+    const seen: number[] = [];
+    const stopGuide = guide.subscribe(transition => {
+      // A rider reads the height again as it commits its layout.
+      seen.push(getMobileKeyboardHeight(window));
+      seen.push(transition.to);
+    });
+    const stopListener = subscribeMobileKeyboard(window, event => {
+      if (event.type === 'viewport') {
+        seen.push(getMobileKeyboardHeight(window));
+      }
+    });
+    const first = renderHook(() => useKeyboardHeight());
+    const second = renderHook(() => useKeyboardHeight());
+    reads = 0;
+    report({height: window.innerHeight - 300});
+    expect(first.result.current).toBe(300);
+    expect(second.result.current).toBe(300);
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen.every(value => value === 300)).toBe(true);
+    expect(reads).toBe(1);
+    first.unmount();
+    second.unmount();
+    stopListener();
+    stopGuide();
+  });
+
   it('re-renders a component when the height changes, and only then', () => {
     let renders = 0;
     const {result, unmount} = renderHook(() => {

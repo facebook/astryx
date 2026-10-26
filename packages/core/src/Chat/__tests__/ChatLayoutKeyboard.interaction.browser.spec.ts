@@ -278,6 +278,38 @@ test('the dock rises on the keyboard spring by the cover over it', async ({
   expect(samples.at(-1)?.value).toBeCloseTo(-lift, 0);
 });
 
+test('one keyboard change reads the layout once, however many read the height (architecture:react-component-runtime INV11)', async ({
+  page,
+}) => {
+  const {dock, editable} = await openChat(page);
+  await editable.focus();
+  const reads = await page.evaluate(async cover => {
+    // Count every read of the visual viewport's height from here on: the
+    // keyboard module's one measurement per report.
+    const viewport = window.visualViewport as unknown as {height: number};
+    let height = viewport.height;
+    let count = 0;
+    Object.defineProperty(viewport, 'height', {
+      configurable: true,
+      get: () => {
+        count += 1;
+        return height;
+      },
+      set: (value: number) => {
+        height = value;
+      },
+    });
+    (window as unknown as {__keyboard: (c: number) => void}).__keyboard(cover);
+    // The guide, the hook and the ride's commit all run by the next frame.
+    await new Promise(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    );
+    return count;
+  }, COVER);
+  await waitForRest(dock);
+  expect(reads).toBe(1);
+});
+
 test('the lift is the part of the keyboard over the dock\u2019s resting bottom: a root ending below the viewport rises by more than the cover', async ({
   page,
 }) => {
