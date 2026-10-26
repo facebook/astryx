@@ -54,11 +54,12 @@ export const sheet = {
      * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
      *   iPhone 17 Pro, 30 releases on Oct 25 2026 of drags from the medium
      *   detent that went past the midpoint toward large, or 90 % of the way
-     *   to gone, then turned back toward medium: let go at 60 to 244 pt/s,
-     *   they settled on large (7 of 7) or dismissed (6 of 6), the position
-     *   nearest where they were let go; from 250.6 pt/s on, the projection
-     *   decided (back to medium near the midpoint), so the speed lies in
-     *   (243.6, 250.6]
+     *   to gone, then turned back toward medium. The seven past the
+     *   midpoint, let go at 60 to 244 pt/s, settled on large, and the six
+     *   near gone, let go at 96 to 264 pt/s, dismissed: each the position
+     *   nearest where it was let go, where a dismissal's projection lands
+     *   too. Past the midpoint, from 250.6 pt/s on, the projection decided
+     *   (back to medium), so the speed lies in (243.6, 250.6]
      */
     minProjectionSpeed: 250,
     /**
