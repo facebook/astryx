@@ -54,6 +54,7 @@ import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {currentGesture} from '../Layer/gestureCounter';
 import {MenuBottomSheetActionList} from '../DropdownMenu/MenuBottomSheetActionList';
+import {menuBottomSheetStyles} from '../DropdownMenu/menuBottomSheet.stylex';
 import {renderDropdownItems} from '../DropdownMenu/renderDropdownItems';
 import {
   DropdownMenuContext,
@@ -69,7 +70,7 @@ import {
 import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {useMenuDrillIn} from '../DropdownMenu/useMenuDrillIn';
 import {useListFocus} from '../hooks/useListFocus';
-import {useMenuPress} from '../hooks/useMenuPress';
+import {useMenuSurfacePress} from '../hooks/useMenuPress';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useLongPress} from '../hooks/useLongPress';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
@@ -175,6 +176,18 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-background-surface'],
     outline: 'none',
     userSelect: 'none',
+  },
+  // The menu's own inset inside the sheet content box (menuBottomSheetStyles
+  // .content): the 16px / 4px the sheet keeps plus the menu's 4px padding.
+  sheetMenuInset: {
+    paddingBlockStart: `calc(${spacingVars['--spacing-4']} + ${spacingVars['--spacing-1']})`,
+    paddingBlockEnd: spacingVars['--spacing-1'],
+    paddingInline: `calc(${spacingVars['--spacing-1']} + ${spacingVars['--spacing-1']})`,
+    // Bleeding rows read the padding this element applies.
+    '--container-padding-block-start': `calc(${spacingVars['--spacing-4']} + ${spacingVars['--spacing-1']})`,
+    '--container-padding-block-end': spacingVars['--spacing-1'],
+    '--container-padding-inline-start': `calc(${spacingVars['--spacing-1']} + ${spacingVars['--spacing-1']})`,
+    '--container-padding-inline-end': `calc(${spacingVars['--spacing-1']} + ${spacingVars['--spacing-1']})`,
   },
   sheetHeader: {
     display: 'flex',
@@ -707,7 +720,7 @@ export function ContextMenu({
   // The press model: the row under a release acts, the highlight follows a
   // held pointer, a mouse released outside dismisses and a finger leaves the
   // menu open.
-  const menuPress = useMenuPress({
+  const menuPress = useMenuSurfacePress({
     menuRef: listRef,
     itemSelector: MENU_ITEM_SELECTOR,
     onDismiss: closeMenu,
@@ -728,7 +741,13 @@ export function ContextMenu({
       {...mergeProps(
         themeProps('context-menu'),
         stylex.props(
-          usesBottomSheet ? styles.sheetMenu : styles.menu,
+          usesBottomSheet
+            ? [
+                styles.sheetMenu,
+                menuBottomSheetStyles.content,
+                styles.sheetMenuInset,
+              ]
+            : styles.menu,
           !usesBottomSheet &&
             (hasOverflow ? styles.touchPanYPinchZoom : styles.touchPinchZoom),
           xstyle,
@@ -744,6 +763,24 @@ export function ContextMenu({
     </div>
   );
 
+  // The root view's heading stands alone; a sub-menu's sits in a row with its
+  // back button.
+  const sheetViewHeading = (
+    <Heading
+      ref={setSheetHeadingRef}
+      level={3}
+      tabIndex={-1}
+      xstyle={[
+        styles.sheetViewHeading,
+        submenuPath.length === 0 && [
+          styles.sheetRootHeading,
+          menuBottomSheetStyles.headingAlone,
+        ],
+      ]}>
+      {currentTitle}
+    </Heading>
+  );
+
   const renderedBottomSheetContent =
     itemsProp !== undefined ? (
       <div
@@ -752,12 +789,17 @@ export function ContextMenu({
         tabIndex={0}
         {...mergeProps(
           themeProps('context-menu'),
-          stylex.props(styles.sheetMenu, xstyle),
+          stylex.props(
+            styles.sheetMenu,
+            menuBottomSheetStyles.content,
+            styles.sheetMenuInset,
+            xstyle,
+          ),
           className,
           style,
         )}>
-        <div {...stylex.props(styles.sheetHeader)}>
-          {submenuPath.length > 0 && (
+        {submenuPath.length > 0 ? (
+          <div {...stylex.props(styles.sheetHeader)}>
             <Button
               label={backLabel}
               variant="ghost"
@@ -768,18 +810,11 @@ export function ContextMenu({
               isIconOnly
               onClick={() => setSubmenuPath(path => path.slice(0, -1))}
             />
-          )}
-          <Heading
-            ref={setSheetHeadingRef}
-            level={3}
-            tabIndex={-1}
-            xstyle={[
-              styles.sheetViewHeading,
-              submenuPath.length === 0 && styles.sheetRootHeading,
-            ]}>
-            {currentTitle}
-          </Heading>
-        </div>
+            {sheetViewHeading}
+          </div>
+        ) : (
+          sheetViewHeading
+        )}
         <MenuBottomSheetActionList
           items={currentItems}
           onSelect={handleBottomSheetSelect}
