@@ -120,9 +120,12 @@ it. It is internal and unexported (`spec:AST-017` FR21).
   only the action lifted on toggles; sliding across never toggles the actions
   passed over.
 - **FR5 — Every pointer, one target rule.** The behavior applies to every web
-  pointer, mouse and pen as well as a finger. The 44 px target applies under a
-  coarse pointer only. Keyboard and assistive-technology behavior is
-  unchanged.
+  pointer, mouse and pen as well as a finger. Under a fine pointer a group
+  keeps one passive `pointerdown` listener on its element and adds document
+  listeners only during a press, removing them at the release; nothing else
+  is idle (`spec:AST-094` FR19, FR24). The 44 px target is each member's hit
+  expansion under a coarse pointer only. Keyboard and assistive-technology
+  behavior is unchanged.
 
 ## Allowed component variation
 

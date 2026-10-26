@@ -263,7 +263,10 @@ a measured, sourced difference exists.
   touchscreen whose primary pointer is fine gets the browser's defaults for
   this record's behaviors (`spec:AST-017` FR59, DEC-25). This rule governs
   this record's behaviors only; `spec:AST-057` keeps its per-event pointer
-  read for the row swipe, as its record states. A recognizer that begins MUST claim its touches by cancelling
+  read for the row swipe, as its record states. A `family:action-groups` member is
+  the one exception for its own group: under a fine pointer it keeps one
+  passive `pointerdown` listener on the group element and adds document
+  listeners only during a press, removed at the release (DEC-17). A recognizer that begins MUST claim its touches by cancelling
   `touchmove` through a non-passive listener on its element; a watcher,
   which never claims, is exempt (DEC-7). A `touchmove` of a touch no recognizer owns MUST NOT be cancelled, with
   two exceptions. While a scroll lock under a modal presentation holds the
@@ -450,7 +453,8 @@ internal `actionGroupTracker` (DEC-17).
   primary pointer is fine (FR19), and while a touch presentation is
   disabled, no touch-only listener, observer or timer is active, except the
   released `module:DropdownMenu/useMenuPress` behavior a finger keeps there
-  (its FR9). The number of `document`- or `window`-level
+  (its FR9), and an action group's one passive `pointerdown` listener and its
+  press-time document listeners (FR19). The number of `document`- or `window`-level
   touch listeners MUST NOT grow with the number of component instances, a
   repeated row or cell adds no touch observer of its own, and nothing
   touch-related remains after the last instance unmounts
@@ -714,7 +718,9 @@ Rejected: the 150 ms delay on every menu row.
 A person who presses one action and slides to another expects the same result
 in a menu, a segmented control, an alert's buttons, or a button group. One
 internal tracker governs every group of sibling actions, so the behavior is
-consistent and built once (`family:action-groups`).
+consistent and built once (`family:action-groups`). The behavior works with a mouse
+as well, so it stays on for every pointer, while the 44 px target stays
+touch-only.
 
 Rejected: a tracking rule for menus only.
 
