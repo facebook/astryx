@@ -150,7 +150,9 @@ async function read(page: Page): Promise<Reading> {
 
 // At rest, the content starts below the whole grab bar, fade included,
 // whatever the sheet's padding (component:BottomSheet, Content area inset).
-for (const story of ['showcase', 'tall-sheet', 'text-only']) {
+// Showcase, Tall Sheet, Hug Height and Text Only hold a lone Section, which
+// escapes the sheet's padding but not the band under the bar.
+for (const story of ['showcase', 'tall-sheet', 'hug-height', 'text-only']) {
   test(`at rest the first line starts below the grab bar: ${story}`, async ({
     page,
   }) => {

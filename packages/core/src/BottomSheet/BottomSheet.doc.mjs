@@ -95,7 +95,7 @@ export const docs = {
     derived: [{property: 'padding', expand: 'container'}],
   },
   description:
-    "A mobile touch sheet that rises from the bottom edge, with animated entrance and exit, a grab handle, optional drag-to-resize snap points, and purpose-controlled dismissal. Like Dialog, it is a padded container: content starts at the theme's bottom-sheet padding (--spacing-4 by default), and a lone Section child or bleed children such as Table and Divider align against it. A sheet always owns a native <dialog>; inside BottomSheetSwitcher the switcher presents and closes that dialog as the flow moves between steps. In both modes, ref and shared DOM props target the visual panel <div>.",
+    "A mobile touch sheet that rises from the bottom edge, with animated entrance and exit, a grab handle, optional drag-to-resize snap points, and purpose-controlled dismissal. Like Dialog, it is a padded container: content starts at the theme's bottom-sheet padding (--spacing-4 by default), and a lone Section child or bleed children such as Table and Divider align against it. At the top the content always starts below the grab bar's 24px band, which is not padding a child escapes, so the first row never sits under the bar; scrolled content passes beneath it. A sheet always owns a native <dialog>; inside BottomSheetSwitcher the switcher presents and closes that dialog as the flow moves between steps. In both modes, ref and shared DOM props target the visual panel <div>.",
   props: [
     {
       name: 'isOpen',

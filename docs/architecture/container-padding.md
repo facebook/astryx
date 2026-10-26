@@ -120,7 +120,12 @@ pads caller content and publishes the applied inset. The inset resolves from the
 `padding` prop on the public spacing scale, then the theme's `padding` properties
 on the `bottom-sheet` component, then `--spacing-4` on every logical edge,
 matching Dialog. This prop and theme property are BottomSheet's projection of
-container lowering.
+container lowering. At the block start a sheet keeps a band under its floating
+grab bar (`--spacing-6`) that is not container padding: it publishes only the
+padding past that band and applies the band on top, so its applied block-start
+inset is `max(padding, --spacing-6)` and a lone Section or Layout that escapes
+the published padding still starts below the bar (`component:BottomSheet`,
+Content area inset).
 
 Edge compensation is a two-sided geometry contract, not a token contract:
 

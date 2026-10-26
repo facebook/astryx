@@ -151,10 +151,12 @@ const bottomSheetInlineEnd = `var(--astryx-bottom-sheet-padding-inline-end, ${bo
 const bottomSheetBlockStart = `var(--astryx-bottom-sheet-padding-block-start, ${bottomSheetShorthand})`;
 const bottomSheetBlockEnd = `var(--astryx-bottom-sheet-padding-block-end, ${bottomSheetShorthand})`;
 // A bottom sheet's resting content starts below its floating grab bar
-// (--spacing-6 tall), whatever the padding: the block-start inset it applies
-// and publishes never drops below the bar (component:BottomSheet, Content
-// area inset). The layout padding variables keep the plain padding.
-const bottomSheetBlockStartClear = `max(${bottomSheetBlockStart}, ${SP6})`;
+// (--spacing-6 tall), whatever the padding (component:BottomSheet, Content
+// area inset). The band under the bar is not container padding: the sheet
+// publishes only the padding past it, which a lone Section escapes, and
+// applies the band on top (BottomSheetPanel). The layout padding variables
+// keep the plain padding.
+const bottomSheetBlockStartClear = `max(calc(${bottomSheetBlockStart} - ${SP6}), 0px)`;
 
 // Drawer padding chains: --astryx-* then the next specificity level,
 // terminating at --spacing-4 like Dialog. Built as chained const strings (no

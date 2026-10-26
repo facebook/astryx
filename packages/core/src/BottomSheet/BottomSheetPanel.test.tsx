@@ -435,6 +435,13 @@ describe('BottomSheetPanel', () => {
       return getComputedStyle(screen.getByTestId('sheet-child').parentElement!);
     }
 
+    // The band under the grab bar is applied on top of the published
+    // block-start, which is only the padding past the band: a lone Section
+    // escapes that and still starts below the bar (component:BottomSheet,
+    // Content area inset).
+    const BAND =
+      'calc(var(--container-padding-block-start,0px)+var(--spacing-6))';
+
     it("pads by Dialog's default chain and publishes the inset it applies", () => {
       const computed = renderWithPadding();
       for (const [edge, property] of EDGES) {
@@ -448,7 +455,14 @@ describe('BottomSheetPanel', () => {
           'var(--astryx-bottom-sheet-padding,var(--spacing-4))',
         );
         if (edge === 'block-start') {
-          expect(published, edge).toMatch(/^max\(.*,var\(--spacing-6\)\)$/);
+          expect(published, edge).toMatch(
+            /^max\(calc\(.*-var\(--spacing-6\)\),0px\)$/,
+          );
+          expect(
+            computed.getPropertyValue(property).replace(/\s+/g, ''),
+            edge,
+          ).toBe(BAND);
+          continue;
         }
         // Applied padding reads the published value, so bleed children
         // subtract exactly the inset they sit in.
@@ -475,20 +489,20 @@ describe('BottomSheetPanel', () => {
         const computed = renderWithPadding(padding);
         const expected = `var(--spacing-${padding})`;
         for (const [edge, property] of EDGES) {
-          const inset =
+          const published =
             edge === 'block-start'
-              ? `max(${expected}, var(--spacing-6))`
+              ? `max(calc(${expected} - var(--spacing-6)), 0px)`
               : expected;
           expect(
             computed
               .getPropertyValue(`--container-padding-${edge}`)
               .replace(/\s+/g, ''),
             edge,
-          ).toBe(inset.replace(/\s+/g, ''));
+          ).toBe(published.replace(/\s+/g, ''));
           expect(
             computed.getPropertyValue(property).replace(/\s+/g, ''),
             edge,
-          ).toBe(inset.replace(/\s+/g, ''));
+          ).toBe(edge === 'block-start' ? BAND : expected.replace(/\s+/g, ''));
         }
         expect(computed.getPropertyValue('--layout-padding-inner-x')).toBe(
           expected,
