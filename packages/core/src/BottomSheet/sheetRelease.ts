@@ -103,6 +103,7 @@ function nearestIndex(
  *   dismissedOffset: 640,
  *   position: 300,
  *   velocity: 1200,
+ *   start: 0,
  * }); // {kind: 'dismiss', offset: 640, spring: SHEET_DISMISS_SWIPE_SPRING, …}
  * ```
  */
@@ -119,8 +120,12 @@ export function resolveSheetRelease({
   dismissedOffset: number | null;
   position: number;
   velocity: number;
-  /** Where the drag began: a release moving back toward it cancels (FR37). */
-  start?: number;
+  /**
+   * Where the drag began (a detent, or where a finger caught the sheet): a
+   * release moving back toward it cancels (FR37). Every drag has one, so it
+   * is required: leaving it out cannot skip the cancel.
+   */
+  start: number;
 }): SheetRelease {
   if (detents.length === 0) {
     throw new RangeError('resolveSheetRelease needs at least one detent');
@@ -157,11 +162,7 @@ export function resolveSheetRelease({
   // spec:AST-094 FR37: a release whose velocity points back toward where
   // the drag began cancels, whatever the travel so far, to the stop nearest
   // that start.
-  if (
-    start != null &&
-    velocity !== 0 &&
-    Math.sign(velocity) === Math.sign(start - position)
-  ) {
+  if (velocity !== 0 && Math.sign(velocity) === Math.sign(start - position)) {
     index = nearestIndex(positions, start);
   }
   if (dismissedOffset != null && index === detents.length) {
