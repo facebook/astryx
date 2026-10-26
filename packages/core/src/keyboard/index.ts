@@ -5,9 +5,9 @@
  * @input useMobileKeyboard.ts, keyboardLayoutGuide.ts, keyboardModel.ts and
  *   rideKeyboard.ts
  * @output Re-exports the on-screen keyboard module (the keyboard height, its
- *   reports, the focus refusal, the reveal-pan watch, BottomSheet's hook), the keyboard layout
- *   guide (getKeyboardLayoutGuide, keyboardProfileOf, bringsUpKeyboard,
- *   createKeyboardModel) and rideKeyboard, with their types
+ *   reports, the focus refusal, the reveal-pan watch, BottomSheet's hook),
+ *   the keyboard layout guide (getKeyboardLayoutGuide, keyboardProfileOf,
+ *   bringsUpKeyboard, createKeyboardModel) and rideKeyboard, with their types
  * @position Entry of the keyboard module. Internal to core: components
  *   import it from `../keyboard`; nothing here is exported from the package
  *   entry point
