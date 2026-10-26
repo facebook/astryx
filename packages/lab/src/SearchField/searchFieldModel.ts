@@ -17,19 +17,22 @@
  * rest, the close button sliding out at the opacity it has. A change of
  * mind mid-flight adds the turn to the curves on screen, on the whole clock,
  * as UIKit's animations do (the animator's `additive`).
- * The clock and the curve are the search table's constants, not motion roles
- * yet: they become internal roles once SearchField's own record measures them
- * (`spec:AST-094` FR4, DEC-5), and no theme retunes them (DEC-11).
+ * The curve is the `timing.curves.move` motion role (`spec:AST-094` FR4); the
+ * clock is the search table's internal constant, which moves to a role if the
+ * record names one. No theme retunes either (DEC-11).
  *
  * SYNC: When modified, update searchFieldModel.test.ts and SearchField.tsx.
  */
 
 import {type MotionCurve} from '@astryxdesign/core/motion/animator';
 import {cubicBezier} from '@astryxdesign/core/motion/bezier';
-import {search} from '@astryxdesign/core/motion/uikit';
+import {search, timing} from '@astryxdesign/core/motion/uikit';
 
-/** The UIKit activation curve as a function of the clock's fraction. */
-export const activationEase = cubicBezier(search.activationCurve);
+/**
+ * The activation's curve, UIKit's ease-in-ease-out (the `timing.curves.move`
+ * role), as a function of the clock's fraction.
+ */
+export const activationEase = cubicBezier(timing.curves.move);
 
 /** The activation's length, s. */
 export const ACTIVATION_S = search.activationMs / 1000;
