@@ -5,8 +5,7 @@
  * @input Nothing; data only
  * @output Exports `switchControl`: UISwitch's geometry, the springs of its
  *   Liquid Glass thumb and of its track color, the drag's rubber band and
- *   flip distance, and the release timing; and `registerSwitchTable`, which
- *   registers the table with the motion role registry
+ *   flip distance, and the release timing
  * @position The switch domain of the UIKit constants table (motion/uikit)
  *
  * The reference is UISwitch on iOS 26.2 (style `.sliding`): a white capsule
@@ -34,8 +33,6 @@
  *
  * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md.
  */
-
-import {registerMotionTable} from '../roles';
 
 export const switchControl = {
   /**
@@ -169,14 +166,3 @@ export const switchControl = {
    */
   haptic: 'none',
 } as const;
-
-/**
- * Registers the switch's table with the motion role registry
- * (motion/roles.ts), as the other domain tables do. It lists no role: the
- * switch's springs and minimum lift time stay internal constants. Nothing
- * registers on import: Switch's touch presentation calls it once before its
- * first animation (it is idempotent).
- */
-export function registerSwitchTable(): void {
-  registerMotionTable('switchControl', switchControl);
-}

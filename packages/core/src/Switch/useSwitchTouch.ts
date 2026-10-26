@@ -93,7 +93,7 @@ import {
 import {resolveMotion} from '../motion/resolveMotion';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
-import {registerSwitchTable, switchControl} from '../motion/uikit/switch';
+import {switchControl} from '../motion/uikit/switch';
 import {useTouchPresentation} from '../utils/touchPresentation';
 import {
   commitOnRelease,
@@ -294,9 +294,6 @@ export class SwitchTouchController {
 
   attach(elements: Elements): void {
     this.detach();
-    // The switch's springs become motion roles before the first animation
-    // resolves one (idempotent; nothing registers on import).
-    registerSwitchTable();
     this.elements = elements;
     this.measureGeometry();
     this.direction = isRtlElement(elements.surface) ? -1 : 1;

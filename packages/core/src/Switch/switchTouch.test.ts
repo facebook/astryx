@@ -19,7 +19,7 @@
 import {describe, expect, it} from 'vitest';
 import {listMotionRoles, motionRoleOf} from '../motion/roles';
 import {solveSpring, toSpring} from '../motion/spring';
-import {registerSwitchTable, switchControl} from '../motion/uikit/switch';
+import {switchControl} from '../motion/uikit/switch';
 import {
   commitOnRelease,
   dragTarget,
@@ -323,20 +323,13 @@ describe('the switch springs against UIKit frames (iOS 26.2)', () => {
   });
 });
 
-describe('switch table registration', () => {
-  it('registers no motion role: the switch\u2019s values stay internal constants', () => {
-    const switchRoles = () =>
-      listMotionRoles()
-        .map(role => role.id)
-        .filter(id => id.startsWith('switchControl.'));
-    // Nothing registers on import; the touch presentation registers the
-    // table, and doing it twice changes nothing.
-    expect(switchRoles()).toEqual([]);
-    registerSwitchTable();
-    registerSwitchTable();
+describe('switch values', () => {
+  it('are internal constants, not motion roles', () => {
     // No public API retunes a component's measured spring (spec:AST-094
     // FR4): the springs and the minimum lift time play as measured.
-    expect(switchRoles()).toEqual([]);
+    expect(
+      listMotionRoles().filter(role => role.id.startsWith('switchControl.')),
+    ).toEqual([]);
     expect(motionRoleOf(switchControl.lift)).toBeUndefined();
     expect(motionRoleOf(switchControl.travel)).toBeUndefined();
     expect(settleTime(0, 0)).toBe(switchControl.minimumLiftMs);
