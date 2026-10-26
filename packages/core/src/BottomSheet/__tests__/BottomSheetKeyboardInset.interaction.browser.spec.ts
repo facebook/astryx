@@ -9,10 +9,12 @@
  * @output Tests that a fully expanded Tall sheet makes room for the keyboard
  *   at the end of its own body through its functional style (no CSS custom
  *   property of its own), brings the focused field above the keyboard, and
- *   gives the room back when the keyboard goes; in Chrome on Android, that
- *   the field rides Gboard's show up from the report and that through
- *   Gboard's hide the room stays while the content rides down, with both
- *   cleared in one commit at rest
+ *   gives the room back when the keyboard goes; in Chrome on Android, under
+ *   a touch screen's coarse pointer, that the field rides Gboard's show up
+ *   from the report and that through Gboard's hide the room stays while the
+ *   content rides down, with both cleared in one commit at rest; that under
+ *   Reduce Motion nothing travels (a cross-fade, the room dropping once at
+ *   rest); and that under a fine pointer nothing of the ride attaches
  * @position Browser tests for BottomSheet's use of the keyboard module
  *   (spec:AST-099 FR3, FR4, FR8)
  */
@@ -398,5 +400,105 @@ test.describe('Chrome on Android, on Gboard\u2019s slides (spec:AST-099 FR8)', (
     expect(translateYOf(rest.contentTranslate)).toBeCloseTo(0, 1);
     expect(rest.scrollTop).toBeCloseTo(shown.scrollTop - intoRoom, 0);
     expect(rest.fieldBottom).toBeCloseTo(shown.fieldBottom + intoRoom, 0);
+  });
+
+  // The field's drawn bottom, the content box's opacity and the room, on every
+  // animation frame for `ms` after `cover` is reported.
+  const sampleAfterReport = async (field: Locator, cover: number, ms: number) =>
+    field.evaluate(
+      async (element, {c, until}) => {
+        let body = element.parentElement;
+        while (body != null && getComputedStyle(body).overflowY !== 'auto') {
+          body = body.parentElement;
+        }
+        const content = body?.firstElementChild ?? body;
+        const read = () => ({
+          bottom: element.getBoundingClientRect().bottom,
+          opacity: Number(getComputedStyle(content as Element).opacity),
+          room:
+            parseFloat(
+              getComputedStyle(content as Element, '::after').blockSize,
+            ) || 0,
+        });
+        const out = [read()];
+        const end = performance.now() + until;
+        await new Promise<void>(resolve => {
+          const sample = () => {
+            out.push(read());
+            if (performance.now() < end) {
+              requestAnimationFrame(sample);
+            } else {
+              resolve();
+            }
+          };
+          requestAnimationFrame(sample);
+          (window as unknown as {__keyboard: (c: number) => void}).__keyboard(
+            c,
+          );
+        });
+        return out;
+      },
+      {c: cover, until: ms},
+    );
+
+  test('Reduce Motion: the sheet never travels with Gboard; it cross-fades, and the room drops once at rest (design:reduced-motion)', async ({
+    page,
+  }) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    const {field} = await openAtLastField(page);
+    await field.focus();
+    const show = await sampleAfterReport(field, COVER, 900);
+    const shown = show.at(-1) as (typeof show)[number];
+    // Every frame draws the field where it was or where it rests, and the
+    // change is a fade.
+    for (const frame of show) {
+      expect(
+        Math.abs(frame.bottom - show[0].bottom) < 0.5 ||
+          Math.abs(frame.bottom - shown.bottom) < 0.5,
+        JSON.stringify(show.map(f => Math.round(f.bottom))),
+      ).toBe(true);
+    }
+    expect(Math.min(...show.map(f => f.opacity))).toBeLessThan(1);
+    expect(shown.opacity).toBe(1);
+
+    const hide = await sampleAfterReport(field, 0, 900);
+    const rest = hide.at(-1) as (typeof hide)[number];
+    for (const frame of hide) {
+      expect(
+        Math.abs(frame.bottom - hide[0].bottom) < 0.5 ||
+          Math.abs(frame.bottom - rest.bottom) < 0.5,
+        JSON.stringify(hide.map(f => Math.round(f.bottom))),
+      ).toBe(true);
+    }
+    // The room holds through the hide, then drops once.
+    const rooms = hide.map(f => Math.round(f.room));
+    expect(rooms[0]).toBeGreaterThan(0);
+    expect(rest.room).toBe(0);
+    expect(
+      rooms.filter((room, i) => i > 0 && room !== rooms[i - 1]),
+    ).toHaveLength(1);
+    expect(rest.opacity).toBe(1);
+  });
+
+  test.describe('under a fine pointer', () => {
+    test.use({hasTouch: false, isMobile: false});
+
+    test('nothing of the ride attaches: the room drops at Chrome\u2019s hide report', async ({
+      page,
+    }) => {
+      const {field, content} = await openAtLastField(page);
+      expect(
+        await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+      ).toBe(false);
+      await field.focus();
+      await reportAt(page, COVER);
+      await expect
+        .poll(async () => (await readBody(field)).room, {timeout: 2000})
+        .toBeGreaterThan(0);
+      await page.waitForTimeout(800);
+      await reportAt(page, 0);
+      expect((await readBody(field)).room).toBe(0);
+      expect(await content.evaluate(el => el.getAnimations().length)).toBe(0);
+    });
   });
 });

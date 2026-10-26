@@ -67,13 +67,15 @@ exported from the package entry.
   keyboard when the sheet starts to move. It returns the room the keyboard
   takes at the end of the sheet's body, which the sheet lays out through a
   functional style on its own body (FR3), committed before the reveal scrolls
-  into it. Where the guide publishes the keyboard's own slide (Gboard's, in
-  Chrome on Android), the sheet rides it (FR8): a reveal during the show
+  into it. Under a coarse primary pointer, where the guide publishes the
+  keyboard's own slide (Gboard's, in Chrome on Android), the sheet rides it
+  (FR8): a reveal during the show
   scrolls the body at once and the content box rides up from where it was on
   the show's curve; through the hide the room stays and the content box
   rides down by the scroll the room's drop takes back, and at rest the room
-  drops and the translate clears in one commit. Safari's and Firefox's
-  reveals are unchanged.
+  drops and the translate clears in one commit. Under a fine pointer nothing
+  of the ride attaches (no guide subscription), and the room follows the
+  reports. Safari's and Firefox's reveals are unchanged.
 
 ## Laying out from the height, riding on top
 

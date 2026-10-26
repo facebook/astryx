@@ -170,17 +170,36 @@ function createGuide(win: Window): KeyboardLayoutGuide {
   let lastFrame: number | undefined;
   let frameRequest: number | null = null;
   let watchUntil = 0;
+  // True while requestAnimationFrame runs. A callback that comes back inside
+  // it (a stub that calls back at once, as many tests' do) is one frame that
+  // ends the watch: requesting the next frame from inside the request would
+  // recurse until the stack overflows.
+  let requesting = false;
+  let calledBackInRequest = false;
+  const onFrame = (time: number) => {
+    lastFrame = time;
+    frameRequest = null;
+    if (requesting) {
+      calledBackInRequest = true;
+      return;
+    }
+    if (time < watchUntil) {
+      requestFrame();
+    }
+  };
+  const requestFrame = () => {
+    requesting = true;
+    calledBackInRequest = false;
+    const request = win.requestAnimationFrame(onFrame);
+    requesting = false;
+    frameRequest = calledBackInRequest ? null : request;
+  };
   const watchFrames = () => {
     watchUntil = win.performance.now() + FRAME_WATCH_MS;
     if (frameRequest != null) {
       return;
     }
-    const onFrame = (time: number) => {
-      lastFrame = time;
-      frameRequest =
-        time < watchUntil ? win.requestAnimationFrame(onFrame) : null;
-    };
-    frameRequest = win.requestAnimationFrame(onFrame);
+    requestFrame();
   };
   const stopWatchingFrames = () => {
     if (frameRequest != null) {

@@ -39,8 +39,13 @@ describe('keyboardNotification', () => {
       {cwd: __dirname, encoding: 'utf8'},
     );
     expect(code).toContain('383.3');
-    // No other row: not the navigation bar's duration, not the press clocks.
+    // No other row: not the navigation bar's duration, not the press clocks,
+    // not the Reduce Motion fade that shares the table's composition.
     expect(code).not.toContain('navigationBarHideShowMs');
     expect(code).not.toContain('buttonReleaseMs');
+    // The fade's length and curve, however esbuild prints them: inline in its
+    // group or through a shared constant.
+    expect(code).not.toMatch(/\b500\b/);
+    expect(code).not.toContain('.42,0,.58,1');
   });
 });

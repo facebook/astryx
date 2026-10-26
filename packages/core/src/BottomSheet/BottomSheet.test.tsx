@@ -17,6 +17,7 @@ import {BottomSheetEscapeContext} from './bottomSheetEscape';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {__resetRevealsAtReportForTest} from '../keyboard/useMobileKeyboard';
+import {getKeyboardLayoutGuide} from '../keyboard/keyboardLayoutGuide';
 
 // A sheet has no stops unless its host asks for them, so the tests that
 // exercise detents pass their own. These three — a 14% peek, a half-height
@@ -1732,9 +1733,14 @@ describe('BottomSheet', () => {
       function renderChromeSheet({
         instantScrollBy = false,
         roomRangeShort = 0,
+        pointer = 'coarse',
+      }: {
+        instantScrollBy?: boolean;
+        roomRangeShort?: number;
+        pointer?: 'coarse' | 'fine';
       } = {}) {
         mockKeyboardGeometryApi();
-        mockPrimaryPointer('coarse');
+        mockPrimaryPointer(pointer);
         mockWindowHeight(800);
         const viewport = Object.assign(mockVisualViewport(800), {scale: 1});
         render(
@@ -1856,6 +1862,24 @@ describe('BottomSheet', () => {
         await afterTheSlide();
         expect(body.scrollTop).toBe(100);
         expect(content.style.translate).toBe('');
+      });
+
+      it('attaches nothing of the ride under a fine pointer: the room drops at Chrome\u2019s hide report', () => {
+        const guide = getKeyboardLayoutGuide(window);
+        const subscribe = vi.spyOn(guide, 'subscribe');
+        const {body, content, input, report} = renderChromeSheet({
+          instantScrollBy: true,
+          pointer: 'fine',
+        });
+        act(() => input.focus());
+        report(500);
+        expect(keyboardInsetOf(body)).toBe(348);
+        report(800);
+        expect(keyboardInsetOf(body)).toBe(0);
+        expect(content.style.translate).toBe('');
+        // Nothing subscribed the keyboard layout guide.
+        expect(subscribe).not.toHaveBeenCalled();
+        subscribe.mockRestore();
       });
     });
 
