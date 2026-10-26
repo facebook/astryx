@@ -54,7 +54,7 @@ export const MENU_PRESS_HANDOFF_PX: number = UIKIT_MENU_PRESS_HANDOFF_PX;
 
 export type MenuPressPointerType = 'mouse' | 'touch' | 'pen';
 
-/** @internal The machine's own shape, with UIMenu's handoff (`spec:AST-094` FR29); not public contract. */
+/** @internal The machine's own shape, with UIMenu's handoff (`spec:AST-094` FR28, FR29); not public contract. */
 export type MenuPressState<T> =
   | {phase: 'idle'}
   | {
@@ -82,7 +82,7 @@ export type MenuPressState<T> =
       row: T | null;
     };
 
-/** @internal The machine's own shape, with UIMenu's handoff (`spec:AST-094` FR29); not public contract. */
+/** @internal The machine's own shape, with UIMenu's handoff (`spec:AST-094` FR28, FR29); not public contract. */
 export type MenuPressInput<T> =
   | {
       type: 'down';
@@ -124,7 +124,7 @@ export type MenuPressInput<T> =
   /** The browser took the gesture: pointercancel, a second pointer, a scroll. */
   | {type: 'cancel'};
 
-/** @internal The machine's own shape, with UIMenu's handoff (`spec:AST-094` FR29); not public contract. */
+/** @internal The machine's own shape, with UIMenu's handoff (`spec:AST-094` FR28, FR29); not public contract. */
 export type MenuPressOutcome<T> =
   | {type: 'none'}
   /** A mouse pressed the trigger: open the menu now, under the held pointer. */
@@ -135,11 +135,13 @@ export type MenuPressOutcome<T> =
   /**
    * The gesture ended without a row acting. `stray` says whether the browser
    * will still report a `click` for this gesture that must not act; `dismiss`
-   * says the menu should close: a mouse released outside it.
+   * says the menu should close: a mouse released outside it. `clear`
+   * (@internal, `spec:AST-094` FR28) says a row a finger lit loses its
+   * highlight (the browser took the press).
    */
-  | {type: 'settle'; stray: boolean; dismiss: boolean};
+  | {type: 'settle'; stray: boolean; dismiss: boolean; clear?: true};
 
-/** @internal The machine's own shape, with UIMenu's handoff (`spec:AST-094` FR29); not public contract. */
+/** @internal The machine's own shape, with UIMenu's handoff (`spec:AST-094` FR28, FR29); not public contract. */
 export interface MenuPressTransition<T> {
   gesture: MenuPressState<T>;
   effect: MenuPressOutcome<T>;
@@ -203,7 +205,7 @@ function release<T>(
 /**
  * Advance the gesture by one event. Pure: same inputs, same output.
  */
-/** @internal The machine's own shape, with UIMenu's handoff (`spec:AST-094` FR29); not public contract. */
+/** @internal The machine's own shape, with UIMenu's handoff (`spec:AST-094` FR28, FR29); not public contract. */
 export function menuPressTransition<T>(
   gesture: MenuPressState<T>,
   event: MenuPressInput<T>,
@@ -373,8 +375,18 @@ function stepTracking<T>(
       return release(gesture.pointerType, event);
     case 'cancel':
       // The browser took the gesture (a scroll, a second finger): nothing
-      // acts, the menu stays, and no click follows a cancelled pointer.
-      return idle({type: 'settle', stray: false, dismiss: false});
+      // acts, the menu stays, and no click follows a cancelled pointer. A
+      // row a finger lit loses its highlight, as UIKit clears it when the
+      // list starts scrolling; a mouse's highlight stays where it was
+      // (spec:AST-017 FR59).
+      return idle({
+        type: 'settle',
+        stray: false,
+        dismiss: false,
+        ...(gesture.row != null && isFinger(gesture.pointerType)
+          ? {clear: true as const}
+          : {}),
+      });
     case 'down':
     case 'opened':
       return {gesture, effect: NONE};
@@ -383,7 +395,7 @@ function stepTracking<T>(
 
 // ---------------------------------------------------------------------------
 // The released public shape (`@astryxdesign/core/hooks`). The handoff
-// positions and `handoffFrom` stay internal: a caller of
+// positions, `handoffFrom` and the settle `clear` stay internal: a caller of
 // `menuPressStep` keeps the settle rule, as released.
 // ---------------------------------------------------------------------------
 
@@ -460,7 +472,10 @@ export function menuPressStep<T>(
   const {gesture: next, effect} = menuPressTransition(gesture, event);
   return {
     gesture: publicGesture(next),
-    effect,
+    effect:
+      effect.type === 'settle'
+        ? {type: 'settle', stray: effect.stray, dismiss: effect.dismiss}
+        : effect,
   };
 }
 

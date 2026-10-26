@@ -254,7 +254,9 @@ export interface DropdownMenuPressOptions extends UseMenuPressOptions {
    * settle rule. `'uikit'` (`spec:AST-094` FR29): as the finger presses on a
    * trigger in a fixed bar, and inside a scroll view once the content-touch
    * delay has passed with no scroll; the opening finger picks only after
-   * UIMenu's handoff distance. A mouse is unaffected.
+   * UIMenu's handoff distance. A mouse is unaffected. A menu with no
+   * trigger (a sub-menu) takes its root's, so a finger in it follows the
+   * root's rules: a cancelled touch clears its lit row (`spec:AST-094` FR28).
    * @default 'pointer'
    */
   touchModel?: 'pointer' | 'uikit';
@@ -428,13 +430,13 @@ export type MenuSurfacePressReturn = Omit<
  * The press model for a menu that never presses a trigger (a sub-menu, a
  * context menu, a Selector's list, a sheet's action list): the menu half
  * alone, so the trigger half's long-press detectors and scroll probe stay
- * out of its bundle (menuTriggerPress.ts). Not exported from the hooks entry
- * point.
+ * out of its bundle (menuTriggerPress.ts). A sub-menu passes its root
+ * menu's touch model. Not exported from the hooks entry point.
  *
  * @internal
  */
 export function useMenuSurfacePress(
-  options: UseMenuPressOptions,
+  options: DropdownMenuPressOptions,
 ): MenuSurfacePressReturn {
   return useMenuPressModel(options).surface;
 }
@@ -666,6 +668,15 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
           return;
         }
         case 'settle': {
+          // A finger's lit row clears on a cancel only where the primary
+          // pointer is coarse (the 'uikit' touch model); elsewhere the
+          // highlight stays as before (spec:AST-094 FR19, AST-017 FR59).
+          if (
+            effect.clear === true &&
+            optionsRef.current.touchModel === 'uikit'
+          ) {
+            highlight(null);
+          }
           endGesture();
           if (effect.stray) {
             armStrayClick(doc);

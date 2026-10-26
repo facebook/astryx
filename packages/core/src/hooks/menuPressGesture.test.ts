@@ -114,9 +114,24 @@ describe('menuPressStep — inside the menu', () => {
     expect(last).toEqual({type: 'settle', stray: true, dismiss: false});
   });
 
-  it('Tracking → Idle: a cancel (scroll, second pointer, browser) acts on nothing', () => {
+  it('Tracking → Idle: a cancel (scroll, second pointer, browser) acts on nothing and clears the lit row', () => {
     const {gesture, last} = run([downInMenu('A'), move('B'), {type: 'cancel'}]);
     expect(gesture.phase).toBe('idle');
+    expect(last).toEqual({
+      type: 'settle',
+      stray: false,
+      dismiss: false,
+      clear: true,
+    });
+  });
+
+  it('Tracking → Idle: a cancelled MOUSE press keeps its lit row', () => {
+    const {last} = run([downInMenu('A', 'mouse'), move('B'), {type: 'cancel'}]);
+    expect(last).toEqual({type: 'settle', stray: false, dismiss: false});
+  });
+
+  it('Tracking → Idle: a cancel with nothing lit has nothing to clear', () => {
+    const {last} = run([downInMenu('A'), move(null), {type: 'cancel'}]);
     expect(last).toEqual({type: 'settle', stray: false, dismiss: false});
   });
 
@@ -401,7 +416,7 @@ describe('menuPressStep — a finger that opened the menu hands off after travel
 });
 
 describe('menuPressStep, the released public machine', () => {
-  it('keeps the released shapes: no handoff state', () => {
+  it('keeps the released shapes: no handoff state, no settle clear', () => {
     let gesture = menuPressStep(IDLE_MENU_PRESS, {
       type: 'down',
       target: 'menu',
