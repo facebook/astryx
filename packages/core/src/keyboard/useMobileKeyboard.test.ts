@@ -2,7 +2,8 @@
 
 /**
  * @file useMobileKeyboard.test.ts
- * @input useMobileKeyboard.ts, a stand-in visual viewport
+ * @input useMobileKeyboard.ts, the keyboard layout guide, a stand-in visual
+ *   viewport
  * @output Tests for the on-screen keyboard module (spec:AST-099): the height
  *   (FR2), where it measures (FR6, FR7), its one set of listeners (FR1,
  *   architecture:react-component-runtime INV11) and the focus refusal (FR4)
@@ -13,6 +14,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, renderHook} from '@testing-library/react';
+import {getKeyboardLayoutGuide} from './keyboardLayoutGuide';
 import {
   __resetLayoutViewportForTest,
   layoutViewportHeight,
@@ -356,6 +358,27 @@ describe('one set of listeners per window (FR1, INV11)', () => {
     ]);
   });
 
+  it('feeds the keyboard layout guide, which adds no listener of its own', () => {
+    const add = vi.spyOn(viewport, 'addEventListener');
+    const windowAdd = vi.spyOn(window, 'addEventListener');
+    const stopHook = subscribeMobileKeyboard(window, () => {});
+    const guide = getKeyboardLayoutGuide(window);
+    const transitions: number[] = [];
+    const stopGuide = guide.subscribe(transition => {
+      transitions.push(transition.to);
+    });
+    expect(add).toHaveBeenCalledTimes(2);
+    expect(
+      windowAdd.mock.calls.filter(([type]) => type === 'resize'),
+    ).toHaveLength(1);
+
+    report({height: window.innerHeight - 300});
+    expect(transitions.at(-1)).toBe(300);
+    expect(guide.inset).toBe(300);
+    stopGuide();
+    stopHook();
+  });
+
   it('reads the layout once per keyboard change, however many read the height (INV11)', () => {
     // Count every read of the visual viewport's height: one per measurement.
     let height = viewport.height;
@@ -370,7 +393,13 @@ describe('one set of listeners per window (FR1, INV11)', () => {
         height = value;
       },
     });
+    const guide = getKeyboardLayoutGuide(window);
     const seen: number[] = [];
+    const stopGuide = guide.subscribe(transition => {
+      // A rider reads the height again as it commits its layout.
+      seen.push(getMobileKeyboardHeight(window));
+      seen.push(transition.to);
+    });
     const stopListener = subscribeMobileKeyboard(window, event => {
       if (event.type === 'viewport') {
         seen.push(getMobileKeyboardHeight(window));
@@ -388,6 +417,7 @@ describe('one set of listeners per window (FR1, INV11)', () => {
     first.unmount();
     second.unmount();
     stopListener();
+    stopGuide();
   });
 
   it('re-renders a component when the height changes, and only then', () => {
@@ -412,8 +442,12 @@ describe('one set of listeners per window (FR1, INV11)', () => {
     viewport.height = window.innerHeight - 300;
     const {result, unmount} = renderHook(() => useKeyboardHeight());
     expect(result.current).toBe(300);
+    const guide = getKeyboardLayoutGuide(window);
+    const stopGuide = guide.subscribe(() => {});
+    expect(guide.inset).toBe(300);
     report({height: window.innerHeight});
     expect(result.current).toBe(0);
+    stopGuide();
     unmount();
   });
 

@@ -1,7 +1,8 @@
 # On-screen keyboard
 
 Core's one source for the on-screen keyboard (`spec:AST-099`,
-`architecture:react-component-runtime` INV11). Everything here is internal to
+`architecture:react-component-runtime` INV11), and the keyboard layout guide
+that times motion with it. Everything here is internal to
 `@astryxdesign/core`: components import it from `../keyboard`, and nothing is
 exported from the package entry.
 
@@ -25,8 +26,8 @@ exported from the package entry.
   pointer. A desktop browser's visual viewport never shrinks for a keyboard,
   so it reads 0; inside an iframe the height is 0. Where the app sets
   `interactive-widget=resizes-content`, Chrome shrinks the layout viewport
-  with the keyboard, so the height is 0 there too: the browser has made the
-  room (FR8).
+  with the keyboard, so the height is 0 there too and nothing rides: the
+  browser has made the room (FR8).
 - **One set of listeners (FR1, INV11):** `subscribeMobileKeyboard(window, fn)`
   delivers every report (the visual viewport's resize and scroll, the window's
   resize, focus moves) from one set of listeners per window, however many
@@ -57,9 +58,17 @@ exported from the package entry.
   keyboard when the sheet starts to move. It returns the room the keyboard
   takes at the end of the sheet's body, which the sheet lays out through a
   functional style on its own body (FR3), committed before the reveal scrolls
-  into it.
+  into it. Under a coarse primary pointer, where the guide publishes the
+  keyboard's own slide (Gboard's, in Chrome on Android), the sheet rides it
+  (FR8): a reveal during the show
+  scrolls the body at once and the content box rides up from where it was on
+  the show's curve; through the hide the room stays and the content box
+  rides down by the scroll the room's drop takes back, and at rest the room
+  drops and the translate clears in one commit. Under a fine pointer nothing
+  of the ride attaches (no guide subscription), and the room follows the
+  reports. Safari's and Firefox's reveals are unchanged.
 
-## Laying out from the height
+## Laying out from the height, riding on top
 
 Layout follows the height (FR3): apply it on your own element through a
 functional style, so the layout is right with no animation running. For an
@@ -72,8 +81,51 @@ const height = useKeyboardHeight();
 <div {...stylex.props(styles.dock(liftFor(height)))} />
 ```
 
-## What the page sees
+An animation that rides the keyboard is optional polish on top, timed by the
+guide:
 
+```ts
+const guide = getKeyboardLayoutGuide(window);
+const unsubscribe = guide.subscribe(t => {
+  rideKeyboard(animator, {y: layoutLift - lift(t.to)}, t);
+});
+```
+
+Each transition is
+`{kind, from, to, start, velocity, animated, predicted, curve, spring}`:
+heights in CSS px, `start` on the document timeline (in the past for a show
+reported after the keyboard started, slightly ahead for a hide that starts
+after a blur), and the curve the keyboard moves on: `curve`, Gboard's slide in
+Chrome on Android, or else `spring`, UIKit's keyboard spring
+(`keyboard.spring`), values and no motion role
+(architecture:react-component-runtime INV11). `rideKeyboard` moves your
+element on the compositor from `start` on that curve, or at once when the
+transition is not animated. Hand the translate back to the layout once the
+ride ends (BottomSheet's hook does, in one commit at rest). Under Reduce Motion
+nothing travels with the keyboard
+(design:reduced-motion): the animator's default cross-fades on a touch screen
+and moves at once otherwise. `presentation(time)` gives the height presented
+at any time, for something that appears while the keyboard moves.
+
+## What the page sees (Mobile Safari, iOS 26.2)
+
+- Show: one `resize` of the visual viewport, with the final height, about
+  `keyboard.showReportLagMs` after the keyboard started to rise. A busy main
+  thread holds the report back, but UIKit raises the keyboard on its own
+  schedule, `keyboard.focusToShowMs` after the focus: the guide watches frames
+  from the focus and dates a report that follows a gap from the focus (no
+  earlier than the last frame before the report), however late, so the dock
+  joins the spring where the keyboard is by then. Without a focus it goes
+  back to the last frame before the report, at most
+  `keyboard.showReportLagMaxMs`.
+- Hide: the `resize` comes only once the keyboard is down. The keyboard starts
+  to fall `keyboard.hideAfterBlurMs` after the focused control blurs to
+  something that brings up no keyboard, whether the page blurred it or the
+  accessory bar's Done did, so the guide starts the hide at the blur and takes
+  the late `resize` as its confirmation. A prediction the viewport has not
+  confirmed once it should have ended gives way to what the viewport says.
+- Another keyboard while one is up (a field that brings up the number pad)
+  is UIKit's zero-duration change: the height jumps.
 - Safari reveals a focused field by scrolling the whole page, so a layout that
   keeps its own content above the keyboard focuses its field with
   `preventScroll` (`refuseFocusReveal`).
@@ -92,9 +144,31 @@ const height = useKeyboardHeight();
   lands its field above the keyboard in the report's own event, so Chrome 124
   never pans it. Chromium 158 does not pan.
 
-- Chrome on Android (Chromium 158 with Gboard, Android 15) is measured from
-  its visual viewport like every browser (`spec:AST-099` DEC-4).
-  `navigator.virtualKeyboard` with `overlaysContent`, the keyboard's own
+## What the page sees (Chromium 158 with Gboard, Android 15)
+
+Measured frame by frame on the emulator, with a marker the page paints on each
+report and Gboard's top read from every recorded frame (`../motion/android/
+keyboard.ts` has the numbers and their sources). The guide reads these reports
+in a browser with the VirtualKeyboard API (`keyboardProfileOf`), and the
+keyboard module measures them from the visual viewport, as in every browser
+(`spec:AST-099` FR8, DEC-4).
+
+- Show: Gboard slides up over the page in about 267 ms. Chrome's one `resize`
+  of the visual viewport comes just after the slide starts: its first painted
+  frame trails Gboard's first moved frame by 14 to 35 ms. The guide dates the
+  show back by `androidKeyboard.showReportLagMs` and rides Gboard's show
+  curve, joining the slide where it is, so content riding it stays on top of
+  the keyboard instead of being covered until the report.
+- Hide: Gboard starts down about `androidKeyboard.hideAfterBlurMs` after the
+  blur and leaves in about 167 ms; the `resize` comes mid-slide. The guide
+  starts the hide at the blur and takes the `resize` as its confirmation; a
+  hide nothing predicted (Back, which keeps the focus) rides from its report,
+  dated back `hideReportLagMs`.
+- When focus moves from one field to another through something that brings up
+  no keyboard (a popover's container), Chrome reports the keyboard gone and
+  back within about 50 ms. A hide reported while a field that gained focus less
+  than 150 ms ago still has it waits for the move to settle.
+- `navigator.virtualKeyboard` with `overlaysContent`, the keyboard's own
   geometry, was measured and not used: in 12 shows its `geometrychange` was
   painted 0 to 67 ms after Gboard started (against 14 to 35 ms for the
   visual viewport), it failed to show the keyboard in 4 of 12 shows when set
@@ -107,11 +181,21 @@ const height = useKeyboardHeight();
   inset the content box's `keyboardInset` functional style lays out as the
   content's last box (after its own children, so it adds scroll range in
   Firefox too, which keeps the content box at the body's height); it reveals the
-  focused field in the keyboard report's own event.
+  focused field in the keyboard report's own event, and in Chrome rides the
+  content box on Gboard's slides (`rideKeyboard`, from the guide's
+  transitions).
 
 ## Files
 
-| File                   | What it holds                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------------- |
-| `useMobileKeyboard.ts` | The keyboard module: the height, its listeners, the focus routes, BottomSheet's hook. |
-| `index.ts`             | Entry point.                                                                          |
+| File                     | What it holds                                                                                                         |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `useMobileKeyboard.ts`   | The keyboard module: the height, its listeners, the focus routes, BottomSheet's hook.                                 |
+| `keyboardModel.ts`       | The clock-free core of the guide: transitions from keyboard reports and focus changes.                                |
+| `keyboardLayoutGuide.ts` | One guide per window, fed by the keyboard module: the frame watch, the verification timer, the focus handoff.         |
+| `rideKeyboard.ts`        | Moves an element with the keyboard on the curve its transition publishes, or at once (tests: `rideKeyboard.test.ts`). |
+| `index.ts`               | Entry point.                                                                                                          |
+
+The timing constants live in `../motion/uikit/keyboard.ts` (iOS) and
+`../motion/android/keyboard.ts` (Chrome with Gboard), the spring in
+`keyboard.spring`, the duration in `keyboardNotification` (composed into
+`timing` as `keyboardNotificationMs`).
