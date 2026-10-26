@@ -151,6 +151,19 @@ describe('a language value as `language` (FR13)', () => {
     expect(calls).toBe(1);
   });
 
+  it('renders plain, not throwing, when a custom language has no function', () => {
+    const missing = createCodeLanguage({
+      name: 'zig',
+      identifiers: ['zig'],
+      tokenize: undefined as unknown as () => [],
+    });
+    const {container} = render(
+      <CodeBlock code="pub fn" language={missing} highlightMode="spans" />,
+    );
+    expect(keywordTexts(container)).toEqual([]);
+    expect(container.textContent).toContain('pub fn');
+  });
+
   it('paints a language value in the server render', () => {
     const html = renderToString(
       <CodeBlock code={THRIFT} language={thrift} highlightMode="spans" />,

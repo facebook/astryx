@@ -14,6 +14,9 @@
  * variables, helpers, wrappers, or types. Where a CodeBlock writes
  * `tokenizer` but the codemod cannot prove the result, it keeps the old prop
  * and leaves a TODO instead of guessing: a computed or missing `language`, a
+ * `tokenizer` value that is neither a function literal nor a name or property
+ * (a name or property is guarded with `fn ? createCodeLanguage(...) : 'x'`,
+ * since it may be undefined), a
  * `plaintext` language (which shows no label today, while a language value
  * does), and any CodeBlock that also spreads props. The deprecated prop keeps
  * working there. Comments are the codemod's only report channel, and each is
@@ -193,29 +196,47 @@ export default function transformer(file, api) {
           ? null
           : staticString(attributeValue(languageAttribute));
       const tokenize = attributeValue(prop);
+      const tokenizeNode = unwrap(tokenize);
+      // A function literal is always a function. A name or property may be
+      // undefined at run time (a forwarded optional prop), so it is guarded:
+      // `fn ? createCodeLanguage({...}) : 'x'` keeps the plain block the
+      // released prop drew without one. Anything else is reported.
+      const isFunction =
+        tokenizeNode?.type === 'ArrowFunctionExpression' ||
+        tokenizeNode?.type === 'FunctionExpression';
+      const isGuardable =
+        tokenizeNode?.type === 'Identifier' ||
+        tokenizeNode?.type === 'MemberExpression' ||
+        tokenizeNode?.type === 'OptionalMemberExpression';
       if (
         language == null ||
         language === '' ||
         language === 'plaintext' ||
-        tokenize == null ||
-        tokenize.type === 'JSXEmptyExpression'
+        !(isFunction || isGuardable)
       ) {
         hasChanges = addComment(j, prop, UNPROVEN_COMMENT) || hasChanges;
         return;
       }
       rewrites.push(() => {
         const create = ensureCreateImport(j, root);
-        languageAttribute.value = j.jsxExpressionContainer(
-          j.callExpression(j.identifier(create), [
-            j.objectExpression([
-              j.objectProperty(j.identifier('name'), j.stringLiteral(language)),
-              j.objectProperty(
-                j.identifier('identifiers'),
-                j.arrayExpression([j.stringLiteral(language)]),
-              ),
-              j.objectProperty(j.identifier('tokenize'), tokenize),
-            ]),
+        const value = j.callExpression(j.identifier(create), [
+          j.objectExpression([
+            j.objectProperty(j.identifier('name'), j.stringLiteral(language)),
+            j.objectProperty(
+              j.identifier('identifiers'),
+              j.arrayExpression([j.stringLiteral(language)]),
+            ),
+            j.objectProperty(j.identifier('tokenize'), tokenize),
           ]),
+        ]);
+        languageAttribute.value = j.jsxExpressionContainer(
+          isFunction
+            ? value
+            : j.conditionalExpression(
+                tokenize,
+                value,
+                j.stringLiteral(language),
+              ),
         );
         opening.attributes = opening.attributes.filter(
           (/** @type {any} */ a) => a !== prop,

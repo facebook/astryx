@@ -26,7 +26,7 @@ const b = <CodeBlock code={src} language={'nim'} tokenizer={(c) => tokens(c)} />
       "import { CodeBlock, createCodeLanguage } from '@astryxdesign/core/CodeBlock';",
     );
     expect(output).toContain(
-      "language={createCodeLanguage({ name: 'zig', identifiers: ['zig'], tokenize: zigTokens })}",
+      "language={zigTokens ? createCodeLanguage({ name: 'zig', identifiers: ['zig'], tokenize: zigTokens }) : 'zig'}",
     );
     expect(output).toContain(
       "language={createCodeLanguage({ name: 'nim', identifiers: ['nim'], tokenize: (c) => tokens(c) })}",
@@ -59,16 +59,30 @@ const a = <CB.CodeBlock code={src} language="zig" tokenizer={zigTokens} />;`);
     expect(() => jscodeshift.withParser('tsx')(output)).not.toThrow();
   });
 
+  it('guards a name or property that may be undefined', async () => {
+    const output = flat(
+      await applyTransform(`import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+const a = <CodeBlock code={src} language="zig" tokenizer={props.tokenizer} />;`),
+    );
+    expect(output).toContain(
+      "language={props.tokenizer ? createCodeLanguage({ name: 'zig', identifiers: ['zig'], tokenize: props.tokenizer }) : 'zig'}",
+    );
+  });
+
   it('reports what it cannot prove and leaves it unchanged', async () => {
     const source = `import {CodeBlock} from '@astryxdesign/core/CodeBlock';
 const a = <CodeBlock code={src} language={lang} tokenizer={t} />;
 const b = <CodeBlock code={src} tokenizer={t} />;
 const c = <CodeBlock code={src} language="plaintext" tokenizer={t} />;
-const d = <CodeBlock {...rest} code={src} language="zig" tokenizer={t} />;`;
+const d = <CodeBlock {...rest} code={src} language="zig" tokenizer={t} />;
+const e = <CodeBlock code={src} language="zig" tokenizer={enabled ? t : undefined} />;
+const f = <CodeBlock code={src} language="zig" tokenizer={enabled && t} />;`;
     const output = await applyTransform(source);
 
-    expect(output.match(/TODO\(astryx upgrade\)/g)).toHaveLength(4);
+    expect(output.match(/TODO\(astryx upgrade\)/g)).toHaveLength(6);
     expect(output.match(/tokenizer=\{t\}/g)).toHaveLength(4);
+    expect(output).toContain('tokenizer={enabled ? t : undefined}');
+    expect(output).toContain('tokenizer={enabled && t}');
     expect(output).not.toMatch(/import \{[^}]*createCodeLanguage/);
     expect(await applyTransform(output)).toBe(output);
   });
