@@ -14,14 +14,21 @@ exported from the package entry.
   The layout viewport's height is `layoutViewportHeight(window)`
   (`../utils/layoutViewport.ts`), in layout px in every engine: WebKit reports
   `innerHeight` and `innerWidth` in the zoomed visual viewport's px, which
-  `innerWidth` matching the visual viewport's width tells apart. BottomSheet's
-  obstruction and ChatLayout's lift read it too.
-- **Where it measures (FR6, FR7):** `isKeyboardMeasurable(window)` is true for
-  a top-level document with a visual viewport and no keyboard geometry API of
-  its own. It is decided from capabilities, never from the user agent.
-  Elsewhere the height is 0: Chrome's `navigator.virtualKeyboard` (Android's
-  path, where the app's `interactive-widget=resizes-content` resizes the
-  layout itself, FR8), and inside an iframe.
+  `innerWidth` matching the visual viewport's width tells apart. A classic
+  horizontal scrollbar, which `innerHeight` counts and the visual viewport
+  does not, is taken out, so a desktop page wider than its window reads no
+  keyboard. BottomSheet's obstruction and ChatLayout's lift read it too.
+- **Where it measures (FR6, FR7, DEC-4):** `isKeyboardMeasurable(window)` is
+  true for a top-level document with a visual viewport, a browser with its own
+  keyboard geometry API (`navigator.virtualKeyboard`, Chrome on Android)
+  included, whose visual viewport shrinks for the keyboard as everywhere
+  else. It is decided from capabilities, never from the user agent or the
+  pointer. A desktop browser's visual viewport never shrinks for a keyboard,
+  so it reads 0; inside an iframe the height is 0, and ChatLayout leaves its
+  composer's taps and focus to the browser. Where the app sets
+  `interactive-widget=resizes-content`, Chrome shrinks the layout viewport
+  with the keyboard, so the height is 0 there too and nothing rides: the
+  browser has made the room (FR8).
 - **One set of listeners (FR1, INV11):** `subscribeMobileKeyboard(window, fn)`
   delivers every report (the visual viewport's resize and scroll, the window's
   resize, focus moves) from one set of listeners per window, however many
@@ -80,7 +87,7 @@ Each transition is
 `{kind, from, to, start, velocity, animated, predicted, spring}`: heights in
 CSS px, `start` on the document timeline (in the past for a show Safari
 reported late, slightly ahead for a hide that starts after a blur), and the
-curve the keyboard moves on (`keyboard.spring`, its own and no theme's). Move
+curve the keyboard moves on (`keyboard.spring`, its own and no motion role). Move
 your own elements on the compositor with the animator, from `start`, on that
 curve, and hand the translate back to the layout once the ride ends
 (ChatLayout does). Under Reduce Motion nothing travels with the keyboard
@@ -146,4 +153,5 @@ at any time, for something that appears while the keyboard moves.
 | `index.ts`               | Entry point.                                                                               |
 
 The timing constants live in `../motion/uikit/keyboard.ts`, the spring in
-`keyboard.spring`, the duration in `timing.keyboardNotificationMs`.
+`keyboard.spring`, the duration in `keyboardNotification` (composed into
+`timing` as `keyboardNotificationMs`).

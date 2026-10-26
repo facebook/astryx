@@ -176,9 +176,10 @@ function mockPrimaryPointer(pointer: 'coarse' | 'fine') {
   );
 }
 
-// Desktop Chrome and Android Chrome: the platform's own keyboard geometry API
-// (navigator.virtualKeyboard), where the sheet neither measures nor claims
-// focus (spec:AST-099 FR6).
+// A browser with its own keyboard geometry API (navigator.virtualKeyboard):
+// desktop Chrome, whose visual viewport never shrinks for a keyboard, and
+// Chrome on Android, measured from its visual viewport like every browser
+// (spec:AST-099 FR6, DEC-4).
 function mockKeyboardGeometryApi() {
   const navigatorMock = Object.create(window.navigator);
   Object.defineProperty(navigatorMock, 'virtualKeyboard', {
@@ -1553,6 +1554,71 @@ describe('BottomSheet', () => {
       expect(keyboardInsetOf(getBody())).toBe(0);
     });
 
+    it('lays out no keyboard room when the body overhangs the viewport by a fraction of a pixel', () => {
+      // Chrome on Android: the visual viewport can be 0.3 px taller than the
+      // layout viewport, and a sheet sized to it ends that far below it.
+      mockIOSWebKit();
+      mockWindowHeight(800);
+      mockVisualViewport(800.3);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 100, bottom: 800.3}),
+      );
+      vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 700, bottom: 740}),
+      );
+
+      input.focus();
+
+      expect(keyboardInsetOf(body)).toBe(0);
+    });
+
+    it('scrolls nothing for a field in the bottom clearance band when the body overhangs the viewport by a fraction of a pixel', () => {
+      // Chrome on Android: the visual viewport can be 0.3 px taller than the
+      // layout viewport. With no keyboard up, a field in the sheet's bottom
+      // 48 px is already visible: the suggestion clearance is for a keyboard.
+      mockIOSWebKit();
+      mockWindowHeight(800);
+      mockVisualViewport(800.3);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 100, bottom: 800.3}),
+      );
+      vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 760, bottom: 790}),
+      );
+      const scrollBy = vi.fn();
+      Object.defineProperty(body, 'scrollBy', {
+        configurable: true,
+        value: scrollBy,
+      });
+
+      input.focus();
+
+      expect(scrollBy).not.toHaveBeenCalled();
+      expect(body.scrollTop).toBe(0);
+    });
+
     it('keeps Tall geometry fixed while extending and cleaning up its internal scroll range', () => {
       mockWindowHeight(800);
       const viewport = mockVisualViewport(500);
@@ -1602,6 +1668,36 @@ describe('BottomSheet', () => {
       expect(keyboardInsetOf(body)).toBe(0);
       expect(sheet.getBoundingClientRect()).toEqual(initialRect);
       expect(sheet.style.height).toBe('');
+    });
+
+    it('lays out the keyboard room in Chrome on Android, which has its own keyboard geometry API (spec:AST-099 DEC-4)', () => {
+      // Gboard shrinks Chrome's visual viewport while the layout viewport
+      // keeps its height; the VirtualKeyboard API is not read.
+      mockKeyboardGeometryApi();
+      mockPrimaryPointer('coarse');
+      mockWindowHeight(800);
+      mockVisualViewport(500);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 100, bottom: 800}),
+      );
+      vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 300, bottom: 340}),
+      );
+
+      input.focus();
+
+      expect(keyboardInsetOf(body)).toBe(348);
     });
 
     it('keeps the keyboard room when the page is pinch-zoomed past 2x with the keyboard up', () => {

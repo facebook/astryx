@@ -21,10 +21,11 @@
  * visual viewport's height times its scale, in CSS px: a page pan is not a
  * smaller keyboard, and a pinch zoom is not a keyboard. The layout viewport's
  * height is read in layout px in every engine (utils/layoutViewport.ts):
- * WebKit reports `innerHeight` in the zoomed visual viewport's px. It is 0 where the
- * platform has its own keyboard geometry API (`navigator.virtualKeyboard`,
- * Android's path, FR6, FR8), without a visual viewport, and inside an iframe,
- * whose visual viewport never shrinks for the keyboard (FR7). One set of
+ * WebKit reports `innerHeight` in the zoomed visual viewport's px. A browser
+ * with its own keyboard geometry API (`navigator.virtualKeyboard`, Chrome on
+ * Android) is measured the same way (FR6, DEC-4). It is 0 without a visual
+ * viewport, and inside an iframe, whose visual viewport never shrinks for the
+ * keyboard (FR7). One set of
  * listeners per window reads it (the visual viewport's resize and scroll, the
  * window's resize, and focus moves), however many components subscribe.
  *
@@ -83,15 +84,18 @@ const NON_TEXT_INPUT_TYPES = new Set([
 
 /**
  * Whether this window measures the keyboard: a top-level document (FR7) with
- * a visual viewport and no keyboard geometry API of its own (FR6). Decided
- * from capabilities, never from the user agent.
+ * a visual viewport (FR6). Decided from capabilities, never from the user
+ * agent or the pointer. A browser with its own keyboard geometry API (the
+ * VirtualKeyboard API, Chrome on Android) is measured the same way: its
+ * visual viewport shrinks for the keyboard while the layout viewport keeps its
+ * height, as everywhere else (`spec:AST-099` DEC-4). A desktop browser's
+ * visual viewport never shrinks for a keyboard, so it reads 0; where the app
+ * sets `interactive-widget=resizes-content`, Chrome shrinks the layout
+ * viewport with the keyboard, so the height is 0 there too and nothing rides:
+ * the browser has made the room itself (FR8).
  */
 export function isKeyboardMeasurable(win: Window): boolean {
-  return (
-    win.visualViewport != null &&
-    !('virtualKeyboard' in win.navigator) &&
-    win.self === win.top
-  );
+  return win.visualViewport != null && win.self === win.top;
 }
 
 /**
@@ -520,6 +524,18 @@ export function __resetRevealsAtReportForTest(): void {
   revealsAtReport = new WeakSet<Window>();
 }
 
+// How far the body runs under the keyboard's top, CSS px. The keyboard's top
+// is measured from `innerHeight`, which is a whole number of CSS px, while
+// the visual viewport and element rects are fractional: on the Android
+// emulator Chrome's visual viewport is 754.3 px over a 754 px layout
+// viewport, so a sheet sized to it ends 0.3 px below `innerHeight` with no
+// keyboard up. An overlap under one CSS px is that integer precision of
+// `innerHeight` (KEYBOARD_EPSILON), not an obstruction.
+function overlapOf(bodyBottom: number, obstructionTop: number): number {
+  const overlap = bodyBottom - obstructionTop;
+  return overlap > KEYBOARD_EPSILON ? overlap : 0;
+}
+
 // The keyboard is gone once its height is back to 0.
 function isVisualViewportRecovered(): boolean {
   return getMobileKeyboardHeight(window) <= 0.5;
@@ -675,7 +691,9 @@ export function useMobileKeyboard({
       const measuredBodyRect = body.getBoundingClientRect();
       const measuredControlRect = control.getBoundingClientRect();
       const obstructionTop = getObstructionTop();
-      const overlap = Math.max(0, measuredBodyRect.bottom - obstructionTop);
+      // Under a pixel of overhang is `innerHeight`'s precision, not a
+      // keyboard: no suggestion clearance then (overlapOf).
+      const overlap = overlapOf(measuredBodyRect.bottom, obstructionTop);
       const clearance = overlap > 0 ? bottomClearance : 0;
       const safeTop = measuredBodyRect.top;
       const safeBottom = Math.min(
@@ -709,7 +727,7 @@ export function useMobileKeyboard({
         clearKeyboardLayout();
         return;
       }
-      const overlap = Math.max(0, geometry.bodyBottom - obstructionTop);
+      const overlap = overlapOf(geometry.bodyBottom, obstructionTop);
       if (overlap === 0) {
         clearKeyboardLayout();
         return;
@@ -766,7 +784,7 @@ export function useMobileKeyboard({
 
       const measuredBodyRect = body.getBoundingClientRect();
       const obstructionTop = getObstructionTop();
-      const overlap = Math.max(0, measuredBodyRect.bottom - obstructionTop);
+      const overlap = overlapOf(measuredBodyRect.bottom, obstructionTop);
       // The extra clearance leaves room for mobile suggestion UI, but only
       // while the visual viewport actually overlaps the sheet. With no
       // obstruction, ordinary desktop and hardware-keyboard focus must not

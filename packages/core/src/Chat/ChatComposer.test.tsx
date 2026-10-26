@@ -291,9 +291,20 @@ describe('ChatComposer focus inside a keyboard-aware surface (spec:AST-099 FR4)'
 
   beforeEach(() => {
     primaryPointer('coarse');
+    // A top-level document with a visual viewport, where the keyboard is
+    // measured (spec:AST-099 FR6, FR7); jsdom has none of its own.
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      value: Object.assign(new EventTarget(), {
+        height: window.innerHeight,
+        offsetTop: 0,
+        scale: 1,
+      }),
+    });
   });
 
   afterEach(() => {
+    Reflect.deleteProperty(window, 'visualViewport');
     vi.unstubAllGlobals();
   });
 

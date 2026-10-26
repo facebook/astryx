@@ -20,7 +20,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {act, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen} from '@testing-library/react';
+import {ChatComposer} from './ChatComposer';
 import {ChatLayout} from './ChatLayout';
 import {editableToClaim, focusAtPoint} from './useChatKeyboard';
 
@@ -431,6 +432,87 @@ describe('the taps the composer claims', () => {
   });
 });
 
+describe('inside an iframe (spec:AST-099 FR7)', () => {
+  let frame: HTMLIFrameElement | null = null;
+
+  afterEach(() => {
+    frame?.remove();
+    frame = null;
+    vi.restoreAllMocks();
+  });
+
+  // A touch event as the browser raises it, in the frame's own window.
+  function touchEvent(
+    win: Window & typeof globalThis,
+    type: string,
+    points: {x: number; y: number}[],
+    changed = points,
+  ) {
+    const event = new win.Event(type, {bubbles: true, cancelable: true});
+    const list = (ps: {x: number; y: number}[]) =>
+      ps.map((p, identifier) => ({identifier, clientX: p.x, clientY: p.y}));
+    Object.assign(event, {
+      touches: list(points),
+      changedTouches: list(changed),
+    });
+    return event;
+  }
+
+  it('leaves the composer\u2019s taps and focus to the browser, under a finger too', () => {
+    frame = document.createElement('iframe');
+    document.body.append(frame);
+    const inner = frame.contentWindow as Window & typeof globalThis;
+    // A touch screen with a visual viewport, in a document that is not the
+    // top one; jsdom has no isContentEditable, so the nearest
+    // contenteditable decides.
+    Object.defineProperty(inner, 'matchMedia', {
+      configurable: true,
+      value: (query: string) => ({
+        matches: query === '(pointer: coarse)',
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }),
+    });
+    Object.defineProperty(inner, 'visualViewport', {
+      configurable: true,
+      value: Object.assign(new inner.EventTarget(), {
+        height: inner.innerHeight,
+        offsetTop: 0,
+        scale: 1,
+      }),
+    });
+    Object.defineProperty(inner.HTMLElement.prototype, 'isContentEditable', {
+      configurable: true,
+      get(this: HTMLElement) {
+        const host = this.closest('[contenteditable]');
+        return host != null && host.getAttribute('contenteditable') !== 'false';
+      },
+    });
+    const host = inner.document.createElement('div');
+    inner.document.body.append(host);
+    render(
+      <ChatLayout composer={<ChatComposer onSubmit={() => {}} />}>
+        <p>Hello</p>
+      </ChatLayout>,
+      {container: host},
+    );
+    const editable = host.querySelector<HTMLElement>(
+      '[contenteditable="true"]',
+    )!;
+    // A tap on the composer's text: the browser focuses it itself.
+    editable.dispatchEvent(touchEvent(inner, 'touchstart', [{x: 10, y: 10}]));
+    const end = touchEvent(inner, 'touchend', [], [{x: 10, y: 10}]);
+    editable.dispatchEvent(end);
+    expect(end.defaultPrevented).toBe(false);
+    // The shell's empty-space tap focuses with the browser's reveal.
+    const focus = vi.spyOn(editable, 'focus');
+    fireEvent.click(editable.parentElement!);
+    expect(focus).toHaveBeenCalled();
+    expect(focus).not.toHaveBeenCalledWith({preventScroll: true});
+  });
+});
+
 describe('the caret a claimed tap places', () => {
   // Installs (or, with undefined, removes) one caret-from-point API on the
   // document, as each engine has its own.
@@ -489,6 +571,26 @@ describe('the caret a claimed tap places', () => {
     focusAtPoint(element, 20, 10);
 
     expect(document.getSelection()?.anchorOffset).toBe(5);
+  });
+});
+
+describe('the ChatLayout stories', () => {
+  it('give a full-page layout the dynamic viewport\u2019s height, so the composer starts on screen', () => {
+    // Where a phone browser's toolbar collapses, 100vh is the viewport with
+    // the toolbar hidden (Firefox for Android: 859 px for 796 visible), which
+    // puts the composer under the window's bottom edge.
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const stories = fs.readFileSync(
+      path.join(
+        here,
+        '../../../../apps/storybook/stories/ChatLayout.stories.tsx',
+      ),
+      'utf8',
+    );
+    // Storybook's preview pads every story by 16 px on each side.
+    expect(stories).not.toMatch(/height: '100vh'/);
+    expect(stories).not.toMatch(/height: '100dvh'/);
+    expect(stories).toMatch(/height: 'calc\(100dvh - 32px\)'/);
   });
 });
 
