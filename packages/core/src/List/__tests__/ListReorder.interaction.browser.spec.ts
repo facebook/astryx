@@ -974,6 +974,16 @@ test.describe('with a mouse', () => {
         'false',
       );
       await expect(page.getByRole('button', {name: 'Done'})).toBeHidden();
+      // Leaving announces where the row is.
+      await expect
+        .poll(async () =>
+          page.evaluate(() =>
+            Array.from(document.querySelectorAll('[aria-live]'))
+              .map(element => element.textContent ?? '')
+              .join(' '),
+          ),
+        )
+        .toContain('Done, Inbox at position 3 of 6');
       // Kept, and at rest: with a mouse nothing travels.
       expect(await labels(page)).toEqual([
         'Sent',
