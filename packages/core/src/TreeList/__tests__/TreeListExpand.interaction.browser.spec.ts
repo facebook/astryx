@@ -84,6 +84,17 @@ function parts(page: Page) {
   };
 }
 
+/** How many tree rows and chevron parts show at less than full opacity. */
+const hiddenParts = async (page: Page) =>
+  page.evaluate(
+    () =>
+      [
+        ...document.querySelectorAll(
+          '[role="treeitem"], [data-tree-chevron], [data-tree-chevron] *',
+        ),
+      ].filter(element => getComputedStyle(element).opacity !== '1').length,
+  );
+
 /** The `y` of an element's `translate`, as the engine presents it. */
 const translateY = async (element: Locator) =>
   element.evaluate(el => {
@@ -300,8 +311,13 @@ test('under reduced motion an expand and a collapse cross-fade: opacity only, wi
   await tapToggle(page);
   await expect(child).toBeVisible();
   expectReducedMotionCrossFade(await holdAnimations(page));
-  await releaseAnimations(page, {finish: true});
+  // The held fades play out: a row or chevron that travels dips (it fades
+  // out, lands while invisible, then fades back in once its fade out has
+  // ended). The collapse starts when the expand has settled, everything
+  // showing again.
+  await releaseAnimations(page);
   await expect.poll(async () => translateY(child)).toBe(0);
+  await expect.poll(async () => hiddenParts(page)).toBe(0);
   await tapToggle(page);
   expectReducedMotionCrossFade(await holdAnimations(page));
   await releaseAnimations(page, {finish: true});
