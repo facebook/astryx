@@ -12,7 +12,8 @@
  *   sheet as UIKit decides it (once it has moved 10 px either way), the
  *   rubber band past the range's first and last months, RTL paging,
  *   Reduced Motion cross-fading instead of travelling, and storyboards of the
- *   arrow step and a release. They run under a finger in Chromium (as on
+ *   arrow step and a release, and a drag after the month and year wheels
+ *   close still paging. They run under a finger in Chromium (as on
  *   Android) and WebKit alike; with a mouse the calendar keeps today's native
  *   scroller.
  * @position Interaction tests of MonthPager.tsx (`*.interaction.browser.spec.ts`,
@@ -173,6 +174,37 @@ test('a slow release before half a month returns; past it, the next month', asyn
   await expect(title).toHaveText('October 2026');
 
   // 70 %: the next month.
+  await driver.play(slowDrag(center, -0.7 * width));
+  await waitForRest(track);
+  expect(await monthsIn(viewport)).toBeCloseTo(10, 2);
+  await expect(title).toHaveText('November 2026');
+});
+
+test('after the month and year wheels close, a drag past half a month still pages', async ({
+  page,
+}) => {
+  const {driver, viewport, track, title, width, center} =
+    await openCalendar(page);
+  const toggle = page.getByRole('button', {name: /choose month and year/i});
+  const wheels = page.locator('[data-panel="wheels"]');
+  const tapToggle = async () => {
+    const box = await toggle.boundingBox();
+    if (box == null) {
+      throw new Error('no month and year toggle');
+    }
+    await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+  };
+  await tapToggle();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  // Closing re-asserts the month shown, which the pager is already on.
+  await tapToggle();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect
+    .poll(async () =>
+      wheels.evaluate(element => getComputedStyle(element).opacity),
+    )
+    .toBe('0');
+
   await driver.play(slowDrag(center, -0.7 * width));
   await waitForRest(track);
   expect(await monthsIn(viewport)).toBeCloseTo(10, 2);

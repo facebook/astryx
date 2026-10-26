@@ -479,6 +479,13 @@ function MonthPagerComponent({
       stopFollowingSettle();
       const row = clampIndex(monthIndex - minMonthIndex, 0, rowCount - 1);
       reportedRowRef.current = row;
+      // Already the pager's target, as when the month and year wheels close
+      // on the month shown: nothing moves. A far jump left pending here would
+      // wait for a render `setCenterRow` does not cause, then land on the
+      // next one (a drag crossing half a month) and cancel that drag.
+      if (row === pager.virtualIndex) {
+        return;
+      }
       const distance = Math.abs(row - pager.virtualIndex);
       if (behavior === 'smooth' && distance <= OVERSCAN) {
         pager.goTo(row, {animated: true});
