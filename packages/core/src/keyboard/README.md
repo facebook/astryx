@@ -14,15 +14,18 @@ exported from the package entry.
   The layout viewport's height is `layoutViewportHeight(window)`
   (`../utils/layoutViewport.ts`), in layout px in every engine: WebKit reports
   `innerHeight` and `innerWidth` in the zoomed visual viewport's px, which
-  `innerWidth` matching the visual viewport's width tells apart. BottomSheet's
-  obstruction and ChatLayout's lift read it too.
+  `innerWidth` matching the visual viewport's width tells apart. A classic
+  horizontal scrollbar, which `innerHeight` counts and the visual viewport
+  does not, is taken out, so a desktop page wider than its window reads no
+  keyboard. BottomSheet's obstruction and ChatLayout's lift read it too.
 - **Where it measures (FR6, FR7, DEC-4):** `isKeyboardMeasurable(window)` is
   true for a top-level document with a visual viewport, a browser with its own
   keyboard geometry API (`navigator.virtualKeyboard`, Chrome on Android)
   included, whose visual viewport shrinks for the keyboard as everywhere
   else. It is decided from capabilities, never from the user agent or the
   pointer. A desktop browser's visual viewport never shrinks for a keyboard,
-  so it reads 0; inside an iframe the height is 0. Where the app sets
+  so it reads 0; inside an iframe the height is 0, and ChatLayout leaves its
+  composer's taps and focus to the browser. Where the app sets
   `interactive-widget=resizes-content`, Chrome shrinks the layout viewport
   with the keyboard, so the height is 0 there too and nothing rides: the
   browser has made the room (FR8).

@@ -2,7 +2,9 @@
 
 /**
  * @file layoutViewport.test.ts
- * @input vitest, a stand-in window and visual viewport
+ * @input vitest, a stand-in window, visual viewport and document root (the
+ *   horizontal scrollbar's cases run on jsdom's window, in
+ *   keyboard/useMobileKeyboard.test.ts)
  * @output Tests layoutViewportHeight: innerHeight at a scale of 1 (a classic
  *   scrollbar included), scaled back where WebKit reports it in the zoomed
  *   visual viewport's px (the states measured in Safari on iOS 26.2), left as
@@ -23,7 +25,18 @@ function windowWith({
   innerWidth: number;
   viewport: {width: number; height: number; scale: number} | null;
 }): Window {
-  return {innerHeight, innerWidth, visualViewport: viewport} as Window;
+  // A root as tall and as wide as the window: no horizontal scrollbar.
+  const documentElement = {
+    clientHeight: innerHeight,
+    clientWidth: innerWidth,
+    scrollWidth: innerWidth,
+  };
+  return {
+    innerHeight,
+    innerWidth,
+    visualViewport: viewport,
+    document: {documentElement},
+  } as unknown as Window;
 }
 
 describe('layoutViewportHeight', () => {

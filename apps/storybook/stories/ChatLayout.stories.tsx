@@ -874,7 +874,8 @@ export const Densities: StoryObj = {
       style={{
         display: 'flex',
         gap: 16,
-        height: '100dvh',
+        // The visible height, less the preview's 16px padding on each side.
+        height: 'calc(100dvh - 32px)',
         padding: 16,
         boxSizing: 'border-box',
       }}>

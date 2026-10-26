@@ -324,8 +324,8 @@ test('the lift is the part of the keyboard over the dock\u2019s resting bottom: 
   page,
 }) => {
   const {dock, editable} = await openChat(page);
-  // Let the chat's root end below the layout viewport: the story at the full
-  // viewport height under the preview's padding.
+  // A root that ends below the layout viewport: the viewport's full height
+  // under the preview's 16 px gutter.
   await dock.evaluate(el => {
     const root = el.parentElement as HTMLElement;
     (root.parentElement as HTMLElement).style.height = '100vh';
