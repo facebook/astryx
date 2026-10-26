@@ -13,7 +13,9 @@
  *   handle picks the row up and the drop moves it; a flick on a handle
  *   scrolls instead; the row follows the finger one to one and stops at the
  *   list's end; the rows it passes slide on the table spring; the drop
- *   springs from rest on the distance-scaled spring; the page autoscrolls by
+ *   springs from rest on the distance-scaled spring, even from a finger that
+ *   lifts moving, and a cancelled drag goes home from rest, commits nothing
+ *   (each told apart from a settle that took the release velocity); the page autoscrolls by
  *   whole points every 20 ms near the edge; a second finger does not break the drag; a
  *   pinch that starts on a handle zooms; the drop and the slides keep moving
  *   while the main thread is blocked; a drag does no Layout or Paint per move;
@@ -44,6 +46,7 @@ import {
   openStory,
   pinch,
   releaseAnimations,
+  releaseVelocity,
   seekAnimations,
   startScreencast,
   tap,
@@ -334,7 +337,46 @@ test('the rows it passes slide out of the way on the table spring', async ({
     .toEqual(['Sent', 'Inbox', 'Drafts', 'Archive', 'Spam', 'Trash']);
 });
 
-test('the drop springs the row from rest into its slot, its duration scaled by the distance left', async ({
+/**
+ * The best fit of `curve` to `samples` over a commit lag of 0 to 30 ms (the
+ * commit that applies a drop lands a few ms into it and continues the same
+ * curve from there), and that lag.
+ */
+function fitLag(
+  samples: ReadonlyArray<{t: number; value: number}>,
+  curve: (t: number) => number,
+): {lag: number; maxError: number} {
+  let lag = 0;
+  let best = Number.POSITIVE_INFINITY;
+  for (let t = 0; t <= 30; t += 0.1) {
+    const error = compareCurve(samples, s => curve(s + t), 0.5).maxError;
+    if (error < best) {
+      best = error;
+      lag = t;
+    }
+  }
+  return {lag, maxError: best};
+}
+
+/**
+ * The settle a release velocity would start (spec:AST-094 FR6, FR38), in
+ * px from the row's start, for comparison with the measured one from rest.
+ */
+function handoffCurve(
+  duration: number,
+  from: number,
+  to: number,
+  velocity: number,
+): (ms: number) => number {
+  const curve = solveSpring(toSpring({duration, bounce: 0}), {
+    from,
+    to,
+    velocity,
+  });
+  return ms => curve.value(ms / 1000);
+}
+
+test('the drop springs the row from rest into its slot, its duration scaled by the distance left, even from a moving finger', async ({
   page,
 }, testInfo) => {
   await open(page);
@@ -349,66 +391,141 @@ test('the drop springs the row from rest into its slot, its duration scaled by t
   const distance = pitch - travel;
   const spring = settleSpring(distance, height);
   const progress = tableProgress(spring.duration);
-  await driver.play(
-    drag(
-      from,
-      {x: from.x, y: from.y + travel},
-      {
-        holdMs: HOLD_MS,
-        durationMs: 200,
-        restMs: 300,
-      },
-    ),
-    {
-      onEvent: async (step: TouchEventStep) => {
-        if (step.type !== 'touchEnd') {
-          return;
-        }
-        await holdAnimations(page, inbox);
-        for (const t of timeline(progress.settleMs)) {
-          await seekAnimations(page, t);
-          samples.push({t, value: (await topOf(inbox)) - start});
-        }
-        await releaseAnimations(page, {finish: true});
-      },
-    },
+  // The finger lifts while it moves, so a settle that took its velocity
+  // would leave from the release moving, not from rest.
+  const script = drag(
+    from,
+    {x: from.x, y: from.y + travel},
+    {holdMs: HOLD_MS, durationMs: 100},
   );
+  const velocity = releaseVelocity(script).y;
+  await driver.play(script, {
+    onEvent: async (step: TouchEventStep) => {
+      if (step.type !== 'touchEnd') {
+        return;
+      }
+      await holdAnimations(page, inbox);
+      for (const t of timeline(progress.settleMs)) {
+        await seekAnimations(page, t);
+        samples.push({t, value: (await topOf(inbox)) - start});
+      }
+      await releaseAnimations(page, {finish: true});
+    },
+  });
   const curve = (t: number) => travel + distance * progress.at(t);
   // The commit that applies the drop lands a few ms into it and continues the
   // same curve from there (its value and velocity kept): the held animation
   // starts that much into the drop. The lag is fitted to every sample (a
   // spring from rest is flat at its start, so its first sample cannot place
   // it).
-  let lag = 0;
-  let best = Number.POSITIVE_INFINITY;
-  for (let t = 0; t <= 30; t += 0.1) {
-    const error = compareCurve(samples, s => curve(s + t), 0.5).maxError;
-    if (error < best) {
-      best = error;
-      lag = t;
-    }
-  }
+  const {lag} = fitLag(samples, curve);
   const comparison = compareCurve(samples, t => curve(t + lag), 0.5);
+  // A settle that took the release velocity misses the samples at any lag.
+  const handoff = fitLag(
+    samples,
+    handoffCurve(spring.duration, travel, pitch, velocity),
+  );
   await writeEvidence(
     'curves/list-reorder-drop',
     {
       [`${testInfo.project.name}.json`]: JSON.stringify(
-        {spring, pitch, height, travel, distance, lag, samples, comparison},
+        {
+          spring,
+          pitch,
+          height,
+          travel,
+          distance,
+          velocity,
+          lag,
+          samples,
+          comparison,
+          handoff,
+        },
         null,
         2,
       ),
     },
     testInfo,
   );
+  expect(velocity).toBeGreaterThan(150);
   expect(spring.duration).toBeLessThan(reorder.settle.maxDuration);
   expect(samples[0].value).toBeCloseTo(travel, 0);
   expect(lag).toBeLessThan(30);
   expect(comparison.maxError, JSON.stringify(comparison.worst)).toBeLessThan(
     0.5,
   );
+  expect(handoff.maxError).toBeGreaterThan(2);
   await expect
     .poll(async () => labels(page))
     .toEqual(['Sent', 'Inbox', 'Drafts', 'Archive', 'Spam', 'Trash']);
+});
+
+test('a cancelled drag sends the row home from rest and commits no move', async ({
+  page,
+  browserName,
+}, testInfo) => {
+  // WebKit's driver dispatches no touch cancel.
+  test.skip(browserName === 'webkit', 'Chromium dispatches the touch cancel');
+  await open(page);
+  const {pitch, height} = await pitchOf(page);
+  const inbox = row(page, 'Inbox');
+  const start = await topOf(inbox);
+  const from = await centerOf(handle(page, 'Inbox'));
+  const travel = 1.6 * pitch;
+  const driver = await touchDriver(page);
+  const samples: {t: number; value: number}[] = [];
+  // The browser takes the touch while the finger still moves.
+  const script = drag(
+    from,
+    {x: from.x, y: from.y + travel},
+    {holdMs: HOLD_MS, durationMs: 200, cancel: true},
+  );
+  const velocity = releaseVelocity(script).y;
+  const spring = settleSpring(travel, height);
+  const progress = tableProgress(spring.duration);
+  await driver.play(script, {
+    onEvent: async (step: TouchEventStep) => {
+      if (step.type !== 'touchCancel') {
+        return;
+      }
+      await holdAnimations(page, inbox);
+      for (const t of timeline(progress.settleMs)) {
+        await seekAnimations(page, t);
+        samples.push({t, value: (await topOf(inbox)) - start});
+      }
+      await releaseAnimations(page, {finish: true});
+    },
+  });
+  // Home from where the finger left it, from rest, on the drop's spring. No
+  // commit comes between the cancel and the return, so neither curve is
+  // shifted, and one that took the release velocity misses the samples.
+  const curve = (t: number) => travel * (1 - progress.at(t));
+  const fit = compareCurve(samples, curve, 0.5);
+  const handoff = compareCurve(
+    samples,
+    handoffCurve(spring.duration, travel, 0, velocity),
+    0.5,
+  );
+  await writeEvidence(
+    'curves/list-reorder-cancel',
+    {
+      [`${testInfo.project.name}.json`]: JSON.stringify(
+        {spring, pitch, height, travel, velocity, samples, fit, handoff},
+        null,
+        2,
+      ),
+    },
+    testInfo,
+  );
+  expect(samples[0].value).toBeCloseTo(travel, 0);
+  expect(fit.maxError, JSON.stringify(fit.worst)).toBeLessThan(0.5);
+  expect(handoff.maxError).toBeGreaterThan(2);
+  await waitForRest(page);
+  expect(await labels(page)).toEqual(ROWS);
+  for (const label of ROWS) {
+    expect(await translateY(row(page, label))).toBe(0);
+  }
+  await expect(page.locator('[data-astryx-reordering]')).toHaveCount(0);
 });
 
 test('near the bottom edge the page autoscrolls by whole points every 20 ms', async ({

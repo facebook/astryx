@@ -34,6 +34,11 @@ export interface TouchFrame {
   readonly t: number;
   /** Every finger that is down at `t`. Empty = all lifted. */
   readonly fingers: readonly Finger[];
+  /**
+   * The fingers this frame takes away are cancelled (a `touchCancel`, as
+   * when the browser takes the touch over), not lifted (a `touchEnd`).
+   */
+  readonly cancel?: boolean;
 }
 
 export type TouchScript = readonly TouchFrame[];
@@ -86,6 +91,8 @@ export interface DragOptions {
   /** Progress easing over the move, default linear (constant velocity). */
   readonly easing?: (progress: number) => number;
   readonly id?: number;
+  /** Ends in a `touchCancel` instead of a lift. */
+  readonly cancel?: boolean;
 }
 
 /** Press at `from`, move to `to`, lift. Constant velocity unless `easing` says otherwise. */
@@ -101,6 +108,7 @@ export function drag(
     restMs = 0,
     easing = (p: number) => p,
     id = 0,
+    cancel = false,
   } = options;
   const frames: TouchFrame[] = [{t: 0, fingers: [{id, ...from}]}];
   for (const t of frameTimes(durationMs, hz)) {
@@ -111,7 +119,11 @@ export function drag(
   }
   // A real finger reports no move while it rests: the lift simply comes later.
   const last = frames[frames.length - 1].t;
-  frames.push({t: last + Math.max(restMs, 1000 / hz / 4), fingers: []});
+  frames.push({
+    t: last + Math.max(restMs, 1000 / hz / 4),
+    fingers: [],
+    ...(cancel ? {cancel} : null),
+  });
   return frames;
 }
 
@@ -305,7 +317,8 @@ export function merge(...scripts: TouchScript[]): TouchScript {
 
 /**
  * Turns frames into events: a finger that appears is a `touchStart`, one that
- * disappears a `touchEnd`, one that moved a `touchMove`. A frame that both
+ * disappears a `touchEnd` (a `touchCancel` in a frame that cancels), one that
+ * moved a `touchMove`. A frame that both
  * moves some fingers and lifts others yields the move first, then the lift.
  * Unchanged frames yield nothing (a resting finger reports nothing).
  */
@@ -334,7 +347,7 @@ export function toTouchEvents(script: TouchScript): TouchEventStep[] {
       const remaining = [...down.values()].filter(f => next.has(f.id));
       events.push({
         t: frame.t,
-        type: 'touchEnd',
+        type: frame.cancel === true ? 'touchCancel' : 'touchEnd',
         fingers: remaining,
         changed: released.map(f => down.get(f.id) ?? f),
       });

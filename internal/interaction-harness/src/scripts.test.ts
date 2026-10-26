@@ -49,6 +49,22 @@ describe('touch scripts', () => {
     expect(releaseVelocity(script)).toEqual({x: 0, y: 0});
   });
 
+  it('a cancelled drag ends in a touchCancel, not a touchEnd', () => {
+    const events = toTouchEvents(
+      drag(
+        {x: 0, y: 0},
+        {x: 0, y: 100},
+        {durationMs: 100, hz: 60, holdMs: 500, cancel: true},
+      ),
+    );
+    expect(events.filter(e => e.type === 'touchEnd')).toHaveLength(0);
+    expect(events.at(-1)).toMatchObject({
+      type: 'touchCancel',
+      fingers: [],
+      changed: [{id: 0, x: 0, y: 100}],
+    });
+  });
+
   it('flick releases at exactly the scripted velocity', () => {
     const script = flick(
       {x: 10, y: 10},

@@ -159,15 +159,18 @@ async function chromiumDriver(page: Page): Promise<TouchDriver> {
           // A start or move lists every finger down (CDP presses the new ones).
           // An end lists the fingers that lift: that releases exactly those
           // while the rest stay down and keep moving; the last lift lists none.
-          // (A move that omits a finger does not release it.)
+          // (A move that omits a finger does not release it.) A cancel takes
+          // every finger and lists none.
           await cdp.send('Input.dispatchTouchEvent', {
             type: step.type,
             touchPoints:
-              step.type !== 'touchEnd'
-                ? touchPoints(step.fingers)
-                : step.fingers.length > 0
-                  ? touchPoints(step.changed)
-                  : [],
+              step.type === 'touchCancel'
+                ? []
+                : step.type !== 'touchEnd'
+                  ? touchPoints(step.fingers)
+                  : step.fingers.length > 0
+                    ? touchPoints(step.changed)
+                    : [],
             timestamp: timestamp / 1000,
           });
         },
