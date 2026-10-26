@@ -1371,11 +1371,12 @@ test(
     );
     await waitForSettle(content);
     await freezeTimers(page);
+    // The film runs to the latest curve end among the held animations; it
+    // starts at the trigger turn, which began before the lift.
     const {storyboard: settleBoard} = await animationStoryboard(page, {
       name: 'refresh-settle-onto-inset',
       clip,
       scope: content,
-      times: timeline(700),
       measure,
       columns: 7,
       cellScale: 0.4,
