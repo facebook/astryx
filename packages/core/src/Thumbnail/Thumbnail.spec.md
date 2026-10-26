@@ -41,7 +41,7 @@ system_specs: [spec:AST-009, spec:AST-085, spec:AST-086]
 | Behavior                | The preview shows a skeleton, the image, an upload overlay, or a placeholder; it is a named group whose open and remove actions are separate buttons.                                |
 | End-user impact         | Screen-reader users hear the file and image in one group name and reach "Open …" and "Remove …" buttons; keyboard and touch users can always reach a hover-revealed remove button.   |
 | Builder impact          | None; the record describes shipped behavior.                                                                                                                                         |
-| Compatibility/readiness | Released behavior recorded as current; no API, default, or output changes. Seven implementation gaps are listed under Current-state impact.                                          |
+| Compatibility/readiness | Released behavior recorded as current; no API, default, or output changes. Eight implementation gaps are listed under Current-state impact.                                          |
 | Review checks           | Reject a hover-only remove button that leaves the tab order, a name on a roleless element, an image exposed without `alt`, or a busy spinner that announces itself.                  |
 | Governing rules         | `spec:AST-085/FR1`; `spec:AST-086/FR8`; WCAG 2.2 2.5.8; `architecture:public-component-api/INV5,INV6,INV8`; `architecture:internationalization/INV1a`.                               |
 
@@ -67,6 +67,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Current-state impact
 
+- **Caller `role` replaces the group role (FR7, AR1).** A caller `role`, such
+  as `none` or `img`, overwrites `role="group"`, leaving the composed name on
+  an element that may not take it, where `architecture:public-component-api`
+  INV5 keeps component-owned semantics from being overwritten.
 - **Joined name outside the catalog (FR3).** With both `label` and `alt`, the
   group name "{label} — {alt}" is assembled at the call site rather than from
   one catalog message, so a locale cannot reorder or re-punctuate it
@@ -135,7 +139,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | FR4 | With `onClick` and not loading (and, as the FR6 gap, not disabled), a full-size `button type="button"` named "Open {name}" wraps the image content and calls `onClick`; hover and pressed overlays show for mouse and touch. Each focus move shows one indicator (`architecture:interaction-modality` INV3): the image container draws the shared focus-visible outline for the open button. Implementation gaps: both the open and the remove button keep their own focus ring inside the container outline, so focusing either draws two indicators; and unmounting a focused action leaves focus on the document body, with the destination open in OQ1 (Current-state impact).                                                                                                                                                                                                                                                    | Current source and tests |
 | FR5 | With `onRemove` (and, as the FR6 gap, not disabled), a small icon-only secondary Button named "Remove {name}" sits `--spacing-1` from the top and inline-end edges above the image, painted with the overlay scrim and on-dark icon; a click stops propagation before `onRemove`, so it never opens the thumbnail. With `showRemoveOn="hover"` the button is visually hidden at rest by opacity, stays in the tab order and accessibility tree, and is revealed on container hover, on focus within, and always on touch devices.                                                                                                                                                                                                                                                                                                                                                                                                     | Current source and tests |
 | FR6 | `isDisabled` dims the root to half opacity with pointer events off. A disabled control stays focusable and announced (`spec:AST-085` FR1, FR5), and the disabled state is reflected on the owning target (`architecture:component-theming-surface` INV6). Implementation gap: a disabled thumbnail renders neither the open nor the remove button, and the `thumbnail` target reflects no state (Current-state impact).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Current source and tests |
-| FR7 | `ref` reaches the root. Supported DOM, ARIA, data, and event props reach the root after its role and name, so a caller `role` or `aria-label` wins; `data-testid` reaches the root; `xstyle`, `className`, and `style` merge in that order after component styles.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Current source and tests |
+| FR7 | `ref` reaches the root. Supported DOM, ARIA, data, and event props reach the root; `data-testid` reaches the root; `xstyle`, `className`, and `style` merge in that order after component styles. A caller `aria-label` or `aria-labelledby` names the group (FR3). The group role is component-owned semantics (`architecture:public-component-api` INV5). Implementation gap: caller props spread after the role, so a caller `role` replaces it (Current-state impact).                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Current source and tests |
 
 ### Allowed variation
 
@@ -178,6 +182,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 - **AR1 — Group name.** The root is a named group, never a roleless element
   with a name, so the open and remove buttons inside it stay reachable.
+  Implementation gap: a caller `role` replaces the group role (FR7).
 - **AR2 — Image alternative.** An image with `alt` is exposed with it; without
   `alt` it is explicitly decorative.
 - **AR3 — Busy state.** The upload Spinner is hidden from assistive technology;
@@ -243,7 +248,8 @@ None recorded. The record describes shipped behavior.
   destination. Open is removed while loading by FR4's own rule, so the case
   remains even once FR6's disabled gap is closed. Options: the thumbnail root
   made programmatically focusable, the remaining action when there is one, or
-  a caller-supplied target.
+  a caller-supplied target; or keep Open mounted and inert while loading, so
+  focus stays where it is and no destination is needed.
 
 ## Content boundary
 
