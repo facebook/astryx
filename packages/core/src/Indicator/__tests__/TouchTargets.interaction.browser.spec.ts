@@ -7,7 +7,8 @@
  * @output Proofs that on a touch screen a checkbox and a radio option are as
  *   easy to hit as an iOS control (the theme's `--size-touch-target`, 44 pt
  *   by default, Apple's control size): the checkbox's input is at least
- *   44 × 44 px and centred on its box, its row at least 44 px; each radio row
+ *   44 × 44 px and centred on its box, its row at least 44 px; a compact
+ *   CheckboxList's rows are at least 44 px; each radio row
  *   is at least 44 px and the rows touch; a tap at the edge of those targets
  *   picks the option; a theme's value tunes every target, and 24px keeps
  *   the old touch layout; a list whose gap already gives each option 44 px
@@ -88,6 +89,9 @@ test.describe('selection controls under a finger', () => {
     const {input, box, row} = await checkboxGeometry(page);
     expect(input.width).toBeGreaterThanOrEqual(SIZE);
     expect(input.height).toBeGreaterThanOrEqual(SIZE);
+    // Centred on the box, as the RTL audit's coarse-hit check (D7) holds in
+    // both directions: on the box's inline-start side the target reaches
+    // 10 px past the row (the decision's requirement 5, noted).
     expect(Math.abs(centre(input).x - centre(box).x)).toBeLessThanOrEqual(1);
     expect(Math.abs(centre(input).y - centre(box).y)).toBeLessThanOrEqual(1);
     expect(row.height).toBeGreaterThanOrEqual(SIZE);
@@ -241,6 +245,47 @@ test.describe('selection controls under a finger', () => {
       );
     for (const row of await radioRows(page)) {
       expect(row.height).toBeCloseTo(36, 0);
+    }
+  });
+
+  test('a compact CheckboxList’s rows are at least the touch target under a finger, and a mouse keeps them compact', async ({
+    page,
+    browser,
+  }) => {
+    // A standalone CheckboxList is a touch target whatever its density
+    // (requirement 2 of the target-size decision).
+    const rowHeights = async (target: Page) =>
+      target
+        .locator('#storybook-root li')
+        .evaluateAll(rows =>
+          rows.map(row => row.getBoundingClientRect().height),
+        );
+    await openStory(page, storybook(), 'core-checkboxlist--default', {
+      density: 'compact',
+    });
+    const finger = await rowHeights(page);
+    expect(finger.length).toBeGreaterThan(1);
+    for (const height of finger) {
+      expect(height).toBeGreaterThanOrEqual(SIZE - 0.5);
+    }
+    const context = await browser.newContext({
+      viewport: {width: 1024, height: 768},
+      hasTouch: false,
+      isMobile: false,
+    });
+    try {
+      const mousePage = await context.newPage();
+      await openStory(mousePage, storybook(), 'core-checkboxlist--default', {
+        density: 'compact',
+      });
+      expect(
+        await mousePage.evaluate(() => matchMedia('(pointer: coarse)').matches),
+      ).toBe(false);
+      for (const height of await rowHeights(mousePage)) {
+        expect(height).toBeLessThan(SIZE);
+      }
+    } finally {
+      await context.close();
     }
   });
 
