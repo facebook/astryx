@@ -4,7 +4,8 @@
  * @file touchModule.ts
  * @input The gesture core (the arena, the recognizers, velocity tracking and
  *   their geometry), the motion math (springs, decay, projection, rubber
- *   banding), the motion roles, and the shared UIKit tables
+ *   banding) and the motion roles; no UIKit table, since a component imports
+ *   only the rows it uses (architecture:component-style-authoring INV6)
  * @output touchModule, the touch and gesture module's primitives, and its type
  *   TouchModule
  * @position Internal. Core components import it directly (or through
@@ -35,7 +36,6 @@ import {
 } from '../motion/roles';
 import * as rubberBand from '../motion/rubberBand';
 import * as spring from '../motion/spring';
-import * as uikit from '../motion/uikit';
 import {browserClock, GestureArena} from '../gestures/GestureArena';
 import {
   ALL_NATIVE_TOUCH,
@@ -94,9 +94,6 @@ export const touchModule = Object.freeze({
   isMotionRoleId,
   formatMotionRoleValue,
   parseMotionRoleValue,
-  // The shared UIKit tables: the gesture groups, the spring rows, timing,
-  // scroll and navigation.
-  ...uikit,
 });
 
 export type TouchModule = typeof touchModule;
