@@ -454,16 +454,31 @@ test('a tap or a drag that lands while it grows closes nothing, moves no focus a
   const focusIsInside = async () =>
     story.layer.evaluate(el => el.contains(document.activeElement));
 
-  // A tap outside, landing while it grows (47 ms after the trigger's press
-  // began, 17 ms after it lifted): no light dismiss, and focus stays in
-  // the popover, where its opening put it.
-  await story.driver.play([
-    {t: 0, fingers: [{id: 0, ...story.center}]},
-    {t: 30, fingers: []},
-    {t: 47, fingers: [{id: 1, ...outside}]},
-    {t: 90, fingers: []},
-  ]);
-  await expect(story.trigger).toHaveAttribute('aria-expanded', 'true');
+  // A tap outside, landing while it grows: no light dismiss, and focus stays
+  // in the popover, where its opening put it. It opens through the engine's
+  // tap (Playwright's WebKit synthesises no click from a raw touch sequence,
+  // so a scripted press there would never open it), and the page records, at
+  // each press, whether the hold's shield was up: the trigger's press found
+  // none, and the tap outside landed while the popover presented.
+  await page.evaluate(selector => {
+    const w = window as unknown as {pressesHeld?: boolean[]};
+    w.pressesHeld = [];
+    document.addEventListener(
+      'pointerdown',
+      () => {
+        const shield = document.querySelector(selector);
+        w.pressesHeld?.push(shield?.matches(':popover-open') === true);
+      },
+      true,
+    );
+  }, SHIELD);
+  await openWithTap(story);
+  await story.driver.tap(outside);
+  expect(
+    await page.evaluate(
+      () => (window as unknown as {pressesHeld: boolean[]}).pressesHeld,
+    ),
+  ).toEqual([false, true]);
   await waitForRest(story.layer);
   expect(await isOpen()).toBe(true);
   expect(await focusIsInside()).toBe(true);
