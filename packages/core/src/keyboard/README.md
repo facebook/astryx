@@ -5,7 +5,7 @@ Core's one source for the on-screen keyboard (`spec:AST-099`,
 `@astryxdesign/core`: components import it from `../keyboard`, and nothing is
 exported from the package entry.
 
-## The keyboard module (`useMobileKeyboard.ts`)
+## The keyboard module (`keyboardHeight.ts`)
 
 - **The height (FR2):** `measureKeyboardHeight(window)` is the layout
   viewport's height minus the visual viewport's height times its scale, in CSS
@@ -27,7 +27,7 @@ exported from the package entry.
   `interactive-widget=resizes-content`, Chrome shrinks the layout viewport
   with the keyboard, so the height is 0 there too: the browser has made the
   room (FR8).
-- **One set of listeners (FR1, INV11):** `subscribeMobileKeyboard(window, fn)`
+- **One set of listeners (FR1, INV11):** `subscribeKeyboardHeight(window, fn)`
   delivers every report (the visual viewport's resize and scroll, the window's
   resize, focus moves) from one set of listeners per window, however many
   components subscribe. `useKeyboardHeight()` gives a component the height and
@@ -51,7 +51,7 @@ exported from the package entry.
   full-viewport dialog). Its one listener, a passive capture-phase
   `touchstart` on the document, lives only while a surface watches.
   BottomSheet's hook watches while its sheet is presented.
-- **BottomSheet's hook (FR4, FR5):** `useMobileKeyboard(options)` gives a
+- **BottomSheet's hook (FR4, FR5):** `useSheetKeyboard(options)` gives a
   fully expanded Tall sheet its keyboard scroll range, claims focus moves into
   it, puts back a document scroll while the page is locked, and dismisses the
   keyboard when the sheet starts to move. It returns the room the keyboard
@@ -103,7 +103,7 @@ const height = useKeyboardHeight();
 
 ## Consumers
 
-- BottomSheet (`BottomSheet/BottomSheetPanel.tsx`): `useMobileKeyboard`, whose
+- BottomSheet (`BottomSheet/BottomSheetPanel.tsx`): `useSheetKeyboard`, whose
   inset the content box's `keyboardInset` functional style lays out as the
   content's last box (after its own children, so it adds scroll range in
   Firefox too, which keeps the content box at the body's height); it reveals the
@@ -111,7 +111,7 @@ const height = useKeyboardHeight();
 
 ## Files
 
-| File                   | What it holds                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------------- |
-| `useMobileKeyboard.ts` | The keyboard module: the height, its listeners, the focus routes, BottomSheet's hook. |
-| `index.ts`             | Entry point.                                                                          |
+| File                | What it holds                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| `keyboardHeight.ts` | The keyboard module: the height, its listeners, the focus routes, BottomSheet's hook. |
+| `index.ts`          | Entry point.                                                                          |
