@@ -98,7 +98,7 @@ async function openRow(page: Page): Promise<OpenRow> {
   const driver = await touchDriver(page);
   const row = page.locator('.astryx-item').first();
   const panel = row.locator('[data-swipe-panel="trailing"]');
-  // The gesture arrives with the lazily loaded swipe layer.
+  // The gesture arrives with the swipe layer.
   await expect(panel).toBeAttached();
   const track = panel.locator(':scope > div').first();
   // The entries are the track's children, each its own moving element.

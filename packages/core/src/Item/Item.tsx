@@ -8,13 +8,12 @@
  * @output Exports Item component, ItemProps type; publishes the shared inline inset
  * @position Core layout primitive; consumed by index.ts, tested by Item.test.tsx
  *
- * The swipe actions live in ItemSwipeLayer, reached only through a dynamic
- * import when `swipeActions` is set: this module imports nothing of the
- * gesture, so a row without swipe actions ships none of it. The root here
- * still carries the swipe styles and forwards its key events into the bridge
- * the layer fills; the layer attaches the gesture to the root itself, so a
- * swipeable row keeps the DOM it had when the gesture was imported here
- * (Item.source-build.test.mjs pins the import graph).
+ * The swipe actions live in ItemSwipeLayer, imported with this module: a
+ * lazily loaded layer could miss a row's first swipe while its chunk was on
+ * the way. The root here still carries the swipe styles and forwards its key
+ * events into the bridge the layer fills; the layer attaches the gesture to
+ * the root itself, so a swipeable row keeps the DOM it had when the gesture
+ * was imported here (Item.source-build.test.mjs pins the import graph).
  *
  * A control Item renders in the row (List's edit-mode delete control, in the
  * marker slot) reaches the row's swipe through ItemSwipeRevealContext: the
@@ -30,8 +29,6 @@
  */
 
 import {
-  lazy,
-  Suspense,
   useCallback,
   useId,
   useMemo,
@@ -65,14 +62,7 @@ import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import type {ItemSwipeBridge} from './ItemSwipeLayer';
-
-// The gesture and the panels, loaded only by a row that has swipe actions: a
-// row without them never bundles useSwipeAction. While the chunk loads the
-// row is already painted and at rest — the panels show nothing at rest, so
-// nothing appears or moves when the layer mounts; the gesture simply attaches
-// once the chunk is ready, as ProgressBar's and Timestamp's lazy affordances do.
-const LazyItemSwipeLayer = lazy(async () => import('./ItemSwipeLayer'));
+import ItemSwipeLayer, {type ItemSwipeBridge} from './ItemSwipeLayer';
 
 // =============================================================================
 // Types
@@ -301,9 +291,8 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    * The swipe is a touch behaviour, the same on every device: the gesture
    * reads each touch's pointer, so a finger swipes the row whatever the
    * primary pointer (a touchscreen laptop's included) and a mouse never does.
-   * The gesture and its panels are loaded on demand, the first time a row has
-   * swipe actions, so a row without them ships none of it; a row with them is
-   * drawn at once and becomes swipeable as soon as that module has loaded.
+   * The gesture and its panels load with the row, so its first swipe never
+   * waits for a chunk.
    */
   swipeActions?: ItemSwipeActions;
 
@@ -921,17 +910,14 @@ export function Item({
       </ItemDescriptionContext>
       {hasSwipe && (
         // The panels: out-of-flow children of this root, so the DOM is the one
-        // the row had before the split. Suspense and lazy add no element, and
-        // the fallback is nothing — at rest a panel shows nothing either.
-        <Suspense fallback={null}>
-          <LazyItemSwipeLayer
-            onBridge={setSwipeBridge}
-            onOpenChange={setSwipeOpenSide}
-            leading={leadingSwipe}
-            trailing={trailingSwipe}
-            behavior={swipeBehavior}
-          />
-        </Suspense>
+        // the row had before the split; at rest a panel shows nothing.
+        <ItemSwipeLayer
+          onBridge={setSwipeBridge}
+          onOpenChange={setSwipeOpenSide}
+          leading={leadingSwipe}
+          trailing={trailingSwipe}
+          behavior={swipeBehavior}
+        />
       )}
     </Component>
   );
