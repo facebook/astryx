@@ -158,9 +158,13 @@ those contracts.
   does, blurs as FR5 does, applies the height through a functional style on
   its own elements, and follows INV3 and INV5. The hook follows INV3 and
   INV5.
-- **INV12 — Size changes inside a container have one module and one
-  boundary.** **Proposed; pending owner decision (OQ3).** In
-  `@astryxdesign/core`, one shared module animates the layout shift around any
+- **INV12 — Size changes inside a container have one module.** **Proposed;
+  pending owner decision (OQ3, OQ4).** When something inside an area changes
+  size, the content after it glides to its new place instead of jumping. The
+  measuring, the walk, and the translate all live inside one internal module;
+  the public hook only marks the area where the walk stops, and the internal
+  `reportLayoutChange` only tells the module that a size is about to change. In
+  `@astryxdesign/core`, the module animates the layout shift around any
   element whose size changes inside a container: a disclosure opening, content
   loading in, a message appearing, an item inserted or removed. It measures the
   layout before and after the change and moves the shifted content with a
@@ -169,7 +173,7 @@ those contracts.
   `spec:AST-094` FR5); it never animates height, which lays out every frame. A
   boundary is any container element registered by ref: ScrollableArea
   registers its scrolling element itself, and an app registers its own scroll
-  container or panel with `useLayoutBoundary(containerRef)`. An element whose
+  container or panel with `useAnimatedLayout(containerRef)`. An element whose
   size changes reports the change, around its commit, to its nearest
   registered ancestor boundary. From that element, the module walks up each
   ancestor to the boundary: at every level, each following in-flow sibling
@@ -192,24 +196,24 @@ those contracts.
   change otherwise. Whether the travel applies under every pointer is OQ3. The
   bounded walk is decided by `cixzhang`, 2026-10-25. TreeList and Collapsible
   adopt the module first, and any Core component whose size changes in place
-  uses it rather than its own layout animation. `useLayoutBoundary` is the one
+  uses it rather than its own layout animation. `useAnimatedLayout` is the one
   public piece: it takes the container's ref and returns nothing, because
   which container scopes the motion is the caller's intent (`spec:AST-002`
-  FR1), and no other API does that job. `useSizeChange` stays internal.
+  FR1), and no other API does that job. `reportLayoutChange` stays internal.
 
   Usage:
 
   ```tsx
   // Public: an app container opts in as a boundary. ScrollableArea does this itself.
   const panelRef = useRef(null);
-  useLayoutBoundary(panelRef);
+  useAnimatedLayout(panelRef);
   <div ref={panelRef}>
     <TreeList items={items} />
     <p>Notes</p>
   </div>;
 
   // Internal: an element whose size changes measures before its commit and animates after it.
-  const change = useSizeChange(groupRef);
+  const change = reportLayoutChange(groupRef);
   const toggle = () => {
     change.measureBefore();
     setExpanded(open => !open);
@@ -368,3 +372,10 @@ component suite is not blanket conformance with every invariant.
   recommended) every pointer, because a disclosure's following content jumps
   the same way under a mouse; or (b) only a coarse primary pointer, with an
   immediate change elsewhere, as other touch presentations do.
+- **OQ4 — The public hook's name.** (`human-design`) Options, each named for
+  what it does: (a, recommended) `useAnimatedLayout(ref)`: when something
+  inside this area changes size, the content after it glides instead of
+  jumping; (b) `useSmoothLayoutShift(ref)`: layout shifts in this area are
+  smoothed; (c) `useLayoutTransitionArea(ref)`: this element is the area
+  layout transitions stay within; or (d) `useGlideAfterResize(ref)`: content
+  after a resized element glides into place.
