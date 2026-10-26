@@ -19,10 +19,11 @@ import {Switch} from '@astryxdesign/core/Switch';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Button} from '@astryxdesign/core/Button';
+// The selection hold is internal to core (no public API records it yet).
 import {
   holdSelection,
   type SelectionHold as RowSelectionHold,
-} from '@astryxdesign/core/List';
+} from '../../../packages/core/src/List/selectionHold';
 import {
   Cog6ToothIcon,
   BellIcon,
