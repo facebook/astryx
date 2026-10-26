@@ -15,6 +15,7 @@ import {Collapsible} from '@astryxdesign/core/Collapsible';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Button} from '@astryxdesign/core/Button';
 import {useAnimatedLayout} from '@astryxdesign/core/hooks';
+import type {AnimatedLayout as AnimatedLayoutHandle} from '@astryxdesign/core/hooks';
 // The internal reporting half of the module: a plain app element whose size
 // changes reports it here, as Astryx components do internally.
 import {
@@ -57,13 +58,16 @@ const label = {
 } as const;
 
 /**
- * A plain element's size change, reported to the nearest area: `before()`
+ * A plain element's size change, reported through the handle: `before()`
  * runs in the handler that causes the change; the move plays when `dep`
  * commits, and the changed element plays its own entrance.
  */
-function useReportedChange(dep: unknown) {
+function useReportedChange(animatedLayout: AnimatedLayoutHandle, dep: unknown) {
   const ref = useRef<HTMLDivElement>(null);
-  const change = useMemo(() => reportLayoutChange(ref), []);
+  const change = useMemo(
+    () => reportLayoutChange(animatedLayout, ref),
+    [animatedLayout],
+  );
   const first = useRef(true);
   useLayoutEffect(() => {
     if (first.current) {
@@ -72,9 +76,9 @@ function useReportedChange(dep: unknown) {
     }
     change.animate();
     if (ref.current != null) {
-      playLayoutChange(ref.current, 'enter');
+      playLayoutChange(animatedLayout, ref.current, 'enter');
     }
-  }, [dep, change]);
+  }, [dep, change, animatedLayout]);
   return {ref, before: () => change.measureBefore()};
 }
 
@@ -106,10 +110,10 @@ const TREE: TreeListItemData[] = [
   {id: 'notes', label: 'Notes.txt'},
 ];
 
-function FieldError() {
+function FieldError({animatedLayout}: {animatedLayout: AnimatedLayoutHandle}) {
   const [email, setEmail] = useState('not-an-email');
   const [error, setError] = useState<string | null>(null);
-  const {ref, before} = useReportedChange(error);
+  const {ref, before} = useReportedChange(animatedLayout, error);
   return (
     <div style={card}>
       <p style={label}>A field error on Validate</p>
@@ -146,9 +150,9 @@ function FieldError() {
   );
 }
 
-function LoadMore() {
+function LoadMore({animatedLayout}: {animatedLayout: AnimatedLayoutHandle}) {
   const [loaded, setLoaded] = useState(false);
-  const {ref, before} = useReportedChange(loaded);
+  const {ref, before} = useReportedChange(animatedLayout, loaded);
   return (
     <div style={card}>
       <p style={label}>Load more: a skeleton replaced by taller content</p>
@@ -184,9 +188,9 @@ function LoadMore() {
   );
 }
 
-function Tags() {
+function Tags({animatedLayout}: {animatedLayout: AnimatedLayoutHandle}) {
   const [tags, setTags] = useState(['design', 'motion', 'layout']);
-  const {ref, before} = useReportedChange(tags.length);
+  const {ref, before} = useReportedChange(animatedLayout, tags.length);
   return (
     <div style={card}>
       <p style={label}>“+ Add tag”: chips that wrap to a new line</p>
@@ -235,16 +239,18 @@ function Section({title, children}: {title: string; children: ReactNode}) {
 }
 
 /**
- * Everything inside the ScrollableArea is one area: a size change anywhere
- * in it glides the content after the change. The sticky header and the
- * absolute badge stay put; the `display: contents` wrapper's children move
- * on their own.
+ * The sticky header and the absolute badge stay put; the `display: contents`
+ * wrapper's children move on their own.
  */
-export const AnimatedLayout: Story = {
-  name: 'Animated layout',
-  render: () => (
+function Demo() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const animatedLayout = useAnimatedLayout({containerRef});
+  return (
     <div style={{maxWidth: 520}}>
-      <ScrollableArea height={560} label="Animated layout demo">
+      <ScrollableArea
+        ref={containerRef}
+        height={560}
+        label="Animated layout demo">
         <div
           style={{
             position: 'sticky',
@@ -261,21 +267,28 @@ export const AnimatedLayout: Story = {
         <div style={{padding: 12}}>
           <Section title="A nested tree (TreeList adopts the module)">
             <div style={card}>
-              <TreeList aria-label="Files" items={TREE} />
+              <TreeList
+                aria-label="Files"
+                items={TREE}
+                animatedLayout={animatedLayout}
+              />
             </div>
           </Section>
           <Section title="A Collapsible (adopts the module)">
             <div style={card}>
-              <Collapsible trigger="Shipping details" defaultIsOpen={false}>
+              <Collapsible
+                trigger="Shipping details"
+                defaultIsOpen={false}
+                animatedLayout={animatedLayout}>
                 <p style={{margin: '4px 0'}}>Ships in 2 business days.</p>
                 <p style={{margin: '4px 0'}}>Free returns for 30 days.</p>
                 <p style={{margin: '4px 0'}}>Tracking arrives by email.</p>
               </Collapsible>
             </div>
           </Section>
-          <FieldError />
-          <LoadMore />
-          <Tags />
+          <FieldError animatedLayout={animatedLayout} />
+          <LoadMore animatedLayout={animatedLayout} />
+          <Tags animatedLayout={animatedLayout} />
           <div style={{...plain, position: 'relative'}}>
             A plain app div with an absolute badge (the badge rides with it)
             <span
@@ -304,15 +317,24 @@ export const AnimatedLayout: Story = {
         </div>
       </ScrollableArea>
     </div>
-  ),
+  );
+}
+
+/**
+ * The ScrollableArea is the container: `useAnimatedLayout({containerRef})`
+ * returns a handle, and each component that changes size takes it.
+ */
+export const AnimatedLayout: Story = {
+  name: 'Animated layout',
+  render: () => <Demo />,
 };
 
 function PanelDemo() {
-  const panel = useRef<HTMLDivElement>(null);
-  useAnimatedLayout(panel);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const animatedLayout = useAnimatedLayout({containerRef});
   return (
     <div
-      ref={panel}
+      ref={containerRef}
       style={{
         maxWidth: 520,
         padding: 12,
@@ -320,7 +342,10 @@ function PanelDemo() {
         borderRadius: 16,
       }}>
       <div style={card}>
-        <Collapsible trigger="Advanced settings" defaultIsOpen={false}>
+        <Collapsible
+          trigger="Advanced settings"
+          defaultIsOpen={false}
+          animatedLayout={animatedLayout}>
           <p style={{margin: '4px 0'}}>Cache size, retries and timeouts.</p>
           <p style={{margin: '4px 0'}}>Changes apply on the next sync.</p>
         </Collapsible>
@@ -331,8 +356,8 @@ function PanelDemo() {
   );
 }
 
-/** An app's own container opts in with `useAnimatedLayout(ref)`. */
+/** An app's own panel as the container. */
 export const AppPanel: Story = {
-  name: 'App panel (useAnimatedLayout)',
+  name: 'App panel',
   render: () => <PanelDemo />,
 };

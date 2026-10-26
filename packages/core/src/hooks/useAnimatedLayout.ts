@@ -4,43 +4,57 @@
 
 /**
  * @file useAnimatedLayout.ts
- * @input React (useLayoutEffect), motion/animatedLayout.ts
- * @output Exports `useAnimatedLayout`: marks a container as the area in which
- *   size changes animate
+ * @input React (useMemo, useRef), motion/animatedLayout.ts
+ * @output Exports `useAnimatedLayout` and the opaque `AnimatedLayout` handle
+ *   type
  * @position Public hook over the one layout-change module
  *   (`architecture:react-component-runtime` INV12)
  *
  * SYNC: When modified, update /packages/core/src/motion/animatedLayout.ts
  */
 
-import {useLayoutEffect, type RefObject} from 'react';
-import {registerLayoutArea} from '../motion/animatedLayout';
+import {useMemo, useRef, type RefObject} from 'react';
+import {
+  createAnimatedLayout,
+  type AnimatedLayout,
+} from '../motion/animatedLayout';
+
+export type {AnimatedLayout} from '../motion/animatedLayout';
+
+export interface UseAnimatedLayoutOptions {
+  /** The container whose content glides: a scroll container or a panel. */
+  containerRef: RefObject<HTMLElement | null>;
+}
 
 /**
- * When something inside this area changes size, the changed element and the
- * content after it animate together on one shared motion token instead of
- * jumping. Fixed and sticky elements stay put, Reduce Motion is respected,
- * ScrollableArea applies it automatically, and nesting stops at the nearest
- * area, so nothing animates twice.
+ * A handle for animating size changes inside a container. Pass it to a
+ * component's `animatedLayout` prop: when that component changes size, the
+ * changed element and the content after it, up to the container, animate
+ * together on one shared motion token instead of jumping. Fixed and stuck
+ * sticky elements stay put and Reduce Motion is respected. Without a handle
+ * a component keeps today's behavior.
  *
  * @example
  * ```
- * const panelRef = useRef<HTMLDivElement>(null);
- * useAnimatedLayout(panelRef);
+ * const containerRef = useRef<HTMLDivElement>(null);
+ * const animatedLayout = useAnimatedLayout({containerRef});
  * return (
- *   <div ref={panelRef}>
- *     <TreeList items={items} />
+ *   <div ref={containerRef}>
+ *     <TreeList items={items} animatedLayout={animatedLayout} />
  *     <p>Notes</p>
  *   </div>
  * );
  * ```
  */
-export function useAnimatedLayout(ref: RefObject<HTMLElement | null>): void {
-  useLayoutEffect(() => {
-    const element = ref.current;
-    if (element == null) {
-      return undefined;
-    }
-    return registerLayoutArea(element);
-  }, [ref]);
+export function useAnimatedLayout({
+  containerRef,
+}: UseAnimatedLayoutOptions): AnimatedLayout {
+  // The container is read when a change runs, so the handle stays stable
+  // across renders and a later ref assignment is still seen.
+  const refHolder = useRef(containerRef);
+  refHolder.current = containerRef;
+  return useMemo(
+    () => createAnimatedLayout(() => refHolder.current.current),
+    [],
+  );
 }

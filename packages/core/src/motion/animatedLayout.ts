@@ -3,17 +3,19 @@
 /**
  * @file animatedLayout.ts
  * @input The DOM (layout rectangles, computed style), Web Animations
- * @output Exports `registerLayoutArea`, `reportLayoutChange`,
- *   `playLayoutChange` and `layoutChangeTiming`: the one module that animates
- *   the layout shift around an element whose size changes inside a registered
- *   area (`architecture:react-component-runtime` INV12)
- * @position Motion foundation. `useAnimatedLayout` (public) registers an
- *   area; ScrollableArea registers its viewport itself; Collapsible and
- *   TreeList report their size changes. Internal to core.
+ * @output Exports `createAnimatedLayout` and the opaque `AnimatedLayout`
+ *   handle, `reportLayoutChange`, `playLayoutChange` and
+ *   `layoutChangeTiming`: the one module that animates the layout shift
+ *   around an element whose size changes inside a container
+ *   (`architecture:react-component-runtime` INV12)
+ * @position Motion foundation. `useAnimatedLayout({containerRef})` (public)
+ *   returns a handle; Collapsible and TreeList take it as their
+ *   `animatedLayout` prop and report their size changes through it. Internal
+ *   to core.
  *
  * How it works:
  * - `measureBefore()` runs before the change commits: from the changed
- *   element it walks up to its nearest registered area and, at each level,
+ *   element it walks up to the handle's container and, at each level,
  *   records the rectangle of every following element sibling (a manual
  *   `parentElement` / `nextElementSibling` walk that never descends into a
  *   subtree, except through `display: contents`, which has no box).
@@ -22,9 +24,8 @@
  *   once, in a microtask, so each element moves once by its total change.
  * - An element moves only when its rectangle changed and it is visible in
  *   the area, before or after. Absolute and fixed elements are skipped (an
- *   absolute child rides with its moving parent), a stuck sticky element does
- *   not change rectangle so it stays, and a nested registered area moves as
- *   one unit.
+ *   absolute child rides with its moving parent), and a stuck sticky element
+ *   does not change rectangle, so it stays.
  * - The move is a compositor-only translate from the old place to the new
  *   one, added to any motion already running (`composite: 'add'`), corrected
  *   for a scaled ancestor. Nothing animates height.
@@ -124,44 +125,32 @@ function safeAnimate(
 }
 
 // ---------------------------------------------------------------------------
-// Areas
+// Handles
 // ---------------------------------------------------------------------------
 
-const areas = new Map<Element, number>();
+const AREA = Symbol('astryx.animatedLayout.area');
 
 /**
- * Register `element` as an area: a size change inside it animates the
- * content after the change, up to and never past it. Returns the
- * unregister function. Registering twice keeps one area until both release.
+ * The opaque handle `useAnimatedLayout` returns: a component that receives
+ * it reports its size changes to the handle's container, the area the walk
+ * stops at. Without a handle a component keeps its jump.
  */
-export function registerLayoutArea(element: Element): () => void {
-  areas.set(element, (areas.get(element) ?? 0) + 1);
-  let released = false;
-  return () => {
-    if (released) {
-      return;
-    }
-    released = true;
-    const count = (areas.get(element) ?? 1) - 1;
-    if (count <= 0) {
-      areas.delete(element);
-    } else {
-      areas.set(element, count);
-    }
-  };
+export interface AnimatedLayout {
+  readonly [AREA]: () => Element | null;
 }
 
-function nearestArea(element: Element): Element | null {
-  for (
-    let node: Element | null = element.parentElement;
-    node != null;
-    node = node.parentElement
-  ) {
-    if (areas.has(node)) {
-      return node;
-    }
-  }
-  return null;
+/** A handle over `area` (the container element, read when a change runs). */
+export function createAnimatedLayout(
+  area: () => Element | null,
+): AnimatedLayout {
+  return {[AREA]: area};
+}
+
+function areaOf(handle: AnimatedLayout, element: Element): Element | null {
+  const area = handle[AREA]();
+  return area != null && area !== element && area.contains(element)
+    ? area
+    : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -343,20 +332,23 @@ export interface LayoutChange {
 }
 
 /**
- * Report a size change of `target` to its nearest registered area. Call
+ * Report a size change of `target` to the handle's area. Call
  * `measureBefore()` before the change commits and `animate()` after it; the
  * content after `target`, up to the area, glides from its old place.
- * Changes in one area in one frame move together. Without an area, nothing
- * moves.
+ * Changes in one area in one frame move together. Without a handle, or
+ * outside its container, nothing moves.
  */
-export function reportLayoutChange(target: Target): LayoutChange {
+export function reportLayoutChange(
+  handle: AnimatedLayout | null | undefined,
+  target: Target,
+): LayoutChange {
   return {
     measureBefore() {
       const element = resolve(target);
-      if (element == null) {
+      if (element == null || handle == null) {
         return;
       }
-      const area = nearestArea(element);
+      const area = areaOf(handle, element);
       if (area == null) {
         return;
       }
@@ -370,10 +362,10 @@ export function reportLayoutChange(target: Target): LayoutChange {
     },
     animate() {
       const element = resolve(target);
-      if (element == null) {
+      if (element == null || handle == null) {
         return;
       }
-      const area = nearestArea(element);
+      const area = areaOf(handle, element);
       const batch = area == null ? undefined : batches.get(area);
       if (batch == null || batch.scheduled) {
         return;
@@ -390,10 +382,11 @@ export function reportLayoutChange(target: Target): LayoutChange {
  * appears fades and reveals downward; under Reduce Motion it only fades.
  */
 export function playLayoutChange(
+  handle: AnimatedLayout | null | undefined,
   element: Element,
   kind: 'enter' | 'exit' = 'enter',
 ): void {
-  if (nearestArea(element) == null) {
+  if (handle == null || areaOf(handle, element) == null) {
     return;
   }
   const timing = layoutChangeTiming(element);

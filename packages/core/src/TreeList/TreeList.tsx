@@ -39,6 +39,7 @@ import {useTreeFocusInternal} from '../hooks/useTreeFocus';
 import {
   playLayoutChange,
   reportLayoutChange,
+  type AnimatedLayout,
   type LayoutChange,
 } from '../motion/animatedLayout';
 
@@ -51,6 +52,13 @@ export {type TreeListDensity, type TreeListVariant} from './TreeListTypes';
 export interface TreeListProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
+
+  /**
+   * The handle from `useAnimatedLayout({containerRef})`. With it, expanding
+   * or collapsing a row glides the rows and content after it, up to that
+   * container, instead of jumping, and the chevron turns on the same timing.
+   */
+  animatedLayout?: AnimatedLayout;
 
   /**
    * Tree items as a recursive data structure.
@@ -209,6 +217,7 @@ export function TreeList({
   'aria-labelledby': ariaLabelledby,
   ref,
   onKeyDown: onKeyDownProp,
+  animatedLayout,
   ...restProps
 }: TreeListProps) {
   const headerId = useId();
@@ -224,8 +233,8 @@ export function TreeList({
     Map<string, boolean>
   >(() => new Map());
 
-  // A row's size change (its children shown or hidden) animates inside the
-  // nearest animated-layout area: the rows and content after it glide, and
+  // With an `animatedLayout` handle, a row's size change (its children shown
+  // or hidden) animates up to the handle's container: the rows and content after it glide, and
   // the shown group plays its own entrance on the same timing
   // (`architecture:react-component-runtime` INV12). Read through a ref
   // because the tree element comes from the focus hook below.
@@ -239,7 +248,7 @@ export function TreeList({
         `[data-tree-id="${CSS.escape(id)}"]`,
       );
       if (row != null) {
-        const change = reportLayoutChange(() => row);
+        const change = reportLayoutChange(animatedLayout, () => row);
         change.measureBefore();
         pendingLayoutRef.current = {change, id};
       }
@@ -252,7 +261,7 @@ export function TreeList({
         return next;
       });
     },
-    [expandedKeysFromProps],
+    [expandedKeysFromProps, animatedLayout],
   );
 
   // ---------------------------------------------------------------------------
@@ -300,9 +309,9 @@ export function TreeList({
       `[data-tree-id="${CSS.escape(pending.id)}"] > [role="group"]`,
     );
     if (group != null) {
-      playLayoutChange(group, 'enter');
+      playLayoutChange(animatedLayout, group, 'enter');
     }
-  }, [expandedKeysOverride]);
+  }, [expandedKeysOverride, animatedLayout]);
 
   const {treeRef, handleKeyDown, handleFocus} =
     useTreeFocusInternal<HTMLUListElement>({
@@ -402,6 +411,7 @@ export function TreeList({
           posInSet={index + 1}
           setSize={items.length}
           isTabbable={item.id === initialTabbableId}
+          hasAnimatedLayout={animatedLayout != null}
         />
       );
     });
