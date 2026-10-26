@@ -40,7 +40,7 @@ export {
   type GestureConstantUnit,
   type HapticFeedbackKind,
 } from './gestures';
-export {menu, registerMenuTable} from './menu';
+export {menu} from './menu';
 export {navigation, registerNavigationTable} from './navigation';
 export {registerScrollTable, scroll} from './scroll';
 export {
