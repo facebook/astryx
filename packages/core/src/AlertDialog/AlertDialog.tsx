@@ -165,15 +165,18 @@ export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
   /**
    * The width of the dialog.
    * Numbers are treated as pixels, strings are used as-is. By default 400,
-   * and under a finger UIKit's alert width, 320.
+   * and under a finger with `presentation="adaptive"` UIKit's alert width,
+   * 320.
    * @default 400
    */
   width?: number | string;
   /**
    * How the alert presents under a finger. `'adaptive'` gives a touch screen
-   * the native alert's touch model: a finger is tracked across both actions
-   * as one group and runs the action it lifts on. `'dialog'` keeps the dialog
-   * a mouse gets on every device, with each button's own press and click.
+   * the native alert: it appears and leaves the way an iOS alert does, 320
+   * wide, and a finger is tracked across both actions as one group and runs
+   * the action it lifts on. `'dialog'` keeps the dialog a mouse gets on every
+   * device: the theme's motion, 400 wide, and each button's own press and
+   * click.
    * @default 'adaptive'
    */
   presentation?: AlertDialogPresentation;

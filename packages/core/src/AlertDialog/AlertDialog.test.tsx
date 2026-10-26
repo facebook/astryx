@@ -605,6 +605,20 @@ describe('AlertDialog touch tracking', () => {
     expect(dialog).not.toHaveAttribute('open');
   });
 
+  it('with presentation="dialog" under a finger keeps the theme motion and Dialog\'s 400: a click acts at once and a close is immediate', () => {
+    const {onOpenChange, cancel, close} = renderOpen({presentation: 'dialog'});
+    // A coarse pointer, before anything is checked.
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(true);
+    const dialog = screen.getByRole('alertdialog');
+    expect(dialog.getAttribute('style')).toContain('--x-width: 400px');
+    // No presentation to wait for: the click acts as it lands.
+    fireEvent.click(cancel);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    // No fade to wait for either: the dialog closes with the caller.
+    close();
+    expect(dialog).not.toHaveAttribute('open');
+  });
+
   it("takes UIKit's alert width under a finger and Dialog's 400 with a mouse, unless the caller sets one", () => {
     const widthOf = () => screen.getByRole('alertdialog').getAttribute('style');
     renderOpen();
