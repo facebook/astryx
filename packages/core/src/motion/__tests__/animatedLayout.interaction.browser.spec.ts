@@ -583,6 +583,45 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     expect(startOffset(second.first).y).toBeCloseTo(-80, 0);
   });
 
+  test('nested changes compose whichever is reported first: a row inside a moving folder moves only by its own change (FR3)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area"><div id="a" class="grow"></div>
+        <div id="folder"><div id="inner" class="grow"></div><div id="row" class="row"></div></div>
+        <div id="after" class="row"></div></div>`,
+    );
+    await page.evaluate(async () => {
+      const area = document.querySelector('#area');
+      const layout = window.AnimatedLayout.createAnimatedLayout(() => area);
+      // The inner change is reported first.
+      const inner = window.AnimatedLayout.reportLayoutChange(layout, () =>
+        document.querySelector('#inner'),
+      );
+      const outer = window.AnimatedLayout.reportLayoutChange(layout, () =>
+        document.querySelector('#a'),
+      );
+      inner.measureBefore();
+      outer.measureBefore();
+      document.querySelector<HTMLElement>('#inner')?.classList.add('open');
+      document.querySelector<HTMLElement>('#a')?.classList.add('open');
+      inner.animate();
+      outer.animate();
+      await new Promise<void>(resolve => {
+        queueMicrotask(resolve);
+      });
+    });
+    const [folder] = await page.evaluate(() => window.motionOf('#folder'));
+    const [row] = await page.evaluate(() => window.motionOf('#row'));
+    const [after] = await page.evaluate(() => window.motionOf('#after'));
+    // The folder moves by the first change; the row inside it by the inner
+    // one alone; what follows by both.
+    expect(startOffset(folder.first).y).toBeCloseTo(-80, 0);
+    expect(startOffset(row.first).y).toBeCloseTo(-80, 0);
+    expect(startOffset(after.first).y).toBeCloseTo(-160, 0);
+  });
+
   test('the glide never scrolls the area (FR3)', async ({page}) => {
     // The same change with and without a handle, from the same scroll
     // position: the area's scroll (the browser's own scroll anchoring
@@ -744,6 +783,16 @@ test.describe('spec:AST-105 FR2–FR4', () => {
         </div>`,
     },
     {
+      // What follows is inside a `display: contents` wrapper, as Tooltip and
+      // Theme render one.
+      name: 'a flex column whose next item is a display: contents wrapper',
+      html: `<div style="display: flex; flex-direction: column; gap: 8px">
+          <div class="row" style="margin: 0"></div>
+          <div id="content" style="height: 80px; background: #fd9">Details</div>
+          <div style="display: contents"><div id="after" class="row" style="margin: 0"></div></div>
+        </div>`,
+    },
+    {
       // Collapsible's shape: the content is the last child of a plain block
       // wrapper, and what follows sits after the wrapper.
       name: 'a plain wrapper, as its last child',
@@ -798,6 +847,51 @@ test.describe('spec:AST-105 FR2–FR4', () => {
       expect(result.settled).toBeCloseTo(result.hidden, 0);
     });
   }
+
+  test("a closing flex-row item that sets its row's height hides at once, and the content after the row takes its final place at once", async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area">
+        <div style="display: flex; align-items: flex-start; gap: 8px">
+          <div id="content" style="width: 80px; height: 120px; background: #fd9"></div>
+          <div style="width: 80px; height: 40px; background: #9cf"></div>
+        </div>
+        <div id="after" class="row" style="margin: 0"></div>
+      </div>`,
+    );
+    const result = await page.evaluate(async () => {
+      const area = document.querySelector('#area');
+      const content = document.querySelector('#content') as HTMLElement;
+      const after = document.querySelector('#after') as HTMLElement;
+      const layoutHandle = window.AnimatedLayout.createAnimatedLayout(
+        () => area,
+      );
+      const report = window.AnimatedLayout.reportLayoutChange(
+        layoutHandle,
+        () => content,
+      );
+      report.measureBefore();
+      report.animate();
+      const held = window.AnimatedLayout.holdLayoutExit(
+        layoutHandle,
+        content,
+        () => {},
+      );
+      // The component hides it in the same commit.
+      content.style.display = 'none';
+      await new Promise<void>(resolve => {
+        queueMicrotask(resolve);
+      });
+      return {
+        held,
+        margin: content.style.getPropertyValue('margin-inline-end'),
+        glides: after.getAnimations().length,
+      };
+    });
+    expect(result).toEqual({held: false, margin: '', glides: 0});
+  });
 
   test('a follower the app moves with its own transform takes its final place at once', async ({
     page,

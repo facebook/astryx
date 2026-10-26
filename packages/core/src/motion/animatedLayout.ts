@@ -462,6 +462,17 @@ function flush(batch: Batch): void {
     return;
   }
   const visible = visibleRect(batch.area);
+  // Every running glide stops first and every new place is read before any
+  // glide starts, so no reading includes another's new motion.
+  const entries: {
+    readonly element: Element;
+    readonly before: DOMRect;
+    readonly carried: OffsetCurve;
+    readonly carriedMs: number;
+    after?: DOMRect;
+    rawX?: number;
+    rawY?: number;
+  }[] = [];
   for (const element of followers) {
     const before = batch.before.get(element);
     if (before == null || (before.width === 0 && before.height === 0)) {
@@ -471,9 +482,9 @@ function flush(batch: Batch): void {
       continue;
     }
     // An element already gliding keeps that motion and adds the new move: the
-    // running glide stops (so the rectangle below is its new layout place)
-    // and the rest of its curve carries into the one new glide, velocity
-    // included, summed with the new move.
+    // running glide stops (so its rectangle is its new layout place) and the
+    // rest of its curve carries into the one new glide, velocity included,
+    // summed with the new move.
     const running = glides.get(element);
     let carried = AT_REST;
     let carriedMs = 0;
@@ -487,9 +498,34 @@ function flush(batch: Batch): void {
       running.animation.cancel();
       glides.delete(element);
     }
-    const after = element.getBoundingClientRect();
-    const dx = before.left - after.left;
-    const dy = before.top - after.top;
+    entries.push({element, before, carried, carriedMs});
+  }
+  const byElement = new Map<Element, (typeof entries)[number]>();
+  for (const entry of entries) {
+    entry.after = entry.element.getBoundingClientRect();
+    entry.rawX = entry.before.left - entry.after.left;
+    entry.rawY = entry.before.top - entry.after.top;
+    byElement.set(entry.element, entry);
+  }
+  for (const entry of entries) {
+    const {element, before, carried, carriedMs} = entry;
+    const after = entry.after as DOMRect;
+    // Nested changes compose: an element inside another moving element moves
+    // only by its own change, whatever order the changes were reported in.
+    let dx = entry.rawX ?? 0;
+    let dy = entry.rawY ?? 0;
+    for (
+      let ancestor = element.parentElement;
+      ancestor != null && ancestor !== batch.area;
+      ancestor = ancestor.parentElement
+    ) {
+      const moving = byElement.get(ancestor);
+      if (moving != null) {
+        dx -= moving.rawX ?? 0;
+        dy -= moving.rawY ?? 0;
+        break;
+      }
+    }
     if (Math.abs(dx) < MIN_SHIFT_PX && Math.abs(dy) < MIN_SHIFT_PX) {
       continue;
     }
@@ -663,28 +699,55 @@ const EXIT_PROPERTIES = [
  */
 function nextInFlow(element: Element, area: Element): Element | null {
   const view = element.ownerDocument.defaultView;
+  // The first box at or inside `from` (a `display: contents` element has
+  // none of its own: its children stand in its place).
+  const firstBox = (from: Element): Element | null => {
+    const style = view?.getComputedStyle(from);
+    if (style == null) {
+      return from;
+    }
+    if (style.display === 'contents') {
+      for (
+        let child = from.firstElementChild;
+        child != null;
+        child = child.nextElementSibling
+      ) {
+        const box = firstBox(child);
+        if (box != null) {
+          return box;
+        }
+      }
+      return null;
+    }
+    return takesPart(from, style) ? from : null;
+  };
   let node: Element | null = element;
   while (node != null && node !== area) {
-    let sibling = node.nextElementSibling;
-    while (sibling != null) {
-      const style = view?.getComputedStyle(sibling);
-      if (style == null || takesPart(sibling, style)) {
-        return sibling;
+    for (
+      let sibling = node.nextElementSibling;
+      sibling != null;
+      sibling = sibling.nextElementSibling
+    ) {
+      const box = firstBox(sibling);
+      if (box != null) {
+        return box;
       }
-      sibling = sibling.nextElementSibling;
     }
     node = node.parentElement;
   }
   return null;
 }
 
-/** An element's start edge along the main axis (RTL rows read right to left). */
-function startEdge(element: Element, isRow: boolean, rtl: boolean): number {
+/**
+ * An element's place: its block start, and its inline start (RTL read right
+ * to left).
+ */
+function placeOf(
+  element: Element,
+  rtl: boolean,
+): {block: number; inline: number} {
   const rect = element.getBoundingClientRect();
-  if (!isRow) {
-    return rect.top;
-  }
-  return rtl ? -rect.right : rect.left;
+  return {block: rect.top, inline: rtl ? -rect.right : rect.left};
 }
 
 /**
@@ -713,20 +776,43 @@ function giveUpSpace(element: HTMLElement, area: Element): boolean {
     element.style.setProperty(property, `${-size}px`);
     return true;
   }
+  const own = element.style.getPropertyValue(property);
+  const ownPriority = element.style.getPropertyPriority(property);
+  const axis = isRow ? 'inline' : 'block';
+  // The content after its container must land too: a flex-row item that
+  // sets its row's height moves what follows the row.
+  const afterParent =
+    element.parentElement == null || element.parentElement === area
+      ? null
+      : nextInFlow(element.parentElement, area);
+  const checked = afterParent == null ? [next] : [next, afterParent];
   // Where the content after it goes once it is hidden.
   const display = element.style.getPropertyValue('display');
   const priority = element.style.getPropertyPriority('display');
   element.style.setProperty('display', 'none', 'important');
-  const target = startEdge(next, isRow, rtl);
+  const targets = checked.map(box => placeOf(box, rtl));
+  const target = targets[0];
   element.style.setProperty('display', display, priority);
-  const before = startEdge(next, isRow, rtl);
   // A first guess (its box), then one correction from the measured result:
   // a gap, a collapsed margin or the element's own margins.
   element.style.setProperty(property, `${-size}px`);
-  const guess = startEdge(next, isRow, rtl);
-  element.style.setProperty(property, `${-size + (target - guess)}px`);
-  if (Math.abs(startEdge(next, isRow, rtl) - target) > 1 && before !== target) {
-    element.style.removeProperty(property);
+  const guess = placeOf(next, rtl)[axis];
+  element.style.setProperty(property, `${-size + (target[axis] - guess)}px`);
+  // Everything checked must land on both axes: a flex-row item that sets
+  // its row's height frees no block space with an inline margin.
+  const missed = checked.some((box, index) => {
+    const landed = placeOf(box, rtl);
+    return (
+      Math.abs(landed.block - targets[index].block) > 1 ||
+      Math.abs(landed.inline - targets[index].inline) > 1
+    );
+  });
+  if (missed) {
+    if (own === '') {
+      element.style.removeProperty(property);
+    } else {
+      element.style.setProperty(property, own, ownPriority);
+    }
     return false;
   }
   return true;
@@ -757,7 +843,8 @@ const replaced = new WeakMap<Element, Replaced>();
  * Returns false, holding nothing, when the exit lands at once: no handle, a
  * close no change in the area measured, outside the area or its visible part,
  * Reduce Motion with a fine pointer, or a layout no end margin can free (a
- * grid track and its gap).
+ * grid track and its gap, a flex-row item that sets its row's height); in
+ * that last case the content after it takes its final place at once too.
  * The component then hides the element itself.
  */
 export function holdLayoutExit(
@@ -802,8 +889,15 @@ export function holdLayoutExit(
     ),
   };
   if (!giveUpSpace(element, area)) {
-    // A layout no end margin can free (a grid track and its gap): it lands
-    // at once rather than jump when it hides.
+    // A layout no end margin can free (a grid track and its gap, a flex-row
+    // item that sets its row's height): it hides at once, and the content
+    // after it takes its final place at once (`spec:AST-105` out of
+    // coverage).
+    for (const changed of [...batch.changed]) {
+      if (changed === element || changed.contains(element)) {
+        batch.changed.delete(changed);
+      }
+    }
     return false;
   }
   replaced.set(element, prior);

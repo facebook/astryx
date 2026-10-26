@@ -78,12 +78,15 @@ describe('architecture:react-component-runtime INV12 source boundary', () => {
     ]) {
       expect(body, forbidden).not.toContain(forbidden);
     }
-    // The one descent is the `display: contents` branch.
+    // Every descent is a `display: contents` branch: the follower walk's and
+    // the exit's search for the next box.
     const descents = body.match(/firstElementChild/g) ?? [];
-    expect(descents).toHaveLength(1);
-    expect(body).toMatch(
-      /display === 'contents'\)\s*\{\s*for\s*\(\s*let child = element\.firstElementChild/,
-    );
+    expect(descents).toHaveLength(2);
+    const contentsDescents =
+      body.match(
+        /display === 'contents'\)\s*\{\s*for\s*\(\s*let child = \w+\.firstElementChild/g,
+      ) ?? [];
+    expect(contentsDescents).toHaveLength(2);
   });
 
   it('keeps the reporting functions out of every public entry point', () => {
