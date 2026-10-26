@@ -4,9 +4,10 @@
  * @file wheelDrum.test.ts
  * @input wheelDrum.ts and wheelPhysics.ts, and a UIPickerView's cell
  *   transforms read at rest
- * @output Proves the drum puts rows where UIKit's cylinder does, and that a
- *   baked motion stays within tolerance, never sweeps a parked row across the
- *   front, and leaves rows that never show without animations
+ * @output Proves the drum puts rows where UIKit's cylinder does, that a tap
+ *   finds the row drawn under it through the perspective, and that a baked
+ *   motion stays within tolerance, never sweeps a parked row across the front,
+ *   and leaves rows that never show without animations
  * @position Unit coverage for DateInput/wheelDrum.ts
  */
 
@@ -19,6 +20,7 @@ import {
   rowAngle,
   rowAtPoint,
   rowDistance,
+  rowExtent,
   rowKeyframes,
   rowOrigin,
   rowTransform,
@@ -106,7 +108,116 @@ describe('the drum at rest', () => {
   });
 });
 
+type Matrix = number[][];
+
+function multiply(a: Matrix, b: Matrix): Matrix {
+  return a.map(row =>
+    b[0].map((_, j) => row.reduce((sum, value, k) => sum + value * b[k][j], 0)),
+  );
+}
+
+const translateZ = (z: number): Matrix => [
+  [1, 0, 0, 0],
+  [0, 1, 0, 0],
+  [0, 0, 1, z],
+  [0, 0, 0, 1],
+];
+
+/**
+ * Where CSS draws a row's edges along y, from the band's centre: the row laid
+ * out there with `transform: rowTransform(angle)` and `transform-origin:
+ * rowOrigin(geometry)`, its parent's `perspective` seen from the band's
+ * centre. Composed as CSS Transforms 2 does, from the strings the drum hands
+ * CSS, not from `rowExtent`'s algebra.
+ */
+function cssExtent(angle: number) {
+  const turn = Number(
+    /rotateX\((-?[\d.e-]+)rad\)/.exec(rowTransform(angle))?.[1],
+  );
+  const originZ = Number(/(-?[\d.]+)px$/.exec(rowOrigin(GEOMETRY))?.[1]);
+  const rotateX: Matrix = [
+    [1, 0, 0, 0],
+    [0, Math.cos(turn), -Math.sin(turn), 0],
+    [0, Math.sin(turn), Math.cos(turn), 0],
+    [0, 0, 0, 1],
+  ];
+  const perspective: Matrix = [
+    [1, 0, 0, 0],
+    [0, 1, 0, 0],
+    [0, 0, 1, 0],
+    [0, 0, -1 / GEOMETRY.perspective, 1],
+  ];
+  const drawn = multiply(
+    perspective,
+    multiply(translateZ(originZ), multiply(rotateX, translateZ(-originZ))),
+  );
+  const at = (y: number) => {
+    const [, screenY, , w] = drawn.map(row => row[1] * y + row[3]);
+    return screenY / w;
+  };
+  return {top: at(-GEOMETRY.rowHeight / 2), bottom: at(GEOMETRY.rowHeight / 2)};
+}
+
 describe('which row is under a point', () => {
+  it('draws each row where CSS draws it, nearer the band than the cylinder alone near the edge', () => {
+    for (let row = -4; row <= 4; row++) {
+      const angle = rowAngle(row * 32, GEOMETRY);
+      const css = cssExtent(angle);
+      const extent = rowExtent(angle, GEOMETRY);
+      // The CSS strings round the turn to 1e-5 rad and the origin to 1e-3 px,
+      // which moves an edge by under 1e-3 px.
+      expect(extent.top).toBeCloseTo(css.top, 3);
+      expect(extent.bottom).toBeCloseTo(css.bottom, 3);
+    }
+    // The fourth row below the band spans 84.7–89.3 px, where the cylinder
+    // without its perspective puts the third row.
+    const fourth = rowExtent(rowAngle(4 * 32, GEOMETRY), GEOMETRY);
+    expect(fourth.top).toBeCloseTo(84.67, 2);
+    expect(fourth.bottom).toBeCloseTo(89.34, 2);
+  });
+
+  it('finds the row CSS draws under every point of the column', () => {
+    // A tap in the middle of the fourth row below or above the band turns
+    // to that row, not the third.
+    const fourth = rowExtent(rowAngle(4 * 32, GEOMETRY), GEOMETRY);
+    const middle = (fourth.top + fourth.bottom) / 2;
+    expect(rowAtPoint(middle, 31 * 32, MINUTES, GEOMETRY)).toBe(35);
+    expect(rowAtPoint(-middle, 31 * 32, MINUTES, GEOMETRY)).toBe(27);
+    for (const offset of [31 * 32, 31 * 32 + 11.5]) {
+      // Each drawn row by its position along the wheel.
+      const drawn = Array.from({length: 13}, (_, k) => {
+        const position = Math.round(offset / 32) - 6 + k;
+        const angle = rowAngle(position * 32 - offset, GEOMETRY);
+        return {position, visible: isRowVisible(angle), ...cssExtent(angle)};
+      }).filter(row => row.visible);
+      const half = GEOMETRY.height / 2;
+      for (let dy = -half; dy <= half; dy += 0.25) {
+        let expected: number | null;
+        if (Math.abs(dy) < GEOMETRY.bandHeight / 2) {
+          // The band's flat strip, the drum cut away behind it.
+          expected = Math.round((offset + dy) / 32);
+        } else {
+          const under = drawn.find(row => dy >= row.top && dy <= row.bottom);
+          const above = drawn.filter(row => row.bottom < dy);
+          const below = drawn.filter(row => row.top > dy);
+          if (under != null) {
+            expected = under.position;
+          } else if (above.length > 0 && below.length > 0) {
+            const a = above.reduce((x, y) => (y.bottom > x.bottom ? y : x));
+            const b = below.reduce((x, y) => (y.top < x.top ? y : x));
+            expected = dy - a.bottom <= b.top - dy ? a.position : b.position;
+          } else {
+            expected = null;
+          }
+        }
+        expect(
+          rowAtPoint(dy, offset, MINUTES, GEOMETRY),
+          `dy ${dy} at ${offset}`,
+        ).toBe(expected);
+      }
+    }
+  });
+
   it('inverts the cylinder', () => {
     const y = GEOMETRY.radius * Math.sin(32 / GEOMETRY.radius);
     expect(rowAtPoint(y, 31 * 32, MINUTES, GEOMETRY)).toBe(32);
