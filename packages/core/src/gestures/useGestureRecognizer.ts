@@ -69,7 +69,8 @@ export function useGestureRecognizer<R extends GestureRecognizer>(
 
   // Synchronizes the consumer's listener with the recognizer, an external
   // object driven by the document's input events: the listener runs inside
-  // those events, never in a render or an Effect.
+  // those events, never in a render or an Effect (read through a ref, so a
+  // new function re-subscribes nothing).
   useEffect(
     () =>
       recognizer.addListener(current => {
@@ -79,18 +80,6 @@ export function useGestureRecognizer<R extends GestureRecognizer>(
       }),
     [recognizer],
   );
-
-  // Synchronizes the document's gesture host (an external system) with the
-  // element behind `ref`.
-  useIsomorphicLayoutEffect(() => {
-    const element = ref.current;
-    if (element == null) {
-      return undefined;
-    }
-    return getGestureHost(element.ownerDocument).attach(element, recognizer, {
-      manageStyle,
-    });
-  }, [ref, recognizer, manageStyle]);
 
   // Synchronizes the recognizer's `isEnabled` with the prop. Turning it off
   // mid-gesture ends the gesture, but this Effect calls no consumer callback
@@ -105,6 +94,21 @@ export function useGestureRecognizer<R extends GestureRecognizer>(
       isSyncingRef.current = false;
     }
   }, [recognizer, isEnabled]);
+
+  // Syncs the document's gesture host with the element behind `ref`: attached
+  // while enabled, re-attached when the node is replaced. A disabled gesture
+  // is not attached at all: no listener and no `touch-action` of its own on
+  // the element (spec:AST-094 FR24).
+  useNodeAttachment(
+    ref,
+    element =>
+      isEnabled
+        ? getGestureHost(element.ownerDocument).attach(element, recognizer, {
+            manageStyle,
+          })
+        : null,
+    [recognizer, manageStyle, isEnabled],
+  );
 
   return recognizer;
 }
@@ -128,9 +132,10 @@ export function usePressTracker(
   });
   const {trackingExpansion, highlightDelay, cancelTravel, quickTapFlash} =
     options;
-  // The tracker reads these four when it is built: a change rebuilds it, and
-  // the new values apply from the next touch. The callbacks, the brake
-  // included, are read through the ref on every touch.
+  // The tracker reads these four when it is built: a change rebuilds it (the
+  // attachment below moves to the new one and disposes the old), and the new
+  // values apply from the next touch. The callbacks, the brake included, are
+  // read through the ref on every touch.
   const tracker = useMemo(
     () =>
       new PressTracker({
@@ -150,29 +155,93 @@ export function usePressTracker(
           optionsRef.current.vetoesAncestorRecognizer?.(recognizer) ??
           defaultVeto(recognizer),
         isEnabled: () => optionsRef.current.isEnabled?.() ?? true,
-        isBraking: touch => optionsRef.current.isBraking?.(touch) === true,
+        // A touch that brakes a scroll the finger set moving presses nothing
+        // (GestureHost.isScrollBraking), unless the caller decides.
+        isBraking: touch => {
+          const element = ref.current;
+          return (
+            optionsRef.current.isBraking?.(touch) ??
+            (element != null &&
+              getGestureHost(element.ownerDocument).isScrollBraking(element))
+          );
+        },
       }),
     [ref, trackingExpansion, highlightDelay, cancelTravel, quickTapFlash],
   );
 
-  // Synchronizes the document's gesture host (an external system) with the
-  // element behind `ref`; a tracker replaced by an option change is disposed.
+  // Syncs the document's gesture host with the element behind `ref`: the
+  // tracker is its press consumer, moved when the node is replaced, and a
+  // press in progress ends with it.
+  useNodeAttachment(
+    ref,
+    element => {
+      const detach = getGestureHost(element.ownerDocument).attachConsumer(
+        element,
+        tracker,
+      );
+      return () => {
+        detach();
+        tracker.dispose();
+      };
+    },
+    [tracker],
+  );
+
+  // Syncs the host's listeners with the tracker's enabled state, which can
+  // change with any render: the host listens only while an enabled control
+  // is attached (spec:AST-094 FR24).
   useIsomorphicLayoutEffect(() => {
     const element = ref.current;
-    if (element == null) {
-      return undefined;
+    if (element != null) {
+      getGestureHost(element.ownerDocument).update(element);
     }
-    const detach = getGestureHost(element.ownerDocument).attachConsumer(
-      element,
-      tracker,
-    );
-    return () => {
-      detach();
-      tracker.dispose();
-    };
-  }, [ref, tracker]);
+  });
 
   return tracker;
+}
+
+/**
+ * Keeps `attach` applied to the element behind `ref`: checked after every
+ * render, so a replaced node (a re-keyed or swapped element) is detached and
+ * the new one attached, a removed one detached, and a change in `deps`
+ * re-attaches (`architecture:react-component-runtime` INV6). Costs no render.
+ * `attach` returns its detach, or null for nothing attached.
+ */
+function useNodeAttachment<T extends Element>(
+  ref: RefObject<T | null>,
+  attach: (element: T) => (() => void) | null,
+  deps: ReadonlyArray<unknown>,
+): void {
+  const attachedRef = useRef<{
+    element: T;
+    deps: ReadonlyArray<unknown>;
+    detach: (() => void) | null;
+  } | null>(null);
+  // Syncs the attachment with the DOM node the caller's ref holds after
+  // this commit.
+  useIsomorphicLayoutEffect(() => {
+    const element = ref.current;
+    const current = attachedRef.current;
+    if (
+      current != null &&
+      current.element === element &&
+      current.deps.length === deps.length &&
+      current.deps.every((dep, index) => Object.is(dep, deps[index]))
+    ) {
+      return;
+    }
+    current?.detach?.();
+    attachedRef.current =
+      element == null ? null : {element, deps, detach: attach(element)};
+  });
+  // Detaches at unmount.
+  useIsomorphicLayoutEffect(
+    () => () => {
+      attachedRef.current?.detach?.();
+      attachedRef.current = null;
+    },
+    [],
+  );
 }
 
 /** PressTracker's own default: an ancestor's single-finger single tap. */

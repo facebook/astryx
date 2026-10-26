@@ -38,8 +38,8 @@
  * timer callback came late, and a test drives the whole machine with explicit
  * timestamps and no real time at all.
  *
- * SYNC: When modified, update GestureRecognizer.ts, GestureHost.ts,
- * GestureArena.test.ts and README.md.
+ * SYNC: When modified, update GestureRecognizer.ts and
+ * __tests__/arena.test.ts.
  */
 
 import {
@@ -258,6 +258,41 @@ export class GestureArena {
       }
       for (const record of created) {
         this.deliverViewBegan(record);
+      }
+    });
+  }
+
+  /**
+   * A contact began where nothing takes part (plain page content). It is
+   * never tracked and stays the browser's; recognizers already tracking a
+   * gesture hear of it, as of any touch off their hit path.
+   */
+  untrackedBegan(input: TouchBeganInput): void {
+    if (!this.active.some(recognizer => recognizer.numberOfTouches > 0)) {
+      return;
+    }
+    this.run(input.time, () => {
+      const time = this.clampTime(input.time);
+      const touch: GestureTouch = {
+        id: input.id,
+        pointerType: input.pointerType,
+        phase: 'began',
+        x: input.x,
+        y: input.y,
+        time,
+        startX: input.x,
+        startY: input.y,
+        startTime: time,
+        samples: [{x: input.x, y: input.y, time}],
+        target: input.target,
+        scroll: input.scroll ?? null,
+        takenByBrowser: false,
+      };
+      const context = this.context();
+      for (const recognizer of [...this.active]) {
+        if (recognizer.numberOfTouches > 0) {
+          recognizer.deliverBeganElsewhere([touch], context);
+        }
       }
     });
   }
