@@ -265,6 +265,54 @@ export const tabBar = {
    *   7.98 pt past its centre, Oct 23 2026
    */
   lensEdgeDimension: 10.5,
+  /**
+   * Minimize on scroll (`tabBarMinimizeBehavior = .onScrollDown`): how far
+   * the content scrolls down, from where the downward scroll started, before
+   * the bar collapses into its minimized circle. A scroll back up does not
+   * expand it; reaching the top does (and a tap on the circle).
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, slow drags: minimized after 65 pt of content scroll from
+   *   the top and after 66.3 pt starting at offset 384; a slow 137 pt and a
+   *   coasting 760 pt reverse scroll mid-content did not expand, Oct 24 2026
+   */
+  minimizeDistance: 66,
+  /**
+   * The minimized bar: a circle this wide at the leading end, concentric
+   * with the bar's leading cap (7 pt in from its leading and bottom edges),
+   * holding the selected tab's icon in the selected colour.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, the minimized `_UITabBarPlatterView` 48 × 48 at
+   *   (28, 798) under a bar at (21, 791), with tab 1 or tab 3 selected; its
+   *   one `_UITabButton` holds only the selected icon, tinted, Oct 24 2026
+   */
+  minimizedSize: 48,
+  /**
+   * The lens travelling into the minimized circle (its centre).
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, least-squares fit of the lens's per-frame x as it
+   *   collapsed from tab 3 to the leading circle (rms 0.8 pt), Oct 24 2026
+   */
+  collapseTravel: {response: 0.4, dampingRatio: 0.85},
+  /**
+   * The lens's size between the item and the circle, both ways; the
+   * platter contracts and grows on it too.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, least-squares fits of the lens's per-frame width:
+   *   76 to 48 collapsing (rms 0.7 pt) and 48 to 98 expanding (rms
+   *   0.15 pt), Oct 24 2026
+   */
+  collapseSize: {response: 0.6, dampingRatio: 0.85},
+  /**
+   * The tab items fading while the glass morphs between the bar and the
+   * circle, and the selected copy inside the lens with them.
+   * @source GUESS — UIKit morphs the glass on its compositor: layer
+   *   properties only show the circles appearing in one frame at the start
+   *   and the bar's items, lens and platter disappearing in one frame
+   *   0.75 s later (iOS 26.2 simulator, Oct 24 2026), so what a person sees
+   *   in between is still to be read from video
+   * @measure M-TB1
+   */
+  minimizeFade: {response: 0.25, dampingRatio: 1},
 } as const;
 
 /**

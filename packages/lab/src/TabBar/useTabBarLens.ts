@@ -5,7 +5,8 @@
 /**
  * @file useTabBarLens.ts
  * @input The TabBar's capsule element, its item count, the selected index,
- *   whether a finger drives the bar and what to do on a lift; core's
+ *   whether a finger drives the bar, whether the bar is minimized and what
+ *   to do on a lift; core's
  *   compositor animator and long-press recognizer
  *   (`@astryxdesign/core/motion`,
  *   `@astryxdesign/core/gestures`), the UIKit tab-bar table and
@@ -53,7 +54,13 @@
  *
  * A selection change slides the body from where the lens was on screen to
  * its new resting place: on `lensTravel` from rest (a key, the app), or
- * continuing the settle a lift started. Every animation runs on the
+ * continuing the settle a lift started.
+ *
+ * Minimizing (useTabBarMinimize.ts) carries the lens into the minimized
+ * circle: it travels to the circle's centre (`collapseTravel`) and shrinks to
+ * its size while fading (`collapseSize`), and the selected copy fades out
+ * with the items (`minimizeFade`); expanding plays it back. A minimized bar
+ * takes no press. Every animation runs on the
  * compositor; a finger's moves retarget them, so the lens keeps moving
  * through a busy main thread. Under Reduce Motion the animator cross-fades
  * instead of moving and a press scales nothing (design:reduced-motion).
@@ -96,6 +103,7 @@ import {
   itemWidth,
   lensTarget,
   liftScale,
+  minimizedCenter,
   nearestIndex,
 } from './tabBarModel';
 
@@ -104,6 +112,12 @@ const DRAG_SLOP = UIKIT_GESTURES.longPress.allowableMovement.value;
 
 /** How long the selected copy's curves run: past any lens spring's settle. */
 const COPY_HORIZON_S = 1.5;
+/**
+ * How long the selected copy stays visible when the bar minimizes: it fades
+ * with the items (`minimizeFade`, under 1% after 0.3 s), so its counter-move
+ * stops there instead of sampling keyframes nobody sees.
+ */
+const COPY_FADE_S = 0.3;
 
 /** Seconds between the samples a derived curve's velocity is read from. */
 const VELOCITY_STEP_S = 0.001;
@@ -128,6 +142,8 @@ export interface UseTabBarLensOptions {
   readonly selectedIndex: number;
   /** A finger drives the bar (the touch presentation: a coarse pointer). */
   readonly isTouch: boolean;
+  /** The bar is minimized (useTabBarMinimize.ts): the lens is in the circle. */
+  readonly isMinimized: boolean;
   /** A finger lifted over the item at `index`. */
   readonly onLift: (index: number) => void;
 }
@@ -173,6 +189,7 @@ export function useTabBarLens({
   count,
   selectedIndex,
   isTouch,
+  isMinimized,
   onLift,
 }: UseTabBarLensOptions): TabBarLensRefs {
   // The table's springs become motion roles (a theme may retune them)
@@ -243,9 +260,11 @@ export function useTabBarLens({
 
   /**
    * Plays the selected copy's counter-transform from `at`, derived from the
-   * body's curves as they now stand. Called after every change to the body.
+   * body's curves as they now stand. Called after every change to the body;
+   * `fromRest` when the body's call started from rest, so the copy joins its
+   * start at the browser's commit.
    */
-  const playCopy = (at: number) => {
+  const playCopy = (at: number, fromRest = false, horizon = COPY_HORIZON_S) => {
     const sample = (t: number) => {
       const time = at + t * 1000;
       return copyTransform(
@@ -255,7 +274,7 @@ export function useTabBarLens({
       );
     };
     const curve = (key: 'x' | 'scaleX' | 'scaleY'): MotionCurve => ({
-      duration: COPY_HORIZON_S,
+      duration: horizon,
       at: t => sample(t)[key],
       velocity: t =>
         (sample(t + VELOCITY_STEP_S)[key] -
@@ -264,7 +283,7 @@ export function useTabBarLens({
     });
     copy.animator.play(
       {x: curve('x'), scaleX: curve('scaleX'), scaleY: curve('scaleY')},
-      {at},
+      fromRest ? {} : {at},
     );
   };
 
@@ -458,23 +477,111 @@ export function useTabBarLens({
       }
     },
     {
-      isEnabled: isTouch,
+      isEnabled: isTouch && !isMinimized,
       // Under a mouse the host writes no touch styles: desktop selection
       // is unchanged.
       manageStyle: isTouch,
     },
   );
 
-  // The recognizer turned off (another input took over): a press it was
-  // tracking ends here, as a cancel, since a recognizer turned off reports
-  // nothing more. A cancel chooses nothing, so the app hears nothing.
+  // The recognizer turned off (another input took over, or the bar
+  // minimized): a press it was tracking ends here, as a cancel, since a
+  // recognizer turned off reports nothing more. A cancel chooses nothing,
+  // so the app hears nothing.
   const endRef = useRef(end);
   endRef.current = end;
   useEffect(() => {
-    if (!isTouch && pressRef.current != null) {
+    if ((!isTouch || isMinimized) && pressRef.current != null) {
       endRef.current(true);
     }
-  }, [isTouch]);
+  }, [isTouch, isMinimized]);
+  /** The body's offset and scale that put the lens in the minimized circle. */
+  const collapsed = (element: HTMLElement, selected: number) => {
+    const width = element.offsetWidth;
+    const isRtl = isRtlElement(element);
+    return {
+      x:
+        minimizedCenter(width, isRtl) -
+        itemCenters(width, count, isRtl)[selected],
+      scaleX: tabBar.minimizedSize / itemWidth(width, count),
+      scaleY: tabBar.minimizedSize / tabBar.itemHeight,
+    };
+  };
+
+  // Minimizing carries the lens into the circle; expanding brings it back.
+  const wasMinimizedRef = useRef(isMinimized);
+  useLayoutEffect(() => {
+    const was = wasMinimizedRef.current;
+    wasMinimizedRef.current = isMinimized;
+    const element = capsuleRef.current;
+    const selected = selectedRef.current;
+    if (was === isMinimized || element == null || selected < 0) {
+      return;
+    }
+    const target = isMinimized
+      ? collapsed(element, selected)
+      : {x: 0, scaleX: 1, scaleY: 1};
+    const now = performance.now();
+    // From rest every curve starts when the browser commits the frame, so a
+    // busy main thread delays the motion instead of skipping into it; motion
+    // already on screen continues from now.
+    const isMoving =
+      body.animator.getVelocity('x', now) !== 0 ||
+      body.animator.getVelocity('scaleX', now) !== 0;
+    const options = isMoving ? {at: now} : {};
+    body.animator.animate(
+      {x: target.x},
+      {spring: tabBar.collapseTravel},
+      options,
+    );
+    body.animator.animate(
+      {
+        scaleX: target.scaleX,
+        scaleY: target.scaleY,
+        opacity: isMinimized ? 0 : 1,
+      },
+      {spring: tabBar.collapseSize},
+      options,
+    );
+    copy.animator.animate(
+      {opacity: isMinimized ? 0 : 1},
+      {spring: tabBar.minimizeFade},
+      options,
+    );
+    playCopy(now, !isMoving, isMinimized ? COPY_FADE_S : COPY_HORIZON_S);
+  }, [isMinimized, capsuleRef, body, copy]);
+
+  // Minimized, the bar's width can still change (a rotation, a split view):
+  // the lens stays in the circle.
+  useEffect(() => {
+    const element = capsuleRef.current;
+    if (
+      !isMinimized ||
+      element == null ||
+      typeof ResizeObserver === 'undefined'
+    ) {
+      return;
+    }
+    let width = element.offsetWidth;
+    const observer = new ResizeObserver(() => {
+      const next = element.offsetWidth;
+      const selected = selectedRef.current;
+      if (next === width || selected < 0) {
+        return;
+      }
+      width = next;
+      const isRtl = isRtlElement(element);
+      body.animator.set({
+        x:
+          minimizedCenter(next, isRtl) -
+          itemCenters(next, count, isRtl)[selected],
+        scaleX: tabBar.minimizedSize / itemWidth(next, count),
+        scaleY: tabBar.minimizedSize / tabBar.itemHeight,
+      });
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [isMinimized, capsuleRef, body, count]);
 
   // A new selection: the resting place jumped to the new item (CSS, this
   // frame); the body starts where the lens was on screen. After a lift it
@@ -495,6 +602,14 @@ export function useTabBarLens({
       selectedIndex < 0 ||
       from >= count
     ) {
+      return;
+    }
+    if (wasMinimizedRef.current) {
+      // Minimized: the lens stays in the circle, now measured from the new
+      // resting place.
+      const target = collapsed(element, selectedIndex);
+      body.animator.set(target);
+      playCopy(performance.now());
       return;
     }
     const isRtl = isRtlElement(element);

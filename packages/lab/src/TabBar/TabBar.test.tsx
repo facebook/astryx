@@ -8,14 +8,15 @@
  *   choosing a tab (onChange) and choosing the selected one again
  *   (onReselect), badges in the tab's name (one message) and drawn without
  *   animation, the lens under the selected tab only, each item drawn once at
- *   rest, and the stable theme classes
+ *   rest, the stable theme
+ *   classes, and when the bar minimizes on scroll and expands again
  * @position Testing; the motion is proven in real engines by
  *   __tests__/TabBar.interaction.browser.spec.ts
  */
 
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {useState} from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {InternationalizationProvider} from '@astryxdesign/core/i18n';
 import {COARSE_POINTER_QUERY} from '@astryxdesign/core/gestures/coarsePointer';
 import {TabBar, TabBarItem, type TabBarProps} from './TabBar';
@@ -207,7 +208,9 @@ describe('TabBar', () => {
     // At rest the lens carries no copy of the items: each icon is drawn once.
     expect(document.querySelector('[data-tab-bar-copy]')).toBeNull();
     expect(lens?.querySelectorAll('[data-testid^="icon-"]')).toHaveLength(0);
-    expect(document.querySelectorAll('[data-testid^="icon-"]')).toHaveLength(4);
+    expect(
+      document.querySelectorAll('[data-tab-bar-items] [data-testid^="icon-"]'),
+    ).toHaveLength(4);
   });
 
   it('draws the lens only while a tab is selected', () => {
@@ -296,5 +299,147 @@ describe('TabBar', () => {
     );
     expect(screen.getAllByRole('tab')).toHaveLength(1);
     expect(screen.queryByText('stray')).toBeNull();
+  });
+});
+
+describe('TabBar minimize on scroll', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    Object.defineProperty(window, 'scrollY', {value: 0, configurable: true});
+  });
+
+  function scrollTo(y: number) {
+    Object.defineProperty(window, 'scrollY', {value: y, configurable: true});
+    act(() => {
+      window.dispatchEvent(new Event('scroll'));
+    });
+  }
+
+  /** One finger on the page, as the gesture host reads a touch. */
+  function touch(type: 'touchstart' | 'touchmove' | 'touchend', y: number) {
+    const event = new Event(type, {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+    });
+    const point = {
+      identifier: 1,
+      clientX: 200,
+      clientY: y,
+      target: document.body,
+    };
+    Object.defineProperty(event, 'changedTouches', {value: [point]});
+    Object.defineProperty(event, 'touches', {
+      value: type === 'touchend' ? [] : [point],
+    });
+    Object.defineProperty(event, 'timeStamp', {value: performance.now()});
+    document.body.dispatchEvent(event);
+  }
+
+  /** A finger dragging the page through `ys`. */
+  function dragPage(ys: number[]) {
+    act(() => {
+      touch('touchstart', 600);
+      // Past the pan's 10 px: the person is scrolling the page.
+      touch('touchmove', 580);
+    });
+    for (const y of ys) {
+      scrollTo(y);
+    }
+    act(() => {
+      touch('touchend', 580);
+      // The page comes to rest, as the browser reports it.
+      window.dispatchEvent(new Event('scrollend'));
+    });
+  }
+
+  const isMinimized = () =>
+    screen.getByRole('tablist').hasAttribute('data-tab-bar-minimized');
+
+  it('never minimizes by default', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    render(<Bar />);
+    dragPage([40, 80, 160]);
+    expect(isMinimized()).toBe(false);
+  });
+
+  it('minimizes 66 px into a downward scroll, not before', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    render(<Bar minimizeBehavior="onScrollDown" />);
+    // The page restored to 300 by a script: not the person's scroll.
+    scrollTo(300);
+    dragPage([320, 365]);
+    expect(isMinimized()).toBe(false);
+    dragPage([366]);
+    expect(isMinimized()).toBe(true);
+  });
+
+  it('stays minimized while scrolling back up mid-page, and expands at the top', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    render(<Bar minimizeBehavior="onScrollDown" />);
+    dragPage([100]);
+    expect(isMinimized()).toBe(true);
+    dragPage([60, 20]);
+    expect(isMinimized()).toBe(true);
+    dragPage([0]);
+    expect(isMinimized()).toBe(false);
+  });
+
+  it('stays minimized when a script scrolls the page to the top', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    render(<Bar minimizeBehavior="onScrollDown" />);
+    dragPage([200]);
+    expect(isMinimized()).toBe(true);
+    // Long after the finger: not the person's scroll.
+    vi.spyOn(performance, 'now').mockReturnValue(performance.now() + 10_000);
+    scrollTo(0);
+    expect(isMinimized()).toBe(true);
+  });
+
+  it('expands on a tap on the circle, keeping the selection', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    const onChange = vi.fn();
+    render(
+      <Bar
+        minimizeBehavior="onScrollDown"
+        initial="browse"
+        onChange={onChange}
+      />,
+    );
+    dragPage([200]);
+    const circle = document.querySelector('[data-tab-bar-circle]');
+    expect(circle?.querySelector('[data-testid="icon-browse"]')).not.toBeNull();
+    fireEvent.click(circle as Element);
+    expect(isMinimized()).toBe(false);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('tab', {name: 'Browse'})).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
+  it('expands when a tab receives focus', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    render(<Bar minimizeBehavior="onScrollDown" />);
+    dragPage([200]);
+    act(() => {
+      screen.getByRole('tab', {name: 'Home'}).focus();
+    });
+    expect(isMinimized()).toBe(false);
+  });
+
+  it('stays expanded under a mouse', () => {
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    render(<Bar minimizeBehavior="onScrollDown" />);
+    dragPage([200]);
+    expect(isMinimized()).toBe(false);
+  });
+
+  it('minimizes under any finger, Android included (one touch model)', () => {
+    restorePointer.push(coarsePrimaryPointer());
+    render(<Bar minimizeBehavior="onScrollDown" />);
+    dragPage([200]);
+    expect(isMinimized()).toBe(true);
   });
 });

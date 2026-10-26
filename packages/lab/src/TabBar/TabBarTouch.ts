@@ -15,3 +15,4 @@
  */
 
 export {useTabBarLens} from './useTabBarLens';
+export {useTabBarMinimize} from './useTabBarMinimize';

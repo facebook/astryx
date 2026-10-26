@@ -19,16 +19,23 @@
  *   selected tab reselects and moves nothing; badges change without
  *   animating; a storyboard of the slide; under a finger, UITabBar's press
  *   tracking (the lift and flex on landing, the chase, the commit on lift
- *   with its edge cases, a declined change settling back, right to left).
- *   Under a mouse (a fine pointer) a press is a plain
- *   tap and the lens slides on the theme's motion instead, which Reduce
- *   Motion drops
+ *   with its edge cases, a declined change settling back, right to left);
+ *   minimize on scroll: 66 px into a finger's downward scroll the bar
+ *   collapses into its circle (the lens travelling and shrinking into it on
+ *   UIKit's springs, through a blocked main thread), scrolling up mid-page
+ *   and a script's scroll to the top leave it minimized, the top and a tap
+ *   on the circle expand it, and the minimized bar lets the page take
+ *   touches outside the circle. Under a mouse (a fine pointer) a click is a
+ *   plain click, the bar never minimizes and the lens slides on the theme's
+ *   motion instead, which Reduce Motion replaces as
+ *   above
  * @position Interaction proof for lab TabBar (TabBar.tsx, tabBarModel.ts);
  *   shape copied from the harness exemplar,
  *   BottomSheetDetent.interaction.browser.spec.ts
  */
 
 import {expect, test, type Locator, type Page} from '@playwright/test';
+import type {TouchDriver} from '@astryxdesign/interaction-harness';
 import {
   animationStoryboard,
   blockMainThread,
@@ -1216,5 +1223,586 @@ test(
     // Lifted and flexed while the finger is down.
     expect(Math.max(...frames.map(f => f.lift))).toBeGreaterThan(1.1);
     expect(Math.max(...frames.map(f => f.flex))).toBeGreaterThan(1.03);
+  },
+);
+
+// =============================================================================
+// Minimize on scroll
+// =============================================================================
+
+/** uikit/tabBar.ts: `minimizeDistance`, `minimizedSize`, the collapse springs. */
+const MINIMIZE_DISTANCE = 66;
+const MINIMIZED_SIZE = 48;
+const COLLAPSE_TRAVEL = {response: 0.4, dampingFraction: 0.85};
+const COLLAPSE_SIZE = {response: 0.6, dampingFraction: 0.85};
+
+const isMinimized = (page: Page) =>
+  page
+    .getByRole('tablist')
+    .evaluate(element => element.hasAttribute('data-tab-bar-minimized'));
+const pageScroll = (page: Page) => page.evaluate(() => window.scrollY);
+const circle = (page: Page) => page.locator('[data-tab-bar-circle]');
+
+/**
+ * A finger dragging the page content by `dy` px (positive scrolls the page
+ * down), then resting so nothing coasts. Where injected touches scroll
+ * natively (Chromium) the page scrolls itself; in WebKit, whose injected
+ * touches do not scroll, the page is scrolled by the finger's travel after
+ * each move while the finger is down, which the bar reads the same way.
+ */
+async function scrollByFinger(
+  page: Page,
+  driver: TouchDriver,
+  dy: number,
+  {settle = true}: {settle?: boolean} = {},
+) {
+  const from = {x: 200, y: dy > 0 ? 520 : 160};
+  const to = {x: from.x, y: from.y - dy};
+  const script = drag(from, to, {
+    durationMs: Math.max(160, Math.abs(dy) * 3),
+    restMs: settle ? 150 : 0,
+  });
+  if (driver.drivesNativeGestures) {
+    await driver.play(script);
+  } else {
+    let lastY = from.y;
+    await driver.play(script, {
+      realtime: false,
+      onEvent: async step => {
+        const finger = step.changed[0];
+        if (step.type !== 'touchMove' || finger == null) {
+          return;
+        }
+        const delta = lastY - finger.y;
+        lastY = finger.y;
+        await page.evaluate(by => window.scrollBy(0, by), delta);
+      },
+    });
+  }
+  if (settle) {
+    await page.waitForTimeout(200);
+  }
+}
+
+/**
+ * Lays the story out right to left: the story's wrapper carries the
+ * direction (Storybook's decorator sets `dir` on it), so it is switched
+ * there.
+ */
+async function rightToLeft(page: Page) {
+  await page.evaluate(() => {
+    document
+      .querySelector('[role="tablist"]')
+      ?.closest('[dir]')
+      ?.setAttribute('dir', 'rtl');
+  });
+  await page.evaluate(
+    () =>
+      new Promise<void>(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+}
+
+/** Resolves once the page has not scrolled for three frames. */
+async function waitForScrollIdle(page: Page) {
+  await page.evaluate(
+    () =>
+      new Promise<void>(resolve => {
+        let last = window.scrollY;
+        let still = 0;
+        const tick = () => {
+          still = window.scrollY === last ? still + 1 : 0;
+          last = window.scrollY;
+          if (still >= 3) {
+            resolve();
+          } else {
+            requestAnimationFrame(tick);
+          }
+        };
+        requestAnimationFrame(tick);
+      }),
+  );
+}
+
+/**
+ * Scrolls the page by a finger and reads the running animations in the
+ * frame after `isChanged` first holds, while the finger is still down (a
+ * 200 ms fade ends long before the finger lifts).
+ */
+async function readDuringScroll(
+  page: Page,
+  driver: TouchDriver,
+  isChanged: () => Promise<boolean>,
+  since: number,
+) {
+  let sampled: Awaited<ReturnType<typeof runningAnimations>> | null = null;
+  const from = {x: 200, y: 520};
+  let lastY = from.y;
+  await driver.play(drag(from, {x: 200, y: 320}, {durationMs: 600}), {
+    realtime: driver.drivesNativeGestures,
+    onEvent: async step => {
+      const finger = step.changed[0];
+      if (step.type !== 'touchMove' || finger == null) {
+        return;
+      }
+      if (!driver.drivesNativeGestures) {
+        const delta = lastY - finger.y;
+        lastY = finger.y;
+        await page.evaluate(by => window.scrollBy(0, by), delta);
+      }
+      if (sampled == null && (await isChanged())) {
+        await page.waitForTimeout(40);
+        sampled = await runningAnimations(page, since);
+      }
+    },
+  });
+  if (sampled == null) {
+    throw new Error('it never changed while the finger was down');
+  }
+  return sampled;
+}
+
+async function minimizeBar(page: Page, driver: TouchDriver) {
+  await scrollByFinger(page, driver, 200);
+  await expect.poll(() => isMinimized(page)).toBe(true);
+}
+
+test.describe('minimize on scroll', () => {
+  test('the page root keeps no touch-action of its own while the bar watches the scroll', async ({
+    page,
+  }) => {
+    const {driver, bar} = await openBar(page, 'minimize-on-scroll');
+    const root = () =>
+      page.evaluate(() => ({
+        inline: document.documentElement.style.touchAction || '',
+        computed: getComputedStyle(document.documentElement).touchAction,
+      }));
+    expect(await root()).toEqual({inline: '', computed: 'auto'});
+    // The watch runs from a finger's pan, which claims no touch: the
+    // gesture host manages the styles and writes none here.
+    await scrollByFinger(page, driver, 200);
+    await expect(bar).toHaveAttribute('data-tab-bar-minimized', '');
+    expect(await root()).toEqual({inline: '', computed: 'auto'});
+  });
+
+  test('a finger scrolling the page down minimizes the bar 66 px into the scroll, not before', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await scrollByFinger(page, driver, 45);
+    const first = await pageScroll(page);
+    expect(first).toBeGreaterThan(10);
+    expect(first).toBeLessThan(MINIMIZE_DISTANCE);
+    expect(await isMinimized(page)).toBe(false);
+    await scrollByFinger(page, driver, 60);
+    expect(await pageScroll(page)).toBeGreaterThanOrEqual(MINIMIZE_DISTANCE);
+    await expect.poll(() => isMinimized(page)).toBe(true);
+  });
+
+  test('scrolling back up mid-page leaves it minimized; reaching the top expands it', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await scrollByFinger(page, driver, 300);
+    await expect.poll(() => isMinimized(page)).toBe(true);
+    await scrollByFinger(page, driver, -120);
+    expect(await pageScroll(page)).toBeGreaterThan(0);
+    expect(await isMinimized(page)).toBe(true);
+    await scrollByFinger(page, driver, -400);
+    expect(await pageScroll(page)).toBe(0);
+    await expect.poll(() => isMinimized(page)).toBe(false);
+  });
+
+  test('a script scrolling the page to the top leaves it minimized', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(300);
+    expect(await pageScroll(page)).toBe(0);
+    expect(await isMinimized(page)).toBe(true);
+  });
+
+  test('a tap on the circle expands the bar, keeping the tab and the scroll', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    await waitForRest(lensBody(page));
+    const scrolled = await pageScroll(page);
+    const box = await circle(page).boundingBox();
+    if (box == null) {
+      throw new Error('no circle');
+    }
+    expect(box.width).toBeCloseTo(MINIMIZED_SIZE, 0);
+    await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    expect(await pageScroll(page)).toBe(scrolled);
+    await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('expanded again, the lens carries no copy at rest, and a slide’s copy lines up with the items', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    await waitForRest(lensBody(page));
+    const box = await circle(page).boundingBox();
+    if (box == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    await waitForRest(lensBody(page));
+    // At rest the selected tab draws its own look: no copy is mounted.
+    await expect(lensCopy(page)).toHaveCount(0);
+    // A slide mounts it again, and it starts where the items are: no offset
+    // or scale left over from the collapse.
+    await driver.tap(await itemCenter(page, 'Browse'));
+    await waitForAnimation(lensCopy(page));
+    await holdAnimations(page);
+    const offsets = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-tab-bar-copy-item]')].map(item => {
+        const value = item.getAttribute('data-tab-bar-copy-item');
+        const face = document.querySelector(
+          `[data-tab-bar-value="${value}"] > span`,
+        );
+        const a = item.getBoundingClientRect();
+        const b = face?.getBoundingClientRect();
+        return b == null
+          ? Infinity
+          : Math.abs(a.left + a.width / 2 - (b.left + b.width / 2));
+      }),
+    );
+    await releaseAnimations(page, {finish: true});
+    expect(offsets.length).toBeGreaterThan(0);
+    for (const offset of offsets) {
+      expect(offset).toBeLessThan(0.5);
+    }
+  });
+
+  test('minimized, the page takes the touches outside the circle', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    const profile = await itemCenter(page, 'Profile');
+    await minimizeBar(page, driver);
+    const hit = await page.evaluate(({x, y}) => {
+      const element = document.elementFromPoint(x, y);
+      return {
+        inBar: element?.closest('[role="tablist"]') != null,
+        onCircle: element?.closest('[data-tab-bar-circle]') != null,
+      };
+    }, profile);
+    expect(hit).toEqual({inBar: false, onCircle: false});
+  });
+
+  test('a tap on the circle mid-collapse turns the bar around from where it is', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    const library = await itemCenter(page, 'Library');
+    const body = lensBody(page);
+    const sampling = sampleRects(body, 1500);
+    // Just past the trigger, so the page stops scrolling while the bar is
+    // still collapsing: a tap on a page that is still scrolling only stops
+    // it, here as on iOS.
+    await scrollByFinger(page, driver, 80, {settle: false});
+    await expect.poll(() => isMinimized(page)).toBe(true);
+    await waitForScrollIdle(page);
+    expect(
+      await body.evaluate(element =>
+        element.getAnimations().some(a => a.playState === 'running'),
+      ),
+    ).toBe(true);
+    const turning = await lensCenterX(page);
+    const box = await circle(page).boundingBox();
+    if (box == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    const samples = (await sampling).flatMap(sample =>
+      sample.box == null
+        ? []
+        : [{t: sample.t, x: sample.box.x + sample.box.width / 2}],
+    );
+    // It was on its way into the circle, then came back without a jump:
+    // consecutive frames never cover the remaining distance at once.
+    expect(Math.abs(turning - library.x)).toBeGreaterThan(5);
+    const steps = samples
+      .slice(1)
+      .flatMap((sample, i) =>
+        sample.t - samples[i].t <= 34 ? [sample.x - samples[i].x] : [],
+      );
+    expect(
+      Math.max(...steps.map(Math.abs)),
+      JSON.stringify(samples),
+    ).toBeLessThan(40);
+    await waitForRest(body);
+    expect(Math.abs((await lensCenterX(page)) - library.x)).toBeLessThan(0.5);
+    await expect(tab(page, 'Library')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('with Reduce Motion the bar cross-fades into the circle: opacity only, within 200 ms', async ({
+    page,
+  }) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    const since = await timelineNow(page);
+    assertCrossFade(
+      await readDuringScroll(page, driver, () => isMinimized(page), since),
+    );
+    await expect.poll(() => isMinimized(page)).toBe(true);
+  });
+
+  test('watching the page’s scroll never holds it: no touch listener on the page’s root path blocks a scroll', async ({
+    page,
+    browserName,
+  }) => {
+    // A blocking (non-passive) touchstart, touchmove or wheel listener on the
+    // root path makes the browser wait for the main thread before every page
+    // scroll (the gesture README's measured limit); the watcher's are passive.
+    // (A finger scrolling through a busy main thread is a simulator proof: the
+    // harness cannot drive one.)
+    test.skip(
+      browserName !== 'chromium',
+      'reads listeners through Chromium’s debugger',
+    );
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    // A scroll first, so every listener the watcher adds while it tracks a
+    // touch is in place.
+    await scrollByFinger(page, driver, 120);
+    const cdp = await page.context().newCDPSession(page);
+    const blocking: string[] = [];
+    for (const expression of [
+      'window',
+      'document',
+      'document.documentElement',
+      'document.body',
+    ]) {
+      const {result} = await cdp.send('Runtime.evaluate', {expression});
+      if (result.objectId == null) {
+        throw new Error(`no ${expression}`);
+      }
+      const {listeners} = await cdp.send('DOMDebugger.getEventListeners', {
+        objectId: result.objectId,
+      });
+      for (const listener of listeners) {
+        if (
+          /^(touchstart|touchmove|wheel)$/.test(listener.type) &&
+          !listener.passive
+        ) {
+          blocking.push(`${expression}: ${listener.type}`);
+        }
+      }
+    }
+    expect(blocking).toEqual([]);
+  });
+
+  test('right to left, the bar collapses into a circle at the right edge', async ({
+    page,
+  }) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await rightToLeft(page);
+    const width = await page.evaluate(() => window.innerWidth);
+    await minimizeBar(page, driver);
+    await waitForRest(lensBody(page));
+    const box = await circle(page).boundingBox();
+    if (box == null) {
+      throw new Error('no circle');
+    }
+    // At the right, where the bar starts in a right-to-left layout: the
+    // bar's 21 px inset plus the 7 px the 48 px circle sits inside the
+    // 62 px bar.
+    expect(width - (box.x + box.width)).toBeCloseTo(28, 0);
+    expect(box.width).toBeCloseTo(MINIMIZED_SIZE, 0);
+  });
+
+  test('minimized, a resize keeps the circle whole: the cap and the lens stay on it', async ({
+    page,
+  }) => {
+    // A phone in portrait: the capsule narrower than its natural width.
+    await page.setViewportSize({width: 375, height: 667});
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    await minimizeBar(page, driver);
+    await waitForRest(lensBody(page));
+    // Rotated to landscape while minimized: the capsule widens.
+    await page.setViewportSize({width: 667, height: 375});
+    await page.waitForTimeout(200);
+    const circleBox = await circle(page).boundingBox();
+    const endBox = await page
+      .locator('[data-tab-bar-platter-end]')
+      .boundingBox();
+    const lensBox = await lensBody(page).boundingBox();
+    if (circleBox == null || endBox == null || lensBox == null) {
+      throw new Error('no circle');
+    }
+    // The trailing cap closes on the circle, and the lens sits in it.
+    expect(
+      Math.abs(endBox.x + endBox.width - (circleBox.x + circleBox.width)),
+    ).toBeLessThan(1);
+    expect(
+      Math.abs(
+        lensBox.x + lensBox.width / 2 - (circleBox.x + circleBox.width / 2),
+      ),
+    ).toBeLessThan(1);
+  });
+
+  test('collapsing carries the lens into the circle on UIKit’s springs while the platter contracts', async ({
+    page,
+  }, testInfo) => {
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    const body = lensBody(page);
+    const restBox = await body.boundingBox();
+    const circleBox = await circle(page).boundingBox();
+    if (restBox == null || circleBox == null) {
+      throw new Error('no lens or circle');
+    }
+    const travel =
+      circleBox.x + circleBox.width / 2 - (restBox.x + restBox.width / 2);
+    const endScale = MINIMIZED_SIZE / restBox.width;
+    await scrollByFinger(page, driver, 200);
+    await waitForAnimation(body);
+    await holdAnimations(page);
+    const times = Array.from({length: 61}, (_, i) => i * 16.667);
+    const bodySamples = await sampleCurve(body, times);
+    const samples = times.map((t, i) => ({
+      t: +t.toFixed(1),
+      x: bodySamples[i].transform.translateX,
+      scaleX: bodySamples[i].transform.scaleX,
+      opacity: bodySamples[i].opacity,
+      analyticX: travel * springStep(COLLAPSE_TRAVEL, t),
+      analyticScaleX: 1 + (endScale - 1) * springStep(COLLAPSE_SIZE, t),
+    }));
+    await releaseAnimations(page, {finish: true});
+    await writeEvidence(
+      'curves/tabbar-collapse',
+      {
+        [`${testInfo.project.name}.json`]: JSON.stringify(
+          {travel, endScale, samples},
+          null,
+          1,
+        ),
+      },
+      testInfo,
+    );
+    for (const sample of samples) {
+      expect(
+        Math.abs(sample.x - sample.analyticX),
+        JSON.stringify(sample),
+      ).toBeLessThan(0.5);
+      expect(
+        Math.abs(sample.scaleX - sample.analyticScaleX),
+        JSON.stringify(sample),
+      ).toBeLessThan(0.005);
+    }
+    // The lens ends inside the circle, faded out; the platter's pieces have
+    // become the circle.
+    expect(samples.at(-1)?.opacity ?? 1).toBeLessThan(0.05);
+    const pieces = await page
+      .locator('[data-tab-bar-platter] > div')
+      .evaluateAll(elements =>
+        elements.map(element => {
+          const rect = element.getBoundingClientRect();
+          return {left: rect.left, right: rect.right};
+        }),
+      );
+    const left = Math.min(...pieces.map(piece => piece.left));
+    const right = Math.max(...pieces.map(piece => piece.right));
+    expect(right - left).toBeCloseTo(MINIMIZED_SIZE, 0);
+    expect(left).toBeCloseTo(circleBox.x, 0);
+  });
+
+  test('the collapse keeps advancing every frame while the main thread is blocked', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'screencast frame evidence is Chromium-only in Playwright (WebKit: the iOS simulator rig)',
+    );
+    const {driver} = await openBar(page, 'minimize-on-scroll');
+    const end = page.locator('[data-tab-bar-platter-end]');
+    await markElement(end);
+    const cast = await startScreencast(page);
+    // Just past the trigger, then block as soon as the collapse is running.
+    await driver.play(
+      drag({x: 200, y: 520}, {x: 200, y: 420}, {durationMs: 300, restMs: 150}),
+    );
+    const [collapse] = await waitForAnimation(end, {minProgressMs: 16});
+    // Blocked by the page itself in the frame that sees the collapse running.
+    const block = await blockMainThread(page, 600, {during: end});
+    await page.waitForTimeout(150);
+    const castFrames = await cast.stop();
+    const tracked = await trackMarker(page, castFrames);
+    const proof = busyWindowProof(
+      tracked,
+      {from: block.from, to: Math.min(block.to, collapse.to)},
+      {
+        axis: 'x',
+        settledWithin: 2,
+        // Screencast throughput, not the animation: no display-rate bound.
+        maxMedianFrameMs: Infinity,
+      },
+    );
+    // The harness's verdict (a loaded machine drops a screencast frame or
+    // two; a frozen collapse presents none).
+    expect(
+      proof.verdict.pass,
+      `${proof.summary}; ${proof.verdict.failures.join('; ')}`,
+    ).toBe(true);
+  });
+});
+
+test(
+  'storyboard: the bar collapses into its circle, and a tap on the circle expands it',
+  {tag: '@storyboard'},
+  async ({page}, testInfo) => {
+    const {driver, bar} = await openBar(page, 'minimize-on-scroll');
+    const box = await bar.boundingBox();
+    if (box == null) {
+      throw new Error('no bar');
+    }
+    const clip = {
+      x: 0,
+      y: box.y - 12,
+      width: box.x * 2 + box.width,
+      height: box.height + 24,
+    };
+    const times = Array.from({length: 25}, (_, i) => i * 33.333);
+    // Crosses the trigger near the end of the drag, so the storyboard holds
+    // the collapse from its first frames.
+    await scrollByFinger(page, driver, 100, {settle: false});
+    await expect.poll(() => isMinimized(page)).toBe(true);
+    const {storyboard: collapse} = await animationStoryboard(page, {
+      name: 'tabbar-collapse',
+      clip,
+      times,
+      columns: 5,
+      cellScale: 0.6,
+    });
+    await collapse.write(testInfo);
+    await releaseAnimations(page, {finish: true});
+    const target = await circle(page).boundingBox();
+    if (target == null) {
+      throw new Error('no circle');
+    }
+    await driver.tap({
+      x: target.x + target.width / 2,
+      y: target.y + target.height / 2,
+    });
+    await expect.poll(() => isMinimized(page)).toBe(false);
+    const {storyboard: expand} = await animationStoryboard(page, {
+      name: 'tabbar-expand',
+      clip,
+      times,
+      columns: 5,
+      cellScale: 0.6,
+    });
+    await expand.write(testInfo);
+    await releaseAnimations(page, {finish: true});
   },
 );

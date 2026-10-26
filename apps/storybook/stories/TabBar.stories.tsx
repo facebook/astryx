@@ -110,6 +110,7 @@ function Bar({
   badges = {library: 3},
   keeps = [],
   onChange,
+  minimizeBehavior,
 }: {
   sections?: Section[];
   initial?: string;
@@ -118,6 +119,7 @@ function Bar({
   keeps?: string[];
   /** Also told of every choice. */
   onChange?: (value: string) => void;
+  minimizeBehavior?: 'never' | 'onScrollDown';
 }) {
   const [value, setValue] = useState(initial);
   const [reselects, setReselects] = useState(0);
@@ -135,6 +137,7 @@ function Bar({
         }}
         onReselect={() => setReselects(n => n + 1)}
         label="Sections"
+        minimizeBehavior={minimizeBehavior}
         data-testid="tab-bar">
         {sections.map(section => (
           <TabBarItem
@@ -154,6 +157,14 @@ function Bar({
 /** Four tabs, a badge on Library. Choosing Home again counts a reselect. */
 export const Default: Story = {
   render: () => <Bar />,
+};
+
+/**
+ * Scroll the page down under a finger: the bar collapses into a circle with
+ * the selected icon. Scroll back to the top, or tap the circle, to expand it.
+ */
+export const MinimizeOnScroll: Story = {
+  render: () => <Bar initial="library" minimizeBehavior="onScrollDown" />,
 };
 
 /** Badges appear, change and disappear at once, as UIKit's do. */

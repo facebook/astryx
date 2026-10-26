@@ -148,7 +148,7 @@ const styles = stylex.create({
       content: [
         {
           type: 'prose',
-          text: "Touch motion has a table of springs, durations and curves measured on iPhone and iPad. Each value is a motion role named by its table path, such as `springs.sheetPresent` or `timing.curves.move`. A theme retunes a role through `motion.springs`, `motion.durations` or `motion.curves`, at its root or in an adaptation rule; a role it leaves alone keeps its measured default. Lab's TabBar reads its `tabBar.*` roles; no core component reads these roles yet.",
+          text: "Touch motion has a table of springs, durations and curves measured on iPhone and iPad. Each value is a motion role named by its table path, such as `springs.sheetPresent` or `timing.curves.move`. A theme retunes a role through `motion.springs`, `motion.durations` or `motion.curves`, at its root or in an adaptation rule; a role it leaves alone keeps its measured default. Lab's TabBar reads its `tabBar.*` roles; no core component reads these roles yet. A value not yet read from video is provisional, and its table entry says so (`tabBar.minimizeFade` is a guess until measured).",
         },
         {
           type: 'code',
@@ -379,6 +379,18 @@ const calmTheme = defineTheme({
               '0.344144s 0',
             ],
             [
+              'tabBar.collapseSize',
+              '--motion-tab-bar-collapse-size',
+              'spring',
+              '0.6s 0.15',
+            ],
+            [
+              'tabBar.collapseTravel',
+              '--motion-tab-bar-collapse-travel',
+              'spring',
+              '0.4s 0.15',
+            ],
+            [
               'tabBar.flexPress',
               '--motion-tab-bar-flex-press',
               'spring',
@@ -409,6 +421,12 @@ const calmTheme = defineTheme({
               '0.4s 0.15',
             ],
             ['tabBar.lift', '--motion-tab-bar-lift', 'spring', '0.25s 0'],
+            [
+              'tabBar.minimizeFade',
+              '--motion-tab-bar-minimize-fade',
+              'spring',
+              '0.25s 0',
+            ],
             [
               'timing.curves.entrance',
               '--motion-timing-curves-entrance',

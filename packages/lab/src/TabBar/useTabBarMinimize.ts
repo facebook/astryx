@@ -1,0 +1,343 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+'use client';
+
+/**
+ * @file useTabBarMinimize.ts
+ * @input The TabBar's capsule element and whether minimizing applies;
+ *   core's compositor animator (`@astryxdesign/core/motion`)
+ *   and the UIKit tab-bar table
+ * @output Exports useTabBarMinimize: whether the bar is minimized (UIKit's
+ *   `tabBarMinimizeBehavior = .onScrollDown`), a way to expand it, and the
+ *   refs TabBar puts on the platter's pieces, the items' layer, the badges and the
+ *   minimized circle's icon
+ * @position Part of TabBar's touch layer (TabBarTouch.ts)
+ *
+ * WHEN (uikit/tabBar.ts, measured on iOS 26.2)
+ *
+ * The bar minimizes once the person has scrolled the page down
+ * `minimizeDistance` from where the downward scroll started. Scrolling back
+ * up does not expand it; reaching the top does, and so does a tap on the
+ * circle (`expand`). Only the person's scrolling counts (a finger's drag and
+ * the coast after it), read through the gesture host as a pan on the page
+ * that never claims its touch: a script scrolling the page to the top leaves
+ * the bar minimized, as on iOS.
+ *
+ * HOW IT MORPHS
+ *
+ * The capsule's glass is drawn in three pieces: a leading cap, a middle and a
+ * trailing cap. Collapsing, the middle narrows to nothing from its leading
+ * side while the trailing cap slides onto the leading one, so the outline
+ * stays a capsule all the way to a circle, and the whole platter shrinks to
+ * `minimizedSize` about the leading cap's centre (`collapseSize`). The items
+ * and their badges fade out (`minimizeFade`) and the selected icon fades in
+ * at the circle's centre; useTabBarLens.ts carries the lens into the circle.
+ * Expanding plays the same motion back. Every animation runs on the
+ * compositor, transforms and opacity only.
+ *
+ * SYNC: When modified, update TabBar.tsx, useTabBarLens.ts and
+ * __tests__/TabBar.interaction.browser.spec.ts.
+ */
+
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
+import {
+  PanGestureRecognizer,
+  useGestureRecognizer,
+} from '@astryxdesign/core/gestures';
+import {useFingerScroll} from '@astryxdesign/core/gestures/useFingerScroll';
+import {registerTabBarTable, tabBar} from '@astryxdesign/core/motion/uikit';
+import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
+import {isRtlElement} from '@astryxdesign/core/hooks';
+
+export interface UseTabBarMinimizeOptions {
+  readonly capsuleRef: RefObject<HTMLDivElement | null>;
+  /** `minimizeBehavior="onScrollDown"` under a finger. */
+  readonly isEnabled: boolean;
+}
+
+export interface TabBarMinimize {
+  readonly isMinimized: boolean;
+  /** Expands a minimized bar (a tap on the circle, focus on a tab). */
+  readonly expand: () => void;
+  /** The platter: shrinks to the circle about the leading cap's centre. */
+  readonly platter: (element: HTMLElement | null) => void;
+  /** The platter's middle: narrows to nothing. */
+  readonly platterMiddle: (element: HTMLElement | null) => void;
+  /** The platter's trailing cap: slides onto the leading one. */
+  readonly platterEnd: (element: HTMLElement | null) => void;
+  /** The items' layer (every tab button): fades as one. */
+  readonly items: (element: HTMLElement | null) => void;
+  /** The badges: fade with the items. */
+  readonly badges: (element: HTMLElement | null) => void;
+  /** The minimized circle's icon: fades in. */
+  readonly circleIcon: (element: HTMLElement | null) => void;
+}
+
+/** No scroller to watch: the server, or minimizing is off. */
+const NO_SCROLLER = {current: null};
+
+/**
+ * Follows the person's scrolling of the page: minimizes after
+ * `minimizeDistance` down, expands at the top. The person's scrolling starts
+ * as a vertical pan on the page that never claims its touch (`claimsTouches:
+ * false`): the gesture host gives it only passive listeners, so the page
+ * scrolls exactly as it would without it. From the pan's start until the
+ * person's scroll ends (the gesture host's finger-scroll reader, which counts
+ * the coast after the lift as theirs), and only then, a passive scroll
+ * listener follows the offset.
+ */
+function useScrollMinimize(isEnabled: boolean) {
+  const [isMinimized, setIsMinimized] = useState(false);
+  // Whose scroll the page's is, from the gesture host: watched only while
+  // minimizing is on.
+  const isFingerScroll = useFingerScroll(
+    isEnabled && typeof document !== 'undefined' ? document : NO_SCROLLER,
+  );
+  const watchRef = useRef<{lift: () => void; stop: () => void} | null>(null);
+  // The downward run, across the person's scrolls: where it started and
+  // where the page was last seen.
+  const runRef = useRef<ScrollRun>({lastY: Number.NaN, downFrom: null});
+  const [rootRef] = useState(() => ({
+    current: typeof document === 'undefined' ? null : document.documentElement,
+  }));
+  useGestureRecognizer(
+    rootRef,
+    () =>
+      new PanGestureRecognizer({
+        name: 'tab-bar-page-scroll',
+        direction: 'vertical',
+        claimsTouches: false,
+        allowedPointerTypes: ['touch'],
+      }),
+    pan => {
+      if (pan.state === 'began') {
+        watchRef.current?.stop();
+        watchRef.current = watchScroll(
+          runRef.current,
+          // The finger's travel since it landed (up scrolls the page down).
+          -pan.totalTranslation().y,
+          setIsMinimized,
+          isFingerScroll,
+          () => {
+            watchRef.current = null;
+          },
+        );
+      } else if (pan.state === 'ended' || pan.state === 'cancelled') {
+        watchRef.current?.lift();
+      }
+    },
+    {isEnabled},
+  );
+  // Minimizing turned off: the bar is expanded again, read during render
+  // (architecture:react-component-runtime INV1/INV3), so a later turn on
+  // starts expanded.
+  const [wasEnabled, setWasEnabled] = useState(isEnabled);
+  if (wasEnabled !== isEnabled) {
+    setWasEnabled(isEnabled);
+    if (!isEnabled) {
+      setIsMinimized(false);
+    }
+  }
+  useEffect(() => {
+    if (!isEnabled) {
+      return;
+    }
+    // The run starts where the page is when the watching starts.
+    runRef.current = {lastY: window.scrollY, downFrom: null};
+    return () => watchRef.current?.stop();
+  }, [isEnabled]);
+  const expand = useCallback(() => setIsMinimized(false), []);
+  return {isMinimized: isEnabled && isMinimized, expand};
+}
+
+interface ScrollRun {
+  lastY: number;
+  /** Where the current downward run started. */
+  downFrom: number | null;
+}
+
+/**
+ * Follows one scroll of the page by the person, from the finger's pan to the
+ * page's rest: `lift` when the finger lifts; the listeners go at the
+ * `scrollend` that follows, or at once if the person's scroll has already
+ * ended (`isFingerScroll`, the gesture host's reader).
+ */
+function watchScroll(
+  run: ScrollRun,
+  fingerTravel: number,
+  setIsMinimized: (isMinimized: boolean) => void,
+  isFingerScroll: () => boolean,
+  onStop: () => void,
+) {
+  const moved = window.scrollY - run.lastY;
+  // Since the person last scrolled, the page moved on its own (a script, the
+  // keys), unless this finger's travel since it landed covers the move: the
+  // browser may start scrolling before the pan begins. On its own, the
+  // downward run starts over.
+  const isThisFinger =
+    Math.sign(moved) === Math.sign(fingerTravel) &&
+    Math.abs(moved) <= Math.abs(fingerTravel);
+  if (!Number.isFinite(moved) || (moved !== 0 && !isThisFinger)) {
+    run.lastY = window.scrollY;
+    run.downFrom = null;
+  }
+  let isLifted = false;
+  const onScroll = () => {
+    const y = window.scrollY;
+    if (y > run.lastY) {
+      run.downFrom ??= run.lastY;
+      if (y - run.downFrom >= tabBar.minimizeDistance) {
+        setIsMinimized(true);
+      }
+    } else if (y < run.lastY) {
+      run.downFrom = null;
+      if (y <= 0) {
+        setIsMinimized(false);
+      }
+    }
+    run.lastY = y;
+  };
+  const onScrollEnd = () => {
+    if (isLifted) {
+      finish();
+    }
+  };
+  const stop = () => {
+    window.removeEventListener('scroll', onScroll);
+    window.removeEventListener('scrollend', onScrollEnd);
+    onStop();
+  };
+  // Where the page is when the person's scroll ends is theirs: the browser
+  // sends at most one scroll event a frame, so the last moves may not have
+  // arrived yet.
+  const finish = () => {
+    onScroll();
+    stop();
+  };
+  window.addEventListener('scroll', onScroll, {passive: true});
+  window.addEventListener('scrollend', onScrollEnd, {passive: true});
+  return {
+    lift: () => {
+      isLifted = true;
+      if (!isFingerScroll()) {
+        finish();
+      }
+    },
+    stop,
+  };
+}
+
+export function useTabBarMinimize({
+  capsuleRef,
+  isEnabled,
+}: UseTabBarMinimizeOptions): TabBarMinimize {
+  // The table's springs become motion roles (a theme may retune them)
+  // before this hook's first animation.
+  if (isEnabled) {
+    registerTabBarTable();
+  }
+  const {isMinimized, expand} = useScrollMinimize(isEnabled);
+  const platter = useAnimator();
+  const platterMiddle = useAnimator();
+  const platterEnd = useAnimator();
+  const badges = useAnimator();
+  const circleIcon = useAnimator({initial: {opacity: 0}});
+  const items = useAnimator();
+
+  const previousRef = useRef(isMinimized);
+  useLayoutEffect(() => {
+    const was = previousRef.current;
+    previousRef.current = isMinimized;
+    const element = capsuleRef.current;
+    if (was === isMinimized || element == null) {
+      return;
+    }
+    const isRtl = isRtlElement(element);
+    // The trailing cap's travel onto the leading one.
+    const travel = element.offsetWidth - tabBar.barHeight;
+    // From rest every curve starts when the browser commits the frame, with
+    // the lens's (useTabBarLens.ts), so a busy main thread delays the morph
+    // instead of skipping into it; a morph already on screen continues.
+    const now = performance.now();
+    const options =
+      platterMiddle.animator.getVelocity('scaleX', now) !== 0 ? {at: now} : {};
+    const size = {spring: tabBar.collapseSize};
+    const fade = {spring: tabBar.minimizeFade};
+    platterMiddle.animator.animate(
+      {scaleX: isMinimized ? 0 : 1},
+      size,
+      options,
+    );
+    platterEnd.animator.animate(
+      {x: isMinimized ? (isRtl ? travel : -travel) : 0},
+      size,
+      options,
+    );
+    platter.animator.animate(
+      {scale: isMinimized ? tabBar.minimizedSize / tabBar.barHeight : 1},
+      size,
+      options,
+    );
+    // The tabs fade as one layer: one animation, not one per tab.
+    items.animator.animate({opacity: isMinimized ? 0 : 1}, fade, options);
+    badges.animator.animate({opacity: isMinimized ? 0 : 1}, fade, options);
+    circleIcon.animator.animate(
+      {opacity: isMinimized ? 1 : 0},
+      isMinimized ? size : fade,
+      options,
+    );
+  }, [
+    isMinimized,
+    capsuleRef,
+    platter,
+    platterMiddle,
+    platterEnd,
+    badges,
+    circleIcon,
+    items,
+  ]);
+
+  // Minimized, the bar's width can still change (a rotation, a split view):
+  // the trailing cap stays closed on the circle.
+  useEffect(() => {
+    const element = capsuleRef.current;
+    if (
+      !isMinimized ||
+      element == null ||
+      typeof ResizeObserver === 'undefined'
+    ) {
+      return;
+    }
+    let width = element.offsetWidth;
+    const observer = new ResizeObserver(() => {
+      const next = element.offsetWidth;
+      if (next === width) {
+        return;
+      }
+      width = next;
+      const travel = next - tabBar.barHeight;
+      const isRtl = isRtlElement(element);
+      platterEnd.animator.set({x: isRtl ? travel : -travel});
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [isMinimized, capsuleRef, platterEnd]);
+
+  return {
+    isMinimized,
+    expand,
+    platter: platter.ref,
+    platterMiddle: platterMiddle.ref,
+    platterEnd: platterEnd.ref,
+    items: items.ref,
+    badges: badges.ref,
+    circleIcon: circleIcon.ref,
+  };
+}
