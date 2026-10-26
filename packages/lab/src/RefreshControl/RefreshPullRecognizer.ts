@@ -3,23 +3,26 @@
 /**
  * @file RefreshPullRecognizer.ts
  * @input Touches from the gesture arena (core's internal gestures modules)
- * @output Exports RefreshPullRecognizer: the downward pan that reads a pull
+ * @output Exports RefreshPullRecognizer: the vertical pan that reads a pull
  *   to refresh without taking the touch from the browser
  * @position The gesture of RefreshControl, on the foundation's
  *   PanGestureRecognizer
  *
  * UIKit's refresh pull is the scroll view's own drag, not a second gesture:
- * pulling past the top reveals the control, and pushing back keeps scrolling
- * the same content in the same gesture. So this pan never claims its touch.
- * The browser keeps the finger for native scrolling, and the pan reads the
- * finger to draw the overscroll (the scroll owner's `overscroll-behavior-y`
- * is `none` near the top, so the browser itself has nothing to draw there):
+ * pulling past the top reveals the control, a drag that began as a scroll
+ * pulls once the content runs out, and pushing back keeps scrolling the same
+ * content, all in one touch. So this pan never claims its touch: it only
+ * watches (`spec:AST-094` FR20, DEC-7). The browser keeps the finger for
+ * native scrolling, so nothing changes hands midway (FR14), and the pan
+ * reads the finger to draw the overscroll (the scroll owner's
+ * `overscroll-behavior-y` is `none` near the top, so the browser itself has
+ * nothing to draw there):
  *
- * - it begins once the finger pulls down past the pan's hysteresis while
- *   nothing under it can scroll that way (`scrollEdge`), or, when the drag
- *   began as a scroll, once the content runs out (`scrollHandoff`);
- * - when the browser takes the touch to scroll, a pull already under way
- *   keeps reading it instead of being cancelled;
+ * - it begins on vertical travel past the pan's hysteresis; the touch layer
+ *   starts the pull where the content is at its top under a finger moving
+ *   down (refreshTouchController.ts);
+ * - when the browser takes the touch to scroll, it keeps reading it to the
+ *   lift;
  * - one finger: a second finger is the browser's (pinch-zoom).
  *
  * `onTouchDown` reports a first finger landing, so a settle in flight can
@@ -45,9 +48,7 @@ export class RefreshPullRecognizer extends PanGestureRecognizer {
   constructor(options: PanGestureRecognizerOptions = {}) {
     super({
       name: 'RefreshPull',
-      direction: 'down',
-      scrollEdge: true,
-      scrollHandoff: true,
+      direction: 'vertical',
       maximumNumberOfTouches: 1,
       ...options,
     });
@@ -66,15 +67,5 @@ export class RefreshPullRecognizer extends PanGestureRecognizer {
       this.onTouchDown?.(event.time);
     }
     super.touchesBegan(touches, event);
-  }
-
-  protected override touchesTakenByBrowser(
-    touches: ReadonlyArray<GestureTouch>,
-    event: GestureEventContext,
-  ): boolean {
-    if (this.state === 'began' || this.state === 'changed') {
-      return true;
-    }
-    return super.touchesTakenByBrowser(touches, event);
   }
 }

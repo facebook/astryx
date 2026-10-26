@@ -189,6 +189,18 @@ describe('useRefreshControl', () => {
     await waitFor(() => expect(document.body).toHaveTextContent('Refreshing'));
   });
 
+  it('pulls from the move that crosses the hysteresis, even one that lands on it exactly', () => {
+    render(
+      <Refreshable data-testid="refresh" onRefresh={() => {}}>
+        <p>Inbox</p>
+      </Refreshable>,
+    );
+    // 5 px steps: the second lands on the 10 px hysteresis, where the pan
+    // begins at a translation of zero; the two after it pull 10 px.
+    pull(content(), [5, 5, 5, 5], false);
+    expect(translateY(content())).toBe(10);
+  });
+
   it('keeps the indicator at the top of the scroll view while the content is pulled, settles and ends', async () => {
     let resolve: () => void = () => {};
     render(
