@@ -249,11 +249,17 @@ function createGrowthInputHold(doc: Document) {
       return;
     }
     isListening = on;
-    const method = on ? 'addEventListener' : 'removeEventListener';
-    doc[method]('touchstart', onTouchStart, OPTIONS);
-    doc[method]('touchmove', onTouchMove, OPTIONS);
-    doc[method]('touchend', onTouchEnd, OPTIONS);
-    doc[method]('touchcancel', onTouchEnd, OPTIONS);
+    if (on) {
+      doc.addEventListener('touchstart', onTouchStart, OPTIONS);
+      doc.addEventListener('touchmove', onTouchMove, OPTIONS);
+      doc.addEventListener('touchend', onTouchEnd, OPTIONS);
+      doc.addEventListener('touchcancel', onTouchEnd, OPTIONS);
+    } else {
+      doc.removeEventListener('touchstart', onTouchStart, OPTIONS);
+      doc.removeEventListener('touchmove', onTouchMove, OPTIONS);
+      doc.removeEventListener('touchend', onTouchEnd, OPTIONS);
+      doc.removeEventListener('touchcancel', onTouchEnd, OPTIONS);
+    }
   };
   const stopIfIdle = () => {
     if (!isGrowing && held.size === 0) {

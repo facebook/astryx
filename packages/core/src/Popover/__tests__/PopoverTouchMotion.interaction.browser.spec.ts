@@ -246,16 +246,22 @@ test('a tap or a drag that lands while it grows closes nothing, moves no focus a
   const outside = {x: 20, y: viewport.height - 40};
   const isOpen = async () =>
     story.layer.evaluate(el => el.matches(':popover-open'));
-  const focused = async () =>
-    page.evaluate(() => document.activeElement?.outerHTML.slice(0, 80) ?? '');
+  const focusIsInside = async () =>
+    story.layer.evaluate(el => el.contains(document.activeElement));
 
-  // A tap outside, landing while it grows: no light dismiss, no focus move.
-  await openWithTap(story);
-  const before = await focused();
-  await story.driver.tap(outside);
+  // A tap outside, landing while it grows (47 ms after the trigger's press
+  // began, 17 ms after it lifted): no light dismiss, and focus stays in
+  // the popover, where its opening put it.
+  await story.driver.play([
+    {t: 0, fingers: [{id: 0, ...story.center}]},
+    {t: 30, fingers: []},
+    {t: 47, fingers: [{id: 1, ...outside}]},
+    {t: 90, fingers: []},
+  ]);
+  await expect(story.trigger).toHaveAttribute('aria-expanded', 'true');
   await waitForRest(story.layer);
   expect(await isOpen()).toBe(true);
-  expect(await focused()).toBe(before);
+  expect(await focusIsInside()).toBe(true);
 
   // Once it has grown, the same tap is the browser's light dismiss again.
   await story.driver.tap(outside);
