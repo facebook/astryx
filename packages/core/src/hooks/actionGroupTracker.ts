@@ -45,6 +45,14 @@
  * that one click, so the action runs exactly once (the swallower listens only
  * from that lift until the click, or the next press or key).
  *
+ * This is core's one track-across-items loop. Menus still run their own copy
+ * of it in useMenuPress.ts; the change after the in-flight menu press work
+ * moves that copy here, and useMenuPress keeps only its menu-only parts (a
+ * trigger's press or held finger opening the menu, the settle rule, edge
+ * autoscroll, the highlight as DOM focus). Add no third copy meanwhile.
+ * Nothing in core drives this tracker yet; its first adopters (the segmented
+ * control and the action groups) arrive in their own changes.
+ *
  * SYNC: When modified, update actionGroupTracker.test.ts
  */
 
