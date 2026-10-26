@@ -16,7 +16,9 @@
  * the wrapped component's props and renders nothing until its module loads.
  *
  * The action list preloads at rest; a failed load is not kept, so the next
- * preload or open loads it again.
+ * preload or open asks the module loader again (a loader that retries then
+ * loads it; a browser does not fetch a native module again once its import
+ * failed).
  *
  * Neither wrapper renders on the server or in the render that hydrates server
  * HTML (spec:AST-013 FR9): a lazy component that has not loaded yet would
@@ -57,7 +59,7 @@ async function loadActionList(): Promise<typeof ActionListModule> {
     },
     (error: unknown) => {
       // A failed load (a dropped connection) is not kept: the next caller
-      // loads it again.
+      // asks the module loader again.
       actionListLoad = null;
       throw error;
     },
@@ -67,8 +69,8 @@ async function loadActionList(): Promise<typeof ActionListModule> {
 
 /**
  * Starts loading the action list; a sheet menu calls it at rest. A preload
- * that fails is dropped, never an unhandled rejection: the first open loads
- * the list again.
+ * that fails is dropped, never an unhandled rejection: the first open asks the
+ * module loader again.
  */
 export function preloadMenuBottomSheetActionList(): void {
   loadActionList().catch(() => {});

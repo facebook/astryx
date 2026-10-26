@@ -5,7 +5,7 @@
  * @input lazyMenuBottomSheet's action-list preload, with the list's module
  *   failing to load once
  * @output A failed preload is no unhandled rejection, and is not kept: the
- *   next load imports the module again
+ *   next load asks the module loader again
  * @position Unit test of ./lazyMenuBottomSheet; the hydration case is in
  *   DropdownMenu.ssr.test.tsx
  */
@@ -18,7 +18,7 @@ afterEach(() => {
 });
 
 describe('preloadMenuBottomSheetActionList', () => {
-  it('drops a failed preload without an unhandled rejection, and loads again on the next call', async () => {
+  it('drops a failed preload without an unhandled rejection, and asks the module loader again on the next call', async () => {
     vi.resetModules();
     let attempts = 0;
     vi.doMock('./MenuBottomSheetActionList', () => {
