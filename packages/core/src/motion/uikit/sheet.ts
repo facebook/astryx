@@ -46,9 +46,11 @@ export const sheet = {
     /**
      * Release speed (pt/s, in either direction) below which a release is not
      * projected: the sheet settles on the position nearest where it was let
-     * go, whichever way it was moving. A sheet turned back toward where it
-     * started and let go slowly stays with the position it is nearest.
-     * Inside the measured bracket.
+     * go, whichever way it was moving. UIKit's sheet, turned back toward
+     * where it started and let go slowly, stays with the position it is
+     * nearest; the BottomSheet's rule cancels such a back-out instead
+     * (`spec:AST-094` FR37, BottomSheet/sheetRelease.ts). Inside the measured
+     * bracket.
      * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
      *   iPhone 17 Pro, 30 releases on Oct 25 2026 of drags from the medium
      *   detent that went past the midpoint toward large, or 90 % of the way
