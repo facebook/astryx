@@ -1701,9 +1701,6 @@ export function useSheetGestures({
       }
       travelBaseRef.current = 0;
       travelLayoutBaseRef.current = 0;
-      // The springs table's roles, before the sheet's first animation (see
-      // springTravel).
-      registerSpringsTable();
       animator.set({y: distance});
       // From rest, with no start time: the browser starts the entrance when
       // it commits it, as Core Animation starts it at its transaction's
@@ -1790,7 +1787,6 @@ export function useSheetGestures({
     // From rest, with no start time, as the entrance: the browser starts the
     // exit when it commits it, so a long task after the close delays it
     // instead of skipping into its curve. The dim shares that start.
-    registerSpringsTable();
     const handle = animator.animate(
       {y: from + distance},
       {spring: springs.sheetDismiss},
