@@ -120,6 +120,7 @@ export const docs = {
       {name: 'List items', required: true, description: 'Individual entries, which may include icons or images.'},
       {name: 'Item description', required: false, description: 'Additional detail for an individual list item.'},
       {name: 'Reorder handle', required: false, description: 'With reorderable: the button at the end of each row that can move. It drags the row, and toggles its reorder mode.'},
+      {name: 'Reorder hint', required: false, description: "While a row is in reorder mode: the hint below its handle, like Core's keyboard hint, whose moves and Done are buttons."},
     ],
   },
 };
@@ -143,6 +144,7 @@ export const docsZh = {
       {name: 'List items', required: true, description: 'Individual entries, which may include icons or images.'},
       {name: 'Item description', required: false, description: 'Additional detail for an individual list item.'},
       {name: 'Reorder handle', required: false, description: 'With reorderable: the button at the end of each row that can move. It drags the row, and toggles its reorder mode.'},
+      {name: 'Reorder hint', required: false, description: "While a row is in reorder mode: the hint below its handle, like Core's keyboard hint, whose moves and Done are buttons."},
     ],
   },
 };
@@ -169,6 +171,7 @@ export const docsDense = {
       {name: 'List items', required: true, description: 'Individual entries, which may include icons or images.'},
       {name: 'Item description', required: false, description: 'Additional detail for an individual list item.'},
       {name: 'Reorder handle', required: false, description: 'With reorderable: the button at the end of each row that can move. It drags the row, and toggles its reorder mode.'},
+      {name: 'Reorder hint', required: false, description: "While a row is in reorder mode: the hint below its handle, like Core's keyboard hint, whose moves and Done are buttons."},
     ],
   },
 };

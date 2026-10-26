@@ -812,6 +812,10 @@ describe('List reorderable', () => {
     expect(handle).toHaveAttribute('aria-pressed', 'false');
     expect(hintButton('Done')).toBeNull();
     expect(handle).toHaveFocus();
+    // Done ends the mode as Escape does, announcing where the row is.
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent('Done, Inbox at position 2 of 3'),
+    );
     // Kept: nothing undone.
     expect(onReorder).toHaveBeenCalledTimes(3);
     expect(labels()).toEqual(['Sent', 'Inbox', 'Drafts']);
