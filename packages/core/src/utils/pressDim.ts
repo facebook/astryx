@@ -71,6 +71,11 @@ export function fadePressDim(
   );
 }
 
+/** The opacity `element`'s dim shows now: 1 when it is at rest or undimmed. */
+export function shownPressDim(element: HTMLElement): number {
+  return animatorFor(element).get('opacity');
+}
+
 /** Drops `element`'s dim at once; its own style shows again. */
 export function stopPressDim(element: HTMLElement): void {
   animatorFor(element).set({opacity: 1}, {promote: false});

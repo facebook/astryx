@@ -15,7 +15,7 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {MotionCurve} from '../motion/animator';
 import {cubicBezier} from '../motion/bezier';
-import {fadePressDim, stopPressDim} from './pressDim';
+import {fadePressDim, shownPressDim, stopPressDim} from './pressDim';
 
 const {animator} = vi.hoisted(() => ({
   animator: {
@@ -68,5 +68,10 @@ describe('fadePressDim', () => {
   it('stopPressDim hands the element back to its own style at once', () => {
     stopPressDim(document.createElement('div'));
     expect(animator.set).toHaveBeenCalledWith({opacity: 1}, {promote: false});
+  });
+
+  it('shownPressDim reads the opacity the dim shows now', () => {
+    animator.opacity = 0.6;
+    expect(shownPressDim(document.createElement('div'))).toBe(0.6);
   });
 });

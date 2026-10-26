@@ -116,7 +116,7 @@ import {registerSpringsTable, springs} from '../motion/uikit/springs';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {spacingVars} from '../theme/tokens.stylex';
-import {fadePressDim, stopPressDim} from '../utils/pressDim';
+import {fadePressDim, shownPressDim, stopPressDim} from '../utils/pressDim';
 import {useSegmentedTouchTracking} from './useSegmentedTouchTracking';
 
 /** The segments, in DOM order. */
@@ -613,9 +613,9 @@ export class SegmentedSelectionMotion {
   /** Each segment's running dim or return (its title and icon). */
   private readonly dimmedTitles = new Set<HTMLElement>();
   /**
-   * Each dimmed segment's pressed-state opacity, read on its first dim: a
-   * finger that slides back onto it during its return would read the
-   * animator's opacity on screen, not the state's.
+   * Each segment's pressed-state opacity, as last read with its dim at rest:
+   * a finger that slides back onto it mid-return would read the animator's
+   * opacity on screen, not the state's.
    */
   private readonly pressedOpacities = new WeakMap<HTMLElement, number>();
   /** The segment showing the selected face under a dragging finger. */
@@ -1676,13 +1676,15 @@ export class SegmentedSelectionMotion {
   }
 
   /**
-   * The opacity `segment`'s pressed state sets: read from its style on its
-   * first dim, while the animator holds no opacity on it; a segment dimmed
-   * before keeps that reading, since the animator's opacity may be on screen.
+   * The opacity `segment`'s pressed state sets: read from its style while its
+   * dim is at rest, where nothing of the animator's covers it; a segment whose
+   * dim is still moving keeps the reading from before, since the animator's
+   * opacity is on screen then. Once a return finishes the next press reads
+   * again, so a theme change reaches it.
    */
   private pressedOpacity(segment: HTMLElement): number {
     const kept = this.pressedOpacities.get(segment);
-    if (this.dimmedTitles.has(segment) && kept !== undefined) {
+    if (kept !== undefined && shownPressDim(segment) < 1) {
       return kept;
     }
     const read = pressedOpacityOf(segment);

@@ -1038,10 +1038,12 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
     expect(recordedCalls()).toHaveLength(fades);
   });
 
-  it('sliding back onto a segment during its return dims it to the state’s 0.2 again, not to the opacity on screen', () => {
-    const ctx = setup('grid');
-    // As a browser shows it: a segment the dim has played on reads the
-    // animator's opacity on screen; until then, its pressed state's 0.2.
+  /**
+   * Computed opacity as a browser shows it: a segment whose dim is moving
+   * reads the animator's opacity on screen; at rest, its pressed state's
+   * opacity (`pressed()`), or its own when not pressed.
+   */
+  const showOpacityAsABrowserDoes = (pressed: () => string) => {
     const realStyle = window.getComputedStyle.bind(window);
     vi.spyOn(window, 'getComputedStyle').mockImplementation(
       (element, pseudo) => {
@@ -1049,14 +1051,13 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
         if (!(element instanceof HTMLElement) || pseudo != null) {
           return style;
         }
-        const played = vi
-          .mocked(fadePressDim)
-          .mock.calls.some(([dimmed]) => dimmed === element);
-        const opacity = played
-          ? String(animatorFor(element).get('opacity'))
-          : element.getAttribute('data-pressed') === 'pressed'
-            ? '0.2'
-            : style.opacity;
+        const shown = animatorFor(element).get('opacity');
+        const opacity =
+          shown < 1
+            ? String(shown)
+            : element.getAttribute('data-pressed') === 'pressed'
+              ? pressed()
+              : style.opacity;
         return new Proxy(style, {
           get: (target, key) => {
             if (key === 'opacity') {
@@ -1069,6 +1070,11 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
         });
       },
     );
+  };
+
+  it('sliding back onto a segment during its return dims it to the state’s 0.2 again, not to the opacity on screen', () => {
+    const ctx = setup('grid');
+    showOpacityAsABrowserDoes(() => '0.2');
     press(ctx, clientCenterOf('list'));
     drag(ctx, clientCenterOf('table'));
     drag(ctx, clientCenterOf('list'));
@@ -1077,6 +1083,23 @@ describe('the titles under a finger (UIKit, F4 batch 64)', () => {
     expect(again.keyframes.at(-1)).toEqual({opacity: 0.2});
     expect(again.options.duration).toBe(470);
     expect(opacityIn(ctx.segments.list, 471)).toBeCloseTo(0.2, 3);
+  });
+
+  it('a press after the return has finished reads the pressed state again, so a theme change reaches it', async () => {
+    const ctx = setup('grid');
+    let pressedOpacity = '0.2';
+    showOpacityAsABrowserDoes(() => pressedOpacity);
+    press(ctx, clientCenterOf('list'));
+    ctx.motion.cancel();
+    // The 470 ms return finishes; then the theme retunes the pressed state.
+    await advance(520);
+    expect(opacityIn(ctx.segments.list, 0)).toBe(1);
+    pressedOpacity = '0.5';
+    press(ctx, clientCenterOf('list'));
+    vi.mocked(window.getComputedStyle).mockRestore();
+    expect(lastFadeOf(ctx.segments.list).keyframes.at(-1)).toEqual({
+      opacity: 0.5,
+    });
   });
 
   it('a tap on the selected segment dims nothing', () => {
