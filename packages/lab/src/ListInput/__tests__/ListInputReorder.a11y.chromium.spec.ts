@@ -9,7 +9,7 @@
  *   the same on every touch screen), and that with a mouse the records take
  *   their places without travel
  * @position Chromium proof for ListInput's reorder, which runs on core List's
- *   reorder session (List/useListReorder.ts)
+ *   reorder session (List/ListReorderScope.tsx)
  */
 
 import {expect, test, type Page} from '@playwright/test';
@@ -80,6 +80,8 @@ test('on a touch screen a keyboard move slides the two records it swaps', async 
   const before = await order();
   await page.keyboard.press('Shift');
   await handle.focus();
+  // Enter turns on reorder mode; each arrow then moves the record a place.
+  await page.keyboard.press('Enter');
   await page.keyboard.press('ArrowDown');
   const moving = await movingRecords(page);
   expect(moving).toBeGreaterThanOrEqual(2);
@@ -105,6 +107,7 @@ test.describe('with a mouse', () => {
     expect(coarse).toBe(false);
     await page.keyboard.press('Shift');
     await handle.focus();
+    await page.keyboard.press('Enter');
     await page.keyboard.press('ArrowDown');
     expect(await movingRecords(page)).toBe(0);
   });

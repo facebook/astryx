@@ -7,10 +7,11 @@
  * @position Storybook demonstrations for List consumers
  */
 
-import {useRef, useState, type MouseEvent} from 'react';
+import {useMemo, useRef, useState, type MouseEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
 import {List, ListItem} from '@astryxdesign/core/List';
+import {createReorderable} from '@astryxdesign/core/reorderable';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {Badge} from '@astryxdesign/core/Badge';
 import {Card} from '@astryxdesign/core/Card';
@@ -19,10 +20,12 @@ import {Switch} from '@astryxdesign/core/Switch';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Button} from '@astryxdesign/core/Button';
+import {ContextMenu} from '@astryxdesign/core/ContextMenu';
+// The selection hold is internal to core (no public API records it yet).
 import {
   holdSelection,
   type SelectionHold as RowSelectionHold,
-} from '@astryxdesign/core/List';
+} from '../../../packages/core/src/List/selectionHold';
 import {
   Cog6ToothIcon,
   BellIcon,
@@ -631,32 +634,34 @@ export const AnimatedChangesSwipe: Story = {
   },
 };
 
-function moveRow<T>(rows: ReadonlyArray<T>, from: number, to: number): T[] {
-  const next = [...rows];
-  const [moved] = next.splice(from, 1);
-  next.splice(to, 0, moved);
+function moveKey(
+  rows: ReadonlyArray<string>,
+  key: unknown,
+  to: number,
+): string[] {
+  const next = rows.filter(row => row !== key);
+  next.splice(to, 0, key as string);
   return next;
 }
 
 function ReorderDemo({
   initial,
-  fixed,
+  pinned = [],
 }: {
   initial: ReadonlyArray<string>;
-  fixed?: string;
+  pinned?: ReadonlyArray<string>;
 }) {
   const [rows, setRows] = useState(initial);
   return (
     <List
       hasDividers
       hasAnimatedChanges
-      onReorder={(from, to) => setRows(current => moveRow(current, from, to))}>
+      reorderable={createReorderable({
+        onReorder: ({key, to}) => setRows(current => moveKey(current, key, to)),
+        isReorderable: key => !pinned.includes(key as string),
+      })}>
       {rows.map(label => (
-        <ListItem
-          key={label}
-          label={label}
-          isReorderDisabled={label === fixed}
-        />
+        <ListItem key={label} itemKey={label} label={label} />
       ))}
     </List>
   );
@@ -672,31 +677,95 @@ export const Reorderable: Story = {
     docs: {
       description: {
         story:
-          'With `onReorder`, each row gets a reorder handle. On a touch ' +
-          'screen, hold a handle for a moment, then drag: the rows you pass ' +
-          'slide out of the way and the row settles into its new place on ' +
-          'release. A mouse drags a handle at once; a tap or click on a ' +
-          'handle opens its moves (Move up, Move down, Move to top, Move to ' +
-          'bottom); from the keyboard, the arrow keys move the focused ' +
-          'handle’s row.',
+          'With `reorderable` (from `createReorderable`), each row with an ' +
+          '`itemKey` gets a reorder handle. On a touch screen, hold a handle ' +
+          'for a moment, then drag: the rows you pass slide out of the way ' +
+          'and the row settles into its new place on release. A mouse drags ' +
+          'a handle at once. Or activate a handle (click it, or press Space ' +
+          'or Enter) to turn on reorder mode for its row: each arrow key, or ' +
+          'each move in the hint below the handle, moves it a place, and ' +
+          'Escape or Done ends the mode.',
       },
     },
   },
 };
 
-export const ReorderWithFixedRow: Story = {
+export const ReorderWithPinnedRows: Story = {
   render: () => (
     <ReorderDemo
       initial={['Favorites', 'Inbox', 'Sent', 'All mail', 'Drafts', 'Spam']}
-      fixed="All mail"
+      pinned={['Favorites', 'All mail']}
     />
   ),
   parameters: {
     docs: {
       description: {
         story:
-          'A ListItem with `isReorderDisabled` has no handle and keeps its ' +
-          'place: rows above and below it reorder within their own group.',
+          'A row the object’s `isReorderable` rejects has no handle. At an ' +
+          'end of the list it also bounds the others (nothing drops above ' +
+          'Favorites); in the middle, other rows move past it.',
+      },
+    },
+  },
+};
+
+function ReorderFromYourUIDemo() {
+  const [rows, setRows] = useState([
+    'Inbox',
+    'Sent',
+    'Drafts',
+    'Archive',
+    'Spam',
+    'Trash',
+  ]);
+  const [selected, setSelected] = useState('Sent');
+  const reorderable = useMemo(
+    () =>
+      createReorderable({
+        onReorder: ({key, to}) => setRows(current => moveKey(current, key, to)),
+      }),
+    [],
+  );
+  return (
+    <VStack gap={2}>
+      <Button
+        label={`Move ${selected}`}
+        onClick={() => reorderable.start(selected)}
+      />
+      <ContextMenu
+        label="Row actions"
+        items={[
+          {
+            label: `Move ${selected}`,
+            onClick: () => reorderable.start(selected),
+          },
+        ]}>
+        <List hasDividers hasAnimatedChanges reorderable={reorderable}>
+          {rows.map(label => (
+            <ListItem
+              key={label}
+              itemKey={label}
+              label={label}
+              isSelected={label === selected}
+              onClick={() => setSelected(label)}
+            />
+          ))}
+        </List>
+      </ContextMenu>
+    </VStack>
+  );
+}
+
+export const ReorderFromYourUI: Story = {
+  render: () => <ReorderFromYourUIDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The object’s `start(key)` turns on reorder mode for a row from ' +
+          'your own UI, here a button and the list’s context menu: the ' +
+          'focus moves to the row’s handle, and its arrow keys, hint and ' +
+          'Done work as they do from the handle.',
       },
     },
   },

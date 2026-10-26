@@ -64,7 +64,7 @@ same generated contract.
   without that meaning (`architecture:public-component-api` INV2). A prop only
   one platform can honor is that platform's prop, such as Switch's `size`,
   which only macOS can honor with the system switch. Switch's `labelPosition` and
-  `labelSpacing` are web-only: an Apple switch row follows the system toggle
+  `labelSpacing` are absent from the Apple contracts: an Apple switch row follows the system toggle
   layout, the label leading, the switch trailing, and the system's spacing
   between them. A `content` slot, which `<Name>Props` leaves out, is a
   parameter of both initializers instead: the labeled one takes it as a
@@ -148,16 +148,16 @@ same generated contract.
   (SwiftUI views with core's names, `Button`, `Text`, and so on, re-exporting
   SwiftUI and the contracts) and the `AstryxNative` product (generated contract
   types, unprefixed: `ButtonProps`, `ButtonVariant`).
-- Card, Heading, Icon, and Text take their generated `<Name>Props`; Button and
+- Avatar, AvatarStatusDot, Card, Heading, Icon, and Text take their generated
+  `<Name>Props`; Button and
   TextInput still take hand-written parameters until each moves onto its
   generated props; Banner has no generated contract.
-- `AstryxNodeView` draws Card, Heading, Icon, and Text wire nodes. Any other
+- `AstryxNodeView` draws Avatar (with its status dot), AvatarStatusDot, Card,
+  Heading, Icon, and Text wire nodes. Any other
   node, HStack and VStack included, renders in its place as unsupported, and
   its siblings still render, until the logic host draws stacks (A9).
-- The generated iOS `SwitchProps` still declares `size`, the generated
-  `SwitchProps` still declare `labelPosition` and `labelSpacing` on iOS and
-  macOS, and `HStackProps` and `VStackProps` are still generated for iOS and
-  macOS.
+- The generated iOS `SwitchProps` still declares `size`, and `HStackProps` and
+  `VStackProps` are still generated for iOS and macOS.
 
 ## Open questions
 

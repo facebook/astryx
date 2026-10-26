@@ -8,7 +8,7 @@
  *   dragged row proposes, the offsets of the rows that make room, the dragged
  *   row's place in its slot, the movable range between fixed rows, the drop's
  *   and the slides' springs, the autoscroll step and the tracking clamp
- * @position List internals; useListReorder.ts drives a drag with them. No
+ * @position List internals; listReorderEngine.tsx drives a drag with them. No
  *   DOM, no React: unit tested against the UIKit lab measurements
  *
  * UIKit's rules (iOS 26.2, measured): the proposed slot changes when the

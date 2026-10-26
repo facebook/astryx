@@ -4,79 +4,68 @@
 
 /**
  * @file ListReorderHandle.tsx
- * @input The List's reorder session (useListReorder.ts, which attaches a
- *   finger's hold from List/ListReorderTouch.ts), the touch presentation
- *   (utils/touchPresentation.ts), the translator and theme tokens
- * @output `ListReorderHandle`: the trailing handle of a reorderable List row,
- *   a button that drags its row (held still for a moment by a finger where
- *   the primary pointer is coarse, at once by a mouse), moves it with the
- *   arrow keys, and, activated without a drag, opens its moves (a
- *   DropdownMenu anchored to the handle); `MOUSE_DRAG_SLOP`
- * @position Internal to core; ListItem renders it at the end of each row of
- *   a List with `onReorder`, and Lab's ListInput at the end of each record
- *   (an internal module import)
+ * @input The List's reorder session (List/listReorderEngine.tsx, through
+ *   ListContext's `reorder`), the translator and theme tokens
+ * @output `ListReorderHandle`, `ListReorderRowName` and `reorderRowStyle`:
+ *   the trailing handle of a reorderable List row, a button that a finger
+ *   (held still for a moment, where the primary pointer is coarse) or a
+ *   mouse drags, and a toggle (`aria-pressed`) whose activation without a
+ *   drag (a click, Space or Enter) turns its row's reorder mode on and off
+ *   (spec:AST-103 FR4); the name of a row without one; and the style of a
+ *   row that has one
+ * @position Part of the reorder machinery that createReorderable carries:
+ *   ListItem renders it, from the List's context, at the end of each row
+ *   that can move
  *
  * UIKit's reorder control (iOS 26.2, measured): the three gray lines at the
  * trailing edge of a row in edit mode. A finger held still on it for the
- * scroll view's content-touch delay (150 ms) claims the drag (the reorder's
- * touch layer, ListReorderTouch.ts); a flick that starts on it scrolls the
- * table instead, so the handle lets the browser pan vertically and
- * pinch-zoom (`pan-y pinch-zoom`) until the claim. All of that applies only
- * where the primary pointer is coarse (spec:AST-094 FR19): elsewhere no
- * recognizer attaches and no touch listener is registered (FR24), and a
- * finger gets the browser's defaults. A mouse drags at once, on the handle's
- * own pointer events, never through the gesture system: a press that moves
- * less than `MOUSE_DRAG_SLOP` stays a click.
+ * scroll view's content-touch delay (150 ms) claims the drag; a flick that
+ * starts on it scrolls the table instead, so the handle leaves the browser
+ * everything but double-tap zoom (`manipulation`, for a long press:
+ * spec:AST-094 FR18) until the claim. All of that applies only where the
+ * primary pointer is coarse (spec:AST-094 FR19);
+ * elsewhere a finger gets the browser's defaults. The handle is the one
+ * element the reorder adds to a row (spec:AST-103 FR5): its lines are a
+ * pseudo-element, and it listens to nothing itself. The list's listeners
+ * (the session's) take its drags; its keys go through React's.
  *
- * A drag is not everyone's: activating the handle without one — a tap, a
- * click, a screen reader's double tap — opens Move up, Move down, Move to top
- * and Move to bottom (WCAG 2.2 SC 2.5.7, a single pointer and no drag),
- * through the same moves as the keys. A press that dragged opens nothing.
- *
- * SYNC: When modified, update List/useListReorder.ts and List/ListItem.tsx.
+ * SYNC: When modified, update List/listReorderEngine.tsx and
+ * List/ListItem.tsx.
  */
 
 import {
+  isValidElement,
   use,
   useEffect,
   useRef,
-  useState,
+  useSyncExternalStore,
   type KeyboardEvent,
-  type PointerEvent,
   type ReactNode,
 } from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, focusVars} from '../theme/tokens.stylex';
-import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {
+  focusOutlineProps,
+  ownRingContainerStyles,
+} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n/useTranslator';
-import {useTouchPresentation} from '../utils/touchPresentation';
-import {DropdownMenu} from '../DropdownMenu/DropdownMenu';
+import {ListContext} from './ListContext';
 import {
   HANDLE_ATTRIBUTE,
-  ListReorderContext,
-  type ListReorderController,
-  type ReorderMove,
-} from './useListReorder';
-
-const MOVE_LABELS = {
-  up: '@astryx.list.reorderMoveUp',
-  down: '@astryx.list.reorderMoveDown',
-  top: '@astryx.list.reorderMoveToTop',
-  bottom: '@astryx.list.reorderMoveToBottom',
-} as const satisfies Record<ReorderMove['kind'], string>;
+  type ListReorderHandleProps,
+  type ListReorderRowNameProps,
+} from './listReorderContext';
+import type {ListReorderController} from './listReorderEngine';
 
 /** A touch target's side: the handle's width and height. */
 const HANDLE_SIZE = 44;
 /** The three lines' height: the handle's share of its row's height. */
 const LINES_HEIGHT = 14;
-/**
- * A mouse's travel, in px, before its press drags the row: below it the
- * press stays a click. A mouse shifts a pixel or two under the press of the
- * button itself. The date wheel's mouse drag uses the same value
- * (DateInput/usePointerDragScroll.ts `DRAG_SLOP`); a test keeps them equal.
- */
-export const MOUSE_DRAG_SLOP = 4;
+/** The lines' length and thickness, and the distance between them. */
+const LINE_WIDTH = 20;
+const LINE_THICKNESS = 2;
+const LINE_GAP = (LINES_HEIGHT - LINE_THICKNESS) / 2;
 
 const styles = stylex.create({
   handle: {
@@ -102,10 +91,26 @@ const styles = stylex.create({
       default: '0',
       ':focus-visible': `calc(-1 * ${focusVars['--focus-outline-width']})`,
     },
-    backgroundColor: 'transparent',
+    // Pressed while its row is in reorder mode, as a pressed toggle button
+    // is; in forced colors, the system's highlight.
+    backgroundColor: {
+      default: 'transparent',
+      ':is([aria-pressed="true"])': {
+        default: colorVars['--color-overlay-pressed'],
+        '@media (forced-colors: active)': 'Highlight',
+      },
+    },
+    forcedColorAdjust: {
+      default: null,
+      ':is([aria-pressed="true"])': 'none',
+    },
     color: {
       default: colorVars['--color-icon-secondary'],
       ':is([aria-disabled="true"])': colorVars['--color-icon-disabled'],
+      ':is([aria-pressed="true"])': {
+        default: colorVars['--color-icon-secondary'],
+        '@media (forced-colors: active)': 'HighlightText',
+      },
     },
     // Grabbing while its list reorders (a drag holds the pointer). Not
     // `:active`: that is the touch press controller's arm, and the handle
@@ -116,79 +121,91 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     // Where the primary pointer is coarse: until the hold claims the drag,
-    // the page keeps its vertical scroll and its pinch-zoom (a flick on the
-    // handle scrolls, as on iOS). No text selection under a held finger: the
-    // gesture host locks it while the finger is down (the hold's
-    // preventsTextSelection), so a mouse keeps the page's selection as it
-    // was. Where it is fine, a finger gets the browser's defaults.
+    // the page keeps its scrolling and its pinch-zoom (a flick on the handle
+    // scrolls, as on iOS): `manipulation`, what a long press leaves the
+    // browser (spec:AST-094 FR18). No text selection under a held finger: the
+    // hold's selection lock holds it while the finger is down, so a mouse
+    // keeps the page's selection as it was. Where it is fine, a finger gets
+    // the browser's defaults.
     touchAction: {
       default: null,
-      '@media (pointer: coarse)': 'pan-y pinch-zoom',
+      '@media (pointer: coarse)': 'manipulation',
     },
     WebkitTapHighlightColor: {
       default: null,
       '@media (pointer: coarse)': 'transparent',
     },
-  },
-  lines: {
-    display: 'block',
-    width: 20,
-    height: LINES_HEIGHT,
-    pointerEvents: 'none',
-  },
-  slot: {
-    flexShrink: 0,
-    width: HANDLE_SIZE,
-    marginInlineEnd: -8,
-  },
-  // Over the handle at the row's end, out of the row's layout.
-  menuHost: {
-    position: 'absolute',
-    insetBlock: 0,
-    insetInlineEnd: 0,
-    width: HANDLE_SIZE,
-    pointerEvents: 'none',
-  },
-  menuAnchor: {
-    display: 'block',
-    width: '100%',
-    height: '100%',
-    outline: 'none',
+    // The three lines: one bar and its two shadows, in the handle's color.
+    // Forced colors keep them (shadows and backgrounds go there otherwise),
+    // drawn in the system's button text.
+    '::before': {
+      content: '""',
+      display: 'block',
+      width: LINE_WIDTH,
+      height: LINE_THICKNESS,
+      borderRadius: LINE_THICKNESS / 2,
+      backgroundColor: 'currentColor',
+      boxShadow: `0 -${LINE_GAP}px currentColor, 0 ${LINE_GAP}px currentColor`,
+      forcedColorAdjust: 'none',
+      pointerEvents: 'none',
+    },
   },
 });
 
 /**
- * The handle's place, empty: a fixed row's end content stays in the column
- * the movable rows' end content keeps beside their handles.
+ * The style of a row that ends with a handle (ListItem applies it): its ring
+ * on focus within stays off for the handle, which rings itself.
  */
-export function ListReorderSlot() {
-  return (
-    <span
-      aria-hidden="true"
-      data-astryx-list-reorder-slot=""
-      {...stylex.props(styles.slot)}
-    />
-  );
+export const reorderRowStyle = ownRingContainerStyles.focusWithin;
+
+/**
+ * The text a label shows: its strings and numbers, through its elements'
+ * children, with runs of space collapsed. Empty when it shows none (an icon,
+ * an image).
+ */
+function textOf(node: ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') {
+    return String(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map(textOf).join('');
+  }
+  if (isValidElement<{children?: ReactNode}>(node)) {
+    return textOf(node.props.children);
+  }
+  return '';
 }
 
 /**
- * The handle's gestures. A finger's hold goes through the reorder's touch
- * layer, only where the primary pointer is coarse; a mouse drags on the
- * handle's own pointer events. `onDrag` runs once a press moves its row.
- * Returns the handle's pointerdown listener.
+ * The reorder handle of a List row. Renders nothing outside a reorderable
+ * List.
  */
-function useHandleGestures(
-  ref: React.RefObject<HTMLButtonElement | null>,
-  controller: ListReorderController | undefined,
-  isDisabled: boolean,
-  onDrag: () => void,
-): (event: PointerEvent<HTMLButtonElement>) => void {
+export function ListReorderHandle({
+  label,
+  itemKey,
+  isDisabled = false,
+}: ListReorderHandleProps) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const t = useTranslator();
+  const controller = use(ListContext)?.reorder?.session as
+    ListReorderController | undefined;
+  // Named after the row's label text, an element's included ("Reorder
+  // Custom Name"); a label that shows no text names it after its place.
+  const text = textOf(label).replace(/\s+/g, ' ').trim();
+  const named = text !== '';
+  // The session moves the row only with its handle recorded, reports its
+  // moves with the row's key, and announces them with its name.
+  useIsomorphicLayoutEffect(
+    () => controller?.registerHandle(ref.current, itemKey, text),
+    [controller, itemKey, text],
+  );
+  // Pressed while its row is in reorder mode.
+  const isPressed = useSyncExternalStore(
+    controller?.subscribeMode ?? subscribeNothing,
+    () => controller?.isInMode(ref.current) ?? false,
+    () => false,
+  );
   const isEnabled = controller != null && !isDisabled;
-  const isTouch = useTouchPresentation().isTouch;
-  const onDragRef = useRef(onDrag);
-  useIsomorphicLayoutEffect(() => {
-    onDragRef.current = onDrag;
-  });
   // The row the handle sits in, read after each commit: the list's own ref is
   // attached after its rows' layout effects run, and by the cleanup below the
   // handle may already be out of the row.
@@ -196,159 +213,21 @@ function useHandleGestures(
   useEffect(() => {
     rowRef.current = controller?.rowOf(ref.current) ?? null;
   });
-  // Ends the mouse press in progress, if any, without reporting it.
-  const endMouseRef = useRef<(() => void) | null>(null);
-  // A handle that stops taking gestures mid-drag (its row disabled, the list
-  // no longer reorderable, the handle gone) sends a drag of its row home,
-  // whichever pointer drives it.
+  // A handle that stops taking gestures mid-drag (its row disabled or no
+  // longer reorderable, the handle gone) sends a drag of its row home,
+  // whichever pointer or key drives it.
   useIsomorphicLayoutEffect(() => {
     if (!isEnabled || controller == null) {
       return undefined;
     }
-    return () => {
-      endMouseRef.current?.();
-      controller.release(rowRef.current);
-    };
+    return () => controller.release(rowRef.current);
   }, [controller, isEnabled]);
-  // A finger: the reorder's touch layer, through the session, only where the
-  // primary pointer is coarse (spec:AST-094 FR19).
-  useIsomorphicLayoutEffect(() => {
-    const handle = ref.current;
-    if (!isEnabled || !isTouch || handle == null || controller == null) {
-      return undefined;
-    }
-    return controller.attachTouch(handle, () => onDragRef.current());
-  }, [ref, controller, isEnabled, isTouch]);
-  // A mouse: the press is the handle's own until it lifts (pointer capture),
-  // and drags the row once it has moved MOUSE_DRAG_SLOP, from where it
-  // pressed. Its listeners live only while it is down.
-  return event => {
-    const handle = event.currentTarget;
-    if (
-      event.pointerType !== 'mouse' ||
-      event.button !== 0 ||
-      !isEnabled ||
-      controller == null
-    ) {
-      return;
-    }
-    endMouseRef.current?.();
-    const {pointerId, clientX: x, clientY: y} = event;
-    let isDragging = false;
-    const end = () => {
-      handle.removeEventListener('pointermove', onMove);
-      handle.removeEventListener('pointerup', onUp);
-      handle.removeEventListener('pointercancel', onCancel);
-      handle.removeEventListener('lostpointercapture', onCancel);
-      if (handle.hasPointerCapture?.(pointerId)) {
-        handle.releasePointerCapture(pointerId);
-      }
-      if (endMouseRef.current === end) {
-        endMouseRef.current = null;
-      }
-    };
-    const onMove = (move: globalThis.PointerEvent) => {
-      if (move.pointerId !== pointerId) {
-        return;
-      }
-      if (!isDragging) {
-        if (Math.hypot(move.clientX - x, move.clientY - y) < MOUSE_DRAG_SLOP) {
-          return;
-        }
-        isDragging = true;
-        onDragRef.current();
-        controller.gesture(controller.rowOf(handle), {state: 'began', y});
-      }
-      controller.gesture(null, {state: 'changed', y: move.clientY});
-    };
-    const onUp = (up: globalThis.PointerEvent) => {
-      if (up.pointerId !== pointerId) {
-        return;
-      }
-      end();
-      if (isDragging) {
-        controller.gesture(null, {state: 'ended', y: up.clientY});
-      }
-    };
-    const onCancel = (cancel: globalThis.PointerEvent) => {
-      if (cancel.pointerId !== pointerId) {
-        return;
-      }
-      end();
-      if (isDragging) {
-        controller.gesture(null, {state: 'cancelled', y: cancel.clientY});
-      }
-    };
-    handle.addEventListener('pointermove', onMove);
-    handle.addEventListener('pointerup', onUp);
-    handle.addEventListener('pointercancel', onCancel);
-    handle.addEventListener('lostpointercapture', onCancel);
-    handle.setPointerCapture?.(pointerId);
-    endMouseRef.current = end;
-  };
-}
-
-export interface ListReorderHandleProps {
-  /** The row's label: a string names the handle after it. */
-  readonly label: ReactNode;
-  /**
-   * The row is disabled: the handle stays focusable with
-   * `aria-disabled="true"`, and no gesture or key moves the row
-   * (spec:AST-085).
-   */
-  readonly isDisabled?: boolean;
-  /**
-   * The handle's whole accessible name, for a row whose label does not name
-   * it (a record of fields: "Reorder guest 2"). Replaces "Reorder {label}".
-   */
-  readonly 'aria-label'?: string;
-}
-
-/**
- * The reorder handle of a list row. Renders nothing outside a reorder
- * session (`ListReorderContext` with `useListReorder`'s value).
- */
-export function ListReorderHandle({
-  label,
-  isDisabled = false,
-  'aria-label': ariaLabel,
-}: ListReorderHandleProps) {
-  const context = use(ListReorderContext);
-  const ref = useRef<HTMLButtonElement>(null);
-  const t = useTranslator();
-  const controller = context?.controller;
-  // The moves menu exists only while it is open: a mounted menu anchors to
-  // the handle, and a dragged handle would then lay out on every move.
-  // Mounted closed, then opened, so the menu moves focus into its rows.
-  const [menu, setMenu] = useState<'closed' | 'mounting' | 'open'>('closed');
-  useEffect(() => {
-    if (menu !== 'mounting') {
-      return;
-    }
-    const frame = requestAnimationFrame(() => setMenu('open'));
-    return () => cancelAnimationFrame(frame);
-  }, [menu]);
-  // A press that dragged the row does not also open the moves menu.
-  const draggedRef = useRef(false);
-  const onMousePress = useHandleGestures(ref, controller, isDisabled, () => {
-    draggedRef.current = true;
-  });
-  const labelText =
-    typeof label === 'string' || typeof label === 'number'
-      ? String(label)
-      : null;
-  const name =
-    ariaLabel ??
-    (labelText == null
-      ? undefined
-      : t('@astryx.list.reorderHandle', {label: labelText}));
-  const named = name != null;
-  // A row without a text label is named after its place, read from the DOM
-  // after each commit (the row does not know its index). A passive effect:
-  // the list's own ref is attached after its rows' layout effects run.
+  // That place is read from the DOM after each commit (the row does not
+  // know its index). A passive effect: the list's own ref is attached after
+  // its rows' layout effects run.
   useEffect(() => {
     const handle = ref.current;
-    const position = context?.controller.positionOf(handle) ?? null;
+    const position = controller?.positionOf(handle) ?? null;
     if (named || handle == null || position == null) {
       return;
     }
@@ -357,105 +236,64 @@ export function ListReorderHandle({
       t('@astryx.list.reorderHandleAt', {position}),
     );
   });
-  if (context == null) {
+  if (controller == null) {
     return null;
   }
-  const rowMoves = () =>
-    controller?.movesFor(controller.rowOf(ref.current)) ?? [];
-  // Activating the handle — a tap, a click, a screen reader's double tap —
-  // opens its moves: a way to reorder with a single pointer and no drag
-  // (WCAG 2.5.7). The keys keep their own moves (Space picks up).
+  const name = named
+    ? t('@astryx.list.reorderHandle', {label: text})
+    : undefined;
   return (
-    <>
-      <button
-        ref={ref}
-        type="button"
-        {...{[HANDLE_ATTRIBUTE]: ''}}
-        // The handle takes its own press, so the row does not highlight under
-        // it (it paints nothing itself).
-        data-astryx-pressable=""
-        // It rings itself: the row's focus-within ring stays off for it.
-        data-astryx-own-ring=""
-        aria-label={name}
-        aria-describedby={context.hintId}
-        aria-disabled={isDisabled || undefined}
-        aria-haspopup="menu"
-        aria-expanded={menu === 'open'}
-        onClick={() => {
-          if (draggedRef.current) {
-            draggedRef.current = false;
-            return;
-          }
-          if (!isDisabled && menu === 'closed' && rowMoves().length > 0) {
-            setMenu('mounting');
-          }
-        }}
-        onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
-          if (!isDisabled) {
-            controller?.keyDown(controller.rowOf(ref.current), event);
-          }
-        }}
-        onBlur={() => controller?.blur(controller.rowOf(ref.current))}
-        // The row's own pointer handling (its swipe) never sees the handle's
-        // touches; the gesture system listens on the document, before this. A
-        // mouse press starts the handle's own drag.
-        onPointerDown={(event: PointerEvent<HTMLButtonElement>) => {
-          draggedRef.current = false;
-          event.stopPropagation();
-          onMousePress(event);
-        }}
-        {...focusOutlineProps.focusVisible(styles.handle)}>
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 20 14"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          {...stylex.props(styles.lines)}>
-          <path d="M1 1h18M1 7h18M1 13h18" />
-        </svg>
-      </button>
-      {menu !== 'closed' && (
-        // The menu's events stay out of the row (its own press, its keys).
-        <span
-          onClick={event => event.stopPropagation()}
-          onKeyDown={event => event.stopPropagation()}
-          onPointerDown={event => event.stopPropagation()}
-          {...stylex.props(styles.menuHost)}>
-          <DropdownMenu
-            isMenuOpen={menu === 'open'}
-            onOpenChange={isOpen => {
-              if (!isOpen) {
-                setMenu('closed');
-              }
-            }}
-            hasChevron={false}
-            items={rowMoves().map(move => ({
-              id: move.kind,
-              label: t(MOVE_LABELS[move.kind]),
-              onClick: () =>
-                controller?.moveRow(controller.rowOf(ref.current), move.to),
-            }))}
-            // Anchored over the handle; named after it; focus coming back to
-            // it goes on to the handle.
-            renderTrigger={trigger => (
-              <span
-                ref={trigger.ref}
-                id={trigger.id}
-                tabIndex={-1}
-                aria-label={
-                  name ?? ref.current?.getAttribute('aria-label') ?? undefined
-                }
-                onFocus={() => ref.current?.focus({preventScroll: true})}
-                {...stylex.props(styles.menuAnchor)}
-              />
-            )}
-          />
-        </span>
-      )}
-    </>
+    <button
+      ref={ref}
+      type="button"
+      {...{[HANDLE_ATTRIBUTE]: ''}}
+      // The handle takes its own press, so the row does not highlight under
+      // it (it paints nothing itself).
+      data-astryx-pressable=""
+      // It rings itself: the row's focus-within ring stays off for it.
+      data-astryx-own-ring=""
+      aria-label={name}
+      aria-describedby={controller.hintId}
+      aria-disabled={isDisabled || undefined}
+      aria-pressed={isPressed}
+      // A click, Space or Enter: reorder mode, unless the press dragged.
+      onClick={() => {
+        if (!controller.takeDrag(ref.current) && !isDisabled) {
+          controller.toggleMode(ref.current);
+        }
+      }}
+      onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
+        if (!isDisabled) {
+          controller.keyDown(ref.current, event);
+        }
+      }}
+      onBlur={event => controller.blur(ref.current, event.relatedTarget)}
+      // The row's own pointer handling (its swipe) never sees the handle's
+      // presses: the list's listeners have them, before this.
+      onPointerDown={event => event.stopPropagation()}
+      {...focusOutlineProps.focusVisible(styles.handle)}
+    />
   );
 }
 
 ListReorderHandle.displayName = 'ListReorderHandle';
+
+const subscribeNothing = () => () => {};
+
+/**
+ * Names a reorderable List's row that has no handle (one that stays, or one
+ * without an item key) for the announcements of the moves beside it.
+ * Renders nothing.
+ */
+export function ListReorderRowName({row, label}: ListReorderRowNameProps) {
+  const controller = use(ListContext)?.reorder?.session as
+    ListReorderController | undefined;
+  const text = textOf(label).replace(/\s+/g, ' ').trim();
+  useIsomorphicLayoutEffect(
+    () => controller?.registerName(row.current, text),
+    [controller, row, text],
+  );
+  return null;
+}
+
+ListReorderRowName.displayName = 'ListReorderRowName';

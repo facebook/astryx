@@ -10,8 +10,9 @@
  *   table spring; after an insert the rows below slide down and the new row
  *   fades in once they have cleared its band; a reorder moves rows to their
  *   new places, the row crossing the others riding above them with the
- *   surface behind it; content below the
- *   list moves with its rows, the button a finger tapped included; a change
+ *   surface behind it; content after the list takes its new place at once,
+ *   never translated, a fixed element inside it staying fixed, and after a
+ *   removal the rows sliding up are clipped to the list's box; a change
  *   while rows still move makes no jump; under reduced motion a removal, an
  *   insert and a reorder cross-fade, opacity only, within 200 ms
  *   (`design:reduced-motion`); a
@@ -38,9 +39,7 @@ import {
   releaseAnimations,
   seekAnimations,
   startScreencast,
-  tap,
   timeline,
-  touchDriver,
   trackMarker,
   traceRendering,
   waitForAnimation,
@@ -327,55 +326,76 @@ test('a reorder: each row slides from its old place to its new one', async ({
   expect((await paint(spam)).zIndex).toBe('auto');
 });
 
-test('content below the list moves with its rows and lands with no jump', async ({
+test('content after the list takes its place by layout at once, with no translate, and a fixed element inside it stays fixed', async ({
   page,
 }) => {
   await open(page);
   const button = page.getByRole('button', {name: 'Insert a row second'});
   const spam = row(page, 'Spam');
+  // More content after the list, holding a position: fixed element, which
+  // stays where the viewport puts it as long as nothing transforms its
+  // ancestors.
+  await button.evaluate(el => {
+    const after = document.createElement('div');
+    after.style.height = '20px';
+    const fixed = document.createElement('div');
+    fixed.setAttribute('data-test-fixed', '');
+    fixed.style.cssText =
+      'position: fixed; top: 10px; left: 10px; width: 8px; height: 8px;';
+    after.append(fixed);
+    el.insertAdjacentElement('afterend', after);
+  });
+  const fixedTop = async () =>
+    page
+      .locator('[data-test-fixed]')
+      .evaluate(el => el.getBoundingClientRect().top);
   const rest = (await button.boundingBox())?.y ?? 0;
   await press(page, 'Remove the second row');
   await expect(row(page, 'Sent')).toHaveCount(0);
   await holdAnimations(page);
   await seekAnimations(page, 0);
-  const gap = rest - ((await button.boundingBox())?.y ?? 0);
-  // Layout moved it up by a row; on screen it starts where it was.
-  expect(await translateY(button)).toBeGreaterThan(1);
-  expect(Math.abs(gap)).toBeLessThan(1);
-  // In step with the last row.
-  await seekAnimations(page, SETTLE_MS / 4);
-  expect(await translateY(button)).toBeCloseTo(await translateY(spam), 1);
+  // Its new layout at once, a row higher, with nothing on it.
+  expect(await button.evaluate(el => getComputedStyle(el).translate)).toBe(
+    'none',
+  );
+  expect(rest - ((await button.boundingBox())?.y ?? 0)).toBeGreaterThan(1);
+  expect(await fixedTop()).toBeCloseTo(10, 0);
+  // The rows inside the list still start where they were.
+  expect(await translateY(spam)).toBeGreaterThan(1);
   await releaseAnimations(page, {finish: true});
-  await expect.poll(async () => translateY(button)).toBe(0);
+  await expect.poll(async () => translateY(spam)).toBe(0);
+  expect(await button.evaluate(el => getComputedStyle(el).translate)).toBe(
+    'none',
+  );
 });
 
-test('the button a finger taps below the list moves with it too', async ({
+test('after a removal the rows sliding up into the gap never paint over the content after the list', async ({
   page,
-  browserName,
 }) => {
-  test.skip(
-    browserName !== 'chromium',
-    "Playwright's WebKit touch taps do not synthesize the click; Chromium's do",
-  );
   await open(page);
-  const driver = await touchDriver(page);
-  const button = page.getByRole('button', {name: 'Remove the second row'});
-  const box = await button.boundingBox();
-  if (box == null) {
-    throw new Error('no button');
-  }
-  // A real touch: the button runs its own press feedback while the list
-  // changes, which must not leave it behind.
-  await driver.play(
-    tap({x: box.x + box.width / 2, y: box.y + box.height / 2}, {holdMs: 80}),
-  );
+  const list = page.locator('#storybook-root ul').first();
+  await press(page, 'Remove the second row');
   await expect(row(page, 'Sent')).toHaveCount(0);
   await holdAnimations(page);
   await seekAnimations(page, 0);
-  const start = await translateY(button);
-  expect(start).toBeGreaterThan(1);
+  // Just under the list's new bottom edge, where the content after it now
+  // sits, the last row, still a row lower on its way up, is clipped away.
+  const hitsRow = await list.evaluate(el => {
+    const box = el.getBoundingClientRect();
+    const target = document.elementFromPoint(
+      box.left + box.width / 2,
+      box.bottom + 4,
+    );
+    return target != null && el.contains(target);
+  });
+  expect(hitsRow).toBe(false);
+  expect(await list.evaluate(el => getComputedStyle(el).overflowY)).toBe(
+    'clip',
+  );
   await releaseAnimations(page, {finish: true});
-  await expect.poll(async () => translateY(button)).toBe(0);
+  await expect
+    .poll(async () => list.evaluate(el => getComputedStyle(el).overflowY))
+    .toBe('visible');
 });
 
 test('a change while rows still move: no jump, they keep moving to their new places', async ({
@@ -425,22 +445,19 @@ test('a change while rows still move: no jump, they keep moving to their new pla
   await expect.poll(async () => translateY(row(page, 'Archive'))).toBe(0);
 });
 
-test("a theme's table spring (a motion role) times the update", async ({
+test('the update keeps its own table spring, whatever a theme writes', async ({
   page,
 }) => {
   await open(page);
-  // A theme that slows the table spring to 0.9 s with no bounce, written the
-  // way a theme writes a role: its CSS variable, here on the root.
+  // The table spring is an internal constant: a variable written the way a
+  // theme would write one (0.9 s, no bounce, on the root) changes nothing.
   await page.evaluate(() =>
     document.documentElement.style.setProperty(
       '--motion-list-update-table-spring',
       '0.9s 0',
     ),
   );
-  const themed = solveSpring(toSpring({duration: 0.9, bounce: 0}), {
-    from: 0,
-    to: 1,
-  });
+  const table = solveSpring(SPRING, {from: 0, to: 1});
   const drafts = row(page, 'Drafts');
   await press(page, 'Remove the second row');
   await expect(row(page, 'Sent')).toHaveCount(0);
@@ -458,12 +475,10 @@ test("a theme's table spring (a motion role) times the update", async ({
   for (const t of [SETTLE_MS / 2, SETTLE_MS]) {
     await seekAnimations(page, t);
     expect(await translateY(drafts)).toBeCloseTo(
-      gap * (1 - themed.value(t / 1000)),
+      gap * (1 - table.value(t / 1000)),
       0,
     );
   }
-  // Where the table's spring has arrived, the theme's is still on its way.
-  expect(1 - themed.value(SETTLE_MS / 1000)).toBeGreaterThan(0.1);
   await releaseAnimations(page, {finish: true});
   await expect.poll(async () => translateY(drafts)).toBe(0);
 });
@@ -651,10 +666,17 @@ test('a row swiped away with a removal action collapses in place: the rows below
   // Drafts' translate every frame from the frame Sent leaves the page.
   await page.evaluate(() => {
     const rows = [...document.querySelectorAll('#storybook-root li')];
-    const sentRow = rows.find(li => li.textContent?.trim() === 'Sent');
-    const target = rows.find(
-      li => li.textContent?.trim() === 'Drafts',
-    ) as HTMLElement;
+    // A row's own text: its swipe panels' action labels aside, since the
+    // panels may already be in the row.
+    const labelOf = (li: Element) => {
+      const copy = li.cloneNode(true) as Element;
+      for (const panel of copy.querySelectorAll('[data-swipe-panel]')) {
+        panel.remove();
+      }
+      return copy.textContent?.trim();
+    };
+    const sentRow = rows.find(li => labelOf(li) === 'Sent');
+    const target = rows.find(li => labelOf(li) === 'Drafts') as HTMLElement;
     const samples: number[] = [];
     (window as unknown as {__ys: number[]}).__ys = samples;
     const tick = () => {
@@ -673,8 +695,7 @@ test('a row swiped away with a removal action collapses in place: the rows below
     };
     requestAnimationFrame(tick);
   });
-  // The gesture arrives with the lazily loaded swipe layer; its panel is the
-  // sign the row can be dragged.
+  // The swipe panel is the sign the row can be dragged.
   await expect(sent.locator('[data-swipe-panel="trailing"]')).toBeAttached();
   // Toward the inline start, most of the row's width: the full swipe fires
   // the outermost entry, Delete, whose removal holds the row out until the

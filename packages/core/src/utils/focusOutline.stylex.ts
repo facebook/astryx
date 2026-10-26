@@ -161,34 +161,6 @@ export const focusOutlineStyles = stylex.create({
     },
   },
   /**
-   * Like {@link focusOutlineStyles.focusWithin}, but a focused descendant
-   * marked `data-astryx-own-ring` — a control that rings itself, such as a
-   * List row's reorder handle — leaves the container's ring off. Without it
-   * the two rings stack for one tab stop, and an ancestor that clips its
-   * inline overflow (List) cuts the container's ring to two lines.
-   */
-  focusWithinExceptOwnRing: {
-    outlineWidth: {
-      default: '0',
-      ':has(:focus-visible:not([data-astryx-own-ring]))':
-        focusOutlineLonghands.outlineWidth,
-    },
-    outlineStyle: {
-      default: 'none',
-      ':has(:focus-visible:not([data-astryx-own-ring]))':
-        focusOutlineLonghands.outlineStyle,
-    },
-    outlineColor: {
-      default: null,
-      ':has(:focus-visible:not([data-astryx-own-ring]))':
-        focusOutlineLonghands.outlineColor,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(:focus-visible:not([data-astryx-own-ring]))': FOCUS_OUTLINE_OFFSET,
-    },
-  },
-  /**
    * Draws no ring, and keeps the UA's own off — for an element whose ring an
    * ancestor paints.
    *
@@ -257,3 +229,36 @@ export const focusOutlineProps = {
     focusOutlineStyles.focusWithinOrPublished,
   ),
 } as const;
+
+/**
+ * A container that rings itself on focus within, except for a focused
+ * descendant marked `data-astryx-own-ring`: a control that rings itself,
+ * such as a List row's reorder handle. Without it the two rings stack for
+ * one tab stop, and an ancestor that clips its inline overflow (List) cuts
+ * the container's ring to two lines. Its own object, so the reorder that
+ * uses it (List/listReorderEngine.tsx, with createReorderable) carries it
+ * and a List without one does not.
+ */
+export const ownRingContainerStyles = stylex.create({
+  focusWithin: {
+    outlineWidth: {
+      default: '0',
+      ':has(:focus-visible:not([data-astryx-own-ring]))':
+        focusOutlineLonghands.outlineWidth,
+    },
+    outlineStyle: {
+      default: 'none',
+      ':has(:focus-visible:not([data-astryx-own-ring]))':
+        focusOutlineLonghands.outlineStyle,
+    },
+    outlineColor: {
+      default: null,
+      ':has(:focus-visible:not([data-astryx-own-ring]))':
+        focusOutlineLonghands.outlineColor,
+    },
+    outlineOffset: {
+      default: '0',
+      ':has(:focus-visible:not([data-astryx-own-ring]))': FOCUS_OUTLINE_OFFSET,
+    },
+  },
+});

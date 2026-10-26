@@ -172,6 +172,9 @@ export * from './Outline';
 // Overflow list
 export * from './OverflowList';
 
+// Reorder (a collection's `reorderable` prop)
+export * from './reorderable';
+
 // Hooks
 export * from './hooks';
 

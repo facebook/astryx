@@ -12,15 +12,16 @@
  *   that move the other way rides above them; nothing moves with a mouse,
  *   without `hasAnimatedChanges`,
  *   on the first render, or
- *   while a reorder session owns the list; content below the list moves with
- *   it unless the list keeps it still, only by what layout moved it; with
+ *   while a reorder session owns the list; content after the list is never
+ *   moved, and a list that got shorter clips its rows to its box while they
+ *   move; with
  *   motion off nothing is read; a resize of the list between commits
  *   refreshes where its rows are
  * @position Beside List/useListUpdateMotion.ts; the motion itself is proven
  *   in a real engine by List/__tests__/ListUpdates.interaction.browser.spec.ts
  */
 
-import {act, render, screen} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, beforeAll, describe, expect, it, vi} from 'vitest';
 import {List} from './List';
 import {ListItem} from './ListItem';
@@ -99,17 +100,13 @@ afterEach(() => {
 function Rows({
   labels,
   hasAnimatedChanges = true,
-  followingContent,
 }: {
   labels: string[];
   hasAnimatedChanges?: boolean;
-  followingContent?: 'moves' | 'stays';
 }) {
   return (
     <div>
-      <List
-        hasAnimatedChanges={hasAnimatedChanges}
-        followingContent={followingContent}>
+      <List hasAnimatedChanges={hasAnimatedChanges}>
         {labels.map(label => (
           <ListItem key={label} label={label} />
         ))}
@@ -215,11 +212,11 @@ describe('List update motion', () => {
     });
   });
 
-  it('a removed row stays exactly as long as its collapse, even on a theme spring slower than a second', async () => {
+  it('a removed row collapses on the table spring and stays exactly as long as its collapse, whatever a theme writes', async () => {
     stubPointer('touch');
-    // A theme that slows the table spring to 1.5 s, written the way a theme
-    // writes a role: its CSS variable, here on the root, which a theme switch
-    // brings in.
+    // The table spring is an internal constant: a variable written the way a
+    // theme would write one (1.5 s, on the root, which a theme switch brings
+    // in) changes nothing.
     document.documentElement.style.setProperty(
       '--motion-list-update-table-spring',
       '1.5s 0',
@@ -229,15 +226,17 @@ describe('List update motion', () => {
       const {rerender} = render(<Rows labels={['A', 'B', 'C']} />);
       await act(async () => undefined);
       const removed = rowOf('B');
+      const at = motionNow();
+      const clock = vi.spyOn(performance, 'now').mockReturnValue(at);
       rerender(<Rows labels={['A', 'C']} />);
+      clock.mockRestore();
       const ghost = removed.parentElement as HTMLElement;
       expect(ghost.hasAttribute('data-astryx-leaving')).toBe(true);
       const collapse = motionOf(ghost, 'y') as RowMotion;
       expect(collapse).toBeDefined();
-      // Still there while its collapse runs, past a second: no timer cuts
-      // it short.
-      await new Promise(resolve => setTimeout(resolve, 1200));
-      expect(ghost.isConnected).toBe(true);
+      // Closed where the table's spring arrives, where the theme's 1.5 s
+      // spring would still be on its way.
+      expect(presentation(ghost, 'y', at + 600)).toBeCloseTo(-ROW, 1);
       // Gone when the collapse ends, with nothing left behind.
       await collapse.handle.finished;
       await Promise.resolve();
@@ -322,17 +321,16 @@ describe('List update motion', () => {
     }
   });
 
-  it('moves the content below only by what layout moved it: a pinned footer stays put', async () => {
+  it('never moves the content after the list: it takes its place by layout', async () => {
     stubPointer('touch');
     const {rerender} = render(<Rows labels={['A', 'B', 'C']} />);
     await act(async () => undefined);
     rerender(<Rows labels={['A', 'C']} />);
     const below = screen.getByTestId('below');
-    expect(motionOf(below)).toBeDefined();
-    // It starts where it was: one row lower than its new place.
-    expect(presentation(below, 'y', motionNow())).toBeGreaterThan(ROW / 2);
-    expect(motionOf(screen.getByTestId('pinned'))).toBeUndefined();
-    expect(screen.getByTestId('pinned').style.translate).toBe('');
+    expect(motionOf(below)).toBeUndefined();
+    expect(below.style.translate).toBe('');
+    // The rows inside the list still move.
+    expect(motionOf(rowOf('C'))).toBeDefined();
   });
 
   it('moves nothing with a mouse, or without hasAnimatedChanges', async () => {
@@ -356,28 +354,32 @@ describe('List update motion', () => {
     expect(motionOf(rowOf('C'))).toBeUndefined();
   });
 
-  it("moves the content below with the rows, unless followingContent is 'stays'", async () => {
+  it('clips its rows to its box while they move after it gets shorter, and only then', async () => {
     stubPointer('touch');
     // jsdom lays nothing out: the list is as tall as its rows.
     const height = vi
       .spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
       .mockImplementation(function (this: HTMLElement) {
-        return this.tagName === 'UL' ? this.children.length * ROW : 0;
+        if (this.tagName === 'UL') {
+          return (
+            this.querySelectorAll(':scope > li:not([data-astryx-leaving])')
+              .length * ROW
+          );
+        }
+        return this.tagName === 'LI' ? ROW : 0;
       });
-    const moves = render(<Rows labels={['A', 'B', 'C']} />);
+    const {rerender} = render(<Rows labels={['A', 'B', 'C']} />);
     await act(async () => undefined);
-    moves.rerender(<Rows labels={['A', 'C']} />);
-    expect(motionOf(screen.getByTestId('below'))).toBeDefined();
-    moves.unmount();
-
-    const stays = render(
-      <Rows labels={['A', 'B', 'C']} followingContent="stays" />,
-    );
-    await act(async () => undefined);
-    stays.rerender(<Rows labels={['A', 'C']} followingContent="stays" />);
-    expect(motionOf(screen.getByTestId('below'))).toBeUndefined();
-    // The rows inside the list still move.
-    expect(motionOf(rowOf('C'))).toBeDefined();
+    const list = document.querySelector('ul') as HTMLElement;
+    // Taller: nothing to clip.
+    rerender(<Rows labels={['A', 'B', 'C', 'D']} />);
+    expect(list.style.overflowY).toBe('');
+    // Shorter: its rows are clipped to its box while they move, not after.
+    rerender(<Rows labels={['A', 'C', 'D']} />);
+    expect(list.style.overflowY).toBe('clip');
+    await waitFor(() => expect(list.style.overflowY).toBe(''), {
+      timeout: 3000,
+    });
     height.mockRestore();
   });
 

@@ -4,7 +4,7 @@
 
 /**
  * @file TransferListSelector.tsx
- * @input Controlled option data, uncontrolled ComplexSelector state, TransferList, action controls, and the core i18n catalog
+ * @input Controlled option data, uncontrolled ComplexSelector state, TransferList with the selector's own reorder (core's `createReorderable`, aimed at the draft when staged), action controls, and the core i18n catalog
  * @output Exports the immediate-or-staged TransferListSelector composition with draft cleanup after dismissal
  * @position Lab collection input shell; consumed by the TransferList entry point, docs, and tests
  *
@@ -24,6 +24,11 @@ import {
 import {useTranslator} from '@astryxdesign/core/i18n';
 import {HStack} from '@astryxdesign/core/Stack';
 import {borderVars, colorVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {
+  createReorderable,
+  type Reorderable,
+} from '@astryxdesign/core/reorderable';
+import {reorderableOptions} from '@astryxdesign/core/internal/reorder';
 import {TransferList, type TransferListProps} from './TransferList';
 
 const DEFAULT_SELECTOR_WIDTH = 'min(41rem, calc(100vw - 32px))';
@@ -105,7 +110,6 @@ type TransferListContentProp =
   | 'hasSearch'
   | 'searchLabel'
   | 'searchPlaceholder'
-  | 'isReorderable'
   | 'hasSelectAll'
   | 'hasClear'
   | 'renderOption'
@@ -135,7 +139,23 @@ export type TransferListSelectorProps<T extends string = string> = Pick<
     applyLabel?: string;
     /** Label for the staged discard action. Only used in staged behavior. @default 'Cancel' */
     cancelLabel?: string;
+    /**
+     * Makes the selected options reorderable (spec:AST-103): pass the object
+     * `createReorderable` makes. Its `isReorderable(value)` says which values
+     * move. An immediate selector hands each move to its `onReorder`; a
+     * staged one moves its draft instead, so Cancel drops the move with the
+     * draft and Apply commits it through `onChange`. Without it, the
+     * selected options keep their order.
+     */
+    reorderable?: Reorderable<T>;
   };
+
+/** `value` with `key` moved to index `to`. */
+function moveValue<T>(value: readonly T[], key: T, to: number): readonly T[] {
+  const next = value.filter(item => item !== key);
+  next.splice(to, 0, key);
+  return next;
+}
 
 function areOrderedValuesEqual<T>(
   first: readonly T[],
@@ -202,7 +222,7 @@ export function TransferListSelector<T extends string = string>({
   hasSearch,
   searchLabel,
   searchPlaceholder,
-  isReorderable,
+  reorderable: ownerReorderable,
   hasSelectAll,
   hasClear,
   renderOption,
@@ -260,6 +280,32 @@ export function TransferListSelector<T extends string = string>({
       {(appliedValue, commit, close, state) => {
         const isStaged = commitBehavior === 'staged';
         const transferListValue = isStaged ? draftValue : appliedValue;
+        // The owner's reorder, aimed at the draft when staged and handed to
+        // the owner when immediate, with the owner's `isReorderable`. Made
+        // each render, so a move reads this render's value (the object may
+        // be made anew).
+        const owner =
+          ownerReorderable == null
+            ? undefined
+            : reorderableOptions(ownerReorderable);
+        const reorderable =
+          owner == null
+            ? undefined
+            : createReorderable<T>({
+                onReorder: move => {
+                  if (state.isBusy) {
+                    return;
+                  }
+                  if (isStaged) {
+                    setDraftValue(current =>
+                      moveValue(current, move.key, move.to),
+                    );
+                  } else {
+                    owner.onReorder(move);
+                  }
+                },
+                isReorderable: owner.isReorderable,
+              });
 
         return (
           <div
@@ -300,7 +346,7 @@ export function TransferListSelector<T extends string = string>({
                 hasSearch={hasSearch}
                 searchLabel={searchLabel}
                 searchPlaceholder={searchPlaceholder}
-                isReorderable={isReorderable}
+                reorderable={reorderable}
                 hasSelectAll={hasSelectAll}
                 hasClear={hasClear}
                 renderOption={renderOption}

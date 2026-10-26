@@ -2,21 +2,34 @@
 
 /**
  * @file ListReorder.test.tsx
- * @input List with `onReorder`, ListItem `isReorderDisabled` and
- *   `reorderLabel`, the reorder session itself, Testing Library
- * @output jsdom proofs of a reorderable List: each row gets a named reorder
- *   handle described by the list's instructions, a fixed row gets none and
- *   bounds the others (its end content kept in line), the handle's keys move
- *   its row (arrows, Home, End), Space picks it up and Escape puts it back, a
- *   move is announced once it lands and a declined one as kept, activating a
- *   handle opens only the moves its row can make, a row of any tag moves, the
- *   handle keeps focus across the commit of a move, modified keys move
- *   nothing, a disabled row's handle stays focusable but inert, and handles
- *   listen for touches on the document only while mounted
- * @position Tests for List/useListReorder.ts and List/ListReorderHandle.tsx
+ * @input List with `reorderable` (createReorderable), ListItem `itemKey`,
+ *   Testing Library
+ * @output jsdom proofs of a reorderable List (spec:AST-103): each row with an
+ *   item key gets a named reorder handle described by the list's
+ *   instructions; a row without a key, or one `isReorderable` rejects, gets
+ *   none, and only such rows at either end bound the others; the handle's
+ *   click, Space or Enter toggles reorder mode (`aria-pressed`), in which
+ *   each arrow moves the row at once with one report of its key and its
+ *   index after the move, announced with its place and neighbours once it
+ *   lands, a move into a row that stays at either end is refused and
+ *   announced, and Escape, another activation or a lost focus ends the mode,
+ *   keeping the moves (the first two announcing where the row is); while
+ *   the mode is on, a hint shows the moves and Done as buttons that do what
+ *   the keys do and leave the focus on the handle; the object's start(key)
+ *   enters the same mode from the app's own UI, keeping it when that UI
+ *   hands its focus back, and does nothing but warn for a key that cannot
+ *   move or is not mounted, or in the list mounted last for an object on
+ *   two; a mouse drags past the slop, and a drag's click
+ *   leaves the mode alone; a new object keeps the mode and the next move
+ *   calls the latest callback; one object serves two lists apart; the
+ *   reorder adds one element to a row and no listener to a row or handle,
+ *   and a List without it loads no reorder module
+ * @position Tests for List/listReorderEngine.tsx, List/ListReorderHandle.tsx
+ *   and reorderable/createReorderable.ts
  */
 
-import {useRef, useState} from 'react';
+import {readFileSync} from 'node:fs';
+import {useState, type Key, type ReactNode} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {
   act,
@@ -25,51 +38,64 @@ import {
   renderHook,
   screen,
   waitFor,
-  within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {List} from '../List';
 import {ListItem} from '../ListItem';
+import {MOUSE_DRAG_SLOP} from '../listReorderEngine';
 import {
-  ListReorderContext,
-  useListReorder,
-  type ListReorderContextValue,
-} from '../useListReorder';
-import {ListReorderHandle, MOUSE_DRAG_SLOP} from '../ListReorderHandle';
+  createReorderable,
+  type Reorderable,
+  type ReorderMove,
+} from '../../reorderable';
 import {DRAG_SLOP} from '../../DateInput/usePointerDragScroll';
 import {useAnnounce} from '../../hooks/useAnnounce';
+import {LayerDepthProvider} from '../../Layer/LayerDepthContext';
+import {useLayerDismissal} from '../../Layer/useLayerDismissal';
 import {motionRole} from '../../motion/roles';
+import {getGestureHost} from '../../gestures/GestureHost';
+import {pointerQuery} from '../../gestures/__tests__/pointerQuery';
 
-function move<T>(items: ReadonlyArray<T>, from: number, to: number): T[] {
-  const next = [...items];
-  const [moved] = next.splice(from, 1);
-  next.splice(to, 0, moved);
+function moveKey<T extends Key>(
+  items: ReadonlyArray<T>,
+  key: Key,
+  to: number,
+): T[] {
+  const next = items.filter(item => item !== key);
+  next.splice(to, 0, key as T);
   return next;
 }
 
 const NONE: ReadonlyArray<string> = [];
 
-function Reorderable({
+function ReorderableRows({
   initial,
   fixed = NONE,
   onReorder,
+  isDisabled = NONE,
 }: {
   initial: ReadonlyArray<string>;
   fixed?: ReadonlyArray<string>;
-  onReorder?: (from: number, to: number) => void;
+  onReorder?: (move: ReorderMove) => void;
+  isDisabled?: ReadonlyArray<string>;
 }) {
   const [items, setItems] = useState(initial);
+  // A new object on every render, as a caller may make it.
+  const reorderable = createReorderable({
+    onReorder: move => {
+      onReorder?.(move);
+      setItems(previous => moveKey(previous, move.key, move.to));
+    },
+    isReorderable: key => !fixed.includes(key as string),
+  });
   return (
-    <List
-      onReorder={(from, to) => {
-        onReorder?.(from, to);
-        setItems(previous => move(previous, from, to));
-      }}>
+    <List reorderable={reorderable}>
       {items.map(item => (
         <ListItem
           key={item}
+          itemKey={item}
           label={item}
-          isReorderDisabled={fixed.includes(item)}
+          isDisabled={isDisabled.includes(item)}
         />
       ))}
     </List>
@@ -77,51 +103,107 @@ function Reorderable({
 }
 
 /** The primary pointer: coarse (a touch screen) or fine (a mouse). */
+let restorePointer: (() => void) | null = null;
+
+/** The primary pointer a test needs (jsdom's is fine), until it ends. */
 function stubPrimaryPointer(coarse: boolean) {
-  vi.stubGlobal(
-    'matchMedia',
-    vi.fn((query: string) => ({
-      matches: coarse && query.includes('pointer: coarse'),
-      media: query,
-      onchange: null,
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
-      addListener: () => undefined,
-      removeListener: () => undefined,
-      dispatchEvent: () => false,
-    })),
-  );
+  restorePointer?.();
+  restorePointer = pointerQuery(coarse).restore;
+}
+
+/** jsdom lays nothing out: 44 px rows from 300 px down the viewport. */
+function layOut(list: HTMLElement) {
+  const place = (row: Element) => Array.from(list.children).indexOf(row);
+  for (const row of Array.from(list.children)) {
+    Object.defineProperty(row, 'offsetParent', {
+      configurable: true,
+      get: () => list,
+    });
+    Object.defineProperty(row, 'offsetTop', {
+      configurable: true,
+      get: () => place(row) * 44,
+    });
+    Object.defineProperty(row, 'offsetHeight', {configurable: true, value: 44});
+    row.getBoundingClientRect = () =>
+      DOMRect.fromRect({
+        x: 0,
+        y: 300 + place(row) * 44,
+        width: 300,
+        height: 44,
+      });
+  }
+}
+
+const MOUSE = {pointerType: 'mouse', pointerId: 1, button: 0, clientX: 280};
+
+/** A mouse presses `handle` at `from`, moves past the slop, then to `to`. */
+function mouseDrag(handle: Element, from: number, to: number) {
+  fireEvent.pointerDown(handle, {...MOUSE, clientY: from});
+  fireEvent.pointerMove(handle, {...MOUSE, clientY: from + MOUSE_DRAG_SLOP});
+  fireEvent.pointerMove(handle, {...MOUSE, clientY: to});
 }
 
 const labels = () =>
   Array.from(document.querySelectorAll('li')).map(row => row.textContent);
 
-describe('List onReorder', () => {
+const handleOf = (label: string) =>
+  screen.getByRole('button', {name: `Reorder ${label}`});
+
+/**
+ * A button of reorder mode's hint. jsdom never opens a popover, so the hint
+ * layer stays `display: none` there: the query includes hidden elements.
+ */
+const hintButton = (name: string) =>
+  screen.queryByRole('button', {name, hidden: true});
+
+describe('List reorderable', () => {
   // The live region outlives each test: clear it, so one test's message is
   // never read by the next.
   afterEach(() => {
     const {result, unmount} = renderHook(() => useAnnounce());
     act(() => result.current(''));
     unmount();
+    restorePointer?.();
+    restorePointer = null;
   });
 
-  it('adds no handle without onReorder', () => {
+  it('adds no handle and no listener without reorderable', () => {
     render(
       <List>
-        <ListItem label="Inbox" />
-        <ListItem label="Sent" />
+        <ListItem itemKey="inbox" label="Inbox" />
+        <ListItem itemKey="sent" label="Sent" />
       </List>,
     );
     expect(screen.queryAllByRole('button')).toHaveLength(0);
     expect(document.querySelector('[data-astryx-list-reorder]')).toBeNull();
   });
 
-  it('gives each row a reorder handle named after it and described by the instructions', () => {
-    render(<Reorderable initial={['Inbox', 'Sent', 'Drafts']} />);
-    const handle = screen.getByRole('button', {name: 'Reorder Inbox'});
+  it('loads no reorder module from List or ListItem: they import its type and context only', () => {
+    // spec:AST-103 FR2: the machinery ships with createReorderable.
+    for (const file of ['../List.tsx', '../ListItem.tsx']) {
+      const source = readFileSync(new URL(file, import.meta.url), 'utf8');
+      const imports = Array.from(
+        source.matchAll(/^import\s+(type\s+)?[^;]*?from\s+'([^']+)';/gms),
+        match => ({isType: match[1] != null, from: match[2]}),
+      );
+      for (const {isType, from} of imports) {
+        if (/reorder/i.test(from)) {
+          expect(
+            isType || from === './listReorderContext',
+            `${file} imports ${from}`,
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('gives each row with an item key a handle named after it and described by the instructions', () => {
+    render(<ReorderableRows initial={['Inbox', 'Sent', 'Drafts']} />);
+    const handle = handleOf('Inbox');
     expect(handle).toHaveAttribute('type', 'button');
+    expect(handle).toHaveAttribute('aria-pressed', 'false');
     expect(handle).toHaveAccessibleDescription(
-      'Drag to move this item, or press Arrow Up or Arrow Down. Press Space to pick it up and Escape to put it back.',
+      'Drag to move this item, or press Space or Enter, then the arrow keys to move it one place at a time. Press Escape when you are done.',
     );
     expect(screen.getAllByRole('button', {name: /^Reorder /})).toHaveLength(3);
     // The instructions are not shown, and sit outside the list.
@@ -134,429 +216,887 @@ describe('List onReorder', () => {
     expect(screen.getByRole('list').children).toHaveLength(3);
   });
 
-  it('names the handle of a row without a text label after its place', () => {
+  it('names the handle of a row with a rich label after its text, and of one that shows no text after its place', async () => {
     render(
-      <List onReorder={() => {}}>
-        <ListItem label="Inbox" />
-        <ListItem label={<strong>Sent</strong>} />
+      <List reorderable={createReorderable({onReorder: () => {}})}>
+        <ListItem itemKey="inbox" label="Inbox" />
+        <ListItem
+          itemKey="sent"
+          label={
+            <span>
+              <strong>Sent</strong> {'mail'}
+            </span>
+          }
+        />
+        <ListItem itemKey="star" label={<svg aria-label="Starred" />} />
       </List>,
     );
+    expect(handleOf('Sent mail')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: 'Reorder item 2'}),
+      await screen.findByRole('button', {name: 'Reorder item 3'}),
     ).toBeInTheDocument();
   });
 
-  it('names the handle of a row with a rich label after its reorderLabel', () => {
-    render(
-      <List onReorder={() => {}}>
-        <ListItem label={<strong>Name</strong>} reorderLabel="Name" />
-        <ListItem label={<strong>Owner</strong>} />
-      </List>,
+  it('adds one element to a row, the handle, whose lines are a pseudo-element', () => {
+    const rows = (reorderable?: Reorderable) => (
+      <List reorderable={reorderable}>
+        <ListItem itemKey="inbox" label="Inbox" endContent={<span>3</span>} />
+      </List>
     );
-    expect(screen.getByRole('button', {name: 'Reorder Name'})).toBeVisible();
-    expect(screen.getByRole('button', {name: 'Reorder item 2'})).toBeVisible();
+    const {rerender} = render(rows());
+    const row = screen.getByText('Inbox').closest('li') as HTMLElement;
+    const before = row.querySelectorAll('*').length;
+    rerender(rows(createReorderable({onReorder: () => {}})));
+    expect(row.querySelectorAll('*').length).toBe(before + 1);
+    const handle = handleOf('Inbox');
+    expect(handle.children).toHaveLength(0);
+    expect(handle.textContent).toBe('');
   });
 
-  it('keeps a fixed row in place: no handle, and a marker the drag reads', () => {
-    render(
-      <Reorderable initial={['Inbox', 'Sent', 'Trash']} fixed={['Trash']} />,
+  it('keeps a row the object rejects in place: no handle, and nothing added to it', () => {
+    const rows = (reorderable?: Reorderable) => (
+      <List reorderable={reorderable}>
+        <ListItem itemKey="inbox" label="Inbox" />
+        <ListItem itemKey="trash" label="Trash" endContent={<span>9</span>} />
+      </List>
+    );
+    const {rerender} = render(rows());
+    const trash = screen.getByText('Trash').closest('li') as HTMLElement;
+    const before = trash.outerHTML;
+    rerender(
+      rows(
+        createReorderable({
+          onReorder: () => {},
+          isReorderable: key => key !== 'trash',
+        }),
+      ),
     );
     expect(screen.queryByRole('button', {name: 'Reorder Trash'})).toBeNull();
-    const trash = screen.getByText('Trash').closest('li');
-    expect(trash).toHaveAttribute('data-astryx-reorder-fixed');
-    expect(screen.getByText('Inbox').closest('li')).not.toHaveAttribute(
-      'data-astryx-reorder-fixed',
-    );
+    expect(handleOf('Inbox')).toBeInTheDocument();
+    expect(trash.outerHTML).toBe(before);
   });
 
-  it('ignores isReorderDisabled in a list without onReorder', () => {
-    render(
-      <List>
-        <ListItem label="Trash" isReorderDisabled />
+  it('keeps a row without an item key in place, and warns in development when no row has one', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warnings = () =>
+      warn.mock.calls.filter(([message]) =>
+        String(message).includes('`itemKey`'),
+      );
+    const {unmount} = render(
+      <List reorderable={createReorderable({onReorder: () => {}})}>
+        <ListItem itemKey="inbox" label="Inbox" />
+        <ListItem label="Sent" />
       </List>,
     );
-    expect(screen.getByText('Trash').closest('li')).not.toHaveAttribute(
-      'data-astryx-reorder-fixed',
+    expect(screen.queryByRole('button', {name: 'Reorder Sent'})).toBeNull();
+    expect(handleOf('Inbox')).toBeInTheDocument();
+    expect(warnings()).toHaveLength(0);
+    unmount();
+    render(
+      <List reorderable={createReorderable({onReorder: () => {}})}>
+        <ListItem label="Sent" />
+        <ListItem label="Drafts" />
+      </List>,
     );
+    expect(warnings()).toHaveLength(1);
+    warn.mockRestore();
   });
 
-  it('moves a row one place with the arrow keys and keeps the handle focused', async () => {
+  it.each([
+    ['Space', ' '],
+    ['Enter', '{Enter}'],
+  ])(
+    'turns reorder mode on with %s: each arrow moves the row at once, reported and announced with its place and neighbours',
+    async (_, press) => {
+      const user = userEvent.setup();
+      const onReorder = vi.fn();
+      render(
+        <ReorderableRows
+          initial={['Inbox', 'Sent', 'Drafts']}
+          onReorder={onReorder}
+        />,
+      );
+      const handle = handleOf('Inbox');
+      expect(handle).toHaveAttribute('aria-pressed', 'false');
+      handle.focus();
+      await user.keyboard(press);
+      expect(handle).toHaveAttribute('aria-pressed', 'true');
+      await user.keyboard('{ArrowDown}');
+      expect(onReorder).toHaveBeenCalledTimes(1);
+      expect(onReorder).toHaveBeenLastCalledWith({key: 'Inbox', to: 1});
+      expect(labels()).toEqual(['Sent', 'Inbox', 'Drafts']);
+      expect(handle).toHaveFocus();
+      expect(handle).toHaveAttribute('aria-pressed', 'true');
+      await waitFor(() =>
+        expect(document.body).toHaveTextContent(
+          'Inbox, position 2 of 3, after Sent, before Drafts',
+        ),
+      );
+      await user.keyboard('{ArrowDown}');
+      expect(onReorder).toHaveBeenLastCalledWith({key: 'Inbox', to: 2});
+      await waitFor(() =>
+        expect(document.body).toHaveTextContent(
+          'Inbox, position 3 of 3, after Drafts, at the end',
+        ),
+      );
+      // Past the end: nothing moves.
+      await user.keyboard('{ArrowDown}');
+      expect(onReorder).toHaveBeenCalledTimes(2);
+      await user.keyboard('{ArrowUp}{ArrowUp}');
+      expect(onReorder).toHaveBeenCalledTimes(4);
+      expect(onReorder).toHaveBeenLastCalledWith({key: 'Inbox', to: 0});
+      expect(labels()).toEqual(['Inbox', 'Sent', 'Drafts']);
+      await waitFor(() =>
+        expect(document.body).toHaveTextContent(
+          'Inbox, position 1 of 3, at the top, before Sent',
+        ),
+      );
+      expect(handle).toHaveFocus();
+    },
+  );
+
+  it('turns reorder mode on with a click, and the arrows move the row', async () => {
     const user = userEvent.setup();
     const onReorder = vi.fn();
     render(
-      <Reorderable
+      <ReorderableRows
         initial={['Inbox', 'Sent', 'Drafts']}
         onReorder={onReorder}
       />,
     );
-    const handle = screen.getByRole('button', {name: 'Reorder Inbox'});
-    handle.focus();
+    const handle = handleOf('Sent');
+    await user.click(handle);
+    expect(handle).toHaveAttribute('aria-pressed', 'true');
+    expect(handle).toHaveFocus();
     await user.keyboard('{ArrowUp}');
-    expect(onReorder).not.toHaveBeenCalled();
-    await user.keyboard('{ArrowDown}');
-    expect(onReorder).toHaveBeenLastCalledWith(0, 1);
+    expect(onReorder).toHaveBeenCalledWith({key: 'Sent', to: 0});
     expect(labels()).toEqual(['Sent', 'Inbox', 'Drafts']);
-    expect(handle).toHaveFocus();
-    await user.keyboard('{ArrowDown}');
-    expect(onReorder).toHaveBeenLastCalledWith(1, 2);
-    expect(labels()).toEqual(['Sent', 'Drafts', 'Inbox']);
-    expect(handle).toHaveFocus();
-    await user.keyboard('{ArrowDown}');
-    expect(onReorder).toHaveBeenCalledTimes(2);
   });
 
-  it('moves a row to either end with Home and End, stopping at a fixed row', async () => {
+  it.each([
+    ['Escape', '{Escape}'],
+    ['a second activation', ' '],
+  ])('leaves reorder mode with %s, keeping its moves', async (_, leave) => {
     const user = userEvent.setup();
     const onReorder = vi.fn();
     render(
-      <Reorderable
-        initial={['Inbox', 'Sent', 'Drafts', 'Trash', 'Archive']}
-        fixed={['Trash']}
-        onReorder={onReorder}
-      />,
-    );
-    screen.getByRole('button', {name: 'Reorder Inbox'}).focus();
-    await user.keyboard('{End}');
-    expect(onReorder).toHaveBeenLastCalledWith(0, 2);
-    expect(labels()).toEqual(['Sent', 'Drafts', 'Inbox', 'Trash', 'Archive']);
-    await user.keyboard('{Home}');
-    expect(onReorder).toHaveBeenLastCalledWith(2, 0);
-    // Past the fixed row: Archive cannot go up.
-    screen.getByRole('button', {name: 'Reorder Archive'}).focus();
-    await user.keyboard('{ArrowUp}');
-    await user.keyboard('{Home}');
-    expect(onReorder).toHaveBeenCalledTimes(2);
-  });
-
-  it('picks a row up with Space and puts it back with Escape', async () => {
-    const user = userEvent.setup();
-    const onReorder = vi.fn();
-    render(
-      <Reorderable
+      <ReorderableRows
         initial={['Inbox', 'Sent', 'Drafts']}
         onReorder={onReorder}
       />,
     );
-    const handle = screen.getByRole('button', {name: 'Reorder Inbox'});
+    const handle = handleOf('Inbox');
     handle.focus();
-    await user.keyboard(' ');
+    await user.keyboard(' {ArrowDown}{ArrowDown}');
+    await user.keyboard(leave);
+    expect(handle).toHaveAttribute('aria-pressed', 'false');
+    expect(handle).toHaveFocus();
+    // Kept: two moves, nothing undone, and where the row is announced.
+    expect(onReorder).toHaveBeenCalledTimes(2);
+    expect(labels()).toEqual(['Sent', 'Drafts', 'Inbox']);
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent('Done, Inbox at position 3 of 3'),
+    );
+    // Out of the mode, the arrows move nothing.
+    await user.keyboard('{ArrowUp}');
+    expect(onReorder).toHaveBeenCalledTimes(2);
+  });
+
+  it('moves nothing with the arrows outside reorder mode', async () => {
+    const user = userEvent.setup();
+    const onReorder = vi.fn();
+    render(
+      <ReorderableRows
+        initial={['Inbox', 'Sent', 'Drafts']}
+        onReorder={onReorder}
+      />,
+    );
+    handleOf('Inbox').focus();
+    await user.keyboard('{ArrowDown}{ArrowUp}');
+    expect(onReorder).not.toHaveBeenCalled();
+    expect(labels()).toEqual(['Inbox', 'Sent', 'Drafts']);
+  });
+
+  it('refuses a move into a row the object rejects at either end, announcing it, and passes one in the middle', async () => {
+    const user = userEvent.setup();
+    const onReorder = vi.fn();
+    render(
+      <ReorderableRows
+        initial={['Pinned', 'Inbox', 'Sent', 'Locked', 'Drafts', 'Trash']}
+        fixed={['Pinned', 'Locked', 'Trash']}
+        onReorder={onReorder}
+      />,
+    );
+    handleOf('Inbox').focus();
+    await user.keyboard(' {ArrowUp}');
+    expect(onReorder).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent("Can't move past Pinned"),
+    );
+    // Down past Sent, past Locked (in the middle), past Drafts.
+    await user.keyboard('{ArrowDown}{ArrowDown}');
+    expect(onReorder).toHaveBeenLastCalledWith({key: 'Inbox', to: 3});
     await waitFor(() =>
       expect(document.body).toHaveTextContent(
-        'Picked up, position 1 of 3. Press Arrow Up or Arrow Down to move, Space to drop, Escape to cancel.',
+        'Inbox, position 4 of 6, after Locked, before Drafts',
       ),
     );
     await user.keyboard('{ArrowDown}{ArrowDown}');
-    expect(labels()).toEqual(['Sent', 'Drafts', 'Inbox']);
-    await user.keyboard('{Escape}');
-    expect(onReorder).toHaveBeenLastCalledWith(2, 0);
-    expect(labels()).toEqual(['Inbox', 'Sent', 'Drafts']);
-    expect(handle).toHaveFocus();
+    expect(onReorder).toHaveBeenCalledTimes(3);
+    expect(onReorder).toHaveBeenLastCalledWith({key: 'Inbox', to: 4});
+    expect(labels()).toEqual([
+      'Pinned',
+      'Sent',
+      'Locked',
+      'Drafts',
+      'Inbox',
+      'Trash',
+    ]);
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent("Can't move past Trash"),
+    );
+  });
+
+  it('leaves out the ghost of a removed row still collapsing: places and names count only the rows', async () => {
+    const user = userEvent.setup();
+    const onReorder = vi.fn();
+    render(
+      <ReorderableRows
+        initial={['Inbox', 'Sent', 'Drafts']}
+        onReorder={onReorder}
+      />,
+    );
+    // The update motion keeps a removed row in the list while it collapses.
+    const list = screen.getByRole('list');
+    const ghost = document.createElement('li');
+    ghost.setAttribute('data-astryx-leaving', '');
+    ghost.setAttribute('aria-hidden', 'true');
+    ghost.textContent = 'Spam';
+    list.insertBefore(ghost, list.children[1]);
+    handleOf('Drafts').focus();
+    await user.keyboard(' {ArrowUp}');
+    expect(onReorder).toHaveBeenCalledWith({key: 'Drafts', to: 1});
     await waitFor(() =>
       expect(document.body).toHaveTextContent(
-        'Reorder cancelled, back to position 1 of 3',
+        'Drafts, position 2 of 3, after Inbox, before Sent',
       ),
     );
+    // Up again: Inbox, not the ghost, is passed.
+    await user.keyboard('{ArrowUp}');
+    expect(onReorder).toHaveBeenLastCalledWith({key: 'Drafts', to: 0});
+    ghost.remove();
   });
 
-  it('drops a picked-up row with Space where it is', async () => {
+  it('names a row that shows no text after its place', async () => {
+    const user = userEvent.setup();
+    render(
+      <List
+        reorderable={createReorderable({
+          onReorder: () => {},
+          isReorderable: key => key !== 'star',
+        })}>
+        <ListItem itemKey="star" label={<svg aria-label="Starred" />} />
+        <ListItem itemKey="inbox" label="Inbox" />
+      </List>,
+    );
+    handleOf('Inbox').focus();
+    await user.keyboard(' {ArrowUp}');
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent("Can't move past Item 1"),
+    );
+  });
+
+  it('leaves reorder mode when its handle loses focus, keeping its moves', async () => {
     const user = userEvent.setup();
     const onReorder = vi.fn();
     render(
-      <Reorderable
+      <ReorderableRows
         initial={['Inbox', 'Sent', 'Drafts']}
         onReorder={onReorder}
       />,
     );
-    screen.getByRole('button', {name: 'Reorder Inbox'}).focus();
-    await user.keyboard(' {ArrowDown} ');
-    await waitFor(() =>
-      expect(document.body).toHaveTextContent('Dropped, position 2 of 3'),
-    );
-    await user.keyboard('{Escape}');
-    // Dropped: Escape no longer moves it.
+    const handle = handleOf('Inbox');
+    handle.focus();
+    await user.keyboard(' {ArrowDown}');
+    await user.tab();
+    expect(handle).toHaveAttribute('aria-pressed', 'false');
     expect(onReorder).toHaveBeenCalledTimes(1);
     expect(labels()).toEqual(['Sent', 'Inbox', 'Drafts']);
+    // Leaving without a word: the focus is elsewhere now.
+    await new Promise(resolve => setTimeout(resolve, 50));
+    expect(document.body).not.toHaveTextContent('Done,');
   });
 
-  it('ignores arrow keys with a modifier: they are shortcuts', async () => {
+  it('ignores arrows with a modifier: they are shortcuts', async () => {
     const onReorder = vi.fn();
     const user = userEvent.setup();
     render(
-      <Reorderable
+      <ReorderableRows
         initial={['Inbox', 'Sent', 'Drafts']}
         onReorder={onReorder}
       />,
     );
-    screen.getByRole('button', {name: 'Reorder Inbox'}).focus();
-    await user.keyboard('{Alt>}{ArrowDown}{/Alt}');
-    await user.keyboard('{Control>}{ArrowDown}{/Control}');
-    await user.keyboard('{Meta>}{ArrowDown}{/Meta}');
+    handleOf('Inbox').focus();
+    await user.keyboard(' {Meta>}{ArrowDown}{/Meta}{Alt>}{ArrowDown}{/Alt}');
     expect(onReorder).not.toHaveBeenCalled();
-    expect(labels()).toEqual(['Inbox', 'Sent', 'Drafts']);
   });
 
   it("keeps a disabled row's handle focusable but moves nothing from it", async () => {
     const onReorder = vi.fn();
     const user = userEvent.setup();
     render(
-      <List onReorder={onReorder}>
-        <ListItem label="Inbox" isDisabled />
-        <ListItem label="Sent" />
-      </List>,
+      <ReorderableRows
+        initial={['Inbox', 'Sent']}
+        isDisabled={['Inbox']}
+        onReorder={onReorder}
+      />,
     );
-    const handle = screen.getByRole('button', {name: 'Reorder Inbox'});
+    const handle = handleOf('Inbox');
     expect(handle).toHaveAttribute('aria-disabled', 'true');
     expect(handle).not.toHaveAttribute('disabled');
     handle.focus();
     expect(handle).toHaveFocus();
-    await user.keyboard('{ArrowDown}{End}{ }{ArrowDown}');
+    await user.keyboard(' {ArrowDown}');
+    expect(handle).toHaveAttribute('aria-pressed', 'false');
     expect(onReorder).not.toHaveBeenCalled();
-    expect(
-      screen.getByRole('button', {name: 'Reorder Sent'}),
-    ).not.toHaveAttribute('aria-disabled');
+    expect(handleOf('Sent')).not.toHaveAttribute('aria-disabled');
   });
 
-  it('announces the new position after a key move', async () => {
+  it('announces a move only once it lands, and a declined one with the place the row kept', async () => {
     const user = userEvent.setup();
-    render(<Reorderable initial={['Inbox', 'Sent', 'Drafts']} />);
-    screen.getByRole('button', {name: 'Reorder Drafts'}).focus();
-    await user.keyboard('{ArrowUp}');
-    await waitFor(() =>
-      expect(document.body).toHaveTextContent('Position 2 of 3'),
-    );
-  });
-
-  it('announces a key move only once it lands, and a declined one as kept', async () => {
-    const user = userEvent.setup();
-    // A consumer that keeps its order: the row never moves.
+    const onReorder = vi.fn();
+    // A caller that keeps its order: the row never moves.
     render(
-      <List onReorder={() => {}}>
+      <List reorderable={createReorderable({onReorder})}>
         {['Inbox', 'Sent', 'Drafts'].map(item => (
-          <ListItem key={item} label={item} />
+          <ListItem key={item} itemKey={item} label={item} />
         ))}
       </List>,
     );
-    screen.getByRole('button', {name: 'Reorder Drafts'}).focus();
-    await user.keyboard('{ArrowUp}');
+    const handle = handleOf('Drafts');
+    handle.focus();
+    await user.keyboard(' {ArrowUp}');
+    expect(onReorder).toHaveBeenCalledWith({key: 'Drafts', to: 1});
     await waitFor(() =>
       expect(document.body).toHaveTextContent(
-        'Reorder cancelled, back to position 3 of 3',
+        'Drafts, position 3 of 3, after Sent, at the end',
       ),
     );
-    expect(document.body).not.toHaveTextContent('Position 2 of 3');
+    expect(document.body).not.toHaveTextContent('position 2 of 3');
     expect(labels()).toEqual(['Inbox', 'Sent', 'Drafts']);
+    expect(handle).toHaveAttribute('aria-pressed', 'true');
+    expect(handle).toHaveFocus();
+  });
+
+  it('reports the item key as given: a number stays a number', async () => {
+    const user = userEvent.setup();
+    const onReorder = vi.fn();
+    render(
+      <List reorderable={createReorderable<number>({onReorder})}>
+        <ListItem itemKey={7} label="Seven" />
+        <ListItem itemKey={8} label="Eight" />
+      </List>,
+    );
+    handleOf('Seven').focus();
+    await user.keyboard(' {ArrowDown}');
+    expect(onReorder).toHaveBeenCalledWith({key: 7, to: 1});
+  });
+
+  it('keeps reorder mode when the object is made anew, and calls the latest onReorder', async () => {
+    const user = userEvent.setup();
+    const first = vi.fn();
+    const second = vi.fn();
+    const rows = (onReorder: (move: ReorderMove) => void) => (
+      <List reorderable={createReorderable({onReorder})}>
+        {['Inbox', 'Sent', 'Drafts'].map(item => (
+          <ListItem key={item} itemKey={item} label={item} />
+        ))}
+      </List>
+    );
+    const {rerender} = render(rows(first));
+    const handle = handleOf('Inbox');
+    handle.focus();
+    await user.keyboard(' ');
+    rerender(rows(second));
+    expect(handle).toHaveAttribute('aria-pressed', 'true');
+    await user.keyboard('{ArrowDown}');
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledTimes(1);
+    expect(second).toHaveBeenCalledWith({key: 'Inbox', to: 1});
+  });
+
+  it('reorders two lists that share one object each on its own', async () => {
+    const user = userEvent.setup();
+    const onReorder = vi.fn();
+    const reorderable = createReorderable({onReorder});
+    render(
+      <>
+        <List reorderable={reorderable} aria-label="Today">
+          <ListItem itemKey="a1" label="A1" />
+          <ListItem itemKey="a2" label="A2" />
+        </List>
+        <List reorderable={reorderable} aria-label="Later">
+          <ListItem itemKey="b1" label="B1" />
+          <ListItem itemKey="b2" label="B2" />
+        </List>
+      </>,
+    );
+    handleOf('B1').focus();
+    await user.keyboard(' ');
+    expect(handleOf('B1')).toHaveAttribute('aria-pressed', 'true');
+    expect(handleOf('A1')).toHaveAttribute('aria-pressed', 'false');
+    await user.keyboard('{ArrowDown}');
+    expect(onReorder).toHaveBeenLastCalledWith({key: 'b1', to: 1});
+    act(() => handleOf('A2').focus());
+    expect(handleOf('B1')).toHaveAttribute('aria-pressed', 'false');
+    await user.keyboard(' {ArrowUp}');
+    expect(onReorder).toHaveBeenLastCalledWith({key: 'a2', to: 0});
+  });
+
+  /** Rows whose object a button outside the list starts reorder mode with. */
+  function StartableRows({
+    initial,
+    fixed = NONE,
+    onReorder,
+    start,
+    isMenu = false,
+  }: {
+    initial: ReadonlyArray<string>;
+    fixed?: ReadonlyArray<string>;
+    onReorder?: (move: ReorderMove) => void;
+    start: string;
+    isMenu?: boolean;
+  }) {
+    const [items, setItems] = useState(initial);
+    // A new object on every render: `start` on the latest one works.
+    const reorderable = createReorderable({
+      onReorder: move => {
+        onReorder?.(move);
+        setItems(previous => moveKey(previous, move.key, move.to));
+      },
+      isReorderable: key => !fixed.includes(key as string),
+    });
+    return (
+      <>
+        <button
+          type="button"
+          onClick={event => {
+            reorderable.start(start);
+            // A closing menu hands the focus back to what had it.
+            if (isMenu) {
+              event.currentTarget.focus();
+            }
+          }}>
+          Move {start}
+        </button>
+        <List reorderable={reorderable}>
+          {items.map(item => (
+            <ListItem key={item} itemKey={item} label={item} />
+          ))}
+        </List>
+      </>
+    );
+  }
+
+  it("starts reorder mode from the app's own UI with start(key): the focus moves to the handle, and the arrows move the row", async () => {
+    const user = userEvent.setup();
+    const onReorder = vi.fn();
+    render(
+      <StartableRows
+        initial={['Inbox', 'Sent', 'Drafts']}
+        onReorder={onReorder}
+        start="Sent"
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Move Sent'}));
+    const handle = handleOf('Sent');
+    expect(handle).toHaveAttribute('aria-pressed', 'true');
+    expect(handle).toHaveFocus();
+    await user.keyboard('{ArrowDown}');
+    expect(onReorder).toHaveBeenCalledWith({key: 'Sent', to: 2});
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent(
+        'Sent, position 3 of 3, after Drafts, at the end',
+      ),
+    );
+    await user.keyboard('{Escape}');
+    expect(handle).toHaveAttribute('aria-pressed', 'false');
+    expect(labels()).toEqual(['Inbox', 'Drafts', 'Sent']);
+  });
+
+  it('keeps the mode start(key) entered when the UI that started it hands its focus back, as a closing menu does', async () => {
+    const user = userEvent.setup();
+    render(
+      <StartableRows
+        initial={['Inbox', 'Sent', 'Drafts']}
+        start="Sent"
+        isMenu
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Move Sent'}));
+    const handle = handleOf('Sent');
+    await waitFor(() => expect(handle).toHaveFocus());
+    expect(handle).toHaveAttribute('aria-pressed', 'true');
   });
 
   it.each([
-    ['lands', true, 'Dropped, position 3 of 3'],
-    ['is declined', false, 'Reorder cancelled, back to position 1 of 3'],
-  ])('announces a drop once it %s', async (_, accept, message) => {
-    const session: {current: ListReorderContextValue | null} = {
-      current: null,
-    };
-    function Rows() {
-      const listRef = useRef<HTMLUListElement>(null);
-      const [items, setItems] = useState(['A', 'B', 'C']);
-      session.current = useListReorder(
-        listRef,
-        (from, to) => {
-          if (accept) {
-            setItems(previous => move(previous, from, to));
-          }
-        },
-        'hint',
+    ['cannot move', 'Pinned'],
+    ['is not mounted', 'Spam'],
+  ])(
+    'does nothing with start(key) for a key that %s, and warns in development',
+    async (_, key) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const user = userEvent.setup();
+      const onReorder = vi.fn();
+      render(
+        <StartableRows
+          initial={['Pinned', 'Inbox', 'Sent']}
+          fixed={['Pinned']}
+          onReorder={onReorder}
+          start={key}
+        />,
       );
-      return (
-        <ul ref={listRef}>
-          {items.map(item => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      );
+      await user.click(screen.getByRole('button', {name: `Move ${key}`}));
+      for (const label of ['Inbox', 'Sent']) {
+        expect(handleOf(label)).toHaveAttribute('aria-pressed', 'false');
+      }
+      await user.keyboard('{ArrowDown}');
+      expect(onReorder).not.toHaveBeenCalled();
+      expect(
+        warn.mock.calls.some(([message]) =>
+          String(message).includes(`start(${key})`),
+        ),
+      ).toBe(true);
+      warn.mockRestore();
+    },
+  );
+
+  it('starts reorder mode in the list mounted last when one object serves two, and warns in development', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const reorderable = createReorderable({onReorder: () => {}});
+    render(
+      <>
+        <List reorderable={reorderable} aria-label="Today">
+          <ListItem itemKey="same" label="Today's" />
+        </List>
+        <List reorderable={reorderable} aria-label="Later">
+          <ListItem itemKey="same" label="Later's" />
+        </List>
+      </>,
+    );
+    act(() => reorderable.start('same'));
+    expect(handleOf("Later's")).toHaveAttribute('aria-pressed', 'true');
+    expect(handleOf("Today's")).toHaveAttribute('aria-pressed', 'false');
+    expect(
+      warn.mock.calls.some(([message]) =>
+        String(message).includes('more than one collection'),
+      ),
+    ).toBe(true);
+    warn.mockRestore();
+  });
+
+  it('shows a hint with the moves and Done while a row is in reorder mode', async () => {
+    const user = userEvent.setup();
+    render(<ReorderableRows initial={['Inbox', 'Sent', 'Drafts']} />);
+    expect(hintButton('Move down')).toBeNull();
+    handleOf('Sent').focus();
+    await user.keyboard(' ');
+    const down = hintButton('Move down') as HTMLElement;
+    expect(hintButton('Move up')).toBeInTheDocument();
+    expect(hintButton('Done')).toBeInTheDocument();
+    // In the anchored hint layer, outside the list; never a tab stop.
+    expect(down.closest('[popover]')).not.toBeNull();
+    expect(down.closest('ul')).toBeNull();
+    expect(down).toHaveAttribute('tabindex', '-1');
+    await user.keyboard('{Escape}');
+    expect(hintButton('Move down')).toBeNull();
+  });
+
+  it('takes an Escape that reaches the dismissal stack with the focus in the hint: the mode ends, and a layer below stays open', async () => {
+    const user = userEvent.setup();
+    const outer = vi.fn();
+    // A layer the list sits in, such as a Dialog.
+    function OuterLayer({children}: {children: ReactNode}) {
+      useLayerDismissal({isActive: true, onDismiss: outer});
+      return <LayerDepthProvider>{children}</LayerDepthProvider>;
     }
-    const {container} = render(<Rows />);
-    const list = container.querySelector('ul') as HTMLUListElement;
-    // jsdom lays nothing out: 44 px rows from 300 px down the viewport.
-    const place = (row: Element) => Array.from(list.children).indexOf(row);
-    for (const row of Array.from(list.children)) {
-      Object.defineProperty(row, 'offsetParent', {get: () => list});
-      Object.defineProperty(row, 'offsetTop', {get: () => place(row) * 44});
-      Object.defineProperty(row, 'offsetHeight', {value: 44});
-      row.getBoundingClientRect = () =>
-        DOMRect.fromRect({
-          x: 0,
-          y: 300 + place(row) * 44,
-          width: 300,
-          height: 44,
-        });
-    }
-    const controller = session.current?.controller;
-    const first = list.children[0] as HTMLElement;
-    act(() => {
-      controller?.gesture(first, {state: 'began', y: 322});
-      // Past both boundaries: slot 2.
-      controller?.gesture(null, {state: 'changed', y: 322 + 70});
-      controller?.gesture(null, {state: 'ended', y: 322 + 70});
-    });
-    expect(document.body).not.toHaveTextContent('Dropped');
-    await waitFor(() => expect(document.body).toHaveTextContent(message));
-    expect(Array.from(list.children).map(row => row.textContent)).toEqual(
-      accept ? ['B', 'C', 'A'] : ['A', 'B', 'C'],
+    render(
+      <OuterLayer>
+        <ReorderableRows initial={['Inbox', 'Sent', 'Drafts']} />
+      </OuterLayer>,
+    );
+    handleOf('Sent').focus();
+    await user.keyboard(' ');
+    expect(handleOf('Sent')).toHaveAttribute('aria-pressed', 'true');
+    // A screen reader moved into the hint: its Escape goes past the handle,
+    // to the stack, whose top-most layer is the hint.
+    fireEvent.keyDown(hintButton('Move up') as HTMLElement, {key: 'Escape'});
+    expect(handleOf('Sent')).toHaveAttribute('aria-pressed', 'false');
+    expect(hintButton('Move up')).toBeNull();
+    expect(outer).not.toHaveBeenCalled();
+    // The next Escape is the layer below's.
+    fireEvent.keyDown(document, {key: 'Escape'});
+    expect(outer).toHaveBeenCalledTimes(1);
+  });
+
+  it("reorders by taps alone: the handle, the hint's moves, then Done, the focus staying on the handle", async () => {
+    const user = userEvent.setup();
+    const onReorder = vi.fn();
+    render(
+      <ReorderableRows
+        initial={['Inbox', 'Sent', 'Drafts']}
+        onReorder={onReorder}
+      />,
+    );
+    const handle = handleOf('Inbox');
+    await user.click(handle);
+    await user.click(hintButton('Move down') as HTMLElement);
+    expect(onReorder).toHaveBeenCalledTimes(1);
+    expect(onReorder).toHaveBeenLastCalledWith({key: 'Inbox', to: 1});
+    expect(labels()).toEqual(['Sent', 'Inbox', 'Drafts']);
+    expect(handle).toHaveFocus();
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent(
+        'Inbox, position 2 of 3, after Sent, before Drafts',
+      ),
+    );
+    await user.click(hintButton('Move down') as HTMLElement);
+    expect(onReorder).toHaveBeenLastCalledWith({key: 'Inbox', to: 2});
+    await user.click(hintButton('Move up') as HTMLElement);
+    expect(onReorder).toHaveBeenCalledTimes(3);
+    expect(onReorder).toHaveBeenLastCalledWith({key: 'Inbox', to: 1});
+    expect(handle).toHaveFocus();
+    expect(handle).toHaveAttribute('aria-pressed', 'true');
+    await user.click(hintButton('Done') as HTMLElement);
+    expect(handle).toHaveAttribute('aria-pressed', 'false');
+    expect(hintButton('Done')).toBeNull();
+    expect(handle).toHaveFocus();
+    // Done ends the mode as Escape does, announcing where the row is.
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent('Done, Inbox at position 2 of 3'),
+    );
+    // Kept: nothing undone.
+    expect(onReorder).toHaveBeenCalledTimes(3);
+    expect(labels()).toEqual(['Sent', 'Inbox', 'Drafts']);
+  });
+
+  it("refuses the hint's move into a row that keeps its place, as the key does", async () => {
+    const user = userEvent.setup();
+    const onReorder = vi.fn();
+    render(
+      <ReorderableRows
+        initial={['Pinned', 'Inbox', 'Sent']}
+        fixed={['Pinned']}
+        onReorder={onReorder}
+      />,
+    );
+    await user.click(handleOf('Inbox'));
+    await user.click(hintButton('Move up') as HTMLElement);
+    expect(onReorder).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent("Can't move past Pinned"),
     );
   });
 
-  it("registers the slides' motion role only for a touch drag, before its first slide", () => {
-    const stubCoarse = (coarse: boolean) =>
-      vi.stubGlobal(
-        'matchMedia',
-        vi.fn((query: string) => ({
-          matches: coarse && query.includes('pointer: coarse'),
-          media: query,
-          onchange: null,
-          addEventListener: () => undefined,
-          removeEventListener: () => undefined,
-          addListener: () => undefined,
-          removeListener: () => undefined,
-          dispatchEvent: () => false,
-        })),
-      );
-    const drag = () => {
-      const session: {current: ListReorderContextValue | null} = {
-        current: null,
-      };
-      function Rows() {
-        const listRef = useRef<HTMLUListElement>(null);
-        session.current = useListReorder(listRef, () => {}, 'hint');
-        return (
-          <ul ref={listRef}>
-            {['A', 'B', 'C'].map(item => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        );
-      }
-      const {container, unmount} = render(<Rows />);
-      const list = container.querySelector('ul') as HTMLUListElement;
-      const place = (row: Element) => Array.from(list.children).indexOf(row);
-      for (const row of Array.from(list.children)) {
-        Object.defineProperty(row, 'offsetParent', {get: () => list});
-        Object.defineProperty(row, 'offsetTop', {get: () => place(row) * 44});
-        Object.defineProperty(row, 'offsetHeight', {value: 44});
-      }
-      act(() => {
-        session.current?.controller.gesture(list.children[0] as HTMLElement, {
-          state: 'began',
-          y: 22,
-        });
-        session.current?.controller.gesture(null, {state: 'cancelled', y: 22});
-      });
-      unmount();
-    };
-    try {
-      // A mouse's rows take their places at once: nothing registers.
-      stubCoarse(false);
-      drag();
-      expect(motionRole('reorder.slide.spring')).toBeUndefined();
-      // Under a finger the rows slide on a role a theme may retune.
-      stubCoarse(true);
-      drag();
-      expect(motionRole('reorder.slide.spring')).toBeDefined();
-    } finally {
-      vi.unstubAllGlobals();
-    }
+  it('shows the same hint when start(key) enters reorder mode', async () => {
+    const user = userEvent.setup();
+    render(
+      <StartableRows initial={['Inbox', 'Sent', 'Drafts']} start="Drafts" />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Move Drafts'}));
+    await user.click(hintButton('Move up') as HTMLElement);
+    expect(labels()).toEqual(['Inbox', 'Drafts', 'Sent']);
+    expect(handleOf('Drafts')).toHaveFocus();
+    expect(handleOf('Drafts')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it("keeps the mouse drag slop equal to the date wheel's", () => {
+    expect(MOUSE_DRAG_SLOP).toBe(DRAG_SLOP);
+  });
+
+  it('drags with a mouse once it moves the slop, from where it pressed; a smaller move stays a click', async () => {
+    stubPrimaryPointer(false);
+    const onReorder = vi.fn();
+    render(<ReorderableRows initial={['A', 'B', 'C']} onReorder={onReorder} />);
+    const list = screen.getByRole('list');
+    layOut(list);
+    const handle = handleOf('A');
+    // Under the slop: a click, so nothing is picked up and nothing announced.
+    fireEvent.pointerDown(handle, {...MOUSE, clientY: 322});
+    fireEvent.pointerMove(handle, {
+      ...MOUSE,
+      clientY: 322 + MOUSE_DRAG_SLOP - 1,
+    });
+    expect(list).not.toHaveAttribute('data-astryx-reordering');
+    fireEvent.pointerUp(handle, {...MOUSE, clientY: 322 + MOUSE_DRAG_SLOP - 1});
+    expect(document.body).not.toHaveTextContent('Picked up');
+    // That click turns reorder mode on, and another turns it off.
+    fireEvent.click(handle);
+    expect(handle).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(handle);
+    expect(handle).toHaveAttribute('aria-pressed', 'false');
+    // Past it the row follows from the press point: past both boundaries.
+    mouseDrag(handle, 322, 322 + 70);
+    expect(list).toHaveAttribute('data-astryx-reordering');
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent('Picked up, position 1 of 3'),
+    );
+    act(() => {
+      fireEvent.pointerUp(handle, {...MOUSE, clientY: 322 + 70});
+    });
+    expect(onReorder).toHaveBeenCalledTimes(1);
+    expect(onReorder).toHaveBeenCalledWith({key: 'A', to: 2});
+    expect(labels()).toEqual(['B', 'C', 'A']);
+    // The drag's own click leaves reorder mode off.
+    fireEvent.click(handle);
+    expect(handle).toHaveAttribute('aria-pressed', 'false');
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent('Dropped, position 3 of 3'),
+    );
   });
 
   it.each([
-    ['its row is disabled', {isDisabled: true}],
+    ['its row is disabled', {isDisabled: ['A']}],
+    ['its row stops being reorderable', {fixed: ['A']}],
     ['the list stops being reorderable', {isReorderable: false}],
   ])(
-    'a drag goes home when %s mid-drag',
-    async (_, change: {isDisabled?: boolean; isReorderable?: boolean}) => {
-      const onReorder = vi.fn();
-      const session: {current: ListReorderContextValue | null} = {
-        current: null,
-      };
-      function Rows({
-        isDisabled = false,
-        isReorderable = true,
-      }: {
-        isDisabled?: boolean;
+    'sends a mouse drag home when %s mid-drag',
+    async (
+      _,
+      change: {
+        isDisabled?: ReadonlyArray<string>;
+        fixed?: ReadonlyArray<string>;
         isReorderable?: boolean;
-      }) {
-        const listRef = useRef<HTMLUListElement>(null);
-        session.current = useListReorder(
-          listRef,
-          isReorderable ? onReorder : undefined,
-          'hint',
-        );
-        return (
-          <ListReorderContext value={session.current}>
-            <ul ref={listRef}>
-              {['A', 'B', 'C'].map(item => (
-                <li key={item}>
-                  {item}
-                  <ListReorderHandle
-                    label={item}
-                    isDisabled={item === 'A' && isDisabled}
-                  />
-                </li>
-              ))}
-            </ul>
-          </ListReorderContext>
-        );
-      }
-      const {container, rerender} = render(<Rows />);
-      const list = container.querySelector('ul') as HTMLUListElement;
-      const place = (row: Element) => Array.from(list.children).indexOf(row);
-      for (const row of Array.from(list.children)) {
-        Object.defineProperty(row, 'offsetParent', {get: () => list});
-        Object.defineProperty(row, 'offsetTop', {get: () => place(row) * 44});
-        Object.defineProperty(row, 'offsetHeight', {value: 44});
-        row.getBoundingClientRect = () =>
-          DOMRect.fromRect({
-            x: 0,
-            y: 300 + place(row) * 44,
-            width: 300,
-            height: 44,
-          });
-      }
-      const controller = session.current?.controller;
-      act(() => {
-        controller?.gesture(list.children[0] as HTMLElement, {
-          state: 'began',
-          y: 322,
-        });
-        controller?.gesture(null, {state: 'changed', y: 322 + 70});
-      });
+      },
+    ) => {
+      stubPrimaryPointer(false);
+      const onReorder = vi.fn();
+      const rows = ({
+        isDisabled = NONE,
+        fixed = NONE,
+        isReorderable = true,
+      }: typeof change) => (
+        <List
+          reorderable={
+            isReorderable
+              ? createReorderable({
+                  onReorder,
+                  isReorderable: key => !fixed.includes(key as string),
+                })
+              : undefined
+          }>
+          {['A', 'B', 'C'].map(item => (
+            <ListItem
+              key={item}
+              itemKey={item}
+              label={item}
+              isDisabled={isDisabled.includes(item)}
+            />
+          ))}
+        </List>
+      );
+      const {rerender} = render(rows({}));
+      const list = screen.getByRole('list');
+      layOut(list);
+      mouseDrag(handleOf('A'), 322, 322 + 70);
       expect(list).toHaveAttribute('data-astryx-reordering');
-      rerender(<Rows {...change} />);
-      // No recognizer reports this end: the session sends the row home.
+      rerender(rows(change));
+      // No pointer reports this end: the session sends the row home.
       await waitFor(() =>
         expect(document.body).toHaveTextContent(
           'Reorder cancelled, back to position 1 of 3',
         ),
       );
+      expect(list).not.toHaveAttribute('data-astryx-reordering');
+      fireEvent.pointerUp(list, {...MOUSE, clientY: 322 + 70});
       expect(onReorder).not.toHaveBeenCalled();
-      expect(Array.from(list.children).map(row => row.textContent)).toEqual([
-        'A',
-        'B',
-        'C',
-      ]);
+      expect(labels()).toEqual(['A', 'B', 'C']);
     },
   );
 
-  it('listens for touches on the document only while a handle is mounted', () => {
+  it("keeps the slides' spring an internal constant: touch motion has no theme surface", () => {
+    const drag = (coarse: boolean) => {
+      stubPrimaryPointer(coarse);
+      const {unmount} = render(<ReorderableRows initial={['A', 'B', 'C']} />);
+      const list = screen.getByRole('list');
+      layOut(list);
+      const handle = handleOf('A');
+      mouseDrag(handle, 322, 322);
+      fireEvent.pointerCancel(handle, {...MOUSE, clientY: 322});
+      unmount();
+    };
+    // A mouse's rows take their places at once; under a finger they slide
+    // on the measured spring, which stays internal: no motion role either
+    // way (spec:AST-094 FR4 as ruled: touch motion stays internal).
+    drag(false);
+    expect(motionRole('reorder.slide.spring')).toBeUndefined();
+    drag(true);
+    expect(motionRole('reorder.slide.spring')).toBeUndefined();
+  });
+
+  it('puts its listeners on the list: none on a row or a handle', () => {
+    stubPrimaryPointer(true);
+    const add = vi.spyOn(EventTarget.prototype, 'addEventListener');
+    render(<ReorderableRows initial={['Inbox', 'Sent', 'Drafts']} />);
+    const list = screen.getByRole('list');
+    const targets = add.mock.contexts;
+    const rows = Array.from(list.children);
+    const handles = Array.from(
+      list.querySelectorAll('[data-astryx-list-reorder]'),
+    );
+    expect(handles).toHaveLength(3);
+    expect(
+      targets.filter(target => handles.includes(target as Element)),
+    ).toEqual([]);
+    expect(targets.filter(target => rows.includes(target as Element))).toEqual(
+      [],
+    );
+    expect(
+      add.mock.calls.filter(
+        (_, index) => targets[index] === list && _[0] === 'pointerdown',
+      ),
+    ).toHaveLength(1);
+    add.mockRestore();
+  });
+
+  it('attaches one hold to the list where the primary pointer is coarse, and none where it is fine', () => {
+    const attached = (coarse: boolean) => {
+      stubPrimaryPointer(coarse);
+      const host = getGestureHost(document);
+      const attach = vi.spyOn(host, 'attach');
+      const {unmount} = render(
+        <ReorderableRows initial={['Inbox', 'Sent', 'Drafts']} />,
+      );
+      const elements = attach.mock.calls.map(([element]) => element);
+      const list = screen.getByRole('list');
+      unmount();
+      attach.mockRestore();
+      return {elements, list};
+    };
+    const coarse = attached(true);
+    expect(coarse.elements).toEqual([coarse.list]);
+    expect(attached(false).elements).toEqual([]);
+  });
+
+  it('listens for touches on the document only while the list is mounted', () => {
     // A touch screen: the hold attaches where the primary pointer is coarse.
     stubPrimaryPointer(true);
-    // A document of its own, so no earlier test has touched it.
-    const doc = document.implementation.createHTMLDocument('handles');
+    // A document of its own, so no earlier test has touched it, in a window
+    // whose primary pointer is the page's.
+    const frame = document.createElement('iframe');
+    document.body.append(frame);
+    const doc = frame.contentDocument as Document;
+    Object.defineProperty(frame.contentWindow, 'matchMedia', {
+      configurable: true,
+      value: (query: string) => window.matchMedia(query),
+    });
     const touches = new Set(['touchstart', 'touchend', 'touchcancel']);
     const added = vi.spyOn(doc, 'addEventListener');
     const removed = vi.spyOn(doc, 'removeEventListener');
     const mount = () => {
       const container = doc.createElement('div');
       doc.body.append(container);
-      return render(<Reorderable initial={['Inbox', 'Sent']} />, {
+      return render(<ReorderableRows initial={['Inbox', 'Sent']} />, {
         container,
         baseElement: doc.body,
       });
@@ -567,7 +1107,7 @@ describe('List onReorder', () => {
     expect(listeners.length).toBeGreaterThan(0);
     first.unmount();
     second.unmount();
-    // Every touch listener the handles put on the document went with them.
+    // Every touch listener the lists put on the document went with them.
     for (const [type, listener, options] of listeners) {
       expect(
         removed.mock.calls.some(
@@ -579,7 +1119,7 @@ describe('List onReorder', () => {
     }
     added.mockRestore();
     removed.mockRestore();
-    vi.unstubAllGlobals();
+    frame.remove();
   });
 
   it('with a fine primary pointer attaches no recognizer and registers no touch listener', () => {
@@ -589,7 +1129,7 @@ describe('List onReorder', () => {
     const added = vi.spyOn(doc, 'addEventListener');
     const container = doc.createElement('div');
     doc.body.append(container);
-    const {unmount} = render(<Reorderable initial={['Inbox', 'Sent']} />, {
+    const {unmount} = render(<ReorderableRows initial={['Inbox', 'Sent']} />, {
       container,
       baseElement: doc.body,
     });
@@ -598,202 +1138,17 @@ describe('List onReorder', () => {
     ).toEqual([]);
     unmount();
     added.mockRestore();
-    vi.unstubAllGlobals();
-  });
-
-  it("keeps the mouse drag slop equal to the date wheel's", () => {
-    expect(MOUSE_DRAG_SLOP).toBe(DRAG_SLOP);
-  });
-
-  it('drags with a mouse once it moves the slop, from where it pressed; a smaller move stays a click', async () => {
-    stubPrimaryPointer(false);
-    const onReorder = vi.fn();
-    function Rows() {
-      const listRef = useRef<HTMLUListElement>(null);
-      const session = useListReorder(listRef, onReorder, 'hint');
-      return (
-        <ListReorderContext value={session}>
-          <ul ref={listRef}>
-            {['A', 'B', 'C'].map(item => (
-              <li key={item}>
-                {item}
-                <ListReorderHandle label={item} />
-              </li>
-            ))}
-          </ul>
-        </ListReorderContext>
-      );
-    }
-    const {container} = render(<Rows />);
-    const list = container.querySelector('ul') as HTMLUListElement;
-    // jsdom lays nothing out: 44 px rows from 300 px down the viewport.
-    const place = (row: Element) => Array.from(list.children).indexOf(row);
-    for (const row of Array.from(list.children)) {
-      Object.defineProperty(row, 'offsetParent', {get: () => list});
-      Object.defineProperty(row, 'offsetTop', {get: () => place(row) * 44});
-      Object.defineProperty(row, 'offsetHeight', {value: 44});
-      row.getBoundingClientRect = () =>
-        DOMRect.fromRect({
-          x: 0,
-          y: 300 + place(row) * 44,
-          width: 300,
-          height: 44,
-        });
-    }
-    const handle = screen.getByRole('button', {name: 'Reorder A'});
-    const mouse = {pointerType: 'mouse', pointerId: 1, button: 0, clientX: 280};
-    // Under the slop: a click, so nothing is picked up and nothing announced.
-    fireEvent.pointerDown(handle, {...mouse, clientY: 322});
-    fireEvent.pointerMove(handle, {
-      ...mouse,
-      clientY: 322 + MOUSE_DRAG_SLOP - 1,
-    });
-    expect(list).not.toHaveAttribute('data-astryx-reordering');
-    fireEvent.pointerUp(handle, {...mouse, clientY: 322 + MOUSE_DRAG_SLOP - 1});
-    expect(document.body).not.toHaveTextContent('Dropped');
-    // Past it the row follows from the press point: past both boundaries.
-    fireEvent.pointerDown(handle, {...mouse, clientY: 322});
-    fireEvent.pointerMove(handle, {...mouse, clientY: 322 + MOUSE_DRAG_SLOP});
-    expect(list).toHaveAttribute('data-astryx-reordering');
-    fireEvent.pointerMove(handle, {...mouse, clientY: 322 + 70});
-    act(() => {
-      fireEvent.pointerUp(handle, {...mouse, clientY: 322 + 70});
-    });
-    expect(onReorder).toHaveBeenCalledWith(0, 2);
-    vi.unstubAllGlobals();
-  });
-
-  it('moves a row of any tag: the row is the list child that holds the handle', async () => {
-    const user = userEvent.setup();
-    const onReorder = vi.fn();
-    function Rows() {
-      const listRef = useRef<HTMLDivElement>(null);
-      const session = useListReorder(listRef, onReorder, 'hint');
-      return (
-        <ListReorderContext value={session}>
-          <div ref={listRef} role="list">
-            {['A', 'B'].map(item => (
-              <div key={item} role="listitem">
-                <span>
-                  {item}
-                  <ListReorderHandle label={item} />
-                </span>
-              </div>
-            ))}
-          </div>
-        </ListReorderContext>
-      );
-    }
-    render(<Rows />);
-    screen.getByRole('button', {name: 'Reorder A'}).focus();
-    await user.keyboard('{ArrowDown}');
-    expect(onReorder).toHaveBeenCalledWith(0, 1);
-  });
-
-  it('opens the moves a row can make when its handle is activated', async () => {
-    const user = userEvent.setup();
-    render(<Reorderable initial={['Inbox', 'Sent', 'Drafts']} />);
-    await user.click(screen.getByRole('button', {name: 'Reorder Inbox'}));
-    // The menu is named by its handle (jsdom never shows the popover).
-    const menu = await screen.findByRole('menu', {
-      name: 'Reorder Inbox',
-      hidden: true,
-    });
-    // The first row cannot go up: only the moves that move it.
-    expect(
-      within(menu)
-        .getAllByRole('menuitem', {hidden: true})
-        .map(item => item.textContent),
-    ).toEqual(['Move down', 'Move to bottom']);
-    fireEvent.click(
-      within(menu).getByRole('menuitem', {
-        name: 'Move to bottom',
-        hidden: true,
-      }),
-    );
-    expect(labels()).toEqual(['Sent', 'Drafts', 'Inbox']);
-    await waitFor(() =>
-      expect(document.body).toHaveTextContent('Position 3 of 3'),
-    );
-  });
-
-  it('opens the moves on a mouse click, and not after a mouse press that moved past the slop', async () => {
-    stubPrimaryPointer(false);
-    render(<Reorderable initial={['Inbox', 'Sent', 'Drafts']} />);
-    const handle = screen.getByRole('button', {name: 'Reorder Inbox'});
-    const mouse = {pointerType: 'mouse', pointerId: 1, button: 0, clientX: 10};
-    // A press that drags: it opens nothing when the click follows the lift.
-    fireEvent.pointerDown(handle, {...mouse, clientY: 10});
-    fireEvent.pointerMove(handle, {...mouse, clientY: 10 + MOUSE_DRAG_SLOP});
-    fireEvent.pointerUp(handle, {...mouse, clientY: 10 + MOUSE_DRAG_SLOP});
-    fireEvent.click(handle);
-    await act(async () => undefined);
-    expect(screen.queryByRole('menu', {hidden: true})).toBeNull();
-    // A click: the press stays under the slop, and the moves open.
-    fireEvent.pointerDown(handle, {...mouse, clientY: 10});
-    fireEvent.pointerUp(handle, {...mouse, clientY: 10});
-    fireEvent.click(handle);
-    expect(
-      await screen.findByRole('menu', {name: 'Reorder Inbox', hidden: true}),
-    ).toBeInTheDocument();
-    vi.unstubAllGlobals();
-  });
-
-  it('offers no moves from a disabled row, nor from a row that cannot move', () => {
-    render(
-      <List onReorder={() => {}}>
-        <ListItem label="Inbox" isDisabled />
-        <ListItem label="Sent" isReorderDisabled />
-        <ListItem label="Drafts" />
-      </List>,
-    );
-    // A screen reader activates a handle with a click, whatever its paint.
-    fireEvent.click(screen.getByRole('button', {name: 'Reorder Inbox'}));
-    // Drafts sits alone below the fixed Sent: no move moves it.
-    fireEvent.click(screen.getByRole('button', {name: 'Reorder Drafts'}));
-    expect(screen.queryAllByRole('menuitem', {hidden: true})).toHaveLength(0);
-    for (const name of ['Reorder Inbox', 'Reorder Drafts']) {
-      expect(screen.getByRole('button', {name})).toHaveAttribute(
-        'aria-expanded',
-        'false',
-      );
-    }
-  });
-
-  it("keeps a fixed row's end content in the movable rows' column", () => {
-    render(
-      <List onReorder={() => {}}>
-        <ListItem
-          label="Name"
-          isReorderDisabled
-          endContent={<span>Locked</span>}
-        />
-        <ListItem label="Owner" endContent={<span>Remove</span>} />
-        <ListItem label="Status" isReorderDisabled />
-      </List>,
-    );
-    const slot = (label: string) =>
-      screen
-        .getByText(label)
-        .closest('li')
-        ?.querySelector('[data-astryx-list-reorder-slot]');
-    // An empty, hidden place where a handle would be, after the end content.
-    expect(slot('Name')).toHaveAttribute('aria-hidden', 'true');
-    // A movable row has its handle there; a fixed row with no end content
-    // has nothing to line up.
-    expect(slot('Owner')).toBeNull();
-    expect(slot('Status')).toBeNull();
   });
 
   it('does not activate an interactive row from its handle', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
     render(
-      <List onReorder={() => {}}>
-        <ListItem label="Inbox" onClick={onClick} />
+      <List reorderable={createReorderable({onReorder: () => {}})}>
+        <ListItem itemKey="inbox" label="Inbox" onClick={onClick} />
       </List>,
     );
-    await user.click(screen.getByRole('button', {name: 'Reorder Inbox'}));
+    await user.click(handleOf('Inbox'));
     expect(onClick).not.toHaveBeenCalled();
   });
 });

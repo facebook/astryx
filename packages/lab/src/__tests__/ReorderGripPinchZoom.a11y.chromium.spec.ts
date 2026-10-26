@@ -11,8 +11,8 @@
  *   leaves the order as it was, while a one-finger drag on the grip still
  *   reorders (WCAG 1.4.4)
  * @position Chromium proof for the `touch-action` of core List's reorder
- *   handle as the Lab reorderable inputs render it (ListInput through core's
- *   List reorder modules, TransferList through `List`)
+ *   handle as the Lab reorderable inputs render it (ListInput through Core's
+ *   internal reorder entry, TransferList through `List`)
  */
 
 import {expect, test, type CDPSession, type Page} from '@playwright/test';

@@ -9,17 +9,24 @@
  * @position Test for GestureRecognizerOptions.claimsTouches
  */
 
-import {afterEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {GestureHost} from '../GestureHost';
 import {PanGestureRecognizer} from '../PanGestureRecognizer';
-import {createHarness, ManualClock} from './harness';
+import {createHarness, ManualClock, RecordingConsumer} from './harness';
+import {coarsePrimaryPointer} from './pointerQuery';
 
 describe('a recognizer that never claims (a watcher)', () => {
   let detach: (() => void)[] = [];
+  // A phone: the host attaches only where the primary pointer is coarse.
+  let restorePointer: () => void;
+  beforeEach(() => {
+    restorePointer = coarsePrimaryPointer();
+  });
   afterEach(() => {
     detach.forEach(release => release());
     detach = [];
     document.body.innerHTML = '';
+    restorePointer();
   });
 
   it('runs alongside a claiming pan on the same touch, and claims nothing', () => {
@@ -41,6 +48,24 @@ describe('a recognizer that never claims (a watcher)', () => {
     expect(sheet.state).toBe('began');
     expect(h.claims).toEqual([1]);
     finger.up(32);
+  });
+
+  it('cancels no press under it when it begins: a held control keeps its touch (spec:AST-094 FR15, FR19)', () => {
+    const h = createHarness();
+    const watcher = new PanGestureRecognizer({
+      name: 'watcher',
+      direction: 'vertical',
+      claimsTouches: false,
+    });
+    const press = new RecordingConsumer();
+    const finger = h
+      .finger(1)
+      .down(0, 100, 0, {recognizers: [watcher], consumer: press})
+      .move(0, 130, 16);
+    expect(watcher.state).toBe('began');
+    expect(press.events).not.toContain('cancelled:1');
+    finger.up(32);
+    expect(press.events).toContain('ended:1');
   });
 
   it('follows a touch the browser took for a scroll until the lift', () => {
@@ -89,5 +114,47 @@ describe('a recognizer that never claims (a watcher)', () => {
         (options as AddEventListenerOptions | undefined)?.passive === false,
     );
     expect(blocking).toHaveLength(0);
+  });
+
+  it('leaves the browser every touch behavior: its direction writes no touch-action', () => {
+    // The host reads an author's touch-action and writes its own in the
+    // next frame (spec:AST-094 FR18): fake that frame.
+    vi.useFakeTimers({toFake: ['requestAnimationFrame']});
+    detach.push(() => vi.useRealTimers());
+    document.body.innerHTML = '<div id="list"></div><div id="row"></div>';
+    const list = document.getElementById('list') as HTMLElement;
+    const row = document.getElementById('row') as HTMLElement;
+    const host = new GestureHost(document, {clock: new ManualClock()});
+    const listStyle = vi.spyOn(list.style, 'setProperty');
+    const rowStyle = vi.spyOn(row.style, 'setProperty');
+    detach.push(
+      host.attach(
+        list,
+        new PanGestureRecognizer({
+          name: 'watcher',
+          direction: 'vertical',
+          claimsTouches: false,
+        }),
+      ),
+      host.attach(
+        row,
+        new PanGestureRecognizer({
+          name: 'watcher',
+          direction: 'vertical',
+          claimsTouches: false,
+        }),
+      ),
+      // A claiming pan beside it on the same element keeps its own.
+      host.attach(
+        row,
+        new PanGestureRecognizer({name: 'swipe', direction: 'horizontal'}),
+      ),
+    );
+    vi.advanceTimersByTime(16);
+    expect(listStyle).not.toHaveBeenCalledWith(
+      'touch-action',
+      expect.anything(),
+    );
+    expect(rowStyle).toHaveBeenCalledWith('touch-action', 'pan-y pinch-zoom');
   });
 });

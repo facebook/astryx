@@ -4,7 +4,7 @@
 
 /**
  * @file ListInput.tsx
- * @input React, StyleX, Astryx field/list/button/icon/empty-state primitives, core List's reorder session and handle (internal module imports of `@astryxdesign/core/List/useListReorder` and `@astryxdesign/core/List/ListReorderHandle`), the container-reveal hook, compact size context, browser scroll geometry, and programmatic theme tokens
+ * @input React, StyleX, Astryx field/list/button/icon/empty-state primitives, core List's reorder session and handle, run by the owner's createReorderable object (Core's internal entry `@astryxdesign/core/internal/reorder`), the container-reveal hook, compact size context, browser scroll geometry, and programmatic theme tokens
  * @output Exports ListInput and its controlled data, column, renderer, and change types
  * @position Lab experiment (RFC facebook/astryx#4531) for editing compact repeated records
  *
@@ -38,15 +38,15 @@ import {
 } from '@astryxdesign/core/hooks';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {useTranslator} from '@astryxdesign/core/i18n';
-import {ListReorderHandle} from '@astryxdesign/core/List/ListReorderHandle';
 import {
-  ListReorderContext,
-  useListReorder,
-} from '@astryxdesign/core/List/useListReorder';
+  ListReorderHandle,
+  ListReorderScope,
+  useListReorderScope,
+} from '@astryxdesign/core/internal/reorder';
+import type {Reorderable} from '@astryxdesign/core/reorderable';
 import {SizeProvider} from '@astryxdesign/core/SizeContext';
 import type {ColumnWidth} from '@astryxdesign/core/Table';
 import {useTheme} from '@astryxdesign/core/theme';
-import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
 import {
   colorVars,
   fontWeightVars,
@@ -65,8 +65,7 @@ export type ListInputChange<T> =
       index: number;
       columnKey?: string;
     }
-  | {type: 'remove'; item: T; index: number}
-  | {type: 'reorder'; item: T; fromIndex: number; toIndex: number};
+  | {type: 'remove'; item: T; index: number};
 
 export interface ListInputValueContext<T> {
   /** Current record. */
@@ -139,11 +138,15 @@ export interface ListInputProps<T> extends Omit<
     index: number,
   ) => InputStatus | undefined;
   /**
-   * Gives each record core List's reorder handle at the row's end: a finger
-   * holds it a moment then drags, a mouse drags at once, and its arrow keys,
-   * Home and End move the record. @default false
+   * Makes the records reorderable (spec:AST-103): pass the object
+   * `createReorderable` makes, keyed by `getItemKey`. Each record ends with
+   * core List's reorder handle: a finger holds it a moment then drags, a
+   * mouse drags at once, and its arrow keys move the record. The object's
+   * `isReorderable(key)` says which records move, and each move goes to its
+   * `onReorder({key, to})`, `to` being the record's index in `value` after
+   * the move. Without it, the records keep their order.
    */
-  isReorderable?: boolean;
+  reorderable?: Reorderable;
   /** Disables fields and mutation controls. @default false */
   isDisabled?: boolean;
   /** Marks the list busy and prevents mutations. @default false */
@@ -339,16 +342,6 @@ function resolveColumnTrack(width?: ColumnWidth): string {
   return `minmax(${minWidth}px, ${proportion}fr)`;
 }
 
-function moveItem<T>(value: T[], fromIndex: number, toIndex: number): T[] {
-  if (fromIndex === toIndex) {
-    return value.slice();
-  }
-  const nextValue = value.slice();
-  const [item] = nextValue.splice(fromIndex, 1);
-  nextValue.splice(toIndex, 0, item);
-  return nextValue;
-}
-
 function joinIDs(...ids: Array<string | undefined>): string | undefined {
   const resolved = ids.filter(Boolean);
   return resolved.length > 0 ? resolved.join(' ') : undefined;
@@ -532,7 +525,7 @@ function startMutationAnimation(
  *   createItem={() => ({id: crypto.randomUUID(), name: '', email: ''})}
  *   columns={columns}
  *   itemName="guest"
- *   isReorderable
+ *   reorderable={reorderable}
  * />
  * ```
  */
@@ -548,7 +541,7 @@ export function ListInput<T>({
   status,
   getItemStatus,
   getFieldStatus,
-  isReorderable = false,
+  reorderable,
   isDisabled = false,
   isLoading = false,
   maxItems,
@@ -591,34 +584,17 @@ export function ListInput<T>({
   // Each record row reveals its row actions (Remove and, when reorderable, the
   // reorder handle) on hover or keyboard focus; touch keeps them visible.
   const {getContainerProps, getContentRevealProps} = useContainerReveal();
-  // Core List's reorder session: the records are the list's rows, each with
-  // its handle; a drop or a key move reports one move to commit.
-  // A disabled or loading list keeps its handles, focusable but inert
-  // (spec:AST-085 FR1, FR2): the session stays, and each handle is disabled.
-  const reorderSession = useListReorder(
-    listRef,
-    isReorderable
-      ? (fromIndex, toIndex) => {
-          const item = value[fromIndex];
-          if (
-            isDisabled ||
-            isLoading ||
-            item == null ||
-            fromIndex === toIndex
-          ) {
-            return;
-          }
-          onChange(moveItem(value, fromIndex, toIndex), {
-            type: 'reorder',
-            item,
-            fromIndex,
-            toIndex,
-          });
-        }
-      : undefined,
+  // Core List's reorder session, run by the owner's object: the records are
+  // the list's rows, each ending with its handle, and each move goes to the
+  // object's onReorder. A disabled or loading list keeps its handles,
+  // focusable but inert (spec:AST-085 FR1, FR2).
+  const reorderScope = useListReorderScope(
+    reorderable,
+    () => listRef.current,
     reorderInstructionsID,
   );
-  const showReorderHandle = isReorderable;
+  const canReorder = reorderScope?.options.isReorderable;
+  const showReorderHandle = reorderScope != null;
   const showRemoveColumn = true;
   const fieldGridTemplate = useMemo(
     () => columns.map(column => resolveColumnTrack(column.width)).join(' '),
@@ -1040,11 +1016,11 @@ export function ListInput<T>({
                 : isDisabled
                   ? 'disabled'
                   : undefined,
-              reorderable: isReorderable ? 'true' : undefined,
+              reorderable: showReorderHandle ? 'true' : undefined,
             }),
             stylex.props(styles.group),
           )}>
-          <ListReorderContext value={reorderSession}>
+          <ListReorderScope reorder={reorderScope}>
             <ol
               ref={listRef}
               role="list"
@@ -1067,6 +1043,10 @@ export function ListInput<T>({
                 value.map((item, index) => {
                   const itemKey = getItemKey(item);
                   const itemKeyString = String(itemKey);
+                  // A record the owner's isReorderable rejects keeps its
+                  // place, with no handle.
+                  const hasHandle =
+                    showReorderHandle && (canReorder?.(itemKey) ?? true);
                   const itemStatus = getItemStatus?.(item, index);
                   const itemStatusID = itemStatus?.message
                     ? `${groupID}-item-${index}-status`
@@ -1079,7 +1059,10 @@ export function ListInput<T>({
                       aria-invalid={itemStatus?.type === 'error' || undefined}
                       aria-posinset={index + 1}
                       aria-setsize={value.length}
-                      {...stylex.props(styles.item)}>
+                      {...stylex.props(
+                        styles.item,
+                        hasHandle && reorderScope?.session.rowStyle,
+                      )}>
                       <div
                         ref={node => {
                           if (node == null) {
@@ -1206,14 +1189,14 @@ export function ListInput<T>({
                                 styles.reorderControlCell,
                               ),
                             )}>
-                            <ListReorderHandle
-                              label={itemKeyString}
-                              aria-label={t('@astryx.listInput.reorderItem', {
-                                itemName,
-                                position: index + 1,
-                              })}
-                              isDisabled={isDisabled || isLoading}
-                            />
+                            {hasHandle ? (
+                              // Named "Reorder guest 2", like Remove.
+                              <ListReorderHandle
+                                label={`${itemName} ${index + 1}`}
+                                itemKey={itemKey}
+                                isDisabled={isDisabled || isLoading}
+                              />
+                            ) : null}
                           </div>
                         ) : null}
                         {itemStatus?.message ? (
@@ -1232,7 +1215,7 @@ export function ListInput<T>({
                 })
               )}
             </ol>
-          </ListReorderContext>
+          </ListReorderScope>
           <div
             ref={addActionRef}
             data-list-input-motion-key="action:add"
@@ -1256,11 +1239,6 @@ export function ListInput<T>({
               />
             </div>
           </div>
-          {showReorderHandle ? (
-            <VisuallyHidden as="div" id={reorderInstructionsID}>
-              {t('@astryx.list.reorderHint')}
-            </VisuallyHidden>
-          ) : null}
         </div>
       </Field>
     </SizeProvider>

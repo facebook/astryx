@@ -37,7 +37,7 @@ export const docs = {
       name: 'onChange',
       type: '(next: T[], change: ListInputChange<T>) => void',
       description:
-        'Called with the next array after an add, update, remove, or reorder action. The change argument identifies the action and affected record.',
+        'Called with the next array after an add, update, or remove action. The change argument identifies the action and affected record. Moves go to the reorderable object instead.',
       required: true,
     },
     {
@@ -92,11 +92,10 @@ export const docs = {
         'Returns validation status for one field. The renderer receives the complete status plus statusVariant="tooltip" and should forward both to its Astryx input so the native status affordance owns styling, description, keyboard access, and tooltip behavior without changing row height.',
     },
     {
-      name: 'isReorderable',
-      type: 'boolean',
+      name: 'reorderable',
+      type: 'Reorderable',
       description:
-        "Gives each record core List's reorder handle at the end of its row, after Remove, as UIKit's reorder control ends an editing row. The handle appears while the record is hovered or holds keyboard focus and stays visible on touch screens. On a touch screen, hold the handle for a moment, then drag: the record follows the finger, the records it passes slide out of its way, the list autoscrolls near the edges, and the drop springs the record into place; a flick on the handle scrolls and a pinch zooms the page. A mouse drags at once, without motion. When the handle is focused, Arrow Up or Arrow Down moves the record one position and Home or End to an end; Space picks it up and Escape puts it back. Each move calls onChange once with reorder metadata. In a disabled or loading list the handles stay focusable but move nothing.",
-      default: 'false',
+        "Makes the records reorderable: pass the object createReorderable makes, keyed by getItemKey. Each record ends with core List's reorder handle, after Remove, as UIKit's reorder control ends an editing row. The handle appears while the record is hovered or holds keyboard focus and stays visible on touch screens. On a touch screen, hold the handle for a moment, then drag: the record follows the finger, the records it passes slide out of its way, the list autoscrolls near the edges, and the drop springs the record into place; a flick on the handle scrolls and a pinch zooms the page. A mouse drags at once, without motion. Activating the handle (a tap, a click, Space or Enter) turns on reorder mode for its record, in which each arrow key moves it a place and Escape or Done ends the mode, keeping the moves. The object's isReorderable(key) says which records move: one it rejects has no handle. Each move goes to the object's onReorder({key, to}), to being the record's index in value after the move. In a disabled or loading list the handles stay focusable but move nothing. Without it, the records keep their order.",
     },
     {
       name: 'isDisabled',
@@ -167,7 +166,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Let records reorder through the handle: a drag commits once on release, each key move commits at once, and focus stays on the handle.',
+          'Let records reorder through the handle: a drag reports one move on release, each key move in reorder mode reports one at once, and focus stays on the handle.',
       },
       {
         guidance: true,
@@ -252,7 +251,8 @@ export const docs = {
   examples: [
     {
       label: 'Tag options',
-      code: `import {Selector} from '@astryxdesign/core/Selector';
+      code: `import {createReorderable} from '@astryxdesign/core/reorderable';
+import {Selector} from '@astryxdesign/core/Selector';
 import {proportional} from '@astryxdesign/core/Table';
 import {TextInput} from '@astryxdesign/core/TextInput';
 
@@ -294,6 +294,19 @@ const columns = [
   },
 ] satisfies ListInputColumn<TagOption>[];
 
+// Each move lands where ListInput reports it: the record's key and index.
+const reorderable = useMemo(
+  () =>
+    createReorderable({
+      onReorder: ({key, to}) =>
+        setTags(tags => {
+          const rest = tags.filter(tag => tag.id !== key);
+          return [...rest.slice(0, to), ...tags.filter(tag => tag.id === key), ...rest.slice(to)];
+        }),
+    }),
+  [],
+);
+
 <ListInput
   label="Tag options"
   itemName="tag"
@@ -302,7 +315,7 @@ const columns = [
   getItemKey={tag => tag.id}
   createItem={() => ({id: crypto.randomUUID(), color: 'blue', label: ''})}
   columns={columns}
-  isReorderable
+  reorderable={reorderable}
   status={
     tags.length < 5
       ? {type: 'error', message: 'Add at least five tag options.'}
@@ -317,7 +330,8 @@ const columns = [
     },
     {
       label: 'Controlled guest list',
-      code: `import {proportional} from '@astryxdesign/core/Table';
+      code: `import {createReorderable} from '@astryxdesign/core/reorderable';
+import {proportional} from '@astryxdesign/core/Table';
 
 type Guest = {id: string; name: string; email: string};
 
@@ -359,6 +373,19 @@ const columns = [
   },
 ] satisfies ListInputColumn<Guest>[];
 
+// Each move lands where ListInput reports it: the record's key and index.
+const reorderable = useMemo(
+  () =>
+    createReorderable({
+      onReorder: ({key, to}) =>
+        setGuests(guests => {
+          const rest = guests.filter(guest => guest.id !== key);
+          return [...rest.slice(0, to), ...guests.filter(guest => guest.id === key), ...rest.slice(to)];
+        }),
+    }),
+  [],
+);
+
 <ListInput
   label="Guests"
   itemName="guest"
@@ -367,7 +394,7 @@ const columns = [
   getItemKey={guest => guest.id}
   createItem={() => ({id: crypto.randomUUID(), name: '', email: ''})}
   columns={columns}
-  isReorderable
+  reorderable={reorderable}
   maxItems={6}
   getFieldStatus={(guest, key) =>
     key === 'email' && guest.email === ''
@@ -571,7 +598,7 @@ export const docsDense = {
   propDescriptions: {
     label: 'Collection label and accessible name.',
     value: 'Controlled ordered records.',
-    onChange: 'Emits next records plus add/update/remove/reorder metadata.',
+    onChange: 'Emits next records plus add/update/remove metadata.',
     getItemKey: 'Required stable unique record identity.',
     createItem: 'Creates a new keyed record for Add.',
     columns:
@@ -582,8 +609,8 @@ export const docsDense = {
     getItemStatus: 'Per-record InputStatus resolver.',
     getFieldStatus:
       'Per-field resolver; complete status plus tooltip variant are forwarded to the rendered input.',
-    isReorderable:
-      "Adds core List's reorder handle at each record's end (after Remove), revealed on hover/focus, shown on touch: hold then drag (touch), drag (mouse), Arrow/Home/End/Space/Escape (keys); passed records slide aside and the drop springs into place; onChange once per move; handles stay focusable but inert while disabled or loading.",
+    reorderable:
+      "createReorderable object keyed by getItemKey: core List's reorder handle at each record's end (after Remove), revealed on hover/focus, shown on touch: hold then drag (touch), drag (mouse), activate for reorder mode then arrows (keys); passed records slide aside and the drop springs into place; each move goes to the object's onReorder({key, to}); its isReorderable keeps a record in place; handles stay focusable but inert while disabled or loading.",
     isDisabled: 'Disables collection, actions, and rendered inputs.',
     isLoading: 'Marks busy and prevents changes.',
     maxItems: 'Makes Add unavailable at the limit.',

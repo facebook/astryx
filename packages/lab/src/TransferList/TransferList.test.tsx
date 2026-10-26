@@ -9,11 +9,12 @@
  * SYNC: When TransferList.tsx behavior changes, update these tests.
  */
 
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {fireEvent, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
+import {createReorderable} from '@astryxdesign/core/reorderable';
 import {
   TransferList,
   type TransferListOption,
@@ -39,7 +40,6 @@ const LOCKED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
     label: 'Owner',
     group: 'Identity',
     isTransferDisabled: true,
-    isReorderDisabled: true,
     disabledMessage: 'Owner is required and fixed in position.',
   },
   OPTIONS[2],
@@ -59,18 +59,16 @@ const TRANSFER_LOCKED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
   OPTIONS[3],
 ];
 
-const REORDER_LOCKED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
-  OPTIONS[0],
-  {
-    value: 'owner',
-    label: 'Owner',
-    group: 'Identity',
-    isReorderDisabled: true,
-    disabledMessage: 'Owner has a fixed position.',
-  },
-  OPTIONS[2],
-  OPTIONS[3],
-];
+/** Moves `key` to index `to` of `value`: how an owner applies a move. */
+function moveValue(
+  value: readonly string[],
+  key: string,
+  to: number,
+): readonly string[] {
+  const next = value.filter(item => item !== key);
+  next.splice(to, 0, key);
+  return next;
+}
 
 type ControlledTransferListProps = Omit<
   TransferListProps<string>,
@@ -79,15 +77,40 @@ type ControlledTransferListProps = Omit<
   initialValue?: readonly string[];
   onValueChange?: (value: readonly string[]) => void;
   options?: ReadonlyArray<TransferListOption<string>>;
+  /**
+   * Values that keep their place: the helper's reorderable object rejects
+   * them in `isReorderable`. Its `onReorder` applies each move to its value.
+   */
+  fixed?: readonly string[];
+  /** Pass no reorderable object, so the selected options keep their order. */
+  isUnordered?: boolean;
 };
 
 function ControlledTransferList({
   initialValue = [],
   onValueChange,
   options = OPTIONS,
+  fixed,
+  isUnordered = false,
   ...props
 }: ControlledTransferListProps) {
   const [value, setValue] = useState<readonly string[]>(initialValue);
+  const reorderable = useMemo(
+    () =>
+      isUnordered
+        ? undefined
+        : createReorderable<string>({
+            onReorder: ({key, to}) =>
+              setValue(current => {
+                const next = moveValue(current, key, to);
+                onValueChange?.(next);
+                return next;
+              }),
+            isReorderable:
+              fixed == null ? undefined : key => !fixed.includes(key),
+          }),
+    [fixed, isUnordered, onValueChange],
+  );
 
   return (
     <TransferList
@@ -100,10 +123,13 @@ function ControlledTransferList({
         onValueChange?.(nextValue);
         setValue(nextValue);
       }}
+      {...(reorderable == null ? null : {reorderable})}
       {...props}
     />
   );
 }
+
+const FIXED_OWNER: readonly string[] = ['owner'];
 
 const testStyles = stylex.create({
   root: (opacity: number) => ({opacity}),
@@ -226,9 +252,9 @@ describe('TransferList', () => {
       expect(screen.getByTestId('custom-status')).toHaveTextContent(
         'Custom Status',
       );
-      // The handle is still named after the option, not its place.
+      // The handle is named after the row's text, not its place.
       expect(
-        screen.getByRole('button', {name: 'Reorder Name'}),
+        screen.getByRole('button', {name: 'Reorder Custom Name'}),
       ).toBeInTheDocument();
     });
 
@@ -319,7 +345,7 @@ describe('TransferList', () => {
         <ControlledTransferList
           initialValue={['name']}
           hasSearch
-          isReorderable={false}
+          isUnordered
         />,
       );
 
@@ -335,6 +361,7 @@ describe('TransferList', () => {
       render(
         <ControlledTransferList
           options={LOCKED_OPTIONS}
+          fixed={['owner']}
           initialValue={['owner', 'status']}
         />,
       );
@@ -344,9 +371,9 @@ describe('TransferList', () => {
       ).toHaveAttribute('aria-disabled', 'true');
       // A row that keeps its place has no handle.
       expect(screen.queryByRole('button', {name: 'Reorder Owner'})).toBeNull();
-      expect(screen.getByText('Owner').closest('li')).toHaveAttribute(
-        'data-astryx-reorder-fixed',
-      );
+      expect(
+        screen.getByRole('button', {name: 'Reorder Status'}),
+      ).toBeInTheDocument();
     });
 
     it('applies transfer and reorder constraints independently', async () => {
@@ -358,15 +385,12 @@ describe('TransferList', () => {
           isTransferDisabled: true,
           disabledMessage: 'Owner is required.',
         },
-        {
-          ...OPTIONS[2],
-          isReorderDisabled: true,
-          disabledMessage: 'Status has a fixed position.',
-        },
+        OPTIONS[2],
       ];
       render(
         <ControlledTransferList
           options={constrainedOptions}
+          fixed={['status']}
           initialValue={['owner', 'status']}
           onValueChange={onValueChange}
         />,
@@ -488,6 +512,53 @@ describe('TransferList', () => {
   });
 
   describe('reordering through List', () => {
+    it("reports each move to an owner's reorderable object in value terms, never through onChange", async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      const onReorder = vi.fn();
+      const reorderable = createReorderable<string>({
+        onReorder,
+        isReorderable: key => key !== 'owner',
+      });
+      // `legacy` has no option: it keeps a place in the value, unshown.
+      render(
+        <TransferList
+          label="Columns"
+          options={OPTIONS}
+          value={['name', 'legacy', 'status', 'owner']}
+          onChange={onChange}
+          reorderable={reorderable}
+        />,
+      );
+      expect(screen.queryByRole('button', {name: 'Reorder Owner'})).toBeNull();
+      screen.getByRole('button', {name: 'Reorder Name'}).focus();
+      await user.keyboard('{Enter}{ArrowDown}{Escape}');
+      // Name now follows Status: index 2 of the value, `legacy` counted.
+      expect(onReorder).toHaveBeenCalledOnce();
+      expect(onReorder).toHaveBeenCalledWith({key: 'name', to: 2});
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it("applies an owner object's moves the way it reports them, a value without an option keeping its place among the hidden", async () => {
+      const user = userEvent.setup();
+      const onValueChange = vi.fn();
+      render(
+        <ControlledTransferList
+          fixed={[]}
+          initialValue={['legacy', 'name', 'status', 'updated']}
+          onValueChange={onValueChange}
+        />,
+      );
+      screen.getByRole('button', {name: 'Reorder Updated'}).focus();
+      await user.keyboard('{Enter}{ArrowUp}{ArrowUp}{Escape}');
+      expect(onValueChange).toHaveBeenLastCalledWith([
+        'legacy',
+        'updated',
+        'name',
+        'status',
+      ]);
+    });
+
     it('gives each selected row a List reorder handle and none to available rows', () => {
       render(<ControlledTransferList initialValue={['name', 'status']} />);
       const selected = screen.getByRole('list', {name: 'Selected columns'});
@@ -518,7 +589,7 @@ describe('TransferList', () => {
       expect(screen.getByRole('button', {name: 'Reorder Name'})).toBeVisible();
     });
 
-    it('keeps values without an option in place when a row moves', async () => {
+    it('reports each move so the owner keeps the shown rows in the order the list shows, around a value without an option', async () => {
       const user = userEvent.setup();
       const onValueChange = vi.fn();
       render(
@@ -527,86 +598,57 @@ describe('TransferList', () => {
           onValueChange={onValueChange}
         />,
       );
+      // The rows the list shows: every value with an option, in value order.
+      const shown = () =>
+        (onValueChange.mock.lastCall?.[0] as readonly string[]).filter(
+          value => value !== 'retired',
+        );
       screen.getByRole('button', {name: 'Reorder Owner'}).focus();
-      await user.keyboard('{ArrowDown}');
-      expect(onValueChange).toHaveBeenLastCalledWith([
-        'name',
-        'retired',
-        'status',
-        'owner',
-      ]);
-      await user.keyboard('{Home}');
-      // The value without an option keeps its own slot.
-      expect(onValueChange).toHaveBeenLastCalledWith([
-        'owner',
-        'retired',
-        'name',
-        'status',
-      ]);
-    });
-
-    it('undoes a move with its inverse, around a value without an option', async () => {
-      const user = userEvent.setup();
-      const onValueChange = vi.fn();
-      render(
-        <ControlledTransferList
-          initialValue={['name', 'retired', 'owner', 'status']}
-          onValueChange={onValueChange}
-        />,
-      );
-      // Space, Home, Escape on Owner: picked up, moved, put back.
-      screen.getByRole('button', {name: 'Reorder Owner'}).focus();
-      await user.keyboard(' ');
-      await user.keyboard('{Home}');
-      await user.keyboard('{Escape}');
-      expect(onValueChange).toHaveBeenLastCalledWith([
-        'name',
-        'retired',
-        'owner',
-        'status',
-      ]);
-      // ArrowDown then ArrowUp on Name.
+      await user.keyboard(' {ArrowDown}');
+      expect(shown()).toEqual(['name', 'status', 'owner']);
+      await user.keyboard('{ArrowUp}{ArrowUp}{Escape}');
+      expect(shown()).toEqual(['owner', 'name', 'status']);
+      // The value without an option stays in the value, wherever the owner
+      // places it.
+      expect(onValueChange.mock.lastCall?.[0]).toContain('retired');
       screen.getByRole('button', {name: 'Reorder Name'}).focus();
-      await user.keyboard('{ArrowDown}');
-      await user.keyboard('{ArrowUp}');
-      expect(onValueChange).toHaveBeenLastCalledWith([
-        'name',
-        'retired',
-        'owner',
-        'status',
-      ]);
+      await user.keyboard(' {ArrowDown}{Escape}');
+      expect(shown()).toEqual(['owner', 'status', 'name']);
     });
   });
 
   describe('keyboard reordering', () => {
-    it('moves immediately, keeps handle focus, and drops without another change', async () => {
-      const user = userEvent.setup();
-      const onValueChange = vi.fn();
-      render(
-        <ControlledTransferList
-          initialValue={['name', 'owner', 'status']}
-          onValueChange={onValueChange}
-        />,
-      );
+    it.each([
+      ['Enter', '{Enter}'],
+      ['Space', ' '],
+    ])(
+      'turns on reorder mode with %s: each arrow changes the value once, keeping handle focus',
+      async (_, press) => {
+        const user = userEvent.setup();
+        const onValueChange = vi.fn();
+        render(
+          <ControlledTransferList
+            initialValue={['name', 'owner', 'status']}
+            onValueChange={onValueChange}
+          />,
+        );
 
-      const handle = screen.getByRole('button', {name: 'Reorder Owner'});
-      handle.focus();
-      await user.keyboard('{Enter}{ArrowUp}');
+        const handle = screen.getByRole('button', {name: 'Reorder Owner'});
+        handle.focus();
+        await user.keyboard(press);
+        expect(handle).toHaveAttribute('aria-pressed', 'true');
+        await user.keyboard('{ArrowUp}');
+        expect(onValueChange).toHaveBeenCalledTimes(1);
+        expect(onValueChange).toHaveBeenLastCalledWith([
+          'owner',
+          'name',
+          'status',
+        ]);
+        expect(handle).toHaveFocus();
+      },
+    );
 
-      expect(onValueChange).toHaveBeenCalledTimes(1);
-      expect(onValueChange).toHaveBeenLastCalledWith([
-        'owner',
-        'name',
-        'status',
-      ]);
-      expect(handle).toHaveFocus();
-
-      await user.keyboard('{Enter}');
-      expect(onValueChange).toHaveBeenCalledTimes(1);
-      expect(handle).toHaveFocus();
-    });
-
-    it('supports Home and End while a value is grabbed', async () => {
+    it('changes the value once per move', async () => {
       const user = userEvent.setup();
       const onValueChange = vi.fn();
       render(
@@ -618,25 +660,25 @@ describe('TransferList', () => {
 
       const handle = screen.getByRole('button', {name: 'Reorder Owner'});
       handle.focus();
-      await user.keyboard(' {End}{Home} ');
+      await user.keyboard(' {ArrowDown}{ArrowDown}');
 
       expect(onValueChange).toHaveBeenNthCalledWith(1, [
         'name',
         'status',
-        'updated',
         'owner',
+        'updated',
       ]);
       expect(onValueChange).toHaveBeenNthCalledWith(2, [
-        'owner',
         'name',
         'status',
         'updated',
+        'owner',
       ]);
       expect(onValueChange).toHaveBeenCalledTimes(2);
       expect(handle).toHaveFocus();
     });
 
-    it('restores the original order when a grabbed move is cancelled', async () => {
+    it('keeps the moves when Escape ends reorder mode', async () => {
       const user = userEvent.setup();
       const onValueChange = vi.fn();
       render(
@@ -650,51 +692,63 @@ describe('TransferList', () => {
       handle.focus();
       await user.keyboard('{Enter}{ArrowDown}{Escape}');
 
-      expect(onValueChange).toHaveBeenNthCalledWith(1, [
+      expect(handle).toHaveAttribute('aria-pressed', 'false');
+      expect(onValueChange).toHaveBeenCalledTimes(1);
+      expect(onValueChange).toHaveBeenLastCalledWith([
         'name',
         'status',
         'owner',
-      ]);
-      expect(onValueChange).toHaveBeenNthCalledWith(2, [
-        'name',
-        'owner',
-        'status',
       ]);
       expect(handle).toHaveFocus();
     });
 
-    it('does not allow a value to cross a reorder-disabled value', async () => {
+    it('keeps values from passing a reorder-disabled value at an end, and lets them pass one in the middle', async () => {
       const user = userEvent.setup();
       const onValueChange = vi.fn();
-      render(
+      const {unmount} = render(
         <ControlledTransferList
-          options={REORDER_LOCKED_OPTIONS}
-          initialValue={['name', 'owner', 'status', 'updated']}
+          fixed={FIXED_OWNER}
+          initialValue={['owner', 'name', 'status', 'updated']}
           onValueChange={onValueChange}
         />,
       );
 
-      const beforeBarrier = screen.getByRole('button', {
-        name: 'Reorder Name',
-      });
-      beforeBarrier.focus();
-      await user.keyboard('{Enter}{ArrowDown}{Enter}');
+      // Owner leads the list: nothing goes before it.
+      const name = screen.getByRole('button', {name: 'Reorder Name'});
+      name.focus();
+      await user.keyboard('{Enter}{ArrowUp}{Escape}');
       expect(onValueChange).not.toHaveBeenCalled();
 
-      const afterBarrier = screen.getByRole('button', {
-        name: 'Reorder Updated',
-      });
-      afterBarrier.focus();
-      await user.keyboard('{Enter}{Home}');
+      const updated = screen.getByRole('button', {name: 'Reorder Updated'});
+      updated.focus();
+      await user.keyboard('{Enter}{ArrowUp}{ArrowUp}{ArrowUp}{Escape}');
+      expect(onValueChange).toHaveBeenCalledTimes(2);
       expect(onValueChange).toHaveBeenLastCalledWith([
-        'name',
         'owner',
         'updated',
+        'name',
         'status',
       ]);
-      await user.keyboard('{ArrowUp}{Enter}');
-      expect(onValueChange).toHaveBeenCalledTimes(1);
-      expect(afterBarrier).toHaveFocus();
+      expect(updated).toHaveFocus();
+      unmount();
+
+      // In the middle, Owner is passed like any other row.
+      onValueChange.mockClear();
+      render(
+        <ControlledTransferList
+          fixed={FIXED_OWNER}
+          initialValue={['name', 'owner', 'status', 'updated']}
+          onValueChange={onValueChange}
+        />,
+      );
+      screen.getByRole('button', {name: 'Reorder Name'}).focus();
+      await user.keyboard('{Enter}{ArrowDown}{Escape}');
+      expect(onValueChange).toHaveBeenLastCalledWith([
+        'owner',
+        'name',
+        'status',
+        'updated',
+      ]);
     });
   });
 });

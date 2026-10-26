@@ -8,7 +8,8 @@
  *   list stays inside that list (its bottom on the list's end), never sliding
  *   under the next panel's header, and lands last on release
  * @position Chromium proof for TransferList's selected panel, which reorders
- *   through core List's onReorder (List/useListReorder.ts clamps the row)
+ *   through core's createReorderable on its List (List/listReorderEngine.tsx
+ *   clamps the row)
  */
 
 import {expect, test, type CDPSession} from '@playwright/test';

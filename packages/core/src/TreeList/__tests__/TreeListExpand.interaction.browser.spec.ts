@@ -14,8 +14,9 @@
  *   keep moving while the main thread is blocked, with no Layout or Paint;
  *   under reduced motion an expand and a collapse cross-fade, opacity only,
  *   within 200 ms (`design:reduced-motion`); right to left mirrors the
- *   chevron's turn; a theme's outline spring times it; a storyboard of the
- *   expand
+ *   chevron's turn; a theme's outline spring times it; content after the
+ *   tree takes its new place by layout at once, with no translate on it and
+ *   a fixed element inside it staying fixed; a storyboard of the expand
  * @position Interaction evidence for TreeList/useTreeExpansionMotion.ts
  *   under a finger (List/__tests__/touchStory.ts), with an Android case that
  *   moves the same way and a mouse case where the children come and go in
@@ -82,6 +83,17 @@ function parts(page: Page) {
     below: treeItem(page, 'app'),
   };
 }
+
+/** How many tree rows and chevron parts show at less than full opacity. */
+const hiddenParts = async (page: Page) =>
+  page.evaluate(
+    () =>
+      [
+        ...document.querySelectorAll(
+          '[role="treeitem"], [data-tree-chevron], [data-tree-chevron] *',
+        ),
+      ].filter(element => getComputedStyle(element).opacity !== '1').length,
+  );
 
 /** The `y` of an element's `translate`, as the engine presents it. */
 const translateY = async (element: Locator) =>
@@ -260,22 +272,19 @@ test('a mouse: a click expands and collapses in one frame, as before', async ({
   }
 });
 
-test("a theme's outline spring (a motion role) times the expansion", async ({
+test('the expansion keeps its own outline spring, whatever a theme writes', async ({
   page,
 }) => {
   await open(page);
-  // A theme that slows the outline spring to 0.8 s with no bounce, written
-  // the way a theme writes a role: its CSS variable, here on the root.
+  // The outline spring is an internal constant: a variable written the way a
+  // theme would write one (0.8 s, no bounce, on the root) changes nothing.
   await page.evaluate(() =>
     document.documentElement.style.setProperty(
       '--motion-list-update-outline-spring',
       '0.8s 0',
     ),
   );
-  const themed = solveSpring(toSpring({duration: 0.8, bounce: 0}), {
-    from: 0,
-    to: 1,
-  });
+  const table = solveSpring(SPRING, {from: 0, to: 1});
   const {group, child, below} = parts(page);
   await tapToggle(page);
   await expect(child).toBeVisible();
@@ -283,12 +292,10 @@ test("a theme's outline spring (a motion role) times the expansion", async ({
   const height = await group.evaluate(el => (el as HTMLElement).offsetHeight);
   for (const t of [SETTLE_MS / 2, SETTLE_MS]) {
     await seekAnimations(page, t);
-    const expected = -height * (1 - themed.value(t / 1000));
+    const expected = -height * (1 - table.value(t / 1000));
     expect(await translateY(child)).toBeCloseTo(expected, 0);
     expect(await translateY(below)).toBeCloseTo(expected, 0);
   }
-  // Where the table's spring has arrived, the theme's is still on its way.
-  expect(1 - themed.value(SETTLE_MS / 1000)).toBeGreaterThan(0.1);
   await releaseAnimations(page, {finish: true});
   await expect.poll(async () => translateY(below)).toBe(0);
 });
@@ -304,8 +311,13 @@ test('under reduced motion an expand and a collapse cross-fade: opacity only, wi
   await tapToggle(page);
   await expect(child).toBeVisible();
   expectReducedMotionCrossFade(await holdAnimations(page));
-  await releaseAnimations(page, {finish: true});
+  // The held fades play out: a row or chevron that travels dips (it fades
+  // out, lands while invisible, then fades back in once its fade out has
+  // ended). The collapse starts when the expand has settled, everything
+  // showing again.
+  await releaseAnimations(page);
   await expect.poll(async () => translateY(child)).toBe(0);
+  await expect.poll(async () => hiddenParts(page)).toBe(0);
   await tapToggle(page);
   expectReducedMotionCrossFade(await holdAnimations(page));
   await releaseAnimations(page, {finish: true});
@@ -509,7 +521,7 @@ test('the end of a collapse shows no child outside the group, up to the frame th
   expect(outside).toEqual([]);
 });
 
-test('content below the tree moves with the rows, out and back, with no jump', async ({
+test('content after the tree takes its place by layout at once, with no translate, and a fixed element inside it stays fixed', async ({
   page,
 }) => {
   await openStory(page, storybook(), 'core-treelist--with-content-below');
@@ -520,53 +532,56 @@ test('content below the tree moves with the rows, out and back, with no jump', a
   const button = page.getByRole('button', {name: 'Open folder'});
   const {group, below} = parts(page);
   await expect(button).toBeVisible();
+  // More content after the tree, holding a position: fixed element, which
+  // stays where the viewport puts it as long as nothing transforms its
+  // ancestors.
+  await button.evaluate(el => {
+    const after = document.createElement('div');
+    after.style.height = '20px';
+    const fixed = document.createElement('div');
+    fixed.setAttribute('data-test-fixed', '');
+    fixed.style.cssText =
+      'position: fixed; top: 10px; left: 10px; width: 8px; height: 8px;';
+    after.append(fixed);
+    el.insertAdjacentElement('afterend', after);
+  });
+  const fixedTop = async () =>
+    page
+      .locator('[data-test-fixed]')
+      .evaluate(el => el.getBoundingClientRect().top);
   const rest = (await button.boundingBox())?.y ?? 0;
+
   await tapToggle(page);
   await holdAnimations(page);
   await seekAnimations(page, 0);
   const height = await group.evaluate(el => (el as HTMLElement).offsetHeight);
-  // On screen where it was: its new layout, one group height back up.
-  expect(await translateY(button)).toBeCloseTo(-height, 0);
-  // In step with the rows below inside the tree.
-  await seekAnimations(page, SETTLE_MS / 4);
-  expect(await translateY(button)).toBeCloseTo(await translateY(below), 1);
-  await releaseAnimations(page, {finish: true});
-  await expect.poll(async () => translateY(button)).toBe(0);
+  // Its new layout at once, one group height down, with nothing on it.
+  expect(await button.evaluate(el => getComputedStyle(el).translate)).toBe(
+    'none',
+  );
   expect(((await button.boundingBox())?.y ?? 0) - rest).toBeCloseTo(height, 0);
+  expect(await fixedTop()).toBeCloseTo(10, 0);
+  // The rows inside the tree still spring from where they were.
+  expect(await translateY(below)).toBeCloseTo(-height, 0);
+  await releaseAnimations(page, {finish: true});
+  await expect.poll(async () => translateY(below)).toBe(0);
 
+  // A collapse: it stays where it is while the rows slide back, then takes
+  // its place when the group leaves, never translated.
   await tapToggle(page);
   await holdAnimations(page);
   await seekAnimations(page, SETTLE_MS / 3);
-  const midway = await translateY(button);
-  expect(midway).toBeLessThan(-1);
-  expect(midway).toBeGreaterThan(-height + 1);
+  expect(await button.evaluate(el => getComputedStyle(el).translate)).toBe(
+    'none',
+  );
+  expect(await fixedTop()).toBeCloseTo(10, 0);
   await releaseAnimations(page, {finish: true});
   await expect(group).toHaveCount(0);
-  expect(await translateY(button)).toBe(0);
+  expect(await button.evaluate(el => getComputedStyle(el).translate)).toBe(
+    'none',
+  );
   expect((await button.boundingBox())?.y ?? 0).toBeCloseTo(rest, 0);
 });
-
-test(
-  'storyboard: content below the tree moving with an expansion',
-  {tag: '@storyboard'},
-  async ({page}, testInfo) => {
-    await openStory(page, storybook(), 'core-treelist--with-content-below');
-    const touch = await page.evaluate(
-      () => matchMedia('(pointer: coarse)').matches,
-    );
-    test.skip(!touch, 'the expansion moves under a finger only');
-    await tapToggle(page);
-    const {storyboard} = await animationStoryboard(page, {
-      name: 'tree-list-expand-content-below',
-      clip: {x: 0, y: 0, width: 402, height: 600},
-      times: [0, 33, 67, 100, 150, 200, 267, Math.round(SETTLE_MS)],
-      columns: 8,
-      cellScale: 0.45,
-    });
-    await releaseAnimations(page, {finish: true});
-    await storyboard.write(testInfo);
-  },
-);
 
 test('the rows below keep moving on every frame while the main thread is blocked', async ({
   page,

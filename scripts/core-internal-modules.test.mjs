@@ -22,7 +22,7 @@ const coreDir = path.resolve(
 );
 
 describe('core internal modules', () => {
-  it('names the motion, gesture, touch resolver and List reorder paths, and nothing core exports', () => {
+  it('names the motion, gesture and touch resolver paths, and nothing core exports', () => {
     for (const specifier of [
       '@astryxdesign/core/motion/animator',
       '@astryxdesign/core/motion/uikit',
@@ -30,8 +30,6 @@ describe('core internal modules', () => {
       '@astryxdesign/core/gestures',
       '@astryxdesign/core/gestures/haptics',
       '@astryxdesign/core/utils/touchPresentation',
-      '@astryxdesign/core/List/useListReorder',
-      '@astryxdesign/core/List/ListReorderHandle',
     ]) {
       expect(CORE_INTERNAL_SPECIFIER.test(specifier)).toBe(true);
     }
@@ -44,7 +42,6 @@ describe('core internal modules', () => {
       '@astryxdesign/core/utils',
       '@astryxdesign/core/Button',
       '@astryxdesign/core/motionless',
-      '@astryxdesign/core/List/ListItem',
       ...exported,
     ]) {
       expect(CORE_INTERNAL_SPECIFIER.test(specifier)).toBe(false);
@@ -71,14 +68,6 @@ describe('core internal modules', () => {
       }),
     ).toBe(
       fs.realpathSync(path.join(coreDir, 'src/utils/touchPresentation.ts')),
-    );
-    expect(
-      resolveCoreInternal('@astryxdesign/core/List/ListReorderHandle', {
-        coreDir,
-        source: true,
-      }),
-    ).toBe(
-      fs.realpathSync(path.join(coreDir, 'src/List/ListReorderHandle.tsx')),
     );
   });
 

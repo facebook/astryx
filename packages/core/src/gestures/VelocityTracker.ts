@@ -34,7 +34,7 @@
  * SYNC: When modified, update VelocityTracker.test.ts.
  */
 
-import {UIKIT_GESTURES} from '../motion/uikit/gestures';
+import {UIKIT_VELOCITY} from '../motion/uikit/gestures';
 import type {Point, TouchSample} from './types';
 
 export interface VelocityTrackerOptions {
@@ -46,8 +46,8 @@ export interface VelocityTrackerOptions {
 }
 
 const ZERO: Point = {x: 0, y: 0};
-const PAN_CURRENT_WEIGHT = UIKIT_GESTURES.velocity.currentWeight.value;
-const SCROLL_CURRENT_WEIGHT = UIKIT_GESTURES.velocity.scrollReleaseWeight.value;
+const PAN_CURRENT_WEIGHT = UIKIT_VELOCITY.currentWeight.value;
+const SCROLL_CURRENT_WEIGHT = UIKIT_VELOCITY.scrollReleaseWeight.value;
 
 function blend(weight: number, current: Point, previous: Point): Point {
   return {
@@ -72,8 +72,7 @@ export class VelocityTracker {
   private previousPan: Point = ZERO;
 
   constructor(options: VelocityTrackerOptions = {}) {
-    this.stillness =
-      options.stillness ?? UIKIT_GESTURES.velocity.stillness.value;
+    this.stillness = options.stillness ?? UIKIT_VELOCITY.stillness.value;
   }
 
   /** Forget every sample (a new gesture). */
@@ -89,15 +88,22 @@ export class VelocityTracker {
    * Record a position. Timestamps must not go backwards (an older sample is
    * ignored), and a moved sample at the newest moved sample's timestamp
    * replaces it. A sample at the newest position is not motion: it changes
-   * no velocity.
+   * no velocity, unless `isMotion` says the contact moved anyway (a pinch's
+   * or a rotation's value holding while both fingers move, which reads as
+   * zero velocity for that interval).
    */
-  add(x: number, y: number, time: number): void {
+  add(
+    x: number,
+    y: number,
+    time: number,
+    {isMotion = false}: {isMotion?: boolean} = {},
+  ): void {
     if (this.newest != null && time < this.newest.time) {
       return;
     }
     this.newest = {x, y, time};
     const last = this.moved[this.moved.length - 1];
-    if (last != null && x === last.x && y === last.y) {
+    if (last != null && x === last.x && y === last.y && !isMotion) {
       return;
     }
     if (last != null && time === last.time) {

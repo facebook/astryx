@@ -15,7 +15,7 @@
  *   `stopRow` (at rest now, for an owner going away mid-motion),
  *   `layoutShifts` (how far a part's presence moves each piece of content),
  *   `releaseMotion` (clear the identity inline values once it rests) and
- *   `contentBelow` (the page content layout moves along with a component)
+ *   `motionNow` (the motion clock)
  * @position Internal utility for row motion (TreeList's expansion, List's
  *   update motion),
  *   shared by any code that moves a list row, so two motions never drive one
@@ -322,93 +322,4 @@ export function layoutShifts(
 /** The time the motion clock reads (`performance.now()`'s time base). */
 export function motionNow(): number {
   return typeof performance === 'undefined' ? Date.now() : performance.now();
-}
-
-/**
- * Whether an animation running on an element drives its `translate`, the
- * one channel this module writes (`transform`, `scale` and `rotate`
- * compose with it).
- */
-function translatesElement(animation: Animation): boolean {
-  if (
-    typeof CSSTransition !== 'undefined' &&
-    animation instanceof CSSTransition
-  ) {
-    return animation.transitionProperty === 'translate';
-  }
-  const effect = animation.effect;
-  if (
-    typeof KeyframeEffect === 'undefined' ||
-    !(effect instanceof KeyframeEffect)
-  ) {
-    return false;
-  }
-  return effect.getKeyframes().some(frame => 'translate' in frame);
-}
-
-function isScrollContainer(element: HTMLElement): boolean {
-  const {overflowY} = getComputedStyle(element);
-  return overflowY === 'auto' || overflowY === 'scroll';
-}
-
-/**
- * The page content that layout moves along with `component` when it grows or
- * shrinks: the in-flow siblings after it, at each level up to its nearest
- * scroll container (or the document), that sit below it. Skipped, and left to
- * layout: positioned and sticky elements, and any element that already
- * carries a `translate` or a running animation another owner put there.
- */
-export function contentBelow(component: HTMLElement): HTMLElement[] {
-  const below: HTMLElement[] = [];
-  const bottom = component.getBoundingClientRect().bottom;
-  const body = component.ownerDocument.body;
-  let node: HTMLElement = component;
-  while (node !== body && node.parentElement != null) {
-    const parent = node.parentElement;
-    for (
-      let next = node.nextElementSibling;
-      next != null;
-      next = next.nextElementSibling
-    ) {
-      if (!(next instanceof HTMLElement)) {
-        continue;
-      }
-      const style = getComputedStyle(next);
-      if (
-        style.position === 'absolute' ||
-        style.position === 'fixed' ||
-        style.position === 'sticky' ||
-        style.display === 'none'
-      ) {
-        continue;
-      }
-      // Ours from a motion still running, or not translated by anyone: an
-      // element another owner translates has an owner our translate would
-      // fight. Other animations compose with it on their own channels (a
-      // tapped button's press feedback scales it through `transform`), so
-      // they are no reason to leave it behind.
-      const ours = moved.has(next);
-      if (
-        !ours &&
-        ((style.translate !== '' && style.translate !== 'none') ||
-          (typeof next.getAnimations === 'function' &&
-            next.getAnimations().some(translatesElement)))
-      ) {
-        continue;
-      }
-      // Below, not beside: a flex or grid neighbour does not move when the
-      // component changes height.
-      const top =
-        next.getBoundingClientRect().top - presentation(next, 'y', motionNow());
-      if (top < bottom - 1) {
-        continue;
-      }
-      below.push(next);
-    }
-    if (isScrollContainer(parent)) {
-      break;
-    }
-    node = parent;
-  }
-  return below;
 }

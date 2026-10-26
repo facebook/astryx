@@ -14,8 +14,10 @@
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
  *
- * In a List with `onReorder` (List/useListReorder.ts), each row ends with a
- * ListReorderHandle, or keeps its place with `isReorderDisabled`.
+ * In a reorderable List (`List reorderable`), each row with an `itemKey`
+ * that the reorderable object lets move ends with its handle, which comes
+ * through ListContext's `reorder` with the rest of the reorder machinery
+ * (List/listReorderContext.ts); a row without one keeps its place.
  *
  * Composes Item for the shared start content + label + description + end content layout
  * and the invisible button/anchor interactive pattern.
@@ -28,7 +30,7 @@
  * - /packages/cli/assets/templates/blocks/components/List/ (showcase blocks)
  */
 
-import {use, useRef, type ReactNode} from 'react';
+import {use, useRef, type Key, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -44,12 +46,9 @@ import {isRenderable, mergeProps} from '../utils';
 import {Item} from '../Item';
 import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
-import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {listRowStyles} from './listRow.stylex';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useMergedRefs} from '../hooks/useMergedRefs';
-import {ListReorderHandle, ListReorderSlot} from './ListReorderHandle';
-import {FIXED_ROW_ATTRIBUTE, ListReorderContext} from './useListReorder';
 
 // =============================================================================
 // Types
@@ -141,19 +140,12 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
   isSelected?: boolean;
 
   /**
-   * In a List with `onReorder`, this row has no reorder handle and keeps its
-   * place: other rows cannot be dragged or moved past it, so it splits the
-   * list into groups that each reorder on their own. No effect elsewhere.
-   * @default false
+   * The row's item key in a reorderable List (`List reorderable`): the key
+   * the reorderable object's `onReorder` reports and `isReorderable` is
+   * asked about. A row without one has no reorder handle. Separate from
+   * React's `key`, which stays React's own. No effect elsewhere.
    */
-  isReorderDisabled?: boolean;
-
-  /**
-   * In a List with `onReorder`, the text this row's reorder handle is named
-   * after ("Reorder {reorderLabel}"), for a row whose `label` is not plain
-   * text. Without it such a handle is named after the row's place.
-   */
-  reorderLabel?: string;
+  itemKey?: Key;
 
   /**
    * Swipe actions for touch, passed through to `Item` unchanged: the verbs a
@@ -409,8 +401,7 @@ export function ListItem({
   rel,
   isDisabled = false,
   isSelected = false,
-  isReorderDisabled = false,
-  reorderLabel,
+  itemKey,
   align,
   xstyle,
   className,
@@ -440,9 +431,18 @@ export function ListItem({
       }
     };
   }, []);
-  // In a List with `onReorder`: a trailing handle, or a row that stays put.
-  const isReorderable = use(ListReorderContext) != null;
-  const hasReorderHandle = isReorderable && !isReorderDisabled;
+  // In a reorderable List: a trailing handle, or a row that stays put.
+  const reorder = ctx?.reorder;
+  const reorderHandle =
+    reorder &&
+    itemKey != null &&
+    (reorder.options.isReorderable?.(itemKey) ?? true) ? (
+      <reorder.session.Handle
+        label={label}
+        itemKey={itemKey}
+        isDisabled={isDisabled}
+      />
+    ) : null;
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
   const edge = ctx?.edge ?? 'padded';
@@ -484,72 +484,72 @@ export function ListItem({
       <span {...stylex.props(markerStyles.number, NUMBER_STYLES[markerKind])} />
     ) : null;
 
+  // A row without a handle in a reorderable List still has a name for the
+  // announcements of the moves beside it. It follows the row, so the row's
+  // element is set when it records it.
+  const reorderName =
+    reorder && !reorderHandle ? (
+      <reorder.session.RowName row={rowRef} label={label} />
+    ) : null;
+
   return (
-    <Item
-      as="li"
-      ref={mergedRef}
-      marker={marker}
-      startContent={startContent}
-      label={label}
-      description={description}
-      endContent={
-        hasReorderHandle ? (
-          <>
-            {endContent}
-            <ListReorderHandle
-              label={reorderLabel ?? label}
-              isDisabled={isDisabled}
-            />
-          </>
-        ) : isReorderable && isRenderable(endContent) ? (
-          // A fixed row keeps its end content in the movable rows' column.
-          <>
-            {endContent}
-            <ListReorderSlot />
-          </>
-        ) : (
-          endContent
-        )
-      }
-      onClick={onClick}
-      interactiveRef={interactiveRef}
-      href={href}
-      target={target as '_blank' | '_self'}
-      rel={rel}
-      isDisabled={isDisabled}
-      isSelected={isSelected}
-      align={align}
-      density={density}
-      xstyle={
-        [
-          hasMarkers && styles.withCounter,
-          styles.travelling,
-          hasDividers && styles.withDivider,
-          hasDividers && embeddedStyles.noRadius,
-          // A list with markers is running text (bullets, numbers, a
-          // Markdown list), not a table: its rows keep their own height, and
-          // each marker stays on its text's first line.
-          !hasMarkers &&
-            (density === 'compact'
-              ? listRowStyles.touchCompact
-              : isRenderable(description)
+    <>
+      <Item
+        as="li"
+        ref={mergedRef}
+        marker={marker}
+        startContent={startContent}
+        label={label}
+        description={description}
+        endContent={
+          reorderHandle ? (
+            <>
+              {endContent}
+              {reorderHandle}
+            </>
+          ) : (
+            endContent
+          )
+        }
+        onClick={onClick}
+        interactiveRef={interactiveRef}
+        href={href}
+        target={target as '_blank' | '_self'}
+        rel={rel}
+        isDisabled={isDisabled}
+        isSelected={isSelected}
+        align={align}
+        density={density}
+        xstyle={
+          [
+            hasMarkers && styles.withCounter,
+            styles.travelling,
+            hasDividers && styles.withDivider,
+            hasDividers && embeddedStyles.noRadius,
+            // A list with markers is running text (bullets, numbers, a
+            // Markdown list), not a table: its rows keep their own height, and
+            // each marker stays on its text's first line. A compact list is the
+            // dense case and keeps its density too: its rows already clear the
+            // 24px target minimum (WCAG 2.5.8).
+            !hasMarkers &&
+              density !== 'compact' &&
+              (isRenderable(description)
                 ? listRowStyles.touchTwoLine
                 : listRowStyles.touchOneLine),
-          edge === 'flush' && styles.edgeFlush,
-          edge === 'outset' && styles.edgeOutset,
-          edge === 'bleed' && styles.edgeBleed,
-          // A focused handle rings itself; the row's focus-within ring stays
-          // off for it (two rings, and the list clips the row's sides).
-          hasReorderHandle && focusOutlineStyles.focusWithinExceptOwnRing,
-          xstyle,
-        ] as StyleXStyles
-      }
-      {...mergeProps(themeProps('list-item'), {className, style})}
-      {...(isReorderable && isReorderDisabled
-        ? {[FIXED_ROW_ATTRIBUTE]: ''}
-        : null)}
-      {...restProps}
-    />
+            edge === 'flush' && styles.edgeFlush,
+            edge === 'outset' && styles.edgeOutset,
+            edge === 'bleed' && styles.edgeBleed,
+            // A focused handle rings itself; the row's focus-within ring stays
+            // off for it (two rings, and the list clips the row's sides).
+            reorderHandle && reorder?.session.rowStyle,
+            xstyle,
+          ] as StyleXStyles
+        }
+        {...mergeProps(themeProps('list-item'), {className, style})}
+        {...restProps}
+      />
+      {reorderName}
+    </>
   );
 }
 

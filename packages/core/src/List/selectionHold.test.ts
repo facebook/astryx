@@ -7,8 +7,8 @@
  * @output Unit tests for holdSelection: which targets it holds (under any
  *   finger, never a mouse), the held state it writes and leaves, presentation values
  *   from each timing's closed-form curve, the deselect's clock and curve as
- *   motion roles under the row's theme, interruption, completion, cancel and
- *   replacement
+ *   internal constants no theme variable reaches, interruption, completion,
+ *   cancel and replacement
  * @position Beside List/selectionHold.ts; the compositor and pixel proofs are
  *   in List/__tests__/ListSelectionHold.interaction.browser.spec.ts
  */
@@ -200,7 +200,7 @@ describe('presentation follows each timing’s curve', () => {
     const timings = [
       {},
       {spring: {response: 0.35, dampingRatio: 1}, velocity: 1},
-      {durationMs: 3000, curve: timing.curves.easeInOut},
+      {durationMs: 3000, curve: timing.curves.move},
     ] as const;
     for (const each of timings) {
       const {control} = listRow(`Row ${timings.indexOf(each)}`);
@@ -217,7 +217,7 @@ describe('presentation follows each timing’s curve', () => {
   it("a fixed duration on a Bézier curve (a navigation's own fade)", () => {
     const {control} = listRow();
     const hold = holdSelection(control, {now});
-    const curve = timing.curves.easeInOut;
+    const curve = timing.curves.move;
     void hold?.animate(1, {
       durationMs: timing.reducedMotionCrossFadeMs,
       curve,
@@ -229,8 +229,9 @@ describe('presentation follows each timing’s curve', () => {
     expect(hold?.presentation(1000 + d)).toBe(1);
   });
 
-  it('a theme retunes the in-transition deselect through its motion roles', () => {
-    // The theme's variables, as its scope's computed style reports them.
+  it('keeps the in-transition deselect’s own clock and curve whatever a theme writes', () => {
+    // The deselect's clock and curve are internal constants: variables a
+    // theme's scope reports for them change nothing.
     const theme: Record<string, string> = {
       '--motion-list-deselect-navigation-pop-ms': '700ms',
       '--motion-list-deselect-navigation-pop-curve':
@@ -267,10 +268,10 @@ describe('presentation follows each timing’s curve', () => {
       ?.querySelector('button') as HTMLElement;
     const hold = holdSelection(control, {now});
     void hold?.animate(1, {startTime: 1000});
-    const ease = cubicBezier([0.42, 0, 0.58, 1]);
-    expect(hold?.presentation(1000 + 700 * 0.25)).toBeCloseTo(ease(0.25), 6);
-    expect(hold?.presentation(1000 + 350)).toBeCloseTo(0.5, 6);
-    expect(hold?.presentation(1000 + 700)).toBe(1);
+    const ms = list.deselect.navigationPopMs;
+    const ease = cubicBezier(list.deselect.navigationPopCurve);
+    expect(hold?.presentation(1000 + ms * 0.25)).toBeCloseTo(ease(0.25), 6);
+    expect(hold?.presentation(1000 + ms)).toBe(1);
     // A caller's own timing is left as it is.
     hold?.setProgress(0);
     void hold?.animate(1, {

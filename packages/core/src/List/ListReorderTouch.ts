@@ -6,14 +6,15 @@
  * @file ListReorderTouch.ts
  * @input The gesture system's long press and host, the reorder claim values
  *   (motion/uikit/reorder.ts) and the row motion (utils/rowMotion.ts)
- * @output The List reorder's touch layer: `attachTouchHold`, the hold that
- *   picks up a row from its handle under a finger, and `touchMotion`, UIKit's
- *   motion for the rows a reorder moves under a finger (the slides' spring
- *   under the list's theme, the slides, the drop's settle, the way home, and
- *   the continuation across the commit). It registers the reorder table's
- *   motion role before its first motion (`registerReorderTable`)
- * @position Imported by List/useListReorder.ts alone: what the reorder runs
- *   only under a finger sits behind this one import
+ * @output The List reorder's touch layer: `attachTouchHold`, the list's one
+ *   hold, which picks up a row from its handle under a finger, and
+ *   `touchMotion`, UIKit's motion for the rows a reorder moves under a finger
+ *   (the slides' spring under the list's theme, the slides, the drop's
+ *   settle, the way home, and the continuation across the commit). It
+ *   registers the reorder table's motion role before its first motion
+ *   (`registerReorderTable`)
+ * @position Imported by List/listReorderEngine.tsx alone: what the reorder
+ *   runs only under a finger sits behind this one import
  *
  * UIKit's reorder control (iOS 26.2, measured): a finger held still on it
  * for the scroll view's content-touch delay (150 ms) claims the drag, and a
@@ -24,9 +25,11 @@
  * the screen before the claim makes it a pinch, the browser's (WCAG 1.4.4);
  * after the claim extra fingers change nothing. The gesture host owns the
  * document's touch listeners: it counts the fingers on the screen and locks
- * text selection under the held finger.
+ * text selection under the held finger. One hold serves the whole list
+ * (spec:AST-103 FR5): it receives only the touches that begin on the list's
+ * handles, so the list's blocking listener is its only one, never a row's.
  *
- * SYNC: When modified, update List/useListReorder.ts.
+ * SYNC: When modified, update List/listReorderEngine.tsx.
  */
 
 import {getGestureHost} from '../gestures/GestureHost';
@@ -47,30 +50,33 @@ import {
 } from '../utils/rowMotion';
 
 /**
- * Lets a finger pick up the row of `handle`: held still for the
- * content-touch delay, and the only finger on the screen. Returns the
- * detach.
+ * The list's hold: a finger held still for the content-touch delay on one of
+ * its handles (a touch `receives` takes) picks up that handle's row.
+ * Returns the detach.
  */
 export function attachTouchHold(
-  handle: HTMLElement,
+  list: HTMLElement,
+  receives: (target: unknown) => boolean,
   onGesture: (recognizer: LongPressGestureRecognizer) => void,
 ): () => void {
-  const host = getGestureHost(handle.ownerDocument);
+  const host = getGestureHost(list.ownerDocument);
   const recognizer = new LongPressGestureRecognizer({
-    name: 'ListReorderHandle.touch',
+    name: 'List.reorder',
     minimumPressDuration: reorder.claim.delayMs,
     allowableMovement: reorder.claim.allowableMovement,
     allowedPointerTypes: ['touch', 'pen'],
+    // Only the touches that begin on a handle: the rest of the list's
+    // touches never reach the hold.
+    shouldReceiveTouch: (_recognizer, touch) => receives(touch.target),
     // Only a lone finger: two are the browser's pinch, wherever the second
     // one landed (the gesture host counts every finger on the screen).
     shouldBegin: () => host.fingersDown() <= 1,
-    // No text selection or callout under the held finger (the host locks
-    // them while it is down, and only then).
-    preventsTextSelection: true,
+    // A long press brings the selection lock: no text selection or callout
+    // under the held finger, while it is down and only then.
   });
   const unlisten = recognizer.addListener(onGesture);
-  // The handle sets its own `touch-action`.
-  const detach = host.attach(handle, recognizer, {manageStyle: false});
+  // The handles set their own `touch-action`.
+  const detach = host.attach(list, recognizer, {manageStyle: false});
   return () => {
     detach();
     unlisten();
@@ -89,9 +95,10 @@ function releaseOnArrival(element: HTMLElement, arrived: Promise<boolean>) {
 /** UIKit's motion for the rows of a reorder under a finger. */
 export const touchMotion = {
   /**
-   * The slides' spring under the list's theme: a motion role
-   * (`reorder.slide.spring`) a theme may retune, read once when a motion
-   * starts. Registers the reorder table first (once).
+   * The slides' spring, read once when a motion starts: the measured
+   * constant (`reorder.slide.spring`), through the motion table, which
+   * makes no reorder value a role (touch motion stays internal). Registers
+   * the reorder table first (once).
    */
   slideBase(list: HTMLElement): DurationBounce {
     registerReorderTable();
