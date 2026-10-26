@@ -163,6 +163,47 @@ function stripAnimationOf(animations: WheelAnimation[]): WheelAnimation {
 }
 
 /** The strip's translation is minus the wheel's offset. */
+/** The strip's running coast, from and to on the page clock, read without
+ * its keyframes. */
+async function stripCoastTiming(
+  strip: Locator,
+): Promise<{from: number; to: number}> {
+  await expect
+    .poll(
+      async () =>
+        strip.evaluate(element =>
+          element
+            .getAnimations()
+            .some(a => a.playState === 'running' && a.startTime != null),
+        ),
+      {timeout: 5_000},
+    )
+    .toBe(true);
+  return strip.evaluate(element => {
+    const animation = element
+      .getAnimations()
+      .find(a => a.playState === 'running' && a.startTime != null);
+    const effect = animation?.effect as KeyframeEffect | null | undefined;
+    const timing = effect?.getComputedTiming();
+    const start = performance.timeOrigin + Number(animation?.startTime ?? 0);
+    const delay = timing?.delay ?? 0;
+    const active = Number(timing?.activeDuration ?? 0);
+    // The curve's end, as the harness reads it: the first of the frames
+    // that hold the strip's last position (the arrival commits there).
+    const frames = effect?.getKeyframes() ?? [];
+    let first = frames.length - 1;
+    while (
+      first > 0 &&
+      String(frames[first - 1].transform) === String(frames[first].transform)
+    ) {
+      first -= 1;
+    }
+    const linear = (effect?.getTiming().easing ?? 'linear') === 'linear';
+    const end = linear ? (frames[first]?.computedOffset ?? 1) * active : active;
+    return {from: start + delay, to: start + delay + end};
+  });
+}
+
 const stripOffset = async (strip: Locator) =>
   strip.evaluate(element => {
     const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
@@ -392,7 +433,10 @@ test('the coast does no Layout or Paint per frame', async ({
   let coast = {from: 0, to: 0};
   const trace = await traceRendering(page, async () => {
     await driver.play(script);
-    coast = stripAnimationOf(await waitForAnimation(strip));
+    // The strip's own timing only: describing every row's baked keyframes
+    // (waitForAnimation) is itself a DevTools task of nearly 50 ms on the
+    // page's main thread, which the long-task check would count.
+    coast = await stripCoastTiming(strip);
     await waitForRest(strip);
   });
   const during = countBetween(trace, coast.from + 50, coast.to - 50);
