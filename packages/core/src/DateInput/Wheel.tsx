@@ -5,7 +5,7 @@
 /**
  * @file Wheel.tsx
  * @input Option list, selected value, change callback; under a finger also
- *   looping, a rest rule and a ref for programmatic turns
+ *   a rest rule and a ref for programmatic turns
  * @output Exports Wheel — one picker column — ScrollWheel (today's column),
  *   and the shared types of wheelOptions.ts
  * @position Internal component; consumed by MonthYearWheels.tsx,
@@ -267,7 +267,7 @@ Wheel.displayName = 'Wheel';
 /**
  * The scrolling column with the handle the touch wheel offers: `spinTo`
  * commits its row at once, and the new value scrolls the column there as any
- * new value does. `isLooping` and `resolveRest` are the touch wheel's alone.
+ * new value does. `resolveRest` is the touch wheel's alone.
  */
 function TodayWheel({
   ref,

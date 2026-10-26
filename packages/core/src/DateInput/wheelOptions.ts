@@ -66,12 +66,6 @@ export interface WheelProps {
    */
   isActive?: boolean;
   /**
-   * The rows repeat without end, as UIDatePicker's minutes and hours do: the
-   * last row is followed by the first. Under a finger only, and ignored for a
-   * list too short to fill the column past its seam (fewer than 11 rows).
-   */
-  isLooping?: boolean;
-  /**
    * The row the wheel rests on after stopping on `index`. When it differs,
    * the wheel turns on to it and commits that one. Under a finger only.
    * @default the nearest enabled row (`nearestEnabledIndex`)

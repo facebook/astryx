@@ -755,19 +755,6 @@ describe('PickerWheel — mechanics for its owners', () => {
     expect(arrived).toBe(false);
   });
 
-  it('loops: the first row follows the last', () => {
-    const {column, option, onChange} = renderWheel({
-      options: MINUTES,
-      value: 59,
-      label: 'Minute',
-      isLooping: true,
-    });
-    // Minute 00 is drawn just below 59.
-    expect(distanceOf(option('00'))).toBeCloseTo(ROW, 2);
-    fireEvent.keyDown(column, {key: 'ArrowDown'});
-    expect(onChange).toHaveBeenLastCalledWith(0);
-  });
-
   it('rests where its owner’s rule says', () => {
     // Only even hours: an odd rest moves on to the next even hour.
     const {column, onChange} = renderWheel({
