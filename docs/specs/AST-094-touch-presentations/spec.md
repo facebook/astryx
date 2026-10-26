@@ -324,7 +324,7 @@ FR33 apply to menus only. A mouse keeps today's behavior.
 - **FR31 — Menus and popovers grow from their trigger and shrink back.**
   Under a finger, on every touch device, an anchored menu or a Popover MUST
   open by growing out of its trigger and close by shrinking back into it, on
-  its theme motion roles (FR4; a menu on `springs.menuOpen` and
+  its motion roles (FR4; a menu on `springs.menuOpen` and
   `springs.menuClose`). The shrink plays in full after the surface has
   closed. This is its exit under FR7 (`family:overlay-dismissal` AV6); under
   reduced motion FR8 applies. A menu or popover presented as a bottom sheet
@@ -354,7 +354,7 @@ FR33 apply to menus only. A mouse keeps today's behavior.
   sub-menu's rows and a leading "Back to <parent>" row replace the menu's rows
   in the same surface, no flyout opens, and Back returns to the row that
   opened it (`component:DropdownMenu` FR11 and FR20). The change between
-  levels plays on the theme motion roles `springs.subMenuOpen` and
+  levels plays on the motion roles `springs.subMenuOpen` and
   `springs.subMenuBack` (FR4); under reduced motion FR8 applies.
 - **FR35 — A presentation takes no input while it grows.** Under a finger, a
   tap or a drag that lands while a Popover or an anchored menu is still
@@ -457,8 +457,8 @@ FR33 apply to menus only. A mouse keeps today's behavior.
 ## Current-state impact
 
 - `architecture:theme-tokens` and `architecture:theme-authoring-contract`:
-  touch motion roles join the motion configuration, with the table's values as
-  their defaults; INV3 and the duration and easing tokens are unchanged (FR4).
+  unchanged until the public motion-token set is decided; then its roles join
+  the motion configuration (FR4, DEC-11).
 - `architecture:interaction-modality`: the touch-presentation conditions
   (FR13) sit beside the shared modality state; its invariants are unchanged.
 - `architecture:react-component-runtime`: FR24 states the caller-visible
@@ -504,7 +504,7 @@ FR33 apply to menus only. A mouse keeps today's behavior.
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | FR1, FR2        | Value check over every measured value and its uses                                                                             | every value; a guess and its measurement task; a platform-specific value; two components playing the same motion                                                                                                                                  | an unsourced value, an unknown source kind, a guess without a listed measurement, an unsourced platform split, or two values for one use fails                                                                                                                                                 |
 | FR3             | Unit tests of the spring, decay, rubber band and projection math against an independent integration and values read from UIKit | under-, critically and overdamped springs; release velocities; both rates; overscroll depths                                                                                                                                                      | changing a formula or a constant breaks the agreement with UIKit's values                                                                                                                                                                                                                      |
-| FR4             | Theme unit tests and a browser test of a themed spring                                                                         | no theme (table defaults); a theme writing a spring, a duration and a curve, at its root and in an adaptation                                                                                                                                     | a role that ignores the theme, a literal played in place of a role, or a default that differs from the table fails                                                                                                                                                                             |
+| FR4             | Role unit tests over every touch motion                                                                                        | each role at its table value; a theme that writes `motion`                                                                                                                                                                                        | a literal played in place of a role, a value that differs from the table, or a theme that changes a role before the public set is decided fails                                                                                                                                                |
 | FR5             | Browser proof: an animation keeps advancing frame by frame through a 1 s main-thread block, with no layout or paint per frame  | Chromium phone emulation; WebKit                                                                                                                                                                                                                  | a script-driven or layout-animating implementation freezes or lays out                                                                                                                                                                                                                         |
 | FR6             | Unit and browser tests catching an animation mid-flight and retargeting it                                                     | catch at peak velocity; retarget with a new spring                                                                                                                                                                                                | a layout read, a jump, or a lost velocity fails                                                                                                                                                                                                                                                |
 | FR7, FR8        | Component browser tests and storyboards with and without Reduce Motion                                                         | entrance, exit, move; a drag and its lift under Reduce Motion                                                                                                                                                                                     | a missing exit, any travel, scale or spring under Reduce Motion other than a coast after a throw and its settle at an edge (`design:reduced-motion` DR2), or an opacity fade over 200 ms fails                                                                                                 |
@@ -631,7 +631,7 @@ Rejected: a system Copy item; suppressing selection on every press-tracked contr
 Motion values stay internal for now: a public, theme-settable set is decided
 separately, so no component-specific role becomes a public token first.
 
-This defers DEC-3's theme override until that set exists.
+This defers DEC-1's and DEC-3's theme retuning until that set exists.
 
 Rejected: publishing the per-component roles as theme tokens.
 
