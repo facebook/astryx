@@ -75,7 +75,9 @@ const styles = stylex.create({
     // A touch target on each side, centred on its row, with the lines in its
     // middle. It takes only the lines' height in the row's layout (the
     // negative block margins), so a compact row stays compact; the target and
-    // its focus ring reach past that into the row's padding.
+    // its focus ring reach past that into the row's padding, never past it:
+    // no further than the row's own inline inset, so a flush row's handle
+    // stays inside the list's clip.
     alignSelf: 'center',
     display: 'flex',
     alignItems: 'center',
@@ -84,7 +86,7 @@ const styles = stylex.create({
     width: HANDLE_SIZE,
     height: HANDLE_SIZE,
     marginBlock: (LINES_HEIGHT - HANDLE_SIZE) / 2,
-    marginInlineEnd: -8,
+    marginInlineEnd: 'calc(-1 * min(8px, var(--_item-inset-inline, 8px)))',
     padding: 0,
     borderWidth: 0,
     borderRadius: 4,
