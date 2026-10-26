@@ -603,6 +603,96 @@ test('below one track height of fill, the leading end follows the track\u2019s c
   }
 });
 
+test('in forced colors the fill keeps its whole outline, a closed capsule inside the track', async ({
+  page,
+}) => {
+  // architecture:theme-tokens INV11: forced colors paint the fill with
+  // Canvas, and its CanvasText outline keeps its shape visible. The track
+  // clips what it holds, so the outline stays whole only when the fill ends
+  // where it is drawn: under forced colors the fill is sized to the value, not
+  // slid along the track.
+  await page.emulateMedia({forcedColors: 'active'});
+  for (const {globals, fromLeft} of [
+    {globals: '', fromLeft: true},
+    {globals: 'direction:rtl', fromLeft: false},
+  ]) {
+    await open(page, 0, globals);
+    for (const value of [2, 50]) {
+      await setValue(page, value);
+      await page.waitForTimeout(700);
+      const box = await trackBox(page);
+      const {track, fill, outline} = await page.evaluate(() => {
+        const bar = document.querySelector(
+          '[role="progressbar"]',
+        ) as HTMLElement;
+        const child = bar.firstElementChild as HTMLElement;
+        const r = (e: Element) => {
+          const b = e.getBoundingClientRect();
+          return {left: b.left, right: b.right};
+        };
+        return {
+          track: r(bar),
+          fill: r(child),
+          outline: (getComputedStyle(child).outlineColor.match(/[\d.]+/g) ?? [])
+            .slice(0, 3)
+            .map(Number),
+        };
+      });
+      const label = `${globals || 'ltr'} ${value}%`;
+      // The fill's box lies inside the track and ends at the value.
+      const filled = ((track.right - track.left) * value) / 100;
+      if (fromLeft) {
+        expect(fill.left - track.left, label).toBeCloseTo(0, 0);
+        expect(fill.right - track.left, label).toBeCloseTo(filled, 0);
+      } else {
+        expect(track.right - fill.right, label).toBeCloseTo(0, 0);
+        expect(track.right - fill.left, label).toBeCloseTo(filled, 0);
+      }
+      // The outline's cap at the track's inline-start edge is drawn: at mid
+      // height the edge's first pixels are the outline's color.
+      const shot = await page.screenshot({
+        clip: {
+          x: fromLeft ? box.x : box.x + box.width - 2,
+          y: box.y,
+          width: 2,
+          height: box.height,
+        },
+      });
+      const nearest = await page.evaluate(
+        async ({png, outline}) => {
+          const bitmap = await createImageBitmap(
+            await (await fetch(`data:image/png;base64,${png}`)).blob(),
+          );
+          const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+          const context = canvas.getContext('2d');
+          if (context == null) {
+            throw new Error('no 2d context');
+          }
+          context.drawImage(bitmap, 0, 0);
+          const {data, width, height} = context.getImageData(
+            0,
+            0,
+            bitmap.width,
+            bitmap.height,
+          );
+          const y = Math.floor(height / 2);
+          let best = Infinity;
+          for (let x = 0; x < width; x += 1) {
+            const i = (y * width + x) * 4;
+            const distance = Math.max(
+              ...[0, 1, 2].map(k => Math.abs(data[i + k] - outline[k])),
+            );
+            best = Math.min(best, distance);
+          }
+          return best;
+        },
+        {png: shot.toString('base64'), outline},
+      );
+      expect(nearest, `${label} start cap`).toBeLessThanOrEqual(64);
+    }
+  }
+});
+
 test('storyboard: the fill moving from 20% to 80% @storyboard', async ({
   page,
 }, testInfo) => {

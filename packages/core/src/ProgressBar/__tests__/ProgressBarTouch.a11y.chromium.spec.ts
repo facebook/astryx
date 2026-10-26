@@ -414,6 +414,49 @@ test('in RTL the minimum and the motion mirror', async ({page}) => {
   expect(half.length).toBeCloseTo((tiny.length + 0.81 * half.width) / 2, 0);
 });
 
+test('in forced colors under a finger the fill is sized to the value, its outline whole, in either direction', async ({
+  page,
+}) => {
+  // architecture:theme-tokens INV11: forced colors keep the fill's shape with
+  // a CanvasText outline, and the track clips what it holds, so the fill is
+  // sized to the value there (still at least two track heights above zero)
+  // rather than slid along the track.
+  await page.emulateMedia({forcedColors: 'active'});
+  for (const {globals, fromLeft} of [
+    {globals: '', fromLeft: true},
+    {globals: 'direction:rtl', fromLeft: false},
+  ]) {
+    await open(page, 0, {globals});
+    for (const value of [1, 50]) {
+      await setValue(page, value);
+      await page.waitForTimeout(900);
+      const {track, fill, height} = await page.evaluate(() => {
+        const bar = document.querySelector('[role="progressbar"]') as Element;
+        const child = bar.firstElementChild as Element;
+        const t = bar.getBoundingClientRect();
+        const f = child.getBoundingClientRect();
+        return {
+          track: {left: t.left, right: t.right},
+          fill: {left: f.left, right: f.right},
+          height: t.height,
+        };
+      });
+      const label = `${globals || 'ltr'} ${value}%`;
+      const expected = Math.max(
+        ((track.right - track.left) * value) / 100,
+        VIEW.minimumFillHeights * height,
+      );
+      if (fromLeft) {
+        expect(fill.left - track.left, label).toBeCloseTo(0, 0);
+        expect(fill.right - fill.left, label).toBeCloseTo(expected, 0);
+      } else {
+        expect(track.right - fill.right, label).toBeCloseTo(0, 0);
+        expect(fill.right - fill.left, label).toBeCloseTo(expected, 0);
+      }
+    }
+  }
+});
+
 test('the fill keeps moving while a script holds the main thread', async ({
   page,
 }) => {

@@ -264,8 +264,22 @@ const styles = stylex.create({
   // track heights once above zero (16px on the 8px track), and is
   // transparent at zero (`fillEmpty`). Under reduced motion it lands at once,
   // as everywhere (below). A mouse or trackpad keeps the theme's timing.
+  //
+  // Under forced colors the fill is sized to the value instead (its `width`,
+  // no transform; under a finger still at least two track heights once above
+  // zero), as before: the track's clip would cut the CanvasText outline's
+  // start cap off a slid fill, and that outline is what keeps the fill's
+  // shape visible there (architecture:theme-tokens INV11).
   fill: {
-    width: '100%',
+    width: {
+      default: '100%',
+      '@media (forced-colors: active)': {
+        default: 'var(--_progress-bar-fill, 0%)',
+        // Under a finger: the touch minimum and the flip offset (below).
+        '@media (pointer: coarse)':
+          'calc(max(var(--_progress-bar-fill, 0%), 16px) + var(--_progress-bar-flip, 0) * 0.01px)',
+      },
+    },
     height: '100%',
     // Forced colors replace status fills with Canvas; this boundary keeps the
     // fill's shape visible (architecture:theme-tokens INV11).
@@ -279,7 +293,10 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-full'],
     transform: {
       default: 'translateX(calc(var(--_progress-bar-fill, 0%) - 100%))',
-      ':dir(rtl)': 'translateX(calc(100% - var(--_progress-bar-fill, 0%)))',
+      ':dir(rtl)': {
+        default: 'translateX(calc(100% - var(--_progress-bar-fill, 0%)))',
+        '@media (forced-colors: active)': 'none',
+      },
       '@media (pointer: coarse)': {
         // `--_progress-bar-flip` steps 0, 1, 2, 0… on every change and moves
         // the fill by that many hundredths of a pixel, so a change back to
@@ -292,15 +309,21 @@ const styles = stylex.create({
         ':dir(rtl)':
           'translateX(calc(min(calc(100% - var(--_progress-bar-fill, 0%)), calc(100% - 16px)) - var(--_progress-bar-flip, 0) * 0.01px))',
       },
+      // After the touch key, so StyleX negates that key under forced colors.
+      '@media (forced-colors: active)': 'none',
     },
-    willChange: 'transform',
-    transitionProperty: 'transform',
+    willChange: {
+      default: 'transform',
+      '@media (forced-colors: active)': 'auto',
+    },
+    transitionProperty: {
+      default: 'transform',
+      '@media (forced-colors: active)': 'width',
+    },
     // Under reduced motion a new value lands at once, with a mouse as with a
-    // finger: progress indicators sit outside design:reduced-motion's scope,
-    // and a fill that never travels is the choice that cannot conflict with
-    // it. The two keys are the shared reduced-motion queries
-    // (motion/reducedMotion.ts), spelled as it does; the coarse one comes
-    // after the touch key so it wins there.
+    // finger: the fill never travels (design:reduced-motion DR1). The two keys
+    // are the shared reduced-motion queries (motion/reducedMotion.ts), spelled
+    // as it does; the coarse one comes after the touch key so it wins there.
     transitionDuration: {
       default: durationVars['--duration-medium'],
       // ProgressBar's internal constant, the table's whole-track duration
