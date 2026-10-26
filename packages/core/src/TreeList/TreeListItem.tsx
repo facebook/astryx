@@ -257,7 +257,9 @@ const styles = stylex.create({
     height: spacingVars['--spacing-4'],
     fontSize: spacingVars['--spacing-4'],
     transitionProperty: 'transform',
-    transitionDuration: durationVars['--duration-fast'],
+    // The layout-change role (a placeholder until the theme names it): the
+    // chevron turns on the same timing as the rows' glide (INV12).
+    transitionDuration: durationVars['--duration-medium-min'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   // The RTL mirror is folded into each state's transform rather than living on

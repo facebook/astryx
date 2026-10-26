@@ -27,7 +27,14 @@
  * - /packages/cli/assets/templates/blocks/components/Collapsible/ (showcase blocks)
  */
 
-import {use, useId, type ReactNode} from 'react';
+import {
+  use,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   borderVars,
@@ -41,6 +48,7 @@ import {
 } from '../theme/tokens.stylex';
 
 import {useCollapsible} from './useCollapsible';
+import {playLayoutChange, reportLayoutChange} from '../motion/animatedLayout';
 import {CollapsibleGroupPresentationContext} from './CollapsibleGroupContext';
 import type {CollapsibleChevronPosition} from './CollapsibleGroupContext';
 import {Icon} from '../Icon';
@@ -116,7 +124,9 @@ const styles = stylex.create({
     height: typeScaleVars['--text-large-size'],
     fontSize: typeScaleVars['--text-large-size'],
     transitionProperty: 'transform',
-    transitionDuration: durationVars['--duration-fast'],
+    // The layout-change role (a placeholder until the theme names it): the
+    // chevron turns on the same timing as the content's glide (INV12).
+    transitionDuration: durationVars['--duration-medium-min'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   chevronOpen: {
@@ -339,10 +349,29 @@ export function Collapsible({
   // attribute, so the trigger keeps `aria-disabled` semantics and stays
   // discoverable. A native `disabled` button would silently swallow events
   // (e.g. a wrapping tooltip's hover) — the system-wide disabled convention.
+  // The content's size change animates inside the nearest animated-layout
+  // area: the content after this Collapsible glides, and the revealed content
+  // plays its own entrance on the same timing
+  // (`architecture:react-component-runtime` INV12).
+  const contentRef = useRef<HTMLDivElement>(null);
+  const layoutChange = useMemo(() => reportLayoutChange(contentRef), []);
+  const wasOpenRef = useRef(isOpen);
+  useLayoutEffect(() => {
+    if (wasOpenRef.current === isOpen) {
+      return;
+    }
+    wasOpenRef.current = isOpen;
+    layoutChange.animate();
+    if (isOpen && contentRef.current != null) {
+      playLayoutChange(contentRef.current, 'enter');
+    }
+  }, [isOpen, layoutChange]);
+
   const handleToggle = () => {
     if (isDisabled) {
       return;
     }
+    layoutChange.measureBefore();
     toggle();
   };
 
@@ -433,6 +462,7 @@ export function Collapsible({
         {!isChevronAtStart && chevron}
       </button>
       <div
+        ref={contentRef}
         id={contentId}
         {...mergeProps(
           themeProps('collapsible-content', {

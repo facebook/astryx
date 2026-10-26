@@ -15,7 +15,15 @@
  * - /packages/cli/assets/templates/blocks/components/TreeList/ (showcase blocks)
  */
 
-import {useId, useState, useMemo, useCallback, type ReactNode} from 'react';
+import {
+  useId,
+  useState,
+  useMemo,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
@@ -28,6 +36,11 @@ import type {
 } from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
 import {useTreeFocusInternal} from '../hooks/useTreeFocus';
+import {
+  playLayoutChange,
+  reportLayoutChange,
+  type LayoutChange,
+} from '../motion/animatedLayout';
 
 // =============================================================================
 // Types
@@ -211,8 +224,25 @@ export function TreeList({
     Map<string, boolean>
   >(() => new Map());
 
+  // A row's size change (its children shown or hidden) animates inside the
+  // nearest animated-layout area: the rows and content after it glide, and
+  // the shown group plays its own entrance on the same timing
+  // (`architecture:react-component-runtime` INV12). Read through a ref
+  // because the tree element comes from the focus hook below.
+  const treeElementRef = useRef<HTMLUListElement | null>(null);
+  const pendingLayoutRef = useRef<{change: LayoutChange; id: string} | null>(
+    null,
+  );
   const handleToggle = useCallback(
     (id: string) => {
+      const row = treeElementRef.current?.querySelector<HTMLElement>(
+        `[data-tree-id="${CSS.escape(id)}"]`,
+      );
+      if (row != null) {
+        const change = reportLayoutChange(() => row);
+        change.measureBefore();
+        pendingLayoutRef.current = {change, id};
+      }
       setExpandedKeysOverride(prev => {
         const next = new Map(prev);
         const isCurrentlyExpanded = prev.has(id)
@@ -259,6 +289,21 @@ export function TreeList({
     return false;
   }, []);
 
+  useLayoutEffect(() => {
+    const pending = pendingLayoutRef.current;
+    if (pending == null) {
+      return;
+    }
+    pendingLayoutRef.current = null;
+    pending.change.animate();
+    const group = treeElementRef.current?.querySelector<HTMLElement>(
+      `[data-tree-id="${CSS.escape(pending.id)}"] > [role="group"]`,
+    );
+    if (group != null) {
+      playLayoutChange(group, 'enter');
+    }
+  }, [expandedKeysOverride]);
+
   const {treeRef, handleKeyDown, handleFocus} =
     useTreeFocusInternal<HTMLUListElement>({
       onToggleExpand: handleToggle,
@@ -268,6 +313,9 @@ export function TreeList({
       // the chevron toggle, start content or description.
       matchLabelledBy: true,
     });
+  useLayoutEffect(() => {
+    treeElementRef.current = treeRef.current;
+  });
 
   const handleRootKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {

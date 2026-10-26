@@ -15,7 +15,7 @@
  * - /packages/cli/assets/templates/blocks/components/ScrollableArea/ (showcase blocks)
  */
 
-import type {ReactNode} from 'react';
+import {useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {
@@ -43,6 +43,8 @@ import {colorVars} from '../theme/tokens.stylex';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {mergeProps} from '../utils/mergeProps';
 import {themeProps} from '../utils/themeProps';
+import {useAnimatedLayout} from '../hooks/useAnimatedLayout';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 
 const styles = stylex.create({
   viewport: {
@@ -213,9 +215,15 @@ export function ScrollableArea({
     className,
     style,
   );
+  // The viewport is an animated-layout area: a size change inside it glides
+  // the content after the change (`architecture:react-component-runtime`
+  // INV12).
+  const areaRef = useRef<HTMLDivElement>(null);
+  useAnimatedLayout(areaRef);
+  const viewportRef = useMergedRefs(ref, areaRef);
   const viewportProps = getViewportProps<HTMLDivElement>({
     ...props,
-    ref,
+    ref: viewportRef,
     ...mergedViewportProps,
   });
 
