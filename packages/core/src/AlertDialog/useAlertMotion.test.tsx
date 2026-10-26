@@ -6,9 +6,9 @@
  *   by a recorder whose animations start and end when the test says so
  * @output The alert motion contract: an opening sets the alert to scale 1.2
  *   and opacity 0 with the dimming at 0 and presents both from rest on
- *   springs.alertPresent with no start time (the browser's commit); closed
+ *   ALERT_PRESENT_SPRING with no start time (the browser's commit); closed
  *   right after, it leaves from where it is; a closing keeps it presented
- *   while both fade out on springs.alertDismiss, then hides it (or after a
+ *   while both fade out on ALERT_DISMISS_SPRING, then hides it (or after a
  *   backstop if the end is never reported); reopening mid-exit fades back
  *   without hiding; touches are refused during both transitions, the
  *   presentation's window counted from its reported start; under Reduce
@@ -26,7 +26,10 @@ import {
   type SpringDescription,
 } from '../motion/spring';
 import {alertController} from '../motion/uikit/alert';
-import {springs} from '../motion/uikit/springs';
+import {
+  ALERT_DISMISS_SPRING,
+  ALERT_PRESENT_SPRING,
+} from '../motion/uikit/springs';
 import type * as SpringsModule from '../motion/uikit/springs';
 import {useAlertMotion, type AlertMotion} from './useAlertMotion';
 
@@ -66,20 +69,19 @@ const {recorded, reducedMotion, alertSprings} = vi.hoisted(() => ({
 
 vi.mock('../motion/uikit/springs', async importOriginal => {
   const actual = await importOriginal<typeof SpringsModule>();
-  const table = Object.defineProperties(
-    {...actual.springs},
+  return Object.defineProperties(
+    {...actual},
     {
-      alertPresent: {
-        get: () => alertSprings.present ?? actual.springs.alertPresent,
+      ALERT_PRESENT_SPRING: {
+        get: () => alertSprings.present ?? actual.ALERT_PRESENT_SPRING,
         enumerable: true,
       },
-      alertDismiss: {
-        get: () => alertSprings.dismiss ?? actual.springs.alertDismiss,
+      ALERT_DISMISS_SPRING: {
+        get: () => alertSprings.dismiss ?? actual.ALERT_DISMISS_SPRING,
         enumerable: true,
       },
     },
   );
-  return {...actual, springs: table};
 });
 
 vi.mock('../motion/animator', () => ({
@@ -231,7 +233,7 @@ describe('useAlertMotion', () => {
       {
         kind: 'animate',
         values: {opacity: 1, scale: 1},
-        spring: springs.alertPresent,
+        spring: ALERT_PRESENT_SPRING,
         options: {},
       },
     ]);
@@ -240,7 +242,7 @@ describe('useAlertMotion', () => {
       {
         kind: 'animate',
         values: {opacity: 1},
-        spring: springs.alertPresent,
+        spring: ALERT_PRESENT_SPRING,
         options: {},
       },
     ]);
@@ -293,14 +295,14 @@ describe('useAlertMotion', () => {
     expect(moves(panel).at(-1)).toEqual({
       kind: 'animate',
       values: {opacity: 0},
-      spring: springs.alertDismiss,
+      spring: ALERT_DISMISS_SPRING,
       velocity: {opacity: 2.1},
       options: {},
     });
     expect(moves(backdrop).at(-1)).toEqual({
       kind: 'animate',
       values: {opacity: 0},
-      spring: springs.alertDismiss,
+      spring: ALERT_DISMISS_SPRING,
       velocity: {opacity: 2.1},
       options: {},
     });
@@ -346,14 +348,14 @@ describe('useAlertMotion', () => {
     expect(moves(panel).at(-1)).toEqual({
       kind: 'animate',
       values: {opacity: 0},
-      spring: springs.alertDismiss,
+      spring: ALERT_DISMISS_SPRING,
       velocity: {opacity: 0},
       options: {},
     });
     expect(moves(backdrop).at(-1)).toEqual({
       kind: 'animate',
       values: {opacity: 0},
-      spring: springs.alertDismiss,
+      spring: ALERT_DISMISS_SPRING,
       velocity: {opacity: 0},
       options: {},
     });
@@ -395,14 +397,14 @@ describe('useAlertMotion', () => {
     expect(moves(panel).at(-1)).toEqual({
       kind: 'animate',
       values: {opacity: 1},
-      spring: springs.alertPresent,
+      spring: ALERT_PRESENT_SPRING,
       velocity: {opacity: -3},
       options: {},
     });
     expect(moves(backdrop).at(-1)).toEqual({
       kind: 'animate',
       values: {opacity: 1},
-      spring: springs.alertPresent,
+      spring: ALERT_PRESENT_SPRING,
       velocity: {opacity: -3},
       options: {},
     });
@@ -549,7 +551,7 @@ describe('useAlertMotion', () => {
     );
     const {panel} = animators();
     expect(panel.calls.find(call => call.kind === 'animate')).toMatchObject({
-      spring: springs.alertPresent,
+      spring: ALERT_PRESENT_SPRING,
     });
     now = 2000;
     await act(async () => {
@@ -567,8 +569,8 @@ describe('useAlertMotion', () => {
 
   it("measures UIKit's durations as its springs' lengths, so the alert keeps UIKit's 435 ms window", () => {
     for (const [spring, measured] of [
-      [springs.alertPresent, alertController.present.durationMs],
-      [springs.alertDismiss, alertController.dismiss.durationMs],
+      [ALERT_PRESENT_SPRING, alertController.present.durationMs],
+      [ALERT_DISMISS_SPRING, alertController.dismiss.durationMs],
     ] as const) {
       expect(Math.round(settlingDuration(toSpring(spring)) * 1000)).toBe(
         measured,

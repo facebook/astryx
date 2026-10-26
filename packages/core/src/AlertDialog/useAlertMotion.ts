@@ -12,7 +12,7 @@
  * @position Internal hook of AlertDialog; the touch presentation's motion
  *
  * UIKit's alert motion (measured on iOS 26.2; numbers in
- * motion/uikit/alert.ts and springs.alertPresent / alertDismiss):
+ * motion/uikit/alert.ts, ALERT_PRESENT_SPRING and ALERT_DISMISS_SPRING):
  *
  * - presenting, the alert scales from 1.2 to 1 and fades in, and the dimming
  *   fades in, all on one critically damped spring (0.404 s); nothing moves
@@ -65,7 +65,10 @@ import {
 } from '../motion/spring';
 import {holdPresentation, isInHeldLayer} from '../Layer/presentationHold';
 import {alertController} from '../motion/uikit/alert';
-import {springs} from '../motion/uikit/springs';
+import {
+  ALERT_DISMISS_SPRING,
+  ALERT_PRESENT_SPRING,
+} from '../motion/uikit/springs';
 
 /** A dialog that misses its exit's end still closes this long after it. */
 const EXIT_BACKSTOP_MS = 100;
@@ -124,7 +127,7 @@ function touchWindowMs(): number {
   const {present} = alertController;
   // UIKit's frame or two after the spring, from the measured pair.
   const lag = present.ignoresTouchesForMs - present.durationMs;
-  return springLengthMs(springs.alertPresent) + lag;
+  return springLengthMs(ALERT_PRESENT_SPRING) + lag;
 }
 
 type Status = 'hidden' | 'open' | 'leaving';
@@ -277,7 +280,7 @@ export function useAlertMotion({
       // Touches come back a presentation's time after that fade starts.
       exitRef.current = null;
       holdWhilePresenting(
-        fadeFromHere(panel, backdrop, 1, springs.alertPresent),
+        fadeFromHere(panel, backdrop, 1, ALERT_PRESENT_SPRING),
       );
       return;
     }
@@ -285,7 +288,7 @@ export function useAlertMotion({
       // A dismissal drops every input until it ends: the alert's content is
       // inert (no click, key or assistive-technology activation reaches an
       // action) and the hold's shield catches every touch.
-      const handle = fadeFromHere(panel, backdrop, 0, springs.alertDismiss);
+      const handle = fadeFromHere(panel, backdrop, 0, ALERT_DISMISS_SPRING);
       hold(handle.finished, 'layer');
       exitRef.current = handle;
       void handle.finished.then(isDone => {
@@ -315,7 +318,7 @@ export function useAlertMotion({
         exitRef.current = null;
         setIsLeaving(false);
       },
-      springLengthMs(springs.alertDismiss) + EXIT_BACKSTOP_MS,
+      springLengthMs(ALERT_DISMISS_SPRING) + EXIT_BACKSTOP_MS,
     );
     return () => clearTimeout(backstop);
   }, [isLeaving]);
@@ -361,8 +364,8 @@ function present(panel: Animator, backdrop: Animator): MotionHandle {
   // (design:reduced-motion); the alert passes no curve of its own (DR4).
   const handle = panel.animate(
     {opacity: 1, scale: 1},
-    {spring: springs.alertPresent},
+    {spring: ALERT_PRESENT_SPRING},
   );
-  backdrop.animate({opacity: 1}, {spring: springs.alertPresent});
+  backdrop.animate({opacity: 1}, {spring: ALERT_PRESENT_SPRING});
   return handle;
 }
