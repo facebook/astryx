@@ -75,7 +75,6 @@ import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {coast as coastCurves} from '../motion/coast';
 import {decayRestDistance} from '../motion/decay';
-import {zoomMedia} from '../motion/uikit/zoomMedia';
 import {
   IDENTITY,
   dismissCommits,
@@ -203,13 +202,10 @@ export function useZoomStage(
    */
   const coast = (geometry: ZoomGeometry, velocity: Point) => {
     const from = current();
-    // Under Reduce Motion a release carries no momentum: the photo stays
-    // where the finger left it (design:reduced-motion DR1).
-    if (animator.reducedMotion({touchRelease: true}) !== 'off') {
-      setTarget(from);
-      setZoomed(isZoomed(geometry, from));
-      return;
-    }
+    // Under Reduce Motion too: momentum that continues a throw, and its
+    // settle at an edge, is the person's own movement, as scrolling keeps
+    // decelerating under iOS Reduce Motion (design:reduced-motion DR2,
+    // DEC-2); the animator's policy leaves `decay` alone.
     const range = restRange(geometry, from.scale);
     const vx = range.x.min === range.x.max ? 0 : velocity.x;
     const vy = range.y.min === range.y.max ? 0 : velocity.y;
