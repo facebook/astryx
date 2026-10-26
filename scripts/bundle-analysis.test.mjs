@@ -45,6 +45,15 @@ beforeAll(() => {
     'Direct/index.js',
     "import {used} from '../lib/a.js';\nexport const Direct = () => used();\n",
   );
+  // A directory exporting two components, and one named after none.
+  write(
+    'Pair/index.js',
+    `export const Pair = () => 'pair';\nexport const PairSibling = () => ${JSON.stringify(UNUSED)};\n`,
+  );
+  write(
+    'helpers/index.js',
+    `export const one = () => 'one';\nexport const two = () => ${JSON.stringify(UNUSED)};\n`,
+  );
   comps = buildMap(dist);
 });
 
@@ -65,6 +74,14 @@ describe('bundle analysis', () => {
       measure(['Direct'], comps).js.raw,
     );
     expect(comps.Barrel.totalRaw).toBe(comps.Direct.totalRaw);
+  });
+
+  it('charges a directory row its same-named export only, as the size report does', () => {
+    const {js} = measure(['Pair'], comps);
+    expect(js.raw).toBeGreaterThan(0);
+    expect(js.raw).toBeLessThan(UNUSED.length);
+    // A directory named after none of its exports counts whole.
+    expect(measure(['helpers'], comps).js.raw).toBeGreaterThan(UNUSED.length);
   });
 
   it('counts the code a set shares once', () => {

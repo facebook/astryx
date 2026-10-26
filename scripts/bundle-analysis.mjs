@@ -6,9 +6,10 @@
  * XDS Bundle Size Analysis
  *
  * Measures what importing XDS components ships: each component directory's
- * entry, or a set of them, bundled, tree-shaken and minified with the PR size
- * report's esbuild options (.github/scripts/lib/component-size.js), counting
- * the JavaScript the import loads eagerly. A set is one bundle, so code its
+ * same-named export (the whole entry for a directory without one), or a set of
+ * them, bundled, tree-shaken and minified with the PR size report's esbuild
+ * options (.github/scripts/lib/component-size.js), counting the JavaScript the
+ * import loads eagerly. A set is one bundle, so code its
  * components share counts once, and a barrel a component imports from costs
  * only the modules the component uses. React and the StyleX runtime count, as
  * in the size report. Sizes are gzip at the default compression level, as the
@@ -27,13 +28,14 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
 import {createRequire} from 'node:module';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {pathToFileURL} from 'node:url';
+import {fileURLToPath} from 'node:url';
 
 const require = createRequire(import.meta.url);
 const {bundleImportWithInputs, gzipBytes} = require(
@@ -49,23 +51,38 @@ function fileSize(fp) {
 }
 
 /**
- * What importing everything `entries` export ships: one bundle of all of
- * them, the JavaScript it loads eagerly, minified: its bytes (`raw`), their
- * gzip size, and the modules that put code in it (`files`).
+ * The export a component directory is named after, when its entry has one
+ * (`Dialog` in Dialog/index.js), as the size report measures it; null for a
+ * directory without one (`hooks`, `utils`), which counts whole.
  */
-export function bundleSize(entries) {
-  if (entries.length === 0) return {raw: 0, gzip: 0, files: 0};
+function namedExport(entry, name) {
+  return bundleImportWithInputs(entry, name) === null ? null : name;
+}
+
+/**
+ * What importing `items` ships: each directory's same-named export, or its
+ * whole entry when it has none, in one bundle; the JavaScript it loads
+ * eagerly, minified: its bytes (`raw`), their gzip size, and the modules
+ * that put code in it (`files`).
+ * @param {readonly {entry: string, name: string | null}[]} items
+ */
+export function bundleSize(items) {
+  if (items.length === 0) return {raw: 0, gzip: 0, files: 0};
   const scratch = mkdtempSync(join(tmpdir(), 'astryx-bundle-analysis-'));
   try {
     const set = join(scratch, 'set.mjs');
     writeFileSync(
       set,
-      entries
-        .map((e, i) => `export * as c${i} from ${JSON.stringify(e)};`)
+      items
+        .map(({entry, name}, i) =>
+          name === null
+            ? `export * as c${i} from ${JSON.stringify(entry)};`
+            : `export {${name} as c${i}} from ${JSON.stringify(entry)};`,
+        )
         .join('\n'),
     );
     const bundle = bundleImportWithInputs(set);
-    if (bundle === null) throw new Error(`could not bundle ${entries.join(', ')}`);
+    if (bundle === null) throw new Error(`could not bundle ${items.map(i => i.entry).join(', ')}`);
     return {
       raw: Buffer.byteLength(bundle.text),
       gzip: gzipBytes(bundle.text),
@@ -97,10 +114,13 @@ export function buildMap(dist = DEFAULT_DIST) {
     const e = existsSync(join(dist, n, 'index.js')) ? join(dist, n, 'index.js') : join(dist, n, 'index.mjs');
     if (!existsSync(e)) continue;
     let solo = null;
-    const measured = () => (solo ??= bundleSize([e]));
+    let name;
+    const item = () => ({entry: e, name: (name ??= namedExport(e, n))});
+    const measured = () => (solo ??= bundleSize([item()]));
     comps[n] = {
       entry: e,
       dist,
+      get item() { return item(); },
       get totalRaw() { return measured().raw; },
       get totalGzip() { return measured().gzip; },
       get fileCount() { return measured().files; },
@@ -117,7 +137,7 @@ export function measure(names, comps) {
     if (!comp) { console.warn(`  ⚠ "${n}" not found`); continue; }
     found.push(n);
   }
-  const js = bundleSize(found.map(n => comps[n].entry));
+  const js = bundleSize(found.map(n => comps[n].item));
   const tG = js.gzip, tR = js.raw;
   const dist = found.length ? comps[found[0]].dist : DEFAULT_DIST;
   const astryxCss = existsSync(join(dist, 'astryx.css')) ? fileSize(join(dist, 'astryx.css')) : {raw: 0, gzip: 0};
@@ -207,8 +227,20 @@ function printFull(comps) {
   for (const [l, ns] of scenarios) printSet(l, measure(ns, comps));
 }
 
+/** Whether this file is the script Node runs (through a symlink too). */
+function isDirectExecution() {
+  if (!process.argv[1]) return false;
+  try {
+    return (
+      realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
+    );
+  } catch {
+    return false;
+  }
+}
+
 // Main, when run as a script.
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+if (isDirectExecution()) {
   if (!existsSync(DEFAULT_DIST)) { console.error('Run `pnpm build` first.'); process.exit(1); }
   const args = process.argv.slice(2);
   const jsonMode = args.includes('--json');
