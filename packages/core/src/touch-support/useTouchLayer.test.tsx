@@ -18,7 +18,10 @@ import {act, render, screen} from '@testing-library/react';
 import {renderToString} from 'react-dom/server';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {touchModule} from './touchModule';
-import {resetTouchSupportForTests} from './touchSupportRegistry';
+import {
+  getTouchModule,
+  resetTouchSupportForTests,
+} from './touchSupportRegistry';
 import {useTouchLayer} from './useTouchLayer';
 
 /** Stands in for `matchMedia('(pointer: coarse)')`; returns the switch. */
@@ -130,6 +133,16 @@ describe('useTouchLayer', () => {
     const second = recorder();
     render(<second.Layer />);
     expect(second.setup).not.toHaveBeenCalled();
+  });
+
+  it('keeps no answer from a read no layer follows (a hidden Activity), so a later layer reads the pointer as it is', () => {
+    const turn = primaryPointer(false);
+    // A render with no commit after it reads the pointer, follows nothing.
+    expect(getTouchModule()).toBeNull();
+    turn(true);
+    const {setup, Layer} = recorder();
+    render(<Layer />);
+    expect(setup).toHaveBeenCalledTimes(1);
   });
 
   it('moves to a new element: the old one cleans up, the new one sets up', () => {

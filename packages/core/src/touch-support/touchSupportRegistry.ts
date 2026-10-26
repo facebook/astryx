@@ -41,12 +41,24 @@ function follow(): void {
   query?.addEventListener('change', onChange);
 }
 
+function matchPointer(): MediaQueryList | null {
+  return typeof window === 'undefined' ||
+    typeof window.matchMedia !== 'function'
+    ? null
+    : window.matchMedia(TOUCH_QUERY);
+}
+
+/**
+ * The pointer now. Only a followed read is kept: with no layer subscribed
+ * (a render no commit follows, a hidden Activity), each read asks the media
+ * query afresh, so a stale answer never outlives a pointer change.
+ */
 function readPointer(): boolean {
+  if (listeners.size === 0) {
+    return matchPointer()?.matches ?? false;
+  }
   if (isCoarse === null) {
-    query =
-      typeof window === 'undefined' || typeof window.matchMedia !== 'function'
-        ? null
-        : window.matchMedia(TOUCH_QUERY);
+    query = matchPointer();
     isCoarse = query?.matches ?? false;
   }
   return isCoarse;
@@ -67,11 +79,13 @@ export function getServerTouchModule(): null {
  * or fine); returns the unsubscribe.
  */
 export function subscribeTouchModule(listener: () => void): () => void {
-  readPointer();
-  if (listeners.size === 0) {
+  listeners.add(listener);
+  if (listeners.size === 1) {
+    // The first layer: read the pointer and follow it from here.
+    query = matchPointer();
+    isCoarse = query?.matches ?? false;
     follow();
   }
-  listeners.add(listener);
   return () => {
     listeners.delete(listener);
     if (listeners.size === 0) {
