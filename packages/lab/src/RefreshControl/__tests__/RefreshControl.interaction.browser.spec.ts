@@ -564,7 +564,9 @@ test('the settle keeps moving every frame while the main thread is blocked', asy
   // the median frame.
   expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
   expect(proof.changed).toBeGreaterThanOrEqual(proof.frames - 3);
-  expect(proof.longestStallMs).toBeLessThan(40);
+  // The harness's verdict judges stalls per delivered interval, so no
+  // absolute bound on the longest one.
+  expect(proof.verdict.failures, proof.summary).toEqual([]);
 });
 
 test('the settle does no Layout or Paint per frame', async ({
