@@ -13,7 +13,6 @@ review_triggers: [theming]
 verified_by:
   [
     packages/core/src/MoreMenu/MoreMenu.test.tsx,
-    packages/core/src/DropdownMenu/DropdownMenu.test.tsx,
     packages/core/src/DropdownMenu/__tests__/MenuButton.a11y.test.tsx,
     packages/core/src/DropdownMenu/__tests__/MenuButton.a11y.chromium.spec.ts,
     apps/storybook/stories/MoreMenu.stories.tsx,
