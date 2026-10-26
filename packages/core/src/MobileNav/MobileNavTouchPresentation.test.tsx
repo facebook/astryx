@@ -3,7 +3,7 @@
 /**
  * @file MobileNavTouchPresentation.test.tsx
  * @input Uses vitest, @testing-library/react, MobileNav and the Layer
- *   module's presentation hold
+ *   module's input hold
  * @output Tests that under a finger the drawer presents and dismisses as a
  *   UIKit sheet does (no touch until the slide-in ends, no input until the
  *   slide-out ends, the dialog closing at its end), and that under a mouse
@@ -25,7 +25,7 @@ import {
   vi,
 } from 'vitest';
 import {stubMatchMedia} from '../__tests__/stubMatchMedia';
-import {isInHeldLayer} from '../Layer/presentationHold';
+import {isInHeldLayer} from '../Layer/inputHold';
 import {MAX_EXIT_MS, MobileNav} from './MobileNav';
 
 function Harness() {

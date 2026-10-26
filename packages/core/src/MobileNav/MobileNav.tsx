@@ -5,8 +5,8 @@
 /**
  * @file MobileNav.tsx
  * @input Uses React, useEffect, useRef, useCallback, ReactNode, StyleX,
- *   useScrollLock (the shared page scroll lock), the Layer module's
- *   presentation hold, the touch presentation's coarse-pointer query
+ *   useScrollLock (the shared page scroll lock), the Layer module's input
+ *   hold, the touch presentation's coarse-pointer query
  * @output Exports MobileNav component and MobileNavProps
  * @position Core implementation; consumed by index.ts
  *
@@ -37,8 +37,7 @@
  *
  * Under a finger the drawer presents and dismisses as a UIKit sheet does
  * (iOS 26.2): nothing takes a touch until the slide-in ends, and nothing takes
- * any input until the slide-out ends, through the Layer module's presentation
- * hold. The dialog stays open, and so keeps the page inert, until the
+ * any input until the slide-out ends, through the Layer module's input hold. The dialog stays open, and so keeps the page inert, until the
  * slide-out ends; the scrim fades over the whole of it; then the dialog
  * closes and focus goes back. Under a mouse nothing is held, and the dialog
  * closes partway into the slide-out (MAX_CLOSE_DELAY_MS) as before.
@@ -75,7 +74,7 @@ import {Icon} from '../Icon';
 import {Heading} from '../Heading/Heading';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {useScrollLock} from '../hooks/useScrollLock';
-import {holdPresentation} from '../Layer/presentationHold';
+import {holdInput} from '../Layer/inputHold';
 import {TOUCH_QUERY} from '../utils/touchPresentation';
 import {mergeProps, composeEventHandlers} from '../utils';
 import {layerTextReset} from '../Layer/layerTextReset.stylex';
@@ -559,8 +558,8 @@ export function MobileNav({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
-  // Under a finger, the presentation hold on the drawer's layer while it
-  // slides in or out (Layer/presentationHold); null under a mouse.
+  // Under a finger, the input hold on the drawer's layer while it slides in
+  // or out (Layer/inputHold); null under a mouse.
   const releaseHoldRef = useRef<(() => void) | null>(null);
   // Element that was focused when the drawer opened; focus goes back to it
   // once the native dialog has closed (see closeAndRestoreFocus).
@@ -638,7 +637,7 @@ export function MobileNav({
       false;
     const hold = (scope: 'viewport' | 'layer', ms: number) => {
       releaseHoldRef.current?.();
-      releaseHoldRef.current = holdPresentation(dialog, {
+      releaseHoldRef.current = holdInput(dialog, {
         until: after(ms),
         scope,
       });
