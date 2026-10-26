@@ -5,26 +5,32 @@
 /**
  * @file NumberInputTouch.tsx
  * @input NumberInput's stepping state and its stepper buttons; the gesture
- *   system's PressTracker (usePressTracker), stepperTracking.ts and the UIKit
- *   constants (motion/uikit/gestures.ts)
+ *   system's PressTracker (usePressTracker), the coarse-pointer gate
+ *   (gestures/coarsePointer.ts), stepperTracking.ts and the UIKit constants
+ *   (motion/uikit/gestures.ts)
  * @output The steppers' press layer: useStepperTouch, which tracks a press on
- *   the steppers by any pointer (a tap steps at the lift, a held half
- *   repeats on one steady ramp, a slide carries it to the other half, the
- *   pressed half paints at once) through the column's press tracker, shows
- *   the stepping value while the press lasts and commits it once, at the
- *   release
+ *   the steppers (a held half repeats on one steady ramp, a slide carries it
+ *   to the other half, the pressed half paints at once), shows the stepping
+ *   value while the press lasts and commits it once, at the release, and
+ *   tells each stepper click what it steps: a tap's click steps the half the
+ *   press lifted on
  * @position NumberInput's one touch module, imported only by NumberInput.tsx,
  *   so a desktop build can swap it out whole
  *
- * A finger, a pen or a mouse on the steppers is tracked here; a keyboard or
- * assistive technology activates a stepper through its click. The press
- * paints the half under the pointer at once and clears at once; inside a
- * scroll view a finger waits for the content-touch delay, and a scroll that
- * takes the touch before then cancels it; once delivered, the press keeps
- * its touch from the page's pan. The gesture host turns text selection off
- * under a held finger only for a long press or a recognizer that asks
- * (`spec:AST-094` FR41, proposed in #8454); a press tracker cannot ask yet,
- * so a held stepper keeps the browser's long-press selection.
+ * A finger is tracked through the column's press tracker, which attaches only
+ * where the primary pointer is coarse (`spec:AST-094` FR19, FR24); a mouse,
+ * and a pen where the primary pointer is fine, through the column's own
+ * pointer events. A keyboard or assistive technology activates a stepper
+ * through its click. A tap steps on the browser's click after its lift, as a
+ * control activates (FR11); a press that stepped while held commits at its
+ * release, and the click after it adds nothing. The press paints the half
+ * under the pointer at once and clears at once; inside a scroll view a finger
+ * waits for the content-touch delay, and a scroll that takes the touch
+ * before then cancels it; once delivered, the press keeps its touch from the
+ * page's pan. The gesture host turns text selection off under a held finger
+ * only for a long press or a recognizer that asks (`spec:AST-094` FR41,
+ * proposed in #8454); a press tracker cannot ask yet, so a held stepper keeps
+ * the browser's long-press selection.
  *
  * While a press steps, the field shows the stepping value and `onChange` is
  * not called; at the release it is called once, with the final value, and
@@ -32,12 +38,21 @@
  * system takes, or one the field turns disabled or read-only under, commits
  * nothing.
  *
- * SYNC: Keep in step with NumberInput.tsx (its stepper click asks
- * `takeTrackedClick`) and NumberInput.stepperTouch.test.tsx.
+ * SYNC: Keep in step with NumberInput.tsx (its stepper clicks ask
+ * `takeClick`, its column forwards its pointer events) and
+ * NumberInput.stepperTouch.test.tsx.
  */
 
-import {useEffect, useRef, useState, type RefObject} from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type RefObject,
+} from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {useMediaQuery} from '../hooks/useMediaQuery';
+import {COARSE_POINTER_QUERY} from '../gestures/coarsePointer';
 import {
   browserClock,
   paintPress,
@@ -63,13 +78,28 @@ export interface StepperTouchState {
   isReadOnly: boolean;
 }
 
+/** What a stepper click steps: a half, nothing, or its own half. */
+export type StepperClick = StepperHalf | 'none' | 'own';
+
 export interface StepperTouch {
   /**
-   * Whether a stepper click is the one a tracked press gets after its lift,
-   * which stepped already, so the click is no step of its own. Every click
-   * ends the wait for it.
+   * What a stepper click does. The click a tracked press gets after its lift
+   * steps the half the press lifted on when it was a tap (`spec:AST-094`
+   * FR11), and nothing ('none') when the press stepped while held or lifted
+   * outside. Any other click is its own ('own'): a keyboard's, assistive
+   * technology's, or one long after the lift. Every click ends the wait.
    */
-  takeTrackedClick: (click: MouseEvent) => boolean;
+  takeClick: (click: MouseEvent) => StepperClick;
+  /**
+   * The column's pointer events: a mouse, and a pen where the primary
+   * pointer is fine, hold a stepper through them.
+   */
+  pointer: {
+    onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
+    onPointerMove: (event: ReactPointerEvent<HTMLElement>) => void;
+    onPointerUp: (event: ReactPointerEvent<HTMLElement>) => void;
+    onPointerCancel: (event: ReactPointerEvent<HTMLElement>) => void;
+  };
 }
 
 /** Tracks a press on the steppers by any pointer. */
@@ -81,8 +111,9 @@ export function useStepperTouch(
 ): StepperTouch {
   // The column's tracker, for the paint its control events read.
   const trackerRef = useRef<PressTracker | null>(null);
-  // When the last tracked press lifted; null while no click is owed to it.
-  const liftedAtRef = useRef<number | null>(null);
+  // The last lift a click may follow: when, and the half a tap's click steps
+  // (null: its click steps nothing). Null while no click is owed.
+  const liftRef = useRef<{at: number; tap: StepperHalf | null} | null>(null);
   // The value the press has stepped to; null before its first step.
   const pressValueRef = useRef<number | null>(null);
   const pressRef = useRef<{
@@ -152,6 +183,14 @@ export function useStepperTouch(
     return y < split ? 'increment' : 'decrement';
   };
 
+  // The one layout read of a press: client y where the decrement half begins.
+  const readSplit = (): number | null => {
+    const decrementBox = decrementRef.current?.getBoundingClientRect();
+    return decrementBox == null || decrementBox.height === 0
+      ? null
+      : decrementBox.top;
+  };
+
   const paint = (half: StepperHalf | null) => {
     for (const [own, button] of [
       ['increment', incrementRef.current],
@@ -209,25 +248,15 @@ export function useStepperTouch(
     // half is not the page's pan. (A scroll that starts on the column waits
     // on the main thread for it.)
     keepsTouch: true,
-    // A mouse holds a stepper the way a finger does, so the tracker attaches
-    // where the primary pointer is fine too and reads each event's pointer:
-    // the host's per-event-pointer exception (spec:AST-094 FR19), the kind
-    // spec:AST-057 grants the row swipe.
-    perEventPointer: true,
     isEnabled: () =>
       !latestRef.current.isDisabled && !latestRef.current.isReadOnly,
     onControlEvent: (event, touch) => {
       const press = pressRef.current;
       if (event === 'touchDown') {
         press.isReleased = false;
-        liftedAtRef.current = null;
+        liftRef.current = null;
         pressValueRef.current = null;
-        // The one layout read of the press.
-        const decrementBox = decrementRef.current?.getBoundingClientRect();
-        press.split =
-          decrementBox == null || decrementBox.height === 0
-            ? null
-            : decrementBox.top;
+        press.split = readSplit();
         press.downTime = touch.time;
         // PressTracker's control profile delays a finger's highlight inside a
         // scroll view; the press reaches the stepper when it lights.
@@ -245,7 +274,7 @@ export function useStepperTouch(
       if (press.isReleased) {
         // Let go of when the field turned disabled or read-only: nothing
         // tracks, paints or commits until the next press.
-        liftedAtRef.current = isLift ? browserClock.now() : null;
+        liftRef.current = isLift ? {at: browserClock.now(), tap: null} : null;
         return;
       }
       const isInside =
@@ -255,14 +284,15 @@ export function useStepperTouch(
       const half: StepperHalf | null = isInside ? halfAt(touch.y) : null;
       if (event === 'touchCancel') {
         // No click follows a touch a scroll or the system took.
-        liftedAtRef.current = null;
+        liftRef.current = null;
         tracking.cancel();
         press.half = null;
         discard();
       } else if (isLift) {
         press.half = half;
-        liftedAtRef.current = browserClock.now();
-        tracking.end(half);
+        // A tap steps on the click that follows (FR11): the lift only says
+        // which half.
+        liftRef.current = {at: browserClock.now(), tap: tracking.end(half)};
         commit();
       } else {
         press.half = half;
@@ -286,9 +316,9 @@ export function useStepperTouch(
     },
   };
 
-  const takeTrackedClick = (click: MouseEvent): boolean => {
-    const liftedAt = liftedAtRef.current;
-    liftedAtRef.current = null;
+  const takeClick = (click: MouseEvent): StepperClick => {
+    const lift = liftRef.current;
+    liftRef.current = null;
     // A click a pointer sent. Where the engine dispatches clicks as pointer
     // events it names the pointer: Chrome on Android names a tap's click
     // 'touch' (detail 0), Safari on iOS names it 'mouse' (detail 1). Where
@@ -302,20 +332,114 @@ export function useStepperTouch(
       clickPointer === undefined ? click.detail > 0 : clickPointer !== '';
     // A press's click follows its lift at once. One that comes later (after
     // a hold, which the engine sends no click for) is a press of its own.
-    return (
-      isFromPointer &&
-      liftedAt != null &&
-      browserClock.now() - liftedAt <=
-        UIKIT_GESTURES.click.strayClickWindow.value
-    );
+    if (
+      !isFromPointer ||
+      lift == null ||
+      browserClock.now() - lift.at > UIKIT_GESTURES.click.strayClickWindow.value
+    ) {
+      return 'own';
+    }
+    return lift.tap ?? 'none';
+  };
+
+  // The press tracker is touch-only work: it attaches only where the primary
+  // pointer is coarse, following it (`spec:AST-094` FR19, FR24).
+  const isCoarse = useMediaQuery(COARSE_POINTER_QUERY);
+  const noColumnRef = useRef<HTMLDivElement | null>(null);
+
+  // A mouse, and a pen where the primary pointer is fine, hold a stepper on
+  // the column's own pointer events: no touch-only work runs for them
+  // (FR24). Where the primary pointer is coarse a pen's touches reach the
+  // press tracker instead.
+  const pointerIdRef = useRef<number | null>(null);
+  const isHeldHere = (event: ReactPointerEvent<HTMLElement>) =>
+    event.pointerType === 'mouse' || (event.pointerType === 'pen' && !isCoarse);
+  const halfUnder = (
+    event: ReactPointerEvent<HTMLElement>,
+  ): StepperHalf | null => {
+    const box = columnRef.current?.getBoundingClientRect();
+    const isInside =
+      box != null &&
+      event.clientX >= box.left &&
+      event.clientX <= box.right &&
+      event.clientY >= box.top &&
+      event.clientY <= box.bottom;
+    return isInside ? halfAt(event.clientY) : null;
+  };
+  const pointer: StepperTouch['pointer'] = {
+    onPointerDown: event => {
+      const latest = latestRef.current;
+      if (
+        !isHeldHere(event) ||
+        event.button !== 0 ||
+        latest.isDisabled ||
+        latest.isReadOnly
+      ) {
+        return;
+      }
+      // The press stays the column's when the pointer leaves it.
+      const column = event.currentTarget;
+      if (typeof column.setPointerCapture === 'function') {
+        column.setPointerCapture(event.pointerId);
+      }
+      pointerIdRef.current = event.pointerId;
+      liftRef.current = null;
+      pressValueRef.current = null;
+      const press = pressRef.current;
+      press.isReleased = false;
+      press.split = readSplit();
+      press.landedOn = halfOf(event.target) ?? halfAt(event.clientY);
+      press.half = press.landedOn;
+      tracking.begin(press.half);
+      tracking.deliver(browserClock.now());
+      paint(press.half);
+    },
+    onPointerMove: event => {
+      const press = pressRef.current;
+      if (event.pointerId !== pointerIdRef.current || press.isReleased) {
+        return;
+      }
+      press.half = halfUnder(event);
+      tracking.move(press.half);
+      paint(press.half);
+    },
+    onPointerUp: event => {
+      if (event.pointerId !== pointerIdRef.current) {
+        return;
+      }
+      pointerIdRef.current = null;
+      const press = pressRef.current;
+      if (press.isReleased) {
+        liftRef.current = {at: browserClock.now(), tap: null};
+        return;
+      }
+      press.half = null;
+      liftRef.current = {
+        at: browserClock.now(),
+        tap: tracking.end(halfUnder(event)),
+      };
+      paint(null);
+      commit();
+    },
+    onPointerCancel: event => {
+      if (event.pointerId !== pointerIdRef.current) {
+        return;
+      }
+      pointerIdRef.current = null;
+      liftRef.current = null;
+      tracking.cancel();
+      pressRef.current.half = null;
+      paint(null);
+      discard();
+    },
   };
 
   // The hook attaches to the column whenever it is mounted (hasNumberSteppers
   // can turn on after the field mounts, or off and on again).
-  const tracker = usePressTracker(columnRef, options);
+  const tracker = usePressTracker(isCoarse ? columnRef : noColumnRef, options);
   useIsomorphicLayoutEffect(() => {
     trackerRef.current = tracker;
   });
 
-  return {takeTrackedClick};
+  return {takeClick, pointer};
 }

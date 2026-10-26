@@ -113,18 +113,19 @@ const expectTimes = (actual: number[], expected: number[]) => {
 };
 
 describe('StepperTracking: taps', () => {
-  it('a tap steps once, at the lift', () => {
+  it('a tap steps nothing at the lift: end names the half its click steps', () => {
+    // A control activates by the browser's click on a lift inside
+    // (`spec:AST-094` FR11): the lift only says which half that click steps.
     const {time, steps, tracking, press} = setup();
     press('increment');
     time.advanceTo(60);
+    expect(tracking.end('increment')).toBe('increment');
     expect(steps).toEqual([]);
-    tracking.end('increment');
-    expect(steps).toEqual([{half: 'increment', at: 60}]);
     time.advanceTo(3000);
-    expect(steps).toHaveLength(1);
+    expect(steps).toEqual([]);
   });
 
-  it('a light tap trembling across the edge steps exactly once', () => {
+  it('a light tap trembling across the edge names its half, once', () => {
     const {time, steps, tracking, press} = setup();
     press('increment');
     for (const t of [10, 20, 30, 40, 50]) {
@@ -134,38 +135,42 @@ describe('StepperTracking: taps', () => {
       tracking.move('increment');
     }
     time.advanceTo(70);
-    tracking.end('increment');
-    expect(steps).toEqual([{half: 'increment', at: 70}]);
+    expect(tracking.end('increment')).toBe('increment');
     time.advanceTo(3000);
-    expect(steps).toHaveLength(1);
+    expect(steps).toEqual([]);
   });
 
-  it('a finger that slid from − onto + before any repeat steps + at the lift', () => {
+  it('a finger that slid from − onto + before any repeat names +', () => {
     const {time, steps, tracking, press} = setup();
     press('decrement');
     time.advanceTo(200);
     tracking.move('increment');
     time.advanceTo(350);
-    tracking.end('increment');
-    expect(steps).toEqual([{half: 'increment', at: 350}]);
+    expect(tracking.end('increment')).toBe('increment');
+    expect(steps).toEqual([]);
   });
 
-  it('a lift outside the control steps nothing', () => {
+  it('a lift outside the control names nothing and steps nothing', () => {
     const {time, steps, tracking, press} = setup();
     press('increment');
     time.advanceTo(120);
     tracking.move(null);
-    tracking.end(null);
+    expect(tracking.end(null)).toBeNull();
     time.advanceTo(2000);
     expect(steps).toEqual([]);
   });
 
-  it('a tap quicker than a scroll view’s delay still steps at the lift', () => {
+  it('a tap quicker than a scroll view’s delay still names its half', () => {
     const {time, steps, tracking} = setup();
     tracking.begin('increment');
     time.advanceTo(60);
-    tracking.end('increment');
-    expect(at(steps)).toEqual([60]);
+    expect(tracking.end('increment')).toBe('increment');
+    expect(steps).toEqual([]);
+  });
+
+  it('a lift with no press names nothing', () => {
+    const {tracking} = setup();
+    expect(tracking.end('increment')).toBeNull();
   });
 });
 
@@ -200,11 +205,12 @@ describe('StepperTracking: holding a half', () => {
     ).toBeLessThan(3000);
   });
 
-  it('a lift after a repeat adds no step', () => {
+  it('a lift after a repeat names nothing and adds no step', () => {
+    // Its click is no step either: the press stepped already.
     const {time, steps, tracking, press} = setup();
     press('increment');
     time.advanceTo(600);
-    tracking.end('increment');
+    expect(tracking.end('increment')).toBeNull();
     time.advanceTo(3000);
     expect(at(steps)).toEqual([500]);
   });

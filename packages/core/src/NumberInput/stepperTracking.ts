@@ -6,20 +6,24 @@
  * @output Exports StepperTracking (the stepper's tap and autorepeat rules on
  *   explicit times), repeatInterval and the StepperHalf type
  * @position Pure half of NumberInput's stepper press: no DOM. The press layer
- *   (NumberInputTouch.tsx) feeds it from the gesture system's PressTracker;
+ *   (NumberInputTouch.tsx) feeds it from the gesture system's PressTracker
+ *   (a finger) and the column's own pointer events (a mouse or a pen);
  *   tested by stepperTracking.test.ts with a manual clock
  *
  * The rules (motion/uikit/stepper.ts):
  *
- * - A tap steps once, at the lift, on the half under the pointer then: a
- *   pointer that slid from − onto + before anything repeated steps +. A lift
- *   outside the control steps nothing.
+ * - A tap steps nothing at its lift: a control activates by the browser's
+ *   click on a lift inside (`spec:AST-094` FR11). The lift names the half
+ *   that click steps, the one under the pointer then: a pointer that slid
+ *   from − onto + before anything repeated names +. A lift outside the
+ *   control names nothing.
  * - A held press steps `delayMs` after it reached the control (UIStepper's
  *   measured delay), then keeps stepping on one steady ramp: after
  *   `firstIntervalMs`, then each interval `acceleration` times the one
  *   before, never under `minIntervalMs`. Each interval is timed from the
  *   step before it, so a step that runs late (a busy main thread) runs once,
- *   never as a burst. A lift after a repeat adds nothing.
+ *   never as a burst. A lift after a repeat names nothing, so its click adds
+ *   nothing.
  * - Sliding onto the other half keeps the running cadence; the next step
  *   lands on the new half.
  * - Leaving the control pauses the cadence and coming back resumes it: the
@@ -131,16 +135,18 @@ export class StepperTracking {
     }
   }
 
-  /** The pointer lifted over `half` (null: outside the control). */
-  end(half: StepperHalf | null): void {
+  /**
+   * The pointer lifted over `half` (null: outside the control). Steps
+   * nothing: returns the half the browser's click after a tap steps, or null
+   * after a repeat, for a lift outside, or with no press.
+   */
+  end(half: StepperHalf | null): StepperHalf | null {
     if (!this.isTracking) {
-      return;
+      return null;
     }
     const isTap = this.steps === 0;
     this.reset();
-    if (isTap && half != null) {
-      this.options.step(half);
-    }
+    return isTap ? half : null;
   }
 
   /** The press was taken away (a scroll, the system): nothing more steps. */

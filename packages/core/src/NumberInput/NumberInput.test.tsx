@@ -2724,7 +2724,9 @@ describe('NumberInput stepper column under a held finger', () => {
         'packages/core/src/NumberInput/NumberInputTouch.tsx',
         'utf8',
       ),
-    ).toMatch(/usePressTracker\(\s*columnRef,/);
+      // The column's press tracker attaches only where the primary pointer is
+      // coarse (`spec:AST-094` FR19, FR24).
+    ).toMatch(/usePressTracker\(\s*isCoarse \? columnRef : noColumnRef,/);
   });
 
   it("keys its touch target on the resolver's TOUCH_QUERY, spelled as a literal", () => {

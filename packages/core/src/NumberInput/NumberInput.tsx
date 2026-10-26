@@ -171,15 +171,16 @@ const styles = stylex.create({
     position: {default: 'static', [TOUCH]: 'relative'},
     borderStartEndRadius: 'var(--_field-radius)',
     borderEndEndRadius: 'var(--_field-radius)',
-    // Under a finger each half takes at least the theme's touch target square
-    // with no change to the layout: the ::before reaches past the column, and
+    // Under a finger each half reaches the theme's touch target tall and past
+    // the field's end, with no change to the layout: the ::before reaches past
+    // the column, never inward over the value (`family:input-fields` FR2), and
     // a press there is the column's (the half above or below its split).
     '::before': {
       content: {default: 'none', [TOUCH]: '""'},
       position: 'absolute',
       insetBlockStart: `min(0px, calc(50% - ${TOUCH_TARGET}))`,
       insetBlockEnd: `min(0px, calc(50% - ${TOUCH_TARGET}))`,
-      insetInlineStart: `min(0px, calc(50% - ${TOUCH_TARGET} / 2))`,
+      insetInlineStart: 0,
       insetInlineEnd: `min(0px, calc(50% - ${TOUCH_TARGET} / 2))`,
     },
     // `manipulation` keeps rapid taps from double-tap zooming the page while
@@ -978,6 +979,7 @@ export function NumberInput({
     // them: an editing field stays focused.
     event.preventDefault();
     stepperPointerTypeRef.current = event.pointerType;
+    stepperTouch.pointer.onPointerDown(event);
   };
 
   const pressStepper = (
@@ -986,6 +988,11 @@ export function NumberInput({
   ) => {
     const pointerType = stepperPointerTypeRef.current;
     stepperPointerTypeRef.current = null;
+    // Every click answers the press layer: the click after a tracked tap
+    // steps the half the press lifted on (spec:AST-094 FR11), the click after
+    // a press that stepped while held steps nothing, and any other click
+    // steps its own half.
+    const click = stepperTouch.takeClick(event.nativeEvent);
     // An aria-disabled stepper does nothing, as a natively disabled one did
     // (spec:AST-085 FR2).
     if (
@@ -1002,19 +1009,17 @@ export function NumberInput({
     if (pointerType === 'mouse' && event.detail > 0) {
       inputRef.current?.focus();
     }
-    // A press the press layer tracked has stepped already, at its lift or
-    // while held: the click the engine sends after it is no step.
-    if (stepperTouch.takeTrackedClick(event.nativeEvent)) {
+    if (click === 'none') {
       return;
     }
-    stepValue(direction);
+    stepValue(click === 'own' ? direction : click === 'increment' ? 1 : -1);
   };
 
   // A click on the column itself, not on a half (the touch target's reach
-  // past the halves, or the column's border), belongs to the press the
-  // tracker already stepped. It never reaches the field's click-to-focus, so a
-  // finger brings up no keyboard there either; a mouse focuses the field, as
-  // on a half.
+  // past the halves, or the column's border), steps the half the tap it
+  // follows lifted on (spec:AST-094 FR11), and nothing otherwise. It never
+  // reaches the field's click-to-focus, so a finger brings up no keyboard
+  // there either; a mouse focuses the field, as on a half.
   const handleColumnClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget) {
       return;
@@ -1025,7 +1030,10 @@ export function NumberInput({
     if (pointerType === 'mouse' && event.detail > 0) {
       inputRef.current?.focus();
     }
-    stepperTouch.takeTrackedClick(event.nativeEvent);
+    const click = stepperTouch.takeClick(event.nativeEvent);
+    if (click === 'increment' || click === 'decrement') {
+      stepValue(click === 'increment' ? 1 : -1);
+    }
   };
 
   // A press on the steppers by any pointer is tracked by the press layer
@@ -1188,6 +1196,9 @@ export function NumberInput({
         <div
           ref={stepperColumnRef}
           onPointerDown={handleStepperPointerDown}
+          onPointerMove={stepperTouch.pointer.onPointerMove}
+          onPointerUp={stepperTouch.pointer.onPointerUp}
+          onPointerCancel={stepperTouch.pointer.onPointerCancel}
           onClick={handleColumnClick}
           {...stylex.props(styles.numberSteppers)}>
           <button

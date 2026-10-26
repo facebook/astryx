@@ -154,6 +154,7 @@ function installLog(): void {
     'touchcancel',
     'pointerdown',
     'pointerup',
+    'click',
   ]) {
     document.addEventListener(type, () => log.touches.push({t: now(), type}), {
       capture: true,
@@ -233,6 +234,16 @@ const hold = (at: Point, ms: number): TouchScript => [
   {t: ms, fingers: []},
 ];
 
+/**
+ * A tap steps on the browser's click after its lift (`spec:AST-094` FR11).
+ * Playwright's WebKit (Linux build) dispatched pointer and touch events and
+ * no click for an injected tap on this story, scripted or through its own
+ * tap path, so a proof that needs the click runs in Chromium and on the iOS
+ * simulator.
+ */
+const WEBKIT_TAP_CLICK_SKIP =
+  "Playwright's WebKit dispatches no click after an injected tap on this story (measured), and a tap steps on its click (spec:AST-094 FR11); proven in Chromium and on the iOS simulator";
+
 /** Moves from `from` to `to` between `t0` and `t1` at 60 Hz. */
 function moves(from: Point, to: Point, t0: number, t1: number): TouchFrame[] {
   const count = Math.max(1, Math.round(((t1 - t0) / 1000) * 60));
@@ -290,19 +301,23 @@ function expectSchedule(times: number[], schedule: number[]): void {
   });
 }
 
-test('a tap steps once, at the lift, and paints only while the finger is down', async ({
+test("a tap steps once, on the browser's click after the lift, and paints only while the finger is down", async ({
   page,
 }) => {
   const {driver, plus} = await openStepper(page);
+  test.skip(driver.engine === 'webkit', WEBKIT_TAP_CLICK_SKIP);
   await driver.play(hold(plus, 80));
   await page.waitForTimeout(700);
   const log = await readLog(page);
   const down = touchTime(log, 'touchstart');
   const up = touchTime(log, 'touchend');
-  // One step, at the lift, not at touch-down; the engine's click after the
-  // lift adds nothing.
+  // One step, on the click the engine sends after the lift (`spec:AST-094`
+  // FR11), not at touch-down or at the lift itself.
   expect(log.shown.map(v => v.value)).toEqual([3]);
   expectOneCommitAtRelease(log, 3);
+  const click = touchTime(log, 'click');
+  expect(click).toBeGreaterThanOrEqual(up);
+  expect(log.commits[0].t).toBeGreaterThanOrEqual(click - 1);
   // The touched half lights in the touch-down frame and clears at the lift,
   // with no fade (UIStepper's fill switches in one frame both ways).
   expect(log.paints.map(({half, paint}) => [half, paint])).toEqual([
@@ -317,6 +332,7 @@ test('a light tap trembling on the top edge steps exactly once', async ({
   page,
 }) => {
   const {driver, plus, top} = await openStepper(page);
+  test.skip(driver.engine === 'webkit', WEBKIT_TAP_CLICK_SKIP);
   const at = (dy: number) => ({x: plus.x, y: top + dy});
   await driver.play([
     {t: 0, fingers: [{id: 0, ...at(1)}]},
@@ -499,7 +515,7 @@ test('leaving the column pauses the repeat, and coming back resumes it with no s
   expectOneCommitAtRelease(log, 5);
 });
 
-test('under a finger each half takes at least the theme touch target square, and the layout does not move', async ({
+test('under a finger each half reaches the theme touch target tall and past the field end, never over the value, and the layout does not move', async ({
   page,
 }) => {
   const {driver} = await openStepper(page);
@@ -527,12 +543,13 @@ test('under a finger each half takes at least the theme touch target square, and
         );
   });
   expect(target).toBe(44);
-  // Each half's reach past the column: one target square per half.
+  // Each half's reach past the column: the target tall per half, and past
+  // the field's end, never inward over the value (`family:input-fields` FR2).
   const block = Math.max(0, target - (column.bottom - column.top) / 2);
-  const inline = Math.max(0, (target - (column.right - column.left)) / 2);
+  const outward = Math.max(0, (target - (column.right - column.left)) / 2);
   expect(block).toBeGreaterThan(0);
   const hits = await page.evaluate(
-    ({box, block, inline}) => {
+    ({box, block, outward}) => {
       const column = document.querySelector(
         '[aria-label^="Increment"]',
       )?.parentElement;
@@ -547,30 +564,51 @@ test('under a finger each half takes at least the theme touch target square, and
         aboveOutside: hits(midX, box.top - block - 2),
         belowInside: hits(midX, box.bottom + block - 1),
         belowOutside: hits(midX, box.bottom + block + 2),
-        startInside: hits(box.left - inline + 1, midY - 4),
-        endInside: hits(box.right + inline - 1, midY + 4),
+        start: hits(box.left - 2, midY - 4),
+        endInside: hits(box.right + outward - 1, midY + 4),
+        endOutside: hits(box.right + outward + 2, midY + 4),
+        // The value's end takes its own pointer input.
+        valueEnd: (() => {
+          const input = document
+            .querySelector('[role="spinbutton"]')
+            ?.getBoundingClientRect();
+          return (
+            input != null &&
+            document
+              .elementFromPoint(input.right - 2, (input.top + input.bottom) / 2)
+              ?.getAttribute('role') === 'spinbutton'
+          );
+        })(),
       };
     },
-    {box: column, block, inline},
+    {box: column, block, outward},
   );
   expect(hits).toEqual({
     aboveInside: true,
     aboveOutside: false,
     belowInside: true,
     belowOutside: false,
-    startInside: true,
+    start: false,
     endInside: true,
+    endOutside: false,
+    valueEnd: true,
   });
-  // A tap in the reach above + steps +, once.
-  await driver.play(
-    hold({x: (column.left + column.right) / 2, y: column.top - block + 2}, 80),
-  );
-  await page.waitForTimeout(500);
-  expectOneCommitAtRelease(await readLog(page), 3);
-  // A tap in the reach focuses nothing (no on-screen keyboard comes up).
-  expect(await page.evaluate(() => document.activeElement?.tagName)).toBe(
-    'BODY',
-  );
+  // A tap in the reach above + steps +, once, on its click, and focuses
+  // nothing (no on-screen keyboard comes up). The click needs an engine that
+  // sends one after an injected tap (WEBKIT_TAP_CLICK_SKIP).
+  if (driver.engine !== 'webkit') {
+    await driver.play(
+      hold(
+        {x: (column.left + column.right) / 2, y: column.top - block + 2},
+        80,
+      ),
+    );
+    await page.waitForTimeout(500);
+    expectOneCommitAtRelease(await readLog(page), 3);
+    expect(await page.evaluate(() => document.activeElement?.tagName)).toBe(
+      'BODY',
+    );
+  }
   // The reach moves no layout: with it taken away, every box is where it was
   // (and the point above the column no longer reaches it).
   const boxes = async () =>
@@ -657,10 +695,11 @@ test('inside a scrolling page, a held press reaches the stepper after the conten
   expectOneCommitAtRelease(log, 4);
 });
 
-test('inside a scrolling page, a quick tap steps at the lift and flashes the press', async ({
+test('inside a scrolling page, a quick tap steps on its click and flashes the press', async ({
   page,
 }) => {
   const {driver, plus} = await openStepper(page);
+  test.skip(driver.engine === 'webkit', WEBKIT_TAP_CLICK_SKIP);
   await makePageScroll(page);
   await driver.play(hold(plus, 60));
   await page.waitForTimeout(600);
@@ -668,6 +707,7 @@ test('inside a scrolling page, a quick tap steps at the lift and flashes the pre
   const up = touchTime(log, 'touchend');
   expect(log.shown.map(v => v.value)).toEqual([3]);
   expectOneCommitAtRelease(log, 3);
+  expect(log.commits[0].t).toBeGreaterThanOrEqual(touchTime(log, 'click') - 1);
   // Quicker than the delay: the press shows at the lift for UIKit's 100 ms
   // flash.
   expect(log.paints.map(p => p.paint)).toEqual(['on', null]);
@@ -920,7 +960,11 @@ test(
     // The traces are the assertion; the sheets are the evidence.
     const values = (b: Storyboard) => b.frames.map(f => f.data.value as number);
     const paints = (b: Storyboard) => b.frames.map(f => f.data.paint as string);
-    expect(values(tap)).toEqual([2, 2, 3]);
+    // A tap steps on the browser's click (FR11): WebKit sends none after a
+    // scripted touch sequence, so there it steps nothing.
+    expect(values(tap)).toEqual(
+      stepper.driver.engine === 'webkit' ? [2, 2, 2] : [2, 2, 3],
+    );
     expect(paints(tap)).toEqual(['- -', 'on -', '- -']);
     expect(values(held)).toEqual([2, 2, 3, 4, 7, 10, 10]);
     expect(paints(held).slice(1, 6)).toEqual(Array(5).fill('on -'));
