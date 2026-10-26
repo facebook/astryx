@@ -209,6 +209,13 @@ describe('ChatLayout and the software keyboard', () => {
   });
 
   it('keeps the message area\u2019s room until a scrolling finger lifts and the scroll ends', async () => {
+    // A finger counts only under a coarse primary pointer (spec:AST-094 FR19).
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(pointer: coarse)',
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
     const {container} = renderLayout();
     const layout = screen.getByTestId('layout');
     const field = screen.getByRole('textbox', {name: 'Message'});
@@ -250,6 +257,38 @@ describe('ChatLayout and the software keyboard', () => {
     await wait(200);
     expect(keyboardRoom(messagesOf())).toBe(0);
     expect(dockOf(container).style.translate).toBe('');
+    vi.unstubAllGlobals();
+  });
+
+  it('keeps no room for a finger under a fine primary pointer, which registers no touch listener (FR19)', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(pointer: fine)',
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    const added: string[] = [];
+    const addEventListener = HTMLElement.prototype.addEventListener;
+    vi.spyOn(HTMLElement.prototype, 'addEventListener').mockImplementation(
+      function (
+        this: HTMLElement,
+        ...args: Parameters<typeof addEventListener>
+      ) {
+        if (this.getAttribute('data-testid') === 'layout') {
+          added.push(String(args[0]));
+        }
+        return addEventListener.apply(this, args);
+      },
+    );
+    try {
+      renderLayout();
+      report(window.innerHeight - 300);
+      await settle();
+      expect(added.filter(type => type.startsWith('touch'))).toEqual([]);
+    } finally {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    }
   });
 
   it('keeps the lift when the page is pinch-zoomed past 2x with the keyboard up', async () => {
