@@ -73,9 +73,10 @@
  *   and the colour layer fades on the same fade. The thumb under a dragging
  *   finger still follows it (direct manipulation). UISwitch itself keeps its
  *   springs; the record decides here.
- * - The springs and the minimum lift time are the switch table's measured
- *   constants, read directly: plain constants until `component:Switch` names
- *   its motion roles (`spec:AST-094` FR4, DEC-5).
+ * - The springs and the minimum lift time play as the motion roles
+ *   `component:Switch` names (`switchControl.lift` and so on: `spec:AST-094`
+ *   FR4, DEC-5), registered by registerSwitchTable() before the first
+ *   animation; they stay internal (DEC-11).
  *
  * SYNC: When modified, update switchTouch.ts, Switch.tsx
  * and __tests__/Switch.interaction.browser.spec.ts.
@@ -898,8 +899,8 @@ export class SwitchTouchController {
       return;
     }
     this.liftTime = null;
-    // The switch's measured values, read as the table's constants until
-    // Switch's record names its motion roles (spec:AST-094 FR4, DEC-5).
+    // The record's motion roles (spec:AST-094 FR4, DEC-5): the animator
+    // resolves each one it is handed.
     const lift = switchControl.lift;
     const settle = switchControl.settle;
     const hold = (settleTime(time, liftTime) - time) / 1000;
