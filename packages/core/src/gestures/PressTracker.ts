@@ -190,7 +190,8 @@ export class PressTracker implements TouchConsumer {
 
   constructor(options: PressTrackerOptions) {
     if (options.keepsTouch === true) {
-      this.keepsTouch = () => this.isKept;
+      // Only the tracked touch whose press was delivered is kept.
+      this.keepsTouch = touchId => this.isKept && this.touchId === touchId;
     }
     this.options = options;
     this.trackingExpansion =
@@ -345,14 +346,15 @@ export class PressTracker implements TouchConsumer {
   }
 
   private setHighlighted(value: boolean): void {
+    if (value && this.touchId != null) {
+      // Delivered: the control keeps this touch until it ends (also when a
+      // quick tap's flash is still showing as the press arrives).
+      this.isKept = true;
+    }
     if (this.isHighlighted === value) {
       return;
     }
     this.isHighlighted = value;
-    if (value) {
-      // Delivered: the control keeps this touch until it ends.
-      this.isKept = true;
-    }
     this.options.onHighlightChange?.(value);
   }
 
@@ -363,7 +365,7 @@ export class PressTracker implements TouchConsumer {
    * undefined and keeps passive listeners, so a scroll starting on it never
    * waits on the main thread.
    */
-  readonly keepsTouch?: () => boolean;
+  readonly keepsTouch?: (touchId: number) => boolean;
 
   /** The selection lock of a control whose hold acts (FR41); see the option. */
   get selectionLock(): SelectionLock | undefined {
@@ -385,6 +387,8 @@ export class PressTracker implements TouchConsumer {
   }
 
   private finish(): void {
+    // A highlight shown at the lift (a quick tap's flash) keeps nothing.
+    this.isKept = false;
     this.touchId = null;
     this.isTracking = false;
     this.isTouchInside = false;
