@@ -169,6 +169,12 @@ function setup(props: Parameters<typeof Controlled>[0] = {}) {
 }
 
 const press = (element: Element) => element.getAttribute('data-astryx-press');
+/** Whether a text selection starting on `target` is refused. */
+function refusesSelection(target: Element): boolean {
+  const event = new Event('selectstart', {bubbles: true, cancelable: true});
+  target.dispatchEvent(event);
+  return event.defaultPrevented;
+}
 const shown = (input: HTMLElement) => (input as HTMLInputElement).value;
 const committed = (onChange: {mock: {calls: [number | null][]}}) =>
   onChange.mock.calls.map(([value]) => value);
@@ -359,17 +365,48 @@ describe('NumberInput steppers under a finger', () => {
     expect(new Set(columnWrites)).toEqual(new Set(['manipulation']));
   });
 
-  it('a held finger turns text selection and the callout off on the column for that press only (spec:AST-094 FR41)', () => {
+  it('a held finger refuses text selection on the column for that press only, with no style write (spec:AST-094 FR41)', () => {
     const {increment} = setup();
     const column = increment.parentElement as HTMLElement;
-    expect(column.style.getPropertyValue('user-select')).toBe('');
+    expect(refusesSelection(column)).toBe(false);
     const id = fingerDown(increment, INCREMENT);
-    expect(column.style.getPropertyValue('user-select')).toBe('none');
+    expect(refusesSelection(column)).toBe(true);
     wait(600);
-    expect(column.style.getPropertyValue('user-select')).toBe('none');
-    touch('touchend', increment, INCREMENT, id);
-    // Lifted at the lift: the column's text is selectable again.
+    expect(refusesSelection(column)).toBe(true);
+    // Away from iOS WebKit the lock cancels `selectstart`: nothing repaints.
     expect(column.style.getPropertyValue('user-select')).toBe('');
+    touch('touchend', increment, INCREMENT, id);
+    // Let go at the lift: the column's text is selectable again.
+    expect(refusesSelection(column)).toBe(false);
+  });
+
+  it('where iOS WebKit runs, a held finger locks selection on the column with a style, for that press only (spec:AST-094 FR41)', () => {
+    // iOS WebKit fires no `selectstart` for a long press: only the style
+    // refuses it there.
+    const css = globalThis.CSS;
+    Object.defineProperty(globalThis, 'CSS', {
+      configurable: true,
+      value: {
+        ...css,
+        supports: (query: string) => query === '(-webkit-touch-callout: none)',
+      },
+    });
+    try {
+      const {increment} = setup();
+      const column = increment.parentElement as HTMLElement;
+      expect(column.style.getPropertyValue('user-select')).toBe('');
+      const id = fingerDown(increment, INCREMENT);
+      expect(column.style.getPropertyValue('user-select')).toBe('none');
+      wait(600);
+      expect(column.style.getPropertyValue('user-select')).toBe('none');
+      touch('touchend', increment, INCREMENT, id);
+      expect(column.style.getPropertyValue('user-select')).toBe('');
+    } finally {
+      Object.defineProperty(globalThis, 'CSS', {
+        configurable: true,
+        value: css,
+      });
+    }
   });
 
   it('paints the touched half at once and clears it at once', () => {
