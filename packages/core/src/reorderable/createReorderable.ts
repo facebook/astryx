@@ -42,15 +42,16 @@ export interface ReorderMove<TKey extends Key = Key, TTo = number> {
 /** What `createReorderable` takes. */
 export interface ReorderableOptions<TKey extends Key = Key, TTo = number> {
   /**
-   * Called once per committed move (a drop). Apply it by rendering the items
-   * in their new order. A cancelled move calls nothing. The latest function given is the one
+   * Called once per committed move: a drop, or each move in reorder mode.
+   * Apply it by rendering the items in their new order. A cancelled move calls nothing. The latest function given is the one
    * called, so the object may be made on every render.
    */
   onReorder: (move: ReorderMove<TKey, TTo>) => void;
   /**
    * Whether the item with `key` can move. An item it rejects shows no handle
    * and cannot be picked up; one at either end of the collection also bounds
-   * the drop range, so nothing drops beyond it. Every item moves without it.
+   * the others, so nothing drops beyond it and a keyboard move into it is
+   * refused. Every item moves without it.
    */
   isReorderable?: (key: TKey) => boolean;
 }

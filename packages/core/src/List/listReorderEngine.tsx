@@ -15,9 +15,11 @@
  *   the reorder session of a List, its Host and its handle. A drag from a
  *   handle moves the row with the finger, the rows it passes slide out of its
  *   way, the list autoscrolls near the scroll edges, and the drop springs the
- *   row into its slot and reports the move once. From the keyboard, Space or
- *   Enter picks the row up, the arrows, Home and End move it, Space or Enter
- *   drops it (one report) and Escape puts it back (none)
+ *   row into its slot and reports the move once. Activating a handle without
+ *   a drag (a click, Space or Enter) turns on reorder mode for its row: each
+ *   arrow moves it a place at once (one report each), announced with its
+ *   place and neighbours, and Escape or another activation ends the mode,
+ *   keeping the moves
  * @position Internal to the reorder (spec:AST-103): only createReorderable
  *   imports it, so a List without `reorderable` loads none of it (FR2);
  *   ListReorderHandle drives it from each row's handle
@@ -44,9 +46,9 @@
  * (its value and its target move with the layout, its spring and velocity
  * stay), so the drop never restarts.
  * If `onReorder` does not commit a new order by the end of the task, every
- * row springs back to its place. A keyboard pick-up is the same session
- * without a pointer: each key moves the row to the next slot (on a spring
- * under a finger's presentation), and only the drop reports.
+ * row springs back to its place. Reorder mode (spec:AST-103 FR4) reports
+ * each key's move at once; once it commits, under a finger's presentation,
+ * the rows slide from their old places to their new ones.
  * The listeners are the list's, not each row's (FR5): one pointerdown
  * listener for a mouse and, where the primary pointer is coarse, one hold
  * recognizer that receives only the touches that begin on this list's
@@ -80,7 +82,11 @@ import {
 import {edgeAutoscroll, type EdgeAutoscroll} from '../utils/edgeAutoscroll';
 import {useTouchPresentation} from '../utils/touchPresentation';
 import {devWarn} from '../utils/devWarning';
-import {ListReorderHandle, reorderRowStyle} from './ListReorderHandle';
+import {
+  ListReorderHandle,
+  ListReorderRowName,
+  reorderRowStyle,
+} from './ListReorderHandle';
 import {attachTouchHold, touchMotion} from './ListReorderTouch';
 import {
   HANDLE_ATTRIBUTE,
@@ -93,7 +99,6 @@ import {
 import {
   autoscrollStep,
   clampTop,
-  movableRange,
   offsetsFor,
   proposedSlot,
   settleSpring,
@@ -237,8 +242,6 @@ interface DragSession {
   readonly tops: ReadonlyArray<number>;
   readonly geometry: ReorderGeometry;
   readonly dragged: number;
-  /** The keyboard's pick-up: keys move the row, no pointer drives it. */
-  readonly byKey: boolean;
   slot: number;
   /** The offset each row is moving to. */
   readonly offsets: number[];
@@ -281,6 +284,14 @@ interface PendingDrop {
   readonly restore: RowRestore;
 }
 
+/** A reorder mode move, reported and waiting for its commit. */
+interface PendingMove {
+  readonly list: HTMLElement;
+  readonly rows: ReadonlyArray<HTMLElement>;
+  /** The rows' layout tops before it, for the slide to their new places. */
+  readonly tops: ReadonlyArray<number>;
+}
+
 /**
  * What a move announces: `landed` once the consumer commits it (the row is at
  * `to` in the DOM), `kept` if the consumer keeps the order instead. A screen
@@ -296,7 +307,21 @@ interface PendingAnnouncement {
 
 /** The strings the controller announces, from the translator. */
 interface ReorderMessages {
-  position: (position: number, total: number) => string;
+  /**
+   * A row's place in reorder mode: its name, place and count, and the names
+   * of the rows before and after it (null at the top or the end).
+   */
+  place: (
+    label: string,
+    position: number,
+    total: number,
+    previous: string | null,
+    next: string | null,
+  ) => string;
+  /** A reorder mode move refused by the row that stays where it would go. */
+  refused: (label: string) => string;
+  /** A row's name when it shows no text: its place. */
+  itemAt: (position: number) => string;
   pickedUp: (position: number, total: number) => string;
   dropped: (position: number, total: number) => string;
   cancelled: (position: number, total: number) => string;
@@ -304,8 +329,25 @@ interface ReorderMessages {
 
 function messagesFrom(t: TranslatorFn): ReorderMessages {
   return {
-    position: (position, total) =>
-      t('@astryx.list.reorderPosition', {position, total}),
+    place: (label, position, total, previous, next) =>
+      previous == null
+        ? t('@astryx.list.reorderPlaceTop', {label, position, total, next})
+        : next == null
+          ? t('@astryx.list.reorderPlaceEnd', {
+              label,
+              position,
+              total,
+              previous,
+            })
+          : t('@astryx.list.reorderPlace', {
+              label,
+              position,
+              total,
+              previous,
+              next,
+            }),
+    refused: label => t('@astryx.list.reorderRefused', {label}),
+    itemAt: position => t('@astryx.list.reorderItemAt', {position}),
     pickedUp: (position, total) =>
       t('@astryx.list.reorderPickedUp', {position, total}),
     dropped: (position, total) =>
@@ -346,6 +388,7 @@ function gestureStateOf(
 export class ListReorderController implements ListReorderSession {
   readonly Host = ListReorderHost;
   readonly Handle = ListReorderHandle;
+  readonly RowName = ListReorderRowName;
   readonly rowStyle = reorderRowStyle;
   options: ListReorderOptions | null = null;
   announce: AnnounceFn = () => {};
@@ -354,10 +397,28 @@ export class ListReorderController implements ListReorderSession {
   presentation: 'uikit' | 'theme' = 'theme';
   /** Each of this list's handles, with its row's item key. */
   private readonly keys = new Map<Element, Key>();
+  /**
+   * The names the announcements give rows: each handle's (its row's label
+   * text) and each handle-less row's own.
+   */
+  private readonly names = new Map<Element, string>();
+  /** The handle whose row is in reorder mode, if any. */
+  private modeHandle: HTMLElement | null = null;
+  private readonly modeListeners = new Set<() => void>();
+  /** The handle whose press became a drag, until its click is read. */
+  private draggedHandle: Element | null = null;
+  /** A reorder mode move, whose rows slide once it commits (under a finger). */
+  private committedMove: PendingMove | null = null;
+  private moveFallback: ReturnType<typeof setTimeout> | null = null;
+  /**
+   * A reorder mode move between its report and its commit: the commit may
+   * move the handle's element, and the blur that causes keeps the mode.
+   */
+  private isMovingByKey = false;
   private session: DragSession | null = null;
   private pending: PendingDrop | null = null;
   private fallback: ReturnType<typeof setTimeout> | null = null;
-  /** The row whose handle keeps focus across the commit of a key drop. */
+  /** The row whose handle keeps focus across a reorder mode move's commit. */
   private focusRow: HTMLElement | null = null;
   /** A move's announcement, waiting for its commit. */
   private announcement: PendingAnnouncement | null = null;
@@ -390,19 +451,114 @@ export class ListReorderController implements ListReorderSession {
   }
 
   /**
-   * Records a row's handle and the row's item key (ListItem `itemKey`);
-   * returns the removal. A row moves only with a handle recorded here.
+   * Records a row's handle, the row's item key (ListItem `itemKey`) and its
+   * name; returns the removal. A row moves only with a handle recorded here.
    */
-  registerHandle(handle: Element | null, key: Key): () => void {
+  registerHandle(handle: Element | null, key: Key, name: string): () => void {
     if (handle == null) {
       return () => {};
     }
     this.keys.set(handle, key);
+    this.names.set(handle, name);
     return () => {
       if (this.keys.get(handle) === key) {
         this.keys.delete(handle);
+        this.names.delete(handle);
+        if (this.modeHandle === handle) {
+          this.setMode(null);
+        }
       }
     };
+  }
+
+  /** Records the name of a row without a handle; returns the removal. */
+  registerName(row: Element | null, name: string): () => void {
+    if (row == null) {
+      return () => {};
+    }
+    this.names.set(row, name);
+    return () => {
+      if (this.names.get(row) === name) {
+        this.names.delete(row);
+      }
+    };
+  }
+
+  /** What the announcements call the row at `index`. */
+  private nameOf(row: HTMLElement, index: number): string {
+    const handle = this.handleIn(row);
+    const name =
+      (handle == null ? null : this.names.get(handle)) ??
+      this.names.get(row) ??
+      '';
+    return name !== '' ? name : (this.messages?.itemAt(index + 1) ?? '');
+  }
+
+  // --- Reorder mode ----------------------------------------------------
+
+  /** Whether `handle`'s row is in reorder mode: its `aria-pressed`. */
+  isInMode(handle: Element | null): boolean {
+    return handle != null && this.modeHandle === handle;
+  }
+
+  /** Calls `listener` when reorder mode starts, moves or ends. */
+  subscribeMode = (listener: () => void): (() => void) => {
+    this.modeListeners.add(listener);
+    return () => {
+      this.modeListeners.delete(listener);
+    };
+  };
+
+  /** The handle whose row is in reorder mode, if any. */
+  get modeTarget(): HTMLElement | null {
+    return this.modeHandle;
+  }
+
+  private setMode(handle: HTMLElement | null): void {
+    if (this.modeHandle === handle) {
+      return;
+    }
+    this.modeHandle = handle;
+    for (const listener of [...this.modeListeners]) {
+      listener();
+    }
+  }
+
+  /**
+   * A handle was activated without a drag (a click, Space or Enter): its row
+   * enters reorder mode, or leaves it (spec:AST-103 FR4).
+   */
+  toggleMode(handle: HTMLElement | null): void {
+    if (handle == null || this.session != null) {
+      return;
+    }
+    if (this.modeHandle === handle) {
+      this.setMode(null);
+      return;
+    }
+    if (this.handleOf(handle) === handle) {
+      this.setMode(handle);
+      // The arrows go to the handle (a click does not focus a button in
+      // every browser).
+      if (handle.ownerDocument.activeElement !== handle) {
+        handle.focus({preventScroll: true});
+      }
+    }
+  }
+
+  /** Ends reorder mode, keeping its moves. */
+  endMode(): void {
+    this.setMode(null);
+  }
+
+  /**
+   * Whether `handle`'s latest press dragged its row; reading it clears it.
+   * A press that dragged does not toggle reorder mode with its click.
+   */
+  takeDrag(handle: Element | null): boolean {
+    const dragged = handle != null && this.draggedHandle === handle;
+    this.draggedHandle = null;
+    return dragged;
   }
 
   /** This list's handle in `row`, if it has one: a nested list's are its own. */
@@ -462,6 +618,7 @@ export class ListReorderController implements ListReorderSession {
         return;
       }
       this.endMouse?.();
+      this.draggedHandle = null;
       const {pointerId, clientX: x, clientY: y} = event;
       let isDragging = false;
       const end = () => {
@@ -487,6 +644,7 @@ export class ListReorderController implements ListReorderSession {
             return;
           }
           isDragging = true;
+          this.draggedHandle = handle;
           this.gesture(this.rowOf(handle), {state: 'began', y});
         }
         this.gesture(null, {state: 'changed', y: move.clientY});
@@ -546,6 +704,9 @@ export class ListReorderController implements ListReorderSession {
       },
       recognizer => {
         const state = gestureStateOf(recognizer);
+        if (state === 'began') {
+          this.draggedHandle = held;
+        }
         if (state != null) {
           this.gesture(state === 'began' ? this.rowOf(held) : null, {
             state,
@@ -567,19 +728,13 @@ export class ListReorderController implements ListReorderSession {
         }
         break;
       case 'changed':
-        if (this.session?.byKey === false) {
-          this.track(event.y);
-        }
+        this.track(event.y);
         break;
       case 'ended':
-        if (this.session?.byKey === false) {
-          this.drop();
-        }
+        this.drop();
         break;
       case 'cancelled':
-        if (this.session?.byKey === false) {
-          this.cancel();
-        }
+        this.cancel();
         break;
     }
   }
@@ -600,17 +755,19 @@ export class ListReorderController implements ListReorderSession {
       this.endMouse?.();
       this.cancel();
     }
+    if (row != null && this.rowOf(this.modeHandle) === row) {
+      this.setMode(null);
+    }
   }
 
-  /**
-   * Picks up `row`: from a pointer at `y`, or from the keyboard (`y` null).
-   * Returns whether it did.
-   */
-  private begin(row: HTMLElement, y: number | null): boolean {
+  /** Picks up `row` under a pointer at `y`. Returns whether it did. */
+  private begin(row: HTMLElement, y: number): boolean {
     const list = this.getList();
     if (list == null || this.session != null) {
       return false;
     }
+    // A drag ends reorder mode, keeping its moves.
+    this.setMode(null);
     // A drop still waiting for its commit is settled where it is.
     this.flushPending();
     const rows = rowsOf(list);
@@ -667,16 +824,15 @@ export class ListReorderController implements ListReorderSession {
       tops,
       geometry,
       dragged,
-      byKey: y == null,
       slot: dragged,
       offsets: rows.map((element, index) =>
         index === dragged ? 0 : shownY(element, at),
       ),
       origin,
-      grabOffset: y == null ? 0 : y - (origin + tops[dragged] + shown),
+      grabOffset: y - (origin + tops[dragged] + shown),
       scroller,
       scrolled: 0,
-      lastY: y ?? 0,
+      lastY: y,
       edge: edgeAutoscroll({
         intervalMs: reorder.autoscroll.tickMs,
         // UIKit's run-loop timer: a late fire (engines fire a 20 ms interval
@@ -693,9 +849,7 @@ export class ListReorderController implements ListReorderSession {
     this.session = session;
     // Rows still sliding from an earlier drag go to their places.
     this.moveTo(dragged, true);
-    if (y != null) {
-      this.track(y);
-    }
+    this.track(y);
     this.announce(
       this.messages?.pickedUp(dragged + 1, rows.length) ?? '',
       'polite',
@@ -720,7 +874,7 @@ export class ListReorderController implements ListReorderSession {
 
   private track(y: number): void {
     const session = this.session;
-    if (session == null || session.byKey) {
+    if (session == null) {
       return;
     }
     session.lastY = y;
@@ -798,7 +952,7 @@ export class ListReorderController implements ListReorderSession {
 
   /** The autoscroll's next step for the finger where it last was. */
   private edgeStep(session: DragSession): number {
-    if (this.session !== session || session.byKey) {
+    if (this.session !== session) {
       return 0;
     }
     const {geometry, dragged} = session;
@@ -845,8 +999,7 @@ export class ListReorderController implements ListReorderSession {
     const target =
       slotTop(geometry, dragged, slot) - geometry.rows[dragged].top;
     const at = motionNow();
-    // The keys already sent a picked-up row to its slot.
-    if (!session.byKey && this.animates) {
+    if (this.animates) {
       const distance = target - shownY(element, at);
       touchMotion.settle(
         element,
@@ -854,7 +1007,7 @@ export class ListReorderController implements ListReorderSession {
         settleSpring(distance, geometry.rows[dragged].height),
         at,
       );
-    } else if (!session.byKey) {
+    } else {
       animatorFor(element).set({y: target});
     }
     const dropped = this.messages?.dropped(slot + 1, rows.length) ?? '';
@@ -884,10 +1037,6 @@ export class ListReorderController implements ListReorderSession {
       dragged,
       restore: session.restore,
     };
-    if (session.byKey) {
-      // The commit moves the row's element; its handle keeps the focus.
-      this.focusRow = element;
-    }
     options.onReorder({key, to: slot});
     // A consumer that does not apply the move by the end of the task gets
     // its rows back where they were.
@@ -899,7 +1048,7 @@ export class ListReorderController implements ListReorderSession {
 
   /**
    * The drag ends where it started: the browser took the touch (a pinch, a
-   * scroll), Escape, or the handle left. Every row goes home and nothing is
+   * scroll), or the handle left. Every row goes home and nothing is
    * reported.
    */
   cancel(): void {
@@ -1048,7 +1197,44 @@ export class ListReorderController implements ListReorderSession {
       }
       this.announce(announcement.landed, announcement.politeness);
     }
-    this.restoreFocus();
+    const move = this.committedMove;
+    if (move != null && !sameOrder(rowsOf(list), move.rows)) {
+      this.committedMove = null;
+      if (this.moveFallback != null) {
+        clearTimeout(this.moveFallback);
+        this.moveFallback = null;
+      }
+      this.slideCommitted(move);
+    }
+    // A reorder mode move has landed (or nothing waits): its handle keeps
+    // the focus.
+    if (this.announcement == null) {
+      this.restoreFocus();
+    }
+  }
+
+  /** A reorder mode move landed: each row slides from its old place to its new one. */
+  private slideCommitted(move: PendingMove): void {
+    const {list} = move;
+    const at = motionNow();
+    for (const [index, element] of move.rows.entries()) {
+      if (element.parentElement !== list) {
+        continue;
+      }
+      const shift = move.tops[index] - layoutTop(element, list);
+      if (Math.abs(shift) < MIN_MOVE_PX) {
+        continue;
+      }
+      // A row still sliding from the previous move goes on from where it is
+      // shown, as a drop's rows do.
+      touchMotion.follow(
+        element,
+        shift,
+        slideSpring(0, touchMotion.slideBase(list)),
+        at,
+      );
+    }
+    list.removeAttribute(REORDERING_ATTRIBUTE);
   }
 
   private rebase(pending: PendingDrop): void {
@@ -1110,123 +1296,118 @@ export class ListReorderController implements ListReorderSession {
   // --- Keys ------------------------------------------------------------
 
   /**
-   * A handle's key. Space or Enter picks its row up and drops it; while it
-   * is up, the arrows move it a place, Home and End to the ends of its range,
-   * and Escape puts it back.
+   * A handle's key in reorder mode (spec:AST-103 FR4): the arrows move its
+   * row a place at once, and Escape ends the mode, keeping the moves. Space
+   * and Enter toggle the mode through the handle's click.
    */
-  keyDown(row: HTMLElement | null, event: KeyboardEvent): void {
-    const list = this.getList();
+  keyDown(handle: HTMLElement | null, event: KeyboardEvent): void {
     // A modified key is a browser or assistive-technology shortcut.
     if (
-      row == null ||
-      list == null ||
+      handle == null ||
+      handle !== this.modeHandle ||
       event.altKey ||
       event.ctrlKey ||
       event.metaKey
     ) {
       return;
     }
-    const session = this.session;
-    if (session != null && !session.byKey) {
-      // A pointer drag has the list.
-      return;
-    }
-    const isUp = session != null && session.rows[session.dragged] === row;
     switch (event.key) {
-      case ' ':
-      case 'Enter':
-        event.preventDefault();
-        if (isUp) {
-          this.drop();
-        } else if (session == null) {
-          this.begin(row, null);
-        }
-        return;
       case 'Escape':
-        if (!isUp) {
-          return;
-        }
         event.preventDefault();
         event.stopPropagation();
-        this.cancel();
+        this.setMode(null);
         return;
       case 'ArrowUp':
       case 'ArrowDown':
-      case 'Home':
-      case 'End': {
-        if (session == null || !isUp) {
-          return;
-        }
         event.preventDefault();
-        const {start, end} = movableRange(
-          session.geometry.rows,
-          session.dragged,
-        );
-        const next =
-          event.key === 'ArrowUp'
-            ? session.slot - 1
-            : event.key === 'ArrowDown'
-              ? session.slot + 1
-              : event.key === 'Home'
-                ? start
-                : end;
-        const slot = Math.min(end, Math.max(start, next));
-        if (slot !== session.slot) {
-          this.moveByKey(session, slot);
-        }
+        this.step(handle, event.key === 'ArrowUp' ? -1 : 1);
         return;
-      }
       default:
         return;
     }
   }
 
   /**
-   * A key moves the picked-up row to `slot`: it and the rows it displaces go
-   * to their places (on the table spring under a finger's presentation), the
-   * list scrolls to keep it in view, and its place is announced. Nothing is
-   * reported until the drop.
+   * Reorder mode's move: the row whose handle is in the mode goes a place up
+   * (`-1`) or down (`1`) at once, with one report, announced with its place
+   * and neighbours once it lands. Under a finger's presentation the rows
+   * then slide to their new places, as a UIKit table moves a row. A move
+   * into a row that stays at either end is refused and announced; one past
+   * the list's end does nothing.
    */
-  private moveByKey(session: DragSession, slot: number): void {
-    const {geometry, dragged, rows} = session;
-    this.moveTo(slot, false);
-    const element = rows[dragged];
-    const offset =
-      slotTop(geometry, dragged, slot) - geometry.rows[dragged].top;
-    if (session.slide != null) {
-      touchMotion.slide(
-        element,
-        offset,
-        slideSpring(0, session.slide),
-        motionNow(),
-      );
-    } else {
-      animatorFor(element).set({y: offset});
-    }
-    this.reveal(session, offset);
-    this.announce(this.messages?.position(slot + 1, rows.length) ?? '');
-  }
-
-  /** Scrolls the list's scroller so the picked-up row, at `offset`, shows. */
-  private reveal(session: DragSession, offset: number): void {
-    const {scroller, geometry, dragged} = session;
-    const row = geometry.rows[dragged];
-    const top = session.origin - session.scrolled + row.top + offset;
-    const bottom = top + row.height;
-    const delta =
-      bottom > scroller.bottom
-        ? bottom - scroller.bottom
-        : top < scroller.top
-          ? top - scroller.top
-          : 0;
-    const next = Math.min(scroller.max, Math.max(0, scroller.position + delta));
-    const moved = next - scroller.position;
-    if (moved === 0) {
+  step(handle: HTMLElement | null, delta: -1 | 1): void {
+    const list = this.getList();
+    const options = this.options;
+    const row = this.rowOf(handle);
+    const key = row == null ? undefined : this.keyOf(row);
+    if (
+      list == null ||
+      options == null ||
+      row == null ||
+      key == null ||
+      handle !== this.modeHandle ||
+      this.session != null
+    ) {
       return;
     }
-    scroller.element.scrollTop = next;
-    scroller.position = next;
-    session.scrolled += moved;
+    const rows = rowsOf(list);
+    const index = rows.indexOf(row);
+    const to = index + delta;
+    if (to < 0 || to >= rows.length) {
+      return;
+    }
+    if (boundsOf(rows.map(element => this.handleIn(element) != null))[to]) {
+      this.announce(this.messages?.refused(this.nameOf(rows[to], to)) ?? '');
+      return;
+    }
+    const order = rows.filter(element => element !== row);
+    order.splice(to, 0, row);
+    this.focusRow = row;
+    this.isMovingByKey = true;
+    this.announceWhenCommitted({
+      row,
+      to,
+      landed: this.placeIn(order, to),
+      kept: this.placeIn(rows, index),
+      politeness: undefined,
+    });
+    if (this.animates) {
+      this.committedMove = {
+        list,
+        rows,
+        tops: rows.map(element => layoutTop(element, list)),
+      };
+      // The List's update motion leaves this commit to the reorder.
+      list.setAttribute(REORDERING_ATTRIBUTE, '');
+      if (this.moveFallback != null) {
+        clearTimeout(this.moveFallback);
+      }
+      // The caller kept the order: nothing slides.
+      this.moveFallback = setTimeout(() => {
+        this.moveFallback = null;
+        if (this.committedMove != null) {
+          this.committedMove = null;
+          if (this.session == null && this.pending == null) {
+            list.removeAttribute(REORDERING_ATTRIBUTE);
+          }
+        }
+      }, 0);
+    }
+    options.onReorder({key, to});
+  }
+
+  /** What reorder mode announces for the row at `at` in `order`. */
+  private placeIn(order: ReadonlyArray<HTMLElement>, at: number): string {
+    const name = (index: number) => this.nameOf(order[index], index);
+    return (
+      this.messages?.place(
+        name(at),
+        at + 1,
+        order.length,
+        at > 0 ? name(at - 1) : null,
+        at < order.length - 1 ? name(at + 1) : null,
+      ) ?? ''
+    );
   }
 
   /**
@@ -1245,37 +1426,61 @@ export class ListReorderController implements ListReorderSession {
         this.announcement = null;
         this.announce(pending.kept, pending.politeness);
       }
+      this.restoreFocus();
     }, 0);
   }
 
-  /** A row's handle lost focus: a keyboard pick-up of its row goes home. */
-  blur(row: HTMLElement | null): void {
-    const session = this.session;
+  /**
+   * A handle lost focus to `next`: its row leaves reorder mode, keeping its
+   * moves, unless a move's commit is moving its element (focus going
+   * nowhere while it does).
+   */
+  blur(handle: HTMLElement | null, next: EventTarget | null): void {
     if (
-      session != null &&
-      session.byKey &&
-      session.rows[session.dragged] === row
+      handle != null &&
+      handle === this.modeHandle &&
+      (next != null || !this.isMovingByKey)
     ) {
-      this.cancel();
+      this.setMode(null);
     }
   }
 
+  /**
+   * After a reorder mode move: the handle has the focus again (the commit
+   * may have moved its element) and its row scrolls into view.
+   */
   private restoreFocus(): void {
+    this.isMovingByKey = false;
     const row = this.focusRow;
     if (row == null) {
       return;
     }
     this.focusRow = null;
-    const handle = row.querySelector<HTMLElement>(`[${HANDLE_ATTRIBUTE}]`);
-    if (handle != null && row.ownerDocument.activeElement !== handle) {
+    const handle = this.handleIn(row);
+    const active = row.ownerDocument.activeElement;
+    // Focus that went elsewhere meanwhile stays there.
+    if (
+      handle instanceof HTMLElement &&
+      handle === this.modeHandle &&
+      (active == null || active === row.ownerDocument.body)
+    ) {
       handle.focus({preventScroll: true});
+    }
+    if (handle === this.modeHandle) {
+      row.scrollIntoView?.({block: 'nearest', inline: 'nearest'});
     }
   }
 
   dispose(): void {
     this.endMouse?.();
+    this.setMode(null);
     // A drag in progress goes home.
     this.cancel();
+    if (this.moveFallback != null) {
+      clearTimeout(this.moveFallback);
+      this.moveFallback = null;
+    }
+    this.committedMove = null;
     if (this.fallback != null) {
       clearTimeout(this.fallback);
       this.fallback = null;

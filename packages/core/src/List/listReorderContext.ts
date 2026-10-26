@@ -20,7 +20,7 @@
  * reorderable/createReorderable.ts.
  */
 
-import type {ComponentType, Key, ReactNode} from 'react';
+import type {ComponentType, Key, ReactNode, RefObject} from 'react';
 import type {StyleXStyles} from '@stylexjs/stylex';
 
 /** The key a reorderable object carries its machinery under. */
@@ -53,6 +53,17 @@ export interface ListReorderHandleProps {
   readonly isDisabled?: boolean;
 }
 
+/**
+ * A reorderable List's row without a handle: its label names it in the
+ * announcements of the moves beside it (List/ListReorderHandle.tsx).
+ */
+export interface ListReorderRowNameProps {
+  /** The row's element. */
+  readonly row: RefObject<HTMLElement | null>;
+  /** The row's label. */
+  readonly label: ReactNode;
+}
+
 /** The parts of a List's reorder session that its List and rows use. */
 export interface ListReorderSession {
   /**
@@ -64,12 +75,13 @@ export interface ListReorderSession {
   /**
    * Rendered by the List beside its rows while it reorders: keeps the
    * session's callbacks, strings and listeners current, renders the handles'
-   * instructions and the list's menu, and disposes of the session when it
-   * goes.
+   * instructions, and disposes of the session when it goes.
    */
   readonly Host: ComponentType<{reorder: ListReorderContextValue}>;
   /** The handle each reorderable row ends with. */
   readonly Handle: ComponentType<ListReorderHandleProps>;
+  /** Names a row without a handle for the announcements; renders nothing. */
+  readonly RowName: ComponentType<ListReorderRowNameProps>;
   /** A row with a handle: its focus ring stays off for the handle's own. */
   readonly rowStyle: StyleXStyles;
 }

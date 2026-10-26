@@ -6,11 +6,13 @@
  * @file ListReorderHandle.tsx
  * @input The List's reorder session (List/listReorderEngine.tsx, through
  *   ListContext's `reorder`), the translator and theme tokens
- * @output `ListReorderHandle` and `reorderRowStyle`: the trailing handle of a
- *   reorderable List row,
- *   a button that a finger (held still for a moment, where the primary
- *   pointer is coarse) or a mouse drags, and whose Space or Enter picks the
- *   row up for the arrow keys; and the style of a row that has one
+ * @output `ListReorderHandle`, `ListReorderRowName` and `reorderRowStyle`:
+ *   the trailing handle of a reorderable List row, a button that a finger
+ *   (held still for a moment, where the primary pointer is coarse) or a
+ *   mouse drags, and a toggle (`aria-pressed`) whose activation without a
+ *   drag (a click, Space or Enter) turns its row's reorder mode on and off
+ *   (spec:AST-103 FR4); the name of a row without one; and the style of a
+ *   row that has one
  * @position Part of the reorder machinery that createReorderable carries:
  *   ListItem renders it, from the List's context, at the end of each row
  *   that can move
@@ -35,6 +37,7 @@ import {
   use,
   useEffect,
   useRef,
+  useSyncExternalStore,
   type KeyboardEvent,
   type ReactNode,
 } from 'react';
@@ -50,6 +53,7 @@ import {ListContext} from './ListContext';
 import {
   HANDLE_ATTRIBUTE,
   type ListReorderHandleProps,
+  type ListReorderRowNameProps,
 } from './listReorderContext';
 import type {ListReorderController} from './listReorderEngine';
 
@@ -86,10 +90,26 @@ const styles = stylex.create({
       default: '0',
       ':focus-visible': `calc(-1 * ${focusVars['--focus-outline-width']})`,
     },
-    backgroundColor: 'transparent',
+    // Pressed while its row is in reorder mode, as a pressed toggle button
+    // is; in forced colors, the system's highlight.
+    backgroundColor: {
+      default: 'transparent',
+      ':is([aria-pressed="true"])': {
+        default: colorVars['--color-overlay-pressed'],
+        '@media (forced-colors: active)': 'Highlight',
+      },
+    },
+    forcedColorAdjust: {
+      default: null,
+      ':is([aria-pressed="true"])': 'none',
+    },
     color: {
       default: colorVars['--color-icon-secondary'],
       ':is([aria-disabled="true"])': colorVars['--color-icon-disabled'],
+      ':is([aria-pressed="true"])': {
+        default: colorVars['--color-icon-secondary'],
+        '@media (forced-colors: active)': 'HighlightText',
+      },
     },
     // Grabbing while its list reorders (a drag holds the pointer). Not
     // `:active`: that is the touch press controller's arm, and the handle
@@ -167,11 +187,21 @@ export function ListReorderHandle({
   const t = useTranslator();
   const controller = use(ListContext)?.reorder?.session as
     ListReorderController | undefined;
-  // The session moves the row only with its handle recorded, and reports its
-  // moves with the row's key.
+  // Named after the row's label text, an element's included ("Reorder
+  // Custom Name"); a label that shows no text names it after its place.
+  const text = textOf(label).replace(/\s+/g, ' ').trim();
+  const named = text !== '';
+  // The session moves the row only with its handle recorded, reports its
+  // moves with the row's key, and announces them with its name.
   useIsomorphicLayoutEffect(
-    () => controller?.registerHandle(ref.current, itemKey),
-    [controller, itemKey],
+    () => controller?.registerHandle(ref.current, itemKey, text),
+    [controller, itemKey, text],
+  );
+  // Pressed while its row is in reorder mode.
+  const isPressed = useSyncExternalStore(
+    controller?.subscribeMode ?? subscribeNothing,
+    () => controller?.isInMode(ref.current) ?? false,
+    () => false,
   );
   const isEnabled = controller != null && !isDisabled;
   // The row the handle sits in, read after each commit: the list's own ref is
@@ -190,10 +220,6 @@ export function ListReorderHandle({
     }
     return () => controller.release(rowRef.current);
   }, [controller, isEnabled]);
-  // Named after the row's label text, an element's included ("Reorder
-  // Custom Name"); a label that shows no text names it after its place.
-  const text = textOf(label).replace(/\s+/g, ' ').trim();
-  const named = text !== '';
   // That place is read from the DOM after each commit (the row does not
   // know its index). A passive effect: the list's own ref is attached after
   // its rows' layout effects run.
@@ -227,12 +253,19 @@ export function ListReorderHandle({
       aria-label={name}
       aria-describedby={controller.hintId}
       aria-disabled={isDisabled || undefined}
-      onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
-        if (!isDisabled) {
-          controller.keyDown(controller.rowOf(ref.current), event);
+      aria-pressed={isPressed}
+      // A click, Space or Enter: reorder mode, unless the press dragged.
+      onClick={() => {
+        if (!controller.takeDrag(ref.current) && !isDisabled) {
+          controller.toggleMode(ref.current);
         }
       }}
-      onBlur={() => controller.blur(controller.rowOf(ref.current))}
+      onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
+        if (!isDisabled) {
+          controller.keyDown(ref.current, event);
+        }
+      }}
+      onBlur={event => controller.blur(ref.current, event.relatedTarget)}
       // The row's own pointer handling (its swipe) never sees the handle's
       // presses: the list's listeners have them, before this.
       onPointerDown={event => event.stopPropagation()}
@@ -242,3 +275,23 @@ export function ListReorderHandle({
 }
 
 ListReorderHandle.displayName = 'ListReorderHandle';
+
+const subscribeNothing = () => () => {};
+
+/**
+ * Names a reorderable List's row that has no handle (one that stays, or one
+ * without an item key) for the announcements of the moves beside it.
+ * Renders nothing.
+ */
+export function ListReorderRowName({row, label}: ListReorderRowNameProps) {
+  const controller = use(ListContext)?.reorder?.session as
+    ListReorderController | undefined;
+  const text = textOf(label).replace(/\s+/g, ' ').trim();
+  useIsomorphicLayoutEffect(
+    () => controller?.registerName(row.current, text),
+    [controller, row, text],
+  );
+  return null;
+}
+
+ListReorderRowName.displayName = 'ListReorderRowName';

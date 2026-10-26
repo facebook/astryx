@@ -484,61 +484,72 @@ export function ListItem({
       <span {...stylex.props(markerStyles.number, NUMBER_STYLES[markerKind])} />
     ) : null;
 
+  // A row without a handle in a reorderable List still has a name for the
+  // announcements of the moves beside it. It follows the row, so the row's
+  // element is set when it records it.
+  const reorderName =
+    reorder != null && !isRenderable(reorderHandle) ? (
+      <reorder.session.RowName row={rowRef} label={label} />
+    ) : null;
+
   return (
-    <Item
-      as="li"
-      ref={mergedRef}
-      marker={marker}
-      startContent={startContent}
-      label={label}
-      description={description}
-      endContent={
-        isRenderable(reorderHandle) ? (
-          <>
-            {endContent}
-            {reorderHandle}
-          </>
-        ) : (
-          endContent
-        )
-      }
-      onClick={onClick}
-      interactiveRef={interactiveRef}
-      href={href}
-      target={target as '_blank' | '_self'}
-      rel={rel}
-      isDisabled={isDisabled}
-      isSelected={isSelected}
-      align={align}
-      density={density}
-      xstyle={
-        [
-          hasMarkers && styles.withCounter,
-          styles.travelling,
-          hasDividers && styles.withDivider,
-          hasDividers && embeddedStyles.noRadius,
-          // A list with markers is running text (bullets, numbers, a
-          // Markdown list), not a table: its rows keep their own height, and
-          // each marker stays on its text's first line. A compact list is the
-          // dense case and keeps its density too: its rows already clear the
-          // 24px target minimum (WCAG 2.5.8).
-          !hasMarkers &&
-            density !== 'compact' &&
-            (isRenderable(description)
-              ? listRowStyles.touchTwoLine
-              : listRowStyles.touchOneLine),
-          edge === 'flush' && styles.edgeFlush,
-          edge === 'outset' && styles.edgeOutset,
-          edge === 'bleed' && styles.edgeBleed,
-          // A focused handle rings itself; the row's focus-within ring stays
-          // off for it (two rings, and the list clips the row's sides).
-          isRenderable(reorderHandle) && reorder?.session.rowStyle,
-          xstyle,
-        ] as StyleXStyles
-      }
-      {...mergeProps(themeProps('list-item'), {className, style})}
-      {...restProps}
-    />
+    <>
+      <Item
+        as="li"
+        ref={mergedRef}
+        marker={marker}
+        startContent={startContent}
+        label={label}
+        description={description}
+        endContent={
+          isRenderable(reorderHandle) ? (
+            <>
+              {endContent}
+              {reorderHandle}
+            </>
+          ) : (
+            endContent
+          )
+        }
+        onClick={onClick}
+        interactiveRef={interactiveRef}
+        href={href}
+        target={target as '_blank' | '_self'}
+        rel={rel}
+        isDisabled={isDisabled}
+        isSelected={isSelected}
+        align={align}
+        density={density}
+        xstyle={
+          [
+            hasMarkers && styles.withCounter,
+            styles.travelling,
+            hasDividers && styles.withDivider,
+            hasDividers && embeddedStyles.noRadius,
+            // A list with markers is running text (bullets, numbers, a
+            // Markdown list), not a table: its rows keep their own height, and
+            // each marker stays on its text's first line. A compact list is the
+            // dense case and keeps its density too: its rows already clear the
+            // 24px target minimum (WCAG 2.5.8).
+            !hasMarkers &&
+              density !== 'compact' &&
+              (isRenderable(description)
+                ? listRowStyles.touchTwoLine
+                : listRowStyles.touchOneLine),
+            edge === 'flush' && styles.edgeFlush,
+            edge === 'outset' && styles.edgeOutset,
+            edge === 'bleed' && styles.edgeBleed,
+            // A focused handle rings itself; the row's focus-within ring stays
+            // off for it (two rings, and the list clips the row's sides).
+            isRenderable(reorderHandle) && reorder?.session.rowStyle,
+            xstyle,
+          ] as StyleXStyles
+        }
+        {...mergeProps(themeProps('list-item'), {className, style})}
+        {...restProps}
+      />
+      {reorderName}
+    </>
   );
 }
 

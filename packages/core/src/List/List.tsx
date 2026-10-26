@@ -100,9 +100,11 @@ export interface ListProps extends BaseProps<
    * its row (a flick on it still scrolls); the row follows the finger, the
    * rows it passes slide out of its way, the list scrolls near the edges, and
    * on release the row settles into its new place, the way an iOS table
-   * reorders. A mouse drags a handle at once. From the keyboard, Space or
-   * Enter on a handle picks its row up, the arrow keys, Home and End move it,
-   * Space or Enter drops it, and Escape puts it back.
+   * reorders. A mouse drags a handle at once. Without a drag, activating a
+   * handle (a click, Space or Enter) turns on reorder mode for its row: each
+   * arrow key moves it a place at once, reported and announced with its place
+   * and neighbours, and Escape or another activation ends the mode, keeping
+   * the moves.
    */
   reorderable?: Reorderable;
 
