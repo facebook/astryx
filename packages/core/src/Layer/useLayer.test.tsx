@@ -492,6 +492,31 @@ describe('useLayer', () => {
   });
 
   describe('context hosting', () => {
+    it('installs the slide rules for a render call that mounts after its host', () => {
+      document.getElementById('astryx-layer-slide-rules')?.remove();
+      function LateRenderHarness({showLayer}: {readonly showLayer: boolean}) {
+        const layer = useLayer({mode: 'context'});
+        return (
+          <div>
+            <button type="button" ref={layer.ref} onClick={layer.show}>
+              Trigger
+            </button>
+            {showLayer ? layer.render(<span>Layer content</span>) : null}
+          </div>
+        );
+      }
+      const {rerender} = render(<LateRenderHarness showLayer={false} />);
+      expect(document.getElementById('astryx-layer-slide-rules')).toBeNull();
+
+      rerender(<LateRenderHarness showLayer />);
+      // The marker's arrival resolves the mount and installs the sheet, so a
+      // layer that joins its host later still slides (FR4) instead of
+      // covering its own trigger on a narrow viewport.
+      expect(
+        document.getElementById('astryx-layer-slide-rules'),
+      ).not.toBeNull();
+    });
+
     it('keeps closed content mounted by default for existing consumers', () => {
       const {container} = render(<ContextLayerHarness />);
 

@@ -1278,6 +1278,12 @@ function useLayerImplementation(
       return;
     }
 
+    // The slide options' `@position-try` rules (FR4) are installed in the
+    // layer's document before its first paint, here where the mount resolves:
+    // the marker's arrival is the one event every mount has, whether the
+    // render call mounts with its host or later. One sheet serves every layer.
+    ensureSlideRules(sentinel.ownerDocument);
+
     const portalTarget = resolveLayerPortalTarget(inlineParent);
     const mount: ContextLayerMount = {
       portalTarget,
@@ -1592,19 +1598,6 @@ function useLayerImplementation(
       }
     };
   }, [handleToggle, bindToggleListener]);
-
-  // The slide options' `@position-try` rules (FR4) are installed in the
-  // layer's document before its first paint; one sheet serves every layer.
-  useIsomorphicLayoutEffect(() => {
-    if (mode !== 'context') {
-      return;
-    }
-    const doc =
-      popoverRef.current?.ownerDocument ?? sentinelRef.current?.ownerDocument;
-    if (doc) {
-      ensureSlideRules(doc);
-    }
-  }, [mode, mountGeneration]);
 
   // Anchor visibility (FR5). The first frame must already be right (FR8), so
   // the opening read is synchronous — a layout effect runs before paint, and a
