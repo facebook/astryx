@@ -138,9 +138,13 @@ Text fields and Accessibility in the Apple Human Interface Guidelines
 (`spec:AST-093` FR3).
 
 Theme values read (`spec:AST-093` FR4): `color.textPrimary`,
-`color.textSecondary`, `color.textDisabled`, `color.borderEmphasized`, `color.error`,
-`color.warning`, `color.success`, `color.errorMuted`, `color.warningMuted`,
-`color.successMuted`, `color.textRed`, `color.textYellow`, `color.textGreen`,
+`color.textSecondary`, `color.textDisabled`, `color.borderEmphasized`, the
+status roles `architecture:theme-tokens` INV11 assigns (`color.borderError`,
+`color.borderWarning`, `color.borderSuccess` for the border;
+`color.iconError`, `color.iconWarning`, `color.iconSuccess` for the icon;
+`color.errorMuted`, `color.warningMuted`, `color.successMuted` for the
+message ground and `color.onErrorMuted`, `color.onWarningMuted`,
+`color.onSuccessMuted` for its text),
 `size.elementSm`, `size.elementMd`, `size.elementLg`, `size.borderWidth`,
 `radius.element`, `space` steps, `font.body`, `font.label`, `font.supporting`,
 `font.weight.medium`, `font.weight.normal`,

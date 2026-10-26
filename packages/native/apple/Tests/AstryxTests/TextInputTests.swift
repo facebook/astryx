@@ -96,7 +96,7 @@ import Testing
 @Test func aStatusColorsTheBorderUnlessTheFieldIsDisabled() {
   let error = Astryx.TextInput(label: "Email", value: "", status: TextInputStatus(type: .error))
   let pixels = Pixels(error.frame(width: 240), scheme: .light)
-  let red = rgba(Theme.default.light.color.error)
+  let red = rgba(Theme.default.light.color.borderError)
   #expect(pixels.contains { close($0, red) })
 }
 

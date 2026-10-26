@@ -303,10 +303,11 @@ public struct TextInput: View {
   var borderColor: Color {
     let color = astryx.tokens.color
     guard !isDisabled, let status = props.status else { return color.borderEmphasized }
+    // The status border role, at 3:1 or more on the page (theme tokens INV11).
     switch status.type {
-    case .error: return color.error
-    case .warning: return color.warning
-    case .success: return color.success
+    case .error: return color.borderError
+    case .warning: return color.borderWarning
+    case .success: return color.borderSuccess
     }
   }
 
@@ -457,21 +458,23 @@ public struct TextInput: View {
     }
   }
 
+  /// The status icon role on the page (theme tokens INV11).
   func statusColor(_ type: TextInputStatusType) -> Color {
     let color = astryx.tokens.color
     switch type {
-    case .error: return color.error
-    case .warning: return color.warning
-    case .success: return color.success
+    case .error: return color.iconError
+    case .warning: return color.iconWarning
+    case .success: return color.iconSuccess
     }
   }
 
+  /// Content on the muted status ground, at 4.5:1 or more (theme tokens INV11).
   func messageColor(_ type: TextInputStatusType) -> Color {
     let color = astryx.tokens.color
     switch type {
-    case .error: return color.textRed
-    case .warning: return color.textYellow
-    case .success: return color.textGreen
+    case .error: return color.onErrorMuted
+    case .warning: return color.onWarningMuted
+    case .success: return color.onSuccessMuted
     }
   }
 
