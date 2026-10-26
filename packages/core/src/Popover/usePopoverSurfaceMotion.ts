@@ -108,12 +108,19 @@ export function usePopoverSurfaceMotion(): (
         typeof view?.matchMedia === 'function' &&
         view.matchMedia(TOUCH_QUERY).matches;
       isTouchPresentationRef.current = isTouch;
-      const motion = motionFor(layer);
       if (!isTouch || source == null) {
-        motion.reset();
+        // A fine pointer animates nothing here, so nothing is created for
+        // it: no `beforetoggle` listener that outlives the open, and no
+        // compositor promotion or its timer (spec:AST-094 FR24). A motion
+        // this layer already has (the pointer changed, or a touch
+        // presentation is on screen) is reset, which is what undoes them.
+        motionRef.current?.motion.reset();
         return;
       }
-      motion.enter(() => ({surface: boxOf(layer), source: boxOf(source)}));
+      motionFor(layer).enter(() => ({
+        surface: boxOf(layer),
+        source: boxOf(source),
+      }));
     },
     [motionFor],
   );
