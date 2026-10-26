@@ -15,7 +15,7 @@
  *   finger to native scrolling; a pull while refreshing settles back onto the
  *   inset; a finger catching the settle resumes it without a jump; under
  *   Reduce Motion (design:reduced-motion) a release and the end only fade,
- *   within 200 ms, even with the theme's motion lengthened, and the trigger
+ *   within 200 ms, whatever a `--motion-…` variable says, and the trigger
  *   does not turn the spinner; with a mouse or trackpad the pull and the top
  *   edge stay the browser's; storyboards of the pull, the settle and the end.
  *
@@ -1055,10 +1055,11 @@ test('under Reduce Motion a release cross-fades onto the inset: opacity only, wi
   ).toBe(true);
 });
 
-test('under Reduce Motion the end cross-fades on a touch screen, even with the theme’s motion lengthened', async ({
+test('under Reduce Motion the end cross-fades on a touch screen, and a `--motion-…` variable changes nothing', async ({
   page,
 }) => {
-  // design:reduced-motion DR2 (coarse pointer) and DR4: no theme value
+  // design:reduced-motion DR2 (coarse pointer) and DR4; the refresh
+  // control's values are internal constants, so no `--motion-…` variable
   // restores travel or a longer animation.
   await page.emulateMedia({reducedMotion: 'reduce'});
   await primaryPointer(page, 'coarse');
@@ -1084,12 +1085,11 @@ test('under Reduce Motion the end cross-fades on a touch screen, even with the t
   ).toBe(true);
 });
 
-test('the end plays the theme’s refreshControl.endMs: the touch layer registers its table before animating', async ({
+test('a `--motion-refresh-control-end-ms` variable changes nothing: the end plays the table’s 300 ms', async ({
   page,
 }) => {
-  // Motion tables register nothing on import (core's registry rule); the
-  // refresh control's touch layer registers its own before its first
-  // animation, so a theme's value reaches the end.
+  // The refresh control's values are internal constants, not motion roles
+  // (spec:AST-094 FR4 names none of them), so no variable retunes the end.
   const {driver, content, start} = await openRefresh(page, undefined, {
     refreshMs: '1500',
   });
@@ -1109,7 +1109,7 @@ test('the end plays the theme’s refreshControl.endMs: the touch layer register
     a => a.part === 'content' && a.properties.includes('translate'),
   );
   expect(slide, JSON.stringify(log)).toBeDefined();
-  expect(Math.abs((slide?.movingMs ?? 0) - 600)).toBeLessThan(20);
+  expect(Math.abs((slide?.movingMs ?? 0) - 300)).toBeLessThan(20);
 });
 
 test('under Reduce Motion the trigger does not turn the spinner', async ({
