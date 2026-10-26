@@ -101,7 +101,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | Presentation | flyout; drill-in; adaptive                       | Where the children render; adaptive drills in when a finger opened the menu. | Every row; drill-in needs a menu root     | adaptive | `component:DropdownMenuSubMenu` | stable    | Unknown values are rejected by the public type.          |
 | Availability | enabled; disabled                                | Whether the row can open.                                                    | Every row                                 | enabled  | `component:DropdownMenuSubMenu` | stable    | A disabled row never opens.                              |
 | Loading      | caret; spinner                                   | Whether the row's end shows a spinner while its rows load.                   | Every row                                 | caret    | `component:DropdownMenuSubMenu` | stable    | The row still opens; an empty flyout takes focus itself. |
-| Regions      | none; header; footer; both                       | Content beside the sub-menu's menu that turns its surface into a dialog.     | Inside a DropdownMenu root                | none     | `component:DropdownMenuSubMenu` | stable    | Without a surface host the regions are not rendered.     |
+| Regions      | none; header; footer; both                       | Content beside the sub-menu's menu that turns its surface into a dialog.     | Inside a DropdownMenu root                | none     | `component:DropdownMenuSubMenu` | stable    | Without a host, rows only; sheet levels still show them. |
 | Open report  | open; close                                      | `onOpenChange` reports each transition of the row's surface.                 | Every row                                 | omitted  | `component:DropdownMenuSubMenu` | stable    | See FR6 for the recorded gap.                            |
 | Root surface | ref; DOM/data/ARIA; class/style/xstyle; handlers | Extends the row root while preserving its role and popup wiring.             | Every row                                 | omitted  | public component API            | stable    | `role` and `tabIndex` are not accepted.                  |
 
@@ -138,6 +138,7 @@ intentional decision.
 | Open     | `aria-expanded=true`; flyout beside the row, labelled by it.          | Pointer, keyboard, or press opening.  |
 | Drilled  | Back row first, then the children, in the root's box.                 | Nested drill-in depth.                |
 | Regions  | Modal dialog named by the row; Tab walks header, rows, footer, wraps. | Header or footer only.                |
+| Sheet    | Its own header and footer replace the menu's, around its live rows.   | Header or footer only.                |
 | Disabled | `aria-disabled=true`, no tab stop, half opacity, no opening.          | Loading or not.                       |
 | RTL      | Caret mirrors once; flyout opens toward the inline end.               | Placement flips at the viewport edge. |
 
@@ -186,7 +187,8 @@ No new component-local visual decision is settled by this draft.
 ## Family and system relationships
 
 - `component:DropdownMenu` owns the root surface, the drill-in stack, the
-  surface host, the `dropdown-menu`, `dropdown-menu-item`, and
+  surface host, the bottom sheet whose levels show a sub-menu's own header and
+  footer (its proposed FR23), the `dropdown-menu`, `dropdown-menu-item`, and
   `dropdown-menu-indicator-icon` target inventory, and disabled keyboard
   discoverability (its OQ1).
 - `architecture:layer-runtime` owns flyout placement, flipping, and insets.
