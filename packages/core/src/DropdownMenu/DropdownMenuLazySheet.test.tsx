@@ -6,10 +6,12 @@
  * @output Tests DropdownMenu while its on-demand touch sheet is still loading
  * @position Test file for DropdownMenu
  *
- * This file never warms the sheet, and it checks that a popover menu never
- * requests it: each test holds the sheet modules until it
- * releases them, so it exercises the path a real page takes while the sheet's
- * code is still downloading.
+ * It checks that importing DropdownMenu and opening a popover menu never
+ * request the sheet, and each test holds the sheet modules until it releases
+ * them, so it exercises the path a real page takes while the sheet's code is
+ * still downloading. The sheet modules' own code is loaded once up front, past
+ * the hold, so a test's timer covers what the menu does after the release,
+ * never a cold module load on a busy machine.
  */
 
 import {describe, it, expect, vi, beforeAll, beforeEach} from 'vitest';
@@ -69,6 +71,13 @@ beforeAll(async () => {
     );
   }
   ({DropdownMenu} = loaded.module);
+  // The sheet modules' own code, loaded once and untimed. `importActual` skips
+  // the mocks above, so `requested` stays empty and the hold still decides
+  // when the sheet arrives; the mocks' `importOriginal` then returns these
+  // modules. A cold load of the sheet's module graph takes seconds on a busy
+  // machine, and inside a test it would land in the wait after the release.
+  await vi.importActual('./MenuBottomSheet');
+  await vi.importActual('./MenuBottomSheetActionList');
 }, 120_000);
 
 beforeEach(() => {
