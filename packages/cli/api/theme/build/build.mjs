@@ -2596,12 +2596,29 @@ async function themeBuildInternal(
   let themeExportName;
   /** Paths through the load that interception could not fully observe. */
   let loadDegradation;
+  /**
+   * The theme file's bytes as loaded: read before and after the load, and the
+   * registry scan below reads these rather than the file again. An editor's
+   * in-place save truncates before it writes, so a later read can find an
+   * empty file the load never saw; a file that changed while it loaded is not
+   * built from.
+   * @type {string}
+   */
+  let themeSource;
   try {
+    const before = fs.readFileSync(filePath, 'utf8');
     const loaded = await extractThemeDefinition(
       filePath,
       interception,
       options.__familyLoader,
     );
+    const after = fs.readFileSync(filePath, 'utf8');
+    if (before !== after || before === '') {
+      throw new Error(
+        `${filePath} changed while it was loading. Build again once it is saved.`,
+      );
+    }
+    themeSource = before;
     themeDef = loaded.theme;
     themeExportName = loaded.exportName;
     loadDegradation = loaded.degraded;
@@ -2676,7 +2693,10 @@ async function themeBuildInternal(
   // themeBuildFamily checks against the selected members' graph.
   const standaloneIcons = !options.__prepareFamily;
   const iconResolution = {
-    readSource: (/** @type {string} */ file) => fs.readFileSync(file, 'utf8'),
+    readSource: (/** @type {string} */ file) =>
+      path.resolve(file) === path.resolve(filePath)
+        ? themeSource
+        : fs.readFileSync(file, 'utf8'),
     resolveModule: resolveThemeModule,
     reservedNames: [`${toIdentifier(themeDef.name)}Theme`],
     rawInput: 'extends' in themeDef,
