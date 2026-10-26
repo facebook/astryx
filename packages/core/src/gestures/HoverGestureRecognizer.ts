@@ -22,7 +22,6 @@ import {
 } from './GestureRecognizer';
 import type {Point, PointerKind} from './types';
 
-/** @experimental */
 export class HoverGestureRecognizer extends GestureRecognizer {
   private point: Point = {x: 0, y: 0};
   /** The kind of pointer hovering: a mouse, or a pen in range. */
@@ -37,11 +36,12 @@ export class HoverGestureRecognizer extends GestureRecognizer {
   }
 
   /**
-   * @internal The host's marker for a hover recognizer, which it drives
-   * outside the touch arena, read without importing this class.
+   * @internal The host's brand for a hover recognizer, which it drives
+   * outside the touch arena, read without importing this class
+   * (recognizerInternals).
    */
-  get isHover(): true {
-    return true;
+  protected get family(): 'hover' {
+    return 'hover';
   }
 
   override location(): Point {
