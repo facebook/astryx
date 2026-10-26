@@ -9,6 +9,8 @@
  */
 
 import type {NativeAdditions} from '../contract/fromComponentDoc.js';
+import {avatar} from './Avatar.js';
+import {avatarStatusDot} from './AvatarStatusDot.js';
 import {badge} from './Badge.js';
 import {button} from './Button.js';
 import {card} from './Card.js';
@@ -20,10 +22,13 @@ import {progressBar} from './ProgressBar.js';
 import {selector} from './Selector.js';
 import {switchControl} from './Switch.js';
 import {text} from './Text.js';
+import {thumbnail} from './Thumbnail.js';
 import {textInput} from './TextInput.js';
 import {vStack} from './VStack.js';
 
 export const NATIVE_COMPONENTS: readonly NativeAdditions[] = [
+  avatar,
+  avatarStatusDot,
   badge,
   button,
   card,
@@ -35,6 +40,7 @@ export const NATIVE_COMPONENTS: readonly NativeAdditions[] = [
   selector,
   switchControl,
   text,
+  thumbnail,
   textInput,
   vStack,
 ];
