@@ -192,20 +192,6 @@ function scrimClearOffset(
     ? dismissedOffsetFor(maxOffset, shortestDetentHeight)
     : maxOffset + shortestDetentHeight * DEFAULT_DISMISS_OVERSHOOT_RATIO;
 }
-// Today's drag (a mouse anywhere, and anything where the primary pointer is
-// fine) keeps the sheet's pointer behavior (spec:AST-017 FR59): within this
-// many px of a detent the live drag eases toward it, so it "clicks" into place
-// instead of hovering just off the mark. Under UIKit's presentation the sheet
-// tracks 1:1, as UIKit's does.
-const MAGNET_RANGE = 40;
-// Rubber-band factor for today's drag up past fully open, capped at
-// OVERSCROLL_MAX (the sheet reserves that much bottom padding for the lift to
-// reveal). Under UIKit's presentation the stretch is UIKit's rubber band
-// instead (spec:AST-094 FR3), within the same reserve.
-const OVERSCROLL_RESISTANCE = 0.35;
-// SYNC: must match OVERSCROLL_PADDING in BottomSheetPanel.tsx (the reserved
-// bottom padding the lift reveals).
-const OVERSCROLL_MAX = 48;
 // The touch path drives the sheet through the same machinery the pointer path
 // uses, by handing it a pointer-shaped object built from a `Touch`. On iOS
 // Safari that object is indistinguishable from the real thing: WebKit raises
@@ -238,9 +224,62 @@ const CONTENT_END_HANDOFF_SLOP = 4;
 // 8px is the conventional tap slop, a shade over iOS's own recognizer, and
 // well under what a real pull covers in its first frames.
 const DRAG_PROMOTION_SLOP = 8;
-// The live offset under UIKit's presentation at `raw`: 1:1 between detents and
-// into the dismiss zone, as UIKit's sheet tracks (the release picks the
-// detent), and past fully open UIKit's rubber band over the sheet's height
+// Today's drag (a mouse anywhere, and anything where the primary pointer is
+// fine) keeps the sheet's pointer behavior (spec:AST-017 FR59): within this
+// many px of a detent the live drag eases toward it, so it "clicks" into place
+// instead of hovering just off the mark. Under UIKit's presentation the sheet
+// tracks 1:1, as UIKit's does.
+const MAGNET_RANGE = 40;
+// Rubber-band factor for today's drag up past fully open. Under UIKit's
+// presentation the stretch is UIKit's rubber band instead (spec:AST-094 FR3).
+const OVERSCROLL_RESISTANCE = 0.35;
+// How far any drag may lift the sheet past fully open: the bottom padding the
+// sheet reserves for the lift to reveal.
+// SYNC: must match OVERSCROLL_PADDING in BottomSheetPanel.tsx.
+const OVERSCROLL_MAX = 48;
+
+// Pull a value toward the nearest of `targets` when within MAGNET_RANGE,
+// easing the last stretch so the surface settles crisply onto a detent while
+// dragging.
+function magnetize(value: number, targets: ReadonlyArray<number>): number {
+  let nearestTarget = targets[0];
+  let nearestDist = Math.abs(value - nearestTarget);
+  for (const target of targets) {
+    const distance = Math.abs(value - target);
+    if (distance < nearestDist) {
+      nearestDist = distance;
+      nearestTarget = target;
+    }
+  }
+  if (nearestDist >= MAGNET_RANGE) {
+    return value;
+  }
+  // Ease-in over the range: the pull grows as the drag nears the detent
+  // (t^2), so it feels magnetic close by without fighting a drag-through.
+  const t = nearestDist / MAGNET_RANGE;
+  const pull = 1 - t * t;
+  return value + (nearestTarget - value) * pull;
+}
+
+// The live offset for a mouse or pen drag at `raw` (spec:AST-017 FR59): a
+// damped, capped stretch up past fully open, 1:1 in the dismiss zone,
+// magnetic between detents.
+function pointerDragOffset(
+  raw: number,
+  offsets: ReadonlyArray<number>,
+): number {
+  if (raw < 0) {
+    return Math.max(-OVERSCROLL_MAX, raw * OVERSCROLL_RESISTANCE);
+  }
+  if (raw > offsets[offsets.length - 1]) {
+    return raw;
+  }
+  return magnetize(raw, offsets);
+}
+
+// The live offset for a finger's drag at `raw`: 1:1 between detents and into
+// the dismiss zone, as UIKit's sheet tracks (the release picks the detent),
+// and past fully open UIKit's rubber band over the sheet's height
 // (spec:AST-094 FR3), no farther than the reserve.
 function fingerDragOffset(raw: number, height: number): number {
   if (raw >= 0) {
@@ -250,40 +289,6 @@ function fingerDragOffset(raw: number, height: number): number {
     -OVERSCROLL_MAX,
     rubberBand(raw, height, sheetTable.rubberBand.coefficient),
   );
-}
-
-// Pull a value toward the nearest of `targets` when within MAGNET_RANGE, easing
-// the last stretch so the surface settles crisply onto a detent while dragging.
-function magnetize(value: number, targets: number[]): number {
-  let nearestTarget = targets[0];
-  let nearestDist = Math.abs(value - nearestTarget);
-  for (const t of targets) {
-    const d = Math.abs(value - t);
-    if (d < nearestDist) {
-      nearestDist = d;
-      nearestTarget = t;
-    }
-  }
-  if (nearestDist >= MAGNET_RANGE) {
-    return value;
-  }
-  // Ease-in over the range: pull grows as you approach (t^2), so the click
-  // feels magnetic near the detent but doesn't fight a deliberate drag-through.
-  const t = nearestDist / MAGNET_RANGE;
-  const pull = 1 - t * t;
-  return value + (nearestTarget - value) * pull;
-}
-
-// The live offset for a mouse or pen drag at `raw`: a damped, capped rubber
-// band up past fully open, 1:1 in the dismiss zone, magnetic between detents.
-function pointerDragOffset(raw: number, offsets: number[]): number {
-  if (raw < 0) {
-    return Math.max(-OVERSCROLL_MAX, raw * OVERSCROLL_RESISTANCE);
-  }
-  if (raw > offsets[offsets.length - 1]) {
-    return raw;
-  }
-  return magnetize(raw, offsets);
 }
 
 function preservationInsetForOffset(
