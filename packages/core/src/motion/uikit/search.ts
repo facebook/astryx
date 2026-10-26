@@ -160,8 +160,9 @@ export const search = {
     fieldHeight: 38,
     /**
      * While active, the field's centre rests this far above the keyboard's
-     * top edge, pt (a 17 pt gap), and follows the keyboard; a tab bar's
-     * search field rides the keyboard the same way.
+     * top edge, pt (a 17 pt gap), and follows the keyboard. Only the bottom
+     * field was measured: a tab bar's search field is not, so this value
+     * makes no claim about it.
      * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
      *   iPhone 17 Pro, the field pinned to keyboardLayoutGuide (centre y 503
      *   with the keyboard's top at 539), Oct 24 2026
