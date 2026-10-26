@@ -8,10 +8,8 @@
  * @output Browser evidence that a wheel dragged onto a row outside the bounds
  *   comes to rest on the nearest row inside them and commits it, on the touch
  *   column under a finger and on today's column under a mouse; that a
- *   downward drag on the touch column leaves the sheet where it is; that the
- *   touch sheet draws its wheels as one picker while today's stay separate;
- *   and that today's column under Reduce Motion fades its rows without
- *   tipping them
+ *   downward drag on the touch column leaves the sheet where it is; and that
+ *   today's column under Reduce Motion fades its rows without tipping them
  * @position Real-engine proof for the rest rule: on the touch column, real
  *   touch input through the gesture system; on today's column, native
  *   scrolling, CSS snapping and the browser's own end-of-scroll signal. None
@@ -140,14 +138,6 @@ test('a downward drag on a wheel moves its rows and leaves the sheet where it is
     'aria-activedescendant',
     restingBefore ?? '',
   );
-});
-
-test('the time wheels draw as one picker, with one band across them', async ({
-  page,
-}) => {
-  await openHourWheel(page);
-  await expect(page.locator('[data-wheel]')).toHaveCount(3);
-  await expect(page.locator('[data-wheel-band]')).toHaveCount(1);
 });
 
 test('a wheel dragged below the minimum comes to rest on the minimum', async ({
@@ -306,41 +296,6 @@ test.describe('under a mouse', () => {
 
     await expect(selectedHour(hours)).toHaveText('11', {timeout: 3000});
     await expect(field).toHaveValue('11:00 AM');
-  });
-
-  test('the time wheels stay separate scrolling columns, with no shared band', async ({
-    page,
-  }) => {
-    await openHourWheelWithMouse(page);
-    await expectFinePointer(page);
-    await expect(page.locator('[data-wheel-band]')).toHaveCount(0);
-    await expect(page.locator('[data-wheel]')).toHaveCount(0);
-  });
-
-  test('the DateTimeInput time wheels keep their gutter', async ({page}) => {
-    await page.goto(
-      `${storybook.origin}/iframe.html?id=core-datetimeinput--default&args=presentation:bottom-sheet&viewMode=story`,
-    );
-    await expectFinePointer(page);
-    await page.getByRole('combobox').first().click();
-    await page.getByRole('radio', {name: 'Time'}).click();
-    const hour = page.getByRole('listbox', {name: 'Hour'});
-    await expect(hour).toBeVisible();
-    await expect(page.locator('[data-wheel]')).toHaveCount(0);
-    // Each column's box, left to right: today's columns sit a gutter apart,
-    // so their bands never touch.
-    const boxes = await page
-      .locator('[data-panel="time"] [role="listbox"]')
-      .evaluateAll(lists =>
-        lists
-          .map(list => list.getBoundingClientRect())
-          .map(box => ({left: box.left, right: box.right}))
-          .sort((a, b) => a.left - b.left),
-      );
-    expect(boxes.length).toBeGreaterThanOrEqual(2);
-    for (let i = 1; i < boxes.length; i++) {
-      expect(boxes[i].left - boxes[i - 1].right).toBeGreaterThanOrEqual(8);
-    }
   });
 
   test('under Reduce Motion, the rows fade toward the edges without tipping', async ({
