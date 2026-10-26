@@ -115,7 +115,11 @@ import {
 import {rubberBand} from '../motion/rubberBand';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {sheet as sheetTable} from '../motion/uikit/sheet';
-import {springs} from '../motion/uikit/springs';
+import {
+  SHEET_DETENT_SPRING,
+  SHEET_DISMISS_SPRING,
+  SHEET_PRESENT_SPRING,
+} from '../motion/uikit/springs';
 import {
   createInteractiveTransition,
   type MapLayer,
@@ -149,7 +153,7 @@ interface SheetDetents {
 // release rule is never consulted.
 const settleOnly: ReleaseRule<'settle'> = ({position}) => ({
   target: position,
-  motion: springs.sheetDetent,
+  motion: SHEET_DETENT_SPRING,
   outcome: 'settle',
 });
 
@@ -541,7 +545,7 @@ export interface UseSheetGesturesResult {
   resetTravel: () => void;
   /**
    * Presents the sheet the way UIKit does under a finger: from below the
-   * screen to its detent on `springs.sheetPresent`, the dim on the same
+   * screen to its detent on `SHEET_PRESENT_SPRING`, the dim on the same
    * curve (under reduced motion, a fade in place). Call from an effect
    * as the sheet opens, before its dialog is shown (a child's effect runs
    * before its host's): the dim is taken over at once, and the travel starts
@@ -551,7 +555,7 @@ export interface UseSheetGesturesResult {
   present: () => boolean;
   /**
    * Dismisses the sheet the way UIKit does under a finger: off screen on
-   * `springs.sheetDismiss`, the dim on the same curve. During the entrance it
+   * `SHEET_DISMISS_SPRING`, the dim on the same curve. During the entrance it
    * waits for the sheet to land, then runs from the detent, as UIKit queues
    * it. Sets and returns `gestureExitRef`'s exit for the host to wait on;
    * null under a mouse.
@@ -1396,7 +1400,7 @@ export function useSheetGestures({
         springTravel(
           state.baseOffset,
           state.committedLayoutOffset,
-          springs.sheetDetent,
+          SHEET_DETENT_SPRING,
           undefined,
           cancelDimFor,
         );
@@ -1605,7 +1609,7 @@ export function useSheetGestures({
     const handle = springTravel(
       settledOffset,
       settledLayoutOffsetRef.current,
-      springs.sheetDetent,
+      SHEET_DETENT_SPRING,
       undefined,
       lastDimForRef.current ?? undefined,
     );
@@ -1702,7 +1706,7 @@ export function useSheetGestures({
         driver: {animator, property: 'y'},
         layers,
         rule: settleOnly,
-      }).to(0, springs.sheetPresent, {
+      }).to(0, SHEET_PRESENT_SPRING, {
         crossfadeAs: 'entrance',
         startAtCommit: true,
       });
@@ -1783,7 +1787,7 @@ export function useSheetGestures({
       driver: {animator, property: 'y'},
       layers,
       rule: settleOnly,
-    }).to(from + distance, springs.sheetDismiss, {
+    }).to(from + distance, SHEET_DISMISS_SPRING, {
       crossfadeAs: 'exit',
       startAtCommit: true,
     });
