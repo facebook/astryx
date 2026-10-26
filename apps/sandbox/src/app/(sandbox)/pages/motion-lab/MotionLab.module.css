@@ -234,7 +234,9 @@
 .scrimAfter[data-open='true'] {
   opacity: 1;
   visibility: visible;
-  transition: opacity var(--lab-duration-overlay) linear, visibility 0s;
+  transition:
+    opacity var(--lab-duration-overlay) linear,
+    visibility 0s;
 }
 
 .scrimBefore[data-open='true'] {
@@ -321,7 +323,9 @@
 .drawer[data-open='true'] {
   transform: translateX(0);
   visibility: visible;
-  transition: transform var(--drawer-slide, 410ms) var(--ease-drawer), visibility 0s;
+  transition:
+    transform var(--drawer-slide, 410ms) var(--ease-drawer),
+    visibility 0s;
 }
 
 /* The unmount timer firing while the slide is still running. */
@@ -351,7 +355,11 @@
 }
 
 .trackTimer {
-  background: color-mix(in srgb, var(--color-text-error, #d3543f) 45%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--color-text-error, #d3543f) 45%,
+    transparent
+  );
 }
 
 /* --------------------------------------------------- sliding indicator --- */
@@ -669,7 +677,8 @@
   height: 11px;
   border-radius: 50%;
   background: var(--color-background-success, #3f9a6b);
-  animation: pulseRing var(--loop-duration, 2s) var(--loop-ease, ease-in-out) infinite;
+  animation: pulseRing var(--loop-duration, 2s) var(--loop-ease, ease-in-out)
+    infinite;
 }
 
 @keyframes pulseRing {
@@ -693,7 +702,8 @@
     var(--color-background-base) 80%
   );
   background-size: 220% 100%;
-  animation: shimmer var(--loop-duration, 1.5s) var(--loop-ease, ease-in-out) infinite;
+  animation: shimmer var(--loop-duration, 1.5s) var(--loop-ease, ease-in-out)
+    infinite;
 }
 
 @keyframes shimmer {
@@ -757,15 +767,46 @@
 
 /* The Table hover tint, at whatever duration and curve is being argued over.
    Rows 1-9 of the violation table are this, and the honest finding is that
-   150ms and 175ms are near-indistinguishable at 1x. */
-.tintRow {
-  padding: var(--space-2, 6px) var(--space-3, 10px);
-  border-radius: var(--radius-sm, 6px);
-  transition: background-color var(--tint-duration, 150ms) var(--tint-ease, ease);
+   150ms and 175ms are near-indistinguishable at 1x, which is why the preview
+   also shows the tint with no transition at all. */
+.tintTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
+.tintTable td {
+  padding: var(--space-2, 6px) var(--space-3, 10px);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tintRow {
+  transition: background-color 150ms ease;
+}
+
+/* The hover overlay token Astryx ships (the rig used to read two names no
+   theme defines, so the tint never showed). */
 .tintRow:hover {
-  background: var(--color-background-hover, var(--color-background-elevated));
+  background-color: var(--color-overlay-hover);
+}
+
+/* The state token, as Table would read it. */
+.tintRowToken {
+  transition: background-color var(--lab-duration-state) var(--ease-state);
+}
+
+/* Reduce Motion: the tint is a change of state, so with a fine pointer it
+   lands at once (design:reduced-motion DR3), and an instant change is also
+   within DR2's "200 ms or less" on touch. */
+@media (prefers-reduced-motion: reduce) {
+  .tintRowToken {
+    transition: none;
+  }
+}
+
+/* Deleting the transition, the option the preview makes visible. */
+.tintRowNone {
+  transition: none;
 }
 
 /* A `transitionProperty` with no duration: the rule reads like motion in
@@ -865,7 +906,9 @@
 }
 
 .lightboxFade[data-open='true'] {
-  transition: opacity var(--lab-duration-enter) var(--ease-entry), visibility 0s;
+  transition:
+    opacity var(--lab-duration-enter) var(--ease-entry),
+    visibility 0s;
 }
 
 .lightboxNone {

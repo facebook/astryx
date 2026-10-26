@@ -262,6 +262,11 @@ export default function ViolationsPage() {
                       label: 'Proposed — --duration-state, --ease-state',
                       content: <TintRig mode="after" />,
                     },
+                    {
+                      tone: 'neutral',
+                      label: 'No transition',
+                      content: <TintRig mode="none" />,
+                    },
                   ]}
                 />
               )}

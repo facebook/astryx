@@ -379,6 +379,11 @@ export default function ReducedMotionPage() {
               label: 'Tokenised --duration-state',
               content: <TintRig mode="after" />,
             },
+            {
+              tone: 'neutral',
+              label: 'No transition',
+              content: <TintRig mode="none" />,
+            },
           ]}
         />
         <DemoBody>
