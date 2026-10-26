@@ -279,9 +279,11 @@ describe('Wheel — where it comes to rest', () => {
     it('starts a second step’s dip where the first one’s fade-in has the column', () => {
       // design:reduced-motion DR2: a leaving element fades out where it is,
       // so a step during the last dip's fade-in never pops back to opaque.
+      // A finger gets the touch column (PickerWheel.test.tsx); today's
+      // column keeps its dip for a coarse pointer wherever it is rendered.
       stubReducedMotion('coarse');
       vi.useFakeTimers();
-      renderWheel(10);
+      renderWheel(10, ScrollWheel);
       const scroller = screen.getByRole('listbox', {name: 'Hour'});
       const animate = vi.fn();
       scroller.animate = animate as HTMLElement['animate'];
