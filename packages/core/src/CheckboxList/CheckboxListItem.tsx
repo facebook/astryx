@@ -5,8 +5,8 @@
 /**
  * @file CheckboxListItem.tsx
  * @input Uses React, CheckboxInput, ListItem, CheckboxListContext,
- *   CheckboxRowPressContext and indicatorPressOwnerStyles (the row owns
- *   its checkbox's touch press)
+ *   CheckboxRowPressContext, the touch query and indicatorPressOwnerStyles
+ *   (under a coarse primary pointer the row owns its checkbox's press)
  * @output Exports CheckboxListItem component, CheckboxListItemProps
  * @position Core implementation; consumed by index.ts, tested by CheckboxList.test.tsx
  *
@@ -28,7 +28,9 @@ import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
 import type {CheckboxInputProps} from '../CheckboxInput/CheckboxInput';
 import {CheckboxRowPressContext} from '../CheckboxInput/CheckboxRowPressContext';
 import {indicatorPressOwnerStyles} from '../Indicator/indicatorPress.stylex';
+import {useMediaQuery} from '../hooks/useMediaQuery';
 import {usePressFeedback} from '../hooks/usePressFeedback';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
 import {ListItem} from '../List/ListItem';
 import {ListContext} from '../List/ListContext';
 import {CheckboxListContext} from './CheckboxListContext';
@@ -268,17 +270,21 @@ export function CheckboxListItem({
   const checkboxRef = useRef<HTMLInputElement | null>(null);
   const hasRowInteraction = isInteractive || onClickProp != null;
 
-  // A row that delegates its surface clicks is the option's one press
-  // surface: Item marks it pressable and declares its press paint, and its
-  // own checkbox carries no press marker (CheckboxRowPressContext), so a
-  // finger on the label, the description or the box itself presses the row,
-  // and the box paints the row's press, the way a radio row's circle does.
-  const rowOwnsPress = hasRowInteraction && !effectiveDisabled;
+  // Under a coarse primary pointer, a row that delegates its surface clicks
+  // is the option's one press surface: Item marks it pressable and declares
+  // its press paint, and its own checkbox carries no press marker
+  // (CheckboxRowPressContext), so a finger on the label, the description or
+  // the box itself presses the row, and the box paints the row's press, the
+  // way a radio row's circle does. A fine primary pointer keeps main's
+  // behavior (spec:AST-017 FR59): the box stays its own press owner, so a pen
+  // on a fine-pointer page presses the box, never the row. The server and
+  // hydrating renders take the fine-pointer answer (spec:AST-094 FR13).
+  const isTouch = useMediaQuery(TOUCH_QUERY, false);
+  const rowOwnsPress = isTouch && hasRowInteraction && !effectiveDisabled;
   // The row's own press arms (the press's image and release it declares)
-  // key on the attribute
-  // the touch press controller writes on this row, so the row names itself
-  // pressable here too: every file with a press arm stays verifiably
-  // reachable by the controller (pressableCoverage.test.ts).
+  // key on the attribute the touch press controller writes on this row, so
+  // the row names itself pressable here too: every file with a press arm
+  // stays verifiably reachable by the controller (pressableCoverage.test.ts).
   const pressable = usePressFeedback();
 
   // A read-only checkbox carries aria-readonly, which the row's clickable

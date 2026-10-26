@@ -8,7 +8,7 @@ export const docs = {
   displayName: 'Checkbox List Item',
   isHiddenFromOverview: true,
   description:
-    'Individual checkbox item with label, description, and end content slot. Works in collection mode (inside a CheckboxList with a value array) or standalone mode (inside List, or inside a CheckboxList without value, such as a select-all item). Under a finger, a toggleable row is one press target: a touch on the label, the description or the box itself shows the pressed state on the row and its checkbox together.',
+    'Individual checkbox item with label, description, and end content slot. Works in collection mode (inside a CheckboxList with a value array) or standalone mode (inside List, or inside a CheckboxList without value, such as a select-all item). On a touch screen (a coarse primary pointer), a toggleable row is one press target: a touch on the label, the description or the box itself shows the pressed state on the row and its checkbox together. Where the primary pointer is fine, the box keeps its own press.',
   props: [
     {
       name: 'label',
@@ -177,7 +177,7 @@ export const docsDense = {
   isHiddenFromOverview: true,
   displayName: 'Checkbox List Item',
   description:
-    'Individual checkbox item w/ label, description, end content slot. Collection mode inside CheckboxList with value; standalone inside List or CheckboxList without value. Under a finger a toggleable row presses as one target, box included.',
+    'Individual checkbox item w/ label, description, end content slot. Collection mode inside CheckboxList with value; standalone inside List or CheckboxList without value. On a touch screen a toggleable row presses as one target, box included; with a fine primary pointer the box keeps its own press.',
   propDescriptions: {
     align:
       "Start/end content alignment, passed to Item: 'center' (default), 'start', or 'first-line' (centered on the label's first line).",
