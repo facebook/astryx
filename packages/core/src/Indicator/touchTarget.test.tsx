@@ -156,15 +156,39 @@ describe('CheckboxList under a finger', () => {
     expect(valueOf(rowOf('Open'), 'min-height', TOUCH)).toBeUndefined();
   });
 
-  it('leaves balanced rows on the list’s taller touch row height', () => {
+  it('makes balanced rows that toggle at least the taller of the touch target and the list’s row height', () => {
+    // A theme that raises the touch target raises these rows too; at the
+    // default they keep List's touch row heights (52 px, 62 px with a
+    // description).
     render(
       <CheckboxList label="Notifications" value={[]} onChange={() => {}}>
         <CheckboxListItem label="Email" value="email" />
+        <CheckboxListItem
+          label="SMS"
+          value="sms"
+          description="Standard rates apply"
+        />
       </CheckboxList>,
     );
-    const minHeight = valueOf(rowOf('Email'), 'min-height', TOUCH);
-    expect(minHeight).toBeDefined();
-    expect(minHeight).not.toBe(TARGET);
+    // StyleX writes the value without the space after the comma.
+    const touchFloor = (name: string) =>
+      valueOf(rowOf(name), 'min-height', TOUCH)?.replace(/\s+/g, '');
+    expect(touchFloor('Email')).toBe(`max(${TARGET},52px)`);
+    expect(touchFloor('SMS')).toBe(`max(${TARGET},62px)`);
+    expect(valueOf(rowOf('Email'), 'min-height', null)).toBeUndefined();
+  });
+
+  it('keeps a read-only balanced list on the list’s row height', () => {
+    render(
+      <CheckboxList
+        label="Tasks"
+        value={['done']}
+        onChange={() => {}}
+        isReadOnly>
+        <CheckboxListItem label="Done" value="done" />
+      </CheckboxList>,
+    );
+    expect(valueOf(rowOf('Done'), 'min-height', TOUCH)).toBe('52px');
   });
 });
 
