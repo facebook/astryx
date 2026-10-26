@@ -217,6 +217,11 @@ function isInsideScroller(element: Element): boolean {
       ) {
         return true;
       }
+      // A fixed box does not move with any scroller above it: a control in a
+      // fixed bar is outside them, however the page scrolls (FR11).
+      if (style.position === 'fixed') {
+        return false;
+      }
     }
     node =
       node.parentNode instanceof ShadowRoot
@@ -297,6 +302,20 @@ let holders = 0;
  * moved, or if it is the fling that finger left running.
  */
 let fling: Node | null = null;
+/**
+ * Where an engine has no `scrollend` (Safari 17 and 18), a fling ends when its
+ * scroll events stop: a decelerating scroller fires one every frame, so this
+ * long without one means it has come to rest.
+ */
+const FLING_IDLE_MS = 100;
+let flingIdleTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Forget the fling, and the idle timer that stands in for its `scrollend`. */
+function clearFling(): void {
+  fling = null;
+  clearTimeout(flingIdleTimer);
+  flingIdleTimer = undefined;
+}
 /** Whether a finger is on the glass, and where the last one landed. */
 let touching = false;
 let lastTouchTarget: Node | null = null;
@@ -539,7 +558,7 @@ function surfaceAt(target: EventTarget | null): HTMLElement | null {
 function scrollerIsBraking(element: HTMLElement): boolean {
   if (fling != null && !fling.isConnected) {
     // The scroller left the document mid-fling: no `scrollend` will come.
-    fling = null;
+    clearFling();
   }
   return fling != null && fling.contains(element);
 }
@@ -806,14 +825,24 @@ function onScroll(event: Event): void {
   const scroller = event.target instanceof Node ? event.target : document;
   // A scroll counts as a finger's only if that finger is down inside THIS
   // scroller, or this is the fling it left running. Anything else is the
-  // program moving something, and must leave the brake unarmed. The fling is
-  // remembered only where `scrollend` will say when it stops.
+  // program moving something, and must leave the brake unarmed. The fling
+  // ends at its `scrollend`, or where there is none, once its scroll events
+  // stop (FLING_IDLE_MS).
   const driven =
     (touching || fling === scroller) &&
     lastTouchTarget != null &&
     scroller.contains(lastTouchTarget);
-  if (driven && 'onscrollend' in window) {
+  if (driven) {
     fling = scroller;
+    if (!('onscrollend' in window)) {
+      clearTimeout(flingIdleTimer);
+      flingIdleTimer = setTimeout(() => {
+        if (fling === scroller) {
+          clearFling();
+          settle();
+        }
+      }, FLING_IDLE_MS);
+    }
   }
   const live = finger.live;
   if (live == null) {
@@ -836,7 +865,7 @@ function onScroll(event: Event): void {
 function onScrollEnd(event: Event): void {
   const scroller = event.target instanceof Node ? event.target : document;
   if (fling != null && scroller === fling) {
-    fling = null;
+    clearFling();
     settle();
   }
 }
@@ -912,7 +941,7 @@ function onVisibilityChange(): void {
     // A hidden page hears no lift and no `scrollend`: nothing is down or
     // flinging when it comes back.
     touching = false;
-    fling = null;
+    clearFling();
     finish(finger);
     finish(button);
   }
@@ -1050,7 +1079,7 @@ export function installPressFeedback(): () => void {
     finish(button);
     untrack();
     touching = false;
-    fling = null;
+    clearFling();
     lastTouchTarget = null;
   };
 }

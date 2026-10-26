@@ -250,6 +250,25 @@ describe('a scroll takes it away and nothing brings it back', () => {
     expect(pressedRow()).toBe(-1);
   });
 
+  it('without scrollend (Safari 17, 18), still brakes a moving list, and presses once its scroll events stop', () => {
+    delete (window as {onscrollend?: unknown}).onscrollend;
+    press(rows[0], 'pointerdown', 10, 10);
+    press(rows[0], 'pointerup', 10, 10);
+    scroller.dispatchEvent(new Event('scroll'));
+    lift(rows[0]);
+    // A finger lands while the list still glides: a brake, no paint.
+    press(rows[1], 'pointerdown', 10, 100);
+    vi.advanceTimersByTime(PRESS_ONSET_MS * 2);
+    expect(pressedRow()).toBe(-1);
+    press(rows[1], 'pointerup', 10, 100);
+    lift(rows[1]);
+    // No scroll event for the idle window: the list has come to rest.
+    vi.advanceTimersByTime(200);
+    press(rows[2], 'pointerdown', 10, 190);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    expect(pressedRow()).toBe(2);
+  });
+
   it('presses normally once the list has come to rest, at its scrollend', () => {
     press(rows[0], 'pointerdown', 10, 10);
     press(rows[0], 'pointerup', 10, 10);
@@ -949,6 +968,17 @@ describe('a control is tracked like UIControl', () => {
     press(control, 'pointerdown', 10, 10);
     press(control, 'pointermove', 10, 10 + PRESS_SLOP_PX + 1);
     expect(control.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+  });
+
+  it('in a fixed bar above a scrolling page, paints in the frame the finger lands', () => {
+    makeScroller(scroller);
+    const bar = document.createElement('div');
+    bar.style.position = 'fixed';
+    const control = pressable('button');
+    bar.appendChild(control);
+    scroller.appendChild(bar);
+    press(control, 'pointerdown', 10, 10);
+    expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
   });
 
   it('fades at the lift on its profile’s clock', () => {
