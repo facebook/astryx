@@ -636,8 +636,9 @@ export const CodeLanguageModules: Story = {
 
 /**
  * Serialized state for a table with merged cells, as content made outside
- * RichText can hold it: the first header cell spans two columns and "Ada"
- * spans two rows.
+ * RichText can hold it: "Ada" spans two rows and "Grace Hopper" spans two
+ * columns. The header row has no merged cell, so splitting the merges leaves
+ * no header cell empty.
  */
 const MERGED_TABLE = (() => {
   const editor = createHeadlessEditor({
@@ -648,7 +649,8 @@ const MERGED_TABLE = (() => {
   });
   const rows: Array<Array<[text: string, colSpan: number, rowSpan: number]>> = [
     [
-      ['Name', 2, 1],
+      ['Name', 1, 1],
+      ['Family name', 1, 1],
       ['Notes', 1, 1],
     ],
     [
@@ -661,8 +663,7 @@ const MERGED_TABLE = (() => {
       ['Her family name at birth', 1, 1],
     ],
     [
-      ['Grace', 1, 1],
-      ['Hopper', 1, 1],
+      ['Grace Hopper', 2, 1],
       ['Built an early compiler', 1, 1],
     ],
   ];
