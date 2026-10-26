@@ -259,8 +259,8 @@ export default defineConfig(
       '@typescript-eslint/switch-exhaustiveness-check': reactSeverity,
     },
   },
-  // Core's internal subpaths (`@astryxdesign/core/internal/*`) are reserved
-  // for Astryx's own packages: only Core and Lab may import them.
+  // Core's internal subpaths (`@astryxdesign/core/internal/*`) and its
+  // gesture, motion and touch-support source are for Core and Lab only.
   {
     files: ['**/*.{ts,tsx,js,jsx,mjs,cjs}'],
     ignores: ['packages/core/**', 'packages/lab/**', '**/dist/**'],
