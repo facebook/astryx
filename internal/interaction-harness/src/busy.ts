@@ -67,6 +67,8 @@ export async function blockMainThread(
   const minProgress = Math.max(minProgressMs, ONE_FRAME_MS);
   if (during == null) {
     return page.evaluate(duration => {
+      // The harness's own work: a trace sets it apart (trace.ts HARNESS_READ).
+      console.timeStamp('harness-read');
       const from = performance.timeOrigin + performance.now();
       const end = performance.now() + duration;
       let spins = 0;
@@ -79,6 +81,18 @@ export async function blockMainThread(
   return during.evaluate(
     (element, {duration, minProgress, wait}) =>
       new Promise<BusyWindow>((resolve, reject) => {
+        // The harness's own waits run on the real timers: a frozen timer gate
+        // (story.ts) holds only the page's.
+        const gate = (
+          window as unknown as {
+            __harnessTimerGate?: {
+              frame?: typeof requestAnimationFrame;
+              timeout?: typeof setTimeout;
+            };
+          }
+        ).__harnessTimerGate;
+        const frame = gate?.frame ?? window.requestAnimationFrame.bind(window);
+        const later = gate?.timeout ?? window.setTimeout.bind(window);
         const deadline = performance.now() + wait;
         const tick = () => {
           const running = element
@@ -93,7 +107,7 @@ export async function blockMainThread(
             // The same loop as above, from a task queued in the frame that saw
             // the animation: it runs once that frame's rendering update has
             // handed the animation to the compositor.
-            setTimeout(() => {
+            later(() => {
               const from = performance.timeOrigin + performance.now();
               const end = performance.now() + duration;
               while (performance.now() < end) {
@@ -104,10 +118,10 @@ export async function blockMainThread(
           } else if (performance.now() > deadline) {
             reject(new Error('blockMainThread: no animation started'));
           } else {
-            requestAnimationFrame(tick);
+            frame(tick);
           }
         };
-        requestAnimationFrame(tick);
+        frame(tick);
       }),
     {duration: ms, minProgress, wait: timeout},
   );
@@ -159,10 +173,12 @@ export interface BusyProof extends FrameStats {
    */
   readonly cadenceMs: number;
   /**
-   * Whole frame intervals in the window at the measured cadence: the frames
-   * the display shows there at least (one more, depending on phase).
+   * Whole frame intervals in the judged part at the measured cadence (the
+   * compositor's, when recorded): the `minJudgedFrames` floor reads it.
    */
   readonly expectedFrames: number;
+  /** Frames the screencast delivered in the judged part, with the marker found. */
+  readonly deliveredFrames: number;
   /**
    * Longest time inside the window with no presented change, the window's own
    * edges included. A frozen animation presents no new frame at all (nothing
@@ -182,7 +198,12 @@ export interface BusyProof extends FrameStats {
    * with the last frame before the window).
    */
   readonly moved: number;
-  /** `moved` over `expectedFrames`. */
+  /**
+   * `moved` (and `recorderSkipped`) over the frames judged: the frames the
+   * screencast delivered in the judged part, or with a compositor record the
+   * compositor's frames from the first to the last moved frame;
+   * `expectedFrames` when nothing moved or was delivered.
+   */
   readonly movedFraction: number;
   /** The judgment against the limits (see `busyWindowProof`). */
   readonly verdict: BusyVerdict;
@@ -204,8 +225,12 @@ export interface BusyProof extends FrameStats {
  *   claims display rate and passes `maxMedianFrameMs`, their median interval
  *   is at most that;
  * - no stall spans more than `maxStallFrames` screencast intervals;
- * - at least `minMovedFraction` of the frames the window should present at
- *   that cadence moved the tracked axis (a short window may still miss one);
+ * - at least `minMovedFraction` of the frames judged moved the tracked axis
+ *   (a short window may still miss one): the frames the screencast delivered
+ *   in the judged part, so an irregular cast is judged on what it delivered
+ *   and a frame it did not deliver is a gap for the stall check, not a miss;
+ *   with a compositor record, the compositor's frames from the first to the
+ *   last moved frame (the gaps before and after are the stall check's);
  * - the judged part spans at least `minJudgedFrames` frames. Fewer means the
  *   animation under test was not moving during the block (it settled before
  *   the block, or the block caught another animation), so there is nothing to
@@ -424,7 +449,32 @@ export function busyWindowProof(
     (judged.to - judged.from) / (compositorFrameMs ?? cadence),
   );
   const moved = changes.length;
-  const movedFraction = (moved + recorderSkipped) / Math.max(1, expectedFrames);
+  // The frames judged for motion: the screencast's own frames in the judged
+  // part (each `changes` entry is one of them), or, with a compositor record,
+  // the compositor's frames from the first to the last moved frame (the gaps
+  // before and after them are the stall check's). After an on-screen start
+  // they count from the on-screen frame, which `changes` leaves out, so the
+  // frames credited as skipped after it are judged too. A part that moved
+  // nothing, or delivered nothing, is judged against its span, so a frozen
+  // animation misses here too.
+  const deliveredFrames = tracked.filter(
+    f =>
+      f.box != null &&
+      (onScreenFrom == null ? f.t >= judged.from : f.t > judged.from) &&
+      f.t <= judged.to,
+  ).length;
+  const judgedFrames =
+    compositorFrameMs != null
+      ? changes.length > 0
+        ? Math.round(
+            (changes[changes.length - 1] - (onScreenFrom ?? changes[0])) /
+              compositorFrameMs,
+          ) + (onScreenFrom == null ? 1 : 0)
+        : expectedFrames
+      : deliveredFrames === 0
+        ? expectedFrames
+        : deliveredFrames;
+  const movedFraction = (moved + recorderSkipped) / Math.max(1, judgedFrames);
   // The cast's position step, and the motion per interval it has to resolve.
   const positions = tracked.flatMap(f => (f.box == null ? [] : [f.box[axis]]));
   const stepPx =
@@ -478,18 +528,18 @@ export function busyWindowProof(
   }
   const allowedMisses = Math.max(
     1,
-    Math.floor((1 - minMovedFraction) * expectedFrames + 1e-9),
+    Math.floor((1 - minMovedFraction) * judgedFrames + 1e-9),
   );
-  if (expectedFrames - moved - recorderSkipped > allowedMisses) {
+  if (judgedFrames - moved - recorderSkipped > allowedMisses) {
     failures.push(
-      `${moved} of ${expectedFrames} expected frames moved${recorderSkipped > 0 ? ` (and ${recorderSkipped} the screencast skipped)` : ''} (${(movedFraction * 100).toFixed(0)}% < ${(minMovedFraction * 100).toFixed(0)}%)`,
+      `${moved} of ${judgedFrames} expected frames moved${recorderSkipped > 0 ? ` (and ${recorderSkipped} the screencast skipped)` : ''} (${(movedFraction * 100).toFixed(0)}% < ${(minMovedFraction * 100).toFixed(0)}%)`,
     );
   }
   const onScreenFromMs =
     onScreenFrom == null ? null : onScreenFrom - window.from;
   const summary =
     `${(judged.to - judged.from).toFixed(0)} ms judged at ${cadence.toFixed(1)} ms/frame: ${stats.frames} frames presented, ` +
-    `${moved}/${expectedFrames} moved${recorderSkipped > 0 ? ` and ${recorderSkipped} skipped by the screencast` : ''} (${(movedFraction * 100).toFixed(0)}%), ` +
+    `${moved}/${judgedFrames} moved${recorderSkipped > 0 ? ` and ${recorderSkipped} skipped by the screencast` : ''} (${(movedFraction * 100).toFixed(0)}%), ` +
     `median ${stats.medianFrameMs.toFixed(1)} ms, ` +
     `longest stall ${longestStallMs.toFixed(1)} ms (${longestStallFrames} intervals) at +${longestStallAtMs.toFixed(0)} ms, ` +
     `${stats.monotonic ? 'monotonic' : 'not monotonic'}, ` +
@@ -515,6 +565,7 @@ export function busyWindowProof(
     longestStallMs,
     longestStallAtMs,
     expectedFrames,
+    deliveredFrames,
     longestStallFrames,
     moved,
     movedFraction,
