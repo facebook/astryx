@@ -30,7 +30,7 @@
  *   busy main thread neither stops nor jumps it. A finger landing on a moving
  *   wheel stops it where it is on screen.
  * - A tap on a row turns the wheel onto it on the tap spin (0.3 s, the
- *   theme's `picker.tapSpin.durationMs` on `timing.curves.easeInOut`). A
+ *   theme's `picker.tapSpin.durationMs` on `timing.curves.move`). A
  *   tap on the band's row does nothing. An end bounces on the theme's
  *   `scroll.bounce`. Each role is resolved when its motion starts.
  * - The value commits when the wheel comes to rest, as UIPickerView's
@@ -218,7 +218,7 @@ function registerWheelTables(): void {
 
 /**
  * A turn onto `to` on the tap spin: `spin`'s duration and curve, or the
- * theme's `picker.tapSpin.durationMs` and `timing.curves.easeInOut` under
+ * theme's `picker.tapSpin.durationMs` and `timing.curves.move` under
  * `column`, resolved as the turn starts.
  */
 function turnCurve(
@@ -232,7 +232,7 @@ function turnCurve(
     from,
     to,
     spin.duration ?? resolveMotion(column, picker.tapSpin, 'durationMs') / 1000,
-    spin.curve ?? resolveMotion(column, timing.curves.easeInOut),
+    spin.curve ?? resolveMotion(column, timing.curves.move),
   );
 }
 

@@ -34,7 +34,7 @@ export interface WheelSpinOptions {
   duration?: number;
   /**
    * Cubic-bézier control points.
-   * @default the theme's `timing.curves.easeInOut`
+   * @default the theme's `timing.curves.move`
    */
   curve?: BezierPoints;
 }
