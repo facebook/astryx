@@ -45,7 +45,11 @@
 import {selectSnapPoint} from '../motion/projection';
 import type {SpringDescription} from '../motion/spring';
 import {sheet} from '../motion/uikit/sheet';
-import {springs} from '../motion/uikit/springs';
+import {
+  SHEET_DETENT_SPRING,
+  SHEET_DISMISS_SWIPE_SPRING,
+  SHEET_RELEASE_FAST_SPRING,
+} from '../motion/uikit/springs';
 import {resolveSettleOffset} from './snapOffsets';
 
 export interface SheetRelease {
@@ -99,7 +103,7 @@ function nearestIndex(
  *   dismissedOffset: 640,
  *   position: 300,
  *   velocity: 1200,
- * }); // {kind: 'dismiss', offset: 640, spring: springs.sheetDismissSwipe, …}
+ * }); // {kind: 'dismiss', offset: 640, spring: SHEET_DISMISS_SWIPE_SPRING, …}
  * ```
  */
 export function resolveSheetRelease({
@@ -161,7 +165,7 @@ export function resolveSheetRelease({
     index = nearestIndex(positions, start);
   }
   if (dismissedOffset != null && index === detents.length) {
-    // GUESS (spec:AST-094 FR2): a slow dismissal plays `springs.sheetDetent`.
+    // GUESS (spec:AST-094 FR2): a slow dismissal plays `SHEET_DETENT_SPRING`.
     // None of the measured releases that dismissed had its spring read;
     // MEASUREMENTS.md's M-SH09 (drags released past the dismiss boundary,
     // their release spring read) will confirm or replace it.
@@ -170,7 +174,7 @@ export function resolveSheetRelease({
       index: -1,
       offset: dismissedOffset,
       projected: choice.projected,
-      spring: isFast ? springs.sheetDismissSwipe : springs.sheetDetent,
+      spring: isFast ? SHEET_DISMISS_SWIPE_SPRING : SHEET_DETENT_SPRING,
     };
   }
   return {
@@ -178,7 +182,7 @@ export function resolveSheetRelease({
     index,
     offset: positions[index],
     projected: choice.projected,
-    spring: isFast ? springs.sheetReleaseFast : springs.sheetDetent,
+    spring: isFast ? SHEET_RELEASE_FAST_SPRING : SHEET_DETENT_SPRING,
   };
 }
 
@@ -261,14 +265,14 @@ export function resolveDefaultRelease({
           index: -1,
           offset: maxOffset + shortestDetentHeight,
           projected,
-          spring: springs.sheetDetent,
+          spring: SHEET_DETENT_SPRING,
         }
       : {
           kind: 'detent',
           index: detents.length - 1,
           offset: maxOffset,
           projected,
-          spring: springs.sheetDetent,
+          spring: SHEET_DETENT_SPRING,
         };
   }
   const offset = resolveSettleOffset(
@@ -282,6 +286,6 @@ export function resolveDefaultRelease({
     index: detents.indexOf(offset),
     offset,
     projected,
-    spring: springs.sheetDetent,
+    spring: SHEET_DETENT_SPRING,
   };
 }
