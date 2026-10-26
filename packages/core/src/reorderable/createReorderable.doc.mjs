@@ -23,14 +23,14 @@ export const docs = {
       name: 'onReorder',
       type: '(move: {key: Key; to: number}) => void',
       description:
-        "Called once per committed move (a drop, or a Move before or Move after action) with the moved item's key and its index after the move, in the full order of the collection's items. Apply it by rendering the items in their new order. A cancelled move calls nothing. The latest function given is the one called, so the object may be made on every render.",
+        "Called once per committed move (a drop, or each move in reorder mode) with the moved item's key and its index after the move, in the full order of the collection's items. Apply it by rendering the items in their new order. A cancelled move calls nothing. The latest function given is the one called, so the object may be made on every render.",
       required: true,
     },
     {
       name: 'isReorderable',
       type: '(key: Key) => boolean',
       description:
-        'Whether the item with this key can move. An item it rejects shows no handle and cannot be picked up; one at either end of the collection also bounds the drop range, so nothing drops beyond it. Every item moves without it.',
+        'Whether the item with this key can move. An item it rejects shows no handle and cannot be picked up; one at either end of the collection also bounds the others, so nothing drops beyond it and a keyboard move into it is refused. Every item moves without it.',
     },
   ],
   returns: [
@@ -38,12 +38,12 @@ export const docs = {
       name: 'reorderable',
       type: 'Reorderable',
       description:
-        "The collection's reorder behavior: pass it as `List`'s `reorderable` prop, with an `itemKey` on each `ListItem`. One object may serve several collections; each reorders on its own.",
+        "The collection's reorder behavior: pass it as `List`'s `reorderable` prop, with an `itemKey` on each `ListItem`. Make it once per collection (with useMemo); one made on every render still works. Its one method, `start(key)`, enters reorder mode for that item from your own UI (a Move item in its context menu, a toolbar button): the focus moves to its handle, as activating it does; a key that cannot move or is not mounted does nothing and warns in development. One object may serve several collections, each reordering on its own; `start` then uses the one mounted last.",
     },
   ],
   usage: {
     description:
-      "Makes a collection's rows reorderable the way an iOS table's edit mode does. On a touch screen a finger held still on a row's handle for a moment picks it up (a flick on the handle still scrolls); the row follows the finger, the rows it passes slide out of its way, the page scrolls near its edges, and on release the row settles into its new place. A mouse drags a handle at once, and the rows take their places without motion. Activating a handle without a drag (a tap, a click, a screen reader's double tap) opens Move before and Move after, each one committed move. From the keyboard, Space or Enter on a handle picks its row up, the arrow keys, Home and End move it, Space or Enter drops it, and Escape puts it back; screen readers hear the pick-up, each move, the drop and a cancel. The reorder code ships with this function: a collection without the prop loads none of it.",
+      "Makes a collection's rows reorderable the way an iOS table's edit mode does. On a touch screen a finger held still on a row's handle for a moment picks it up (a flick on the handle still scrolls); the row follows the finger, the rows it passes slide out of its way, the page scrolls near its edges, and on release the row settles into its new place. A mouse drags a handle at once, and the rows take their places without motion. Without a drag, the handle toggles reorder mode for its row (a click, Space or Enter): each arrow key moves the row a place at once, and Escape or another activation ends the mode, keeping the moves; screen readers hear each move with the row's place and neighbours. The reorder code ships with this function: a collection without the prop loads none of it.",
     bestPractices: [
       {
         guidance: true,
@@ -54,6 +54,11 @@ export const docs = {
         guidance: true,
         description:
           'Use `isReorderable` for rows that must stay put, such as a pinned first row.',
+      },
+      {
+        guidance: true,
+        description:
+          "Offer reorder mode from your own UI too, such as a row's context menu, with `reorderable.start(item.id)`.",
       },
       {
         guidance: false,
@@ -78,11 +83,12 @@ export const docsDense = {
       '(key) => boolean; a rejected row has no handle, and at an end bounds the drop.',
   },
   returnDescriptions: {
-    reorderable: "pass as List's reorderable prop.",
+    reorderable:
+      "pass as List's reorderable prop; start(key) enters reorder mode from your own UI.",
   },
   usage: {
     description:
-      'UIKit edit-mode reorder: hold then drag (touch), drag (mouse), Space/Enter, arrows, Home, End, Escape (keys).',
+      'UIKit edit-mode reorder: hold then drag (touch), drag (mouse); without a drag, the handle toggles reorder mode (click, Space, Enter), arrows move, Escape ends.',
     bestPractices: [
       {
         guidance: true,
