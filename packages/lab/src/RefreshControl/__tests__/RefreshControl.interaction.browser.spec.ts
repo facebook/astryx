@@ -1504,13 +1504,28 @@ test('the spin steps clockwise every eighth of a second while the main thread is
   await expect.poll(() => isBusy(content)).toBe(true);
   // Past the trigger turn and the gradient's spring (both about 3 s).
   await page.waitForTimeout(3600);
-  const glyph = await content
+  const spinner = content
     .locator(':scope > div:last-child > div > span')
-    .first()
-    .boundingBox();
+    .first();
+  const glyph = await spinner.boundingBox();
   if (glyph == null) {
     throw new Error('no indicator');
   }
+  // The step, from the running spin itself: one turn over the stepping
+  // spokes.
+  const {stepMs, spokes} = await spinner.evaluate(element => {
+    const turns = Array.from(element.children).flatMap(child =>
+      child
+        .getAnimations()
+        .filter(
+          animation => animation.effect?.getTiming().iterations === Infinity,
+        ),
+    );
+    return {
+      stepMs: Number(turns[0]?.effect?.getTiming().duration) / turns.length,
+      spokes: turns.length,
+    };
+  });
   const cast = await startScreencast(page);
   await page.waitForTimeout(150);
   const block = await blockMainThread(page, 700);
@@ -1548,15 +1563,45 @@ test('the spin steps clockwise every eighth of a second while the main thread is
     f => f.t >= block.from + 20 && f.t <= block.to - 20,
   );
   expect(inside.length).toBeGreaterThanOrEqual(judged.length - 2);
-  // About every 125 ms, always one spoke clockwise.
-  expect(steps.length).toBeGreaterThanOrEqual(4);
-  for (const step of steps) {
-    expect((step.from + 1) % 8, JSON.stringify(step)).toBe(step.to);
+  const first = inside[0];
+  const last = inside[inside.length - 1];
+  if (first == null || last == null) {
+    throw new Error('no frame to judge');
   }
-  for (let i = 1; i < steps.length; i += 1) {
-    expect(steps[i].t - steps[i - 1].t).toBeGreaterThan(90);
-    expect(steps[i].t - steps[i - 1].t).toBeLessThan(160);
+  // Judged against the clock, not the frame rate: between any two judged
+  // frames the head has moved clockwise by as many spokes as step boundaries
+  // fit between them. A frame's time is known to within the screencast's own
+  // interval, so the count may fall either side of that window by it; a
+  // freeze, a catch-up jump or a backward step fails at any cadence.
+  const intervals = inside
+    .slice(1)
+    .map((f, i) => f.t - inside[i].t)
+    .sort((a, b) => a - b);
+  const slackMs = intervals[Math.floor(intervals.length / 2)] ?? 0;
+  const moved = [0];
+  for (let i = 1; i < inside.length; i += 1) {
+    moved.push(
+      moved[i - 1] + ((inside[i].head - inside[i - 1].head + spokes) % spokes),
+    );
   }
+  const offClock: {from: number; to: number; moved: number}[] = [];
+  for (let i = 0; i < inside.length; i += 1) {
+    for (let j = i + 1; j < inside.length; j += 1) {
+      const elapsedMs = inside[j].t - inside[i].t;
+      const count = moved[j] - moved[i];
+      if (
+        count < Math.floor((elapsedMs - slackMs) / stepMs) ||
+        count > Math.ceil((elapsedMs + slackMs) / stepMs)
+      ) {
+        offClock.push({from: inside[i].t, to: inside[j].t, moved: count});
+      }
+    }
+  }
+  expect(offClock.slice(0, 5), JSON.stringify({stepMs, slackMs})).toEqual([]);
+  // The judged frames reach across the block, within the screencast's own
+  // interval at each end.
+  expect(first.t - (block.from + 20)).toBeLessThanOrEqual(2 * slackMs);
+  expect(block.to - 20 - last.t).toBeLessThanOrEqual(2 * slackMs);
 });
 
 test('the trigger\u2019s copy of the spokes leaves when its fade ends, mid-refresh', async ({
@@ -1566,46 +1611,56 @@ test('the trigger\u2019s copy of the spokes leaves when its fade ends, mid-refre
     refreshMs: '8000',
   });
   const glyph = content.locator(':scope > div:last-child > div > span').first();
-  // The copy's arrival, its fade's length and its removal, on the page clock.
+  // When the copy's fade finishes: whether the copy is still mounted, and
+  // whether the refresh is still busy. The hook sets the fade's finish
+  // handler as it starts it, before this listener exists, so a copy its own
+  // fade removes is already gone when this one runs.
   await glyph.evaluate(element => {
-    const log = {added: NaN, fadeMs: NaN, removed: NaN};
+    const log: {
+      fadeMs: number | null;
+      mountedAtFinish: boolean | null;
+      busyAtFinish: boolean | null;
+    } = {fadeMs: null, mountedAtFinish: null, busyAtFinish: null};
     (window as unknown as {__copy: typeof log}).__copy = log;
+    const root = element.closest('.astryx-refresh-control');
     new MutationObserver(records => {
       for (const record of records) {
         for (const node of Array.from(record.addedNodes)) {
-          log.added = performance.now();
-          const timing = (node as Element)
-            .getAnimations()[0]
-            ?.effect?.getComputedTiming();
-          log.fadeMs = Number(timing?.duration);
-        }
-        if (record.removedNodes.length > 0) {
-          log.removed = performance.now();
+          const copy = node as Element;
+          const [fade] = copy.getAnimations();
+          log.fadeMs = Number(fade?.effect?.getComputedTiming().duration);
+          fade?.addEventListener('finish', () => {
+            log.mountedAtFinish = copy.isConnected;
+            log.busyAtFinish = root?.getAttribute('aria-busy') === 'true';
+          });
         }
       }
     }).observe(element, {childList: true});
   });
   await driver.play(slowPull(start, 300, 200));
   await expect.poll(() => isBusy(content)).toBe(true);
+  const readLog = () =>
+    page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __copy: {
+              fadeMs: number | null;
+              mountedAtFinish: boolean | null;
+              busyAtFinish: boolean | null;
+            };
+          }
+        ).__copy,
+    );
   await expect
-    .poll(() => glyph.evaluate(element => element.children.length), {
-      timeout: 8000,
-    })
-    .toBe(8);
-  // Gone mid-refresh: its fade's own end removed it, not the refresh's end.
-  expect(await isBusy(content)).toBe(true);
-  const log = await page.evaluate(
-    () =>
-      (
-        window as unknown as {
-          __copy: {added: number; fadeMs: number; removed: number};
-        }
-      ).__copy,
-  );
+    .poll(async () => (await readLog()).mountedAtFinish, {timeout: 9000})
+    .not.toBeNull();
+  const log = await readLog();
   expect(log.fadeMs, JSON.stringify(log)).toBeGreaterThan(0);
-  const lifetime = log.removed - log.added;
-  expect(lifetime, JSON.stringify(log)).toBeGreaterThanOrEqual(log.fadeMs - 20);
-  expect(lifetime, JSON.stringify(log)).toBeLessThan(log.fadeMs + 250);
+  // Removed by its own fade's end, mid-refresh: not by the refresh's end.
+  expect(log.mountedAtFinish, JSON.stringify(log)).toBe(false);
+  expect(log.busyAtFinish, JSON.stringify(log)).toBe(true);
+  expect(await glyph.evaluate(element => element.children.length)).toBe(8);
 });
 
 test('the cross-fade and the spin do no Layout or Paint per frame', async ({
