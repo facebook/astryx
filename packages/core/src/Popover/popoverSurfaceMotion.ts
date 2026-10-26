@@ -67,6 +67,7 @@ import {
   type SpringDescription,
 } from '../motion/spring';
 import {registerSpringsTable, springs} from '../motion/uikit/springs';
+import {resolveMotion} from '../motion/resolveMotion';
 import {placeLayerExitCopy} from '../Layer/layerExitCopy';
 import {
   frameOf,
@@ -282,7 +283,7 @@ export function createPopoverSurfaceMotion(
         start,
         PRESENTED,
         next.axis,
-        springs.popoverPresent,
+        resolveMotion(element, springs.popoverPresent),
         velocity,
       ),
     );
@@ -327,7 +328,7 @@ export function createPopoverSurfaceMotion(
         from,
         {scale: target.scale, length: target.length, opacity: 0},
         target.axis,
-        springs.popoverDismiss,
+        resolveMotion(element, springs.popoverDismiss),
         velocity,
       ),
     );
