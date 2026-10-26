@@ -167,6 +167,9 @@ announcements are those of FR3 and FR4, and the tree adds no option.
   - Escape, or activating the handle again, leaves reorder mode and keeps
     every move, announcing "Done" with the item's position, such as "Done,
     Milk at position 3 of 5";
+  - while the item is in reorder mode, the same accent insertion line a drag
+    shows marks the item's place, moving with each move
+    (`design:ordered-collection-reordering` DR7);
   - while the item is in reorder mode, a hint anchored to it shows the moves
     for its axis and a Done control, with the same layer, anchoring, and
     theme roles as Core's keyboard hint, and stays until the mode ends; each
