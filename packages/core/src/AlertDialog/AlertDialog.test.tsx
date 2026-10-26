@@ -573,12 +573,13 @@ describe('AlertDialog touch tracking', () => {
     props: {
       isInline?: boolean;
       touch?: boolean;
+      smallScreen?: boolean;
       presentation?: 'adaptive' | 'dialog';
     } = {},
   ) {
     const isTouch = props.touch ?? true;
     stubAlertDialogMedia({
-      smallScreen: true,
+      smallScreen: props.smallScreen ?? true,
       coarsePointer: isTouch,
       noHover: isTouch,
     });
@@ -709,10 +710,17 @@ describe('AlertDialog touch tracking', () => {
     expect(dialog).not.toHaveAttribute('open');
   });
 
-  it("takes UIKit's alert width under a finger and Dialog's 400 with a mouse, unless the caller sets one", () => {
+  it("takes UIKit's alert width on a phone under a finger, and Dialog's 400 on a wider touch screen or with a mouse", () => {
     const widthOf = () => screen.getByRole('alertdialog').getAttribute('style');
+    // A phone: a compact width with a touch pointer.
     renderOpen();
     expect(widthOf()).toContain('--x-width: 320px');
+    cleanup();
+    vi.unstubAllGlobals();
+    // A wider touch screen (a tablet): Dialog's 400.
+    renderOpen({smallScreen: false});
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(true);
+    expect(widthOf()).toContain('--x-width: 400px');
     cleanup();
     vi.unstubAllGlobals();
     renderOpen({touch: false});

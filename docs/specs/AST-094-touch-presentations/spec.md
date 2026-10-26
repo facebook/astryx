@@ -135,8 +135,8 @@ a measured, sourced difference exists.
   | `springs.menuClose`        | damping ratio 0.85, response 0.35 s     | measured: UIMenu closing, iOS 26.2 simulator, 2026-10-23                                       |
   | `springs.subMenuOpen`      | damping ratio 0.85, response 0.4 s      | measured: UIKit's own spring for UIMenu's sub-menu opening, iOS 26.2 simulator, 2026-10-24     |
   | `springs.subMenuBack`      | damping ratio 1, response 0.4 s         | measured: UIKit's own spring for UIMenu's sub-menu header back, iOS 26.2 simulator, 2026-10-24 |
-  | `springs.alertPresent`     | mass 1, stiffness 522.35, damping 45.71 | measured: UIAlertController alert appearing, iOS 26.2 simulator, 2026-10-23                    |
-  | `springs.alertDismiss`     | mass 1, stiffness 522.35, damping 45.71 | measured: UIAlertController alert dismissing, iOS 26.2 simulator, 2026-10-23                   |
+  | `alert.present`            | mass 1, stiffness 522.35, damping 45.71 | measured: UIAlertController alert appearing, iOS 26.2 simulator, 2026-10-23                    |
+  | `alert.dismiss`            | mass 1, stiffness 522.35, damping 45.71 | measured: UIAlertController alert dismissing, iOS 26.2 simulator, 2026-10-23                   |
   | `timing.stateChangeMs`     | 250 ms                                  | measured: Core Animation's implicit transaction, iOS 26.2 simulator, 2026-10-23                |
   | `timing.curves.viewChange` | cubic-bezier(0.25, 0.1, 0.25, 1)        | Apple: `CAMediaTimingFunctionName.default`                                                     |
   | `timing.curves.exit`       | cubic-bezier(0.42, 0, 1, 1)             | measured: UIKit's ease-in, iOS 26.2 simulator, 2026-10-23                                      |

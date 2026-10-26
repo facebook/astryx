@@ -23,6 +23,9 @@
  * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md
  */
 
+import {registerMotionTable} from '../roles';
+import {ALERT_DISMISS_SPRING, ALERT_PRESENT_SPRING} from './springs';
+
 export const alertController = {
   /**
    * The alert's width, in pt: fixed, in portrait and landscape alike (the
@@ -144,3 +147,35 @@ export const alertController = {
     haptic: 'none',
   },
 } as const;
+
+/**
+ * The alert's springs as internal motion roles (`spec:AST-094` FR4, kept
+ * internal by DEC-11): `alert.present` (the alert scales and fades in, its
+ * dimming fades in) and `alert.dismiss` (both fade out). Each is the springs
+ * table's row, so a bundle carries these two springs and no other.
+ */
+export const alertMotion = {
+  /**
+   * The alert appearing: the springs table's `alertPresent` row.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, UIView.animate hooked and CASpringAnimation dumped
+   *   (mass 1, stiffness 522.350, damping 45.710, duration 0.404),
+   *   Oct 23 2026
+   */
+  present: ALERT_PRESENT_SPRING,
+  /**
+   * The alert dismissing: the springs table's `alertDismiss` row.
+   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+   *   iPhone 17 Pro, CASpringAnimation dump, Oct 23 2026
+   */
+  dismiss: ALERT_DISMISS_SPRING,
+} as const;
+
+/**
+ * Registers the alert's two springs as internal motion roles (motion/roles.ts),
+ * named in FR4's role table. Nothing registers on import, and a second call
+ * does nothing.
+ */
+export function registerAlertTable(): void {
+  registerMotionTable('alert', alertMotion, {roles: ['present', 'dismiss']});
+}

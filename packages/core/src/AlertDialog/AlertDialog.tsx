@@ -170,15 +170,15 @@ export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
   /**
    * The width of the dialog.
    * Numbers are treated as pixels, strings are used as-is. By default 400,
-   * and under a finger with `presentation="adaptive"` UIKit's alert width,
-   * 320.
+   * and on a phone (a compact width under a finger) with
+   * `presentation="adaptive"` UIKit's alert width, 320.
    * @default 400
    */
   width?: number | string;
   /**
    * How the alert presents under a finger. `'adaptive'` gives a touch screen
    * the native alert: it appears and leaves the way an iOS alert does, 320
-   * wide, and a finger is tracked across both actions as one group and runs
+   * wide on a phone, and a finger is tracked across both actions as one group and runs
    * the action it lifts on. `'dialog'` keeps the dialog a mouse gets on every
    * device: the theme's motion, 400 wide, and each button's own press and
    * click.
@@ -263,9 +263,10 @@ export function AlertDialog({
   // UIKit's action layout needs both a finger and a compact viewport (the
   // active theme's compact definition).
   const isCompactTouch = isTouch && touch.isCompact;
-  // UIKit's alert width under a finger (alertController.width), so the
-  // presentation's 1.2 start stays on screen; with a mouse Dialog's 400.
-  const width = widthProp ?? (isTouch ? alertController.width : 400);
+  // On a phone (a compact width under a finger), UIKit's alert width in
+  // every theme (alertController.width), so the presentation's 1.2 start
+  // stays on screen; on a wider touch screen and with a mouse, Dialog's 400.
+  const width = widthProp ?? (isCompactTouch ? alertController.width : 400);
   const surfaceRef = useRef<HTMLDialogElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const actionRowRef = useRef<HTMLElement>(null);
