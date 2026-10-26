@@ -50,7 +50,11 @@ import {useTooltip} from '../Tooltip';
 import {mergeProps, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {indicatorPressOwnerStyles} from '../Indicator/indicatorPress.stylex';
-import {cellPressConsts, pressConsts} from '../utils/interactionOverlay.stylex';
+import {
+  cellPressConsts,
+  pressConsts,
+  pressReleaseRoles,
+} from '../utils/interactionOverlay.stylex';
 import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 import {useTranslator} from '../i18n';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
@@ -64,10 +68,15 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 import {CheckboxRowPressContext} from './CheckboxRowPressContext';
 
 const COARSE = '@media (pointer: coarse)';
-/** A control's release (UIButton's), when the checkbox owns the press. */
-const CONTROL_RELEASE = `${pressConsts.controlReleaseMs}ms`;
+/**
+ * A control's release (UIButton's), when the checkbox owns the press: the
+ * theme's motion role, or the table's value (spec:AST-094 FR4).
+ */
+const CONTROL_RELEASE = `var(${pressReleaseRoles.controlDuration}, ${pressConsts.controlReleaseMs}ms)`;
 /** A cell's release (the row's deselect), when a row owns the press. */
-const CELL_RELEASE = `${cellPressConsts.cellReleaseMs}ms`;
+const CELL_RELEASE = `var(${pressReleaseRoles.duration}, ${cellPressConsts.cellReleaseMs}ms)`;
+/** A cell's release curve: its role, or the table's. */
+const CELL_RELEASE_EASE = `var(${pressReleaseRoles.curve}, ${cellPressConsts.cellReleaseEase})`;
 
 const styles = stylex.create({
   container: {
@@ -172,7 +181,7 @@ const styles = stylex.create({
       animationTimingFunction: {
         default: null,
         '@media (pointer: coarse)': {
-          default: cellPressConsts.cellReleaseEase,
+          default: CELL_RELEASE_EASE,
           '@media (prefers-reduced-motion: reduce)':
             reducedMotionFadeConsts.easing,
         },
