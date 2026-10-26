@@ -130,8 +130,11 @@ describe('interaction proof routing', () => {
     for (const candidate of proofs.steps) {
       if (guards.has(candidate.name)) continue;
       expect(candidate.if, candidate.name ?? candidate.uses).toMatch(
+        // An upload that runs after a failure also skips when the job never
+        // checked out (a guard failed), as its action loads from the checkout.
         new RegExp(
-          `^(always\\(\\) && )?${applies.replace(/[.()|]/g, '\\$&')}$`,
+          `^(always\\(\\) && )?${applies.replace(/[.()|]/g, '\\$&')}` +
+            "( && hashFiles\\('\\.github/actions/upload-artifact/action\\.yml'\\) != '')?$",
         ),
       );
     }

@@ -229,6 +229,19 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
+      # The artifact actions load from the workspace, and this job checks out
+      # the pull request head: a head older than them has no copy, so take
+      # them from this workflow's own commit.
+      - name: Load the artifact actions from the workflow commit
+        env:
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          git fetch --quiet --no-tags --depth=1 origin "$WORKFLOW_SHA"
+          for action in upload-artifact download-artifact; do
+            mkdir -p ".github/actions/$action"
+            git show "$WORKFLOW_SHA:.github/actions/$action/action.yml" > ".github/actions/$action/action.yml"
+          done
+
       - name: Fetch release refs, base, and trusted release policy
         run: |
           git fetch origin '+refs/heads/release/v*:refs/remotes/origin/release/v*'
@@ -969,6 +982,20 @@ jobs:
           # the analysis silently reported zero changed components.
           fetch-depth: 50
 
+      # The artifact actions load from the workspace, and this job checks out
+      # the pull request head: a head older than them has no copy, so take
+      # them from this workflow's own commit.
+      - name: Load the artifact actions from the workflow commit
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        env:
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          git fetch --quiet --no-tags --depth=1 origin "$WORKFLOW_SHA"
+          for action in upload-artifact download-artifact; do
+            mkdir -p ".github/actions/$action"
+            git show "$WORKFLOW_SHA:.github/actions/$action/action.yml" > ".github/actions/$action/action.yml"
+          done
+
       - name: Verify Storybook source checkout
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && github.event_name == 'pull_request'
         env:
@@ -1103,6 +1130,19 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 50
+
+      # The artifact actions load from the workspace, and this job checks out
+      # the pull request head: a head older than them has no copy, so take
+      # them from this workflow's own commit.
+      - name: Load the artifact actions from the workflow commit
+        env:
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          git fetch --quiet --no-tags --depth=1 origin "$WORKFLOW_SHA"
+          for action in upload-artifact download-artifact; do
+            mkdir -p ".github/actions/$action"
+            git show "$WORKFLOW_SHA:.github/actions/$action/action.yml" > ".github/actions/$action/action.yml"
+          done
 
       - name: Fetch base branch
         run: git fetch origin ${{ github.base_ref }} --depth=50
@@ -1359,6 +1399,19 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
+      # The artifact actions load from the workspace, and this job checks out
+      # the pull request head: a head older than them has no copy, so take
+      # them from this workflow's own commit.
+      - name: Load the artifact actions from the workflow commit
+        env:
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          git fetch --quiet --no-tags --depth=1 origin "$WORKFLOW_SHA"
+          for action in upload-artifact download-artifact; do
+            mkdir -p ".github/actions/$action"
+            git show "$WORKFLOW_SHA:.github/actions/$action/action.yml" > ".github/actions/$action/action.yml"
+          done
+
       - name: Setup Node and pnpm
         uses: ./.github/actions/setup
         with:
@@ -1411,6 +1464,19 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
+      # The artifact actions load from the workspace, and this job checks out
+      # the pull request head: a head older than them has no copy, so take
+      # them from this workflow's own commit.
+      - name: Load the artifact actions from the workflow commit
+        env:
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          git fetch --quiet --no-tags --depth=1 origin "$WORKFLOW_SHA"
+          for action in upload-artifact download-artifact; do
+            mkdir -p ".github/actions/$action"
+            git show "$WORKFLOW_SHA:.github/actions/$action/action.yml" > ".github/actions/$action/action.yml"
+          done
+
       - name: Setup Node and pnpm
         uses: ./.github/actions/setup
 
@@ -1439,7 +1505,7 @@ jobs:
             --fail-on-new
 
       - name: Upload a11y artifact
-        if: always()
+        if: always() && hashFiles('.github/actions/upload-artifact/action.yml') != ''
         uses: ./.github/actions/upload-artifact
         with:
           name: a11y-report
@@ -1458,6 +1524,19 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      # The artifact actions load from the workspace, and this job checks out
+      # the pull request head: a head older than them has no copy, so take
+      # them from this workflow's own commit.
+      - name: Load the artifact actions from the workflow commit
+        env:
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          git fetch --quiet --no-tags --depth=1 origin "$WORKFLOW_SHA"
+          for action in upload-artifact download-artifact; do
+            mkdir -p ".github/actions/$action"
+            git show "$WORKFLOW_SHA:.github/actions/$action/action.yml" > ".github/actions/$action/action.yml"
+          done
 
       - name: Verify evidence checkout
         if: github.event_name == 'pull_request'
@@ -1609,6 +1688,19 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      # The artifact actions load from the workspace, and this job checks out
+      # the pull request head: a head older than them has no copy, so take
+      # them from this workflow's own commit.
+      - name: Load the artifact actions from the workflow commit
+        env:
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          git fetch --quiet --no-tags --depth=1 origin "$WORKFLOW_SHA"
+          for action in upload-artifact download-artifact; do
+            mkdir -p ".github/actions/$action"
+            git show "$WORKFLOW_SHA:.github/actions/$action/action.yml" > ".github/actions/$action/action.yml"
+          done
 
       - name: Setup Node and pnpm
         uses: ./.github/actions/setup
@@ -1818,6 +1910,20 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
+      # The artifact actions load from the workspace, and this job checks out
+      # the pull request head: a head older than them has no copy, so take
+      # them from this workflow's own commit.
+      - name: Load the artifact actions from the workflow commit
+        if: needs.interaction-scope.outputs.applies == 'true'
+        env:
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          git fetch --quiet --no-tags --depth=1 origin "$WORKFLOW_SHA"
+          for action in upload-artifact download-artifact; do
+            mkdir -p ".github/actions/$action"
+            git show "$WORKFLOW_SHA:.github/actions/$action/action.yml" > ".github/actions/$action/action.yml"
+          done
+
       - name: Verify evidence checkout
         if: needs.interaction-scope.outputs.applies == 'true'
         env:
@@ -1851,7 +1957,7 @@ jobs:
 
       # Storyboards (PNG contact sheets) and curve traces, for review.
       - name: Upload interaction evidence
-        if: always() && needs.interaction-scope.outputs.applies == 'true'
+        if: always() && needs.interaction-scope.outputs.applies == 'true' && hashFiles('.github/actions/upload-artifact/action.yml') != ''
         uses: ./.github/actions/upload-artifact
         with:
           name: interaction-evidence
@@ -2277,6 +2383,19 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
+      # The artifact actions load from the workspace, and this job checks out
+      # the pull request head: a head older than them has no copy, so take
+      # them from this workflow's own commit.
+      - name: Load the artifact actions from the workflow commit
+        env:
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          git fetch --quiet --no-tags --depth=1 origin "$WORKFLOW_SHA"
+          for action in upload-artifact download-artifact; do
+            mkdir -p ".github/actions/$action"
+            git show "$WORKFLOW_SHA:.github/actions/$action/action.yml" > ".github/actions/$action/action.yml"
+          done
+
       - name: Verify RTL checkout
         if: github.event_name == 'pull_request'
         env:
@@ -2430,6 +2549,19 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      # The artifact actions load from the workspace, and this job checks out
+      # the pull request head: a head older than them has no copy, so take
+      # them from this workflow's own commit.
+      - name: Load the artifact actions from the workflow commit
+        env:
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          git fetch --quiet --no-tags --depth=1 origin "$WORKFLOW_SHA"
+          for action in upload-artifact download-artifact; do
+            mkdir -p ".github/actions/$action"
+            git show "$WORKFLOW_SHA:.github/actions/$action/action.yml" > ".github/actions/$action/action.yml"
+          done
 
       - name: Setup Node and pnpm
         uses: ./.github/actions/setup
