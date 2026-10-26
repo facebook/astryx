@@ -245,6 +245,12 @@ Out of coverage, each taking its final place at once:
 
 The following are preferred techniques, not independent compatibility promises:
 
+- The size-change hook's documentation states what callers ask about: only
+  content after the change moves, and the changed element's own content is
+  not animated by INV12; fixed elements and stuck sticky elements stay put;
+  Reduce Motion is handled; List rows use the same module; nesting stops at
+  the nearest area, so nothing animates twice; and the scroll position is
+  kept.
 - Use an Effect Event when an external-system Effect needs a stable callback that
   reads the latest props or state without making those reads reactive. Do not use
   an Effect Event to hide a value whose change should resynchronize the system.
@@ -394,12 +400,12 @@ component suite is not blanket conformance with every invariant.
   the same way under a mouse; or (b) only a coarse primary pointer, with an
   immediate change elsewhere, as other touch presentations do.
 - **OQ4 — The public hook's name.** (`human-design`) Options, each named for
-  what it does: (a, recommended) `useAnimatedLayout(ref)`: when something
-  inside this area changes size, the content after it glides instead of
-  jumping; (b) `useSmoothLayoutShift(ref)`: layout shifts in this area are
-  smoothed; (c) `useLayoutTransitionArea(ref)`: this element is the area
-  layout transitions stay within; or (d) `useGlideAfterResize(ref)`: content
-  after a resized element glides into place.
+  what it does: (a, recommended) `useSmoothLayoutShift(ref)`: layout shifts
+  in this area are smoothed; (b) `useGlideOnResize(ref)`: content after a
+  resized element glides into place; (c) `useAnimatedLayout(ref)`: when
+  something inside this area changes size, the content after it glides
+  instead of jumping; or (d) `useAnimatedReflow(ref)`: reflow in this area is
+  animated.
 - **OQ5 — How the walk chooses what moves.** (`human-design`) Options: (a,
   recommended) the walk collects candidates and only those whose layout
   rectangle changed between the two measurements move, which handles flex
