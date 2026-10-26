@@ -47,27 +47,31 @@
  * UNDER A FINGER (useSegmentedTouchTracking.ts reports the touch)
  *
  * - Landing on the selected segment lifts the lens in place: its size grows
- *   by `segmentedControl.liftGrowth` on `liftSpring`, and the radiogroup's
- *   ::after, laid out with the lens and moved with it on the same curves,
- *   casts the theme's elevation shadow (`--shadow-high`), its opacity
- *   following the lift on the same spring, so the raised lens reads as raised
- *   over any page. (UIKit's lens is glass; that material is an open owner
- *   decision.) Inside a scroller the press waits the content-touch delay, as
- *   UIScrollView delays a control's touches.
+ *   by twice the theme's `--spacing-3` across and twice its `--spacing-2` down
+ *   (`segmentedControl.liftGrowth`, UIKit's 24 × 16 pt, where the spacing
+ *   cannot be read) on `liftSpring`, and the radiogroup's ::after, laid out
+ *   with the lens and moved with it on the same curves, casts the theme's
+ *   elevation shadow (`--shadow-high`), its opacity following the lift on the
+ *   same spring, so the raised lens reads as raised over any page. (UIKit's
+ *   lens is glass; that material is an open owner decision.) Inside a
+ *   scroller the press waits the content-touch delay, as UIScrollView delays
+ *   a control's touches.
  * - Dragging from there carries it: its center chases the finger on
- *   `trackingSpring`, no further than `dragOvershoot` past the end segments,
- *   and the selected face (weight and color) moves to the title under the
- *   finger at once, the lens lagging behind it (inline, until the commit's
- *   own styles take over).
+ *   `trackingSpring`, no further than `dragOvershoot` past the end segments.
+ *   The selected title's colour follows the lens's presented center, moving
+ *   to a neighbour only once the center is a quarter of that segment (at
+ *   least 8 px) past the boundary (inline, until the commit's own styles take
+ *   over); every title keeps its weight until the lift.
  * - Letting go commits the segment nearest the finger: the lens springs
  *   there on `selectionSpring` and comes back down on `liftSpring`.
  * - A touch that lands on another segment leaves the lens alone until the
  *   finger lifts; then it slides there like any change, lifted for the first
- *   `tapLiftHangMs` of the travel. Meanwhile that segment's title and icon dim
- *   to `pressedTitle.opacity` on its fade clock (the dim moves with the finger
- *   to another segment) and come back on its lift clock; the segments paint
- *   no press of their own there (SegmentedControlItem.tsx drops the shared
- *   press paint under a finger).
+ *   `tapLiftHangMs` of the travel. Meanwhile that segment takes the
+ *   `segmented-control-item` target's pressed state, its opacity fading to the
+ *   state's (0.2 by default) on the `pressedTitle` fade clock (the dim moves
+ *   with the finger to another segment) and back on its lift clock; the
+ *   segments paint no press of their own there (SegmentedControlItem.tsx
+ *   drops the shared press paint under a finger).
  * - The value a finger lets go on is committed through that segment's click.
  *   The commit's titles take their new weights at once, so the lens aims at
  *   the destination's box as it is once the new value shows. A click the
@@ -84,7 +88,7 @@
  * animator an entrance at the new segment, so its Reduce Motion cross-fade
  * lands the lens there and fades it in (a touch release fades on any pointer),
  * while the radiogroup's ::after, painted with the surface that was on
- * screen, fades out where it is on the same clock. The pressed title's dim
+ * screen, fades out where it is on the same clock. A pressed segment's dim
  * fades on the animator's Reduce Motion fade, whatever its roles say.
  *
  * SYNC: When modified, update:
