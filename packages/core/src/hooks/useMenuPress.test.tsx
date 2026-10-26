@@ -23,10 +23,7 @@ import {
   type DropdownMenuPressReturn,
 } from './useMenuPress';
 import {MENU_PRESS_SETTLE_MS} from './menuPressGesture';
-import {
-  holdPresentation,
-  isPresentationShield,
-} from '../Layer/presentationHold';
+import {holdInput, isInputShield} from '../Layer/inputHold';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 import {scroll} from '../motion/uikit/scroll';
 
@@ -185,7 +182,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('useMenuPress — a presentation hold over the menu', () => {
+describe('useMenuPress — a input hold over the menu', () => {
   afterEach(() => {
     Reflect.deleteProperty(document, 'elementFromPoint');
     Reflect.deleteProperty(document, 'elementsFromPoint');
@@ -197,12 +194,12 @@ describe('useMenuPress — a presentation hold over the menu', () => {
     const menu = screen.getByRole('menu');
     // The layer runtime's hold covers the viewport while the menu grows; a
     // hit test there answers with its shield, which is not content.
-    const release = holdPresentation(menu, {
+    const release = holdInput(menu, {
       until: new Promise(() => {}),
       scope: 'viewport',
     });
     try {
-      const shield = [...menu.children].find(isPresentationShield)!;
+      const shield = [...menu.children].find(isInputShield)!;
       expect(shield).toBeDefined();
       Object.defineProperty(document, 'elementFromPoint', {
         configurable: true,

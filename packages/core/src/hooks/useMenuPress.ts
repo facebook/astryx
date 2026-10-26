@@ -63,7 +63,7 @@ import {
   type RefObject,
 } from 'react';
 import {currentGesture} from '../Layer/gestureCounter';
-import {isPresentationShield} from '../Layer/presentationHold';
+import {isInputShield} from '../Layer/inputHold';
 import {
   IDLE_MENU_PRESS,
   menuPressTransition,
@@ -529,17 +529,17 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
             : doc;
         element = scope.elementFromPoint(event.clientX, event.clientY);
         if (
-          isPresentationShield(element) &&
+          isInputShield(element) &&
           typeof scope.elementsFromPoint === 'function'
         ) {
-          // A presentation hold covers the viewport while the menu grows
+          // A input hold covers the viewport while the menu grows
           // (`spec:AST-094` FR35). It keeps new input away; the press in
           // flight (the finger that opened the menu, FR29) still reaches the
           // row under it. Only the hold's shield is seen through.
           element =
             scope
               .elementsFromPoint(event.clientX, event.clientY)
-              .find(candidate => !isPresentationShield(candidate)) ?? null;
+              .find(candidate => !isInputShield(candidate)) ?? null;
         }
       } else {
         element = event.target instanceof Element ? event.target : null;

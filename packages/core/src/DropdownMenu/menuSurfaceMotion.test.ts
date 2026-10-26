@@ -16,7 +16,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {settlingDuration, solveSpring, toSpring} from '../motion/spring';
 import {menu, springs} from '../motion/uikit';
-import {isInHeldLayer} from '../Layer/presentationHold';
+import {isInHeldLayer} from '../Layer/inputHold';
 import {TOUCH_QUERY} from '../utils/touchPresentation';
 import {
   createMenuSurfaceMotion,
@@ -336,7 +336,7 @@ describe('createMenuSurfaceMotion', () => {
       const ghost = ghostOf(element);
       expect(ghost).not.toBeNull();
       expect(ghost!.getAttribute('popover')).toBe('manual');
-      // Shown: the open's presentation hold (spec:AST-094 FR35), gone once
+      // Shown: the open's input hold (spec:AST-094 FR35), gone once
       // the open settled, then the copy.
       expect(shown.filter(shownElement => shownElement.isConnected)).toEqual([
         ghost,

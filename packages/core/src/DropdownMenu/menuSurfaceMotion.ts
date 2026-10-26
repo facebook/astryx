@@ -6,7 +6,7 @@
  * @file menuSurfaceMotion.ts
  * @input An anchored menu's popover element, the control it hangs off, the
  *   motion foundation (compositor animator, spring math), the layer
- *   runtime's exit copy and presentation hold, and the UIKit table
+ *   runtime's exit copy and input hold, and the UIKit table
  * @output Exports `menuCollapsedState` (the transform that shrinks the
  *   surface to UIMenu's collapsed square on its anchor), `menuSpring`,
  *   `menuExitDurationMs` and `createMenuSurfaceMotion` (the touch
@@ -43,8 +43,8 @@
  * `display` transition would restyle the element every frame).
  *
  * While it opens, the menu takes no input (`spec:AST-094` FR35), as UIMenu
- * takes none until it is presented: the layer runtime's presentation hold
- * (`holdPresentation`, `scope: 'viewport'`) covers the viewport from
+ * takes none until it is presented: the layer runtime's input hold
+ * (`holdInput`, `scope: 'viewport'`) covers the viewport from
  * inside the layer until the open settles, so a tap or a drag that lands
  * then neither closes the menu nor reaches, scrolls or focuses the page. The
  * finger that opened it is not held: its events stay with the control it
@@ -61,7 +61,7 @@
  */
 
 import {placeLayerExitCopy} from '../Layer/layerExitCopy';
-import {holdPresentation} from '../Layer/presentationHold';
+import {holdInput} from '../Layer/inputHold';
 import {
   createAnimator,
   type Animator,
@@ -286,7 +286,7 @@ export function createMenuSurfaceMotion(
     openHandle = handle;
     // No input reaches the menu or the page until it is open (FR35).
     endHold();
-    releaseHold = holdPresentation(element, {until: handle, scope: 'viewport'});
+    releaseHold = holdInput(element, {until: handle, scope: 'viewport'});
     void handle.finished.then(() => {
       if (openHandle === handle) {
         openHandle = null;

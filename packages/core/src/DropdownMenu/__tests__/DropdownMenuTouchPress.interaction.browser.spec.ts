@@ -111,7 +111,7 @@ async function installMenuLog(page: Page) {
     document.addEventListener(
       'toggle',
       event => {
-        // The menu's own popover: a presentation hold's shield is a
+        // The menu's own popover: a input hold's shield is a
         // popover too, and toggles while the menu grows. A popover hidden
         // from assistive technology (a close's exit copy) is no menu a
         // screen reader hears (module AR5).

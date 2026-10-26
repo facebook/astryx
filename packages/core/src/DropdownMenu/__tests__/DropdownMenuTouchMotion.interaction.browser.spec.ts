@@ -135,7 +135,7 @@ async function installMenuLog(page: Page) {
     document.addEventListener(
       'toggle',
       event => {
-        // The menu's own popover: a presentation hold's shield is a
+        // The menu's own popover: a input hold's shield is a
         // popover too, and toggles while the menu grows.
         const target = event.target as Element | null;
         if (!target?.matches('[popover]:has([role="menu"])')) {
