@@ -996,6 +996,8 @@ describe('decay: momentum curves (a coast)', () => {
     ]) {
       expect(bundle).not.toContain(row);
     }
+    // Nor the keyboard's duration, which shares the table's composition.
+    expect(bundle).not.toContain('383.3');
   });
 
   it('imports neither the coast math nor the scroll table', () => {

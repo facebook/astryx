@@ -83,6 +83,22 @@ export const press = {
   buttonReleaseMs: 250,
 } as const;
 
+// The groups with their own export (the keyboard's duration, the Reduce
+// Motion fade) and `timing` share plain constants, not bindings or property
+// reads: esbuild keeps a top-level destructuring in every bundle, so each
+// group's binding would carry the other group into a bundle that reads only
+// one (`architecture:component-style-authoring` INV6).
+
+/**
+ * The duration the keyboard notifications report
+ * (UIKeyboardAnimationDurationUserInfoKey, with curve 7), show and hide
+ * alike, in ms. The frame follows `springs.keyboard`, cut at this time.
+ * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+ *   iPhone 17 Pro, UIKeyboardWillShow / WillHide / WillChangeFrame read,
+ *   Oct 23 2026
+ */
+const KEYBOARD_NOTIFICATION_MS = 383.3;
+
 /**
  * The keyboard notifications' duration, its own export so the keyboard layout
  * guide reads it without the rest of the table
@@ -90,20 +106,35 @@ export const press = {
  * its table path, `keyboardNotificationMs`, which stays out of the roles.
  */
 export const keyboardNotification = {
-  /**
-   * The duration the keyboard notifications report
-   * (UIKeyboardAnimationDurationUserInfoKey, with curve 7), show and hide
-   * alike, in ms. The frame follows `springs.keyboard`, cut at this time.
-   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, UIKeyboardWillShow / WillHide / WillChangeFrame read,
-   *   Oct 23 2026
-   */
-  durationMs: 383.3,
+  durationMs: KEYBOARD_NOTIFICATION_MS,
 } as const;
 
-// Composed from a binding, so a bundle that reads only the keyboard's
-// duration drops the rest of the table.
-const {durationMs: keyboardNotificationMs} = keyboardNotification;
+/**
+ * Reduce Motion with Prefer Cross-Fade Transitions: a navigation push or pop
+ * becomes a cross-fade of this length on `curves.move` (the new view
+ * fades in while the old one fades out, with no travel), in ms. Sheets,
+ * full-screen modals and alerts fade on their own presentation spring
+ * instead. A reference reading only: under reduced motion a touch
+ * presentation follows `design:reduced-motion` DR2 and DR4, not this clock
+ * (`spec:AST-094` FR8).
+ * @source apple-docs https://developer.apple.com/documentation/uikit/uiaccessibility/preferscrossfadetransitions
+ *   (the setting)
+ * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+ *   iPhone 17 Pro, CAAnimation dump with Reduce Motion and Prefer
+ *   Cross-Fade Transitions on (opacity CABasicAnimation 0.5 s,
+ *   (0.42, 0, 0.58, 1)), Oct 23 2026
+ */
+const REDUCED_MOTION_CROSS_FADE_MS = 500;
+
+/**
+ * `easeInEaseOut`; UIKit's default curve (`UIView.AnimationCurve
+ * .easeInOut`, "the default curve for most animations").
+ * @source apple-docs https://developer.apple.com/documentation/quartzcore/camediatimingfunctionname/easeineaseout
+ * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
+ *   iPhone 17 Pro, CAMediaTimingFunction read from UIView.animate,
+ *   Oct 23 2026
+ */
+const REDUCED_MOTION_CROSS_FADE_CURVE = [0.42, 0, 0.58, 1] as const;
 
 /**
  * The Reduce Motion fade, its own export so the animator reads it without
@@ -112,37 +143,9 @@ const {durationMs: keyboardNotificationMs} = keyboardNotification;
  * `curves.move`, so their roles are unchanged.
  */
 export const reducedMotionCrossFade = {
-  /**
-   * Reduce Motion with Prefer Cross-Fade Transitions: a navigation push or pop
-   * becomes a cross-fade of this length on `curves.move` (the new view
-   * fades in while the old one fades out, with no travel), in ms. Sheets,
-   * full-screen modals and alerts fade on their own presentation spring
-   * instead. A reference reading only: under reduced motion a touch
-   * presentation follows `design:reduced-motion` DR2 and DR4, not this clock
-   * (`spec:AST-094` FR8).
-   * @source apple-docs https://developer.apple.com/documentation/uikit/uiaccessibility/preferscrossfadetransitions
-   *   (the setting)
-   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, CAAnimation dump with Reduce Motion and Prefer
-   *   Cross-Fade Transitions on (opacity CABasicAnimation 0.5 s,
-   *   (0.42, 0, 0.58, 1)), Oct 23 2026
-   */
-  durationMs: 500,
-  /**
-   * `easeInEaseOut`; UIKit's default curve (`UIView.AnimationCurve
-   * .easeInOut`, "the default curve for most animations").
-   * @source apple-docs https://developer.apple.com/documentation/quartzcore/camediatimingfunctionname/easeineaseout
-   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, CAMediaTimingFunction read from UIView.animate,
-   *   Oct 23 2026
-   */
-  curve: [0.42, 0, 0.58, 1],
+  durationMs: REDUCED_MOTION_CROSS_FADE_MS,
+  curve: REDUCED_MOTION_CROSS_FADE_CURVE,
 } as const;
-
-// `timing` composes the fade from bindings, not property reads, so a bundle
-// that reads only the fade drops the rest of the table.
-const {durationMs: reducedMotionCrossFadeMs, curve: move} =
-  reducedMotionCrossFade;
 
 export const timing = {
   press,
@@ -156,8 +159,8 @@ export const timing = {
      *   Oct 23 2026
      */
     viewChange: [0.25, 0.1, 0.25, 1],
-    // The Reduce Motion fade's curve, sourced on `reducedMotionCrossFade`.
-    move,
+    // The Reduce Motion fade's curve, sourced on its constant.
+    move: REDUCED_MOTION_CROSS_FADE_CURVE,
     /**
      * `easeIn`.
      * @source apple-docs https://developer.apple.com/documentation/quartzcore/camediatimingfunctionname/easein
@@ -183,7 +186,8 @@ export const timing = {
    *   iPhone 17 Pro, read, Oct 23 2026
    */
   navigationBarHideShowMs: 200,
-  keyboardNotificationMs,
+  // The keyboard's duration, sourced on its constant.
+  keyboardNotificationMs: KEYBOARD_NOTIFICATION_MS,
   /**
    * Core Animation's implicit animation duration
    * (`CATransaction.animationDuration()`), in ms.
@@ -191,8 +195,8 @@ export const timing = {
    *   iPhone 17 Pro, read, Oct 23 2026
    */
   stateChangeMs: 250,
-  // The Reduce Motion fade's length, sourced on `reducedMotionCrossFade`.
-  reducedMotionCrossFadeMs,
+  // The Reduce Motion fade's length, sourced on its constant.
+  reducedMotionCrossFadeMs: REDUCED_MOTION_CROSS_FADE_MS,
 } as const;
 
 /**
