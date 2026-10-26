@@ -9,6 +9,18 @@
  * @position Browser adapter of packages/core/src/gestures: turns real events
  *   into GestureArena input, and carries out what the arena decides
  *
+ * ONLY WHERE THE PRIMARY POINTER IS COARSE
+ *
+ * - Recognizers attach, and the host registers listeners, only while the
+ *   primary pointer is coarse (`spec:AST-094` FR19, FR24; coarsePointer.ts).
+ *   Where it is fine, an attach is recorded but nothing is installed: no
+ *   document, window or element listener, no `touch-action` or other style,
+ *   nothing delivered, so a finger on a touchscreen laptop gets the
+ *   browser's defaults. The host follows the query: turning coarse installs
+ *   it and styles every registration; turning fine cancels every touch in
+ *   flight and removes it all. A development warning names the first attach
+ *   under a fine pointer.
+ *
  * INPUT CHANNELS
  *
  * - Fingers begin and end with Touch Events: they are the only cancelable
@@ -32,11 +44,30 @@
  *   cancelled where `touch-action` let the browser pan, and a scroll above
  *   the touch.
  *
+ * FINGER SCROLLS
+ *
+ * - `watchFingerScrolls(scroller)` / `isFingerScroll(scroller)` tell a
+ *   scroll a finger drives (a finger that landed inside the scroller is down
+ *   while it scrolls, then the momentum after the lift) from one the program
+ *   starts (`scrollTo`, a status-bar tap): the finger's lasts until the
+ *   scroller's own `scrollend`, or, where the browser fires none (mobile
+ *   Safari before 26), until its scroll events go quiet. A component that
+ *   animates differently for the two asks here instead of listening to
+ *   touches itself.
+ *
  * WHAT THE BROWSER IS TOLD
  *
  * - Each element gets the `touch-action` its recognizers leave the browser
- *   (touchAction.ts), set inline when they attach and restored when they
- *   detach.
+ *   (touchAction.ts), never wider than the element's own value (a caller's
+ *   explicit `touch-action` stays in force), set inline when they attach and
+ *   restored when they detach.
+ * - While a finger or a pen is down, text selection and the touch callout
+ *   are off only where the hold does something (`spec:AST-094` FR41): on the
+ *   elements of recognizers that bring a `selectionLock`, and on a non-text
+ *   input under the finger inside them (WebKit's own style makes every
+ *   input selectable); restored when the contact ends. Only where the
+ *   primary pointer is coarse: a mouse never takes this lock, nor a finger
+ *   or a pen where the primary pointer is fine.
  * - Each element with a recognizer that can claim a touch while it moves (a
  *   pan, a swipe, a long press that then drags, a pinch, a rotation) gets a
  *   NON-passive `touchmove` listener that cancels the event only while a
@@ -46,8 +77,14 @@
  *   known cost: a scroll that BEGINS on such an element waits for a busy main
  *   thread (measured in iOS Safari; a passive listener would hand every
  *   diagonal to the scroll instead). Elements whose recognizers only claim
- *   at the lift (taps) and press consumers get no blocking listener, so a
- *   scroll starting on them never waits.
+ *   at the lift (taps), recognizers that never claim (`claimsTouches` false)
+ *   and press consumers get no blocking listener, and the listener a
+ *   finger's target gets at touch-down is passive for them too, so a scroll
+ *   starting on them never waits.
+ * - The browser took a finger on `pointercancel`, on its first uncancelable
+ *   `touchmove` where it could pan, or on a scroll above it once the finger
+ *   has travelled the slop; a scroll under a finger that has not moved is
+ *   the page's own and leaves the touch alone.
  * - A lift whose click must not happen cancels its `touchend` (no click, no
  *   compatibility mouse events) and arms a one-shot swallower for the next
  *   trusted click; a click held for a recognizer that may still recognize is
@@ -61,7 +98,8 @@
  * SYNC: When modified, update GestureHost.test.ts and README.md.
  */
 
-import {UIKIT_GESTURES} from '../motion/uikit/gestures';
+import {isRtlElement} from '../hooks/isRtlElement';
+import {UIKIT_CLICK, UIKIT_PRESS} from '../motion/uikit/gestures';
 import {
   browserClock,
   GestureArena,
@@ -70,14 +108,14 @@ import {
   type GestureArenaOptions,
   type GestureClock,
 } from './GestureArena';
-import type {GestureRecognizer} from './GestureRecognizer';
-import {HAPTIC_SWITCH_ATTRIBUTE} from './haptics';
+import type {GestureRecognizer, SelectionLock} from './GestureRecognizer';
+import {HAPTIC_SWITCH_ATTRIBUTE} from './hapticSwitch';
 import {HoverGestureRecognizer} from './HoverGestureRecognizer';
 import {TapGestureRecognizer} from './TapGestureRecognizer';
 import {createNativeScrollProbe, parentAcrossShadow} from './nativeScroll';
 import {
   gestureHostStyle,
-  holdSelectionStyle,
+  intersectTouchAction,
   type GestureHostStyle,
 } from './touchAction';
 import type {
@@ -89,14 +127,24 @@ import type {
   TouchInput,
   TouchSample,
 } from './types';
+import {internals} from './recognizerInternals';
+import {isCoarsePointer, watchCoarsePointer} from './coarsePointer';
+import {locksSelectionFor} from './selectionLock';
+import type {PanGestureRecognizer} from './PanGestureRecognizer';
 
 interface Registration {
   readonly recognizers: GestureRecognizer[];
   readonly hovers: HoverGestureRecognizer[];
   consumer: TouchConsumer | null;
-  touchMoveListener: EventListener | null;
+  /** Whether the element carries the host's shared blocking touchmove handler. */
+  hasTouchMoveListener: boolean;
   /** Inline values the host replaced, to restore on detach. */
   readonly savedStyle: Map<string, string>;
+  /**
+   * The element's own `touch-action` before the host wrote one (its classes
+   * or inline style), read once; the host never allows more than it does.
+   */
+  callerTouchAction: string | null;
   manageStyle: boolean;
 }
 
@@ -118,9 +166,49 @@ export interface GestureHostOptions {
   isPrimaryPointerCoarse?: () => boolean;
 }
 
+/**
+ * How far a finger travels before a page-scroll hold judges its pan, in CSS
+ * px: enough that a swipe's first sample (a 2 px by 2 px wobble) does not fix
+ * the wrong axis, and still under WebKit's 10–11 px scroll claim, so the
+ * verdict comes before the browser commits to a scroll.
+ */
+const PAGE_HOLD_SLOP = 5;
+
+/**
+ * Where the browser sends no `scrollend`, how long a finger-driven scroller
+ * stays quiet (no scroll event) before its scroll counts as ended, in ms:
+ * longer than the gap between a momentum scroll's events, short enough that
+ * a program's scroll right after it is not read as the finger's.
+ */
+const SCROLL_END_FALLBACK_MS = 150;
+
+/**
+ * Decides, once per one-finger touch, whether its pan would scroll the page:
+ * `origin` is the innermost node under the finger (the composed path's first
+ * node, so a scroller inside a shadow root is seen), `dx` and `dy` the touch's
+ * movement once it clears a small slop. True cancels the touch's moves for as
+ * long as it lasts.
+ */
+export type PageScrollDecision = (
+  origin: EventTarget | null,
+  dx: number,
+  dy: number,
+) => boolean;
+
 export interface AttachOptions {
   /** Let the host set touch-action (and long-press callout) styles. @default true */
   manageStyle?: boolean;
+  /**
+   * The recognizer, or the press tracker, reads each event's pointer itself,
+   * so it attaches even where the primary pointer is fine: the host installs
+   * what it needs there, styles its element and raises no warning. A
+   * recognizer does so as `spec:AST-057`'s row swipe does. A press tracker
+   * there paints a finger's press feedback only (an FR19 exception for press
+   * feedback only, pending in `spec:AST-094`'s amendment): no control event,
+   * nothing kept from the browser, which still pans, and no mouse or pen
+   * press. Everything else stays inactive there. @default false
+   */
+  perEventPointer?: boolean;
 }
 
 const STYLE_PROPERTIES: Record<keyof GestureHostStyle, string> = {
@@ -131,34 +219,32 @@ const STYLE_PROPERTIES: Record<keyof GestureHostStyle, string> = {
 };
 
 /**
+ * Run `task` in the next frame, before it paints: a read there styles what
+ * the frame must style anyway, and its writes are what the frame shows.
+ */
+function inNextFrame(view: Window | null, task: () => void): void {
+  if (view != null && typeof view.requestAnimationFrame === 'function') {
+    view.requestAnimationFrame(task);
+  } else {
+    setTimeout(task, 0);
+  }
+}
+
+/**
  * Whether a recognizer can take a touch while it moves, and so needs the
  * blocking `touchmove` listener that stops the browser's pan. A tap claims
  * only at the lift (it fails once the finger travels), so it needs none.
  */
 function claimsWhileMoving(recognizer: GestureRecognizer): boolean {
   return (
-    recognizer.acceptsTouchInput &&
+    recognizer.claimsTouches &&
+    internals(recognizer).acceptsTouchInput &&
     !(recognizer instanceof TapGestureRecognizer)
   );
 }
 
 const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
 
-/** The inline properties a held press sets to none (holdSelectionStyle). */
-const HOLD_SELECTION_PROPERTIES = [
-  '-webkit-touch-callout',
-  '-webkit-user-select',
-  'user-select',
-] as const;
-
-/** Elements a held press turned selection off on, and what to restore. */
-const heldSelection = new WeakMap<
-  HTMLElement,
-  {
-    count: number;
-    saved: ReadonlyArray<{name: string; value: string; priority: string}>;
-  }
->();
 const ACTIVE_CAPTURE = {capture: true, passive: false} as const;
 
 type StylusTouch = Touch & {touchType?: string};
@@ -198,6 +284,20 @@ function eventTime(event: Event): number {
   return time;
 }
 
+/**
+ * A pan, read by its shape so the host never imports the pan's module (a
+ * page that constructs no pan does not bundle it, nor the gesture table
+ * groups only the pan reads).
+ */
+function isPan(
+  recognizer: GestureRecognizer,
+): recognizer is PanGestureRecognizer {
+  return (
+    typeof (recognizer as {maximumNumberOfTouches?: unknown})
+      .maximumNumberOfTouches === 'number'
+  );
+}
+
 /** A touch list as an array; a synthetic event may carry none. */
 function touchesOf(list: TouchList | null | undefined): Touch[] {
   return list == null ? [] : Array.from(list);
@@ -207,6 +307,11 @@ export class GestureHost {
   readonly arena: GestureArena;
   private readonly doc: Document;
   private readonly registry = new Map<Element, Registration>();
+  /** Elements whose caller touch-action waits for a read after paint. */
+  private readonly pendingCallerReads = new Set<HTMLElement>();
+  private isCallerReadScheduled = false;
+  /** The selection lock each contact holds, by host contact id. */
+  private readonly lockedBy = new Map<number, () => void>();
   /** Touch.identifier → arena id, for live fingers. */
   private readonly touchIds = new Map<number, number>();
   /** Touch.identifier → the element the finger landed on. */
@@ -242,12 +347,9 @@ export class GestureHost {
   /** Fingers still waiting for their pointerdown, by arena id. */
   private readonly unpairedTouches = new Map<number, PlacedContact>();
   /** The last position fed per contact, so one channel's echo is dropped. */
-  /** The elements each held contact turned selection off on. */
-  private readonly heldSelectionBy = new Map<number, HTMLElement[]>();
   private readonly isPrimaryPointerCoarse: () => boolean;
-  private readonly coarseQuery: MediaQueryList | null;
-  private isWatchingPointer = false;
-  private readonly onPointerKindChange = (): void => this.refreshAll();
+  /** Whether the host follows `(pointer: coarse)` (no read was passed). */
+  private readonly followsPointer: boolean;
   private readonly lastFed = new Map<number, TouchSample>();
   private readonly hovered = new Map<number, Set<HoverGestureRecognizer>>();
   /** When a finger was last down or lifted, and where it landed. */
@@ -258,8 +360,59 @@ export class GestureHost {
   private readonly ownedScrolls = new Set<Node>();
   private lastScroll: {readonly scroller: Node; readonly time: number} | null =
     null;
+  /** Page-scroll holds; while any is held, page pans under a finger are judged. */
+  private readonly pageHolds = new Set<{readonly decide: PageScrollDecision}>();
+  /** Whether the holds' listeners are on: while held and the pointer is coarse. */
+  private isHoldListening = false;
+  private stopWatchingHoldPointer: (() => void) | null = null;
+  /** The one finger of the gesture the page-scroll holds are judging. */
+  private pageHoldTouch: {
+    readonly id: number;
+    readonly x: number;
+    readonly y: number;
+    verdict: boolean | null;
+  } | null = null;
+  /** Predicates that hold a touch's target away from every participant. */
+  private readonly touchGates = new Set<(target: Node) => boolean>();
+  /** Scrollers someone watches (watchFingerScrolls), and how many watchers. */
+  private readonly scrollWatchers = new Map<Node, number>();
+  /**
+   * Watched scrollers whose scroll a finger is driving: a finger that landed
+   * inside one was down when it scrolled, and its own `scrollend` (the
+   * momentum after the lift included) has not come yet.
+   */
+  private readonly fingerScrollers = new Set<Node>();
+  /**
+   * Finger-driven scrollers whose `scrollend` came while that finger still
+   * rested on them: the scroll stays the finger's until the lift.
+   */
+  private readonly endedWhileDown = new Set<Node>();
+  /**
+   * Where the browser has no `scrollend`: per finger-driven scroller, the
+   * quiet spell after its last scroll event that ends the scroll instead.
+   */
+  private readonly scrollEndFallbacks = new Map<
+    Node,
+    ReturnType<typeof setTimeout>
+  >();
+  /**
+   * Where each finger now on the screen landed, from the last touch event's
+   * `touches` (every finger, whether or not a recognizer tracks it).
+   */
+  private fingerTargets: ReadonlyArray<Node> = [];
   private nextId = 1;
   private isInstalled = false;
+  /**
+   * Whether the primary pointer is coarse (`spec:AST-094` FR19), read when
+   * something first attaches and kept current while anything is attached.
+   */
+  private isCoarse = false;
+  private stopWatchingPointer: (() => void) | null = null;
+  private hasWarnedFinePointer = false;
+  /** Recognizers attached with `perEventPointer`: active on any pointer. */
+  private readonly perEventRecognizers = new Set<GestureRecognizer>();
+  /** Press consumers attached with `perEventPointer`: active on any pointer. */
+  private readonly perEventConsumers = new Set<TouchConsumer>();
   private readonly inputMode: 'auto' | 'pointer-events';
   private usesTouchEvents = true;
   private swallowDeadline = Number.NEGATIVE_INFINITY;
@@ -272,9 +425,9 @@ export class GestureHost {
         width: doc.defaultView?.innerWidth ?? 0,
         height: doc.defaultView?.innerHeight ?? 0,
       }),
+      // The writing direction through core's one helper.
       isRtl: view =>
-        view instanceof Element &&
-        doc.defaultView?.getComputedStyle(view).direction === 'rtl',
+        view instanceof Element && isRtlElement(view as HTMLElement),
     };
     this.arena = new GestureArena({
       clock: options.clock ?? browserClock,
@@ -283,22 +436,11 @@ export class GestureHost {
       onTransition: options.onTransition,
     });
     const view = doc.defaultView;
-    const coarseQuery =
-      options.isPrimaryPointerCoarse == null &&
-      typeof view?.matchMedia === 'function'
-        ? view.matchMedia('(pointer: coarse)')
-        : null;
+    // A test may pass its own read; otherwise the one coarse-pointer gate,
+    // followed as it changes.
+    this.followsPointer = options.isPrimaryPointerCoarse == null;
     this.isPrimaryPointerCoarse =
-      options.isPrimaryPointerCoarse ?? (() => coarseQuery?.matches ?? false);
-    this.coarseQuery = coarseQuery;
-  }
-
-  /** Re-derive every element's styles and the host's listeners. */
-  private refreshAll(): void {
-    for (const [element, registration] of this.registry) {
-      this.refresh(element, registration);
-    }
-    this.syncListeners();
+      options.isPrimaryPointerCoarse ?? (() => isCoarsePointer(view));
   }
 
   // --- Attachment ------------------------------------------------------------
@@ -312,6 +454,11 @@ export class GestureHost {
     const registration = this.registrationFor(element);
     registration.manageStyle = options.manageStyle ?? registration.manageStyle;
     recognizer.view = element;
+    if (options.perEventPointer === true) {
+      this.perEventRecognizers.add(recognizer);
+    } else if (!this.isCoarse) {
+      this.warnFinePointer();
+    }
     if (recognizer instanceof HoverGestureRecognizer) {
       registration.hovers.push(recognizer);
     } else {
@@ -325,6 +472,7 @@ export class GestureHost {
     this.syncListeners();
     return () => {
       recognizer.onEnabledChange = null;
+      this.perEventRecognizers.delete(recognizer);
       const index = registration.recognizers.indexOf(recognizer);
       if (index >= 0) {
         registration.recognizers.splice(index, 1);
@@ -343,20 +491,104 @@ export class GestureHost {
       }
       this.refresh(element, registration);
       this.cleanup(element, registration);
+      // A registration that stays may have lost its last enabled member.
+      this.syncListeners();
     };
   }
 
   /** Attach the view-level touch consumer of an element (a pressable control). */
-  attachConsumer(element: Element, consumer: TouchConsumer): () => void {
+  attachConsumer(
+    element: Element,
+    consumer: TouchConsumer,
+    options: Pick<AttachOptions, 'perEventPointer'> = {},
+  ): () => void {
     const registration = this.registrationFor(element);
     registration.consumer = consumer;
+    if (options.perEventPointer === true) {
+      this.perEventConsumers.add(consumer);
+    } else if (!this.isCoarse) {
+      this.warnFinePointer();
+    }
+    this.refresh(element, registration);
     this.syncListeners();
     return () => {
+      this.perEventConsumers.delete(consumer);
       if (registration.consumer === consumer) {
         registration.consumer = null;
       }
+      // A keepsTouch consumer's blocking touchmove goes with it, even while
+      // the element keeps its recognizers.
+      this.refresh(element, registration);
       this.cleanup(element, registration);
+      // A registration that stays may have lost its last enabled member.
+      this.syncListeners();
     };
+  }
+
+  /**
+   * Hold the page still under a finger until the returned release runs. A
+   * one-finger pan that `decide` says would scroll the page, and that no
+   * recognizer owns, is cancelled for the rest of its touch; a second finger
+   * (pinch-zoom) never is. Holds stack. Only while one is held does the host
+   * listen with a non-passive `touchmove`, so a scroll lock costs nothing
+   * once it is released, and a touch scrolls as without the system.
+   */
+  holdPageScroll(decide: PageScrollDecision): () => void {
+    const hold = {decide};
+    this.pageHolds.add(hold);
+    if (this.pageHolds.size === 1) {
+      // Only where the primary pointer is coarse (FR19, FR24), following it.
+      const view = this.doc.defaultView;
+      this.stopWatchingHoldPointer = watchCoarsePointer(view, isCoarse =>
+        this.listenForHolds(isCoarse),
+      );
+      this.listenForHolds(isCoarsePointer(view));
+    }
+    let isHeld = true;
+    return () => {
+      if (!isHeld) {
+        return;
+      }
+      isHeld = false;
+      this.pageHolds.delete(hold);
+      if (this.pageHolds.size === 0) {
+        this.stopWatchingHoldPointer?.();
+        this.stopWatchingHoldPointer = null;
+        this.listenForHolds(false);
+      }
+    };
+  }
+
+  /** Turn the page holds' document listeners on or off. */
+  private listenForHolds(on: boolean): void {
+    if (on === this.isHoldListening) {
+      return;
+    }
+    this.isHoldListening = on;
+    if (on) {
+      this.doc.addEventListener(
+        'touchstart',
+        this.onHoldTouchStart,
+        PASSIVE_CAPTURE,
+      );
+      this.doc.addEventListener(
+        'touchmove',
+        this.onHoldTouchMove,
+        ACTIVE_CAPTURE,
+      );
+    } else {
+      this.doc.removeEventListener(
+        'touchstart',
+        this.onHoldTouchStart,
+        PASSIVE_CAPTURE,
+      );
+      this.doc.removeEventListener(
+        'touchmove',
+        this.onHoldTouchMove,
+        ACTIVE_CAPTURE,
+      );
+      this.pageHoldTouch = null;
+    }
   }
 
   /**
@@ -364,6 +596,10 @@ export class GestureHost {
    * recognizers' options or its consumer's enabled state changed.
    */
   update(element: Element): void {
+    if (!this.followsPointer) {
+      // A read passed in (a test's) is not followed: an update reads it again.
+      this.isCoarse = this.isPrimaryPointerCoarse();
+    }
     const registration = this.registry.get(element);
     if (registration != null) {
       this.refresh(element, registration);
@@ -400,7 +636,7 @@ export class GestureHost {
    */
   isScrollBraking(
     node: Node,
-    window: number = UIKIT_GESTURES.press.scrollBrake.value,
+    window: number = UIKIT_PRESS.scrollBrake.value,
   ): boolean {
     const last = this.lastScroll;
     return (
@@ -410,15 +646,63 @@ export class GestureHost {
     );
   }
 
+  /**
+   * Keeps track of whether the scrolls of `scroller` (an element, or the
+   * document for the page's own scroll) are a finger's, for isFingerScroll,
+   * until the returned function is called. The host stays installed
+   * meanwhile.
+   */
+  watchFingerScrolls(scroller: Node): () => void {
+    this.scrollWatchers.set(
+      scroller,
+      (this.scrollWatchers.get(scroller) ?? 0) + 1,
+    );
+    this.watchPointer();
+    this.syncListeners();
+    let isWatching = true;
+    return () => {
+      if (!isWatching) {
+        return;
+      }
+      isWatching = false;
+      const count = (this.scrollWatchers.get(scroller) ?? 1) - 1;
+      if (count > 0) {
+        this.scrollWatchers.set(scroller, count);
+      } else {
+        this.scrollWatchers.delete(scroller);
+        this.fingerScrollers.delete(scroller);
+        this.endedWhileDown.delete(scroller);
+        this.clearScrollEndFallback(scroller);
+      }
+      this.uninstallIfIdle();
+    };
+  }
+
+  /**
+   * Whether the scroll now moving a watched `scroller` is a finger's: a
+   * finger that landed inside it was down when it scrolled, and the scroll
+   * has not ended since (its `scrollend` comes after the momentum that
+   * follows the lift). A scroll the program starts while no finger is down
+   * there (`scrollTo`, a status-bar tap) is not. The scroller's own
+   * `scrollend` closes a finger's scroll; where the browser has no
+   * `scrollend`, a quiet spell of SCROLL_END_FALLBACK_MS after its last
+   * scroll event does.
+   */
+  isFingerScroll(scroller: Node): boolean {
+    return this.fingerScrollers.has(scroller);
+  }
+
   private registrationFor(element: Element): Registration {
+    this.watchPointer();
     let registration = this.registry.get(element);
     if (registration == null) {
       registration = {
         recognizers: [],
         hovers: [],
         consumer: null,
-        touchMoveListener: null,
+        hasTouchMoveListener: false,
         savedStyle: new Map(),
+        callerTouchAction: null,
         manageStyle: true,
       };
       this.registry.set(element, registration);
@@ -426,37 +710,108 @@ export class GestureHost {
     return registration;
   }
 
+  /**
+   * Whether `recognizer` takes input now: where the primary pointer is
+   * coarse, or with `perEventPointer` (FR19; `spec:AST-057`).
+   */
+  private isActive(recognizer: GestureRecognizer): boolean {
+    return this.isCoarse || this.perEventRecognizers.has(recognizer);
+  }
+
+  /**
+   * Whether a press consumer takes input now (FR19; its per-event opt-in,
+   * an FR19 exception for press feedback pending in AST-094's amendment).
+   */
+  private isConsumerActive(consumer: TouchConsumer): boolean {
+    return this.isCoarse || this.perEventConsumers.has(consumer);
+  }
+
+  /** Whether anything attached takes input now. */
+  private needsInput(): boolean {
+    return (
+      this.isCoarse ||
+      this.perEventRecognizers.size > 0 ||
+      this.perEventConsumers.size > 0
+    );
+  }
+
   private refresh(element: Element, registration: Registration): void {
     if (registration.manageStyle && element instanceof HTMLElement) {
       this.applyStyle(element, registration);
     }
+    // Where the primary pointer is fine, no touch listener but a
+    // perEventPointer recognizer's (FR19).
     const needsListener =
-      this.isPrimaryPointerCoarse() &&
-      registration.recognizers.some(r => r.isEnabled && claimsWhileMoving(r));
-    if (needsListener && registration.touchMoveListener == null) {
-      const listener: EventListener = event =>
-        this.cancelIfClaimed(event as TouchEvent);
-      registration.touchMoveListener = listener;
-      element.addEventListener('touchmove', listener, {passive: false});
-    } else if (!needsListener && registration.touchMoveListener != null) {
-      element.removeEventListener('touchmove', registration.touchMoveListener);
-      registration.touchMoveListener = null;
+      registration.recognizers.some(
+        recognizer =>
+          this.isActive(recognizer) &&
+          recognizer.isEnabled &&
+          claimsWhileMoving(recognizer),
+      ) ||
+      // A kept press holds its touch only where the pointer is coarse; a
+      // per-event tracker elsewhere gives press feedback only (FR19).
+      (registration.consumer?.keepsTouch != null &&
+        registration.consumer.isEnabled?.() !== false &&
+        this.isCoarse);
+    // The blocking listener sits on the element itself (FR19: a scroll that
+    // starts elsewhere never waits on it), but every element shares the
+    // host's one handler, which routes through the arena.
+    if (needsListener && !registration.hasTouchMoveListener) {
+      element.addEventListener('touchmove', this.onBlockingTouchMove, {
+        passive: false,
+      });
+      registration.hasTouchMoveListener = true;
+    } else if (!needsListener && registration.hasTouchMoveListener) {
+      element.removeEventListener('touchmove', this.onBlockingTouchMove);
+      registration.hasTouchMoveListener = false;
     }
   }
 
   private applyStyle(element: HTMLElement, registration: Registration): void {
-    // Where the primary pointer is fine, or no attached recognizer is
-    // enabled, the host manages no style: the element keeps its own
-    // touch-action (spec:AST-094 FR19); any value set before is restored.
-    // A disabled recognizer leaves the browser everything too.
-    const style: GestureHostStyle = this.isPrimaryPointerCoarse()
-      ? gestureHostStyle(registration.recognizers.filter(r => r.isEnabled))
-      : {};
+    // Where the primary pointer is fine, the browser's own styles, but a
+    // perEventPointer recognizer's (FR19).
+    // A disabled recognizer leaves the browser everything (FR24).
+    const active = registration.recognizers.filter(
+      recognizer => recognizer.isEnabled && this.isActive(recognizer),
+    );
+    let style: GestureHostStyle =
+      active.length > 0 ? gestureHostStyle(active) : {};
+    // A control that keeps its touch (a stepper's hold-repeat) takes taps in
+    // quick succession: where the pointer is coarse, the browser's double-tap
+    // zoom goes, as for a tap recognizer (`spec:AST-094` FR18); where it is
+    // fine, the browser keeps its own value (FR19).
+    if (
+      style.touchAction == null &&
+      this.isCoarse &&
+      registration.consumer?.keepsTouch != null
+    ) {
+      style = {...style, touchAction: 'manipulation'};
+    }
     for (const key of Object.keys(
       STYLE_PROPERTIES,
     ) as (keyof GestureHostStyle)[]) {
       const property = STYLE_PROPERTIES[key];
-      const value = style[key];
+      let value = style[key];
+      if (value != null && key === 'touchAction') {
+        // The author's value (a trigger's own `touch-action: none`) stays in
+        // force: the host writes what both allow, never wider (spec:AST-094
+        // FR18, DEC-8). An inline value is the style's own, read with no
+        // recalc. A stylesheet's needs a computed read, which waits for the
+        // next frame, before its paint, never inside an attach (a forced
+        // recalc over whatever just mounted); until then the host writes
+        // nothing, so the author's value stands.
+        const callerInline = registration.savedStyle.has(property)
+          ? (registration.savedStyle.get(property) ?? '')
+          : element.style.getPropertyValue(property);
+        const caller =
+          callerInline !== '' ? callerInline : registration.callerTouchAction;
+        if (caller != null) {
+          value = intersectTouchAction(value, caller);
+        } else {
+          this.readCallerTouchActionInNextFrame(element);
+          continue;
+        }
+      }
       if (value != null) {
         if (!registration.savedStyle.has(property)) {
           registration.savedStyle.set(
@@ -477,6 +832,40 @@ export class GestureHost {
     }
   }
 
+  /**
+   * Read the touch-action an author's stylesheet gives `element` in the next
+   * frame, before it paints, then write what both allow. Batched: one style
+   * read serves every pending element, and the writes follow the reads. The
+   * host has written no touch-action on them yet, so the read is the
+   * author's own value.
+   */
+  private readCallerTouchActionInNextFrame(element: HTMLElement): void {
+    this.pendingCallerReads.add(element);
+    if (this.isCallerReadScheduled) {
+      return;
+    }
+    this.isCallerReadScheduled = true;
+    inNextFrame(this.doc.defaultView, () => {
+      this.isCallerReadScheduled = false;
+      const pending: [HTMLElement, Registration][] = [];
+      for (const candidate of this.pendingCallerReads) {
+        const registration = this.registry.get(candidate);
+        if (registration != null && registration.callerTouchAction == null) {
+          pending.push([candidate, registration]);
+        }
+      }
+      this.pendingCallerReads.clear();
+      const view = this.doc.defaultView;
+      for (const [candidate, registration] of pending) {
+        registration.callerTouchAction =
+          view?.getComputedStyle(candidate).touchAction || 'auto';
+      }
+      for (const [candidate, registration] of pending) {
+        this.applyStyle(candidate, registration);
+      }
+    });
+  }
+
   private cleanup(element: Element, registration: Registration): void {
     if (
       registration.recognizers.length > 0 ||
@@ -485,51 +874,100 @@ export class GestureHost {
     ) {
       return;
     }
-    if (registration.touchMoveListener != null) {
-      element.removeEventListener('touchmove', registration.touchMoveListener);
+    if (registration.hasTouchMoveListener) {
+      element.removeEventListener('touchmove', this.onBlockingTouchMove);
     }
     this.registry.delete(element);
-    this.syncListeners();
+    this.uninstallIfIdle();
   }
 
   /**
-   * Listen only while something could take a touch: the primary pointer is
-   * coarse and an enabled recognizer or an enabled consumer is attached
-   * (`spec:AST-094` FR19, FR24). Otherwise no document listener is
-   * registered, so a desktop page pays nothing.
+   * Listen only while something could take a touch now (`spec:AST-094`
+   * FR19, FR24): an enabled recognizer or consumer that takes input (where
+   * the primary pointer is coarse, or one attached with `perEventPointer`),
+   * or a finger-scroll watch.
+   * Otherwise no document listener is registered, so a desktop page and a
+   * disabled control pay nothing.
    */
   private syncListeners(): void {
-    // The primary pointer can change (a tablet's keyboard attached or
-    // removed): while anything is attached, styles and listeners follow it.
-    // Nothing touch-related stays once the last attachment goes (FR24).
-    const hasAttachments = this.registry.size > 0;
-    if (hasAttachments && !this.isWatchingPointer) {
-      this.coarseQuery?.addEventListener?.('change', this.onPointerKindChange);
-      this.isWatchingPointer = true;
-    } else if (!hasAttachments && this.isWatchingPointer) {
-      this.coarseQuery?.removeEventListener?.(
-        'change',
-        this.onPointerKindChange,
-      );
-      this.isWatchingPointer = false;
-    }
     if (this.shouldListen()) {
       this.install();
-    } else if (this.isInstalled) {
+    } else {
       this.uninstall();
     }
   }
 
+  /** With nothing attached, stop listening and stop following the pointer. */
+  private uninstallIfIdle(): void {
+    this.syncListeners();
+    if (this.registry.size === 0 && this.scrollWatchers.size === 0) {
+      this.uninstall();
+      this.stopWatchingPointer?.();
+      this.stopWatchingPointer = null;
+    }
+  }
+
+  /** Read the primary pointer, and follow it while anything is attached. */
+  private watchPointer(): void {
+    if (this.stopWatchingPointer != null) {
+      return;
+    }
+    const view = this.doc.defaultView;
+    this.isCoarse = this.isPrimaryPointerCoarse();
+    this.stopWatchingPointer = this.followsPointer
+      ? watchCoarsePointer(view, isCoarse => this.pointerChanged(isCoarse))
+      : () => {};
+  }
+
+  /**
+   * The primary pointer turned coarse or fine (a tablet docking a mouse):
+   * install or remove everything, as if each attach happened now.
+   */
+  private pointerChanged(isCoarse: boolean): void {
+    if (isCoarse === this.isCoarse) {
+      return;
+    }
+    this.isCoarse = isCoarse;
+    if (!isCoarse) {
+      this.cancelEverything(this.arena.now());
+    }
+    for (const [element, registration] of this.registry) {
+      this.refresh(element, registration);
+    }
+    this.syncListeners();
+  }
+
+  /** Something attached where the primary pointer is fine: say so once. */
+  private warnFinePointer(): void {
+    if (process.env.NODE_ENV !== 'production' && !this.hasWarnedFinePointer) {
+      this.hasWarnedFinePointer = true;
+      console.warn(
+        'Astryx: a gesture recognizer or press tracker was attached where ' +
+          'the primary pointer is fine. It stays inactive until the pointer ' +
+          'is coarse (spec:AST-094 FR19), so attach touch work only under a ' +
+          'touch presentation, or pass perEventPointer for a recognizer or ' +
+          "press tracker that reads each event's pointer itself (spec:AST-057).",
+      );
+    }
+  }
+
   private shouldListen(): boolean {
-    if (!this.isPrimaryPointerCoarse()) {
+    if (!this.needsInput()) {
       return false;
     }
+    if (this.scrollWatchers.size > 0) {
+      return true;
+    }
     for (const registration of this.registry.values()) {
+      const consumer = registration.consumer;
       if (
-        (registration.consumer != null &&
-          registration.consumer.isEnabled?.() !== false) ||
-        registration.recognizers.some(r => r.isEnabled) ||
-        registration.hovers.some(r => r.isEnabled)
+        (consumer != null &&
+          consumer.isEnabled?.() !== false &&
+          this.isConsumerActive(consumer)) ||
+        registration.recognizers.some(
+          recognizer => recognizer.isEnabled && this.isActive(recognizer),
+        ) ||
+        (this.isCoarse && registration.hovers.some(r => r.isEnabled))
       ) {
         return true;
       }
@@ -540,6 +978,10 @@ export class GestureHost {
   // --- Listeners -------------------------------------------------------------
 
   private install(): void {
+    this.watchPointer();
+    if (!this.needsInput()) {
+      return;
+    }
     if (this.isInstalled) {
       return;
     }
@@ -563,6 +1005,7 @@ export class GestureHost {
     doc.addEventListener('pointerout', this.onPointerOut, PASSIVE_CAPTURE);
     doc.addEventListener('contextmenu', this.onContextMenu, ACTIVE_CAPTURE);
     doc.addEventListener('scroll', this.onScroll, PASSIVE_CAPTURE);
+    doc.addEventListener('scrollend', this.onScrollEnd, PASSIVE_CAPTURE);
     doc.addEventListener('visibilitychange', this.onVisibilityChange);
     view?.addEventListener('click', this.onClick, ACTIVE_CAPTURE);
     view?.addEventListener('blur', this.onBlur);
@@ -573,6 +1016,8 @@ export class GestureHost {
       return;
     }
     this.isInstalled = false;
+    // Unheard from here on: no fingers to keep.
+    this.fingerTargets = [];
     const doc = this.doc;
     const view = doc.defaultView;
     doc.removeEventListener('touchstart', this.onTouchStart, PASSIVE_CAPTURE);
@@ -590,10 +1035,14 @@ export class GestureHost {
     doc.removeEventListener('pointerout', this.onPointerOut, PASSIVE_CAPTURE);
     doc.removeEventListener('contextmenu', this.onContextMenu, ACTIVE_CAPTURE);
     doc.removeEventListener('scroll', this.onScroll, PASSIVE_CAPTURE);
+    doc.removeEventListener('scrollend', this.onScrollEnd, PASSIVE_CAPTURE);
     doc.removeEventListener('visibilitychange', this.onVisibilityChange);
     view?.removeEventListener('click', this.onClick, ACTIVE_CAPTURE);
     view?.removeEventListener('blur', this.onBlur);
     this.cancelEverything(this.arena.now());
+    for (const scroller of [...this.scrollEndFallbacks.keys()]) {
+      this.clearScrollEndFallback(scroller);
+    }
     this.lastTouch = null;
     this.lastScroll = null;
   }
@@ -611,11 +1060,19 @@ export class GestureHost {
   ): {
     recognizers: GestureRecognizer[];
     consumer: TouchConsumer | null;
+    consumerElement: Element | null;
     hovers: HoverGestureRecognizer[];
   } {
     const recognizers: GestureRecognizer[] = [];
     const hovers: HoverGestureRecognizer[] = [];
     let consumer: TouchConsumer | null = null;
+    let consumerElement: Element | null = null;
+    if (
+      target instanceof Node &&
+      [...this.touchGates].some(gate => gate(target))
+    ) {
+      return {recognizers, consumer, consumerElement, hovers};
+    }
     let hasConsumerOwner = pointerType == null;
     for (
       let node: Node | null = target instanceof Node ? target : null;
@@ -627,22 +1084,121 @@ export class GestureHost {
       }
       const registration = this.registry.get(node);
       if (registration != null) {
-        recognizers.push(...registration.recognizers);
-        hovers.push(...registration.hovers);
+        // Where the primary pointer is fine, only perEventPointer
+        // recognizers take part (FR19; `spec:AST-057`).
+        recognizers.push(
+          ...registration.recognizers.filter(recognizer =>
+            this.isActive(recognizer),
+          ),
+        );
+        if (this.isCoarse) {
+          hovers.push(...registration.hovers);
+        }
       }
       if (hasConsumerOwner || pointerType == null) {
         continue;
       }
-      if (registration?.consumer != null) {
+      // Where the primary pointer is fine, only a perEventPointer consumer
+      // takes part (FR19); an inactive one is as if absent.
+      if (
+        registration?.consumer != null &&
+        this.isConsumerActive(registration.consumer) &&
+        // Where the pointer is fine its press feedback is for a finger only:
+        // a mouse or a pen there keeps the desktop's own handling (FR19).
+        (this.isCoarse || pointerType === 'touch')
+      ) {
         consumer = registration.consumer;
+        consumerElement = node;
         hasConsumerOwner = true;
         continue;
       }
     }
-    return {recognizers, consumer, hovers};
+    return {recognizers, consumer, consumerElement, hovers};
+  }
+
+  /**
+   * Turn text selection and the touch callout off, for as long as this
+   * finger or pen is down, only on the elements whose hold does something:
+   * a long press's (a menu, a hold-repeat), those of recognizers created
+   * with a `selectionLock` (a slider's thumb, a switch's drag, a tab bar's
+   * zero-delay lens) and that of a press tracker created with one (a
+   * stepper's hold-repeat). Anything whose hold does nothing, a plain
+   * press-tracked control or row included, keeps the browser's long-press
+   * selection (`spec:AST-094` FR41). Restored when the contact ends. Callers
+   * lock only where the primary pointer is coarse (locksSelectionFor), so
+   * desktop selection is untouched, and only once the arena has admitted
+   * the contact: `recognizers` and `consumer` are the ones that took it.
+   */
+  private lockSelection(
+    id: number,
+    recognizers: ReadonlyArray<GestureRecognizer>,
+    target: EventTarget | null,
+    consumer: TouchConsumer | null,
+    consumerElement: Element | null,
+  ): void {
+    // Each recognizer whose hold does something brings its lock; the host
+    // never imports one (a component without such a hold does not bundle
+    // it). Only one that took this contact locks for it: a recognizer that
+    // declined it (its pointer, or its own shouldReceiveTouch) has no hold
+    // here.
+    const byLock = new Map<SelectionLock, Set<Element>>();
+    for (const recognizer of recognizers) {
+      const lock = recognizer.selectionLock;
+      if (lock != null && recognizer.view instanceof Element) {
+        const elements = byLock.get(lock) ?? new Set<Element>();
+        elements.add(recognizer.view);
+        byLock.set(lock, elements);
+      }
+    }
+    const consumerLock = consumer?.selectionLock;
+    if (consumerLock != null && consumerElement != null) {
+      const elements = byLock.get(consumerLock) ?? new Set<Element>();
+      elements.add(consumerElement);
+      byLock.set(consumerLock, elements);
+    }
+    if (byLock.size > 0) {
+      const undo = [...byLock].map(([lock, elements]) =>
+        lock(elements, target),
+      );
+      this.lockedBy.set(id, () => {
+        for (const release of undo) {
+          release();
+        }
+      });
+    }
+  }
+
+  /** Undo `lockSelection` for a contact that ended; idempotent. */
+  private unlockSelection(id: number): void {
+    this.lockedBy.get(id)?.();
+    this.lockedBy.delete(id);
   }
 
   // --- Touch events ----------------------------------------------------------
+
+  /**
+   * Hold touches away from every participant while `gate(target)` answers
+   * true (a presentation running in a layer: its content takes no touch
+   * until it settles). Returns the release.
+   */
+  addTouchGate(gate: (target: Node) => boolean): () => void {
+    this.touchGates.add(gate);
+    return () => {
+      this.touchGates.delete(gate);
+    };
+  }
+
+  /**
+   * How many fingers are on the screen: the length of `touches` in the last
+   * touch event the host's listeners heard (`touchstart`, `touchmove`,
+   * `touchend`, `touchcancel`), whatever its target, so a finger on an
+   * element with no recognizer counts too. 0 before any, and while no
+   * listener is installed. A recognizer that must not begin under a second
+   * finger reads it in `shouldBegin`.
+   */
+  fingersDown(): number {
+    return this.fingerTargets.length;
+  }
 
   /** Whether this event is new to the host (and mark it handled). */
   private takeEvent(event: Event): boolean {
@@ -654,13 +1210,23 @@ export class GestureHost {
   }
 
   private readonly onTouchStart = (event: TouchEvent): void => {
+    this.noteFingersDown(event);
     if (!this.takeEvent(event)) {
       return;
+    }
+    if (this.fingerTargets.length > 1) {
+      this.failUnclaimedLoneFingerPans();
     }
     const time = eventTime(event);
     const inputs: ArenaBeganInput[] = [];
     const untracked: TouchBeganInput[] = [];
     const stale: number[] = [];
+    // Locked once the arena knows which recognizers took each finger.
+    const toLock: {
+      id: number;
+      target: EventTarget | null;
+      consumerElement: Element | null;
+    }[] = [];
     for (const touch of touchesOf(event.changedTouches)) {
       if ((touch as StylusTouch).touchType === 'stylus') {
         continue;
@@ -672,7 +1238,10 @@ export class GestureHost {
         stale.push(previous);
       }
       const target = touch.target instanceof Node ? touch.target : event.target;
-      const {recognizers, consumer} = this.participantsAt(target, 'touch');
+      const {recognizers, consumer, consumerElement} = this.participantsAt(
+        target,
+        'touch',
+      );
       if (recognizers.length === 0 && consumer == null) {
         // Nothing here takes part: the touch stays the page's, but a
         // recognizer tracking another finger hears it began (a second
@@ -689,11 +1258,14 @@ export class GestureHost {
       }
       const id = this.nextId++;
       this.touchIds.set(touch.identifier, id);
-      this.holdSelection(id, recognizers);
+      if (locksSelectionFor('touch', this.doc.defaultView)) {
+        toLock.push({id, target, consumerElement});
+      }
       this.watchTarget(
         touch.identifier,
         target,
-        recognizers.some(claimsWhileMoving),
+        recognizers.some(claimsWhileMoving) ||
+          (this.isCoarse && consumer?.keepsTouch != null),
       );
       this.lastFed.set(id, {x: touch.clientX, y: touch.clientY, time});
       this.pairTouch(id, {x: touch.clientX, y: touch.clientY, target});
@@ -707,12 +1279,24 @@ export class GestureHost {
         scroll: createNativeScrollProbe(target),
         recognizers,
         consumer,
+        // Where the pointer is fine only per-event participants hear it, and
+        // a press tracker among them gives press feedback only (FR19).
+        ...(this.isCoarse ? {} : {isFeedbackOnly: true}),
       });
     }
     if (stale.length > 0) {
       this.arena.cancelled(stale, time);
     }
     this.arena.began(inputs);
+    for (const {id, target, consumerElement} of toLock) {
+      this.lockSelection(
+        id,
+        this.arena.participantsOf(id),
+        target,
+        this.arena.consumerOf(id) ?? null,
+        consumerElement,
+      );
+    }
     for (const input of untracked) {
       this.arena.untrackedBegan(input);
     }
@@ -724,6 +1308,7 @@ export class GestureHost {
   };
 
   private readonly onTouchMove = (event: TouchEvent): void => {
+    this.noteFingersDown(event);
     if (!this.takeEvent(event)) {
       return;
     }
@@ -781,6 +1366,75 @@ export class GestureHost {
     this.feedMoves(inputs);
   };
 
+  private readonly onHoldTouchStart = (event: TouchEvent): void => {
+    const fingers = touchesOf(event.touches);
+    const current = this.pageHoldTouch;
+    // Only a finger already down keeps its record: a new touch that reuses
+    // the identifier starts afresh.
+    if (
+      current != null &&
+      fingers.some(finger => finger.identifier === current.id) &&
+      !touchesOf(event.changedTouches).some(
+        finger => finger.identifier === current.id,
+      )
+    ) {
+      // A second finger joins the held one: nothing is cancelled while two
+      // are down (a pinch), and the first keeps its verdict for the rest of
+      // its touch once it is alone again.
+      return;
+    }
+    const finger = fingers[0];
+    this.pageHoldTouch =
+      fingers.length === 1 && finger != null
+        ? {
+            id: finger.identifier,
+            x: finger.clientX,
+            y: finger.clientY,
+            verdict: null,
+          }
+        : null;
+  };
+
+  private readonly onHoldTouchMove = (event: TouchEvent): void => {
+    const fingers = touchesOf(event.touches);
+    const current = this.pageHoldTouch;
+    const finger = fingers[0];
+    // A second finger is a pinch: zooming the page stays available.
+    if (
+      fingers.length !== 1 ||
+      finger == null ||
+      current == null ||
+      finger.identifier !== current.id
+    ) {
+      return;
+    }
+    // A recognizer that owns the touch decides about its moves itself.
+    const id = this.touchIds.get(current.id);
+    if (id != null && this.arena.isClaimed(id)) {
+      return;
+    }
+    if (current.verdict == null) {
+      const dx = finger.clientX - current.x;
+      const dy = finger.clientY - current.y;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < PAGE_HOLD_SLOP) {
+        return;
+      }
+      // The browser picks the scroller once per gesture; so do the holds.
+      const origin = event.composedPath()[0] ?? event.target;
+      current.verdict = [...this.pageHolds].some(hold =>
+        hold.decide(origin, dx, dy),
+      );
+    }
+    if (current.verdict && event.cancelable) {
+      event.preventDefault();
+    }
+  };
+
+  /** The one blocking `touchmove` handler every claiming element shares. */
+  private readonly onBlockingTouchMove = (event: Event): void => {
+    this.cancelIfClaimed(event as TouchEvent);
+  };
+
   /**
    * Cancel a `touchmove` while a recognizer owns one of its fingers. A touch
    * no recognizer owns keeps its moves (`spec:AST-094` FR19): nothing is
@@ -795,7 +1449,12 @@ export class GestureHost {
     const moved = touchesOf(event.changedTouches);
     for (const touch of moved) {
       const id = this.touchIds.get(touch.identifier);
-      if (id != null && this.arena.isClaimed(id)) {
+      if (
+        id != null &&
+        (this.arena.isClaimed(id) ||
+          (this.isCoarse &&
+            this.arena.consumerOf(id)?.keepsTouch?.(id) === true))
+      ) {
         event.preventDefault();
         return;
       }
@@ -813,6 +1472,7 @@ export class GestureHost {
   }
 
   private readonly onTouchEnd = (event: TouchEvent): void => {
+    this.noteFingersDown(event);
     if (!this.takeEvent(event)) {
       return;
     }
@@ -843,6 +1503,7 @@ export class GestureHost {
   };
 
   private readonly onTouchCancel = (event: TouchEvent): void => {
+    this.noteFingersDown(event);
     if (!this.takeEvent(event)) {
       return;
     }
@@ -1058,80 +1719,9 @@ export class GestureHost {
     }
   }
 
-  /**
-   * For one held press by a finger or a pen: text selection and the touch
-   * callout off on the elements whose hold does something (a long press),
-   * as `holdSelectionStyle` decides (`spec:AST-094` FR41, DEC-9).
-   * Everything else keeps the browser's long-press selection. Restored when
-   * the contact ends; refcounted across contacts on one element.
-   */
-  private holdSelection(
-    id: number,
-    recognizers: ReadonlyArray<GestureRecognizer>,
-  ): void {
-    const elements = new Set<HTMLElement>();
-    for (const recognizer of recognizers) {
-      if (
-        recognizer.view instanceof HTMLElement &&
-        recognizer.isEnabled &&
-        holdSelectionStyle([recognizer]) != null
-      ) {
-        elements.add(recognizer.view);
-      }
-    }
-    if (elements.size === 0) {
-      return;
-    }
-    const held = [...elements];
-    for (const element of held) {
-      const entry = heldSelection.get(element);
-      if (entry != null) {
-        entry.count += 1;
-        continue;
-      }
-      const saved = HOLD_SELECTION_PROPERTIES.map(name => ({
-        name,
-        value: element.style.getPropertyValue(name),
-        priority: element.style.getPropertyPriority(name),
-      }));
-      for (const name of HOLD_SELECTION_PROPERTIES) {
-        element.style.setProperty(name, 'none');
-      }
-      heldSelection.set(element, {count: 1, saved});
-    }
-    this.heldSelectionBy.set(id, held);
-  }
-
-  /** Undo `holdSelection` for a contact that ended; idempotent. */
-  private releaseSelection(id: number): void {
-    const held = this.heldSelectionBy.get(id);
-    if (held == null) {
-      return;
-    }
-    this.heldSelectionBy.delete(id);
-    for (const element of held) {
-      const entry = heldSelection.get(element);
-      if (entry == null) {
-        continue;
-      }
-      entry.count -= 1;
-      if (entry.count > 0) {
-        continue;
-      }
-      heldSelection.delete(element);
-      for (const {name, value, priority} of entry.saved) {
-        if (value === '') {
-          element.style.removeProperty(name);
-        } else {
-          element.style.setProperty(name, value, priority);
-        }
-      }
-    }
-  }
-
   /** Forget a contact's pairing and echo state. */
   private forgetContact(id: number): void {
-    this.releaseSelection(id);
+    this.unlockSelection(id);
     this.lastFed.delete(id);
     this.judgedUncancelable.delete(id);
     this.unpairedTouches.delete(id);
@@ -1162,7 +1752,7 @@ export class GestureHost {
     if (event.pointerType === 'mouse' && event.button !== 0) {
       return;
     }
-    const {recognizers, consumer} = this.participantsAt(
+    const {recognizers, consumer, consumerElement} = this.participantsAt(
       event.target,
       event.pointerType,
     );
@@ -1171,9 +1761,6 @@ export class GestureHost {
     }
     const id = this.nextId++;
     this.pointerIds.set(event.pointerId, id);
-    if (event.pointerType !== 'mouse') {
-      this.holdSelection(id, recognizers);
-    }
     this.arena.began([
       {
         id,
@@ -1185,8 +1772,18 @@ export class GestureHost {
         scroll: createNativeScrollProbe(event.target),
         recognizers,
         consumer,
+        ...(this.isCoarse ? {} : {isFeedbackOnly: true}),
       },
     ]);
+    if (locksSelectionFor(event.pointerType, this.doc.defaultView)) {
+      this.lockSelection(
+        id,
+        this.arena.participantsOf(id),
+        event.target,
+        this.arena.consumerOf(id) ?? null,
+        consumerElement,
+      );
+    }
   };
 
   private readonly onPointerMove = (event: PointerEvent): void => {
@@ -1235,7 +1832,7 @@ export class GestureHost {
       return;
     }
     this.pointerIds.delete(event.pointerId);
-    this.releaseSelection(id);
+    this.unlockSelection(id);
     const dispositions = this.arena.ended([
       {id, x: event.clientX, y: event.clientY, time: eventTime(event)},
     ]);
@@ -1259,7 +1856,7 @@ export class GestureHost {
     const id = this.pointerIds.get(event.pointerId);
     if (id != null) {
       this.pointerIds.delete(event.pointerId);
-      this.releaseSelection(id);
+      this.unlockSelection(id);
       this.arena.cancelled([id], eventTime(event));
     }
   };
@@ -1347,7 +1944,7 @@ export class GestureHost {
 
   private armSwallower(): void {
     this.swallowDeadline =
-      browserClock.now() + UIKIT_GESTURES.click.strayClickWindow.value;
+      browserClock.now() + UIKIT_CLICK.strayClickWindow.value;
   }
 
   private disarmSwallower(): void {
@@ -1431,12 +2028,32 @@ export class GestureHost {
     if (!(scroller instanceof Node) || this.ownedScrolls.has(scroller)) {
       return;
     }
+    // A watched scroller's scroll is a finger's from a scroll while a finger
+    // that landed inside it is down until its own scrollend.
+    this.endedWhileDown.delete(scroller);
+    if (
+      this.scrollWatchers.has(scroller) &&
+      !this.fingerScrollers.has(scroller) &&
+      this.isFingerDownIn(scroller)
+    ) {
+      this.fingerScrollers.add(scroller);
+    }
+    if (this.fingerScrollers.has(scroller) && !this.hasScrollEnd()) {
+      this.clearScrollEndFallback(scroller);
+      this.scrollEndFallbacks.set(
+        scroller,
+        setTimeout(() => {
+          this.scrollEndFallbacks.delete(scroller);
+          this.endFingerScroll(scroller);
+        }, SCROLL_END_FALLBACK_MS),
+      );
+    }
     // A scroll is a finger's only if that finger was inside this scroller,
     // recently; anything else is the program moving something.
     const last = this.lastTouch;
     if (
       last != null &&
-      time - last.time < UIKIT_GESTURES.press.momentumMemory.value &&
+      time - last.time < UIKIT_PRESS.momentumMemory.value &&
       scroller.contains(last.target)
     ) {
       this.lastScroll = {scroller, time};
@@ -1452,7 +2069,17 @@ export class GestureHost {
       ) {
         continue;
       }
-      if (touch.target instanceof Node && scroller.contains(touch.target)) {
+      if (
+        touch.target instanceof Node &&
+        scroller.contains(touch.target) &&
+        // Only a pan this finger drove takes the touch: the browser starts
+        // one only once the finger has travelled its slop. A scroll under a
+        // finger that has not (scrollIntoView, a transcript pinned to its
+        // end, scroll anchoring) is the page's own: the touch, and the click
+        // it earns, stay where they are.
+        Math.hypot(touch.x - touch.startX, touch.y - touch.startY) >=
+          UIKIT_PRESS.slop.value
+      ) {
         taken.push(touch.id);
       }
     }
@@ -1460,6 +2087,88 @@ export class GestureHost {
       this.arena.browserTookOver(taken, time);
     }
   };
+
+  private noteFingersDown(event: TouchEvent): void {
+    const fingers: Node[] = [];
+    for (const touch of touchesOf(event.touches)) {
+      if ((touch as StylusTouch).touchType !== 'stylus') {
+        if (touch.target instanceof Node) {
+          fingers.push(touch.target);
+        }
+      }
+    }
+    this.fingerTargets = fingers;
+    // A scroll that ended while its finger rested ends with the lift.
+    for (const scroller of this.endedWhileDown) {
+      if (!this.isFingerDownIn(scroller)) {
+        this.endedWhileDown.delete(scroller);
+        this.fingerScrollers.delete(scroller);
+      }
+    }
+  }
+
+  /**
+   * A second finger landed somewhere (wherever: often on a plain row): a
+   * pan that takes one finger only and has not claimed its touch fails, so
+   * the two fingers stay the browser's pinch (WCAG 1.4.4) instead of the
+   * pan claiming them midway. A drag a recognizer has claimed keeps its
+   * finger: a second finger never cancels or redirects it (`spec:AST-094`
+   * FR10), and no claim is released here.
+   */
+  private failUnclaimedLoneFingerPans(): void {
+    for (const recognizer of [...this.arena.involvedRecognizers]) {
+      if (
+        isPan(recognizer) &&
+        recognizer.state === 'possible' &&
+        recognizer.maximumNumberOfTouches === 1 &&
+        recognizer.trackedTouches.length > 0 &&
+        recognizer.trackedTouches.every(
+          touch =>
+            touch.pointerType === 'touch' && !this.arena.isClaimed(touch.id),
+        )
+      ) {
+        recognizer.cancel();
+      }
+    }
+  }
+
+  private isFingerDownIn(scroller: Node): boolean {
+    return this.fingerTargets.some(target => scroller.contains(target));
+  }
+
+  private readonly onScrollEnd = (event: Event): void => {
+    const scroller = event.target === this.doc ? this.doc : event.target;
+    if (scroller instanceof Node) {
+      this.endFingerScroll(scroller);
+    }
+  };
+
+  /** Whether the browser sends `scrollend`. */
+  private hasScrollEnd(): boolean {
+    const view = this.doc.defaultView;
+    return view != null && 'onscrollend' in view;
+  }
+
+  private clearScrollEndFallback(scroller: Node): void {
+    const timer = this.scrollEndFallbacks.get(scroller);
+    if (timer != null) {
+      clearTimeout(timer);
+      this.scrollEndFallbacks.delete(scroller);
+    }
+  }
+
+  /** A finger-driven scroll stopped: it ends, or at the lift if it rests. */
+  private endFingerScroll(scroller: Node): void {
+    if (!this.fingerScrollers.has(scroller)) {
+      return;
+    }
+    if (this.isFingerDownIn(scroller)) {
+      // The finger still rests there: the scroll is its until the lift.
+      this.endedWhileDown.add(scroller);
+    } else {
+      this.fingerScrollers.delete(scroller);
+    }
+  }
 
   private readonly onVisibilityChange = (): void => {
     if (this.doc.visibilityState === 'hidden') {
@@ -1475,7 +2184,7 @@ export class GestureHost {
   private cancelEverything(time: number): void {
     const ids = [...this.pointerIds.values()];
     for (const id of ids) {
-      this.releaseSelection(id);
+      this.unlockSelection(id);
     }
     for (const identifier of [...this.touchIds.keys()]) {
       const id = this.forgetFinger(identifier);
