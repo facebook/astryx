@@ -1613,13 +1613,16 @@ test('at the trigger each spoke cross-fades into the gradient: UIKit\u2019s two 
   // trigger turn finished.
   const held = await glyph.evaluate(element => {
     const kinds: string[] = [];
+    const spinStarts = new Set<number | null>();
     for (const animation of element.getAnimations({subtree: true})) {
+      const startTime = animation.startTime;
       animation.pause();
       const timing = animation.effect?.getTiming();
       if ((animation.effect as KeyframeEffect).target === element) {
         animation.finish();
         kinds.push('turn');
       } else if (timing?.iterations === Infinity) {
+        spinStarts.add(Number(startTime));
         animation.currentTime = 755;
         kinds.push('spin');
       } else {
@@ -1629,6 +1632,7 @@ test('at the trigger each spoke cross-fades into the gradient: UIKit\u2019s two 
     }
     return {
       kinds,
+      spinStarts: [...spinStarts],
       children: element.children.length,
       copySpokes: element.lastElementChild?.children.length ?? 0,
       color: getComputedStyle(element.firstElementChild as Element)
@@ -1641,6 +1645,8 @@ test('at the trigger each spoke cross-fades into the gradient: UIKit\u2019s two 
   expect(held.copySpokes).toBe(8);
   expect(held.kinds.filter(k => k === 'spin')).toHaveLength(8);
   expect(held.kinds.filter(k => k === 'cross-fade')).toHaveLength(1);
+  // The eight spokes step on one clock.
+  expect(held.spinStarts).toHaveLength(1);
   const shot = await glyph.screenshot();
   const ink = (held.color.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
   const alphas = await page.evaluate(

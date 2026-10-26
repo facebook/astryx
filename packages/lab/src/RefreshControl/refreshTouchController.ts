@@ -203,9 +203,32 @@ function derivative(
 }
 
 /**
- * The refresh control's touch layer. The wiring owns the state and the
- * announcements; this owns everything a finger drives.
+ * One spoke's turn of the spin as Web Animation keyframes on its opacity.
+ * While refreshing, UIKit's replicator turns its instances by one spoke every
+ * eighth of `spinMs`, each instance `spinInstanceAlphaOffset` more opaque
+ * than the one before it (the first at `spinFirstInstanceAlpha`). With eight
+ * spokes at eight angles that is each spoke stepping its own opacity through
+ * the instances that pass it, so every step is drawn at its own angle and
+ * nothing is resampled: spoke p holds instance (p − s) mod 8 at step s. Holds
+ * joined by 0.1 ms ramps under linear timing, never steps(), so every engine
+ * runs them on the compositor. One iteration is one turn.
  */
+function spinKeyframes(spoke: number, turnMs: number): Keyframe[] {
+  const count = refreshControl.indicatorSpokes;
+  const ramp = 0.1 / turnMs;
+  const frames: Keyframe[] = [];
+  for (let step = 0; step < count; step += 1) {
+    const instance = (((spoke - step) % count) + count) % count;
+    const opacity =
+      refreshControl.spinFirstInstanceAlpha +
+      instance * refreshControl.spinInstanceAlphaOffset;
+    // The last hold runs to the turn's end, where the next turn begins.
+    const end = step + 1 < count ? (step + 1) / count - ramp : 1;
+    frames.push({offset: step / count, opacity}, {offset: end, opacity});
+  }
+  return frames;
+}
+
 /**
  * The trigger's cross-fade as Web Animation keyframes on the copy's opacity:
  * 1 − w, w the gradient spring under the element's theme, until it settles
@@ -244,6 +267,10 @@ function crossFadeKeyframes(element: Element): {
   return {frames, durationMs, easing: 'linear'};
 }
 
+/**
+ * The refresh control's touch layer. The wiring owns the state and the
+ * announcements; this owns everything a finger drives.
+ */
 export function useRefreshTouchController({
   isPullEnabled,
   model,
@@ -268,6 +295,8 @@ export function useRefreshTouchController({
   // the transient copy of them that fades out over them at the trigger.
   const spinnerElement = useRef<HTMLElement | null>(null);
   const crossFadeCopy = useRef<HTMLElement | null>(null);
+  // The spokes' turns while the refresh spins, one animation each.
+  const spin = useRef<Animation[]>([]);
   const contentElement = useRef<HTMLElement | null>(null);
   const indicatorElement = useRef<HTMLElement | null>(null);
   // Whether the content holds the refreshing inset (only under a finger).
@@ -383,9 +412,47 @@ export function useRefreshTouchController({
     crossFadeCopy.current = null;
   }, []);
 
-  /** Starts the spokes' own stepping keyframes: the spinning attribute. */
+  /**
+   * Starts the spin, marked by the spinning attribute: each spoke's turn of
+   * the gradient, every one started in this task so they share one clock, a
+   * turn every `refreshControl.spinMs` under the theme. A spin already
+   * running is left as it is.
+   */
   const startStepping = useCallback(() => {
-    indicatorElement.current?.setAttribute(REFRESH_SPINNING_ATTRIBUTE, '');
+    const indicatorNode = indicatorElement.current;
+    if (
+      indicatorNode == null ||
+      indicatorNode.hasAttribute(REFRESH_SPINNING_ATTRIBUTE)
+    ) {
+      return;
+    }
+    indicatorNode.setAttribute(REFRESH_SPINNING_ATTRIBUTE, '');
+    const glyph = spinnerElement.current;
+    if (glyph == null) {
+      return;
+    }
+    const turnMs = resolveMotion(glyph, refreshControl, 'spinMs');
+    spin.current = Array.from(glyph.children)
+      .filter(spoke => spoke !== crossFadeCopy.current)
+      .flatMap((spoke, index) =>
+        typeof spoke.animate === 'function'
+          ? [
+              spoke.animate(spinKeyframes(index, turnMs), {
+                duration: turnMs,
+                iterations: Infinity,
+              }),
+            ]
+          : [],
+      );
+  }, []);
+
+  /** Stops the spin: the spokes show the reveal again. */
+  const stopStepping = useCallback(() => {
+    indicatorElement.current?.removeAttribute(REFRESH_SPINNING_ATTRIBUTE);
+    for (const animation of spin.current) {
+      animation.cancel();
+    }
+    spin.current = [];
   }, []);
 
   /**
@@ -416,8 +483,7 @@ export function useRefreshTouchController({
     copy.style.inset = '0';
     for (const spoke of Array.from(glyph.children)) {
       const spokeCopy = spoke.cloneNode(false) as HTMLElement;
-      // As the pull left it: full alpha, and none of the spinning steps.
-      spokeCopy.style.animationName = 'none';
+      // As the pull left it: full alpha (a clone runs no animation).
       spokeCopy.style.opacity = '1';
       copy.append(spokeCopy);
     }
@@ -442,11 +508,11 @@ export function useRefreshTouchController({
   }, [removeCrossFadeCopy]);
 
   const resetIndicator = useCallback(() => {
-    indicatorElement.current?.removeAttribute(REFRESH_SPINNING_ATTRIBUTE);
+    stopStepping();
     setReveal(0);
     restoreIndicator();
     removeCrossFadeCopy();
-  }, [removeCrossFadeCopy, restoreIndicator, setReveal]);
+  }, [removeCrossFadeCopy, restoreIndicator, setReveal, stopStepping]);
 
   const startSpinning = useCallback(
     (withTurn: boolean) => {
@@ -675,7 +741,7 @@ export function useRefreshTouchController({
       // Under the finger: the release settles back to the top, and the
       // indicator retracts with it.
       pull.current.floor = 0;
-      indicatorElement.current?.removeAttribute(REFRESH_SPINNING_ATTRIBUTE);
+      stopStepping();
       removeCrossFadeCopy();
       return;
     }
@@ -753,6 +819,7 @@ export function useRefreshTouchController({
     resolveOwner,
     removeCrossFadeCopy,
     stopPlacing,
+    stopStepping,
     title.animator,
     turn.animator,
   ]);

@@ -199,7 +199,7 @@ async function flush(): Promise<void> {
   });
 }
 
-/** The indicator, whose spinning attribute starts the spokes' steps. */
+/** The indicator, marked with the spinning attribute while the spokes step. */
 function indicator(): HTMLElement {
   return screen.getAllByTestId('spoke')[0].parentElement
     ?.parentElement as HTMLElement;
@@ -964,15 +964,20 @@ describe('useRefreshControl', () => {
     expect(indicator()).toHaveAttribute('data-refresh-spinning');
     await flush();
     // One transient copy, holding a copy of each spoke as the pull left it:
-    // full alpha, none of the spinning steps.
+    // full alpha, and none of the spinning steps.
     expect(seen.added).toHaveLength(1);
     const [copy] = seen.added;
     expect(copy.children).toHaveLength(refreshControl.indicatorSpokes);
     for (const spoke of Array.from(copy.children) as HTMLElement[]) {
-      expect(spoke.style.animationName).toBe('none');
       expect(spoke.style.opacity).toBe('1');
       expect(spoke.childNodes).toHaveLength(0);
+      expect(played.filter(p => p.element === spoke)).toEqual([]);
     }
+    // Each spoke steps on its own animation, a turn per iteration.
+    const steps = played.filter(p => p.options.iterations === Infinity);
+    expect(steps.map(p => p.element)).toEqual(
+      screen.getAllByTestId('spoke').filter(spoke => !copy.contains(spoke)),
+    );
     // Its one animation: 1 − w on the gradient spring until it settles, held
     // at 0 until the copy is removed.
     const fades = played.filter(p => p.element === copy);
@@ -1012,6 +1017,9 @@ describe('useRefreshControl', () => {
     await waitFor(() =>
       expect(indicator()).not.toHaveAttribute('data-refresh-spinning'),
     );
+    for (const step of steps) {
+      expect(step.animation.cancel).toHaveBeenCalled();
+    }
   });
 
   it('under Reduce Motion fades the copy in the shared 200 ms fade, the spokes stepping from the trigger', async () => {
@@ -1048,7 +1056,7 @@ describe('useRefreshControl', () => {
     expect(seen.removed).toEqual(seen.added);
   });
 
-  it('without Web Animations steps at once and leaves no copy', async () => {
+  it('without Web Animations marks the spin and leaves no copy', async () => {
     render(
       <SpokedRefreshable onRefresh={() => new Promise<void>(() => {})}>
         <p>Inbox</p>
@@ -1063,6 +1071,7 @@ describe('useRefreshControl', () => {
   });
 
   it('shows the gradient at once for a refresh begun without a pull', async () => {
+    const played = recordAnimations();
     render(
       <SpokedRefreshable onRefresh={() => new Promise<void>(() => {})}>
         <p>Inbox</p>
@@ -1073,8 +1082,9 @@ describe('useRefreshControl', () => {
       screen.getByRole('button', {name: 'Refresh'}).click();
     });
     expect(content()).toHaveAttribute('aria-busy', 'true');
-    // The stepping keyframes, with no cross-fade.
+    // Every spoke steps at once, with no cross-fade.
     expect(indicator()).toHaveAttribute('data-refresh-spinning');
+    expect(played.map(p => p.element)).toEqual(screen.getAllByTestId('spoke'));
     await flush();
     expect(seen.added).toEqual([]);
   });
@@ -1087,13 +1097,19 @@ describe('useRefreshControl', () => {
         </SpokedRefreshable>
       );
     }
+    const played = recordAnimations();
     const {rerender} = render(<Controlled isRefreshing={false} />);
     // A pull past the trigger, the finger still down.
     pull(content(), [30, 30, 30, 30], false);
     rerender(<Controlled isRefreshing />);
     expect(indicator()).toHaveAttribute('data-refresh-spinning');
+    const steps = played.filter(p => p.options.iterations === Infinity);
+    const running = () =>
+      steps.filter(p => vi.mocked(p.animation.cancel).mock.calls.length === 0);
+    expect(running()).toHaveLength(refreshControl.indicatorSpokes);
     rerender(<Controlled isRefreshing={false} />);
     expect(indicator()).not.toHaveAttribute('data-refresh-spinning');
+    expect(running()).toEqual([]);
     await flush();
     expect(screen.getAllByTestId('spoke')).toHaveLength(
       refreshControl.indicatorSpokes,

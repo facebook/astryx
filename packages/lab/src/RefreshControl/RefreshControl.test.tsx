@@ -209,40 +209,32 @@ describe('RefreshControl indicator: UIRefreshControl\u2019s replicator', () => {
         }
       })
       .join('\n');
-  /** The whole `@keyframes <name> { … }` rule, braces matched. */
-  const keyframesRule = (name: string): string => {
-    const css = allCss();
-    const start = css.search(new RegExp(`@keyframes ${name}\\b`, 'i'));
-    expect(start).toBeGreaterThanOrEqual(0);
-    let depth = 0;
-    for (let i = css.indexOf('{', start); i < css.length; i += 1) {
-      if (css[i] === '{') {
-        depth += 1;
-      }
-      if (css[i] === '}' && --depth === 0) {
-        return css.slice(start, i + 1);
-      }
-    }
-    return css.slice(start);
-  };
   /**
-   * The named keyframes' opacity frames as [offset 0..1, opacity], sorted
-   * (a keyframe may list several offsets).
+   * Records the Web Animations elements start from now on (jsdom implements
+   * none), for the test that calls it.
    */
-  const opacityFrames = (name: string): [number, number][] =>
-    Array.from(
-      keyframesRule(name).matchAll(/([\d.%,\s]+)\{\s*opacity:\s*([\d.]+)/g),
-    )
-      .flatMap(m =>
-        m[1]
-          .split(',')
-          .map(key => key.trim())
-          .filter(key => key.endsWith('%'))
-          .map(
-            key => [parseFloat(key) / 100, Number(m[2])] as [number, number],
-          ),
-      )
-      .sort((a, b) => a[0] - b[0]);
+  const recordAnimations = () => {
+    const played: {
+      element: Element;
+      keyframes: Keyframe[];
+      options: KeyframeAnimationOptions;
+    }[] = [];
+    Object.defineProperty(HTMLElement.prototype, 'animate', {
+      configurable: true,
+      value(
+        this: Element,
+        keyframes: Keyframe[],
+        options: KeyframeAnimationOptions,
+      ) {
+        played.push({element: this, keyframes, options});
+        return {onfinish: null, cancel: vi.fn()} as unknown as Animation;
+      },
+    });
+    onTestFinished(() => {
+      Reflect.deleteProperty(HTMLElement.prototype, 'animate');
+    });
+    return played;
+  };
   const animationNameOf = (el: Element) => {
     const css = allCss();
     for (const cls of Array.from(el.classList)) {
@@ -312,20 +304,39 @@ describe('RefreshControl indicator: UIRefreshControl\u2019s replicator', () => {
   });
 
   it('steps each spoke through the instances that pass it, all on one clock', () => {
+    // Under a finger, where the hook spins the drawing.
+    const matchMedia = window.matchMedia;
+    useTouchScreen(true);
+    onTestFinished(() => {
+      window.matchMedia = matchMedia;
+    });
+    const played = recordAnimations();
+    // A refresh begun without a pull: the spin at once, with no cross-fade.
     render(
-      <RefreshControl onRefresh={() => {}}>
+      <RefreshControl onRefresh={() => {}} isRefreshing>
         <div>Row</div>
       </RefreshControl>,
     );
-    const spokes = Array.from(glyphOf().children) as HTMLElement[];
+    const glyph = glyphOf();
+    const spokes = Array.from(glyph.children) as HTMLElement[];
     const count = table.indicatorSpokes;
-    const steps = count * 8;
     expect(spokes).toHaveLength(count);
+    expect(glyph.parentElement).toHaveAttribute('data-refresh-spinning');
+    // One Web Animation per spoke, all started in one task (one clock), and
+    // nothing in the stylesheet.
+    expect(played.map(run => run.element)).toEqual(spokes);
     spokes.forEach((spoke, p) => {
-      // No delay: every spoke's phase is in its keyframes, so they share one
-      // iteration boundary.
-      expect(spoke.style.animationDelay).toBe('');
-      const frames = opacityFrames(animationNameOf(spoke));
+      expect(animationNameOf(spoke)).toBe('');
+      const [{keyframes, options}] = played.filter(
+        run => run.element === spoke,
+      );
+      // One turn per iteration, forever, linear: the `refreshControl.spinMs`
+      // motion role, the table's value without a theme.
+      expect(options).toEqual({duration: table.spinMs, iterations: Infinity});
+      expect(keyframes.every(frame => frame.easing === undefined)).toBe(true);
+      const frames = keyframes.map(
+        frame => [Number(frame.offset), Number(frame.opacity)] as const,
+      );
       expect(frames[0][0]).toBe(0);
       expect(frames.at(-1)?.[0]).toBe(1);
       const holdAt = (x: number) => {
@@ -336,36 +347,27 @@ describe('RefreshControl indicator: UIRefreshControl\u2019s replicator', () => {
         }
         return NaN;
       };
-      for (let step = 0; step < steps; step += 1) {
+      for (let step = 0; step < count; step += 1) {
         // Spoke p holds instance (p − s) mod 8 at step s, so the brightest
         // instance moves one spoke clockwise per step.
         const instance = (((p - step) % count) + count) % count;
         expect(
-          holdAt((step + 0.5) / steps),
+          holdAt((step + 0.5) / count),
           `spoke ${p} step ${step}`,
         ).toBeCloseTo(
           table.spinFirstInstanceAlpha +
             instance * table.spinInstanceAlphaOffset,
           6,
         );
+        // Each hold ends 0.1 ms before the next begins: a ramp, not steps().
+        if (step > 0) {
+          const next = frames.findIndex(([offset]) => offset === step / count);
+          expect(
+            (frames[next][0] - frames[next - 1][0]) * table.spinMs,
+          ).toBeCloseTo(0.1, 6);
+        }
       }
     });
-    const css = allCss();
-    expect(css).not.toMatch(/steps\(/);
-    // Eight turns per iteration: eight times the `refreshControl.spinMs`
-    // motion role's variable, whose fallback is the table's value.
-    const durations = Array.from(
-      css.matchAll(
-        /animation-duration:\s*calc\(8\s*\*\s*var\((--[\w-]+),\s*([\d.]+)(m?s)\)\)/g,
-      ),
-    );
-    expect(
-      durations.some(
-        ([, variable, value, unit]) =>
-          variable === '--motion-refresh-control-spin-ms' &&
-          Number(value) * (unit === 's' ? 1000 : 1) === table.spinMs,
-      ),
-    ).toBe(true);
   });
 
   it('cross-fades each spoke on the hook\u2019s gradient spring at the trigger', () => {
@@ -375,6 +377,7 @@ describe('RefreshControl indicator: UIRefreshControl\u2019s replicator', () => {
     onTestFinished(() => {
       window.matchMedia = matchMedia;
     });
+    const played = recordAnimations();
     const {rerender} = render(
       <RefreshControl onRefresh={() => {}} isRefreshing={false}>
         <div>Row</div>
@@ -389,16 +392,16 @@ describe('RefreshControl indicator: UIRefreshControl\u2019s replicator', () => {
     // transient copy of them out on the gradient spring under the theme, so a
     // theme that retunes the spring retunes it.
     const spokes = Array.from(glyph.children) as HTMLElement[];
-    for (const spoke of spokes) {
-      expect(spoke.style.animationName).toBe('');
-    }
-    // A refresh begun without a pull hands the gradient over at once: the
-    // spinning attribute starts every spoke's steps, with no cross-fade.
+    expect(played).toEqual([]);
+    // A refresh begun without a pull hands the gradient over at once: every
+    // spoke steps, with no cross-fade.
     rerender(
       <RefreshControl onRefresh={() => {}} isRefreshing>
         <div>Row</div>
       </RefreshControl>,
     );
     expect(glyph.parentElement).toHaveAttribute('data-refresh-spinning');
+    expect(played.map(run => run.element)).toEqual(spokes);
+    expect(glyph.children).toHaveLength(spokes.length);
   });
 });
