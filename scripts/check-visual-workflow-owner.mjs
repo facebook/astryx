@@ -25,6 +25,11 @@ const VISUAL_COMMAND = [
   /\b(?:toHaveScreenshot|toMatchImageSnapshot|pixelmatch|compareCaptures)\s*\(/,
   /\bvisual[-_ ]regression\b/i,
 ];
+// actions/upload-artifact, directly or through the repository's retried
+// wrapper (.github/actions/upload-artifact). Its merge sub-action produces no
+// new artifact content.
+const UPLOAD_ARTIFACT =
+  /^(?:actions\/upload-artifact@|\.\/\.github\/actions\/upload-artifact\/?$)/;
 const VISUAL_ARTIFACT =
   /^(?:visual-(?:pr-report|capture|report|baseline)|.*visual[-_]regression)(?:$|[-_*])/i;
 
@@ -75,7 +80,7 @@ export function findVisualOwners(workflows, scripts = {}) {
       ].filter(value => typeof value === 'string');
       const artifactProducer = steps.some(
         step =>
-          /^actions\/upload-artifact@/.test(step.uses ?? '') &&
+          UPLOAD_ARTIFACT.test(step.uses ?? '') &&
           strings([step.with?.name, step.with?.path]).some(value =>
             value.split(/[\s/]+/).some(part => VISUAL_ARTIFACT.test(part)),
           ),

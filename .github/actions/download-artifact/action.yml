@@ -1,0 +1,62 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+name: 'Download artifact, retried'
+description: >-
+  actions/download-artifact, run again when an attempt fails. Its client
+  throws at once on a network error talking to the artifact service
+  (ECONNRESET, ETIMEDOUT and the like) instead of retrying, and one such reset
+  fails the pull-request job that joins on the artifact. Three attempts; when
+  all three fail, the step fails with the last attempt's error. A retry
+  extracts over whatever a failed attempt left. Requires actions/checkout to
+  have run first — the composite action itself is read from the checked-out
+  tree.
+
+inputs:
+  name:
+    description: 'Artifact name; empty downloads every artifact `pattern` matches, or all of them.'
+    required: false
+    default: ''
+  path:
+    description: 'Destination directory; empty is the workspace.'
+    required: false
+    default: ''
+  pattern:
+    description: 'Glob of artifact names to download, when `name` is empty.'
+    required: false
+    default: ''
+  merge-multiple:
+    description: 'Extract every matched artifact into the same directory.'
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - id: first
+      continue-on-error: true
+      uses: actions/download-artifact@v8
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+        pattern: ${{ inputs.pattern }}
+        merge-multiple: ${{ inputs.merge-multiple }}
+
+    - id: second
+      if: steps.first.outcome == 'failure'
+      continue-on-error: true
+      uses: actions/download-artifact@v8
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+        pattern: ${{ inputs.pattern }}
+        merge-multiple: ${{ inputs.merge-multiple }}
+
+    # The last attempt carries no continue-on-error: its failure, with its own
+    # error, fails the step.
+    - if: steps.second.outcome == 'failure'
+      uses: actions/download-artifact@v8
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+        pattern: ${{ inputs.pattern }}
+        merge-multiple: ${{ inputs.merge-multiple }}

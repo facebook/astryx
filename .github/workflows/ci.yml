@@ -275,7 +275,7 @@ jobs:
             packages/cli/assets/codemods/__tests__/registry.test.mjs
 
       - name: Upload exact-head release bump receipt
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: release-bump-receipt-${{ github.event.pull_request.head.sha }}
           path: release-bump-receipt.json
@@ -500,7 +500,7 @@ jobs:
 
       - name: Upload docsite browser evidence
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: docsite-browser-evidence
           path: test-results/docsite/
@@ -1022,7 +1022,7 @@ jobs:
 
       - name: Upload Storybook artifact
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && (github.event_name == 'pull_request' || inputs.operation == 'release-check')
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: storybook-${{ steps.release.outputs.short_hash || steps.urls.outputs.short_hash }}
           path: apps/storybook/dist/
@@ -1041,7 +1041,7 @@ jobs:
       # (packages/) — the download below unpacks it there.
       - name: Upload built themes and core
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && (github.event_name == 'pull_request' || inputs.operation == 'release-check')
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: dists-${{ steps.release.outputs.short_hash || steps.urls.outputs.short_hash }}
           path: |
@@ -1078,7 +1078,7 @@ jobs:
 
       - name: Upload analysis artifact
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true' && (github.event_name == 'pull_request' || inputs.operation == 'release-check')
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: pr-analysis
           path: |
@@ -1162,7 +1162,7 @@ jobs:
 
       - name: Upload base size stats
         if: steps.merge-base.outputs.found == 'true'
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: pr-size-base
           path: size-base.json
@@ -1298,7 +1298,7 @@ jobs:
         run: rm -rf apps/sandbox/out/template-assets
 
       - name: Upload Sandbox artifact
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: sandbox-${{ steps.urls.outputs.short_hash }}
           path: apps/sandbox/out/
@@ -1365,7 +1365,7 @@ jobs:
           install: 'false'
 
       - name: Download Storybook artifact
-        uses: actions/download-artifact@v8
+        uses: ./.github/actions/download-artifact
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
@@ -1382,7 +1382,7 @@ jobs:
             --shard-output "a11y-shard-${{ matrix.shard }}.json"
 
       - name: Upload accessibility audit shard
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: a11y-shard-${{ needs.build-storybook.outputs.short_hash }}-${{ matrix.shard }}
           path: a11y-shard-${{ matrix.shard }}.json
@@ -1415,13 +1415,13 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Download Storybook artifact
-        uses: actions/download-artifact@v8
+        uses: ./.github/actions/download-artifact
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
 
       - name: Download accessibility audit shards
-        uses: actions/download-artifact@v8
+        uses: ./.github/actions/download-artifact
         with:
           pattern: a11y-shard-${{ needs.build-storybook.outputs.short_hash }}-*
           path: a11y-shards
@@ -1440,7 +1440,7 @@ jobs:
 
       - name: Upload a11y artifact
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: a11y-report
           path: a11y-report.json
@@ -1473,12 +1473,12 @@ jobs:
           install: 'false'
 
       - name: Download analysis artifact
-        uses: actions/download-artifact@v8
+        uses: ./.github/actions/download-artifact
         with:
           name: pr-analysis
 
       - name: Download Storybook artifact
-        uses: actions/download-artifact@v8
+        uses: ./.github/actions/download-artifact
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
@@ -1514,7 +1514,7 @@ jobs:
       # still exists when the gate above fails.
       - name: Upload a11y artifact
         if: always() && github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: a11y-report
           path: a11y-report.json
@@ -1576,7 +1576,7 @@ jobs:
       # test-results/ or a top-level *-audit-evidence/ folder.
       - name: Upload browser accessibility evidence
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: pr-a11y-evidence-${{ needs.build-storybook.outputs.short_hash }}
           path: |
@@ -1616,7 +1616,7 @@ jobs:
           install: 'false'
 
       - name: Download Storybook artifact
-        uses: actions/download-artifact@v8
+        uses: ./.github/actions/download-artifact
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
@@ -1644,7 +1644,7 @@ jobs:
 
       - name: Upload pressed-state pixel evidence
         if: always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: pressed-state-evidence-${{ needs.build-storybook.outputs.short_hash }}-${{ matrix.shard }}
           path: test-results/pressed-state-evidence/
@@ -1660,7 +1660,7 @@ jobs:
       # same exact head as every other check in this job.
       - name: Upload component-audit browser evidence
         if: always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: component-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}-${{ matrix.shard }}
           path: test-results/chat-layout-audit-evidence/
@@ -1832,7 +1832,7 @@ jobs:
 
       - name: Download Storybook artifact
         if: needs.interaction-scope.outputs.applies == 'true'
-        uses: actions/download-artifact@v8
+        uses: ./.github/actions/download-artifact
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
@@ -1852,7 +1852,7 @@ jobs:
       # Storyboards (PNG contact sheets) and curve traces, for review.
       - name: Upload interaction evidence
         if: always() && needs.interaction-scope.outputs.applies == 'true'
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: interaction-evidence
           path: test-results/interaction-evidence
@@ -1948,7 +1948,7 @@ jobs:
           install: 'false'
 
       - name: Download Storybook artifact
-        uses: actions/download-artifact@v8
+        uses: ./.github/actions/download-artifact
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
@@ -1957,7 +1957,7 @@ jobs:
       # at this commit. If it is missing, the gate builds Core and the themes.
       - name: Download built themes and core
         continue-on-error: true
-        uses: actions/download-artifact@v8
+        uses: ./.github/actions/download-artifact
         with:
           name: dists-${{ needs.build-storybook.outputs.short_hash }}
           path: packages
@@ -1975,7 +1975,7 @@ jobs:
             --observations-out ".visual-scout/observations-${{ matrix.shard }}.json"
 
       - name: Upload scout shard
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: visual-scout-${{ needs.build-storybook.outputs.short_hash }}-${{ matrix.shard }}
           path: .visual-scout/observations-${{ matrix.shard }}.json
@@ -2017,13 +2017,13 @@ jobs:
 
       - name: Download analysis artifact
         if: github.event_name == 'pull_request'
-        uses: actions/download-artifact@v8
+        uses: ./.github/actions/download-artifact
         with:
           name: pr-analysis
 
       - name: Download Storybook artifact
         if: github.event_name == 'pull_request' || inputs.operation == 'release-check'
-        uses: actions/download-artifact@v8
+        uses: ./.github/actions/download-artifact
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
@@ -2033,7 +2033,7 @@ jobs:
       - name: Download built themes and core
         if: github.event_name == 'pull_request' || inputs.operation == 'release-check'
         continue-on-error: true
-        uses: actions/download-artifact@v8
+        uses: ./.github/actions/download-artifact
         with:
           name: dists-${{ needs.build-storybook.outputs.short_hash }}
           path: packages
@@ -2042,7 +2042,7 @@ jobs:
       # without any it scouts inline as before.
       - name: Download scout shards
         if: (github.event_name == 'pull_request' || inputs.operation == 'release-check') && needs.visual-scout.result == 'success'
-        uses: actions/download-artifact@v8
+        uses: ./.github/actions/download-artifact
         with:
           pattern: visual-scout-${{ needs.build-storybook.outputs.short_hash }}-*
           path: .visual-scout
@@ -2128,7 +2128,7 @@ jobs:
 
       - name: Upload visual verdict and report
         if: always() && github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: visual-pr-report
           path: |
@@ -2164,7 +2164,7 @@ jobs:
 
       - name: Upload release visual verdict and report
         if: always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: visual-release-report
           path: |
@@ -2213,7 +2213,7 @@ jobs:
 
       - name: Upload canonical baseline candidate
         if: always() && steps.maintenance-validation.outcome == 'success'
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: visual-baseline-capture-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -2289,12 +2289,12 @@ jobs:
           install: 'false'
 
       - name: Download analysis artifact
-        uses: actions/download-artifact@v8
+        uses: ./.github/actions/download-artifact
         with:
           name: pr-analysis
 
       - name: Download Storybook artifact
-        uses: actions/download-artifact@v8
+        uses: ./.github/actions/download-artifact
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
@@ -2387,7 +2387,7 @@ jobs:
 
       - name: Upload RTL shard evidence
         if: always() && matrix.parts == 1
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: rtl-audit-report-${{ matrix.package }}
           path: |
@@ -2398,7 +2398,7 @@ jobs:
 
       - name: Upload RTL part
         if: always() && matrix.parts > 1
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: rtl-audit-part-${{ matrix.package }}-${{ matrix.part }}
           path: |
@@ -2435,13 +2435,13 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Download Storybook artifact
-        uses: actions/download-artifact@v8
+        uses: ./.github/actions/download-artifact
         with:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
 
       - name: Download Core RTL parts
-        uses: actions/download-artifact@v8
+        uses: ./.github/actions/download-artifact
         with:
           pattern: rtl-audit-part-core-*
           path: rtl-parts
@@ -2492,7 +2492,7 @@ jobs:
 
       - name: Upload RTL shard evidence
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: ./.github/actions/upload-artifact
         with:
           name: rtl-audit-report-core
           path: |
@@ -2513,7 +2513,7 @@ jobs:
       - name: Download applicable RTL shard reports
         if: ${{ needs.check-components.result == 'success' && (needs.check-components.outputs.has_rtl_components == 'true' || needs.check-components.outputs.has_rtl_harness == 'true' || needs.check-components.outputs.force_full_component_audits == 'true') }}
         continue-on-error: true
-        uses: actions/download-artifact@v8
+        uses: ./.github/actions/download-artifact
         with:
           pattern: rtl-audit-report-*
           path: rtl-shard-reports

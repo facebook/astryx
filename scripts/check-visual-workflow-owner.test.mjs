@@ -126,6 +126,22 @@ describe('single visual workflow owner', () => {
     ).toHaveLength(1);
   });
 
+  it.each(['visual-capture', 'visual-pr-report'])(
+    'rejects a second producer of %s through the retried upload action',
+    name => {
+      expect(
+        owners({
+          steps: [
+            {
+              uses: './.github/actions/upload-artifact',
+              with: {name, path: 'result'},
+            },
+          ],
+        }),
+      ).toHaveLength(1);
+    },
+  );
+
   it('rejects a separately named visual owner and a second canonical-workflow job', () => {
     expect(
       owners({name: 'Visual regression', steps: [{run: 'node custom.mjs'}]}),

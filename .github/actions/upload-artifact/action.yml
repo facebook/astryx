@@ -1,0 +1,64 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+name: 'Upload artifact, retried'
+description: >-
+  actions/upload-artifact, run again when an attempt fails. Its client throws
+  at once on a network error talking to the artifact service (ECONNRESET,
+  ETIMEDOUT and the like) instead of retrying, and one such reset fails every
+  pull-request job that joins on the artifact. Three attempts; when all three
+  fail, the step fails with the last attempt's error. Requires
+  actions/checkout to have run first — the composite action itself is read
+  from the checked-out tree.
+
+inputs:
+  name:
+    description: 'Artifact name.'
+    required: false
+    default: 'artifact'
+  path:
+    description: 'Files, directories or wildcard patterns to upload.'
+    required: true
+  if-no-files-found:
+    description: '`warn`, `error` or `ignore` when the path matches no file.'
+    required: false
+    default: 'warn'
+  retention-days:
+    description: 'Days before the artifact expires; 0 keeps the repository default.'
+    required: false
+    default: '0'
+
+runs:
+  using: composite
+  steps:
+    - id: first
+      continue-on-error: true
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+        if-no-files-found: ${{ inputs.if-no-files-found }}
+        retention-days: ${{ inputs.retention-days }}
+
+    # A failed attempt may have created the artifact before the connection
+    # dropped, so a retry replaces it.
+    - id: second
+      if: steps.first.outcome == 'failure'
+      continue-on-error: true
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+        if-no-files-found: ${{ inputs.if-no-files-found }}
+        retention-days: ${{ inputs.retention-days }}
+        overwrite: true
+
+    # The last attempt carries no continue-on-error: its failure, with its own
+    # error, fails the step.
+    - if: steps.second.outcome == 'failure'
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+        if-no-files-found: ${{ inputs.if-no-files-found }}
+        retention-days: ${{ inputs.retention-days }}
+        overwrite: true
