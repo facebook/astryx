@@ -695,7 +695,7 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     // main-thread fade), and the lift and travel are the animator's.
     const css = held.filter(a => a.kind === 'CSSAnimation');
     expect(
-      css.map(a => a.target.split('.')[1]).sort(),
+      css.map(a => (a.target ?? '').split('.')[1]).sort(),
       JSON.stringify(held),
     ).toEqual(['astryx-switch', 'astryx-switch-thumb']);
     for (const animation of css) {
