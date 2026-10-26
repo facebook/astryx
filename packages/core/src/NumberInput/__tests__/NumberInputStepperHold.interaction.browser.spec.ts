@@ -796,6 +796,42 @@ test(
       new Storyboard(page, {name, clip, columns: 6, cellScale: 1});
     const shoot = async (b: Storyboard, label: string, t: number) =>
       b.capture(label, t, {value: await value(), paint: await paint()});
+    /** Starts one take's clock on the page: the moment of its first touch. */
+    const armTouchClock = async () =>
+      page.evaluate(() => {
+        const take = window as unknown as {takeDown?: number | null};
+        take.takeDown = null;
+        document.addEventListener(
+          'touchstart',
+          () => {
+            take.takeDown ??= performance.now();
+          },
+          {capture: true, passive: true},
+        );
+      });
+    /**
+     * Waits on the page's own clock until `at` ms after the take's first
+     * touch, so the host's load cannot move a moment onto the next step.
+     */
+    const untilPage = async (at: number) =>
+      page.evaluate(
+        async after =>
+          new Promise<void>(resolve => {
+            const take = window as unknown as {takeDown?: number | null};
+            const tick = () => {
+              if (
+                take.takeDown != null &&
+                performance.now() - take.takeDown >= after
+              ) {
+                resolve();
+              } else {
+                requestAnimationFrame(tick);
+              }
+            };
+            tick();
+          }),
+        at,
+      );
     /** Plays `script` and photographs the field at each of `moments` (ms). */
     async function filmed(
       b: Storyboard,
@@ -804,10 +840,10 @@ test(
       moments: [number, string][],
     ) {
       await shoot(b, 'before', -1);
-      const started = Date.now();
+      await armTouchClock();
       const playing = driver.play(script);
       for (const [at, label] of moments) {
-        await page.waitForTimeout(Math.max(0, at - (Date.now() - started)));
+        await untilPage(at);
         await shoot(b, label, at);
       }
       await playing;
