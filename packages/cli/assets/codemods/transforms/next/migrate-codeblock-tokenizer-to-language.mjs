@@ -108,6 +108,7 @@ function staticString(node) {
  * A name, or a property chain on one with no call and no computed key other
  * than a literal: safe to read twice, and narrowed by a `?:` guard.
  * @param {any} node
+ * @returns {boolean}
  */
 function isCallFreeChain(node) {
   const value = unwrap(node);
