@@ -2,8 +2,9 @@
 
 /**
  * @file pressFeedback.ts
- * @input The press state machine (pressGesture.ts) and the document's pointer,
- *   scroll and visibility events
+ * @input The press state machine (pressGesture.ts), the document's pointer,
+ *   scroll and visibility events, and the release clock's theme motion role
+ *   variable (interactionOverlay.stylex.ts)
  * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, pressableProps, the
  *   list row's press profile (CELL_PRESS_PROFILE, cellPressableProps),
  *   installPressFeedback and subscribePressPaint
@@ -40,6 +41,7 @@
  * utils/interactionOverlay.stylex.ts and pressFeedback.test.ts.
  */
 
+import {pressReleaseRoles} from './interactionOverlay.stylex';
 import type {PressGesture, PressPaint, PressStep} from './pressGesture';
 import {
   idlePressGesture,
@@ -124,6 +126,32 @@ const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
   flash: PRESS_FLASH_MS,
   onset: PRESS_ONSET_MS,
 };
+
+/**
+ * How long a timer runs on `element`. The release's clock is the theme motion
+ * role `timing.press.highlightOutMs` (`spec:AST-094` FR4), read off the
+ * element's role variable when the release starts: the variable the
+ * stylesheet's release plays (interactionOverlay.stylex.ts), so a theme that
+ * retunes it moves both and the attribute never leaves before the fade ends.
+ * Read directly, not through the motion table, so a pressable component
+ * carries no table (`architecture:component-style-authoring` INV6).
+ */
+function timerMs(
+  kind: NonNullable<PressStep['timer']>,
+  element: Element,
+): number {
+  if (kind !== 'fade') {
+    return TIMER_MS[kind];
+  }
+  const value = element.ownerDocument.defaultView
+    ?.getComputedStyle(element)
+    .getPropertyValue(pressReleaseRoles.duration)
+    .trim();
+  const match = value == null ? null : /^([\d.]+)(ms|s)$/.exec(value);
+  return match == null
+    ? TIMER_MS.fade
+    : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
+}
 
 const TIMER_EVENT = {
   fade: 'fadeEnd',
@@ -248,16 +276,19 @@ function apply(step: PressStep): void {
     // A TIMER, never `requestAnimationFrame`: iOS throttles frame callbacks
     // while a scroll runs, so a frame-based delay would fire late, after the
     // scroll, and paint a control nobody is pressing any more.
-    live.timer = setTimeout(() => {
-      if (live != null) {
-        live.timer = null;
-      }
-      apply(
-        pressGestureStep(live?.gesture ?? idlePressGesture(), {
-          kind: TIMER_EVENT[kind],
-        }),
-      );
-    }, TIMER_MS[kind]);
+    live.timer = setTimeout(
+      () => {
+        if (live != null) {
+          live.timer = null;
+        }
+        apply(
+          pressGestureStep(live?.gesture ?? idlePressGesture(), {
+            kind: TIMER_EVENT[kind],
+          }),
+        );
+      },
+      timerMs(kind, live.element),
+    );
   }
 }
 
