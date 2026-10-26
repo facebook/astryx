@@ -11,7 +11,8 @@
  *   transform/opacity at each t, with the individual `translate`, `rotate` and
  *   `scale` properties composed in), `releaseAnimations`, `curveOf`, which
  *   picks one channel out of the samples for ./math's `compareCurve`, and the
- *   animation-state waits `waitForAnimation` and `waitForRest`.
+ *   animation-state waits `waitForAnimation`, `watchAnimations` and
+ *   `waitForRest`.
  * @position Curve sampling: the exact presented value of an animation at a
  *   fixed time, independent of frame timing, so a curve can be compared with
  *   the UIKit reference to a fraction of a pixel. A paused animation's effect
@@ -26,14 +27,6 @@ import {parseTransform, type TimedValue, type Transform2D} from './math';
 /** How far inside its end a seek past an animation's end lands, ms. */
 export const END_INSET_MS = 0.5;
 
-/**
- * Installs `window.__harnessCurveEnd(animation)`: the local time (ms, delay
- * included) where the animation's effect stops changing. An animation whose
- * keyframes end in a run of identical values (an end value held so that a
- * later interruption can read it) ends where that run starts, when it plays
- * forward under a linear or cubic-bézier effect easing (the time the run
- * starts is solved from the curve); any other ends at its end time.
- */
 /**
  * Page side: records every animation the document runs, from its first frame
  * or its creation (a frame loop on the page's real requestAnimationFrame, and
@@ -221,6 +214,14 @@ async function installRecorder(page: Page): Promise<void> {
   await page.evaluate(animationRecorder);
 }
 
+/**
+ * Installs `window.__harnessCurveEnd(animation)`: the local time (ms, delay
+ * included) where the animation's effect stops changing. An animation whose
+ * keyframes end in a run of identical values (an end value held so that a
+ * later interruption can read it) ends where that run starts, when it plays
+ * forward under a linear or cubic-bézier effect easing (the time the run
+ * starts is solved from the curve); any other ends at its end time.
+ */
 async function installCurveEnd(page: Page): Promise<void> {
   await installRecorder(page);
   await page.evaluate(() => {
@@ -865,14 +866,15 @@ export interface ActiveAnimation {
  * It does not race a short animation: the page records every animation from
  * its first frame (from the first call into this module on the page: this,
  * `waitForRest`, `watchAnimations`, sampling or holding), so one that started
- * after the last `waitForRest` or `waitForAnimation` and has already
+ * after the last `waitForRest`, `waitForAnimation` or `watchAnimations` and has already
  * finished is reported too, with `finishedAt` set. For an action that may be
  * the page's first contact with this module, take `watchAnimations(locator)`
  * before the action instead.
  *
- * A run going backward is read when it was reversed before it started; the
+ * A run going backward is read when it was reversed before it started. The
  * recorder keeps one entry per `Animation` object, so an animation reversed
- * or replayed mid-run is reported as its first run.
+ * or replayed mid-run is misread: a watch taken before the reversal rejects,
+ * and an unwatched wait returns at once with a curve dated before it.
  */
 export async function waitForAnimation(
   locator: Locator,
@@ -892,6 +894,8 @@ export async function waitForAnimation(
   for (;;) {
     const found = await locator.evaluate(
       (element, {minProgress, since: watchedFrom}) => {
+        // The harness's own read: a trace sets it apart (trace.ts HARNESS_READ).
+        console.timeStamp('harness-read');
         const w = window as unknown as {
           __harnessCurveEnd: (a: Animation) => number;
           __harnessAnimations: {
@@ -967,15 +971,29 @@ export async function waitForAnimation(
           );
         };
         const after = watchedFrom ?? recorder.armedAt();
+        // Document-timeline animations only, as for holdAnimations: a scroll-
+        // or view-timeline one that reached its end is not a finished curve.
         const recorded = recorder.log.filter(
-          e => e.seenAt >= after && inside(e.animation),
+          e =>
+            e.seenAt >= after &&
+            inside(e.animation) &&
+            e.animation.timeline instanceof DocumentTimeline,
         );
-        // Running: since the watch, or (without one) any on the element.
-        const running = (
+        // Running: since the watch, or (without one) any on the element. A
+        // pending one (no start time yet) counts too: the action's animation
+        // may still be pending at the first look, and an earlier one that
+        // finished must not answer for it. Only document-timeline animations
+        // count, as for holdAnimations: a scroll- or view-timeline one moves
+        // only when something scrolls and never progresses on its own.
+        const live = (
           watchedFrom == null
             ? element.getAnimations({subtree: true})
             : recorded.filter(e => e.finishedAt == null).map(e => e.animation)
-        ).filter(a => a.playState === 'running' && a.startTime != null);
+        ).filter(
+          a =>
+            a.playState === 'running' && a.timeline instanceof DocumentTimeline,
+        );
+        const running = live.filter(a => a.startTime != null);
         // Progress along the curve, on the timeline: a delay presents nothing
         // (going backward, the end delay plays first), a run going backward
         // (`reverse()`) progresses from its end, and a faster rate presents
@@ -994,7 +1012,7 @@ export async function waitForAnimation(
         if (progressed.length > 0) {
           return progressed.map(a => describe(a, null, null));
         }
-        if (running.length > 0) {
+        if (live.length > 0) {
           return [];
         }
         // Finished: by its finish event, or by its state when the event has not
