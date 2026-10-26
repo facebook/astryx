@@ -8,9 +8,9 @@
  *   clear button, the navigation bar's fades over an activation, the field
  *   that scrolls away with the content, and the bottom placement's rest above
  *   the keyboard
- * @position The search domain of the UIKit constants table (motion/uikit);
- *   read by lab's SearchField, and by the navigation stack's bar and the tab
- *   bar's search tab that host it
+ * @position The search domain of the UIKit constants table (motion/uikit).
+ *   Its planned readers are lab's SearchField and the bars that host it (a
+ *   navigation stack's bar, a tab bar's search tab)
  *
  * On iOS 26.2 a search bar in a navigation item activates on one
  * UIViewPropertyAnimator: the field rises into the bar and narrows, a glass
@@ -22,9 +22,11 @@
  * the `@measure` task that will confirm or replace them. uikit.test.ts
  * enforces both.
  *
- * Every value here is an internal constant, the clock and curve included:
- * none is a motion role (`spec:AST-094` FR4 names the roles, and touch motion
- * has no theme surface), so every reader plays the measured values.
+ * The clock (`activationMs`), the curve (`activationCurve`) and the
+ * scroll-away snap (`scrollAway.snapMs`) are not motion roles yet: they become
+ * internal roles, which their readers play through, once SearchField's own
+ * record measures them (`spec:AST-094` FR4, DEC-5), and like every motion role
+ * they stay internal (DEC-11). The thresholds and the geometry are not motion.
  *
  * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md
  */

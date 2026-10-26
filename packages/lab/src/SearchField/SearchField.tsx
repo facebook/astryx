@@ -30,12 +30,13 @@
  * primary pointer, iOS and Android alike) the field then plays UIKit's
  * activation, all on one clock
  * (`search.activationMs`, 383 ms on `search.activationCurve`, the
- * UIViewPropertyAnimator UIKit uses; both are motion roles a theme may
- * retune, read when each move starts): it rises by the host's `lift`, it
- * narrows to make room for the close button, and the glass close button
- * slides in from 44 px past its place while it fades in. Every part moves
- * on the compositor (translate, scale, opacity), so the activation keeps
- * moving while the page's script runs. The field narrows without
+ * UIViewPropertyAnimator UIKit uses; both are the search table's constants,
+ * not motion roles yet: they become internal roles once SearchField's own
+ * record measures them, `spec:AST-094` FR4 and DEC-5): it rises by the
+ * host's `lift`, it narrows to make room for the close button, and the glass
+ * close button slides in from 44 px past its place while it fades in. Every
+ * part moves on the compositor (translate, scale, opacity), so the activation
+ * keeps moving while the page's script runs. The field narrows without
  * re-laying out: its background is three pieces, two rounded ends and a
  * middle that scales, and the trailing end slides.
  *
