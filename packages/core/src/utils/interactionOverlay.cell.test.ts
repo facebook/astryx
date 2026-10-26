@@ -19,14 +19,13 @@
 import {createElement} from 'react';
 import {render, screen} from '@testing-library/react';
 import {describe, expect, it} from 'vitest';
-import {motionRoleIn, motionRoleOf} from '../motion/roles';
 import {list} from '../motion/uikit/list';
-import {registerTimingTable, timing} from '../motion/uikit/timing';
+import {timing} from '../motion/uikit/timing';
 import {Item} from '../Item';
 import {TreeList} from '../TreeList';
 import {durationToMs, rulesDeclaredFor} from '../__tests__/pressState';
 import {PRESS_FADE_MS} from './pressGesture';
-import {cellPressConsts, pressReleaseRoles} from './rowPressLayer.stylex';
+import {cellPressConsts} from './rowPressLayer.stylex';
 
 const ON = '[data-astryx-press="on"]';
 const FADING = '[data-astryx-press="fading"]';
@@ -101,16 +100,7 @@ describe('press layer clock', () => {
     expect(cellPressConsts.cellReleaseMs).toBe(PRESS_FADE_MS);
   });
 
-  it('plays the theme motion roles of the release, with the table as fallback', () => {
-    // AST-094 FR4: the release is `timing.press.highlightOutMs` and
-    // `timing.press.highlightOutCurve`, which a theme may retune.
-    registerTimingTable();
-    expect(pressReleaseRoles.duration).toBe(
-      motionRoleIn(timing.press, 'highlightOutMs')?.variable,
-    );
-    expect(pressReleaseRoles.curve).toBe(
-      motionRoleOf(timing.press.highlightOutCurve)?.variable,
-    );
+  it('is the press model’s release', () => {
     expect(list.highlight.releaseMs).toBe(timing.press.highlightOutMs);
     expect(list.highlight.releaseCurve).toBe(timing.press.highlightOutCurve);
   });
@@ -167,10 +157,16 @@ describe.each([
     const row = mount();
     const fading = layerRules(row, FADING);
     expect(values(fading, 'animation-name')).toHaveLength(1);
-    // The clock, and its reduced-motion cap (DR2), both the table's value.
-    expect([
-      ...new Set(values(fading, 'animation-duration').map(durationToMs)),
-    ]).toEqual([list.highlight.releaseMs]);
+    // One literal clock and curve: touch motion values are internal
+    // constants, never a `--motion-*` variable.
+    expect(values(fading, 'animation-duration').map(durationToMs)).toEqual([
+      list.highlight.releaseMs,
+    ]);
+    expect(
+      values(fading, 'animation-timing-function').every(curve =>
+        curve.startsWith('cubic-bezier('),
+      ),
+    ).toBe(true);
     // StyleX writes the curve minified (`cubic-bezier(0,0,.2,1)`): compare
     // the control points.
     const points = (css: string) =>
