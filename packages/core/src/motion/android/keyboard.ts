@@ -15,9 +15,9 @@
  * Chrome reports the keyboard once per slide, through the visual viewport,
  * just after the slide starts, never per frame. Content that rides the
  * keyboard plays these curves from the slide's start so it moves in step
- * with Gboard (spec:AST-099 FR8). These are Gboard's own motion, values no
- * theme retunes: the system moves the keyboard on them whatever the theme
- * says, so a retuned curve would leave the content out of step with it.
+ * with Gboard (spec:AST-099 FR8). These are Gboard's own motion, values and
+ * no motion role: the system moves the keyboard on them whatever the page
+ * does, so any other curve would leave the content out of step with it.
  *
  * Measured on the Android 15 emulator (golden image of Oct 25 2026, Chromium
  * 158, Gboard) by recording the screen at 540 × 1200 and reading Gboard's top

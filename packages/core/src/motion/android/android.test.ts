@@ -4,7 +4,7 @@
  * @file android.test.ts
  * @input The Android constants table's files and values, the motion roles
  * @output Tests that every leaf carries a source, the values, and that the
- *   table is no theme's (no motion roles)
+ *   table registers no motion role
  * @position Testing for /packages/core/src/motion/android
  */
 
@@ -50,7 +50,7 @@ describe('the Android constants table', () => {
     expect(keyboard.showReportLagMs).toBeGreaterThan(0);
   });
 
-  it('is the keyboard’s own motion, which no theme retunes', () => {
+  it('is the keyboard’s own motion, no motion role', () => {
     for (const key of Object.keys(keyboard)) {
       expect(motionRole(`androidKeyboard.${key}`), key).toBeUndefined();
     }

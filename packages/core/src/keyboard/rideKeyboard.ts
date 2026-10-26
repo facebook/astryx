@@ -17,9 +17,9 @@
  * animated (a keyboard changing while up) lands at once. Under Reduce Motion
  * nothing travels (design:reduced-motion): the animator's default
  * cross-fades the element to its new place on a touch screen and moves it at
- * once otherwise. These are the keyboard's own motion, values no theme
- * retunes: the system moves the keyboard on them whatever the theme says, so
- * a retuned curve would leave the element out of step with it.
+ * once otherwise. These are the keyboard's own motion, values and no motion
+ * role: the system moves the keyboard on them whatever the page does, so any
+ * other curve would leave the element out of step with it.
  *
  * SYNC: When modified, update /packages/core/src/keyboard/README.md
  */
