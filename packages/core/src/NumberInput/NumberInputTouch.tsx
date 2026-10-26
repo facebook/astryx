@@ -268,8 +268,8 @@ export function useStepperTouch(
         press.isDelayed =
           touch.pointerType === 'touch' &&
           touch.scroll?.isInsideScroller === true;
-        // The half the press landed on; a press on the column's reach past its
-        // halves (its touch target) takes the half above or below the split.
+        // The half the press landed on; a press on the column itself (its
+        // border) takes the half above or below the split.
         press.landedOn = halfOf(touch.target) ?? halfAt(touch.y);
         press.half = press.landedOn;
         tracking.begin(press.half);

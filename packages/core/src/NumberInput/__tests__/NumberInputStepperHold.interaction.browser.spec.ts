@@ -515,138 +515,39 @@ test('leaving the column pauses the repeat, and coming back resumes it with no s
   expectOneCommitAtRelease(log, 5);
 });
 
-test('under a finger each half reaches the theme touch target tall and past the field end, never over the value, and the layout does not move', async ({
+test('under a finger each half keeps its own size, with no touch-target growth', async ({
   page,
 }) => {
-  const {driver} = await openStepper(page);
-  const columnBox = async (p: Page) =>
-    p.evaluate(() => {
-      const column = document.querySelector(
-        '[aria-label^="Increment"]',
-      )?.parentElement;
-      if (column == null) {
-        throw new Error('no stepper column');
-      }
-      const {left, right, top, bottom} = column.getBoundingClientRect();
-      return {left, right, top, bottom};
-    });
-  const column = await columnBox(page);
-  // The theme's touch target, as the column reads it (44 px by default).
-  const target = await page.evaluate(() => {
+  await openStepper(page);
+  const hits = await page.evaluate(() => {
     const column = document.querySelector(
       '[aria-label^="Increment"]',
     )?.parentElement;
-    return column == null
-      ? 0
-      : parseFloat(
-          getComputedStyle(column).getPropertyValue('--size-touch-target'),
-        );
+    if (column == null) {
+      throw new Error('no stepper column');
+    }
+    const box = column.getBoundingClientRect();
+    const midX = (box.left + box.right) / 2;
+    const midY = (box.top + box.bottom) / 2;
+    const on = (x: number, y: number) => {
+      const element = document.elementFromPoint(x, y);
+      return element != null && column.contains(element);
+    };
+    return {
+      inside: on(midX, midY),
+      above: on(midX, box.top - 2),
+      below: on(midX, box.bottom + 2),
+      pastTheEnd: on(box.right + 2, midY),
+      reach: getComputedStyle(column, '::before').content,
+    };
   });
-  expect(target).toBe(44);
-  // Each half's reach past the column: the target tall per half, and past
-  // the field's end, never inward over the value (`family:input-fields` FR2).
-  const block = Math.max(0, target - (column.bottom - column.top) / 2);
-  const outward = Math.max(0, (target - (column.right - column.left)) / 2);
-  expect(block).toBeGreaterThan(0);
-  const hits = await page.evaluate(
-    ({box, block, outward}) => {
-      const column = document.querySelector(
-        '[aria-label^="Increment"]',
-      )?.parentElement;
-      const hits = (x: number, y: number) => {
-        const element = document.elementFromPoint(x, y);
-        return element != null && column?.contains(element) === true;
-      };
-      const midX = (box.left + box.right) / 2;
-      const midY = (box.top + box.bottom) / 2;
-      return {
-        aboveInside: hits(midX, box.top - block + 1),
-        aboveOutside: hits(midX, box.top - block - 2),
-        belowInside: hits(midX, box.bottom + block - 1),
-        belowOutside: hits(midX, box.bottom + block + 2),
-        start: hits(box.left - 2, midY - 4),
-        endInside: hits(box.right + outward - 1, midY + 4),
-        endOutside: hits(box.right + outward + 2, midY + 4),
-        // The value's end takes its own pointer input.
-        valueEnd: (() => {
-          const input = document
-            .querySelector('[role="spinbutton"]')
-            ?.getBoundingClientRect();
-          return (
-            input != null &&
-            document
-              .elementFromPoint(input.right - 2, (input.top + input.bottom) / 2)
-              ?.getAttribute('role') === 'spinbutton'
-          );
-        })(),
-      };
-    },
-    {box: column, block, outward},
-  );
   expect(hits).toEqual({
-    aboveInside: true,
-    aboveOutside: false,
-    belowInside: true,
-    belowOutside: false,
-    start: false,
-    endInside: true,
-    endOutside: false,
-    valueEnd: true,
+    inside: true,
+    above: false,
+    below: false,
+    pastTheEnd: false,
+    reach: 'none',
   });
-  // A tap in the reach above + steps +, once, on its click, and focuses
-  // nothing (no on-screen keyboard comes up). The click needs an engine that
-  // sends one after an injected tap (WEBKIT_TAP_CLICK_SKIP).
-  if (driver.engine !== 'webkit') {
-    await driver.play(
-      hold(
-        {x: (column.left + column.right) / 2, y: column.top - block + 2},
-        80,
-      ),
-    );
-    await page.waitForTimeout(500);
-    expectOneCommitAtRelease(await readLog(page), 3);
-    expect(await page.evaluate(() => document.activeElement?.tagName)).toBe(
-      'BODY',
-    );
-  }
-  // The reach moves no layout: with it taken away, every box is where it was
-  // (and the point above the column no longer reaches it).
-  const boxes = async () =>
-    page.evaluate(() => {
-      const column = document.querySelector(
-        '[aria-label^="Increment"]',
-      )?.parentElement;
-      const input = document.querySelector('[role="spinbutton"]');
-      if (column?.parentElement == null || input == null) {
-        throw new Error('no stepper column');
-      }
-      return [column, column.parentElement, input].map(element => {
-        const {left, top, width, height} = element.getBoundingClientRect();
-        return {left, top, width, height};
-      });
-    });
-  const withReach = await boxes();
-  await page.addStyleTag({
-    content: '[data-no-reach]::before { content: none !important; }',
-  });
-  await page.evaluate(() => {
-    document
-      .querySelector('[aria-label^="Increment"]')
-      ?.parentElement?.setAttribute('data-no-reach', '');
-  });
-  expect(await boxes()).toEqual(withReach);
-  expect(
-    await page.evaluate(
-      ({x, y}) => {
-        const column = document.querySelector(
-          '[aria-label^="Increment"]',
-        )?.parentElement;
-        const element = document.elementFromPoint(x, y);
-        return element != null && column?.contains(element) === true;
-      },
-      {x: (column.left + column.right) / 2, y: column.top - block + 1},
-    ),
-  ).toBe(false);
 });
 
 test('a scroll that starts on a stepper scrolls the page and steps nothing', async ({

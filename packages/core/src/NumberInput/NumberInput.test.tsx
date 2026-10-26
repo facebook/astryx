@@ -24,7 +24,6 @@ import {NumberInput} from './NumberInput';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
-import {TOUCH_QUERY} from '../utils/touchPresentation';
 
 // jsdom cannot match `:focus-visible`: compare the ring's StyleX class hash.
 const RING = stylex
@@ -2757,15 +2756,5 @@ describe('NumberInput stepper column under a held finger', () => {
     expect(touchSource).toMatch(
       /usePressTracker\(\s*isCoarse \? columnRef : noColumnRef,/,
     );
-  });
-
-  it("keys its touch target on the resolver's TOUCH_QUERY, spelled as a literal", () => {
-    // An imported at-rule key lands in a different StyleX priority layer
-    // than its literal, so the key stays a literal equal to the constant.
-    const source = readFileSync(
-      'packages/core/src/NumberInput/NumberInput.tsx',
-      'utf8',
-    );
-    expect(source).toContain(`const TOUCH = '@media ${TOUCH_QUERY}';`);
   });
 });

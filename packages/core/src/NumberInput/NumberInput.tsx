@@ -86,17 +86,6 @@ const padInlineEnd = `var(--astryx-number-input-padding-inline-end, ${padInline}
 const padBlockStart = `var(--astryx-number-input-padding-block-start, ${padBlockAll})`;
 const padBlockEnd = `var(--astryx-number-input-padding-block-end, ${padBlockAll})`;
 
-// A coarse primary pointer: the touch presentation resolver's TOUCH_QUERY
-// (utils/touchPresentation.ts) as a StyleX media key, so the steppers' touch
-// target is there from the first paint, on every touch device. Spelled as a
-// literal: the StyleX build gives an imported at-rule key a different
-// priority than its literal, which reorders the cascade; NumberInput.test.tsx
-// keeps it equal to TOUCH_QUERY.
-const TOUCH = '@media (pointer: coarse)';
-// The theme's touch target (44 px by default): under a finger, each stepper
-// half takes at least this square.
-const TOUCH_TARGET = sizeVars['--size-touch-target'];
-
 const styles = stylex.create({
   wrapper: {
     zIndex: 1,
@@ -165,28 +154,15 @@ const styles = stylex.create({
     borderInlineStartWidth: borderVars['--border-width'],
     borderInlineStartStyle: 'solid',
     borderInlineStartColor: colorVars['--color-border-emphasized'],
-    // Under a finger the column clips nothing, so its ::before can reach past
-    // it; each half rounds its own outer corner instead.
-    overflow: {default: 'hidden', [TOUCH]: 'visible'},
-    position: {default: 'static', [TOUCH]: 'relative'},
+    overflow: 'hidden',
     borderStartEndRadius: 'var(--_field-radius)',
     borderEndEndRadius: 'var(--_field-radius)',
-    // Under a finger each half reaches the theme's touch target tall and past
-    // the field's end, with no change to the layout: the ::before reaches past
-    // the column, never inward over the value (`family:input-fields` FR2), and
-    // a press there is the column's (the half above or below its split).
-    '::before': {
-      content: {default: 'none', [TOUCH]: '""'},
-      position: 'absolute',
-      insetBlockStart: `min(0px, calc(50% - ${TOUCH_TARGET}))`,
-      insetBlockEnd: `min(0px, calc(50% - ${TOUCH_TARGET}))`,
-      insetInlineStart: 0,
-      insetInlineEnd: `min(0px, calc(50% - ${TOUCH_TARGET} / 2))`,
-    },
-    // No touch-action or selection style of its own: where the primary
-    // pointer is coarse the gesture host gives the column's kept press
+    // No touch-action, selection or touch-target style of its own: where the
+    // primary pointer is coarse the gesture host gives the column's kept press
     // `touch-action: manipulation` (`spec:AST-094` FR18) and its selection
-    // lock (FR41); a fine pointer keeps the browser's defaults (FR19).
+    // lock (FR41); a fine pointer keeps the browser's defaults (FR19). Each
+    // half keeps its own size: the theme's touch target is not for spin
+    // buttons.
   },
   numberStepperButton: {
     boxSizing: 'border-box',
@@ -219,14 +195,6 @@ const styles = stylex.create({
   },
   incrementIcon: {
     transform: 'rotate(180deg)',
-  },
-  // The outer corner of each half, under a finger, where the column clips
-  // nothing (numberSteppers).
-  incrementCorner: {
-    borderStartEndRadius: {default: 0, [TOUCH]: 'var(--_field-radius)'},
-  },
-  decrementCorner: {
-    borderEndEndRadius: {default: 0, [TOUCH]: 'var(--_field-radius)'},
   },
 });
 
@@ -972,8 +940,7 @@ export function NumberInput({
   const stepperPointerTypeRef = useRef<string | null>(null);
 
   const handleStepperPointerDown = (event: React.PointerEvent<HTMLElement>) => {
-    // The steppers never take focus, on a half or in the column's reach past
-    // them: an editing field stays focused.
+    // The steppers never take focus: an editing field stays focused.
     event.preventDefault();
     stepperPointerTypeRef.current = event.pointerType;
     stepperTouch.pointer.onPointerDown(event);
@@ -981,8 +948,8 @@ export function NumberInput({
 
   // iOS Safari follows the second tap of a quick double tap with a
   // compatibility mousedown even though its pointerdown was prevented; that
-  // mousedown's default would focus the stepper (or, in the column's reach,
-  // blur the field), so the column prevents it too.
+  // mousedown's default would focus the stepper and blur an editing field, so
+  // the column prevents it.
   const handleStepperMouseDown = (event: React.MouseEvent<HTMLElement>) => {
     event.preventDefault();
   };
@@ -1020,11 +987,10 @@ export function NumberInput({
     stepValue(click === 'own' ? direction : click === 'increment' ? 1 : -1);
   };
 
-  // A click on the column itself, not on a half (the touch target's reach
-  // past the halves, or the column's border), steps the half the tap it
-  // follows lifted on (spec:AST-094 FR11), and nothing otherwise. It never
-  // reaches the field's click-to-focus, so a finger brings up no keyboard
-  // there either; a mouse focuses the field, as on a half.
+  // A click on the column itself, not on a half (its border), steps the half
+  // the tap it follows lifted on (spec:AST-094 FR11), and nothing otherwise.
+  // It never reaches the field's click-to-focus, so a finger brings up no
+  // keyboard there either; a mouse focuses the field, as on a half.
   const handleColumnClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget) {
       return;
@@ -1220,7 +1186,6 @@ export function NumberInput({
             {...stylex.props(
               styles.numberStepperButton,
               interactionOverlayStyles.backgroundImage,
-              styles.incrementCorner,
               (isDisabled || isReadOnly || !canIncrement) &&
                 styles.numberStepperButtonDisabled,
             )}>
@@ -1244,7 +1209,6 @@ export function NumberInput({
               styles.numberStepperButton,
               interactionOverlayStyles.backgroundImage,
               styles.decrementButton,
-              styles.decrementCorner,
               (isDisabled || isReadOnly || !canDecrement) &&
                 styles.numberStepperButtonDisabled,
             )}>

@@ -431,14 +431,14 @@ describe('NumberInput steppers under a finger', () => {
     expect(committed(onChange)).toEqual([8]);
   });
 
-  it('a tap in the column’s reach past the halves steps once and focuses nothing', () => {
-    // The touch target reaches past the halves; a tap there is the column's,
-    // and its click must not reach the field's click-to-focus (no keyboard).
+  it('a tap on the column itself (its border) steps once and focuses nothing', () => {
+    // A tap on the column's border is the column's, and its click must not
+    // reach the field's click-to-focus (no keyboard).
     const {onChange, input, increment} = setup();
     const column = increment.parentElement as HTMLElement;
-    const above = {x: 212, y: -6};
-    const id = fingerDown(column, above);
-    touch('touchend', column, above, id);
+    const border = {x: 200, y: 8};
+    const id = fingerDown(column, border);
+    touch('touchend', column, border, id);
     expect(onChange).not.toHaveBeenCalled();
     act(() => {
       column.dispatchEvent(clickNaming('mouse', 1));
@@ -447,7 +447,7 @@ describe('NumberInput steppers under a finger', () => {
     expect(input).not.toHaveFocus();
   });
 
-  it('a press in the reach keeps an editing field focused, as one on a half does', () => {
+  it('a press on the column itself keeps an editing field focused, as one on a half does', () => {
     const {input, increment} = setup();
     act(() => {
       input.focus();
@@ -456,8 +456,8 @@ describe('NumberInput steppers under a finger', () => {
     const notCancelled = fireEvent.pointerDown(column, {
       pointerType: 'touch',
       pointerId: 9,
-      clientX: 212,
-      clientY: -6,
+      clientX: 200,
+      clientY: 8,
     });
     // Default-prevented, so the browser moves no focus off the field.
     expect(notCancelled).toBe(false);
