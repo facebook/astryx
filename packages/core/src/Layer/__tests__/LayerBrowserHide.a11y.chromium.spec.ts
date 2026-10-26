@@ -8,8 +8,9 @@
  * @output Real-engine proof that a show the browser's own hide wakes — its
  *   close watcher's Escape returning focus to a trigger whose focus-driven
  *   layer asks to show — reaches the page as no error and ends with that
- *   layer shown, and that a tap outside, which returns no focus, hides the
- *   layer with no error and wakes nothing. Only a real engine
+ *   layer shown; that a tap outside, which returns no focus, hides the
+ *   layer with no error and wakes nothing; and that a press which
+ *   light-dismisses one layer and opens another opens it at once. Only a real engine
  *   decides when a popover operation is in flight and refuses a show inside
  *   it; the unit suite (useLayer.test.tsx) covers the same rules on a
  *   mirrored Popover API. The in-flight rule is Chromium 150+: on the
@@ -56,7 +57,7 @@ test('an Escape the browser answers, with focus inside the layer, returns focus 
   const errors = collectPageErrors(page);
   await openStory(page, 'core-layer--browser-hide-wakes-a-focus-layer');
   const trigger = page.getByRole('button', {name: 'Show layer'});
-  const inside = page.getByRole('button', {name: 'Inside'});
+  const inside = page.getByRole('button', {name: 'Inside', exact: true});
   const hint = page.getByRole('tooltip');
 
   // Keyboard focus shows the focus-driven layer; the press opens the content
@@ -85,7 +86,7 @@ test('a tap outside the layer, with focus inside it, hides the layer without an 
   const errors = collectPageErrors(page);
   await openStory(page, 'core-layer--browser-hide-wakes-a-focus-layer');
   const trigger = page.getByRole('button', {name: 'Show layer'});
-  const inside = page.getByRole('button', {name: 'Inside'});
+  const inside = page.getByRole('button', {name: 'Inside', exact: true});
   const hint = page.getByRole('tooltip');
 
   await page.keyboard.press('Tab');
@@ -100,5 +101,26 @@ test('a tap outside the layer, with focus inside it, hides the layer without an 
   await expect(inside).toBeHidden();
   await expect(trigger).not.toBeFocused();
   await expect(hint).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test('a press that light-dismisses one layer and opens another opens it at once: focus moves into it, without an error', async ({
+  page,
+}) => {
+  const errors = collectPageErrors(page);
+  await openStory(page, 'core-layer--browser-hide-wakes-a-focus-layer');
+  const inside = page.getByRole('button', {name: 'Inside', exact: true});
+  const otherTrigger = page.getByRole('button', {name: 'Show the other layer'});
+  const otherInside = page.getByRole('button', {name: 'Inside the other'});
+
+  await page.getByRole('button', {name: 'Show layer'}).click();
+  await expect(inside).toBeVisible();
+
+  // The browser light-dismisses the first layer at pointerup; the click opens
+  // the other one in the same gesture and focuses into it right away.
+  await otherTrigger.click();
+  await expect(inside).toBeHidden();
+  await expect(otherInside).toBeVisible();
+  await expect(otherInside).toBeFocused();
   expect(errors).toEqual([]);
 });

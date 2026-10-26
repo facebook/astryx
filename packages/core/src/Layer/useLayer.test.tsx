@@ -1081,8 +1081,10 @@ describe('useLayer', () => {
           operationsInFlight -= 1;
         }
       };
+      let refusals = 0;
       const showSpy = vi.fn(function (this: HTMLElement) {
-        if (operationsInFlight > 0) {
+        if (operationsInFlight > 0 || refusals > 0) {
+          refusals = Math.max(0, refusals - 1);
           throw new DOMException(
             "Failed to execute 'showPopover' on 'HTMLElement': Invalid to show a popover during another show operation",
             'InvalidStateError',
@@ -1113,6 +1115,10 @@ describe('useLayer', () => {
           for (const task of toggleTasks.splice(0)) {
             task();
           }
+        },
+        /** The engine refuses the next show too, whatever is in flight. */
+        refuseNextShow: () => {
+          refusals += 1;
         },
       };
     }
@@ -1154,26 +1160,120 @@ describe('useLayer', () => {
       expect(errors).toEqual([]);
       expect(document.activeElement).toBe(trigger);
       expect(popover).not.toHaveAttribute('data-open');
-      // Nothing reached the browser while its hide was running, not even
-      // after the script unwound: the hide ends at its `toggle`.
+      // The show was asked of the browser inside the hide and refused; the
+      // hook kept the refusal to itself and parked the show. Nothing else is
+      // asked before the hide ends at its `toggle`, not even after the
+      // script unwound.
       await act(async () => {});
-      expect(showSpy.mock.results.every(r => r.type === 'return')).toBe(true);
+      const refusals = () =>
+        showSpy.mock.results.filter(r => r.type === 'throw').length;
+      expect(refusals()).toBe(1);
       expect(getByRole('tooltip', {hidden: true})).not.toHaveAttribute(
         'data-open',
       );
       expect(onTooltipShow).toHaveBeenCalledTimes(1);
 
       // The task after the hide: the popover's `toggle` fires, the hook
-      // reconciles its state, and the deferred show runs exactly once.
+      // reconciles its state, and the parked show runs exactly once.
       act(() => runToggleTasks());
       await act(async () => {});
-      expect(showSpy.mock.results.every(r => r.type === 'return')).toBe(true);
+      expect(refusals()).toBe(1);
       expect(getByRole('tooltip', {hidden: true})).toHaveAttribute(
         'data-open',
         'true',
       );
       expect(onTooltipShow).toHaveBeenCalledTimes(2);
       expect(popover).not.toHaveAttribute('data-open');
+    });
+
+    it('lets a replay the browser refuses again reach the page, and parks nothing more', async () => {
+      const {showSpy, browserHide, runToggleTasks, refuseNextShow} =
+        installBrowserHidePopoverApi();
+      const onTooltipShow = vi.fn();
+      const {getByRole} = render(
+        <FocusReturnHarness onTooltipShow={onTooltipShow} />,
+      );
+      const trigger = getByRole('button', {name: 'Trigger'});
+      const inside = getByRole('button', {name: 'Inside', hidden: true});
+      const popover = getByRole('dialog', {hidden: true});
+      act(() => trigger.focus());
+      fireEvent.click(trigger);
+      act(() => inside.focus());
+      runToggleTasks();
+      const refusals = () =>
+        showSpy.mock.results.filter(r => r.type === 'throw').length;
+
+      // The hide wakes the tooltip; the browser refuses; the show is parked.
+      act(() => browserHide(popover));
+      expect(refusals()).toBe(1);
+
+      // Hold the microtasks the ledger queues, to run the replay by hand.
+      const held: (() => void)[] = [];
+      const queue = vi
+        .spyOn(globalThis, 'queueMicrotask')
+        .mockImplementation(callback => {
+          held.push(callback);
+        });
+      try {
+        act(() => runToggleTasks());
+        // The hide's end queued the batch; the batch queues the one replay.
+        expect(held).toHaveLength(1);
+        held.shift()?.();
+        expect(held).toHaveLength(1);
+        const replay = held.shift();
+        // The replay runs outside the hide, so a browser that refuses again
+        // throws to the page from the replay's own microtask: nothing catches
+        // it, and nothing is parked again.
+        refuseNextShow();
+        expect(replay).toThrow(
+          expect.objectContaining({name: 'InvalidStateError'}),
+        );
+        expect(held).toHaveLength(0);
+      } finally {
+        queue.mockRestore();
+      }
+      await act(async () => {});
+      expect(refusals()).toBe(2);
+      expect(getByRole('tooltip', {hidden: true})).not.toHaveAttribute(
+        'data-open',
+      );
+      expect(onTooltipShow).toHaveBeenCalledTimes(1);
+    });
+
+    it('opens a layer at once when the press that closed another one opens it after the hide has returned', () => {
+      // A light dismiss runs at pointerup and the click that follows opens the
+      // next layer in the same gesture: the browser accepts that show (its
+      // hide has returned) although the hidden layer's `toggle` has not fired.
+      const {showSpy, browserHide, runToggleTasks} =
+        installBrowserHidePopoverApi();
+      const api: {first?: FixedLayerReturn; second?: FixedLayerReturn} = {};
+      const onSecondShow = vi.fn();
+      function Harness() {
+        api.first = useLayer({mode: 'fixed'});
+        api.second = useLayer({mode: 'fixed', onShow: onSecondShow});
+        return (
+          <>
+            {api.first.render(<span>First</span>, {x: 0, y: 0})}
+            {api.second.render(<span>Second</span>, {x: 0, y: 0})}
+          </>
+        );
+      }
+      const {getByText} = render(<Harness />);
+      act(() => api.first?.show());
+      const first = getByText('First').closest('[popover]') as HTMLElement;
+      const second = getByText('Second').closest('[popover]') as HTMLElement;
+
+      act(() => {
+        browserHide(first);
+        api.second?.show();
+      });
+      expect(showSpy.mock.results.every(r => r.type === 'return')).toBe(true);
+      expect(second).toHaveAttribute('data-open', 'true');
+      expect(onSecondShow).toHaveBeenCalledTimes(1);
+      expect(api.second?.isOpen).toBe(true);
+      // The first layer's hide ends at its toggle, with nothing left to replay.
+      act(() => runToggleTasks());
+      expect(onSecondShow).toHaveBeenCalledTimes(1);
     });
 
     it('keeps counting a browser-run hide across a render it causes (an inline onHide, a state update in the focus handler)', async () => {
@@ -1231,13 +1331,16 @@ describe('useLayer', () => {
       window.removeEventListener('error', onError);
       expect(errors).toEqual([]);
       await act(async () => {});
-      expect(showSpy.mock.results.every(r => r.type === 'return')).toBe(true);
-      // Still inside the hide's window: nothing replayed yet.
+      const refusals = () =>
+        showSpy.mock.results.filter(r => r.type === 'throw').length;
+      // One refusal, kept by the hook; still inside the hide's window, so
+      // nothing replayed yet, however the host re-rendered meanwhile.
+      expect(refusals()).toBe(1);
       expect(onTooltipShow).toHaveBeenCalledTimes(1);
 
       act(() => runToggleTasks());
       await act(async () => {});
-      expect(showSpy.mock.results.every(r => r.type === 'return')).toBe(true);
+      expect(refusals()).toBe(1);
       expect(getByRole('tooltip', {hidden: true})).toHaveAttribute(
         'data-open',
         'true',

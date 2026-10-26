@@ -1533,6 +1533,11 @@ export const Playground: Story = {
 function BrowserHideWakesAFocusLayerDemo() {
   const content = useLayer({mode: 'context', lightDismiss: true});
   const hint = useLayer({mode: 'context'});
+  // A second light-dismissible layer, opened by a press that light-dismisses
+  // the first one; like a menu, it moves focus into itself right after the
+  // show, which only works when the show ran at once.
+  const other = useLayer({mode: 'context', lightDismiss: true});
+  const otherInsideRef = useRef<HTMLButtonElement | null>(null);
   return (
     <div {...stylex.props(styles.demoArea)}>
       <Button
@@ -1557,6 +1562,21 @@ function BrowserHideWakesAFocusLayerDemo() {
           <Text type="body">Shown while the trigger has focus.</Text>
         </div>,
         {placement: 'above', alignment: 'center'},
+      )}
+      <Button
+        ref={other.ref}
+        label="Show the other layer"
+        onClick={() => {
+          other.show();
+          otherInsideRef.current?.focus();
+        }}
+      />
+      {other.render(
+        <div {...stylex.props(styles.popoverContent)}>
+          <Text type="body">The other layer.</Text>
+          <Button ref={otherInsideRef} label="Inside the other" />
+        </div>,
+        {placement: 'below', alignment: 'center'},
       )}
     </div>
   );

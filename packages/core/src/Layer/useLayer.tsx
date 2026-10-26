@@ -48,6 +48,7 @@ import {
 } from './layerSlideRules';
 import {
   afterPopoverOperations,
+  isBrowserHideInFlight,
   isPopoverOperationInFlight,
   observeBrowserHide,
   runPopoverOperation,
@@ -1187,37 +1188,61 @@ function useLayerImplementation(
     return dismissedByGestureRef.current === gesture;
   }, []);
 
-  const showPopoverElement = useCallback((popover: HTMLElement) => {
+  /**
+   * Asks the browser to show the popover. Returns false when the browser
+   * refused with an `InvalidStateError` while a hide it runs itself is still
+   * in flight (the ledger counts it from `beforetoggle`); the caller then
+   * replays the show once that hide has ended. Any other failure, and a
+   * refusal outside such a hide, reaches the caller: a replay runs outside
+   * the hide, so one that fails is not caught here.
+   */
+  const showPopoverElement = useCallback((popover: HTMLElement): boolean => {
     // Finding infra-4: the Popover API is unsupported on Safari <17 and
     // Firefox <125. On those browsers `showPopover` does not exist, so fall
     // back to plain visibility instead of throwing.
     if (typeof popover.showPopover === 'function') {
-      runPopoverOperation(popover.ownerDocument, () => {
-        // The trigger is passed as the popover's invoker `source`: a layer
-        // hosted away from its trigger then still takes its sequential focus
-        // order (and its popover nesting) from the trigger rather than from
-        // its own DOM position. Browsers without the option ignore it.
-        // `source` is declared as an `HTMLElement`. A caller-rendered icon
-        // trigger is an `SVGElement`, whose dictionary conversion throws
-        // before the popover opens. Omitting the option for it still anchors
-        // the layer, because positioning reads the anchor-name pair, and only
-        // gives up the invoker's focus order. The check asks the trigger's own
-        // window: an HTML trigger rendered into another document (an iframe,
-        // a Picture-in-Picture window) is not an instance of this window's
-        // `HTMLElement`, and keeps its source.
-        const trigger = triggerRef.current;
-        const triggerView = trigger?.ownerDocument.defaultView;
-        popover.showPopover({
-          source:
-            triggerView != null && trigger instanceof triggerView.HTMLElement
-              ? trigger
-              : undefined,
+      const doc = popover.ownerDocument;
+      const duringBrowserHide = isBrowserHideInFlight(doc);
+      try {
+        runPopoverOperation(doc, () => {
+          // The trigger is passed as the popover's invoker `source`: a layer
+          // hosted away from its trigger then still takes its sequential
+          // focus order (and its popover nesting) from the trigger rather
+          // than from its own DOM position. Browsers without the option
+          // ignore it. `source` is declared as an `HTMLElement`. A
+          // caller-rendered icon trigger is an `SVGElement`, whose dictionary
+          // conversion throws before the popover opens. Omitting the option
+          // for it still anchors the layer, because positioning reads the
+          // anchor-name pair, and only gives up the invoker's focus order.
+          // The check asks the trigger's own window: an HTML trigger rendered
+          // into another document (an iframe, a Picture-in-Picture window) is
+          // not an instance of this window's `HTMLElement`, and keeps its
+          // source.
+          const trigger = triggerRef.current;
+          const triggerView = trigger?.ownerDocument.defaultView;
+          popover.showPopover({
+            source:
+              triggerView != null && trigger instanceof triggerView.HTMLElement
+                ? trigger
+                : undefined,
+          });
         });
-      });
+      } catch (error) {
+        // The name, not the constructor: a popover in another document throws
+        // that document's `DOMException`.
+        if (
+          duringBrowserHide &&
+          (error as {name?: unknown} | null)?.name === 'InvalidStateError'
+        ) {
+          return false;
+        }
+        throw error;
+      }
     } else {
       popover.style.display = 'block';
     }
     openedPopoverRef.current = popover;
+    return true;
   }, []);
 
   const isCurrentContextPopover = useCallback(
@@ -1293,12 +1318,7 @@ function useLayerImplementation(
       return;
     }
     if (!isOpenRef.current) {
-      // Another popover is mid show/hide (typically one whose hide is handing
-      // focus back to this layer's trigger): the browser would refuse the
-      // show, so replay this call once that operation has returned. The
-      // hide may be the browser's own (an Escape its close watcher answers),
-      // which the ledger learns of from `beforetoggle`.
-      if (isPopoverOperationInFlight(popover.ownerDocument)) {
+      const replayWhenSettled = () => {
         pendingShowRef.current = true;
         afterPopoverOperations(popover.ownerDocument, () => {
           if (pendingShowRef.current) {
@@ -1306,11 +1326,26 @@ function useLayerImplementation(
             showRef.current();
           }
         });
+      };
+      // Another layer's own show or hide is running (typically a hide that is
+      // handing focus back to this layer's trigger): the browser would refuse
+      // the show, so replay this call once that operation has returned.
+      if (isPopoverOperationInFlight(popover.ownerDocument)) {
+        replayWhenSettled();
         return;
       }
       popover.removeAttribute(LAYER_CLEARS_ANCHOR_ATTRIBUTE);
       popover.removeAttribute(LAYER_SCROLLS_ATTRIBUTE);
-      showPopoverElement(popover);
+      // A hide the browser runs itself (an Escape its close watcher answers)
+      // is counted too, from `beforetoggle` until the element's `toggle`, a
+      // task after the hide has returned. The show is asked of the browser
+      // first, because the browser accepts it once its hide has returned (a
+      // light dismiss at pointerup, then this show at the click); only a show
+      // it refuses replays once the hide's count has ended.
+      if (!showPopoverElement(popover)) {
+        replayWhenSettled();
+        return;
+      }
       if (keepsAnchorClear) {
         keepAnchorClear(popover, triggerRef.current);
       }
@@ -1544,9 +1579,25 @@ function useLayerImplementation(
       ) {
         // Changing a portal target remounts the popover. Preserve the logical
         // open state without firing onShow again for the replacement element.
-        showPopoverElement(el);
-        if (keepsAnchorClear) {
-          keepAnchorClear(el, triggerRef.current);
+        // A show the browser refused during one of its own hides replays once
+        // that hide has ended, for the element still mounted then.
+        if (showPopoverElement(el)) {
+          if (keepsAnchorClear) {
+            keepAnchorClear(el, triggerRef.current);
+          }
+        } else {
+          afterPopoverOperations(el.ownerDocument, () => {
+            const current = popoverRef.current;
+            if (
+              isOpenRef.current &&
+              current === el &&
+              openedPopoverRef.current !== el &&
+              showPopoverElement(el) &&
+              keepsAnchorClear
+            ) {
+              keepAnchorClear(el, triggerRef.current);
+            }
+          });
         }
       }
     },

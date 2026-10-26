@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] useLayer: a layer that a popover hide the browser runs itself wakes through its focus restore — a tooltip on the trigger that an Escape the browser's close watcher answers hands focus back to, with focus inside the layer — no longer asks the browser to show while that hide is still running, which threw an `InvalidStateError` to the page in Chromium 150+ and left the layer closed; the show waits for the hide to end and then runs, so the layer ends shown.
+[fix] useLayer: a show that a browser-run popover hide refuses (Chromium 156 throws an `InvalidStateError`) is replayed once that hide has ended, so the layer ends shown. For example, pressing Escape inside a popover returns focus to its trigger, whose tooltip now opens instead of failing.
 
 @vjeux
