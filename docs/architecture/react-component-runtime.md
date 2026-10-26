@@ -159,7 +159,7 @@ those contracts.
   its own elements, and follows INV3 and INV5. The hook follows INV3 and
   INV5.
 - **INV12 — Size changes inside a container have one module.** **Proposed;
-  pending owner decision (OQ3–OQ5).** When something inside an area changes
+  pending owner decision (OQ3, OQ5).** When something inside an area changes
   size, the content after it glides to its new place instead of jumping. The
   measuring, the walk, and the translate all live inside one internal module;
   the public hook only marks the area where the walk stops, and the internal
@@ -170,32 +170,50 @@ those contracts.
   layout before and after the change and moves the shifted content with a
   compositor-only translate from its old place to its new one, played through
   the shared rectangle morph (`architecture:layer-runtime` INV15;
-  `spec:AST-094` FR5); it never animates height, which lays out every frame. A
-  boundary is any container element registered by ref: ScrollableArea
+  `spec:AST-094` FR5); it never animates height, which lays out every frame.
+  An area is any container element registered by ref: ScrollableArea
   registers its scrolling element itself, and an app registers its own scroll
-  container or panel with `useSmoothLayoutShift(containerRef)`. An element whose
+  container or panel with `useAnimatedLayout(containerRef)`. An element whose
   size changes reports the change, around its commit, to its nearest
-  registered ancestor boundary. From that element, the module walks up each
-  ancestor to the boundary: at every level, each following in-flow sibling
-  moves by the distance layout moved it, measured before and after. The walk
-  visits only the following element siblings at each ancestor level, through
-  `parentElement` and `nextElementSibling`, never descending into a subtree, so
-  its cost grows with depth plus following siblings and it needs no
-  TreeWalker, which visits subtrees and text nodes. It
-  stops at the boundary and never passes it, so content outside the boundary
-  takes its final place at once. The walk only collects
-  candidates; an element moves only when its layout rectangle changed between
-  the two measurements (OQ5) and it intersects the boundary's visible area. An
-  element outside the visible area takes its final place at once, so the setup
-  cost is bounded by what the person can see. Which elements move is listed under
-  Size-change coverage below.
+  registered ancestor area. From that element, the module walks up each
+  ancestor to the area: at every level, each following in-flow sibling moves
+  by the distance layout moved it, measured before and after. The walk visits
+  only the following element siblings at each ancestor level, through
+  `parentElement` and `nextElementSibling`, never descending into a subtree,
+  so its cost grows with depth plus following siblings and it needs no
+  TreeWalker, which visits subtrees and text nodes. It stops at the area and
+  never passes it, so content outside the area takes its final place at once.
+  The walk only collects candidates; an element moves only when its layout
+  rectangle changed between the two measurements (OQ5) and it intersects the
+  area's visible part, so the setup cost is bounded by what the person can
+  see. Which elements move is listed under Size-change coverage below. Shifted
+  content may mix Astryx components and plain app elements, and none of it
+  opts in. Several changes, nested or not, compose without wrappers: changes
+  in one area in the same frame are measured together before and after, so
+  each element moves once, by its total change. Each moving element is one
+  the page already renders, so the module adds no elements
+  (`architecture:component-style-authoring` INV7). Under Reduce Motion,
+  shifted content changes as `design:reduced-motion` DR1–DR3 require: a
+  cross-fade under a coarse primary pointer, an immediate change otherwise.
+  Whether the travel applies under every pointer is OQ3. The bounded walk and
+  the name `useAnimatedLayout` are decided by `cixzhang`, 2026-10-25. TreeList
+  and Collapsible adopt the module first, and any Core component whose size
+  changes in place uses it rather than its own layout animation.
+  `useAnimatedLayout` is the one public piece: it takes the container's ref
+  and returns nothing, because which container scopes the motion is the
+  caller's intent (`spec:AST-002` FR1), and no other API does that job.
+  `reportLayoutChange` stays internal. Its documentation reads: "When
+  something inside this area changes size, only the content after it animates
+  to its new place. Fixed and sticky elements stay put, Reduce Motion is
+  respected, ScrollableArea applies it automatically, and List rows use the
+  same module."
 
   Usage:
 
   ```tsx
   // Public: an app container opts in as a boundary. ScrollableArea does this itself.
   const panelRef = useRef(null);
-  useSmoothLayoutShift(panelRef);
+  useAnimatedLayout(panelRef);
   <div ref={panelRef}>
     <TreeList items={items} />
     <p>Notes</p>
@@ -399,13 +417,6 @@ component suite is not blanket conformance with every invariant.
   recommended) every pointer, because a disclosure's following content jumps
   the same way under a mouse; or (b) only a coarse primary pointer, with an
   immediate change elsewhere, as other touch presentations do.
-- **OQ4 — The public hook's name.** (`human-design`) Options, each named for
-  what it does: (a, recommended) `useSmoothLayoutShift(ref)`: layout shifts
-  in this area are smoothed; (b) `useGlideOnResize(ref)`: content after a
-  resized element glides into place; (c) `useAnimatedLayout(ref)`: when
-  something inside this area changes size, the content after it glides
-  instead of jumping; or (d) `useAnimatedReflow(ref)`: reflow in this area is
-  animated.
 - **OQ5 — How the walk chooses what moves.** (`human-design`) Options: (a,
   recommended) the walk collects candidates and only those whose layout
   rectangle changed between the two measurements move, which handles flex
