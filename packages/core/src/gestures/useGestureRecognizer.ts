@@ -25,7 +25,6 @@
 
 import {useEffect, useRef, useState, type RefObject} from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 import {getGestureHost} from './GestureHost';
 import type {GestureRecognizer} from './GestureRecognizer';
 import {useAttachment, useIsUnmountedRef} from './useAttachment';
@@ -82,6 +81,7 @@ export function useGestureRecognizer<R extends GestureRecognizer>(
 ): R {
   const [recognizer] = useState(create);
   const onGestureRef = useRef(onGesture);
+  // Syncs the listener's ref with the caller's newest callback.
   useIsomorphicLayoutEffect(() => {
     onGestureRef.current = onGesture;
   });
@@ -92,8 +92,9 @@ export function useGestureRecognizer<R extends GestureRecognizer>(
   } = options;
   const isUnmountedRef = useIsUnmountedRef();
 
-  // The listener runs inside input events, never during a render or an
-  // Effect, and goes quiet once the component unmounts.
+  // Syncs the recognizer's target-action listener with this component. The
+  // listener runs inside input events, never during a render or an Effect,
+  // and goes quiet once the component unmounts.
   useEffect(
     () =>
       recognizer.addListener(current => {
@@ -104,8 +105,9 @@ export function useGestureRecognizer<R extends GestureRecognizer>(
     [recognizer, isUnmountedRef],
   );
 
-  // The isEnabled sync runs first, under the guard, so disabling cancels a
-  // gesture in flight before its attachment goes.
+  // Syncs the recognizer's `isEnabled` with the option. It runs first,
+  // under the guard, so disabling cancels a gesture in flight before its
+  // attachment goes.
   useIsomorphicLayoutEffect(() => {
     syncingDepth += 1;
     try {
@@ -115,7 +117,8 @@ export function useGestureRecognizer<R extends GestureRecognizer>(
     }
   }, [recognizer, isEnabled]);
 
-  // A disabled gesture is not attached at all: no listener and no
+  // Syncs the document's gesture host with the element behind `ref`. A
+  // disabled gesture is not attached at all: no listener and no
   // `touch-action` of its own on the element (spec:AST-094 FR24). A replaced
   // node is released and the new one attached; detaching cancels a gesture in
   // progress from a layout effect, and that cancel reaches no caller callback
