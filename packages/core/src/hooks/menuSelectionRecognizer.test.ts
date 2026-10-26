@@ -117,4 +117,20 @@ describe('MenuSelectionGestureRecognizer', () => {
     expect(recognizer.allowedPointerTypes?.has('touch')).toBe(true);
     expect(recognizer.allowedPointerTypes?.has('pen')).toBe(true);
   });
+
+  it('a second finger that lands off the menu ends the press with nothing acting', () => {
+    const h = createHarness();
+    const recognizer = select(true);
+    h.finger(1).down(100, 100, 1000, {recognizers: [recognizer]});
+    h.advance(1000 + ONSET);
+    expect(recognizer.state).toBe('began');
+    // The second finger lands outside the menu, on nothing of its own.
+    h.finger(2).down(400, 600, 1200, {recognizers: []});
+    expect(recognizer.state).not.toBe('began');
+    expect(h.log).toContain('select:cancelled@1200');
+    expect(h.arena.isClaimed(2)).toBe(false);
+    h.finger(1).up(1300);
+    h.finger(2).up(1300);
+    expect(h.log).not.toContain('select:ended@1300');
+  });
 });

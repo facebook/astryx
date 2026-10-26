@@ -22,7 +22,7 @@ import {GestureHost} from '../gestures/GestureHost';
 import {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer';
 import {lockSelection} from '../gestures/selectionLock';
 import {coarsePrimaryPointer} from '../gestures/__tests__/pointerQuery';
-import {UIKIT_GESTURES} from '../motion/uikit/gestures';
+import {UIKIT_PRESS} from '../motion/uikit/gestures';
 import {PRESS_FADE_MS} from '../utils/pressGesture';
 import {
   useActionGroupTracking,
@@ -522,7 +522,7 @@ describe('useActionGroupTracking', () => {
       const {message, cancel, onCancel} = mountInScroller();
       const f = finger();
       f.down(message, {x: 50, y: 40});
-      f.move(message, {x: 50, y: 40 + UIKIT_GESTURES.press.slop.value + 2}, 30);
+      f.move(message, {x: 50, y: 40 + UIKIT_PRESS.slop.value + 2}, 30);
       f.move(message, centerOf(CANCEL), 30);
       expect(paintOf(cancel)).toBeNull();
       f.up(message, centerOf(CANCEL));
@@ -536,7 +536,7 @@ describe('useActionGroupTracking', () => {
       f.move(
         message,
         centerOf(CANCEL),
-        UIKIT_GESTURES.press.contentTouchDelay.value + 10,
+        UIKIT_PRESS.contentTouchDelay.value + 10,
       );
       expect(paintOf(cancel)).toBe('on');
       f.up(message, centerOf(CANCEL));

@@ -43,7 +43,10 @@ import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
-import {MENU_PRESS_LONG_PRESS_MS} from '../hooks/useMenuPress';
+import {
+  MENU_PRESS_AUTOSCROLL_ZONE_PX,
+  MENU_PRESS_LONG_PRESS_MS,
+} from '../hooks/useMenuPress';
 import {MENU_PRESS_SETTLE_MS} from '../hooks/menuPressGesture';
 import {COMPACT_QUERY, TOUCH_QUERY} from '../utils/touchPresentation';
 import {getGestureHost} from '../gestures/GestureHost';
@@ -3290,6 +3293,43 @@ describe('DropdownMenu press model', () => {
       expect(rows[0]).not.toHaveFocus();
       contact.up(rows[0], rowCenter(2), 30);
       expect(onPick).not.toHaveBeenCalled();
+    });
+
+    it('in a menu that scrolls, a finger resting near its bottom edge autoscrolls it, and leaving the edge stops it (FR30)', async () => {
+      const onPick = vi.fn();
+      const {rows} = await openPlaced(onPick);
+      const menu = screen.getByRole('menu', {hidden: true});
+      Object.defineProperty(menu, 'scrollHeight', {value: 600});
+      Object.defineProperty(menu, 'clientHeight', {value: 150});
+      place(menu, {left: 0, top: 0, width: 200, height: 150});
+      const wait = async (ms: number) => {
+        await act(async () => {
+          await new Promise<void>(resolve => {
+            setTimeout(resolve, ms);
+          });
+        });
+      };
+      // The bottom row, inside the edge zone (the menu ends at 150).
+      const edge = {x: 100, y: 150 - MENU_PRESS_AUTOSCROLL_ZONE_PX / 2};
+      const contact = finger();
+      contact.down(rows[2], edge);
+      expect(menu.scrollTop).toBe(0);
+      // Resting: the press begins after the content-touch delay, lights the
+      // row under the finger, and the menu scrolls toward the edge.
+      contact.move(rows[2], {...edge, y: edge.y + 1}, ONSET + 30);
+      expect(rows[2]).toHaveFocus();
+      const first = menu.scrollTop;
+      expect(first).toBeGreaterThan(0);
+      await wait(80);
+      expect(menu.scrollTop).toBeGreaterThan(first);
+      // Off the edge, the scrolling stops.
+      contact.move(rows[1], rowCenter(1));
+      const atRest = menu.scrollTop;
+      await wait(80);
+      expect(menu.scrollTop).toBe(atRest);
+      contact.up(rows[1], rowCenter(1));
+      await wait(40);
+      expect(menu.scrollTop).toBe(atRest);
     });
 
     describe('an Android finger (no iOS engine) is tracked the same way', () => {
