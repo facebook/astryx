@@ -39,7 +39,7 @@ export {
   type HapticFeedbackKind,
 } from './gestures';
 export {navigation, registerNavigationTable} from './navigation';
-export {refreshControl, registerRefreshControlTable} from './refresh';
+export {refreshControl} from './refresh';
 export {registerScrollTable, scroll} from './scroll';
 export {registerSpringsTable, springs} from './springs';
 export {registerTimingTable, timing} from './timing';
