@@ -3230,9 +3230,12 @@ describe('DropdownMenu press model', () => {
       expect(onPick).toHaveBeenCalledWith('Duplicate');
     });
 
-    it('a second finger that lands before the row lights ends the press with nothing acting (FR4)', async () => {
+    it('in a menu that scrolls, a second finger that lands before the row lights ends the press with nothing acting (FR4)', async () => {
       const onPick = vi.fn();
       const {rows} = await openPlaced(onPick);
+      const menu = screen.getByRole('menu', {hidden: true});
+      Object.defineProperty(menu, 'scrollHeight', {value: 600});
+      Object.defineProperty(menu, 'clientHeight', {value: 300});
       const first = finger();
       const second = finger();
       first.down(rows[0], rowCenter(0));
@@ -3241,6 +3244,21 @@ describe('DropdownMenu press model', () => {
       second.up(rows[2], rowCenter(2));
       expect(onPick).not.toHaveBeenCalled();
       expect(rows[0]).not.toHaveFocus();
+    });
+
+    it('in a menu that fits, a second finger that lands before the press begins puts out the lit row, and nothing acts (FR4)', async () => {
+      const onPick = vi.fn();
+      const {rows} = await openPlaced(onPick);
+      const first = finger();
+      const second = finger();
+      first.down(rows[0], rowCenter(0));
+      expect(rows[0]).toHaveFocus();
+      second.down(rows[2], rowCenter(2), {after: 40});
+      first.up(rows[0], rowCenter(0), 40);
+      second.up(rows[2], rowCenter(2));
+      expect(onPick).not.toHaveBeenCalled();
+      fireEvent.click(rows[0], {detail: 1});
+      expect(onPick).not.toHaveBeenCalled();
     });
 
     it('a second finger that lands once the row is lit ends the press with nothing acting (FR4)', async () => {
