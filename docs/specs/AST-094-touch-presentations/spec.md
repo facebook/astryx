@@ -106,18 +106,23 @@ a measured, sourced difference exists.
   touch presentation plays MUST be a motion role named for its use
   (`architecture:theme-tokens` INV3). The roles this record names are listed below with their defaults and
   sources; further roles a component's own record measures join through the
-  generated motion role table (DEC-5). The role's value is its
-  measured value (FR1, FR2). The roles are internal until the public
-  motion-token set is decided, so a theme cannot override them yet (DEC-11). A component MUST read touch motion through these roles
-  and MUST NOT play a literal. Once a role is public, a theme value MUST reach the motion at its
+  generated motion role table (DEC-5). With tempo 1 and character
+  standard, every role plays its measured value exactly (FR1, FR2); a theme's
+  tempo scales durations and its character sets curves and bounce through
+  fixed per-role weights (`spec:AST-108`), and roles on the fixed list ignore
+  both: the on-screen keyboard (`spec:AST-099` FR8); gesture thresholds, the
+  content-touch delay, and momentum (`spec:AST-002` FR3); finger tracking, the
+  rubber band, press clocks, and busy loops; and the 200 ms Reduce Motion cap.
+  The per-role tables stay internal (DEC-15). A component MUST read touch motion through these roles
+  and MUST NOT play a literal. A theme's knob values MUST reach the motion at its
   start, without changing how the motion runs (FR5, FR6). Motion that
   must stay in step with the on-screen keyboard is not a theme role: it rides
   the keyboard's own motion (`spec:AST-099` FR8,
   `architecture:react-component-runtime` INV11). Gesture thresholds, the timings that decide who gets a touch (the
   content-touch delay, the scroll brake, momentum memory) and haptics are not
-  motion: they stay internal measured values and are not public concepts (`spec:AST-002` FR3). When the public set is decided, its roles join the motion configuration of
-  `architecture:theme-authoring-contract` and `architecture:theme-tokens`,
-  whose rules are unchanged until then. It departs from the draft `design:motion` DR3
+  motion: they stay internal measured values and are not public concepts (`spec:AST-002` FR3). The three knobs are the motion configuration of
+  `architecture:theme-authoring-contract` and `architecture:theme-tokens`
+  (`spec:AST-108`). It departs from the draft `design:motion` DR3
   wherever the native motion settles with an overshoot or stretches with a
   rubber band.
 
@@ -701,6 +706,17 @@ rows likewise highlight on touch-down is a guess until a short UIMenu on the
 iOS 26.2 simulator measures it.
 
 Rejected: the 150 ms delay on every menu row.
+
+### DEC-15 — The public motion set is three theme knobs; per-role tables stay internal
+
+**Reference:** `spec:AST-094/DEC-15`
+**Decider:** `cixzhang`, `2026-10-26`
+
+A theme reaches touch motion only through `spec:AST-108`'s three knobs, tempo,
+character, and reduced motion, which transform the measured roles; the
+per-role tables and weights stay internal. This supersedes DEC-11's "all
+internal" for exactly these three knobs; DEC-11's rejected alternative, public
+per-component roles, stays rejected.
 
 ## Open questions
 

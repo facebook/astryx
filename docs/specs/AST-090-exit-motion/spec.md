@@ -100,11 +100,11 @@ components read through two shared primitives is a system fact.
 FR1–FR13 govern dialog and layer surfaces in a pointer presentation. FR14
 governs them in a touch presentation.
 
-- **FR1 — Exits are off by default.** `--duration-exit-dialog` and
-  `--duration-exit-layer` default to `0ms`. A surface whose kind's exit
-  duration is zero closes at once: it is hidden in the update that closes it,
-  and focus, callbacks, and dismissal behave as they do for a surface with no
-  exit.
+\1 When a theme sets them, its tempo scales them (`spec:AST-108`). A surface whose kind's exit
+duration is zero closes at once: it is hidden in the update that closes it,
+and focus, callbacks, and dismissal behave as they do for a surface with no
+exit.
+
 - **FR2 — A theme turns on each kind.** A surface plays its exit when its
   kind's exit duration, resolved on the surface, is greater than zero. The two
   kinds are independent. The durations resolve like any token, so a theme or a

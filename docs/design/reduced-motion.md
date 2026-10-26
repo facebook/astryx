@@ -72,6 +72,10 @@ trackpad, or keyboard the change is immediate.
   still cross-fades. Native scrolling is the browser's and is untouched; a
   coast Astryx animates itself after a throw behaves like native momentum
   under Reduce Motion.
+- **DR2a — A theme may reduce motion for everyone.** A theme's
+  `reducedMotion: 'always'` applies DR1–DR3 for every person, whatever their
+  setting; `'system'` follows each person's setting (`spec:AST-108`). No theme
+  option loosens DR1–DR4.
 - **DR3 — Fine-pointer presentations change at once.** Under reduced motion,
   every other DR1 transition, when the primary pointer is not coarse, MUST complete
   immediately, with no animated property.
