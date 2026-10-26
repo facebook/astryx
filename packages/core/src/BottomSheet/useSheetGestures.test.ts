@@ -694,6 +694,21 @@ describe('useSheetGestures', () => {
       expect(onDismiss).toHaveBeenCalledTimes(1);
     });
 
+    it('cancels a release moving back toward where the drag began, whatever the travel so far (spec:AST-094 FR37)', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      // From the tallest detent down past the midpoint to 150 px ...
+      down(hook, 0, 0, t);
+      stream(hook, t, {from: 0, to: 150, t0: 0, t1: 300});
+      // ... then back up at 50 px/s and let go at 146 px, nearest the 200 px
+      // detent: the drag cancels to where it began.
+      move(hook, 148, 340, t);
+      move(hook, 146, 380, t);
+      up(hook, 146, 382, t);
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(hook.result.current.settledOffset).toBe(0);
+    });
+
     it('releases no throw from a finger held still for longer than 40 ms before the lift', () => {
       // UIKit would keep the last motion through a silent rest; the release
       // filter reads 0 after its stillness interval, as Android's does, so a
@@ -796,6 +811,21 @@ describe('useSheetGestures', () => {
       down(hook, 0, 0, t);
       move(hook, 60, 300, t); // one sample, 300ms after touch-down
       up(hook, 60, 302, t);
+      // The release filter reads no velocity from a single move
+      // (spec:AST-100 FR2), under a mouse as under a finger: the sheet settles
+      // where it is nearest.
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(hook.result.current.settledOffset).toBe(0);
+    });
+
+    it('throws nothing from a mouse held still for over 40 ms before the lift (spec:AST-100 FR2)', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      stream(hook, t, {from: 0, to: 60, t0: 0, t1: 40}); // 1500 px/s ...
+      up(hook, 60, 95, t); // ... 55 ms still, then the lift
+      // The speed over the last 100 ms used to keep the throw; the release
+      // velocity every pointer reads is 0 after a still pointer.
       expect(onDismiss).not.toHaveBeenCalled();
       expect(hook.result.current.settledOffset).toBe(0);
     });
@@ -1113,19 +1143,18 @@ describe('useSheetGestures', () => {
     }
   });
 
-  it('under a mouse, magnetically settles the live drag onto a nearby detent, as before', () => {
-    // Offsets [0, 100, 200] for a 400px sheet with snaps 300 and 200. A mouse
-    // keeps the pointer behavior (spec:AST-017 FR59): 10px short of the 100
-    // detent it eases toward it.
+  it('under a mouse, eases the live drag onto a detent within 40 px, as before (spec:AST-017 FR59)', () => {
+    // Offsets [0, 100, 200] for a 400px sheet with snaps 300 and 200. 30 px
+    // short of the 100 detent the pull is 1 - (30 / 40)^2 of the gap.
     asMouse();
     const {hook} = setup({snapHeights: () => [200, 300]});
     const t = makeTarget();
     down(hook, 0, 0, t);
-    move(hook, 90, 100, t);
-    const off = liveOffset(hook);
-    expect(off).toBeGreaterThan(90);
-    expect(off).toBeLessThanOrEqual(100);
-    // Past the shortest detent, in the dismiss zone, it tracks 1:1.
+    move(hook, 70, 100, t);
+    expect(liveOffset(hook)).toBeCloseTo(70 + 30 * (1 - (30 / 40) ** 2), 6);
+    // 40 px or more from every detent, and past the shortest one, 1:1.
+    move(hook, 150, 150, t);
+    expect(liveOffset(hook)).toBe(150);
     move(hook, 320, 200, t);
     expect(liveOffset(hook)).toBe(320);
   });
@@ -1461,19 +1490,34 @@ describe('useSheetGestures', () => {
     });
   });
 
-  it('holds at the fully-open position when dragged further up', () => {
+  it('stretches a finger dragged up past the fully-open position by the rubber band, within the reserve (spec:AST-094 FR3)', () => {
+    // UIKit's presentation: a finger where the primary pointer is coarse.
     asFinger();
-    // UIKit's sheet stops dead at its largest detent (measured on iOS 26.2:
-    // no stretch from a grabber or a content touch, or from medium past it).
+    // (1 - 1 / (x * 0.55 / d + 1)) * d past the tallest detent, d the sheet's
+    // 400 px height, no farther than the 48 px the sheet reserves below.
+    const band = (x: number) =>
+      (1 - 1 / ((x * 0.55) / SHEET_HEIGHT + 1)) * SHEET_HEIGHT;
     const {hook} = setup({snapHeights: () => [200]});
     const t = makeTarget();
     down(hook, 100, 0, t);
-    move(hook, 60, 50, t);
-    expect(liveOffset(hook)).toBe(0);
-    move(hook, 20, 100, t); // 80px past the top of a rested-at-top sheet
-    expect(liveOffset(hook)).toBe(0);
-    move(hook, 130, 150, t); // back down: the finger's travel from the press, clamped
+    move(hook, 60, 50, t); // 40 px past the top of a rested-at-top sheet
+    expect(liveOffset(hook)).toBeCloseTo(-band(40), 6);
+    move(hook, 20, 100, t); // 80 px past it
+    expect(liveOffset(hook)).toBeCloseTo(-band(80), 6);
+    move(hook, -100, 150, t); // 200 px past it: the reserve
+    expect(liveOffset(hook)).toBe(-48);
+    move(hook, 130, 200, t); // back down: the finger's travel from the press
     expect(liveOffset(hook)).toBe(30);
+  });
+
+  it('under a mouse, stretches an upward drag past the fully-open position at 0.35, within the reserve, as before (spec:AST-017 FR59)', () => {
+    const {hook} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    down(hook, 100, 0, t);
+    move(hook, 20, 100, t); // 80 px past the top of a rested-at-top sheet
+    expect(liveOffset(hook)).toBeCloseTo(-80 * 0.35, 6);
+    move(hook, -100, 150, t); // 200 px past it: the reserve
+    expect(liveOffset(hook)).toBe(-48);
   });
 
   it('under a mouse, rubber-bands an upward drag past the fully-open position, as before', () => {
@@ -1910,7 +1954,7 @@ describe('useSheetGestures', () => {
       expect(hook.result.current.isDragging).toBe(true);
     });
 
-    it('leaves a pull-up to a nested scroller with content below', () => {
+    it('leaves a pull-up to a nested scroller with content below', async () => {
       const {hook} = setup({snapHeights: () => [200]});
       const {sheet, tile} = makeNested({bodyScrollTop: 0, innerScrollTop: 100});
       // Rest at the lower detent, so an expanding handoff would have somewhere
@@ -1919,6 +1963,9 @@ describe('useSheetGestures', () => {
       move(hook, 180, 700, sheet);
       up(hook, 180, 1100, sheet);
       expect(hook.result.current.settledOffset).toBe(200);
+      // The settle reports its end through a promise: let it, so a touch
+      // finds the sheet at rest rather than catching it.
+      await act(async () => {});
       const touch = fingers();
       let pull: Event | undefined;
       act(() => {
@@ -1955,7 +2002,10 @@ describe('useSheetGestures', () => {
     // content reaches its end mid-gesture it keeps the drag and rubber-bands
     // (the browser's), and the sheet holds its detent. The sheet grows only
     // from a drag that begins with the content at its end.
-    function midDetentScroller(hook: Hook, scrollTop: number) {
+    async function midDetentScroller(
+      hook: Hook,
+      scrollTop: number,
+    ): Promise<HTMLElement> {
       const el = makeScroller({
         scrollTop,
         clientHeight: 200,
@@ -1966,14 +2016,18 @@ describe('useSheetGestures', () => {
       move(hook, 180, 700, sheet);
       up(hook, 180, 1100, sheet);
       expect(hook.result.current.settledOffset).toBe(200);
+      // The settle reports its end through a promise: let it, so the sheet
+      // rests at its detent before the next touch (one during the settle
+      // would catch it).
+      await act(async () => {});
       return el;
     }
     // A move the browser sends while it scrolls with the finger.
     const scrolling = {cancelable: false};
 
-    it('keeps a scroll that runs out of content mid-gesture: the sheet holds its detent', () => {
+    it('keeps a scroll that runs out of content mid-gesture: the sheet holds its detent', async () => {
       const {hook} = setup({snapHeights: () => [200]});
-      const el = midDetentScroller(hook, 300); // finger lands mid-content
+      const el = await midDetentScroller(hook, 300); // finger lands mid-content
       const touch = fingers();
       act(() => {
         touch(el, 'touchstart', 500);
@@ -1992,9 +2046,9 @@ describe('useSheetGestures', () => {
       expect(hook.result.current.settledOffset).toBe(200);
     });
 
-    it('never moves the sheet while the finger goes back and forth past the content end', () => {
+    it('never moves the sheet while the finger goes back and forth past the content end', async () => {
       const {hook} = setup({snapHeights: () => [200]});
-      const el = midDetentScroller(hook, 300);
+      const el = await midDetentScroller(hook, 300);
       const touch = fingers();
       act(() => {
         touch(el, 'touchstart', 500);
@@ -2012,9 +2066,9 @@ describe('useSheetGestures', () => {
       expect(liveOffset(hook)).toBe(200);
     });
 
-    it('grows the sheet from a drag that begins with the content at its end', () => {
+    it('grows the sheet from a drag that begins with the content at its end', async () => {
       const {hook} = setup({snapHeights: () => [200]});
-      const el = midDetentScroller(hook, 600); // the content is at its end
+      const el = await midDetentScroller(hook, 600); // the content is at its end
       const touch = fingers();
       act(() => {
         touch(el, 'touchstart', 500);
@@ -2029,11 +2083,11 @@ describe('useSheetGestures', () => {
       });
     });
 
-    it('leaves the momentum after the lift to the content', () => {
+    it('leaves the momentum after the lift to the content', async () => {
       // Landing on the last pixel is not a pull, and the momentum tail after
       // the finger lifts fires no touchmove at all.
       const {hook} = setup({snapHeights: () => [200]});
-      const el = midDetentScroller(hook, 300);
+      const el = await midDetentScroller(hook, 300);
       const touch = fingers();
       act(() => {
         touch(el, 'touchstart', 500);

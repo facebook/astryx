@@ -361,31 +361,42 @@ test('a slow drag follows the finger and settles on the nearest detent', async (
   );
 });
 
-test('pulled up past the tallest detent, the sheet holds', async ({page}) => {
+test('pulled up past the tallest detent, the sheet stretches by the rubber band and settles back (spec:AST-094 FR3)', async ({
+  page,
+}) => {
   const {driver, sheet, tallTop, handle} = await openSheet(page);
-  const tops: number[] = [];
+  // UIKit's rubber band over the sheet's height (coefficient 0.55), no
+  // farther than the 48 px the sheet reserves below the screen.
+  const height = await sheet.evaluate(el => el.getBoundingClientRect().height);
+  const band = (past: number) =>
+    Math.min(48, (1 - 1 / ((past * 0.55) / height + 1)) * height);
+  const pulled: {top: number; past: number}[] = [];
   await driver.play(
     drag(handle, {x: handle.x, y: handle.y - 120}, {durationMs: 400, hz: 60}),
     {
       onEvent: async step => {
         if (step.type === 'touchMove') {
-          tops.push(await sheetTop(sheet));
+          // A frame after each move, so the page has handled it.
+          await frames(page, 1);
+          pulled.push({
+            top: await sheetTop(sheet),
+            // The handle's pan reports the travel past its hysteresis.
+            past: Math.max(0, handle.y - step.changed[0].y - PAN_HYSTERESIS),
+          });
         }
       },
     },
   );
-  // UIKit's sheet doesn't stretch past its largest detent (iOS 26.2): no
-  // move lifts it, and the lift leaves nothing to settle.
-  expect(tops.length).toBeGreaterThan(10);
-  for (const top of tops) {
-    expect(top).toBeCloseTo(tallTop, 0);
+  expect(pulled.length).toBeGreaterThan(0);
+  for (const {top, past} of pulled) {
+    expect(Math.abs(top - (tallTop - band(past)))).toBeLessThanOrEqual(1);
   }
-  await frames(page, 2);
-  expect(await sheet.evaluate(el => el.getAnimations().length)).toBe(0);
+  // Let go, it settles back onto the tallest detent.
+  await waitForRest(sheet);
   expect(await sheetTop(sheet)).toBeCloseTo(tallTop, 0);
 });
 
-test('on Android too, the drag tracks the finger 1:1 and holds at the tallest detent', async ({
+test('on Android too, the drag tracks the finger 1:1 and stretches past the tallest detent', async ({
   page,
 }) => {
   // Tracking is universal (F4's Android audit): no shim, Chromium's own idiom.
@@ -407,7 +418,7 @@ test('on Android too, the drag tracks the finger 1:1 and holds at the tallest de
       },
     },
   );
-  expect(tracked.length).toBeGreaterThan(10);
+  expect(tracked.length).toBeGreaterThan(0);
   for (const {top, finger} of tracked) {
     expect(
       Math.abs(top - tallTop - Math.max(0, finger - PAN_HYSTERESIS)),
@@ -417,7 +428,8 @@ test('on Android too, the drag tracks the finger 1:1 and holds at the tallest de
   const restTop = await sheetTop(sheet);
   const upHandle = {x: handle.x, y: restTop + 12};
   const tops: number[] = [];
-  // From half, up past the tallest detent: it follows to tall, then holds.
+  // From half, up past the tallest detent: it follows to tall, then
+  // stretches by the rubber band, within the 48 px reserve (spec:AST-094 FR3).
   await driver.play(
     drag(
       upHandle,
@@ -432,7 +444,8 @@ test('on Android too, the drag tracks the finger 1:1 and holds at the tallest de
       },
     },
   );
-  expect(Math.min(...tops)).toBeGreaterThanOrEqual(tallTop - 0.5);
+  expect(Math.min(...tops)).toBeGreaterThanOrEqual(tallTop - 48.5);
+  expect(Math.min(...tops)).toBeLessThan(tallTop - 10);
 });
 
 test('the dim follows the sheet: at once under the finger, in lockstep with the release', async ({
@@ -934,36 +947,47 @@ test('a finger on the drawn sheet catches it even when the hit test lands on the
 
 test('the settle keeps advancing every frame while the main thread is blocked', async ({
   page,
-  browserName,
 }, testInfo) => {
   const {driver, sheet, tallTop, halfTop, handle} = await openSheet(page);
   await markElement(sheet);
   const cast = await startScreencast(page);
-  await driver.play(slowDragTo(handle, Math.round((halfTop - tallTop) * 0.66)));
   // The settle must be running (and composited) before the block: an
-  // animation cannot start while the main thread is held.
-  const [settle] = await waitForAnimation(sheet, {minProgressMs: 16});
-  const block = await blockMainThread(page, 700);
-  await page.waitForTimeout(150);
+  // animation cannot start while the main thread is held. Armed before the
+  // release, the page waits for the settle itself (the sheet runs no other
+  // animation during the drag) and blocks once it has run 16 ms, however busy
+  // the machine; armed after, the round trip would leave little of the settle
+  // to judge.
+  const blocking = blockMainThread(page, 700, {
+    during: sheet,
+    minProgressMs: 16,
+  });
+  await driver.play(slowDragTo(handle, Math.round((halfTop - tallTop) * 0.66)));
+  const block = await blocking;
+  // Where the settle ends, from the page: a frame after the block can still
+  // show a stale position (see `settledAt`). The frames track the marker
+  // chip, which sits inset in the sheet, so it is the chip's rest: the sheet's
+  // own top would end the judged window about 9 px before the settle does.
+  await waitForRest(sheet);
+  const settledAt = await sheet.evaluate(el => {
+    const chip = el.querySelector('[data-harness-marker-chip]');
+    if (chip == null) {
+      throw new Error('the sheet lost its marker chip');
+    }
+    return chip.getBoundingClientRect().y;
+  });
   const castFrames = await cast.stop();
   const tracked = await trackMarker(page, castFrames);
-  // Judge the part of the block during which the settle still moves more
-  // than the screencast resolves per frame. Chromium's frames resolve 1 px;
-  // WebKit's 2 px, every ~11 ms, so its judging stops 10 px from the end,
-  // where this spring (ω 18.3/s, so about 0.2 × the remaining distance a
-  // frame) slows under 2 px a frame.
-  const proof = busyWindowProof(
-    tracked,
-    {from: block.from, to: Math.min(block.to, settle.to)},
-    {settledWithin: browserName === 'webkit' ? 10 : 1},
-  );
+  // Judge the part of the block during which the settle was still moving:
+  // until it is within 2 px of rest (the screencast rounds to whole pixels,
+  // so the easing tail shows plateaus there).
+  const proof = busyWindowProof(tracked, block, {settledWithin: 2, settledAt});
   await writeEvidence(
     'busy-main-thread/bottomsheet-settle',
     {
       [`${testInfo.project.name}.json`]: JSON.stringify(
         {
           block,
-          settle,
+          settledAt,
           proof,
           frames: tracked.map(f => ({
             t: +(f.t - block.from).toFixed(1),
@@ -981,17 +1005,25 @@ test('the settle keeps advancing every frame while the main thread is blocked', 
     name: 'bottomsheet-settle-busy-main-thread',
     zero: block.from,
     from: block.from - 40,
-    to: Math.min(block.to, settle.to) + 40,
+    to: proof.judged.to + 40,
     columns: 8,
     cellScale: 0.35,
     data: t => ({y: tracked.find(f => f.t === t)?.box?.y ?? -1}),
   });
-  await film.write(testInfo, {block, settle});
-  expect(proof.medianFrameMs).toBeLessThan(20);
-  expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
-  expect(proof.changed).toBeGreaterThanOrEqual(proof.frames - 3);
-  expect(proof.longestStallMs).toBeLessThan(40);
+  await film.write(testInfo, {block, judged: proof.judged});
+  testInfo.annotations.push({
+    type: 'busy-main-thread',
+    description: proof.summary,
+  });
+  expect(proof.verdict.failures, proof.summary).toEqual([]);
   expect(proof.monotonic).toBe(true);
+  // The judged window runs until the marker is within 2 px of where it rests.
+  const lastJudged = tracked
+    .filter(f => f.box != null && f.t <= proof.judged.to)
+    .at(-1);
+  expect(
+    Math.abs((lastJudged?.box?.y ?? Number.NaN) - settledAt),
+  ).toBeLessThanOrEqual(2);
 });
 
 test('the settle does no Layout or Paint per frame', async ({

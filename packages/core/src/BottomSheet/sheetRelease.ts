@@ -19,14 +19,16 @@
  *   velocity. Below `sheet.release.minProjectionSpeed` nothing is
  *   projected: it lands on whatever is nearest where it was let go; at
  *   rest the sheet dismisses once it is more than halfway from its
- *   shortest detent to gone. Nothing restricts the direction: a sheet
- *   released just above a detent while moving up, but slowly, falls back
- *   to it, and one turned back toward where it started and let go slowly
- *   stays with the position it is nearest.
+ *   shortest detent to gone. A sheet released just above a detent while
+ *   moving up, but slowly, falls back to it.
  * - From that speed on, a flick: at least to the next position beyond where
  *   it is, in its direction (on a position within
  *   `sheet.release.detentTolerance`, the one after it), or to the
  *   projection's nearest position if that is farther.
+ * - Either way, a release whose velocity points back toward where the
+ *   drag began cancels, to the stop nearest that start, whatever the travel
+ *   so far (spec:AST-094 FR37). UIKit's own sheet does not: measured, a
+ *   back-out let go below 250 pt/s settles where it is nearest (sheet.ts).
  *
  * The sheet gets there on UIKit's release spring, picked by the same speed
  * (critically damped below it, 80 % damped from it on), and starting at the
@@ -69,6 +71,20 @@ function rateForProjection(seconds: number): number {
 
 const PROJECTION_RATE = rateForProjection(sheet.release.projectionSeconds);
 
+/** The index of the position nearest `offset` (the first on a tie). */
+function nearestIndex(
+  positions: ReadonlyArray<number>,
+  offset: number,
+): number {
+  let best = 0;
+  for (let i = 1; i < positions.length; i += 1) {
+    if (Math.abs(positions[i] - offset) < Math.abs(positions[best] - offset)) {
+      best = i;
+    }
+  }
+  return best;
+}
+
 /**
  * Where a sheet released at `position` moving at `velocity` settles, and on
  * which spring.
@@ -92,6 +108,7 @@ export function resolveSheetRelease({
   dismissedOffset,
   position,
   velocity,
+  start,
 }: {
   /** Detent offsets, ascending (the tallest first). */
   detents: ReadonlyArray<number>;
@@ -99,6 +116,8 @@ export function resolveSheetRelease({
   dismissedOffset: number | null;
   position: number;
   velocity: number;
+  /** Where the drag began: a release moving back toward it cancels (FR37). */
+  start?: number;
 }): SheetRelease {
   if (detents.length === 0) {
     throw new RangeError('resolveSheetRelease needs at least one detent');
@@ -131,6 +150,16 @@ export function resolveSheetRelease({
     if (next !== -1 && (velocity > 0 ? next > index : next < index)) {
       index = next;
     }
+  }
+  // spec:AST-094 FR37: a release whose velocity points back toward where
+  // the drag began cancels, whatever the travel so far, to the stop nearest
+  // that start.
+  if (
+    start != null &&
+    velocity !== 0 &&
+    Math.sign(velocity) === Math.sign(start - position)
+  ) {
+    index = nearestIndex(positions, start);
   }
   if (dismissedOffset != null && index === detents.length) {
     // A slow dismissal's spring is a stand-in: none of the measured releases
@@ -309,7 +338,10 @@ export interface SheetReleaseContext {
   readonly isUIKit: boolean;
   /** How much of the sheet the shortest detent shows, px (today's rule). */
   readonly shortestDetentHeight: number;
-  /** The detent offset the drag started from (today's rule). */
+  /**
+   * The offset the drag started from: today's rule reads it, and under
+   * UIKit's rule a release moving back toward it cancels (FR37).
+   */
   readonly startOffset: number;
   /** Today's inputs: the drag's direction, travel and release velocity. */
   readonly today: {direction: number; travel: number; velocity: number};
@@ -339,6 +371,9 @@ export function sheetReleaseRule(
         dismissedOffset: context.dismissedOffset,
         position: input.position,
         velocity: input.velocity,
+        // A release moving back toward where the drag began cancels
+        // (spec:AST-094 FR37).
+        start: context.startOffset,
       })
     : resolveDefaultRelease({
         detents: context.detents,

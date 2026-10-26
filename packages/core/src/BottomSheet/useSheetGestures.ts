@@ -125,6 +125,7 @@ import {
   type PointerKind,
 } from '../gestures';
 import {playHaptic} from '../gestures/haptics';
+import {lockSelection as lockElementSelection} from '../gestures/selectionLock';
 import {VelocityTracker} from '../gestures/VelocityTracker';
 import {readTouchPresentation} from './sheetTouch';
 import {useMediaQuery} from '../hooks';
@@ -134,7 +135,9 @@ import {
   type MotionHandle,
 } from '../motion/animator';
 import {resolveMotion} from '../motion/resolveMotion';
+import {rubberBand} from '../motion/rubberBand';
 import type {SpringDescription} from '../motion/spring';
+import {sheet as sheetTable} from '../motion/uikit/sheet';
 import {registerSpringsTable, springs} from '../motion/uikit/springs';
 import {
   createInteractiveTransition,
@@ -216,8 +219,8 @@ function scrimClearOffset(
 const MAGNET_RANGE = 40;
 // Rubber-band factor for today's drag up past fully open, capped at
 // OVERSCROLL_MAX (the sheet reserves that much bottom padding for the lift to
-// reveal). Under UIKit's presentation it holds at the tallest detent, as
-// UIKit's sheet does.
+// reveal). Under UIKit's presentation the stretch is UIKit's rubber band
+// instead (spec:AST-094 FR3), within the same reserve.
 const OVERSCROLL_RESISTANCE = 0.35;
 // SYNC: must match OVERSCROLL_PADDING in BottomSheetPanel.tsx (the reserved
 // bottom padding the lift reveals).
@@ -228,6 +231,19 @@ const OVERSCROLL_MAX = 48;
 // would suppress the panel's transition across a close the click triggered.
 // 8px is the conventional tap slop, a shade over iOS's own recognizer.
 const DRAG_PROMOTION_SLOP = 8;
+// The live offset under UIKit's presentation at `raw`: 1:1 between detents and
+// into the dismiss zone, as UIKit's sheet tracks (the release picks the
+// detent), and past fully open UIKit's rubber band over the sheet's height
+// (spec:AST-094 FR3), no farther than the reserve.
+function fingerDragOffset(raw: number, height: number): number {
+  if (raw >= 0) {
+    return raw;
+  }
+  return Math.max(
+    -OVERSCROLL_MAX,
+    rubberBand(raw, height, sheetTable.rubberBand.coefficient),
+  );
+}
 
 // Pull a value toward the nearest of `targets` when within MAGNET_RANGE, easing
 // the last stretch so the surface settles crisply onto a detent while dragging.
@@ -874,48 +890,20 @@ export function useSheetGestures({
   // still on a caught sheet would otherwise start iOS's text selection and
   // its loupe under the drag. Set at the catch (the touch-down), before the
   // long press would select; the sheet's own values come back at the lift.
-  const selectionLockRef = useRef<{
-    element: HTMLElement;
-    saved: ReadonlyArray<readonly [string, string, string]>;
-  } | null>(null);
+  // One counted lock with the gesture host's own (gestures/selectionLock.ts),
+  // so the two give the sheet its values back in whichever order they let go.
+  const selectionReleaseRef = useRef<(() => void) | null>(null);
   const lockSelection = useCallback(() => {
     const element = sheetElRef.current;
-    if (element == null || selectionLockRef.current != null) {
+    if (element == null || selectionReleaseRef.current != null) {
       return;
     }
-    const names = [
-      '-webkit-user-select',
-      'user-select',
-      '-webkit-touch-callout',
-    ];
-    selectionLockRef.current = {
-      element,
-      saved: names.map(
-        name =>
-          [
-            name,
-            element.style.getPropertyValue(name),
-            element.style.getPropertyPriority(name),
-          ] as const,
-      ),
-    };
-    for (const name of names) {
-      element.style.setProperty(name, 'none');
-    }
+    selectionReleaseRef.current = lockElementSelection([element], null);
   }, []);
   const unlockSelection = useCallback(() => {
-    const lock = selectionLockRef.current;
-    if (lock == null) {
-      return;
-    }
-    selectionLockRef.current = null;
-    for (const [name, value, priority] of lock.saved) {
-      if (value === '') {
-        lock.element.style.removeProperty(name);
-      } else {
-        lock.element.style.setProperty(name, value, priority);
-      }
-    }
+    const release = selectionReleaseRef.current;
+    selectionReleaseRef.current = null;
+    release?.();
   }, []);
 
   // Unmount: the size observer, and the sheet's animator. Stopping it settles
@@ -1860,12 +1848,12 @@ export function useSheetGestures({
       // Under UIKit's presentation (a finger or a pen where the primary
       // pointer is coarse, the same answer as the release's): 1:1 between
       // detents and into the dismiss zone, as UIKit's sheet tracks (the
-      // release, not the drag, picks the detent), and held at fully open,
-      // since UIKit's sheet doesn't stretch beyond its largest detent.
-      // Otherwise today's pointer behavior (spec:AST-017 FR59).
+      // release, not the drag, picks the detent), and past fully open the
+      // record's rubber band (spec:AST-094 FR3). Otherwise today's pointer
+      // behavior (spec:AST-017 FR59).
       const next =
         releaseMotionRef.current.kind === 'uikit'
-          ? Math.max(0, raw)
+          ? fingerDragOffset(raw, state.height)
           : pointerDragOffset(raw, offsets);
       // Dragging above the base restores the full layout height below the
       // viewport; otherwise keep whatever layout the base detent settled with
