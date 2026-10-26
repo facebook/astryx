@@ -3,9 +3,9 @@
 'use client';
 
 /**
- * @file useAttachedElement.ts
- * @input An element ref, an attach function and its dependencies
- * @output Exports useAttachedElement and useIsUnmountedRef
+ * @file useAttachment.ts
+ * @input An element ref, an attach function and a key
+ * @output Exports useAttachment and useIsUnmountedRef
  * @position Internal React helpers shared by useGestureRecognizer and
  *   usePressTracker, so each hook imports only what it uses
  *
@@ -31,41 +31,37 @@ export function useIsUnmountedRef(): {readonly current: boolean} {
 }
 
 /**
- * Keeps one attachment for the element behind `ref`, re-made on any commit
- * that finds another element there (or the dependencies changed), and
- * released on unmount.
+ * Keep `attach` bound to the element `ref` holds after each commit. A
+ * replaced node is released and the new one attached, a changed `key`
+ * re-attaches, and the last attachment is released on unmount; a commit that
+ * changes neither does nothing (react-component-runtime INV3).
  */
-export function useAttachedElement(
+export function useAttachment(
   ref: RefObject<Element | null>,
   attach: (element: Element) => () => void,
-  dependencies: ReadonlyArray<unknown>,
+  key: unknown,
 ): void {
-  const attachedRef = useRef<{
+  const attachmentRef = useRef<{
     element: Element;
-    dependencies: ReadonlyArray<unknown>;
-    detach: () => void;
+    key: unknown;
+    release: () => void;
   } | null>(null);
+
   useIsomorphicLayoutEffect(() => {
     const element = ref.current;
-    const attached = attachedRef.current;
-    if (
-      attached != null &&
-      attached.element === element &&
-      attached.dependencies.length === dependencies.length &&
-      attached.dependencies.every((value, i) =>
-        Object.is(value, dependencies[i]),
-      )
-    ) {
+    const current = attachmentRef.current;
+    if (current?.element === element && current?.key === key) {
       return;
     }
-    attached?.detach();
-    attachedRef.current =
-      element == null ? null : {element, dependencies, detach: attach(element)};
+    current?.release();
+    attachmentRef.current =
+      element == null ? null : {element, key, release: attach(element)};
   });
+
   useIsomorphicLayoutEffect(
     () => () => {
-      attachedRef.current?.detach();
-      attachedRef.current = null;
+      attachmentRef.current?.release();
+      attachmentRef.current = null;
     },
     [],
   );
