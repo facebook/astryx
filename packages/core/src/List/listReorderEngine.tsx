@@ -79,6 +79,7 @@ import {
 } from '../hooks/useAnnounce';
 import {useTranslator, type TranslatorFn} from '../i18n/useTranslator';
 import {useLayer} from '../Layer/useLayer';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {Kbd} from '../Kbd';
 import {anchoredHintStyles, renderAnchoredHint} from '../hooks/anchoredHint';
 import {colorVars, fontWeightVars, spacingVars} from '../theme/tokens.stylex';
@@ -1703,11 +1704,16 @@ function ListReorderHost({reorder}: {reorder: ListReorderContextValue}) {
 
 const hintStyles = stylex.create({
   // A glyph or Done: the hint's text, with nothing of a button's own. Under
-  // a finger its target reaches past the glyph to 44 px, without growing
-  // the hint.
+  // a finger each is 44 px wide, so a glyph's target is centered on it and
+  // never covers its neighbour (design:bidirectionality DR8), and its
+  // target reaches 44 px tall without growing the hint's height.
   button: {
     position: 'relative',
     display: 'inline-flex',
+    minWidth: {
+      default: null,
+      '@media (pointer: coarse)': 44,
+    },
     alignItems: 'center',
     justifyContent: 'center',
     margin: 0,
@@ -1730,10 +1736,7 @@ const hintStyles = stylex.create({
         default: 0,
         '@media (pointer: coarse)': 'min(0px, calc((100% - 44px) / 2))',
       },
-      insetInline: {
-        default: 0,
-        '@media (pointer: coarse)': 'min(0px, calc((100% - 44px) / 2))',
-      },
+      insetInline: 0,
     },
   },
   done: {
@@ -1797,9 +1800,15 @@ function ListReorderModeHint({
   );
   const layer = useLayer({mode: 'context'});
   const layerRef = useRef(layer);
+  const hintRef = useRef<HTMLElement | null>(null);
+  // No external system: keeps the latest layer handle for the effect below,
+  // which re-runs only when the mode's row changes. Idempotent.
   useIsomorphicLayoutEffect(() => {
     layerRef.current = layer;
   });
+  // External system: the hint's popover in the top layer (useLayer),
+  // anchored to the handle of the row in reorder mode. Shown while that row
+  // is in the mode; hidden and unanchored when the mode ends or moves on.
   useIsomorphicLayoutEffect(() => {
     if (target == null) {
       return undefined;
@@ -1812,11 +1821,23 @@ function ListReorderModeHint({
       shown.ref(null);
     };
   }, [target]);
+  // The shared dismissal stack (family:overlay-dismissal): while the hint is
+  // up, an Escape that reaches the stack, with the focus in the hint, ends
+  // reorder mode instead of closing a layer below it such as a Dialog. The
+  // handle claims its own Escape first.
+  useLayerDismissal({
+    isActive: target != null,
+    onDismiss: () => controller.endMode(),
+    getContainer: () => hintRef.current,
+  });
   return renderAnchoredHint(
     layer,
     target == null ? null : (
       <span
-        ref={element => controller.setHintElement(element)}
+        ref={element => {
+          hintRef.current = element;
+          controller.setHintElement(element);
+        }}
         {...stylex.props(anchoredHintStyles.keys)}>
         <HintButton
           label={t('@astryx.list.reorderMoveUp')}
