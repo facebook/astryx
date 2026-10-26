@@ -19,6 +19,10 @@ import {y2kTheme} from '@astryxdesign/theme-y2k';
 import '@astryxdesign/core/reset.css';
 
 import {storyPadding} from './storyFrame';
+import {installTouchSupportForStories} from './touchSupport';
+
+// Before any story renders, as an app's client entry does (touchSupport.ts).
+installTouchSupportForStories();
 
 /**
  * Every shipped theme, so the toolbar can reach them and the visual gate can
@@ -145,6 +149,11 @@ const preview: Preview = {
         ],
         dynamicTitle: true,
       },
+    },
+    touchSupport: {
+      // Read from the URL once, when the preview loads (touchSupport.ts): no
+      // toolbar, since TouchSupport cannot be uninstalled.
+      description: 'TouchSupport installed (on) or not (off), from the URL',
     },
     direction: {
       description: 'Text direction',
