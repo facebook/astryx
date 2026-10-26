@@ -4032,7 +4032,7 @@ describe("useSheetGestures: the handle's pan", () => {
 });
 
 describe("useSheetGestures: the body's pull at the content's edge", () => {
-  it('claims a slow pull from 5 px, before WebKit would take it for the overscroll', () => {
+  it('begins a slow pull at the pan\u2019s 10 px and leaves the moves before it to the browser', () => {
     // A finger: a coarse primary pointer before the sheet mounts (the gesture
     // host attaches its recognizers only there, spec:AST-094 FR19).
     stubCoarsePointer();
@@ -4044,21 +4044,23 @@ describe("useSheetGestures: the body's pull at the content's edge", () => {
     });
     attach(hook, sheetOf(body));
     const touch = fingers();
-    let early: Event | undefined;
     let first: Event | undefined;
+    let second: Event | undefined;
+    let claim: Event | undefined;
     act(() => {
       touch(body, 'touchstart', 100);
       first = touch(body, 'touchmove', 103);
-      early = touch(body, 'touchmove', 106);
+      second = touch(body, 'touchmove', 106);
     });
-    // 3 px is the browser's; from 5 px the moves are the sheet's, though the
-    // pan has not begun (UIKit's 10 px threshold).
+    // A pan starts at its 10 px threshold and nothing claims the touch earlier
+    // (cixzhang's #8060 ruling): the moves before it are the browser's.
     expect(first?.defaultPrevented).toBe(false);
-    expect(early?.defaultPrevented).toBe(true);
+    expect(second?.defaultPrevented).toBe(false);
     expect(hook.result.current.isDragging).toBe(false);
     act(() => {
-      touch(body, 'touchmove', 115);
+      claim = touch(body, 'touchmove', 115);
     });
+    expect(claim?.defaultPrevented).toBe(true);
     expect(hook.result.current.isDragging).toBe(true);
     expect(liveOffset(hook)).toBe(15 - PAN_THRESHOLD);
     act(() => {

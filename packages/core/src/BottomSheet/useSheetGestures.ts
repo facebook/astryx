@@ -2085,10 +2085,6 @@ export function useSheetGestures({
         maximumNumberOfTouches: 1,
         allowedPointerTypes: ['touch', 'pen'],
         scrollEdge: true,
-        // At the edge the pull is the sheet's from the first moves: claimed
-        // under WebKit's own slow-drag claim (10–11 px), so a slow pull never
-        // turns into the content's overscroll.
-        claimDistance: 'early',
         shouldBegin: canBegin,
         shouldReceiveTouch: notePointer,
       }),
@@ -2108,7 +2104,6 @@ export function useSheetGestures({
         maximumNumberOfTouches: 1,
         allowedPointerTypes: ['touch', 'pen'],
         scrollEdge: true,
-        claimDistance: 'early',
         shouldBegin: () => canBegin() && activeOffsetRef.current > 0,
         shouldReceiveTouch: notePointer,
       }),
