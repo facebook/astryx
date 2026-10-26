@@ -403,6 +403,18 @@ describe('build-css astryx.css', () => {
         ? Number.NaN
         : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
     };
+    // A release clock is its theme role's variable with the table's value as
+    // the fallback (`var(--motion-timing-press-button-release-ms,.25s)`): the
+    // fallback is what ships where no theme sets the role.
+    const durationMs = value => {
+      const role = value.trim().match(/^var\(--[\w-]+,\s*([^)]+)\)$/);
+      return toMs(role == null ? value : role[1]);
+    };
+    const durationOf = line =>
+      line.match(/animation-duration:\s*([^;}]+)/)?.[1] ?? null;
+    /** A control's release clock: UIButton's role, `button-release-ms`. */
+    const isControlClock = line =>
+      /button-release-ms/.test(durationOf(line) ?? '');
     const kindOf = line =>
       line.includes('::before')
         ? '::before'
@@ -430,11 +442,11 @@ describe('build-css astryx.css', () => {
 
     it('cross-fades every control release in 200 ms or less where the primary pointer is coarse (DR2)', () => {
       const long = fadingLines().filter(line => {
-        const duration = line.match(/animation-duration:\s*([^;}]+)/);
+        const duration = durationOf(line);
         return (
           duration != null &&
           !line.includes('prefers-reduced-motion') &&
-          toMs(duration[1]) > 200
+          durationMs(duration) > 200
         );
       });
       expect(new Set(long.map(kindOf))).toEqual(
@@ -449,10 +461,7 @@ describe('build-css astryx.css', () => {
         );
         expect(reduced.length, kind).toBeGreaterThan(0);
         for (const line of reduced) {
-          expect(
-            toMs(line.match(/animation-duration:\s*([^;}]+)/)[1]),
-            line,
-          ).toBeLessThanOrEqual(200);
+          expect(durationMs(durationOf(line)), line).toBeLessThanOrEqual(200);
         }
       }
     });
@@ -489,7 +498,7 @@ describe('build-css astryx.css', () => {
         line =>
           kindOf(line) !== 'host' &&
           !line.includes('prefers-reduced-motion') &&
-          /animation-duration:\.25s/.test(line),
+          isControlClock(line),
       );
       expect(layerReleases.length).toBeGreaterThan(0);
       for (const line of layerReleases) {
@@ -510,16 +519,18 @@ describe('build-css astryx.css', () => {
         .match(/controlReleaseEase:\s*'([^']+)'/)[1]
         .match(/-?\d*\.?\d+/g)
         .map(point => String(Number(point)).replace(/^0\./, '.'));
-      const clock = `animation-duration:${String(ms / 1000).replace(/^0\./, '.')}s`;
       const curve = `animation-timing-function:cubic-bezier(${points.join(',')})`;
+      const isClock = line =>
+        isControlClock(line) && durationMs(durationOf(line)) === ms;
       const gated = line => /^@media \(pointer: coarse\)\{/.test(line.trim());
       const lines = astryxCss
         .split('\n')
         .filter(line => !line.includes('prefers-reduced-motion'));
       const control = lines.filter(
-        line => line.includes(clock) || line.includes(curve),
+        line => isClock(line) || line.includes(curve),
       );
-      expect(control.length).toBeGreaterThan(0);
+      expect(control.some(isClock)).toBe(true);
+      expect(control.some(line => line.includes(curve))).toBe(true);
       expect(control.filter(line => !gated(line))).toEqual([]);
       expect(
         lines.some(line => gated(line) && /\{isolation:isolate\}/.test(line)),
