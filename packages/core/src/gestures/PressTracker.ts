@@ -47,12 +47,11 @@
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 import {timing} from '../motion/uikit/timing';
 import {travel} from './geometry';
-import type {GestureRecognizer} from './GestureRecognizer';
+import type {GestureRecognizer, SelectionLock} from './GestureRecognizer';
 import {internals} from './recognizerInternals';
 import type {TapGestureRecognizer} from './TapGestureRecognizer';
 import type {GestureTouch, TouchConsumer} from './types';
 
-/** @experimental */
 export type ControlEvent =
   | 'touchDown'
   | 'touchDragInside'
@@ -63,7 +62,6 @@ export type ControlEvent =
   | 'touchUpOutside'
   | 'touchCancel';
 
-/** @experimental */
 export interface PressBounds {
   readonly left: number;
   readonly top: number;
@@ -71,7 +69,6 @@ export interface PressBounds {
   readonly bottom: number;
 }
 
-/** @experimental */
 export interface PressTrackerOptions {
   /** The control's bounds in client px, read when a finger lands. */
   getBounds: () => PressBounds | null;
@@ -89,6 +86,14 @@ export interface PressTrackerOptions {
    * @default false
    */
   keepsTouch?: boolean;
+  /**
+   * For a control whose own record defines a hold action (a stepper's
+   * hold-repeat): pass `lockSelection` (gestures/selectionLock.ts) to turn
+   * text selection and the callout off for each press, where the primary
+   * pointer is coarse (`spec:AST-094` FR41). A control whose hold does
+   * nothing passes none. @default undefined
+   */
+  selectionLock?: SelectionLock;
   trackingExpansion?: number;
   /**
    * When the highlight waits `contentTouchDelay`: inside a scroller (a
@@ -120,12 +125,10 @@ export interface PressTrackerOptions {
 
 const PRESS = UIKIT_GESTURES.press;
 
-/** @experimental */
 export type PressHighlightDelay = 'inScrollers' | 'always' | 'never';
 
 /**
  * How a kind of pressable tracks a finger and how long its release takes.
- * @experimental
  */
 export interface PressProfile {
   readonly highlightDelay: PressHighlightDelay;
@@ -135,7 +138,6 @@ export interface PressProfile {
   readonly releaseMs: number;
 }
 
-/** @experimental */
 export const PRESS_PROFILES = {
   /** UIControl: same-frame highlight outside scrollers, 70 pt tracking. */
   control: {
@@ -143,16 +145,19 @@ export const PRESS_PROFILES = {
     quickTapFlash: PRESS.quickTapFlash.value,
     releaseMs: timing.press.buttonReleaseMs,
   },
-  /** A table or collection cell: delayed highlight, cancelled by the scroll. */
+  /**
+   * A table or collection cell: inside a scroll view it highlights after the
+   * content-touch delay, outside one at once (AST-094 FR11: the delay applies
+   * only inside scroll views); cancelled by the scroll.
+   */
   cell: {
-    highlightDelay: 'always',
+    highlightDelay: 'inScrollers',
     cancelTravel: UIKIT_GESTURES.pan.hysteresis.value,
     quickTapFlash: 0,
     releaseMs: timing.press.highlightOutMs,
   },
 } as const satisfies Record<string, PressProfile>;
 
-/** @experimental */
 export type PressProfileName = keyof typeof PRESS_PROFILES;
 
 /**
@@ -168,7 +173,6 @@ function vetoesSingleTap(recognizer: GestureRecognizer): boolean {
   return tap.numberOfTapsRequired === 1 && tap.numberOfTouchesRequired === 1;
 }
 
-/** @experimental */
 export class PressTracker implements TouchConsumer {
   isHighlighted = false;
   private isKept = false;
@@ -325,6 +329,10 @@ export class PressTracker implements TouchConsumer {
   }
 
   private emit(event: ControlEvent, touch: GestureTouch): void {
+    // A finger where the primary pointer is fine gets press feedback only.
+    if (touch.isFeedbackOnly === true) {
+      return;
+    }
     this.options.onControlEvent?.(event, touch);
   }
 
@@ -348,6 +356,11 @@ export class PressTracker implements TouchConsumer {
    * waits on the main thread.
    */
   readonly keepsTouch?: () => boolean;
+
+  /** The selection lock of a control whose hold acts (FR41); see the option. */
+  get selectionLock(): SelectionLock | undefined {
+    return this.options.selectionLock;
+  }
 
   private clearHighlightTimer(): void {
     if (this.highlightTimer != null) {

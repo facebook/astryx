@@ -21,6 +21,7 @@
  */
 
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
+import {lockSelection} from './selectionLock';
 import {travel} from './geometry';
 import {
   GestureRecognizer,
@@ -31,7 +32,6 @@ import {
 } from './GestureRecognizer';
 import type {GestureEventContext, GestureTouch} from './types';
 
-/** @experimental */
 export interface LongPressGestureRecognizerOptions extends GestureRecognizerOptions<LongPressGestureRecognizer> {
   minimumPressDuration?: number;
   allowableMovement?: number;
@@ -41,7 +41,6 @@ export interface LongPressGestureRecognizerOptions extends GestureRecognizerOpti
   numberOfTouchesRequired?: number;
 }
 
-/** @experimental */
 export class LongPressGestureRecognizer extends GestureRecognizer {
   /** @internal The host's brand: a long press keeps the callout and selection off (recognizerInternals). */
   protected get family(): 'longPress' {
@@ -54,12 +53,28 @@ export class LongPressGestureRecognizer extends GestureRecognizer {
   numberOfTouchesRequired: number;
 
   private tapsDone = 0;
+  /** The taps phase's current tap: when it landed and its most fingers. */
+  private tapStartedAt: number | null = null;
+  private tapMostTouches = 0;
   private isPressTimerArmed = false;
   /** When the gesture began, on the event clock. */
   beganAt: number | null = null;
 
   constructor(options: LongPressGestureRecognizerOptions = {}) {
-    super(options);
+    // A long press's hold does something (a menu, a hold-repeat): it locks
+    // selection for its press (spec:AST-094 FR41). One at 0 ms recognizes at
+    // touch-down and has no hold, so it brings none, nor does one told null:
+    // there the browser keeps its native long press.
+    super({
+      ...options,
+      selectionLock:
+        options.selectionLock !== undefined
+          ? options.selectionLock
+          : (options.minimumPressDuration ??
+                UIKIT_GESTURES.longPress.minimumPressDuration.value) > 0
+            ? lockSelection
+            : null,
+    });
     this.minimumPressDuration =
       options.minimumPressDuration ??
       UIKIT_GESTURES.longPress.minimumPressDuration.value;
@@ -97,6 +112,10 @@ export class LongPressGestureRecognizer extends GestureRecognizer {
     if (this.tapsDone > 0) {
       // The next tap (or the press) landed in time.
       this.clearTimer();
+    }
+    if (this.tapsDone < this.numberOfTapsRequired) {
+      this.tapStartedAt ??= event.time;
+      this.tapMostTouches = Math.max(this.tapMostTouches, this.numberOfTouches);
     }
     if (
       this.numberOfTouches === this.numberOfTouchesRequired &&
@@ -151,7 +170,23 @@ export class LongPressGestureRecognizer extends GestureRecognizer {
     if (this.numberOfTouches - touches.length > 0) {
       return;
     }
-    // A completed tap of the taps phase.
+    // A completed tap of the taps phase: quick, and with the press's finger
+    // count, as a tap recognizer's would be. GUESS: its hold limit and
+    // interval are the tap recognizer's (UIKit's measured
+    // `maximumTapDuration` and `maximumIntervalBetweenTaps`), until
+    // measurement M-G20 (motion/MEASUREMENTS.md) reads
+    // UILongPressGestureRecognizer's own.
+    const heldFor = event.time - (this.tapStartedAt ?? event.time);
+    const fingers = this.tapMostTouches;
+    this.tapStartedAt = null;
+    this.tapMostTouches = 0;
+    if (
+      heldFor > UIKIT_GESTURES.tap.maximumTapDuration.value ||
+      fingers !== this.numberOfTouchesRequired
+    ) {
+      this.setState('failed');
+      return;
+    }
     this.tapsDone += 1;
     this.setTimer(
       event.time + UIKIT_GESTURES.tap.maximumIntervalBetweenTaps.value,
@@ -163,6 +198,8 @@ export class LongPressGestureRecognizer extends GestureRecognizer {
 
   protected override reset(): void {
     this.tapsDone = 0;
+    this.tapStartedAt = null;
+    this.tapMostTouches = 0;
     this.isPressTimerArmed = false;
     this.beganAt = null;
   }

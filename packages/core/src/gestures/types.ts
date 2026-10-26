@@ -9,21 +9,20 @@
  * @position Shared vocabulary of packages/core/src/gestures; no runtime code
  */
 
+import type {SelectionLock} from './GestureRecognizer';
+
 /**
  * UIGestureRecognizer.State. A discrete recognizer goes straight from
  * `possible` to `ended` (UIKit's `.recognized` is the same value).
- * @experimental
  */
 export type GestureState =
   'possible' | 'began' | 'changed' | 'ended' | 'cancelled' | 'failed';
 
 /**
  * What made the contact. A pen on an iPad is `pen`, not `touch`.
- * @experimental
  */
 export type PointerKind = 'touch' | 'mouse' | 'pen';
 
-/** @experimental */
 export interface Point {
   readonly x: number;
   readonly y: number;
@@ -31,7 +30,6 @@ export interface Point {
 
 /**
  * One position of a contact at one instant, in client (viewport) CSS px.
- * @experimental
  */
 export interface TouchSample {
   readonly x: number;
@@ -40,14 +38,12 @@ export interface TouchSample {
   readonly time: number;
 }
 
-/** @experimental */
 export type TouchPhase = 'began' | 'moved' | 'ended' | 'cancelled';
 
 /**
  * The scrollers between a touch and the page, as the host sees them: enough
  * for a recognizer to ask whether the browser would scroll something if the
  * finger moved one way, without the recognizer touching the DOM.
- * @experimental
  */
 export interface NativeScrollProbe {
   /**
@@ -76,7 +72,6 @@ export interface NativeScrollProbe {
 /**
  * One contact: UITouch. The arena owns it and updates it in place; a
  * recognizer keeps a reference to every touch it receives.
- * @experimental
  */
 export interface GestureTouch {
   /** Unique among the contacts the arena tracks at once. */
@@ -103,11 +98,17 @@ export interface GestureTouch {
   readonly scroll: NativeScrollProbe | null;
   /** The browser took this contact for its own pan or zoom. */
   takenByBrowser: boolean;
+  /**
+   * A finger delivered where the primary pointer is fine, which only a
+   * per-event press tracker hears (an FR19 exception for press feedback
+   * only, pending in `spec:AST-094`'s amendment): the tracker paints its
+   * press and reports no control event.
+   */
+  readonly isFeedbackOnly?: boolean;
 }
 
 /**
  * The input a host hands the arena for one contact in one event.
- * @experimental
  */
 export interface TouchInput {
   readonly id: number;
@@ -120,17 +121,17 @@ export interface TouchInput {
 
 /**
  * A new contact: where it is, what made it, and what it landed on.
- * @experimental
  */
 export interface TouchBeganInput extends TouchInput {
   readonly pointerType: PointerKind;
   readonly target: unknown;
   readonly scroll?: NativeScrollProbe | null;
+  /** See GestureTouch.isFeedbackOnly. */
+  readonly isFeedbackOnly?: boolean;
 }
 
 /**
  * What a recognizer is told alongside the touches that changed.
- * @experimental
  */
 export interface GestureEventContext {
   /** Timestamp of the event being processed. */
@@ -143,7 +144,6 @@ export interface GestureEventContext {
  * Facts about the page a recognizer may need and must not read from the DOM
  * itself: the viewport for screen-edge pans, and the writing direction of a
  * view for `leading` / `trailing`.
- * @experimental
  */
 export interface GestureEnvironment {
   viewportSize(): {readonly width: number; readonly height: number};
@@ -167,7 +167,6 @@ export const DEFAULT_ENVIRONMENT: GestureEnvironment = {
  * `touchesEnded` to when no gesture recognizer takes the touch (a UIControl).
  * The arena delivers through it, honoring `delaysTouchesBegan`,
  * `delaysTouchesEnded` and `cancelsTouchesInView`.
- * @experimental
  */
 export interface TouchConsumer {
   touchBegan(touch: GestureTouch): void;
@@ -187,4 +186,12 @@ export interface TouchConsumer {
    * move before the press is delivered still scrolls.
    */
   keepsTouch?(): boolean;
+  /**
+   * A control whose own record defines a hold action (a stepper's
+   * hold-repeat) brings the lock that turns text selection and the callout
+   * off for that press only, as a recognizer created with one does
+   * (`spec:AST-094` FR41). A control whose hold does nothing leaves it
+   * undefined and keeps the browser's long-press selection.
+   */
+  readonly selectionLock?: SelectionLock;
 }
