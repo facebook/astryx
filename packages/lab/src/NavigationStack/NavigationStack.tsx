@@ -848,9 +848,10 @@ function writingDirection(element: HTMLElement | null): 'ltr' | 'rtl' {
  * and back swipes, on the compositor.
  */
 /**
- * Registers the motion roles the stack animates with (the navigation and
- * spring tables), so a theme can retune them. Once per page, before the
- * first animation; nothing registers on import.
+ * Registers the navigation and spring tables the stack animates with in
+ * core's motion registry, where only `spec:AST-094` FR4's springs are roles
+ * and a role plays its table value: touch motion has no theme surface. Once
+ * per page, before the first animation; nothing registers on import.
  */
 let isStackMotionRegistered = false;
 function registerStackMotion(): void {
@@ -1224,7 +1225,7 @@ export function NavigationStack<T>({
    * platter is there from the push's first frame and the chevron fades in a
    * beat later; on the pop the chevron fades out at once and the platter
    * leaves with the screen. Both fades are the back-button spring; the
-   * push's delay is a motion role, resolved under the stack's theme.
+   * push's delay is the navigation table's, as measured.
    */
   const fadeBack = useCallback(
     (kind: 'push' | 'pop', under: string | null, release = false) => {
