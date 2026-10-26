@@ -28,7 +28,7 @@ import {
   readIndicatorPressLayer,
   readsAncestorPress,
 } from '../__tests__/indicatorPressLayer';
-import {pressConsts} from '../utils/interactionOverlay.stylex';
+import {controlPressConsts} from '../utils/controlPressLayer.stylex';
 import {CheckboxInput} from './CheckboxInput';
 import {Theme} from '../theme/Theme';
 import {defineTheme} from '../theme/defineTheme';
@@ -960,7 +960,7 @@ describe('pressed state', () => {
       releases: true,
       // UIButton's release, and under Reduce Motion the policy's 200 ms fade
       // (design:reduced-motion DR2, reducedMotionFadeConsts).
-      releaseMs: [pressConsts.controlReleaseMs, 200],
+      releaseMs: [controlPressConsts.controlReleaseMs, 200],
       fillsBoth: true,
     });
     // Nothing carries a press strength any more, so no main-thread release

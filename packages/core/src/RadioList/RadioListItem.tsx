@@ -34,18 +34,11 @@ import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useIndicator} from '../Indicator';
 import {Item, type ItemAlign} from '../Item';
 import {themeProps} from '../utils/themeProps';
-import {
-  cellPressConsts,
-  pressReleaseRoles,
-} from '../utils/interactionOverlay.stylex';
+import {cellPressConsts} from '../utils/rowPressLayer.stylex';
 import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 
-/**
- * The row is a cell: the circle releases on the row's deselect clock and
- * curve, each its theme motion role or the table's value (spec:AST-094 FR4).
- */
-const CELL_RELEASE = `var(${pressReleaseRoles.duration}, ${cellPressConsts.cellReleaseMs}ms)`;
-const CELL_RELEASE_EASE = `var(${pressReleaseRoles.curve}, ${cellPressConsts.cellReleaseEase})`;
+/** The row is a cell: the circle releases on the row's deselect clock. */
+const CELL_RELEASE = `${cellPressConsts.cellReleaseMs}ms`;
 
 // The mouse press's paint, declared on the row and inherited by the layer
 // over the circle. Internal: not a theme hook.
@@ -107,7 +100,7 @@ const styles = stylex.create({
       animationTimingFunction: {
         default: null,
         '@media (pointer: coarse)': {
-          default: CELL_RELEASE_EASE,
+          default: cellPressConsts.cellReleaseEase,
           '@media (prefers-reduced-motion: reduce)':
             reducedMotionFadeConsts.easing,
         },

@@ -27,7 +27,7 @@ import {
   readIndicatorPressLayer,
   readsAncestorPress,
 } from '../__tests__/indicatorPressLayer';
-import {cellPressConsts} from '../utils/interactionOverlay.stylex';
+import {cellPressConsts} from '../utils/rowPressLayer.stylex';
 import {RadioList} from './RadioList';
 import {RadioListItem} from './RadioListItem';
 import {getForcedColorsRules} from '../__tests__/forcedColors';

@@ -423,9 +423,8 @@ describe('build-css astryx.css', () => {
       // (indicatorPressOwnerStyles); the layer over a checkbox box or a radio
       // circle (its wrapper's `::after`) reads them, so it answers its
       // nearest owner only. The release runs on a control's clock (250 ms)
-      // for a standalone checkbox and a cell's (200 ms) in a row, each read
-      // through its theme motion role with the table's value as the fallback
-      // (spec:AST-094 FR4), and the layer reads no strength.
+      // for a standalone checkbox and a cell's (200 ms) in a row, and the
+      // layer reads no strength.
       const own = arm =>
         lines().filter(
           line =>
@@ -464,20 +463,15 @@ describe('build-css astryx.css', () => {
           ),
         ),
       ).toBe(true);
-      const clocks = lines().flatMap(line => {
+      const durations = lines().flatMap(line => {
         const match = line.match(
-          /^\s*@media [^{]*pointer: coarse[^{]*\{[^{]*::after\{animation-duration:var\((--motion-timing-press-[\w-]+),\s*([\d.]+)(ms|s)\)\}/,
+          /^\s*@media [^{]*pointer: coarse[^{]*\{[^{]*::after\{animation-duration:([\d.]+)(ms|s)\}/,
         );
         return match == null
           ? []
-          : [`${match[1]} ${Number(match[2]) * (match[3] === 's' ? 1000 : 1)}`];
+          : [Number(match[1]) * (match[2] === 's' ? 1000 : 1)];
       });
-      expect(clocks).toEqual(
-        expect.arrayContaining([
-          '--motion-timing-press-highlight-out-ms 200',
-          '--motion-timing-press-button-release-ms 250',
-        ]),
-      );
+      expect(durations).toEqual(expect.arrayContaining([200, 250]));
       expect(
         lines().some(
           line =>

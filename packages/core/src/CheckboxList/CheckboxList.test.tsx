@@ -40,7 +40,7 @@ import {
   readsAncestorPress,
   readsIndicatorPress,
 } from '../__tests__/indicatorPressLayer';
-import {cellPressConsts} from '../utils/interactionOverlay.stylex';
+import {cellPressConsts} from '../utils/rowPressLayer.stylex';
 
 // FieldStatus announces status messages through the persistent useAnnounce
 // singletons; remove them between tests so role/aria-live queries in this
