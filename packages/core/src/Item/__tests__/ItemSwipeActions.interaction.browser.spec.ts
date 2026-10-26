@@ -621,8 +621,9 @@ test('the settle keeps advancing every frame while the main thread is blocked', 
     tracked,
     {from: block.from, to: Math.min(block.to, settle.to)},
     // Within 8 px of its end a critically damped settle moves less than a
-    // pixel a frame, finer than the screencast resolves.
-    {axis: 'x', settledWithin: 8},
+    // pixel a frame, finer than the screencast resolves. The judged part of
+    // the block is the settle's own motion, not a sliver: 16 frames at least.
+    {axis: 'x', settledWithin: 8, minJudgedFrames: 16},
   );
   await writeEvidence(
     'busy-main-thread/item-swipe-settle',
@@ -653,12 +654,12 @@ test('the settle keeps advancing every frame while the main thread is blocked', 
     data: t => ({x: tracked.find(f => f.t === t)?.box?.x ?? -1}),
   });
   await film.write(testInfo, {block, settle});
-  // The judged part of the block is the settle's own motion, not a sliver.
-  expect(proof.expectedFrames).toBeGreaterThan(15);
-  expect(proof.medianFrameMs).toBeLessThan(20);
+  // The harness's verdict (no stall over two dropped frames, nearly every
+  // expected frame moved, the judged part long enough), in frames at the
+  // screencast's own cadence rather than its delivery rate.
+  expect(proof.verdict.failures, proof.summary).toEqual([]);
   expect(proof.frames).toBeGreaterThanOrEqual(proof.expectedFrames - 2);
   expect(proof.changed).toBeGreaterThanOrEqual(proof.frames - 3);
-  expect(proof.longestStallMs).toBeLessThan(40);
   expect(proof.monotonic).toBe(true);
 });
 
