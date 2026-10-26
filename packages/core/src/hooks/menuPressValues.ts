@@ -5,7 +5,7 @@
  * @input None
  * @output The three UIKit values the menu press model reads
  * @position Copies of three entries of the UIKit tables (motion/uikit
- *   gestures.ts `menuPress.holdOpenSlop` and `menuPress.handoff`, scroll.ts
+ *   gestures.ts `UIKIT_MENU_PRESS.holdOpenSlop` and `.handoff`, scroll.ts
  *   `delaysContentTouchesMs`), so a menu bundles these numbers and not the
  *   tables with their measurement records (architecture:component-style-
  *   authoring INV6). The tables stay the source and document the

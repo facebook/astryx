@@ -402,14 +402,23 @@ describe('useMenuPress — release outside and cancellation', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
-  it('a pointercancel clears the row the press lit (the browser took it for a scroll)', () => {
+  it('where the primary pointer is coarse, a pointercancel clears the row the press lit (the browser took it for a scroll); where it is fine, the highlight stays as before', () => {
     const onHighlight = vi.fn();
-    render(<Harness onHighlight={onHighlight} />);
+    const {unmount} = render(
+      <Harness touchModel="uikit" onHighlight={onHighlight} />,
+    );
     fireEvent.pointerDown(row('A'), touch());
     fireEvent.pointerMove(row('B'), touch());
     expect(onHighlight).toHaveBeenLastCalledWith(row('B'));
     fireEvent.pointerCancel(row('B'), touch());
     expect(onHighlight).toHaveBeenLastCalledWith(null);
+    unmount();
+    const onFineHighlight = vi.fn();
+    render(<Harness onHighlight={onFineHighlight} />);
+    fireEvent.pointerDown(row('A'), touch());
+    fireEvent.pointerMove(row('B'), touch());
+    fireEvent.pointerCancel(row('B'), touch());
+    expect(onFineHighlight).toHaveBeenLastCalledWith(row('B'));
   });
 
   it('a second pointer ends the gesture and does not start another', () => {
@@ -873,7 +882,7 @@ describe('useMenuPress — the trigger', () => {
     }
   });
 
-  it('a trigger under a sticky ancestor inside a scroll view waits for the content-touch delay; stuck to the page it opens as the finger presses', () => {
+  it('a trigger under a sticky ancestor in scrolling page content is in a scroll view and waits for the content-touch delay; under a fixed one it opens as the finger presses (spec:AST-094 FR11)', () => {
     vi.useFakeTimers();
     const root = document.documentElement;
     Object.defineProperty(root, 'scrollHeight', {
@@ -885,15 +894,12 @@ describe('useMenuPress — the trigger', () => {
       value: 800,
     });
     try {
-      const opensAt = (inScrollView: boolean) => {
+      const opensAt = (position: 'sticky' | 'fixed') => {
         const onOpenChange = vi.fn();
-        const sticky = (
-          <div style={{position: 'sticky', top: 0}}>
-            <Harness touchModel="uikit" onOpenChange={onOpenChange} />
-          </div>
-        );
         const {unmount} = render(
-          inScrollView ? <ScrollView>{sticky}</ScrollView> : sticky,
+          <div style={{position, top: 0}}>
+            <Harness touchModel="uikit" onOpenChange={onOpenChange} />
+          </div>,
         );
         const trigger = screen.getByRole('button', {name: 'Open'});
         fireEvent.pointerDown(trigger, {...touch(), clientX: 0, clientY: 0});
@@ -908,8 +914,8 @@ describe('useMenuPress — the trigger', () => {
         unmount();
         return elapsed;
       };
-      expect(opensAt(true)).toBe(scroll.delaysContentTouchesMs);
-      expect(opensAt(false)).toBe(0);
+      expect(opensAt('sticky')).toBe(scroll.delaysContentTouchesMs);
+      expect(opensAt('fixed')).toBe(0);
     } finally {
       delete (root as unknown as Record<string, unknown>).scrollHeight;
       delete (root as unknown as Record<string, unknown>).clientHeight;
