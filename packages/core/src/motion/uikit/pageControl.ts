@@ -17,13 +17,13 @@
  *
  * Every leaf carries one or more `@source`; uikit.test.ts enforces it.
  *
+ * Every value is an internal constant that Lab's PageControl reads
+ * directly: touch motion stays internal (no theme role).
+ *
  * SYNC: When modified, update:
  * - /packages/lab/src/PageControl/pageControlModel.ts
- * - /packages/cli/assets/docs/motion.doc.mjs (`pnpm generate:motion-roles`)
  * - /packages/core/src/motion/README.md (domain list)
  */
-
-import {registerMotionTable} from '../roles';
 
 /** UIPageControl on iOS 26. */
 export const pageControl = {
@@ -209,17 +209,3 @@ export const pageControl = {
    */
   jogMaxRate: 15,
 } as const;
-
-/**
- * Makes the window's slide (spring and delay) and the fades and switches
- * (durations and curves) motion roles a theme may retune (motion/roles.ts).
- * When a held finger turns the control interactive decides who holds the
- * touch, not how anything moves, so it is not a role. Nothing registers on
- * import: PageControl's touch layer calls it once (it is idempotent), so a
- * page that never shows the touch presentation ships no registry.
- */
-export function registerPageControlTable(): void {
-  registerMotionTable('pageControl', pageControl, {
-    exclude: ['interactionDelayMs'],
-  });
-}

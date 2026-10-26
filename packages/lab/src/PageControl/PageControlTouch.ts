@@ -25,11 +25,7 @@ import {
 } from '@astryxdesign/core/gestures';
 import {animatorFor} from '@astryxdesign/core/motion/animator';
 import {reducedMotionFade} from '@astryxdesign/core/motion/reducedMotion';
-import {resolveMotion} from '@astryxdesign/core/motion/resolveMotion';
-import {
-  pageControl,
-  registerPageControlTable,
-} from '@astryxdesign/core/motion/uikit';
+import {pageControl} from '@astryxdesign/core/motion/uikit';
 import {
   BOX,
   PITCH,
@@ -100,13 +96,6 @@ export function usePageControlTouch({
   windowStart,
   isInteracting,
 }: PageControlTouch): void {
-  // The table's roles, once, before the first motion resolves one.
-  useLayoutEffect(() => {
-    if (isTouch) {
-      registerPageControlTable();
-    }
-  }, [isTouch]);
-
   const geometry = () => {
     const root = rootRef.current;
     if (root == null) {
@@ -355,40 +344,37 @@ export function usePageControlTouch({
       }
     }
     let resizeTimer: ReturnType<typeof setTimeout> | undefined;
-    const timer = setTimeout(
-      () => {
-        // A table spring: the animator plays the theme's value of the role.
-        const transition = {spring: PC.windowSlide};
-        const stripAnimator = animatorFor(strip);
-        stripAnimator.animate({x: offsetFor(windowStart)}, transition);
-        const shown = Array.from(strip.children) as HTMLElement[];
-        if (stripAnimator.reducedMotion() === 'off') {
-          for (const dot of shown) {
-            animatorFor(dot).animate(
-              {scale: scaleFor(windowStart, pageOf(dot))},
-              transition,
-            );
-          }
-          return;
+    const timer = setTimeout(() => {
+      // A table spring: the animator plays the theme's value of the role.
+      const transition = {spring: PC.windowSlide};
+      const stripAnimator = animatorFor(strip);
+      stripAnimator.animate({x: offsetFor(windowStart)}, transition);
+      const shown = Array.from(strip.children) as HTMLElement[];
+      if (stripAnimator.reducedMotion() === 'off') {
+        for (const dot of shown) {
+          animatorFor(dot).animate(
+            {scale: scaleFor(windowStart, pageOf(dot))},
+            transition,
+          );
         }
-        // Under Reduce Motion the strip's cross-fade carries the whole change
-        // (design:reduced-motion): the dots take their new sizes while it is
-        // transparent, not with fades of their own, which would fight their
-        // page opacity.
-        const resize = () => {
-          for (const dot of shown) {
-            animatorFor(dot).set({scale: scaleFor(windowStart, pageOf(dot))});
-          }
-        };
-        const half = (reducedMotionFade(root)?.duration ?? 0) / 2;
-        if (half > 0) {
-          resizeTimer = setTimeout(resize, half);
-        } else {
-          resize();
+        return;
+      }
+      // Under Reduce Motion the strip's cross-fade carries the whole change
+      // (design:reduced-motion): the dots take their new sizes while it is
+      // transparent, not with fades of their own, which would fight their
+      // page opacity.
+      const resize = () => {
+        for (const dot of shown) {
+          animatorFor(dot).set({scale: scaleFor(windowStart, pageOf(dot))});
         }
-      },
-      resolveMotion(root, PC, 'windowSlideDelayMs'),
-    );
+      };
+      const half = (reducedMotionFade(root)?.duration ?? 0) / 2;
+      if (half > 0) {
+        resizeTimer = setTimeout(resize, half);
+      } else {
+        resize();
+      }
+    }, PC.windowSlideDelayMs);
     return () => {
       clearTimeout(timer);
       clearTimeout(resizeTimer);
@@ -421,15 +407,12 @@ export function usePageControlTouch({
     }
     // Under Reduce Motion every dot takes the policy's fade.
     const reduced = reducedFadeOf(root);
-    // The theme's values of the roles (the table's when it sets none).
+    // The table's measured values: touch motion stays internal.
     const fade = fadeOf(
-      resolveMotion(root, PC, kind === 'tap' ? 'tapFadeOutMs' : 'fadeOutMs'),
-      resolveMotion(root, PC, 'fadeOutCurve'),
+      kind === 'tap' ? PC.tapFadeOutMs : PC.fadeOutMs,
+      PC.fadeOutCurve,
     );
-    const switchFade = fadeOf(
-      resolveMotion(root, PC, 'switchMs'),
-      resolveMotion(root, PC, 'switchCurve'),
-    );
+    const switchFade = fadeOf(PC.switchMs, PC.switchCurve);
     for (const dot of Array.from(
       stripRef.current?.children ?? [],
     ) as HTMLElement[]) {

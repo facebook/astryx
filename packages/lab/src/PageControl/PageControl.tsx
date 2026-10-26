@@ -58,8 +58,8 @@
  * (`useTouchPresentation`; one touch model, no platform idiom). With a mouse
  * or a trackpad the control pages by tap (UIKit's tap rule: up to 45 px of
  * travel) and keys over a row cropped to the control, with instant opacity
- * changes. The motion values are theme roles (`pageControl`,
- * resolveMotion).
+ * changes. The motion values are the `pageControl` table's measured
+ * constants: touch motion stays internal (no theme role).
  *
  * The touch presentation lives in PageControlTouch.ts, imported once here.
  *

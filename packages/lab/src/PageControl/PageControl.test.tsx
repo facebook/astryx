@@ -226,10 +226,11 @@ describe('PageControl', () => {
     expect(dots.every(dot => dot.style.transition === 'none')).toBe(true);
   });
 
-  it("under a finger, a theme's --motion-page-control-… values reach the fades", () => {
+  // Touch motion stays internal: no theme role, so no variable retunes it.
+  it("under a finger, the old indicator fades on the table's measured 250 ms and curve, and a --motion-page-control-… variable changes nothing", () => {
     asTouch();
     const onChange = vi.fn();
-    const {rerender} = render(
+    const themed = (value: number) => (
       <div
         data-astryx-theme="page-control-test"
         style={
@@ -238,24 +239,16 @@ describe('PageControl', () => {
             '--motion-page-control-fade-out-curve': 'cubic-bezier(0, 0, 1, 1)',
           } as React.CSSProperties
         }>
-        <PageControl count={5} value={2} onChange={onChange} />
-      </div>,
+        <PageControl count={5} value={value} onChange={onChange} />
+      </div>
     );
-    rerender(
-      <div
-        data-astryx-theme="page-control-test"
-        style={
-          {
-            '--motion-page-control-fade-out-ms': '500ms',
-            '--motion-page-control-fade-out-curve': 'cubic-bezier(0, 0, 1, 1)',
-          } as React.CSSProperties
-        }>
-        <PageControl count={5} value={3} onChange={onChange} />
-      </div>,
-    );
+    const {rerender} = render(themed(2));
+    rerender(themed(3));
     const slider = screen.getByRole('slider');
     const old = slider.querySelector<HTMLElement>('[data-page="2"]');
-    expect(old?.style.transition).toBe('opacity 0.5s cubic-bezier(0, 0, 1, 1)');
+    expect(old?.style.transition).toBe(
+      'opacity 0.25s cubic-bezier(0, 0, 0.58, 1)',
+    );
   });
 
   it('under a finger and Reduce Motion, every opacity change fades in 200 ms on easeInOut, whatever the theme (design:reduced-motion DR2)', () => {
