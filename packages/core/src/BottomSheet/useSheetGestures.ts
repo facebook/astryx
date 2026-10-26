@@ -888,11 +888,12 @@ export function useSheetGestures({
     },
     [animator, recordSheetHeight],
   );
-  // While a finger drags the sheet, or holds it after catching it mid-settle,
-  // its text is not selectable and the touch callout is off: a finger held
-  // still on a caught sheet would otherwise start iOS's text selection and
-  // its loupe under the drag. Set at the catch (the touch-down), before the
-  // long press would select; the sheet's own values come back at the lift.
+  // While a finger drags the sheet under UIKit's presentation, or holds it
+  // after catching it mid-settle, its text is not selectable and the touch
+  // callout is off: a finger held still on a caught sheet would otherwise
+  // start iOS's text selection and its loupe under the drag. Set at the catch
+  // (the touch-down), before the long press would select; the sheet's own
+  // values come back at the lift.
   // One counted lock with the gesture host's own (gestures/selectionLock.ts),
   // so the two give the sheet its values back in whichever order they let go.
   const selectionReleaseRef = useRef<(() => void) | null>(null);
@@ -1760,9 +1761,6 @@ export function useSheetGestures({
         return false;
       }
       dragTouchRef.current = pointerType === 'touch';
-      if (dragTouchRef.current) {
-        lockSelection();
-      }
       const naturalEndGap = naturalEndGapFor(bodyNodeRef.current);
       let baseOffset = settledOffset;
       let baseLayoutOffset = settledLayoutOffsetRef.current;
@@ -1793,6 +1791,12 @@ export function useSheetGestures({
         sheetElRef.current,
         pointerType,
       );
+      // Selection and the callout go off with UIKit's presentation, the same
+      // answer as the tracking and the release: a finger where the primary
+      // pointer is fine keeps the browser's (spec:AST-094 FR19).
+      if (releaseMotionRef.current.kind === 'uikit') {
+        lockSelection();
+      }
       dragStateRef.current = {
         pan: null,
         height: sheetHeight,

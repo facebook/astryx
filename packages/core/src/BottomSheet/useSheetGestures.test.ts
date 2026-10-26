@@ -2436,6 +2436,34 @@ describe('useSheetGestures: the release on the compositor', () => {
     expect(t.style.getPropertyValue('user-select')).toBe('text');
   });
 
+  it('leaves text selection to the browser for a finger where the primary pointer is fine (spec:AST-094 FR19)', () => {
+    // A touchscreen laptop: a finger drags the handle through today's drag,
+    // and selection and the callout stay the browser's.
+    stubPointer({coarse: false});
+    const {hook} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    t.style.setProperty('user-select', 'text');
+    act(() => hook.result.current.sheetRef(t));
+    act(() =>
+      hook.result.current.handleProps.onPointerDown(fingerEvent(0, 0, t)),
+    );
+    for (const [y, time] of [
+      [20, 33],
+      [40, 66],
+      [60, 100],
+    ]) {
+      act(() =>
+        hook.result.current.handleProps.onPointerMove(fingerEvent(y, time, t)),
+      );
+    }
+    expect(hook.result.current.isDragging).toBe(true);
+    expect(t.style.getPropertyValue('user-select')).toBe('text');
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(fingerEvent(60, 102, t)),
+    );
+    expect(t.style.getPropertyValue('user-select')).toBe('text');
+  });
+
   it('carries a drag-dismissed sheet off screen on the release spring, for the host to wait on', async () => {
     // A host that closes when asked.
     const onDismiss = vi.fn();
@@ -2489,6 +2517,28 @@ describe('useSheetGestures: the release on the compositor', () => {
     expect(hook.result.current.settledOffset).toBe(0);
     const release = played.at(-1) as Played;
     // The sheet extends 48 px below the screen: it never rises past that.
+    for (let ms = 0; ms <= 600; ms += 4) {
+      expect(travelAt(release, ms)).toBeGreaterThanOrEqual(-48.5);
+    }
+  });
+
+  it('keeps a finger let go above fully open, still moving up, within the reserve below the screen', () => {
+    const {hook} = setup({
+      snapHeights: () => [200],
+      offscreenBlockEndInset: 48,
+    });
+    const t = makeTarget();
+    const played = recordAnimations(t);
+    downFinger(hook, 400, 0, t);
+    // Up past fully open until the band holds the sheet at the 48 px wall,
+    // the finger still moving up at 1500 px/s when it lifts.
+    stream(hook, t, {from: 400, to: 100, t0: 0, t1: 200, finger: true});
+    expect(liveOffset(hook)).toBe(-48);
+    act(() =>
+      hook.result.current.handleProps.onPointerUp(fingerEvent(100, 201, t)),
+    );
+    expect(hook.result.current.settledOffset).toBe(0);
+    const release = played.at(-1) as Played;
     for (let ms = 0; ms <= 600; ms += 4) {
       expect(travelAt(release, ms)).toBeGreaterThanOrEqual(-48.5);
     }
