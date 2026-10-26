@@ -2,8 +2,8 @@
 
 /**
  * @file refresh.ts
- * @input The motion role registry (registerRefreshControlTable only)
- * @output Exports `refreshControl` and `registerRefreshControlTable`. The table: UIRefreshControl's height (the
+ * @input None (measured constants)
+ * @output Exports `refreshControl`. The table: UIRefreshControl's height (the
  *   refreshing inset and the one-to-one stretch of a pull), its trigger, the
  *   pull after the trigger, the indicator's reveal curve, spin, trigger
  *   rotation and exit, and the end-of-refresh clock
@@ -39,13 +39,12 @@
  * the `@measure` task that will confirm or replace them. uikit.test.ts
  * enforces both.
  *
- * Every value is an internal constant: spec:AST-094 FR4 names none of them as
- * a motion role, so the table registers no role (motion/roles.ts).
+ * Every value is an internal constant read as it is: spec:AST-094 FR4 names
+ * none of them as a motion role, so the table is never registered
+ * (motion/roles.ts).
  *
  * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md
  */
-
-import {registerMotionTable} from '../roles';
 
 export const refreshControl = {
   /**
@@ -179,14 +178,3 @@ export const refreshControl = {
    */
   exitScale: 0.001,
 } as const;
-
-/**
- * Registers the table under `refreshControl` (motion/roles.ts) with no role:
- * spec:AST-094 FR4 names none of its values, so each stays an internal
- * constant. Nothing registers on import: the refresh control's touch layer
- * calls it once before its first animation (it is idempotent), so a page that
- * never pulls ships no registry.
- */
-export function registerRefreshControlTable(): void {
-  registerMotionTable('refreshControl', refreshControl);
-}
