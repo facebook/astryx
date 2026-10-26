@@ -58,7 +58,8 @@
  * ListReorderTouch.ts, imported here alone.
  *
  * SYNC: When modified, update List/listReorderContext.ts, List/List.tsx,
- * List/ListReorderHandle.tsx and List/ListReorderTouch.ts.
+ * List/ListReorderHandle.tsx, List/ListReorderTouch.ts and
+ * List/__tests__/ListReorder.interaction.browser.spec.ts.
  */
 
 import {useEffect, useState, type Key, type KeyboardEvent} from 'react';

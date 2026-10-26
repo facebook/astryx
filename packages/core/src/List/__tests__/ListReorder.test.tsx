@@ -19,7 +19,8 @@
  *   menu with Move before and Move after, only the ones that move its row,
  *   each one committed move
  * @position Tests for List/listReorderEngine.tsx, List/ListReorderHandle.tsx
- *   and reorderable/createReorderable.ts
+ *   and reorderable/createReorderable.ts; the touch and mouse drags are
+ *   proven in a real browser by ListReorder.interaction.browser.spec.ts
  */
 
 import {readFileSync} from 'node:fs';
