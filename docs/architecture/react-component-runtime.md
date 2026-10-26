@@ -166,7 +166,7 @@ those contracts.
   translate from its old place to its new one (`spec:AST-094` FR5); it never
   animates height, which lays out every frame. What moves is designated, never
   found by walking siblings. A boundary is any container element registered by
-  ref: ScrollArea registers its scrolling element itself, and an app registers
+  ref: ScrollableArea registers its scrolling element itself, and an app registers
   its own scroll container or panel with `useDisclosureBoundary(containerRef)`.
   Following content inside a boundary can mix Astryx components and plain app
   elements; how each moves is OQ2, and INV12 proposes (ii): an Astryx
@@ -177,21 +177,22 @@ those contracts.
   so the module adds no elements (`architecture:component-style-authoring`
   INV7). Anything else inside the boundary, fixed or sticky elements, and
   content outside it take their final place at once; a nested boundary moves
-  as one participant of the boundary around it. Under Reduce Motion nothing
-  travels, and following content cross-fades into place
-  (`design:reduced-motion` DR2). The handle (a container boundary with opt-in
+  as one participant of the boundary around it. Under Reduce Motion, following
+  content changes as `design:reduced-motion` DR1–DR3 require: a cross-fade
+  under a coarse primary pointer, an immediate change otherwise. Whether the
+  travel applies under every pointer is OQ3. The handle (a container boundary with opt-in
   participants, any container by ref) is decided by `cixzhang`, 2026-10-25.
   The public pieces are `useDisclosureBoundary(containerRef)` and, under OQ2's
   (ii), `useDisclosureParticipant(elementRef)`: each takes a ref and returns
   nothing, because which container scopes the motion and which app content
   moves with it are the caller's intent (`spec:AST-002` FR1), and no other API
-  does either job (`architecture:public-component-api` INV21). The change hook
+  does either job. The change hook
   stays internal.
 
   Usage:
 
   ```tsx
-  // Public: an app container opts in as a boundary. ScrollArea does this itself.
+  // Public: an app container opts in as a boundary. ScrollableArea does this itself.
   const panelRef = useRef(null);
   useDisclosureBoundary(panelRef);
   <div ref={panelRef}>
@@ -372,3 +373,7 @@ component suite is not blanket conformance with every invariant.
   following content in one element passed by ref and translated as a block,
   which needs one measurement but cannot separate a disclosure from content
   inside the same wrapper.
+- **OQ3 — Which pointers get the travel.** (`human-design`) Options: (a,
+  recommended) every pointer, because a disclosure's following content jumps
+  the same way under a mouse; or (b) only a coarse primary pointer, with an
+  immediate change elsewhere, as other touch presentations do.
