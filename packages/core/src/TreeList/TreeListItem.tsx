@@ -27,6 +27,7 @@ import {
 } from '../theme/tokens.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {rowPressLayerStyles} from '../utils/rowPressLayer';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {
   hasInteractiveAncestor,
@@ -682,8 +683,8 @@ export function TreeListItem({
                   interactionOverlayStyles.backgroundImage,
                   // The touch press on a compositor layer (after the
                   // overlay, whose own touch paint it turns off).
-                  interactionOverlayStyles.cell,
-                  interactionOverlayStyles.cellOnImage,
+                  rowPressLayerStyles.cell,
+                  rowPressLayerStyles.cellOnImage,
                   isDisabled && styles.disabled,
                   isSelected && styles.selected,
                   xstyle,

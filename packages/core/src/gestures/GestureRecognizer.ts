@@ -24,7 +24,7 @@
  * event, so a listener that writes a transform writes it in the same frame
  * as the input, with no React render in between.
  *
- * SYNC: When modified, update GestureArena.ts and README.md.
+ * SYNC: When modified, update GestureArena.ts.
  */
 
 import type {GestureArena} from './GestureArena';
@@ -38,7 +38,6 @@ import type {
 } from './types';
 import {DEFAULT_ENVIRONMENT} from './types';
 
-/** @experimental */
 export interface GestureRecognizerOptions<R = GestureRecognizer> {
   /** A name for debugging and test output. */
   name?: string;
@@ -79,10 +78,8 @@ export interface GestureRecognizerOptions<R = GestureRecognizer> {
   ) => boolean;
 }
 
-/** @experimental */
 export type GestureListener<R> = (recognizer: R) => void;
 
-/** @experimental */
 export type GestureTransitionListener<R> = (
   recognizer: R,
   from: GestureState,
@@ -113,19 +110,16 @@ export function isTransitionAllowed(
   return ALLOWED[from].includes(to);
 }
 
-/** @experimental */
 export function isTerminal(state: GestureState): boolean {
   return state === 'ended' || state === 'cancelled' || state === 'failed';
 }
 
-/** @experimental */
 export function isActive(state: GestureState): boolean {
   return state === 'began' || state === 'changed';
 }
 
 /**
  * The browser behaviors `touch-action` can keep or remove.
- * @experimental
  */
 export interface NativeTouchBehavior {
   readonly panX: boolean;
@@ -152,7 +146,6 @@ export const MANIPULATION: NativeTouchBehavior = {
 
 let nextRecognizerId = 1;
 
-/** @experimental */
 export abstract class GestureRecognizer {
   /** Stable id, for ordering and debugging. */
   readonly id = nextRecognizerId++;
@@ -303,12 +296,16 @@ export abstract class GestureRecognizer {
     );
   }
 
-  /** @internal Whether this and `other` may be active together. */
+  /**
+   * @internal Whether this and `other` may be active together: both allow it
+   * (`recognizeSimultaneouslyWith` sets both sides; each delegate answers for
+   * its own recognizer), so one delegate alone keeps them exclusive (FR15).
+   */
   allowsSimultaneous(other: GestureRecognizer): boolean {
     return (
       this.simultaneousWith.has(other) ||
-      this.options.shouldRecognizeSimultaneously?.(this, other) === true ||
-      other.options.shouldRecognizeSimultaneously?.(other, this) === true
+      (this.options.shouldRecognizeSimultaneously?.(this, other) === true &&
+        other.options.shouldRecognizeSimultaneously?.(other, this) === true)
     );
   }
 
@@ -393,9 +390,9 @@ export abstract class GestureRecognizer {
 
   /**
    * The browser took these touches for its own pan or zoom (their pointer
-   * stream is gone). Return true to keep tracking them, as a pan that takes
-   * the rest of a scroll over at its edge does; by default they are treated
-   * as cancelled.
+   * stream is gone). Return true to keep observing them; by default they are
+   * treated as cancelled. An observer never claims them: a drag the browser
+   * took stays the browser's (FR14).
    */
   protected touchesTakenByBrowser(
     touches: ReadonlyArray<GestureTouch>,
@@ -404,6 +401,18 @@ export abstract class GestureRecognizer {
     this.touchesCancelled(touches, event);
     return false;
   }
+
+  /**
+   * A touch began elsewhere (off this recognizer's hit path) while this
+   * recognizer tracks touches of its own. It is not this recognizer's touch
+   * and is never delivered as one; a recognizer that a foreign finger should
+   * end (a menu's press slide) cancels itself here. By default nothing
+   * happens.
+   */
+  protected touchBeganElsewhere(
+    _touches: ReadonlyArray<GestureTouch>,
+    _event: GestureEventContext,
+  ): void {}
 
   /** Clear per-gesture state before the next attempt. */
   protected reset(): void {}
@@ -486,6 +495,17 @@ export abstract class GestureRecognizer {
   }
 
   /** @internal */
+  deliverBeganElsewhere(
+    touches: ReadonlyArray<GestureTouch>,
+    event: GestureEventContext,
+  ): void {
+    if (isTerminal(this.state)) {
+      return;
+    }
+    this.touchBeganElsewhere(touches, event);
+  }
+
+  /** @internal */
   deliverMoved(
     touches: ReadonlyArray<GestureTouch>,
     event: GestureEventContext,
@@ -550,12 +570,19 @@ export abstract class GestureRecognizer {
     }
   }
 
+  /** @internal The host's hook: listeners follow whether anything is enabled. */
+  onEnabledChange: (() => void) | null = null;
+
   /**
    * UIKit's `isEnabled` setter: turning a recognizer off mid-gesture cancels
    * the gesture (an active one) or fails it (a possible one).
    */
   setEnabled(value: boolean): void {
+    const changed = this.isEnabled !== value;
     this.isEnabled = value;
+    if (changed) {
+      this.onEnabledChange?.();
+    }
     if (!value && (this.state !== 'possible' || this.isInvolved())) {
       this.cancel();
     }
@@ -567,7 +594,8 @@ export abstract class GestureRecognizer {
       this.arena.stop(this);
     } else if (isActive(this.state)) {
       this.applyState('cancelled');
-    } else if (this.state === 'possible') {
+    } else if (this.state === 'possible' && this.isInvolved()) {
+      // An idle recognizer stays `possible`: nothing would ever reset it.
       this.applyState('failed');
     }
   }
