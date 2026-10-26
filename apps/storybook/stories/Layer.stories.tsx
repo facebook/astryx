@@ -1520,3 +1520,47 @@ export const Playground: Story = {
   },
   render: () => <PlaygroundDemo />,
 };
+
+/**
+ * A trigger that carries a focus-driven layer (the shape of a tooltip, shown
+ * on plain focus) and opens a light-dismissible layer. An Escape the browser's
+ * close watcher answers, or a tap outside, is a hide the browser runs itself:
+ * with focus inside the layer, it returns focus to the trigger while the
+ * document still counts the layer as hiding, and the focus-driven layer asks
+ * to show inside that window.
+ */
+function BrowserHideWakesAFocusLayerDemo() {
+  const content = useLayer({mode: 'context', lightDismiss: true});
+  const hint = useLayer({mode: 'context'});
+  return (
+    <div {...stylex.props(styles.demoArea)}>
+      <Button
+        ref={el => {
+          content.ref(el);
+          hint.ref(el);
+        }}
+        label="Show layer"
+        onFocus={hint.show}
+        onBlur={hint.hide}
+        onClick={() => (content.isOpen ? content.hide() : content.show())}
+      />
+      {content.render(
+        <div {...stylex.props(styles.popoverContent)}>
+          <Text type="body">A light-dismissible layer.</Text>
+          <Button label="Inside" onClick={content.hide} />
+        </div>,
+        {placement: 'below', alignment: 'center'},
+      )}
+      {hint.render(
+        <div {...stylex.props(styles.popoverContent)} role="tooltip">
+          <Text type="body">Shown while the trigger has focus.</Text>
+        </div>,
+        {placement: 'above', alignment: 'center'},
+      )}
+    </div>
+  );
+}
+
+export const BrowserHideWakesAFocusLayer: Story = {
+  render: () => <BrowserHideWakesAFocusLayerDemo />,
+};

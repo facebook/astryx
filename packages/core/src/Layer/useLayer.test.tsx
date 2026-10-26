@@ -1036,6 +1036,168 @@ describe('useLayer', () => {
       expect(onTooltipShow).toHaveBeenCalledTimes(2);
     });
 
+    /**
+     * The browser's own hide: a light dismiss or an Escape its close watcher
+     * answers never calls the hook's hide(). The engine fires `beforetoggle`
+     * synchronously as the hide starts, restores focus inside the hide, and
+     * fires `toggle` in a task once it has ended; `showPopover()` throws
+     * throughout.
+     */
+    function installBrowserHidePopoverApi() {
+      let operationsInFlight = 0;
+      const previouslyFocused = new WeakMap<HTMLElement, Element | null>();
+      const toggleTasks: (() => void)[] = [];
+      const fireToggle = (
+        popover: HTMLElement,
+        type: 'beforetoggle' | 'toggle',
+        newState: 'open' | 'closed',
+      ) => {
+        const event = new Event(type, {bubbles: false});
+        Object.defineProperty(event, 'newState', {
+          value: newState,
+          configurable: true,
+        });
+        popover.dispatchEvent(event);
+      };
+      const hide = (popover: HTMLElement) => {
+        operationsInFlight += 1;
+        try {
+          fireToggle(popover, 'beforetoggle', 'closed');
+          delete popover.dataset.open;
+          toggleTasks.push(() => fireToggle(popover, 'toggle', 'closed'));
+          const target = previouslyFocused.get(popover);
+          previouslyFocused.delete(popover);
+          if (
+            target instanceof HTMLElement &&
+            popover.contains(document.activeElement)
+          ) {
+            target.focus();
+          }
+        } finally {
+          operationsInFlight -= 1;
+        }
+      };
+      const showSpy = vi.fn(function (this: HTMLElement) {
+        if (operationsInFlight > 0) {
+          throw new DOMException(
+            "Failed to execute 'showPopover' on 'HTMLElement': Invalid to show a popover during another show operation",
+            'InvalidStateError',
+          );
+        }
+        operationsInFlight += 1;
+        try {
+          fireToggle(this, 'beforetoggle', 'open');
+          previouslyFocused.set(this, this.ownerDocument.activeElement);
+          this.dataset.open = 'true';
+          toggleTasks.push(() => fireToggle(this, 'toggle', 'open'));
+        } finally {
+          operationsInFlight -= 1;
+        }
+      });
+      const hideSpy = vi.fn(function (this: HTMLElement) {
+        hide(this);
+      });
+      HTMLElement.prototype.showPopover = showSpy;
+      HTMLElement.prototype.hidePopover = hideSpy;
+      return {
+        showSpy,
+        hideSpy,
+        /** The browser hides the popover itself: a tap outside, a close watcher's Escape. */
+        lightDismiss: (popover: HTMLElement) => hide(popover),
+        /** The task after the hide: the queued `toggle` events fire. */
+        runToggleTasks: () => {
+          for (const task of toggleTasks.splice(0)) {
+            task();
+          }
+        },
+      };
+    }
+
+    it('defers the show a browser-run hide wakes until that hide has ended, and replays it at its toggle', async () => {
+      const {showSpy, lightDismiss, runToggleTasks} =
+        installBrowserHidePopoverApi();
+      const errors: unknown[] = [];
+      const onError = (event: ErrorEvent) => {
+        errors.push(event.error);
+        event.preventDefault();
+      };
+      window.addEventListener('error', onError);
+      const onTooltipShow = vi.fn();
+      const {getByRole} = render(
+        <FocusReturnHarness onTooltipShow={onTooltipShow} />,
+      );
+      const trigger = getByRole('button', {name: 'Trigger'});
+      const inside = getByRole('button', {name: 'Inside', hidden: true});
+      const popover = getByRole('dialog', {hidden: true});
+
+      act(() => trigger.focus());
+      fireEvent.click(trigger);
+      act(() => inside.focus());
+      runToggleTasks();
+      expect(onTooltipShow).toHaveBeenCalledTimes(1);
+      expect(popover).toHaveAttribute('data-open', 'true');
+
+      // A tap outside: the browser hides the popover on its own and returns
+      // focus to the trigger inside that hide; the tooltip asks to show.
+      act(() => lightDismiss(popover));
+      window.removeEventListener('error', onError);
+
+      expect(errors).toEqual([]);
+      expect(document.activeElement).toBe(trigger);
+      expect(popover).not.toHaveAttribute('data-open');
+      // Nothing reached the browser while its hide was running, not even
+      // after the script unwound: the hide ends at its `toggle`.
+      await act(async () => {});
+      expect(showSpy.mock.results.every(r => r.type === 'return')).toBe(true);
+      expect(getByRole('tooltip', {hidden: true})).not.toHaveAttribute(
+        'data-open',
+      );
+      expect(onTooltipShow).toHaveBeenCalledTimes(1);
+
+      // The task after the hide: the popover's `toggle` fires, the hook
+      // reconciles its state, and the deferred show runs exactly once.
+      act(() => runToggleTasks());
+      await act(async () => {});
+      expect(showSpy.mock.results.every(r => r.type === 'return')).toBe(true);
+      expect(getByRole('tooltip', {hidden: true})).toHaveAttribute(
+        'data-open',
+        'true',
+      );
+      expect(onTooltipShow).toHaveBeenCalledTimes(2);
+      expect(popover).not.toHaveAttribute('data-open');
+    });
+
+    it('releases a browser-run hide whose element detaches before its toggle, so later shows run', async () => {
+      const {showSpy, lightDismiss} = installBrowserHidePopoverApi();
+      const api: {popover?: FixedLayerReturn; tooltip?: FixedLayerReturn} = {};
+      function Harness({withPopover}: {withPopover: boolean}) {
+        api.popover = useLayer({mode: 'fixed'});
+        api.tooltip = useLayer({mode: 'fixed'});
+        return (
+          <>
+            {withPopover &&
+              api.popover.render(<span>Popover</span>, {x: 0, y: 0})}
+            {api.tooltip.render(<span>Tip</span>, {x: 0, y: 0})}
+          </>
+        );
+      }
+      const {getByText, rerender} = render(<Harness withPopover />);
+      act(() => api.popover?.show());
+      const popover = getByText('Popover').closest('[popover]') as HTMLElement;
+      // The browser hides it, and React unmounts it before the `toggle` task.
+      act(() => lightDismiss(popover));
+      rerender(<Harness withPopover={false} />);
+      expect(popover.isConnected).toBe(false);
+
+      act(() => api.tooltip?.show());
+      await act(async () => {});
+      expect(showSpy).toHaveBeenCalledTimes(2);
+      expect(getByText('Tip').closest('[popover]')).toHaveAttribute(
+        'data-open',
+        'true',
+      );
+    });
+
     it('drops a deferred show that hide() cancels before it replays', async () => {
       const api: {popover?: FixedLayerReturn; tooltip?: FixedLayerReturn} = {};
       // While the popover hides, the tooltip asks to show and then changes

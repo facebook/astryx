@@ -4,7 +4,7 @@
 
 /**
  * @file useLayer.tsx
- * @input Uses React hooks, Popover API, CSS anchor positioning, shared text/provider boundaries
+ * @input Uses React hooks, Popover API (its `beforetoggle`/`toggle` events through the popoverOperations ledger), CSS anchor positioning, shared text/provider boundaries
  * @output Exports the public useLayer hook plus internal trigger helpers.
  * @position Core layer utility; used by useHoverCard, useTooltip, etc.
  *
@@ -46,6 +46,12 @@ import {
   getAnchorClearFallbacks,
   slideRuleName,
 } from './layerSlideRules';
+import {
+  afterPopoverOperations,
+  beginBrowserPopoverOperation,
+  isPopoverOperationInFlight,
+  runPopoverOperation,
+} from './popoverOperations';
 import {preserveAnimations} from './preserveAnimations';
 import {useLayerContext} from './LayerContext';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
@@ -808,43 +814,6 @@ function observeAnchorClearance(
   };
 }
 
-/**
- * Popover operations in flight, per document.
- *
- * The Popover API refuses to show a popover while the document is in the
- * middle of showing or hiding ANY popover: `showPopover()` throws an
- * `InvalidStateError` ("Invalid to show a popover during another show
- * operation"); an engine still rolling the rule out instead refuses silently
- * with a console warning, which would leave this hook open with nothing
- * shown. Hiding a popover restores focus to the element that had it —
- * synchronously, inside that window — so a focus-driven layer on the element
- * receiving focus (a tooltip on the trigger that just closed a popover) asks
- * to show while the hide is still running. Every layer's show and hide passes
- * through here, so the window is observable: a `show()` that arrives inside
- * it is replayed in a microtask, which runs once the script that started the
- * operation — and the event dispatch it answered — has unwound.
- */
-const popoverOperationsByDocument = new WeakMap<Document, number>();
-
-function runPopoverOperation(doc: Document, operation: () => void): void {
-  popoverOperationsByDocument.set(
-    doc,
-    (popoverOperationsByDocument.get(doc) ?? 0) + 1,
-  );
-  try {
-    operation();
-  } finally {
-    popoverOperationsByDocument.set(
-      doc,
-      (popoverOperationsByDocument.get(doc) ?? 1) - 1,
-    );
-  }
-}
-
-function isPopoverOperationInFlight(doc: Document): boolean {
-  return (popoverOperationsByDocument.get(doc) ?? 0) > 0;
-}
-
 interface ContextLayerMount {
   /** Null means the marker's parent is safe and the layer stays inline. */
   portalTarget: HTMLElement | null;
@@ -1326,10 +1295,12 @@ function useLayerImplementation(
     if (!isOpenRef.current) {
       // Another popover is mid show/hide (typically one whose hide is handing
       // focus back to this layer's trigger): the browser would refuse the
-      // show, so replay this call once that operation has returned.
+      // show, so replay this call once that operation has returned. The
+      // hide may be the browser's own (a light dismiss, an Escape its close
+      // watcher answers), which the ledger learns of from `beforetoggle`.
       if (isPopoverOperationInFlight(popover.ownerDocument)) {
         pendingShowRef.current = true;
-        queueMicrotask(() => {
+        afterPopoverOperations(popover.ownerDocument, () => {
           if (pendingShowRef.current) {
             pendingShowRef.current = false;
             showRef.current();
@@ -1489,9 +1460,36 @@ function useLayerImplementation(
   // The isOpenRef guard prevents double-firing: when our hide() already set
   // the ref to false, the subsequent toggle event (which the browser fires
   // as a side-effect of hidePopover) sees false and skips.
+  // A hide the browser runs itself (light dismiss, popover="auto" stack
+  // eviction, an Escape its close watcher answers) never passes through
+  // hide(), so the ledger of popover operations would not know the document
+  // is mid-hide, and a layer that the hide's focus restore wakes would ask the
+  // browser to show inside it. `beforetoggle` fires synchronously as such a
+  // hide starts: the operation is counted from there until the `toggle` the
+  // browser queues for the task after it, or until the element detaches.
+  const browserHideEndRef = useRef<(() => void) | null>(null);
+  const endBrowserHide = useCallback(() => {
+    browserHideEndRef.current?.();
+    browserHideEndRef.current = null;
+  }, []);
+  const handleBeforeToggle = useCallback((e: Event) => {
+    const toggleEvent = e as ToggleEvent;
+    if (
+      toggleEvent.newState === 'closed' &&
+      isOpenRef.current &&
+      browserHideEndRef.current == null
+    ) {
+      const el = e.currentTarget as HTMLElement | null;
+      browserHideEndRef.current = beginBrowserPopoverOperation(
+        el?.ownerDocument ?? document,
+      );
+    }
+  }, []);
+
   const handleToggle = useCallback(
     (e: Event) => {
       const toggleEvent = e as ToggleEvent;
+      endBrowserHide();
       if (toggleEvent.newState === 'closed' && isOpenRef.current) {
         openedPopoverRef.current = null;
         isOpenRef.current = false;
@@ -1503,7 +1501,7 @@ function useLayerImplementation(
         clearContextMount();
       }
     },
-    [onHide, clearContextMount, rememberDismissal],
+    [onHide, clearContextMount, rememberDismissal, endBrowserHide],
   );
 
   // Ref callback for popover element — sets up the `toggle` listener.
@@ -1525,16 +1523,23 @@ function useLayerImplementation(
           'toggle',
           listenedHandlerRef.current,
         );
+        listenedElRef.current.removeEventListener(
+          'beforetoggle',
+          handleBeforeToggle,
+        );
         listenedElRef.current = null;
         listenedHandlerRef.current = null;
+        // An element that detaches mid-hide never delivers its `toggle`.
+        endBrowserHide();
       }
       if (el && listenedElRef.current !== el) {
         el.addEventListener('toggle', handler);
+        el.addEventListener('beforetoggle', handleBeforeToggle);
         listenedElRef.current = el;
         listenedHandlerRef.current = handler;
       }
     },
-    [],
+    [handleBeforeToggle, endBrowserHide],
   );
 
   const popoverRefCallback = useCallback(
@@ -1593,11 +1598,16 @@ function useLayerImplementation(
           'toggle',
           listenedHandlerRef.current,
         );
+        listenedElRef.current.removeEventListener(
+          'beforetoggle',
+          handleBeforeToggle,
+        );
         listenedElRef.current = null;
         listenedHandlerRef.current = null;
+        endBrowserHide();
       }
     };
-  }, [handleToggle, bindToggleListener]);
+  }, [handleToggle, bindToggleListener, handleBeforeToggle, endBrowserHide]);
 
   // Anchor visibility (FR5). The first frame must already be right (FR8), so
   // the opening read is synchronous — a layout effect runs before paint, and a
