@@ -28,6 +28,19 @@ function touch(
   y: number,
   fingers = 1,
 ): Event {
+  if (type === 'touchstart') {
+    // A browser sends a contact's pointerdown before its touchstart; the page
+    // hold reads the primary pointer at a hold's first touch contact.
+    const down = new Event('pointerdown', {bubbles: true, composed: true});
+    Object.assign(down, {
+      pointerType: 'touch',
+      pointerId: 1,
+      isPrimary: true,
+      clientX: x,
+      clientY: y,
+    });
+    target.dispatchEvent(down);
+  }
   // Touch events are composed: they leave shadow roots, retargeted to the host.
   const event = new Event(type, {
     bubbles: true,
