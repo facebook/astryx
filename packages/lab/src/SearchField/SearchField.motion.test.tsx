@@ -1,25 +1,23 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file SearchField.roles.test.tsx
+ * @file SearchField.motion.test.tsx
  * @input vitest, Testing Library, SearchField, searchFieldModel and the
  *   motion foundation (its `useAnimator` wrapped to record what is played)
- * @output Proofs that the activation reads its clock and curve as motion
- *   roles under the field's theme: a theme's `--motion-search-activation-ms`
- *   and `--motion-search-activation-curve` time the activation the field
- *   plays, and without a theme it keeps UIKit's 383 ms ease-in-ease-out; the
- *   activation from rest starts on the frame that presents the parts at rest
+ * @output Proofs that the activation plays the search table's clock and
+ *   curve, UIKit's 383 ms ease-in-ease-out, whatever motion variables a
+ *   theme scope carries (touch motion has no theme surface); the activation
+ *   from rest starts on the frame that presents the parts at rest
  *   (`start: 'presented'`), and a change of mind adds to the curves on screen
  *   (`additive`) on the whole clock; a mouse plays none (any finger, iOS or
  *   Android, plays it)
  * @position Testing; validates SearchField.tsx and searchFieldModel.ts with a
- *   stubbed computed style (as core's resolveMotion.test.ts does)
+ *   stubbed computed style
  */
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, fireEvent, render, screen} from '@testing-library/react';
-import {registerSearchTable, search} from '@astryxdesign/core/motion/uikit';
-import type * as UIKitTables from '@astryxdesign/core/motion/uikit';
+import {search} from '@astryxdesign/core/motion/uikit';
 import type * as UseAnimator from '@astryxdesign/core/motion/useAnimator';
 import {SearchField} from './SearchField';
 import {activationTiming} from './searchFieldModel';
@@ -27,20 +25,6 @@ import {activationTiming} from './searchFieldModel';
 const played = vi.hoisted(() => [] as Array<Record<string, number>>);
 /** The options of each play, in order. */
 const playedOptions = vi.hoisted(() => [] as Array<Record<string, unknown>>);
-/** The search table's registration and each play, in order. */
-const events = vi.hoisted(() => [] as Array<'register' | 'play'>);
-
-// Records the search table's registration; it still registers.
-vi.mock('@astryxdesign/core/motion/uikit', async importOriginal => {
-  const actual = await importOriginal<typeof UIKitTables>();
-  return {
-    ...actual,
-    registerSearchTable: () => {
-      events.push('register');
-      actual.registerSearchTable();
-    },
-  };
-});
 
 // Records the length of every curve the field plays; the animator still
 // plays them.
@@ -56,7 +40,6 @@ vi.mock('@astryxdesign/core/motion/useAnimator', async importOriginal => {
         wrapped.add(animator);
         const play = animator.play.bind(animator);
         animator.play = (curves, options) => {
-          events.push('play');
           playedOptions.push({...options});
           played.push(
             Object.fromEntries(
@@ -96,7 +79,6 @@ function deliverFrames(count: number) {
 beforeEach(() => {
   played.length = 0;
   playedOptions.length = 0;
-  events.length = 0;
   variables = new Map();
   frameCallbacks = new Map();
   frameTime = performance.now();
@@ -140,7 +122,7 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-/** A theme scope with the given motion role values. */
+/** A theme scope carrying the given CSS variables. */
 function themed(values: Record<string, string>) {
   const scope = document.createElement('div');
   scope.setAttribute('data-astryx-theme', 'test');
@@ -149,38 +131,25 @@ function themed(values: Record<string, string>) {
   return scope;
 }
 
-describe('SearchField motion roles', () => {
-  it('reads the clock and curve from the field’s theme, or the table’s', () => {
-    // As the touch layer does before its first move.
-    registerSearchTable();
+describe('SearchField motion', () => {
+  it('plays the search table’s 383 ms ease-in-ease-out, which no theme retunes', () => {
+    const timing = activationTiming();
+    expect(timing.seconds).toBeCloseTo(search.activationMs / 1000, 6);
+    // UIKit's ease-in-ease-out, slow at the start.
+    expect(timing.ease(0.25)).toBeLessThan(0.2);
+    // A theme scope that writes the variables a motion role would read
+    // changes nothing: the search table's values are internal constants.
     const scope = themed({
       '--motion-search-activation-ms': '600ms',
       '--motion-search-activation-curve': 'cubic-bezier(0, 0, 1, 1)',
     });
-    const child = document.createElement('div');
-    scope.append(child);
-    const timing = activationTiming(child);
-    expect(timing.seconds).toBeCloseTo(0.6, 6);
-    // The theme's linear curve.
-    expect(timing.ease(0.25)).toBeCloseTo(0.25, 3);
-
-    const unthemed = document.createElement('div');
-    document.body.append(unthemed);
-    const table = activationTiming(unthemed);
-    expect(table.seconds).toBeCloseTo(search.activationMs / 1000, 6);
-    // UIKit's ease-in-ease-out, slow at the start.
-    expect(table.ease(0.25)).toBeLessThan(0.2);
-  });
-
-  it('times the activation it plays by the theme’s --motion-search-activation-ms', () => {
-    const scope = themed({'--motion-search-activation-ms': '600ms'});
     render(<SearchField label="Search" />, {container: scope});
-    const input = screen.getByRole('searchbox');
-    act(() => input.focus());
+    act(() => screen.getByRole('searchbox').focus());
+    deliverFrames(2);
     expect(played.length).toBeGreaterThan(0);
     for (const curves of played) {
       for (const duration of Object.values(curves)) {
-        expect(duration).toBeCloseTo(0.6, 6);
+        expect(duration).toBeCloseTo(search.activationMs / 1000, 6);
       }
     }
   });
@@ -211,27 +180,6 @@ describe('SearchField motion roles', () => {
     }
   });
 
-  it('registers the search table’s roles before its first move', () => {
-    render(<SearchField label="Search" />);
-    act(() => screen.getByRole('searchbox').focus());
-    deliverFrames(2);
-    expect(events).toContain('play');
-    expect(events.indexOf('register')).toBeGreaterThanOrEqual(0);
-    expect(events.indexOf('register')).toBeLessThan(events.indexOf('play'));
-  });
-
-  it('keeps UIKit’s 383 ms activation without a theme', () => {
-    render(<SearchField label="Search" />);
-    act(() => screen.getByRole('searchbox').focus());
-    deliverFrames(2);
-    expect(played.length).toBeGreaterThan(0);
-    for (const curves of played) {
-      for (const duration of Object.values(curves)) {
-        expect(duration).toBeCloseTo(search.activationMs / 1000, 6);
-      }
-    }
-  });
-
   it('plays no activation under a mouse: the parts take their places at once', () => {
     vi.stubGlobal(
       'matchMedia',
@@ -248,7 +196,6 @@ describe('SearchField motion roles', () => {
     );
     // A fine primary pointer, asserted in this test's own context.
     expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
-    themed({'--motion-search-activation-ms': '600ms'});
     render(<SearchField label="Search" />);
     act(() => screen.getByRole('searchbox').focus());
     deliverFrames(3);

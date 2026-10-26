@@ -13,8 +13,7 @@
  *   mid-activation turns around from where the parts are; the activation
  *   keeps advancing every frame through a blocked main thread and does no
  *   Layout or Paint; right to left it narrows from the left; under a mouse
- *   every part takes its place at once;
- *   a theme's search.activationMs role times the activation; in the Lifted
+ *   every part takes its place at once; in the Lifted
  *   story the results rise with the field and the title fades as UIKit's
  *   does (the story stands in for the navigation bar); all of that under a
  *   finger, one touch model on every touch device (an Android finger, with
@@ -631,25 +630,6 @@ test('right to left: the field narrows from the left and the close button slides
   // gives up.
   expect(await translateX(end(page))).toBeCloseTo(NARROWING, 1);
   expect(await translateX(close(page))).toBeCloseTo(0, 1);
-});
-
-test('a theme’s activation clock (the search.activationMs role) times the activation', async ({
-  page,
-}) => {
-  const {driver, field} = await openField(page);
-  // A theme writes the role's variable on its scope; it inherits from here.
-  await page.evaluate(() =>
-    document.documentElement.style.setProperty(
-      '--motion-search-activation-ms',
-      '600ms',
-    ),
-  );
-  await driver.tap(await centerOf(field));
-  const [activation] = await waitForAnimation(end(page));
-  await waitForRest(end(page));
-  expect(activation.to - activation.from).toBeGreaterThan(595);
-  expect(activation.to - activation.from).toBeLessThan(605);
-  expect(await translateX(end(page))).toBeCloseTo(-NARROWING, 1);
 });
 
 test('the waiting close button does not widen the page: nothing scrolls sideways', async ({
