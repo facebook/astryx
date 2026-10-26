@@ -412,7 +412,7 @@ describe('createPopoverSurfaceMotion', () => {
         expect(String(frame.scale)).toMatch(/^1( 1)?$/);
       }
     }
-    const ease = cubicBezier(timing.curves.easeInOut);
+    const ease = cubicBezier(timing.curves.move);
     // The animator holds a curve's end value to the end of a longer
     // animation: the fade ends at the first keyframe after which the opacity
     // stays at its target.
