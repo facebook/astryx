@@ -297,24 +297,22 @@ describe('the release', () => {
     expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
   });
 
-  it('runs on the theme’s release clock when a theme retunes it', () => {
-    // AST-094 FR4: the release is the motion role
-    // `timing.press.highlightOutMs`; the stylesheet's fade plays the same
-    // role, so the attribute stays until that fade ends.
-    // Set on the row itself: a browser inherits a theme's variable down to
-    // it, which jsdom does not model.
-    const root = rows[0];
-    root.style.setProperty('--motion-timing-press-highlight-out-ms', '400ms');
+  it('keeps the press model’s own release clock, whatever a theme writes', () => {
+    // Touch motion values are internal constants: no theme variable reaches
+    // the release, so it ends on the model's clock, inside
+    // design:reduced-motion DR2's 200 ms. Set on the row itself: a browser
+    // inherits a theme's variable down to it, which jsdom does not model.
+    const row = rows[0];
+    row.style.setProperty('--motion-timing-press-highlight-out-ms', '400ms');
     try {
-      press(rows[0], 'pointerdown', 10, 10);
+      press(row, 'pointerdown', 10, 10);
       vi.advanceTimersByTime(PRESS_ONSET_MS);
-      press(rows[0], 'pointerup', 10, 10);
+      press(row, 'pointerup', 10, 10);
+      expect(row.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
       vi.advanceTimersByTime(PRESS_FADE_MS);
-      expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
-      vi.advanceTimersByTime(400 - PRESS_FADE_MS);
-      expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+      expect(row.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
     } finally {
-      root.style.removeProperty('--motion-timing-press-highlight-out-ms');
+      row.style.removeProperty('--motion-timing-press-highlight-out-ms');
     }
   });
 
@@ -541,6 +539,21 @@ describe('the release fades: the arms the controller writes to', () => {
     expect(hasReleaseFade(surface(interactionOverlayStyles.pressedAlpha))).toBe(
       true,
     );
+  });
+
+  it("plays the press model's own release curve on every variant, reading no theme variable", () => {
+    // Touch motion values are internal constants: the fading arm's clock and
+    // curve are literal values, never a `--motion-*` variable.
+    for (const variant of [...variants, 'pressedAlpha'] as const) {
+      const fading = rulesWithSelector(
+        surface(interactionOverlayStyles[variant]),
+        '[data-astryx-press="fading"]',
+      );
+      expect(
+        fading.filter(rule => /animation-[\w-]+:\s*(?:var|min)\(/.test(rule)),
+        variant,
+      ).toEqual([]);
+    }
   });
 
   it("the machine's clock is the stylesheet's constant: one number", () => {

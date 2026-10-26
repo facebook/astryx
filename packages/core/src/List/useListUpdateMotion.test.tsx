@@ -212,11 +212,11 @@ describe('List update motion', () => {
     });
   });
 
-  it('a removed row stays exactly as long as its collapse, even on a theme spring slower than a second', async () => {
+  it('a removed row collapses on the table spring and stays exactly as long as its collapse, whatever a theme writes', async () => {
     stubPointer('touch');
-    // A theme that slows the table spring to 1.5 s, written the way a theme
-    // writes a role: its CSS variable, here on the root, which a theme switch
-    // brings in.
+    // The table spring is an internal constant: a variable written the way a
+    // theme would write one (1.5 s, on the root, which a theme switch brings
+    // in) changes nothing.
     document.documentElement.style.setProperty(
       '--motion-list-update-table-spring',
       '1.5s 0',
@@ -226,15 +226,17 @@ describe('List update motion', () => {
       const {rerender} = render(<Rows labels={['A', 'B', 'C']} />);
       await act(async () => undefined);
       const removed = rowOf('B');
+      const at = motionNow();
+      const clock = vi.spyOn(performance, 'now').mockReturnValue(at);
       rerender(<Rows labels={['A', 'C']} />);
+      clock.mockRestore();
       const ghost = removed.parentElement as HTMLElement;
       expect(ghost.hasAttribute('data-astryx-leaving')).toBe(true);
       const collapse = motionOf(ghost, 'y') as RowMotion;
       expect(collapse).toBeDefined();
-      // Still there while its collapse runs, past a second: no timer cuts
-      // it short.
-      await new Promise(resolve => setTimeout(resolve, 1200));
-      expect(ghost.isConnected).toBe(true);
+      // Closed where the table's spring arrives, where the theme's 1.5 s
+      // spring would still be on its way.
+      expect(presentation(ghost, 'y', at + 600)).toBeCloseTo(-ROW, 1);
       // Gone when the collapse ends, with nothing left behind.
       await collapse.handle.finished;
       await Promise.resolve();

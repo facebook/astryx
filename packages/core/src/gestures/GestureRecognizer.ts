@@ -24,7 +24,7 @@
  * event, so a listener that writes a transform writes it in the same frame
  * as the input, with no React render in between.
  *
- * SYNC: When modified, update GestureArena.ts and README.md.
+ * SYNC: When modified, update GestureArena.ts.
  */
 
 import type {GestureArena} from './GestureArena';
@@ -390,9 +390,9 @@ export abstract class GestureRecognizer {
 
   /**
    * The browser took these touches for its own pan or zoom (their pointer
-   * stream is gone). Return true to keep tracking them, as a pan that takes
-   * the rest of a scroll over at its edge does; by default they are treated
-   * as cancelled.
+   * stream is gone). Return true to keep observing them; by default they are
+   * treated as cancelled. An observer never claims them: a drag the browser
+   * took stays the browser's (FR14).
    */
   protected touchesTakenByBrowser(
     touches: ReadonlyArray<GestureTouch>,
@@ -570,12 +570,19 @@ export abstract class GestureRecognizer {
     }
   }
 
+  /** @internal The host's hook: listeners follow whether anything is enabled. */
+  onEnabledChange: (() => void) | null = null;
+
   /**
    * UIKit's `isEnabled` setter: turning a recognizer off mid-gesture cancels
    * the gesture (an active one) or fails it (a possible one).
    */
   setEnabled(value: boolean): void {
+    const changed = this.isEnabled !== value;
     this.isEnabled = value;
+    if (changed) {
+      this.onEnabledChange?.();
+    }
     if (!value && (this.state !== 'possible' || this.isInvolved())) {
       this.cancel();
     }
