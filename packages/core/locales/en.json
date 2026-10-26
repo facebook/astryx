@@ -507,6 +507,10 @@
     "defaultMessage": "Done",
     "description": "Button in the hint a List row's reorder mode shows: it ends the mode and keeps the moves, as Escape does."
   },
+  "@astryx.list.reorderModeDone": {
+    "defaultMessage": "Done, {label} at position {position, number} of {total, number}",
+    "description": "Screen-reader announcement when a List row's reorder mode ends (Escape, the handle again, or Done), keeping its moves. `{label}` is the row's text, `{position}` its 1-based place, `{total}` the number of rows (e.g. \"Done, Milk at position 3 of 5\")."
+  },
   "@astryx.list.reorderPickedUp": {
     "defaultMessage": "Picked up, position {position, number} of {total, number}.",
     "description": "Screen-reader announcement when a row of a List is picked up to be reordered, from its handle's keys or by a drag. `{position}` is the row's 1-based place, `{total}` the number of rows."
