@@ -112,11 +112,10 @@ import {
   type Animator,
   type MotionHandle,
 } from '../motion/animator';
-import {resolveMotion} from '../motion/resolveMotion';
 import {rubberBand} from '../motion/rubberBand';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {sheet as sheetTable} from '../motion/uikit/sheet';
-import {registerSpringsTable, springs} from '../motion/uikit/springs';
+import {springs} from '../motion/uikit/springs';
 import {
   createInteractiveTransition,
   type MapLayer,
@@ -1232,9 +1231,6 @@ export function useSheetGestures({
       dimFor?: (offset: number) => number,
       crossfadeAs?: 'exit',
     ): MotionHandle => {
-      // The springs table's roles, so a theme's values for them apply: once,
-      // before the sheet's first animation (motion/roles.ts).
-      registerSpringsTable();
       const base = layoutOffset + travelBaseRef.current;
       travelLayoutBaseRef.current = layoutOffset;
       const to = offset - base;
@@ -1258,10 +1254,6 @@ export function useSheetGestures({
           layers.push({animator: scrim, property: 'opacity', map});
         }
       }
-      // The spring the release plays: its theme value, read once, so the
-      // overshoot cap and the driver agree (a theme may retune it,
-      // spec:AST-094 FR4).
-      const played = resolveMotion(sheetElRef.current, spring);
       // Thrown up onto the tallest detent, the 80 % damped spring overshoots
       // above it; the sheet extends only its reserve below the screen, so
       // the hand-off is capped to keep the page from showing under it.
@@ -1269,7 +1261,7 @@ export function useSheetGestures({
       const v =
         motion.kind === 'uikit' && offset === 0
           ? limitOvershoot(
-              played,
+              spring,
               from,
               to,
               handed,
@@ -1284,7 +1276,7 @@ export function useSheetGestures({
         to,
         motion.kind === 'theme'
           ? {durationMs: motion.durationMs, easing: motion.easing}
-          : played,
+          : spring,
         {
           velocity: motion.kind === 'theme' ? 0 : v,
           touchRelease,
@@ -1690,9 +1682,6 @@ export function useSheetGestures({
       }
       travelBaseRef.current = 0;
       travelLayoutBaseRef.current = 0;
-      // The springs table's roles, before the sheet's first animation (see
-      // springTravel).
-      registerSpringsTable();
       animator.set({y: distance});
       // From rest, with no start time: the browser starts the entrance when
       // it commits it, as Core Animation starts it at its transaction's
@@ -1780,7 +1769,6 @@ export function useSheetGestures({
     // From rest, with no start time, as the entrance: the browser starts the
     // exit when it commits it, so a long task after the close delays it
     // instead of skipping into its curve. The dim shares that start.
-    registerSpringsTable();
     const layers: MapLayer[] = [];
     const scrim = scrimLayerAnimator();
     if (scrim != null) {
