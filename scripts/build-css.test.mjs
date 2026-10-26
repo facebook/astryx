@@ -415,18 +415,14 @@ describe('build-css astryx.css', () => {
         ? Number.NaN
         : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
     };
-    // A release clock is its theme role's variable with the table's value as
-    // the fallback (`var(--motion-timing-press-button-release-ms,.25s)`): the
-    // fallback is what ships where no theme sets the role.
-    const durationMs = value => {
-      const role = value.trim().match(/^var\(--[\w-]+,\s*([^)]+)\)$/);
-      return toMs(role == null ? value : role[1]);
-    };
+    const durationMs = value => toMs(value);
     const durationOf = line =>
       line.match(/animation-duration:\s*([^;}]+)/)?.[1] ?? null;
-    /** A control's release clock: UIButton's role, `button-release-ms`. */
-    const isControlClock = line =>
-      /button-release-ms/.test(durationOf(line) ?? '');
+    /** A control's release clock: UIButton's, 250 ms (`button.highlight`). */
+    const isControlClock = line => {
+      const duration = durationOf(line);
+      return duration != null && toMs(duration) === 250;
+    };
     const kindOf = line =>
       line.includes('::before')
         ? '::before'
@@ -538,11 +534,15 @@ describe('build-css astryx.css', () => {
       const lines = astryxCss
         .split('\n')
         .filter(line => !line.includes('prefers-reduced-motion'));
-      const control = lines.filter(
-        line => isClock(line) || line.includes(curve),
-      );
+      // The curve as written in the stylesheet, minified or not.
+      const hasCurve = line =>
+        line
+          .replace(/\s+/g, '')
+          .replace(/([(,])0\./g, '$1.')
+          .includes(curve);
+      const control = lines.filter(line => isClock(line) || hasCurve(line));
       expect(control.some(isClock)).toBe(true);
-      expect(control.some(line => line.includes(curve))).toBe(true);
+      expect(control.some(hasCurve)).toBe(true);
       expect(control.filter(line => !gated(line))).toEqual([]);
       expect(
         lines.some(line => gated(line) && /\{isolation:isolate\}/.test(line)),

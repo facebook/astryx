@@ -142,8 +142,8 @@ describe('press paint under Reduce Motion', () => {
     const cellDuration = rules.find(
       ([, {ltr}]) =>
         !ltr.includes(fade) &&
-        // The deselect's clock: its role, falling back to the table's 200 ms.
-        [FADING, CELL, 'animation-duration:', ',.2s)'].every(part =>
+        // The deselect's clock: the table's 200 ms.
+        [FADING, CELL, 'animation-duration:.2s'].every(part =>
           ltr.includes(part),
         ),
     );

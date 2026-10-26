@@ -2,9 +2,8 @@
 
 /**
  * @file pressFeedback.ts
- * @input The press state machine (pressGesture.ts), the document's pointer,
- *   keyboard, scroll and visibility events, and the release clocks' theme
- *   motion role variables (interactionOverlay.stylex.ts)
+ * @input The press state machine (pressGesture.ts) and the document's pointer,
+ *   keyboard, scroll and visibility events
  * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, PRESS_PROFILES,
  *   pressableProps, the list row's press profile (CELL_PRESS_PROFILE,
  *   cellPressableProps) and installPressFeedback
@@ -63,7 +62,6 @@
  * pressFeedback.test.ts.
  */
 
-import {pressReleaseRoles} from './rowPressLayer.stylex';
 import type {PressGesture, PressPaint, PressStep} from './pressGesture';
 import {
   idlePressGesture,
@@ -106,8 +104,6 @@ export interface PressProfile {
   readonly highlightDelay: 'inScrollers' | 'always';
   /** How long the release's exit runs, in ms: the attribute leaves after it. */
   readonly releaseMs: number;
-  /** The theme motion role variable that retunes that clock (`spec:AST-094` FR4). */
-  readonly releaseRole: string;
 }
 
 /**
@@ -138,13 +134,11 @@ export const PRESS_PROFILES = {
   control: {
     highlightDelay: 'inScrollers',
     releaseMs: controlPressConsts.controlReleaseMs,
-    releaseRole: pressReleaseRoles.controlDuration,
   },
   /** A table or collection cell: always inside a scroll view, so it waits. */
   cell: {
     highlightDelay: 'always',
     releaseMs: PRESS_FADE_MS,
-    releaseRole: pressReleaseRoles.duration,
   },
 } as const satisfies Readonly<Record<string, PressProfile>>;
 
@@ -280,8 +274,6 @@ interface LiveGesture {
   pointerId: number | null;
   /** The surface's profile's release clock, in ms. */
   releaseMs: number;
-  /** Its theme motion role variable. */
-  releaseRole: string;
   timer: ReturnType<typeof setTimeout> | null;
 }
 
@@ -323,34 +315,21 @@ const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
 };
 
 /**
- * How long a timer runs on `element`. The release's clock is the theme motion
- * role `timing.press.highlightOutMs` (`spec:AST-094` FR4), read off the
- * element's role variable when the release starts: the variable the
- * stylesheet's release plays (interactionOverlay.stylex.ts), so a theme that
- * retunes it moves both and the attribute never leaves before the fade ends.
- * Read directly, not through the motion table, so a pressable component
- * carries no table (`architecture:component-style-authoring` INV6).
+ * How long a timer runs on `element`. The release's clock is the table's
+ * (PRESS_FADE_MS, the value the stylesheet's release plays), capped under
+ * reduced motion as the stylesheet caps its fade (`design:reduced-motion`
+ * DR2: a touch transition finishes in 200 ms or less).
  */
 function timerMs(
   kind: NonNullable<PressStep['timer']>,
-  live: {element: Element; releaseMs: number; releaseRole: string},
+  live: {element: Element; releaseMs: number},
 ): number {
   if (kind !== 'fade') {
     return TIMER_MS[kind];
   }
-  // The release clock's theme role, or the profile's table value.
-  const value = live.element.ownerDocument.defaultView
-    ?.getComputedStyle(live.element)
-    .getPropertyValue(live.releaseRole)
-    .trim();
-  const match = value == null ? null : /^([\d.]+)(ms|s)$/.exec(value);
-  const ms =
-    match == null
-      ? live.releaseMs
-      : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
+  const ms = live.releaseMs;
   // design:reduced-motion DR2: under reduced motion a touch transition
-  // finishes in 200 ms or less, whatever the theme sets (the stylesheet caps
-  // its fade the same way).
+  // finishes in 200 ms or less (the stylesheet caps its fade the same way).
   const reduced =
     live.element.ownerDocument.defaultView?.matchMedia?.(
       '(prefers-reduced-motion: reduce)',
@@ -549,14 +528,10 @@ function takeOver(other: Slot, element: HTMLElement): void {
  * with any other pointer (a finger on a touch screen beside a mouse), as the
  * stylesheet's release arms are (the desktop rule, `spec:AST-017` FR59/DEC-25).
  */
-function releaseOf(
-  profile: PressProfile,
-): Pick<PressProfile, 'releaseMs' | 'releaseRole'> {
+function releaseOf(profile: PressProfile): Pick<PressProfile, 'releaseMs'> {
   // The same coarse gate the stylesheet's release arms use.
-  const {releaseMs, releaseRole} = stylesheetDroppedActive()
-    ? profile
-    : PRESS_PROFILES.cell;
-  return {releaseMs, releaseRole};
+  const {releaseMs} = stylesheetDroppedActive() ? profile : PRESS_PROFILES.cell;
+  return {releaseMs};
 }
 
 /**

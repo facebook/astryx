@@ -10,7 +10,7 @@
  * @output Exports reusable background-color and background-image state styles,
  *   the touch press's registered strength variable (`pressVars`) and its
  *   clock (`pressConsts`). The compositor press layers (a list row's, a
- *   control's and a card's), their clocks and the release's theme roles are
+ *   control's and a card's), and their clocks are
  *   internal (rowPressLayer.ts, controlPressLayer.ts and their .stylex.ts)
  * @position Internal styling utility for interactive core surfaces
  *
@@ -92,7 +92,7 @@ import * as stylex from '@stylexjs/stylex';
 import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {controlPressConsts} from './controlPressLayer.stylex';
-import {cellPressConsts, pressReleaseRoles} from './rowPressLayer.stylex';
+import {cellPressConsts} from './rowPressLayer.stylex';
 
 /**
  * The touch press's strength on the surface the controller painted, 0 to 1.
@@ -125,10 +125,10 @@ export const pressConsts = stylex.defineConsts({
   releaseMs: 200,
 });
 
-/** The cell release's clock as CSS: the role, or the table's value. */
-const PRESS_RELEASE_DURATION = `var(${pressReleaseRoles.duration}, ${pressConsts.releaseMs}ms)`;
-/** The control release's clock as CSS: the role, or the table's value. */
-const CONTROL_RELEASE_DURATION = `var(${pressReleaseRoles.controlDuration}, ${controlPressConsts.controlReleaseMs}ms)`;
+/** The cell release's clock as CSS: the table's value. */
+const PRESS_RELEASE_DURATION = `${pressConsts.releaseMs}ms`;
+/** The control release's clock as CSS: the table's value. */
+const CONTROL_RELEASE_DURATION = `${controlPressConsts.controlReleaseMs}ms`;
 
 const ENABLED = ':where(:not(:disabled,[aria-disabled="true"]))';
 const HOVER_HOVER = '@media (hover: hover)';
@@ -183,7 +183,7 @@ const pressRelease = stylex.keyframes({
  * and is so front-loaded (strength 0.05 at the midpoint) that the release
  * would read as half its clock.
  */
-const RELEASE_EASE = `var(${pressReleaseRoles.curve}, ${cellPressConsts.cellReleaseEase})`;
+const RELEASE_EASE = cellPressConsts.cellReleaseEase;
 
 /**
  * A control's release curve: UIButton's, UIKit's easeInEaseOut

@@ -6,9 +6,8 @@
 /**
  * @file controlPressLayer.ts
  * @input StyleX, the semantic overlay color tokens, the touch press strength
- *   (`pressVars`, interactionOverlay.stylex.ts), the release's clocks
- *   (controlPressLayer.stylex.ts, rowPressLayer.stylex.ts) and the Reduce
- *   Motion fade
+ *   (`pressVars`, interactionOverlay.stylex.ts), the control release's clock
+ *   (controlPressLayer.stylex.ts) and the Reduce Motion fade
  * @output `controlPressLayerStyles`: the compositor press layers for a control
  *   on its own surface (`control`: Button) and for a card's `::after`
  *   (`controlOver`), and the strength hold for an owner whose descendant layer
@@ -24,7 +23,6 @@ import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {controlPressConsts} from './controlPressLayer.stylex';
 import {pressVars} from './interactionOverlay.stylex';
-import {pressReleaseRoles} from './rowPressLayer.stylex';
 
 // The overlay's arm selectors (interactionOverlay.stylex.ts), restated here:
 // StyleX resolves a style's keys within its own file.
@@ -59,8 +57,8 @@ const controlRelease = stylex.keyframes({
   to: {opacity: 0},
 });
 
-/** The control release's clock as CSS: the role, or the table's value. */
-const CONTROL_RELEASE_DURATION = `var(${pressReleaseRoles.controlDuration}, ${controlPressConsts.controlReleaseMs}ms)`;
+/** The control release's clock as CSS: the table's value. */
+const CONTROL_RELEASE_DURATION = `${controlPressConsts.controlReleaseMs}ms`;
 /** A control's release curve: UIButton's, UIKit's easeInEaseOut. */
 const CONTROL_RELEASE_EASE = controlPressConsts.controlReleaseEase;
 /** Reduce Motion on a coarse primary pointer: the policy's cross-fade. */
