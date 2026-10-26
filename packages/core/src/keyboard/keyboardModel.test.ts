@@ -16,7 +16,7 @@ import {describe, expect, it} from 'vitest';
 import {createKeyboardModel} from './keyboardModel';
 import {keyboard, springs, timing} from '../motion/uikit';
 import {keyboardNotification} from '../motion/uikit/timing';
-import {MOTION_ROLE_KINDS} from '../motion/roleKinds.generated';
+import {motionRoleIn} from '../motion/roles';
 import {naturalFrequency, toSpring} from '../motion/spring';
 
 const OMEGA = naturalFrequency(toSpring(keyboard.spring));
@@ -262,15 +262,13 @@ describe('createKeyboardModel', () => {
 });
 
 describe('the keyboard\u2019s own timing (spec:AST-099 FR3)', () => {
-  it('cuts the spring at the notification duration, which no theme retunes', () => {
-    // The system moves the keyboard on its own spring and duration whatever
-    // the theme says, so neither is a motion role (spec:AST-094 FR4).
+  it('cuts the spring at the notification duration, and neither is a motion role', () => {
+    // The system moves the keyboard on its own spring and duration, so
+    // neither is a motion role (spec:AST-094 FR4).
     expect(keyboardNotification.durationMs).toBe(383.3);
     expect(timing.keyboardNotificationMs).toBe(keyboardNotification.durationMs);
-    expect(MOTION_ROLE_KINDS).not.toHaveProperty(
-      'timing.keyboardNotificationMs',
-    );
-    expect(MOTION_ROLE_KINDS).not.toHaveProperty('springs.keyboard');
+    expect(motionRoleIn(timing, 'keyboardNotificationMs')).toBeUndefined();
+    expect(motionRoleIn(springs, 'keyboard')).toBeUndefined();
   });
 
   it('plays the same spring as the UIKit table\u2019s keyboard row', () => {
