@@ -1713,9 +1713,8 @@ function DropdownMenuPopover({
       host: surfaceHost,
       ownerId: menuId,
       menuMaxHeight: resolvedMaxHeight ?? undefined,
-      touchModel: touchModes ? 'uikit' : 'pointer',
     }),
-    [surfaceHost, menuId, resolvedMaxHeight, touchModes],
+    [surfaceHost, menuId, resolvedMaxHeight],
   );
 
   // Resolve menu content: data-driven items become components
