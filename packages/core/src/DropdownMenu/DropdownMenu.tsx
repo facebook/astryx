@@ -1319,10 +1319,16 @@ function DropdownMenuPopover({
     isUikitMotionRef.current = isUikitMotion;
     const trigger = buttonRef.current;
     if (surface != null && trigger != null) {
-      placeOverTrigger(surface, trigger, coversTriggerRef.current);
-      const motion = getSurfaceMotion(surface);
+      placeOverTrigger(
+        surface,
+        trigger,
+        coversTriggerRef.current,
+        // The menu's own scrolling element (its first role="menu"; a nested
+        // flyout comes after it in DOM order).
+        surface.querySelector<HTMLElement>('[role="menu"]'),
+      );
       if (isUikitMotion) {
-        motion.enter(() => {
+        getSurfaceMotion(surface).enter(() => {
           const triggerBox = trigger.getBoundingClientRect();
           const surfaceBox = surface.getBoundingClientRect();
           return {
@@ -1338,8 +1344,10 @@ function DropdownMenuPopover({
             },
           };
         });
-      } else {
-        motion.reset();
+      } else if (surfaceMotionRef.current?.element === surface) {
+        // A mouse runs nothing touch-related (spec:AST-094 FR24): it creates
+        // no motion, and stops one a finger's open left.
+        surfaceMotionRef.current.motion.reset();
       }
     }
     if (renderTrigger != null) {
