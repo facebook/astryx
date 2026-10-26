@@ -13,7 +13,8 @@
 import {describe, expect, it} from 'vitest';
 import {createKeyboardModel} from './keyboardModel';
 import {keyboard, timing} from '../motion/uikit';
-import {MOTION_ROLE_KINDS} from '../motion/roleKinds.generated';
+import {motionRoleIn, motionRoleOf} from '../motion/roles';
+import {registerSpringsTable, registerTimingTable} from '../motion/uikit';
 import {naturalFrequency, toSpring} from '../motion/spring';
 
 const OMEGA = naturalFrequency(toSpring(keyboard.spring));
@@ -263,9 +264,10 @@ describe('the keyboard\u2019s own timing (spec:AST-099 FR3)', () => {
     // The system moves the keyboard on its own spring and duration whatever
     // the theme says, so neither is a motion role (spec:AST-094 FR4).
     expect(timing.keyboardNotificationMs).toBe(383.3);
-    expect(MOTION_ROLE_KINDS).not.toHaveProperty(
-      'timing.keyboardNotificationMs',
-    );
-    expect(MOTION_ROLE_KINDS).not.toHaveProperty('springs.keyboard');
+    // The generated role-kind map is gone; ask the registry itself.
+    registerSpringsTable();
+    registerTimingTable();
+    expect(motionRoleIn(timing, 'keyboardNotificationMs')).toBeUndefined();
+    expect(motionRoleOf(keyboard.spring)).toBeUndefined();
   });
 });
