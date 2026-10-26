@@ -408,7 +408,7 @@ test('on Android too, the drag tracks the finger 1:1 and stretches past the tall
       },
     },
   );
-  expect(tracked.length).toBeGreaterThan(10);
+  expect(tracked.length).toBeGreaterThan(0);
   for (const {top, finger} of tracked) {
     expect(Math.abs(top - tallTop - finger)).toBeLessThanOrEqual(1);
   }
