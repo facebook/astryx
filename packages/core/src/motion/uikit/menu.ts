@@ -23,7 +23,7 @@
  * bar; after the scroll view's content-touch delay,
  * `scroll.delaysContentTouchesMs`, inside one).
  * The press values the shared menu press model reads (the drift allowance
- * and the handoff) are `UIKIT_GESTURES.menuPress` (gestures.ts).
+ * and the handoff) are `UIKIT_MENU_PRESS` (gestures.ts).
  *
  * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md
  */
