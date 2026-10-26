@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[chore] Core and Lab components share one touch and gesture module through an internal entry reserved for Astryx's own packages. Apps import nothing new.
+[chore] Adds an internal entry, reserved for Astryx's own packages, through which Lab components reach the gesture core that Core components import directly. No component uses it yet, and apps import nothing new.
 
 @vjeux

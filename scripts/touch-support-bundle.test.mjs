@@ -25,9 +25,8 @@ const CORE_SRC = path.join(REPO, 'packages/core/src');
 const require = createRequire(path.join(REPO, 'package.json'));
 const esbuild = require('esbuild');
 
-/** The module and the gesture core it gathers. */
-const PRIMITIVE_INPUT =
-  /^packages\/core\/src\/(gestures\/|touch-support\/touchModule\.ts$)/;
+/** The gesture core the internal entry re-exports. */
+const PRIMITIVE_INPUT = /^packages\/core\/src\/gestures\//;
 
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-touch-module-'));
 afterAll(() => {
@@ -117,10 +116,10 @@ describe('the touch module in bundles', () => {
     const component = name =>
       entryWith(
         `${name}.ts`,
-        `import {touchModule} from ${JSON.stringify(
+        `import {GestureArena} from ${JSON.stringify(
           path.join(CORE_SRC, 'internal/touch.ts'),
         )};
-export const ${name} = () => new touchModule.GestureArena();
+export const ${name} = () => new GestureArena();
 `,
       );
     const outputs = outputsOf([component('First'), component('Second')]);
@@ -200,7 +199,7 @@ describe('the touch module internals', () => {
       ...filesUnder(path.join(REPO, 'packages/cli/assets/docs'), /\.mjs$/),
     ];
     const naming = docs.filter(file =>
-      /\b(GestureArena|GestureRecognizer|touchModule)\b|@astryxdesign\/core\/internal\//.test(
+      /\b(GestureArena|GestureRecognizer)\b|@astryxdesign\/core\/internal\//.test(
         fs.readFileSync(file, 'utf8'),
       ),
     );
