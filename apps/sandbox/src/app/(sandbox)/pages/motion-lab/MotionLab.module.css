@@ -234,9 +234,7 @@
 .scrimAfter[data-open='true'] {
   opacity: 1;
   visibility: visible;
-  transition:
-    opacity var(--lab-duration-overlay) linear,
-    visibility 0s;
+  transition: opacity var(--lab-duration-overlay) linear, visibility 0s;
 }
 
 .scrimBefore[data-open='true'] {
@@ -323,9 +321,7 @@
 .drawer[data-open='true'] {
   transform: translateX(0);
   visibility: visible;
-  transition:
-    transform var(--drawer-slide, 410ms) var(--ease-drawer),
-    visibility 0s;
+  transition: transform var(--drawer-slide, 410ms) var(--ease-drawer), visibility 0s;
 }
 
 /* The unmount timer firing while the slide is still running. */
@@ -355,11 +351,7 @@
 }
 
 .trackTimer {
-  background: color-mix(
-    in srgb,
-    var(--color-text-error, #d3543f) 45%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--color-text-error, #d3543f) 45%, transparent);
 }
 
 /* --------------------------------------------------- sliding indicator --- */
@@ -677,8 +669,7 @@
   height: 11px;
   border-radius: 50%;
   background: var(--color-background-success, #3f9a6b);
-  animation: pulseRing var(--loop-duration, 2s) var(--loop-ease, ease-in-out)
-    infinite;
+  animation: pulseRing var(--loop-duration, 2s) var(--loop-ease, ease-in-out) infinite;
 }
 
 @keyframes pulseRing {
@@ -702,8 +693,7 @@
     var(--color-background-base) 80%
   );
   background-size: 220% 100%;
-  animation: shimmer var(--loop-duration, 1.5s) var(--loop-ease, ease-in-out)
-    infinite;
+  animation: shimmer var(--loop-duration, 1.5s) var(--loop-ease, ease-in-out) infinite;
 }
 
 @keyframes shimmer {
@@ -910,9 +900,7 @@
 }
 
 .lightboxFade[data-open='true'] {
-  transition:
-    opacity var(--lab-duration-enter) var(--ease-entry),
-    visibility 0s;
+  transition: opacity var(--lab-duration-enter) var(--ease-entry), visibility 0s;
 }
 
 .lightboxNone {
