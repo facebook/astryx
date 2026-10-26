@@ -19,9 +19,9 @@
  * bottom centre of the source for a popover below it. Its scale (from
  * `popover.collapsedScale`), its length away from the source (from
  * `popover.collapsedLengthPx` to its own) and its opacity run on one spring,
- * `springs.popoverPresent`, with the edge that meets the source held in
+ * `POPOVER_PRESENT_SPRING`, with the edge that meets the source held in
  * place. The dismissal runs the same path back into that point on
- * `springs.popoverDismiss`.
+ * `POPOVER_DISMISS_SPRING`.
  *
  * Here the layer element is scaled about that point. Across the source's
  * edge its scale is s = s₀ + (1 − s₀)·p; along the axis away from the source
@@ -66,7 +66,10 @@ import {
   toSpring,
   type SpringDescription,
 } from '../motion/spring';
-import {registerSpringsTable, springs} from '../motion/uikit/springs';
+import {
+  POPOVER_DISMISS_SPRING,
+  POPOVER_PRESENT_SPRING,
+} from '../motion/uikit/springs';
 import {placeLayerExitCopy} from '../Layer/layerExitCopy';
 import {
   frameOf,
@@ -204,17 +207,85 @@ const MOTION_STYLE_PROPERTIES = [
   'animation-name',
 ] as const;
 
+/**
+ * Holds the input of touches that land while the popover grows
+ * (`spec:AST-094` FR35): their tap closes nothing, activates nothing and
+ * moves no focus (the touch's end is cancelled, which also cancels the
+ * browser's light dismiss and its click), and a one-finger drag scrolls
+ * nothing. A pinch still zooms the page (FR10). Listens only while it grows
+ * or such a touch is down.
+ */
+function createGrowthInputHold(doc: Document) {
+  const held = new Set<number>();
+  let isGrowing = false;
+  let isListening = false;
+  const onTouchStart = (event: TouchEvent) => {
+    if (!isGrowing) {
+      return;
+    }
+    for (const touch of Array.from(event.changedTouches)) {
+      held.add(touch.identifier);
+    }
+  };
+  const onTouchMove = (event: TouchEvent) => {
+    const only = event.touches.length === 1 ? event.touches[0] : null;
+    if (only != null && held.has(only.identifier) && event.cancelable) {
+      event.preventDefault();
+    }
+  };
+  const onTouchEnd = (event: TouchEvent) => {
+    let isHeld = false;
+    for (const touch of Array.from(event.changedTouches)) {
+      isHeld = held.delete(touch.identifier) || isHeld;
+    }
+    if (isHeld && event.type === 'touchend' && event.cancelable) {
+      event.preventDefault();
+    }
+    stopIfIdle();
+  };
+  const OPTIONS = {capture: true, passive: false} as const;
+  const listen = (on: boolean) => {
+    if (on === isListening) {
+      return;
+    }
+    isListening = on;
+    const method = on ? 'addEventListener' : 'removeEventListener';
+    doc[method]('touchstart', onTouchStart, OPTIONS);
+    doc[method]('touchmove', onTouchMove, OPTIONS);
+    doc[method]('touchend', onTouchEnd, OPTIONS);
+    doc[method]('touchcancel', onTouchEnd, OPTIONS);
+  };
+  const stopIfIdle = () => {
+    if (!isGrowing && held.size === 0) {
+      listen(false);
+    }
+  };
+  return {
+    start() {
+      isGrowing = true;
+      listen(true);
+    },
+    stop() {
+      isGrowing = false;
+      stopIfIdle();
+    },
+    dispose() {
+      isGrowing = false;
+      held.clear();
+      listen(false);
+    },
+  };
+}
+
 export function createPopoverSurfaceMotion(
   element: HTMLElement,
   options: Pick<AnimatorOptions, 'now'> = {},
 ): PopoverSurfaceMotion {
-  // The table registers once, before the first animation (nothing runs on
-  // import). The popover's two springs are not among the roles it
-  // registers: they are this component's measured values, so there is
-  // nothing to resolve them against. Making them roles is the motion
-  // table's call, and no theme writes a role variable on this base anyway.
-  registerSpringsTable();
+  // The popover's two springs are this component's measured values, not
+  // motion roles (touch motion stays internal, spec:AST-094 DEC-11): they
+  // play as given, so no table is registered and no other row is bundled.
   const animator = createAnimator(element, options);
+  const inputHold = createGrowthInputHold(element.ownerDocument);
   // The presentation in progress or last played; null while the popover is
   // in a presentation this motion does not drive.
   let collapsed: PopoverCollapsedState | null = null;
@@ -238,6 +309,7 @@ export function createPopoverSurfaceMotion(
     collapsed = null;
     measured = null;
     presentHandle = null;
+    inputHold.stop();
     endExit();
     animator.set({scaleX: 1, scaleY: 1, opacity: 1});
     for (const property of MOTION_STYLE_PROPERTIES) {
@@ -285,14 +357,17 @@ export function createPopoverSurfaceMotion(
         start,
         PRESENTED,
         next.axis,
-        springs.popoverPresent,
+        POPOVER_PRESENT_SPRING,
         velocity,
       ),
     );
     presentHandle = handle;
+    // While it grows, a touch that lands takes no input (FR35).
+    inputHold.start();
     void handle.finished.then(() => {
       if (presentHandle === handle) {
         presentHandle = null;
+        inputHold.stop();
       }
     });
   };
@@ -310,6 +385,7 @@ export function createPopoverSurfaceMotion(
       target.scale,
     );
     presentHandle = null;
+    inputHold.stop();
     // The copy stands where the surface is drawn, the presentation's frame
     // included (the layer runtime's exit copy, INV13).
     const copy = placeLayerExitCopy(element, POPOVER_EXIT_COPY_ATTRIBUTE);
@@ -330,7 +406,7 @@ export function createPopoverSurfaceMotion(
         from,
         {scale: target.scale, length: target.length, opacity: 0},
         target.axis,
-        springs.popoverDismiss,
+        POPOVER_DISMISS_SPRING,
         velocity,
       ),
     );
@@ -350,6 +426,7 @@ export function createPopoverSurfaceMotion(
     reset,
     dispose() {
       reset();
+      inputHold.dispose();
       animator.dispose();
     },
   };
