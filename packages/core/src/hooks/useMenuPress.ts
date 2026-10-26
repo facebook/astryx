@@ -317,7 +317,8 @@ export interface DropdownMenuPressReturn extends UseMenuPressReturn {
    * trigger's opening finger does, and its lift before that acts on nothing and
    * leaves the menu open; otherwise, and for a mouse, the opening press follows
    * the settle rule. Ignored while another gesture is live or the hook is
-   * disabled.
+   * disabled. A menu with no trigger (a context menu) passes the touch model
+   * to `useMenuSurfacePress`, so the finger it hands over keeps the handoff.
    */
   continueGesture: (pointer: MenuPressContinuation) => void;
 }
@@ -472,7 +473,7 @@ export type MenuSurfacePressReturn = Omit<
  * @internal
  */
 export function useMenuSurfacePress(
-  options: UseMenuPressOptions,
+  options: DropdownMenuPressOptions,
 ): MenuSurfacePressReturn {
   return useMenuPressModel(options).surface;
 }

@@ -20,6 +20,7 @@ import {
   __resetMenuPressForTest,
   useDropdownMenuPress,
   useMenuPress,
+  useMenuSurfacePress,
   type DropdownMenuPressReturn,
   type UseMenuPressReturn,
 } from './useMenuPress';
@@ -676,6 +677,55 @@ describe('useMenuPress — the trigger', () => {
       fireEvent.pointerMove(row('B'), pointer);
       expect(row('B')).toHaveFocus();
       fireEvent.pointerUp(row('B'), pointer);
+      expect(onSelect).toHaveBeenCalledWith('B');
+    });
+
+    it("a menu with no trigger takes the touch model: under 'uikit' the finger it is handed picks only past the handoff (a context menu\u2019s long press)", () => {
+      const onSelect = vi.fn<(label: string) => void>();
+      const press: {current: ReturnType<typeof useMenuSurfacePress> | null} = {
+        current: null,
+      };
+      function SurfaceHarness() {
+        const menuRef = useRef<HTMLDivElement>(null);
+        press.current = useMenuSurfacePress({
+          menuRef,
+          itemSelector: ITEM_SELECTOR,
+          touchModel: 'uikit',
+          // The row under the finger by an injected hit test.
+          hitTest: () => row('B'),
+        });
+        return (
+          <div
+            ref={menuRef}
+            role="menu"
+            tabIndex={-1}
+            {...press.current.menuProps}>
+            {['A', 'B', 'C'].map(label => (
+              <div
+                key={label}
+                role="menuitem"
+                tabIndex={-1}
+                onClick={() => onSelect(label)}>
+                {label}
+              </div>
+            ))}
+          </div>
+        );
+      }
+      render(<SurfaceHarness />);
+      act(() => {
+        press.current?.continueGesture({
+          pointerId: 7,
+          pointerType: 'touch',
+          time: Date.now(),
+        });
+      });
+      fireEvent.pointerMove(row('B'), {...finger, clientX: 0, clientY: 4});
+      expect(row('B')).not.toHaveFocus();
+      fireEvent.pointerMove(row('B'), {...finger, clientX: 0, clientY: 20});
+      expect(row('B')).toHaveFocus();
+      fireEvent.pointerUp(row('B'), {...finger, clientX: 0, clientY: 20});
+      expect(onSelect).toHaveBeenCalledTimes(1);
       expect(onSelect).toHaveBeenCalledWith('B');
     });
 
