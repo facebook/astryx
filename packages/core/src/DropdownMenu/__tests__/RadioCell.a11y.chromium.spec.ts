@@ -144,7 +144,7 @@ test('after a pointer open, a cell the mouse rests on paints no focus ring, and 
   );
 });
 
-test('under forced colors the checked cell keeps a visible border and keyboard focus an outline', async ({
+test('under forced colors the checked cell keeps a visible border, keyboard focus an outline, and a swatch its colour', async ({
   page,
 }) => {
   await page.emulateMedia({forcedColors: 'active'});
@@ -154,6 +154,18 @@ test('under forced colors the checked cell keeps a visible border and keyboard f
   expect(highlight).not.toBe(canvas);
   expect(await borderColor(page, 'Blue')).toBe(highlight);
   expect(await borderColor(page, 'Red')).toBe(canvas);
+  // A swatch drawn as a background colour keeps it (the story opts out of
+  // the forced background), so an unchecked swatch stays visible.
+  expect(
+    await page
+      .getByRole('menuitemradio', {name: 'Red'})
+      .evaluate(
+        cell =>
+          getComputedStyle(
+            cell.querySelector('[aria-hidden="true"]') as HTMLElement,
+          ).backgroundColor,
+      ),
+  ).toBe('rgb(229, 72, 77)'); // the story's #e5484d, not Canvas
 
   await page.keyboard.press('ArrowDown');
   const red = page.getByRole('menuitemradio', {name: 'Red'});

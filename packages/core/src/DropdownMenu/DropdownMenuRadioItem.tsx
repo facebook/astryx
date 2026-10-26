@@ -25,8 +25,8 @@
  * Given children that render, the item is a cell instead: the caller's content
  * is the tile (a swatch, an icon, a numbered slot), with no radio mark and no
  * row layout, named by `label` through a visually hidden element. The checked
- * cell carries an accent border, and keyboard focus the shared ring, which
- * focus a pointer moved there never paints. Cells keep the row's role, focus,
+ * cell carries an accent border, and focus after keyboard input the shared
+ * ring; focus after pointer input paints none. Cells keep the row's role, focus,
  * selection and handler order, so the menu's arrow keys, typeahead and press
  * model reach them in DOM order; a caller lays them out by styling the group or
  * a wrapper as a grid.
@@ -65,6 +65,17 @@ import {
 import type {BaseProps} from '../BaseProps';
 import {useDropdownMenuRadioGroupContext} from './DropdownMenuContext';
 
+/**
+ * Whether children render something React can tell before rendering. An array
+ * counts only through an item that does, so `{a && <A />}{b && <B />}` with
+ * both false, or an empty `.map()`, renders nothing. An element always counts:
+ * a fragment, or a component that returns `null`, is only read when it renders.
+ */
+function rendersContent(children: ReactNode): boolean {
+  return Array.isArray(children)
+    ? children.some(rendersContent)
+    : isRenderable(children);
+}
 const styles = stylex.create({
   root: {
     width: '100%',
@@ -272,8 +283,8 @@ export function DropdownMenuRadioItem({
   );
 
   // Children that render make the option a cell; `false`, `''` and the like
-  // leave it a row.
-  if (isRenderable(children)) {
+  // leave it a row, also inside an array (`rendersContent`).
+  if (rendersContent(children)) {
     return (
       <RadioCell
         hostProps={rest}
@@ -390,9 +401,10 @@ function RadioCell({
   children,
 }: RadioCellProps) {
   const labelId = useId();
-  // The ring marks focus the keyboard moved here. Focus a pointer moved here
-  // (the menu's hover focus after a mouse open) paints none, as the menu
-  // surfaces gate theirs (architecture:interaction-modality INV1). Tracking is
+  // The ring marks focus after keyboard input, also where the mouse then moves
+  // it. Focus after pointer input (the menu's hover focus after a mouse open)
+  // paints none, as the menu surfaces gate theirs
+  // (architecture:interaction-modality INV1). Tracking is
   // activated here too, so a cell in any menu reads the last input.
   useInteractionModalityTracking();
   const [isKeyboardFocused, setIsKeyboardFocused] = useState(false);

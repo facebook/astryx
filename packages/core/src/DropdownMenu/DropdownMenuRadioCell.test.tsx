@@ -228,19 +228,56 @@ describe('DropdownMenuRadioItem with children (a cell)', () => {
           <DropdownMenuRadioItem value="green" label="Green">
             {''}
           </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="blue" label="Blue">
+            {showSwatch && <span data-testid="swatch" />}
+            {showSwatch && <span data-testid="badge" />}
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="gray" label="Gray">
+            {[].map(id => (
+              <span key={id} data-testid="swatch" />
+            ))}
+          </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenu>,
     );
     await user.click(screen.getByRole('button', {name: /Color/}));
-    // Each is a row, with its radio mark, not an empty cell.
-    for (const name of ['Red', 'Green']) {
+    // Each is a row, with its radio mark, not an empty cell, also when the
+    // children are an array of nothing.
+    for (const name of ['Red', 'Green', 'Blue', 'Gray']) {
       expect(
         cell(name).querySelector('.astryx-radio-indicator'),
       ).not.toBeNull();
     }
   });
 
-  it('paints the keyboard ring for focus the keyboard moved, never for focus the mouse moved after a pointer open', async () => {
+  it('is a cell for a fragment or a component that renders nothing, as an element cannot be read before it renders', async () => {
+    const user = userEvent.setup();
+    const showSwatch = false;
+    function Nothing() {
+      return null;
+    }
+    render(
+      <DropdownMenu button={{label: 'Color'}}>
+        <DropdownMenuRadioGroup value="red" onChange={() => {}} label="Color">
+          <DropdownMenuRadioItem value="red" label="Red">
+            <>
+              {showSwatch && <span data-testid="swatch" />}
+              {showSwatch && <span data-testid="badge" />}
+            </>
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="green" label="Green">
+            <Nothing />
+          </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Color/}));
+    for (const name of ['Red', 'Green']) {
+      expect(cell(name).querySelector('.astryx-radio-indicator')).toBeNull();
+    }
+  });
+
+  it('paints the keyboard ring for focus after keyboard input, also where the mouse then moves it, and none after pointer input', async () => {
     const user = userEvent.setup();
     render(<ColorMenu />);
     // A pointer open: the cells the mouse rests on take focus, with no ring.
@@ -256,6 +293,13 @@ describe('DropdownMenuRadioItem with children (a cell)', () => {
     expect(cell('Blue')).toHaveFocus();
     expect(
       ringClassesOn(cell('Blue'), cell('Green')).length,
+    ).toBeGreaterThanOrEqual(3);
+
+    // The last input is still the keyboard: focus the mouse moves keeps it.
+    fireEvent.pointerMove(cell('Green'), {pointerType: 'mouse'});
+    expect(cell('Green')).toHaveFocus();
+    expect(
+      ringClassesOn(cell('Green'), cell('Red')).length,
     ).toBeGreaterThanOrEqual(3);
   });
 

@@ -189,9 +189,10 @@ intentional decision.
 - **AR5 — A cell's checked state and keyboard focus are visible (proposed,
   DEC-1).** A checked cell carries a 2px `--color-accent` border every cell
   reserves, transparent when unchecked and Highlight against Canvas under forced
-  colors. The shared focus ring paints outside it only for focus the keyboard
-  moved there; focus a pointer moved there paints none, the browser's ring
-  included (`architecture:interaction-modality` INV1).
+  colors. The shared focus ring paints outside it for focus after keyboard
+  input, also where the mouse then moves it; focus after pointer input paints
+  none, the browser's ring included (`architecture:interaction-modality`
+  INV1).
 
 ## Design relationships
 
@@ -228,7 +229,7 @@ No new component-local visual decision is settled by this draft.
 | FR4, AR2      | Disabled focused test with an assistive-technology click; browser disabled-hover frame              | disabled checked/unchecked                                     | Removing the disabled guard makes the focused test fail                                                                      | `audit:DropdownMenuRadioItem/§1,§4`        |
 | AR4           | Exact-head keyboard-focus and forced-colors frames with rendered contrast                           | Neutral/Butter light/dark focus, forced colors                 | Current frames record the gap; a remediation passes only with a perceivable indicator in every theme and under forced colors | `audit:DropdownMenuRadioItem/§1,§5`        |
 | FR6, FR7      | Marker and target tests; exact-head Neutral/Butter/RTL/narrow/size/coarse/focus frames              | sm/md/lg, fine/coarse, LTR/RTL, light/dark                     | A lost target or reflection, a marker that is announced, wrongly sized, or misplaced fails                                   | `audit:DropdownMenuRadioItem/§2,§5,§9,§10` |
-| FR9, AR1, AR5 | `DropdownMenuRadioCell.test.tsx`; `RadioCell.a11y.chromium.spec.ts` (AX names, paint, keys, axe)    | cell, non-rendering children, pointer/keyboard focus, forced   | A marker or row slot in a cell, a cell named by its tile, a lost checked border, or a ring for pointer-moved focus fails     | `audit:DropdownMenuRadioItem/§1,§4,§5`     |
+| FR9, AR1, AR5 | `DropdownMenuRadioCell.test.tsx`; `RadioCell.a11y.chromium.spec.ts` (AX names, paint, keys, axe)    | cell, non-rendering children, pointer/keyboard focus, forced   | A marker or row slot in a cell, a cell named by its tile, a lost checked border, or a ring after pointer input fails         | `audit:DropdownMenuRadioItem/§1,§4,§5`     |
 
 ## Decision log
 

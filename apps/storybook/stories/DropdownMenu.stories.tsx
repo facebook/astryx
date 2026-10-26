@@ -881,6 +881,8 @@ const radioCellStyles = stylex.create({
     width: 24,
     height: 24,
     borderRadius: '50%',
+    // A tile drawn as a background colour keeps it under forced colors.
+    forcedColorAdjust: 'none',
   },
   swatchColor: (color: string) => ({
     backgroundColor: color,

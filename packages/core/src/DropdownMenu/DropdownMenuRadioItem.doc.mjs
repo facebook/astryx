@@ -64,7 +64,7 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        'Content drawn as a cell instead of the row: a tile, a colour swatch, an icon, a numbered slot. The cell shows no radio mark; label names it through a visually hidden element, the checked cell carries an accent border (Highlight under forced colors), and keyboard focus adds the focus ring. Cells keep the row role, focus, selection and handlers, so the arrow keys and typeahead reach them in DOM order. Lay them out by styling the group or a wrapper inside it as a grid. Children that render nothing leave the row; icon, description and endContent are not shown in a cell.',
+        "Content drawn as a cell instead of the row: a tile, a colour swatch, an icon, a numbered slot. The cell shows no radio mark; label names it through a visually hidden element, the checked cell carries an accent border (Highlight under forced colors), and keyboard focus adds the focus ring. Cells keep the row role, focus, selection and handlers, so the arrow keys and typeahead reach them in DOM order. Lay them out by styling the group or a wrapper inside it as a grid. Children that render nothing, also an array of nothing, leave the row; an element always makes a cell, even a fragment or a component that returns null. A tile drawn as a background colour needs `forcedColorAdjust: 'none'` to keep it under forced colors. icon, description and endContent are not shown in a cell.",
     },
     {
       name: 'ref',
@@ -89,7 +89,7 @@ export const docsZh = {
     isDisabled: '该单选项是否禁用。',
     endContent: '在标签和描述之后渲染的内容。',
     children:
-      '以单元格而非行绘制的内容：图块、色板、图标或编号槽位。单元格不显示单选标记；label 通过视觉隐藏的元素为其命名，选中的单元格带有强调色边框（强制颜色模式下为 Highlight），键盘焦点会显示焦点环。单元格保留行的角色、焦点、选择和事件处理，方向键和输入查找按 DOM 顺序到达它们。通过将组或组内的包装元素设为网格来布局。不渲染任何内容的 children 保持为行；单元格中不显示 icon、description 和 endContent。',
+      "以单元格而非行绘制的内容：图块、色板、图标或编号槽位。单元格不显示单选标记；label 通过视觉隐藏的元素为其命名，选中的单元格带有强调色边框（强制颜色模式下为 Highlight），键盘焦点会显示焦点环。单元格保留行的角色、焦点、选择和事件处理，方向键和输入查找按 DOM 顺序到达它们。通过将组或组内的包装元素设为网格来布局。不渲染任何内容的 children（包括只含空内容的数组）保持为行；元素总会生成单元格，即使是片段或返回 null 的组件。以背景色绘制的图块需要 `forcedColorAdjust: 'none'`，才能在强制颜色模式下保留颜色。单元格中不显示 icon、description 和 endContent。",
     ref: '转发到行根元素（带 role="menuitemradio" 的元素）的 ref。',
   },
 };
@@ -108,7 +108,7 @@ export const docsDense = {
       'disabled; aria-disabled, blocks selection, skipped by arrow keys',
     endContent: 'content after label+description',
     children:
-      'drawn as a cell (tile, swatch, icon) instead of the row: no radio mark, named by label, accent border when checked, focus ring on keyboard focus; arrows reach cells in DOM order; lay out via group/wrapper grid; non-rendering children stay a row',
+      'drawn as a cell (tile, swatch, icon) instead of the row: no radio mark, named by label, accent border when checked, focus ring on keyboard focus; arrows reach cells in DOM order; lay out via group/wrapper grid; non-rendering children (arrays too) stay a row, any element is a cell; background-colour tiles need forcedColorAdjust none',
     ref: 'forwarded to the row root (the role="menuitemradio" element)',
   },
 };
