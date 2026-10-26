@@ -2515,7 +2515,9 @@ describe('useSheetGestures: the release on the compositor', () => {
             } as CSSStyleDeclaration)
           : computed(element, pseudo),
     );
-    const throwIn = (parent: HTMLElement): Played => {
+    // Each throw on its own stretch of the clock: the gesture host reads
+    // event times, so the second throw starts after the first.
+    const throwIn = (parent: HTMLElement, at: number): Played => {
       const {hook} = setup({
         snapHeights: () => [200],
         offscreenBlockEndInset: 48,
@@ -2523,16 +2525,16 @@ describe('useSheetGestures: the release on the compositor', () => {
       const t = makeTarget();
       parent.append(t);
       const played = recordAnimations(t);
-      down(hook, 0, 0, t);
-      stream(hook, t, {from: 0, to: 150, t0: 0, t1: 600});
+      down(hook, 0, at, t);
+      stream(hook, t, {from: 0, to: 150, t0: at, t1: at + 600});
       // Thrown back up at 3000 px/s, released 5 px below fully open.
-      stream(hook, t, {from: 150, to: 5, t0: 600, t1: 648});
-      lift(hook, 5, 650, t);
+      stream(hook, t, {from: 150, to: 5, t0: at + 600, t1: at + 648});
+      lift(hook, 5, at + 650, t);
       expect(hook.result.current.settledOffset).toBe(0);
       return played.at(-1) as Played;
     };
-    const themed = throwIn(scope);
-    const measured = throwIn(plain);
+    const themed = throwIn(scope, 0);
+    const measured = throwIn(plain, 10_000);
     for (let ms = 0; ms <= 600; ms += 4) {
       expect(travelAt(themed, ms)).toBeCloseTo(travelAt(measured, ms), 6);
       expect(travelAt(themed, ms)).toBeGreaterThanOrEqual(-48.5);
