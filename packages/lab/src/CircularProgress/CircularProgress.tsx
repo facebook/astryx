@@ -256,7 +256,7 @@ const styles = stylex.create({
   // The theme's duration and easing still time a change: they are declared
   // here and read back when the value changes (`transition-property: none`,
   // so nothing transitions on its own). Under reduced motion the duration is
-  // 0 s, so a new value shows at once, as ProgressBar's fill does.
+  // 0 s, so a new value shows at once.
   fill: {
     position: 'absolute',
     inset: 0,
@@ -264,10 +264,10 @@ const styles = stylex.create({
     overflow: 'hidden',
     pointerEvents: 'none',
     transitionProperty: 'none',
-    // Under reduced motion a new value shows at once, on every pointer
-    // (progress indicators sit outside design:reduced-motion's scope); the
-    // keys are the shared reduced-motion queries, a fine pointer's and a
-    // coarse pointer's.
+    // Under reduced motion a new value shows at once, on every pointer (a Lab
+    // component sits outside design:reduced-motion's scope, which covers
+    // core); the keys are the shared reduced-motion queries, a fine pointer's
+    // and a coarse pointer's.
     transitionDuration: {
       default: durationVars['--duration-medium'],
       '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
