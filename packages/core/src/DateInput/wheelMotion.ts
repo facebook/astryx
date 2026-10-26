@@ -8,8 +8,9 @@
  *   the rows for a drag frame by frame, plays any curve on the compositor
  *   (baked per row by wheelDrum.ts), reads the offset on screen at any
  *   instant, stops a motion where it is, ticks, and reports arrival
- * @position Imperative engine of the touch picker wheel. Never renders React:
- *   a gesture or a motion writes styles and nothing else
+ * @position Imperative engine of the touch picker wheel (PickerWheel.tsx).
+ *   Never renders React: a gesture or a motion writes styles and nothing
+ *   else
  *
  * A motion is a set of Web Animations, one per row that shows during it plus
  * one for the band strip, all baked from the same samples of the same curve
@@ -24,6 +25,8 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/DateInput/wheelMotion.test.ts
+ * - /packages/core/src/DateInput/PickerWheel.tsx
+ * - /packages/core/src/DateInput/PickerWheel.test.tsx
  */
 
 import {canVibrate, playHaptic} from '../gestures/haptics';
