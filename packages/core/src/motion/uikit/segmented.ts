@@ -5,9 +5,8 @@
  * @input Nothing; data only
  * @output Exports `segmentedControl`: UISegmentedControl's selection slide
  *   spring and what a finger does to the lens: the lift (size and spring),
- *   how long a tap keeps it lifted, the spring it chases a dragging finger
- *   with, how far past the end segments it follows, and the pressed title's
- *   dim, all internal constants
+ *   how long a tap keeps it lifted, how far past the end segments it follows
+ *   a dragging finger, and the pressed title's dim, all internal constants
  * @position The segmented-control domain of the UIKit constants table
  *   (motion/uikit); read by SegmentedControl's touch presentation
  *
@@ -33,7 +32,11 @@
  * Every leaf carries one or more `@source`; uikit.test.ts enforces it.
  * Durations are in ms; curves are cubic-bézier control points
  * [x1, y1, x2, y2]. The values are internal constants: `spec:AST-094` FR4
- * names no segmented-control motion role, so no theme retunes them.
+ * names no segmented-control motion role, so no theme retunes them. The lens
+ * chases a dragging finger on the shared role `springs.fingerTracking`, the
+ * values UIKit reports for this control too (trackingResponse 0.15,
+ * trackingDampingRatio 0.86, read during a drag; per-frame chase rms 0.51 /
+ * 0.77 pt; UIKit lab, iOS 26.2 simulator, Oct 23 2026).
  *
  * SYNC: When modified, update:
  * - /packages/core/src/SegmentedControl/useSegmentedSelectionMotion.ts
@@ -91,19 +94,6 @@ export const segmentedControl = {
    *   0.07 pt, Oct 23 2026
    */
   tapLiftHangMs: 230,
-  /**
-   * The spring the lifted lens chases a dragging finger with: its center
-   * trails the finger (about 14 pt at 200 pt/s) and catches up within about
-   * 0.13 s when the finger stops.
-   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, UIViewSpringAnimationBehaviorSettings tracking values
-   *   read during a drag (trackingDampingRatio 0.86, trackingResponse 0.15),
-   *   Oct 23 2026
-   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, per-frame lens center against the HID touch stream for
-   *   two drags, simulated chase rms 0.51 / 0.77 pt, Oct 23 2026
-   */
-  trackingSpring: {response: 0.15, dampingRatio: 0.86},
   /**
    * How far past the first or last segment's center the lens follows a
    * dragging finger, in pt; beyond that it stays put while the finger goes

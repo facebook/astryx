@@ -56,7 +56,9 @@
  *   scroller the press waits the content-touch delay, as UIScrollView delays
  *   a control's touches.
  * - Dragging from there carries it: its center chases the finger on
- *   `trackingSpring`, no further than `dragOvershoot` past the end segments.
+ *   `springs.fingerTracking` (the shared `spec:AST-094` FR4 role, which
+ *   UISegmentedControl's tracking values match), no further than
+ *   `dragOvershoot` past the end segments.
  *   The selected title's colour follows the lens's presented center, moving
  *   to a neighbour only once the center is a quarter of that segment (at
  *   least 8 px) past the boundary (inline, until the commit's own styles take
@@ -111,6 +113,7 @@ import {
 import {reducedMotionFade} from '../motion/reducedMotion';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
 import {segmentedControl} from '../motion/uikit/segmented';
+import {registerSpringsTable, springs} from '../motion/uikit/springs';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {spacingVars} from '../theme/tokens.stylex';
@@ -651,6 +654,9 @@ export class SegmentedSelectionMotion {
     }),
     options: SegmentedSelectionMotionOptions = {},
   ) {
+    // The chase plays the shared role `springs.fingerTracking`: registered
+    // before the first animation (idempotent; nothing registers on import).
+    registerSpringsTable();
     this.now = options.now ?? defaultNow;
     this.after =
       options.afterAnimator ??
@@ -1300,7 +1306,7 @@ export class SegmentedSelectionMotion {
         ? segmentedControl.selectionSpring
         : kind === 'lift'
           ? segmentedControl.liftSpring
-          : segmentedControl.trackingSpring;
+          : springs.fingerTracking;
     const velocity: Record<string, number> = {};
     for (const key of Object.keys(values) as (keyof typeof this.velocity)[]) {
       const v = this.velocity[key];

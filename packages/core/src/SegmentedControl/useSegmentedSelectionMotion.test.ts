@@ -21,7 +21,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {createAnimator, type Animator} from '../motion/animator';
 import {solveSpring, toSpring} from '../motion/spring';
-import {segmentedControl} from '../motion/uikit';
+import {segmentedControl, springs} from '../motion/uikit';
 import {measureSegments, segmentTargetAt} from './useSegmentedTouchTracking';
 import {
   SegmentedSelectionMotion,
@@ -692,11 +692,11 @@ describe('under a finger', () => {
     expect(ctx.animator.get('scaleX')).toBeCloseTo(120 / 96, 6);
   });
 
-  it('a drag carries the lens on the tracking spring, no further than 11 pt past the end segments', async () => {
+  it('a drag carries the lens on the shared finger-tracking role, no further than 11 pt past the end segments', async () => {
     const ctx = setup('grid');
     press(ctx, clientCenterOf('grid'));
     drag(ctx, clientCenterOf('list'));
-    const chase = solveSpring(toSpring(segmentedControl.trackingSpring), {
+    const chase = solveSpring(toSpring(springs.fingerTracking), {
       from: 0,
       to: centerOf('list') - centerOf('grid'),
       velocity: 0,

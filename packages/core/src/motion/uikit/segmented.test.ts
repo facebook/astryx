@@ -18,7 +18,7 @@ import {dampingRatioOf, responseOf, solveSpring, toSpring} from '../spring';
 import {motionRoleIn, motionRoleOf} from '../roles';
 import {resolveMotion} from '../resolveMotion';
 import {segmentedControl} from './segmented';
-import {springs} from './springs';
+import {registerSpringsTable, springs} from './springs';
 
 /**
  * The selection lens's presented position (pt, in the control) per frame,
@@ -128,12 +128,26 @@ describe('segmentedControl.selectionSpring reproduces UIKit’s slide', () => {
   });
 });
 
+describe('the drag chase', () => {
+  it('is the shared role springs.fingerTracking (spec:AST-094 FR4), the values UIKit reports for this control: no copy in the table', () => {
+    registerSpringsTable();
+    expect('trackingSpring' in segmentedControl).toBe(false);
+    expect(springs.fingerTracking).toEqual({
+      response: 0.15,
+      dampingRatio: 0.86,
+    });
+    expect(motionRoleOf(springs.fingerTracking)).toMatchObject({
+      id: 'springs.fingerTracking',
+      kind: 'spring',
+    });
+  });
+});
+
 describe('internal constants', () => {
   it('no value is a motion role (spec:AST-094 FR4 names none for the segmented control); the titles switch at once, with no clock', () => {
     expect(motionRoleOf(segmentedControl.selectionSpring)).toBeUndefined();
     expect(motionRoleIn(segmentedControl, 'selectionSpring')).toBeUndefined();
     expect(motionRoleOf(segmentedControl.liftSpring)).toBeUndefined();
-    expect(motionRoleOf(segmentedControl.trackingSpring)).toBeUndefined();
     expect(motionRoleIn(segmentedControl, 'tapLiftHangMs')).toBeUndefined();
     expect(motionRoleIn(segmentedControl, 'dragOvershoot')).toBeUndefined();
     expect(Object.keys(segmentedControl)).not.toContain('labelCrossFadeMs');
@@ -146,10 +160,6 @@ describe('internal constants', () => {
       '0.25s 0',
     );
     element.style.setProperty('--motion-segmented-control-lift-spring', '1s 0');
-    element.style.setProperty(
-      '--motion-segmented-control-tracking-spring',
-      '1s 0',
-    );
     document.body.append(element);
     try {
       expect(resolveMotion(element, segmentedControl.selectionSpring)).toEqual(
@@ -157,9 +167,6 @@ describe('internal constants', () => {
       );
       expect(resolveMotion(element, segmentedControl.liftSpring)).toEqual(
         segmentedControl.liftSpring,
-      );
-      expect(resolveMotion(element, segmentedControl.trackingSpring)).toEqual(
-        segmentedControl.trackingSpring,
       );
     } finally {
       element.remove();
