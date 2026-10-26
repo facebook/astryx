@@ -40,8 +40,14 @@ async function mount(page: Page) {
 }
 
 /** The rows a person can see: not under a hidden wrapper, not in a closed popover. */
+/**
+ * The rows a person can reach: under a finger a drilled view is a card over
+ * the parent's rows, which stay painted, receded, inert and hidden from
+ * assistive technology (spec:AST-094 FR34), so a row counts by role, not by
+ * paint.
+ */
 function shownRows(page: Page) {
-  return page.locator('[role="menuitem"]:visible');
+  return page.getByRole('menuitem');
 }
 
 test.describe('on a phone (coarse pointer)', () => {
@@ -104,7 +110,7 @@ test.describe('on a phone (coarse pointer)', () => {
         () =>
           document
             .querySelector('[role="menuitem"][aria-haspopup="menu"]')
-            ?.closest('[hidden]') instanceof HTMLElement,
+            ?.closest('[hidden], [inert]') instanceof HTMLElement,
       ),
     ).toBe(true);
 
