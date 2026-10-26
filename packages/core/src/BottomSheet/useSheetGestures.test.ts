@@ -255,7 +255,9 @@ describe('useSheetGestures', () => {
     const {hook, onDismiss} = setup({snapHeights: () => [200]});
     const t = makeTarget();
     down(hook, 0, 0, t);
-    // 60px in 20ms = 3px/ms, and 60px > the flick distance floor.
+    // 60px in 20ms = 3px/ms, and 60px > the flick distance floor (two
+    // moves: the release filter needs two moved samples, spec:AST-100 FR2).
+    move(hook, 30, 10, t);
     move(hook, 60, 20, t);
     up(hook, 60, 22, t);
     expect(onDismiss).toHaveBeenCalledTimes(1);
@@ -272,6 +274,7 @@ describe('useSheetGestures', () => {
     });
     const t = makeTarget();
     down(hook, 0, 0, t);
+    move(hook, 30, 10, t);
     move(hook, 60, 20, t);
     up(hook, 60, 22, t);
 
@@ -294,6 +297,7 @@ describe('useSheetGestures', () => {
     onSnap.mockClear();
     // Now flick up fast: 60px in 20ms = 3px/ms, over the distance floor.
     down(hook, 200, 1000, t);
+    move(hook, 170, 1010, t);
     move(hook, 140, 1020, t);
     up(hook, 140, 1022, t);
     expect(onDismiss).not.toHaveBeenCalled();
@@ -373,7 +377,7 @@ describe('useSheetGestures', () => {
       const {hook, onDismiss} = setup({snapHeights: () => [200]});
       const t = makeTarget();
       down(hook, 0, 0, t);
-      stream(hook, t, {from: 0, to: 60, t0: 0, t1: 20}); // 3000 px/s ...
+      stream(hook, t, {from: 0, to: 60, t0: 0, t1: 20, step: 10}); // 3000 px/s ...
       up(hook, 60, 55, t); // ... then 35 ms still, then the lift
       // Projected 60 + 3000 × 0.1 = 360, nearest gone (400).
       expect(onDismiss).toHaveBeenCalledTimes(1);
@@ -464,7 +468,8 @@ describe('useSheetGestures', () => {
       const t = makeTarget();
       down(hook, 0, 0, t);
       move(hook, 0, 250, t); // a still hold on the handle
-      move(hook, 30, 275, t); // then 60px in 50ms
+      move(hook, 20, 270, t); // then 60px in 50ms, the last 40 in 30
+      move(hook, 40, 285, t);
       move(hook, 60, 300, t);
       up(hook, 60, 302, t);
       expect(onDismiss).toHaveBeenCalledTimes(1);
@@ -476,11 +481,11 @@ describe('useSheetGestures', () => {
       down(hook, 0, 0, t);
       move(hook, 60, 300, t); // one sample, 300ms after touch-down
       up(hook, 60, 302, t);
-      // UIKit's filter reads 60 px over the 300 ms since the last sample,
-      // 200 px/s, under a mouse as under a finger: its coast (about 100 px)
-      // ends short of the dismiss line, nearest the 200 px detent.
+      // The release filter reads no velocity from a single move
+      // (spec:AST-100 FR2), under a mouse as under a finger: the sheet settles
+      // where it is nearest.
       expect(onDismiss).not.toHaveBeenCalled();
-      expect(hook.result.current.settledOffset).toBe(200);
+      expect(hook.result.current.settledOffset).toBe(0);
     });
 
     it('throws nothing from a mouse held still for over 40 ms before the lift (spec:AST-100 FR2)', () => {
@@ -538,6 +543,7 @@ describe('useSheetGestures', () => {
     // Fast (2000 px/s) but only 20px of travel: projected 20 + 228 = 248,
     // which lands on the 200 detent; gone (400) is further.
     down(hook, 0, 0, t);
+    move(hook, 10, 5, t);
     move(hook, 20, 10, t);
     up(hook, 20, 12, t);
     expect(onDismiss).not.toHaveBeenCalled();
