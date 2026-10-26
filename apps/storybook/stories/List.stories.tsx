@@ -647,15 +647,18 @@ function moveKey(
 function ReorderDemo({
   initial,
   pinned = [],
+  edge,
 }: {
   initial: ReadonlyArray<string>;
   pinned?: ReadonlyArray<string>;
+  edge?: 'padded' | 'flush';
 }) {
   const [rows, setRows] = useState(initial);
   return (
     <List
       hasDividers
       hasAnimatedChanges
+      edge={edge}
       reorderable={createReorderable({
         onReorder: ({key, to}) => setRows(current => moveKey(current, key, to)),
         isReorderable: key => !pinned.includes(key as string),
@@ -685,6 +688,24 @@ export const Reorderable: Story = {
           'or Enter) to turn on reorder mode for its row: each arrow key, or ' +
           'each move in the hint below the handle, moves it a place, and ' +
           'Escape or Done ends the mode.',
+      },
+    },
+  },
+};
+
+export const ReorderFlush: Story = {
+  render: () => (
+    <ReorderDemo
+      initial={['Inbox', 'Sent', 'Drafts', 'Archive']}
+      edge="flush"
+    />
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'With `edge="flush"` the rows have no side padding, so each ' +
+          "reorder handle ends at the row's edge, inside the list.",
       },
     },
   },
