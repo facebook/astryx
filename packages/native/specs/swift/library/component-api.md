@@ -150,12 +150,12 @@ same generated contract.
   (SwiftUI views with core's names, `Button`, `Text`, and so on, re-exporting
   SwiftUI and the contracts) and the `AstryxNative` product (generated contract
   types, unprefixed: `ButtonProps`, `ButtonVariant`).
-- Avatar, AvatarStatusDot, Card, Heading, Icon, and Text take their generated
-  `<Name>Props`; Button and
+- Avatar, AvatarStatusDot, Card, Heading, Icon, Text, and Thumbnail take their
+  generated `<Name>Props`; Button and
   TextInput still take hand-written parameters until each moves onto its
   generated props; Banner has no generated contract.
 - `AstryxNodeView` draws Avatar (with its status dot), AvatarStatusDot, Card,
-  Heading, Icon, and Text wire nodes. Any other
+  Heading, Icon, Text, and Thumbnail wire nodes. Any other
   node, HStack and VStack included, renders in its place as unsupported, and
   its siblings still render, until the logic host draws stacks (A9).
 - The generated iOS `SwitchProps` still declares `size`, and `HStackProps` and
