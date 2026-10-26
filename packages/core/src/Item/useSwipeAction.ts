@@ -547,6 +547,8 @@ export function useSwipeAction({
   const motionRef = useRef(0);
   /** The root's motion in progress, when a spring drives it. */
   const rootMotionRef = useRef<MotionHandle | null>(null);
+  /** That motion once it has started on screen (its `started` resolved). */
+  const startedMotionRef = useRef<MotionHandle | null>(null);
   const fireTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Releases the browser timer a slide-out set for its fire when the row
   // leaves, and drops a fire still waiting for its slide-out to start.
@@ -686,19 +688,35 @@ export function useSwipeAction({
       layoutRef.current = layout;
       motionRef.current += 1;
       const sign = physicalSign(layout.side, layout.inlineSign);
-      // No explicit start: a settle from rest starts when the browser commits
-      // it, so a frame held back (iOS during a smooth scroll) delays it
-      // instead of skipping into it; one that continues motion keeps the
-      // frame on screen. Calls in one task share one clock either way. UIKit
-      // sets the full swipe's look inside the same per-move animator.
+      // From rest no start is pinned: the driver and every layer start when
+      // the browser commits them, together, so a frame held back (iOS during a
+      // smooth scroll) delays the settle instead of skipping into it. A move
+      // that continues motion on screen (the next move's spring, the release,
+      // a catch: the root's motion has started and not ended) would start
+      // each layer at its own call time, so the parts share one pinned start.
+      // UIKit sets the full swipe's look inside the same per-move animator.
+      const previous = rootMotionRef.current;
+      const isMoving =
+        previous != null &&
+        startedMotionRef.current === previous &&
+        (previous.velocity('x') !== 0 ||
+          previous.value('x') !== previous.value('x', Infinity));
       const run = transitionFor(layout).to(sign * travel, spring, {
         velocity: animators.root.getVelocity('x'),
         touchRelease,
-        startAtCommit: true,
+        ...(isMoving ? {now: performance.now()} : {startAtCommit: true}),
         state: {isConfirmed: confirm === 1, wasConfirmed: confirm === 1},
       });
-      rootMotionRef.current = run.handle;
-      return run.handle?.finished ?? run.finished;
+      const handle = run.handle;
+      rootMotionRef.current = handle;
+      // On screen from its start: a move from rest waits for the browser's
+      // commit, so until then the next move is from rest too.
+      void handle?.started.then(() => {
+        if (rootMotionRef.current === handle) {
+          startedMotionRef.current = handle;
+        }
+      });
+      return handle?.finished ?? run.finished;
     },
     [animators, transitionFor],
   );
