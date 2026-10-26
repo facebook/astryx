@@ -50,6 +50,7 @@ import * as stylex from '@stylexjs/stylex';
 import {devWarn} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
 import {usePopover} from './usePopover';
+import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
@@ -593,13 +594,30 @@ export function Popover({
     hasSheetBeenOpen ||
     (resolvedPresentation === 'bottom-sheet' && !popover.isOpen);
   const sheetPanelRef = useRef<HTMLDivElement | null>(null);
+  // Focus enters the sheet as it enters the anchored popover (FR2): on the
+  // first genuine content control, never the injected fallback close.
+  // BottomSheet focuses a `[data-autofocus]` descendant first, so the panel
+  // marks that control as it mounts, unless the caller marked one.
+  const attachSheetPanel = useCallback((panel: HTMLDivElement | null) => {
+    sheetPanelRef.current = panel;
+    if (panel == null || panel.querySelector('[data-autofocus]') != null) {
+      return;
+    }
+    const firstControl = Array.from(
+      panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+    ).find(
+      element =>
+        element.closest('[data-astryx-popover-fallback-close]') == null,
+    );
+    firstControl?.setAttribute('data-autofocus', '');
+  }, []);
   useEffect(() => {
     if (isSheetOpen || !hasSheetBeenOpen) {
       return;
     }
     const dialog = sheetPanelRef.current?.closest('dialog');
     if (dialog == null || !dialog.open) {
-      // eslint-disable-next-line @eslint-react/set-state-in-effect -- the closed sheet's exit is already over: unmount it
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- syncs with the sheet's <dialog>: it is already closed, so its close event has fired and its exit is over; unmount it
       setHasSheetBeenOpen(false);
       return;
     }
@@ -929,7 +947,7 @@ export function Popover({
   const sheet = isSheetMounted ? (
     <BottomSheetEscapeContext value={hasEscapeDismiss}>
       <PopoverBottomSheet
-        ref={sheetPanelRef}
+        ref={attachSheetPanel}
         id={sheetId}
         isOpen={isSheetOpen}
         onOpenChange={setSheetOpen}

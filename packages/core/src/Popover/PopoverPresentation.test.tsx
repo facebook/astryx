@@ -355,6 +355,29 @@ describe('Popover presentation', () => {
     expect(onInnerOpenChange).toHaveBeenCalledWith(false);
   });
 
+  it('the sheet focuses the first content control, as the anchored popover does (FR2)', async () => {
+    isCompactTouch = true;
+    render(
+      <Popover
+        label="Filters"
+        presentation="adaptive"
+        content={
+          <div>
+            <p>Status</p>
+            <button type="button">Apply</button>
+          </div>
+        }>
+        <Button label="Filter">Filter</Button>
+      </Popover>,
+    );
+    await tapTrigger();
+    await vi.waitFor(() => {
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', {name: 'Apply'}),
+      );
+    });
+  });
+
   it('adaptive: a desktop keeps the anchored popover', async () => {
     render(<Filters presentation="adaptive" />);
     await tapTrigger();
