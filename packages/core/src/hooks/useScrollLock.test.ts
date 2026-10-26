@@ -226,6 +226,28 @@ describe('useScrollLock', () => {
       expect(pan(scrim, 300, 200)).toBe(true);
     });
 
+    it('lets a one-finger drag through on a pinch-zoomed page, so a zoomed-in reader can pan around the overlay', () => {
+      const scrim = document.createElement('div');
+      document.body.append(scrim);
+      const zoom = {scale: 2};
+      Object.defineProperty(window, 'visualViewport', {
+        value: zoom,
+        configurable: true,
+      });
+      try {
+        renderHook(() => useScrollLock(true));
+
+        expect(pan(scrim, 300, 200)).toBe(false);
+
+        // Read per touch: back at 1x, the same lock holds the page again.
+        zoom.scale = 1;
+        expect(pan(scrim, 300, 200)).toBe(true);
+      } finally {
+        // @ts-expect-error -- jsdom has no visualViewport of its own
+        delete window.visualViewport;
+      }
+    });
+
     it('lets a pan through when a scroller under the finger can move that way', () => {
       const list = scroller(400, 100);
       const row = document.createElement('div');
