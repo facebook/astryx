@@ -120,6 +120,26 @@ function chainsToViewport(
 }
 
 /**
+ * Whether the page is pinch-zoomed in (`visualViewport.scale > 1`): a
+ * one-finger drag then pans the zoomed view, which a zoomed-in reader needs
+ * to move around an open overlay (`spec:AST-094` FR10). Read per touch, so a
+ * pinch made while the lock holds counts from the next drag.
+ */
+export function isPageZoomedIn(doc: Document): boolean {
+  return (doc.defaultView?.visualViewport?.scale ?? 1) > 1;
+}
+
+/**
+ * Whether `element` is a native control that takes a finger's drag itself:
+ * a range input moves its thumb, so the drag never reaches the page and is
+ * not the lock's to cancel (`spec:AST-094` FR19).
+ */
+function takesDragItself(element: Element): boolean {
+  // `:disabled` also covers a slider inside a disabled fieldset.
+  return element.matches('input[type="range"]:not(:disabled)');
+}
+
+/**
  * Whether a scroller in the scroll chain of `target` takes a pan of (`dx`,
  * `dy`) before the page does: one that can still move that way, or one at
  * its edge whose `overscroll-behavior` keeps the overscroll to itself.
@@ -145,6 +165,9 @@ export function isPanAbsorbedBeforePage(
   ) {
     if (!(node instanceof Element)) {
       continue;
+    }
+    if (takesDragItself(node)) {
+      return true;
     }
     if (
       node === doc.documentElement ||

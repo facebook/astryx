@@ -20,10 +20,13 @@ import {
   pointerQuery,
 } from '../gestures/__tests__/pointerQuery';
 
-/** A one-finger (or `fingers`-finger) touch event at (x, y) on `target`. */
+/**
+ * A one-finger (or `fingers`-finger) touch event at (x, y) on `target`. Every
+ * touch reuses identifier 0, as Chrome for Android does for each new touch.
+ */
 function touch(
   target: EventTarget,
-  type: 'touchstart' | 'touchmove',
+  type: 'touchstart' | 'touchmove' | 'touchend',
   x: number,
   y: number,
   fingers = 1,
@@ -48,17 +51,26 @@ function touch(
     composed: true,
   });
   const point = {clientX: x, clientY: y, identifier: 0, target};
+  // As a browser does: `touches` lists the fingers still down (none once the
+  // finger lifts), `changedTouches` the one this event is about.
   Object.defineProperty(event, 'touches', {
-    value: Array.from({length: fingers}, () => point),
+    value:
+      type === 'touchend' ? [] : Array.from({length: fingers}, () => point),
   });
+  Object.defineProperty(event, 'changedTouches', {value: [point]});
   target.dispatchEvent(event);
   return event;
 }
 
-/** A pan from (x, y0) to (x, y1), returning whether its move was cancelled. */
+/**
+ * A pan from (x, y0) to (x, y1) that lifts at the end, returning whether its
+ * move was cancelled.
+ */
 function pan(target: EventTarget, y0: number, y1: number, fingers = 1) {
   touch(target, 'touchstart', 100, y0, fingers);
-  return touch(target, 'touchmove', 100, y1, fingers).defaultPrevented;
+  const move = touch(target, 'touchmove', 100, y1, fingers);
+  touch(target, 'touchend', 100, y1, fingers);
+  return move.defaultPrevented;
 }
 
 /** A vertical scroller with `overflow` px to scroll, scrolled to `top`. */
@@ -224,6 +236,48 @@ describe('useScrollLock', () => {
       renderHook(() => useScrollLock(true));
 
       expect(pan(scrim, 300, 200)).toBe(true);
+    });
+
+    it('lets a one-finger drag through on a pinch-zoomed page, so a zoomed-in reader can pan around the overlay', () => {
+      const scrim = document.createElement('div');
+      document.body.append(scrim);
+      const zoom = {scale: 2};
+      Object.defineProperty(window, 'visualViewport', {
+        value: zoom,
+        configurable: true,
+      });
+      try {
+        renderHook(() => useScrollLock(true));
+
+        expect(pan(scrim, 300, 200)).toBe(false);
+
+        // Read per touch: back at 1x, the same lock holds the page again.
+        zoom.scale = 1;
+        expect(pan(scrim, 300, 200)).toBe(true);
+      } finally {
+        // @ts-expect-error -- jsdom has no visualViewport of its own
+        delete window.visualViewport;
+      }
+    });
+
+    it('lets a drag on a native range input through, so the slider follows the finger', () => {
+      const dialog = document.createElement('dialog');
+      const slider = document.createElement('input');
+      slider.type = 'range';
+      dialog.append(slider);
+      document.body.append(dialog);
+      renderHook(() => useScrollLock(true));
+
+      // Along the slider, and along the page's axis alike: the input takes
+      // the drag, so it never scrolls the page (spec:AST-094 FR19).
+      touch(slider, 'touchstart', 100, 200);
+      expect(touch(slider, 'touchmove', 240, 200).defaultPrevented).toBe(false);
+      touch(slider, 'touchend', 240, 200);
+      expect(pan(slider, 300, 200)).toBe(false);
+
+      // A disabled slider takes nothing: the drag is the page's, and held.
+      slider.disabled = true;
+      expect(pan(slider, 300, 200)).toBe(true);
     });
 
     it('lets a pan through when a scroller under the finger can move that way', () => {
