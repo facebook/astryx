@@ -260,6 +260,24 @@ describe('TransferList', () => {
       ).toBeInTheDocument();
     });
 
+    it('names a reorder handle after its option when renderOption returns a component (spec:AST-103 FR4)', async () => {
+      function OptionLabel({label}: {label: string}) {
+        return <span>{label}</span>;
+      }
+      render(
+        <ControlledTransferList
+          initialValue={['name', 'status']}
+          renderOption={option => <OptionLabel label={option.label} />}
+        />,
+      );
+      expect(
+        await screen.findByRole('button', {name: 'Reorder Name'}),
+      ).toBeInTheDocument();
+      expect(
+        await screen.findByRole('button', {name: 'Reorder Status'}),
+      ).toBeInTheDocument();
+    });
+
     it('renders custom empty-state copy for both panels', () => {
       const {rerender} = render(
         <TransferList
