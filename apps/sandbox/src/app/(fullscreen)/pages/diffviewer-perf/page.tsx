@@ -31,7 +31,6 @@ import {Badge} from '@astryxdesign/core/Badge';
 import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
 import {Grid} from '@astryxdesign/core/Grid';
-import {ScrollableArea} from '@astryxdesign/core/ScrollableArea';
 import {Section} from '@astryxdesign/core/Section';
 import {
   SegmentedControl,
@@ -572,11 +571,9 @@ export default function DiffViewerPerfPage() {
         <VStack gap={1}>
           <Heading level={2}>DiffViewer Performance</Heading>
           <Text type="body" color="secondary">
-            Render a whole change set, one DiffViewer per file, and measure the
-            diff model, the first file on screen, the full render, long tasks,
-            DOM size and heap, then scroll the list and time collapse, expand
-            and view switches. Multi-file workloads mix many small files with a
-            few very large ones.
+            Render a whole change set, one DiffViewer per file, while observing
+            the first file on screen, the full render, long tasks, DOM size,
+            heap, scroll frames, and collapse, expand and view switches.
           </Text>
         </VStack>
 
@@ -665,6 +662,24 @@ export default function DiffViewerPerfPage() {
               onClick={runBenchmark}
               isDisabled={controlsDisabled}
             />
+            <Button
+              label="Scroll test"
+              variant="secondary"
+              onClick={runScrollTest}
+              isDisabled={files.length === 0 || controlsDisabled}
+            />
+            <Button
+              label="Collapse all"
+              variant="secondary"
+              onClick={collapseAll}
+              isDisabled={files.length === 0 || controlsDisabled}
+            />
+            <Button
+              label="Expand all"
+              variant="secondary"
+              onClick={expandAll}
+              isDisabled={files.length === 0 || controlsDisabled}
+            />
           </HStack>
         </Section>
 
@@ -737,26 +752,6 @@ export default function DiffViewerPerfPage() {
                   value={formatDuration(interaction?.ms ?? null)}
                 />
               </Grid>
-              <HStack gap={2} wrap="wrap">
-                <Button
-                  label="Scroll test"
-                  variant="secondary"
-                  onClick={runScrollTest}
-                  isDisabled={files.length === 0 || controlsDisabled}
-                />
-                <Button
-                  label="Collapse all"
-                  variant="secondary"
-                  onClick={collapseAll}
-                  isDisabled={files.length === 0 || controlsDisabled}
-                />
-                <Button
-                  label="Expand all"
-                  variant="secondary"
-                  onClick={expandAll}
-                  isDisabled={files.length === 0 || controlsDisabled}
-                />
-              </HStack>
               <Text type="body" color="secondary">
                 Full render runs from the commit to the next painted frame;
                 first file on screen runs from the commit to the paint after a
@@ -776,11 +771,7 @@ export default function DiffViewerPerfPage() {
             </VStack>
           </Card>
 
-          <ScrollableArea
-            key={runKey}
-            ref={surfaceRef}
-            label="Rendered change set"
-            height={640}>
+          <Card key={runKey} ref={surfaceRef} height={640} padding={3}>
             <VStack gap={3}>
               {files.map(file => {
                 const path = file.newPath ?? file.oldPath ?? '';
@@ -802,7 +793,7 @@ export default function DiffViewerPerfPage() {
                 );
               })}
             </VStack>
-          </ScrollableArea>
+          </Card>
         </Grid>
       </VStack>
     </AppShell>
