@@ -137,7 +137,7 @@ function mount(html: string): Record<string, HTMLElement> {
 
 beforeEach(() => {
   clock = new ManualClock();
-  host = new GestureHost(document, {clock});
+  host = new GestureHost(document, {clock, isPrimaryPointerCoarse: () => true});
   detachers = [];
 });
 
@@ -149,6 +149,105 @@ afterEach(() => {
 });
 
 describe('GestureHost', () => {
+  it('sets touch-action only while the primary pointer is coarse and a recognizer is enabled (spec:AST-094 FR19)', () => {
+    // jsdom drops touch-action from the style, so the writes are observed.
+    const {box} = mount('<div id="box"></div>');
+    const set = vi.spyOn(box.style, 'setProperty');
+    const remove = vi.spyOn(box.style, 'removeProperty');
+    const writes = () =>
+      set.mock.calls.filter(call => call[0] === 'touch-action').length;
+    let coarse = false;
+    const host2 = new GestureHost(document, {
+      clock,
+      isPrimaryPointerCoarse: () => coarse,
+    });
+    const pan = new PanGestureRecognizer({direction: 'horizontal'});
+    const detach = host2.attach(box, pan);
+    expect(writes()).toBe(0);
+    coarse = true;
+    host2.update(box);
+    expect(set).toHaveBeenLastCalledWith('touch-action', 'pan-y pinch-zoom');
+    pan.setEnabled(false);
+    expect(remove).toHaveBeenCalledWith('touch-action');
+    pan.setEnabled(true);
+    expect(writes()).toBe(2);
+    coarse = false;
+    host2.update(box);
+    expect(remove.mock.calls.filter(c => c[0] === 'touch-action').length).toBe(
+      2,
+    );
+    detach();
+  });
+
+  it('registers no document listener for a disabled consumer until it is enabled (spec:AST-094 FR24)', () => {
+    const {box} = mount('<div id="box"></div>');
+    const added = vi.spyOn(document, 'addEventListener');
+    const removed = vi.spyOn(document, 'removeEventListener');
+    added.mockClear();
+    removed.mockClear();
+    const types = (spy: typeof added) =>
+      spy.mock.calls
+        .map(call => call[0])
+        .filter(t => /^(touch|pointer)/.test(t));
+    const coarse = new GestureHost(document, {
+      clock,
+      isPrimaryPointerCoarse: () => true,
+    });
+    let enabled = false;
+    const consumer = new RecordingConsumer();
+    Object.assign(consumer, {isEnabled: () => enabled});
+    const detach = coarse.attachConsumer(box, consumer);
+    expect(types(added)).toEqual([]);
+    enabled = true;
+    coarse.update(box);
+    expect(types(added)).toContain('touchstart');
+    enabled = false;
+    coarse.update(box);
+    expect(types(removed)).toContain('touchstart');
+    detach();
+  });
+
+  it('registers no document listener where the primary pointer is fine, or while nothing enabled is attached (spec:AST-094 FR19, FR24)', () => {
+    const {box} = mount('<div id="box"></div>');
+    const added = vi.spyOn(document, 'addEventListener');
+    const removed = vi.spyOn(document, 'removeEventListener');
+    added.mockClear();
+    removed.mockClear();
+    const types = (spy: typeof added) =>
+      spy.mock.calls
+        .map(call => call[0])
+        .filter(t => /^(touch|pointer)/.test(t));
+    // A fine primary pointer: nothing is registered, an element's touchmove
+    // listener included.
+    const fine = new GestureHost(document, {
+      clock,
+      isPrimaryPointerCoarse: () => false,
+    });
+    const boxAdded = vi.spyOn(box, 'addEventListener');
+    const detachFine = fine.attach(box, new PanGestureRecognizer());
+    expect(types(added)).toEqual([]);
+    expect(boxAdded).not.toHaveBeenCalled();
+    detachFine();
+    // A coarse one, with only a disabled recognizer: still nothing.
+    const coarse = new GestureHost(document, {
+      clock,
+      isPrimaryPointerCoarse: () => true,
+    });
+    const pan = new PanGestureRecognizer({isEnabled: false});
+    const detach = coarse.attach(box, pan);
+    expect(types(added)).toEqual([]);
+    expect(boxAdded).not.toHaveBeenCalled();
+    // Enabling it registers the listeners; disabling removes them.
+    pan.setEnabled(true);
+    expect(types(added)).toContain('touchstart');
+    expect(boxAdded).toHaveBeenCalledWith('touchmove', expect.any(Function), {
+      passive: false,
+    });
+    pan.setEnabled(false);
+    expect(types(removed)).toContain('touchstart');
+    detach();
+  });
+
   it('sets touch-action on attach and restores it on detach; the long-press styles wait for a held press', () => {
     const {box} = mount('<div id="box" style="color: red"></div>');
     const set = vi.spyOn(box.style, 'setProperty');
