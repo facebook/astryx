@@ -16,11 +16,41 @@
  *   and TreeList.spec.md.
  */
 
-import {openStory, withStorybook} from '@astryxdesign/interaction-harness';
 import {expect, test, type Page} from '@playwright/test';
+import {
+  DEFAULT_STORYBOOK_DIR,
+  serveStorybook,
+  type StaticServer,
+} from '@astryxdesign/a11y-spec/storybook';
 
-const origin = withStorybook(test);
+let storybook: StaticServer | undefined;
+test.beforeAll(async () => {
+  storybook = await serveStorybook(
+    process.env.ASTRYX_STORYBOOK_DIR ?? DEFAULT_STORYBOOK_DIR,
+  );
+});
+test.afterAll(async () => {
+  await storybook?.close();
+});
+
 const STORY = 'core-animated-layout--animated-layout';
+
+/** Loads the story and waits for its first render and two frames. */
+async function openStory(page: Page): Promise<void> {
+  await page.goto(
+    `${storybook?.origin ?? ''}/iframe.html?id=${STORY}&viewMode=story`,
+  );
+  await page
+    .locator('#storybook-root > *')
+    .first()
+    .waitFor({state: 'attached'});
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+  });
+}
 
 /** The translate an element's running animation starts from, in px (y). */
 async function glideOf(page: Page, selector: string): Promise<number | null> {
@@ -64,7 +94,7 @@ test.describe('component:Collapsible FR10 and component:TreeList FR8 (spec:AST-1
   test('a Collapsible in a ScrollableArea glides the content after it as it opens and closes, and the closing content exits inert until it hides', async ({
     page,
   }) => {
-    await openStory(page, origin(), STORY);
+    await openStory(page);
     await mark(page, 'A plain app div', 'after');
     const scrollBefore = await viewportScroll(page);
     const trigger = page.getByRole('button', {name: 'Shipping details'});
@@ -110,7 +140,7 @@ test.describe('component:Collapsible FR10 and component:TreeList FR8 (spec:AST-1
   test('a TreeList row glides the rows after it as it expands and collapses, and the collapsing group exits inert until it unmounts', async ({
     page,
   }) => {
-    await openStory(page, origin(), STORY);
+    await openStory(page);
     const documents = page.getByRole('treeitem', {name: 'Documents'});
     const notes = '[data-tree-id="notes"]';
     await documents.locator('[data-tree-toggle]').click();
