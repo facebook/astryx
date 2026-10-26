@@ -15,8 +15,12 @@
  *
  * The one place the module's primitives are gathered. Importing it attaches
  * no listeners: a recognizer listens only once a component starts it under a
+<<<<<<< 48c89c7ee05c7abc274c4518d702279de578b3aa
  * coarse pointer (`spec:AST-094` FR19, FR24). Every member is a plain value,
  * never a hook.
+=======
+ * coarse pointer (`spec:AST-094` FR19, FR24).
+>>>>>>> ee91c19ef8758ee5d3024c0ec2985f22e0bece68
  *
  * SYNC: When modified, update scripts/touch-support-bundle.test.mjs.
  */
