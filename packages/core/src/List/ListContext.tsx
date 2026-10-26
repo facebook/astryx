@@ -8,7 +8,8 @@
  * @output Exports ListContext for sharing density, dividers, the row edge
  *   treatment, and marker style between List and ListItem, and
  *   ListMarkerScope, which sets the marker for the items inside it, or a
- *   task item's checkbox in its place
+ *   task item's checkbox in its place, and whether their List has a marker
+ *   gutter for wide counters to hang into
  * @position Internal context; consumed by List.tsx and ListItem.tsx
  */
 
@@ -54,6 +55,15 @@ export interface ListContextValue {
    * `'none'`.
    */
   task?: ListTaskMarker;
+  /**
+   * Whether the List reaches past its rows' inline start by a marker gutter
+   * (`--spacing-4`), set by ListMarkerScope; internal. A wide counter may
+   * hang into that gutter as well as the row's inline inset before it widens
+   * the List's number column. Markdown sets it on the items of its numbered
+   * Lists, which reach out by that gutter, so their text starts where
+   * RichText's does.
+   */
+  hasMarkerGutter?: boolean;
 }
 
 export const ListContext = createContext<ListContextValue | null>(null);
@@ -62,22 +72,27 @@ ListContext.displayName = 'ListContext';
 /**
  * Draws `marker` on the List items inside it, in place of the marker their
  * List's `listStyle` names, or `task`'s read-only checkbox in place of either;
- * internal, for Markdown's nested lists and task items in mixed lists. Outside
- * a List, or in a List without markers, it changes nothing.
+ * internal, for Markdown's nested lists and task items in mixed lists. With
+ * `hasMarkerGutter`, a wide counter may also hang into the marker gutter the
+ * List reaches out by. Outside a List, or in a List without markers, it
+ * changes nothing.
  */
 export function ListMarkerScope({
   marker,
   task,
+  hasMarkerGutter = false,
   children,
 }: {
   readonly marker: ListMarker;
   readonly task?: ListTaskMarker;
+  readonly hasMarkerGutter?: boolean;
   readonly children: ReactNode;
 }): ReactNode {
   const context = use(ListContext);
   const value = useMemo(
-    () => (context == null ? null : {...context, marker, task}),
-    [context, marker, task],
+    () =>
+      context == null ? null : {...context, marker, task, hasMarkerGutter},
+    [context, marker, task, hasMarkerGutter],
   );
   return value == null ? (
     children
