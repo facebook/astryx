@@ -21,7 +21,7 @@
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {pressVars} from './interactionOverlay.stylex';
-import {cellPressConsts, pressReleaseRoles} from './rowPressLayer.stylex';
+import {cellPressConsts} from './rowPressLayer.stylex';
 
 // The overlay's arm selectors (interactionOverlay.stylex.ts), restated here:
 // StyleX resolves a style's keys within its own file.
@@ -59,20 +59,14 @@ const pressRelease = stylex.keyframes({
   to: {[PRESS_ALPHA]: 0},
 });
 
-/** The row layer's clock as CSS: the same role as the strength's release. */
-const CELL_RELEASE = `var(${pressReleaseRoles.duration}, ${cellPressConsts.cellReleaseMs}ms)`;
-/** The row layer's clock under reduced motion: capped as the strength's is. */
-const CELL_RELEASE_REDUCED = `min(${CELL_RELEASE}, 200ms)`;
-const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
+/** The row layer's clock as CSS: the press model's release. */
+const CELL_RELEASE = `${cellPressConsts.cellReleaseMs}ms`;
 
 /** Opacity 1 → 0: the row layer leaves; its fading arm runs it. */
 const cellRelease = stylex.keyframes({
   from: {opacity: 1},
   to: {opacity: 0},
 });
-
-/** The release's curve: the role, or the table's gentle ease-out. */
-const RELEASE_EASE = `var(${pressReleaseRoles.curve}, ${cellPressConsts.cellReleaseEase})`;
 
 export const rowPressLayerStyles = stylex.create({
   /**
@@ -185,19 +179,13 @@ export const rowPressLayerStyles = stylex.create({
       },
       animationDuration: {
         default: null,
-        [COARSE]: {
-          default: null,
-          [PRESSED_FADING]: {
-            default: CELL_RELEASE,
-            [REDUCED_MOTION]: CELL_RELEASE_REDUCED,
-          },
-        },
+        [COARSE]: {default: null, [PRESSED_FADING]: CELL_RELEASE},
       },
       animationTimingFunction: {
         default: null,
         [COARSE]: {
           default: null,
-          [PRESSED_FADING]: RELEASE_EASE,
+          [PRESSED_FADING]: cellPressConsts.cellReleaseEase,
         },
       },
       animationFillMode: {
