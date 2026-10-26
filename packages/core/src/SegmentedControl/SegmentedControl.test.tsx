@@ -12,8 +12,15 @@
  * SYNC: When SegmentedControl components change, update tests to match new behavior
  */
 
+import {StrictMode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {
+  cleanup,
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {hasPressedArm} from '../__tests__/pressState';
 import {SegmentedControl} from './SegmentedControl';
@@ -847,5 +854,139 @@ describe('pressed state', () => {
     expect(hasPressedArm(screen.getByRole('radio', {name: 'List'}))).toBe(
       false,
     );
+  });
+});
+
+describe('selection motion', () => {
+  /** A finger is the primary pointer (any touch screen). */
+  function mockCoarsePointer() {
+    return vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query: string) =>
+        ({
+          matches: query === '(pointer: coarse)',
+          media: query,
+          onchange: null,
+          addListener: () => {},
+          removeListener: () => {},
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          dispatchEvent: () => false,
+        }) as MediaQueryList,
+    );
+  }
+
+  function renderControl(onChange = vi.fn()) {
+    return render(
+      <SegmentedControl value="grid" onChange={onChange} label="View mode">
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+        <SegmentedControlItem
+          value="icon"
+          label="Icon"
+          icon={<span>*</span>}
+          isLabelHidden
+        />
+      </SegmentedControl>,
+    );
+  }
+
+  it('keeps the pointer presentation as it was: no lens, the theme’s transitions', () => {
+    renderControl();
+    expect(
+      screen
+        .getByRole('radiogroup')
+        .style.getPropertyValue('--_segmented-lens-visibility'),
+    ).toBe('');
+    expect(
+      getComputedStyle(screen.getByRole('radio', {name: 'List'}))
+        .transitionProperty,
+    ).toContain('background-color');
+  });
+
+  it('one touch model: a finger on any engine (no iOS check) gets the touch presentation, and a tap still selects', async () => {
+    const spy = mockCoarsePointer();
+    try {
+      const onChange = vi.fn();
+      renderControl(onChange);
+      // The lens is the radiogroup's own pseudo-elements, so the touch
+      // presentation shows as its styles: no CSS transition on the segments.
+      expect(
+        getComputedStyle(screen.getByRole('radio', {name: 'List'}))
+          .transitionProperty,
+      ).toBe('none');
+      await userEvent.setup().click(screen.getByRole('radio', {name: 'List'}));
+      expect(onChange).toHaveBeenCalledWith('list');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('touch presentation: as many elements as under a mouse; selection unchanged', async () => {
+    // A fine pointer for the first render.
+    expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+    const mouse = renderControl().container.querySelectorAll('*').length;
+    cleanup();
+    const spy = mockCoarsePointer();
+    try {
+      const onChange = vi.fn();
+      const {container} = renderControl(onChange);
+      expect(container.querySelectorAll('*').length).toBe(mouse);
+      await userEvent.setup().click(screen.getByRole('radio', {name: 'List'}));
+      expect(onChange).toHaveBeenCalledWith('list');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('touch presentation: a value change starts the slide, StrictMode included', () => {
+    const spy = mockCoarsePointer();
+    const boxes: Record<string, [number, number]> = {
+      grid: [2, 96],
+      list: [102, 96],
+    };
+    const rects = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        const [left, width] =
+          this.getAttribute('role') === 'radiogroup'
+            ? [0, 200]
+            : (boxes[this.dataset.value ?? ''] ?? [0, 0]);
+        return {
+          left,
+          top: 2,
+          width,
+          height: 28,
+          right: left + width,
+          bottom: 30,
+          x: left,
+          y: 2,
+          toJSON: () => ({}),
+        };
+      });
+    try {
+      const ui = (value: string) => (
+        <StrictMode>
+          <SegmentedControl value={value} onChange={() => {}} label="View">
+            <SegmentedControlItem value="grid" label="Grid" />
+            <SegmentedControlItem value="list" label="List" />
+          </SegmentedControl>
+        </StrictMode>
+      );
+      const {rerender} = render(ui('grid'));
+      rerender(ui('list'));
+      const group = screen.getByRole('radiogroup');
+      // After StrictMode's extra unmount and remount, the lens (the
+      // radiogroup's ::before) still takes the destination's box, painted
+      // from the selected surface.
+      expect(group.style.getPropertyValue('--_segmented-lens-visibility')).toBe(
+        'visible',
+      );
+      expect(group.style.getPropertyValue('--_segmented-lens-width')).toBe(
+        '96px',
+      );
+    } finally {
+      rects.mockRestore();
+      spy.mockRestore();
+    }
   });
 });
