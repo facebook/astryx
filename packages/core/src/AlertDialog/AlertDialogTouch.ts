@@ -32,9 +32,7 @@
 import type {RefObject} from 'react';
 import {useActionGroupTracking} from '../hooks/useActionGroupTracking';
 import {useIsScrollable} from '../hooks/useIsScrollable';
-import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {alertController} from '../motion/uikit/alert';
-import {registerSpringsTable} from '../motion/uikit/springs';
 import {
   useAlertActionLayout,
   type AlertActionLayout,
@@ -94,15 +92,6 @@ export function useAlertDialogTouch(
   }: AlertDialogTouchOptions,
 ): AlertDialogTouch {
   const isDriving = isTouch && !isInline;
-  // The springs table's motion roles resolve under the dialog's theme once it
-  // is registered: here, before the alert first animates (this layout effect
-  // is declared ahead of useAlertMotion, so it runs before its effects), and
-  // only by touch code, so nothing registers on import.
-  useIsomorphicLayoutEffect(() => {
-    if (isDriving) {
-      registerSpringsTable();
-    }
-  }, [isDriving]);
   const motion = useAlertMotion({isOpen, isEnabled: isDriving});
   // Tracked while presented under a touch presentation, leaving included: a
   // touch then is taken and dropped (isInert) rather than reaching the button
