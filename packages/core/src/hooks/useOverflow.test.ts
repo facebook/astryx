@@ -405,10 +405,11 @@ describe('useOverflow on the single-line path', () => {
 
 describe('useOverflow leaving the multi-row path', () => {
   it('reports rows 1 and rowHeight 0 once maxRows drops to the single-line path', () => {
+    const initialProps: {maxRows: number | undefined} = {maxRows: 2};
     const {result, rerender} = renderHook(
       ({maxRows}: {maxRows: number | undefined}) =>
         useOverflow(6, {gap: 10, maxRows}),
-      {initialProps: {maxRows: 2}},
+      {initialProps},
     );
 
     act(() => {
