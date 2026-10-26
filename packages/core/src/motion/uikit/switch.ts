@@ -2,7 +2,7 @@
 
 /**
  * @file switch.ts
- * @input Nothing; data only
+ * @input The springs table's measured switch travel (springs.ts)
  * @output Exports `switchControl`: UISwitch's geometry, the springs of its
  *   Liquid Glass thumb and of its track color, the drag's rubber band and
  *   flip distance, and the release timing
@@ -26,13 +26,15 @@
  * `@measure` task that will confirm or replace them. uikit.test.ts enforces
  * both.
  *
- * Every value here stays an internal constant: no public API retunes a
- * component's measured spring (`spec:AST-094` FR4's roles are the shared
- * ones), and the geometry, rubber band, flip distance, shadow and haptic are
- * not motion.
+ * Every value here is an internal constant. The springs and the minimum lift
+ * stay plain constants until `component:Switch` names its motion roles
+ * (`spec:AST-094` FR4, DEC-5; DEC-11 keeps every role from themes); the
+ * geometry, rubber band, flip distance, shadow and haptic are not motion.
  *
  * SYNC: When modified, update /packages/core/src/motion/MEASUREMENTS.md.
  */
+
+import {SWITCH_THUMB_MOVE_SPRING} from './springs';
 
 export const switchControl = {
   /**
@@ -99,9 +101,10 @@ export const switchControl = {
    * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
    *   iPhone 17 Pro, the lens's position behavior read on a tap (damping 1,
    *   response 0.3); the lens center after a 50 ms tap and after a 1 s hold
-   *   fits one spring at 0.31 / 1 (rms 0.11 pt), Oct 23 2026
+   *   fits one spring at 0.31 / 1 (rms 0.11 pt), Oct 23 2026; the springs
+   *   table's `SWITCH_THUMB_MOVE_SPRING` holds the one value
    */
-  travel: {response: 0.3, dampingRatio: 1},
+  travel: SWITCH_THUMB_MOVE_SPRING,
   /**
    * During a drag the thumb chases the finger: each move retargets this
    * spring at the finger's position, rubber-banded past either end.

@@ -231,7 +231,7 @@ describe('settleTime', () => {
   it('settles at the release, but no sooner than the minimum lift', () => {
     expect(settleTime(1000, 0)).toBe(1000);
     expect(settleTime(50, 30)).toBe(30 + switchControl.minimumLiftMs);
-    // A theme's minimum lift time (the role's resolved value) replaces it.
+    // A caller's minimum, when it passes one, replaces it.
     expect(settleTime(50, 30, 400)).toBe(430);
   });
 });
@@ -323,8 +323,8 @@ describe('the switch springs against UIKit frames (iOS 26.2)', () => {
 
 describe('switch values', () => {
   it('are internal constants, not motion roles', () => {
-    // No public API retunes a component's measured spring (spec:AST-094
-    // FR4): the springs and the minimum lift time play as measured.
+    // Until Switch's record names its motion roles (spec:AST-094 FR4,
+    // DEC-5), the springs and the minimum lift time are plain constants.
     expect(
       listMotionRoles().filter(role => role.id.startsWith('switchControl.')),
     ).toEqual([]);
