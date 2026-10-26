@@ -4,8 +4,9 @@
  * @file Item.source-build.test.mjs
  * @input Uses Babel, the core build config, and the Item and ItemSwipeLayer
  *   sources
- * @output Verifies the shipped Item module reaches the swipe gesture only
- *   through a dynamic import, so a row without swipe actions bundles none of it
+ * @output Verifies the shipped Item module imports the swipe layer with the
+ *   row (no lazy chunk, which could miss a first swipe) and reaches the
+ *   gesture only through it
  * @position Regression test for the import graph of the shipped Item module
  */
 
@@ -72,13 +73,13 @@ async function compiledImportsOf(fileName) {
 }
 
 describe('the shipped Item module and the swipe gesture', () => {
-  it('reaches the swipe layer only through a dynamic import, and the gesture not at all', async () => {
+  it('imports the swipe layer with the row, with no lazy chunk, and the gesture only through it', async () => {
     const {statics, dynamics} = await compiledImportsOf('Item.tsx');
-    // The gesture and its panels are the layer's: a row without swipe actions
-    // never loads them, so this module must not import them statically.
+    // A lazily loaded layer could miss a row's first swipe while its chunk
+    // was on the way: the layer comes with the module, the gesture with it.
+    expect(statics).toContain('./ItemSwipeLayer.js');
     expect(statics).not.toContainEqual(expect.stringMatching(/useSwipeAction/));
-    expect(statics).not.toContainEqual(expect.stringMatching(/ItemSwipeLayer/));
-    expect(dynamics).toEqual(['./ItemSwipeLayer.js']);
+    expect(dynamics).toEqual([]);
   });
 
   it('keeps the gesture inside the swipe layer', async () => {

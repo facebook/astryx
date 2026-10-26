@@ -9,7 +9,7 @@
  *   PanGestureRecognizer; the UIKit constants table and swipeRelease.ts
  * @output Exports useSwipeAction — the gesture behind Item's `swipeActions`
  * @position Internal to Item, through ItemSwipeLayer (the only module that
- *   imports it, loaded on demand); tested through Item.test.tsx
+ *   imports it); tested through Item.test.tsx
  *
  * A native-list swipe: drag a row sideways and the side's panel is uncovered.
  * Under `reveal` a release past half the panel leaves the row resting open

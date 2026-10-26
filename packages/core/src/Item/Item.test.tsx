@@ -10,23 +10,8 @@
  */
 
 import {use, useRef} from 'react';
-import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  it,
-  expect,
-  vi,
-} from 'vitest';
-import {
-  act,
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from '@testing-library/react';
+import {afterEach, beforeEach, describe, it, expect, vi} from 'vitest';
+import {act, cleanup, fireEvent, render, screen} from '@testing-library/react';
 import {rulesDeclaredFor} from '../__tests__/pressState';
 import userEvent from '@testing-library/user-event';
 import {Item} from './Item';
@@ -686,30 +671,6 @@ describe('Item', () => {
 });
 
 describe('swipeActions', () => {
-  // The panels and the gesture are loaded lazily (React.lazy + Suspense), so
-  // the first row with swipe actions renders them a tick after it mounts.
-  // Mount one once up front: the resolved module is cached on the lazy
-  // component, and every row below renders its panels synchronously. The
-  // module is imported first: a cold import compiles the gesture and motion
-  // modules it brings, which can outlast waitFor's one second on a busy
-  // machine, while the import itself is awaited for as long as it takes.
-  beforeAll(async () => {
-    await import('./ItemSwipeLayer');
-    render(
-      <Item
-        label="Warm"
-        data-testid="warm"
-        swipeActions={{leading: [{label: 'Unread', onActivate: () => {}}]}}
-      />,
-    );
-    await waitFor(() => {
-      expect(
-        screen.getByTestId('warm').querySelector('[data-swipe-panel]'),
-      ).not.toBeNull();
-    });
-    cleanup();
-  });
-
   // The gesture system outlives a test (one per document) and keeps the time
   // of the touches it has seen; a document clock never runs backwards, so
   // each test's fake clock starts after the last one's.
@@ -925,6 +886,15 @@ describe('swipeActions', () => {
     f.up();
     return f;
   }
+
+  it('swipes on the first touch right after mount, with no import to wait for', async () => {
+    // The first row with swipe actions in this file: a lazily loaded layer
+    // would still be on its way here, and the touch would move nothing.
+    const {row} = renderRow();
+    dragLeading(row, 45);
+    await settled();
+    expect(xOf(row)).toBe(72);
+  });
 
   it('is served on a role-less row and a listitem, and not on a row whose role forbids interactive descendants', () => {
     const actions = {leading: [{label: 'Unread', onActivate: vi.fn()}]};
