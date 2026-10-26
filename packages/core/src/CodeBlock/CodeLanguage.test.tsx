@@ -132,6 +132,25 @@ describe('a language value as `language` (FR13)', () => {
     expect(keywordTexts(value.container)).toEqual([]);
   });
 
+  it('tokenizes an inline custom language once across re-renders', () => {
+    let calls = 0;
+    const tokenize = () => {
+      calls++;
+      return [{type: 'keyword', start: 0, end: 3}];
+    };
+    const make = () =>
+      createCodeLanguage({name: 'zig', identifiers: ['zig'], tokenize});
+    const {rerender} = render(
+      <CodeBlock code="pub fn" language={make()} highlightMode="spans" />,
+    );
+    for (let i = 0; i < 5; i++) {
+      rerender(
+        <CodeBlock code="pub fn" language={make()} highlightMode="spans" />,
+      );
+    }
+    expect(calls).toBe(1);
+  });
+
   it('paints a language value in the server render', () => {
     const html = renderToString(
       <CodeBlock code={THRIFT} language={thrift} highlightMode="spans" />,

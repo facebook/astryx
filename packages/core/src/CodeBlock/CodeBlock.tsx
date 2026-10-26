@@ -51,6 +51,7 @@ import {
   isCustomCodeLanguage,
   languageKey,
   languageLabel as languageWord,
+  sameCodeLanguage,
 } from './grammar';
 import {ensureHighlightStyles} from './highlightStyles';
 import {applyHighlightRangesChunked} from './highlightRanges';
@@ -653,9 +654,16 @@ function isSafari(): boolean {
  */
 function useTokenLines(
   code: string,
-  language: CodeLanguageInput,
+  languageProp: CodeLanguageInput,
   customTokenizer?: CodeBlockProps['tokenizer'],
 ): TokenLine[] {
+  // Keep one language while it paints the same, so an inline
+  // `createCodeLanguage({...})` — the form the `tokenizer` codemod writes —
+  // tokenizes once, as `tokenizer` did (adjusting state during render).
+  const [language, setLanguage] = useState(languageProp);
+  if (!sameCodeLanguage(language, languageProp)) {
+    setLanguage(languageProp);
+  }
   const [asyncTokenResult, setAsyncTokenResult] = useState<{
     code: string;
     language: CodeLanguageInput;

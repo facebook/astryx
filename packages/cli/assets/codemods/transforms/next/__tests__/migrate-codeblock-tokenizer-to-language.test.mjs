@@ -45,6 +45,20 @@ const a = <Code code={src} language="zig" tokenizer={zigTokens} />;`),
     expect(output).toContain("createCodeLanguage({ name: 'zig'");
   });
 
+  it('adds a separate import beside a namespace import', async () => {
+    const output =
+      await applyTransform(`import * as CB from '@astryxdesign/core/CodeBlock';
+const a = <CB.CodeBlock code={src} language="zig" tokenizer={zigTokens} />;`);
+    expect(output).toContain(
+      "import * as CB from '@astryxdesign/core/CodeBlock';",
+    );
+    expect(flat(output)).toContain(
+      "import { createCodeLanguage } from '@astryxdesign/core/CodeBlock';",
+    );
+    const jscodeshift = (await import('jscodeshift')).default;
+    expect(() => jscodeshift.withParser('tsx')(output)).not.toThrow();
+  });
+
   it('reports what it cannot prove and leaves it unchanged', async () => {
     const source = `import {CodeBlock} from '@astryxdesign/core/CodeBlock';
 const a = <CodeBlock code={src} language={lang} tokenizer={t} />;

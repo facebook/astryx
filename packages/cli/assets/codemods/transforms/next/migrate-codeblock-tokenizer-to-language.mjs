@@ -127,13 +127,15 @@ function ensureCreateImport(j, root) {
     return local;
   }
   const specifier = j.importSpecifier(j.identifier('createCodeLanguage'));
-  const existing = root
-    .find(j.ImportDeclaration)
-    .filter(
-      (/** @type {any} */ p) =>
-        p.node.source.value === CODEBLOCK_SOURCE &&
-        p.node.importKind !== 'type',
-    );
+  const existing = root.find(j.ImportDeclaration).filter(
+    (/** @type {any} */ p) =>
+      p.node.source.value === CODEBLOCK_SOURCE &&
+      p.node.importKind !== 'type' &&
+      // A namespace import cannot take a named specifier beside it.
+      !(p.node.specifiers ?? []).some(
+        (/** @type {any} */ s) => s.type === 'ImportNamespaceSpecifier',
+      ),
+  );
   if (existing.size() > 0) {
     existing.get().node.specifiers.push(specifier);
   } else {
