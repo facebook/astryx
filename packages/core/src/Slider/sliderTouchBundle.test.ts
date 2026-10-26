@@ -96,6 +96,16 @@ describe('Slider’s touch layer is one module, imported from one site', () => {
     expect([...graph.keys()].filter(file => TOUCH_ONLY.test(file))).toEqual([]);
   });
 
+  it('reads the UIKit gesture groups it uses, never their union', () => {
+    // One export per recognizer group lets a touch module bundle only the
+    // groups it reads; `UIKIT_GESTURES` carries every group.
+    const text = readFileSync(path.join(SRC, LAYER), 'utf8');
+    expect(text).not.toMatch(/\bUIKIT_GESTURES\b/);
+    expect(text).toMatch(
+      /import \{[^}]*\bUIKIT_PAN\b[^}]*\} from '\.\.\/motion\/uikit\/gestures'/,
+    );
+  });
+
   it('finds them from the layer itself (the walk sees them)', () => {
     const graph = staticGraph(LAYER);
     expect(graph.has('gestures/GestureHost.ts')).toBe(true);

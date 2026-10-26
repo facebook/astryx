@@ -97,7 +97,7 @@ import {
 import {projectDistance} from '../motion/projection';
 import {resolveMotion} from '../motion/resolveMotion';
 import {solveSpring, toSpring, type SpringDescription} from '../motion/spring';
-import {UIKIT_GESTURES} from '../motion/uikit/gestures';
+import {UIKIT_CONTROL, UIKIT_PAN} from '../motion/uikit/gestures';
 import {
   registerSliderTable,
   slider as UIKIT_SLIDER,
@@ -325,7 +325,7 @@ export class SliderTouchController {
       cancelsTouchesInView: false,
       // A touch that travels as far as a thumb's pan needs to begin is a
       // swipe, not a tap (UITapGestureRecognizer would allow 45 pt).
-      allowableMovement: UIKIT_GESTURES.pan.hysteresis.value,
+      allowableMovement: UIKIT_PAN.hysteresis.value,
       // A finger held on the track does nothing, so the tap takes no
       // selection lock: the control's own `user-select: none` already keeps
       // its text unselectable.
@@ -640,7 +640,7 @@ export class SliderTouchController {
     this.drop(index);
     this.model.press(null);
     const location = pan.location();
-    const expansion = UIKIT_GESTURES.control.trackingExpansion.value;
+    const expansion = UIKIT_CONTROL.trackingExpansion.value;
     const inside =
       location.x >= geometry.rect.left - expansion &&
       location.x <= geometry.rect.right + expansion &&
