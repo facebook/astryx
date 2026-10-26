@@ -4,7 +4,8 @@
  * @file pressFeedback.ts
  * @input The press state machine (pressGesture.ts), the shared input stream
  *   (inputStream.ts) for the document's pointer, touch, scroll, focus and
- *   visibility events, and the window's keyboard events
+ *   visibility events, the window's keyboard events, and the release clocks'
+ *   theme motion role variables (interactionOverlay.stylex.ts)
  * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, PRESS_PROFILES,
  *   pressableProps, the list row's press profile (CELL_PRESS_PROFILE,
  *   cellPressableProps), installPressFeedback, subscribePressPaint, and the
@@ -81,6 +82,7 @@
  * pressFeedback.test.ts.
  */
 
+import {pressReleaseRoles} from './interactionOverlay.stylex';
 import type {
   PressGesture,
   PressPaint as GesturePaint,
@@ -129,6 +131,8 @@ export interface PressProfile {
   readonly highlightDelay: 'inScrollers' | 'always';
   /** How long the release's exit runs, in ms: the attribute leaves after it. */
   readonly releaseMs: number;
+  /** The theme motion role variable that retunes that clock (`spec:AST-094` FR4). */
+  readonly releaseRole: string;
 }
 
 /**
@@ -154,14 +158,19 @@ export const PRESS_PROFILES = {
   /**
    * UIControl: highlighted in the frame the finger lands, outside scrollers,
    * and released on UIButton's clock (the stylesheet's own constant) under
-   * a coarse primary pointer (see `releaseMsOf`).
+   * a coarse primary pointer (see `releaseOf`).
    */
   control: {
     highlightDelay: 'inScrollers',
     releaseMs: pressConsts.controlReleaseMs,
+    releaseRole: pressReleaseRoles.controlDuration,
   },
   /** A table or collection cell: always inside a scroll view, so it waits. */
-  cell: {highlightDelay: 'always', releaseMs: PRESS_FADE_MS},
+  cell: {
+    highlightDelay: 'always',
+    releaseMs: PRESS_FADE_MS,
+    releaseRole: pressReleaseRoles.duration,
+  },
 } as const satisfies Readonly<Record<string, PressProfile>>;
 
 export type PressProfileName = keyof typeof PRESS_PROFILES;
@@ -296,6 +305,8 @@ interface LiveGesture {
   pointerId: number | null;
   /** The surface's profile's release clock, in ms. */
   releaseMs: number;
+  /** Its theme motion role variable. */
+  releaseRole: string;
   timer: ReturnType<typeof setTimeout> | null;
 }
 
@@ -335,6 +346,33 @@ const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
   flash: PRESS_FLASH_MS,
   onset: PRESS_ONSET_MS,
 };
+
+/**
+ * How long a timer runs on `element`. The release's clock is the theme motion
+ * role `timing.press.highlightOutMs` (`spec:AST-094` FR4), read off the
+ * element's role variable when the release starts: the variable the
+ * stylesheet's release plays (interactionOverlay.stylex.ts), so a theme that
+ * retunes it moves both and the attribute never leaves before the fade ends.
+ * Read directly, not through the motion table, so a pressable component
+ * carries no table (`architecture:component-style-authoring` INV6).
+ */
+function timerMs(
+  kind: NonNullable<PressStep['timer']>,
+  live: {element: Element; releaseMs: number; releaseRole: string},
+): number {
+  if (kind !== 'fade') {
+    return TIMER_MS[kind];
+  }
+  // The release clock's theme role, or the profile's table value.
+  const value = live.element.ownerDocument.defaultView
+    ?.getComputedStyle(live.element)
+    .getPropertyValue(live.releaseRole)
+    .trim();
+  const match = value == null ? null : /^([\d.]+)(ms|s)$/.exec(value);
+  return match == null
+    ? live.releaseMs
+    : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
+}
 
 const TIMER_EVENT = {
   fade: 'fadeEnd',
@@ -556,7 +594,7 @@ function apply(slot: Slot, step: PressStep): void {
           }),
         );
       },
-      kind === 'fade' ? live.releaseMs : TIMER_MS[kind],
+      timerMs(kind, live),
     );
   }
 }
@@ -656,9 +694,14 @@ function takeOver(other: Slot, element: HTMLElement): void {
  * with any other pointer (a finger on a touch screen beside a mouse), as the
  * stylesheet's release arms are (the desktop rule, `spec:AST-017` FR59/DEC-25).
  */
-function releaseMsOf(profile: PressProfile): number {
+function releaseOf(
+  profile: PressProfile,
+): Pick<PressProfile, 'releaseMs' | 'releaseRole'> {
   // The same coarse gate the stylesheet's release arms use.
-  return stylesheetDroppedActive() ? profile.releaseMs : PRESS_FADE_MS;
+  const {releaseMs, releaseRole} = stylesheetDroppedActive()
+    ? profile
+    : PRESS_PROFILES.cell;
+  return {releaseMs, releaseRole};
 }
 
 /**
@@ -712,7 +755,7 @@ function pressButton(
     element,
     gesture: idlePressGesture(),
     pointerId,
-    releaseMs: releaseMsOf(profileOf(element)),
+    ...releaseOf(profileOf(element)),
     timer: null,
   };
   holdKey(pointerId == null);
@@ -787,7 +830,7 @@ function onPointerDown(event: PointerEvent): void {
     element,
     gesture: idlePressGesture(),
     pointerId: event.pointerId,
-    releaseMs: releaseMsOf(profile),
+    ...releaseOf(profile),
     timer: null,
   };
   apply(

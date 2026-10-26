@@ -149,10 +149,25 @@ export const cellPressConsts = stylex.defineConsts({
   cellReleaseEase: 'cubic-bezier(0, 0, 0.2, 1)',
 });
 
-/** The cell release's clock as CSS. */
-const PRESS_RELEASE_DURATION = `${pressConsts.releaseMs}ms`;
-/** The control release's clock as CSS. */
-const CONTROL_RELEASE_DURATION = `${pressConsts.controlReleaseMs}ms`;
+/**
+ * The theme motion roles the release plays (`spec:AST-094` FR4): a cell's
+ * clock, `timing.press.highlightOutMs`, and curve,
+ * `timing.press.highlightOutCurve`, and a control's clock,
+ * `timing.press.buttonReleaseMs`. A theme writes a role's variable only
+ * when it retunes it, so the table's value is each one's fallback;
+ * interactionOverlay.cell.test.ts holds the names to motion/roles.ts and the
+ * controller reads the same clock roles (pressFeedback.ts).
+ */
+export const pressReleaseRoles = stylex.defineConsts({
+  duration: '--motion-timing-press-highlight-out-ms',
+  curve: '--motion-timing-press-highlight-out-curve',
+  controlDuration: '--motion-timing-press-button-release-ms',
+});
+
+/** The cell release's clock as CSS: the role, or the table's value. */
+const PRESS_RELEASE_DURATION = `var(${pressReleaseRoles.duration}, ${pressConsts.releaseMs}ms)`;
+/** The control release's clock as CSS: the role, or the table's value. */
+const CONTROL_RELEASE_DURATION = `var(${pressReleaseRoles.controlDuration}, ${pressConsts.controlReleaseMs}ms)`;
 /** Reduce Motion on a coarse primary pointer: the policy's cross-fade. */
 const REDUCED_MOTION_RELEASE_DURATION = reducedMotionFadeConsts.duration;
 
@@ -217,8 +232,8 @@ const pressRelease = stylex.keyframes({
   to: {[PRESS_ALPHA]: 0},
 });
 
-/** The row layer's clock as CSS. */
-const CELL_RELEASE = `${cellPressConsts.cellReleaseMs}ms`;
+/** The row layer's clock as CSS: the same role as the strength's release. */
+const CELL_RELEASE = `var(${pressReleaseRoles.duration}, ${cellPressConsts.cellReleaseMs}ms)`;
 
 /** Opacity 1 → 0: the row layer leaves; its fading arm runs it. */
 const cellRelease = stylex.keyframes({
@@ -239,7 +254,7 @@ const controlRelease = stylex.keyframes({
  * and is so front-loaded (strength 0.05 at the midpoint) that the release
  * would read as half its clock.
  */
-const RELEASE_EASE = 'cubic-bezier(0, 0, 0.2, 1)';
+const RELEASE_EASE = `var(${pressReleaseRoles.curve}, ${cellPressConsts.cellReleaseEase})`;
 
 /**
  * A control's release curve: UIButton's, UIKit's easeInEaseOut
@@ -624,7 +639,7 @@ export const interactionOverlayStyles = stylex.create({
         default: null,
         [COARSE]: {
           default: null,
-          [PRESSED_FADING]: cellPressConsts.cellReleaseEase,
+          [PRESSED_FADING]: RELEASE_EASE,
         },
       },
       animationFillMode: {
