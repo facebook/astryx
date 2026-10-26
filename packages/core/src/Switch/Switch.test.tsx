@@ -41,6 +41,8 @@ import {
 import {button as uikitButton} from '../motion/uikit/button';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
+import {defineTheme, generateThemeRules} from '../theme';
+import {docs as switchDocs} from './Switch.doc.mjs';
 
 afterEach(() => {
   __resetLiveRegionsForTest();
@@ -1154,6 +1156,81 @@ describe('Switch', () => {
 // jsdom cannot emulate forced-colors rendering, so these assert that the
 // compiled output includes the forced-colors rules; visual behavior needs
 // manual verification under Windows High Contrast.
+describe('touch listeners (spec:AST-094 FR24)', () => {
+  const coarseMedia = (query: string) =>
+    ({
+      matches:
+        query.includes('pointer: coarse') ||
+        query.includes('any-pointer: coarse'),
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as unknown as MediaQueryList;
+
+  // React's root delegates touch events too: count against a plain element.
+  const touchListenersWhileRendering = (
+    isDisabled: boolean | 'none',
+  ): number => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(coarseMedia);
+    const types: string[] = [];
+    const record = function (this: unknown, type: string) {
+      types.push(type);
+    };
+    const onDocument = vi
+      .spyOn(document, 'addEventListener')
+      .mockImplementation(record);
+    const onElements = vi
+      .spyOn(HTMLElement.prototype, 'addEventListener')
+      .mockImplementation(record);
+    const {unmount} = render(
+      isDisabled === 'none' ? (
+        <div />
+      ) : (
+        <Switch
+          label="Notifications"
+          value={false}
+          onChange={() => {}}
+          isDisabled={isDisabled}
+        />
+      ),
+    );
+    onDocument.mockRestore();
+    onElements.mockRestore();
+    unmount();
+    vi.restoreAllMocks();
+    return types.filter(type => type.startsWith('touch')).length;
+  };
+
+  it('a disabled switch under a coarse pointer attaches no touch listener', () => {
+    const baseline = touchListenersWhileRendering('none');
+    expect(touchListenersWhileRendering(false)).toBeGreaterThan(baseline);
+    expect(touchListenersWhileRendering(true)).toBe(baseline);
+  });
+});
+
+describe('switch-thumb guaranteed properties', () => {
+  it('declares aspectRatio, and a theme value compiles onto the thumb target', () => {
+    // Typed locally: the authoring type gains the field in this change.
+    const thumb = switchDocs.theming?.targets?.find(
+      target => target.className === 'astryx-switch-thumb',
+    ) as {guaranteedProperties?: string[]} | undefined;
+    expect(thumb?.guaranteedProperties).toEqual(['aspectRatio']);
+    const rules = generateThemeRules(
+      defineTheme({
+        name: 'circle-thumb',
+        components: {'switch-thumb': {base: {aspectRatio: '1'}}},
+      }),
+    );
+    const rule = rules.find(r => r.includes('.astryx-switch-thumb'));
+    expect(rule).toBeDefined();
+    expect(rule).toMatch(/aspect-ratio:\s*1\b/);
+  });
+});
+
 describe('forced colors (WCAG 1.4.11)', () => {
   it('compiles forced-colors overrides so on/off state survives Windows High Contrast', () => {
     render(<Switch label="Notifications" value={true} onChange={() => {}} />);
