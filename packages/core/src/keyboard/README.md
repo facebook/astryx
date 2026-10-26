@@ -31,9 +31,9 @@ exported from the package entry.
 - **One set of listeners (FR1, INV11):** `subscribeKeyboardHeight(window, fn)`
   delivers every report (the visual viewport's resize and scroll, the window's
   resize, focus moves) from one set of listeners per window, however many
-  components subscribe. `useKeyboardHeight()` gives a component the height and
-  re-renders it when the height changes. No other code in core listens to the
-  visual viewport for the keyboard.
+  components subscribe, and `getKeyboardHeight(window)` gives a reader the
+  height that report measured. No other code in core listens to the visual
+  viewport for the keyboard.
 - **Focus (FR4):** `refuseFocusReveal(document, {claim, park, isActive})`
   delivers every focus move a surface claims with `preventScroll`, on the
   capture-phase `blur` before the browser's own focus step, so the browser
@@ -68,19 +68,11 @@ exported from the package entry.
   of the ride attaches (no guide subscription), and the room follows the
   reports. Safari's and Firefox's reveals are unchanged.
 
-## Laying out from the height, riding on top
+## Riding the keyboard
 
-Layout follows the height (FR3): apply it on your own element through a
-functional style, so the layout is right with no animation running. For an
-element docked at the bottom, rise by the part of the keyboard over its
-resting bottom, and only while a keyboard is up:
-`lift = height > 0 ? max(0, restingBottom − (innerHeight − height)) : 0`.
-
-```ts
-const height = useKeyboardHeight();
-<div {...stylex.props(styles.dock(liftFor(height)))} />
-```
-
+Layout follows the height (FR3), through a functional style on your own
+element, so it is right with no animation running; for an element docked at
+the bottom, `lift = height > 0 ? max(0, restingBottom − (innerHeight − height)) : 0`.
 An animation that rides the keyboard is optional polish on top, timed by the
 guide:
 

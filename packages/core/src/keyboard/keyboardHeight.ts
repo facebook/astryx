@@ -11,9 +11,8 @@
  *   rideKeyboard
  * @output Exports the on-screen keyboard module: measureKeyboardHeight,
  *   isKeyboardMeasurable, subscribeKeyboardHeight, getKeyboardHeight,
- *   useKeyboardHeight, isTextEntryControl, findTextEntryControl,
- *   refuseFocusReveal, watchRevealPan, and BottomSheet's useSheetKeyboard
- *   hook
+ *   isTextEntryControl, findTextEntryControl, refuseFocusReveal,
+ *   watchRevealPan, and BottomSheet's useSheetKeyboard hook
  * @position Core's one source for the on-screen keyboard (spec:AST-099,
  *   architecture:react-component-runtime INV11). Internal to core: nothing
  *   here is exported from the package. BottomSheet reads the keyboard here
@@ -64,13 +63,7 @@ import {animatorFor, type Animator} from '../motion/animator';
 import {getKeyboardLayoutGuide} from './keyboardLayoutGuide';
 import {rideKeyboard} from './rideKeyboard';
 import type {KeyboardTransition} from './keyboardModel';
-import {
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  type RefObject,
-} from 'react';
+import {useEffect, useRef, useState, type RefObject} from 'react';
 import {flushSync} from 'react-dom';
 import {layoutViewportHeight} from '../utils/layoutViewport';
 
@@ -232,36 +225,6 @@ export function subscribeKeyboardHeight(
 export function getKeyboardHeight(win: Window): number {
   const store = stores.get(win);
   return store?.detach != null ? store.height : measureKeyboardHeight(win);
-}
-
-/**
- * The keyboard height for a component, CSS px, re-rendering when it changes.
- * 0 during server render and before hydration reads a viewport.
- *
- * @example
- * ```
- * const keyboardHeight = useKeyboardHeight();
- * <div {...stylex.props(styles.bottom(keyboardHeight))} />
- * ```
- */
-export function useKeyboardHeight(win?: Window | null): number {
-  const target = win ?? (typeof window === 'undefined' ? null : window);
-  return useSyncExternalStore(
-    onChange => {
-      if (target == null) {
-        return () => {};
-      }
-      let last = getKeyboardHeight(target);
-      return subscribeKeyboardHeight(target, event => {
-        if (event.type === 'viewport' && event.height !== last) {
-          last = event.height;
-          onChange();
-        }
-      });
-    },
-    () => (target == null ? 0 : getKeyboardHeight(target)),
-    () => 0,
-  );
 }
 
 /** Whether focusing `element` brings up a keyboard for typing text. */

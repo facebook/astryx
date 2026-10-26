@@ -23,7 +23,6 @@ export {
   measureKeyboardHeight,
   refuseFocusReveal,
   subscribeKeyboardHeight,
-  useKeyboardHeight,
   useSheetKeyboard,
   watchRevealPan,
   type KeyboardHeightEvent,
