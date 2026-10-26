@@ -238,7 +238,7 @@ describe('observeKeyboardDismiss', () => {
       expect(document.activeElement).toBe(field);
     });
 
-    it('does nothing while no keyboard covers the page (a hardware keyboard)', () => {
+    it('does nothing while the keyboard module measures none (a hardware keyboard, or Chrome under resizes-content)', () => {
       viewport.height = window.innerHeight;
       viewport.dispatchEvent(new Event('resize'));
       observe('interactive');
