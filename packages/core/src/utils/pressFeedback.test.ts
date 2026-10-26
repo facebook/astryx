@@ -89,9 +89,12 @@ beforeEach(() => {
   });
   document.body.innerHTML = '';
   scroller = document.createElement('div');
+  // The rows sit in a scroll view, as a list's do.
+  makeScroller(scroller);
   rows = [];
   for (let index = 0; index < 4; index += 1) {
-    // List rows are cells: they wait the content-touch delay wherever they are.
+    // List rows are cells: inside the scroll view they wait the content-touch
+    // delay (FR11).
     const row = pressable('div', 'cell');
     const label = document.createElement('span');
     label.textContent = `row ${index}`;
@@ -993,13 +996,19 @@ describe('a control is tracked like UIControl', () => {
     expect(control.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
   });
 
-  it('a cell waits the delay even with no scroller above it', () => {
+  it('a cell outside a scroll view highlights at once (FR11)', () => {
     const cell = pressable('div', 'cell');
     document.body.appendChild(cell);
     press(cell, 'pointerdown', 10, 10);
-    expect(cell.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
-    vi.advanceTimersByTime(PRESS_ONSET_MS);
     expect(cell.getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
+  });
+
+  it('a cell inside a scroll view waits the content-touch delay (FR11)', () => {
+    makeScroller(scroller);
+    press(rows[0], 'pointerdown', 10, 10);
+    expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    vi.advanceTimersByTime(PRESS_ONSET_MS);
+    expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('on');
   });
 
   it('marks a control with an empty marker and a cell with `cell`', () => {

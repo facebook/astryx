@@ -21,8 +21,9 @@
  * button, a card, a switch) is a UIControl: under a finger it highlights in
  * the frame the finger lands, unless a scroller sits above it, where it waits
  * UIScrollView's content-touch delay like everything else in a scroll view.
- * A cell (`cell`: a list or tree row) always waits that delay, because a
- * UIKit cell always sits in a scroll view. Both are cancelled by travel past
+ * A cell (`cell`: a list or tree row) waits that delay inside a scroll view
+ * and highlights at once outside one (`spec:AST-094` FR11); it differs from a
+ * control in what cancels it and in its release. Both are cancelled by travel past
  * the slop or by the scroll that takes the touch, and both fade at the lift
  * on their profile's clock.
  *
@@ -102,8 +103,8 @@ export const pressableProps: {readonly [PRESSABLE_ATTRIBUTE]: ''} = {
 export interface PressProfile {
   /**
    * When the highlight waits UIScrollView's content-touch delay
-   * (`PRESS_ONSET_MS`): only inside a scroller (a control), or always (a
-   * cell).
+   * (`PRESS_ONSET_MS`): only inside a scroller (a control and a cell,
+   * `spec:AST-094` FR11), or always.
    */
   readonly highlightDelay: 'inScrollers' | 'always';
   /** How long the release's exit runs, in ms: the attribute leaves after it. */
@@ -132,8 +133,8 @@ export const cellPressableProps: {
 export const PRESS_PROFILES = {
   /** UIControl: highlighted in the frame the finger lands, outside scrollers. */
   control: {highlightDelay: 'inScrollers', releaseMs: PRESS_FADE_MS},
-  /** A table or collection cell: always inside a scroll view, so it waits. */
-  cell: {highlightDelay: 'always', releaseMs: PRESS_FADE_MS},
+  /** A table or collection cell: waits only inside a scroll view (FR11). */
+  cell: {highlightDelay: 'inScrollers', releaseMs: PRESS_FADE_MS},
 } as const satisfies Readonly<Record<string, PressProfile>>;
 
 export type PressProfileName = keyof typeof PRESS_PROFILES;
