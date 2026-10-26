@@ -887,14 +887,6 @@ test('a finger dragging the open sheet re-rasters none of it', async ({
   browserName,
 }) => {
   test.skip(browserName !== 'chromium', 'raster traces are Chromium-only');
-  test.fail(
-    true,
-    'Pending a fix at its origin: the motion animator promotes the sheet by ' +
-      "replacing its stylesheet's will-change (transform, opacity) with " +
-      'translate, a layer change that re-rasters the whole sheet when the ' +
-      'gesture starts and again once it ends; on a software GPU (the ' +
-      'Android emulator) that is 40-115 ms a frame.',
-  );
   // A finger on Android: its selection lock changes no style. On iOS WebKit
   // the lock still turns user-select off on the sheet (the only refusal iOS
   // honors, sheetSelectionLock.ts), which repaints it at the catch and the
