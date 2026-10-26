@@ -66,15 +66,18 @@ export function useTouchLayer(
   // After every render: attach, detach, or move to a new element. Comparing
   // the module and the element keeps a re-render from setting up again.
   useIsomorphicLayoutEffect(() => {
+    // The pointer now, not at render: a layer rendered hidden (an Activity)
+    // under a coarse pointer and shown after it turned fine sets nothing up.
+    const live = touch === null ? null : getTouchModule();
     const element = ref.current;
     const attached = attachedRef.current;
-    if (attached?.touch === touch && attached.element === element) {
+    if (attached?.touch === live && attached.element === element) {
       return;
     }
     attached?.cleanup();
     attachedRef.current =
-      touch !== null && element !== null
-        ? {touch, element, cleanup: setupRef.current(touch, element)}
+      live !== null && element !== null
+        ? {touch: live, element, cleanup: setupRef.current(live, element)}
         : null;
   });
 

@@ -13,7 +13,7 @@
  * @position Unit tests of packages/core/src/touch-support/useTouchLayer.ts
  */
 
-import {StrictMode, useRef} from 'react';
+import {Activity, StrictMode, useRef} from 'react';
 import {act, render, screen} from '@testing-library/react';
 import {renderToString} from 'react-dom/server';
 import {afterEach, describe, expect, it, vi} from 'vitest';
@@ -143,6 +143,25 @@ describe('useTouchLayer', () => {
     const {setup, Layer} = recorder();
     render(<Layer />);
     expect(setup).toHaveBeenCalledTimes(1);
+  });
+
+  it('sets nothing up when a layer rendered hidden under a coarse pointer is shown after the pointer turned fine', async () => {
+    const turn = primaryPointer(true);
+    const {setup, Layer} = recorder();
+    const view = render(
+      <Activity mode="hidden">
+        <Layer />
+      </Activity>,
+    );
+    turn(false);
+    await act(async () => {
+      view.rerender(
+        <Activity mode="visible">
+          <Layer />
+        </Activity>,
+      );
+    });
+    expect(setup).not.toHaveBeenCalled();
   });
 
   it('moves to a new element: the old one cleans up, the new one sets up', () => {
