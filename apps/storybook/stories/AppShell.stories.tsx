@@ -21,6 +21,7 @@ import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {TextArea} from '@astryxdesign/core/TextArea';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import * as stylex from '@stylexjs/stylex';
+import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {
   HomeIcon,
   Cog6ToothIcon,
@@ -60,7 +61,40 @@ const styles = stylex.create({
     flexDirection: 'column' as const,
     gap: 32,
   },
+  // No top padding: the tiles meet the header, so they start passing under
+  // it at once.
+  tiles: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: 12,
+    paddingInline: 16,
+    paddingBlockEnd: 16,
+  },
+  tile: {
+    display: 'flex',
+    alignItems: 'flex-end',
+    height: 120,
+    padding: 12,
+    borderRadius: 12,
+    color: colorVars['--color-on-dark'],
+    fontWeight: 600,
+  },
+  tileBlue: {backgroundColor: colorVars['--color-icon-blue']},
+  tileGreen: {backgroundColor: colorVars['--color-icon-green']},
+  tileOrange: {backgroundColor: colorVars['--color-icon-orange']},
+  tilePurple: {backgroundColor: colorVars['--color-icon-purple']},
+  tilePink: {backgroundColor: colorVars['--color-icon-pink']},
+  tileTeal: {backgroundColor: colorVars['--color-icon-teal']},
 });
+
+const TILE_COLORS = [
+  styles.tileBlue,
+  styles.tileGreen,
+  styles.tileOrange,
+  styles.tilePurple,
+  styles.tilePink,
+  styles.tileTeal,
+];
 
 // =============================================================================
 // Helpers
@@ -246,7 +280,7 @@ const meta: Meta<typeof AppShell> = {
   argTypes: {
     height: {
       control: 'radio',
-      options: ['fill', 'auto'],
+      options: ['fill', 'auto', 'adaptive'],
     },
     variant: {
       control: 'radio',
@@ -277,7 +311,7 @@ export const Playground: StoryObj<typeof AppShell> = {
     },
     height: {
       control: 'radio',
-      options: ['fill', 'auto'],
+      options: ['fill', 'auto', 'adaptive'],
     },
   },
   args: {
@@ -501,6 +535,62 @@ export const AutoHeight: Story = {
       sideNav={<SideNavWithoutHeader />}
       height="auto">
       <MockContent paragraphs={20} />
+    </AppShell>
+  ),
+};
+
+/**
+ * Adaptive height: `fill` with a mouse or trackpad, `auto` where the primary
+ * pointer is touch. On a phone (or with touch emulation) the page itself
+ * scrolls under the sticky header, so a status-bar tap returns to the top and
+ * the browser's toolbar minimizes as you scroll. On a desktop the main region
+ * scrolls inside the viewport-high shell; the page's action gives keyboard
+ * users a stop inside it, from which the arrow keys scroll it.
+ */
+export const AdaptiveHeight: Story = {
+  render: () => (
+    <AppShell
+      contentPadding={6}
+      topNav={<AppTopNav />}
+      sideNav={<SideNavWithoutHeader />}
+      height="adaptive">
+      <div {...stylex.props(styles.longContent)}>
+        <div>
+          <Button label="New page" variant="primary" />
+        </div>
+        <MockContent paragraphs={20} />
+      </div>
+    </AppShell>
+  ),
+};
+
+/**
+ * The touch bar over scrolling content. Under a finger, when the page scrolls
+ * (`height="auto"`, as here, or `height="adaptive"` on a phone), the pinned
+ * header paints no background of its own, as an iOS 26 bar does. Scroll the
+ * tiles under it: once they have moved 10px under the bar, a veil of the
+ * bar's colour fades in at the top of the screen, and it fades out when they
+ * come back. With a mouse the header stays opaque.
+ */
+export const TouchBarOverContent: Story = {
+  render: () => (
+    <AppShell
+      contentPadding={0}
+      topNav={<AppTopNav />}
+      height="auto"
+      variant="surface">
+      <div {...stylex.props(styles.tiles)}>
+        {Array.from({length: 18}, (_, index) => (
+          <div
+            key={index}
+            {...stylex.props(
+              styles.tile,
+              TILE_COLORS[index % TILE_COLORS.length],
+            )}>
+            Tile {index + 1}
+          </div>
+        ))}
+      </div>
     </AppShell>
   ),
 };

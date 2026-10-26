@@ -18,6 +18,7 @@ import {
   beforeEach,
   afterEach,
 } from 'vitest';
+import {readFileSync} from 'node:fs';
 import {renderToString} from 'react-dom/server';
 import {act, render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -1144,5 +1145,211 @@ describe('AppShell', () => {
     expect(
       JSON.parse(screen.getByTestId('probe').textContent).isMobileNavOpen,
     ).toBe(true);
+  });
+});
+
+describe('AppShell page scroll owner', () => {
+  // One mock list per query, so a test can make the primary pointer a finger
+  // without also crossing the width breakpoint (or the other way around).
+  function mockQueries(matchesFor: (query: string) => boolean) {
+    const lists = new Map<string, ReturnType<typeof createMockMatchMedia>>();
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => {
+        let list = lists.get(query);
+        if (list == null) {
+          list = createMockMatchMedia(matchesFor(query));
+          lists.set(query, list);
+        }
+        return list;
+      }),
+    );
+    return lists;
+  }
+
+  const TOUCH = '(pointer: coarse)';
+
+  it('reads touch in script only through the shared touch resolver', () => {
+    const source = readFileSync(
+      'packages/core/src/AppShell/AppShell.tsx',
+      'utf8',
+    );
+    expect(source).toContain('useTouchPresentation(');
+    // No pointer check of its own in script: no media query on the pointer,
+    // literal or through a constant. A StyleX key spelled as the resolver's
+    // constant ('@media (pointer: coarse)') stays allowed; the resolver's
+    // spelling test pins it.
+    expect(source).not.toMatch(
+      /(?:matchMedia|useMediaQuery)\(\s*['"`][^'"`]*pointer/,
+    );
+    expect(source).not.toMatch(
+      /(?:matchMedia|useMediaQuery)\(\s*[A-Z_]*(?:TOUCH|POINTER)/,
+    );
+  });
+
+  it('adaptive scrolls the page, not the main region, where the primary pointer is touch', () => {
+    mockQueries(query => query === TOUCH);
+    render(
+      <AppShell height="adaptive" topNav={<div>Nav</div>} data-testid="shell">
+        <div>Content</div>
+      </AppShell>,
+    );
+
+    expect(screen.getByTestId('shell')).toHaveAttribute(
+      'data-scroll-owner',
+      'document',
+    );
+    expect(getComputedStyle(screen.getByRole('banner')).position).toBe(
+      'sticky',
+    );
+    expect(getComputedStyle(screen.getByRole('main')).overflow).toBe('clip');
+  });
+
+  it('adaptive keeps the main region as the scroller with a fine pointer', () => {
+    mockQueries(() => false);
+    render(
+      <AppShell height="adaptive" topNav={<div>Nav</div>} data-testid="shell">
+        <div>Content</div>
+      </AppShell>,
+    );
+
+    expect(screen.getByTestId('shell')).toHaveAttribute(
+      'data-scroll-owner',
+      'content',
+    );
+    expect(getComputedStyle(screen.getByRole('banner')).position).not.toBe(
+      'sticky',
+    );
+    expect(getComputedStyle(screen.getByRole('main')).overflow).toBe('auto');
+  });
+
+  it('fill keeps the main region as the scroller on a touch device', () => {
+    mockQueries(query => query === TOUCH);
+    render(
+      <AppShell topNav={<div>Nav</div>} data-testid="shell">
+        <div>Content</div>
+      </AppShell>,
+    );
+
+    expect(screen.getByTestId('shell')).toHaveAttribute(
+      'data-scroll-owner',
+      'content',
+    );
+    expect(getComputedStyle(screen.getByRole('main')).overflow).toBe('auto');
+  });
+
+  it('auto scrolls the page whatever the pointer', () => {
+    mockQueries(() => false);
+    render(
+      <AppShell height="auto" topNav={<div>Nav</div>} data-testid="shell">
+        <div>Content</div>
+      </AppShell>,
+    );
+
+    expect(screen.getByTestId('shell')).toHaveAttribute(
+      'data-scroll-owner',
+      'document',
+    );
+  });
+
+  it('a height outside the union keeps the auto minimum height, with no sticky regions', () => {
+    mockQueries(() => false);
+    render(
+      <AppShell
+        height={'unknown' as never}
+        topNav={<div>Nav</div>}
+        data-testid="shell">
+        <div>Content</div>
+      </AppShell>,
+    );
+
+    expect(screen.getByTestId('shell')).toHaveAttribute(
+      'data-scroll-owner',
+      'document',
+    );
+    expect(getComputedStyle(screen.getByRole('banner')).position).not.toBe(
+      'sticky',
+    );
+    expect(getComputedStyle(screen.getByRole('main')).overflow).not.toBe(
+      'auto',
+    );
+  });
+
+  it('adaptive keeps the side navigation mounted when the primary pointer changes, so a collapsed SideNav stays collapsed', async () => {
+    const lists = mockQueries(() => false);
+    const user = userEvent.setup();
+    render(
+      <AppShell
+        height="adaptive"
+        topNav={<div>Nav</div>}
+        sideNav={
+          <SideNav collapsible>
+            <SideNavSection title="Test" isHeaderHidden>
+              <SideNavItem label="Nav" />
+            </SideNavSection>
+          </SideNav>
+        }>
+        <div>Content</div>
+      </AppShell>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    expect(
+      screen.getByRole('button', {name: 'Expand sidebar'}),
+    ).toBeInTheDocument();
+
+    act(() => lists.get(TOUCH)?._setMatches(true));
+    expect(
+      screen.getByRole('button', {name: 'Expand sidebar'}),
+    ).toBeInTheDocument();
+
+    act(() => lists.get(TOUCH)?._setMatches(false));
+    expect(
+      screen.getByRole('button', {name: 'Expand sidebar'}),
+    ).toBeInTheDocument();
+  });
+
+  it('adaptive follows the primary pointer when it changes', () => {
+    const lists = mockQueries(() => false);
+    render(
+      <AppShell height="adaptive" topNav={<div>Nav</div>} data-testid="shell">
+        <div>Content</div>
+      </AppShell>,
+    );
+    expect(screen.getByTestId('shell')).toHaveAttribute(
+      'data-scroll-owner',
+      'content',
+    );
+
+    act(() => lists.get(TOUCH)?._setMatches(true));
+    expect(screen.getByTestId('shell')).toHaveAttribute(
+      'data-scroll-owner',
+      'document',
+    );
+
+    act(() => lists.get(TOUCH)?._setMatches(false));
+    expect(screen.getByTestId('shell')).toHaveAttribute(
+      'data-scroll-owner',
+      'content',
+    );
+  });
+
+  it('adaptive starts out scrolling the page on the server when the mobile SSR hint is set', () => {
+    const host = document.createElement('div');
+    host.innerHTML = renderToString(
+      <AppShell
+        height="adaptive"
+        sideNav={<TestSideNav />}
+        mobileNav={{defaultIsMobile: true}}
+        data-testid="shell">
+        <div>Content</div>
+      </AppShell>,
+    );
+
+    expect(
+      host
+        .querySelector('[data-testid="shell"]')
+        ?.getAttribute('data-scroll-owner'),
+    ).toBe('document');
   });
 });
