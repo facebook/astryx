@@ -263,7 +263,12 @@ function scaleOf(element: Element, rect: DOMRect): {x: number; y: number} {
     html.offsetHeight > 0 && rect.height > 0
       ? rect.height / html.offsetHeight
       : 1;
-  return {x: x || 1, y: y || 1};
+  // Subpixel rounding makes an unscaled element read a hair off 1; only a
+  // real scale is corrected.
+  return {
+    x: Math.abs(x - 1) < 0.01 ? 1 : x || 1,
+    y: Math.abs(y - 1) < 0.01 ? 1 : y || 1,
+  };
 }
 
 function flush(batch: Batch): void {
