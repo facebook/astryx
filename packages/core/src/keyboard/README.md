@@ -48,6 +48,19 @@ exported from the package entry.
   sends a held tap's mousedown and click, aimed at whatever is under the
   finger by then, so the route swallows them on the document until the tap's
   click or the next touch, pointer press or key.
+- **The browser's own reveal pan (FR4):** `watchRevealPan(window, {owns})`
+  is the one building block every keyboard-aware surface uses for a browser
+  that pans the visual viewport to a focused field after the keyboard's
+  report. The surface calls `report()` on each report that changes the
+  height; on a later report, `isRevealPan(height)` says the visual viewport
+  has moved down with no touch, document scroll or zoom since, while a text
+  field the surface owns has focus, and `putBack()` pans it back without
+  scrolling the document, by scrolling into view a probe fixed where the
+  visual viewport sat at the report (or the element given, such as a
+  full-viewport dialog). Its one listener, a passive capture-phase
+  `touchstart` on the document, lives only while a surface watches.
+  ChatLayout watches under a finger; BottomSheet's hook watches while its
+  sheet is presented.
 - **BottomSheet's hook (FR4, FR5):** `useMobileKeyboard(options)` gives a
   fully expanded Tall sheet its keyboard scroll range, claims focus moves into
   it, puts back a document scroll while the page is locked, and dismisses the
@@ -119,12 +132,18 @@ at any time, for something that appears while the keyboard moves.
 - Firefox for Android reports the keyboard once it is up, and 34 to 104 ms
   later pans the visual viewport to a focused field the keyboard still
   covers. So BottomSheet reveals in the report's own event, and where a
-  browser has panned to the field after a report (the visual viewport moved
-  down with no touch, document scroll or zoom since), it lands the field with
-  its own scroller, leaving a smooth reveal under way to land it, and only
-  then scrolls the dialog's top back into view; a field it cannot bring up
-  keeps the browser's reveal. Every later reveal lands at once in the
-  report's frame. A browser that never pans keeps the smooth reveal.
+  browser has panned to the field after a report (`watchRevealPan`), it
+  lands the field with its own scroller, leaving a smooth reveal under way to
+  land it, and only then scrolls the dialog's top back into view; a field it
+  cannot bring up keeps the browser's reveal. Every later reveal lands at
+  once in the report's frame. A browser that never pans keeps the smooth
+  reveal.
+- Chrome 124 on Android (Gboard) animates its own pan to the focused
+  composer about 150 ms after the report, by the keyboard's whole height,
+  while the composer is still riding up; left alone, the composer ends
+  mid-screen. ChatLayout puts the pan back on its first frame
+  (`watchRevealPan`), so the visual viewport stays where it was and the
+  composer rests on the keyboard. Chromium 158 does not pan.
 
 ## What the page sees (Chromium 158 with Gboard, Android 15)
 

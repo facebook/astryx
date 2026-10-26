@@ -10,8 +10,8 @@
  * @output Exports the on-screen keyboard module: measureKeyboardHeight,
  *   isKeyboardMeasurable, subscribeMobileKeyboard, getMobileKeyboardHeight,
  *   useKeyboardHeight, isTextEntryControl, findTextEntryControl,
- *   refuseFocusReveal, claimTapFocus, and BottomSheet's useMobileKeyboard
- *   hook
+ *   refuseFocusReveal, claimTapFocus, watchRevealPan, and BottomSheet's
+ *   useMobileKeyboard hook
  * @position Core's one source for the on-screen keyboard (spec:AST-099,
  *   architecture:react-component-runtime INV11). Internal to core: nothing
  *   here is exported from the package. BottomSheet, ChatLayout and the
@@ -356,6 +356,127 @@ export function refuseFocusReveal(
   doc.addEventListener('blur', onBlur, true);
   return () => {
     doc.removeEventListener('blur', onBlur, true);
+  };
+}
+
+/** The caller's rules for watchRevealPan. */
+export interface WatchRevealPanOptions {
+  /** Whether the focused field is the caller's to keep in view. */
+  owns: (focused: HTMLElement) => boolean;
+  /** Called on every touch start, which ends the watch for the report. */
+  onTouch?: () => void;
+}
+
+/** A watch for the browser's own reveal pan (see watchRevealPan). */
+export interface RevealPanWatch {
+  /** A report changed the keyboard's height: remember where everything sat. */
+  report: () => void;
+  /** Whether the visual viewport has since moved down as a reveal pan. */
+  isRevealPan: (height: number) => boolean;
+  /**
+   * Pans the visual viewport back to where it sat at the report without
+   * scrolling the document: scrolls `anchor`, an element fixed at the layout
+   * viewport's top, into view, or a probe fixed where the visual viewport sat.
+   */
+  putBack: (anchor?: Element | null) => void;
+  /** Removes the watch's listener. */
+  stop: () => void;
+}
+
+/**
+ * FR4's last route: a browser that reveals a focused field itself pans the
+ * visual viewport to it after the keyboard's report while the keyboard still
+ * covers the field. Measured in Firefox for Android (34 to 39 ms after the
+ * report) and in Chrome 124 on Android (an animated pan of the keyboard's
+ * whole height, starting about 150 ms after the report, while a composer is
+ * still riding up). Such a pan: the visual viewport moved down within the
+ * layout viewport since the report, with no touch since, no document scroll
+ * and no zoom, while a text field the caller owns has focus. Recorded from
+ * the behavior, never from the user agent. The caller lands its field itself
+ * and puts the pan back. One building block for every keyboard-aware surface
+ * (BottomSheet, ChatLayout).
+ *
+ * @example
+ * ```
+ * const watch = watchRevealPan(window, {owns: field => region.contains(field)});
+ * // On a report that changes the height: watch.report();
+ * // On any later report: if (watch.isRevealPan(height)) watch.putBack();
+ * ```
+ */
+export function watchRevealPan(
+  win: Window,
+  {owns, onTouch}: WatchRevealPanOptions,
+): RevealPanWatch {
+  const doc = win.document;
+  let atReport: {x: number; y: number; top: number; scale: number} | null =
+    null;
+  let touchedSinceReport = false;
+  const handleTouchStart = () => {
+    touchedSinceReport = true;
+    onTouch?.();
+  };
+  doc.addEventListener('touchstart', handleTouchStart, {
+    capture: true,
+    passive: true,
+  });
+  return {
+    report: () => {
+      const viewport = win.visualViewport;
+      atReport =
+        viewport == null
+          ? null
+          : {
+              x: win.scrollX,
+              y: win.scrollY,
+              top: viewport.offsetTop,
+              scale: viewport.scale,
+            };
+      touchedSinceReport = false;
+    },
+    isRevealPan: height => {
+      const viewport = win.visualViewport;
+      const focused = doc.activeElement;
+      return (
+        viewport != null &&
+        atReport != null &&
+        !touchedSinceReport &&
+        height > 0 &&
+        viewport.offsetTop > atReport.top &&
+        viewport.scale === atReport.scale &&
+        win.scrollX === atReport.x &&
+        win.scrollY === atReport.y &&
+        focused instanceof HTMLElement &&
+        isTextEntryControl(focused) &&
+        owns(focused)
+      );
+    },
+    putBack: anchor => {
+      const options: ScrollIntoViewOptions = {
+        block: 'start',
+        inline: 'nearest',
+        behavior: 'instant',
+      };
+      if (anchor != null) {
+        anchor.scrollIntoView(options);
+        return;
+      }
+      // A fixed element sits in the layout viewport, which the pan does not
+      // move: scrolling its top into view pans the visual viewport back.
+      const probe = doc.createElement('div');
+      probe.style.position = 'fixed';
+      probe.style.left = '0';
+      probe.style.top = `${atReport?.top ?? 0}px`;
+      probe.style.width = '1px';
+      probe.style.height = '1px';
+      probe.style.visibility = 'hidden';
+      probe.style.pointerEvents = 'none';
+      (doc.body ?? doc.documentElement).append(probe);
+      probe.scrollIntoView(options);
+      probe.remove();
+    },
+    stop: () => {
+      doc.removeEventListener('touchstart', handleTouchStart, true);
+    },
   };
 }
 
@@ -939,33 +1060,14 @@ export function useMobileKeyboard({
     // view once the sheet lands the field itself, and the field lands at once
     // on every later report.
     let lastHeight = getMobileKeyboardHeight(window);
-    let atReport: {x: number; y: number; top: number; scale: number} | null =
-      null;
-    let touchedSinceReport = false;
-    const handleTouchStart = () => {
-      touchedSinceReport = true;
+    const revealPan = watchRevealPan(window, {
+      owns: focused => hasKeyboardLayoutRef.current && body.contains(focused),
       // The reader's own scroll may stop a smooth reveal short: forget where
       // it was going.
-      smoothTarget = null;
-    };
-    const isBrowserReveal = (height: number) => {
-      const viewport = window.visualViewport;
-      const activeElement = document.activeElement;
-      return (
-        viewport != null &&
-        atReport != null &&
-        !touchedSinceReport &&
-        height > 0 &&
-        hasKeyboardLayoutRef.current &&
-        viewport.offsetTop > atReport.top &&
-        viewport.scale === atReport.scale &&
-        window.scrollX === atReport.x &&
-        window.scrollY === atReport.y &&
-        activeElement instanceof HTMLElement &&
-        body.contains(activeElement) &&
-        isTextEntryControl(activeElement)
-      );
-    };
+      onTouch: () => {
+        smoothTarget = null;
+      },
+    });
     // Every keyboard report reaches the reveal through the keyboard module's
     // one set of listeners.
     const unsubscribe = subscribeMobileKeyboard(window, event => {
@@ -974,22 +1076,12 @@ export function useMobileKeyboard({
       }
       if (event.height !== lastHeight) {
         lastHeight = event.height;
-        const viewport = window.visualViewport;
-        atReport =
-          viewport == null
-            ? null
-            : {
-                x: window.scrollX,
-                y: window.scrollY,
-                top: viewport.offsetTop,
-                scale: viewport.scale,
-              };
-        touchedSinceReport = false;
+        revealPan.report();
         cancelAnimationFrame(animationFrame);
         revealFocusedControl();
         return;
       }
-      if (isBrowserReveal(event.height)) {
+      if (revealPan.isRevealPan(event.height)) {
         revealsAtReport.add(window);
         cancelAnimationFrame(animationFrame);
         // A smooth reveal still under way lands the field where it is going.
@@ -1006,24 +1098,19 @@ export function useMobileKeyboard({
         // coordinates, which the pan does not move); a field the sheet cannot
         // bring up keeps the browser's reveal.
         const activeElement = document.activeElement;
+        const dialog = sheet?.closest('dialog');
         if (
+          dialog != null &&
           activeElement instanceof HTMLElement &&
           activeElement.getBoundingClientRect().bottom - distanceLeft <=
             getObstructionTop()
         ) {
-          sheet?.closest('dialog')?.scrollIntoView({
-            block: 'start',
-            inline: 'nearest',
-            behavior: 'instant',
-          });
+          // The full-viewport dialog is fixed at the layout viewport's top.
+          revealPan.putBack(dialog);
         }
         return;
       }
       scheduleReveal();
-    });
-    document.addEventListener('touchstart', handleTouchStart, {
-      capture: true,
-      passive: true,
     });
     body.addEventListener('focusin', handleFocusIn);
     body.addEventListener('focusout', handleFocusOut);
@@ -1044,7 +1131,7 @@ export function useMobileKeyboard({
       cancelAnimationFrame(animationFrame);
       stopClaiming?.();
       unsubscribe();
-      document.removeEventListener('touchstart', handleTouchStart, true);
+      revealPan.stop();
       body.removeEventListener('focusin', handleFocusIn);
       body.removeEventListener('focusout', handleFocusOut);
       sheet?.removeEventListener('transitionend', handleSheetTransitionEnd);

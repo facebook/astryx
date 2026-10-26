@@ -895,6 +895,46 @@ test.describe('under a finger', () => {
     });
     expect(opacities).toEqual(['1', '1']);
   });
+
+  test('the browser\u2019s own reveal pan is put back: the composer rests on the keyboard and the page does not move (spec:AST-099 FR4)', async ({
+    page,
+  }) => {
+    const {dock, editable} = await openChat(page);
+    await editable.focus();
+    await showKeyboard(page);
+    await page.waitForTimeout(150);
+    const result = await page.evaluate(async cover => {
+      const viewport = window.visualViewport as unknown as EventTarget & {
+        offsetTop: number;
+      };
+      // The browser's side of a put-back: scrolling a fixed element's top
+      // into view pans the visual viewport to it.
+      let putBacks = 0;
+      const original = Element.prototype.scrollIntoView;
+      Element.prototype.scrollIntoView = function (
+        this: Element,
+        ...args: Parameters<Element['scrollIntoView']>
+      ) {
+        if (getComputedStyle(this).position === 'fixed') {
+          putBacks += 1;
+          viewport.offsetTop = Math.max(0, this.getBoundingClientRect().top);
+        }
+        original.apply(this, args);
+      };
+      // As Chrome 124 does while the composer is still riding up: it pans
+      // the visual viewport to the composer by the keyboard's height.
+      viewport.offsetTop = cover;
+      viewport.dispatchEvent(new Event('scroll'));
+      await new Promise(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      );
+      Element.prototype.scrollIntoView = original;
+      return {putBacks, offsetTop: viewport.offsetTop};
+    }, COVER);
+    await waitForRest(dock);
+    expect(result.putBacks).toBeGreaterThan(0);
+    expect(result.offsetTop).toBe(0);
+  });
 });
 
 // The dock's ride among what a hold takes on the dock (a CSS transition that

@@ -5,7 +5,8 @@
 /**
  * @file useChatKeyboard.ts
  * @input React refs, the keyboard module (useKeyboardHeight,
- *   claimTapFocus, refuseFocusReveal, rideKeyboard), the keyboard layout
+ *   claimTapFocus, refuseFocusReveal, watchRevealPan, rideKeyboard), the
+ *   keyboard layout
  *   guide (each transition's start, resting value and curve), the animator,
  *   the keyboard's own motion (`keyboard.spring` on iOS, Gboard's slides in
  *   Chrome on Android), the touch query, the layout viewport's height
@@ -69,11 +70,13 @@ import {
   isKeyboardMeasurable,
   refuseFocusReveal,
   rideKeyboard,
+  subscribeMobileKeyboard,
   useKeyboardHeight,
+  watchRevealPan,
   type KeyboardTransition,
 } from '../keyboard';
 import {layoutViewportHeight} from '../utils/layoutViewport';
-import {TOUCH_QUERY} from '../utils/touchPresentation';
+import {TOUCH_QUERY, useTouchPresentation} from '../utils/touchPresentation';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 
 export interface UseChatKeyboardOptions {
@@ -473,6 +476,45 @@ export function useChatKeyboard({
       deliver: focusAtPoint,
     });
   }, []);
+
+  // A browser that reveals the composer itself pans the visual viewport after
+  // the keyboard's report while the composer is still riding up (Chrome 124
+  // on Android pans by the keyboard's whole height): the keyboard module's
+  // reveal-pan watch puts the pan back, so the composer rests on the keyboard
+  // and the page does not move (spec:AST-099 FR4). Synchronizes the keyboard
+  // module's reports, under a finger only (spec:AST-094 FR24).
+  const touchPresentation = useTouchPresentation();
+  useIsomorphicLayoutEffect(() => {
+    const composer = composerRef.current;
+    const win = composer?.ownerDocument.defaultView;
+    if (
+      !touchPresentation.isTouch ||
+      composer == null ||
+      win == null ||
+      !isKeyboardMeasurable(win)
+    ) {
+      return undefined;
+    }
+    const watch = watchRevealPan(win, {
+      owns: focused => composer.contains(focused),
+    });
+    let reportedHeight = getMobileKeyboardHeight(win);
+    const unsubscribe = subscribeMobileKeyboard(win, event => {
+      if (event.type !== 'viewport') {
+        return;
+      }
+      if (event.height !== reportedHeight) {
+        reportedHeight = event.height;
+        watch.report();
+      } else if (watch.isRevealPan(event.height)) {
+        watch.putBack();
+      }
+    });
+    return () => {
+      unsubscribe();
+      watch.stop();
+    };
+  }, [touchPresentation.isTouch]);
 
   // Every other move into the composer's text is the keyboard module's focus
   // takeover (spec:AST-099 FR4), where the keyboard is measured (FR6). A

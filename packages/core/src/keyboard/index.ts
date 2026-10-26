@@ -5,7 +5,7 @@
  * @input useMobileKeyboard.ts, keyboardLayoutGuide.ts, keyboardModel.ts and
  *   rideKeyboard.ts
  * @output Re-exports the on-screen keyboard module (the keyboard height, its
- *   reports, the focus refusal, BottomSheet's hook), the keyboard layout
+ *   reports, the focus refusal, the reveal-pan watch, BottomSheet's hook), the keyboard layout
  *   guide (getKeyboardLayoutGuide, keyboardProfileOf, bringsUpKeyboard,
  *   createKeyboardModel) and rideKeyboard, with their types
  * @position Entry of the keyboard module. Internal to core: components
@@ -26,9 +26,12 @@ export {
   subscribeMobileKeyboard,
   useKeyboardHeight,
   useMobileKeyboard,
+  watchRevealPan,
   type ClaimTapFocusOptions,
   type MobileKeyboardEvent,
   type RefuseFocusRevealOptions,
+  type RevealPanWatch,
+  type WatchRevealPanOptions,
 } from './useMobileKeyboard';
 export {
   bringsUpKeyboard,
