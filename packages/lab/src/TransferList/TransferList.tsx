@@ -4,7 +4,7 @@
 
 /**
  * @file TransferList.tsx
- * @input Controlled option data, local action glyphs, core's reorder (`createReorderable`, List `reorderable`, ListItem `itemKey`, and an owner's reorderable object, whose options it reads), and the core i18n catalog
+ * @input Controlled option data, local action glyphs, core's reorder (List `reorderable` and ListItem `itemKey`, with the owner's createReorderable object adapted through Core's internal reorder entry, which loads no reorder code of its own), and the core i18n catalog
  * @output Exports TransferList with immediate transfers, vertical reordering, and responsive scroll ownership
  * @position Lab collection input; consumed by index.ts, TransferListSelector, docs, and tests
  *
@@ -32,11 +32,13 @@ import {IconButton} from '@astryxdesign/core/IconButton';
 import {Item} from '@astryxdesign/core/Item';
 import {List, ListItem} from '@astryxdesign/core/List';
 import {
-  createReorderable,
   type Reorderable,
   type ReorderMove,
 } from '@astryxdesign/core/reorderable';
-import {reorderableOptions} from '@astryxdesign/core/internal/reorder';
+import {
+  adaptReorderable,
+  reorderableOptions,
+} from '@astryxdesign/core/internal/reorder';
 import {Text} from '@astryxdesign/core/Text';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
@@ -88,7 +90,7 @@ export interface TransferListOption<T extends string = string> {
   group?: string;
   /** Prevents moving the option between the selected and available lists. */
   isTransferDisabled?: boolean;
-  /** Explains why a transfer is unavailable (a fixed row has no reorder handle). */
+  /** Explains why a transfer is unavailable. */
   disabledMessage?: string;
 }
 
@@ -547,9 +549,8 @@ export function TransferList<T extends string = string>({
       const order = [...shown];
       const [moved] = order.splice(fromIndex, 1);
       order.splice(toIndex, 0, moved);
-      // The shown rows' new order goes back into the slots the shown values
-      // held: a value without an option keeps its own slot, so every move
-      // can be undone by its inverse.
+      // The shown rows' new order goes back into the places the shown values
+      // held, so a value without an option keeps its place in this order.
       const isShown = new Set(shown);
       let next = 0;
       const nextValue = currentValueRef.current.map(item =>
@@ -558,21 +559,25 @@ export function TransferList<T extends string = string>({
       if (owner == null) {
         return;
       }
-      // In the value's terms: where the moved value lands. Moving it there
-      // keeps the shown rows in this order.
+      // In the value's terms: where the moved value lands. The owner moving
+      // it there keeps the shown rows in this order.
       owner.onReorder({key: key as T, to: nextValue.indexOf(key as T)});
     },
     [owner, selectedOptions],
   );
+  // The owner's object, adapted so List's moves among the shown rows reach
+  // the owner in the value's terms; its engine is the owner's, so nothing
+  // here loads the reorder (spec:AST-103 FR2), and the owner's `start(key)`
+  // finds this list (FR4a).
   const reorderable = useMemo(
     () =>
-      isOrdering
-        ? createReorderable({
+      isOrdering && reorderableProp != null
+        ? adaptReorderable<string, number>(reorderableProp, {
             onReorder: reorderSelected,
             isReorderable: key => canMove(key as T),
           })
         : undefined,
-    [canMove, isOrdering, reorderSelected],
+    [canMove, isOrdering, reorderSelected, reorderableProp],
   );
 
   const handleSearch = useCallback(
@@ -638,12 +643,17 @@ export function TransferList<T extends string = string>({
     side: 'selected' | 'available',
     index: number,
   ) => {
+    // Transfer and reorder are separate states of the row's own target
+    // (theming-surface INV6): a row the owner keeps in place is `fixed`.
     const theme = themeProps('transfer-list-item', {
       side,
-      state:
-        option.isTransferDisabled || !canMove(option.value)
-          ? 'disabled'
-          : 'enabled',
+      state: option.isTransferDisabled ? 'disabled' : 'enabled',
+      reorder:
+        side === 'selected' && isOrdering
+          ? canMove(option.value)
+            ? 'movable'
+            : 'fixed'
+          : undefined,
     });
     if (side === 'selected') {
       return (

@@ -11,7 +11,9 @@
 
 import {useMemo, useState} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {fireEvent, render, screen, within} from '@testing-library/react';
+import {act, fireEvent, render, screen, within} from '@testing-library/react';
+import fs from 'node:fs';
+import path from 'node:path';
 import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
 import {createReorderable} from '@astryxdesign/core/reorderable';
@@ -255,6 +257,24 @@ describe('TransferList', () => {
       // The handle is named after the row's text, not its place.
       expect(
         screen.getByRole('button', {name: 'Reorder Custom Name'}),
+      ).toBeInTheDocument();
+    });
+
+    it('names a reorder handle after its option when renderOption returns a component (spec:AST-103 FR4)', async () => {
+      function OptionLabel({label}: {label: string}) {
+        return <span>{label}</span>;
+      }
+      render(
+        <ControlledTransferList
+          initialValue={['name', 'status']}
+          renderOption={option => <OptionLabel label={option.label} />}
+        />,
+      );
+      expect(
+        await screen.findByRole('button', {name: 'Reorder Name'}),
+      ).toBeInTheDocument();
+      expect(
+        await screen.findByRole('button', {name: 'Reorder Status'}),
       ).toBeInTheDocument();
     });
 
@@ -750,5 +770,76 @@ describe('TransferList', () => {
         'updated',
       ]);
     });
+  });
+});
+
+describe("the owner's reorderable object", () => {
+  it("its start(key) turns on reorder mode for that row in TransferList's list (spec:AST-103 FR4a)", () => {
+    let start: ((key: string) => void) | undefined;
+    function Owned() {
+      const [value, setValue] = useState<readonly string[]>(['name', 'status']);
+      const reorderable = useMemo(
+        () =>
+          createReorderable<string>({
+            onReorder: ({key, to}) =>
+              setValue(current => moveValue(current, key, to)),
+          }),
+        [],
+      );
+      start = key => reorderable.start(key);
+      return (
+        <TransferList
+          label="Columns"
+          selectedLabel="Selected columns"
+          availableLabel="Available columns"
+          options={OPTIONS}
+          value={value}
+          onChange={setValue}
+          reorderable={reorderable}
+        />
+      );
+    }
+    render(<Owned />);
+    const handle = screen.getByRole('button', {name: 'Reorder Status'});
+    expect(handle).not.toHaveAttribute('aria-pressed', 'true');
+    act(() => start?.('status'));
+    expect(handle).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('loads no reorder code of its own: the engine comes with the owner\u2019s object (spec:AST-103 FR2)', () => {
+    for (const file of ['TransferList.tsx', 'TransferListSelector.tsx']) {
+      const source = fs.readFileSync(
+        path.join(import.meta.dirname, file),
+        'utf8',
+      );
+      const valueImports = [
+        ...source.matchAll(
+          /^import\s+(?!type\b)\{([^}]*)\}\s+from\s+'([^']+)';/gm,
+        ),
+      ];
+      for (const [, names, from] of valueImports) {
+        const values = names
+          .split(',')
+          .map(name => name.trim())
+          .filter(name => name !== '' && !name.startsWith('type '));
+        expect(values, `${file}: ${from}`).not.toContain('createReorderable');
+      }
+    }
+  });
+
+  it('reflects a kept row as reorder fixed on its own target, apart from its transfer state (theming-surface INV6)', () => {
+    const {container} = render(
+      <ControlledTransferList
+        initialValue={['name', 'status']}
+        fixed={['name']}
+      />,
+    );
+    const rowOf = (value: string) =>
+      container.querySelector<HTMLElement>(
+        `[data-transfer-list-row="${value}"]`,
+      );
+    expect(rowOf('name')).toHaveAttribute('data-reorder', 'fixed');
+    expect(rowOf('name')).toHaveAttribute('data-state', 'enabled');
+    expect(rowOf('status')).toHaveAttribute('data-reorder', 'movable');
   });
 });

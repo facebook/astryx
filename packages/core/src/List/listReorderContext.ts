@@ -40,6 +40,12 @@ export interface ListReorderOptions {
   readonly onReorder: (move: {key: Key; to: number}) => void;
   /** Whether the item with `key` moves; every item does without it. */
   readonly isReorderable?: (key: Key) => boolean;
+  /**
+   * An adapted object's (internal/reorder `adaptReorderable`): the owner's
+   * options, which the owner's `start` finds this list by, while the moves go
+   * through these.
+   */
+  readonly startedBy?: ListReorderOptions;
 }
 
 /** The handle a reorderable row ends with (List/ListReorderHandle.tsx). */
@@ -48,6 +54,16 @@ export interface ListReorderHandleProps {
   readonly label: ReactNode;
   /** The row's item key (ListItem `itemKey`), which its moves report. */
   readonly itemKey: Key;
+  /**
+   * The row's own accessible name, when its caller gave one (ListItem
+   * `aria-label`): the handle is "Reorder" followed by it.
+   */
+  readonly rowLabel?: string;
+  /**
+   * The elements that name the row, when its caller gave them (ListItem
+   * `aria-labelledby`): the handle is "Reorder" followed by them.
+   */
+  readonly rowLabelledBy?: string;
   /**
    * The row is disabled: the handle stays focusable with
    * `aria-disabled="true"`, and no gesture or key moves the row
