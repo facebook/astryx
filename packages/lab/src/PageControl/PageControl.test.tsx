@@ -11,7 +11,7 @@
  *   __tests__/PageControl.interaction.browser.spec.ts
  */
 
-import {afterEach, describe, expect, it, vi} from 'vitest';
+import {afterAll, afterEach, describe, expect, it, vi} from 'vitest';
 import {createRef} from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {PageControl} from './PageControl';
@@ -43,12 +43,19 @@ function tap(target: Element, x: number) {
 }
 
 /**
- * A coarse primary pointer (a phone): the gesture host listens only there
- * (`spec:AST-094` FR19, FR24). jsdom models a desktop otherwise.
+ * The primary pointer. The document's gesture host listens only where it is
+ * coarse (`spec:AST-094` FR19, FR24) and keeps the `(pointer: coarse)` query
+ * it read when it was created, so the file installs one query, before
+ * anything renders, whose answer each case sets. jsdom has no `matchMedia`:
+ * a desktop otherwise.
  */
-function asCoarsePointer() {
-  vi.stubGlobal('matchMedia', (query: string) => ({
-    matches: query.includes('pointer: coarse'),
+const pointer = {isCoarse: false};
+const originalMatchMedia = window.matchMedia;
+window.matchMedia = (query: string) =>
+  ({
+    get matches() {
+      return pointer.isCoarse && query.includes('pointer: coarse');
+    },
     media: query,
     onchange: null,
     addEventListener: () => {},
@@ -56,11 +63,19 @@ function asCoarsePointer() {
     addListener: () => {},
     removeListener: () => {},
     dispatchEvent: () => false,
-  }));
+  }) as unknown as MediaQueryList;
+
+/** A coarse primary pointer (a phone), for this case. */
+function asCoarsePointer() {
+  pointer.isCoarse = true;
 }
 
 afterEach(() => {
-  vi.unstubAllGlobals();
+  pointer.isCoarse = false;
+});
+
+afterAll(() => {
+  window.matchMedia = originalMatchMedia;
 });
 
 /** WCAG contrast of `fg` at `alpha` over `bg` against `bg`. */
