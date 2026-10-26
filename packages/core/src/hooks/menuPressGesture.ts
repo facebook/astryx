@@ -54,7 +54,8 @@ export const MENU_PRESS_HANDOFF_PX: number = UIKIT_MENU_PRESS_HANDOFF_PX;
 
 export type MenuPressPointerType = 'mouse' | 'touch' | 'pen';
 
-export type MenuPressGesture<T> =
+/** @internal The machine's own shape, with UIMenu's handoff (`spec:AST-094` FR28, FR29); not public contract. */
+export type MenuPressState<T> =
   | {phase: 'idle'}
   | {
       phase: 'triggerPress';
@@ -81,7 +82,8 @@ export type MenuPressGesture<T> =
       row: T | null;
     };
 
-export type MenuPressEvent<T> =
+/** @internal The machine's own shape, with UIMenu's handoff (`spec:AST-094` FR28, FR29); not public contract. */
+export type MenuPressInput<T> =
   | {
       type: 'down';
       target: 'trigger' | 'menu';
@@ -122,7 +124,8 @@ export type MenuPressEvent<T> =
   /** The browser took the gesture: pointercancel, a second pointer, a scroll. */
   | {type: 'cancel'};
 
-export type MenuPressEffect<T> =
+/** @internal The machine's own shape, with UIMenu's handoff (`spec:AST-094` FR28, FR29); not public contract. */
+export type MenuPressOutcome<T> =
   | {type: 'none'}
   /** A mouse pressed the trigger: open the menu now, under the held pointer. */
   | {type: 'open'}
@@ -138,20 +141,21 @@ export type MenuPressEffect<T> =
    */
   | {type: 'settle'; stray: boolean; dismiss: boolean; clear?: true};
 
-export interface MenuPressStep<T> {
-  gesture: MenuPressGesture<T>;
-  effect: MenuPressEffect<T>;
+/** @internal The machine's own shape, with UIMenu's handoff (`spec:AST-094` FR28, FR29); not public contract. */
+export interface MenuPressTransition<T> {
+  gesture: MenuPressState<T>;
+  effect: MenuPressOutcome<T>;
 }
 
-export const IDLE_MENU_PRESS: MenuPressGesture<never> = {phase: 'idle'};
+export const IDLE_MENU_PRESS: MenuPressState<never> = {phase: 'idle'};
 
-const NONE: MenuPressEffect<never> = {type: 'none'};
+const NONE: MenuPressOutcome<never> = {type: 'none'};
 
-function idle<T>(effect: MenuPressEffect<T>): MenuPressStep<T> {
+function idle<T>(effect: MenuPressOutcome<T>): MenuPressTransition<T> {
   return {gesture: {phase: 'idle'}, effect};
 }
 
-function highlightEffect<T>(row: T | null): MenuPressEffect<T> {
+function highlightEffect<T>(row: T | null): MenuPressOutcome<T> {
   return row == null ? {type: 'clear'} : {type: 'highlight', row};
 }
 
@@ -187,8 +191,8 @@ function hasPassedHandoff(
  */
 function release<T>(
   pointerType: MenuPressPointerType,
-  event: Extract<MenuPressEvent<T>, {type: 'up'}>,
-): MenuPressStep<T> {
+  event: Extract<MenuPressInput<T>, {type: 'up'}>,
+): MenuPressTransition<T> {
   if (event.row != null) {
     return idle({type: 'act', row: event.row});
   }
@@ -201,10 +205,11 @@ function release<T>(
 /**
  * Advance the gesture by one event. Pure: same inputs, same output.
  */
-export function menuPressStep<T>(
-  gesture: MenuPressGesture<T>,
-  event: MenuPressEvent<T>,
-): MenuPressStep<T> {
+/** @internal The machine's own shape, with UIMenu's handoff (`spec:AST-094` FR28, FR29); not public contract. */
+export function menuPressTransition<T>(
+  gesture: MenuPressState<T>,
+  event: MenuPressInput<T>,
+): MenuPressTransition<T> {
   switch (gesture.phase) {
     case 'idle':
       return stepIdle(gesture, event);
@@ -218,9 +223,9 @@ export function menuPressStep<T>(
 }
 
 function stepIdle<T>(
-  gesture: Extract<MenuPressGesture<T>, {phase: 'idle'}>,
-  event: MenuPressEvent<T>,
-): MenuPressStep<T> {
+  gesture: Extract<MenuPressState<T>, {phase: 'idle'}>,
+  event: MenuPressInput<T>,
+): MenuPressTransition<T> {
   if (event.type !== 'down') {
     return {gesture, effect: NONE};
   }
@@ -256,9 +261,9 @@ function stepIdle<T>(
 }
 
 function stepTriggerPress<T>(
-  gesture: Extract<MenuPressGesture<T>, {phase: 'triggerPress'}>,
-  event: MenuPressEvent<T>,
-): MenuPressStep<T> {
+  gesture: Extract<MenuPressState<T>, {phase: 'triggerPress'}>,
+  event: MenuPressInput<T>,
+): MenuPressTransition<T> {
   switch (event.type) {
     case 'opened':
       return {
@@ -286,9 +291,9 @@ function stepTriggerPress<T>(
 }
 
 function stepOpen<T>(
-  gesture: Extract<MenuPressGesture<T>, {phase: 'open'}>,
-  event: MenuPressEvent<T>,
-): MenuPressStep<T> {
+  gesture: Extract<MenuPressState<T>, {phase: 'open'}>,
+  event: MenuPressInput<T>,
+): MenuPressTransition<T> {
   switch (event.type) {
     case 'move': {
       if (isFinger(gesture.pointerType) && hasPosition(event)) {
@@ -354,9 +359,9 @@ function stepOpen<T>(
 }
 
 function stepTracking<T>(
-  gesture: Extract<MenuPressGesture<T>, {phase: 'tracking'}>,
-  event: MenuPressEvent<T>,
-): MenuPressStep<T> {
+  gesture: Extract<MenuPressState<T>, {phase: 'tracking'}>,
+  event: MenuPressInput<T>,
+): MenuPressTransition<T> {
   switch (event.type) {
     case 'move':
       if (event.row === gesture.row) {
@@ -386,4 +391,101 @@ function stepTracking<T>(
     case 'opened':
       return {gesture, effect: NONE};
   }
+}
+
+// ---------------------------------------------------------------------------
+// The released public shape (`@astryxdesign/core/hooks`). The handoff
+// positions, `handoffFrom` and the settle `clear` stay internal: a caller of
+// `menuPressStep` keeps the settle rule, as released.
+// ---------------------------------------------------------------------------
+
+export type MenuPressGesture<T> =
+  | {phase: 'idle'}
+  | {
+      phase: 'triggerPress';
+      pointerType: MenuPressPointerType;
+      startedAt: number;
+    }
+  | {
+      phase: 'open';
+      pointerType: MenuPressPointerType;
+      openedAt: number;
+    }
+  | {
+      phase: 'tracking';
+      pointerType: MenuPressPointerType;
+      /** Where the press began. */
+      origin: 'trigger' | 'menu';
+      /** The enabled row currently under the pointer, if any. */
+      row: T | null;
+    };
+
+export type MenuPressEvent<T> =
+  | {
+      type: 'down';
+      target: 'trigger' | 'menu';
+      pointerType: MenuPressPointerType;
+      /** The enabled row under the press when it lands inside the menu. */
+      row: T | null;
+      time: number;
+    }
+  /** The menu opened while the trigger press is still held. */
+  | {type: 'opened'; time: number}
+  | {type: 'move'; row: T | null; isInMenu: boolean; time: number}
+  | {
+      type: 'up';
+      row: T | null;
+      isInMenu: boolean;
+      isOnTrigger: boolean;
+      time: number;
+    }
+  /** The browser took the gesture: pointercancel, a second pointer, a scroll. */
+  | {type: 'cancel'};
+
+export type MenuPressEffect<T> =
+  | {type: 'none'}
+  /** A mouse pressed the trigger: open the menu now, under the held pointer. */
+  | {type: 'open'}
+  | {type: 'highlight'; row: T}
+  | {type: 'clear'}
+  | {type: 'act'; row: T}
+  /**
+   * The gesture ended without a row acting. `stray` says whether the browser
+   * will still report a `click` for this gesture that must not act; `dismiss`
+   * says the menu should close (a mouse released outside it).
+   */
+  | {type: 'settle'; stray: boolean; dismiss: boolean};
+
+export interface MenuPressStep<T> {
+  gesture: MenuPressGesture<T>;
+  effect: MenuPressEffect<T>;
+}
+
+/**
+ * The menu press machine, as released: one step from a gesture and an event
+ * to the next gesture and the effect to apply. Pure.
+ */
+export function menuPressStep<T>(
+  gesture: MenuPressGesture<T>,
+  event: MenuPressEvent<T>,
+): MenuPressStep<T> {
+  const {gesture: next, effect} = menuPressTransition(gesture, event);
+  return {
+    gesture: publicGesture(next),
+    effect:
+      effect.type === 'settle'
+        ? {type: 'settle', stray: effect.stray, dismiss: effect.dismiss}
+        : effect,
+  };
+}
+
+function publicGesture<T>(gesture: MenuPressState<T>): MenuPressGesture<T> {
+  if (gesture.phase !== 'open') {
+    return gesture;
+  }
+  return {
+    phase: 'open',
+    pointerType: gesture.pointerType,
+    openedAt: gesture.openedAt,
+  };
 }

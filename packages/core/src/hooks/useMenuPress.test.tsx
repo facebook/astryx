@@ -402,14 +402,23 @@ describe('useMenuPress — release outside and cancellation', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
-  it('a pointercancel clears the row the press lit (the browser took it for a scroll)', () => {
+  it('where the primary pointer is coarse, a pointercancel clears the row the press lit (the browser took it for a scroll); where it is fine, the highlight stays as before', () => {
     const onHighlight = vi.fn();
-    render(<Harness onHighlight={onHighlight} />);
+    const {unmount} = render(
+      <Harness touchModel="uikit" onHighlight={onHighlight} />,
+    );
     fireEvent.pointerDown(row('A'), touch());
     fireEvent.pointerMove(row('B'), touch());
     expect(onHighlight).toHaveBeenLastCalledWith(row('B'));
     fireEvent.pointerCancel(row('B'), touch());
     expect(onHighlight).toHaveBeenLastCalledWith(null);
+    unmount();
+    const onFineHighlight = vi.fn();
+    render(<Harness onHighlight={onFineHighlight} />);
+    fireEvent.pointerDown(row('A'), touch());
+    fireEvent.pointerMove(row('B'), touch());
+    fireEvent.pointerCancel(row('B'), touch());
+    expect(onFineHighlight).toHaveBeenLastCalledWith(row('B'));
   });
 
   it('a second pointer ends the gesture and does not start another', () => {

@@ -68,10 +68,10 @@ import {
 import {currentGesture} from '../Layer/gestureCounter';
 import {
   IDLE_MENU_PRESS,
-  menuPressStep,
-  type MenuPressEffect,
-  type MenuPressEvent,
-  type MenuPressGesture,
+  menuPressTransition,
+  type MenuPressOutcome,
+  type MenuPressInput,
+  type MenuPressState,
   type MenuPressPointerType,
 } from './menuPressGesture';
 import {createNativeScrollProbe} from '../gestures/nativeScroll';
@@ -512,7 +512,7 @@ export function useDropdownMenuPress(
   // last input, which this tracks for the document.
   useInteractionModalityTracking();
 
-  const gestureRef = useRef<MenuPressGesture<HTMLElement>>(IDLE_MENU_PRESS);
+  const gestureRef = useRef<MenuPressState<HTMLElement>>(IDLE_MENU_PRESS);
   const pointerIdRef = useRef<number | null>(null);
   const detachRef = useRef<(() => void) | null>(null);
   // The held finger is detected by `useLongPress`, the same hook ContextMenu
@@ -685,13 +685,13 @@ export function useDropdownMenuPress(
 
   // Declared before `step` so the mutual recursion through refs type-checks.
   const stepRef = useRef<
-    (event: MenuPressEvent<HTMLElement>, native?: PointerEvent) => void
+    (event: MenuPressInput<HTMLElement>, native?: PointerEvent) => void
   >(() => {});
 
   const applyEffect = useCallback(
     (
-      effect: MenuPressEffect<HTMLElement>,
-      gesture: MenuPressGesture<HTMLElement>,
+      effect: MenuPressOutcome<HTMLElement>,
+      gesture: MenuPressState<HTMLElement>,
       native: PointerEvent | undefined,
     ) => {
       const doc = getDocument();
@@ -725,7 +725,13 @@ export function useDropdownMenuPress(
           return;
         }
         case 'settle': {
-          if (effect.clear === true) {
+          // A finger's lit row clears on a cancel only where the primary
+          // pointer is coarse (the 'uikit' touch model); elsewhere the
+          // highlight stays as before (spec:AST-094 FR19, AST-017 FR59).
+          if (
+            effect.clear === true &&
+            optionsRef.current.touchModel === 'uikit'
+          ) {
             highlight(null);
           }
           endGesture();
@@ -743,8 +749,8 @@ export function useDropdownMenuPress(
   );
 
   const step = useCallback(
-    (event: MenuPressEvent<HTMLElement>, native?: PointerEvent) => {
-      const result = menuPressStep(gestureRef.current, event);
+    (event: MenuPressInput<HTMLElement>, native?: PointerEvent) => {
+      const result = menuPressTransition(gestureRef.current, event);
       gestureRef.current = result.gesture;
       applyEffect(result.effect, result.gesture, native);
     },
