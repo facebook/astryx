@@ -6,8 +6,8 @@
  *   (the `cell` style of interactionOverlay.stylex.ts), the motion
  *   foundation's animator and Bézier solver (motion/), and the
  *   in-transition deselect clock and curve
- *   (motion/uikit/list.ts), resolved under the row's theme (resolveMotion),
- *   and the last input's modality (focusReturn.ts) for the focus it returns
+ *   (motion/uikit/list.ts, internal constants), and the last input's
+ *   modality (focusReturn.ts) for the focus it returns
  * @output Exports `holdSelection`, which keeps a tapped list row selected
  *   while a navigation covers it and deselects it as the navigation pops
  *   (`SelectionHold`), plus its timing types
@@ -32,12 +32,11 @@
  * highlight is at a time from the curve itself, so a finger landing
  * mid-animation starts from the value on screen.
  *
- * The deselect's clock and curve are motion roles (`list.deselect`): a theme
- * that retunes them retunes the in-transition deselect, read under the row's
- * theme when each deselect starts. Under reduced motion every deselect that
- * `animate` plays takes the animator's own Reduced Motion handling
- * (`design:reduced-motion`): no spring, opacity only, 200 ms or less under a
- * finger; the hold has no option to keep its curve.
+ * The deselect's clock and curve are the list table's internal constants
+ * (`list.deselect`): no theme variable reaches them. Under reduced motion
+ * every deselect that `animate` plays takes the animator's own Reduced
+ * Motion handling (`design:reduced-motion`): no spring, opacity only, 200 ms
+ * or less under a finger; the hold has no option to keep its curve.
  *
  * Progress, as the navigation measures it: 0 = the pushed screen covers the
  * row, 1 = the row is revealed. Highlight = 1 − progress.
@@ -56,8 +55,7 @@ import {
   type MotionCurve,
 } from '../motion/animator';
 import {cubicBezier} from '../motion/bezier';
-import {resolveMotion} from '../motion/resolveMotion';
-import {list, registerListTable} from '../motion/uikit/list';
+import {list} from '../motion/uikit/list';
 import {focusForLastInput} from '../utils/focusReturn';
 import {
   CELL_PRESS_PROFILE,
@@ -88,8 +86,7 @@ interface StartTime {
 }
 
 /**
- * UIKit's in-transition deselect: `list.deselect`, 350 ms linear unless the
- * row's theme retunes it.
+ * UIKit's in-transition deselect: `list.deselect`, 350 ms linear.
  */
 export type HoldTransitionTiming = StartTime;
 
@@ -138,9 +135,8 @@ export interface SelectionHold {
   /**
    * Moves the deselect to `to` from its presentation value: 1 when the pop
    * completes, 0 when it cancels. With no spring or duration, UIKit's
-   * in-transition deselect (350 ms linear, or as the row's theme retunes
-   * it). Resolves true when it arrives, false when `setProgress`, another
-   * `animate` or `end` interrupts it.
+   * in-transition deselect (350 ms linear). Resolves true when it arrives,
+   * false when `setProgress`, another `animate` or `end` interrupts it.
    */
   animate(to: 0 | 1, timing?: HoldTiming): Promise<boolean>;
   /** The deselect's progress at `time` (default now), from its curve. */
@@ -266,8 +262,6 @@ export function holdSelection(
   ) {
     return null;
   }
-  // The deselect's clock and curve are the list table's roles.
-  registerListTable();
   // A new hold takes the row from any earlier one, even mid-deselect: it
   // starts fully held, so nothing marks the row deselecting and the
   // dividers beside it stay hidden.
@@ -346,12 +340,9 @@ export function holdSelection(
           : // The in-transition deselect covers the whole way in its clock;
             // a partial way (a pop started from a scrubbed value) takes its
             // share.
-            resolveMotion(row, list.deselect, 'navigationPopMs') *
-            Math.abs(target - from);
+            list.deselect.navigationPopMs * Math.abs(target - from);
       const points =
-        'curve' in timing
-          ? timing.curve
-          : resolveMotion(row, list.deselect.navigationPopCurve);
+        'curve' in timing ? timing.curve : list.deselect.navigationPopCurve;
       return motion.play(
         {opacity: bezierCurve(from, target, durationMs, points)},
         start,

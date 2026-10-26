@@ -22,6 +22,7 @@ import {
   rulesDeclaredFor,
   rulesWithSelector,
 } from '../__tests__/pressState';
+import {controlPressConsts} from './controlPressLayer.stylex';
 import {
   interactionOverlayStyles,
   pressConsts,
@@ -32,6 +33,7 @@ import {
   PRESS_PROFILES,
   PRESSABLE_ATTRIBUTE,
   PRESSED_ATTRIBUTE,
+  PRESS_INPUT_ATTRIBUTE,
   pressableProps,
 } from './pressFeedback';
 import {
@@ -335,27 +337,6 @@ describe('the release', () => {
     expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
   });
 
-  it('runs on the theme’s release clock when a theme retunes it', () => {
-    // AST-094 FR4: the release is the motion role
-    // `timing.press.highlightOutMs`; the stylesheet's fade plays the same
-    // role, so the attribute stays until that fade ends.
-    // Set on the row itself: a browser inherits a theme's variable down to
-    // it, which jsdom does not model.
-    const root = rows[0];
-    root.style.setProperty('--motion-timing-press-highlight-out-ms', '400ms');
-    try {
-      press(rows[0], 'pointerdown', 10, 10);
-      vi.advanceTimersByTime(PRESS_ONSET_MS);
-      press(rows[0], 'pointerup', 10, 10);
-      vi.advanceTimersByTime(PRESS_FADE_MS);
-      expect(rows[0].getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
-      vi.advanceTimersByTime(400 - PRESS_FADE_MS);
-      expect(rows[0].hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
-    } finally {
-      root.style.removeProperty('--motion-timing-press-highlight-out-ms');
-    }
-  });
-
   it('answers a tap too quick for the delay, at the release', () => {
     press(rows[0], 'pointerdown', 10, 10);
     vi.advanceTimersByTime(20);
@@ -460,6 +441,20 @@ describe('a phone or tablet paints a mouse or Space press itself', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("keeps a mouse or Space press on the fine pointer's 200 ms release, even on a control", () => {
+    const control = document.createElement('button');
+    control.setAttribute(PRESSABLE_ATTRIBUTE, '');
+    rows[1].appendChild(control);
+    press(control, 'pointerdown', 10, 100, 'mouse');
+    expect(control.getAttribute(PRESS_INPUT_ATTRIBUTE)).toBe('mouse');
+    press(control, 'pointerup', 10, 100, 'mouse');
+    expect(control.getAttribute(PRESSED_ATTRIBUTE)).toBe('fading');
+    vi.advanceTimersByTime(PRESS_FADE_MS);
+    expect(control.hasAttribute(PRESSED_ATTRIBUTE)).toBe(false);
+    expect(control.hasAttribute(PRESS_INPUT_ATTRIBUTE)).toBe(false);
+    control.remove();
   });
 
   it('paints a mouse press at once, holds it, and fades it at the release', () => {
@@ -877,11 +872,15 @@ describe('the release fades: the arms the controller writes to', () => {
   it("each profile's clock is the stylesheet's constant: one number each", () => {
     expect(PRESS_FADE_MS).toBe(pressConsts.releaseMs);
     expect(PRESS_PROFILES.cell.releaseMs).toBe(pressConsts.releaseMs);
-    expect(pressConsts.controlReleaseMs).toBe(button.highlight.releaseMs);
-    expect(pressConsts.controlReleaseEase).toBe(
+    expect(controlPressConsts.controlReleaseMs).toBe(
+      button.highlight.releaseMs,
+    );
+    expect(controlPressConsts.controlReleaseEase).toBe(
       `cubic-bezier(${button.highlight.releaseCurve.join(', ')})`,
     );
-    expect(PRESS_PROFILES.control.releaseMs).toBe(pressConsts.controlReleaseMs);
+    expect(PRESS_PROFILES.control.releaseMs).toBe(
+      controlPressConsts.controlReleaseMs,
+    );
     expect(hasReleaseFade(surface(interactionOverlayStyles.pressedAlpha))).toBe(
       true,
     );

@@ -12,7 +12,7 @@
  *   state; no Layout or Paint runs while it animates (Chromium trace); the
  *   engine plays the analytic curve when seeked; a finished animation leaves
  *   within a frame or two of the curve's end; a dialog's ::backdrop follows
- *   the curve and holds its end state; a theme that retunes a table spring
+ *   the curve and holds its end state; a role variable set on a scope
  *   changes the curve the engine plays
  * @position Browser proof for animator.ts, run by `pnpm test:interaction`;
  *   jsdom runs no animations
@@ -375,16 +375,17 @@ test('the engine plays the analytic curve, all channels on one clock', async ({
   expect(result.worstOpacity).toBeLessThan(0.003);
 });
 
-test('a theme that retunes a table spring changes the curve the engine plays', async ({
+test('a role variable set on a scope changes nothing while touch motion stays internal', async ({
   page,
 }) => {
-  // The theme writes the role's variable on its scope, as defineTheme's CSS
-  // does; the box outside the scope keeps the table's spring.
+  // A page's own style sets the role's variable on a scope; touch motion
+  // stays internal (spec:AST-094 DEC-11), so both boxes play the table's
+  // spring.
   const html = `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
   html, body { margin: 0; background: #fff; }
   .box { position: absolute; top: 40px; width: 48px; height: 48px; background: #36c; }
-  @scope ([data-astryx-theme="soft"]) { :scope { --motion-springs-sheet-present: 0.8s 0.3; } }
+  @scope ([data-astryx-theme="soft"]) { :scope { --motion-springs-settle: 0.8s 0.3; } }
 </style>
 <div class="box" id="plain" style="left: 0"></div>
 <div data-astryx-theme="soft"><div class="box" id="themed" style="left: 80px"></div></div>
@@ -394,39 +395,30 @@ test('a theme that retunes a table spring changes the curve the engine plays', a
   );
   await page.goto('http://motion.test/');
   const result = await page.evaluate(async () => {
-    // A theme retunes only a registered table's roles: register it as a
-    // touch module would, and fail loudly if the role is not there.
+    // Only a registered table's roles resolve: register it as a touch
+    // module would, and fail loudly if the role is not there.
     Motion.registerSpringsTable();
-    if (
-      Motion.motionRoleOf(Motion.springs.sheetPresent)?.id !==
-      'springs.sheetPresent'
-    ) {
+    if (Motion.motionRoleOf(Motion.springs.settle)?.id !== 'springs.settle') {
       throw new Error(
-        'springs.sheetPresent is not a registered role: call registerSpringsTable() first',
+        'springs.settle is not a registered role: call registerSpringsTable() first',
       );
     }
     const curves = {
-      plain: Motion.solveSpring(Motion.toSpring(Motion.springs.sheetPresent), {
+      plain: Motion.solveSpring(Motion.toSpring(Motion.springs.settle), {
         from: 300,
         to: 0,
       }),
-      themed: Motion.solveSpring(
-        Motion.toSpring({duration: 0.8, bounce: 0.3}),
-        {
-          from: 300,
-          to: 0,
-        },
-      ),
+      themed: Motion.solveSpring(Motion.toSpring(Motion.springs.settle), {
+        from: 300,
+        to: 0,
+      }),
     };
     const report: Record<string, {worst: number; lowest: number}> = {};
     for (const id of ['plain', 'themed'] as const) {
       const element = document.getElementById(id) as HTMLElement;
       const animator = Motion.createAnimator(element);
       animator.set({y: 300});
-      const handle = animator.animate(
-        {y: 0},
-        {spring: Motion.springs.sheetPresent},
-      );
+      const handle = animator.animate({y: 0}, {spring: Motion.springs.settle});
       await handle.started;
       const animations = element.getAnimations();
       for (const a of animations) {
@@ -451,12 +443,12 @@ test('a theme that retunes a table spring changes the curve the engine plays', a
     type: 'themed spring',
     description: JSON.stringify(result),
   });
-  // Each box plays its own spring: the themed one overshoots, the table's
-  // (critically damped) does not.
+  // Both boxes play the table's (critically damped) spring: neither
+  // overshoots.
   expect(result.plain.worst).toBeLessThan(0.06);
   expect(result.themed.worst).toBeLessThan(0.06);
-  expect(result.themed.lowest).toBeLessThan(-10);
   expect(result.plain.lowest).toBeGreaterThan(-0.5);
+  expect(result.themed.lowest).toBeGreaterThan(-0.5);
 });
 
 test('a finished animation leaves the element once the curve ends', async ({

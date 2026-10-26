@@ -64,6 +64,7 @@ import type {LinkComponentType} from '../Link/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {controlPressLayerStyles} from '../utils/controlPressLayer';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
 import type {ButtonVariantMap} from './index';
@@ -240,10 +241,22 @@ const variants = stylex.create({
   destructive: {
     backgroundColor: colorVars['--color-error'],
     color: colorVars['--color-on-error'],
+    // Forced colors replace the fill with ButtonFace; a border keeps the
+    // destructive fill's shape visible (architecture:theme-tokens INV11). A
+    // border, not an outline, leaves the shared focus ring intact.
+    borderWidth: {default: 0, '@media (forced-colors: active)': '1px'},
+    borderStyle: {default: 'none', '@media (forced-colors: active)': 'solid'},
+    borderColor: {
+      default: null,
+      '@media (forced-colors: active)': 'CanvasText',
+    },
     // The ring matches the variant it rings: an accent-colored outline on a
     // red button reads as another control's focus. Only the color differs —
     // width, style and offset come from the shared outline.
-    outlineColor: {default: null, ':focus-visible': colorVars['--color-error']},
+    outlineColor: {
+      default: null,
+      ':focus-visible': colorVars['--color-error'],
+    },
   },
 });
 
@@ -719,7 +732,7 @@ export function Button({
     interactionOverlayStyles.backgroundImage,
     // The press the controller writes, on a layer under the label whose
     // release runs on the compositor (UIButton's highlight release).
-    interactionOverlayStyles.control,
+    controlPressLayerStyles.control,
     buttonDisabled && styles.inactive,
     isTrueDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,

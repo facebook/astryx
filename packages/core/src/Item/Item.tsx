@@ -54,6 +54,8 @@ import {useDevWarning} from '../hooks/useDevWarning';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {cellPressableProps} from '../utils/pressFeedback';
+import {rowPressLayerStyles} from '../utils/rowPressLayer';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useInteractionModalityTracking} from '../utils/interactionModality';
 import type {ItemSwipeBridge} from './ItemSwipeLayer';
@@ -897,7 +899,7 @@ export function Item({
           // The touch press on a compositor layer (after the overlay, whose
           // own touch paint it turns off): the release keeps fading while
           // script runs.
-          isInteractive && interactionOverlayStyles.cell,
+          isInteractive && rowPressLayerStyles.cell,
           isLinkRoot && styles.linkRoot,
           isHighlighted && styles.highlighted,
           isSelected && styles.selected,
