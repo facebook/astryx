@@ -121,7 +121,8 @@ export function useCarouselPaging({
 
   /**
    * Gives the children within a viewport of the content on screen their own
-   * layers, and takes them from the rest.
+   * layers, and takes them from the rest. Rects are read in the track's own
+   * CSS pixels, as the pager reads them (an ancestor's `zoom` divided out).
    */
   function promote(): void {
     const viewport = scrollElRef.current;
@@ -130,13 +131,17 @@ export function useCarouselPaging({
       return;
     }
     const box = track.getBoundingClientRect();
+    const used = Number.parseFloat(getComputedStyle(track).width);
+    const scale = used > 0 && box.width > 0 ? box.width / used : 1;
     const rtl = isRtlElement(viewport);
     const width = viewport.clientWidth;
     const at = pager.presentation();
     for (const child of Array.from(track.children)) {
       const rect = child.getBoundingClientRect();
-      const start = rtl ? box.right - rect.right : rect.left - box.left;
-      const isNear = start + rect.width > at - width && start < at + 2 * width;
+      const start =
+        (rtl ? box.right - rect.right : rect.left - box.left) / scale;
+      const end = start + rect.width / scale;
+      const isNear = end > at - width && start < at + 2 * width;
       (child as HTMLElement).style.setProperty(
         'will-change',
         isNear ? 'transform' : '',
