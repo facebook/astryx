@@ -251,7 +251,7 @@ describe('ComplexSelector + TransferList composition', () => {
     ).toEqual(['Owner', 'Name']);
   });
 
-  it('lets Escape cancel an active reorder without closing the selector', async () => {
+  it('lets Escape end reorder mode without closing the selector', async () => {
     const user = userEvent.setup();
     const onCommit = vi.fn();
     render(<StagedColumnSelector onCommit={onCommit} />);
@@ -272,18 +272,18 @@ describe('ComplexSelector + TransferList composition', () => {
       ...hidden,
     });
     reorder.focus();
-    // Picked up and moved a place: nothing changes until the drop.
+    // In reorder mode, a move changes the draft at once.
     await user.keyboard('{Enter}{ArrowDown}');
     expect(screen.getByTestId('draft-value')).toHaveTextContent(
-      '["name","status"]',
+      '["status","name"]',
     );
-    expect(reorder.closest('ul')).toHaveAttribute('data-astryx-reordering');
+    expect(reorder).toHaveAttribute('aria-pressed', 'true');
 
+    // Escape ends the mode, keeping the move, and leaves the selector open.
     await user.keyboard('{Escape}');
-    expect(reorder.closest('ul')).not.toHaveAttribute('data-astryx-reordering');
-
+    expect(reorder).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByTestId('draft-value')).toHaveTextContent(
-      '["name","status"]',
+      '["status","name"]',
     );
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
     expect(onCommit).not.toHaveBeenCalled();

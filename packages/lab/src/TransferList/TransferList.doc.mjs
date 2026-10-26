@@ -122,7 +122,7 @@ export const docs = {
       name: 'isReorderable',
       type: 'boolean',
       description:
-        "Gives every selected option a reorder handle at the end of its row (core's createReorderable on the selected List): on a touch screen hold the handle for a moment, then drag; a mouse drags at once; a tap or click on a handle opens Move before and Move after; from the keyboard, Space or Enter picks the focused handle's row up, the arrow keys, Home and End move it, Space or Enter drops it and Escape puts it back. Per-option isReorderDisabled removes the handle; at either end of the selected list such a row also keeps the others from moving past it. Reordering pauses while a search filters the panel.",
+        "Gives every selected option a reorder handle at the end of its row (core's createReorderable on the selected List): on a touch screen hold the handle for a moment, then drag; a mouse drags at once; a tap, a click, Space or Enter on a handle turns on reorder mode for its row, in which each arrow key (or each move in the hint below the handle) moves it a place and changes the value at once, and Escape, Done or another activation ends the mode, keeping the moves. Per-option isReorderDisabled removes the handle; at either end of the selected list such a row also keeps the others from moving past it. Reordering pauses while a search filters the panel.",
       default: 'true',
     },
     {

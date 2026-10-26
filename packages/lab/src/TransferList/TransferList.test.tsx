@@ -528,14 +528,14 @@ describe('TransferList', () => {
         />,
       );
       screen.getByRole('button', {name: 'Reorder Owner'}).focus();
-      await user.keyboard(' {ArrowDown} ');
+      await user.keyboard(' {ArrowDown}{Escape}');
       expect(onValueChange).toHaveBeenLastCalledWith([
         'name',
         'retired',
         'status',
         'owner',
       ]);
-      await user.keyboard(' {Home} ');
+      await user.keyboard(' {ArrowUp}{ArrowUp}{Escape}');
       // The value without an option keeps its own slot.
       expect(onValueChange).toHaveBeenLastCalledWith([
         'owner',
@@ -554,21 +554,32 @@ describe('TransferList', () => {
           onValueChange={onValueChange}
         />,
       );
-      // Space, Home, Escape on Owner: picked up, moved, put back. Nothing
-      // changes.
+      // Owner up a place, then back down.
       screen.getByRole('button', {name: 'Reorder Owner'}).focus();
-      await user.keyboard(' {Home}{Escape}');
-      expect(onValueChange).not.toHaveBeenCalled();
-      // Name down a place, then back up.
-      screen.getByRole('button', {name: 'Reorder Name'}).focus();
-      await user.keyboard(' {ArrowDown} ');
+      await user.keyboard(' {ArrowUp}');
       expect(onValueChange).toHaveBeenLastCalledWith([
         'owner',
         'retired',
         'name',
         'status',
       ]);
-      await user.keyboard(' {ArrowUp} ');
+      await user.keyboard('{ArrowDown}{Escape}');
+      expect(onValueChange).toHaveBeenLastCalledWith([
+        'name',
+        'retired',
+        'owner',
+        'status',
+      ]);
+      // Name down a place, then back up.
+      screen.getByRole('button', {name: 'Reorder Name'}).focus();
+      await user.keyboard(' {ArrowDown}');
+      expect(onValueChange).toHaveBeenLastCalledWith([
+        'owner',
+        'retired',
+        'name',
+        'status',
+      ]);
+      await user.keyboard('{ArrowUp}{Escape}');
       expect(onValueChange).toHaveBeenLastCalledWith([
         'name',
         'retired',
@@ -579,32 +590,37 @@ describe('TransferList', () => {
   });
 
   describe('keyboard reordering', () => {
-    it('moves a picked-up value without a change, and changes once at the drop, keeping handle focus', async () => {
-      const user = userEvent.setup();
-      const onValueChange = vi.fn();
-      render(
-        <ControlledTransferList
-          initialValue={['name', 'owner', 'status']}
-          onValueChange={onValueChange}
-        />,
-      );
+    it.each([
+      ['Enter', '{Enter}'],
+      ['Space', ' '],
+    ])(
+      'turns on reorder mode with %s: each arrow changes the value once, keeping handle focus',
+      async (_, press) => {
+        const user = userEvent.setup();
+        const onValueChange = vi.fn();
+        render(
+          <ControlledTransferList
+            initialValue={['name', 'owner', 'status']}
+            onValueChange={onValueChange}
+          />,
+        );
 
-      const handle = screen.getByRole('button', {name: 'Reorder Owner'});
-      handle.focus();
-      await user.keyboard('{Enter}{ArrowUp}');
-      expect(onValueChange).not.toHaveBeenCalled();
+        const handle = screen.getByRole('button', {name: 'Reorder Owner'});
+        handle.focus();
+        await user.keyboard(press);
+        expect(handle).toHaveAttribute('aria-pressed', 'true');
+        await user.keyboard('{ArrowUp}');
+        expect(onValueChange).toHaveBeenCalledTimes(1);
+        expect(onValueChange).toHaveBeenLastCalledWith([
+          'owner',
+          'name',
+          'status',
+        ]);
+        expect(handle).toHaveFocus();
+      },
+    );
 
-      await user.keyboard('{Enter}');
-      expect(onValueChange).toHaveBeenCalledTimes(1);
-      expect(onValueChange).toHaveBeenLastCalledWith([
-        'owner',
-        'name',
-        'status',
-      ]);
-      expect(handle).toHaveFocus();
-    });
-
-    it('supports Home and End while a value is grabbed', async () => {
+    it('changes the value once per move', async () => {
       const user = userEvent.setup();
       const onValueChange = vi.fn();
       render(
@@ -616,26 +632,25 @@ describe('TransferList', () => {
 
       const handle = screen.getByRole('button', {name: 'Reorder Owner'});
       handle.focus();
-      await user.keyboard(' {End} ');
-      await user.keyboard(' {Home} ');
+      await user.keyboard(' {ArrowDown}{ArrowDown}');
 
       expect(onValueChange).toHaveBeenNthCalledWith(1, [
         'name',
         'status',
-        'updated',
         'owner',
+        'updated',
       ]);
       expect(onValueChange).toHaveBeenNthCalledWith(2, [
-        'owner',
         'name',
         'status',
         'updated',
+        'owner',
       ]);
       expect(onValueChange).toHaveBeenCalledTimes(2);
       expect(handle).toHaveFocus();
     });
 
-    it('restores the original order when a grabbed move is cancelled', async () => {
+    it('keeps the moves when Escape ends reorder mode', async () => {
       const user = userEvent.setup();
       const onValueChange = vi.fn();
       render(
@@ -649,7 +664,13 @@ describe('TransferList', () => {
       handle.focus();
       await user.keyboard('{Enter}{ArrowDown}{Escape}');
 
-      expect(onValueChange).not.toHaveBeenCalled();
+      expect(handle).toHaveAttribute('aria-pressed', 'false');
+      expect(onValueChange).toHaveBeenCalledTimes(1);
+      expect(onValueChange).toHaveBeenLastCalledWith([
+        'name',
+        'status',
+        'owner',
+      ]);
       expect(handle).toHaveFocus();
     });
 
@@ -667,13 +688,13 @@ describe('TransferList', () => {
       // Owner leads the list: nothing goes before it.
       const name = screen.getByRole('button', {name: 'Reorder Name'});
       name.focus();
-      await user.keyboard('{Enter}{ArrowUp}{Enter}');
+      await user.keyboard('{Enter}{ArrowUp}{Escape}');
       expect(onValueChange).not.toHaveBeenCalled();
 
       const updated = screen.getByRole('button', {name: 'Reorder Updated'});
       updated.focus();
-      await user.keyboard('{Enter}{Home}{ArrowUp}{Enter}');
-      expect(onValueChange).toHaveBeenCalledTimes(1);
+      await user.keyboard('{Enter}{ArrowUp}{ArrowUp}{ArrowUp}{Escape}');
+      expect(onValueChange).toHaveBeenCalledTimes(2);
       expect(onValueChange).toHaveBeenLastCalledWith([
         'owner',
         'updated',
@@ -693,7 +714,7 @@ describe('TransferList', () => {
         />,
       );
       screen.getByRole('button', {name: 'Reorder Name'}).focus();
-      await user.keyboard('{Enter}{ArrowDown}{Enter}');
+      await user.keyboard('{Enter}{ArrowDown}{Escape}');
       expect(onValueChange).toHaveBeenLastCalledWith([
         'owner',
         'name',
