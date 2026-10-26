@@ -195,7 +195,9 @@ remain documented in `BottomSheet.doc.mjs`.
 ### Transformation and precedence order
 
 - Content area inset: the `padding` prop, then the theme's `padding` properties
-  on `bottom-sheet`, then `--spacing-4` on every logical edge.
+  on `bottom-sheet`, then `--spacing-4` on every logical edge. At rest the
+  block-start inset is never less than the grab bar's height (`--spacing-6`),
+  so the first row starts below the bar; scrolled content still passes under it.
 - Stack order: open order, then tree order for sheets opening in one update
   (FR5). A sheet that closes and reopens takes a new place on top.
 - Native top-layer order is derived from the stack order, not trusted: where

@@ -247,10 +247,9 @@ const styles = stylex.create({
     // change width partway down. Painting the surface here hides the ring
     // evenly, leaving the border below as the sheet's one edge.
     backgroundColor: colorVars['--color-background-surface'],
-    // No reserve for the handle bar: it floats, so the content starts at the
-    // sheet's top edge and rides up under the pill. The pill is 4px centered
-    // in a 24px band, so it occupies only 10-14px from the edge -- inside the
-    // space a content wrapper's own top padding already provides.
+    // No reserve for the handle bar here: it floats over the scrolling area,
+    // so scrolled content rides up under the pill. The content box keeps the
+    // resting content clear of the bar instead (`clearsGrabBar`).
     paddingBlockEnd: 0,
   },
   content: {
@@ -263,6 +262,13 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     height: '100%',
     minHeight: 'min-content',
+  },
+  // At rest the content starts below the grab bar whatever the padding, so
+  // the first row never sits under the bar's fade (component:BottomSheet's
+  // Content area inset). The inset is the content box's own padding, so it
+  // scrolls away with the content, which then passes under the bar.
+  clearsGrabBar: {
+    paddingBlockStart: `max(var(--container-padding-block-start, 0px), ${HANDLE_BAR_HEIGHT})`,
   },
   tallKeyboardBody: {
     scrollPaddingBlockEnd: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
@@ -809,6 +815,7 @@ export function BottomSheetPanel({
                 !usesThemePadding &&
                   effectivePadding !== 4 &&
                   containerPaddingBlockEndVarStyles[effectivePadding],
+                styles.clearsGrabBar,
               ),
             ),
           )}>

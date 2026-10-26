@@ -414,6 +414,14 @@ describe('BottomSheetPanel', () => {
       ['block-start', 'padding-top'],
       ['block-end', 'padding-bottom'],
     ] as const;
+    // The applied block-start inset never drops below the grab bar's height,
+    // so resting content starts below the bar (component:BottomSheet, Content
+    // area inset); the published value stays the padding, so a child that
+    // bleeds into it escapes only the padding and also starts below the bar.
+    const appliedAt = (edge: string, published: string) =>
+      edge === 'block-start'
+        ? `max(${published}, var(--spacing-6))`
+        : published;
 
     function renderWithPadding(padding?: 0 | 2) {
       render(
@@ -446,8 +454,16 @@ describe('BottomSheetPanel', () => {
         );
         // Applied padding reads the published value, so bleed children
         // subtract exactly the inset they sit in.
-        expect(computed.getPropertyValue(property), edge).toBe(
-          `var(--container-padding-${edge})`,
+        expect(
+          computed.getPropertyValue(property).replace(/\s+/g, ''),
+          edge,
+        ).toBe(
+          appliedAt(
+            edge,
+            edge === 'block-start'
+              ? 'var(--container-padding-block-start, 0px)'
+              : `var(--container-padding-${edge})`,
+          ).replace(/\s+/g, ''),
         );
       }
       for (const name of [
@@ -473,7 +489,15 @@ describe('BottomSheetPanel', () => {
             computed.getPropertyValue(`--container-padding-${edge}`),
             edge,
           ).toBe(expected);
-          expect(computed.getPropertyValue(property), edge).toBe(expected);
+          expect(
+            computed.getPropertyValue(property).replace(/\s+/g, ''),
+            edge,
+          ).toBe(
+            (edge === 'block-start'
+              ? appliedAt(edge, 'var(--container-padding-block-start, 0px)')
+              : expected
+            ).replace(/\s+/g, ''),
+          );
         }
         expect(computed.getPropertyValue('--layout-padding-inner-x')).toBe(
           expected,
