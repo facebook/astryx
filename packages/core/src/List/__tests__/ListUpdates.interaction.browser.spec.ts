@@ -666,10 +666,17 @@ test('a row swiped away with a removal action collapses in place: the rows below
   // Drafts' translate every frame from the frame Sent leaves the page.
   await page.evaluate(() => {
     const rows = [...document.querySelectorAll('#storybook-root li')];
-    const sentRow = rows.find(li => li.textContent?.trim() === 'Sent');
-    const target = rows.find(
-      li => li.textContent?.trim() === 'Drafts',
-    ) as HTMLElement;
+    // A row's own text: its swipe panels' action labels aside, since the
+    // panels may already be in the row.
+    const labelOf = (li: Element) => {
+      const copy = li.cloneNode(true) as Element;
+      for (const panel of copy.querySelectorAll('[data-swipe-panel]')) {
+        panel.remove();
+      }
+      return copy.textContent?.trim();
+    };
+    const sentRow = rows.find(li => labelOf(li) === 'Sent');
+    const target = rows.find(li => labelOf(li) === 'Drafts') as HTMLElement;
     const samples: number[] = [];
     (window as unknown as {__ys: number[]}).__ys = samples;
     const tick = () => {
@@ -688,8 +695,7 @@ test('a row swiped away with a removal action collapses in place: the rows below
     };
     requestAnimationFrame(tick);
   });
-  // The gesture arrives with the lazily loaded swipe layer; its panel is the
-  // sign the row can be dragged.
+  // The swipe panel is the sign the row can be dragged.
   await expect(sent.locator('[data-swipe-panel="trailing"]')).toBeAttached();
   // Toward the inline start, most of the row's width: the full swipe fires
   // the outermost entry, Delete, whose removal holds the row out until the
