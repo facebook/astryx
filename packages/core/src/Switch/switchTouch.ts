@@ -158,8 +158,8 @@ export function commitOnRelease(
 /**
  * When the lifted thumb may settle, on the document timeline (ms): at the
  * release, but never sooner than the minimum lift time after the lift began.
- * That time is a motion role: a caller passes the theme's value
- * (resolveMotion), the table's by default.
+ * A caller may pass the minimum it plays; the table's measured one by
+ * default.
  */
 export function settleTime(
   releaseTime: number,
