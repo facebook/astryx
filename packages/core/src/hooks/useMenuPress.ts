@@ -941,14 +941,43 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
   installRef.current = installTouchMovePreventer;
   const attachRef = useRef(attach);
   attachRef.current = attach;
+  const holdDetectorsRef = useRef<{
+    plain: UseLongPressHandlers;
+    scroller: UseLongPressHandlers;
+  } | null>(null);
   const [triggerContext] = useState<MenuTriggerContext>(() => ({
     optionsRef,
     gestureRef,
-    triggerGestureRef,
-    longPressApiRef,
-    holdKindRef,
-    lastPointerEventRef,
-    ignoredPointerIdRef,
+    setTriggerGesture: gesture => {
+      triggerGestureRef.current = gesture;
+    },
+    setHoldDetectors: detectors => {
+      holdDetectorsRef.current = detectors;
+      longPressApiRef.current =
+        holdKindRef.current === 'scroller'
+          ? detectors.scroller
+          : detectors.plain;
+    },
+    startHold: (kind, at) => {
+      holdKindRef.current = kind;
+      const detectors = holdDetectorsRef.current;
+      if (detectors == null) {
+        return;
+      }
+      const hold = kind === 'scroller' ? detectors.scroller : detectors.plain;
+      longPressApiRef.current = hold;
+      hold.start(at);
+    },
+    setLastPointerEvent: event => {
+      lastPointerEventRef.current = event;
+    },
+    takeIgnoredPointer: pointerId => {
+      if (pointerId !== ignoredPointerIdRef.current) {
+        return false;
+      }
+      ignoredPointerIdRef.current = null;
+      return true;
+    },
     installTouchMovePreventer: () => installRef.current(),
     step: (event, native) => stepRef.current(event, native),
     attach: pointerId => attachRef.current(pointerId),

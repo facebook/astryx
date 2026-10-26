@@ -18,7 +18,7 @@
  * SYNC: When modified, update useMenuPress.ts and useMenuPress.test.tsx.
  */
 
-import {useCallback, useMemo, useRef, type RefObject} from 'react';
+import {useCallback, useMemo, type RefObject} from 'react';
 import {currentGesture} from '../Layer/gestureCounter';
 import {createNativeScrollProbe} from '../gestures/nativeScroll';
 import type {
@@ -47,11 +47,27 @@ export interface MenuTriggerContext {
     touchModel?: 'pointer' | 'uikit';
   }>;
   readonly gestureRef: RefObject<MenuPressState<HTMLElement>>;
-  readonly triggerGestureRef: RefObject<number | null>;
-  readonly longPressApiRef: RefObject<UseLongPressHandlers | null>;
-  readonly holdKindRef: RefObject<'plain' | 'scroller'>;
-  readonly lastPointerEventRef: RefObject<PointerEvent | null>;
-  readonly ignoredPointerIdRef: RefObject<number | null>;
+  // The model's own state changes through these calls, never through a
+  // write to one of its refs: React Compiler reads a write through a hook
+  // argument as mutating it.
+  /** Marks the gesture whose long press opened the menu. */
+  readonly setTriggerGesture: (gesture: number | null) => void;
+  /**
+   * This render's two hold detectors, in a scroll view or not; the model
+   * keeps the one the live press uses.
+   */
+  readonly setHoldDetectors: (detectors: {
+    plain: UseLongPressHandlers;
+    scroller: UseLongPressHandlers;
+  }) => void;
+  /** Starts the live press's hold, in a scroll view or not, at a point. */
+  readonly startHold: (
+    kind: 'plain' | 'scroller',
+    at: {x: number; y: number},
+  ) => void;
+  readonly setLastPointerEvent: (event: PointerEvent) => void;
+  /** Whether the model ignores this pointer; a match is cleared. */
+  readonly takeIgnoredPointer: (pointerId: number) => boolean;
   readonly installTouchMovePreventer: () => void;
   readonly step: (
     event: MenuPressInput<HTMLElement>,
@@ -119,7 +135,7 @@ export function useMenuTriggerPress(
     if (gesture.phase !== 'triggerPress') {
       return;
     }
-    ctx.triggerGestureRef.current = currentGesture();
+    ctx.setTriggerGesture(currentGesture());
     const didOpen =
       ctx.optionsRef.current.onTriggerPress?.(gesture.pointerType) ?? false;
     if (!didOpen) {
@@ -152,16 +168,12 @@ export function useMenuTriggerPress(
     delayMs: isUikit ? DELAYS_CONTENT_TOUCHES_MS : pointerHoldMs,
     ...(isUikit ? {moveCancelPx: MENU_PRESS_HOLD_OPEN_SLOP_PX} : {}),
   });
-  const holdDetectorsRef = useRef({plain: plainHold, scroller: scrollerHold});
-  holdDetectorsRef.current = {plain: plainHold, scroller: scrollerHold};
-  ctx.longPressApiRef.current =
-    ctx.holdKindRef.current === 'scroller' ? scrollerHold : plainHold;
+  ctx.setHoldDetectors({plain: plainHold, scroller: scrollerHold});
 
   const handleTriggerPointerDown = useCallback(
     (event: React.PointerEvent<HTMLElement>) => {
       const {isEnabled = true} = ctx.optionsRef.current;
-      if (event.pointerId === ctx.ignoredPointerIdRef.current) {
-        ctx.ignoredPointerIdRef.current = null;
+      if (ctx.takeIgnoredPointer(event.pointerId)) {
         return;
       }
       if (!isEnabled || ctx.gestureRef.current.phase !== 'idle') {
@@ -196,20 +208,15 @@ export function useMenuTriggerPress(
         // menu.
         event.preventDefault();
         ctx.attach(native.pointerId);
-        ctx.lastPointerEventRef.current = native;
+        ctx.setLastPointerEvent(native);
         ctx.step(down, native);
         fireLongPress();
         return;
       }
       ctx.attach(native.pointerId);
-      ctx.lastPointerEventRef.current = native;
+      ctx.setLastPointerEvent(native);
       if (pointerType !== 'mouse') {
-        ctx.holdKindRef.current = inScrollView ? 'scroller' : 'plain';
-        ctx.longPressApiRef.current =
-          ctx.holdKindRef.current === 'scroller'
-            ? holdDetectorsRef.current.scroller
-            : holdDetectorsRef.current.plain;
-        ctx.longPressApiRef.current.start({
+        ctx.startHold(inScrollView ? 'scroller' : 'plain', {
           x: native.clientX,
           y: native.clientY,
         });
