@@ -7,7 +7,7 @@ source), the spring, decay, rubber-band and projection math UIKit uses, and a
 compositor animator that plays it. Nothing here is exported from the package
 entry point. Core's motion and gesture modules read the table by path;
 components read touch motion through its internal motion roles (`roles.ts`),
-so each keeps its measured value.
+so each keeps its measured value; no shipped component reads the roles yet.
 
 ## Files
 
@@ -21,7 +21,7 @@ so each keeps its measured value.
 | `uikit/gestures.ts`                              | Gesture recognizer thresholds, the velocity filter and haptic stand-ins, as `{value, unit}` entries (sources in JSDoc).                                              |
 | `uikit/pageControl.ts`                           | UIPageControl: indicator geometry, the control's height and width cap, default indicator alphas, the tap rule.                                                       |
 | `roles.ts`                                       | Motion roles: each spring, duration and curve of a registered table, named by its path, and its CSS variable.                                                        |
-| `resolveMotion.ts`                               | A role's value under an element's theme, read once when a motion starts.                                                                                             |
+| `resolveMotion.ts`                               | A role's value: its table value while touch motion stays internal (`spec:AST-094` DEC-11).                                                                           |
 | `MEASUREMENTS.md`                                | The UIKit reference captures each unconfirmed value still needs.                                                                                                     |
 | `spring.ts`                                      | Closed-form damped spring, every Apple parameterization, settling duration, a spring chasing a moving target.                                                        |
 | `decay.ts`                                       | UIScrollView's momentum coast.                                                                                                                                       |
@@ -43,9 +43,9 @@ The motion roles are the springs, durations and curves `spec:AST-094` FR4
 names for their use (`springs.settle`, `timing.stateChangeMs`,
 `timing.curves.move`, …): a shared table lists them when it registers
 (`roles`), and every other value, a component's measured spring included, is
-a plain constant. Touch motion stays internal: no public API sets a role. A
-role's value is carried by its CSS variable (`--motion-springs-settle`) on the
-element's scope, and an empty variable means the table's value. A table's
+a plain constant. Touch motion stays internal (`spec:AST-094` DEC-11): a role
+plays its table value, and nothing reads its CSS variable
+(`--motion-springs-settle`), so no page or theme style retunes it. A table's
 roles exist once its `register<Name>Table()` has run: the animator registers
 the Reduce Motion fade's curve, and code that plays the shared springs calls
 `registerSpringsTable()` before its first motion. The animator resolves each
@@ -62,12 +62,13 @@ import {solveSpringTowardRamp, toSpring} from '../motion/spring';
 import {resolveMotion} from '../motion/resolveMotion';
 import {registerSpringsTable, springs} from '../motion/uikit';
 
-// Once, so the springs follow the theme's roles:
+// Once, so the springs are registered as their roles:
 registerSpringsTable();
 
 const animator = createAnimator(sheet);
-// The animator plays a motion role as the theme sets it (spec:AST-094 FR4);
-// math on a spring reads the role with resolveMotion.
+// The animator plays a motion role (spec:AST-094 FR4), its table value while
+// touch motion stays internal (DEC-11); math on a spring reads the role with
+// resolveMotion.
 const spring = springs.settle;
 
 // A drag writes one style per frame and never renders:
@@ -208,8 +209,8 @@ Chromium and WebKit on the phone profile.
   end.
 - A dialog's `::backdrop` follows the curve when seeked and holds its end
   state.
-- A scope that sets `springs.settle`'s variable changes the curve the engine
-  plays for an element in it, and only there.
+- A scope that sets `springs.settle`'s variable changes nothing: touch motion
+  stays internal (DEC-11), so the engine plays the table's spring there too.
 
 ```
 pnpm test:interaction packages/core/src/motion
