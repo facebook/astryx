@@ -21,8 +21,9 @@
  * button, a card, a switch) is a UIControl: under a finger it highlights in
  * the frame the finger lands, unless a scroller sits above it, where it waits
  * UIScrollView's content-touch delay like everything else in a scroll view.
- * A cell (`cell`: a list or tree row) always waits that delay, because a
- * UIKit cell always sits in a scroll view. Both are cancelled by travel past
+ * A cell (`cell`: a list or tree row) waits that delay inside a scroll view
+ * and highlights at once outside one (`spec:AST-094` FR11), like a control.
+ * Both are cancelled by travel past
  * the slop or by the scroll that takes the touch, and both fade at the lift
  * on their profile's clock.
  *
@@ -73,6 +74,7 @@ import {
   PRESS_FADE_MS,
   PRESS_FLASH_MS,
   PRESS_ONSET_MS,
+  PRESS_SCROLL_BRAKE_MS,
   pressGestureStep,
 } from './pressGesture';
 import {controlPressConsts} from './controlPressLayer.stylex';
@@ -112,8 +114,8 @@ export const pressableProps: {readonly [PRESSABLE_ATTRIBUTE]: ''} = {
 export interface PressProfile {
   /**
    * When the highlight waits UIScrollView's content-touch delay
-   * (`PRESS_ONSET_MS`): only inside a scroller (a control), or always (a
-   * cell).
+   * (`PRESS_ONSET_MS`): only inside a scroller (a control and a cell,
+   * `spec:AST-094` FR11), or always.
    */
   readonly highlightDelay: 'inScrollers' | 'always';
   /** How long the release's exit runs, in ms: the attribute leaves after it. */
@@ -149,11 +151,8 @@ export const PRESS_PROFILES = {
     highlightDelay: 'inScrollers',
     releaseMs: controlPressConsts.controlReleaseMs,
   },
-  /** A table or collection cell: always inside a scroll view, so it waits. */
-  cell: {
-    highlightDelay: 'always',
-    releaseMs: PRESS_FADE_MS,
-  },
+  /** A table or collection cell: waits only inside a scroll view (FR11). */
+  cell: {highlightDelay: 'inScrollers', releaseMs: PRESS_FADE_MS},
 } as const satisfies Readonly<Record<string, PressProfile>>;
 
 export type PressProfileName = keyof typeof PRESS_PROFILES;
@@ -237,6 +236,11 @@ function isInsideScroller(element: Element): boolean {
       ) {
         return true;
       }
+      // A fixed box does not move with any scroller above it: a control in a
+      // fixed bar is outside them, however the page scrolls (FR11).
+      if (style.position === 'fixed') {
+        return false;
+      }
     }
     node =
       node.parentNode instanceof ShadowRoot
@@ -317,6 +321,21 @@ let holders = 0;
  * moved, or if it is the fling that finger left running.
  */
 let fling: Node | null = null;
+/*
+ * Where an engine has no `scrollend` (Safari 17 and 18), a fling ends once its
+ * scroll events stop for PRESS_SCROLL_BRAKE_MS, UIKit's measured brake window
+ * (a touch on a scroller that moved this recently brakes it): a decelerating
+ * scroller fires a scroll every frame, so that long without one means it has
+ * come to rest.
+ */
+let flingIdleTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Forget the fling, and the idle timer that stands in for its `scrollend`. */
+function clearFling(): void {
+  fling = null;
+  clearTimeout(flingIdleTimer);
+  flingIdleTimer = undefined;
+}
 /** Whether a finger is on the glass, and where the last one landed. */
 let touching = false;
 let lastTouchTarget: Node | null = null;
@@ -563,7 +582,7 @@ function surfaceAt(target: EventTarget | null): HTMLElement | null {
 function scrollerIsBraking(element: HTMLElement): boolean {
   if (fling != null && !fling.isConnected) {
     // The scroller left the document mid-fling: no `scrollend` will come.
-    fling = null;
+    clearFling();
   }
   return fling != null && fling.contains(element);
 }
@@ -849,14 +868,24 @@ function onScroll(event: Event): void {
   const scroller = event.target instanceof Node ? event.target : document;
   // A scroll counts as a finger's only if that finger is down inside THIS
   // scroller, or this is the fling it left running. Anything else is the
-  // program moving something, and must leave the brake unarmed. The fling is
-  // remembered only where `scrollend` will say when it stops.
+  // program moving something, and must leave the brake unarmed. The fling
+  // ends at its `scrollend`, or where there is none, once its scroll events
+  // stop for the brake window (PRESS_SCROLL_BRAKE_MS).
   const driven =
     (touching || fling === scroller) &&
     lastTouchTarget != null &&
     scroller.contains(lastTouchTarget);
-  if (driven && 'onscrollend' in window) {
+  if (driven) {
     fling = scroller;
+    if (!('onscrollend' in window)) {
+      clearTimeout(flingIdleTimer);
+      flingIdleTimer = setTimeout(() => {
+        if (fling === scroller) {
+          clearFling();
+          settle();
+        }
+      }, PRESS_SCROLL_BRAKE_MS);
+    }
   }
   const live = finger.live;
   if (live == null) {
@@ -879,7 +908,7 @@ function onScroll(event: Event): void {
 function onScrollEnd(event: Event): void {
   const scroller = event.target instanceof Node ? event.target : document;
   if (fling != null && scroller === fling) {
-    fling = null;
+    clearFling();
     settle();
   }
 }
@@ -955,7 +984,7 @@ function onVisibilityChange(): void {
     // A hidden page hears no lift and no `scrollend`: nothing is down or
     // flinging when it comes back.
     touching = false;
-    fling = null;
+    clearFling();
     finish(finger);
     finish(button);
   }
@@ -1093,7 +1122,7 @@ export function installPressFeedback(): () => void {
     finish(button);
     untrack();
     touching = false;
-    fling = null;
+    clearFling();
     lastTouchTarget = null;
   };
 }

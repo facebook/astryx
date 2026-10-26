@@ -31,8 +31,9 @@ import {VStack} from '@astryxdesign/core/Layout';
  * nothing; the browser taking the touch to scroll cancels it with no fade; a
  * tap shorter than the delay paints at the lift; the release fades over
  * 250 ms (UIButton's) under a coarse primary pointer. A cell (a list row)
- * waits 150 ms, is cancelled by 10 px of travel, and releases on the
- * deselect clock. A mouse keeps `:active` on a desktop.
+ * waits 150 ms inside a scroller and highlights at once outside one, is
+ * cancelled by 10 px of travel, and releases on the deselect clock. A mouse
+ * keeps `:active` on a desktop.
  */
 const meta: Meta = {
   title: 'Core/Press feedback (touch)',
@@ -41,7 +42,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          'The touch press model on every pressable surface. View with a coarse pointer (DevTools device toolbar, or a phone). Under a finger the bare `:active` arm is dropped and one document-level controller writes `data-astryx-press="on"` while a press is held and `data-astryx-press="fading"` for the release. A control highlights in the frame the finger lands (150 ms later inside a scroller) and releases over 250 ms; a cell (a list row) waits 150 ms, is cancelled by 10 px of travel, and releases on the deselect clock. A scroll claiming the touch cancels with no fade. A mouse keeps `:active` on a desktop. Scroll the list stories with a finger: nothing paints while the list moves.',
+          'The touch press model on every pressable surface. View with a coarse pointer (DevTools device toolbar, or a phone). Under a finger the bare `:active` arm is dropped and one document-level controller writes `data-astryx-press="on"` while a press is held and `data-astryx-press="fading"` for the release. A control highlights in the frame the finger lands (150 ms later inside a scroller) and releases over 250 ms; a cell (a list row) waits 150 ms inside a scroller and highlights at once outside one, is cancelled by 10 px of travel, and releases on the deselect clock. A scroll claiming the touch cancels with no fade. A mouse keeps `:active` on a desktop. Scroll the list stories with a finger: nothing paints while the list moves.',
       },
     },
   },
