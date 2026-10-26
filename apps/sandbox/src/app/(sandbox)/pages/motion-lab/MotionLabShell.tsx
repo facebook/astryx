@@ -144,7 +144,7 @@ export function MotionLabShell({children}: {children: ReactNode}) {
             <VStack gap={0}>
               {isNarrow && (
                 <div {...stylex.props(sx.narrowNav)}>
-                  <Collapsible trigger="Motion Lab pages">
+                  <Collapsible trigger="Motion Lab pages" defaultIsOpen={false}>
                     <LabNav />
                   </Collapsible>
                 </div>
