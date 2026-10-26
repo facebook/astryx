@@ -14,7 +14,7 @@
  */
 
 import {act, fireEvent, render, screen, within} from '@testing-library/react';
-import {Profiler} from 'react';
+import {Profiler, createRef} from 'react';
 import {
   afterAll,
   afterEach,
@@ -28,7 +28,7 @@ import {
 import {timing} from '../motion/uikit';
 import {colorVars, fontWeightVars} from '../theme/tokens.stylex';
 import {PickerWheel} from './PickerWheel';
-import type {WheelOption, WheelProps} from './wheelOptions';
+import type {WheelHandle, WheelOption, WheelProps} from './wheelOptions';
 import {WHEEL_ROW_PITCH, todayLook} from './wheelLook';
 
 const ROW = WHEEL_ROW_PITCH;
@@ -86,7 +86,9 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-function renderWheel(props: Partial<WheelProps> = {}) {
+function renderWheel(
+  props: Partial<WheelProps> & {ref?: WheelProps['ref']} = {},
+) {
   const onChange = vi.fn();
   const view = render(
     <PickerWheel
@@ -695,8 +697,9 @@ describe('PickerWheel — under reduced motion', () => {
     expect(onChange).toHaveBeenLastCalledWith(9);
   });
 
-  it('fades for a tap and a key', () => {
-    const {column, onChange} = renderWheel();
+  it('fades for a tap, a key and a spin, whatever spin it is asked for', async () => {
+    const ref = createRef<WheelHandle>();
+    const {column, onChange} = renderWheel({ref});
     const below = CENTRE + ROW;
     touch('touchstart', column, below);
     advance(60);
@@ -707,6 +710,16 @@ describe('PickerWheel — under reduced motion', () => {
     fireEvent.keyDown(column, {key: 'ArrowDown'});
     expect(onChange).toHaveBeenLastCalledWith(12);
     advance(FADE_MS);
+    let arrived: boolean | undefined;
+    act(() => {
+      void ref.current!.spinTo(15, {duration: 2}).then(value => {
+        arrived = value;
+      });
+    });
+    advance(FADE_MS);
+    await act(async () => {});
+    expect(arrived).toBe(true);
+    expect(onChange).toHaveBeenLastCalledWith(15);
     expectFadesOnly();
   });
 });
@@ -736,6 +749,36 @@ describe('PickerWheel — mechanics for its owners', () => {
     expect(onPointerDown).not.toHaveBeenCalled();
   });
 
+  it('spins to a row on request and commits it there', async () => {
+    const ref = createRef<WheelHandle>();
+    const {onChange} = renderWheel({ref});
+    let arrived: boolean | undefined;
+    act(() => {
+      void ref.current!.spinTo(15).then(value => {
+        arrived = value;
+      });
+    });
+    advance(310);
+    await act(async () => {});
+    expect(arrived).toBe(true);
+    expect(onChange).toHaveBeenCalledWith(15);
+  });
+
+  it('reports a spin a finger interrupted', async () => {
+    const ref = createRef<WheelHandle>();
+    const {column} = renderWheel({ref});
+    let arrived: boolean | undefined;
+    act(() => {
+      void ref.current!.spinTo(15).then(value => {
+        arrived = value;
+      });
+    });
+    advance(100);
+    touch('touchstart', column, 100);
+    await act(async () => {});
+    expect(arrived).toBe(false);
+  });
+
   it('loops: the first row follows the last', () => {
     const {column, option, onChange} = renderWheel({
       options: MINUTES,
@@ -747,6 +790,51 @@ describe('PickerWheel — mechanics for its owners', () => {
     expect(distanceOf(option('00'))).toBeCloseTo(ROW, 2);
     fireEvent.keyDown(column, {key: 'ArrowDown'});
     expect(onChange).toHaveBeenLastCalledWith(0);
+  });
+
+  it('rests where its owner’s rule says', () => {
+    // Only even hours: an odd rest moves on to the next even hour.
+    const {column, onChange} = renderWheel({
+      options: HOURS.map(option => ({...option, isDisabled: false})),
+      resolveRest: index => (index % 2 === 0 ? index : index + 1),
+    });
+    drag(column, 150, 100, {steps: 25, interval: 40, hold: 300});
+    advance(2000);
+    expect(onChange).toHaveBeenLastCalledWith(12);
+  });
+
+  it('keeps a spin going when its owner re-renders the rows mid-turn', async () => {
+    const ref = createRef<WheelHandle>();
+    const {rerender, onChange} = renderWheel({
+      ref,
+      options: MINUTES,
+      value: 15,
+      label: 'Minute',
+    });
+    let arrived: boolean | undefined;
+    act(() => {
+      void ref.current!.spinTo(30).then(value => {
+        arrived = value;
+      });
+    });
+    advance(100);
+    // The owner commits a time on its bound: the minutes before 30 are
+    // disabled now. The same row nodes come back, so the turn goes on.
+    rerender(
+      <PickerWheel
+        ref={ref}
+        label="Minute"
+        options={MINUTES.map(option => ({
+          ...option,
+          isDisabled: option.value < 30,
+        }))}
+        value={30}
+        onChange={onChange}
+      />,
+    );
+    advance(250);
+    await act(async () => {});
+    expect(arrived).toBe(true);
   });
 
   it('keeps coasting when its owner hands it a copy of the same rows', () => {
