@@ -408,7 +408,7 @@ describe('the selection tick', () => {
   });
 });
 
-describe('the bounce spring a theme resolved', () => {
+describe('the bounce spring it is handed', () => {
   it('returns from past an end on the spring it is handed', () => {
     const layout: WheelLayout = {rowHeight: 32, rowCount: 60};
     const table = planRelease(-60, 0, layout);
@@ -419,9 +419,8 @@ describe('the bounce spring a theme resolved', () => {
     expect(stiff.curve.duration).toBeLessThan(table.curve.duration);
   });
 
-  // A theme may set an undamped scroll.bounce (bounce 1, or a physical
-  // spring with no damping): it never settles, and a plan that never ends
-  // cannot be baked. It snaps onto its end at the animator's limit, as the
+  // An undamped bounce spring (bounce 1, or a physical spring with no
+  // damping) never settles, and a plan that never ends cannot be baked. It snaps onto its end at the animator's limit, as the
   // animator's own motion does.
   it('ends a plan whose bounce never settles at the animator limit', () => {
     const springs = [

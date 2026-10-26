@@ -6,10 +6,13 @@
  * @output Checks the table's values through the math that plays them: every
  *   spring is valid and settles; the alert spring is UIKit's legacy
  *   derivation; a sheet's detent and presentation springs render alike;
- *   scroll-to-top and the rubber band reproduce what UIKit was measured doing
+ *   scroll-to-top and the rubber band reproduce what UIKit was measured doing;
+ *   the press release curve is the press model's
  * @position Testing; the source rules are uikit.test.ts
  */
 
+import {readFileSync} from 'node:fs';
+import {join} from 'node:path';
 import {describe, expect, it} from 'vitest';
 import {cubicBezier} from '../bezier';
 import {solveDecay} from '../decay';
@@ -23,8 +26,9 @@ import {
   toSpring,
   type SpringDescription,
 } from '../spring';
-import {listMotionRoles, motionRoleIn, motionRoleOf} from '../roles';
-import {datePicker, registerDatePickerTable, scroll, springs} from '.';
+import {scroll, springs} from '.';
+import {datePicker} from './datePicker';
+import {press} from './timing';
 
 describe('UIKit constants table through the motion math', () => {
   const springEntries: [string, SpringDescription][] = [
@@ -108,47 +112,6 @@ describe('UIKit constants table through the motion math', () => {
     expect(datePicker.compact.dismiss).toEqual(springs.menuClose);
   });
 
-  it('registers the date picker\u2019s played motion as roles, and only that', () => {
-    // Nothing registers on import; the touch module calls this.
-    expect(motionRoleOf(datePicker.wheels.columnTurn.curve)).toBeUndefined();
-    registerDatePickerTable();
-    registerDatePickerTable();
-    // The toggle's fades (TouchDateField, TouchDateTimeField) and the column
-    // turn (TimeWheels, MonthYearWheels) are played; the rest waits.
-    expect(
-      motionRoleIn(datePicker.calendar.monthYearToggle, 'fadeMs')?.variable,
-    ).toBe('--motion-date-picker-calendar-month-year-toggle-fade-ms');
-    expect(motionRoleIn(datePicker.wheels.columnTurn, 'durationMs')?.kind).toBe(
-      'duration',
-    );
-    expect(motionRoleOf(datePicker.wheels.columnTurn.curve)?.variable).toBe(
-      '--motion-date-picker-wheels-column-turn-curve',
-    );
-    // Motion no component plays yet is not offered to themes.
-    expect(
-      motionRoleOf(datePicker.calendar.selection.programmaticSpring),
-    ).toBeUndefined();
-    expect(motionRoleOf(datePicker.compact.present)).toBeUndefined();
-    expect(motionRoleOf(datePicker.compact.dismiss)).toBeUndefined();
-    expect(motionRoleIn(datePicker.compact, 'labelDimMs')).toBeUndefined();
-    // The rules are not motion.
-    expect(
-      motionRoleIn(datePicker.calendar.monthYearToggle, 'chevronTurnDegrees'),
-    ).toBeUndefined();
-    expect(
-      motionRoleIn(datePicker.wheels, 'minuteIntervalMax'),
-    ).toBeUndefined();
-    expect(
-      listMotionRoles()
-        .map(role => role.id)
-        .filter(id => id.startsWith('datePicker.')),
-    ).toEqual([
-      'datePicker.calendar.monthYearToggle.fadeMs',
-      'datePicker.wheels.columnTurn.curve',
-      'datePicker.wheels.columnTurn.durationMs',
-    ]);
-  });
-
   it('a column the date picker turns itself moves on the sinusoid of an animated setContentOffset, within 0.2 %', () => {
     const ease = cubicBezier(datePicker.wheels.columnTurn.curve);
     for (let i = 0; i <= 100; i++) {
@@ -157,5 +120,18 @@ describe('UIKit constants table through the motion math', () => {
         Math.abs(ease(t) - (0.5 - 0.5 * Math.cos(Math.PI * t))),
       ).toBeLessThan(0.002);
     }
+  });
+
+  it('the press release curve is the press model\u2019s RELEASE_EASE', () => {
+    // The table records the curve the touch press model ships with; this pins
+    // the two together so neither drifts alone.
+    const source = readFileSync(
+      join(__dirname, '../../utils/interactionOverlay.stylex.ts'),
+      'utf8',
+    );
+    const match = /const RELEASE_EASE = 'cubic-bezier\(([^)]*)\)'/.exec(source);
+    expect(match?.[1].split(',').map(Number)).toEqual([
+      ...press.highlightOutCurve,
+    ]);
   });
 });

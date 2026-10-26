@@ -7,8 +7,7 @@
  *   calendar (day selection, month paging and its chevrons, the month/year
  *   toggle and its wheels) and the date and time wheels' rules (the AM/PM
  *   column following the hour, looping columns, the bounds, the minute
- *   interval); and `registerDatePickerTable`, which makes its motion the
- *   `datePicker` motion table
+ *   interval)
  * @position The date picker domain of the UIKit constants table
  *   (motion/uikit); read by the DateInput, DateTimeInput and TimeInput touch
  *   surfaces
@@ -30,21 +29,14 @@
  * the animations UIKit attached, the gesture recognizers' states and the
  * `valueChanged` events, Oct 23 2026.
  *
- * The motion a component plays from it is a motion role a theme may retune
- * (motion/roles.ts): `datePicker.calendar.monthYearToggle.fadeMs` (the
- * month/year toggle's fades) and `datePicker.wheels.columnTurn.durationMs` and
- * `.curve` (a column the picker turns itself). The selection spring and the
- * compact popover's springs and label dim join when a component plays them.
- * The rules (booleans, names, counts, angles) are not motion, and the roles'
- * kinds leave them out.
+ * Every value here is an internal constant the touch surfaces read directly:
+ * none is a motion role (`spec:AST-094` FR4), so nothing here is a theme's to
+ * retune.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/motion/MEASUREMENTS.md (measurement tasks)
  * - /packages/core/src/motion/README.md (the table's file list)
- * - /packages/cli/assets/docs/motion.doc.mjs (`pnpm generate:motion-roles`)
  */
-
-import {registerMotionTable} from '../roles';
 
 export const datePicker = {
   calendar: {
@@ -314,22 +306,3 @@ export const datePicker = {
     yearAndMonthMonthLoops: false,
   },
 } as const;
-
-/**
- * Makes the motion the date pickers play a motion role a theme may retune
- * (motion/roles.ts). The rest waits for a component to play it, so a theme
- * author is never offered a value that changes nothing. Nothing registers on
- * import: the date pickers' touch module calls it once before its first
- * animation (it is idempotent), so a page that never shows a touch picker
- * ships no registry.
- */
-export function registerDatePickerTable(): void {
-  registerMotionTable('datePicker', datePicker, {
-    exclude: [
-      'calendar.selection.programmaticSpring',
-      'compact.present',
-      'compact.dismiss',
-      'compact.labelDimMs',
-    ],
-  });
-}

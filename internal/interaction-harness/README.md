@@ -49,8 +49,8 @@ committed: a pull request links or attaches it.
 | `scripts.ts`    | Touch scripts as data: `tap`, `drag` (hold, rest), `flick` (exact final-move speed, velocity profiles), `holdThenDrag`, `pinch`, `rotate`, `path`, `merge` (a second finger mid-gesture), `releaseVelocity`, `toTouchEvents`. |
 | `touch.ts`      | `touchDriver(page).play(script)`: the script as real engine input. `installInputLog` / `readInputLog`: what the page received.                                                                                                |
 | `frames.ts`     | `startScreencast` (timestamped composited frames), `markElement` (a marker chip or outline), `trackMarker` (marker box per frame), `sampleRects` (per-rAF rects), `frameStats`.                                               |
-| `busy.ts`       | `blockMainThread(page, ms)` and `busyWindowProof(tracked, window)`: frames presented, frames that moved, longest stall, and a verdict.                                                                                        |
-| `trace.ts`      | `traceRendering(page, body)`: main-thread Layout / Paint / UpdateLayoutTree / PrePaint counts, `countBetween` for a sub-window, long tasks. `installLongTaskLog` / `readLongTasks`.                                           |
+| `busy.ts`       | `blockMainThread(page, ms)` and `busyWindowProof(tracked, window)`: frames presented, frames that moved, longest stall, a verdict; `presented` adds the compositor's own frames.                                              |
+| `trace.ts`      | `traceRendering(page, body)`: main-thread Layout / Paint / UpdateLayoutTree / PrePaint counts, `countBetween`, long tasks; `installLongTaskLog` / `readLongTasks`; `startCompositorTrace`: when the compositor presents.      |
 | `curves.ts`     | `holdAnimations`, `seekAnimations`, `sampleCurve` (presented transform / opacity at any t), `waitForAnimation`, `watchAnimations`, `waitForRest`, `releaseAnimations`.                                                        |
 | `math.ts`       | Oracles independent of the code under test: `cubicBezier`, `timingFunction`, `springStep` (SwiftUI response / dampingFraction, initial velocity), `projectDecay`, `rubberBand`, `parseTransform`, `compareCurve`, `timeline`. |
 | `storyboard.ts` | `animationStoryboard` (seek to t = 0, 16.7, 33.3 … ms), `touchStoryboard` (a frame per scripted event), `castStoryboard` (real screencast frames): PNG contact sheet + JSON trace.                                            |
@@ -131,6 +131,33 @@ raw numbers for the report. Frames are judged in presentation order: a loaded
 machine can deliver them out of order. `castStoryboard` turns the frames of the
 block into a filmstrip.
 
+A just-started animation can reach the screen after the block began (50–100 ms
+later in WebKit on a loaded machine). When the cast saw the element at rest
+before the block (wait for `cast.frameCount()` to pass 0 before starting the
+animation), judging starts at its first presented change: the judged part still
+ends with the block and still needs four intervals, and `onScreenFromMs` and the
+summary report when it came. An element already moving is judged from the
+block's start. WebKit's casts are 2 px quantized: the frames come at the
+viewport's size, but the page in them is captured at half resolution, so
+positions move in 2 CSS px steps (Chromium's in 1). With under two steps of
+motion per frame, a frame delivered a few ms early shows no step and reads as
+not moved. The proof reports `stepPx` and `pxPerFrame` and notes motion under
+two steps per frame, which never fails it. Move a proof's element at least two
+steps a frame: the self-tests move 560 px in 1,600 ms, about 4.8 px a frame.
+
+On a loaded machine Chromium's screencast can skip frames the compositor
+still presents. `startCompositorTrace(page)`, started with the screencast and
+stopped after the block, records when the compositor presented each frame
+(`Display::FrameDisplayed`); pass it as `presented`. A gap between two moved
+frames with nothing delivered inside it is then measured between the
+compositor's own frames: the frames it presented there count as presented
+(`recorderSkipped`, in the summary), and a gap it did not present through is
+a stall as before. A gap that opens or closes the judged part, or holds a
+delivered frame that did not move, is judged from the screencast, so a
+frozen element fails whatever else the compositor draws (a rAF animation's
+block presents no compositor frame at all). WebKit has no such trace:
+`stop()` resolves to `[]` and the screencast is judged alone.
+
 **No Layout / Paint.** `traceRendering` records a Chromium trace around the
 interaction; `countBetween` counts the steady middle of an animation (its
 first and last frames may commit). A transform/opacity animation does no
@@ -139,7 +166,12 @@ harness's own animation recorder stands down while the trace runs, since its
 frame loop would make every frame a main-thread one, restyling each running
 animation's target and laying out an anchored one: it reads only the element a
 CSS animation or transition event names, once, when that animation starts, and
-catches up afterwards.
+catches up afterwards. A `waitForRest` awaited inside the traced body stands
+down too: it waits on timers for the scheduled ends of the element's curves
+(looking `frames` times a frame apart before settling on none, so an
+animation the action starts a frame or two later is waited for) and reads no
+style until the trace ends (in the anchored fixture's steady middle,
+24 Layouts before, 0 now).
 
 **Storyboards.** Deterministic: frames come from seeking held animations or
 from stepping scripted input, never from wall-clock capture. The JSON trace
@@ -173,6 +205,7 @@ in all, and lists each retake under `recaptures` in the trace.
 | Curve sampling, storyboards, input log                 | yes          | yes                                                                                                   |
 | Screencast frame evidence (busy main thread)           | yes          | yes (WebKit's own screencast; frames keep coming while the main thread is blocked)                    |
 | Rendering trace, long tasks                            | yes          | no (Playwright exposes neither)                                                                       |
+| Compositor presentation record                         | yes          | no: `stop()` resolves to `[]`; the busy verdict judges the screencast alone                           |
 
 What WebKit cannot show here — native scroll hand-off, flings, a finger
 lifting while another stays down, finger tracking under a busy main thread, and
