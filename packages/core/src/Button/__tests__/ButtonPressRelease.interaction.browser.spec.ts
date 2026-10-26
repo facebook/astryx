@@ -530,8 +530,15 @@ test('the release of a button keeps fading on every frame while the main thread 
   const opened = await openSurface(page, BUTTONS, secondaryButton);
   const cast = await startScreencast(page);
   await opened.driver.play(tap(opened.center, {holdMs: HOLD_MS}));
-  const [release] = await waitForAnimation(opened.surface, {minProgressMs: 16});
-  const block = await blockMainThread(page, 700);
+  // The release is the longest animation running: the 250 ms `::before`
+  // opacity fade, not the 125 ms press-scale transition that starts with it.
+  const running = await waitForAnimation(opened.surface, {minProgressMs: 16});
+  const release = running.reduce((longest, animation) =>
+    animation.durationMs > longest.durationMs ? animation : longest,
+  );
+  // A 1 s block, as spec:AST-094 FR5's verification names, covers the
+  // whole release.
+  const block = await blockMainThread(page, 1000);
   await page.waitForTimeout(150);
   const frames = await cast.stop();
   const pixels = await samplePixel(page, frames, opened.probe);
