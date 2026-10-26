@@ -153,7 +153,7 @@ export const docsDense = {
   name: 'ChatLayout',
   displayName: 'Chat Layout',
   description:
-    'layout shell for full chat; msgs in page flow, composer fixed bottom w/ frosted glass dock; density prop (default balanced); scrollRef delegates to parent/body; in Safari on iOS and Firefox for Android the composer rides the software keyboard (Chrome on Android: the page\u2019s interactive-widget setting decides), transcript stays at newest msg, every focus route (tap, prev/next, Tab, focus()) w/o page scroll; Done rests focus on the named composer group (no tab stop); drag to composer dismisses keyboard (touch, no caller control)',
+    'layout shell for full chat; msgs in page flow, composer fixed bottom w/ frosted glass dock; density prop (default balanced); scrollRef delegates to parent/body; in Safari on iOS and Firefox for Android the composer rides the software keyboard (Chrome on Android: the page\u2019s interactive-widget setting decides), transcript stays at newest msg, every focus route (tap, prev/next, Tab, focus()) w/o page scroll; Done rests focus on the named composer group (no tab stop); drag to composer + lift there (or flick toward it) dismisses keyboard, moving back keeps it (touch, no caller control)',
   usage: {
     bestPractices: [
       {
