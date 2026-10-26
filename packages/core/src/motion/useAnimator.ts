@@ -42,8 +42,9 @@ export interface UseAnimatorResult {
  * registerSpringsTable();
  *
  * const {ref, animator} = useAnimator();
- * // `spring` is the motion role for this move (spec:AST-094 FR4),
- * // never a UIKit table entry played from a component.
+ * // `spring` is the motion role for this move (spec:AST-094 FR4), such as
+ * // `springs.settle`; never a measured constant that is not a role, such
+ * // as `springs.sheetPresent`.
  * const open = () => animator.animate({y: 0}, {spring});
  * return <div ref={ref} />;
  * ```
