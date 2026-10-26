@@ -243,16 +243,15 @@ host.attach(element('onePan'), onePan);
 // A control that keeps its press through a drag, as a stepper's hold does.
 const keptEvent = (state: string) =>
   window.__gestures.push({name: 'kept', state, time: performance.now()});
-host.attachConsumer(
-  element('kept'),
-  new PressTracker({
-    getBounds: () => element('kept').getBoundingClientRect(),
-    keepsTouch: true,
-    onControlEvent: event => keptEvent(event),
-    onHighlightChange: isHighlighted =>
-      keptEvent(isHighlighted ? 'highlight' : 'unhighlight'),
-  }),
-);
+const keptTracker = new PressTracker({
+  getBounds: () => element('kept').getBoundingClientRect(),
+  keepsTouch: true,
+  onControlEvent: event => keptEvent(event),
+});
+host.attachConsumer(element('kept'), keptTracker);
+// Read by the proof: whether the held press is delivered (kept) yet.
+(window as unknown as {__keptTracker: PressTracker}).__keptTracker =
+  keptTracker;
 
 // A scroll lock's page hold, held on demand: every one-finger pan would
 // scroll the page.

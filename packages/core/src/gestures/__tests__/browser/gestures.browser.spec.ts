@@ -628,19 +628,33 @@ test('a control that keeps its press through a drag holds the page still and sta
   const start = await center(page, 'kept');
   const before = await page.evaluate(() => window.scrollY);
   // The finger rests until the press is delivered: a control in a scroller
-  // waits before it highlights, and a drag that starts sooner is a scroll.
+  // keeps its touch only after the content-touch delay, and a drag that
+  // starts sooner is a scroll.
+  const isKept = async (): Promise<boolean> => {
+    const kept = await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __keptTracker: {keepsTouch?: () => boolean};
+          }
+        ).__keptTracker.keepsTouch?.() === true,
+    );
+    return kept;
+  };
   await driver.play([{t: 0, down: [{id: 1, ...start}]}]);
-  await page.waitForFunction(() =>
-    window.__gestures.some(
-      entry => entry.name === 'kept' && entry.state === 'highlight',
-    ),
+  await page.waitForFunction(
+    () =>
+      (
+        window as unknown as {__keptTracker: {keepsTouch?: () => boolean}}
+      ).__keptTracker.keepsTouch?.() === true,
   );
   await logTouchMoves(page);
   await driver.play(drag(start, {x: start.x, y: start.y - 40}, 20, false));
   let kept = states(await log(page), 'kept');
   expect(kept).toContain('touchDown');
   expect(kept).not.toContain('touchCancel');
-  expect(kept).not.toContain('unhighlight');
+  // Still pressed: the press keeps its touch through the drag.
+  expect(await isKept()).toBe(true);
   // Its press was delivered, so every move is cancelled: the page stays.
   const moves = await readTouchMoves(page);
   expect(moves.length).toBeGreaterThan(0);
