@@ -28,7 +28,7 @@ import {
   writeEvidence,
 } from '@astryxdesign/interaction-harness';
 import {LAYER_KEYBOARD_CLEARANCE_PX} from '../../Layer/layerKeyboardClearance';
-import {keyboard as keyboardTiming} from '../../motion/uikit/keyboard';
+import {timing} from '../../motion/uikit/timing';
 
 const storybook = withStorybook(test);
 
@@ -177,10 +177,10 @@ test('a tall popover shrinks to stay 10 px above the keyboard once it has arrive
 
   await keyboard(page, COVER);
   // On its way up the keyboard covers the difference: nothing changes yet.
-  await page.waitForTimeout(keyboardTiming.notificationMs / 2);
+  await page.waitForTimeout(timing.keyboardNotificationMs / 2);
   expect((await boxOf(surface)).keyboardCap).toBe('');
   const covered = await shotWithKeyboard(page, COVER);
-  await page.waitForTimeout(keyboardTiming.notificationMs);
+  await page.waitForTimeout(timing.keyboardNotificationMs);
   const avoiding = await boxOf(surface);
   expect(avoiding.top).toBeCloseTo(before.top, 0);
   expect(
@@ -233,7 +233,7 @@ test('with the keyboard up, a tap on the scrolled-in Save note clicks it', async
   const field = page.getByRole('textbox', {name: 'Title'});
   await field.focus();
   await keyboard(page, COVER);
-  await page.waitForTimeout(keyboardTiming.notificationMs * 1.5);
+  await page.waitForTimeout(timing.keyboardNotificationMs * 1.5);
   expect((await boxOf(surface)).keyboardCap).not.toBe('');
   await surface.evaluate(element => {
     element.scrollTop = element.scrollHeight;
@@ -274,7 +274,7 @@ test('opened while the keyboard is already up, it opens clear of the keyboard', 
   const search = page.getByRole('textbox', {name: 'Search notes'});
   await search.focus();
   await keyboard(page, COVER);
-  await page.waitForTimeout(keyboardTiming.notificationMs + 100);
+  await page.waitForTimeout(timing.keyboardNotificationMs + 100);
   const trigger = page.getByRole('button', {name: 'Add note'});
   const box = await trigger.boundingBox();
   if (box == null) {
@@ -316,7 +316,7 @@ test('a popover clear of the keyboard is left as it is', async ({page}) => {
     before.innerHeight - COVER - LAYER_KEYBOARD_CLEARANCE_PX,
   );
   await keyboard(page, COVER);
-  await page.waitForTimeout(keyboardTiming.notificationMs + 200);
+  await page.waitForTimeout(timing.keyboardNotificationMs + 200);
   const after = await boxOf(surface);
   expect(after.keyboardCap).toBe('');
   expect(after.bottom).toBeCloseTo(before.bottom, 0);
