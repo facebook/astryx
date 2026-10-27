@@ -43,7 +43,7 @@ import {
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
-import {useSwipeAction, type SwipeSide} from './useSwipeAction';
+import {isSwipeOpen, useSwipeAction, type SwipeSide} from './useSwipeAction';
 import type {ItemSwipeAction, ItemSwipeBehavior} from './Item';
 
 // =============================================================================
@@ -291,11 +291,13 @@ export default function ItemSwipeLayer({
       onBridge(null);
     };
   });
-  const isSwipeResting = swipe.state.phase === 'resting';
+  // Open from the release that opens it (`isSwipeOpen`), as UIKit counts it:
+  // an entry the finger can see while the row springs open is tappable.
+  const isOpen = isSwipeOpen(swipe.state);
 
   // A side's panel: entries as real buttons under `reveal`, presentational
   // blocks under `commit`. Out of the accessibility tree and the tab order
-  // except while the row rests open on its side, so the row keeps one tab
+  // except while the row is open on its side, so the row keeps one tab
   // stop, the other side's entries (out of sight behind the row) are never
   // reached, and a pointer that can hover never meets it.
   const renderSwipePanel = (side: SwipeSide, entries: ItemSwipeAction[]) => {
@@ -304,7 +306,7 @@ export default function ItemSwipeLayer({
     }
     const outer = entries[entries.length - 1];
     const isCommit = behavior === 'commit';
-    const isLive = isSwipeResting && swipe.state.side === side && !isCommit;
+    const isLive = isOpen && swipe.state.side === side && !isCommit;
     const refs = swipe.panelRefs[side];
     const renderEntry = (entry: ItemSwipeAction) => {
       const variant = entry.variant ?? 'accent';

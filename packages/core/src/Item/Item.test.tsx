@@ -1320,6 +1320,22 @@ describe('swipeActions', () => {
       second.up();
     });
 
+    it('never starts a swipe from a second finger whose first finger is off the row: the pinch stays the page’s (spec:AST-094 FR10)', () => {
+      const {row} = renderRow();
+      // The first finger is somewhere else on the page; the second lands on
+      // the row and travels sideways, past the claim and the swipe.
+      const first = finger(document.body, 1);
+      const second = finger(row, 2);
+      first.down(60, 200);
+      second.down(100);
+      second.move(110);
+      second.move(130);
+      expect(second.move(160).defaultPrevented).toBe(false);
+      expect(xOf(row)).toBe(0);
+      second.up();
+      first.up();
+    });
+
     it('keeps a begun swipe when a second finger lands: the row stays on its finger, which it keeps from the browser (spec:AST-094 FR10)', async () => {
       const {row} = renderRow();
       const first = finger(row, 1);
@@ -1376,6 +1392,26 @@ describe('swipeActions', () => {
       expect(xOf(row)).toBe(0);
       expect(panel).toHaveAttribute('inert');
       // The row's own primary never fired.
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
+    it('fires a tapped entry while the row is still springing open: the row is open from its release', async () => {
+      const onActivate = vi.fn();
+      const onClick = vi.fn();
+      const {row} = renderRow({
+        leading: [{label: 'Unread', onActivate}],
+        onClick,
+      });
+      dragLeading(row, 45);
+      // Released past half the panel 16 ms ago: the settle has hundreds of
+      // milliseconds left, yet the row already counts as open, so its panel
+      // is live and an entry tapped now fires.
+      const panel = panelOf(row, 'leading') as HTMLElement;
+      expect(panel).not.toHaveAttribute('inert');
+      fireEvent.click(screen.getByRole('button', {name: 'Unread'}));
+      expect(onActivate).toHaveBeenCalledTimes(1);
+      await settled();
+      expect(xOf(row)).toBe(0);
       expect(onClick).not.toHaveBeenCalled();
     });
 
@@ -1495,7 +1531,11 @@ describe('swipeActions', () => {
       await act(async () => {
         vi.advanceTimersByTime(16);
       });
-      expect(panelOf(row, 'leading')).toHaveAttribute('inert');
+      // Mid-fade the row has not travelled: it lands at the bottom of the
+      // dip. It is open from its release, as after a spring, so its panel is
+      // already live.
+      expect(xOf(row)).toBe(45);
+      expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
       await act(async () => {
         vi.advanceTimersByTime(534);
       });
