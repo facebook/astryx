@@ -4680,4 +4680,23 @@ describe('MultiSelector caller aria-labelledby', () => {
     const opener = screen.getByRole('button', {name: 'Lunch'});
     expect(opener).toHaveAttribute('aria-labelledby', 'lunch-heading');
   });
+
+  it("leaves a renderTrigger control's own aria-labelledby in place without a caller value", () => {
+    render(
+      <>
+        <span id="row-title">Lunch fruits</span>
+        <MultiSelector
+          label="Fruits"
+          options={FRUITS}
+          value={[]}
+          onChange={() => {}}
+          renderTrigger={props => (
+            <button type="button" aria-labelledby="row-title" {...props} />
+          )}
+        />
+      </>,
+    );
+    const opener = screen.getByRole('button', {name: 'Lunch fruits'});
+    expect(opener).toHaveAttribute('aria-labelledby', 'row-title');
+  });
 });

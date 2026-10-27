@@ -2494,7 +2494,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       // in this mode; the selector's own wiring below wins over them.
       ...rest,
       'aria-describedby': ariaDescribedByProp,
-      'aria-labelledby': ariaLabelledByProp,
+      // Only a caller value is handed back, so a control that names itself
+      // with its own aria-labelledby before spreading keeps it.
+      ...(ariaLabelledByProp != null
+        ? {'aria-labelledby': ariaLabelledByProp}
+        : null),
       ref: mergeRefs<HTMLElement>(el => {
         popover.triggerRef(el);
         triggerRef.current = el;
