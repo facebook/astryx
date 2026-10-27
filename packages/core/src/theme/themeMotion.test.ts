@@ -62,15 +62,16 @@ describe('the motion knobs (spec:AST-108 FR1)', () => {
 });
 
 describe('the CSS motion tokens (spec:AST-108 FR2)', () => {
-  it('are today\u2019s at the defaults: nothing is written', () => {
+  it('are today\u2019s at the defaults', () => {
     expect(expandThemeMotion({})).toEqual({});
-    expect(
-      expandThemeMotion({
-        tempo: 1,
-        character: 'standard',
-        reducedMotion: 'system',
-      }),
-    ).toEqual({});
+    const explicit = expandThemeMotion({
+      tempo: 1,
+      character: 'standard',
+      reducedMotion: 'system',
+    });
+    expect(durationsMs(explicit)).toEqual(TODAY_MS);
+    expect(explicit['--ease-entrance']).toBe(STANDARD);
+    expect(explicit['--ease-move']).toBe(STANDARD);
     const motion = resolveThemeMotion({});
     expect(durationsMs(motion.durations)).toEqual(TODAY_MS);
     expect(motion.easings).toEqual({
@@ -154,6 +155,29 @@ describe('existing motion configuration (spec:AST-108 FR5)', () => {
     expect(theme.tokens['--ease-entrance']).toBe('linear');
     expect(theme.tokens['--duration-fast']).toBe(`${Math.round(175 * 1.5)}ms`);
     expect(theme.tokens['--ease-move']).toBe(CHARACTER_EASE.crisp);
+  });
+
+  it('a child theme keeps each knob it leaves out and can set one back to its default', () => {
+    const base = defineTheme({
+      name: 'SlowCrisp',
+      motion: {tempo: 0.8, character: 'crisp'},
+    });
+    const quicker = defineTheme({
+      name: 'SlowCrispChild',
+      extends: base,
+      motion: {tempo: 1.2},
+    });
+    expect(quicker.tokens['--duration-medium']).toBe(
+      `${Math.round(410 * 1.2)}ms`,
+    );
+    expect(quicker.tokens['--ease-entrance']).toBe(CHARACTER_EASE.crisp);
+    const reset = defineTheme({
+      name: 'SlowCrispReset',
+      extends: base,
+      motion: {tempo: 1, character: 'standard'},
+    });
+    expect(reset.tokens['--duration-medium']).toBe('410ms');
+    expect(reset.tokens['--ease-entrance']).toBe(STANDARD);
   });
 
   it('a theme with no motion writes no motion token, so it renders as before', () => {

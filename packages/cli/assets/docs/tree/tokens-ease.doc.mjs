@@ -17,14 +17,14 @@ export const docs = {
     "order": 110
   },
   "category": "foundations",
-  "description": "Easing curves for animations and transitions.",
+  "description": "Easing curves for animations and transitions. `--ease-entrance` and `--ease-move` follow a theme's `motion.character`: `crisp` decelerates without overshoot, `expressive` overshoots slightly, and at `standard` both equal `--ease-standard`. Exits keep their own curve at every character.",
   "sections": [
     {
       "title": "Easing Tokens",
       "content": [
         {
           "type": "prose",
-          "text": "Easing curves for animations and transitions."
+          "text": "Easing curves for animations and transitions. `--ease-entrance` and `--ease-move` follow a theme's `motion.character`: `crisp` decelerates without overshoot, `expressive` overshoots slightly, and at `standard` both equal `--ease-standard`. Exits keep their own curve at every character."
         },
         {
           "type": "table",
@@ -35,6 +35,14 @@ export const docs = {
           "rows": [
             [
               "--ease-standard",
+              "cubic-bezier(0.24, 1, 0.4, 1)"
+            ],
+            [
+              "--ease-entrance",
+              "cubic-bezier(0.24, 1, 0.4, 1)"
+            ],
+            [
+              "--ease-move",
               "cubic-bezier(0.24, 1, 0.4, 1)"
             ]
           ]

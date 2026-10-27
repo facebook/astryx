@@ -140,22 +140,28 @@ export function durationTokensAt(tempo: number): Record<string, string> {
  * The motion tokens `config` generates (FR2, FR5): `--duration-*` times
  * `tempo`, with a `MotionScaleConfig`'s own durations winning, and the
  * job-named `--ease-entrance` and `--ease-move` at the theme's character.
- * Only tokens that differ from Astryx's defaults are written.
+ * A knob the config leaves out writes nothing, so a theme extending another
+ * keeps the base's value for it; a knob it sets is written even at its
+ * default, so a child can set a base's tempo back to 1.
  */
 export function expandThemeMotion(
   config: ThemeMotionConfig,
 ): Record<string, string> {
   const knobs = resolveMotionKnobs(config);
   const tokens: Record<string, string> = {};
-  if (knobs.tempo !== 1) {
+  if (knobs.tempoIsSet) {
     Object.assign(tokens, durationTokensAt(knobs.tempo));
   }
   if (isScaleConfig(config)) {
     Object.assign(tokens, expandMotionScale(config));
   }
+  const scaleEasing =
+    isScaleConfig(config) && config.easing != null ? config.easing : null;
   const ease =
     CHARACTER_EASE[knobs.character] ??
-    (isScaleConfig(config) && config.easing != null ? config.easing : null);
+    (config.character != null
+      ? (scaleEasing ?? easeDefaults['--ease-standard'])
+      : scaleEasing);
   if (ease != null) {
     tokens['--ease-entrance'] = ease;
     tokens['--ease-move'] = ease;
