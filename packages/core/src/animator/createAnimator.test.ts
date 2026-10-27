@@ -18,7 +18,11 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {solveDecay} from '../motion/decay';
 import {solveSpring, toSpring} from '../motion/spring';
 import {springs} from '../motion/uikit/springs';
-import {createAnimator, type AnimatorChannel} from './createAnimator';
+import {
+  createAnimator,
+  type AnimatorChannel,
+  type AnimatorValues,
+} from './createAnimator';
 
 interface Recorded {
   keyframes: Keyframe[];
@@ -331,6 +335,25 @@ describe('createAnimator', () => {
     animator.set({y: 50});
     expect(recorded.length).toBe(count);
     expect(animator.get().y).toBe(0);
+  });
+
+  it('a channel it does not know is ignored: no throw, and a call with nothing it knows resolves at once', async () => {
+    const box = element();
+    const animator = createAnimator(box);
+    const unknown = {width: 200, x: 30} as unknown as AnimatorValues;
+    expect(() => animator.set(unknown)).not.toThrow();
+    expect(animator.get()).toEqual({
+      x: 30,
+      y: 0,
+      scale: 1,
+      rotate: 0,
+      opacity: 1,
+    });
+    expect(box.style.width).toBe('');
+    await expect(
+      animator.animate({height: 10} as unknown as AnimatorValues),
+    ).resolves.toBeUndefined();
+    expect(recorded).toEqual([]);
   });
 
   it('an empty call resolves at once and moves nothing', async () => {
