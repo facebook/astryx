@@ -5,18 +5,16 @@
  * @input `timing` (the press clocks the touch press model measured)
  * @output Exports `list`: the clocks and curves of UITableView and
  *   UICollectionView list cells (the cell highlight's release, the selected
- *   cell's deselect inside a navigation pop, the touch row heights)
+ *   cell's deselect inside a navigation pop)
  * @position The list domain of the UIKit constants table (motion/uikit);
  *   read by utils/interactionOverlay.stylex.ts (the row press layer)
- *   through its build-time mirror, by List/selectionHold.ts (a row kept
- *   selected through a navigation push), and by List/listRow.stylex.ts
- *   (touch row heights) through its mirror
+ *   through its build-time mirror, and by List/selectionHold.ts (a row
+ *   kept selected through a navigation push)
  *
  * Every leaf carries one or more `@source`; GUESS values also carry the
  * `@measure` task that will confirm or replace them (MEASUREMENTS.md, M-LI
  * rows). uikit.test.ts enforces both. Durations are in ms; curves are
- * cubic-bézier control points [x1, y1, x2, y2]; lengths are in points, one
- * CSS px each.
+ * cubic-bézier control points [x1, y1, x2, y2].
  *
  * Every value here is a list's own measured motion, an internal constant:
  * it is no motion role, and no theme variable reaches it.
@@ -25,8 +23,6 @@
  * - /packages/core/src/motion/MEASUREMENTS.md
  * - /packages/core/src/utils/rowPressLayer.stylex.ts (`cellPressConsts`
  *   mirrors the cell release; interactionOverlay.cell.test.ts checks it)
- * - /packages/core/src/List/listRow.stylex.ts (`listRowConsts` mirrors the
- *   row heights; List.test.tsx checks it)
  */
 
 import {timing} from './timing';
@@ -76,21 +72,5 @@ export const list = {
      *   17 Pro, CAAnimation dump (linear timing function), Oct 23 2026
      */
     navigationPopCurve: [0, 0, 1, 1],
-  },
-  metrics: {
-    /**
-     * A one-line row's height: the `.default`, `.value1` and `.value2`
-     * styles at the default text size (`rowHeight` automatic).
-     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone
-     *   17 Pro, view frame read (UITableView cells), Oct 23 2026
-     */
-    rowHeight: 52,
-    /**
-     * A row with a second line: the `.subtitle` style at the default text
-     * size.
-     * @source measured: UIKit lab (injected host app), iOS 26.2 sim iPhone
-     *   17 Pro, view frame read (UITableView cells), Oct 23 2026
-     */
-    subtitleRowHeight: 62,
   },
 } as const;
