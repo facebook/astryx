@@ -63,6 +63,7 @@ import {
   type LayoutChange,
 } from '../../../motion/animatedLayout';
 import {
+  GLIDING_ATTRIBUTE,
   glidingDividerStyles,
   markGlidingRows,
   panelDividerFor,
@@ -248,7 +249,7 @@ const dividerStyles = stylex.create({
     borderBottomWidth: 0,
   },
   // The row's divider, carried down: its row's themed or app-set border
-  // reaches the panel through `--_table-panel-divider-*` on the panel row
+  // reaches the panel through `--_table-panel-divider-*` on the panel's cell
   // (set after each commit), the tokens otherwise.
   panelCell: {
     // The width this divider draws, for its stand-in during a glide.
@@ -400,6 +401,7 @@ function ExpansionPanelCell({
         panelIndentStyles[ctx?.density ?? 'balanced'],
         hasRowDividers && dividerStyles.panelCell,
         glidingDividerStyles.cell,
+        hasRowDividers && glidingDividerStyles.panelCell,
       )}>
       {children}
     </td>
@@ -462,6 +464,11 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
   // INV12). LayoutChangeSnapshot measures each changed row in the commit,
   // before the DOM changes; the layout effect below runs the glide after it.
   const scrollWrapperRef = useRef<HTMLDivElement | null>(null);
+  // The scroll wrapper's merged ref, kept while the inner ref is the same.
+  const mergedScrollWrapperRef = useRef<{
+    inner: ScrollWrapperRenderProps['htmlProps']['ref'] | null;
+    merged: (node: HTMLDivElement | null) => void;
+  } | null>(null);
   const pendingLayoutRef = useRef<
     {change: LayoutChange; key: string; isExpanding: boolean}[]
   >([]);
@@ -519,32 +526,43 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
   );
   // Each open panel carries its row's divider (a theme's `table-cell` border
   // or an app's own never reach the panel's cell, which is not a table cell
-  // of the row). Written only when it differs, so a commit that changes
-  // nothing writes nothing.
+  // of the row). Every read before any write, and written only when it
+  // differs, so a commit that changes nothing writes nothing. A row a glide
+  // is moving has transparent cells until it ends: its panel keeps what it
+  // carries.
   useLayoutEffect(() => {
     const wrapper = scrollWrapperRef.current;
     if (wrapper == null) {
       return;
     }
-    const carried: [HTMLElement, BottomEdge][] = [];
+    const carried: [
+      HTMLElement,
+      NonNullable<ReturnType<typeof panelDividerFor>>,
+    ][] = [];
     for (const panel of wrapper.querySelectorAll<HTMLElement>(
       'tr[data-expansion-panel]',
     )) {
       const row = panel.previousElementSibling;
       const cell = panel.firstElementChild;
-      const edge =
-        row == null || cell == null ? null : panelDividerFor(row, cell);
+      if (
+        row == null ||
+        !(cell instanceof HTMLElement) ||
+        row.hasAttribute(GLIDING_ATTRIBUTE)
+      ) {
+        continue;
+      }
+      const edge = panelDividerFor(row);
       if (edge != null) {
-        carried.push([panel, edge]);
+        carried.push([cell, edge]);
       }
     }
-    for (const [panel, edge] of carried) {
+    for (const [cell, edge] of carried) {
       const set = (name: string, value: string) => {
-        if (panel.style.getPropertyValue(name) !== value) {
-          panel.style.setProperty(name, value);
+        if (cell.style.getPropertyValue(name) !== value) {
+          cell.style.setProperty(name, value);
         }
       };
-      set('--_table-panel-divider-width', `${edge.width}px`);
+      set('--_table-panel-divider-width', edge.width);
       set('--_table-panel-divider-style', edge.style);
       set('--_table-panel-divider-color', edge.color);
     }
@@ -752,14 +770,25 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
       transformScrollWrapper(
         props: ScrollWrapperRenderProps,
       ): ScrollWrapperRenderProps {
-        const existingRef = props.htmlProps.ref;
-        const mergedRef = (node: HTMLDivElement | null) => {
-          scrollWrapperRef.current = node;
-          if (typeof existingRef === 'function') {
-            existingRef(node);
-          } else if (existingRef != null) {
-            existingRef.current = node;
-          }
+        // One merged ref per inner ref, so React does not detach and
+        // re-attach the wrapper's refs (a later plugin's listeners
+        // included) on every render.
+        const existingRef = props.htmlProps.ref ?? null;
+        const cached = mergedScrollWrapperRef.current;
+        const mergedRef =
+          cached != null && cached.inner === existingRef
+            ? cached.merged
+            : (node: HTMLDivElement | null) => {
+                scrollWrapperRef.current = node;
+                if (typeof existingRef === 'function') {
+                  existingRef(node);
+                } else if (existingRef != null) {
+                  existingRef.current = node;
+                }
+              };
+        mergedScrollWrapperRef.current = {
+          inner: existingRef,
+          merged: mergedRef,
         };
         return {
           ...props,

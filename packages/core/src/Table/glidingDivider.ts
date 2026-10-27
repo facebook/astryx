@@ -53,9 +53,7 @@ export const glidingDividerStyles = stylex.create({
    */
   cell: {
     borderBottomColor: {
-      // A detail panel's cell carries its row's divider color (see
-      // plugins/rowExpansion); every other cell reads the token.
-      default: `var(--_table-panel-divider-color, ${colorVars['--color-border']})`,
+      default: colorVars['--color-border'],
       [CELL_GLIDING]: 'transparent',
     },
     // Every declaration only on the line cell: a pinned cell's own ::after
@@ -79,6 +77,16 @@ export const glidingDividerStyles = stylex.create({
         [CELL_LINE]: `var(${APP_DIVIDER_COLOR}, ${colorVars['--color-border']})`,
       },
       pointerEvents: {default: null, [CELL_LINE]: 'none'},
+    },
+  },
+  /**
+   * After `cell` on a detail panel's cell: its divider color is the one its
+   * row hands down (plugins/rowExpansion).
+   */
+  panelCell: {
+    borderBottomColor: {
+      default: `var(--_table-panel-divider-color, ${colorVars['--color-border']})`,
+      [CELL_GLIDING]: 'transparent',
     },
   },
   /**
@@ -112,82 +120,101 @@ export interface BottomEdge {
   color: string;
 }
 
-function bottomEdge(element: Element): BottomEdge {
+function edgeOf(element: Element | null, side: 'Bottom' | 'Top'): BottomEdge {
+  if (element == null) {
+    return {width: 0, style: 'none', color: ''};
+  }
   const style = getComputedStyle(element);
   return {
-    width: parseFloat(style.borderBottomWidth) || 0,
-    style: style.borderBottomStyle,
-    color: style.borderBottomColor,
+    width:
+      parseFloat(
+        style.getPropertyValue(`border-${side.toLowerCase()}-width`),
+      ) || 0,
+    style: style.getPropertyValue(`border-${side.toLowerCase()}-style`),
+    color: style.getPropertyValue(`border-${side.toLowerCase()}-color`),
   };
 }
 
 /**
- * The bottom border the table paints for a cell: the cell's own, or its row's
- * where an app styles the row and the row's wins the collapse (wider, then
- * the stronger style; the cell wins a tie).
+ * The border the table paints under a cell, by the collapsing rules (CSS 2.1
+ * 17.6.2.1): of the cell's own bottom, the cell's below it (top), its row's
+ * bottom and the next row's top, `hidden` wins, then the wider, then the
+ * stronger style; a tie goes to a cell over a row, and to the upper one.
+ * `isOwn` says the cell's own border won. Shared with plugins/stickyColumns.
  */
-export function collapsedBottom(cell: Element): BottomEdge {
-  const own = bottomEdge(cell);
+export function collapsedBottom(cell: HTMLTableCellElement): BottomEdge & {
+  isOwn: boolean;
+} {
   const row = cell.parentElement;
-  if (row == null) {
-    return own;
+  const nextRow = row?.nextElementSibling ?? null;
+  const nextCell = nextRow?.children[cell.cellIndex] ?? null;
+  // In tie order.
+  const candidates = [
+    edgeOf(cell, 'Bottom'),
+    edgeOf(nextCell, 'Top'),
+    edgeOf(row, 'Bottom'),
+    edgeOf(nextRow, 'Top'),
+  ];
+  const own = candidates[0];
+  if (candidates.some(edge => edge.style === 'hidden')) {
+    return {
+      width: 0,
+      style: 'none',
+      color: own.color,
+      isOwn: own.style === 'hidden',
+    };
   }
-  const other = bottomEdge(row);
-  if (own.style === 'hidden' || other.style === 'hidden') {
-    return {width: 0, style: 'none', color: own.color};
+  const strength = (edge: BottomEdge) =>
+    edge.style === 'none' || edge.width === 0
+      ? [-1, -1]
+      : [edge.width, STYLE_RANK.indexOf(edge.style)];
+  let winner = own;
+  for (const edge of candidates.slice(1)) {
+    const [width, rank] = strength(edge);
+    const [bestWidth, bestRank] = strength(winner);
+    if (width > bestWidth || (width === bestWidth && rank > bestRank)) {
+      winner = edge;
+    }
   }
-  const drawn = (edge: BottomEdge) => edge.style !== 'none' && edge.width > 0;
-  if (!drawn(other)) {
-    return own;
-  }
-  if (!drawn(own) || other.width > own.width) {
-    return other;
-  }
-  if (other.width < own.width) {
-    return own;
-  }
-  return STYLE_RANK.indexOf(other.style) > STYLE_RANK.indexOf(own.style)
-    ? other
-    : own;
+  return {...winner, isOwn: winner === own};
 }
 
 /** The batch that marked a row last: only that batch unmarks it. */
 const markedBy = new WeakMap<Element, symbol>();
 
 /**
- * The divider a detail panel takes from its row: the row's cell color and
- * style (a theme's `table-cell` styling or an app's own, which never reach
- * the panel's cell), at the panel's own width, unless the row's own border
- * wins the collapse (an app styling the `<tr>`). Read once per commit.
+ * The divider a detail panel takes from its row: the color and style of the
+ * row's cells (a theme's `table-cell` styling or an app's own, which never
+ * reach the panel's cell), at the panel's own width unless the row's own
+ * border wins the collapse (an app styling the `<tr>`), as custom property
+ * values for the panel's cell. Every value is written, `initial` where the
+ * panel keeps its own, so a panel nested in another never inherits that
+ * one's. Read once per commit.
  */
-export function panelDividerFor(
-  row: Element,
-  panelCell: Element,
-): BottomEdge | null {
+export function panelDividerFor(row: Element): {
+  width: string;
+  style: string;
+  color: string;
+} | null {
   const rowCell = row.lastElementChild;
   if (rowCell == null) {
     return null;
   }
+  const rowStyle = getComputedStyle(row);
+  const rowWidth = parseFloat(rowStyle.borderBottomWidth) || 0;
+  if (rowStyle.borderBottomStyle !== 'none' && rowWidth > 0) {
+    return {
+      width: `${rowWidth}px`,
+      style: rowStyle.borderBottomStyle,
+      color: rowStyle.borderBottomColor,
+    };
+  }
   const cellStyle = getComputedStyle(rowCell);
-  const own: BottomEdge = {
-    width: parseFloat(getComputedStyle(panelCell).borderBottomWidth) || 0,
+  return {
+    width: 'initial',
     style: cellStyle.borderBottomStyle,
     color: cellStyle.borderBottomColor,
   };
-  const rowStyle = getComputedStyle(row);
-  if (rowStyle.borderBottomStyle === 'none') {
-    return own;
-  }
-  const other: BottomEdge = {
-    width: parseFloat(rowStyle.borderBottomWidth) || 0,
-    style: rowStyle.borderBottomStyle,
-    color: rowStyle.borderBottomColor,
-  };
-  return other.width > own.width ||
-    (other.width === own.width &&
-      STYLE_RANK.indexOf(other.style) > STYLE_RANK.indexOf(own.style))
-    ? other
-    : own;
 }
 
 /**
@@ -199,7 +226,7 @@ export function rowEdge(row: Element): BottomEdge | null {
   if (row.hasAttribute(GLIDING_ATTRIBUTE) || row.lastElementChild == null) {
     return null;
   }
-  return collapsedBottom(row.lastElementChild);
+  return collapsedBottom(row.lastElementChild as HTMLTableCellElement);
 }
 
 /**

@@ -144,8 +144,13 @@ describe('an open panel carries its row divider (Table FR14)', () => {
     }
     await user.click(screen.getAllByRole('button', {name: /expand/i})[0]);
     const panel = document.querySelector<HTMLElement>(
-      'tr[data-expansion-panel]',
+      'tr[data-expansion-panel] > td',
     )!;
+    // The panel keeps its own width (a value, not inherited from any panel
+    // around it) while the row's own border does not win.
+    expect(panel.style.getPropertyValue('--_table-panel-divider-width')).toBe(
+      'initial',
+    );
     expect(panel.style.getPropertyValue('--_table-panel-divider-color')).toBe(
       'rgb(255, 0, 0)',
     );
