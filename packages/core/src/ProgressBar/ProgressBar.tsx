@@ -169,6 +169,22 @@ const indeterminateSlideRtl = stylex.keyframes({
   },
 });
 
+// Reduced motion on a touch screen: a value change shows the fill at its new
+// length fading in, opacity only, in 200 ms on easeInOut whatever the
+// theme's duration (design:reduced-motion DR2, DR4). The fill is keyed by
+// its value, so each change remounts it and the fade restarts; the old
+// length does not fade out separately (ProgressBar stays presentational and
+// remembers no previous value).
+const REDUCED_COARSE =
+  '@media (prefers-reduced-motion: reduce) and (pointer: coarse)';
+const REDUCED_FADE_DURATION = '200ms';
+const REDUCED_FADE_EASE = 'cubic-bezier(0.42, 0, 0.58, 1)';
+
+const fillFadeIn = stylex.keyframes({
+  from: {opacity: 0},
+  to: {opacity: 1},
+});
+
 // =============================================================================
 // Styles
 // =============================================================================
@@ -248,13 +264,24 @@ const styles = stylex.create({
     outlineOffset: {default: null, '@media (forced-colors: active)': '-1px'},
     borderRadius: radiusVars['--radius-full'],
     transitionProperty: 'width',
-    // A resize, so under reduced motion the fill jumps to its new value
-    // (design:reduced-motion DR1).
+    // A resize, so under reduced motion the fill never grows or shrinks
+    // (design:reduced-motion DR1): with a mouse it changes at once (DR3); on
+    // a touch screen the keyed fill below fades the new length in (DR2).
     transitionDuration: {
       default: durationVars['--duration-medium'],
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
+    display: {default: null, [REDUCED_COARSE]: 'none'},
+  },
+  // The fill under reduced motion on a touch screen, keyed by its value: it
+  // remounts at each new length and fades in. Absent otherwise.
+  fadeFill: {
+    display: {default: 'none', [REDUCED_COARSE]: 'block'},
+    animationName: fillFadeIn,
+    animationDuration: REDUCED_FADE_DURATION,
+    animationTimingFunction: REDUCED_FADE_EASE,
+    animationFillMode: 'both',
   },
   indeterminateFill: {
     height: '100%',
@@ -554,13 +581,27 @@ export function ProgressBar({
               )}
             />
           ) : (
-            <div
-              {...mergeProps(
-                themeProps('progress-bar-fill', {variant: fillVariant}),
-                stylex.props(styles.fill, variantStyles[fillVariant]),
-              )}
-              style={{width: `${percentage}%`}}
-            />
+            <>
+              <div
+                {...mergeProps(
+                  themeProps('progress-bar-fill', {variant: fillVariant}),
+                  stylex.props(styles.fill, variantStyles[fillVariant]),
+                )}
+                style={{width: `${percentage}%`}}
+              />
+              <div
+                key={percentage}
+                {...mergeProps(
+                  themeProps('progress-bar-fill', {variant: fillVariant}),
+                  stylex.props(
+                    styles.fill,
+                    variantStyles[fillVariant],
+                    styles.fadeFill,
+                  ),
+                )}
+                style={{width: `${percentage}%`}}
+              />
+            </>
           )}
         </div>
         {/* Marks overlay the fill but live outside the semantic progressbar.
