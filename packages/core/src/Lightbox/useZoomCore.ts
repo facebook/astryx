@@ -37,6 +37,7 @@ import {useCallback, useEffect, useMemo, useRef, type RefObject} from 'react';
 import type {Point} from '../gestures/types';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import type {Animator, MotionCurve, MotionValues} from '../motion/animator';
+import {createRectMorph, type RectMorph} from '../motion/rectMorph';
 import {resolveMotion} from '../motion/resolveMotion';
 import {registerReducedMotionCrossFade} from '../motion/uikit/timing';
 import {zoomMedia} from '../motion/uikit/zoomMedia';
@@ -130,6 +131,13 @@ export interface ZoomStage {
    * curves start.
    */
   play: Animator['play'];
+  /**
+   * The photo's rect morph (architecture:layer-runtime INV15's shared morph)
+   * on the stage's own animator, so the zoom transition and pinch, pan and
+   * settle share one set of channels; the photo with it. Null before a photo
+   * attaches.
+   */
+  morph(): {morph: RectMorph; photo: HTMLElement} | null;
   /** The photo at its fitted size, opaque, at once (after a transition). */
   rest(): void;
 }
@@ -205,6 +213,8 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
   const zoomedRef = useRef(false);
   const targetRef = useRef<ZoomTransform>(IDENTITY);
 
+  // The photo's rect morph, on the stage's animator (`morph`).
+  const morphRef = useRef<{photo: HTMLElement; morph: RectMorph} | null>(null);
   const contentRef = useCallback(
     (element: HTMLElement | null) => {
       contentElementRef.current = element;
@@ -598,6 +608,19 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
           animator.set(firstValues(curves));
         }
         return animator.play(curves, playOptions);
+      },
+      morph: () => {
+        const photo = contentElementRef.current;
+        if (photo == null) {
+          return null;
+        }
+        // One morph per photo element (paging shows another).
+        if (morphRef.current?.photo !== photo) {
+          morphRef.current = {photo, morph: createRectMorph(photo, {animator})};
+        }
+        // A transition takes the photo over, as `play` does.
+        targetRef.current = IDENTITY;
+        return morphRef.current;
       },
       rest: () => {
         animator.stop();

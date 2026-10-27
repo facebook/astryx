@@ -9,13 +9,18 @@
  * @output Exports `zoomFromSource` (UIKit's zoom transition between a source
  *   element and the viewer's photo, opening or closing, on the compositor),
  *   `sourceBoxOf` and `showSourcePortal`
- * @position Lightbox's transition driver (internal); the geometry and the
- *   curves are zoomTransition.ts
+ * @position Lightbox's transition driver (internal); the geometry is
+ *   zoomTransition.ts, the motion the shared rect morph (motion/rectMorph.ts,
+ *   architecture:layer-runtime INV15)
  *
  * Two portals, as UIKit's `.zoom`: the photo itself (the detail) grows from
  * the source's width to its fitted box and fades in, while a copy of the
  * source's picture (aspect fill in the source's box) grows with it and fades
- * out; closing runs the reverse onto the photo's current box. The backdrop
+ * out; closing runs the reverse from the photo's current box. Each grows
+ * through a rect morph: the photo's on the zoom stage's own animator (pinch,
+ * pan and settle share it), the copy's on its own, both started in one task
+ * on one spring. A close during the opening dismisses the same two morphs,
+ * which continue from the rects on screen with their velocity. The backdrop
  * and the controls fade with the progress. The source is hidden while its
  * picture flies, until the last transition holding it ends (a close can
  * interrupt the opening). Under Reduce Motion the animator's default applies
@@ -29,15 +34,20 @@
  */
 
 import {animatorFor, type Animator, type MotionCurve} from '../motion/animator';
+import {
+  createRectMorph,
+  type MorphPath,
+  type RectMorph,
+} from '../motion/rectMorph';
 import {resolveMotion} from '../motion/resolveMotion';
 import {zoomMedia} from '../motion/uikit/zoomMedia';
 import {
   zoomCloseProgress,
-  zoomElementCurves,
   zoomOpenProgress,
+  zoomPath,
   type Rect,
 } from './zoomTransition';
-import {firstValues, type ZoomStage} from './useZoomCore';
+import type {ZoomStage} from './useZoomCore';
 
 /** The source's box in client px, or null when it is gone or off screen. */
 export function sourceBoxOf(source: HTMLElement | null): Rect | null {
@@ -169,6 +179,12 @@ export interface ZoomFromSourceOptions {
   offset?: number;
 }
 
+/** A copy of the source's picture and the rect morph that moves it. */
+interface SourceCopy {
+  portal: HTMLImageElement;
+  morph: RectMorph;
+}
+
 /** Openings in flight, by container: a close turns them around. */
 const openings = new WeakMap<
   HTMLElement,
@@ -176,10 +192,26 @@ const openings = new WeakMap<
     source: HTMLElement;
     /** Its curves have started (two frames after its presented start). */
     started: boolean;
-    /** The portal it plays, which a close turning it around takes over. */
-    owned: {portal: HTMLImageElement | null};
+    /** The paths its morphs play, which a close turning it around follows. */
+    photoPath: MorphPath;
+    copyPath: MorphPath | null;
+    /** The copy it plays, which a close turning it around takes over. */
+    owned: {copy: SourceCopy | null};
   }
 >();
+
+/** The values that put an element laid out in `path.box` on `path` at `p`. */
+function valuesAt(path: MorphPath, p: number) {
+  const rect = path.rectAt(p);
+  const scale = path.box.width > 0 ? rect.width / path.box.width : 1;
+  return {
+    x: rect.x - path.box.x,
+    y: rect.y - path.box.y,
+    scaleX: scale,
+    scaleY: scale,
+    opacity: path.opacityAt?.(p) ?? 1,
+  };
+}
 
 /**
  * Runs the zoom transition; resolves once the photo is at rest (open) or in
@@ -196,14 +228,13 @@ export function zoomFromSource({
   signal,
   offset = 0,
 }: ZoomFromSourceOptions): Promise<void> | null {
-  // A close during the opening turns it around from where it shows, on the
-  // opening's geometry, as UIKit's interruptible transition does: an additive
-  // retarget keeps the opening's curves going and adds the close's change on
-  // top, so whichever frame first shows it, nothing steps back. An opening
-  // whose curves have not started yet still shows its first values: the close
-  // starts from there.
+  // A close during the opening turns it around from where it shows: it
+  // dismisses the opening's own morphs, which continue from the rects on
+  // screen with their velocity (motion/rectMorph.ts), so whichever frame first
+  // shows it, nothing steps back. An opening whose curves have not started
+  // yet still shows its first values: the close starts from there.
   const opening = kind === 'close' ? openings.get(container) : undefined;
-  const turning = opening?.started === true && opening.source === source;
+  const turning = opening != null && opening.source === source;
   const sourceBox = sourceBoxOf(source);
   const measured = stage.fittedBox();
   const fitted =
@@ -211,22 +242,21 @@ export function zoomFromSource({
       ? {...measured, x: measured.x + offset}
       : measured;
   const detail = kind === 'open' || turning ? fitted : stage.shownBox();
-  if (sourceBox == null || fitted == null || detail == null) {
+  const owner = stage.morph();
+  if (sourceBox == null || fitted == null || detail == null || owner == null) {
     return null;
   }
   const geometry = {source: sourceBox, detail, align: 'center' as const};
   // The transition's springs: the table's internal constants.
-  const close = zoomCloseProgress({
-    spring: resolveMotion(container, zoomMedia.transition.closeSpring),
-    fadeSpring: resolveMotion(container, zoomMedia.transition.closeFadeSpring),
-  });
-  const frame =
-    kind === 'open'
-      ? zoomOpenProgress({
-          spring: resolveMotion(container, zoomMedia.transition.openSpring),
-        })
-      : close.frame;
-  const fade = kind === 'open' ? frame : close.fade;
+  const openSpring = resolveMotion(container, zoomMedia.transition.openSpring);
+  const closeSpring = resolveMotion(
+    container,
+    zoomMedia.transition.closeSpring,
+  );
+  const closeFadeSpring = resolveMotion(
+    container,
+    zoomMedia.transition.closeFadeSpring,
+  );
   // Under Reduce Motion the animator turns the zoom into a fade in place
   // (or an instant change): nothing flies out of the source.
   const reduced = animatorFor(container).reducedMotion() !== 'off';
@@ -237,51 +267,78 @@ export function zoomFromSource({
   // its curve's first value.
   const start =
     kind === 'open' && !reduced ? ('presented' as const) : undefined;
-  const play = <K extends string>(
-    animator: Pick<Animator, 'play'> & Partial<Pick<Animator, 'set'>>,
-    curves: Partial<Record<K, MotionCurve>>,
-    crossfadeAs?: 'entrance' | 'exit',
-  ) => {
-    // The stage writes its own first values (ZoomStage.play).
-    if (start === 'presented') {
-      animator.set?.(firstValues(curves));
-    }
-    return animator.play(curves, {
-      crossfadeAs,
-      start,
-      additive: turning,
-    });
-  };
-  const handle = play(
-    stage,
-    zoomElementCurves(geometry, fitted, 'detail', frame, fade),
-    kind === 'open' ? 'entrance' : 'exit',
-  );
-  let portal: HTMLImageElement | null = null;
+  // The photo, laid out in its fitted box; closing, from where it shows.
+  const photoPath =
+    turning && opening != null
+      ? opening.photoPath
+      : zoomPath(geometry, 'detail', fitted);
+  const handle =
+    kind === 'open'
+      ? owner.morph.present(photoPath, openSpring, {
+          start,
+          crossfadeAs: 'entrance',
+        })
+      : owner.morph.dismiss(photoPath, closeSpring, {
+          target: owner.photo,
+          fadeSpring: closeFadeSpring,
+          crossfadeAs: 'exit',
+        });
+  // The copy of the source's picture, laid out on the source, on the same
+  // spring in the same task: both share the browser's start.
+  let copy: SourceCopy | null = null;
+  let copyPath: MorphPath | null = null;
   if (!reduced) {
-    const taken = turning ? (opening?.owned.portal ?? null) : null;
-    if (taken != null && taken.isConnected && opening != null) {
-      opening.owned.portal = null;
-      portal = taken;
-    } else {
-      portal = showSourcePortal(container, source, sourceBox, src);
+    const taken = turning ? (opening?.owned.copy ?? null) : null;
+    if (taken != null && taken.portal.isConnected && opening != null) {
+      opening.owned.copy = null;
+      copy = taken;
+      copyPath = opening.copyPath;
     }
-    play(
-      animatorFor(portal),
-      zoomElementCurves(geometry, sourceBox, 'source', frame, fade),
-    );
+    if (copy == null || copyPath == null) {
+      const portal = showSourcePortal(container, source, sourceBox, src);
+      copy = {
+        portal,
+        morph: createRectMorph(portal, {animator: animatorFor(portal)}),
+      };
+      copyPath = zoomPath(geometry, 'source', sourceBox);
+      if (kind === 'close') {
+        // A copy made for the close starts over the photo as it shows,
+        // unseen, and shrinks into the source as it fades in.
+        animatorFor(portal).set(valuesAt(copyPath, 1));
+      }
+    }
+    if (kind === 'open') {
+      copy.morph.present(copyPath, openSpring, {start});
+    } else {
+      copy.morph.dismiss(copyPath, closeSpring, {
+        target: copy.portal,
+        fadeSpring: closeFadeSpring,
+      });
+    }
   }
+  // The backdrop and the controls fade with the progress.
+  const fade =
+    kind === 'open'
+      ? zoomOpenProgress({spring: openSpring})
+      : zoomCloseProgress({spring: closeSpring, fadeSpring: closeFadeSpring})
+          .fade;
   const opacity: MotionCurve = {
     duration: fade.duration,
     at: t => Math.min(1, Math.max(0, fade.at(t))),
     velocity: t => fade.velocity(t),
   };
   for (const animator of fades) {
-    play(animator, {opacity});
+    if (start === 'presented') {
+      animator.set({opacity: opacity.at(0)});
+    }
+    animator.play(
+      {opacity},
+      {start, additive: turning && opening?.started === true},
+    );
   }
-  const owned = {portal};
+  const owned = {copy};
   if (kind === 'open') {
-    const entry = {source, started: false, owned};
+    const entry = {source, started: false, photoPath, copyPath, owned};
     openings.set(container, entry);
     void handle.started.then(
       () => {
@@ -296,7 +353,7 @@ export function zoomFromSource({
   const release = reduced ? null : hideSource(source);
   const end = () => {
     release?.();
-    owned.portal?.remove();
+    owned.copy?.portal.remove();
     if (openings.get(container)?.owned === owned) {
       openings.delete(container);
     }
