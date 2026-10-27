@@ -26,6 +26,7 @@ import {ChatComposer} from './ChatComposer';
 import {ChatLayout} from './ChatLayout';
 import {editableToClaim, focusAtPoint} from './useChatKeyboard';
 import {getKeyboardLayoutGuide} from '../keyboard';
+import {__focusTakeoverCallersForTest} from '../keyboard/keyboardHeight';
 
 type FakeViewport = EventTarget & {
   height: number;
@@ -484,11 +485,30 @@ describe('focus moves into the composer (spec:AST-099 FR4)', () => {
     ).toHaveLength(2);
   });
 
-  it('adds no tab stop for the composer region', () => {
+  it('adds no tab stop for the composer region: it takes focus only for Done\u2019s park, and gives the focus stop up as focus leaves (spec:AST-017 FR59)', () => {
     primaryPointer('coarse');
-    renderWithSearch('textarea');
+    const {message} = renderWithSearch('textarea');
     const region = screen.getByRole('group', {name: 'Message composer'});
+    // No focus target until Done parks focus there, so a tap or a click
+    // beside the composer never focuses the region.
+    expect(region.hasAttribute('tabindex')).toBe(false);
+    act(() => message.focus());
+    act(() => message.blur());
+    expect(document.activeElement).toBe(region);
     expect(region.tabIndex).toBe(-1);
+    act(() => message.focus());
+    expect(document.activeElement).toBe(message);
+    expect(region.hasAttribute('tabindex')).toBe(false);
+  });
+
+  it('never makes the composer region a focus target under a mouse (spec:AST-017 FR59)', () => {
+    primaryPointer('fine');
+    const {message} = renderWithSearch('textarea');
+    const region = screen.getByRole('group', {name: 'Message composer'});
+    expect(region.hasAttribute('tabindex')).toBe(false);
+    act(() => message.focus());
+    act(() => message.blur());
+    expect(region.hasAttribute('tabindex')).toBe(false);
   });
 
   it('leaves focus where the browser puts it when it moves on to another field', () => {
@@ -588,6 +608,44 @@ describe('focus moves into the composer (spec:AST-099 FR4)', () => {
     finger('touchmove', 420, 1016);
     finger('touchend', 420, 1116);
     expect(document.activeElement).not.toBe(message);
+  });
+
+  it('registers no touch listener and installs no focus takeover under a mouse (architecture INV13, spec:AST-094 FR24)', () => {
+    primaryPointer('fine');
+    const touchTargets: EventTarget[] = [];
+    const addEventListener = EventTarget.prototype.addEventListener;
+    vi.spyOn(EventTarget.prototype, 'addEventListener').mockImplementation(
+      function (this: EventTarget, type, listener, options) {
+        if (type.startsWith('touch')) {
+          touchTargets.push(this);
+        }
+        addEventListener.call(this, type, listener, options);
+      },
+    );
+    renderWithSearch('textarea');
+    const layout = screen.getByTestId('layout');
+    // React's own root listeners sit outside the layout.
+    expect(
+      touchTargets.filter(
+        target => target instanceof Node && layout.contains(target),
+      ),
+    ).toEqual([]);
+    expect(__focusTakeoverCallersForTest(document)).toBe(0);
+  });
+
+  it('installs the focus takeover for each ChatLayout under a finger, through the keyboard module\u2019s one listener (spec:AST-094 FR24)', () => {
+    primaryPointer('coarse');
+    render(
+      <>
+        <ChatLayout composer={<textarea aria-label="First" />}>
+          <p>Hello</p>
+        </ChatLayout>
+        <ChatLayout composer={<textarea aria-label="Second" />}>
+          <p>Hi</p>
+        </ChatLayout>
+      </>,
+    );
+    expect(__focusTakeoverCallersForTest(document)).toBe(2);
   });
 });
 

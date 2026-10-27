@@ -467,6 +467,26 @@ test('the transcript at its newest message stays there', async ({page}) => {
   expect(await dockY(dock)).toBeCloseTo(-lift, 0);
 });
 
+test('under a mouse a click in the dock beside the composer does not focus the composer group (spec:AST-017 FR59)', async ({
+  page,
+}) => {
+  const {editable} = await openChat(page);
+  await editable.click();
+  const region = page.getByRole('group', {name: 'Message composer'});
+  const outer = await region.boundingBox();
+  const inner = await region.locator(':scope > div').boundingBox();
+  if (outer == null || inner == null) {
+    throw new Error('the composer region is not laid out');
+  }
+  // The region's own gutter, beside the composer.
+  const gutter = inner.x - outer.x;
+  expect(gutter).toBeGreaterThan(2);
+  await page.mouse.click(outer.x + gutter / 2, inner.y + inner.height / 2);
+  expect(
+    await region.evaluate(element => element === document.activeElement),
+  ).toBe(false);
+});
+
 test('the dock comes down when the composer text loses focus', async ({
   page,
 }) => {

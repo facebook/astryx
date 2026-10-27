@@ -52,15 +52,16 @@
  *   Safari's reveal (`preventScroll`), which would otherwise scroll the
  *   whole page up to show a field that the keyboard is about to cover, and
  *   puts the caret where the finger lifted. The tap is the keyboard module's
- *   tap route (claimTapFocus): its end cancels the browser's own focus for
- *   that touch. Taps on anything else in the composer, and taps once the
+ *   tap route (claimTapFocus), attached only under a finger: its end cancels
+ *   the browser's own focus for that touch. Taps on anything else in the composer, and taps once the
  *   text has focus, are the browser's.
  * - Every other move into the composer's text (the keyboard's previous and
  *   next buttons, Tab, a script moving focus from another element, a text
  *   control tapped while another element has focus) is delivered the same
  *   way, by the keyboard module's focus takeover (refuseFocusReveal), under a
  *   finger and where the keyboard is measured. The keyboard's Done moves
- *   focus to the composer region ChatLayout names, which is no tab stop. A script's focus() while
+ *   focus to the composer region ChatLayout names, which is no tab stop and
+ *   is focusable for that park alone (spec:AST-017 FR59). A script's focus() while
  *   nothing has focus raises no event before Safari reveals the field, so
  *   nothing can take that move over: the composer's own focus routes pass
  *   `preventScroll` in this region (keyboardSurface.ts), and the tap route
@@ -257,6 +258,24 @@ export function focusAtPoint(editable: HTMLElement, x: number, y: number) {
     selection?.removeAllRanges();
     selection?.addRange(range);
   }
+}
+
+/**
+ * Done's park (spec:AST-099 FR4): focus rests on the composer region, which
+ * is focusable for the park alone, so a click or a tap beside the composer
+ * never focuses it (spec:AST-017 FR59). The region gives the focus stop up as
+ * soon as focus leaves it.
+ */
+function parkFocus(region: HTMLElement): void {
+  region.setAttribute('tabindex', '-1');
+  region.addEventListener(
+    'blur',
+    () => {
+      region.removeAttribute('tabindex');
+    },
+    {once: true},
+  );
+  region.focus({preventScroll: true});
 }
 
 /**
@@ -563,19 +582,26 @@ export function useChatKeyboard({
 
   // A tap on the composer's text that would bring up the keyboard is the
   // keyboard module's tap route (spec:AST-099 FR4): focused here without
-  // Safari's reveal, with the caret where the finger lifted. Only where the
-  // keyboard is measured: inside an iframe nothing changes (FR7).
+  // Safari's reveal, with the caret where the finger lifted. Only under a
+  // finger: under a fine primary pointer no touch listener is registered
+  // (architecture INV13, spec:AST-094 FR24). Only where the keyboard is
+  // measured: inside an iframe nothing changes (FR7).
   useIsomorphicLayoutEffect(() => {
     const composer = composerRef.current;
     const win = composer?.ownerDocument.defaultView;
-    if (composer == null || win == null || !isKeyboardMeasurable(win)) {
+    if (
+      !touchPresentation.isTouch ||
+      composer == null ||
+      win == null ||
+      !isKeyboardMeasurable(win)
+    ) {
       return undefined;
     }
     return claimTapFocus(composer, {
       claim: editableToClaim,
       deliver: focusAtPoint,
     });
-  }, []);
+  }, [touchPresentation.isTouch]);
 
   // A browser that reveals the composer itself pans the visual viewport after
   // the keyboard's report while the composer is still riding up (Chrome 124
@@ -616,16 +642,23 @@ export function useChatKeyboard({
   }, [isTouch]);
 
   // Every other move into the composer's text is the keyboard module's focus
-  // takeover (spec:AST-099 FR4), where the keyboard is measured (FR6). A
-  // desktop browser keeps its own focus (spec:AST-017 FR59): the pointer is
-  // read on every blur, so a tablet that docks a mouse follows it. When the
-  // keyboard's Done ends entry, focus leaves the composer's text for nothing
-  // and moves to the composer region (FR4), a named group that is no tab
-  // stop, so the next tap or Tab starts from the composer.
+  // takeover (spec:AST-099 FR4), where the keyboard is measured (FR6), and
+  // only under a finger (spec:AST-094 FR24): a desktop browser keeps its own
+  // focus (spec:AST-017 FR59). The takeover follows the touch presentation,
+  // and the pointer is read again on every blur, so a tablet that docks a
+  // mouse drops it. When the keyboard's Done ends entry, focus leaves the
+  // composer's text for nothing and moves to the composer region (FR4), a
+  // named group that is no tab stop, so the next tap or Tab starts from the
+  // composer.
   useIsomorphicLayoutEffect(() => {
     const composer = composerRef.current;
     const win = composer?.ownerDocument.defaultView;
-    if (composer == null || win == null || !isKeyboardMeasurable(win)) {
+    if (
+      !touchPresentation.isTouch ||
+      composer == null ||
+      win == null ||
+      !isKeyboardMeasurable(win)
+    ) {
       return undefined;
     }
     return refuseFocusReveal(composer.ownerDocument, {
@@ -635,11 +668,11 @@ export function useChatKeyboard({
       claim: destination => findTextEntryControl(destination, composer),
       park: origin => {
         if (findTextEntryControl(origin, composer) != null) {
-          composer.focus({preventScroll: true});
+          parkFocus(composer);
         }
       },
     });
-  }, []);
+  }, [touchPresentation.isTouch]);
 
   return {
     lift,
