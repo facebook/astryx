@@ -65,7 +65,8 @@ const animatedLayout = useAnimatedLayout({containerRef: scrollRef});
   `animatedLayout` prop or option.
 - **FR2 — Without a handle, nothing changes.** A component without a handle
   keeps its behavior: the changed element shows its change as its own record
-  says, and content after it takes its place at once.
+  says, and content after it takes its place at once. AppShell's content area
+  holds its own handle for a side nav collapse (`component:AppShell` FR17).
 - **FR3 — The content after a change glides within the area.** For any change
   a component holding the handle reports, such as a disclosure opening,
   content loading in, a message appearing, or an item inserted or removed,
