@@ -41,7 +41,7 @@ system_specs: []
 | Behavior                | One TabList entry. In the navigation pattern it is a button or, with `href`, a link marked `aria-current` when selected; in the tabs pattern (`role="tablist"`) it is a `role="tab"` button that controls its panel. The strip has one tab stop, which starts on the selected entry. |
 | End-user impact         | Users select a view or destination; keyboard users meet one tab stop for the whole strip; screen-reader users hear the selected entry and, in the tabs pattern, the panel it controls.                                                                                               |
 | Builder impact          | None.                                                                                                                                                                                                                                                                                |
-| Compatibility/readiness | Records shipped behavior; no public change. Three implementation gaps (see Current-state impact).                                                                                                                                                                                    |
+| Compatibility/readiness | Records shipped behavior; no public change. Four implementation gaps (see Current-state impact).                                                                                                                                                                                     |
 | Review checks           | Reject more than one tab stop per strip, `aria-current="page"` on a navigation tab, a disabled tab that fires its handler or navigates, or a tabs-pattern tab that renders a link.                                                                                                   |
 | Governing rules         | `component:TabList` (strip edge geometry); `family:navigation-destinations`; `architecture:interaction-modality`.                                                                                                                                                                    |
 
@@ -76,6 +76,10 @@ Consumer migration instructions belong in consumer docs and release notes.
   pressed fill, and indicator fade still animate when reduced motion is
   requested;
   `design:reduced-motion` DR3 allows no animated property for a fine pointer.
+- **The `tab` target does not reflect disabled.** A disabled Tab drops its
+  hover and pressed treatment, but the `tab` target reflects only `selected`.
+  `architecture:component-theming-surface` INV6 has a state that changes paint
+  reflected on the owning target.
 
 ## Ownership boundary
 
@@ -102,16 +106,16 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Behavioral and layout contract
 
-| ID  | Invariant                                                                                                                                                                                                                                                                            | Basis                    |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------ |
-| FR1 | In the navigation pattern a Tab is a `<button type="button">`, or with `href` the `as` component, else the `LinkProvider` link, else `<a>`. The selected Tab carries `aria-current="true"`, never `"page"`.                                                                          | Current source and tests |
-| FR2 | In the tabs pattern a Tab is a `<button>` with `role="tab"`, `aria-selected`, and `aria-controls` from `panelId` (else a caller `aria-controls`). `href` is ignored, and development warnings name an ignored `href`, a missing panel, or a `panelId` outside the tabs pattern.      | Current source and tests |
-| FR3 | The strip has one tab stop. It starts on the selected Tab (`tabIndex=0`, every other entry `-1`), moves to whichever entry the arrow keys, Home, or End focus, without selecting it, and falls to the first enabled entry when no entry is selected or the selected one is disabled. | Current source and tests |
-| FR4 | Activation runs the caller `onClick`, then selects the Tab's `value` through the TabList unless the caller cancelled the event.                                                                                                                                                      | Current source and tests |
-| FR5 | A Tab with `aria-disabled="true"` does not run `onClick`, does not select, and, as a link, renders a plain `<a>` without `href`; it gets no hover or pressed treatment.                                                                                                              | Current source and tests |
-| FR6 | `isLabelHidden` names the Tab by `label` through `aria-label` and hides the text; the visible label reserves its selected (semibold) width so selection does not shift layout. `selectedIcon` replaces `icon` while selected.                                                        | Current source and tests |
-| FR7 | Every Tab renders an indicator carrying `tab-indicator`, visible only when selected; the root carries `tab` with `selected`. The pressed overlay paints on the tab surface.                                                                                                          | Current source and tests |
-| FR8 | The root forwards the `ref` and other DOM props, merges `className`, `style`, and `xstyle` after component styles, and paints the shared focus outline.                                                                                                                              | Current source and tests |
+| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                  | Basis                    |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| FR1 | In the navigation pattern a Tab is a `<button type="button">`, or with `href` the `as` component, else the `LinkProvider` link, else `<a>`. The selected Tab carries `aria-current="true"`, never `"page"`.                                                                                                                                                | Current source and tests |
+| FR2 | In the tabs pattern a Tab is a `<button>` with `role="tab"`, `aria-selected`, and `aria-controls` from `panelId` (else a caller `aria-controls`). `href` is ignored, and development warnings name an ignored `href`, a missing panel, or a `panelId` outside the tabs pattern.                                                                            | Current source and tests |
+| FR3 | The strip has one tab stop. It starts on the selected Tab (`tabIndex=0`, every other entry `-1`), and moves to whichever entry the arrow keys, Home, or End focus, without selecting it. Where the stop starts when no entry is selected, or the selected one is disabled, is uncontracted here; the Tabs accessibility inventory leaves that policy open. | Current source and tests |
+| FR4 | Activation runs the caller `onClick`, then selects the Tab's `value` through the TabList unless the caller cancelled the event.                                                                                                                                                                                                                            | Current source and tests |
+| FR5 | A Tab with `aria-disabled="true"` does not run `onClick`, does not select, and, as a link, renders a plain `<a>` without `href`; it gets no hover or pressed treatment.                                                                                                                                                                                    | Current source and tests |
+| FR6 | `isLabelHidden` names the Tab by `label` through `aria-label` and hides the text; the visible label reserves its selected (semibold) width so selection does not shift layout. `selectedIcon` replaces `icon` while selected.                                                                                                                              | Current source and tests |
+| FR7 | Every Tab renders an indicator carrying `tab-indicator`, visible only when selected; the root carries `tab` with `selected`. The pressed overlay paints on the tab surface.                                                                                                                                                                                | Current source and tests |
+| FR8 | The root forwards the `ref` and other DOM props, merges `className`, `style`, and `xstyle` after component styles, and paints the shared focus outline.                                                                                                                                                                                                    | Current source and tests |
 
 ### Allowed variation
 
@@ -168,14 +172,13 @@ FR1–FR2.
 | Contract | Verification                                                                                                                                      | Representative states             | Mutation or failure expectation                  | Audit section             |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- | ------------------------------------------------ | ------------------------- |
 | FR1, FR2 | `TabList.test.tsx` aria-current, polymorphic link, and tabs-pattern tests; `Tabs.a11y.test.tsx`; `Tabs.a11y.chromium.spec.ts` for `aria-selected` | Navigation, link, tabs            | Wrong role or state fails.                       | `audit:Tab/accessibility` |
-| FR3      | `TabList.test.tsx` single tab stop and roving tabindex tests                                                                                      | Selected, no match                | Extra tab stops, or a wrong starting stop, fail. | `audit:Tab/accessibility` |
+| FR3      | `TabList.test.tsx` single tab stop and roving tabindex tests                                                                                      | Selected                          | Extra tab stops, or a wrong starting stop, fail. | `audit:Tab/accessibility` |
 | FR4, FR5 | `TabList.test.tsx` onChange and disabled tests                                                                                                    | Click, disabled button            | Selection when disabled fails.                   | `audit:Tab/behavior`      |
 | FR6, FR7 | `TabList.test.tsx` icon, icon-only, and pressed-overlay tests                                                                                     | Icon, selected icon, hidden label | Wrong icon, name, or overlay fails.              | `audit:Tab/behavior`      |
 
 Read from source, with no focused test yet:
 
-- FR3: the stop moving with arrow, Home, and End focus, and the fallback past a
-  disabled selected entry.
+- FR3: the stop moving with arrow, Home, and End focus.
 - FR1: the button's `type="button"`.
 - FR4: the caller `onClick` running first, and its `preventDefault()`
   cancelling selection.
