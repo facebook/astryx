@@ -6,6 +6,7 @@ import {
   isCleanRender,
   renderPage,
   renderUntilClean,
+  uncleanFindings,
 } from './cdn-page-render.mjs';
 
 const URL = 'http://127.0.0.1:1/';
@@ -39,6 +40,7 @@ function fakeLaunch({
   onButton = () => {},
   gotoErrors = [],
   button = 'Start',
+  buttonError = null,
 }) {
   let launches = 0;
   let closed = 0;
@@ -57,6 +59,9 @@ function fakeLaunch({
       first: () => ({
         textContent: async options => {
           onButton(options);
+          if (buttonError != null) {
+            throw buttonError;
+          }
           return button;
         },
       }),
@@ -138,6 +143,63 @@ describe('renderPage', () => {
   });
 });
 
+describe('renderPage reading the button', () => {
+  it('reports no button when none appears within the wait: the page rendered nothing to press', async () => {
+    const timeout = navigationTimeout();
+    const {launch} = fakeLaunch({buttonError: timeout});
+    const result = await renderPage(URL, {launch});
+    expect(result.button).toBeNull();
+    expect(isCleanRender(result)).toBe(false);
+  });
+
+  it('throws any other error from reading the button, rather than reporting it as a missing button', async () => {
+    const crashed = new Error('locator.textContent: Target crashed');
+    const {launch, closed} = fakeLaunch({buttonError: crashed});
+    await expect(renderPage(URL, {launch})).rejects.toBe(crashed);
+    expect(closed()).toBe(1);
+  });
+});
+
+describe('uncleanFindings', () => {
+  it('names everything that made a render unclean', () => {
+    expect(
+      uncleanFindings({
+        consoleErrors: ['Uncaught TypeError: x is not a function'],
+        pageErrors: ['Error: boom'],
+        failedRequests: [`${CSS} :: net::ERR_BLOCKED_BY_ORB`],
+        timedOut: false,
+        pendingRequests: [],
+        button: null,
+      }),
+    ).toEqual([
+      'console error: Uncaught TypeError: x is not a function',
+      'page error: Error: boom',
+      `failed request: ${CSS} :: net::ERR_BLOCKED_BY_ORB`,
+      'rendered no button',
+    ]);
+  });
+
+  it('names a timeout with each request still in flight, and no missing button for a page that never finished', () => {
+    expect(uncleanFindings(TIMED_OUT)).toEqual([
+      'navigation timed out',
+      `still in flight: ${CORE}`,
+    ]);
+  });
+
+  it('has nothing to say about a clean render', () => {
+    expect(
+      uncleanFindings({
+        consoleErrors: [],
+        pageErrors: [],
+        failedRequests: [],
+        timedOut: false,
+        pendingRequests: [],
+        button: 'Start',
+      }),
+    ).toEqual([]);
+  });
+});
+
 describe('renderPage within a budget', () => {
   it('waits for the navigation no longer than its budget, and for the button no longer than what is left of it', async () => {
     let clock = 0;
@@ -188,6 +250,30 @@ describe('renderUntilClean', () => {
     expect(retries).toEqual([1]);
     expect(result.timedOut).toBe(true);
     expect(result.pendingRequests).toEqual([CORE]);
+  });
+
+  it('hands each retry the attempt it discards, so what went wrong on it can be reported', async () => {
+    const heard = [];
+    let calls = 0;
+    const clean = {
+      ...TIMED_OUT,
+      timedOut: false,
+      pendingRequests: [],
+      button: 'Start',
+    };
+    const result = await renderUntilClean(
+      async () => {
+        calls += 1;
+        return calls === 1 ? TIMED_OUT : clean;
+      },
+      {
+        attempts: 2,
+        onRetry: (attempt, _leftMs, discarded) =>
+          heard.push([attempt, discarded]),
+      },
+    );
+    expect(heard).toEqual([[1, TIMED_OUT]]);
+    expect(result).toBe(clean);
   });
 
   it('gives each attempt an equal share of the time left before the deadline', async () => {
