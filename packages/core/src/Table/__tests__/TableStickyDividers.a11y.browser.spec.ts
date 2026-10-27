@@ -338,7 +338,9 @@ test('a carried border follows an operating-system switch between light and dark
   await page.emulateMedia({colorScheme: 'light'});
   await mount(page, 'pinned-dividers-live');
   await page.getByRole('button', {name: 'Add columns'}).click();
-  await page.getByRole('button', {name: 'Token row borders'}).click();
+  // The third row's wider top border, in the border token: the pinned cells
+  // above it carry its colour as values, which the mode watch reads again.
+  await page.getByRole('button', {name: 'Token top border'}).click();
   await page.emulateMedia({colorScheme: 'dark'});
   for (const left of [0, 150]) {
     await scrollTo(page, left);
@@ -392,6 +394,37 @@ test("an open panel's divider follows an operating-system switch between light a
     .toBe(true);
 });
 
+test("an open panel's carried override follows an operating-system switch between light and dark", async ({
+  page,
+}) => {
+  await page.emulateMedia({colorScheme: 'light'});
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-tablerowexpansion--panel-divider-follows-scheme&viewMode=story&args=override:!true`,
+  );
+  await expect(page.locator('tr[data-expansion-panel]')).toBeVisible();
+  const colours = async () =>
+    page.evaluate(() => {
+      const panel = document.querySelector('tr[data-expansion-panel] > td');
+      const row =
+        panel?.parentElement?.previousElementSibling?.lastElementChild;
+      return {
+        panel: panel == null ? '' : getComputedStyle(panel).borderBottomColor,
+        row: row == null ? '' : getComputedStyle(row).borderBottomColor,
+        style: panel == null ? '' : getComputedStyle(panel).borderBottomStyle,
+      };
+    });
+  const light = await colours();
+  expect(light.panel).toBe(light.row);
+  expect(light.style).toBe('dashed');
+  await page.emulateMedia({colorScheme: 'dark'});
+  await expect
+    .poll(async () => {
+      const dark = await colours();
+      return dark.panel === dark.row && dark.panel !== light.panel;
+    })
+    .toBe(true);
+});
+
 test("a carried border follows a Theme switched between the hooks' owner and the table", async ({
   page,
   browserName,
@@ -400,7 +433,9 @@ test("a carried border follows a Theme switched between the hooks' owner and the
   await page.emulateMedia({colorScheme: 'light'});
   await mount(page, 'pinned-dividers-live');
   await page.getByRole('button', {name: 'Add columns'}).click();
-  await page.getByRole('button', {name: 'Token row borders'}).click();
+  // The third row's wider top border, in the border token: the pinned cells
+  // above it carry its colour as values, which the mode watch reads again.
+  await page.getByRole('button', {name: 'Token top border'}).click();
   // The Theme around the table switches on its own state: the component
   // that calls the hooks does not re-render.
   await page.getByRole('button', {name: 'Theme dark'}).click();

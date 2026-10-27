@@ -202,10 +202,11 @@ function ThemeAroundTable({children}: {children: React.ReactNode}) {
  * 3 px top border, which wins the collapse over the third row's bottom; "Row
  * borders" draws an app's 2 px blue border on the rows that turns red on
  * hover (`tr:hover`); "First row top" gives the first body row a 3 px top
- * border, which wins over the header's bottom; "Token row borders" draws a
- * 2 px row border in the theme's border token, which follows a light/dark
- * switch (the table sits in a `system`-mode Theme); "Add columns" widens the
- * table inside the same wrapper.
+ * border, which wins over the header's bottom; "Token top border" gives the
+ * third row a 3 px top border in the theme's border token, which the pinned
+ * cells above it carry as values and which follows a light/dark switch (the
+ * table sits in a `system`-mode Theme); "Add columns" widens the table inside
+ * the same wrapper.
  */
 export const PinnedDividersLive: Story = {
   render: () => {
@@ -218,7 +219,7 @@ export const PinnedDividersLive: Story = {
     const [hasThickTop, setHasThickTop] = useState(false);
     const [hasRowBorders, setHasRowBorders] = useState(false);
     const [hasFirstRowTop, setHasFirstRowTop] = useState(false);
-    const [hasTokenRowBorders, setHasTokenRowBorders] = useState(false);
+    const [hasTokenTop, setHasTokenTop] = useState(false);
     const shown = hasMoreColumns
       ? columns
       : columns.filter(column => ['name', 'status'].includes(column.key));
@@ -231,8 +232,8 @@ export const PinnedDividersLive: Story = {
         {hasRowBorders && (
           <style>{`[data-testid="pinned-dividers-live"] tbody tr { border-bottom: 2px solid rgb(37, 99, 235); } [data-testid="pinned-dividers-live"] tbody tr:hover { border-bottom-color: rgb(220, 38, 38); }`}</style>
         )}
-        {hasTokenRowBorders && (
-          <style>{`[data-testid="pinned-dividers-live"] tbody tr { border-bottom: 2px solid var(--color-border); }`}</style>
+        {hasTokenTop && (
+          <style>{`[data-testid="pinned-dividers-live"] tbody tr:nth-child(3) td { border-top: 3px solid var(--color-border); }`}</style>
         )}
         {hasFirstRowTop && (
           <style>{`[data-testid="pinned-dividers-live"] tbody tr:first-child td { border-top: 3px solid rgb(234, 88, 12); }`}</style>
@@ -253,10 +254,8 @@ export const PinnedDividersLive: Story = {
           <button type="button" onClick={() => setHasFirstRowTop(on => !on)}>
             First row top
           </button>{' '}
-          <button
-            type="button"
-            onClick={() => setHasTokenRowBorders(on => !on)}>
-            Token row borders
+          <button type="button" onClick={() => setHasTokenTop(on => !on)}>
+            Token top border
           </button>{' '}
           <button type="button" onClick={() => setHasMoreColumns(on => !on)}>
             Add columns
