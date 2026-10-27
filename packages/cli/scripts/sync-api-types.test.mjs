@@ -32,13 +32,12 @@ const CONFIG_OUT_DIR = JSON.parse(
 ).compilerOptions.outDir;
 
 /**
- * The stand-in for `pnpm`: `pnpm exec tsc --project <config> [--outDir <dir>]`
- * emits `<outDir>/packages/cli/<tree>/index.d.mts` for each tree, where the
- * output directory is `--outDir` or the config's own. The role in
- * `SYNC_TEST_ROLE` orders the two runs through files in `SYNC_TEST_DIR`.
+ * The stand-in for TypeScript's `tsc` script: `tsc --project <config>
+ * [--outDir <dir>]` emits `<outDir>/packages/cli/<tree>/index.d.mts` for each
+ * tree, where the output directory is `--outDir` or the config's own. The role
+ * in `SYNC_TEST_ROLE` orders the two runs through files in `SYNC_TEST_DIR`.
  */
-const FAKE_PNPM = `#!/usr/bin/env node
-const fs = require('node:fs');
+const FAKE_TSC = `const fs = require('node:fs');
 const path = require('node:path');
 const args = process.argv.slice(2);
 const flag = name => {
@@ -81,7 +80,11 @@ afterEach(() => {
   }
 });
 
-/** A scratch CLI package with a copy of the script and the stand-in `pnpm`. */
+/**
+ * A scratch CLI package with a copy of the script and a stand-in `typescript`
+ * package, and a PATH directory with nothing in it: the script needs no
+ * `pnpm` there.
+ */
 function makeScratchPackage() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-api-types-test-'));
   scratch.push(root);
@@ -98,9 +101,15 @@ function makeScratchPackage() {
     path.join(cli, 'tsconfig.api-dts.json'),
     JSON.stringify({compilerOptions: {outDir: CONFIG_OUT_DIR}}),
   );
+  const typescript = path.join(cli, 'node_modules', 'typescript');
+  fs.mkdirSync(path.join(typescript, 'bin'), {recursive: true});
+  fs.writeFileSync(
+    path.join(typescript, 'package.json'),
+    JSON.stringify({name: 'typescript', bin: {tsc: './bin/tsc'}}),
+  );
+  fs.writeFileSync(path.join(typescript, 'bin', 'tsc'), FAKE_TSC);
   const bin = path.join(root, 'bin');
   fs.mkdirSync(bin);
-  fs.writeFileSync(path.join(bin, 'pnpm'), FAKE_PNPM, {mode: 0o755});
   const sync = path.join(root, 'sync');
   fs.mkdirSync(sync);
   return {cli, bin, sync};
@@ -120,11 +129,7 @@ function runSync(pkg, role) {
         cwd: pkg.cli,
         env: {
           ...process.env,
-          PATH: [
-            pkg.bin,
-            path.dirname(process.execPath),
-            process.env.PATH,
-          ].join(path.delimiter),
+          PATH: pkg.bin,
           SYNC_TEST_DIR: pkg.sync,
           SYNC_TEST_ROLE: role,
         },
@@ -147,7 +152,7 @@ async function waitForFile(file) {
   }
 }
 
-describe.skipIf(process.platform === 'win32')('sync-api-types', () => {
+describe('sync-api-types', () => {
   it('a run syncs the emitted declarations beside their sources', async () => {
     const pkg = makeScratchPackage();
     fs.writeFileSync(path.join(pkg.sync, 'second-compiling'), '');

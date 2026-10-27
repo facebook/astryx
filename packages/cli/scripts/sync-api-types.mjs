@@ -4,7 +4,8 @@
  * @file Generate the published type surface from the JSDoc source of truth.
  *
  * Functions own their types: a leaf's `@returns` + its colocated `.type.mjs`
- * typedefs ARE the contract. This script runs `tsc` (allowJs + checkJs +
+ * typedefs ARE the contract. This script runs TypeScript's `tsc` script
+ * through this Node, with no shell and no `pnpm` on PATH (allowJs + checkJs +
  * declaration + emitDeclarationOnly) over the source trees into a throwaway
  * temp dir, then copies the emitted declaration trees (the `.d.mts` files) back
  * alongside their sources (so relative imports and shared `types` declarations
@@ -27,6 +28,7 @@
 
 import {execFileSync} from 'node:child_process';
 import * as fs from 'node:fs';
+import {createRequire} from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -91,6 +93,20 @@ function cleanDts(dir) {
   }
 }
 
+/**
+ * The TypeScript compiler's `tsc` script, as the CLI package resolves
+ * `typescript`. It runs through this Node: Windows cannot spawn `pnpm` by name
+ * without a shell.
+ * @returns {string}
+ */
+function tscScript() {
+  const manifest = createRequire(path.join(CLI_ROOT, 'package.json')).resolve(
+    'typescript/package.json',
+  );
+  const {bin} = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+  return path.join(path.dirname(manifest), typeof bin === 'string' ? bin : bin.tsc);
+}
+
 for (const tree of TREES) cleanDts(path.join(CLI_ROOT, tree));
 // A temp directory of this run's own, passed to tsc as --outDir: two builds on
 // one machine (two checkouts, or two jobs) run this at once, and a shared
@@ -98,8 +114,8 @@ for (const tree of TREES) cleanDts(path.join(CLI_ROOT, tree));
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-dts-build-'));
 try {
   execFileSync(
-    'pnpm',
-    ['exec', 'tsc', '--project', 'tsconfig.api-dts.json', '--outDir', tmp],
+    process.execPath,
+    [tscScript(), '--project', 'tsconfig.api-dts.json', '--outDir', tmp],
     {cwd: CLI_ROOT, stdio: 'inherit'},
   );
   for (const tree of TREES) {
