@@ -85,21 +85,21 @@ import {
   type SyntheticEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {Animator, MotionHandle} from '@astryxdesign/core/motion/animator';
-import {resolveMotion} from '@astryxdesign/core/motion/resolveMotion';
+import type {Animator, MotionHandle} from '@astryxdesign/core/internal/motion';
+import {resolveMotion} from '@astryxdesign/core/internal/motion';
 import {
   solveSpring,
   toSpring,
   type SpringDescription,
-} from '@astryxdesign/core/motion/spring';
+} from '@astryxdesign/core/internal/motion';
 import {
   navigation,
   registerNavigationTable,
   registerSpringsTable,
   springs,
-} from '@astryxdesign/core/motion/uikit';
-import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
-import {TOUCH_QUERY} from '@astryxdesign/core/utils/touchPresentation';
+} from '@astryxdesign/core/internal/motion';
+import {useAnimator} from '@astryxdesign/core/internal/motion';
+import {TOUCH_QUERY} from '@astryxdesign/core/internal/touch';
 import {isRtlElement} from '@astryxdesign/core/hooks';
 import {useTranslator} from '@astryxdesign/core/i18n';
 import {focusOutlineStyles, observeResize} from '@astryxdesign/core/utils';

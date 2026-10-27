@@ -17,8 +17,8 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, fireEvent, render, screen} from '@testing-library/react';
-import {search} from '@astryxdesign/core/motion/uikit';
-import type * as UseAnimator from '@astryxdesign/core/motion/useAnimator';
+import {search} from '@astryxdesign/core/internal/motion';
+import type * as InternalMotion from '@astryxdesign/core/internal/motion';
 import {SearchField} from './SearchField';
 import {activationTiming} from './searchFieldModel';
 
@@ -28,8 +28,8 @@ const playedOptions = vi.hoisted(() => [] as Array<Record<string, unknown>>);
 
 // Records the length of every curve the field plays; the animator still
 // plays them.
-vi.mock('@astryxdesign/core/motion/useAnimator', async importOriginal => {
-  const actual = await importOriginal<typeof UseAnimator>();
+vi.mock('@astryxdesign/core/internal/motion', async importOriginal => {
+  const actual = await importOriginal<typeof InternalMotion>();
   const wrapped = new WeakSet<object>();
   return {
     ...actual,

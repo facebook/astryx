@@ -23,10 +23,13 @@
  * SYNC: When modified, update navigationSearch.test.ts.
  */
 
-import type {MotionCurve} from '@astryxdesign/core/motion/animator';
-import {cubicBezier, type BezierPoints} from '@astryxdesign/core/motion/bezier';
-import {resolveMotion} from '@astryxdesign/core/motion/resolveMotion';
-import {search, timing} from '@astryxdesign/core/motion/uikit';
+import type {MotionCurve} from '@astryxdesign/core/internal/motion';
+import {
+  cubicBezier,
+  type BezierPoints,
+} from '@astryxdesign/core/internal/motion';
+import {resolveMotion} from '@astryxdesign/core/internal/motion';
+import {search, timing} from '@astryxdesign/core/internal/motion';
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
