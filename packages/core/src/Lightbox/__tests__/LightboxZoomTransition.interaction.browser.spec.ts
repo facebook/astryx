@@ -41,6 +41,7 @@ import {
   openStory,
   releaseAnimations,
   sampleCurve,
+  seekAnimations,
   startScreencast,
   timeline,
   touchDriver,
@@ -190,6 +191,42 @@ test('the photo opens out of its thumbnail on the 0.34 s critically damped sprin
     )
     .toBe('visible');
 });
+
+// The second photo's page is already mounted beside the first, where the
+// pager has to move to; the third's page mounts with the opening, its photo
+// without a laid-out size until its picture applies.
+for (const i of [1, 2]) {
+  test(`photo ${i + 1} opens out of its own thumbnail, on the page it opens at`, async ({
+    page,
+  }) => {
+    const s = await openStoryPage(page);
+    const thumb = await s.box(i);
+    await tap(s.driver, s.thumbnail(i));
+    const dialog = page.getByRole('dialog');
+    const photo = dialog.locator('[data-current] img');
+    await waitForAnimation(photo);
+    await holdAnimations(page);
+    await seekAnimations(page, 0);
+    // Its first frame sits on the thumbnail it opens from: centred on it, at
+    // its width, not a page or more away.
+    const start = await photoBox(photo);
+    const centre = (b: Box) => ({x: b.x + b.width / 2, y: b.y + b.height / 2});
+    expect(Math.abs(centre(start).x - centre(thumb).x)).toBeLessThan(2);
+    expect(Math.abs(centre(start).y - centre(thumb).y)).toBeLessThan(2);
+    expect(Math.abs(start.width - thumb.width)).toBeLessThan(2);
+    await releaseAnimations(page);
+    await waitForRest(photo);
+    // It lands at its fitted size in the middle of the viewport, showing the
+    // photo of the thumbnail it opened from.
+    const rest = await photoBox(photo);
+    const viewport = page.viewportSize()!;
+    expect(Math.abs(centre(rest).x - viewport.width / 2)).toBeLessThan(2);
+    const idOf = (src: string | null) => /\/id\/(\d+)\//.exec(src ?? '')?.[1];
+    expect(idOf(await photo.getAttribute('src'))).toBe(
+      idOf(await s.thumbnail(i).getAttribute('src')),
+    );
+  });
+}
 
 test('the opening plays whole when its first frame comes late: delayed, never skipped', async ({
   page,
