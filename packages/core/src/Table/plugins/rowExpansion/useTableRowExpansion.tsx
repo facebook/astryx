@@ -439,6 +439,26 @@ function ExpansionPanelCell({
   );
 }
 
+/**
+ * Measures each expansion change for the glide, except in a grid table: its
+ * column lines are painted at the cells' static places too, and only row
+ * dividers have a moving stand-in, so a grid table's rows change at once
+ * (component:Table FR15).
+ */
+function ExpansionSnapshot({
+  value,
+  onBeforeChange,
+}: {
+  value: Set<string>;
+  onBeforeChange: (previous: Set<string>) => void;
+}) {
+  const ctx = useTableContext();
+  if (ctx?.dividers === 'grid') {
+    return null;
+  }
+  return <LayoutChangeSnapshot value={value} onBeforeChange={onBeforeChange} />;
+}
+
 // =============================================================================
 // Hook
 // =============================================================================
@@ -555,6 +575,19 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
     },
     [animatedLayout, expandedKeys, rowFor],
   );
+  // Without a handle the chevrons keep the theme's own turn: a spring a
+  // handle set stays only while it is passed (`spec:AST-105` FR2).
+  useLayoutEffect(() => {
+    if (animatedLayout != null) {
+      return;
+    }
+    for (const glyph of scrollWrapperRef.current?.querySelectorAll<HTMLElement>(
+      '[data-expansion-toggle] > *',
+    ) ?? []) {
+      applyLayoutChangeTransition(null, glyph);
+    }
+  }, [animatedLayout]);
+
   useLayoutEffect(() => {
     const pendings = pendingLayoutRef.current;
     pendingLayoutRef.current = [];
@@ -786,7 +819,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
             ) : (
               <>
                 {props.beforeTable}
-                <LayoutChangeSnapshot
+                <ExpansionSnapshot
                   value={expandedKeys}
                   onBeforeChange={measureChanges}
                 />

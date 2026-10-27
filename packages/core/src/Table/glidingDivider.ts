@@ -107,6 +107,8 @@ export const glidingDividerStyles = stylex.create({
 
 /** The batch that marked a row last: only that batch unmarks it. */
 const markedBy = new WeakMap<Element, symbol>();
+/** A marked cell's own inline border color, given back when it is unmarked. */
+const inlineColorOf = new WeakMap<HTMLElement, string>();
 
 /**
  * A row's own bottom border, for its stand-in while it moves; null for a row
@@ -174,6 +176,12 @@ export async function markGlidingRows(
       row.style.setProperty(APP_DIVIDER_STYLE, edge.style);
       row.style.setProperty(APP_DIVIDER_COLOR, edge.color);
       row.setAttribute(GLIDING_ATTRIBUTE, '');
+      // The table's last row can glide a pixel farther than the rows above
+      // it (its border collapses differently), so mid-glide it overlaps the
+      // row above. Each moving row is its own layer; the last one stays
+      // under the others so it cannot cover the divider above it. Both stay
+      // under a sticky header (z-index 3).
+      row.style.zIndex = row.nextElementSibling == null ? '0' : '1';
       // The first cell that scrolls with the row draws the line; a pinned
       // cell is positioned (the line would be its width) and draws its own.
       let hasLine = false;
@@ -182,6 +190,13 @@ export async function markGlidingRows(
           !hasLine && !cell.hasAttribute(PINNED_ATTRIBUTE);
         cell.setAttribute(CELL_ATTRIBUTE, isLine ? 'line' : '');
         hasLine ||= isLine;
+        // Inline, so a theme's `table-cell` color or an app's stylesheet on
+        // the cells, which outrank the stylesheet's rule, cannot keep the
+        // line at the row's static place.
+        if (cell instanceof HTMLElement) {
+          inlineColorOf.set(cell, cell.style.borderBottomColor);
+          cell.style.borderBottomColor = 'transparent';
+        }
       }
     }
     markedBy.set(row, batch);
@@ -198,8 +213,13 @@ export async function markGlidingRows(
     }
     markedBy.delete(row);
     row.removeAttribute(GLIDING_ATTRIBUTE);
+    row.style.removeProperty('z-index');
     for (const cell of row.children) {
       cell.removeAttribute(CELL_ATTRIBUTE);
+      if (cell instanceof HTMLElement && inlineColorOf.has(cell)) {
+        cell.style.borderBottomColor = inlineColorOf.get(cell) ?? '';
+        inlineColorOf.delete(cell);
+      }
     }
     row.style.removeProperty(APP_DIVIDER_WIDTH);
     row.style.removeProperty(APP_DIVIDER_STYLE);

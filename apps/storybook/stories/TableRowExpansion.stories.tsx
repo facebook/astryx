@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useMemo, useRef, useState} from 'react';
+import React, {useMemo, useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
   Table,
@@ -167,15 +167,24 @@ export const NotAllRowsExpandable: Story = {
   },
 };
 
+const manyOrders: Order[] = Array.from({length: 2000}, (_, index) => ({
+  ...orders[index % orders.length],
+  id: `ord-${String(index + 1).padStart(4, '0')}`,
+}));
+const sevenOrders = manyOrders.slice(0, 7);
+
 /**
  * With an `animatedLayout` handle, opening or closing a row's panel glides the
  * rows after it instead of jumping them, the panel plays in on the same
  * motion, and each row's divider moves with its row. The Customer column is
  * pinned and the table scrolls horizontally, so the pinned cells' own
- * dividers move too. Under Reduce Motion the rows change at once.
+ * dividers move too. Under Reduce Motion, and with `dividers="grid"` (the
+ * `grid` control), the rows change at once. The `themed` control sets a blue
+ * theme border and an app's red border on the third row's cells.
  */
-export const GlidingRows: Story = {
-  render: () => {
+export const GlidingRows: StoryObj<{themed?: boolean; grid?: boolean}> = {
+  args: {themed: false, grid: false},
+  render: ({themed, grid}) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const animatedLayout = useAnimatedLayout({containerRef});
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
@@ -193,14 +202,19 @@ export const GlidingRows: Story = {
       () => columns.map(column => ({...column, width: pixel(220)})),
       [],
     );
+    const style: React.CSSProperties & Record<string, string | number> = {
+      maxWidth: 640,
+      ...(themed === true ? {'--color-border': 'rgb(37, 99, 235)'} : {}),
+    };
     return (
-      <div
-        ref={containerRef}
-        data-testid="gliding-rows"
-        style={{maxWidth: 640}}>
+      <div ref={containerRef} data-testid="gliding-rows" style={style}>
+        {themed && (
+          <style>{`[data-testid="gliding-rows"] tbody tr:nth-child(3) td { border-bottom-color: rgb(220, 38, 38); }`}</style>
+        )}
         <Table
-          data={orders}
+          data={sevenOrders}
           columns={wideColumns}
+          dividers={grid === true ? 'grid' : undefined}
           idKey="id"
           hasHover
           plugins={{expansion, sticky}}
@@ -210,11 +224,6 @@ export const GlidingRows: Story = {
     );
   },
 };
-
-const manyOrders: Order[] = Array.from({length: 2000}, (_, index) => ({
-  ...orders[index % orders.length],
-  id: `ord-${String(index + 1).padStart(4, '0')}`,
-}));
 
 /**
  * A long table (2,000 rows, not virtualized) with an `animatedLayout`

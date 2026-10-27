@@ -52,7 +52,13 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function ExpandableTable({withHandle}: {withHandle: boolean}) {
+function ExpandableTable({
+  withHandle,
+  dividers,
+}: {
+  withHandle: boolean;
+  dividers?: 'rows' | 'grid';
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const animatedLayout = useAnimatedLayout({containerRef});
   const [expandedKeys, setExpandedKeys] = useState(() => new Set<string>());
@@ -78,6 +84,7 @@ function ExpandableTable({withHandle}: {withHandle: boolean}) {
         data={rows}
         columns={columns}
         idKey="id"
+        dividers={dividers}
         plugins={{rowExpansion: expansion}}
       />
     </div>
@@ -118,6 +125,15 @@ describe('useTableRowExpansion adopts animatedLayout (spec:AST-105 FR1, FR2)', (
         .querySelector<HTMLElement>('[data-expansion-toggle] > *')
         ?.style.getPropertyValue('transition-timing-function'),
     ).toMatch(/^linear\(/);
+  });
+
+  it('changes the rows at once in a grid table, even with a handle (Table FR15)', async () => {
+    const user = userEvent.setup();
+    render(<ExpandableTable withHandle dividers="grid" />);
+    stubGeometry();
+    await user.click(screen.getAllByRole('button', {name: /expand/i})[0]);
+    await flush();
+    expect(animated).toEqual([]);
   });
 
   it('changes nothing without a handle', async () => {
