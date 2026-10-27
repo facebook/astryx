@@ -900,6 +900,32 @@ describe('promotion: a compositing layer while it moves', () => {
     expect(element.style.willChange).toBe('');
   });
 
+  it("reads the stylesheet's will-change in a task of its own, so a promotion reads no style in its own task", async () => {
+    // A drag's first move promotes: reading the stylesheet's reasons then
+    // would force a style recalculation in the input handler.
+    stylesheet['will-change'] = 'transform, opacity';
+    const {animator, element} = setup();
+    await commitFrame(clock);
+    await vi.advanceTimersByTimeAsync(0);
+    const readsOf = () =>
+      vi
+        .mocked(window.getComputedStyle)
+        .mock.calls.filter(([read]) => read === element).length;
+    const before = readsOf();
+    animator.set({y: 10});
+    expect(readsOf()).toBe(before);
+    expect(element.style.willChange).toBe('transform, opacity, translate');
+    await advance(PROMOTION_LINGER_MS + 10);
+    expect(element.style.willChange).toBe('');
+  });
+
+  it("keeps the stylesheet's will-change when an element attached in this task moves at once", () => {
+    stylesheet['will-change'] = 'transform, opacity';
+    const {animator, element} = setup();
+    animator.animate({y: 100}, {spring: springs.settle});
+    expect(element.style.willChange).toBe('transform, opacity, translate');
+  });
+
   it('promotes during direct manipulation, until the writes stop', async () => {
     const {animator, element} = setup();
     animator.set({y: 10});
@@ -1463,6 +1489,68 @@ describe('Reduced Motion (design:reduced-motion)', () => {
     next.remove();
   });
 
+  it('a node detached mid-dip and attached again in a later task shows the move landed and visible', async () => {
+    const {animator, element} = reduced();
+    // The call owns its opacity: its dip writes the low opacity inline.
+    animator.animate({x: 240, opacity: 1}, {spring: springs.navigationPush});
+    await advance(25);
+    expect(Number(element.style.opacity)).toBeLessThan(1);
+    animator.attach(null);
+    await advance(100);
+    animator.attach(element);
+    expect(animator.get('x')).toBe(240);
+    expect(animator.get('opacity')).toBe(1);
+    expect(element.style.opacity).not.toBe('0');
+    expect(Number(element.style.opacity || '1')).toBe(1);
+  });
+
+  it('a node detached mid-dip while another axis moves is left with no animation or promotion', async () => {
+    const {animator, element} = reduced();
+    animator.set({x: 0, y: 0});
+    // y coasts (momentum keeps its motion) while x waits in a dip.
+    const start = clock;
+    animator.decay(coast(animator, {y: 800}, {at: start}), {at: start});
+    animator.animate({x: 240}, {spring: springs.navigationPush});
+    await advance(25);
+    animator.attach(null);
+    await advance(1);
+    expect(
+      recorded.filter(
+        animation =>
+          animation.element === element &&
+          !animation.cancelled &&
+          animation.playState !== 'finished',
+      ),
+    ).toEqual([]);
+    expect(element.style.willChange).toBe('');
+  });
+
+  it('lands a waiting move on the latest node detached in the task, after a replacement too', async () => {
+    const {animator} = reduced();
+    animator.animate({x: 240, opacity: 1}, {spring: springs.navigationPush});
+    await advance(25);
+    const next = document.createElement('div');
+    document.body.append(next);
+    animator.attach(null);
+    animator.attach(next);
+    animator.attach(null);
+    await advance(100);
+    // The node attached last, then detached, is the one left visible.
+    expect(Number(next.style.opacity || '1')).toBe(1);
+    next.remove();
+  });
+
+  it('a dispose right after a detach lands the waiting move on that node', async () => {
+    const {animator, element} = reduced();
+    animator.animate({x: 240, opacity: 1}, {spring: springs.navigationPush});
+    await advance(25);
+    animator.attach(null);
+    animator.dispose();
+    await advance(100);
+    expect(Number(element.style.opacity || '1')).toBe(1);
+    expect(element.style.willChange).toBe('');
+  });
+
   it('an identity held over a differing stylesheet follows a node replacement', () => {
     const {animator, element} = reduced();
     stylesheet = {opacity: '0'};
@@ -1952,7 +2040,10 @@ describe('Reduced Motion (design:reduced-motion)', () => {
     await commitFrame(clock);
     await advance(20);
     animator.attach(null);
+    // The unmount is deferred to a microtask: read once it has run.
+    await Promise.resolve();
     expect(element.style.willChange).toBe('');
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("a new element taking over an exit by role leaves the stylesheet's opacity on the outgoing one", async () => {
@@ -2510,6 +2601,21 @@ describe('play: any closed-form curve', () => {
     expect(() => handle.retarget({x: 0})).toThrow(/spring/);
     handle.retarget({x: 0}, {spring: springs.settle});
     expect(animator.getVelocity('x')).toBeCloseTo(300, 9);
+  });
+
+  it('lets an explicit axis win over scale, in either order', () => {
+    const {animator} = setup();
+    const flat = (value: number) => ({
+      duration: 0,
+      at: () => value,
+      velocity: () => 0,
+    });
+    animator.play({scaleY: flat(0.5), scale: flat(2)});
+    expect(animator.get('scaleX')).toBe(2);
+    expect(animator.get('scaleY')).toBe(0.5);
+    animator.play({scale: flat(3), scaleX: flat(0.25)});
+    expect(animator.get('scaleX')).toBe(0.25);
+    expect(animator.get('scaleY')).toBe(3);
   });
 
   it('rejects a curve without a finite duration', () => {
