@@ -1,5 +1,5 @@
 ---
-schema_version: 3
+schema_version: 5
 template_version: 7
 kind: component
 id: component:swift/Thumbnail
