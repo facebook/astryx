@@ -121,6 +121,49 @@ function translateOf(entry: Played): {x: number; y: number} {
     : {x: Number(match[1]), y: Number(match[2])};
 }
 
+/**
+ * How long an animation moves, ms: up to its first keyframe at its final
+ * value. A glide the rect morph plays holds its end state for a while after
+ * it lands (the animator's end hold); the entrance ends with its curve.
+ */
+function motionMs(entry: Played): number {
+  const frames = entry.keyframes;
+  const key = (frame: Keyframe) =>
+    JSON.stringify([frame.translate, frame.opacity, frame.clipPath]);
+  const last = key(frames[frames.length - 1]);
+  const index = frames.findIndex(frame => key(frame) === last);
+  const offset =
+    (frames[index].offset as number | undefined) ??
+    index / Math.max(1, frames.length - 1);
+  return offset * Number(entry.options.duration);
+}
+
+/** The speed an animation starts with along x, px/s, from its keyframes. */
+function startSpeedX(entry: Played): number {
+  const [a, b] = entry.keyframes;
+  const x = (frame: Keyframe) =>
+    Number(/^(-?[\d.e+-]+)px/.exec(String(frame.translate ?? ''))?.[1] ?? 0);
+  const offset = (frame: Keyframe, index: number) =>
+    (frame.offset as number | undefined) ??
+    index / Math.max(1, entry.keyframes.length - 1);
+  const ms = (offset(b, 1) - offset(a, 0)) * Number(entry.options.duration);
+  return ms > 0 ? ((x(b) - x(a)) / ms) * 1000 : 0;
+}
+
+/** The speed an animation starts with along y, px/s, from its keyframes. */
+function startSpeedY(entry: Played): number {
+  const [a, b] = entry.keyframes;
+  const y = (frame: Keyframe) =>
+    Number(
+      /px\s+(-?[\d.e+-]+)px/.exec(String(frame.translate ?? ''))?.[1] ?? 0,
+    );
+  const offset = (frame: Keyframe, index: number) =>
+    (frame.offset as number | undefined) ??
+    index / Math.max(1, entry.keyframes.length - 1);
+  const ms = (offset(b, 1) - offset(a, 0)) * Number(entry.options.duration);
+  return ms > 0 ? ((y(b) - y(a)) / ms) * 1000 : 0;
+}
+
 async function runChange(
   layout: ReturnType<typeof createAnimatedLayout> | null,
   changed: Element,
@@ -312,10 +355,15 @@ describe('one shared motion (spec:AST-105 FR4)', () => {
     const own = played.find(p => (p.element as HTMLElement).id === 'changed');
     expect(follower).toBeDefined();
     expect(own).toBeDefined();
-    expect(own?.options.duration).toBe(follower?.options.duration);
+    // One clock: the follower's glide (the rect morph's) lands when the
+    // changed element's entrance does.
+    expect(motionMs(follower as Played)).toBeCloseTo(
+      motionMs(own as Played),
+      3,
+    );
     // SwiftUI's smooth spring (0.5 s, no bounce) settles in about 0.6 s.
-    expect(Number(follower?.options.duration)).toBeGreaterThan(400);
-    expect(Number(follower?.options.duration)).toBeLessThan(900);
+    expect(motionMs(follower as Played)).toBeGreaterThan(400);
+    expect(motionMs(follower as Played)).toBeLessThan(900);
   });
 
   it("ignores a scope's --motion-springs-settle: the role is internal", async () => {
@@ -364,8 +412,10 @@ describe('one shared motion (spec:AST-105 FR4)', () => {
     await flushMicrotasks();
     const first = played.find(p => p.element === a);
     expect(translateOf(first as Played).y).toBeCloseTo(-80);
-    // Mid-glide it shows at 50 on screen; the second change moves its layout
-    // 80 -> 120.
+    // 100 ms later, mid-glide, it shows at 50 on screen; the second change
+    // moves its layout 80 -> 120.
+    const at = performance.now();
+    vi.spyOn(performance, 'now').mockReturnValue(at + 100);
     played = [];
     phase.current = 'before';
     top = 50;
@@ -374,18 +424,58 @@ describe('one shared motion (spec:AST-105 FR4)', () => {
     top = 120;
     report.animate();
     await flushMicrotasks();
-    expect(first?.cancel).toHaveBeenCalledTimes(1);
+    // The first glide stops: one glide plays, the new one.
+    expect(first?.cancel).toHaveBeenCalled();
     const second = played.filter(p => p.element === a);
     expect(second).toHaveLength(1);
     // From 50 on screen to 120: it starts 70 px above its new place.
     expect(translateOf(second[0]).y).toBeCloseTo(-70);
-    // And it keeps the first glide's speed 100 ms in (about 6 px a frame);
-    // a new spring from rest moves about 1.4 px in its first frame.
-    const next = translateOf({
-      ...second[0],
-      keyframes: second[0].keyframes.slice(1),
-    });
-    expect(next.y - -70).toBeGreaterThan(3);
+    // And it keeps the first glide's speed 100 ms in (about 360 px/s); a
+    // new spring from rest starts at about 85 px/s.
+    expect(startSpeedY(second[0])).toBeGreaterThan(200);
+    vi.restoreAllMocks();
+  });
+
+  it('retargets an element gliding down by a sideways move: it keeps its running motion, out of line with the new move', async () => {
+    const {area, changed, phase} = setUp(
+      '<div id="area"><div id="changed"></div><div id="a"></div></div>',
+    );
+    const a = document.getElementById('a') as HTMLElement;
+    let left = 0;
+    let top = 0;
+    vi.spyOn(a, 'getBoundingClientRect').mockImplementation(
+      () => new DOMRect(left, top, 400, 40),
+    );
+    const layout = createAnimatedLayout(() => area);
+    // First change: the row's layout moves down, 0 -> 80.
+    let report = reportLayoutChange(layout, () => changed);
+    report.measureBefore();
+    top = 80;
+    report.animate();
+    await flushMicrotasks();
+    // 100 ms later it shows at 50, still moving down; the second change moves
+    // its layout sideways, 0 -> 100, in a wrapping row.
+    const at = performance.now();
+    vi.spyOn(performance, 'now').mockReturnValue(at + 100);
+    played = [];
+    phase.current = 'before';
+    top = 50;
+    report = reportLayoutChange(layout, () => changed);
+    report.measureBefore();
+    left = 100;
+    top = 80;
+    report.animate();
+    await flushMicrotasks();
+    const second = played.filter(p => p.element === a);
+    expect(second).toHaveLength(1);
+    // From where it shows: 100 px left of and 30 px above its new place.
+    expect(translateOf(second[0]).x).toBeCloseTo(-100);
+    expect(translateOf(second[0]).y).toBeCloseTo(-30);
+    // It keeps moving down at the first glide's speed (about 360 px/s),
+    // and starts sideways from rest rather than turning at once.
+    expect(startSpeedY(second[0])).toBeGreaterThan(200);
+    expect(Math.abs(startSpeedX(second[0]))).toBeLessThan(60);
+    vi.restoreAllMocks();
   });
 
   it('drops a measurement no commit claims by the next frame', async () => {

@@ -86,11 +86,18 @@ window.motionOf = selector => {
     const effect = animation.effect;
     const frames = effect.getKeyframes();
     const timing = effect.getTiming();
+    // How long it moves: up to its first keyframe at its final value. A glide
+    // the rect morph plays holds its end state a while after it lands (the
+    // animator's end hold); an entrance or a cross-fade ends with its curve.
+    const key = frame =>
+      JSON.stringify([frame.translate, frame.transform, frame.opacity, frame.clipPath]);
+    const last = key(frames[frames.length - 1]);
+    const settled = frames.find(frame => key(frame) === last);
     return {
       first: frames[0].translate ?? frames[0].transform ?? null,
       opacity: frames[0].opacity == null ? null : String(frames[0].opacity),
       composite: effect.composite,
-      duration: Number(timing.duration),
+      duration: Number(timing.duration) * settled.computedOffset,
       startTime: animation.startTime == null ? null : Number(animation.startTime),
     };
   });
