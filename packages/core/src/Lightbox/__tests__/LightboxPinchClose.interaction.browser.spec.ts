@@ -384,6 +384,47 @@ test('released still pinching, it springs back carrying the pinch velocity (FR6,
   expect(await v.scale()).toBe(1);
 });
 
+test('a pinch fades the backdrop without its blur, and a spring-back brings the blur back', async ({
+  page,
+}) => {
+  const v = await openViewer(page);
+  const filter = async () =>
+    v.dialog.evaluate(el => {
+      const style = getComputedStyle(
+        el,
+        '::backdrop',
+      ) as CSSStyleDeclaration & {webkitBackdropFilter?: string};
+      return style.backdropFilter || style.webkitBackdropFilter || 'none';
+    });
+  expect(await filter()).toBe('blur(2px)');
+  // On a 2-core limit a full-viewport blur repainted every frame of a fade
+  // drops frames, so the pinch fades the backdrop without it. 300 → 285 px
+  // stays above the close point, so the photo springs back.
+  let during: string | null = null;
+  let moves = 0;
+  await v.driver.play(
+    pinch({
+      center: v.centre,
+      fromDistance: 300,
+      toDistance: 285,
+      durationMs: 300,
+      restMs: 200,
+    }),
+    {
+      onEvent: async step => {
+        moves += step.type === 'touchMove' ? 1 : 0;
+        if (step.type === 'touchMove' && moves === 12 && during == null) {
+          during = await filter();
+        }
+      },
+    },
+  );
+  expect(during).toBe('none');
+  await waitForRest(v.photo);
+  await expect(v.dialog).toBeVisible();
+  await expect.poll(filter).toBe('blur(2px)');
+});
+
 test('reopened by 0.1 it springs back; reopened by 0.02, it still closes', async ({
   page,
 }) => {
