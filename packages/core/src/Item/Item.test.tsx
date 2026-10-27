@@ -1320,6 +1320,22 @@ describe('swipeActions', () => {
       second.up();
     });
 
+    it('never starts a swipe from a second finger whose first finger is off the row: the pinch stays the page’s (spec:AST-094 FR10)', () => {
+      const {row} = renderRow();
+      // The first finger is somewhere else on the page; the second lands on
+      // the row and travels sideways, past the claim and the swipe.
+      const first = finger(document.body, 1);
+      const second = finger(row, 2);
+      first.down(60, 200);
+      second.down(100);
+      second.move(110);
+      second.move(130);
+      expect(second.move(160).defaultPrevented).toBe(false);
+      expect(xOf(row)).toBe(0);
+      second.up();
+      first.up();
+    });
+
     it('keeps a begun swipe when a second finger lands: the row stays on its finger, which it keeps from the browser (spec:AST-094 FR10)', async () => {
       const {row} = renderRow();
       const first = finger(row, 1);
