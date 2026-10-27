@@ -71,7 +71,11 @@ beforeEach(() => {
       if (nav != null && (this === nav || this.contains(nav))) {
         return rect(0, width);
       }
-      if (this.getAttribute('role') === 'main') {
+      // The main element and the column around it, beside the rail.
+      if (
+        this.querySelector('[role="main"]') != null ||
+        this.getAttribute('role') === 'main'
+      ) {
         return rect(width, SHELL_WIDTH - width);
       }
       return rect(0, 0);
@@ -160,7 +164,7 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     // The content column starts where it was and slides to its new place.
     const main = screen.getByRole('main');
     const [slide] = animated('translate').filter(
-      entry => entry.element === main,
+      entry => entry.element !== main && entry.element.contains(main),
     );
     expect(slide.keyframes[0].translate).toBe(`${EXPANDED - COLLAPSED}px 0px`);
     expect(slide.keyframes.at(-1)?.translate).toBe('0px 0px');
@@ -215,7 +219,7 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     );
     const main = screen.getByRole('main');
     const [slide] = animated('translate').filter(
-      entry => entry.element === main,
+      entry => entry.element !== main && entry.element.contains(main),
     );
     expect(slide.keyframes[0].translate).toBe(`${COLLAPSED - EXPANDED}px 0px`);
   });

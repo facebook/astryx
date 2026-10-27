@@ -316,7 +316,8 @@ export function playRail(
       const previous = host.style.overflow;
       host.style.overflow = 'clip';
       restore.push(() => (host.style.overflow = previous));
-      const background = getComputedStyle(column).backgroundColor;
+      // The content's own background, so the gap matches what it fills.
+      const background = getComputedStyle(content ?? column).backgroundColor;
       const reach =
         travel < 0 && !/rgba\(.*,\s*0\)|transparent/.test(background);
       play(

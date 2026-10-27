@@ -752,19 +752,23 @@ export function AppShell({
   // =========================================================================
   // The rail's collapse motion moves the content column beside the inline
   // side nav on the rail's clock (`component:AppShell` FR17,
-  // `component:SideNav` FR6): the elevated layout's wrapper when it has a
-  // box, otherwise the main element.
+  // `component:SideNav` FR6): the rail's sibling that holds the main element,
+  // so the main element's own clip moves with it.
   const railRef = useRef<HTMLDivElement>(null);
-  const contentWrapperRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
   const sideNavShell = useMemo<SideNavShell>(
     () => ({
       rail: () => railRef.current,
-      column: () =>
-        contentWrapperRef.current != null &&
-        getComputedStyle(contentWrapperRef.current).display !== 'contents'
-          ? contentWrapperRef.current
-          : mainRef.current,
+      column: () => {
+        let column: HTMLElement | null = mainRef.current;
+        while (
+          column?.parentElement != null &&
+          !column.parentElement.contains(railRef.current)
+        ) {
+          column = column.parentElement;
+        }
+        return column;
+      },
       content: () => mainRef.current,
     }),
     [],
@@ -824,7 +828,6 @@ export function AppShell({
   // the elevated desktop layout, the wrapper generates no layout box.
   const mainContent = (
     <div
-      ref={contentWrapperRef}
       {...stylex.props(
         shouldElevateWithCorner
           ? styles.elevatedContentWrapper
