@@ -297,9 +297,19 @@ export function resolveThemeValues(
     Object.assign(tokens, expandRadiusScale(input.radius));
   }
 
-  // 4. Motion-generated tokens (spec:AST-108 FR2, FR5)
+  // 4. Motion-generated tokens (spec:AST-108 FR2, FR5). A layer that writes
+  // durations also writes the copies busy loops read (FR4), so an enclosing
+  // theme's tempo copies never stand in for its own: without a tempo of its
+  // own, they are its durations.
   if (input.motion) {
-    Object.assign(tokens, expandThemeMotion(input.motion));
+    const motion = expandThemeMotion(input.motion);
+    Object.assign(tokens, motion);
+    for (const [name, value] of Object.entries(motion)) {
+      const preTempo = preTempoName(name);
+      if (preTempo !== name && !(preTempo in motion)) {
+        tokens[preTempo] = value;
+      }
+    }
   }
 
   // 5. Font family tokens
@@ -318,14 +328,32 @@ export function resolveThemeValues(
   // 7. Explicit token overrides — highest precedence within this input layer.
   // A generated axis in the same root or adaptation value cannot beat them.
   if (input.tokens) {
+    const own = input.tokens as Partial<Record<string, TokenValue>>;
     for (const [key, value] of Object.entries(input.tokens)) {
       if (value !== undefined) {
         tokens[key] = resolveTokenValue(value, {strict: strictTokens});
         // An explicit duration beats tempo, so a busy loop reading the
         // pre-tempo value reads it too (spec:AST-108 FR4).
         const preTempo = preTempoName(key);
-        if (preTempo !== key && preTempo in tokens) {
+        if (preTempo !== key && own[preTempo] === undefined) {
           tokens[preTempo] = tokens[key];
+        }
+      }
+    }
+    // At 'standard', --ease-entrance and --ease-move equal --ease-standard
+    // (spec:AST-108 FR2): an explicit one carries them, unless the layer sets
+    // them itself or a character picks its own curve.
+    const character =
+      input.motion != null && 'character' in input.motion
+        ? input.motion.character
+        : undefined;
+    if (
+      own['--ease-standard'] !== undefined &&
+      (character === undefined || character === 'standard')
+    ) {
+      for (const name of ['--ease-entrance', '--ease-move']) {
+        if (own[name] === undefined) {
+          tokens[name] = tokens['--ease-standard'];
         }
       }
     }

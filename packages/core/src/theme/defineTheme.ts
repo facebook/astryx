@@ -534,6 +534,58 @@ function describeBadBase(value: unknown): string {
   return `an object with keys [${keys.slice(0, 4).join(', ')}${keys.length > 4 ? ', …' : ''}]`;
 }
 
+/** A motion token: a duration or an easing (spec:AST-108 FR5). */
+function isMotionToken(name: string): boolean {
+  return name.startsWith('--duration-') || name.startsWith('--ease-');
+}
+
+/**
+ * The explicit motion tokens of a base's lineage, which keep winning over
+ * what a child's knobs regenerate (spec:AST-108 FR5;
+ * `architecture:theme-authoring-contract` INV15). A defined theme keeps its
+ * input tokens. A built theme module carries its resolved tokens and its axes
+ * but not its input: there, a motion token that differs from what its own
+ * motion generates was written explicitly, except the entrance and move
+ * curves that follow an explicit --ease-standard at 'standard' (FR2).
+ */
+function lineageExplicitMotionTokens(
+  base: DefinedTheme | undefined,
+): Partial<Record<string, TokenValue>> | undefined {
+  if (base == null) {
+    return undefined;
+  }
+  if (base.__inputTokens != null) {
+    return Object.fromEntries(
+      Object.entries(base.__inputTokens).filter(([name]) =>
+        isMotionToken(name),
+      ),
+    );
+  }
+  const motion = base.__axes?.motion;
+  const generated: Record<string, string> = {
+    ...durationDefaults,
+    ...easeDefaults,
+    ...(motion != null ? resolveThemeValues({motion}).tokens : undefined),
+  };
+  const tokens = base.tokens as Record<string, string | undefined>;
+  const standard = tokens['--ease-standard'];
+  const character =
+    motion != null && 'character' in motion ? motion.character : undefined;
+  const followsStandard = (name: string, value: string) =>
+    (name === '--ease-entrance' || name === '--ease-move') &&
+    value === standard &&
+    (character === undefined || character === 'standard');
+  return Object.fromEntries(
+    Object.entries(tokens).filter(
+      (entry): entry is [string, string] =>
+        entry[1] !== undefined &&
+        isMotionToken(entry[0]) &&
+        entry[1] !== generated[entry[0]] &&
+        !followsStandard(entry[0], entry[1]),
+    ),
+  );
+}
+
 /**
  * Create an Astryx theme.
  *
@@ -574,14 +626,7 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
       ? {...baseMotion, ...input.motion}
       : input.motion;
   const lineageMotionTokens =
-    input.motion != null && base?.__inputTokens != null
-      ? Object.fromEntries(
-          Object.entries(base.__inputTokens).filter(
-            ([name]) =>
-              name.startsWith('--duration-') || name.startsWith('--ease-'),
-          ),
-        )
-      : undefined;
+    input.motion != null ? lineageExplicitMotionTokens(base) : undefined;
   const ownValues: ThemeValuesInput = {
     typography: input.typography,
     color: input.color,

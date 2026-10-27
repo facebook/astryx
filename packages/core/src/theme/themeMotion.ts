@@ -169,10 +169,13 @@ export interface ThemeMotion {
  */
 export function resolveThemeMotion(theme: {
   readonly motion?: ThemeMotionConfig;
+  readonly __axes?: {readonly motion?: ThemeMotionConfig};
   readonly tokens?: Readonly<Record<string, string | undefined>>;
 }): ThemeMotion {
-  const knobs = resolveMotionKnobs(theme.motion);
-  const generated = theme.motion ? expandThemeMotion(theme.motion) : {};
+  // A defined theme's motion is its axes': its own merged with its base's.
+  const config = theme.__axes?.motion ?? theme.motion;
+  const knobs = resolveMotionKnobs(config);
+  const generated = config ? expandThemeMotion(config) : {};
   const value = (name: string, fallback: string): string =>
     theme.tokens?.[name] ?? generated[name] ?? fallback;
   const durations: Record<string, string> = {};
