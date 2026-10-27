@@ -2,5 +2,5 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Localize pasted-text counts, file-size limits, and spoken shortcut keys
+[fix] Localize pasted-text counts, spoken shortcut names and Ctrl/Esc keycaps; format file-size limits with provider-locale digits and translatable units
 @nynexman4464

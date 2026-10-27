@@ -229,9 +229,9 @@ function reportUserFacingLiteralsIn(expr, name, context, isDefault, opts = {}) {
     case 'TemplateLiteral':
       for (const [index, quasi] of expr.quasis.entries()) {
         const raw = quasi.value?.cooked ?? quasi.value?.raw ?? '';
-        // A unit following an interpolation is CSS, not English prose. Keep
-        // this formatter-only and do not exempt chunks like "s remaining".
-        if (opts.requireEnglish && index > 0 && /^\s*(?:px|s|ms|deg)\s*$/.test(raw)) {
+        // A unit directly following an interpolation is CSS, not English.
+        // Keep space-separated display units and prose such as "s remaining".
+        if (opts.requireEnglish && index > 0 && /^(?:px|s|ms|deg)\s*$/.test(raw)) {
           continue;
         }
         if (typeof raw === 'string' && looksUserFacing(raw)) {

@@ -202,6 +202,11 @@ ruleTester.run('no-hardcoded-i18n-string', noHardcodedI18nStringRule, {
       code: "function formatColorLabel() { return 'Choose a color'; }",
       errors: [{messageId: 'hardcodedReturn'}],
     },
+    // A space between a number and its unit is display text, not CSS.
+    ...['px', 's', 'ms', 'deg'].map(unit => ({
+      code: `const format = value => \`\${value} ${unit}\`;`,
+      errors: [{messageId: 'hardcodedReturn'}],
+    })),
     // CSS-fragment exemptions must not hide prose or affect other sinks.
     ...[
       'function formatLabel(seconds, count) { return `${seconds}s ${count} remaining`; }',
