@@ -53,7 +53,7 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
-import {useMediaQuery} from '../hooks';
+import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useActionGroupTracking} from '../hooks/useActionGroupTracking';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {alertController} from '../motion/uikit/alert';
