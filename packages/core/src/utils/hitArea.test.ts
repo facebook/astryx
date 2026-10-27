@@ -466,6 +466,49 @@ describe('watchHitArea', () => {
     stop();
   });
 
+  it('leaves a touch the browser hands a lone control a few px past its area to it: only a nearer neighbour swallows', () => {
+    const control = byId('switch');
+    place(control, rect(100, 100, 24, 24));
+    place(byId('link'), rect(400, 400, 60, 24));
+    const stop = watchHitArea(control, () => {});
+    show(control);
+    flush();
+    // 3 px right of the 44 px area (10 px of growth), nothing near.
+    const press = new Event('pointerdown', {bubbles: true});
+    Object.assign(press, {pointerType: 'touch', clientX: 137, clientY: 112});
+    control.dispatchEvent(press);
+    const click = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      detail: 1,
+    });
+    control.dispatchEvent(click);
+    expect(click.defaultPrevented).toBe(false);
+    stop();
+  });
+
+  it('measures a watched neighbour by its own box, not by its grown input', () => {
+    document.body.innerHTML =
+      '<div id="a"><input id="ia" role="switch"></div>' +
+      '<div id="b"><input id="ib" role="switch"></div>';
+    const a = byId('a');
+    const b = byId('b');
+    place(a, rect(100, 100, 32, 20));
+    place(b, rect(100, 128, 32, 20));
+    // Each input is grown to its hit area: 44 px tall.
+    place(byId('ia'), rect(94, 88, 44, 44));
+    place(byId('ib'), rect(94, 116, 44, 44));
+    const heard: HitInsets[] = [];
+    const stopA = watchHitArea(a, insets => heard.push(insets));
+    const stopB = watchHitArea(b, () => {});
+    show(a, b);
+    flush();
+    // Half the 8 px gap to b's box, not a quarter (b's input reaches a).
+    expect(heard.at(-1)?.bottom).toBe(4);
+    stopA();
+    stopB();
+  });
+
   it('listens for presses once, on the document: a watched control, row or handle gets no listener of its own (spec:AST-103 FR5)', () => {
     const elements = ['switch', 'other'].map(byId);
     const onElements = elements.map(element =>
@@ -480,6 +523,21 @@ describe('watchHitArea', () => {
       onDocument.mock.calls.filter(([type]) => type === 'pointerdown'),
     ).toHaveLength(1);
     stops.forEach(stop => stop());
+  });
+
+  it('removes its document listener when the last watch stops (spec:AST-094 FR24)', () => {
+    const offDocument = vi.spyOn(document, 'removeEventListener');
+    const stops = ['switch', 'other'].map(id =>
+      watchHitArea(byId(id), () => {}),
+    );
+    stops[0]();
+    expect(
+      offDocument.mock.calls.filter(([type]) => type === 'pointerdown'),
+    ).toHaveLength(0);
+    stops[1]();
+    expect(
+      offDocument.mock.calls.filter(([type]) => type === 'pointerdown'),
+    ).toHaveLength(1);
   });
 
   it('leaves nothing behind after resetHitAreaForTests, even from a watch never stopped', () => {

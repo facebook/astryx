@@ -330,19 +330,43 @@ interface Candidate {
   readonly rect: HitRect;
 }
 
-/** The page's interactive elements and their rects: one read. */
+/** The watched element `element` belongs to, if any (itself included). */
+function watchedOwner(element: Element): Element | null {
+  for (
+    let node: Element | null = element;
+    node != null;
+    node = node.parentElement
+  ) {
+    if (watched.has(node)) {
+      return node;
+    }
+  }
+  return null;
+}
+
+/**
+ * The page's interactive elements and their rects: one read. A watched
+ * control counts by its own box, never by a part inside it (its invisible
+ * input is grown by its hit area, which must not shrink a neighbour's).
+ */
 function readCandidates(doc: Document): Candidate[] {
-  return [...doc.querySelectorAll(INTERACTIVE)].map(element => ({
-    element,
-    rect: plainRect(element),
-  }));
+  const seen = new Set<Element>();
+  const candidates: Candidate[] = [];
+  for (const found of doc.querySelectorAll(INTERACTIVE)) {
+    const element = watchedOwner(found) ?? found;
+    if (!seen.has(element)) {
+      seen.add(element);
+      candidates.push({element, rect: plainRect(element)});
+    }
+  }
+  return candidates;
 }
 
 /** A control's rect and clamped insets, from candidates already read. */
 function measureOne(
   watch: Watch,
   candidates: ReadonlyArray<Candidate>,
-): {target: HitRect; insets: HitInsets} {
+): {target: HitRect; insets: HitInsets; neighbours: HitRect[]} {
   const target = plainRect(watch.element);
   // Two targets each growing up to half the minimum reach each other from a
   // minimum apart.
@@ -362,7 +386,11 @@ function measureOne(
         !isOwn(watch, element),
     )
     .map(({rect}) => rect);
-  return {target, insets: clampedHitInsets(target, neighbours, watch.minSize)};
+  return {
+    target,
+    insets: clampedHitInsets(target, neighbours, watch.minSize),
+    neighbours,
+  };
 }
 
 /** One pass: every pending control's reads, then every write. */
@@ -453,13 +481,23 @@ function checkPress(element: Element, event: PointerEvent): void {
     return;
   }
   const candidates = readCandidates(element.ownerDocument);
-  let isInside = false;
+  const x = press.clientX;
+  const y = press.clientY;
+  // A touch the browser gives the control outside its fresh area (a
+  // browser's own touch adjustment reaches a few px past a target) is still
+  // the control's unless a neighbour is nearer it.
+  let isNearerNeighbour = false;
   for (const watch of entry.watches) {
-    const {target, insets} = measureOne(watch, candidates);
+    const {target, insets, neighbours} = measureOne(watch, candidates);
     deliver(watch, insets);
-    isInside ||= contains(grown(target, insets), press.clientX, press.clientY);
+    if (contains(grown(target, insets), x, y)) {
+      isNearerNeighbour = false;
+      break;
+    }
+    const own = distanceTo(target, x, y);
+    isNearerNeighbour ||= neighbours.some(rect => distanceTo(rect, x, y) < own);
   }
-  if (!isInside) {
+  if (isNearerNeighbour) {
     const swallow = (click: Event) => {
       disarm();
       // A keyboard or assistive-technology activation (detail 0) is never
