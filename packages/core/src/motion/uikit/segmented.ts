@@ -4,7 +4,8 @@
  * @file segmented.ts
  * @input Nothing; data only
  * @output Exports `segmentedControl`: UISegmentedControl's selection slide
- *   spring, an internal constant
+ *   spring; and `registerSegmentedTable`, which registers it as an internal
+ *   motion role (`spec:AST-094` FR4, DEC-11)
  * @position The segmented-control domain of the UIKit constants table
  *   (motion/uikit); read by SegmentedControl's touch presentation
  *
@@ -27,13 +28,16 @@
  *
  * Every leaf carries one or more `@source`; uikit.test.ts enforces it.
  * Durations are in ms; curves are cubic-bézier control points
- * [x1, y1, x2, y2]. The values are internal constants: `spec:AST-094` FR4
- * names no segmented-control motion role, so no theme retunes them.
+ * [x1, y1, x2, y2]. The slide's spring is an internal motion role
+ * (`registerSegmentedTable`; `spec:AST-094` FR4), which no theme retunes
+ * while it stays internal (DEC-11).
  *
  * SYNC: When modified, update:
  * - /packages/core/src/SegmentedControl/useSegmentedSelectionMotion.ts
  * - /packages/core/src/motion/README.md (domain list)
  */
+
+import {registerMotionTable} from '../roles';
 
 export const segmentedControl = {
   /**
@@ -55,3 +59,15 @@ export const segmentedControl = {
    */
   selectionSpring: {response: 0.4, dampingRatio: 0.85},
 } as const;
+
+/**
+ * Registers this table with the motion registry (motion/roles.ts): the slide's
+ * spring becomes an internal motion role (`spec:AST-094` FR4, kept internal
+ * by DEC-11), named in FR4's role table. Nothing registers on import, and a
+ * second call does nothing.
+ */
+export function registerSegmentedTable(): void {
+  registerMotionTable('segmented', segmentedControl, {
+    roles: ['selectionSpring'],
+  });
+}

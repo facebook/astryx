@@ -197,6 +197,7 @@ describe('motion roles', () => {
     expect(
       Object.fromEntries(discovered.map(role => [role.id, role.kind])),
     ).toEqual({
+      'segmented.selectionSpring': 'spring',
       'springs.directChange': 'spring',
       'springs.emphasis': 'spring',
       'springs.fingerTracking': 'spring',

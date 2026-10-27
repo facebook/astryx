@@ -20,8 +20,9 @@
  *
  * UISegmentedControl slides one selection indicator from the old segment to
  * the new one on a spring (`segmentedControl.selectionSpring`, UIKit's measured
- * value, an internal constant), after a tap and after a programmatic change
- * alike.
+ * value, played through its internal motion role `segmented.selectionSpring`,
+ * `spec:AST-094` FR4, which no theme retunes while it stays internal, DEC-11),
+ * after a tap and after a programmatic change alike.
  *
  * The selected segment paints its own raised surface at rest, so themes keep
  * styling it as they always have. For the slide the lens takes over: the
@@ -57,7 +58,10 @@ import {
   type Animator,
   type MotionHandle,
 } from '../motion/animator';
-import {segmentedControl} from '../motion/uikit/segmented';
+import {
+  registerSegmentedTable,
+  segmentedControl,
+} from '../motion/uikit/segmented';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {observeResize} from '../utils/sharedResizeObserver';
 
@@ -308,6 +312,9 @@ export class SegmentedSelectionMotion {
     }),
     options: SegmentedSelectionMotionOptions = {},
   ) {
+    // The slide plays the segmented role (`spec:AST-094` FR4): registered
+    // before the first animation (idempotent; nothing registers on import).
+    registerSegmentedTable();
     this.now = options.now ?? defaultNow;
     this.leavingAnimator =
       options.leavingAnimator ??

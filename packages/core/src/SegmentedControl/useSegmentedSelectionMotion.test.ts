@@ -17,6 +17,8 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {createAnimator, type Animator} from '../motion/animator';
+import {motionRoleOf} from '../motion/roles';
+import {segmentedControl} from '../motion/uikit/segmented';
 import {
   SegmentedSelectionMotion,
   layerVariable,
@@ -187,6 +189,15 @@ async function advance(ms: number): Promise<void> {
   clock += ms;
   await vi.advanceTimersByTimeAsync(ms);
 }
+
+describe('the motion role (spec:AST-094 FR4)', () => {
+  it('plays the slide through its internal segmented role', () => {
+    setup('grid');
+    expect(motionRoleOf(segmentedControl.selectionSpring)?.id).toBe(
+      'segmented.selectionSpring',
+    );
+  });
+});
 
 describe('the selection slide', () => {
   it('paints the lens (the radiogroup’s ::before) with the selected surface and hides it on the segment: no element is added', () => {
