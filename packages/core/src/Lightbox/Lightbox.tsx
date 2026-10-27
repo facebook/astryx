@@ -79,7 +79,7 @@ import {zoomMedia} from '../motion/uikit/zoomMedia';
 import {useZoomStage, type ZoomStage} from './useZoomStage';
 import {lightboxScope} from './lightbox.markers.stylex';
 import {useTouchPresentation} from '../utils/touchPresentation';
-import {isCoarsePointer} from '../gestures/coarsePointer';
+import {isCoarsePointer} from '../utils/coarsePointer';
 import {animatorFor, type Animator} from '../motion/animator';
 import {
   hideSource,
