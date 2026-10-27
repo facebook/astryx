@@ -1234,18 +1234,94 @@ describe('touch listeners (spec:AST-094 FR24)', () => {
     expect(touchListenersWhileRendering('busy')).toBeGreaterThan(baseline);
   });
 
+  it('under a fine pointer an enabled switch arms one passive pointerdown listener on its own element and adds no page listener until a press; a disabled one arms none (spec:AST-094 FR24, FR43)', () => {
+    const fineMedia = (query: string) =>
+      ({
+        matches:
+          query.includes('pointer: fine') || query.includes('hover: hover'),
+        media: query,
+        onchange: null,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        addListener: () => {},
+        removeListener: () => {},
+        dispatchEvent: () => false,
+      }) as unknown as MediaQueryList;
+    const listenersWhileRendering = (isDisabled: boolean) => {
+      vi.spyOn(window, 'matchMedia').mockImplementation(fineMedia);
+      const onElements: {
+        target: unknown;
+        type: string;
+        options: unknown;
+      }[] = [];
+      const onPage: string[] = [];
+      const elementSpy = vi
+        .spyOn(HTMLElement.prototype, 'addEventListener')
+        .mockImplementation(function (
+          this: unknown,
+          type: string,
+          _listener: unknown,
+          options?: unknown,
+        ) {
+          onElements.push({target: this, type, options});
+        });
+      const recordPage = function (this: unknown, type: string) {
+        onPage.push(type);
+      };
+      const documentSpy = vi
+        .spyOn(document, 'addEventListener')
+        .mockImplementation(recordPage);
+      const windowSpy = vi
+        .spyOn(window, 'addEventListener')
+        .mockImplementation(recordPage);
+      const {container, unmount} = render(
+        <Switch
+          label="Notifications"
+          value={false}
+          onChange={() => {}}
+          isDisabled={isDisabled}
+        />,
+      );
+      const surface = container.querySelector('[role="switch"]')?.parentElement;
+      elementSpy.mockRestore();
+      documentSpy.mockRestore();
+      windowSpy.mockRestore();
+      unmount();
+      vi.restoreAllMocks();
+      const armed = onElements.filter(({target, type, options}) => {
+        const o = options as AddEventListenerOptions | undefined;
+        return (
+          target === surface &&
+          type === 'pointerdown' &&
+          o?.capture === true &&
+          o?.passive === true
+        );
+      }).length;
+      // The host's page listeners for a press: none at rest (FR24).
+      const pressListeners = onPage.filter(type =>
+        /^(pointermove|pointerup|pointercancel|touch)/.test(type),
+      ).length;
+      return {armed, pressListeners};
+    };
+    expect(listenersWhileRendering(false)).toEqual({
+      armed: 1,
+      pressListeners: 0,
+    });
+    expect(listenersWhileRendering(true)).toEqual({
+      armed: 0,
+      pressListeners: 0,
+    });
+  });
+
   it('runs no hit-area observer or window listener under a fine pointer, or while disabled under a coarse one', () => {
     const observersWhileRendering = (
       isCoarse: boolean,
       isDisabled: boolean,
     ): {observers: number; resize: number} => {
-      vi.spyOn(window, 'matchMedia').mockImplementation(
-        query =>
-          ({
-            ...coarseMedia(query),
-            matches: isCoarse && query.includes('pointer: coarse'),
-          }),
-      );
+      vi.spyOn(window, 'matchMedia').mockImplementation(query => ({
+        ...coarseMedia(query),
+        matches: isCoarse && query.includes('pointer: coarse'),
+      }));
       let observers = 0;
       vi.stubGlobal(
         'IntersectionObserver',
