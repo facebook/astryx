@@ -30,6 +30,7 @@ import type {
   ScrollWrapperRenderProps,
 } from '../../types';
 import {resolveColumnFloorWidths} from '../../columnUtils';
+import {collapsedBottom} from '../../rowDivider';
 
 // =============================================================================
 // Config
@@ -309,83 +310,6 @@ const shadowStyles = stylex.create({
 // Pinned dividers: app overrides
 // =============================================================================
 
-/** Border styles by collapsed-border precedence, weakest first (CSS 2.1). */
-const STYLE_RANK = [
-  'inset',
-  'groove',
-  'outset',
-  'ridge',
-  'dotted',
-  'dashed',
-  'solid',
-  'double',
-];
-
-interface BottomEdge {
-  width: number;
-  style: string;
-  color: string;
-}
-
-function edgeOf(element: Element | null, side: 'Bottom' | 'Top'): BottomEdge {
-  if (element == null) {
-    return {width: 0, style: 'none', color: ''};
-  }
-  const style = getComputedStyle(element);
-  return {
-    width:
-      parseFloat(
-        style.getPropertyValue(`border-${side.toLowerCase()}-width`),
-      ) || 0,
-    style: style.getPropertyValue(`border-${side.toLowerCase()}-style`),
-    color: style.getPropertyValue(`border-${side.toLowerCase()}-color`),
-  };
-}
-
-/**
- * The border the table paints under a cell, by the collapsing rules (CSS 2.1
- * 17.6.2.1): of the cell's own bottom, the cell's below it (top), its row's
- * bottom and the next row's top, `hidden` wins, then the wider, then the
- * stronger style; a tie goes to a cell over a row, and to the upper one.
- * `isOwn` says the cell's own border won.
- */
-function collapsedBottom(cell: HTMLTableCellElement): BottomEdge & {
-  isOwn: boolean;
-} {
-  const row = cell.parentElement;
-  const nextRow = row?.nextElementSibling ?? null;
-  const nextCell = nextRow?.children[cell.cellIndex] ?? null;
-  // In tie order.
-  const candidates = [
-    edgeOf(cell, 'Bottom'),
-    edgeOf(nextCell, 'Top'),
-    edgeOf(row, 'Bottom'),
-    edgeOf(nextRow, 'Top'),
-  ];
-  const own = candidates[0];
-  if (candidates.some(edge => edge.style === 'hidden')) {
-    return {
-      width: 0,
-      style: 'none',
-      color: own.color,
-      isOwn: own.style === 'hidden',
-    };
-  }
-  const strength = (edge: BottomEdge) =>
-    edge.style === 'none' || edge.width === 0
-      ? [-1, -1]
-      : [edge.width, STYLE_RANK.indexOf(edge.style)];
-  let winner = own;
-  for (const edge of candidates.slice(1)) {
-    const [width, rank] = strength(edge);
-    const [bestWidth, bestRank] = strength(winner);
-    if (width > bestWidth || (width === bestWidth && rank > bestRank)) {
-      winner = edge;
-    }
-  }
-  return {...winner, isOwn: winner === own};
-}
-
 /**
  * Where another border than the cell's own wins the collapse (an app's border
  * on the row, the next row's top border, or a width on the cell past its
@@ -395,11 +319,20 @@ function collapsedBottom(cell: HTMLTableCellElement): BottomEdge & {
  * Every read comes before any write, and a cell is written only when what it
  * carries changes.
  */
-function syncPinnedDividers(root: HTMLElement): void {
+function syncPinnedDividers(
+  root: HTMLElement,
+  rows?: ReadonlySet<Element>,
+): void {
   const changes: [HTMLTableCellElement, string[] | null][] = [];
-  for (const cell of root.querySelectorAll<HTMLTableCellElement>(
-    `[${PINNED_ATTRIBUTE}]`,
-  )) {
+  const cells =
+    rows == null
+      ? root.querySelectorAll<HTMLTableCellElement>(`[${PINNED_ATTRIBUTE}]`)
+      : [...rows].flatMap(row => [
+          ...row.querySelectorAll<HTMLTableCellElement>(
+            `:scope > [${PINNED_ATTRIBUTE}]`,
+          ),
+        ]);
+  for (const cell of cells) {
     const edge = collapsedBottom(cell);
     const dividerWidth =
       parseFloat(
@@ -513,6 +446,46 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
       syncPinnedDividers(el);
     };
     el.addEventListener('scroll', update, {passive: true});
+    // A row border can change by CSS state alone (`tr:hover`,
+    // `:focus-within`): on pointer and focus changes, the rows they touch
+    // (and the row above each, whose divider a row's top border joins) are
+    // read again, once per frame.
+    const touched = new Set<Element>();
+    let frame = 0;
+    const onStateChange = (event: Event) => {
+      for (const target of [
+        event.target,
+        (event as PointerEvent | FocusEvent).relatedTarget,
+      ]) {
+        const row = target instanceof Element ? target.closest('tr') : null;
+        if (row == null || !el.contains(row)) {
+          continue;
+        }
+        touched.add(row);
+        const above =
+          row.previousElementSibling ??
+          row.parentElement?.previousElementSibling?.lastElementChild;
+        if (above != null) {
+          touched.add(above);
+        }
+      }
+      if (touched.size > 0 && frame === 0) {
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          syncPinnedDividers(el, new Set(touched));
+          touched.clear();
+        });
+      }
+    };
+    const stateEvents = [
+      'pointerover',
+      'pointerout',
+      'focusin',
+      'focusout',
+    ] as const;
+    for (const type of stateEvents) {
+      el.addEventListener(type, onStateChange, {passive: true});
+    }
     const resizeObserver =
       typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
     resizeObserver?.observe(el);
@@ -526,6 +499,10 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
     refreshRef.current = resize;
     detachRef.current = () => {
       el.removeEventListener('scroll', update);
+      for (const type of stateEvents) {
+        el.removeEventListener(type, onStateChange);
+      }
+      cancelAnimationFrame(frame);
       resizeObserver?.disconnect();
     };
   }, []);

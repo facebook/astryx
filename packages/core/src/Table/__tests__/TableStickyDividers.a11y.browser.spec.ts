@@ -60,7 +60,8 @@ async function scrollTo(page: Page, left: number) {
 type Rgb = [number, number, number];
 
 /**
- * The column of pixels within 3 px of a body row's bottom edge, top to
+ * The column of pixels within 3 px of a body row's bottom edge (-1: the
+ * header row's), top to
  * bottom, at an x inside the pinned cell and at an x inside the first
  * unpinned cell visible past it.
  */
@@ -69,10 +70,13 @@ async function dividerPixels(
   row: number,
 ): Promise<{pinned: Rgb[]; unpinned: Rgb[]}> {
   const points = await page.evaluate(index => {
-    const rows = document.querySelectorAll(
-      '.astryx-table-scroll-wrapper tbody tr',
-    );
-    const tr = rows[index] as HTMLElement;
+    const tr = (
+      index < 0
+        ? document.querySelector('.astryx-table-scroll-wrapper thead tr')
+        : document.querySelectorAll('.astryx-table-scroll-wrapper tbody tr')[
+            index
+          ]
+    ) as HTMLElement;
     const pinned = tr.children[0].getBoundingClientRect();
     return {
       y: Math.round(pinned.bottom),
@@ -266,6 +270,44 @@ test("the next row's wider top border wins under the pinned cell too", async ({
   for (const left of [0, 150]) {
     await scrollTo(page, left);
     const {pinned, unpinned} = await dividerPixels(page, 2);
+    expect(sameColumn(pinned, unpinned, 24), `at ${left}px`).toBe(true);
+    const orange = darkest(pinned);
+    expect(orange[0], `at ${left}px is orange`).toBeGreaterThan(orange[2] + 60);
+  }
+});
+
+test('a row border recoloured by CSS state alone (tr:hover) reaches the pinned cell', async ({
+  page,
+}) => {
+  await mount(page, 'pinned-dividers-live');
+  await page.getByRole('button', {name: 'Add columns'}).click();
+  await page.getByRole('button', {name: 'Row borders'}).click();
+  for (const left of [0, 150]) {
+    await scrollTo(page, left);
+    await page
+      .locator('.astryx-table-scroll-wrapper tbody tr')
+      .nth(0)
+      .hover({position: {x: 400, y: 10}});
+    await expect
+      .poll(async () => {
+        const {pinned, unpinned} = await dividerPixels(page, 0);
+        const red = darkest(pinned);
+        return sameColumn(pinned, unpinned, 24) && red[0] > red[2] + 60;
+      }, `at ${left}px`)
+      .toBe(true);
+  }
+});
+
+test("the first body row's wider top border wins under the pinned header too", async ({
+  page,
+}) => {
+  await mount(page, 'pinned-dividers-live');
+  await page.getByRole('button', {name: 'Add columns'}).click();
+  await page.getByRole('button', {name: 'First row top'}).click();
+  for (const left of [0, 150]) {
+    await scrollTo(page, left);
+    // The header's bottom edge, under the pinned header cell and past it.
+    const {pinned, unpinned} = await dividerPixels(page, -1);
     expect(sameColumn(pinned, unpinned, 24), `at ${left}px`).toBe(true);
     const orange = darkest(pinned);
     expect(orange[0], `at ${left}px is orange`).toBeGreaterThan(orange[2] + 60);

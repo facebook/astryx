@@ -18,7 +18,7 @@
  * - /packages/core/src/Table/useTableRowExpansion.doc.mjs
  */
 
-import {useMemo, useRef, type ReactNode} from 'react';
+import {useLayoutEffect, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   spacingVars,
@@ -29,6 +29,7 @@ import {
   easeVars,
 } from '../../../theme/tokens.stylex';
 import {tableRowMarker} from '../../table.stylex';
+import {panelDividerFor} from '../../rowDivider';
 import {Icon} from '../../../Icon';
 import {VisuallyHidden} from '../../../VisuallyHidden';
 import {resolveContextActions} from '../../tableContextMenu';
@@ -216,16 +217,19 @@ const dividerStyles = stylex.create({
   expandedRowCell: {
     borderBottomWidth: 0,
   },
+  // The row's divider, carried down: its row's themed or app-set border
+  // reaches the panel through `--_table-panel-divider-*` on the panel's cell
+  // (set after each commit, see ExpansionPanelCell), the tokens otherwise.
   panelCell: {
     borderBottomWidth: {
-      default: borderVars['--border-width'],
+      default: `var(--_table-panel-divider-width, ${borderVars['--border-width']})`,
       // Same rule TableCell uses: no trailing line under the last row of the
       // table. Scoped to the marker so <tbody>, also a :last-child, does not
       // match and suppress every panel's border.
       [stylex.when.ancestor(':last-child', tableRowMarker)]: '0',
     },
-    borderBottomStyle: 'solid',
-    borderBottomColor: colorVars['--color-border'],
+    borderBottomStyle: 'var(--_table-panel-divider-style, solid)',
+    borderBottomColor: `var(--_table-panel-divider-color, ${colorVars['--color-border']})`,
   },
 });
 
@@ -352,8 +356,32 @@ function ExpansionPanelCell({
 }) {
   const ctx = useTableContext();
   const hasRowDividers = ctx?.dividers === 'rows' || ctx?.dividers === 'grid';
+  const cellRef = useRef<HTMLTableCellElement>(null);
+  // The panel carries its row's divider (a theme's `table-cell` border or an
+  // app's own never reach this cell, which is not one of the row's cells).
+  // Read after each commit; written only when it differs.
+  useLayoutEffect(() => {
+    const cell = cellRef.current;
+    const row = cell?.parentElement?.previousElementSibling;
+    if (cell == null || row == null || !hasRowDividers) {
+      return;
+    }
+    const edge = panelDividerFor(row);
+    if (edge == null) {
+      return;
+    }
+    const set = (name: string, value: string) => {
+      if (cell.style.getPropertyValue(name) !== value) {
+        cell.style.setProperty(name, value);
+      }
+    };
+    set('--_table-panel-divider-width', edge.width);
+    set('--_table-panel-divider-style', edge.style);
+    set('--_table-panel-divider-color', edge.color);
+  });
   return (
     <td
+      ref={cellRef}
       colSpan={colSpan}
       {...stylex.props(
         expansionStyles.expandedCell,
