@@ -10,7 +10,7 @@
  *   after the component while the revealed content enters, and closing
  *   glides it while the closing content exits, inert, until it hides
  * @position Testing; `component:Collapsible` FR10 and `component:TreeList`
- *   FR8. The module's own proofs are animatedLayout.interaction.browser.spec.ts
+ *   FR9. The module's own proofs are animatedLayout.interaction.browser.spec.ts
  *
  * SYNC: When modified, update the Verification rows in Collapsible.spec.md
  *   and TreeList.spec.md.
@@ -90,7 +90,7 @@ async function viewportScroll(page: Page): Promise<number> {
   });
 }
 
-test.describe('component:Collapsible FR10 and component:TreeList FR8 (spec:AST-105)', () => {
+test.describe('component:Collapsible FR10 and component:TreeList FR9 (spec:AST-105)', () => {
   test('a Collapsible in a ScrollableArea glides the content after it as it opens and closes, and the closing content exits inert until it hides', async ({
     page,
   }) => {
