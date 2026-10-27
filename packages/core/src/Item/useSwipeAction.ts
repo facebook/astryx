@@ -30,8 +30,8 @@
  * verb already; the gesture is an accelerator for a verb the row exposes
  * elsewhere, never the only way to reach one.
  *
- * The pan is the gesture foundation's, published as `Item.swipe` so an app
- * can relate its own recognizers to it. It claims the touch after 8 px of
+ * The pan is the gesture foundation's (named `Item.swipe`, a debugging
+ * label). It claims the touch after 8 px of
  * sideways travel (a drag more vertical than horizontal belongs to the
  * scroller and fails it), toward a side with entries or on a row that is open
  * or moving: a browser commits to scrolling a touch at about 10 px, so the
@@ -42,7 +42,8 @@
  * device. The foundation tells the browser (`touch-action: pan-y
  * pinch-zoom`, `touchmove` cancelled only while the pan owns the touch, the
  * click the browser synthesizes swallowed) and leaves a pinch to the page: a
- * second finger that lands before the claim fails the one-finger pan and
+ * finger that lands while another is down, on the row or anywhere else, never
+ * starts the pan, a second finger that lands before the claim fails it and
  * leaves its touch to the browser's pinch, and once the row has claimed its
  * finger a second finger leaves the swipe going (spec:AST-094 FR10).
  *
@@ -80,7 +81,11 @@
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 import type {KeyboardEvent as ReactKeyboardEvent} from 'react';
-import {PanGestureRecognizer, useGestureRecognizer} from '../gestures';
+import {
+  PanGestureRecognizer,
+  getGestureHost,
+  useGestureRecognizer,
+} from '../gestures';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {isRtlElement} from '../hooks/isRtlElement';
 import {
@@ -874,6 +879,13 @@ export function useSwipeAction({
         maximumNumberOfTouches: 1,
         name: 'Item.swipe',
         shouldBegin: pan => {
+          // A finger that is not the only one down is part of a pinch, even
+          // when the first finger is off the row: the page zooms
+          // (spec:AST-094 FR10).
+          const doc = rootRef.current?.ownerDocument ?? document;
+          if (getGestureHost(doc).fingersDown() > 1) {
+            return false;
+          }
           if (stateRef.current.phase === 'held') {
             return false;
           }
