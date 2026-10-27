@@ -117,7 +117,8 @@ the only component record in the AppShell root.
   TopNav and uncontracted here. AppShell only selects the mode.
 - How SideNav renders in its inline, top-bar, drawer, and drawer-content modes,
   and side nav collapse — owned by SideNav and uncontracted here
-  (`component:SideNav` covers only its row geometry). AppShell only selects the
+  (`component:SideNav` covers its row geometry and its collapse motion,
+  FR6). AppShell only selects the
   mode.
 - The drawer dialog itself: modal presentation, focus containment and return,
   backdrop dismissal, slide motion, and its close delay — owned by MobileNav and
@@ -165,6 +166,7 @@ the only component record in the AppShell root.
 | FR14 | Main content stays mounted across the breakpoint (`family:layout-regions` FR9); in addition, input values and focus inside `children` survive in both directions.                                                                                                                                                                                                                                                                                                                                                                                                  | Current source and tests             |
 | FR15 | `className`, `style`, and `xstyle` merge onto the root after component styles.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Current source                       |
 | FR16 | With `elevated`, a present `topNav`, and an inline side nav, the content area is a raised surface whose block-start, inline-start corner uses the page radius; otherwise the content wrapper creates no layout box.                                                                                                                                                                                                                                                                                                                                                | Current source and stories           |
+| FR17 | While the side nav collapses or expands, the content area's old and new wrap move on the side nav's one clock, as `component:SideNav` FR6 states; the content area never animates its width.                                                                                                                                                                                                                                                                                                                                                                       | `component:SideNav` FR6              |
 
 ### Allowed variation
 
@@ -283,6 +285,7 @@ reachability, not a decision that it must stay unthemeable.
 | FR9–FR12            | `AppShell.test.tsx` mobile suites; `MobileNavCloseEdgeCases.test.tsx` AppShell drawer suites | Sidenav only; both navs; heading-only TopNav; custom node                           | A missing toggle, duplicated items, a stale drawer, or an early hide fails.      | `audit:AppShell/behavior`      |
 | FR13, AR3           | `AppShell.test.tsx` keyboard drawer and `useAppShellMobile` suites                           | Outside a shell; inside, closed and open                                            | A wrong id link or stale state fails.                                            | `audit:AppShell/accessibility` |
 | FR14, AR4           | `AppShell.test.tsx` breakpoint continuity test                                               | Desktop to mobile and back with a focused input                                     | Remounting content loses the value or focus.                                     | `audit:AppShell/behavior`      |
+| FR17                | Real-browser frame evidence of the content area during a side nav collapse (pending)         | collapse and expand with an inline side nav                                         | a content area that animates its width or moves on its own clock fails           | `audit:AppShell/behavior`      |
 | FR7, FR16           | `AppShell.stories.tsx` and visual baselines                                                  | `elevated` with both navs, at desktop width                                         | A changed `elevated` background or missing corner shows in visual review.        | `audit:AppShell/visual`        |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                | Consumer anatomy and current targets                                                | Missing, extra, stale, or multiply assigned mappings fail repository validation. | `audit:AppShell/theming`       |
 
