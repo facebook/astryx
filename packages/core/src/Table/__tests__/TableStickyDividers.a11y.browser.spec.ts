@@ -50,7 +50,7 @@ async function scrollTo(page: Page, left: number) {
   }, left);
   // Two frames: the scroll lands and paints.
   await page.evaluate(
-    () =>
+    async () =>
       new Promise(resolve =>
         requestAnimationFrame(() => requestAnimationFrame(resolve)),
       ),
@@ -60,13 +60,14 @@ async function scrollTo(page: Page, left: number) {
 type Rgb = [number, number, number];
 
 /**
- * The darkest pixel within 3 px of a body row's bottom edge, at an x inside
- * the pinned cell and at an x inside the first unpinned cell visible past it.
+ * The column of pixels within 3 px of a body row's bottom edge, top to
+ * bottom, at an x inside the pinned cell and at an x inside the first
+ * unpinned cell visible past it.
  */
 async function dividerPixels(
   page: Page,
   row: number,
-): Promise<{pinned: Rgb; unpinned: Rgb}> {
+): Promise<{pinned: Rgb[]; unpinned: Rgb[]}> {
   const points = await page.evaluate(index => {
     const rows = document.querySelectorAll(
       '.astryx-table-scroll-wrapper tbody tr',
@@ -79,7 +80,7 @@ async function dividerPixels(
       unpinnedX: Math.round(pinned.right + 40),
     };
   }, row);
-  const sample = async (x: number): Promise<Rgb> => {
+  const sample = async (x: number): Promise<Rgb[]> => {
     const shot = await page.screenshot({
       clip: {x, y: points.y - 3, width: 1, height: 6},
       scale: 'css',
@@ -91,16 +92,17 @@ async function dividerPixels(
       const canvas = document.createElement('canvas');
       canvas.width = image.width;
       canvas.height = image.height;
-      const context = canvas.getContext('2d')!;
+      const context = canvas.getContext('2d');
+      if (context == null) {
+        return [];
+      }
       context.drawImage(image, 0, 0);
       const data = context.getImageData(0, 0, image.width, image.height).data;
-      let best: [number, number, number] = [255, 255, 255];
+      const column: [number, number, number][] = [];
       for (let i = 0; i < data.length; i += 4) {
-        if (data[i] + data[i + 1] + data[i + 2] < best[0] + best[1] + best[2]) {
-          best = [data[i], data[i + 1], data[i + 2]];
-        }
+        column.push([data[i], data[i + 1], data[i + 2]]);
       }
-      return best;
+      return column;
     }, shot.toString('base64'));
   };
   return {
@@ -111,6 +113,14 @@ async function dividerPixels(
 
 const near = (a: Rgb, b: Rgb, tolerance = 6) =>
   a.every((channel, i) => Math.abs(channel - b[i]) <= tolerance);
+/** Every pixel of one column matches the other's, top to bottom. */
+const sameColumn = (a: Rgb[], b: Rgb[], tolerance = 6) =>
+  a.length === b.length && a.every((rgb, i) => near(rgb, b[i], tolerance));
+/** The darkest pixel of a column: the divider's own color. */
+const darkest = (column: Rgb[]): Rgb =>
+  column.reduce((best, rgb) =>
+    rgb[0] + rgb[1] + rgb[2] < best[0] + best[1] + best[2] ? rgb : best,
+  );
 
 test('the divider under a pinned cell matches its row, at rest and scrolled', async ({
   page,
@@ -120,8 +130,13 @@ test('the divider under a pinned cell matches its row, at rest and scrolled', as
     await scrollTo(page, left);
     for (const row of [0, 1, 2]) {
       const {pinned, unpinned} = await dividerPixels(page, row);
-      expect(near(pinned, unpinned), `row ${row} at ${left}px`).toBe(true);
-      expect(pinned[0], `row ${row} at ${left}px is drawn`).toBeLessThan(250);
+      expect(sameColumn(pinned, unpinned), `row ${row} at ${left}px`).toBe(
+        true,
+      );
+      expect(
+        darkest(pinned)[0],
+        `row ${row} at ${left}px is drawn`,
+      ).toBeLessThan(250);
     }
   }
 });
@@ -145,7 +160,7 @@ test('a pinned cell keeps its divider where the cell scrolled beneath it has non
     }
   });
   const after = await dividerPixels(page, 1);
-  expect(near(after.pinned, before.pinned)).toBe(true);
+  expect(sameColumn(after.pinned, before.pinned)).toBe(true);
 });
 
 test("a theme's divider color and an app's row border carry over to the pinned cells", async ({
@@ -156,18 +171,23 @@ test("a theme's divider color and an app's row border carry over to the pinned c
     await scrollTo(page, left);
     // Row 1: the theme's blue divider, under the pinned cell as elsewhere.
     const themed = await dividerPixels(page, 0);
-    expect(near(themed.pinned, themed.unpinned, 24), `themed at ${left}px`).toBe(
-      true,
-    );
-    expect(themed.pinned[2], `themed at ${left}px is blue`).toBeGreaterThan(
-      themed.pinned[0] + 60,
+    expect(
+      sameColumn(themed.pinned, themed.unpinned, 24),
+      `themed at ${left}px`,
+    ).toBe(true);
+    const blue = darkest(themed.pinned);
+    expect(blue[2], `themed at ${left}px is blue`).toBeGreaterThan(
+      blue[0] + 60,
     );
     // Row 2: the app's red row border wins the collapse; the pinned cell
     // draws it too.
+    // Every pixel of the column: a pinned line of the theme's blue over the
+    // app's red (the row's border not carried) fails here.
     const app = await dividerPixels(page, 1);
-    expect(near(app.pinned, app.unpinned, 24), `app at ${left}px`).toBe(true);
-    expect(app.pinned[0], `app at ${left}px is red`).toBeGreaterThan(
-      app.pinned[2] + 60,
+    expect(sameColumn(app.pinned, app.unpinned, 24), `app at ${left}px`).toBe(
+      true,
     );
+    const red = darkest(app.pinned);
+    expect(red[0], `app at ${left}px is red`).toBeGreaterThan(red[2] + 60);
   }
 });
