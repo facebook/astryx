@@ -174,6 +174,47 @@ export const PinnedDividers: Story = {
 };
 
 /**
+ * A border that changes after mount reaches the pinned cells, and the edge
+ * shadows follow columns added without a resize. "Highlight" sets the third
+ * row's border through React state; "Add columns" widens the table inside the
+ * same wrapper.
+ */
+export const PinnedDividersLive: Story = {
+  render: () => {
+    const sticky = useTableStickyColumns<Employee>({
+      startKeys: ['name'],
+      endKeys: ['status'],
+    });
+    const [isHighlighted, setIsHighlighted] = useState(false);
+    const [hasMoreColumns, setHasMoreColumns] = useState(false);
+    const shown = hasMoreColumns
+      ? columns
+      : columns.filter(column => ['name', 'status'].includes(column.key));
+    return (
+      <div data-testid="pinned-dividers-live" style={{maxWidth: 720}}>
+        {isHighlighted && (
+          <style>{`[data-testid="pinned-dividers-live"] tbody tr:nth-child(3) td { border-bottom: 2px solid rgb(22, 163, 74); }`}</style>
+        )}
+        <p style={note}>
+          <button type="button" onClick={() => setIsHighlighted(on => !on)}>
+            Highlight
+          </button>{' '}
+          <button type="button" onClick={() => setHasMoreColumns(on => !on)}>
+            Add columns
+          </button>
+        </p>
+        <Table
+          data={employees}
+          columns={shown}
+          idKey="id"
+          plugins={{stickyColumns: sticky}}
+        />
+      </div>
+    );
+  },
+};
+
+/**
  * Pin the trailing `Status` column to the end edge.
  */
 export const PinEnd: Story = {
