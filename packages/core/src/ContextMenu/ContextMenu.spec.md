@@ -63,8 +63,8 @@ Consumer migration instructions belong in consumer docs and release notes.
   headless context menu (FR10).
 - The alternative Pointer menu surface and Touch menu surface and their shared
   current `context-menu` target.
-- Cursor-anchor placement and current open-state coordination across the two
-  presentation paths.
+- Cursor-anchor placement across the two presentation paths; open state is the
+  factory's (FR10).
 
 **Does not own / non-goals**
 
@@ -196,8 +196,9 @@ anchor is positioning infrastructure rather than consumer anatomy.
 - `architecture:interaction-modality` owns the shared right-click, keyboard,
   long-press, pointer, touch, and adaptive-presentation boundaries.
 - `architecture:layer-runtime` owns the current context-mode `useLayer` host and
-  cursor-anchor positioning. ContextMenu retains local outside-click handling and
-  joins shared Escape ordering through `useLayerDismissal`; touch hosting delegates
+  cursor-anchor positioning. The factory closes the menu on an outside click
+  (FR10), and ContextMenu joins shared Escape ordering through
+  `useLayerDismissal`; touch hosting delegates
   to BottomSheet.
 - `family:overlay-dismissal` owns shared Escape and platform-close ordering.
   ContextMenu's pointer presentation is a shared-stack adopter; the touch
