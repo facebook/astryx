@@ -214,7 +214,7 @@ export const GalleryKeepsIndex: Story = {
 
 /**
  * Photos open from their thumbnails and close back into the one showing:
- * `sourceFor` hands the viewer each item's thumbnail, and the photo zooms
+ * `experimental.sourceFor` hands the viewer each item's thumbnail, and the photo zooms
  * out of it (UIKit's zoom transition). Page to another photo and close, or
  * drag it down: it lands in its own thumbnail.
  */
@@ -259,7 +259,7 @@ export const ZoomFromThumbnails: Story = {
           media={GALLERY_MEDIA}
           index={index}
           onIndexChange={setIndex}
-          sourceFor={i => thumbnails.current[i] ?? null}
+          experimental={{sourceFor: i => thumbnails.current[i] ?? null}}
           hasZoom
         />
       </>
@@ -313,7 +313,7 @@ export const MountedWhileOpen: Story = {
             media={GALLERY_MEDIA}
             index={openIndex}
             onIndexChange={setOpenIndex}
-            sourceFor={i => thumbnails.current[i] ?? null}
+            experimental={{sourceFor: i => thumbnails.current[i] ?? null}}
             hasZoom
           />
         )}
@@ -360,7 +360,7 @@ export const InsideADialog: Story = {
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           media={{src: SAMPLE_IMAGE, alt: 'Forest path'}}
-          sourceFor={() => thumbnail.current}
+          experimental={{sourceFor: () => thumbnail.current}}
           hasZoom
         />
       </>

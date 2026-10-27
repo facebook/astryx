@@ -387,7 +387,7 @@ describe('Lightbox', () => {
           onOpenChange={() => {}}
           media={media}
           index={0}
-          sourceFor={sourceFor}
+          experimental={{sourceFor}}
         />,
       );
       expect(sourceFor).not.toHaveBeenCalled();
@@ -397,7 +397,7 @@ describe('Lightbox', () => {
           onOpenChange={() => {}}
           media={media}
           index={0}
-          sourceFor={sourceFor}
+          experimental={{sourceFor}}
         />,
       );
       expect(sourceFor).toHaveBeenLastCalledWith(0);
@@ -407,7 +407,7 @@ describe('Lightbox', () => {
           onOpenChange={() => {}}
           media={media}
           index={2}
-          sourceFor={sourceFor}
+          experimental={{sourceFor}}
         />,
       );
       rerender(
@@ -416,7 +416,7 @@ describe('Lightbox', () => {
           onOpenChange={() => {}}
           media={media}
           index={2}
-          sourceFor={sourceFor}
+          experimental={{sourceFor}}
         />,
       );
       expect(sourceFor).toHaveBeenLastCalledWith(2);
@@ -431,7 +431,12 @@ describe('Lightbox', () => {
       const thumbnail = document.createElement('img');
       document.body.append(thumbnail);
       const sourceFor = vi.fn((): HTMLElement | null => thumbnail);
-      const props = {onOpenChange: () => {}, media, index: 0, sourceFor};
+      const props = {
+        onOpenChange: () => {},
+        media,
+        index: 0,
+        experimental: {sourceFor},
+      };
       const {rerender} = render(<Lightbox isOpen={false} {...props} />);
       rerender(<Lightbox isOpen={true} {...props} />);
       rerender(<Lightbox isOpen={false} {...props} />);

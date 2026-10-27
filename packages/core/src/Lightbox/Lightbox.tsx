@@ -11,11 +11,11 @@
  *   animator, usePager (a gallery pages like Photos: a UIKit paging scroll view with Photos'
  *   40 pt gap), and the compositor animator for Photos' drag to dismiss (the
  *   backdrop and the controls' layers fade with the drag), zoomFromSource (UIKit's
- *   zoom transition between a source, `sourceFor`, and the photo) and holdInput (the Layer
+ *   zoom transition between a source, `experimental.sourceFor`, and the photo) and holdInput (the Layer
  *   module's input hold: a touch opening holds taps and drags until it ends,
  *   spec:AST-094 FR35), openerActivation (the click that opened a viewer, recorded by one
  *   document listener every closed touch viewer shares)
- * @output Exports Lightbox component, LightboxProps, LightboxMedia
+ * @output Exports Lightbox component, LightboxProps, LightboxExperimentalOptions, LightboxMedia
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -105,6 +105,18 @@ export interface LightboxMedia {
   type?: LightboxMediaType;
 }
 
+/**
+ * Lightbox's experimental options (`experimental`): anything here may change or
+ * be removed in a patch release.
+ */
+export interface LightboxExperimentalOptions {
+  /**
+   * The element an item opens from and closes into, usually its thumbnail, or
+   * null for an item with none on screen.
+   */
+  sourceFor?: (index: number) => HTMLElement | null;
+}
+
 export interface LightboxProps extends BaseProps<HTMLDialogElement> {
   /** Ref forwarded to the root dialog element */
   ref?: React.Ref<HTMLDialogElement>;
@@ -151,17 +163,15 @@ export interface LightboxProps extends BaseProps<HTMLDialogElement> {
    */
   hasAutoPlay?: boolean;
   /**
-   * The element an item's photo opens from and closes into, usually its
-   * thumbnail: on a touch screen (a coarse primary pointer) the viewer zooms
-   * out of it on open and back into it on close (UIKit's zoom transition),
-   * for whichever item shows then; with a mouse it opens and closes at once,
-   * as before. Return null when there is none, or it is off screen. Without
-   * it, the element that opened the viewer is the opened item's source when
-   * it shows a picture (an image, or a button or link around one).
-   *
-   * Proposed; pending owner review.
+   * Experimental options: anything in this object may change or be removed in
+   * a patch release, and omitting it keeps the stable behavior. `sourceFor`
+   * returns the element an item opens from and closes into, usually its
+   * thumbnail: on a touch screen the photo zooms out of it on open and back
+   * into it on close (UIKit's zoom transition), and a photo dragged down lands
+   * in it. It returns null for an item with none on screen.
+   * @experimental
    */
-  sourceFor?: (index: number) => HTMLElement | null;
+  experimental?: LightboxExperimentalOptions;
 }
 
 // =============================================================================
@@ -498,7 +508,7 @@ export function Lightbox({
   onIndexChange,
   hasZoom = false,
   hasAutoPlay = false,
-  sourceFor,
+  experimental,
   xstyle,
   className,
   style,
@@ -645,6 +655,7 @@ export function Lightbox({
   // An item's source: the caller's, or for the opened item the element that
   // opened the viewer when it shows a picture (a thumbnail, or a button or
   // link around one); a text button opens and closes plainly.
+  const sourceFor = experimental?.sourceFor;
   const sourceElementFor = useCallback(
     (i: number): HTMLElement | null => {
       if (sourceFor != null) {
@@ -963,7 +974,8 @@ export function Lightbox({
   });
 
   // Open and close the dialog. Under the touch layer, with a source
-  // (`sourceFor`, or the element that opened the viewer for the opened item),
+  // (`experimental.sourceFor`, or the element that opened the viewer for the
+  // opened item),
   // the photo zooms out of it on open and back into the current item's on
   // close (UIKit's zoom transition); the dialog stays open, the page inert,
   // until the photo has landed. Where the primary pointer is fine the viewer
@@ -1123,7 +1135,16 @@ export function Lightbox({
           next.release();
           if (opening != null) {
             markFaded(fades);
-            void opening.then(endEntrance, endEntrance);
+            // The backdrop fades without its blur until the photo lands.
+            const move = (backdropMovesRef.current += 1);
+            now.setBackdropMoving(true);
+            const landed = () => {
+              if (backdropMovesRef.current === move) {
+                now.setBackdropMoving(false);
+              }
+              endEntrance();
+            };
+            void opening.then(landed, landed);
           } else {
             endEntrance();
           }
@@ -1190,6 +1211,9 @@ export function Lightbox({
       return;
     }
     markFaded(fades);
+    // The backdrop fades without its blur while the photo returns.
+    backdropMovesRef.current += 1;
+    now.setBackdropMoving(true);
     const token = ++closeTokenRef.current;
     void closing.then(() => {
       if (closeTokenRef.current === token) {
