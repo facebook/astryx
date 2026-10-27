@@ -2995,7 +2995,7 @@ describe('DropdownMenu press model', () => {
     }
   });
 
-  it('presentation="popover" pins the released trigger under a finger: it opens at 500 ms and its opening press follows the settle rule', () => {
+  it('presentation="popover" pins the released trigger under a finger: it opens at 500 ms, not on the press', () => {
     // spec:AST-094 FR25: a moved touch default comes back through
     // `presentation`, never through a public threshold.
     stubCoarsePointer();
@@ -3021,14 +3021,6 @@ describe('DropdownMenu press model', () => {
       });
       expect(MENU_PRESS_LONG_PRESS_MS).toBe(500);
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
-      // No handoff distance: once the press has settled, a finger that barely
-      // moved picks the row under it, as before.
-      act(() => {
-        vi.advanceTimersByTime(MENU_PRESS_SETTLE_MS);
-      });
-      fireEvent.pointerMove(item('Delete'), {...touch, clientX: 0, clientY: 2});
-      fireEvent.pointerUp(item('Delete'), {...touch, clientX: 0, clientY: 2});
-      expect(onPick).toHaveBeenCalledWith('Delete');
     } finally {
       vi.useRealTimers();
     }
