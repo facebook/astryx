@@ -78,6 +78,24 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // A test that ends mid-drag lifts its pointer where it is, and losing
+  // window focus cancels every touch in flight; what the gesture host defers
+  // to the next task (a mouse drag's selection hold lifts one task after its
+  // press ends) runs on this test's clock, so the next test does not inherit
+  // it.
+  if (pressed != null) {
+    const {target, y, pointerType} = pressed;
+    act(() => {
+      mouse(target, 'pointerup', y, 100_000, pointerType);
+    });
+  }
+  window.dispatchEvent(new Event('blur'));
+  if (pointerUsed) {
+    pointerUsed = false;
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+  }
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
@@ -270,8 +288,23 @@ function mouse(
     buttons: type === 'pointerup' ? 0 : 1,
   });
   Object.defineProperty(event, 'timeStamp', {value: timeBase + time});
+  pressed =
+    type === 'pointerdown'
+      ? {target, y, pointerType}
+      : type === 'pointerup'
+        ? null
+        : pressed;
+  pointerUsed = true;
   return fireEvent(target, event);
 }
+// Whether a test pressed a pointer (its host work deferred to the next task
+// must run before the next test), and the one it left pressed.
+let pointerUsed = false;
+let pressed: {
+  target: Element;
+  y: number;
+  pointerType: 'mouse' | 'touch' | 'pen';
+} | null = null;
 
 // A finger where a test stubs a coarse primary pointer, else a mouse. jsdom
 // lacks TouchEvent: the touch events carry the fields the host reads.
@@ -321,22 +354,46 @@ function drag(
   pointerType?: 'mouse' | 'touch' | 'pen',
 ) {
   if (pointerType != null) {
+    // Every pointer's pan begins past its threshold (spec:AST-094 FR17,
+    // FR19, FR43): the press lands that far behind the first move. A finger
+    // on a touchscreen whose primary pointer is fine sends its touches after
+    // its pointer events.
+    const fire = (
+      type: 'pointerdown' | 'pointermove' | 'pointerup',
+      y: number,
+      time: number,
+    ) => {
+      mouse(handle, type, y, time, pointerType);
+      if (pointerType === 'touch') {
+        const touchType = {
+          pointerdown: 'touchstart',
+          pointermove: 'touchmove',
+          pointerup: 'touchend',
+        }[type];
+        const event = new Event(touchType, {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+        });
+        const touch = {identifier: 7, clientX: 50, clientY: y, target: handle};
+        Object.defineProperties(event, {
+          changedTouches: {value: [touch]},
+          touches: {value: type === 'pointerup' ? [] : [touch]},
+          timeStamp: {value: timeBase + time},
+        });
+        fireEvent(handle, event);
+      }
+    };
+    const direction =
+      points.length > 1 ? Math.sign(points[1].y - points[0].y) : 0;
     points.forEach((point, i) =>
-      mouse(
-        handle,
+      fire(
         i === 0 ? 'pointerdown' : 'pointermove',
-        point.y,
+        i === 0 ? point.y - direction * PAN_THRESHOLD : point.y,
         i * 16,
-        pointerType,
       ),
     );
-    mouse(
-      handle,
-      'pointerup',
-      points[points.length - 1].y,
-      points.length * 16,
-      pointerType,
-    );
+    fire('pointerup', points[points.length - 1].y, points.length * 16);
     return;
   }
   points.forEach((point, i) =>
@@ -408,7 +465,9 @@ function fireTimedPointer(
   if (pendingPress != null) {
     const landing = pendingPress;
     pendingPress = null;
-    const behind = matchMedia('(pointer: coarse)').matches ? PAN_THRESHOLD : 0;
+    // Every pointer's pan begins past its threshold (spec:AST-094 FR17,
+    // FR19, FR43), a mouse's too.
+    const behind = PAN_THRESHOLD;
     contact(
       target,
       'pointerdown',
@@ -685,6 +744,7 @@ describe('BottomSheet', () => {
 
     fireEvent.click(dialog);
     expect(onOpenChange).toHaveBeenCalledTimes(1);
+    measureTallSheet();
     drag(getHandle(), [{y: 0}, {y: 40}, {y: 120}]);
     expect(onOpenChange).toHaveBeenCalledTimes(2);
     expect(onOpenChange).toHaveBeenNthCalledWith(2, false);
@@ -3814,6 +3874,7 @@ describe('BottomSheet', () => {
       stubReducedMotion(false);
       render(<Controlled />);
       const dialog = screen.getByRole('dialog');
+      measureTallSheet();
       drag(getHandle(), [{y: 0}, {y: 40}, {y: 120}], 'touch');
       // Exiting: a transform end does not close the dialog, the fade does.
       fireEvent.transitionEnd(getSheet(), {propertyName: 'transform'});
@@ -3844,6 +3905,7 @@ describe('BottomSheet', () => {
       }
       render(<Reopenable />);
       const dialog = screen.getByRole('dialog');
+      measureTallSheet();
       drag(getHandle(), [{y: 0}, {y: 40}, {y: 120}], 'touch');
       fireEvent.transitionEnd(getSheet(), {propertyName: 'opacity'});
       expect(dialog).not.toHaveAttribute('open');
@@ -3898,6 +3960,7 @@ describe('BottomSheet', () => {
       stubReducedMotion(false);
       render(<Controlled />);
       const dialog = screen.getByRole('dialog');
+      measureTallSheet();
       drag(getHandle(), [{y: 0}, {y: 40}, {y: 120}], 'mouse');
       fireEvent.transitionEnd(getSheet(), {propertyName: 'transform'});
       expect(dialog).not.toHaveAttribute('open');
