@@ -43,17 +43,32 @@ function Sheet() {
 - The listener is read through a ref. Passing a new function on each render
   attaches nothing new, and a gesture never causes a React render.
 - The recognizer attaches in a layout effect, so the element's `touch-action`
-  is set before the browser can see a finger.
-- The `isEnabled` option follows the prop. Turning it off mid-gesture ends
-  the gesture without calling the listener, since the handler that turned
-  it off owns that end (no consumer callback from an Effect). A handler that
-  wants UIKit's `.cancelled` calls `recognizer.setEnabled(false)` itself,
-  which reports it at once.
-- `usePressTracker` rebuilds its tracker when `trackingExpansion`,
-  `highlightDelay`, `cancelTravel` or `quickTapFlash` change, from the next
-  touch, and reads its callbacks (`isBraking` included) on every touch.
+  is set before the browser can see a finger. It follows the element behind
+  the ref: a node rendered after mount, or swapped behind the same ref (a
+  trigger rendered `as` another element), is attached at that commit.
+- `isEnabled: false` mid-gesture ends the gesture without calling the
+  listener, since the handler that turned it off owns that end (no consumer
+  callback from an Effect). A handler that wants UIKit's `.cancelled` calls
+  `recognizer.setEnabled(false)` itself, which reports it at once. A
+  recognizer that required it to fail (a single tap waiting on a double
+  tap) resolves just after that render, and its listener reports as usual;
+  so does one waiting on a recognizer whose node a render replaced. After
+  unmount the listener hears nothing, not even the cancellation of a
+  gesture the unmount ended.
+- `actionGroup: true` attaches the element as an action group, sibling
+  actions a held pointer slides across, which the host serves where the
+  primary pointer is fine too (`family:action-groups` FR5). Changing it
+  attaches the element again.
 - `usePressTracker(ref, options)` gives an element `UIControl` touch tracking
-  (see below).
+  (see below). It follows its element the same way, takes `isBraking` (by
+  default the host's: a touch that stops a flick presses nothing), and keeps
+  one tracker for the component's life: it reads `trackingExpansion`,
+  `highlightDelay`, `cancelTravel` and `quickTapFlash` (and the ref itself)
+  as they are now, so a change, even mid-press, never drops the press in
+  progress. Unmounting or losing its element calls neither
+  `onHighlightChange` nor `onControlEvent`, and neither does disabling the
+  control under a finger: the press ends, so the handler that disables it
+  clears its own highlight.
 
 Outside React, `getGestureHost(document).attach(element, recognizer)` does
 the same and returns a detach function.
@@ -125,7 +140,10 @@ each one that accepts it tracks it until it ends. Then:
   The delegates `shouldRequireFailureOf` and `shouldBeRequiredToFailBy`
   express the same thing dynamically.
 - **Delegates.** `shouldBegin`, `shouldReceiveTouch`, and `canPrevent` /
-  `canBePrevented` on subclasses.
+  `canBePrevented` on subclasses. The arena's plumbing (touch delivery,
+  approved transitions, a pending recognition) is `protected`: a subclass
+  overrides the `touches*` handlers and sets `state`, and only the gesture
+  system drives the rest.
 
 ```ts
 // Single tap waits for the double tap to fail, as in UIKit.
@@ -190,8 +208,10 @@ presses nothing.
 ## What the browser is told
 
 - **`touch-action`.** Each element gets the intersection of what its
-  recognizers leave the browser. It is set inline on attach and restored on
-  detach (opt out with `manageStyle: false`):
+  recognizers leave the browser, and never more than the element's own
+  value allows: a caller's explicit `touch-action` (a trigger's `none`)
+  stays in force, as the intersection of both. It is set inline on attach
+  and restored on detach (opt out with `manageStyle: false`):
 
   | Recognizers on the element                   | `touch-action`      |
   | -------------------------------------------- | ------------------- |
@@ -234,14 +254,30 @@ presses nothing.
   long press that then drags, a pinch, a rotation) has a non-passive
   `touchmove` listener that cancels the event only while one of its touches
   is owned. A touch nobody owns scrolls exactly as it would without the
-  system. Taps claim only at the lift, so an element with only taps, or only
-  a press consumer, gets no such listener (see the known limit below).
+  system. Taps claim only at the lift, and a recognizer that never claims
+  (`claimsTouches` false, such as a pull that only watches the scroll) never
+  owns a touch, so an element with only those, or only a press consumer,
+  gets no such listener (see the known limit below). The listener the host
+  adds to a finger's target at touch-down, for a target that leaves the
+  document mid-gesture, is passive too unless a recognizer on that touch can
+  claim while it moves.
 - **Claim at the begin.** A pan claims its touch only as it begins, at
   UIKit's 10 pt (`spec:AST-094` FR19), before WebKit commits a slow drag to
   a scroll at 10–11 px; a drag the browser took first stays the browser's
   (FR14).
+  Measured in Mobile Safari (iOS 26.2): `touchmove` arrives from the first
+  pixel; on a scrollable element WebKit commits to scrolling at 10 to 11 px
+  (the last cancelable `touchmove` at 10 px), and cancelling every
+  `touchmove` from 8 px keeps the page still for the whole gesture. Under
+  `pan-y` it scrolls only drags steeper than about 2:1 to 3:1, once the
+  vertical travel reaches about 10 px. A pan that competes with native
+  scrolling therefore decides at 10 px or less.
 - **The browser's claim.** `pointercancel` on a finger, or a scroll above
-  the touch, means the browser took the finger; so does its first `touchmove`
+  the touch once the finger has travelled the slop (the browser starts a pan
+  no earlier), means the browser took the finger; a scroll under a finger
+  that has not moved (scrollIntoView, a transcript pinned to its end, scroll
+  anchoring) is the page's own and leaves the press and its click alone. So
+  does its first `touchmove`
   that can no longer be cancelled, when the browser could pan along the
   finger's main axis. (Chromium also stops asking after one unconsumed
   `touchmove` when `touch-action` keeps it from panning that way, as for a
@@ -274,7 +310,8 @@ to the top, then rubber-bands), and never changes hands midway
 
 "Could scroll" follows the browser's own rules: `touch-action` between the
 touch and each scroller, scroll chaining stopped by `overscroll-behavior`,
-and RTL `scrollLeft` ranges.
+and RTL `scrollLeft` ranges, along the flat tree (content slotted into a
+shadow-tree scroller scrolls with it, as the hit path does).
 
 ### Multiple fingers
 
@@ -323,7 +360,10 @@ pattern per UIKit feedback kind. iOS Safari has no vibration API. It plays a
 light impact only when a real tap toggles an `<input type="checkbox"
 switch>`, and WebKit requires a trusted event for it. `attachTapHaptic(label)`
 puts a hidden switch inside a label the control renders as its tap target,
-so every real tap on it plays that impact. Nothing can play a haptic later
+so every real tap on it plays that impact; focus the activation gives the
+switch goes straight back. A label tied to its control by `for`, or whose
+control is itself a switch, gets no switch; a label wrapping its own control
+gets one, which hands each tap on to that control. Nothing can play a haptic later
 from script, so mid-drag haptics (detent snaps, picker ticks) are not
 possible in iOS Safari.
 
@@ -343,10 +383,11 @@ in `../utils/touchPresentation.ts`:
 
 - touch behaviours (this system, the press model, UIKit springs and
   timings) key on a coarse PRIMARY pointer (`TOUCH_QUERY`);
-- layout behaviours key on a compact viewport, below the theme's `md`
-  width point (`spec:AST-012` FR9): `COMPACT_QUERY` spells the default
-  points for a style, and behaviour reads the active theme's definition, so
-  a theme that moves `md` moves compact with it;
+- layout behaviours key on a compact viewport, narrower than the theme's
+  `md` width point or shorter than 500 px (`COMPACT_QUERY`; behaviour reads
+  the active theme's points), the closest a size can get to
+  UIKit's compact size class (a Max-size iPhone in landscape is its one
+  known miss);
 - a presentation that needs both, a sheet in place of a popover, asks for
   both (`COMPACT_TOUCH_QUERY`).
 
@@ -417,7 +458,9 @@ mouse), and a decision taken once reads `readTouchPresentation()`.
 - `__tests__/haptics.test.ts`: vibration patterns and the hidden switch.
 - `__tests__/browser/`: the browser proof on a phone-sized touch screen, in
   Chromium (CDP touches with timestamps) and WebKit (its own touch input).
-  Run it with
+  CI runs it in Chromium in the interaction lane
+  (`pnpm test:interaction --project chromium`, `playwright.interaction.config.ts`).
+  Run both engines with
   `pnpm exec playwright test --config packages/core/src/gestures/__tests__/browser/playwright.config.ts`;
   where WebKit cannot launch on the host, its project runs in the official
   Playwright image (see the config header). The same fixture passed in
