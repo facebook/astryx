@@ -4,6 +4,11 @@ domain:      component
 package:     @astryxdesign/core
 import:      @astryxdesign/core/AlertDialog
 command:     pnpm exec astryx component AlertDialog
+name:        BottomSheet
+domain:      component
+package:     @astryxdesign/core
+import:      @astryxdesign/core/BottomSheet
+command:     pnpm exec astryx component BottomSheet
 name:        BottomSheetSwitcher
 domain:      component
 package:     @astryxdesign/core
@@ -95,12 +100,6 @@ domain:      doc
 package:     @astryxdesign/cli
 command:     pnpm exec astryx docs migration/component-migration move-the-app-frame-first
 parent:      pnpm exec astryx docs migration/component-migration --index
-name:        motion
-section:     touch-motion
-domain:      doc
-package:     @astryxdesign/cli
-command:     pnpm exec astryx docs motion touch-motion
-parent:      pnpm exec astryx docs motion --index
 name:        styling/styling-advanced
 section:     compound-components
 domain:      doc

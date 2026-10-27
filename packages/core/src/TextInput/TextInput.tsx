@@ -17,6 +17,7 @@
  */
 
 import {
+  use,
   useId,
   useOptimistic,
   useTransition,
@@ -94,7 +95,7 @@ const sizeStyles = stylex.create({
 
 export type TextInputSize = keyof typeof sizeStyles;
 
-import {groupStyles} from '../InputGroup/groupStyles';
+import {groupStyles, inputGroupItemProps} from '../InputGroup/groupStyles';
 
 // Re-export shared types for convenience
 
@@ -108,6 +109,7 @@ import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {InputGroupInternalContext} from '../InputGroup/InputGroupInternalContext';
 import type {BaseProps} from '../BaseProps';
 import {
   type FieldInputBaseProps,
@@ -297,7 +299,7 @@ export function TextInput({
   description,
   isOptional = false,
   isRequired = false,
-  isDisabled = false,
+  isDisabled: isDisabledProp = false,
   isReadOnly = false,
   disabledMessage,
   startIcon,
@@ -327,6 +329,9 @@ export function TextInput({
   'aria-describedby': ariaDescribedByProp,
   ...restProps
 }: TextInputProps) {
+  const inputGroup = useInputGroup();
+  const inputGroupState = use(InputGroupInternalContext);
+  const isDisabled = isDisabledProp || inputGroupState.isDisabled;
   const {rest, container} = useFieldInputStyling('TextInput', restProps, {
     containerXstyle,
     containerClassName,
@@ -352,7 +357,6 @@ export function TextInput({
   const statusMessageID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const inputGroup = useInputGroup();
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -452,6 +456,7 @@ export function TextInput({
       }}
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
+      {...(inputGroup ? inputGroupItemProps : undefined)}
       {...mergeProps(
         themeProps('text-input', {
           size,

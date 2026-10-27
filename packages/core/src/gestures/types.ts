@@ -12,27 +12,19 @@
 /**
  * UIGestureRecognizer.State. A discrete recognizer goes straight from
  * `possible` to `ended` (UIKit's `.recognized` is the same value).
- * @experimental
  */
 export type GestureState =
   'possible' | 'began' | 'changed' | 'ended' | 'cancelled' | 'failed';
 
-/**
- * What made the contact. A pen on an iPad is `pen`, not `touch`.
- * @experimental
- */
+/** What made the contact. A pen on an iPad is `pen`, not `touch`. */
 export type PointerKind = 'touch' | 'mouse' | 'pen';
 
-/** @experimental */
 export interface Point {
   readonly x: number;
   readonly y: number;
 }
 
-/**
- * One position of a contact at one instant, in client (viewport) CSS px.
- * @experimental
- */
+/** One position of a contact at one instant, in client (viewport) CSS px. */
 export interface TouchSample {
   readonly x: number;
   readonly y: number;
@@ -40,14 +32,12 @@ export interface TouchSample {
   readonly time: number;
 }
 
-/** @experimental */
 export type TouchPhase = 'began' | 'moved' | 'ended' | 'cancelled';
 
 /**
  * The scrollers between a touch and the page, as the host sees them: enough
  * for a recognizer to ask whether the browser would scroll something if the
  * finger moved one way, without the recognizer touching the DOM.
- * @experimental
  */
 export interface NativeScrollProbe {
   /**
@@ -56,13 +46,6 @@ export interface NativeScrollProbe {
    * lets the browser pan that axis).
    */
   canScroll(dx: number, dy: number): boolean;
-  /**
-   * How much further (px) the scroller that would move for a finger moving
-   * by (dx, dy) can scroll before it reaches its edge; 0 when none would.
-   * Lets a scroll handoff place the point where the content ran out between
-   * two samples instead of at the next one.
-   */
-  distanceToEdge?(dx: number, dy: number): number;
   /** Whether any element under the touch can scroll natively at all. */
   readonly isInsideScroller: boolean;
   /**
@@ -76,7 +59,6 @@ export interface NativeScrollProbe {
 /**
  * One contact: UITouch. The arena owns it and updates it in place; a
  * recognizer keeps a reference to every touch it receives.
- * @experimental
  */
 export interface GestureTouch {
   /** Unique among the contacts the arena tracks at once. */
@@ -105,10 +87,7 @@ export interface GestureTouch {
   takenByBrowser: boolean;
 }
 
-/**
- * The input a host hands the arena for one contact in one event.
- * @experimental
- */
+/** The input a host hands the arena for one contact in one event. */
 export interface TouchInput {
   readonly id: number;
   readonly x: number;
@@ -118,20 +97,14 @@ export interface TouchInput {
   readonly history?: ReadonlyArray<TouchSample>;
 }
 
-/**
- * A new contact: where it is, what made it, and what it landed on.
- * @experimental
- */
+/** A new contact: where it is, what made it, and what it landed on. */
 export interface TouchBeganInput extends TouchInput {
   readonly pointerType: PointerKind;
   readonly target: unknown;
   readonly scroll?: NativeScrollProbe | null;
 }
 
-/**
- * What a recognizer is told alongside the touches that changed.
- * @experimental
- */
+/** What a recognizer is told alongside the touches that changed. */
 export interface GestureEventContext {
   /** Timestamp of the event being processed. */
   readonly time: number;
@@ -143,11 +116,17 @@ export interface GestureEventContext {
  * Facts about the page a recognizer may need and must not read from the DOM
  * itself: the viewport for screen-edge pans, and the writing direction of a
  * view for `leading` / `trailing`.
- * @experimental
  */
 export interface GestureEnvironment {
   viewportSize(): {readonly width: number; readonly height: number};
   isRtl(view: unknown): boolean;
+  /**
+   * The size of a recognizer's view, or null when it has none to measure.
+   * A screen-edge pan reads it to tell an edge zone from a wider view.
+   */
+  viewSize?(
+    view: unknown,
+  ): {readonly width: number; readonly height: number} | null;
 }
 
 export const DEFAULT_ENVIRONMENT: GestureEnvironment = {
@@ -160,6 +139,13 @@ export const DEFAULT_ENVIRONMENT: GestureEnvironment = {
   isRtl() {
     return false;
   },
+  viewSize(view) {
+    if (typeof Element === 'undefined' || !(view instanceof Element)) {
+      return null;
+    }
+    const {width, height} = view.getBoundingClientRect();
+    return {width, height};
+  },
 };
 
 /**
@@ -167,7 +153,6 @@ export const DEFAULT_ENVIRONMENT: GestureEnvironment = {
  * `touchesEnded` to when no gesture recognizer takes the touch (a UIControl).
  * The arena delivers through it, honoring `delaysTouchesBegan`,
  * `delaysTouchesEnded` and `cancelsTouchesInView`.
- * @experimental
  */
 export interface TouchConsumer {
   touchBegan(touch: GestureTouch): void;
@@ -180,4 +165,11 @@ export interface TouchConsumer {
    * (attached above this consumer) from beginning for a touch on it.
    */
   allowsAncestorRecognizer?(recognizer: unknown): boolean;
+  /**
+   * Whether the consumer takes touches now (a disabled control does not).
+   * The host listens only while something enabled is attached
+   * (`spec:AST-094` FR24); after this changes, call `host.update(element)`.
+   * @default true
+   */
+  isEnabled?(): boolean;
 }
