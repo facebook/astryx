@@ -385,3 +385,56 @@ describe('a swap that rides a glide (spec:AST-105 FR8 with FR3)', () => {
     expect(ride?.keyframes.at(-1)?.translate).toBe('-212px 0px');
   });
 });
+
+describe('the glide in a right-to-left document', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('moves a follower by its inline-start edge, the right one', async () => {
+    document.body.innerHTML = `
+      <div id="area" dir="rtl">
+        <div id="rail"></div>
+        <div id="column" style="direction: rtl"></div>
+      </div>`;
+    const area = document.getElementById('area') as HTMLElement;
+    const rail = document.getElementById('rail') as HTMLElement;
+    const column = document.getElementById('column') as HTMLElement;
+    let railWidth = 260;
+    // The rail sits on the right; the column keeps its left edge at 0.
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        if (this === area) {
+          return DOMRect.fromRect({x: 0, y: 0, width: 1000, height: 600});
+        }
+        if (this === rail) {
+          return DOMRect.fromRect({
+            x: 1000 - railWidth,
+            y: 0,
+            width: railWidth,
+            height: 600,
+          });
+        }
+        if (this === column) {
+          return DOMRect.fromRect({
+            x: 0,
+            y: 0,
+            width: 1000 - railWidth,
+            height: 600,
+          });
+        }
+        return DOMRect.fromRect({x: 0, y: 0, width: 0, height: 0});
+      },
+    );
+    const handle = createAnimatedLayout(() => area);
+    const change = reportLayoutChange(handle, {current: rail});
+    change.measureBefore();
+    railWidth = 48;
+    change.animate();
+    await Promise.resolve();
+    const glide = played.find(entry => entry.element === column);
+    // Its right edge moved from 740 to 952: it starts 212 px back.
+    expect(glide?.keyframes[0].translate).toBe('-212px 0px');
+    expect(glide?.keyframes.at(-1)?.translate).toBe('0px 0px');
+  });
+});
