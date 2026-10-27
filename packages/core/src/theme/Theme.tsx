@@ -45,6 +45,7 @@ import {registerTheme} from './themeRegistry';
 import {dataAttr} from '../naming';
 import {ThemeContext} from './useTheme';
 import {warnOnce} from '../utils/devWarning';
+import {resolveMotionKnobs} from './themeMotion';
 
 /**
  * Theme provider props
@@ -193,11 +194,16 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
  *
  * - 'light' | 'dark' → sets data-theme="light" | "dark"
  * - 'system' → removes data-theme (reset.css defaults to color-scheme: light dark)
+ *
+ * A theme with `reducedMotion: 'always'` also marks `<html>` with
+ * `data-astryx-reduced-motion`, so layers portaled outside the wrapper reduce
+ * their motion too (spec:AST-108 FR6).
  */
 function useRootThemeSync(
   isNested: boolean,
   mode: ThemeMode,
   themeName: string,
+  reducesMotion: boolean,
 ): void {
   useIsomorphicLayoutEffect(() => {
     if (isNested) {
@@ -216,12 +222,18 @@ function useRootThemeSync(
 
     // Sync theme name so @scope rules reach portals/fallback viewports.
     document.documentElement.setAttribute(dataAttr('theme'), themeName);
+    if (reducesMotion) {
+      document.documentElement.setAttribute(dataAttr('reduced-motion'), '');
+    } else {
+      document.documentElement.removeAttribute(dataAttr('reduced-motion'));
+    }
 
     return () => {
       document.documentElement.removeAttribute('data-theme');
       document.documentElement.removeAttribute(dataAttr('theme'));
+      document.documentElement.removeAttribute(dataAttr('reduced-motion'));
     };
-  }, [isNested, mode, themeName]);
+  }, [isNested, mode, themeName, reducesMotion]);
 }
 
 // =============================================================================
@@ -251,7 +263,11 @@ export function Theme({
   registerTheme(theme);
 
   useThemeStyleInjection(theme);
-  useRootThemeSync(isNested, mode, theme.name);
+  // spec:AST-108 FR6: 'always' marks the theme's root; every component style
+  // keyed on prefers-reduced-motion also keys on the mark.
+  const reducesMotion =
+    resolveMotionKnobs(theme.__axes?.motion).reducedMotion === 'always';
+  useRootThemeSync(isNested, mode, theme.name, reducesMotion);
 
   // Get color-scheme style
   const colorSchemeStyle =
@@ -270,6 +286,7 @@ export function Theme({
         <div
           {...stylex.props(wrapperStyles.base, colorSchemeStyle)}
           data-astryx-theme={theme.name}
+          data-astryx-reduced-motion={reducesMotion ? '' : undefined}
           data-theme={mode === 'system' ? undefined : mode}>
           {children}
         </div>
