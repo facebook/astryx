@@ -9,7 +9,15 @@
  * SYNC: When BottomSheet.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  afterEach,
+  onTestFinished,
+} from 'vitest';
 import {act, render, screen, fireEvent} from '@testing-library/react';
 import {createRef, useState} from 'react';
 import {BottomSheet} from './BottomSheet';
@@ -1421,6 +1429,82 @@ describe('BottomSheet', () => {
   });
 
   describe('mobile keyboard', () => {
+    // The reveal-pan watch reads touches to leave a reader's own pan alone:
+    // the most document touch listeners registered at once.
+    function trackDocumentTouchListeners(): () => number {
+      const live = new Set<unknown>();
+      let most = 0;
+      const add = EventTarget.prototype.addEventListener;
+      const remove = EventTarget.prototype.removeEventListener;
+      const adding = vi
+        .spyOn(document, 'addEventListener')
+        .mockImplementation((type, listener, options) => {
+          if (type === 'touchstart') {
+            live.add(listener);
+            most = Math.max(most, live.size);
+          }
+          add.call(document, type, listener, options);
+        });
+      const removing = vi
+        .spyOn(document, 'removeEventListener')
+        .mockImplementation((type, listener, options) => {
+          if (type === 'touchstart') {
+            live.delete(listener);
+          }
+          remove.call(document, type, listener, options);
+        });
+      onTestFinished(() => {
+        adding.mockRestore();
+        removing.mockRestore();
+      });
+      return () => most;
+    }
+
+    it('registers no touch listener for a presented Tall sheet under a fine pointer (architecture INV13, spec:AST-094 FR24)', () => {
+      mockPrimaryPointer('fine');
+      mockWindowHeight(800);
+      mockVisualViewport(800);
+      const mostTouchListeners = trackDocumentTouchListeners();
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      expect(screen.getByRole('textbox', {name: 'Comment'})).toBeVisible();
+      expect(mostTouchListeners()).toBe(0);
+    });
+
+    it('registers one document touch listener for two presented Tall sheets under a coarse pointer (spec:AST-094 FR24)', () => {
+      mockPrimaryPointer('coarse');
+      mockWindowHeight(800);
+      mockVisualViewport(800);
+      const mostTouchListeners = trackDocumentTouchListeners();
+      render(
+        <>
+          <BottomSheet
+            isOpen
+            onOpenChange={() => {}}
+            label="Add a comment"
+            height="tall">
+            <input aria-label="Comment" />
+          </BottomSheet>
+          <BottomSheet
+            isOpen
+            onOpenChange={() => {}}
+            label="Add a note"
+            height="tall">
+            <input aria-label="Note" />
+          </BottomSheet>
+        </>,
+      );
+      expect(screen.getByRole('textbox', {name: 'Note'})).toBeInTheDocument();
+      expect(mostTouchListeners()).toBe(1);
+    });
+
     it('claims a transition between fields and delivers it with preventScroll', () => {
       mockIOSWebKit();
       render(
@@ -1838,8 +1922,10 @@ describe('BottomSheet', () => {
     });
 
     describe('the reveal at the keyboard\u2019s report (spec:AST-099 FR4)', () => {
-      // A Tall sheet with its last field low, as in the Mobile keyboard story.
+      // A Tall sheet with its last field low, as in the Mobile keyboard story,
+      // on a touch screen: the on-screen keyboard's own pan comes with one.
       function renderLowField() {
+        mockPrimaryPointer('coarse');
         mockWindowHeight(800);
         const viewport = Object.assign(mockVisualViewport(800), {scale: 1});
         render(
