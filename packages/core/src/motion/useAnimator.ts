@@ -24,7 +24,7 @@
  */
 
 import {useState} from 'react';
-import {createAnimator, type Animator, type AnimatorOptions} from './animator';
+import {createMotionAnimator, type Animator, type AnimatorOptions} from './animator';
 
 export interface UseAnimatorResult {
   /** Callback ref for the animated element; stable. */
@@ -50,7 +50,7 @@ export interface UseAnimatorResult {
  */
 export function useAnimator(options?: AnimatorOptions): UseAnimatorResult {
   const [result] = useState<UseAnimatorResult>(() => {
-    const animator = createAnimator(null, options);
+    const animator = createMotionAnimator(null, options);
     return {animator, ref: element => animator.attach(element)};
   });
   return result;

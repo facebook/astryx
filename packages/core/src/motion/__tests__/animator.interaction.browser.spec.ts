@@ -67,7 +67,7 @@ async function open(page: Page) {
 </style>
 <div id="box"></div>
 <script>${script}</script>
-<script>window.animator = Motion.createAnimator(document.getElementById('box'));</script>`;
+<script>window.animator = Motion.createMotionAnimator(document.getElementById('box'));</script>`;
   await page.route('http://motion.test/', async route =>
     route.fulfill({contentType: 'text/html', body: html}),
   );
@@ -506,7 +506,7 @@ test('a role variable set on a scope changes nothing while touch motion stays in
     const report: Record<string, {worst: number; lowest: number}> = {};
     for (const id of ['plain', 'themed'] as const) {
       const element = document.getElementById(id) as HTMLElement;
-      const animator = Motion.createAnimator(element);
+      const animator = Motion.createMotionAnimator(element);
       animator.set({y: 300});
       const handle = animator.animate({y: 0}, {spring: Motion.springs.settle});
       await handle.started;
@@ -615,7 +615,7 @@ test('a dialog\u2019s ::backdrop plays the curve and holds its end state', async
     const dialog = document.createElement('dialog');
     document.body.append(dialog);
     dialog.showModal();
-    const backdrop = Motion.createAnimator(dialog, {
+    const backdrop = Motion.createMotionAnimator(dialog, {
       pseudoElement: '::backdrop',
     });
     backdrop.set({opacity: 0});

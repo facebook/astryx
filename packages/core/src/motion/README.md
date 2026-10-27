@@ -55,8 +55,14 @@ the timings that decide who gets a touch are not roles.
 
 ## Animator
 
+Products animate one element through the public layer over this animator,
+`createAnimator` (`animator/createAnimator.ts`) and its hook `useAnimator`
+(`spec:AST-107` FR3): values and six methods, every `animate` on
+`springs.stateChange`. This internal factory is `createMotionAnimator`, so no
+internal factory shares a public factory's name (FR6).
+
 ```
-import {createAnimator} from '../motion/animator';
+import {createMotionAnimator} from '../motion/animator';
 import {coast} from '../motion/coast';
 import {solveSpringTowardRamp, toSpring} from '../motion/spring';
 import {resolveMotion} from '../motion/resolveMotion';
@@ -65,7 +71,7 @@ import {registerSpringsTable, springs} from '../motion/uikit';
 // Once, so the springs are registered as their roles:
 registerSpringsTable();
 
-const animator = createAnimator(sheet);
+const animator = createMotionAnimator(sheet);
 // The animator plays a motion role (spec:AST-094 FR4), its table value while
 // touch motion stays internal (DEC-11); math on a spring reads the role with
 // resolveMotion.
@@ -152,7 +158,7 @@ await handle.finished; // true if it ran to the end, false if interrupted
 - `animatorFor(element)` returns the one animator for an element, so code
   that animates it from several places (a swipe on x, a removal on y)
   composes in one `translate` track.
-- `createAnimator(dialog, {pseudoElement: '::backdrop'})` drives a
+- `createMotionAnimator(dialog, {pseudoElement: '::backdrop'})` drives a
   pseudo-element; with no inline style to hold it, a static filling animation
   holds its end value until the next animation replaces it, while the
   pseudo-element exists. A dialog's `::backdrop` is made again each time the
