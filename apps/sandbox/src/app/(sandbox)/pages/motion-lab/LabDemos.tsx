@@ -943,8 +943,15 @@ export function TopNavExitRig({mode}: {mode: Mode}) {
         view: window,
       }),
     );
-    if (document.activeElement !== focused && focused instanceof HTMLElement) {
+    const moved = document.activeElement;
+    if (moved === focused || !(moved instanceof HTMLElement)) {
+      return;
+    }
+    if (focused instanceof HTMLElement && focused !== document.body) {
       focused.focus({preventScroll: true});
+    } else {
+      // Nothing had focus: leave nothing focused.
+      moved.blur();
     }
   }, []);
   useLoop(() => {
