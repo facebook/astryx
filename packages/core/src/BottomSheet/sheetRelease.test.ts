@@ -265,6 +265,38 @@ describe('resolveSheetRelease against UIKit', () => {
     });
   }
 
+  // The same releases with the cancel out of the way: each one starts where
+  // it is lifted, so FR37 never applies and every release lands where
+  // UIKit's sheet landed. With a start at the medium detent the cancel decides
+  // every release moving back toward it, and the slowest projected speed,
+  // the projection time and the tolerance on a stop would go untested on
+  // those.
+  describe('with no back-out to cancel (each release starting where it is lifted)', () => {
+    for (const [name, offset, velocity, outcome, zeta] of releases) {
+      it(`${name}: ${velocity} pt/s from ${offset} pt → ${outcome}`, () => {
+        const release = resolveSheetRelease({
+          detents: [LARGE, MEDIUM],
+          dismissedOffset: GONE,
+          position: offset,
+          velocity,
+          start: offset,
+        });
+        const landed =
+          release.kind === 'dismiss'
+            ? 'dismissed'
+            : release.index === 0
+              ? 'large'
+              : 'medium';
+        expect(landed).toBe(outcome);
+        if (zeta != null) {
+          expect(release.spring).toBe(
+            zeta === 1 ? springs.sheetDetent : springs.sheetReleaseFast,
+          );
+        }
+      });
+    }
+  });
+
   it('departs from UIKit only on back-outs, which FR37 cancels', () => {
     expect(
       releases
