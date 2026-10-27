@@ -639,6 +639,11 @@ export function Item({
   // An open row's root is no pressable surface: a tap on its content only
   // closes it, and UIKit's cell neither sees that touch nor highlights.
   const [isSwipeOpen, setSwipeOpen] = useState(false);
+  // A row that stops serving swipe actions while open is open no longer: its
+  // root takes presses again from this render (react-component-runtime INV1).
+  if (isSwipeOpen && !hasSwipe) {
+    setSwipeOpen(false);
+  }
   const linkRootProps = isLinkRoot
     ? {
         // A disabled row keeps its place in the tree but goes nowhere.

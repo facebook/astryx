@@ -167,7 +167,8 @@ export interface UseSwipeActionOptions {
   fireOutermost: (side: SwipeSide) => boolean;
   /**
    * Told from the transition that opens or closes the row (open is
-   * `isSwipeOpen`), and told `false` if the row leaves while open.
+   * `isSwipeOpen`). A row that leaves while open is not told: its owner,
+   * which decides whether the layer renders, drops its flag as it renders.
    */
   onOpenChange?: (isOpen: boolean) => void;
 }
@@ -441,15 +442,6 @@ export function useSwipeAction({
       report?.(isOpen);
     }
   }, []);
-  // Releases the open report when the row leaves while open.
-  useEffect(
-    () => () => {
-      if (isSwipeOpen(stateRef.current)) {
-        latestRef.current.onOpenChange?.(false);
-      }
-    },
-    [],
-  );
 
   const [animators] = useState<Animators>(() => ({
     leading: createSide(),
