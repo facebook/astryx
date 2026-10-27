@@ -342,6 +342,35 @@ test('under a finger, a tap in a link row’s growth follows its link', async ({
   await followed;
 });
 
+test('a mouse click in a link row’s padding does nothing, as before (spec:AST-017 FR59)', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    hasTouch: false,
+    isMobile: false,
+    viewport: {width: 900, height: 700},
+  });
+  const page = await context.newPage();
+  try {
+    await openStory(page, storybook(), 'core-list--links');
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(false);
+    const row = page.locator('#storybook-root li').first();
+    const box = await row.boundingBox();
+    if (box == null) {
+      throw new Error('no row');
+    }
+    const url = page.url();
+    // The row's leading padding: inside its box, outside its anchor.
+    await page.mouse.click(box.x + 2, box.y + box.height / 2);
+    await page.waitForTimeout(500);
+    expect(page.url()).toBe(url);
+  } finally {
+    await context.close();
+  }
+});
+
 for (const story of [
   'core-list--interactive',
   'core-list--links',
