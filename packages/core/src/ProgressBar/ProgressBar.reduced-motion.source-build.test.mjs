@@ -4,8 +4,9 @@
  * @file ProgressBar.reduced-motion.source-build.test.mjs
  * @input Uses Babel, the core StyleX build config, and the ProgressBar source
  * @output Verifies the shipped determinate fill jumps to a new value under
- *   reduced motion: its width transition takes no time (design:reduced-motion
- *   DR1 forbids a resize)
+ *   reduced motion, on any pointer: its width transition takes no time
+ *   (design:reduced-motion DR1 forbids a resize; D36 rules out a fade on a
+ *   touch screen)
  * @position Regression test for the compiled CSS of the ProgressBar fill;
  *   jsdom evaluates no media queries or transitions
  */
@@ -36,6 +37,18 @@ describe('the determinate fill under reduced motion', () => {
     expect(await compiledRules()).toContainEqual(
       expect.stringContaining('transition-property:width'),
     );
+  });
+
+  it('jumps on a touch screen and with a mouse alike: no reduced-motion rule is scoped to a pointer, and none fades or animates the fill (D36)', async () => {
+    const rules = await compiledRules();
+    const reduced = rules.filter(rule =>
+      rule.startsWith('@media(prefers-reduced-motion:reduce)'),
+    );
+    expect(reduced.filter(rule => rule.includes('pointer'))).toEqual([]);
+    // (The indeterminate loop's own reduced-motion pace is a separate rule.)
+    expect(
+      reduced.filter(rule => /animation-name|opacity|display/.test(rule)),
+    ).toEqual([]);
   });
 
   it('jumps: its transition takes no time (DR1)', async () => {
