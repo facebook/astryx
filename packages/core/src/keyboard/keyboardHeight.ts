@@ -301,6 +301,18 @@ export interface RefuseFocusRevealOptions {
  * });
  * ```
  */
+// One capture-phase `blur` listener per document, shared by every caller of
+// refuseFocusReveal in it (spec:AST-094 FR24: document listeners do not grow
+// with the number of instances), added with the first caller and removed
+// with the last.
+const focusTakeovers = new WeakMap<
+  Document,
+  {
+    listener: (event: FocusEvent) => void;
+    callers: Set<(event: FocusEvent) => void>;
+  }
+>();
+
 export function refuseFocusReveal(
   doc: Document,
   {isActive, claim, park}: RefuseFocusRevealOptions,
@@ -320,12 +332,45 @@ export function refuseFocusReveal(
       park?.(event.target);
     }
   };
-  // `blur` does not bubble: only the capture phase hears every one, and it
-  // runs before the browser's own focus step.
-  doc.addEventListener('blur', onBlur, true);
+  let shared = focusTakeovers.get(doc);
+  if (shared == null) {
+    const callers = new Set<(event: FocusEvent) => void>();
+    // Callers hear each blur in the order they came, as separate listeners
+    // would; one that stopped during this blur no longer hears it.
+    const listener = (event: FocusEvent) => {
+      for (const caller of [...callers]) {
+        if (callers.has(caller)) {
+          caller(event);
+        }
+      }
+    };
+    // `blur` does not bubble: only the capture phase hears every one, and it
+    // runs before the browser's own focus step.
+    doc.addEventListener('blur', listener, true);
+    shared = {listener, callers};
+    focusTakeovers.set(doc, shared);
+  }
+  shared.callers.add(onBlur);
   return () => {
-    doc.removeEventListener('blur', onBlur, true);
+    const current = focusTakeovers.get(doc);
+    if (current == null || !current.callers.delete(onBlur)) {
+      return;
+    }
+    if (current.callers.size === 0) {
+      doc.removeEventListener('blur', current.listener, true);
+      focusTakeovers.delete(doc);
+    }
   };
+}
+
+/**
+ * Test-only: how many callers refuse the focus reveal in `doc`, through its
+ * one shared listener. Not part of the runtime API.
+ *
+ * @internal
+ */
+export function __focusTakeoverCallersForTest(doc: Document): number {
+  return focusTakeovers.get(doc)?.callers.size ?? 0;
 }
 
 /** The caller's rules for watchRevealPan. */
@@ -656,8 +701,10 @@ export function useSheetKeyboard({
     // A hide the room is held through (see holdRoomThrough).
     let heldHide: {readonly release: () => void} | null = null;
     let documentScrollAtKeyboard: {x: number; y: number} | null = null;
-    // FR6: where this window measures the keyboard, never by user agent.
-    const ownsFocusTransitions = isKeyboardMeasurable(window);
+    // FR6: where this window measures the keyboard, never by user agent, and
+    // only under a coarse primary pointer: under a fine one no touch-only
+    // listener is registered (architecture INV13, spec:AST-094 FR24).
+    const ownsFocusTransitions = isTouch && isKeyboardMeasurable(window);
     // Desktop Safari and Firefox measure too, but show no on-screen keyboard
     // and keep the browser's own focus (spec:AST-017 FR59, DEC-25): a window
     // switch must not park focus on the sheet. Read on every blur, so a
