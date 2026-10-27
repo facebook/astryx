@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {describe, expect, it} from 'vitest';
 
 import {execFileSync} from 'node:child_process';

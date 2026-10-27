@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 // Lists the tests a scoped pull request runs beyond Vitest's `--changed`
 // (spec:AST-030 FR13), in two groups no module graph relates to a change:
 //
