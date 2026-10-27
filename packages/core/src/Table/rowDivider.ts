@@ -65,10 +65,12 @@ function rowBelow(row: Element | null): Element | null {
  * bottom, the next row's top, and at a section edge (thead to tbody) the two
  * row groups' borders, `hidden` wins, then the wider, then the stronger
  * style; a tie goes to a cell over a row over a row group, and to the upper
- * one. `isOwn` says the cell's own border won.
+ * one. `isOwn` says the cell's own border won; `isRow` says a row's or a
+ * row group's won, which the table paints along the whole row.
  */
 export function collapsedBottom(cell: HTMLTableCellElement): BottomEdge & {
   isOwn: boolean;
+  isRow: boolean;
 } {
   const row = cell.parentElement;
   const nextRow = rowBelow(row);
@@ -90,6 +92,7 @@ export function collapsedBottom(cell: HTMLTableCellElement): BottomEdge & {
       style: 'none',
       color: own.color,
       isOwn: own.style === 'hidden',
+      isRow: false,
     };
   }
   const strength = (edge: BottomEdge) =>
@@ -104,7 +107,11 @@ export function collapsedBottom(cell: HTMLTableCellElement): BottomEdge & {
       winner = edge;
     }
   }
-  return {...winner, isOwn: winner === own};
+  return {
+    ...winner,
+    isOwn: winner === own,
+    isRow: candidates.indexOf(winner) >= 2,
+  };
 }
 
 /**

@@ -143,10 +143,13 @@ export const DetailPanel: Story = {
 /**
  * An open panel's divider is the one its row hands down, in the theme's
  * colour, and follows a switch between light and dark: the table sits in a
- * `system`-mode Theme, which follows the operating system.
+ * `system`-mode Theme, which follows the operating system. With `override`,
+ * an app draws the row's cells dashed in a token colour, which the panel
+ * carries and follows across the switch too.
  */
-export const PanelDividerFollowsScheme: Story = {
-  render: () => {
+export const PanelDividerFollowsScheme: StoryObj<{override?: boolean}> = {
+  args: {override: false},
+  render: ({override}) => {
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
       () => new Set(['ord-1001']),
     );
@@ -158,7 +161,12 @@ export const PanelDividerFollowsScheme: Story = {
     });
     return (
       <Theme theme={neutralTheme} mode="system">
-        <div style={{backgroundColor: 'var(--color-background-surface)'}}>
+        <div
+          data-testid="panel-divider-scheme"
+          style={{backgroundColor: 'var(--color-background-surface)'}}>
+          {override && (
+            <style>{`[data-testid="panel-divider-scheme"] tbody tr:not([data-expansion-panel]) > td { border-bottom-color: var(--color-text-secondary); border-bottom-style: dashed; }`}</style>
+          )}
           <Table
             data={orders}
             columns={columns}
