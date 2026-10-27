@@ -165,6 +165,12 @@ work.
   threshold compares the tracker's release velocity. Lab keeps no copy of
   it: no Lab component has its own sample buffer, velocity math, or release
   filter, so Lab reports the same velocity as Core for the same motion.
+- **INV13 — Press tracking across a group has one owner.** In
+  `@astryxdesign/core`, one internal module, `actionGroupTracker`, tracks a
+  held pointer across a group's actions for every `family:action-groups`
+  member, and `module:DropdownMenu/useMenuPress` converges onto it. No member
+  keeps its own copy of the tracking. It is not exported (`spec:AST-017`
+  FR21).
 
 ## Allowed variation
 
@@ -254,6 +260,7 @@ reachability, newer-intent precedence, and the evidence/scope guard were approve
 | INV8       | Owner-defined intent order, pending, close, cancellation, disablement, and unmount mutations                                                                          | Older work changes current content, selection, status or announcement, visibility, focus, or activation after owner-defined supersession                                                                                                                                                                    |
 | INV9       | Concrete-harm reproduction, representative normal/legacy/no-new-prop paths, and coincident public-delta inventory                                                     | Unsupported or aesthetic preference is treated as harm, unaffected behavior changes, or an API, layout, sizing, default, sticky, or exception delta escapes direct authority                                                                                                                                |
 | INV10      | Source boundary check over Core and Lab, a Lab-to-Core comparison on one recorded stream, and release-filter unit tests over recorded iOS pan and scroll-view streams | A Core component with its own sample buffer, velocity math, or release filter; a Lab component with its own sample buffer, velocity math, or release filter; a Lab component reporting a different velocity than Core for the same stream; an export of the tracker; a non-zero release after a still pause |
+| INV13      | Source boundary check over Core and each family member's pointer-stream tests                                                                                         | A member that tracks a held pointer across its actions with its own code, or a public export of the tracker, fails                                                                                                                                                                                          |
 
 Real-browser evidence is required when the behavior depends on
 `:focus-visible`, pointer capability, touch or pen synthesis, rendered focus
