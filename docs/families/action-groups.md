@@ -23,6 +23,8 @@ members:
     component:Selector,
     component:MultiSelector,
     component:DateInput,
+    component:DateTimeInput,
+    component:TimeInput,
     component:AlertDialog,
     component:ButtonGroup,
     component:ToggleButtonGroup,
@@ -63,8 +65,8 @@ momentary, toggle, or option actions that a person chooses one of. Members
 today:
 
 - menus: DropdownMenu, ContextMenu, and their sub-menus;
-- option lists: Selector's and MultiSelector's options, and the date wheels of
-  DateInput and DateTimeInput;
+- option lists: Selector's and MultiSelector's options, and the wheels of
+  DateInput, DateTimeInput, and TimeInput;
 - AlertDialog's actions;
 - ButtonGroup and ToggleButtonGroup;
 - Toolbar's buttons; a field inside a toolbar is skipped;
@@ -108,7 +110,8 @@ it. It is internal and unexported (`spec:AST-017` FR21).
 - **FR1 — The lift decides.** In a member, a press on an action that slides
   across its siblings acts on the action the pointer lifts on, through that
   action's own activation; a press that never leaves its action acts on it.
-  One gesture acts at most once (`spec:AST-094` FR26).
+  One gesture acts at most once (`spec:AST-094` FR26). After a slide, focus does what
+  a click on the lifted action does.
 - **FR2 — The highlight follows the pointer.** While the pointer is held, the
   enabled action under it is highlighted, at most one at a time, and nothing
   is highlighted over a disabled action, a gap, or outside the group
@@ -121,9 +124,11 @@ it. It is internal and unexported (`spec:AST-017` FR21).
   passed over.
 - **FR5 — Every pointer, one target rule.** The behavior applies to every web
   pointer, mouse and pen as well as a finger. Under a fine pointer a group
-  keeps one passive `pointerdown` listener on its element and adds document
-  listeners only during a press, removing them at the release; nothing else
-  is idle (`spec:AST-094` FR19, FR24). The 44 px target is each member's hit
+  keeps one `pointerdown` listener on its element, cancelable where the member
+  needs it, adds document listeners only during a press and removes them at
+  the release, and may arm one per-document click swallower from the release
+  until that gesture's click; nothing else is idle (`spec:AST-094` FR19,
+  FR24). The 44 px target is each member's hit
   expansion under a coarse pointer only. Keyboard and assistive-technology
   behavior is unchanged.
 
@@ -133,6 +138,8 @@ it. It is internal and unexported (`spec:AST-017` FR21).
   stay with the member.
 - Menus keep their own opening and handoff (`spec:AST-094` FR29) and their
   scrolling rules.
+- A wheel is a scroll container: a drag scrolls it, as it does today, and a
+  tap acts on the option under it; only a press that does not scroll tracks.
 
 ## Representative matrix
 

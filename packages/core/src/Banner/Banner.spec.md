@@ -92,7 +92,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 **Does not own / non-goals**
 
 - Button geometry, interaction layers, tooltip painting, or consumer-supplied
-  `endContent` — delegated to `component:Button`.
+  `endContent` — delegated to `component:Button`. An action row of two or more
+  actions follows `family:action-groups`.
 - A new theme property, prop, variant, or DOM element.
 
 ## Public concepts
