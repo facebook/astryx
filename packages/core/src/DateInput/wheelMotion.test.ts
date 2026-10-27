@@ -253,6 +253,53 @@ describe('WheelMotion', () => {
     expect(onMidpoint).toHaveBeenCalledTimes(1);
   });
 
+  it('reads its start while its animations wait for their first frame, so a finger catches what is drawn (spec:AST-094 FR6)', () => {
+    const rows = Array.from({length: LAYOUT.rowCount}, () =>
+      document.createElement('div'),
+    );
+    const strip = document.createElement('div');
+    const drawing = document.createElement('div');
+    // Every animation waits for the frame that starts it: a busy main
+    // thread holds that frame.
+    for (const element of [...rows, strip, drawing]) {
+      element.animate = () =>
+        ({
+          startTime: null,
+          pending: true,
+          ready: new Promise<void>(() => {}),
+          cancel: vi.fn(),
+        }) as unknown as Animation;
+    }
+    const motion = new WheelMotion(LAYOUT);
+    motion.attach(new Map(rows.map((row, index) => [index, row])), strip);
+    motion.setOffset(0);
+    const atRest = rows.map(row => row.style.transform);
+    const onEnd = vi.fn();
+    motion.crossFade(20 * 32, {durationMs: 200, fade: [drawing], onEnd});
+
+    // 150 ms in, the fade has not started on screen: the rows still show
+    // where it starts, and a finger catches them there.
+    vi.advanceTimersByTime(150);
+    expect(motion.offset()).toBe(0);
+    expect(motion.velocity()).toBe(0);
+    expect(motion.stop()).toBe(0);
+    expect(onEnd).toHaveBeenCalledWith('stopped', 0);
+    expect(rows.map(row => row.style.transform)).toEqual(atRest);
+
+    // The same for a curve that travels: its start, at its start velocity.
+    const curve = {
+      duration: 0.3,
+      to: 320,
+      value: (t: number) => (320 * t) / 0.3,
+      velocity: () => 320 / 0.3,
+    };
+    motion.play(curve);
+    vi.advanceTimersByTime(100);
+    expect(motion.offset()).toBe(0);
+    expect(motion.velocity()).toBeCloseTo(320 / 0.3, 6);
+    expect(motion.stop()).toBe(0);
+  });
+
   it('is stopped by a finger before its midpoint with the rows unmoved', () => {
     const rows = new Map(
       Array.from({length: LAYOUT.rowCount}, (_, index) => [
