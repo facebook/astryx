@@ -2,8 +2,8 @@
 
 /**
  * @file motion.ts
- * @input The animator, the bezier and spring math, the rubber band, and the
- *   UIKit tuning tables (motion/)
+ * @input The animator and its React hook, the bezier and spring math, the
+ *   rubber band, and the UIKit tuning tables (motion/)
  * @output `@astryxdesign/core/internal/motion`: the motion Lab components
  *   build on, named re-exports only
  * @position An internal entry reserved for Astryx's own packages:
@@ -33,6 +33,8 @@ export type {
   MotionValues,
   SpringTransition,
 } from '../motion/animator';
+export {useAnimator} from '../motion/useAnimator';
+export type {UseAnimatorResult} from '../motion/useAnimator';
 export {cubicBezier} from '../motion/bezier';
 export type {BezierPoints} from '../motion/bezier';
 export {resolveMotion} from '../motion/resolveMotion';
@@ -98,6 +100,7 @@ export {
   registerSpringsTable,
   registerTimingTable,
   scroll,
+  search,
   SEGMENTED_THUMB_SPRING,
   SETTLE_SPRING,
   SHEET_DETENT_SPRING,
@@ -132,4 +135,3 @@ export type {
   GestureConstantUnit,
   HapticFeedbackKind,
 } from '../motion/uikit';
-export {useAnimator} from '../motion/useAnimator';
