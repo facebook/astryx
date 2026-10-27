@@ -34,9 +34,10 @@
  *   band's row does nothing. An end bounces on `scroll.bounce`. The curve
  *   and the bounce are resolved when their motion starts (internal roles,
  *   motion/resolveMotion.ts).
- * - A scroll wheel turns the rows by its delta and snaps onto the nearest
- *   row once it stops; a ctrl-wheel, as a trackpad pinch arrives, is left to
- *   the page's zoom (`spec:AST-094` FR43).
+ * - A trackpad's scroll and a mouse wheel drive the same pan as a contact
+ *   moving with the rows, so the wheel coasts and rests by the same release
+ *   (`spec:AST-094` FR43); a ctrl-wheel, as a trackpad pinch arrives, is a
+ *   pinch's input and stays the page's zoom.
  * - The value commits when the wheel comes to rest, as UIPickerView's
  *   didSelectRow does. A row `resolveRest` moves away from (by default, a
  *   disabled one: outside the bounds) is followed by a turn onto the row it
@@ -127,7 +128,6 @@ import {
   nearestIndex,
   offsetBounds,
   planRelease,
-  snapCurve,
   spinCurve,
   wrapIndex,
   type WheelCurve,
@@ -144,8 +144,6 @@ import {
 /** UIKit's row pitch, px: the wheel's geometry is UIPickerView's. */
 const ROW_HEIGHT = picker.geometry.rowHeight;
 const GEOMETRY = drumGeometry(ROW_HEIGHT);
-/** Wheel events stop moving the wheel after this long without one, ms. */
-const WHEEL_IDLE_MS = 160;
 const styles = stylex.create({
   column: {
     position: 'relative',
@@ -671,6 +669,11 @@ export function PickerWheel({
       new PanGestureRecognizer({
         name: 'wheel-pan',
         direction: 'vertical',
+        // A trackpad's scroll and a mouse wheel drive the pan as a contact
+        // moving with the rows: the host's one wheel listener, a release
+        // that keeps the scroll's speed (`spec:AST-094` FR43, FR24). A
+        // ctrl-wheel is a pinch's, so it stays the page's zoom.
+        allowedScrollTypes: ['continuous', 'discrete'],
         // A held finger on the wheel never starts text selection or the
         // callout.
         selectionLock: lockSelection,
@@ -794,48 +797,6 @@ export function PickerWheel({
     column.addEventListener('pointerdown', keep);
     return () => column.removeEventListener('pointerdown', keep);
   }, [isActive]);
-
-  // A mouse wheel or a trackpad turns the rows; the wheel eases onto the
-  // nearest row once the events stop.
-  useEffect(() => {
-    const column = columnRef.current;
-    if (column == null || !isActive) {
-      return;
-    }
-    let idle: number | undefined;
-    const onWheel = (event: WheelEvent) => {
-      // A ctrl-wheel is a pinch (a trackpad pinch arrives as one): it zooms
-      // the page and never turns the wheel (`spec:AST-094` FR43).
-      if (event.ctrlKey) {
-        return;
-      }
-      event.preventDefault();
-      const currentLayout = latestRef.current.layout;
-      const delta =
-        event.deltaMode === 1
-          ? event.deltaY * ROW_HEIGHT
-          : event.deltaMode === 2
-            ? event.deltaY * GEOMETRY.height
-            : event.deltaY;
-      const {min, max} = offsetBounds(currentLayout);
-      const shown = motion.isMoving() ? motion.stop() : motion.offset();
-      const next = Math.min(max, Math.max(min, shown + delta));
-      showRows(next / ROW_HEIGHT, next / ROW_HEIGHT);
-      motion.setOffset(next, {ticks: true});
-      window.clearTimeout(idle);
-      idle = window.setTimeout(() => {
-        const offset = motion.offset();
-        const target =
-          nearestIndex(offset, latestRef.current.layout) * ROW_HEIGHT;
-        play(snapCurve(offset, target, 1), {onEnd});
-      }, WHEEL_IDLE_MS);
-    };
-    column.addEventListener('wheel', onWheel, {passive: false});
-    return () => {
-      column.removeEventListener('wheel', onWheel);
-      window.clearTimeout(idle);
-    };
-  }, [isActive, motion, onEnd, play, showRows]);
 
   const spinTo = useCallback(
     async (index: number, spin: WheelSpinOptions = {}): Promise<boolean> =>

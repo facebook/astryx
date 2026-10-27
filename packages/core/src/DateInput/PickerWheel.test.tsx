@@ -562,27 +562,89 @@ describe('PickerWheel — a mouse', () => {
 });
 
 describe('PickerWheel — a scroll wheel', () => {
-  /** One wheel event over the column; returns whether it was cancelled. */
+  const YEARS: WheelOption[] = Array.from({length: 100}, (_, i) => ({
+    value: 2000 + i,
+    label: String(2000 + i),
+  }));
+
+  /**
+   * One wheel event over the column at the fake clock's time, in pixels (a
+   * trackpad); returns whether it was cancelled.
+   */
   function wheel(target: Element, deltaY: number, ctrlKey = false): boolean {
     const event = new WheelEvent('wheel', {
       bubbles: true,
       cancelable: true,
+      composed: true,
+      clientX: 60,
+      clientY: 108,
       deltaY,
+      deltaMode: 0,
       ctrlKey,
     });
+    Object.defineProperty(event, 'timeStamp', {value: performance.now()});
     act(() => {
       target.dispatchEvent(event);
     });
     return event.defaultPrevented;
   }
 
-  it('turns with a scroll and rests on a row', () => {
+  /** Steps of `deltaY` every `everyMs`, then the quiet that ends a scroll. */
+  function scroll(
+    target: Element,
+    steps: number,
+    deltaY: number,
+    everyMs: number,
+  ) {
+    for (let i = 0; i < steps; i++) {
+      if (i > 0) {
+        advance(everyMs);
+      }
+      expect(wheel(target, deltaY)).toBe(true);
+    }
+  }
+
+  it('turns with a slow scroll and rests on the nearest row', () => {
     const {column, onChange} = renderWheel();
-    // Two rows down.
-    expect(wheel(column, 64)).toBe(true);
-    advance(1000);
+    // Two rows down, slowly: no speed left at the release.
+    scroll(column, 8, 8, 60);
+    advance(2000);
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith(12);
+  });
+
+  it('keeps a quick scroll\u2019s speed at its release and coasts on, as a flick does (spec:AST-094 FR43)', () => {
+    const {column, onChange} = renderWheel({options: YEARS, value: 2000});
+    // 7.5 rows in 150 ms: a scroll that stopped there would rest on 2008.
+    scroll(column, 10, 24, 16);
+    advance(4000);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    const [rest] = onChange.mock.calls[0];
+    expect(rest).toBeGreaterThan(2012);
+  });
+
+  it('takes the wheel through its pan: the column has the host\u2019s one wheel listener (spec:AST-094 FR24)', () => {
+    const added: [EventTarget, string][] = [];
+    const real = EventTarget.prototype.addEventListener;
+    const spy = vi
+      .spyOn(EventTarget.prototype, 'addEventListener')
+      .mockImplementation(function (
+        this: EventTarget,
+        type,
+        listener,
+        options,
+      ) {
+        added.push([this, type]);
+        return real.call(this, type, listener, options);
+      });
+    try {
+      const {column} = renderWheel();
+      expect(
+        added.filter(([target, type]) => target === column && type === 'wheel'),
+      ).toHaveLength(1);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('leaves a ctrl-wheel, a trackpad pinch, to the page (spec:AST-094 FR43)', () => {

@@ -52,6 +52,7 @@ import {
   trackMarker,
   waitForAnimation,
   waitForRest,
+  webInputDriver,
   withStorybook,
   writeEvidence,
   type TouchDriver,
@@ -756,6 +757,47 @@ test('under reduced motion, a tap lands its row on the compositor while the main
       `the row at +${Math.round(frame.t - block.from)} ms, at rest y ${Math.round(to.y)} (${timeline})`,
     ).toBeLessThan(3);
   }
+});
+
+test('a trackpad scroll drives the wheel\u2019s pan: it keeps its speed at the release, coasts on and rests on a row, the page held still (spec:AST-094 FR43)', async ({
+  page,
+}) => {
+  const {field, minutes, strip} = await openWheel(page);
+  const input = await webInputDriver(page);
+  test.skip(
+    !input.wheels,
+    'this engine\u2019s mobile emulation has no wheel input (README: engine limits)',
+  );
+  const column = await minutes.boundingBox();
+  if (column == null) {
+    throw new Error('no minute column');
+  }
+  const at = {
+    x: Math.round(column.x + column.width / 2),
+    y: Math.round(column.y + column.height / 2),
+  };
+  const scrolled = await page.evaluate(() => [window.scrollX, window.scrollY]);
+  // A quick two-finger scroll: eight 24 px steps, 7.5 rows, about 16 ms apart.
+  for (let i = 0; i < 8; i++) {
+    await input.wheel({...at, dy: 24});
+    await page.waitForTimeout(16);
+  }
+  // Where the scroll left the rows, before its release (it ends 100 ms
+  // after its last step).
+  const lift = await stripOffset(strip);
+  expect(lift).toBeGreaterThan(4 * ROW);
+  await page.waitForTimeout(200);
+  await waitForRest(strip);
+  const rested = await stripOffset(strip);
+  expect(rested % ROW).toBe(0);
+  // It kept the scroll's speed at the release and coasted on past where
+  // the scroll left it; a wheel that only followed its deltas rests there.
+  expect(rested).toBeGreaterThan(lift + 2 * ROW);
+  await expect(field).toHaveValue(String(rested / ROW).padStart(2, '0'));
+  // The pan took the scroll: the page did not move.
+  expect(await page.evaluate(() => [window.scrollX, window.scrollY])).toEqual(
+    scrolled,
+  );
 });
 
 test.describe('under a mouse', () => {
