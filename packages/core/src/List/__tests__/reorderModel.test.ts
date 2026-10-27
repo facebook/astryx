@@ -328,22 +328,87 @@ describe('slotLine', () => {
   });
 });
 
+describe('slotLine in a wrapping grid', () => {
+  // Three 60 x 40 cards a row, 80 px apart, rows 60 px apart.
+  const grid = [
+    {x: 40, y: 20},
+    {x: 120, y: 20},
+    {x: 200, y: 20},
+    {x: 40, y: 80},
+    {x: 120, y: 80},
+    {x: 200, y: 80},
+  ];
+  const card = {width: 60, height: 40};
+
+  it("at a row's end, stands half a step beyond the last card of that row, not between the rows", () => {
+    // Onto the end of the first row: after C, at its right edge.
+    expect(slotLine(grid, 0, 2, card)).toEqual({
+      x: 240,
+      y: 20,
+      length: 40,
+      angle: 90,
+    });
+    // Back onto the start of the second row: before D, at its left edge.
+    expect(slotLine(grid, 5, 3, card)).toEqual({
+      x: 0,
+      y: 80,
+      length: 40,
+      angle: 90,
+    });
+  });
+});
+
 describe('stepLine', () => {
   it("marks the leading edge of a key move's new slot, across the move", () => {
     const card = {width: 60, height: 40};
+    const row = [
+      {x: 40, y: 20},
+      {x: 120, y: 20},
+    ];
+    const column = [
+      {x: 40, y: 20},
+      {x: 40, y: 80},
+    ];
     // Right by one slot: the edge to the right of the new slot.
-    expect(stepLine({x: 40, y: 20}, {x: 120, y: 20}, card)).toEqual({
+    expect(stepLine(row, 0, 1, card)).toEqual({
       x: 160,
       y: 20,
       length: 40,
       angle: 90,
     });
     // Down by one row: the edge below the new slot.
-    expect(stepLine({x: 40, y: 20}, {x: 40, y: 80}, card)).toEqual({
+    expect(stepLine(column, 0, 1, card)).toEqual({
       x: 40,
       y: 110,
       length: 60,
       angle: 0,
+    });
+  });
+
+  it('after a move that wraps rows, marks the new slot along its row, inside the grid', () => {
+    const card = {width: 60, height: 40};
+    const grid = [
+      {x: 40, y: 20},
+      {x: 120, y: 20},
+      {x: 200, y: 20},
+      {x: 40, y: 80},
+      {x: 120, y: 80},
+      {x: 200, y: 80},
+    ];
+    // Right from the end of the first row to the start of the second: the
+    // edge between the new slot and the next one in its row.
+    expect(stepLine(grid, 2, 3, card)).toEqual({
+      x: 80,
+      y: 80,
+      length: 40,
+      angle: 90,
+    });
+    // Left from the start of the second row to the end of the first.
+    expect(stepLine(grid, 3, 2, card)).toEqual({
+      x: 160,
+      y: 20,
+      length: 40,
+      angle: 90,
     });
   });
 });

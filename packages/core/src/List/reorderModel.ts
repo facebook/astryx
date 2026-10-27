@@ -198,11 +198,30 @@ function lineAcross(
 }
 
 /**
+ * Whether slots `a` and `b` are neighbours along a row or a column for an
+ * item of `size`: a row's centres sit within half an item's height (a fanned
+ * hand's too), a column's within half its width. A step that wraps rows is
+ * neither.
+ */
+function isAdjacent(
+  a: ReorderSlot,
+  b: ReorderSlot,
+  size: ReorderSize,
+): boolean {
+  return (
+    Math.abs(a.y - b.y) < Math.max(1, size.height / 2) ||
+    Math.abs(a.x - b.x) < Math.max(1, size.width / 2)
+  );
+}
+
+/**
  * The insertion cue of a drag in a slot layout (`positions()`, or an
  * attached container's measured slots): a list's line, turned to lie between
  * the target slot and the next slot along the drag, which is where the item
- * lands in the order; past the last slot, half a step beyond it. None at the
- * item's own place. (Proposed for design:ordered-collection-reordering OQ2.)
+ * lands in the order. Where the next slot is on another row (a row's end in
+ * a wrapping grid) or there is none, half a step beyond the target slot
+ * along its own row or column. None at the item's own place. (Proposed for
+ * design:ordered-collection-reordering OQ2.)
  */
 export function slotLine(
   slots: ReadonlyArray<ReorderSlot>,
@@ -216,26 +235,40 @@ export function slotLine(
   const forward = position > dragged;
   const at = slots[position];
   const next = slots[forward ? position + 1 : position - 1];
-  if (next != null) {
+  if (next != null && isAdjacent(at, next, size)) {
     return lineAcross(at, next, size);
   }
   const back = slots[forward ? position - 1 : position + 1];
-  return back == null
-    ? null
-    : lineAcross(at, {x: 2 * at.x - back.x, y: 2 * at.y - back.y}, size);
+  if (back != null && isAdjacent(at, back, size)) {
+    return lineAcross(at, {x: 2 * at.x - back.x, y: 2 * at.y - back.y}, size);
+  }
+  // Alone on its row and column: at its edge along the reading order.
+  const side = forward ? size.width : -size.width;
+  return lineAcross(at, {x: at.x + side, y: at.y}, size);
 }
 
 /**
  * Reorder mode's cue after a key move from slot `from` to slot `to`: the
- * leading edge of the new slot, half a step beyond it along the move, as a
- * list's line marks the edge its row came in through.
+ * leading edge of the new slot along the move, half a step beyond it, as a
+ * list's line marks the edge its row came in through. A move that wraps rows
+ * is marked along the new slot's row, as a drag's cue is, so the line stays
+ * inside the layout.
  */
 export function stepLine(
-  from: ReorderSlot,
-  to: ReorderSlot,
+  slots: ReadonlyArray<ReorderSlot>,
+  from: number,
+  to: number,
   size: ReorderSize,
 ): ReorderLine | null {
-  return lineAcross(to, {x: 2 * to.x - from.x, y: 2 * to.y - from.y}, size);
+  const a = slots[from];
+  const b = slots[to];
+  if (a == null || b == null) {
+    return null;
+  }
+  if (!isAdjacent(a, b, size)) {
+    return slotLine(slots, from, to, size);
+  }
+  return lineAcross(b, {x: 2 * b.x - a.x, y: 2 * b.y - a.y}, size);
 }
 
 /**

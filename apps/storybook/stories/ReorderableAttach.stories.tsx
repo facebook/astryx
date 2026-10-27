@@ -52,6 +52,15 @@ function moveKey(
 }
 
 const styles = stylex.create({
+  dialog: {
+    padding: 24,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border'],
+    borderRadius: radiusVars['--radius-container'],
+    backgroundColor: colorVars['--color-background-surface'],
+    color: colorVars['--color-text-primary'],
+  },
   table: {
     position: 'relative',
     inlineSize: 88 * 5,
@@ -320,6 +329,44 @@ export const AttachedRowsInAColumn: Story = {
         story:
           'A column of plain rows: a drag shows the same insertion line a ' +
           'List does, at the gap where the row would land.',
+      },
+    },
+  },
+};
+
+/**
+ * The row of cards inside a native modal dialog, attached while the dialog
+ * is still closed: its announcements reach the open dialog.
+ */
+function AttachedCardsInDialog() {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  return (
+    <>
+      <button type="button" onClick={() => dialogRef.current?.showModal()}>
+        Open the hand
+      </button>
+      <dialog
+        ref={dialogRef}
+        aria-label="Your hand"
+        {...stylex.props(styles.dialog)}>
+        <AttachedCards slots={ROW} />
+        <button type="button" onClick={() => dialogRef.current?.close()}>
+          Close
+        </button>
+      </dialog>
+    </>
+  );
+}
+
+export const AttachedCardsInADialog: Story = {
+  render: () => <AttachedCardsInDialog />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The cards are attached while their modal dialog is closed; once ' +
+          'it opens, a move is announced inside the dialog, where a screen ' +
+          'reader still reads.',
       },
     },
   },

@@ -367,13 +367,37 @@ function lineCenter(
 
 /** A row's layout top inside the list (transforms ignored). */
 function layoutTop(row: HTMLElement, list: HTMLElement): number {
-  const base = row.offsetParent === list ? 0 : list.offsetTop;
-  return row.offsetTop - base;
+  return layoutOffset(row, list, 'offsetTop', 'clientTop');
 }
 
 function layoutLeft(row: HTMLElement, list: HTMLElement): number {
-  const base = row.offsetParent === list ? 0 : list.offsetLeft;
-  return row.offsetLeft - base;
+  return layoutOffset(row, list, 'offsetLeft', 'clientLeft');
+}
+
+/**
+ * A row's layout offset inside the list (transforms ignored), through any
+ * positioned wrapper between them: an attached container's items may sit
+ * under wrappers of the app's.
+ */
+function layoutOffset(
+  row: HTMLElement,
+  list: HTMLElement,
+  offset: 'offsetTop' | 'offsetLeft',
+  border: 'clientTop' | 'clientLeft',
+): number {
+  let total = row[offset];
+  let parent = row.offsetParent;
+  while (
+    parent instanceof HTMLElement &&
+    parent !== list &&
+    list.contains(parent)
+  ) {
+    total += parent[border] + parent[offset];
+    parent = parent.offsetParent;
+  }
+  // Measured from an ancestor outside the list (the list is static): less
+  // the list's own offset from it.
+  return parent === list ? total : total - list[offset];
 }
 
 function isScrollContainer(element: HTMLElement): boolean {
@@ -1022,6 +1046,21 @@ export class ListReorderController implements ListReorderSession {
       handle.getAttribute('aria-disabled') !== 'true'
       ? handle
       : null;
+  }
+
+  /**
+   * The list's pointer listeners for the primary pointer (spec:AST-094
+   * FR43): a mouse, and a pen where the primary pointer is fine, drag at
+   * once; a finger, and a pen where it is coarse, hold first. List's host and
+   * createReorderable's attach both wire them here. Returns the detach.
+   */
+  attachPointers(isCoarse: boolean): () => void {
+    const detachMouse = this.attachMouse(!isCoarse);
+    const detachTouch = this.attachTouch(isCoarse);
+    return () => {
+      detachMouse();
+      detachTouch();
+    };
   }
 
   /**
@@ -1844,7 +1883,7 @@ export class ListReorderController implements ListReorderSession {
     // last move.
     const slots = this.slotsFor(list, rows);
     if (slots != null && this.lastMove != null && this.lastMove.to === index) {
-      const line = stepLine(slots[this.lastMove.from], slots[index], {
+      const line = stepLine(slots, this.lastMove.from, index, {
         width: row.offsetWidth,
         height: row.offsetHeight,
       });
@@ -1926,6 +1965,19 @@ export class ListReorderController implements ListReorderSession {
    */
   rowOf(element: Element | null): HTMLElement | null {
     const list = this.getList();
+    if (list != null && this.itemElements != null) {
+      // An attached container's items, which may sit under wrappers: the
+      // item that holds `element`.
+      const items = new Set(this.itemElements());
+      let item = element;
+      while (item != null && item !== list) {
+        if (item instanceof HTMLElement && items.has(item)) {
+          return item;
+        }
+        item = item.parentElement;
+      }
+      return null;
+    }
     let node = element;
     while (node != null && node.parentElement !== list) {
       node = node.parentElement;
@@ -2296,12 +2348,16 @@ function ListReorderHost({reorder}: {reorder: ListReorderContextValue}) {
       presentation: isTouch ? 'uikit' : 'theme',
     });
   });
-  // A pen drags at once where the primary pointer is fine, as a mouse does,
-  // since the handle allows it no pan there; where it is coarse, the handle
-  // keeps the page's pan, so a pen holds as a finger does (an iPad Pencil's
-  // touches are claimable; spec:AST-094 FR43, FR18).
+  // Every pointer (spec:AST-094 FR43, FR18, FR19): a pen drags at once where
+  // the primary pointer is fine, as a mouse does, since the handle allows it
+  // no pan there; where it is coarse, the handle keeps the page's pan, so a
+  // pen holds as a finger does (an iPad Pencil's touches are claimable). The
+  // hold attaches for every pointer: a finger on a touch screen whose
+  // primary pointer is fine holds as it does on a phone; where the primary
+  // pointer is fine, the gesture host keeps one passive listener on the list
+  // until a press (FR24). Wired as createReorderable's attach wires them.
   useIsomorphicLayoutEffect(
-    () => controller.attachMouse(!isTouch),
+    () => controller.attachPointers(isTouch),
     [controller, isTouch],
   );
   // Where the object's `start` finds this list.
@@ -2311,14 +2367,6 @@ function ListReorderHost({reorder}: {reorder: ListReorderContextValue}) {
   );
   // The List stopped reordering, or unmounted: a drag goes home.
   useIsomorphicLayoutEffect(() => () => controller.dispose(), [controller]);
-  // The hold attaches for every pointer (spec:AST-094 FR43, FR19): a finger
-  // on a touch screen whose primary pointer is fine holds as it does on a
-  // phone; where the primary pointer is fine, the gesture host keeps one
-  // passive listener on the list until a press (FR24).
-  useIsomorphicLayoutEffect(
-    () => controller.attachTouch(isTouch),
-    [controller, isTouch],
-  );
   return (
     <>
       <span id={controller.hintId} hidden>

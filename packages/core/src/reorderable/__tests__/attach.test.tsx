@@ -9,8 +9,14 @@
  * @position Unit tests for reorderable/createReorderable.ts's attach
  */
 
-import {act, fireEvent, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {useEffect, useRef} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
+import {pointerQuery} from '../../gestures/__tests__/pointerQuery';
+import {
+  __resetLiveRegionsForTest,
+  announceMessage,
+} from '../../hooks/useAnnounce';
 import {createReorderable} from '../createReorderable';
 
 interface Card {
@@ -47,6 +53,7 @@ function deck(names: ReadonlyArray<string>) {
 }
 
 afterEach(() => {
+  __resetLiveRegionsForTest();
   document.body.replaceChildren();
 });
 
@@ -86,6 +93,63 @@ describe('createReorderable attach', () => {
     } finally {
       document.documentElement.lang = '';
     }
+  });
+
+  it("names each handle from its item's accessible name: aria-labelledby, then aria-label, then title, then text", () => {
+    const {container, cards, items} = deck(['Milk', 'Eggs', 'Bread']);
+    const label = document.createElement('span');
+    label.id = 'label-of-milk';
+    label.textContent = 'Whole milk';
+    document.body.append(label);
+    cards[0].el.setAttribute('aria-labelledby', 'label-of-milk');
+    cards[0].el.setAttribute('aria-label', 'Dairy');
+    cards[1].el.setAttribute('title', 'Free-range eggs');
+    const {detach} = createReorderable({onReorder: () => {}}).attach(
+      container,
+      {items},
+    );
+    expect(cards[0].grip).toHaveAccessibleName('Reorder Whole milk');
+    expect(cards[1].grip).toHaveAccessibleName('Reorder Free-range eggs');
+    expect(cards[2].grip).toHaveAccessibleName('Reorder Bread');
+    detach();
+  });
+
+  it('detaches inside a React effect cleanup without an error from React', () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    function Hand() {
+      const ref = useRef<HTMLDivElement>(null);
+      useEffect(() => {
+        const container = ref.current;
+        if (container == null) {
+          return undefined;
+        }
+        const {detach} = createReorderable({onReorder: () => {}}).attach(
+          container,
+          {
+            items: () =>
+              Array.from(container.children as HTMLCollectionOf<HTMLElement>)
+                .filter(element => element.dataset.key != null)
+                .map(element => ({
+                  key: element.dataset.key,
+                  element,
+                  handle: element,
+                })),
+          },
+        );
+        return detach;
+      }, []);
+      return (
+        <div ref={ref}>
+          <div data-key="a">A</div>
+          <div data-key="b">B</div>
+        </div>
+      );
+    }
+    const {unmount} = render(<Hand />);
+    unmount();
+    const reported = errors.mock.calls.map(call => call.join(' '));
+    errors.mockRestore();
+    expect(reported.filter(text => /unmount/i.test(text))).toEqual([]);
   });
 
   it('warns in development about an item with no accessible name and no text', () => {
@@ -159,10 +223,172 @@ describe('createReorderable attach', () => {
     for (const {grip} of cards.slice(1)) {
       expect(grip).toHaveAttribute('role', 'img');
       expect(grip).not.toHaveAttribute('aria-pressed');
-      expect(grip).toHaveAccessibleName('grip');
+      expect(grip).toHaveAttribute('aria-label', 'grip');
       expect(grip.tabIndex).toBe(-1);
+      // No handle shows (spec:AST-103 FR1, DEC-2): a grip that does nothing
+      // is hidden.
+      expect(grip.hidden).toBe(true);
     }
     expect(cards[0].grip).toHaveAttribute('role', 'button');
+    expect(cards[0].grip.hidden).toBe(false);
+    detach();
+    for (const {grip} of cards) {
+      expect(grip.hidden).toBe(false);
+    }
+  });
+
+  it('leaves a rejected item visible when its handle is the item itself', () => {
+    const {container, cards} = deck(['Milk', 'Eggs']);
+    const {detach} = createReorderable({
+      onReorder: () => {},
+      isReorderable: key => key !== 'eggs',
+    }).attach(container, {
+      items: () =>
+        cards.map(card => ({key: card.id, element: card.el, handle: card.el})),
+    });
+    expect(cards[1].el.hidden).toBe(false);
+    detach();
+  });
+
+  it("names a rejected item in a refused move's announcement", async () => {
+    const {container, cards, items} = deck(['Pinned', 'Eggs', 'Bread']);
+    const {detach} = createReorderable({
+      onReorder: () => {},
+      isReorderable: key => key !== 'pinned',
+    }).attach(container, {items});
+    const eggs = cards[1].grip;
+    eggs.focus();
+    fireEvent.keyDown(eggs, {key: 'Enter'});
+    fireEvent.keyDown(eggs, {key: 'ArrowUp'});
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent("Can't move past Pinned"),
+    );
+    detach();
+  });
+
+  it('listens on the container, never on each handle (spec:AST-103 FR5, spec:AST-094 FR24)', () => {
+    const {container, cards, items} = deck(['Milk', 'Eggs', 'Bread']);
+    const targets: EventTarget[] = [];
+    const add = EventTarget.prototype.addEventListener;
+    const spy = vi
+      .spyOn(EventTarget.prototype, 'addEventListener')
+      .mockImplementation(function (
+        this: EventTarget,
+        ...args: Parameters<EventTarget['addEventListener']>
+      ) {
+        targets.push(this);
+        return add.apply(this, args);
+      });
+    const {detach} = createReorderable({onReorder: () => {}}).attach(
+      container,
+      {items},
+    );
+    spy.mockRestore();
+    for (const {grip} of cards) {
+      expect(targets).not.toContain(grip);
+    }
+    detach();
+  });
+
+  it('follows the primary pointer turning coarse or fine (spec:AST-094 FR43)', () => {
+    const pointer = pointerQuery(false);
+    try {
+      const {container, cards, items} = deck(['Milk', 'Eggs']);
+      const {detach} = createReorderable({onReorder: () => {}}).attach(
+        container,
+        {items},
+      );
+      // Fine: no pan, so a pen drags at once.
+      expect(cards[0].grip.style.touchAction).toBe('none');
+      // A tablet undocking its mouse: a flick on the handle scrolls again.
+      act(() => {
+        pointer.set(true);
+      });
+      expect(cards[0].grip.style.touchAction).toBe('manipulation');
+      act(() => {
+        pointer.set(false);
+      });
+      expect(cards[0].grip.style.touchAction).toBe('none');
+      detach();
+    } finally {
+      pointer.restore();
+    }
+  });
+
+  it('renders the hint next to the container, in its theme scope, and removes it on detach', () => {
+    const {container, items} = deck(['Milk', 'Eggs']);
+    const {detach} = createReorderable({onReorder: () => {}}).attach(
+      container,
+      {items},
+    );
+    const next = container.nextElementSibling;
+    expect(next?.hasAttribute('data-astryx-reorder-hint-host')).toBe(true);
+    detach();
+    expect(
+      document.querySelector('[data-astryx-reorder-hint-host]'),
+    ).toBeNull();
+  });
+
+  it('speaks through the shared announcement channel, with no live region of its own (spec:AST-103 FR4)', async () => {
+    // A page that already announces through the shared channel.
+    announceMessage('Ready', 'polite');
+    const regions = () => document.querySelectorAll('[role="status"]');
+    expect(regions()).toHaveLength(1);
+    const {container, cards, items, move} = deck(['Milk', 'Eggs', 'Bread']);
+    const {detach} = createReorderable({
+      onReorder: ({key, to}) => move(String(key), to),
+    }).attach(container, {items});
+    const milk = cards[0].grip;
+    milk.focus();
+    fireEvent.keyDown(milk, {key: 'Enter'});
+    fireEvent.keyDown(milk, {key: 'ArrowDown'});
+    await waitFor(() =>
+      expect(regions()[0]).toHaveTextContent(
+        'Milk, position 2 of 3, after Eggs, before Bread',
+      ),
+    );
+    expect(regions()).toHaveLength(1);
+    detach();
+  });
+
+  it('commits a move the app makes among items nested under a wrapper (subtree)', async () => {
+    const container = document.createElement('div');
+    const wrapper = document.createElement('div');
+    container.append(wrapper);
+    document.body.append(container);
+    const cards = ['Milk', 'Eggs', 'Bread'].map(name => {
+      const el = document.createElement('div');
+      el.append(name);
+      const grip = document.createElement('span');
+      el.append(grip);
+      wrapper.append(el);
+      return {id: name.toLowerCase(), el, grip};
+    });
+    const items = () =>
+      cards.map(card => ({key: card.id, element: card.el, handle: card.grip}));
+    const {detach} = createReorderable({
+      onReorder: ({key, to}) => {
+        // Applied a little later in the same task, as a framework's render.
+        queueMicrotask(() =>
+          queueMicrotask(() => {
+            const from = cards.findIndex(card => card.id === key);
+            const [card] = cards.splice(from, 1);
+            cards.splice(to, 0, card);
+            wrapper.append(...cards.map(each => each.el));
+          }),
+        );
+      },
+    }).attach(container, {items});
+    const milk = cards[0].grip;
+    milk.focus();
+    fireEvent.keyDown(milk, {key: 'Enter'});
+    fireEvent.keyDown(milk, {key: 'ArrowDown'});
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent(
+        'Milk, position 2 of 3, after Eggs, before Bread',
+      ),
+    );
+    expect(document.body).not.toHaveTextContent("Can't move Milk");
     detach();
   });
 
@@ -531,9 +757,17 @@ describe('createReorderable attach', () => {
   );
 
   it('announces inside the modal dialog that encloses the container (spec:AST-086 FR14)', async () => {
-    const dialog = document.createElement('div');
-    dialog.setAttribute('role', 'dialog');
-    dialog.setAttribute('aria-modal', 'true');
+    // jsdom has no showModal(): stand in for a dialog opened modally.
+    const matches = Element.prototype.matches;
+    const modal = vi
+      .spyOn(Element.prototype, 'matches')
+      .mockImplementation(function (this: Element, selector: string) {
+        return selector === ':modal'
+          ? this instanceof HTMLDialogElement && this.open
+          : matches.call(this, selector);
+      });
+    const dialog = document.createElement('dialog');
+    dialog.setAttribute('open', '');
     document.body.append(dialog);
     const {container, cards, items, move} = deck(['Milk', 'Eggs', 'Bread']);
     dialog.append(container);
@@ -549,10 +783,10 @@ describe('createReorderable attach', () => {
         'Milk, position 2 of 3, after Eggs, before Bread',
       ),
     );
-    const live = dialog.querySelector('[aria-live="polite"]');
-    expect(live).not.toBeNull();
+    // The shared channel's region in the dialog, not one of attach's own.
+    expect(dialog.querySelectorAll('[role="status"]')).toHaveLength(1);
     detach();
-    expect(dialog.querySelector('[aria-live="polite"]')).toBeNull();
+    modal.mockRestore();
   });
 
   it('drops an item in a positions() layout on the slot whose centre is nearest its own (spec:AST-103 FR1)', () => {

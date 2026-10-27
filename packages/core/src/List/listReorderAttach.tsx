@@ -16,23 +16,38 @@
  *
  * Each reorderable item's handle becomes reorder mode's toggle: a button
  * named "Reorder" and the item's name (its element's accessible name, else
- * its text), pressed while its item is in reorder mode, in the Tab order. The
- * container gets the drag and reorder mode of List's session. A move commits
- * once `items()` reports the new order after `onReorder`: a change to the
- * container's children, or the end of the task. Announcements go to a polite
- * container this attach owns, inside the modal dialog that encloses the
- * container when one does (`spec:AST-086` FR14), in the shipped English
- * catalog (`architecture:internationalization` INV3). `detach` ends a drag or
+ * its text), pressed while its item is in reorder mode, in the Tab order; a
+ * rejected or keyless item's handle is hidden (spec:AST-103 FR1, DEC-2). The
+ * container gets the drag and reorder mode of List's session, through
+ * listeners on the container, never on each handle (FR5). A move commits
+ * once `items()` reports the new order after `onReorder`: a change anywhere
+ * under the container, or the end of the task. Announcements go through the
+ * shared polite channel (hooks/useAnnounce.ts), inside the modal dialog that
+ * encloses the container when one does (`spec:AST-086` FR14), in the shipped
+ * English catalog (`architecture:internationalization` INV3). The pointers
+ * follow the primary pointer turning coarse or fine. `detach` ends a drag or
  * reorder mode calling nothing, removes every listener, observer and element
  * it added, and restores each handle's own attributes.
+ *
+ * Known limit: reorder mode's hint renders in a React root of its own, right
+ * after the container, so it takes the theme around the container but not
+ * the providers of an app's React tree, nor a theme set on the container
+ * itself.
  *
  * SYNC: When modified, update reorderable/createReorderable.ts and
  * reorderable/createReorderable.doc.mjs.
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {createRoot} from 'react-dom/client';
+import type {Root} from 'react-dom/client';
+import {
+  announceInModal,
+  announceMessage,
+  enclosingModalDialog,
+  type AnnouncePoliteness,
+} from '../hooks/useAnnounce';
 import {getResolve} from '../i18n/resolve';
+import {isCoarsePointer, watchCoarsePointer} from '../utils/coarsePointer';
 import {devWarn} from '../utils/devWarning';
 import {reorderLineElementStyle} from './ListReorderHandle';
 import {HANDLE_ATTRIBUTE, type ListReorderOptions} from './listReorderContext';
@@ -64,19 +79,13 @@ const HANDLE_ATTRIBUTES = [
   HANDLE_ATTRIBUTE,
 ] as const;
 
-/** Visually hidden, read by assistive technology. */
-const HIDDEN_STYLE =
-  'position:absolute;width:1px;height:1px;margin:-1px;padding:0;' +
-  'overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0';
-
 let attachedCount = 0;
 
-/** What an attached item is called: its accessible name, else its text. */
+/**
+ * What an attached item is called, in the accessible-name order:
+ * `aria-labelledby`, then `aria-label`, then `title`, then its text.
+ */
 function nameOf(element: HTMLElement): string {
-  const label = element.getAttribute('aria-label')?.trim();
-  if (label != null && label !== '') {
-    return label;
-  }
   const labelledBy = element.getAttribute('aria-labelledby');
   if (labelledBy != null) {
     const text = labelledBy
@@ -86,6 +95,12 @@ function nameOf(element: HTMLElement): string {
       .trim();
     if (text !== '') {
       return text;
+    }
+  }
+  for (const attribute of ['aria-label', 'title']) {
+    const value = element.getAttribute(attribute)?.trim();
+    if (value != null && value !== '') {
+      return value;
     }
   }
   return element.textContent?.trim() ?? '';
@@ -123,32 +138,37 @@ export function attachReorder(
     hintId,
     () => ownItems().map(item => item.element),
   );
-  // Inside the modal dialog that encloses the container, where assistive
-  // technology still reads (spec:AST-086 FR14); else the document's body.
-  const host =
-    container.closest<HTMLElement>(
-      'dialog[open], [role="dialog"][aria-modal="true"]',
-    ) ?? doc.body;
-  const live = doc.createElement('div');
-  live.setAttribute('role', 'status');
-  live.setAttribute('aria-live', 'polite');
-  live.setAttribute('style', HIDDEN_STYLE);
+  // Right after the container, in its theme scope (and inside the modal
+  // dialog that encloses it): the handles' instructions and reorder mode's
+  // hint, as List renders them after its list. No layout box.
+  const hintHost = doc.createElement('span');
+  hintHost.setAttribute('data-astryx-reorder-hint-host', '');
+  hintHost.style.display = 'contents';
   const instructions = doc.createElement('span');
   instructions.id = hintId;
   instructions.hidden = true;
   instructions.textContent = translate('@astryx.list.reorderHint', undefined);
-  host.append(live, instructions);
-  let announceTimer: ReturnType<typeof setTimeout> | null = null;
-  const announce = (message: string) => {
-    // Emptied first, so the same text twice is read twice.
-    live.textContent = '';
-    if (announceTimer != null) {
-      clearTimeout(announceTimer);
+  const hintRoot = doc.createElement('span');
+  hintRoot.style.display = 'contents';
+  hintHost.append(instructions, hintRoot);
+  if (container.parentNode != null) {
+    container.after(hintHost);
+  } else {
+    doc.body.append(hintHost);
+  }
+  // The shared polite channel, which joins a frame's messages and keeps a
+  // repeat once, inside the enclosing modal dialog when there is one
+  // (spec:AST-103 FR4, spec:AST-086 FR14).
+  const announce = (
+    message: string,
+    politeness: AnnouncePoliteness = 'polite',
+  ) => {
+    const dialog = enclosingModalDialog(container);
+    if (dialog != null) {
+      announceInModal(dialog, message, politeness);
+    } else {
+      announceMessage(message, politeness);
     }
-    announceTimer = setTimeout(() => {
-      announceTimer = null;
-      live.textContent = message;
-    }, 0);
   };
   let commitQueued = false;
   /** The move waiting for its commit, whose handle then takes the focus. */
@@ -205,17 +225,47 @@ export function attachReorder(
       queueCommit();
     },
   };
-  const isCoarse =
-    doc.defaultView?.matchMedia?.('(pointer: coarse)').matches ?? false;
+  let isCoarse = isCoarsePointer(doc.defaultView);
   controller.refusal = 'not-moved';
-  controller.configure({
-    options: sessionOptions,
-    announce,
-    messages: messagesFrom(translate),
-    presentation: isCoarse ? 'uikit' : 'theme',
-  });
+  const configure = () => {
+    controller.configure({
+      options: sessionOptions,
+      announce,
+      messages: messagesFrom(translate),
+      presentation: isCoarse ? 'uikit' : 'theme',
+    });
+  };
+  configure();
 
   // --- Handles -----------------------------------------------------------
+
+  /**
+   * Each item that stays (rejected or keyless): its handle shows no grip
+   * (hidden, unless the handle is the item itself) and its name is
+   * registered for the announcements, such as a refusal past it. The release
+   * puts both back.
+   */
+  const stillItems = new Map<HTMLElement, () => void>();
+  const keepStill = (element: HTMLElement, handle: HTMLElement) => {
+    if (stillItems.has(element)) {
+      return;
+    }
+    const unregister = controller.registerName(element, nameOf(element));
+    const hides = handle !== element && !handle.hidden;
+    if (hides) {
+      handle.hidden = true;
+    }
+    stillItems.set(element, () => {
+      unregister();
+      if (hides) {
+        handle.hidden = false;
+      }
+    });
+  };
+  const releaseStill = (element: HTMLElement) => {
+    stillItems.get(element)?.();
+    stillItems.delete(element);
+  };
 
   /** Each wired handle: its item's key and element, and its unwiring. */
   const wired = new Map<
@@ -256,40 +306,11 @@ export function attachReorder(
     // a pen drags the item at once (spec:AST-094 FR18, FR43).
     handle.style.touchAction = isCoarse ? 'manipulation' : 'none';
     const unregister = controller.registerHandle(handle, key, name);
-    const onClick = () => {
-      if (!controller.takeDrag(handle)) {
-        controller.toggleMode(handle);
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      // A button's Enter and Space, for a handle that is not one.
-      if (
-        !isNativeControl(handle) &&
-        (event.key === 'Enter' || event.key === ' ') &&
-        !event.altKey &&
-        !event.ctrlKey &&
-        !event.metaKey
-      ) {
-        event.preventDefault();
-        controller.toggleMode(handle);
-        return;
-      }
-      controller.keyDown(handle, event);
-    };
-    const onFocusOut = (event: FocusEvent) => {
-      controller.blur(handle, event.relatedTarget);
-    };
-    handle.addEventListener('click', onClick);
-    handle.addEventListener('keydown', onKeyDown);
-    handle.addEventListener('focusout', onFocusOut);
     wired.set(handle, {
       key,
       element,
       unwire: () => {
         unregister();
-        handle.removeEventListener('click', onClick);
-        handle.removeEventListener('keydown', onKeyDown);
-        handle.removeEventListener('focusout', onFocusOut);
         for (const [attribute, value] of saved) {
           if (value == null) {
             handle.removeAttribute(attribute);
@@ -310,6 +331,7 @@ export function attachReorder(
   // first, so reorder mode and the focus follow it.
   const wire = () => {
     const kept = new Set<HTMLElement>();
+    const still = new Set<HTMLElement>();
     const fresh: {
       key: string | number;
       element: HTMLElement;
@@ -317,8 +339,11 @@ export function attachReorder(
     }[] = [];
     for (const {key, element, handle} of ownItems()) {
       if (key == null || sessionOptions.isReorderable?.(key) === false) {
+        keepStill(element, handle);
+        still.add(element);
         continue;
       }
+      releaseStill(element);
       kept.add(handle);
       if (!wired.has(handle)) {
         wireHandle(handle, key, element);
@@ -344,6 +369,11 @@ export function attachReorder(
       entry.unwire();
       wired.delete(handle);
     }
+    for (const element of [...stillItems.keys()]) {
+      if (!still.has(element)) {
+        releaseStill(element);
+      }
+    }
   };
   let isAttached = true;
   wire();
@@ -355,15 +385,71 @@ export function attachReorder(
 
   // --- Listeners, the hint, `start` ----------------------------------------
 
-  // Every pointer (spec:AST-094 FR43): a mouse, and a pen where the primary
-  // pointer is fine, drag at once; a finger, and a pen where it is coarse,
-  // hold first.
-  const detachMouse = controller.attachMouse(!isCoarse);
-  const detachTouch = controller.attachTouch(isCoarse);
+  // Every pointer (spec:AST-094 FR43), following the primary pointer as it
+  // turns coarse or fine (a tablet docking a mouse): the session's pointer
+  // listeners, the handles' touch-action and the motion.
+  let detachPointers = controller.attachPointers(isCoarse);
+  const unwatchPointer = watchCoarsePointer(doc.defaultView, next => {
+    if (next === isCoarse) {
+      return;
+    }
+    isCoarse = next;
+    detachPointers();
+    detachPointers = controller.attachPointers(isCoarse);
+    configure();
+    for (const handle of wired.keys()) {
+      handle.style.touchAction = isCoarse ? 'manipulation' : 'none';
+    }
+  });
+  // A handle's click, key and focus leaving, delegated from the container
+  // (spec:AST-103 FR5, spec:AST-094 FR24).
+  const handleOf = (target: EventTarget | null): HTMLElement | null => {
+    if (!(target instanceof Element)) {
+      return null;
+    }
+    const handle = target.closest<HTMLElement>(`[${HANDLE_ATTRIBUTE}]`);
+    return handle != null && wired.has(handle) ? handle : null;
+  };
+  const onClick = (event: MouseEvent) => {
+    const handle = handleOf(event.target);
+    if (handle != null && !controller.takeDrag(handle)) {
+      controller.toggleMode(handle);
+    }
+  };
+  const onKeyDown = (event: KeyboardEvent) => {
+    const handle = handleOf(event.target);
+    if (handle == null) {
+      return;
+    }
+    // A button's Enter and Space, for a handle that is not one.
+    if (
+      !isNativeControl(handle) &&
+      (event.key === 'Enter' || event.key === ' ') &&
+      !event.altKey &&
+      !event.ctrlKey &&
+      !event.metaKey
+    ) {
+      event.preventDefault();
+      controller.toggleMode(handle);
+      return;
+    }
+    controller.keyDown(handle, event);
+  };
+  const onFocusOut = (event: FocusEvent) => {
+    const handle = handleOf(event.target);
+    if (handle != null) {
+      controller.blur(handle, event.relatedTarget);
+    }
+  };
+  container.addEventListener('click', onClick);
+  container.addEventListener('keydown', onKeyDown);
+  container.addEventListener('focusout', onFocusOut);
   // `start(key)` reaches this container's items (FR4a), the latest attached.
   const unmountSession = mountSession(options, controller);
+  // Anywhere under the container: items nested in a wrapper the app
+  // reorders count too.
   const observer = new MutationObserver(queueCommit);
-  observer.observe(container, {childList: true});
+  observer.observe(container, {childList: true, subtree: true});
   // The insertion line: a container of plain elements carries no List
   // style, so attach draws the line as an element of its own, in the
   // container while the line shows (the session marks the container), placed
@@ -388,11 +474,19 @@ export function attachReorder(
     attributes: true,
     attributeFilter: [LINE_ATTRIBUTE],
   });
-  // Reorder mode's hint: an element this attach owns, rendered as a List's.
-  const hintHost = doc.createElement('div');
-  host.append(hintHost);
-  const root = createRoot(hintHost);
-  root.render(<ListReorderModeHint controller={controller} />);
+  // Reorder mode's hint, rendered as a List's, in an element this attach
+  // owns right after the container. Its renderer loads when attach runs, not
+  // with the import: a page that never attaches never loads it, and a React
+  // page already has it. A mode that starts before it loads (a `start` right
+  // after attach) shows its hint once it has.
+  let root: Root | null = null;
+  void import('react-dom/client').then(({createRoot}) => {
+    if (!isAttached) {
+      return;
+    }
+    root = createRoot(hintRoot);
+    root.render(<ListReorderModeHint controller={controller} />);
+  });
 
   return {
     detach: () => {
@@ -405,23 +499,31 @@ export function attachReorder(
       lineObserver.disconnect();
       line.remove();
       unsubscribe();
-      detachMouse();
-      detachTouch();
+      unwatchPointer();
+      detachPointers();
+      container.removeEventListener('click', onClick);
+      container.removeEventListener('keydown', onKeyDown);
+      container.removeEventListener('focusout', onFocusOut);
       unmountSession();
       for (const entry of wired.values()) {
         entry.unwire();
       }
       wired.clear();
-      if (announceTimer != null) {
-        clearTimeout(announceTimer);
+      for (const element of [...stillItems.keys()]) {
+        releaseStill(element);
       }
       if (movedTimer != null) {
         clearTimeout(movedTimer);
       }
-      root.unmount();
       hintHost.remove();
-      live.remove();
-      instructions.remove();
+      // After the current task's rendering: React reports an unmount run
+      // synchronously inside another root's effect cleanup, where an app
+      // usually calls detach.
+      const rendered = root;
+      root = null;
+      if (rendered != null) {
+        queueMicrotask(() => rendered.unmount());
+      }
     },
   };
 }

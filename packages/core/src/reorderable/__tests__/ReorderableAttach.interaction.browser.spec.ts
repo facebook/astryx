@@ -29,6 +29,7 @@ const FAN_STORY = 'core-createreorderable--attached-cards-in-a-fan';
 const ANEW_STORY = 'core-createreorderable--attached-cards-rendered-anew';
 const WRAP_STORY = 'core-createreorderable--attached-cards-wrapping';
 const ROWS_STORY = 'core-createreorderable--attached-rows-in-a-column';
+const DIALOG_STORY = 'core-createreorderable--attached-cards-in-a-dialog';
 
 /**
  * The insertion line attach draws in its container while a drag or reorder
@@ -322,6 +323,37 @@ test.describe('with a mouse or a pen', () => {
     await expect
       .poll(async () => order(page))
       .toEqual(['K', 'Q', 'J', '10', 'A']);
+  });
+
+  test('a container attached before its modal dialog opens announces inside the open dialog (spec:AST-103 FR4b)', async ({
+    page,
+  }) => {
+    await openStory(page, storybook(), DIALOG_STORY);
+    await page.getByRole('button', {name: 'Open the hand'}).click();
+    const dialog = page.getByRole('dialog', {name: 'Your hand'});
+    await expect(dialog).toBeVisible();
+    const grip = dialog.getByRole('button', {name: 'Reorder Card A'});
+    await grip.focus();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('ArrowRight');
+    // Heard inside the dialog, which a screen reader still reads.
+    await expect
+      .poll(async () =>
+        dialog
+          .locator('[role="status"]')
+          .evaluateAll(regions =>
+            regions.map(region => region.textContent ?? '').join(' '),
+          ),
+      )
+      .toContain('Card A');
+    // Not on the page behind it, which the modal makes inert.
+    const behind = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('[role="status"]'))
+        .filter(region => region.closest('dialog') == null)
+        .map(region => region.textContent ?? '')
+        .join(' '),
+    );
+    expect(behind).not.toContain('Card A');
   });
 
   test('a pen drags a grip at once, with no hold (spec:AST-103 FR3)', async ({
