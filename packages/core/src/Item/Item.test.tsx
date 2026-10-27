@@ -11,14 +11,13 @@
 
 import {use, useRef} from 'react';
 import {afterEach, beforeEach, describe, it, expect, vi} from 'vitest';
-import {act, cleanup, fireEvent, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen} from '@testing-library/react';
 import {rulesDeclaredFor} from '../__tests__/pressState';
 import userEvent from '@testing-library/user-event';
 import {Item} from './Item';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
 import {emulateTouch} from './__tests__/emulateTouch';
 import {TapGestureRecognizer, useGestureRecognizer} from '../gestures';
-import {pointerQuery} from '../gestures/__tests__/pointerQuery';
 
 /**
  * Item in delegation mode: `interactiveRef` points at a nested control that
@@ -750,6 +749,34 @@ describe('swipeActions', () => {
    * keeps reporting where it is, which is what brings UIKit's velocity
    * filter (the gesture system's) down to rest: it never decays on its own.
    */
+  /**
+   * The pointer event a browser sends with a finger's touch event. Where the
+   * primary pointer is fine (a touchscreen laptop), the host hears a finger
+   * from its `pointerdown`, which comes first, and samples its moves from
+   * its pointer events (spec:AST-094 FR43).
+   */
+  const POINTER_FOR: Record<string, string> = {
+    touchstart: 'pointerdown',
+    touchmove: 'pointermove',
+    touchend: 'pointerup',
+    touchcancel: 'pointercancel',
+  };
+  function sendFingerPointer(type: string, contact: Contact): void {
+    contact.target.dispatchEvent(
+      new PointerEvent(POINTER_FOR[type], {
+        bubbles: true,
+        cancelable: type !== 'touchcancel',
+        button: type === 'touchmove' ? -1 : 0,
+        buttons: type === 'touchend' || type === 'touchcancel' ? 0 : 1,
+        clientX: contact.x,
+        clientY: contact.y,
+        pointerId: 100 + contact.id,
+        pointerType: 'touch',
+        isPrimary: contact.id === 1,
+      }),
+    );
+  }
+
   function finger(target: Element, id = 1) {
     let contact: Contact = {id, x: 0, y: 10, target};
     const send = (
@@ -758,6 +785,9 @@ describe('swipeActions', () => {
     ) => {
       let event: Event | undefined;
       act(() => {
+        if (!window.matchMedia('(pointer: coarse)').matches) {
+          sendFingerPointer(type, contact);
+        }
         event = sendTouch(type, contact, cancelable);
       });
       return event as Event;
@@ -1041,15 +1071,16 @@ describe('swipeActions', () => {
       vi.unstubAllGlobals();
     });
 
-    it('swipes under a finger, claiming the touch and resting open as on a phone', async () => {
+    it('swipes under a finger, resting open as on a phone', async () => {
       // A fine primary pointer in this context, before anything is checked.
       expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
       const {row} = renderRow();
       expect(panelOf(row, 'leading')).toHaveAttribute('inert');
       const f = finger(row);
       f.down(10);
-      // Claimed at 8 px, before a browser would scroll it.
-      expect(f.move(20).defaultPrevented).toBe(true);
+      // Here a finger's claim rests on touch-action, not on a cancelled
+      // touchmove (spec:AST-094 FR43): the row keeps one listener.
+      f.move(20);
       f.move(35);
       f.move(80);
       f.rest();
@@ -1059,7 +1090,7 @@ describe('swipeActions', () => {
       expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
     });
 
-    it('keeps every other recognizer on the gesture host inactive while a finger swipes the row (spec:AST-094 FR19; the row swipe reads each event, spec:AST-057)', async () => {
+    it('swipes beside another recognizer, which takes its own finger too where the primary pointer is fine (spec:AST-094 FR43)', async () => {
       expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
       const taps: string[] = [];
       function Other() {
@@ -1073,32 +1104,17 @@ describe('swipeActions', () => {
         );
         return <div ref={ref} data-testid="other" />;
       }
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const {row} = renderRow();
       render(<Other />);
       const t = finger(screen.getByTestId('other'), 3);
       t.down(20);
       t.up();
-      // Not opted out of the gate: inactive where the primary pointer is fine.
-      expect(taps).not.toContain('ended');
-      // The row swipes under a finger beside it.
+      // Gestures attach for every pointer: the tap is recognized here too.
+      expect(taps).toContain('ended');
+      // And the row swipes under a finger beside it.
       dragLeading(row, 45);
       await settled();
       expect(xOf(row)).toBe(72);
-      warn.mockRestore();
-      // The control: on a phone's pointer the same tap is recognized.
-      const coarse = pointerQuery(true);
-      try {
-        cleanup();
-        taps.length = 0;
-        render(<Other />);
-        const u = finger(screen.getByTestId('other'), 4);
-        u.down(20);
-        u.up();
-        expect(taps).toContain('ended');
-      } finally {
-        coarse.restore();
-      }
     });
 
     it('swipes under a pen, as under a finger', async () => {
@@ -1126,6 +1142,97 @@ describe('swipeActions', () => {
       await settled();
       expect(xOf(row)).toBeGreaterThan(0);
       expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
+    });
+
+    /** One wheel on the row, 16 ms after the last, on the gesture's clock. */
+    const wheelOn = (
+      row: HTMLElement,
+      init: {dx: number; dy?: number; mode?: number},
+    ) => {
+      let event: WheelEvent | undefined;
+      act(() => {
+        event = new WheelEvent('wheel', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 150,
+          clientY: 10,
+          deltaX: init.dx,
+          deltaY: init.dy ?? 0,
+          deltaMode: init.mode ?? 0,
+        });
+        Object.defineProperty(event, 'timeStamp', {value: performance.now()});
+        row.dispatchEvent(event);
+        vi.advanceTimersByTime(16);
+      });
+      return event as WheelEvent;
+    };
+
+    it('swipes under a trackpad’s two-finger horizontal scroll, resting open as under a finger (spec:AST-094 FR43)', async () => {
+      expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
+      const {row} = renderRow();
+      // Fingers moving right (the content follows them): negative deltaX,
+      // uneven sub-pixel steps, as a trackpad reports them.
+      const events = Array.from({length: 10}, (_, i) =>
+        wheelOn(row, {dx: -(7.75 + (i % 3) * 0.5)}),
+      );
+      expect(events.at(-1)?.defaultPrevented).toBe(true);
+      // The gesture ends 100 ms after its last wheel, and the row settles.
+      await settled();
+      expect(xOf(row)).toBe(72);
+      expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
+    });
+
+    it('fires the outermost entry on a trackpad scroll past the commit point', async () => {
+      const inner = vi.fn();
+      const outer = vi.fn();
+      const {row} = renderRow({
+        leading: [
+          {label: 'Unread', onActivate: inner},
+          {label: 'Pin', onActivate: outer},
+        ],
+      });
+      for (let i = 0; i < 30; i++) {
+        wheelOn(row, {dx: -(8.25 + (i % 2) * 0.5)});
+      }
+      await settled();
+      await settled();
+      expect(outer).toHaveBeenCalledTimes(1);
+      expect(inner).not.toHaveBeenCalled();
+    });
+
+    it('never swipes under a mouse wheel, in pixel notches or in lines, and leaves it to the page', async () => {
+      const {row} = renderRow();
+      // Shift and a mouse wheel: whole 100 px notches on one axis.
+      const notches = [0, 1, 2, 3].map(() => wheelOn(row, {dx: -100}));
+      // A line-mode wheel (Firefox).
+      const lines = [0, 1, 2].map(() => wheelOn(row, {dx: -3, mode: 1}));
+      await settled();
+      expect([...notches, ...lines].some(event => event.defaultPrevented)).toBe(
+        false,
+      );
+      expect(xOf(row)).toBe(0);
+      expect(panelOf(row, 'leading')).toHaveAttribute('inert');
+    });
+
+    it('never reveals the actions on hover', async () => {
+      const {row} = renderRow();
+      act(() => {
+        for (const x of [10, 60, 120, 200]) {
+          row.dispatchEvent(
+            new PointerEvent('pointermove', {
+              bubbles: true,
+              buttons: 0,
+              clientX: x,
+              clientY: 10,
+              pointerId: 1,
+              pointerType: 'mouse',
+            }),
+          );
+        }
+      });
+      await settled();
+      expect(xOf(row)).toBe(0);
+      expect(panelOf(row, 'leading')).toHaveAttribute('inert');
     });
 
     it('never swipes under a mouse', async () => {

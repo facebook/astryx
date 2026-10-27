@@ -19,7 +19,8 @@
  * row springs back, or holds out when the entry has `hasRemoval`. A release
  * short of the threshold springs back under both.
  *
- * A finger or a pen, never a mouse (the recognizer's pointer types), by
+ * A finger, a pen or a trackpad's two-finger scroll, never a mouse or its
+ * wheel (the recognizer's pointer and scroll types), by
  * pointer type rather than by breakpoint: a mouse has the row's own controls
  * and a keyboard has the verb already; the gesture is an accelerator for a
  * verb the row exposes elsewhere, never the only way to reach one.
@@ -183,6 +184,13 @@ function focusRowContent(root: HTMLElement): void {
  * own controls).
  */
 const SWIPE_POINTER_TYPES = ['touch', 'pen'] as const;
+
+/**
+ * The scroll input that swipes a row: a trackpad's two-finger scroll, as a
+ * finger would (`spec:AST-094` FR43, `spec:AST-057`); never a mouse wheel's
+ * notches.
+ */
+const SWIPE_SCROLL_TYPES = ['continuous'] as const;
 
 export function useSwipeAction({
   behavior,
@@ -540,6 +548,7 @@ export function useSwipeAction({
     () =>
       new PanGestureRecognizer({
         allowedPointerTypes: SWIPE_POINTER_TYPES,
+        allowedScrollTypes: SWIPE_SCROLL_TYPES,
         direction: 'horizontal',
         hysteresis: SWIPE.claim,
         maximumNumberOfTouches: 1,
