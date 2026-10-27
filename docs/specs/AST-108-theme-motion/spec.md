@@ -113,9 +113,9 @@ defineTheme({
   unless the theme sets `tempo` itself, so an existing theme renders exactly as
   before, springs included. Explicit
   `MotionScaleConfig` fields and explicit `tokens` win over `tempo` and
-  `character`, and an extending theme's motion configuration merges with its
-  base's field by field: a field or knob the child omits keeps its base's
-  value. An adaptation rule may set `tempo` and `character` like
+  `character`, and an extending theme's `MotionScaleConfig` fields replace its base's as a
+  unit, the documented extends rule (`author-a-theme`). Only the three knobs
+  inherit: a knob the child omits keeps its base's value. An adaptation rule may set `tempo` and `character` like
   any other `motion` value (`spec:AST-012` FR4); `reducedMotion` is set on the
   theme itself, since its root mark has no conditional form.
 - **FR6 — Server rendering gets the same values.** A theme is plain data, and
