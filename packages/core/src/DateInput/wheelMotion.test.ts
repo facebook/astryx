@@ -6,7 +6,9 @@
  *   strip, and a curve from wheelPhysics.ts
  * @output Proves what the player leaves on the rows when it lets a motion go,
  *   and its cross-fade for reduced motion: opacity only, the rows landing at
- *   the midpoint, stoppable before it
+ *   the midpoint (baked into their own animations where Web Animations run,
+ *   so a late timer moves nothing), timed from when it starts on screen,
+ *   stoppable before it
  * @position Unit coverage for wheelMotion.ts; jsdom runs no Web Animations,
  *   so the player writes each motion's end state inline and keeps time with
  *   its timers. The wheels' tests and the browser specs cover it on screen.
@@ -113,6 +115,142 @@ describe('WheelMotion', () => {
     expect(onEnd).toHaveBeenCalledWith('arrived', 640);
     expect(motion.isMoving()).toBe(false);
     expect(cancel).toHaveBeenCalled();
+  });
+
+  it('bakes the landing into animations of the rows and the strip, so a late timer moves nothing', () => {
+    const rows = new Map(
+      Array.from({length: LAYOUT.rowCount}, (_, index) => [
+        index,
+        document.createElement('div'),
+      ]),
+    );
+    const strip = document.createElement('div');
+    const drawing = document.createElement('div');
+    const played = new Map<
+      HTMLElement,
+      {keyframes: Keyframe[]; duration: number}
+    >();
+    for (const element of [...rows.values(), strip, drawing]) {
+      element.animate = (
+        keyframes: Keyframe[],
+        options: KeyframeAnimationOptions,
+      ) => {
+        played.set(element, {keyframes, duration: Number(options.duration)});
+        return {cancel: vi.fn()} as unknown as Animation;
+      };
+    }
+    const motion = new WheelMotion(LAYOUT);
+    motion.attach(rows, strip);
+    motion.setOffset(0);
+    const row = rows.get(0)!;
+    const stripOrigin = strip.style.transform;
+    const rowOrigin = row.style.transform;
+    motion.crossFade(20 * 32, {durationMs: 200, fade: [drawing]});
+
+    // No timer has run (a busy main thread): the destination is inline
+    // already...
+    expect(strip.style.transform).toBe(
+      `translateY(${stripTranslation(640)}px)`,
+    );
+    expect(row.style.transform).not.toBe(rowOrigin);
+    // ...and the strip's own animation holds its origin to the midpoint,
+    // then steps onto it, as a moved row's does.
+    for (const [element, origin] of [
+      [strip, stripOrigin],
+      [row, rowOrigin],
+    ] as const) {
+      const {keyframes, duration} = played.get(element) ?? {
+        keyframes: [],
+        duration: 0,
+      };
+      expect(keyframes.map(frame => frame.transform)).toEqual([
+        origin,
+        origin,
+        element.style.transform,
+        element.style.transform,
+      ]);
+      expect(keyframes[1].offset).toBe(keyframes[2].offset);
+      expect(Number(keyframes[1].offset) * duration).toBeCloseTo(100, 6);
+      expect(keyframes[3].offset).toBe(1);
+    }
+    // The drawing still only fades.
+    expect(played.get(drawing)?.keyframes.map(frame => frame.opacity)).toEqual([
+      1, 0, 1,
+    ]);
+  });
+
+  it('times the midpoint and the end from when its animations start, not from the call', async () => {
+    const rows = new Map(
+      Array.from({length: LAYOUT.rowCount}, (_, index) => [
+        index,
+        document.createElement('div'),
+      ]),
+    );
+    const strip = document.createElement('div');
+    const drawing = document.createElement('div');
+    // Every animation the fade creates waits for the frame that starts them.
+    let commit = () => {};
+    const ready = new Promise<void>(resolve => {
+      commit = resolve;
+    });
+    const created: {
+      startTime: number | null;
+      pending: boolean;
+      cancel: () => void;
+    }[] = [];
+    for (const element of [...rows.values(), strip, drawing]) {
+      element.animate = () => {
+        const animation = {
+          startTime: null,
+          pending: true,
+          ready,
+          cancel: vi.fn(),
+        };
+        created.push(animation);
+        return animation as unknown as Animation;
+      };
+    }
+    const motion = new WheelMotion(LAYOUT);
+    motion.attach(rows, strip);
+    motion.setOffset(0);
+    const onMidpoint = vi.fn();
+    const onEnd = vi.fn();
+    motion.crossFade(20 * 32, {
+      durationMs: 200,
+      fade: [drawing],
+      onMidpoint,
+      onEnd,
+    });
+
+    // A busy main thread holds that frame past the fade's whole length:
+    // nothing lands, ends or is cancelled before the fade starts.
+    vi.advanceTimersByTime(250);
+    expect(onMidpoint).not.toHaveBeenCalled();
+    expect(onEnd).not.toHaveBeenCalled();
+    for (const animation of created) {
+      expect(animation.cancel).not.toHaveBeenCalled();
+    }
+
+    // The frame commits: the fade starts now, and is timed from here.
+    const startTime = performance.now();
+    for (const animation of created) {
+      animation.startTime = startTime;
+      animation.pending = false;
+    }
+    commit();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(motion.offset()).toBe(0);
+    vi.advanceTimersByTime(99);
+    expect(onMidpoint).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(2);
+    expect(onMidpoint).toHaveBeenCalledTimes(1);
+    expect(motion.offset()).toBe(640);
+    vi.advanceTimersByTime(98);
+    expect(onEnd).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(2);
+    expect(onEnd).toHaveBeenCalledWith('arrived', 640);
+    expect(onMidpoint).toHaveBeenCalledTimes(1);
   });
 
   it('is stopped by a finger before its midpoint with the rows unmoved', () => {

@@ -23,6 +23,11 @@
  * before it starts until it ends: Mobile Safari freezes a Web Animation on an
  * element without a compositing layer through a main-thread block.
  *
+ * A reduced-motion cross-fade lands the same way: the destination goes
+ * inline first, and each row and the strip hold the origin in an animation
+ * that steps onto it at the fade's midpoint, on the compositor. Its timers,
+ * like a motion's end, are timed from when its animations start on screen.
+ *
  * SYNC: When modified, update:
  * - /packages/core/src/DateInput/wheelMotion.test.ts
  * - /packages/core/src/DateInput/PickerWheel.tsx
@@ -72,7 +77,11 @@ export interface CrossFadeOptions {
   easing?: string;
   /** What fades: the drawings of the rows. */
   fade: ReadonlyArray<HTMLElement>;
-  /** Called just before the rows land, at the midpoint. */
+  /**
+   * Called on a main-thread timer at the fade's midpoint, timed from when the
+   * fade starts on screen. The rows land on the compositor, so a busy main
+   * thread can run it after they have landed.
+   */
   onMidpoint?: () => void;
   /** Called once when the fade ends, either way. */
   onEnd?: (outcome: WheelMotionOutcome, offset: number) => void;
@@ -90,8 +99,18 @@ interface RunningMotion {
   readonly timers: number[];
   readonly ticks: boolean;
   readonly onEnd?: (outcome: WheelMotionOutcome, offset: number) => void;
-  /** A cross-fade's opacity animations; the rows themselves never animate. */
+  /** A cross-fade's opacity animations. */
   readonly fades?: ReadonlyArray<Animation>;
+  /** A cross-fade's landing: the offset it starts from, and its length. */
+  readonly landing?: {readonly from: number; readonly durationMs: number};
+  /**
+   * Whether the landing plays on the compositor (Web Animations run): the
+   * destination inline, each row and the strip stepping onto it.
+   */
+  readonly baked?: boolean;
+  /** Runs once at the curve's midpoint (a cross-fade's landing). */
+  readonly midpoint?: () => void;
+  midpointDone?: boolean;
 }
 
 function now(): number {
@@ -132,6 +151,34 @@ function targetOf(animation: Animation): Element | null {
     effect instanceof KeyframeEffect
     ? effect.target
     : null;
+}
+
+/**
+ * An element's landing over a cross-fade lasting `durationMs`: `origin` held
+ * to the midpoint, then `destination`, held past the end; null when nothing
+ * changes.
+ */
+function land(
+  element: HTMLElement,
+  origin: string,
+  destination: string,
+  durationMs: number,
+): Animation | null {
+  if (origin === destination) {
+    return null;
+  }
+  const totalMs = durationMs + END_HOLD_MS;
+  const midpoint = durationMs / 2 / totalMs;
+  element.style.willChange = 'transform';
+  return element.animate(
+    [
+      {offset: 0, transform: origin},
+      {offset: midpoint, transform: origin},
+      {offset: midpoint, transform: destination},
+      {offset: 1, transform: destination},
+    ],
+    {duration: totalMs, easing: 'linear'},
+  );
 }
 
 /** Cancel an animation and drop its element's layer. */
@@ -199,8 +246,9 @@ export class WheelMotion {
       this.render(this.restingOffset);
       return;
     }
-    if (motion.fades != null) {
-      // A cross-fade moves no row: the rows that mount show where it is.
+    if (motion.landing != null && motion.baked !== true) {
+      // A landing timed on the main thread (no Web Animations): the rows
+      // that mount show where it is.
       this.render(this.offset(), true);
       return;
     }
@@ -355,30 +403,25 @@ export class WheelMotion {
     if (this.strip != null) {
       motion.stripAnimation = this.animateStrip(motion, this.strip);
     }
-    // The browser starts animations created in one task together, when it
-    // commits them; read that start back so `offset()` follows the screen.
-    const first =
-      motion.rowAnimations.values().next().value ?? motion.stripAnimation;
-    if (first != null) {
-      first.ready?.then(
-        () => {
-          if (this.motion === motion && typeof first.startTime === 'number') {
-            this.shiftOrigin(motion, first.startTime);
-          }
-        },
-        () => {},
-      );
-    }
+    this.followStart(motion);
     this.schedule(motion);
   }
 
   /**
    * Land on `to` without travel, as reduced motion asks
    * (design:reduced-motion DR2): `fade` dips out where the rows are, the
-   * rows land on `to` at the midpoint (`onMidpoint` runs just before, to
-   * mount them), and `fade` comes back in; opacity only, `durationMs` in all.
-   * Like any motion it ends once (`onEnd`), and `stop` (a finger) ends it
-   * where it is shown: before the midpoint the rows have not moved.
+   * rows land on `to` at the midpoint (`onMidpoint` runs on a main-thread
+   * timer near it), and `fade` comes back in; opacity only, `durationMs` in
+   * all. Like any motion it ends once (`onEnd`), and `stop` (a finger) ends
+   * it where it is shown: before the midpoint the rows have not moved.
+   *
+   * The landing is baked, as `play()` bakes its end: the destination goes
+   * inline first, and each mounted row (the owner mounts the rows around
+   * both ends first) and the strip hold the origin in an animation that steps
+   * onto the destination at the midpoint, on the compositor, so a busy main
+   * thread never brings the fade back in on the old rows. Without Web
+   * Animations (jsdom) the rows land on a timer. The midpoint and the end are
+   * timed from when the fade starts on screen.
    */
   crossFade(to: number, options: CrossFadeOptions): void {
     const {durationMs, easing = 'linear', fade, onMidpoint, onEnd} = options;
@@ -398,6 +441,9 @@ export class WheelMotion {
       value: t => (t < duration / 2 ? from : to),
       velocity: () => 0,
     };
+    const baked = [...this.rows.values(), this.strip].some(
+      element => element != null && canAnimate(element),
+    );
     const fades = fade
       .filter(canAnimate)
       .map(element =>
@@ -416,25 +462,31 @@ export class WheelMotion {
       ticks: false,
       onEnd,
       fades,
-    };
-    this.motion = motion;
-    motion.timers.push(
-      window.setTimeout(() => {
-        if (this.motion === motion) {
-          onMidpoint?.();
+      landing: {from, durationMs},
+      baked,
+      midpoint: () => {
+        onMidpoint?.();
+        if (!baked) {
           this.render(to, true);
         }
-      }, durationMs / 2),
-      window.setTimeout(() => {
-        if (this.motion !== motion) {
-          return;
+      },
+    };
+    this.motion = motion;
+    if (baked) {
+      this.restingOffset = to;
+      this.render(to, true);
+      this.rows.forEach((row, index) => {
+        const animation = this.animateRow(motion, index, row);
+        if (animation != null) {
+          motion.rowAnimations.set(index, animation);
         }
-        this.finish(motion);
-        this.restingOffset = to;
-        this.render(to, true);
-        onEnd?.('arrived', to);
-      }, durationMs),
-    );
+      });
+      if (this.strip != null) {
+        motion.stripAnimation = this.animateStrip(motion, this.strip);
+      }
+    }
+    this.followStart(motion);
+    this.schedule(motion);
   }
 
   /** Release every resource; the rows stay where they are shown. */
@@ -457,6 +509,19 @@ export class WheelMotion {
     if (!canAnimate(row)) {
       return null;
     }
+    const {landing} = motion;
+    if (landing != null) {
+      const at = (offset: number) =>
+        rowTransform(
+          rowAngle(rowDistance(index, offset, this.layout), this.geometry),
+        );
+      return land(
+        row,
+        at(landing.from),
+        at(motion.curve.to),
+        landing.durationMs,
+      );
+    }
     const frames = rowKeyframes(
       index,
       motion.samples,
@@ -472,6 +537,14 @@ export class WheelMotion {
     motion: RunningMotion,
     strip: HTMLElement,
   ): Animation | null {
+    const {landing} = motion;
+    if (landing != null) {
+      const at = (offset: number) =>
+        `translateY(${stripTranslation(offset)}px)`;
+      return canAnimate(strip)
+        ? land(strip, at(landing.from), at(motion.curve.to), landing.durationMs)
+        : null;
+    }
     return canAnimate(strip)
       ? bake(
           strip,
@@ -479,6 +552,45 @@ export class WheelMotion {
           motion.curve.duration,
         )
       : null;
+  }
+
+  /** The first of a motion's animations: all of them start together. */
+  private firstAnimation(motion: RunningMotion): Animation | undefined {
+    return (
+      motion.stripAnimation ??
+      motion.rowAnimations.values().next().value ??
+      motion.fades?.[0]
+    );
+  }
+
+  /**
+   * The browser starts animations created in one task together, when it next
+   * commits a frame, which a busy main thread delays: read that start back so
+   * `offset()` and the timers follow the screen.
+   */
+  private followStart(motion: RunningMotion): void {
+    const first = this.firstAnimation(motion);
+    first?.ready?.then(
+      () => {
+        if (this.motion === motion && typeof first.startTime === 'number') {
+          this.shiftOrigin(motion, first.startTime);
+        }
+      },
+      () => {
+        // Cancelled before it started: time it from now, so it still ends.
+        if (this.motion === motion) {
+          this.shiftOrigin(motion, now());
+        }
+      },
+    );
+  }
+
+  /**
+   * Whether the motion's animations are still waiting for the frame that
+   * starts them; their start (`followStart`) re-arms the timers then.
+   */
+  private isPending(motion: RunningMotion): boolean {
+    return this.firstAnimation(motion)?.pending === true;
   }
 
   private shiftOrigin(motion: RunningMotion, origin: number): void {
@@ -504,6 +616,9 @@ export class WheelMotion {
         if (delay >= 0) {
           motion.timers.push(
             window.setTimeout(() => {
+              if (this.isPending(motion)) {
+                return;
+              }
               this.lastTick = now();
               playHaptic('selection');
             }, delay),
@@ -511,10 +626,28 @@ export class WheelMotion {
         }
       }
     }
+    if (motion.midpoint != null && motion.midpointDone !== true) {
+      motion.timers.push(
+        window.setTimeout(
+          () => {
+            if (
+              this.motion !== motion ||
+              motion.midpointDone === true ||
+              this.isPending(motion)
+            ) {
+              return;
+            }
+            motion.midpointDone = true;
+            motion.midpoint?.();
+          },
+          Math.max(0, durationMs / 2 - elapsed),
+        ),
+      );
+    }
     motion.timers.push(
       window.setTimeout(
         () => {
-          if (this.motion !== motion) {
+          if (this.motion !== motion || this.isPending(motion)) {
             return;
           }
           this.finish(motion);

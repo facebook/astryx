@@ -59,15 +59,14 @@
  * them where UIDatePicker sets its own: close together around the centre.
  *
  * Both drawings mount only a window of rows, as UIPickerView lays out only
- * the cells it shows: the cylinder's front half (±90° from the band), the
- * band copy's three rows, and a buffer of two on each side, so showing a
- * wheel costs the same for 12 rows or 200.
- * A motion mounts every row it will show before it plays (its cost follows
- * the distance it travels, not the list), a drag moves the window when the
- * finger nears its edge, and the window settles back around the rest. The
- * listbox's options are separate, plain and complete: one per row, stacked
- * transparent over the band, so assistive technology meets every option and
- * its cursor sits on the band.
+ * the cells it shows, so showing a wheel costs the same for 12 rows or 200.
+ * The rows are kept imperatively (wheelRows.ts), never in React state: a
+ * drag moves the window by recycling rows with style and attribute writes,
+ * so no drag frame renders the column (`spec:AST-094` FR9); a motion mounts
+ * every row it will show before it plays, and the window settles back
+ * around the rest. The listbox's options are separate, plain and complete:
+ * one per row, stacked transparent over the band, so assistive technology
+ * meets every option and its cursor sits on the band.
  *
  * Accessibility: a listbox, one tab stop, `aria-activedescendant` on the
  * committed row (a value set from outside shows in the same render). Arrow
@@ -93,7 +92,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import {flushSync} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {PanGestureRecognizer} from '../gestures/PanGestureRecognizer';
 import {TapGestureRecognizer} from '../gestures/TapGestureRecognizer';
@@ -119,6 +117,7 @@ import {useOwnScrollGesture} from './useOwnScrollGesture';
 import {useWheelListbox} from './useWheelListbox';
 import {drumGeometry, rowAtPoint} from './wheelDrum';
 import {WheelMotion, type PlayOptions} from './wheelMotion';
+import {WheelRows, type WheelRange, type WheelRowClasses} from './wheelRows';
 import {reducedMotionFade} from '../motion/reducedMotion';
 import {
   dragOffset,
@@ -144,22 +143,6 @@ const ROW_HEIGHT = picker.geometry.rowHeight;
 const GEOMETRY = drumGeometry(ROW_HEIGHT);
 /** Wheel events stop moving the wheel after this long without one, ms. */
 const WHEEL_IDLE_MS = 160;
-/**
- * Rows on each side of the band that can show: the cylinder's front half,
- * ±90° (rows past it are parked out of sight).
- */
-const VISIBLE_REACH = Math.ceil(((Math.PI / 2) * GEOMETRY.radius) / ROW_HEIGHT);
-/**
- * Rows on each side of the band's centre that the band's copy can show:
- * the band is 34 px tall and a row 32, so the row under it and one each side.
- */
-const BAND_REACH = 1;
-/**
- * Rows mounted past those that can show, on each side: a drag mounts more as
- * it nears the edge, and every motion mounts its whole span before it plays.
- */
-const WINDOW_BUFFER = 2;
-
 const styles = stylex.create({
   column: {
     position: 'relative',
@@ -262,8 +245,6 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     whiteSpace: 'nowrap',
   },
-  /** A strip row at its position along the wheel. */
-  stripRowAt: (top: string) => ({insetBlockStart: top}),
   stripLabel: {
     '::before': {
       content: 'attr(data-label)',
@@ -335,61 +316,6 @@ function nearestPosition(
   return row + cycles * layout.rowCount;
 }
 
-/**
- * The mounted rows, as runs of positions along the drum (row units,
- * inclusive): the cylinder's rows, and the band copy's, fewer.
- */
-interface RowWindow {
-  readonly from: number;
-  readonly to: number;
-  readonly bandFrom: number;
-  readonly bandTo: number;
-}
-
-/**
- * Positions `reach` past `lo` to `hi` on each side. A finite wheel's run
- * stops at its rows; a looping wheel's positions run past either end.
- */
-function run(
-  lo: number,
-  hi: number,
-  reach: number,
-  layout: WheelLayout,
-): [number, number] {
-  const from = Math.floor(Math.min(lo, hi)) - reach;
-  const to = Math.ceil(Math.max(lo, hi)) + reach;
-  return layout.looping
-    ? [from, to]
-    : [Math.max(0, from), Math.min(layout.rowCount - 1, to)];
-}
-
-/**
- * The window around positions `lo` to `hi`: every row that can show while
- * the wheel is between them, on the cylinder and in the band, and a buffer.
- */
-function windowAround(lo: number, hi: number, layout: WheelLayout): RowWindow {
-  const [from, to] = run(lo, hi, VISIBLE_REACH + WINDOW_BUFFER, layout);
-  const [bandFrom, bandTo] = run(lo, hi, BAND_REACH + WINDOW_BUFFER, layout);
-  return {from, to, bandFrom, bandTo};
-}
-
-/** Whether `window` mounts every row that can show between `lo` and `hi`. */
-function covers(
-  window: RowWindow,
-  lo: number,
-  hi: number,
-  layout: WheelLayout,
-): boolean {
-  const [from, to] = run(lo, hi, VISIBLE_REACH, layout);
-  const [bandFrom, bandTo] = run(lo, hi, BAND_REACH, layout);
-  return (
-    window.from <= from &&
-    window.to >= to &&
-    window.bandFrom <= bandFrom &&
-    window.bandTo >= bandTo
-  );
-}
-
 /** The lowest and highest positions a curve passes (row units). */
 function curveSpan(curve: WheelCurve, rowHeight: number): [number, number] {
   let lo = Math.min(curve.value(0), curve.to);
@@ -430,6 +356,28 @@ export function PickerWheel({
   const group = useWheelGroup();
   // A column takes its place only inside a WheelGroup.
   const placed = group != null ? place : undefined;
+  // The rows' class names (wheelRows.ts draws the rows): a placed column's
+  // labels keep their edge or their centre at its place.
+  const align = placed?.align;
+  const rowClasses = useMemo<WheelRowClasses>(() => {
+    const alignment = align != null ? alignStyle(align) : null;
+    return {
+      row: stylex.props(styles.row, styles.rowLabel, alignment).className ?? '',
+      rowDisabled:
+        stylex.props(styles.row, styles.rowLabel, alignment, styles.rowDisabled)
+          .className ?? '',
+      stripRow:
+        stylex.props(styles.stripRow, styles.stripLabel, alignment).className ??
+        '',
+      stripRowDisabled:
+        stylex.props(
+          styles.stripRow,
+          styles.stripLabel,
+          alignment,
+          styles.rowDisabled,
+        ).className ?? '',
+    };
+  }, [align]);
   const columnRef = useRef<HTMLDivElement | null>(null);
   const drumRef = useRef<HTMLDivElement | null>(null);
   const bandCopyRef = useRef<HTMLDivElement | null>(null);
@@ -447,12 +395,8 @@ export function PickerWheel({
     0,
     options.findIndex(option => option.value === value),
   );
-  // The mounted rows. `windowRef` runs ahead of the render: it is what the
-  // next commit mounts.
-  const [rowWindow, setRowWindow] = useState(() =>
-    windowAround(selectedIndex, selectedIndex, layout),
-  );
-  const windowRef = useRef(rowWindow);
+  // The mounted rows: kept and recycled imperatively, never React state.
+  const rowsRef = useRef<WheelRows | null>(null);
   const dragRef = useRef<DragState | null>(null);
   /** A finger landed on a moving wheel and stopped it. */
   const caughtRef = useRef(false);
@@ -462,52 +406,41 @@ export function PickerWheel({
     latestRef.current = {options, value, onChange, resolveRest, layout};
   });
 
-  // Mount every row that can show between positions `lo` and `hi`, at once
-  // when a motion or a drag frame is about to show them.
-  const showRows = useCallback(
-    (lo: number, hi: number, {now = false}: {now?: boolean} = {}) => {
-      const currentLayout = latestRef.current.layout;
-      if (covers(windowRef.current, lo, hi, currentLayout)) {
-        return;
-      }
-      const next = windowAround(lo, hi, currentLayout);
-      windowRef.current = next;
-      if (now) {
-        // A motion's animations are baked per mounted row as it starts, and
-        // a drag frame writes the mounted rows: both need the rows now.
-        // eslint-disable-next-line @eslint-react/dom-no-flush-sync, @eslint-react/set-state-in-effect -- see above; never called from an effect with `now`
-        flushSync(() => setRowWindow(next));
-      } else {
-        // eslint-disable-next-line @eslint-react/set-state-in-effect -- the window follows the offset, which only exists in the motion engine
-        setRowWindow(next);
+  // Mount every row that can show while the wheel is in `ranges` (row
+  // units), before a drag frame or a motion shows them: recycled rows, no
+  // render.
+  const showRanges = useCallback(
+    (ranges: ReadonlyArray<WheelRange>) => {
+      const rows = rowsRef.current;
+      if (rows?.show(ranges) === true) {
+        motion.attach(rows.drumRows(), stripRef.current);
       }
     },
-    [],
+    [motion],
+  );
+  const showRows = useCallback(
+    (lo: number, hi: number) => showRanges([[lo, hi]]),
+    [showRanges],
   );
 
   // At rest, the window settles back around the rest.
-  const settleRows = useCallback((offset: number) => {
-    const currentLayout = latestRef.current.layout;
-    const position = offset / currentLayout.rowHeight;
-    const next = windowAround(position, position, currentLayout);
-    const current = windowRef.current;
-    if (
-      next.from !== current.from ||
-      next.to !== current.to ||
-      next.bandFrom !== current.bandFrom ||
-      next.bandTo !== current.bandTo
-    ) {
-      windowRef.current = next;
-      setRowWindow(next);
-    }
-  }, []);
+  const settleRows = useCallback(
+    (offset: number) => {
+      const rows = rowsRef.current;
+      if (rows?.settle(offset / latestRef.current.layout.rowHeight) === true) {
+        motion.attach(rows.drumRows(), stripRef.current);
+      }
+    },
+    [motion],
+  );
 
   // Every transition the wheel starts: its rows mounted first, the window
   // settled after. Under reduced motion it lands without travel: the rows
   // cross-fade onto their row on the animator's Reduce Motion fade, whatever
-  // the curve (design:reduced-motion DR2, DR4), and the target's rows mount
-  // at the fade's midpoint. The momentum that continues a throw is not a
-  // transition and plays as is.
+  // the curve (design:reduced-motion DR2, DR4), the rows around where it
+  // lands mounted with the ones around where it starts, before the fade, so
+  // the landing plays on the compositor. The momentum that continues a throw
+  // is not a transition and plays as is.
   const play = useCallback(
     (
       curve: WheelCurve,
@@ -526,21 +459,25 @@ export function PickerWheel({
         const fade = [drumRef.current, bandCopyRef.current].filter(
           (element): element is HTMLDivElement => element != null,
         );
-        const position = curve.to / ROW_HEIGHT;
+        const from = motion.stop() / ROW_HEIGHT;
+        const to = curve.to / ROW_HEIGHT;
+        showRanges([
+          [from, from],
+          [to, to],
+        ]);
         motion.crossFade(curve.to, {
           durationMs: fadeTiming.duration,
           easing: fadeTiming.easing,
           fade,
-          onMidpoint: () => showRows(position, position, {now: true}),
           onEnd,
         });
         return;
       }
       const [lo, hi] = curveSpan(curve, ROW_HEIGHT);
-      showRows(lo, hi, {now: true});
+      showRows(lo, hi);
       motion.play(curve, {...options, onEnd});
     },
-    [motion, showRows, settleRows],
+    [motion, showRows, showRanges, settleRows],
   );
 
   // The wheel came to rest at `offset`: commit, or turn on to the row the
@@ -594,18 +531,32 @@ export function PickerWheel({
     [arrive],
   );
 
-  // Hand the mounted rows to the motion engine whenever they are rendered
-  // anew.
+  // The rows: created with the drum and the strip, drawn again when the
+  // options, the layout or their classes change, and handed to the motion
+  // engine. A new wheel mounts the window around its committed row.
   useIsomorphicLayoutEffect(() => {
-    motion.setLayout(layout);
-    const rows = new Map<number, HTMLElement>();
-    for (const child of drumRef.current?.children ?? []) {
-      if (child instanceof HTMLElement) {
-        rows.set(Number(child.dataset.position ?? child.dataset.index), child);
-      }
+    const drum = drumRef.current;
+    const strip = stripRef.current;
+    if (drum == null || strip == null) {
+      return;
     }
-    motion.attach(rows, stripRef.current);
-  }, [motion, layout, options, rowWindow]);
+    let rows = rowsRef.current;
+    if (rows == null || !rows.owns(drum, strip)) {
+      rows = new WheelRows(drum, strip, GEOMETRY);
+      rowsRef.current = rows;
+    }
+    motion.setLayout(layout);
+    rows.update(options, layout, rowClasses);
+    if (rows.isEmpty()) {
+      const latest = latestRef.current;
+      const committed = Math.max(
+        0,
+        latest.options.findIndex(option => option.value === latest.value),
+      );
+      rows.settle(nearestPosition(committed, motion.target(), layout));
+    }
+    motion.attach(rows.drumRows(), strip);
+  }, [motion, layout, options, rowClasses]);
 
   useEffect(() => () => motion.dispose(), [motion]);
 
@@ -736,7 +687,7 @@ export function PickerWheel({
             dragRef.current.start - recognizer.translation().y,
             currentLayout,
           );
-          showRows(offset / ROW_HEIGHT, offset / ROW_HEIGHT, {now: true});
+          showRows(offset / ROW_HEIGHT, offset / ROW_HEIGHT);
           motion.setOffset(offset, {ticks: true});
           break;
         }
@@ -749,7 +700,7 @@ export function PickerWheel({
             drag.start - recognizer.translation().y,
             currentLayout,
           );
-          showRows(offset / ROW_HEIGHT, offset / ROW_HEIGHT, {now: true});
+          showRows(offset / ROW_HEIGHT, offset / ROW_HEIGHT);
           motion.setOffset(offset, {ticks: true});
           break;
         }
@@ -861,7 +812,7 @@ export function PickerWheel({
       const {min, max} = offsetBounds(currentLayout);
       const shown = motion.isMoving() ? motion.stop() : motion.offset();
       const next = Math.min(max, Math.max(min, shown + delta));
-      showRows(next / ROW_HEIGHT, next / ROW_HEIGHT, {now: true});
+      showRows(next / ROW_HEIGHT, next / ROW_HEIGHT);
       motion.setOffset(next, {ticks: true});
       window.clearTimeout(idle);
       idle = window.setTimeout(() => {
@@ -1040,27 +991,6 @@ export function PickerWheel({
     activate: activateRow,
   });
 
-  // The mounted rows: each position of the window on the drum (on a looping
-  // wheel each copy has its own, so a short list repeats around the
-  // cylinder), and each position of the band copy's run on its strip.
-  const positions: number[] = [];
-  for (let position = rowWindow.from; position <= rowWindow.to; position++) {
-    positions.push(position);
-  }
-  const bandPositions: number[] = [];
-  for (
-    let position = rowWindow.bandFrom;
-    position <= rowWindow.bandTo;
-    position++
-  ) {
-    bandPositions.push(position);
-  }
-  const rowIndexAt = (position: number) =>
-    loops ? wrapIndex(position, rowCount) : position;
-  const drumRows = positions.filter(
-    position => loops || (position >= 0 && position < rowCount),
-  );
-
   return (
     <div
       ref={columnRef}
@@ -1083,55 +1013,22 @@ export function PickerWheel({
           {option.label}
         </div>
       ))}
+      {/* The rows: drawn and recycled by wheelRows.ts, never by React. */}
       <div
         ref={drumRef}
         aria-hidden="true"
         data-wheel-drum=""
-        {...stylex.props(styles.drum)}>
-        {drumRows.map(position => {
-          const index = rowIndexAt(position);
-          const option = options[index];
-          return (
-            <div
-              key={loops ? position : option.value}
-              data-index={index}
-              data-position={loops ? position : undefined}
-              data-label={option.label}
-              {...stylex.props(
-                styles.row,
-                styles.rowLabel,
-                placed != null && alignStyle(placed.align),
-                option.isDisabled && styles.rowDisabled,
-              )}
-            />
-          );
-        })}
-      </div>
+        {...stylex.props(styles.drum)}
+      />
       <div
         ref={bandCopyRef}
         aria-hidden="true"
         {...stylex.props(styles.bandCopy)}>
-        <div ref={stripRef} data-wheel-strip="" {...stylex.props(styles.strip)}>
-          {bandPositions.map(position => {
-            const option = options[rowIndexAt(position)];
-            if (option == null) {
-              return null;
-            }
-            return (
-              <div
-                key={position}
-                data-label={option.label}
-                {...stylex.props(
-                  styles.stripRow,
-                  styles.stripLabel,
-                  styles.stripRowAt(`${position * ROW_HEIGHT}px`),
-                  placed != null && alignStyle(placed.align),
-                  option.isDisabled && styles.rowDisabled,
-                )}
-              />
-            );
-          })}
-        </div>
+        <div
+          ref={stripRef}
+          data-wheel-strip=""
+          {...stylex.props(styles.strip)}
+        />
       </div>
     </div>
   );

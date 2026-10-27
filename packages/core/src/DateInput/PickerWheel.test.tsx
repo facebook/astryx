@@ -564,7 +564,11 @@ describe('PickerWheel — a mouse', () => {
 describe('PickerWheel — under reduced motion', () => {
   const FADE_MS = timing.reducedMotionCrossFadeMs;
   /** Every animation the wheel started, with its keyframes and timing. */
-  let animations: {keyframes: Keyframe[]; options: KeyframeAnimationOptions}[];
+  let animations: {
+    keyframes: Keyframe[];
+    options: KeyframeAnimationOptions;
+    target: Element;
+  }[];
 
   beforeEach(() => {
     animations = [];
@@ -579,10 +583,11 @@ describe('PickerWheel — under reduced motion', () => {
     }));
     // jsdom runs no Web Animations: record what the wheel asks for.
     Element.prototype.animate = vi.fn(function animate(
+      this: Element,
       keyframes: Keyframe[],
       options: KeyframeAnimationOptions,
     ) {
-      animations.push({keyframes, options});
+      animations.push({keyframes, options, target: this});
       return {cancel: () => {}} as unknown as Animation;
     });
   });
@@ -658,6 +663,43 @@ describe('PickerWheel — under reduced motion', () => {
     expectFadesOnly();
     advance(FADE_MS);
     expect(onChange).toHaveBeenLastCalledWith(9);
+  });
+
+  it('draws a far fade\u2019s destination before it starts and lands it on the compositor, not the rows between', () => {
+    const YEARS: WheelOption[] = Array.from({length: 200}, (_, i) => ({
+      value: 1900 + i,
+      label: String(1900 + i),
+    }));
+    const {column, onChange} = renderWheel({
+      options: YEARS,
+      value: 2000,
+      label: 'Year',
+    });
+    animations.length = 0;
+    fireEvent.keyDown(column, {key: 'End'});
+    expect(onChange).toHaveBeenLastCalledWith(2099);
+    // No timer has run (a busy main thread): the rows around 2099 are
+    // drawn already, on the drum and in the band...
+    const drum = column.querySelector('[data-wheel-drum]')!;
+    const last = drum.querySelector<HTMLElement>('[data-index="199"]');
+    expect(last).not.toBeNull();
+    expect(
+      column.querySelector('[data-wheel-strip] [data-label="2099"]'),
+    ).not.toBeNull();
+    // ...the last row at the band inline, its animation holding it out of
+    // sight to the fade's midpoint, then stepping it there...
+    expect(last?.style.transform).toBe(rowTransform(0));
+    const landing = animations.find(({target}) => target === last);
+    const [origin, held, landed, end] =
+      landing?.keyframes.map(frame => frame.transform) ?? [];
+    expect(held).toBe(origin);
+    expect(landed).toBe(rowTransform(0));
+    expect(end).toBe(landed);
+    expect(origin).not.toBe(landed);
+    // ...and nothing between 2000 and 2099 is drawn for it.
+    expect(drum.querySelector('[data-index="150"]')).toBeNull();
+    expectFadesOnly();
+    advance(FADE_MS);
   });
 
   it('fades for a tap, a key and a spin, whatever spin it is asked for', async () => {
@@ -890,6 +932,38 @@ describe('PickerWheel — a window of rows', () => {
     const after = drumIndices(column);
     expect(after).toHaveLength(15);
     expect(Math.min(...after)).toBe(rest - 7);
+  });
+
+  it('moves the window through a drag without rendering the column (spec:AST-094 FR9)', () => {
+    // One entry per commit of the wheel.
+    const commits: string[] = [];
+    render(
+      <Profiler id="wheel" onRender={(_id, phase) => commits.push(phase)}>
+        <PickerWheel
+          label="Year"
+          options={YEARS}
+          value={2000}
+          onChange={() => {}}
+        />
+      </Profiler>,
+    );
+    const column = screen.getByRole('listbox', {name: 'Year'});
+    commits.length = 0;
+    // A slow drag up 10 rows: the window moves five times on the way...
+    touch('touchstart', column, 200);
+    for (let i = 1; i <= 40; i++) {
+      advance(40);
+      touch('touchmove', column, 200 - i * 8);
+    }
+    const drawn = drumIndices(column);
+    expect(Math.max(...drawn)).toBeGreaterThanOrEqual(110 + 5);
+    // ...each row drawn once, in order, at its own position...
+    expect(drawn).toEqual([...drawn].sort((a, b) => a - b));
+    expect(new Set(drawn).size).toBe(drawn.length);
+    // ...and no frame of it rendered the column.
+    expect(commits).toEqual([]);
+    advance(40);
+    touch('touchend', column, 200 - 320);
   });
 
   it('moves the window ahead of a drag', () => {

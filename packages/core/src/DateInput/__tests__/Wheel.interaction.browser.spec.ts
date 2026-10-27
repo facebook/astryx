@@ -682,9 +682,6 @@ test('under reduced motion, a tap lands its row on the compositor while the main
   page,
   browserName,
 }) => {
-  // The look mounts the destination's rows at the fade's midpoint, on the
-  // main thread, until its rows are recycled imperatively (FR9).
-  test.fixme(true, 'the look lands its rows on a midpoint timer (known issue, FR9)');
   // design:reduced-motion DR2 with spec:AST-094 FR5: the rows land at the
   // fade's midpoint on the compositor, so a main thread blocked across it
   // never brings the fade back in on the old row.
@@ -693,24 +690,29 @@ test('under reduced motion, a tap lands its row on the compositor while the main
     'the screencast proof runs on Chromium; WebKit runs the landing case above',
   );
   await page.emulateMedia({reducedMotion: 'reduce'});
-  const {driver, field, minutes, strip} = await openWheel(page);
+  const {driver, field, minutes} = await openWheel(page);
   const box = await minutes.boundingBox();
   if (box == null) {
     throw new Error('no minute column');
   }
-  const target = minutes.getByRole('option', {name: '01'});
+  // The look draws the row under the band on the band's own strip: mark
+  // minute 01's band row, below the band before the tap (out of sight, the
+  // band's copy is clipped to the band) and at the band once it lands.
+  const target = minutes.locator('[data-wheel-strip] [data-label="01"]');
   await markElement(target);
   const chip = page.locator('[data-harness-marker-chip]');
   const from = await chip.boundingBox();
   const cast = await startScreencast(page);
-  // The row below the band, minute 01, in sight before and after (today’s
-  // rows fade toward the edges). The block starts once the tap’s
-  // cross-fade plays on the compositor, and covers its midpoint and its end.
+  // A tap on the row below the band, minute 01. The block starts once the
+  // tap’s cross-fade plays on the compositor, and covers its midpoint and
+  // its end.
   await driver.tap({
     x: Math.round(box.x + box.width / 2),
     y: Math.round(box.y + box.height / 2 + ROW),
   });
-  const fade = (await waitForAnimation(strip, {minProgressMs: 16})).find(
+  // The look fades its drawings (the drum and the band's copy) inside the
+  // column; the rows and the strip land in their own, longer animations.
+  const fade = (await waitForAnimation(minutes, {minProgressMs: 16})).find(
     animation => animation.durationMs <= 200,
   );
   if (fade == null) {
