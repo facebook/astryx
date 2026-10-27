@@ -220,7 +220,8 @@ they are separately named.
   and their reverse dependents, the folders of the components, in any package,
   whose built bundle, `import()` targets included, reaches a changed module.
   Visual audits each dependent folder that has a stable story, and runs the
-  whole plan when the dependents exceed its focused budget or none has one. A Changeset renders nothing and widens no audit. A changed module that no component bundle holds adds none, and without
+  whole plan when the dependents exceed its focused budget or none has one; RTL
+  audits every component each of those folders implements. A Changeset renders nothing and widens no audit. A changed module that no component bundle holds adds none, and without
   a readable build the audits run in full. PR accessibility stays scoped to
   changed components (FR12). Shared infrastructure runs the full suite: root
   dependency manifests and lockfile, root configuration, a package's manifest,

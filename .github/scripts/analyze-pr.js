@@ -89,6 +89,36 @@ function familyMembers(pkg, folder) {
   }
 }
 
+// Every canonical component a folder implements: the package barrel exports
+// it from inside that folder, documented or not (FieldLabel in Field,
+// DrawerHeader in Drawer). RTL matches owners by these names.
+const folderIndex = new Map();
+function folderComponents(pkg, folder, repoRoot = process.cwd()) {
+  const sourceDir = path.join(repoRoot, pkgSrc(pkg));
+  const key = `${repoRoot}\0${pkg.name}`;
+  if (!folderIndex.has(key)) {
+    folderIndex.set(key, {
+      canonical:
+        pkg.layout === 'flat'
+          ? new Set(flatPackageComponentNames(repoRoot, pkg))
+          : new Set(nestedPackageComponentNames(repoRoot, pkg)),
+      exports:
+        pkg.layout === 'flat'
+          ? new Map()
+          : componentExportsFromBarrel(path.join(sourceDir, 'index.ts'), sourceDir),
+    });
+  }
+  const { canonical, exports } = folderIndex.get(key);
+  if (pkg.layout === 'flat') return canonical.has(folder) ? [folder] : [];
+  const directory = path.join(sourceDir, folder);
+  return [...canonical]
+    .filter((name) => {
+      const file = exports.get(name);
+      return file === directory || file?.startsWith(`${directory}${path.sep}`);
+    })
+    .sort();
+}
+
 function getComponentNames(pkg) {
   if (pkg.layout === 'flat') {
     return flatPackageComponentNames(process.cwd(), pkg);
@@ -891,27 +921,39 @@ function analyze() {
   const unreachedSources = unresolvedComponentSources.filter((source) =>
     unresolvedFiles.some((entry) => entry.source === source && !isDecided(entry.file)),
   );
-  // One folder-level affected set, which visual and RTL both audit
-  // (spec:AST-030 FR13): each reverse dependent by the component folder it
-  // lives in, so a family member is its folder (Dialog, not DialogHeader),
-  // and each changed multi-component folder that documents components.
+  // One affected set of component folders, which visual and RTL both audit
+  // (spec:AST-030 FR13): each reverse dependent's folder, and each changed
+  // multi-component folder that documents components. Visual reads the
+  // folders (its stories are keyed by folder); RTL reads every component each
+  // folder implements (its routes are keyed by component: FieldLabel, not
+  // Field).
   const folderOf = (target) => target.distModule.split('/')[0].replace(/\.(tsx?|jsx?|mjs)$/, '');
+  const dependentComponentFolders = [];
   const dependentComponentOwners = [];
   if (!baseOnly) {
-    const add = (owner) => {
-      if (
-        !newComponentOwners.includes(owner) &&
-        !modifiedComponentOwners.includes(owner) &&
-        !dependentComponentOwners.includes(owner)
-      ) {
-        dependentComponentOwners.push(owner);
+    const touched = new Set([...newComponentOwners, ...modifiedComponentOwners]);
+    const addFolder = (pkg, folder) => {
+      const qualified = `${pkg.packageName}/${folder}`;
+      if (dependentComponentFolders.includes(qualified)) return;
+      const members = folderComponents(pkg, folder);
+      const owners = (members.length > 0 ? members : [folder]).map(
+        (name) => `${pkg.packageName}/${name}`,
+      );
+      if (owners.every((owner) => touched.has(owner))) return;
+      dependentComponentFolders.push(qualified);
+      for (const owner of owners) {
+        if (!touched.has(owner) && !dependentComponentOwners.includes(owner)) {
+          dependentComponentOwners.push(owner);
+        }
       }
     };
-    for (const target of headTargets) add(`${target.pkg.packageName}/${folderOf(target)}`);
+    for (const target of headTargets) addFolder(target.pkg, folderOf(target));
     for (const source of unresolvedComponentSources) {
       const [packageName, folder] = source.split('/');
       const pkg = PACKAGES.find((candidate) => candidate.packageName === packageName);
-      if (pkg != null && pkg.layout !== 'flat' && familyMembers(pkg, folder).length > 0) add(source);
+      if (pkg != null && pkg.layout !== 'flat' && familyMembers(pkg, folder).length > 0) {
+        addFolder(pkg, folder);
+      }
     }
     console.log(`Reverse dependents: ${dependentComponentOwners.join(', ') || 'none'}`);
   }
@@ -936,6 +978,7 @@ function analyze() {
     newComponentOwners,
     modifiedComponentOwners,
     dependentComponentOwners,
+    dependentComponentFolders,
     // Every changed multi-component folder stays listed: PR accessibility
     // expands it to its members (spec:AST-030 FR12, DEC-5). Only the sources
     // no bundle decided ask for full audits.
@@ -963,4 +1006,6 @@ function analyze() {
   return result;
 }
 
-analyze();
+if (require.main === module) analyze();
+
+module.exports = { folderComponents };

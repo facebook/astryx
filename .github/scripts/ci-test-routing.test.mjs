@@ -797,7 +797,7 @@ describe('scoped browser audits (spec:AST-030 FR9, FR13)', () => {
   it('hands the visual gate the folder-level reverse dependents RTL audits, and the whole plan when analysis or the gate asks for it', () => {
     const visual = stepNamed('Run the visual gate for the touched components');
     expect(visual.run).toContain(
-      `DEPENDENTS=$(jq -r '[(.dependentComponentOwners // [])[] | select(startswith("core/")) | ltrimstr("core/")] | unique | join(",")' analysis.json)`,
+      `DEPENDENTS=$(jq -r '[(.dependentComponentFolders // [])[] | select(startswith("core/")) | ltrimstr("core/")] | unique | join(",")' analysis.json)`,
     );
     expect(visual.run).toContain(
       'if [ -n "$DEPENDENTS" ]; then DEPENDENT_ARGS=(--dependents "$DEPENDENTS"); fi',

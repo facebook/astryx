@@ -2133,9 +2133,9 @@ jobs:
           set -eu
           # Component names are not globally unique; use their package identity.
           TOUCHED=$(jq -r '. as $root | [(.newComponents + .modifiedComponents)[] | select($root.componentStats[.].package == "@astryxdesign/core")] | unique | join(",")' analysis.json)
-          # Reverse dependents by folder: the same affected set RTL audits
-          # (spec:AST-030 FR13).
-          DEPENDENTS=$(jq -r '[(.dependentComponentOwners // [])[] | select(startswith("core/")) | ltrimstr("core/")] | unique | join(",")' analysis.json)
+          # Reverse dependents by folder: the folders of the components RTL
+          # audits (spec:AST-030 FR13).
+          DEPENDENTS=$(jq -r '[(.dependentComponentFolders // [])[] | select(startswith("core/")) | ltrimstr("core/")] | unique | join(",")' analysis.json)
           COMPONENTS="$TOUCHED"
           DEPENDENT_ARGS=()
           if [ -n "$DEPENDENTS" ]; then DEPENDENT_ARGS=(--dependents "$DEPENDENTS"); fi

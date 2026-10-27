@@ -237,6 +237,33 @@ describe('RTL shard scope artifact handling', () => {
     }
   });
 
+  it("passes a dependent folder's members to the RTL filter by component name", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rtl-analysis-'));
+    const file = path.join(dir, 'analysis.json');
+    try {
+      fs.writeFileSync(
+        file,
+        JSON.stringify({
+          newComponentOwners: [],
+          modifiedComponentOwners: [],
+          dependentComponentOwners: ['core/Avatar', 'core/AvatarStatusDot'],
+        }),
+      );
+      const scope = resolveRtlShardScope({
+        packageName: 'core',
+        forceFull: false,
+        hasComponents: true,
+        hasHarness: false,
+        analysis: readAnalysis(file),
+      });
+      expect(scope.filter.split(',')).toEqual(
+        expect.arrayContaining(['core/Avatar', 'core/AvatarStatusDot']),
+      );
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  });
+
   it.each([
     ['missing', null, 'Could not read analysis artifact'],
     ['malformed', '{not json', 'Could not read analysis artifact'],
