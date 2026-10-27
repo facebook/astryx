@@ -62,7 +62,8 @@ const {Selector} = await import('../Selector');
 const {MultiSelector} = await import('../MultiSelector');
 const {CommandPalette} = await import('../CommandPalette');
 const {BaseTypeahead} = await import('../Typeahead/BaseTypeahead');
-const {Tokenizer} = await import('../Tokenizer/Tokenizer');
+const {TokenizerWithPresentation} =
+  await import('../internal/tokenizer-presentation');
 // The Tokenizer's sheet loads lazily. Load it here, untimed, so the sheet
 // case's findByLabelText waits only for the render, never for a cold import.
 await import('../Tokenizer/TokenizerBottomSheet');
@@ -168,7 +169,7 @@ const ADOPTERS: Record<string, () => Promise<void>> = {
     // The sheet's own content is a caller's `emptySearchText` element; the
     // default EmptyState announces itself.
     render(
-      <Tokenizer
+      <TokenizerWithPresentation
         label="Tags"
         searchSource={source}
         value={[]}
