@@ -49,6 +49,7 @@ import {isSpring} from './roleValue';
 import {solveSpring, toSpring, type SpringDescription} from './spring';
 import {registerSpringsTable, SETTLE_SPRING} from './uikit/springs';
 import {reducedMotionCrossFade} from './uikit/timing';
+import {resolveMotion} from './resolveMotion';
 import {themeReducesMotion} from './themeKnobs';
 
 /** The shared motion role (`spec:AST-105` FR4). */
@@ -89,14 +90,15 @@ function matches(element: Element, query: string): boolean {
 }
 
 /**
- * `springs.settle` from the internal role registry: one shared value for the
- * glide, the changed element and the indicator. Motion roles are internal
- * (`spec:AST-094` DEC-11): no theme, scope or custom property changes it.
+ * `springs.settle` from the internal role registry, at the tempo and
+ * character of the theme `area` is in (`spec:AST-108` FR3): one shared
+ * value for the glide, the changed element and the indicator (FR4a). No
+ * custom property changes it.
  */
-function settleSpring(): SpringDescription {
+function settleSpring(area: Element): SpringDescription {
   registerSpringsTable();
   const value = motionRole(ROLE_ID)?.value;
-  return isSpring(value) ? value : SETTLE_SPRING;
+  return isSpring(value) ? resolveMotion(area, value) : SETTLE_SPRING;
 }
 
 function springProgress(description: SpringDescription): SpringProgress {
@@ -127,7 +129,7 @@ function layoutMotion(area: Element): LayoutMotion {
       easing: `cubic-bezier(${x1}, ${y1}, ${x2}, ${y2})`,
     };
   }
-  return {kind: 'spring', progress: springProgress(settleSpring())};
+  return {kind: 'spring', progress: springProgress(settleSpring(area))};
 }
 
 /** Linear keyframes over `durationMs`, one per frame, from `frame(t ms)`. */
