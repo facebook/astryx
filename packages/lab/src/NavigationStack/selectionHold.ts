@@ -5,15 +5,15 @@
  * @input A list row under the activation that pushed (core's row press
  *   layer: `data-astryx-pressable="cell"`, its `data-astryx-press` state and
  *   `data-astryx-deselecting`), core's animator, Bézier solver and the list
- *   table's deselect clock and curve (`@astryxdesign/core/motion/*`), and
- *   the touch presentation's coarse-pointer query
+ *   table's deselect clock and curve (Core's internal motion entry), and
+ *   the touch presentation's coarse-pointer query (its internal touch entry)
  * @output Exports `holdSelection`, which keeps the row that pushed selected
  *   while the pushed screen covers it and deselects it as the screen pops
  *   (`SelectionHold`)
  * @position NavigationStack's own copy of List's internal selection hold
- *   (core's List/selectionHold.ts). It mirrors that hold until Lab has a
- *   route to core's modules for it (#8464's module-sharing decision); then
- *   NavigationStack takes core's hold again and this file goes.
+ *   (core's List/selectionHold.ts). It mirrors that hold until Core's
+ *   internal touch entry exports it (#8082); then NavigationStack takes
+ *   core's hold again and this file goes.
  *
  * UIKit's reference (iOS 26.2): the row a user taps to push stays selected
  * while the pushed screen covers it. The deselect starts when the pop does
@@ -44,11 +44,11 @@ import {
   createAnimator,
   type Animator,
   type MotionCurve,
-} from '@astryxdesign/core/motion/animator';
-import {cubicBezier} from '@astryxdesign/core/motion/bezier';
-import type {SpringDescription} from '@astryxdesign/core/motion/spring';
-import {list} from '@astryxdesign/core/motion/uikit';
-import {TOUCH_QUERY} from '@astryxdesign/core/utils/touchPresentation';
+} from '@astryxdesign/core/internal/motion';
+import {cubicBezier} from '@astryxdesign/core/internal/motion';
+import type {SpringDescription} from '@astryxdesign/core/internal/motion';
+import {list} from '@astryxdesign/core/internal/motion';
+import {TOUCH_QUERY} from '@astryxdesign/core/internal/touch';
 
 /** Core's press layer contract (utils/pressFeedback.ts), read from the DOM. */
 const PRESSABLE_ATTRIBUTE = 'data-astryx-pressable';

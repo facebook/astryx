@@ -39,9 +39,9 @@ import {
   PanGestureRecognizer,
   ScreenEdgePanGestureRecognizer,
   useGestureRecognizer,
-} from '@astryxdesign/core/gestures';
-import {navigation, UIKIT_GESTURES} from '@astryxdesign/core/motion/uikit';
-import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
+} from '@astryxdesign/core/internal/touch';
+import {navigation, UIKIT_GESTURES} from '@astryxdesign/core/internal/motion';
+import {useTouchPresentation} from '@astryxdesign/core/internal/touch';
 import {
   popVelocity,
   progressFromTravel,

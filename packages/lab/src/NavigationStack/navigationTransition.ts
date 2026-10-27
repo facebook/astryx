@@ -30,7 +30,7 @@
  * SYNC: When modified, update navigationTransition.test.ts.
  */
 
-import {navigation} from '@astryxdesign/core/motion/uikit';
+import {navigation} from '@astryxdesign/core/internal/motion';
 
 export interface TransitionLayers {
   /** The top card's translateX, px. */
