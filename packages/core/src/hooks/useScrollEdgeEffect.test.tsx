@@ -396,3 +396,15 @@ describe('useScrollEdgeEffect', () => {
     expect(animator.set).not.toHaveBeenCalled();
   });
 });
+
+describe('the internal motion entry', () => {
+  // Lab reaches the effect and its table only through
+  // `@astryxdesign/core/internal/motion` (architecture:react-component-runtime
+  // INV13), by name, as the same values Core imports by path.
+  it('re-exports the effect and the bars table by name', async () => {
+    const entry: Record<string, unknown> = await import('../internal/motion');
+    expect(entry.useScrollEdgeEffect).toBe(useScrollEdgeEffect);
+    expect(entry.bars).toBe(bars);
+    expect(entry.registerBarsTable).toBe(registerBarsTable);
+  });
+});

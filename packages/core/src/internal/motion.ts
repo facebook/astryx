@@ -3,7 +3,8 @@
 /**
  * @file motion.ts
  * @input The animator and its React hook, the bezier and spring math, the
- *   rubber band, and the UIKit tuning tables (motion/)
+ *   rubber band, the UIKit tuning tables (motion/), and the scroll edge
+ *   effect (hooks/useScrollEdgeEffect)
  * @output `@astryxdesign/core/internal/motion`: the motion Lab components
  *   build on, named re-exports only
  * @position An internal entry reserved for Astryx's own packages:
@@ -77,6 +78,7 @@ export {
   ALERT_DISMISS_SPRING,
   ALERT_PRESENT_SPRING,
   BANNER_SPRING,
+  bars,
   CONTEXT_MENU_DISMISS_SPRING,
   CONTEXT_MENU_LIFT_SPRING,
   DIRECT_CHANGE_SPRING,
@@ -95,6 +97,7 @@ export {
   NAVIGATION_POP_SPRING,
   NAVIGATION_PUSH_SPRING,
   QUICK_CHANGE_SPRING,
+  registerBarsTable,
   registerNavigationTable,
   registerScrollTable,
   registerSpringsTable,
@@ -135,3 +138,8 @@ export type {
   GestureConstantUnit,
   HapticFeedbackKind,
 } from '../motion/uikit';
+export {useScrollEdgeEffect} from '../hooks/useScrollEdgeEffect';
+export type {
+  UseScrollEdgeEffectOptions,
+  UseScrollEdgeEffectResult,
+} from '../hooks/useScrollEdgeEffect';
