@@ -98,7 +98,7 @@ export const docs = {
       name: 'hasZoom',
       type: 'boolean',
       description:
-        'Enable zoom (images only): on a touch screen, pinch, or double-tap to zoom in at that point and back; a double-click or Enter/Space/+/- zooms 2× about the centre and back. When zoomed, drag (with momentum under a finger) or use arrow keys to pan.',
+        'Enable zoom (images only): under a coarse primary pointer (a touch screen), pinch, or double-tap to zoom in at that point and back; a double-click or Enter/Space/+/- zooms 2× about the centre and back. When zoomed, drag (with momentum under a finger) or use arrow keys to pan.',
       default: 'false',
     },
     {

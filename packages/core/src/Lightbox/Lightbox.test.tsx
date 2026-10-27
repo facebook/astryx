@@ -1068,6 +1068,34 @@ describe('Lightbox mouse and pen zoom where the primary pointer is fine', () => 
     // The left edge stops on the stage's left edge.
     expect(photoTransform(img).translate).toBe('0px -100px');
   });
+
+  it('pans a zoomed photo from a mouse drag’s first pixel, the grab cursor at once', async () => {
+    const {stage, img} = renderPhoto();
+    fireEvent.keyDown(document.querySelector('dialog')!, {key: '+'});
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 400));
+    });
+    const mouse = (type: string, x: number) => {
+      const event = new Event(type, {bubbles: true, cancelable: true});
+      Object.defineProperty(event, 'pointerType', {value: 'mouse'});
+      Object.defineProperty(event, 'button', {value: 0});
+      Object.defineProperty(event, 'pointerId', {value: 1});
+      Object.defineProperty(event, 'clientX', {value: x});
+      Object.defineProperty(event, 'clientY', {value: 300});
+      act(() => {
+        stage.dispatchEvent(event);
+      });
+    };
+    mouse('pointerdown', 200);
+    // A press alone neither drags nor grabs: a click stays a click.
+    expect(stage).not.toHaveAttribute('data-zoom-dragging');
+    mouse('pointermove', 198);
+    // 2 px: the photo follows and the grab cursor shows, with no threshold.
+    expect(photoTransform(img).translate).toBe('-202px -100px');
+    expect(stage).toHaveAttribute('data-zoom-dragging');
+    mouse('pointerup', 198);
+    expect(stage).not.toHaveAttribute('data-zoom-dragging');
+  });
 });
 
 describe('Lightbox double-click under the touch layer', () => {
