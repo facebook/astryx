@@ -812,18 +812,22 @@ test('the slide keeps advancing every frame while the main thread is blocked', a
   );
   const {driver} = await openBar(page);
   const body = lensBody(page);
-  const cast = await startScreencast(page);
-  await driver.tap(await itemCenter(page, 'Profile'));
+  const profile = await itemCenter(page, 'Profile');
   await markElement(body);
-  const [slide] = await waitForAnimation(body, {minProgressMs: 16});
-  // Blocked by the page itself in the frame that sees the slide running.
-  const block = await blockMainThread(page, 600, {during: body});
+  const cast = await startScreencast(page);
+  // Armed before the tap, the page blocks itself in the frame that sees the
+  // slide running: one evaluate sees it and blocks, so no runner latency
+  // between the two can eat the slide first. The judged part ends where the
+  // lens settles (settledWithin).
+  const blocking = blockMainThread(page, 600, {during: body});
+  await driver.tap(profile);
+  const block = await blocking;
   await page.waitForTimeout(150);
   const castFrames = await cast.stop();
   const tracked = await trackMarker(page, castFrames);
   const proof = busyWindowProof(
     tracked,
-    {from: block.from, to: Math.min(block.to, slide.to)},
+    {from: block.from, to: block.to},
     {
       axis: 'x',
       settledWithin: 2,
@@ -835,7 +839,7 @@ test('the slide keeps advancing every frame while the main thread is blocked', a
     'busy-main-thread/tabbar-lens-travel',
     {
       [`${testInfo.project.name}.json`]: JSON.stringify(
-        {block, slide, proof},
+        {block, proof},
         null,
         1,
       ),
@@ -846,12 +850,12 @@ test('the slide keeps advancing every frame while the main thread is blocked', a
     name: 'tabbar-lens-travel-busy-main-thread',
     zero: block.from,
     from: block.from - 40,
-    to: Math.min(block.to, slide.to) + 40,
+    to: proof.judged.to + 40,
     columns: 8,
     cellScale: 0.35,
     data: t => ({x: tracked.find(f => f.t === t)?.box?.x ?? -1}),
   });
-  await film.write(testInfo, {block, slide});
+  await film.write(testInfo, {block});
   // The harness's verdict: no stall past two dropped screencast frames,
   // and the frames moving (a loaded machine drops a frame
   // or two; a frozen slide presents none).
@@ -1783,19 +1787,22 @@ test.describe('minimize on scroll', () => {
     const end = page.locator('[data-tab-bar-platter-end]');
     await markElement(end);
     const cast = await startScreencast(page);
-    // Just past the trigger, then block as soon as the collapse is running.
+    // Armed before the drag, the page blocks itself in the frame that sees
+    // the collapse running: one evaluate sees it and blocks, so no runner
+    // latency between the two can eat the collapse first. The judged part
+    // ends where the platter settles (settledWithin).
+    const blocking = blockMainThread(page, 600, {during: end});
+    // Just past the trigger.
     await driver.play(
       drag({x: 200, y: 520}, {x: 200, y: 420}, {durationMs: 300, restMs: 150}),
     );
-    const [collapse] = await waitForAnimation(end, {minProgressMs: 16});
-    // Blocked by the page itself in the frame that sees the collapse running.
-    const block = await blockMainThread(page, 600, {during: end});
+    const block = await blocking;
     await page.waitForTimeout(150);
     const castFrames = await cast.stop();
     const tracked = await trackMarker(page, castFrames);
     const proof = busyWindowProof(
       tracked,
-      {from: block.from, to: Math.min(block.to, collapse.to)},
+      {from: block.from, to: block.to},
       {
         axis: 'x',
         settledWithin: 2,
