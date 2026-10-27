@@ -148,6 +148,96 @@ export function nearestSlot(
   return nearest;
 }
 
+/** An insertion cue: a line centred on `x, y`, `length` long, at `angle`°. */
+export interface ReorderLine {
+  readonly x: number;
+  readonly y: number;
+  readonly length: number;
+  /** Clockwise from the horizontal, within (-90, 90]. */
+  readonly angle: number;
+}
+
+/** The size of the item a cue marks the place of, unturned. */
+export interface ReorderSize {
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * A line between slot centres `a` and `b`: through their midpoint,
+ * perpendicular to the step from one to the other, as long as `size` is
+ * across it. Null when they coincide.
+ */
+function lineAcross(
+  a: ReorderSlot,
+  b: ReorderSlot,
+  size: ReorderSize,
+): ReorderLine | null {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const distance = Math.hypot(dx, dy);
+  if (distance === 0) {
+    return null;
+  }
+  // The line runs along (-dy, dx): perpendicular to the step.
+  const ux = -dy / distance;
+  const uy = dx / distance;
+  let angle = (Math.atan2(uy, ux) * 180) / Math.PI;
+  // A line has no direction.
+  if (angle > 90) {
+    angle -= 180;
+  } else if (angle <= -90) {
+    angle += 180;
+  }
+  return {
+    x: (a.x + b.x) / 2,
+    y: (a.y + b.y) / 2,
+    length: size.width * Math.abs(ux) + size.height * Math.abs(uy),
+    angle,
+  };
+}
+
+/**
+ * The insertion cue of a drag in a slot layout (`positions()`, or an
+ * attached container's measured slots): a list's line, turned to lie between
+ * the target slot and the next slot along the drag, which is where the item
+ * lands in the order; past the last slot, half a step beyond it. None at the
+ * item's own place. (Proposed for design:ordered-collection-reordering OQ2.)
+ */
+export function slotLine(
+  slots: ReadonlyArray<ReorderSlot>,
+  dragged: number,
+  position: number,
+  size: ReorderSize,
+): ReorderLine | null {
+  if (position === dragged) {
+    return null;
+  }
+  const forward = position > dragged;
+  const at = slots[position];
+  const next = slots[forward ? position + 1 : position - 1];
+  if (next != null) {
+    return lineAcross(at, next, size);
+  }
+  const back = slots[forward ? position - 1 : position + 1];
+  return back == null
+    ? null
+    : lineAcross(at, {x: 2 * at.x - back.x, y: 2 * at.y - back.y}, size);
+}
+
+/**
+ * Reorder mode's cue after a key move from slot `from` to slot `to`: the
+ * leading edge of the new slot, half a step beyond it along the move, as a
+ * list's line marks the edge its row came in through.
+ */
+export function stepLine(
+  from: ReorderSlot,
+  to: ReorderSlot,
+  size: ReorderSize,
+): ReorderLine | null {
+  return lineAcross(to, {x: 2 * to.x - from.x, y: 2 * to.y - from.y}, size);
+}
+
 /**
  * A layout's rows in reading order, from its slots: each row lists its
  * items' indices from the reading start (the left, or the right in

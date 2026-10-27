@@ -225,14 +225,39 @@ const listStyles = stylex.create({
       },
       forcedColorAdjust: 'none',
       translate: '0 var(--astryx-reorder-line-y, 0px)',
+      // Turned across the step between two slots in a slot layout.
+      rotate: 'var(--astryx-reorder-line-angle, 0deg)',
       pointerEvents: 'none',
       zIndex: 2,
     },
+  },
+  // The same line as an element of its own, for a container of plain
+  // elements, which carries no List style (createReorderable's attach): its
+  // container's custom properties place it the same way.
+  lineElement: {
+    position: 'absolute',
+    top: 0,
+    insetInlineStart: 'var(--astryx-reorder-line-start, 0px)',
+    inlineSize: 'var(--astryx-reorder-line-size, 0px)',
+    blockSize: INSERTION_LINE_THICKNESS,
+    borderRadius: INSERTION_LINE_THICKNESS / 2,
+    backgroundColor: {
+      default: colorVars['--color-accent'],
+      '@media (forced-colors: active)': 'Highlight',
+    },
+    forcedColorAdjust: 'none',
+    translate: '0 var(--astryx-reorder-line-y, 0px)',
+    rotate: 'var(--astryx-reorder-line-angle, 0deg)',
+    pointerEvents: 'none',
+    zIndex: 2,
   },
 });
 
 /** The style of a reorderable list (List applies it): its insertion line. */
 export const reorderListStyle = listStyles.list;
+
+/** The insertion line as an element (createReorderable's attach draws it). */
+export const reorderLineElementStyle = listStyles.lineElement;
 
 /**
  * The text a label shows: its strings and numbers, through its elements'

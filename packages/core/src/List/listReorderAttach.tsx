@@ -30,12 +30,15 @@
  * reorderable/createReorderable.doc.mjs.
  */
 
+import * as stylex from '@stylexjs/stylex';
 import {createRoot} from 'react-dom/client';
 import {getResolve} from '../i18n/resolve';
 import {devWarn} from '../utils/devWarning';
+import {reorderLineElementStyle} from './ListReorderHandle';
 import {HANDLE_ATTRIBUTE, type ListReorderOptions} from './listReorderContext';
 import {GHOST_ATTRIBUTE} from './useListUpdateMotion';
 import {
+  LINE_ATTRIBUTE,
   ListReorderController,
   ListReorderModeHint,
   messagesFrom,
@@ -361,6 +364,30 @@ export function attachReorder(
   const unmountSession = mountSession(options, controller);
   const observer = new MutationObserver(queueCommit);
   observer.observe(container, {childList: true});
+  // The insertion line: a container of plain elements carries no List
+  // style, so attach draws the line as an element of its own, in the
+  // container while the line shows (the session marks the container), placed
+  // by the same custom properties as a List's.
+  const line = doc.createElement('span');
+  line.setAttribute('aria-hidden', 'true');
+  line.setAttribute(GHOST_ATTRIBUTE, '');
+  line.setAttribute('data-astryx-reorder-line-element', '');
+  line.inert = true;
+  line.className = stylex.props(reorderLineElementStyle).className ?? '';
+  const syncLine = () => {
+    if (container.hasAttribute(LINE_ATTRIBUTE)) {
+      if (line.parentNode !== container) {
+        container.append(line);
+      }
+    } else {
+      line.remove();
+    }
+  };
+  const lineObserver = new MutationObserver(syncLine);
+  lineObserver.observe(container, {
+    attributes: true,
+    attributeFilter: [LINE_ATTRIBUTE],
+  });
   // Reorder mode's hint: an element this attach owns, rendered as a List's.
   const hintHost = doc.createElement('div');
   host.append(hintHost);
@@ -375,6 +402,8 @@ export function attachReorder(
       isAttached = false;
       controller.dispose();
       observer.disconnect();
+      lineObserver.disconnect();
+      line.remove();
       unsubscribe();
       detachMouse();
       detachTouch();

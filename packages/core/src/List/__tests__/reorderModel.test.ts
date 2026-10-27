@@ -19,9 +19,11 @@ import {
   dropPosition,
   movableRange,
   nearestSlot,
-  slotsOf,
   type ReorderGeometry,
   type ReorderRow,
+  slotLine,
+  slotsOf,
+  stepLine,
 } from '../reorderModel';
 
 function table(
@@ -272,5 +274,76 @@ describe('nearestSlot', () => {
       index === 3 ? {isFixed: true} : item,
     );
     expect(nearestSlot(grid, fixedMiddle, 0, {x: 41, y: 59})).toBe(3);
+  });
+});
+
+describe('slotLine', () => {
+  // A row of three 60 x 40 cards, 80 px apart.
+  const row = [
+    {x: 40, y: 20},
+    {x: 120, y: 20},
+    {x: 200, y: 20},
+  ];
+  const card = {width: 60, height: 40};
+
+  it("is a list's line turned across the step: between the target slot and the next one along the drag, as long as the item is across", () => {
+    // From the first slot to the second: between the second and the third.
+    expect(slotLine(row, 0, 1, card)).toEqual({
+      x: 160,
+      y: 20,
+      length: 40,
+      angle: 90,
+    });
+    // Back from the third to the second: between the second and the first.
+    expect(slotLine(row, 2, 1, card)).toEqual({
+      x: 80,
+      y: 20,
+      length: 40,
+      angle: 90,
+    });
+  });
+
+  it("past the last slot, half a step beyond it; none at the item's own place", () => {
+    expect(slotLine(row, 0, 2, card)).toEqual({
+      x: 240,
+      y: 20,
+      length: 40,
+      angle: 90,
+    });
+    expect(slotLine(row, 1, 1, card)).toBeNull();
+  });
+
+  it("in a column it is the list's line, across the item's width", () => {
+    const column = [
+      {x: 150, y: 22},
+      {x: 150, y: 66},
+      {x: 150, y: 110},
+    ];
+    expect(slotLine(column, 0, 1, {width: 300, height: 44})).toEqual({
+      x: 150,
+      y: 88,
+      length: 300,
+      angle: 0,
+    });
+  });
+});
+
+describe('stepLine', () => {
+  it("marks the leading edge of a key move's new slot, across the move", () => {
+    const card = {width: 60, height: 40};
+    // Right by one slot: the edge to the right of the new slot.
+    expect(stepLine({x: 40, y: 20}, {x: 120, y: 20}, card)).toEqual({
+      x: 160,
+      y: 20,
+      length: 40,
+      angle: 90,
+    });
+    // Down by one row: the edge below the new slot.
+    expect(stepLine({x: 40, y: 20}, {x: 40, y: 80}, card)).toEqual({
+      x: 40,
+      y: 110,
+      length: 60,
+      angle: 0,
+    });
   });
 });

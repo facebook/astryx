@@ -27,6 +27,31 @@ const storybook = withStorybook(test);
 const STORY = 'core-createreorderable--attached-cards-in-a-row';
 const FAN_STORY = 'core-createreorderable--attached-cards-in-a-fan';
 const ANEW_STORY = 'core-createreorderable--attached-cards-rendered-anew';
+const WRAP_STORY = 'core-createreorderable--attached-cards-wrapping';
+const ROWS_STORY = 'core-createreorderable--attached-rows-in-a-column';
+
+/**
+ * The insertion line attach draws in its container while a drag or reorder
+ * mode marks a place: its box in the viewport, or null while it is hidden.
+ */
+const lineBox = async (page: Page) =>
+  table(page).evaluate(container => {
+    const line = container.querySelector<HTMLElement>(
+      '[data-astryx-reorder-line-element]',
+    );
+    if (line == null || getComputedStyle(line).display === 'none') {
+      return null;
+    }
+    const box = line.getBoundingClientRect();
+    return box.width === 0 && box.height === 0
+      ? null
+      : {
+          left: box.left,
+          top: box.top,
+          width: box.width,
+          height: box.height,
+        };
+  });
 /** The fan's slot centres, as its story's positions() gives them. */
 const FAN = [-24, -12, 0, 12, 24].map(angle => {
   const radians = (angle * Math.PI) / 180;
@@ -183,6 +208,120 @@ test.describe('with a mouse or a pen', () => {
       .poll(async () => order(page))
       .toEqual(['A', 'K', 'Q', 'J', '10']);
     await expect(grip()).toBeFocused();
+  });
+
+  test("a column of plain rows shows a List's insertion line at the gap where the row would land", async ({
+    page,
+  }) => {
+    await openStory(page, storybook(), ROWS_STORY);
+    const rowBox = async (label: string) => {
+      const box = await table(page)
+        .locator(`[data-row="${label}"]`)
+        .boundingBox();
+      if (box == null) {
+        throw new Error(`no row ${label}`);
+      }
+      return box;
+    };
+    const sent = await rowBox('Sent');
+    const gripBox = await table(page)
+      .locator('[data-row="Inbox"] [data-grip]')
+      .boundingBox();
+    if (gripBox == null) {
+      throw new Error('no grip for Inbox');
+    }
+    const from = {
+      x: gripBox.x + gripBox.width / 2,
+      y: gripBox.y + gripBox.height / 2,
+    };
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    // Past Sent's far edge: Inbox would land after Sent.
+    await page.mouse.move(from.x, from.y + sent.height + 8, {steps: 8});
+    const line = await lineBox(page);
+    expect(line, 'a line shows').not.toBeNull();
+    // Across the row, at the gap after Sent.
+    expect(Math.abs((line?.width ?? 0) - sent.width)).toBeLessThan(1);
+    expect(
+      Math.abs(
+        (line?.top ?? 0) + (line?.height ?? 0) / 2 - (sent.y + sent.height),
+      ),
+    ).toBeLessThan(2);
+    await page.mouse.up();
+    await expect
+      .poll(async () =>
+        table(page)
+          .locator('[data-row]')
+          .evaluateAll(rows =>
+            rows.map(row => (row as HTMLElement).dataset.row ?? ''),
+          ),
+      )
+      .toEqual(['Sent', 'Inbox', 'Drafts', 'Archive']);
+    expect(await lineBox(page)).toBeNull();
+  });
+
+  test('in a positions() row the line stands between the target slot and the next one (proposed: design OQ2)', async ({
+    page,
+  }) => {
+    await openStory(page, storybook(), STORY);
+    const from = await gripOf(page, 'A');
+    const origin = await table(page).evaluate(element => {
+      const box = element.getBoundingClientRect();
+      return {x: box.left + element.clientLeft, y: box.top + element.clientTop};
+    });
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    // Onto the second slot: A would land between K and Q.
+    await page.mouse.move(from.x + 88 + 4, from.y, {steps: 8});
+    const line = await lineBox(page);
+    expect(line, 'a line shows').not.toBeNull();
+    // Upright, as tall as a card, centred between the second and third slots.
+    expect(line?.height ?? 0).toBeGreaterThan(90);
+    expect(line?.width ?? 99).toBeLessThan(4);
+    const centreX = (line?.left ?? 0) + (line?.width ?? 0) / 2 - origin.x;
+    expect(Math.abs(centreX - (SLOTS[1].x + SLOTS[2].x) / 2)).toBeLessThan(1.5);
+    await page.mouse.up();
+    await expect
+      .poll(async () => order(page))
+      .toEqual(['K', 'A', 'Q', 'J', '10']);
+  });
+
+  test('cards wrapping by CSS, with no positions(), drop on their measured slots and move by rows with the arrows', async ({
+    page,
+  }) => {
+    await openStory(page, storybook(), WRAP_STORY);
+    const before = await moves(page);
+    const card = async (name: string) => {
+      const box = await table(page)
+        .locator(`[data-card="${name}"]`)
+        .boundingBox();
+      if (box == null) {
+        throw new Error(`no card ${name}`);
+      }
+      return box;
+    };
+    const k = await card('K');
+    const from = await gripOf(page, 'A');
+    const a = await card('A');
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    // A's centre onto K's.
+    await page.mouse.move(from.x + (k.x - a.x), from.y + (k.y - a.y), {
+      steps: 12,
+    });
+    await page.mouse.up();
+    await expect
+      .poll(async () => order(page))
+      .toEqual(['K', 'A', 'Q', 'J', '10']);
+    expect(await moves(page)).toBe(before + 1);
+    // Three cards a row: Down moves A to the next row's same column.
+    const grip = page.getByRole('button', {name: 'Reorder Card A'});
+    await grip.focus();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('ArrowDown');
+    await expect
+      .poll(async () => order(page))
+      .toEqual(['K', 'Q', 'J', '10', 'A']);
   });
 
   test('a pen drags a grip at once, with no hold (spec:AST-103 FR3)', async ({

@@ -128,8 +128,11 @@ import {
   nearestSlot,
   type ReorderArrow,
   type ReorderGeometry,
+  type ReorderLine,
   type ReorderSlot,
+  slotLine,
   slotsOf,
+  stepLine,
 } from './reorderModel';
 
 /**
@@ -289,22 +292,56 @@ function previewOf(row: HTMLElement, top: number, background: string | null) {
 const LINE_Y = '--astryx-reorder-line-y';
 const LINE_START = '--astryx-reorder-line-start';
 const LINE_SIZE = '--astryx-reorder-line-size';
+const LINE_ANGLE = '--astryx-reorder-line-angle';
+
+/** The list's box a line is placed in: its padding box's width and direction. */
+interface LineFrame {
+  readonly width: number;
+  readonly isRtl: boolean;
+}
+
+function frameOf(list: HTMLElement): LineFrame {
+  return {
+    width: list.clientWidth,
+    isRtl: getComputedStyle(list).direction === 'rtl',
+  };
+}
 
 /**
- * Shows the list's insertion line (its pseudo-element, reorderListStyle)
- * across `row`'s width, centred on `center` in list coordinates.
+ * Shows the list's insertion line (its pseudo-element, reorderListStyle, or
+ * an attached container's line element): `line`, in px from the top-left of
+ * the list's padding box. Its inline start is logical, so it is measured
+ * from the right in right-to-left.
  */
-function showLine(list: HTMLElement, row: HTMLElement, center: number): void {
-  list.style.setProperty(LINE_START, `${row.offsetLeft}px`);
-  list.style.setProperty(LINE_SIZE, `${row.offsetWidth}px`);
-  list.style.setProperty(LINE_Y, `${center - INSERTION_LINE_THICKNESS / 2}px`);
+function showLine(
+  list: HTMLElement,
+  line: ReorderLine,
+  frame: LineFrame,
+): void {
+  const start = frame.isRtl
+    ? frame.width - (line.x + line.length / 2)
+    : line.x - line.length / 2;
+  list.style.setProperty(LINE_START, `${start}px`);
+  list.style.setProperty(LINE_SIZE, `${line.length}px`);
+  list.style.setProperty(LINE_Y, `${line.y - INSERTION_LINE_THICKNESS / 2}px`);
+  list.style.setProperty(LINE_ANGLE, `${line.angle}deg`);
   list.setAttribute(LINE_ATTRIBUTE, '');
+}
+
+/** A list's line across `row`, centred on `center` (a list's own gap). */
+function rowLine(row: HTMLElement, center: number): ReorderLine {
+  return {
+    x: row.offsetLeft + row.offsetWidth / 2,
+    y: center,
+    length: row.offsetWidth,
+    angle: 0,
+  };
 }
 
 /** Hides the list's insertion line and clears what placed it. */
 function hideLine(list: HTMLElement): void {
   list.removeAttribute(LINE_ATTRIBUTE);
-  for (const property of [LINE_Y, LINE_START, LINE_SIZE]) {
+  for (const property of [LINE_Y, LINE_START, LINE_SIZE, LINE_ANGLE]) {
     list.style.removeProperty(property);
   }
 }
@@ -450,6 +487,8 @@ interface DragSession {
   lastX: number;
   /** The rows' layout lefts at the begin, in a `positions()` layout. */
   readonly lefts: ReadonlyArray<number> | null;
+  /** The list's box the insertion line is placed in. */
+  readonly frame: LineFrame;
   /** Points per tick of the running autoscroll; 0 when none. */
   step: number;
   /** The dragged row's inline stacking before the drag. */
@@ -673,6 +712,8 @@ export class ListReorderController implements ListReorderSession {
   private modeLine: {list: HTMLElement; listPosition: string} | null = null;
   /** The direction of the last key move in reorder mode, for its line. */
   private lastStep: -1 | 1 | null = null;
+  /** The last key move's places, for its line in a slot layout. */
+  private lastMove: {from: number; to: number} | null = null;
   /**
    * Until when the handle takes back the focus the UI that started the mode
    * with `start` hands back (a menu that closes restores its trigger's).
@@ -840,6 +881,7 @@ export class ListReorderController implements ListReorderSession {
     }
     this.modeHandle = handle;
     this.lastStep = null;
+    this.lastMove = null;
     this.clearModeLine();
     for (const listener of [...this.modeListeners]) {
       listener();
@@ -1221,7 +1263,7 @@ export class ListReorderController implements ListReorderSession {
     const scroller = scrollerOf(list);
     // A positions() layout: the dragged item follows the pointer on both
     // axes, and the nearest slot centre is its drop position.
-    const slots = slotsOf(this.options?.positions, rows.length);
+    const slots = this.slotsFor(list, rows);
     const listBox = list.getBoundingClientRect();
     const originX = listBox.left + list.clientLeft;
     const left = row.getBoundingClientRect().left - originX;
@@ -1296,6 +1338,7 @@ export class ListReorderController implements ListReorderSession {
       grabX: x - (originX + left),
       lastX: x,
       lefts: slots == null ? null : rows.map(item => layoutLeft(item, list)),
+      frame: frameOf(list),
     };
     this.session = session;
     // Rows still sliding from an earlier drag go to their places.
@@ -1373,11 +1416,21 @@ export class ListReorderController implements ListReorderSession {
       return;
     }
     session.position = position;
-    const center = lineCenter(session.geometry, session.dragged, position);
-    if (center == null) {
+    const row = session.rows[session.dragged];
+    let line: ReorderLine | null;
+    if (session.slots != null) {
+      line = slotLine(session.slots, session.dragged, position, {
+        width: row.offsetWidth,
+        height: row.offsetHeight,
+      });
+    } else {
+      const center = lineCenter(session.geometry, session.dragged, position);
+      line = center == null ? null : rowLine(row, center);
+    }
+    if (line == null) {
       hideLine(session.list);
     } else {
-      showLine(session.list, session.rows[session.dragged], center);
+      showLine(session.list, line, session.frame);
     }
     // A pointer drag announces its pick-up and its drop, not each place it
     // passes: announcing each crossed position is noisy.
@@ -1787,6 +1840,22 @@ export class ListReorderController implements ListReorderSession {
     }
     const rows = this.rowsIn(list);
     const index = rows.indexOf(row);
+    // A slot layout: the leading edge of the item's new slot, across its
+    // last move.
+    const slots = this.slotsFor(list, rows);
+    if (slots != null && this.lastMove != null && this.lastMove.to === index) {
+      const line = stepLine(slots[this.lastMove.from], slots[index], {
+        width: row.offsetWidth,
+        height: row.offsetHeight,
+      });
+      this.holdModeLine(list);
+      if (line == null) {
+        hideLine(list);
+      } else {
+        showLine(list, line, frameOf(list));
+      }
+      return;
+    }
     const top = layoutTop(row, list);
     const bottom = top + row.offsetHeight;
     const neighbour = rows[index + this.lastStep];
@@ -1800,6 +1869,12 @@ export class ListReorderController implements ListReorderSession {
             )
           : Math.max(0, layoutTop(neighbour, list) - bottom);
     const center = this.lastStep < 0 ? top - gap / 2 : bottom + gap / 2;
+    this.holdModeLine(list);
+    showLine(list, rowLine(row, center), frameOf(list));
+  }
+
+  /** Reorder mode's line is `list`'s, which is its containing block. */
+  private holdModeLine(list: HTMLElement): void {
     if (this.modeLine?.list !== list) {
       this.clearModeLine();
       const listPosition = list.style.position;
@@ -1808,7 +1883,31 @@ export class ListReorderController implements ListReorderSession {
       }
       this.modeLine = {list, listPosition};
     }
-    showLine(list, row, center);
+  }
+
+  /**
+   * The slots a drag and the arrows use: `positions()`, else an attached
+   * container's measured slots when its items are not one column; null for
+   * a column (a List's rows), whose drags follow UIKit's row model.
+   */
+  private slotsFor(
+    list: HTMLElement,
+    rows: ReadonlyArray<HTMLElement>,
+  ): ReadonlyArray<ReorderSlot> | null {
+    const given = slotsOf(this.options?.positions, rows.length);
+    if (given != null || this.itemElements == null || rows.length < 2) {
+      return given;
+    }
+    // Their layout places (transforms left out), from the container's
+    // padding box.
+    const measured = rows.map(element => ({
+      x: layoutLeft(element, list) + element.offsetWidth / 2,
+      y: layoutTop(element, list) + element.offsetHeight / 2,
+    }));
+    const isColumn = measured.every(
+      slot => Math.abs(slot.x - measured[0].x) < 1,
+    );
+    return isColumn ? null : measured;
   }
 
   private clearModeLine(): void {
@@ -1929,6 +2028,7 @@ export class ListReorderController implements ListReorderSession {
     this.focusRow = row;
     this.isMovingByKey = true;
     this.lastStep = delta < 0 ? -1 : 1;
+    this.lastMove = {from: index, to};
     const grid = this.keyGrid(list, rows);
     this.announceWhenCommitted({
       row,
@@ -2017,30 +2117,17 @@ export class ListReorderController implements ListReorderSession {
     list: HTMLElement,
     rows: ReadonlyArray<HTMLElement>,
   ): number[][] {
-    const slots = slotsOf(this.options?.positions, rows.length);
-    if (slots != null) {
-      return gridOf(slots, this.isRtl(list));
-    }
-    if (this.itemElements == null || rows.length === 0) {
+    const slots = this.slotsFor(list, rows);
+    if (slots == null) {
       return rows.map((_, index) => [index]);
     }
-    const boxes = rows.map(element => element.getBoundingClientRect());
-    // Nothing laid out (the items are not rendered yet): one column.
-    if (boxes.every(box => box.width === 0 && box.height === 0)) {
-      return rows.map((_, index) => [index]);
-    }
+    // Items whose centres are within half an item's height share a row (a
+    // fanned hand's slots are one row).
     const tolerance = Math.max(
       1,
-      Math.min(...boxes.map(box => box.height)) / 2,
+      Math.min(...rows.map(element => element.offsetHeight)) / 2,
     );
-    return gridOf(
-      boxes.map(box => ({
-        x: box.left + box.width / 2,
-        y: box.top + box.height / 2,
-      })),
-      this.isRtl(list),
-      tolerance,
-    );
+    return gridOf(slots, this.isRtl(list), tolerance);
   }
 
   private isRtl(list: HTMLElement): boolean {

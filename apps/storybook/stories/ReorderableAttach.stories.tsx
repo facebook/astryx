@@ -60,6 +60,35 @@ const styles = stylex.create({
   fanTable: {
     blockSize: 160,
   },
+  // Laid out by CSS, not by positions(): the measured layout decides.
+  wrapTable: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 16,
+    inlineSize: 72 * 3 + 16 * 2,
+    blockSize: 'auto',
+  },
+  flowCard: {
+    position: 'relative',
+  },
+  rows: {
+    display: 'flex',
+    flexDirection: 'column',
+    inlineSize: 280,
+    margin: 0,
+    padding: 0,
+  },
+  row: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    blockSize: 44,
+    paddingInlineStart: 40,
+    borderBlockEndWidth: 1,
+    borderBlockEndStyle: 'solid',
+    borderBlockEndColor: colorVars['--color-border'],
+    color: colorVars['--color-text-primary'],
+  },
   card: {
     position: 'absolute',
     boxSizing: 'border-box',
@@ -108,7 +137,8 @@ function AttachedCards({
   slots,
   rendersAnew = false,
 }: {
-  slots: ReadonlyArray<{x: number; y: number; angle: number}>;
+  /** Each card's slot; without it, the cards wrap and are measured. */
+  slots?: ReadonlyArray<{x: number; y: number; angle: number}>;
   /** Each move renders every card anew: new elements, the same keys. */
   rendersAnew?: boolean;
 }) {
@@ -122,7 +152,7 @@ function AttachedCards({
           setMoves(count => count + 1);
           setCards(current => moveKey(current, key, to));
         },
-        positions: () => slots,
+        positions: slots == null ? undefined : () => slots,
       }),
     [slots],
   );
@@ -150,7 +180,11 @@ function AttachedCards({
     <div
       ref={tableRef}
       data-moves={moves}
-      {...stylex.props(styles.table, slots === FAN && styles.fanTable)}>
+      {...stylex.props(
+        styles.table,
+        slots === FAN && styles.fanTable,
+        slots == null && styles.wrapTable,
+      )}>
       {cards.map((card, index) => (
         <div
           key={rendersAnew ? `${card}:${moves}` : card}
@@ -158,7 +192,9 @@ function AttachedCards({
           aria-label={`Card ${card}`}
           {...stylex.props(
             styles.card,
-            styles.slot(slots[index].x, slots[index].y, slots[index].angle),
+            slots == null
+              ? styles.flowCard
+              : styles.slot(slots[index].x, slots[index].y, slots[index].angle),
           )}>
           <span>{card}</span>
           <span data-grip="" {...stylex.props(styles.grip)}>
@@ -208,6 +244,82 @@ export const AttachedCardsRenderedAnew: Story = {
           'An app that renders every card anew on each move (new elements, ' +
           'the same keys): reorder mode and the focus stay on the moved ' +
           'card’s grip.',
+      },
+    },
+  },
+};
+
+export const AttachedCardsWrapping: Story = {
+  render: () => <AttachedCards />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Cards that wrap by CSS, with no `positions()`: their measured ' +
+          'places are the slots a drag drops on, and the arrow keys follow ' +
+          'their rows and columns.',
+      },
+    },
+  },
+};
+
+/** A column of plain rows reordered through attach, with no positions(). */
+function AttachedRows() {
+  const listRef = useRef<HTMLUListElement>(null);
+  const [rows, setRows] = useState(['Inbox', 'Sent', 'Drafts', 'Archive']);
+  const [moves, setMoves] = useState(0);
+  const reorderable = useMemo(
+    () =>
+      createReorderable<string>({
+        onReorder: ({key, to}) => {
+          setMoves(count => count + 1);
+          setRows(current => moveKey(current, key, to));
+        },
+      }),
+    [],
+  );
+  // External system: the attached reorder on the list's plain rows,
+  // detached on unmount.
+  useEffect(() => {
+    const list = listRef.current;
+    if (list == null) {
+      return undefined;
+    }
+    const {detach} = reorderable.attach(list, {
+      items: () =>
+        Array.from(list.querySelectorAll<HTMLElement>('[data-row]')).map(
+          element => ({
+            key: element.dataset.row,
+            element,
+            handle:
+              element.querySelector<HTMLElement>('[data-grip]') ?? element,
+          }),
+        ),
+    });
+    return detach;
+  }, [reorderable]);
+  return (
+    <ul ref={listRef} data-moves={moves} {...stylex.props(styles.rows)}>
+      {rows.map(row => (
+        <li key={row} data-row={row} {...stylex.props(styles.row)}>
+          <span data-grip="" {...stylex.props(styles.grip)}>
+            ⋮⋮
+          </span>
+          {row}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export const AttachedRowsInAColumn: Story = {
+  render: () => <AttachedRows />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A column of plain rows: a drag shows the same insertion line a ' +
+          'List does, at the gap where the row would land.',
       },
     },
   },
