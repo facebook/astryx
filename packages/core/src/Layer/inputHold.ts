@@ -49,15 +49,18 @@
  * gesture host hears it; a touch's start is never canceled (that would cancel
  * a pinch too), and a move is canceled, so that it pans nothing, only while
  * one finger is down. A click a key or assistive technology sends (`detail`
- * 0) passes. During a presentation a mouse passes too: once a mouse moves,
- * the shield stops taking hits and the gesture host's gate lets it through,
- * and a finger's press makes the shield take hits again (a finger that lands
- * while it does not is captured to it, so its release stays the hold's and a
- * light-dismissing layer stays open). Nothing listens while nothing is held
- * (spec:AST-094 FR24), so a hold cannot know a pointer used before it began:
- * a mouse press made before the mouse has moved during the hold still meets
- * the shield. A dismissal's shield takes every hit, a mouse's included: its
- * content is inert, and a click would fall through it to the page.
+ * 0) passes. During a presentation a mouse passes too: once a mouse moves
+ * with no button down, the shield stops taking hits and the gesture host's
+ * gate lets it through. A finger's press makes the shield take hits again,
+ * and a finger that lands while it does not is captured to it, so its
+ * release stays the hold's and a light-dismissing layer stays open. A mouse
+ * press that begins on the shield stays the shield's to its end: its release
+ * and click land on it, not on what lies beneath. Nothing listens while
+ * nothing is held (spec:AST-094 FR24), so a hold cannot know a pointer used
+ * before it began: a mouse press made before the mouse has moved during the
+ * hold meets the shield. A dismissal's shield takes every hit, a mouse's
+ * included: its content is inert, and a click would fall through it to the
+ * page.
  *
  * The shield sets its own `pointer-events` and `visibility`, so a layer root
  * that takes no hits itself (its content or a backdrop child opts back in)
@@ -167,6 +170,10 @@ export function isInHeldLayer(target: Node | null): boolean {
  * mouse (spec:AST-094 FR35: a mouse keeps today's behavior).
  */
 function holdsTarget(target: Node): boolean {
+  // What lands on a shield is held, a mouse's press included.
+  if (isInputShield(target)) {
+    return true;
+  }
   let isHeld = false;
   for (
     let node: Node | null = target;
@@ -518,11 +525,17 @@ function createPressHold(doc: Document): PressHold | null {
 
   const onPointer = (event: Event) => {
     const {pointerId, pointerType, type} = event as PointerEvent;
-    if (
-      (type === 'pointermove' || type === 'pointerdown') &&
-      (pointerType === 'mouse' || HELD_POINTERS.has(pointerType)) &&
-      holdsNewPress()
-    ) {
+    // A finger or a pen raises the shields; only a mouse moving with no
+    // button down lowers them: a mouse press that began on a shield stays
+    // its own to its end, so its release and click land on the shield, not
+    // on what lies beneath (the click would go to the common ancestor of
+    // the two targets, a dialog that reads it as a backdrop click).
+    const isFollowed = HELD_POINTERS.has(pointerType)
+      ? type === 'pointerdown' || type === 'pointermove'
+      : pointerType === 'mouse' &&
+        type === 'pointermove' &&
+        (event as PointerEvent).buttons === 0;
+    if (isFollowed && holdsNewPress()) {
       followPointer(pointerType);
     }
     if (type === 'pointerdown') {

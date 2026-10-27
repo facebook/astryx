@@ -222,6 +222,51 @@ test("a mouse clicks a held light-dismissing popover's action, and a click outsi
   expect((await readLog(page)).clicks).toEqual(['popAction', 'under']);
 });
 
+test("a mouse press made before the mouse moves during a presentation's hold meets the shield to its end: its release and click land on the shield and reach nothing, and once the mouse moves its press reaches the dialog's recognizer (spec:AST-094 FR35)", async ({
+  page,
+}) => {
+  await load(page);
+  await open(page, 'dialog');
+  const action = await centre(page, 'action');
+  // The mouse rests over the action before the hold, unheard.
+  await page.mouse.move(action.x - 40, action.y);
+  await page.mouse.move(action.x, action.y, {steps: 4});
+  await page.evaluate(() => {
+    const seen: string[] = [];
+    (window as unknown as {__seen: string[]}).__seen = seen;
+    for (const type of ['pointerup', 'click']) {
+      window.addEventListener(
+        type,
+        event => {
+          const target = event.target as Element;
+          const name =
+            target.hasAttribute('popover') && target.id === ''
+              ? 'shield'
+              : target.id === ''
+                ? target.tagName.toLowerCase()
+                : target.id;
+          seen.push(`${type}:${name}`);
+        },
+        true,
+      );
+    }
+  });
+  await hold(page, 'dialog', 'viewport');
+  await page.mouse.down();
+  await page.mouse.up();
+  await settle(page);
+  expect(
+    await page.evaluate(() => (window as unknown as {__seen: string[]}).__seen),
+  ).toEqual(['pointerup:shield', 'click:shield']);
+  expect(await readLog(page)).toEqual({clicks: [], taps: 0, toggles: []});
+  // The mouse moves: its next press reaches the dialog's recognizer, as with
+  // no hold.
+  await page.mouse.move(action.x + 4, action.y, {steps: 4});
+  await page.mouse.down();
+  await page.mouse.up();
+  await expect.poll(async () => (await readLog(page)).taps).toBe(1);
+});
+
 test('a touch that lands during a hold and lifts after its release reaches nothing to its end: no release, end or click lands anywhere, and the next tap clicks (spec:AST-094 FR35)', async ({
   page,
 }) => {
