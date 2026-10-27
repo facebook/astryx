@@ -76,8 +76,10 @@ exported from the package entry.
   scrolls the body at once and the content box rides up from where it was on
   the show's curve; through the hide the room stays and the content box
   rides down by the scroll the room's drop takes back, and at rest the room
-  drops and the translate clears in one commit. Under a fine pointer nothing
-  of the ride attaches (no guide subscription), and the room follows the
+  drops and the translate clears in one commit. Under a fine pointer, and
+  where the keyboard moves on Safari's schedule (iOS Safari, Firefox for
+  Android, which have no VirtualKeyboard API), nothing of the ride attaches:
+  no guide subscription and no frame watch, and the room follows the
   reports. Safari's and Firefox's reveals are unchanged.
 
 ## Laying out from the height, riding on top
