@@ -244,7 +244,7 @@ test.describe('Switch under a mouse (spec:AST-094 FR43)', () => {
     }
   });
 
-  test('the switch keeps horizontal touch moves for its drag under any primary pointer, so a touchscreen laptop’s finger drags it as on a phone (spec:AST-094 FR18, FR43)', async ({
+  test('the switch keeps horizontal touch moves for its drag under any primary pointer, so a touchscreen laptop’s finger flips it by the same rule (spec:AST-094 FR18, FR43)', async ({
     browser,
   }) => {
     const sw = await openMouseSwitch(browser);
