@@ -14,7 +14,7 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {tabBar} from '@astryxdesign/core/motion/uikit';
+import {tabBar} from '@astryxdesign/core/internal/motion';
 import {
   copyTransform,
   itemCenters,

@@ -26,8 +26,7 @@
  * (the values' sources).
  */
 
-import {rubberBand} from '@astryxdesign/core/motion/rubberBand';
-import {tabBar} from '@astryxdesign/core/motion/uikit';
+import {rubberBand, tabBar} from '@astryxdesign/core/internal/motion';
 
 /** The widest a capsule of `count` tabs gets without a search tab, px. */
 export function naturalWidth(count: number): number {
