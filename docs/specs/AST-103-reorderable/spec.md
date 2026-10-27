@@ -134,7 +134,7 @@ announcements are those of FR3 and FR4, and the tree adds no option.
     `spec:AST-094`'s values, and a flick still scrolls;
   - a drag commits once, at the drop (DR4), and `onReorder` is called once
     for it; a cancelled drag calls nothing;
-  - under Reduce Motion the dragged row still follows the finger or pointer,
+  - under Reduce Motion the moving preview still follows the finger or pointer,
     and the other rows and the drop take their places without travel
     (`design:reduced-motion` DR1–DR3; a mouse drop follows DR3).
 - **FR4 — Reorder mode is the one path without a drag.** Each reorderable

@@ -119,6 +119,9 @@ No normative assets are included. Pointer and keyboard sequences belong under
 `spec:AST-103` applies this treatment to every reorderable collection, its
 keyboard reorder mode included (DR7).
 
+Implementation gap: Lab's ListInput and TransferList draw no insertion line
+when reordering by keyboard (DR7).
+
 ## Decision log
 
 ### DEC-1 — Reordering follows this design, not a slide-aside
