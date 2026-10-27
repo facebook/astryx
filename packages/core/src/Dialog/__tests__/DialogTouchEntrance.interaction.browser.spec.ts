@@ -263,6 +263,57 @@ test.describe('with a mouse on a touch screen', () => {
     await page.mouse.click(BACKDROP.x, BACKDROP.y);
     await expect(openDialogs(page)).toHaveCount(0);
   });
+
+  test('a mouse press with no movement first, on an action while the dialog enters, runs it, as before', async ({
+    page,
+  }) => {
+    // Under Reduce Motion the dialog only fades in, so its action stays where
+    // the mouse rests.
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    await openStory(page, storybook(), INFO);
+    const opener = page.getByRole('button', {name: 'Open Info Modal'});
+    // A first presentation, which a mouse opens and a key closes: from it on
+    // the page's input hold knows the latest pointer.
+    await opener.click();
+    await expect(openDialogs(page)).toHaveCount(1);
+    await finishEntrance(page);
+    const action = await centerOf(page.getByRole('button', {name: 'Got it'}));
+    await page.keyboard.press('Escape');
+    await expect(openDialogs(page)).toHaveCount(0);
+    // The mouse comes to rest where the action appears; a key opens the
+    // dialog again.
+    await page.mouse.move(action.x - 40, action.y);
+    await page.mouse.move(action.x, action.y, {steps: 4});
+    // What each click lands on, heard first, before any hold.
+    await page.evaluate(() => {
+      const clicks: string[] = [];
+      (window as unknown as {__clicks: string[]}).__clicks = clicks;
+      window.addEventListener(
+        'click',
+        event => {
+          const target = event.target as Element;
+          clicks.push(target.closest('button')?.textContent?.trim() ?? '');
+        },
+        {capture: true},
+      );
+    });
+    await opener.focus();
+    await page.keyboard.press('Enter');
+    await holdEntrance(page);
+
+    // A press where the mouse already is, with no movement first: it lands on
+    // the action (after the key's own click on the opener).
+    await page.mouse.down();
+    await page.mouse.up();
+    await expect
+      .poll(async () =>
+        page.evaluate(
+          () => (window as unknown as {__clicks: string[]}).__clicks,
+        ),
+      )
+      .toEqual(['Open Info Modal', 'Got it']);
+    await expect(openDialogs(page)).toHaveCount(0);
+  });
 });
 
 test.describe('with a mouse', () => {
