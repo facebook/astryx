@@ -199,7 +199,7 @@ export default function PreviewsPage() {
 
       <DemoCard
         title="TopNav mega-menu exit"
-        question="The only component in core that animates a popover exit, and it never checks Reduce Motion."
+        question="The only popover exit in core that travels, and it never checks Reduce Motion."
         badges={<Badge variant="warning" label="PARTIAL" />}>
         <ComparePanes
           panes={[

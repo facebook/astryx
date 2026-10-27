@@ -1001,7 +1001,7 @@ export function TopNavExitRig({mode}: {mode: Mode}) {
       </div>
       <Hint>
         {mode === 'before'
-          ? 'The only popover exit in core, and the proof the pattern works: the panel rises 4px and fades on open and close. Under Reduce Motion it does exactly the same.'
+          ? 'The only popover exit in core that travels, and the proof the pattern works: the panel rises 4px and fades on open and close. Under Reduce Motion it does exactly the same.'
           : 'The same exit with the missing branch: under Reduce Motion the panel fades within 200 ms on a touch screen and changes at once with a mouse; the lab\u2019s Degrade shows the fade, Delete the cut. Turn either on to compare.'}
       </Hint>
     </VStack>
