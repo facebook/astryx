@@ -122,6 +122,32 @@ function filesUnder(dir, pattern) {
 const GESTURE_USERS = new Set([
   // AppShell's scroll-edge bar.
   'AppShell',
+  // The action-group tracker.
+  'ButtonGroup',
+  'ToggleButton',
+  // Carousel's paging.
+  'Carousel',
+  // Chat's keyboard dismissal on a transcript drag.
+  'Chat',
+  // Item's swipe actions, and the imports that reach Item.
+  'Item',
+  'List',
+  'CheckboxList',
+  'RadioList',
+  'Breadcrumbs',
+  // NumberInput's steppers.
+  'NumberInput',
+  // SegmentedControl's press and drag to select.
+  'SegmentedControl',
+  // Switch's thumb drag.
+  'Switch',
+  // Toast's swipe to dismiss.
+  'Toast',
+  // The public pan, which the root's createPanGesture shares.
+  'hooks: usePanGesture',
+  // The public snap-point drag.
+  'dragToSnapPoints',
+  'hooks: useDragToSnapPoints',
   // Slider's thumb.
   'Slider',
   // The List reorder, through createReorderable.
@@ -151,6 +177,9 @@ const GESTURE_USERS = new Set([
   'Pagination',
   'Popover',
   'Selector',
+  'MobileNav',
+  'SideNav',
+  'TopNav',
 ]);
 
 /** Public imports that carry no gesture code, whatever the list above says. */
