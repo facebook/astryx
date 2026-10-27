@@ -43,7 +43,8 @@ affects_consumer_docs:
 
 A product can follow a drag, settle an element on snap points, and animate one
 element with the same motion Core uses, through three public factories and the
-three React hooks over them. The hooks
+three React hooks over them, and can give any element a context menu through
+a public headless layer. The hooks
 hand out values, never the gesture machinery behind them, which stays
 internal.
 
@@ -103,11 +104,13 @@ animator2.destroy();
 - **FR1 — `usePanGesture` reports a drag as values.**
   `usePanGesture(ref, {axis?, onPan})` calls `onPan` with
   `{state, translation, velocity}` as a drag on the element begins, changes,
-  ends, or is cancelled. `axis` limits the drag to `'x'` or `'y'`. It never
+  ends, or is cancelled. `axis` limits the drag to `'x'` or `'y'`. A finger,
+  a mouse, and a pen all drive it (`spec:AST-094` FR43). It never
   hands out a recognizer object, and it recognizes no press or long press.
 - **FR2 — `useDragToSnapPoints` settles an element on snap points.**
   `useDragToSnapPoints(ref, {axis, snapPoints, flickThreshold?, onSettle})`
-  lets a drag move the element along `axis`. `snapPoints` are offsets in
+  lets a drag move the element along `axis`, under
+  every pointer, as FR1's does. `snapPoints` are offsets in
   pixels along `axis` from the element's resting position, in ascending order;
   unlike BottomSheet's `snapPoints`, they are not viewport fractions. At the
   release the element settles on the nearest snap point to where it is,
@@ -118,7 +121,9 @@ animator2.destroy();
   2026-10-23 and 2026-10-24), carries to the next snap point in its direction, and a
   release whose velocity points back toward where the drag started returns to
   the snap point it started from (`spec:AST-094` FR37). The threshold is public because a product's own
-  snap surface decides how readily a flick commits, which no motion role or
+  snap surface decides how readily a flick commits: a short drawer that should
+  close on a light flick and a tall sheet that should not take the same drag
+  to different snap points, which no motion role or
   theme knob expresses (`spec:AST-002` FR5); Core components keep theirs
   internal (`spec:AST-100` FR3). It calls `onSettle(index)` once the element
   settles. It returns
@@ -136,8 +141,10 @@ animator2.destroy();
   `springs.stateChange` motion role (`spec:AST-094` FR4), which follows the
   theme's tempo and character (`spec:AST-108` FR3), and every `decay` plays on
   the fixed momentum decay (`spec:AST-108` FR4); choosing any other spring or
-  curve is not offered. `animate` on a channel it does not know, or any call
-  after `destroy`, does nothing and resolves at once.
+  curve is not offered. `animate` on a channel it does not know, any call
+  before `ref` attaches, and any call after `destroy` do nothing and resolve at
+  once. A later `animate`, `decay`, `set`, or `stop` on a channel resolves that
+  channel's earlier promise where it stopped.
 - **FR4 — One hook per job.** `usePanGesture` does not do presses or long
   presses, which `useLongPress` owns. `useAnimator` animates one element, and
   `useAnimatedLayout` animates an area (`spec:AST-105`). A component's own
@@ -187,6 +194,8 @@ render, onOpenChange?, presentation?}) → {open(at?), close(), destroy()}`
 
 ## Current-state impact
 
+- `architecture:public-component-api` INV21 counts a hook over a public
+  factory, and a component built entirely on one, as one API with it.
 - `architecture:react-component-runtime` INV13 gains three rules: the
   recognizer family is the only class family, told apart by `kind`, never
   `instanceof`, and the velocity tracker moves to a `create…` factory; no internal factory shares a public factory's

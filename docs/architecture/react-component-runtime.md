@@ -188,7 +188,8 @@ those contracts.
   touch press recognizer. The recognizer family (its base, the arena, and the
   host) is the one place these modules use classes, and it uses no
   inheritance checks: a recognizer is told apart by its `kind` field, never by
-  `instanceof`. Every other module, and every public layer, is built from
+  `instanceof`. (Implementation gap: recognizers carry no `kind`
+  field yet.) Every other module, and every public layer, is built from
   `create…` factories, the velocity tracker included (implementation gap: it is
   still the `VelocityTracker` class), and no internal factory shares a public factory's name
   (`spec:AST-107` FR6). Core and Lab components use `spec:AST-107`'s public
