@@ -132,6 +132,8 @@ const GESTURE_USERS = new Set([
   'PowerSearch',
   'Table',
   'TimeInput',
+  // useMenuPress's trigger, which waits on a scroll view under a finger.
+  'hooks: useMenuPress',
   // useScrollLock's page hold, and the layered components that reach it.
   'hooks: useScrollLock',
   'Layer',
