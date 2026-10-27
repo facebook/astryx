@@ -15,8 +15,6 @@ verified_by:
     .github/visual-baseline/manifest.json,
     packages/core/src/Code/Code.test.tsx,
     packages/core/src/theme/themingTargets.test.ts,
-    packages/core/src/docPropLiterals.test.ts,
-    packages/core/src/docPropReferences.test.ts,
     .github/scripts/story-play-guard.js,
     apps/storybook/stories/Code.stories.tsx,
     apps/storybook/rtl-audit/verified-not-applicable.json,
@@ -145,7 +143,7 @@ No current design record prescribes exact Code pixels; exact tuning stays in cod
 
 - `architecture:public-component-api` owns export reachability, accepted root props, styling composition, ref reachability, released defaults, and consumer documentation.
 - `architecture:component-theming-surface` owns target qualification, target placement, visual-axis reflection, and metadata ownership.
-- `architecture:component-test-sufficiency` owns the rational evidence set; consumer-metadata claims are proven by the shared schema and projection checks rather than component functional tests.
+- `architecture:component-test-sufficiency` owns the rational evidence set.
 
 ## Verification map
 
@@ -157,7 +155,6 @@ No current design record prescribes exact Code pixels; exact tuning stays in cod
 | FR4, ORD1          | `Code.test.tsx` ref and passthrough tests                                                                    | Ref; `aria-label`, `className`, `style`, `xstyle`                      | A dropped ref, or a dropped caller prop, class, inline style, or `xstyle` class, fails. Gap: the ref test still passes when a wrapper receives the ref, and no test asserts that the target and `data-color` override caller DOM props or that caller `xstyle` follows the base styles. | `audit:Code/api`        |
 | FR5                | `themingTargets.test.ts`; `Code.test.tsx` color tests                                                        | Every color value                                                      | A missing target or `data-color` reflection fails.                                                                                                                                                                                                                                      | `audit:Code/theming`    |
 | RTL not applicable | `@astryx/no-physical-properties` lint rule; `apps/storybook/rtl-audit/verified-not-applicable.json` entry    | Every story                                                            | The lint rule fails a physical left/right property or value in Code's styles. Gap: no browser right-to-left check covers Code; the entry records the decision.                                                                                                                          | `audit:Code/rtl`        |
-| Consumer metadata  | `docPropLiterals.test.ts`; `docPropReferences.test.ts`                                                       | Content, color values and default, inherited size                      | A doc type that drops a value the source accepts fails; prose of the form "X prop on Code" naming a prop Code does not document fails. Gap: a documented value the source does not accept, or an undocumented prop named any other way, passes.                                         | `audit:Code/docs`       |
 | PR1                | Source review                                                                                                | Every state                                                            | Gap: no automated check fails if Code adds state, an effect, or a listener.                                                                                                                                                                                                             | `audit:Code/behavior`   |
 
 ## Decision log
