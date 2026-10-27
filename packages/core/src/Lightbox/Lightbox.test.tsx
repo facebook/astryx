@@ -125,6 +125,21 @@ describe('Lightbox', () => {
     expect(dialog).toBeInTheDocument();
   });
 
+  it('opens once an item arrives when opened with none', () => {
+    const {rerender} = render(
+      <Lightbox isOpen={true} onOpenChange={() => {}} media={[]} />,
+    );
+    expect(document.querySelector('dialog')).toBeNull();
+    rerender(
+      <Lightbox
+        isOpen={true}
+        onOpenChange={() => {}}
+        media={[{src: '/photo.jpg', alt: 'Photo'}]}
+      />,
+    );
+    expect(document.querySelector('dialog')).toHaveAttribute('open');
+  });
+
   it('calls showModal when isOpen becomes true', () => {
     render(
       <Lightbox
@@ -1454,6 +1469,26 @@ describe('Lightbox touch zoom (synthetic touches)', () => {
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
   });
 
+  it('reports a drag-down close from the release, while the photo still leaves (architecture:react-component-runtime INV2)', () => {
+    const onOpenChange = vi.fn();
+    render(
+      <Lightbox
+        isOpen={true}
+        onOpenChange={onOpenChange}
+        media={{src: '/photo.jpg', alt: 'Photo'}}
+      />,
+    );
+    const img = screen.getByAltText('Photo');
+    const stage = img.parentElement!;
+    const finger = dragDown(stage, 100);
+    expect(onOpenChange).not.toHaveBeenCalled();
+    touch('touchend', stage, [], [finger], clock + 16);
+    // From the release itself, not once the photo has left.
+    expect(onOpenChange).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(document.querySelector('dialog')!.open).toBe(true);
+  });
+
   it('springs back when the finger lifts moving up', async () => {
     const onOpenChange = vi.fn();
     render(
@@ -1605,28 +1640,39 @@ describe('Lightbox opener fallback listener (spec:AST-094 FR24)', () => {
     added.restore();
   });
 
-  it('shares one document listener across the viewers on a touch screen', () => {
+  it('shares the touch press controller across the viewers on a touch screen: its listeners once, none of their own (spec:AST-094 FR24)', () => {
     const restorePointer = stubCoarsePointer();
-    const added = countLightboxCaptureClicks('addEventListener');
-    const removed = countLightboxCaptureClicks('removeEventListener');
-    const {unmount} = render(
-      <>
-        {[0, 1, 2].map(i => (
-          <Lightbox
-            key={i}
-            isOpen={false}
-            onOpenChange={() => {}}
-            media={{src: `/photo-${i}.jpg`, alt: `Photo ${i}`}}
-          />
-        ))}
-      </>,
-    );
-    expect(added.count()).toBe(1);
-    // The last viewer to go takes the listener with it.
-    unmount();
-    expect(removed.count()).toBe(1);
-    added.restore();
-    removed.restore();
+    const added = vi.spyOn(document, 'addEventListener');
+    const removed = vi.spyOn(document, 'removeEventListener');
+    const viewers = (count: number) =>
+      render(
+        <>
+          {Array.from({length: count}, (_, i) => (
+            <Lightbox
+              key={i}
+              isOpen={false}
+              onOpenChange={() => {}}
+              media={{src: `/photo-${i}.jpg`, alt: `Photo ${i}`}}
+            />
+          ))}
+        </>,
+      );
+    const one = viewers(1);
+    const forOne = added.mock.calls.length;
+    one.unmount();
+    added.mockClear();
+    removed.mockClear();
+    const three = viewers(3);
+    const forThree = added.mock.calls.length;
+    // The press controller's listeners, installed once however many viewers.
+    expect(forThree).toBeGreaterThan(0);
+    expect(forThree).toBe(forOne);
+    expect(added.mock.calls.filter(([type]) => type === 'click')).toEqual([]);
+    // The last viewer to go takes them with it.
+    three.unmount();
+    expect(removed.mock.calls.length).toBe(forThree);
+    added.mockRestore();
+    removed.mockRestore();
     restorePointer();
   });
 });

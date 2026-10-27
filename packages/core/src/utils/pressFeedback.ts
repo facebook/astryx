@@ -592,3 +592,18 @@ export function installPressFeedback(): () => void {
     lastTouchTarget = null;
   };
 }
+
+/**
+ * Where and when a finger last landed, as this controller saw it while
+ * installed (the `Date.now()` clock), or null: read-only, for a caller that
+ * needs the touch that opened something without a document listener of its
+ * own (spec:AST-094 FR24; Lightbox's opener record).
+ */
+export function lastTouchLanding(): {
+  readonly target: Node;
+  readonly time: number;
+} | null {
+  return lastTouchTarget == null
+    ? null
+    : {target: lastTouchTarget, time: lastTouchAt};
+}
