@@ -17,9 +17,9 @@
  *   its background. A collapse lays a copy of the old, expanded rail over the
  *   real collapsed one and clips the copy down to the new width; the copy's
  *   text fades over the first 40% and the copy over the last 30%, so the real
- *   rail, icons only, is all that remains. An expand clips the real rail open
- *   from the old width under a copy of it, clipped the same, whose text fades
- *   in over the last 60%, so no label shows at the collapsed width.
+ *   rail, icons only, is all that remains. An expand clips a copy of the new
+ *   rail open from the old width, its text fading in over the last 60% so no
+ *   label shows at the collapsed width, while the real rail waits under it.
  * - The content column slides from its old place to its new one (the rail's
  *   sibling, as the glide moves siblings), carrying an in-place swap
  *   (`spec:AST-105` FR8): a copy of the old wrap at the old width fades out
@@ -241,9 +241,11 @@ export function playRail(
     );
     fadeText(p => 1 - clamp(p / 0.4));
   } else {
+    // The real rail waits under its copy: a rail without a background of its
+    // own would show its labels through it.
     play(
       rail,
-      frames(p => ({clipPath: inset(delta * (1 - p))})),
+      frames(() => ({opacity: 0})),
     );
     play(
       copy,

@@ -188,7 +188,7 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     expect(fadeIn?.keyframes.at(-1)?.opacity).toBe(1);
   });
 
-  it('expands by revealing the real rail with a clip, applied before the first frame paints', () => {
+  it('expands by revealing the new rail with a clip, applied before the first frame paints', () => {
     render(<Shell />);
     toggle();
     recorded.forEach(entry => entry.animation.finish());
@@ -196,9 +196,9 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     toggle();
 
     expect(railWidth()).toBe(EXPANDED);
-    const reveal = animated('clipPath').find(
-      entry => !entry.element.hasAttribute('inert'),
-    );
+    // A copy of the new rail is clipped open; the real one waits under it.
+    const [reveal] = animated('clipPath');
+    expect(reveal.element.textContent).toContain('Projects');
     expect(reveal?.keyframes[0].clipPath).toContain(
       `${EXPANDED - COLLAPSED}px`,
     );
