@@ -76,11 +76,17 @@ test('a row dragged past the end of its list stays inside it, clear of the next 
       GRIP,
     );
   const before = await order();
+  // The dragged row as it shows: during a drag its preview, which follows
+  // the finger while the row itself stays dimmed in place.
   const geometry = async () =>
     grip.evaluate(element => {
       const row = element.closest('li') as HTMLElement;
       const list = row.parentElement as HTMLElement;
-      const rowBox = row.getBoundingClientRect();
+      const shown =
+        list.querySelector<HTMLElement>(
+          ':scope > [data-astryx-reorder-preview]',
+        ) ?? row;
+      const rowBox = shown.getBoundingClientRect();
       const listBox = list.getBoundingClientRect();
       return {
         rowTop: rowBox.top,
@@ -108,7 +114,7 @@ test('a row dragged past the end of its list stays inside it, clear of the next 
   }
   await sleep(150);
   const held = await geometry();
-  // The finger is 200 px past the list's end; the row stopped with its
+  // The finger is 200 px past the list's end; the preview stopped with its
   // bottom on that end, so none of it hangs under the next panel.
   expect(held.rowTop).toBeGreaterThan(start.rowTop + 40);
   expect(held.rowBottom).toBeLessThanOrEqual(held.listBottom + 0.5);
