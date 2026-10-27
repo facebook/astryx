@@ -144,8 +144,9 @@ Out of coverage, each taking its final place at once:
 
 ## Current-state impact
 
-- No Core component takes `animatedLayout` yet; TreeList and Collapsible are
-  the first adopters, and their docs gain the `animatedLayout` prop.
+- No Core component takes `animatedLayout` yet; TreeList, Collapsible, and
+  Table's row expansion (`component:Table` FR15) are the first adopters, and
+  their docs gain the `animatedLayout` handle.
 - Core gains the `useAnimatedLayout` export and its documentation (FR7).
 - `architecture:react-component-runtime` INV12 produces the glide.
 - `architecture:react-component-runtime` INV12 also gains the in-place swap
