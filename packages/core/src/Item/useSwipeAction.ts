@@ -39,9 +39,9 @@
  * or moving: a browser commits to scrolling a touch at about 10 px, so the
  * row must claim before that. The swipe itself begins where UIKit's does,
  * after 25 px, from 0, and in between the row carries on as it was. The pan
- * attaches for every pointer (`spec:AST-094` FR43) and takes a finger only, as
- * `spec:AST-057` says: a finger swipes the row whatever the primary pointer,
- * and a mouse or a pen never starts it, one rule on every device. The
+ * attaches for every pointer (`spec:AST-094` FR43) and takes a finger and a
+ * pen, as `spec:AST-057` says: either swipes the row whatever the primary
+ * pointer, and a mouse drag never starts it, one rule on every device. The
  * foundation tells the browser (`touch-action: pan-y
  * pinch-zoom`, `touchmove` cancelled only while the pan owns the touch, the
  * click the browser synthesizes swallowed) and leaves a pinch to the page: a
@@ -79,9 +79,9 @@
  * busy. A drag costs no React render; the
  * claim, the confirming and the landing each cost one.
  *
- * A finger swipes the row on every device, whatever the primary pointer, and
- * so does a trackpad's or a mouse wheel's horizontal scroll (`spec:AST-057`
- * DEC-7); a mouse or a pen drag never does.
+ * A finger or a pen swipes the row on every device, whatever the primary
+ * pointer, and so does a trackpad's or a mouse wheel's horizontal scroll
+ * (`spec:AST-057` FR4, DEC-7); a mouse drag never does.
  *
  * Under Reduce Motion (`design:reduced-motion`) the finger's own drag is
  * direct manipulation and follows it one for one, but nothing a release or
@@ -1231,10 +1231,10 @@ export function useSwipeAction({
     rootRef,
     () =>
       new PanGestureRecognizer({
-        // Recognizers attach for every pointer (`spec:AST-094` FR43); only a
-        // finger drags the row: a mouse and a pen never start the swipe
-        // (`spec:AST-057` FR6, AR2).
-        allowedPointerTypes: ['touch'],
+        // Recognizers attach for every pointer (`spec:AST-094` FR43); a
+        // finger or a pen drags the row, and a mouse never starts the swipe
+        // (`spec:AST-057` FR4, FR6, AR2).
+        allowedPointerTypes: ['touch', 'pen'],
         // A trackpad's horizontal scroll swipes the row as a finger does, and
         // a mouse wheel's horizontal notches the same way (`spec:AST-057`
         // DEC-7): the same contact, moving with the content.

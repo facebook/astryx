@@ -63,6 +63,7 @@ import {
   withStorybook,
   waitForAnimation,
   waitForRest,
+  PEN_SKIP,
   webInputDriver,
   WHEEL_SKIP,
   writeEvidence,
@@ -1824,6 +1825,42 @@ test.describe('under a trackpad or a mouse wheel (a desktop context)', () => {
     }
     await page.waitForTimeout(250);
     expect(await xOf(other)).toBeCloseTo(0, 0);
+  });
+
+  test('a pen’s sideways drag opens a row as a finger does, and the page selects no text (spec:AST-057 FR4)', async ({
+    page,
+  }) => {
+    await openStory(page, storybook(), 'core-item--swipe-actions');
+    const driver = await webInputDriver(page);
+    test.skip(!driver.pens, PEN_SKIP);
+    const row = page.locator('.astryx-item').first();
+    const panel = row.locator('[data-swipe-panel="trailing"]');
+    await expect(panel).toBeAttached();
+    const openWidth = await openWidthOf(panel.locator(':scope > div').first());
+    const rest = await row.boundingBox();
+    if (rest == null) {
+      throw new Error('no row');
+    }
+    const y = rest.y + rest.height / 2;
+    const from = rest.x + rest.width - 24;
+    // Toward the inline start, past the swipe's 25 px and past half the
+    // panel, then held still before the lift so the release reads no fling.
+    const points = [
+      ...Array.from({length: 13}, (_, i) => ({
+        t: i * 16,
+        x: from - (i * (openWidth + 25)) / 12,
+        y,
+      })),
+      ...Array.from({length: 12}, (_, i) => ({
+        t: 208 + i * 16,
+        x: from - (openWidth + 25),
+        y,
+      })),
+    ];
+    await driver.pen(points);
+    await expect.poll(async () => xOf(row)).toBeCloseTo(-openWidth, 0);
+    await expect(panel).not.toHaveAttribute('inert', '');
+    expect(await page.evaluate(() => String(getSelection()))).toBe('');
   });
 
   test('a mouse click on the content of a row a trackpad opened closes it and reaches nothing, as a finger’s tap does (spec:AST-057 DEC-7)', async ({

@@ -1230,10 +1230,11 @@ describe('swipeActions', () => {
       expect(panelOf(row, 'leading')).toHaveAttribute('inert');
     });
 
-    it('never swipes under a pen: only a finger starts the drag (spec:AST-057 FR6)', async () => {
+    it('swipes under a pen as under a finger: the drag opens the row past half the panel (spec:AST-057 FR4)', async () => {
       expect(window.matchMedia('(pointer: coarse)').matches).toBe(false);
       const {row} = renderRow();
-      const pen = (type: string, x: number) =>
+      const pen = (type: string, x: number) => {
+        void act(() => vi.advanceTimersByTime(16));
         act(() => {
           row.dispatchEvent(
             new PointerEvent(type, {
@@ -1247,13 +1248,20 @@ describe('swipeActions', () => {
             }),
           );
         });
+      };
       pen('pointerdown', 10);
-      pen('pointermove', 60);
-      pen('pointermove', 120);
-      pen('pointerup', 120);
+      pen('pointermove', 20);
+      pen('pointermove', 35); // 25 px: the swipe begins here, at 0
+      pen('pointermove', 57);
+      pen('pointermove', 80);
+      // Held still before the lift, so the release reads no fling.
+      for (let i = 0; i < 20; i += 1) {
+        pen('pointermove', 80);
+      }
+      pen('pointerup', 80);
       await settled();
-      expect(xOf(row)).toBe(0);
-      expect(panelOf(row, 'leading')).toHaveAttribute('inert');
+      expect(xOf(row)).toBe(72);
+      expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
     });
 
     /** A wheel event as a browser sends it, stamped with the document clock. */
