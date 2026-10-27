@@ -4,9 +4,10 @@
 
 /**
  * @file ListItem.tsx
- * @input Uses React, ReactNode, StyleXStyles, theme tokens, List edge compensation,
- *   CheckboxInput, and the marker or task checkbox a ListMarkerScope sets
- *   (Markdown's nested lists and the task items of mixed lists)
+ * @input Uses React, ReactNode, StyleXStyles, theme tokens, the List row edge
+ *   treatment, CheckboxInput, and the marker or task checkbox a
+ *   ListMarkerScope sets (Markdown's nested lists and the task items of mixed
+ *   lists)
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
  *
@@ -23,6 +24,7 @@
 
 import {use, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
@@ -34,7 +36,7 @@ import {ListContext, type ListMarker} from './ListContext';
 import {CheckboxInput} from '../CheckboxInput';
 import {mergeProps} from '../utils';
 import {Item} from '../Item';
-import type {ItemSwipeActions, ItemSwipeBehavior} from '../Item';
+import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
@@ -44,6 +46,13 @@ import {themeProps} from '../utils/themeProps';
 export interface ListItemProps extends BaseProps<HTMLLIElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLLIElement>;
+  /**
+   * Vertical alignment of the start and end content against the label,
+   * forwarded to Item. Use `first-line` to keep the start and end content level with the
+   * first line of a wrapped label.
+   * @default 'center'
+   */
+  align?: ItemAlign;
   /**
    * Primary text label for the item.
    *
@@ -142,23 +151,37 @@ const styles = stylex.create({
   withCounter: {
     counterIncrement: 'astryx-list',
   },
-  // List's inline edge compensation cancels as much of the row's built-in
-  // inline inset as the container padding allows (e.g. under a heading).
-  // The margins read --_item-inset-inline — the same variable Item derives
-  // its paddingInline from — on the row element itself (custom properties
-  // only cascade downward, so the <ul> could not read it). Density changes
-  // and theme paddingInline overrides on `item` move both values together.
-  // Each edge clamps against ITS OWN container padding var: a single
-  // start-var clamp on both margins over-cancels the end edge under
-  // asymmetric container padding (16px start / 4px end) and the selected
-  // row paints past the outer border. Logical properties keep RTL correct,
-  // and a zero-padding/full-bleed surface (min(inset, 0px) = 0px) leaves
-  // the row in place instead of pulling it outside its content edge.
-  inlineEdgeCompensation: {
+  // List's edge treatments. Each reads --_item-inset-inline, the variable
+  // Item derives its paddingInline from, on the row itself (custom properties
+  // only cascade downward, so the <ul> cannot read it); density and theme
+  // paddingInline overrides on `item` move it. Each edge resolves against ITS
+  // OWN container padding var, so asymmetric padding never over-reaches an
+  // edge, and logical properties keep RTL correct.
+  //
+  // 'flush': no inset, so content meets the row's edges.
+  edgeFlush: {
+    '--_item-inset-inline': '0px',
+  },
+  // 'outset': the list reaches the container's padding edge (List.tsx); the
+  // row steps back in by whatever padding its inset does not fill, so the row
+  // reaches min(inset, container padding) past the content line and its text
+  // lands on that line when the padding is at least the inset.
+  edgeOutset: {
     marginInlineStart:
-      'calc(-1 * min(var(--_item-inset-inline), var(--container-padding-inline-start, 0px)))',
+      'max(var(--container-padding-inline-start, 0px) - var(--_item-inset-inline), 0px)',
     marginInlineEnd:
-      'calc(-1 * min(var(--_item-inset-inline), var(--container-padding-inline-end, 0px)))',
+      'max(var(--container-padding-inline-end, 0px) - var(--_item-inset-inline), 0px)',
+  },
+  // 'bleed': the row fills the list, which reaches the container's padding
+  // edge (List.tsx); its text sits on the container's padding line, never
+  // closer to the row's edge than its own inset. Square corners: the row
+  // meets the container's straight sides.
+  edgeBleed: {
+    paddingInlineStart:
+      'max(var(--container-padding-inline-start, 0px), var(--_item-inset-inline))',
+    paddingInlineEnd:
+      'max(var(--container-padding-inline-end, 0px), var(--_item-inset-inline))',
+    borderRadius: 0,
   },
   withDivider: {
     borderBlockEndWidth: borderVars['--border-width'],
@@ -296,6 +319,7 @@ export function ListItem({
   rel,
   isDisabled = false,
   isSelected = false,
+  align,
   xstyle,
   className,
   style,
@@ -305,8 +329,8 @@ export function ListItem({
   const ctx = use(ListContext);
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
+  const edge = ctx?.edge ?? 'padded';
   const listStyle = ctx?.listStyle ?? 'none';
-  const edgeCompensation = ctx?.edgeCompensation;
   const hasMarkers = listStyle !== 'none';
   // ListMarkerScope may name another marker for this item.
   const markerKind: ListMarker | null =
@@ -360,14 +384,19 @@ export function ListItem({
       rel={rel}
       isDisabled={isDisabled}
       isSelected={isSelected}
+      align={align}
       density={density}
-      xstyle={[
-        hasMarkers && styles.withCounter,
-        hasDividers && styles.withDivider,
-        hasDividers && embeddedStyles.noRadius,
-        edgeCompensation === 'inline' && styles.inlineEdgeCompensation,
-        xstyle,
-      ]}
+      xstyle={
+        [
+          hasMarkers && styles.withCounter,
+          hasDividers && styles.withDivider,
+          hasDividers && embeddedStyles.noRadius,
+          edge === 'flush' && styles.edgeFlush,
+          edge === 'outset' && styles.edgeOutset,
+          edge === 'bleed' && styles.edgeBleed,
+          xstyle,
+        ] as StyleXStyles
+      }
       {...mergeProps(themeProps('list-item'), {className, style})}
       {...restProps}
     />

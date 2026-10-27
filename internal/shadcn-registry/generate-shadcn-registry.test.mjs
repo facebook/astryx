@@ -42,6 +42,7 @@ import {
   blockRegistryIdentity,
   componentRegistryIdentity,
   pageRegistryIdentity,
+  registryNameForPath,
   resolveShadcnRegistryOrigin,
   shadcnInstallCommand,
 } from '../../apps/docsite/src/lib/shadcnRegistry.mjs';
@@ -59,6 +60,25 @@ const DOCSITE_ROOT = path.resolve(
 const SHADCN_ENTRY = createRequire(
   path.join(DOCSITE_ROOT, 'package.json'),
 ).resolve('shadcn');
+
+// Before it writes files, ShadCN installs an item's npm dependencies with the
+// project's package manager. These tests check what ShadCN writes, not what a
+// registry install resolves, so no-op package managers first on PATH keep them
+// off the network. A real install of the items' pinned packages downloaded the
+// full registry metadata for @astryxdesign/core and could stall past the spawn
+// timeout.
+const NOOP_PACKAGE_MANAGERS = mkdtempSync(
+  path.join(tmpdir(), 'astryx-noop-pm-'),
+);
+for (const name of ['pnpm', 'npm', 'yarn', 'bun']) {
+  writeFileSync(path.join(NOOP_PACKAGE_MANAGERS, name), '#!/bin/sh\nexit 0\n', {
+    mode: 0o755,
+  });
+}
+const SHADCN_ENV = {
+  ...process.env,
+  PATH: `${NOOP_PACKAGE_MANAGERS}${path.delimiter}${process.env.PATH ?? ''}`,
+};
 
 const packages = [
   {
@@ -390,9 +410,69 @@ describe('buildShadcnRegistry', () => {
       );
       expect(result.routes).toContain('showcases/button/variants');
       expect(result.routes).toContain('blocks/filter-toolbar');
+
+      // Every item is also served at `<name>.json` in the root, the address
+      // standard clients derive from the index, with the canonical bytes.
+      for (const [name, canonical] of [
+        ['component-button', 'components/button'],
+        ['showcase-button-button-styles', 'showcases/button/button-styles'],
+        ['block-filter-toolbar', 'blocks/filter-toolbar'],
+        ['template-dashboard', 'templates/dashboard'],
+      ]) {
+        expect(readFileSync(path.join(outDir, `${name}.json`), 'utf8')).toBe(
+          readFileSync(path.join(outDir, `${canonical}.json`), 'utf8'),
+        );
+      }
+      // The alias keeps the name it stood for, so a renamed item still
+      // installs as `@namespace/<old-name>`.
+      expect(
+        readFileSync(
+          path.join(outDir, 'showcase-button-variants.json'),
+          'utf8',
+        ),
+      ).toBe(
+        readFileSync(
+          path.join(outDir, 'showcases', 'button', 'button-styles.json'),
+          'utf8',
+        ),
+      );
     } finally {
       rmSync(outDir, {recursive: true, force: true});
     }
+  });
+
+  it('fails generation when two items would claim the same route', () => {
+    const outDir = mkdtempSync(path.join(tmpdir(), 'astryx-shadcn-clash-'));
+    try {
+      const input = fixture();
+      input.blocks[0].registry = {slug: 'button-styles'};
+      input.blocks.push({
+        ...input.blocks[0],
+        dirName: 'ButtonStylesCopy',
+        name: 'Button Styles Copy',
+        displayName: 'Button Styles Copy',
+      });
+      expect(() =>
+        generateShadcnRegistry({...input, outDir, cliRoot: outDir}),
+      ).toThrow(/Duplicate shadcn registry item name/);
+    } finally {
+      rmSync(outDir, {recursive: true, force: true});
+    }
+  });
+
+  it('maps every organized path to the item name it stands for', () => {
+    expect(registryNameForPath('components/button')).toBe('component-button');
+    expect(registryNameForPath('components/lab/line-clamp')).toBe(
+      'component-lab-line-clamp',
+    );
+    expect(registryNameForPath('examples/button/icon')).toBe(
+      'example-button-icon',
+    );
+    expect(registryNameForPath('templates/dashboard')).toBe(
+      'template-dashboard',
+    );
+    // No route can be the index: every name starts with a kind prefix.
+    expect(() => registryNameForPath('registry')).toThrow(/kind folder/);
   });
 
   it('generates exact-version compatibility output for production', () => {
@@ -538,7 +618,7 @@ describe('buildShadcnRegistry', () => {
       await execFileAsync(
         process.execPath,
         [SHADCN_ENTRY, 'add', itemPath, '--yes'],
-        {cwd: project, timeout: 30_000},
+        {cwd: project, timeout: 30_000, env: SHADCN_ENV},
       );
 
       expect(
@@ -631,7 +711,7 @@ describe('buildShadcnRegistry', () => {
       await execFileAsync(
         process.execPath,
         [SHADCN_ENTRY, 'add', itemPath, '--yes'],
-        {cwd: project, timeout: 30_000},
+        {cwd: project, timeout: 30_000, env: SHADCN_ENV},
       );
 
       const sourcePath = path.join(
@@ -712,7 +792,7 @@ describe('buildShadcnRegistry', () => {
       await execFileAsync(
         process.execPath,
         [SHADCN_ENTRY, 'add', itemPath, '--yes'],
-        {cwd: project, timeout: 30_000},
+        {cwd: project, timeout: 30_000, env: SHADCN_ENV},
       );
       await new Promise((resolve, reject) => {
         server.once('error', reject);
@@ -861,7 +941,7 @@ describe('buildShadcnRegistry', () => {
       await execFileAsync(
         process.execPath,
         [SHADCN_ENTRY, 'add', itemPath, '--yes'],
-        {cwd: project, timeout: 30_000},
+        {cwd: project, timeout: 30_000, env: SHADCN_ENV},
       );
 
       expect(
@@ -942,7 +1022,7 @@ describe('buildShadcnRegistry', () => {
           cwd: project,
           timeout: 30_000,
           env: {
-            ...process.env,
+            ...SHADCN_ENV,
             NO_PROXY: '127.0.0.1,localhost',
             no_proxy: '127.0.0.1,localhost',
           },

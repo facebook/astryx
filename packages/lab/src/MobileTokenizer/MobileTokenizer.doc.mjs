@@ -8,9 +8,11 @@ export const docs = {
   keywords: ['tokenizer', 'mobile', 'touch', 'bottom sheet', 'tags', 'chips'],
   props: [
     {name: 'label', type: 'string', description: 'Field label and sheet heading.', required: true},
+    {name: 'isLabelHidden', type: 'boolean', description: 'Hide the visible label; the trigger and the sheet keep it as their accessible name.', default: 'false'},
     {name: 'searchSource', type: 'SearchSource<T>', description: 'Core Typeahead search source (search + bootstrap).', required: true},
     {name: 'value', type: 'T[]', description: 'Selected items (Core SearchableItem).', required: true},
     {name: 'onChange', type: '(items: T[], change: MobileTokenizerChange<T>) => void', description: 'Mirrors Core Tokenizer: single-item add/create/remove, or reorder.', required: true},
+    {name: 'renderItem', type: '(item: T) => ReactNode', description: 'Custom content for a result row, shown beside its checkbox. Default: the item label.'},
     {name: 'placeholder', type: 'string', description: 'Trigger text when nothing is selected.'},
     {name: 'hasCreate', type: 'boolean', description: 'Offer Create "<query>" for unmatched free text.', default: 'false'},
     {name: 'maxEntries', type: 'number', description: 'Cap selections; add rows disable at the cap.'},

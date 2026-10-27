@@ -33,7 +33,8 @@ import {TextInput} from '@astryxdesign/core/TextInput';
 import {colorVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {useToast} from '@astryxdesign/core/Toast';
-import {Drawer, DrawerHeader, Stat} from '@astryxdesign/lab';
+import {Drawer, DrawerHeader} from '@astryxdesign/core/Drawer';
+import {Stat} from '@astryxdesign/lab';
 
 import {
   TEMPLATE_AUDIT_CATEGORIES,

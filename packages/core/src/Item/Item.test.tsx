@@ -531,6 +531,67 @@ describe('Item', () => {
     expect(screen.getByTestId('item')).toBeInTheDocument();
   });
 
+  it('reflects the resolved alignment on the item theme target', () => {
+    const {rerender} = render(<Item label="Item" data-testid="item" />);
+    expect(screen.getByTestId('item')).toHaveAttribute('data-align', 'center');
+    for (const align of ['center', 'start', 'first-line'] as const) {
+      rerender(<Item label="Item" align={align} data-testid="item" />);
+      const item = screen.getByTestId('item');
+      expect(item).toHaveClass('astryx-item');
+      expect(item).toHaveAttribute('data-align', align);
+    }
+  });
+
+  it('aligns the row on first baselines only under first-line', () => {
+    const {rerender} = render(<Item label="Item" data-testid="item" />);
+    const declares = (value: string) =>
+      rulesDeclaredFor(screen.getByTestId('item')).some(rule =>
+        rule.includes(`align-items: ${value}`),
+      );
+    expect(declares('baseline')).toBe(false);
+    rerender(<Item label="Item" align="start" data-testid="item" />);
+    expect(declares('baseline')).toBe(false);
+    rerender(<Item label="Item" align="first-line" data-testid="item" />);
+    expect(declares('baseline')).toBe(true);
+  });
+
+  it('gives each first-line slot a strut with no accessible text', () => {
+    render(
+      <Item
+        label="Item"
+        align="first-line"
+        startContent={<span data-testid="start">S</span>}
+        endContent={<span data-testid="end">E</span>}
+      />,
+    );
+    for (const id of ['start', 'end']) {
+      const slot = screen.getByTestId(id).parentElement!;
+      const before = rulesDeclaredFor(slot).filter(rule =>
+        rule.slice(0, rule.indexOf('{')).includes('::before'),
+      );
+      expect(before.some(rule => rule.includes('/ ""'))).toBe(true);
+    }
+  });
+
+  it('leaves center and start slots without a strut', () => {
+    const {rerender} = render(
+      <Item label="Item" startContent={<span data-testid="start">S</span>} />,
+    );
+    const hasStrut = () =>
+      rulesDeclaredFor(screen.getByTestId('start').parentElement!).some(rule =>
+        rule.slice(0, rule.indexOf('{')).includes('::before'),
+      );
+    expect(hasStrut()).toBe(false);
+    rerender(
+      <Item
+        label="Item"
+        align="start"
+        startContent={<span data-testid="start">S</span>}
+      />,
+    );
+    expect(hasStrut()).toBe(false);
+  });
+
   // ===========================================================================
   // Description rendering
   // ===========================================================================
@@ -660,6 +721,7 @@ describe('swipeActions', () => {
     vi.useRealTimers();
   });
 
+  /** The first finger down: the primary touch pointer. */
   function touch(
     element: Element,
     type: 'pointerDown' | 'pointerMove' | 'pointerUp' | 'pointerCancel',
@@ -670,7 +732,25 @@ describe('swipeActions', () => {
     fireEvent[type](element, {
       clientX: x,
       clientY: y,
+      isPrimary: true,
       pointerId: 7,
+      pointerType: 'touch',
+    });
+  }
+
+  /** A second finger: a touch pointer that is not the primary one. */
+  function secondFinger(
+    element: Element,
+    type: 'pointerDown' | 'pointerMove' | 'pointerUp' | 'pointerCancel',
+    x: number,
+    y = 10,
+  ) {
+    vi.advanceTimersByTime(10);
+    fireEvent[type](element, {
+      clientX: x,
+      clientY: y,
+      isPrimary: false,
+      pointerId: 8,
       pointerType: 'touch',
     });
   }
@@ -894,6 +974,105 @@ describe('swipeActions', () => {
       clientY: 10,
       pointerId: 1,
       pointerType: 'mouse',
+    });
+  });
+
+  describe('a pinch', () => {
+    /** A touchmove listing both fingers; true when the row cancelled it. */
+    const pinchMoveCancelled = (row: Element, x: number) =>
+      !fireEvent.touchMove(row, {
+        cancelable: true,
+        touches: [
+          {clientX: x, clientY: 10},
+          {clientX: 300 - x, clientY: 10},
+        ],
+      });
+
+    it('lets the touch go when a second finger lands on the row before the axis is decided, and cancels nothing', () => {
+      const {row} = renderRow();
+      touch(row, 'pointerDown', 100);
+      secondFinger(row, 'pointerDown', 60);
+      // The fingers spread apart; the first one travels toward the leading
+      // side far past the axis lock.
+      touch(row, 'pointerMove', 130);
+      secondFinger(row, 'pointerMove', 30);
+      touch(row, 'pointerMove', 160);
+      expect(pinchMoveCancelled(row, 160)).toBe(false);
+      void act(() => vi.advanceTimersByTime(20));
+      expect(travelOf(row)).toBe('');
+      // The browser takes the pinch.
+      touch(row, 'pointerCancel', 160);
+      secondFinger(row, 'pointerCancel', 0);
+      settled();
+      expect(travelOf(row)).toBe('');
+    });
+
+    it('lets the touch go when the second finger lands off the row', () => {
+      const {row} = renderRow();
+      touch(row, 'pointerDown', 100);
+      secondFinger(document.body, 'pointerDown', 60, 200);
+      touch(row, 'pointerMove', 130);
+      touch(row, 'pointerMove', 160);
+      expect(pinchMoveCancelled(row, 160)).toBe(false);
+      void act(() => vi.advanceTimersByTime(20));
+      expect(travelOf(row)).toBe('');
+      touch(row, 'pointerCancel', 160);
+    });
+
+    it('never starts a drag from a finger that is not the first one down', () => {
+      const {row} = renderRow();
+      // The first finger is somewhere else on the page; this one lands on
+      // the row and travels sideways.
+      secondFinger(row, 'pointerDown', 100);
+      secondFinger(row, 'pointerMove', 130);
+      secondFinger(row, 'pointerMove', 160);
+      expect(pinchMoveCancelled(row, 160)).toBe(false);
+      void act(() => vi.advanceTimersByTime(20));
+      expect(travelOf(row)).toBe('');
+      secondFinger(row, 'pointerUp', 160);
+    });
+
+    it('keeps a drag the row already owns when a second finger lands', () => {
+      const {row} = renderRow();
+      touch(row, 'pointerDown', 10);
+      touch(row, 'pointerMove', 30);
+      touch(row, 'pointerMove', 45);
+      void act(() => vi.advanceTimersByTime(20));
+      expect(travelOf(row)).toBe('35px');
+      secondFinger(row, 'pointerDown', 200);
+      touch(row, 'pointerMove', 60);
+      expect(pinchMoveCancelled(row, 60)).toBe(true);
+      void act(() => vi.advanceTimersByTime(20));
+      expect(travelOf(row)).toBe('50px');
+      touch(row, 'pointerUp', 60);
+      secondFinger(row, 'pointerUp', 200);
+      settled();
+      expect(travelOf(row)).toBe('72px');
+    });
+
+    it('stops listening to the document once the axis is decided or the touch ends', () => {
+      const add = vi.spyOn(document, 'addEventListener');
+      const remove = vi.spyOn(document, 'removeEventListener');
+      try {
+        const {row} = renderRow();
+        const watching = () =>
+          add.mock.calls.filter(([type]) => type === 'pointerdown').length -
+          remove.mock.calls.filter(([type]) => type === 'pointerdown').length;
+        const before = watching();
+        touch(row, 'pointerDown', 10);
+        expect(watching()).toBe(before + 1);
+        touch(row, 'pointerMove', 40);
+        expect(watching()).toBe(before);
+        touch(row, 'pointerUp', 40);
+        settled();
+        touch(row, 'pointerDown', 10);
+        expect(watching()).toBe(before + 1);
+        touch(row, 'pointerUp', 12);
+        expect(watching()).toBe(before);
+      } finally {
+        add.mockRestore();
+        remove.mockRestore();
+      }
     });
   });
 

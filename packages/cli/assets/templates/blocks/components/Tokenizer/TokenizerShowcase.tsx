@@ -17,13 +17,14 @@ export default function TokenizerShowcase() {
     {id: '2', label: 'Engineering'},
   ]);
   return (
-    <Tokenizer
-      label="Tags"
-      placeholder="Search..."
-      searchSource={source}
-      value={value}
-      onChange={setValue}
-      containerStyle={{width: 400}}
-    />
+    <div style={{display: 'grid', gridTemplateColumns: 'minmax(0, 400px)'}}>
+      <Tokenizer
+        label="Tags"
+        placeholder="Search..."
+        searchSource={source}
+        value={value}
+        onChange={setValue}
+      />
+    </div>
   );
 }

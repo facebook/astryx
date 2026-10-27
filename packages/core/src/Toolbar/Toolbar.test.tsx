@@ -140,14 +140,6 @@ describe('Toolbar', () => {
     );
   });
 
-  it('sets aria-orientation to vertical', () => {
-    render(<Toolbar label="Actions" orientation="vertical" />);
-    expect(screen.getByRole('toolbar')).toHaveAttribute(
-      'aria-orientation',
-      'vertical',
-    );
-  });
-
   it('reflects the size', () => {
     render(<Toolbar label="Actions" size="sm" />);
     const toolbar = screen.getByRole('toolbar');

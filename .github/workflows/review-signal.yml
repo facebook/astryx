@@ -31,7 +31,9 @@
 # The CODE label DISABLES auto-merge so the PR can't merge unattended (the
 # design label is advisory and does not). Both are cleared when an entitled
 # owner approves (code → CODEOWNER; design → DESIGNOWNER
-# or CODEOWNER). Code detection is path-based and deterministic; design adds a
+# or CODEOWNER). For an author with write or admin permission, the review
+# app named in vars.REVIEW_APP also clears the code gate with its latest
+# approval on the exact head. Code detection is path-based and deterministic; design adds a
 # content-based diff score (deterministic too — same diff, same score).
 #
 # HARD GATE (code review only): this emits a "review-required" COMMIT STATUS.
@@ -110,6 +112,7 @@ jobs:
         env:
           ENG_OWNERS: ${{ vars.ENGOWNERS }}
           DESIGN_OWNERS: ${{ vars.DESIGNOWNERS }}
+          REVIEW_APP: ${{ vars.REVIEW_APP }}
         with:
           # api.github.com 503s intermittently; an unretried one used to leave a
           # PR with no review-required status at all, blocked forever on
@@ -447,24 +450,46 @@ jobs:
             // the PR's reviews here (this job runs on pull_request_target and
             // workflow_dispatch, both of which work for forks) and treat a gate
             // as satisfied when an entitled owner has approved:
-            //   code gate   → an ENGOWNER approval
+            //   code gate   → an ENGOWNER approval, or — for an author with
+            //                 write or admin permission — the review app's
+            //                 (vars.REVIEW_APP) latest verdict, when it approves
             //   design gate → a DESIGNOWNER approval
             // Only reviews whose commit_id equals this current PR head count.
             // Within that head, each reviewer's latest APPROVED /
             // CHANGES_REQUESTED / DISMISSED state wins. An H1 approval can never
             // clear H2 for either engineering or design.
+            //
+            // The author's permission is read live at every evaluation. An unset
+            // REVIEW_APP or a failed read leaves the app's reviews without effect
+            // (fail closed to the engineering-owner path).
+            const reviewApp = reviewDecision.normalizeReviewApp(process.env.REVIEW_APP);
+            let authorHasWrite = false;
+            if (reviewApp && codeHighRisk) {
+              try {
+                const { data: permission } =
+                  await github.rest.repos.getCollaboratorPermissionLevel({
+                    owner, repo, username: pr.user.login,
+                  });
+                authorHasWrite = reviewDecision.hasWritePermission(permission);
+              } catch (e) {
+                core.warning(`Could not read author permission; review-app approval does not apply: ${e.message}`);
+              }
+            }
             let codeApproved = false;
+            let codeApprovedBy = null;
             let designApproved = false;
             try {
               const reviews = await github.paginate(github.rest.pulls.listReviews, {
                 owner, repo, pull_number: pr.number, per_page: 100,
               });
-              ({codeApproved, designApproved} =
+              ({codeApproved, codeApprovedBy, designApproved} =
                 reviewDecision.resolveReviewApprovals({
                   reviews,
                   headSha: pr.head.sha,
                   engOwners,
                   designOwners,
+                  reviewApp,
+                  authorHasWrite,
                 }));
             } catch (e) {
               core.warning(`Could not resolve exact-head reviews: ${e.message}`);
@@ -474,7 +499,7 @@ jobs:
             // already approved.
             const codeGated = codeHighRisk && !codeApproved;
             const designGated = designAffecting && !designApproved;
-            core.info(`approvals: code=${codeApproved} design=${designApproved} → codeGated=${codeGated} designGated=${designGated}`);
+            core.info(`approvals: code=${codeApproved} (${codeApprovedBy || '-'}, authorHasWrite=${authorHasWrite}) design=${designApproved} → codeGated=${codeGated} designGated=${designGated}`);
 
             // --- Apply labels. ---
             const current = pr.labels.map((l) => l.name);
@@ -578,9 +603,11 @@ jobs:
             // backfill; re-run the workflow to retry.
             const gateDescription = codeGated
               ? `Waiting on code review: ${gateReasons.join(', ')}`.slice(0, 140)
-              : codeHighRisk && codeApproved
-                ? 'Cleared by code-owner approval.'
-                : 'No code review required.';
+              : codeHighRisk && codeApprovedBy === 'review-app'
+                ? 'Cleared by review-app approval for a write-access author.'
+                : codeHighRisk && codeApproved
+                  ? 'Cleared by code-owner approval.'
+                  : 'No code review required.';
             await github.rest.repos.createCommitStatus({
               owner,
               repo,

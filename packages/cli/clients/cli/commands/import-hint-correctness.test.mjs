@@ -21,7 +21,7 @@ import {
   resolveImportPath,
   discoverComponents,
   findComponentSource,
-} from './component/index.mjs';
+} from './component.mjs';
 import {findCoreDir} from '../../../foundation/fs/paths.mjs';
 import {runCli} from '../../../test-utils/run-cli.mjs';
 

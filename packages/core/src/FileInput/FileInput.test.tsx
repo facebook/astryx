@@ -243,12 +243,35 @@ describe('FileInput', () => {
     expect(trigger).not.toHaveAttribute('aria-required');
   });
 
-  it('sets disabled attribute when isDisabled is true', () => {
+  it('keeps a disabled input focusable and out of form submission', async () => {
+    const user = userEvent.setup();
     render(
-      <FileInput label="Upload" isDisabled value={null} onChange={() => {}} />,
+      <form>
+        <FileInput
+          label="Upload"
+          isRequired
+          isDisabled
+          value={null}
+          onChange={() => {}}
+        />
+      </form>,
     );
-    const input = document.querySelector('input[type="file"]')!;
-    expect(input).toBeDisabled();
+    const input =
+      document.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const trigger = screen.getByRole('button', {name: 'Upload'});
+    expect(input).not.toHaveAttribute('disabled');
+    expect(trigger).not.toHaveAttribute('disabled');
+    expect(trigger).toHaveAttribute('aria-disabled', 'true');
+    const openPicker = vi.spyOn(input, 'click');
+    await user.tab();
+    expect(trigger).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(openPicker).not.toHaveBeenCalled();
+    expect(input.form).toBeNull();
+    expect(trigger.closest('form')!.checkValidity()).toBe(true);
+    // A label click activates the hidden input directly; it is canceled so
+    // the picker never opens (fireEvent returns false when prevented).
+    expect(fireEvent.click(input)).toBe(false);
   });
 
   it('sets aria-invalid when status type is error', () => {
@@ -1095,7 +1118,7 @@ describe('FileInput', () => {
       expect(clickSpy).not.toHaveBeenCalled();
     });
 
-    it('keeps the trigger non-focusable when disabled without a reason', () => {
+    it('keeps the trigger focusable when disabled without a reason', () => {
       render(
         <FileInput
           label="Resume"
@@ -1105,8 +1128,8 @@ describe('FileInput', () => {
         />,
       );
       const trigger = screen.getByRole('button');
-      expect(trigger).toHaveAttribute('tabindex', '-1');
-      expect(trigger).not.toHaveAttribute('aria-disabled');
+      expect(trigger).toHaveAttribute('tabindex', '0');
+      expect(trigger).toHaveAttribute('aria-disabled', 'true');
     });
   });
 });

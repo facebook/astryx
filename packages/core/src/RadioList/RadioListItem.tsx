@@ -29,7 +29,7 @@ import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useIndicator} from '../Indicator';
-import {Item} from '../Item';
+import {Item, type ItemAlign} from '../Item';
 import {themeProps} from '../utils/themeProps';
 
 // The touch press's paint, declared by the shared overlay styles on the
@@ -37,6 +37,10 @@ import {themeProps} from '../utils/themeProps';
 // 1 while on and 1 → 0 over the release, and inherited resolved by the layer
 // that paints it. See interactionOverlay.stylex.ts.
 const pressedOverlayImage = 'var(--_press-paint-image)';
+
+// The mouse press's paint, declared on the row and inherited by the layer
+// over the circle. Internal: not a theme hook.
+const ROW_PRESS = '--_radio-row-press';
 
 const styles = stylex.create({
   radioWrapper: {
@@ -48,8 +52,10 @@ const styles = stylex.create({
     isolation: 'isolate',
   },
   // The row remains the large press target, but nested links and buttons keep
-  // their independent action and do not make the radio appear pressed. This
-  // owner-drawn layer also survives a theme replacing the indicator component.
+  // their independent action and do not make the radio appear pressed: the
+  // row declares the mouse press's paint (`rowStyles.press`) and this layer
+  // reads it. This owner-drawn layer also survives a theme replacing the
+  // indicator component.
   // Two pointers, two press models (see interactionOverlay.stylex.ts): a
   // mouse keeps `:active`; under a coarse pointer that arm is dropped and the
   // touch press controller writes `data-astryx-press` on the row, which this layer
@@ -63,16 +69,7 @@ const styles = stylex.create({
       inset: 0,
       borderRadius: radiusVars['--radius-full'],
       pointerEvents: 'none',
-      backgroundColor: {
-        default: 'transparent',
-        [stylex.when.ancestor(
-          ':active:not(:has(a:active,button:active,[role="button"]:active,[role="link"]:active))',
-          indicatorScope,
-        )]: {
-          default: colorVars['--color-overlay-pressed'],
-          '@media (pointer: coarse)': 'transparent',
-        },
-      },
+      backgroundColor: `var(${ROW_PRESS}, transparent)`,
       // The touch press, as an image layer over the colour: an image change is
       // discrete, so no transition can delay the onset, and the strength the
       // row's `pressedAlpha` arms own (1 while on, 1 → 0 over the release) is
@@ -152,10 +149,33 @@ const rowStyles = stylex.create({
     // circle reads it.
     backgroundImage: 'none',
   },
+  // The mouse press (a finger's lives on `data-astryx-press`): the row is
+  // pressed, but not through a nested link or button, which keep their own
+  // action. The `:has()` is on the row itself and reaches no descendant
+  // selector, so a change inside the row re-checks the row alone; the circle's
+  // layer reads the paint through inheritance rather than a relation that
+  // would restyle everything under the row.
+  press: {
+    [ROW_PRESS]: {
+      default: null,
+      ':active:not(:has(a:active,button:active,[role="button"]:active,[role="link"]:active))':
+        {
+          default: colorVars['--color-overlay-pressed'],
+          '@media (pointer: coarse)': 'transparent',
+        },
+    },
+  },
 });
 
 export interface RadioListItemProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
+  /**
+   * Vertical alignment of the start and end content against the label,
+   * forwarded to Item. Use `first-line` to keep the radio level with the
+   * first line of a wrapped label.
+   * @default 'center'
+   */
+  align?: ItemAlign;
   /**
    * Primary label for the radio item.
    *
@@ -232,6 +252,7 @@ export function RadioListItem({
   isDisabled: isItemDisabled = false,
   startContent,
   endContent,
+  align,
   xstyle,
   className,
   style,
@@ -366,6 +387,7 @@ export function RadioListItem({
         ) : undefined
       }
       endContent={endContent}
+      align={align}
       xstyle={
         [
           // Hover reaches the radio visual through this ancestor marker rather
@@ -378,6 +400,7 @@ export function RadioListItem({
           // styles so it wins within the base layer; a `radio-list-item` theme
           // still overrides it from the higher `astryx-theme` layer.
           rowStyles.root,
+          !isDisabled && rowStyles.press,
           xstyle,
         ] as StyleXStyles
       }

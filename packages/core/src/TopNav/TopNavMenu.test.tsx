@@ -233,13 +233,58 @@ describe('TopNavMenu — drawer focus ring', () => {
     expectSharedFocusRing(screen.getByRole('button', {name: /Products/}));
   });
 
-  it('draws the shared ring on a drawer item', () => {
+  it('draws the shared ring on a drawer item', async () => {
+    const user = userEvent.setup();
     render(
       <TopNavRenderContext value="drawer">
         <TopNavMenu label="Products" items={mockItems} />
       </TopNavRenderContext>,
     );
+    await user.click(screen.getByRole('button', {name: /Products/}));
     expectSharedFocusRing(screen.getByRole('link', {name: /Analytics/}));
+  });
+
+  it('clips the drawer section only while it is collapsed', async () => {
+    // The ring paints outside the item, so a permanent clip would cut it off.
+    const user = userEvent.setup();
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMenu label="Products" items={mockItems} />
+      </TopNavRenderContext>,
+    );
+    const trigger = screen.getByRole('button', {name: /Products/});
+    const section = document.getElementById(
+      trigger.getAttribute('aria-controls') ?? '',
+    )!;
+    expect(getComputedStyle(section).overflow).toBe('hidden');
+    expect(getComputedStyle(section.firstElementChild!).overflow).toBe('');
+
+    await user.click(trigger);
+    expect(getComputedStyle(section).overflow).toBe('visible');
+  });
+});
+
+describe('TopNavMenu — drawer collapsed section', () => {
+  it('makes collapsed items inert and hidden from assistive technology', async () => {
+    const user = userEvent.setup();
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMenu label="Products" items={mockItems} />
+      </TopNavRenderContext>,
+    );
+    const trigger = screen.getByRole('button', {name: /Products/});
+    const region = document.getElementById(
+      trigger.getAttribute('aria-controls') ?? '',
+    );
+
+    expect(region).toHaveAttribute('inert');
+    expect(region).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.queryByRole('link', {name: /Analytics/})).toBeNull();
+
+    await user.click(trigger);
+    expect(region).not.toHaveAttribute('inert');
+    expect(region).toHaveAttribute('aria-hidden', 'false');
+    expect(screen.getByRole('link', {name: /Analytics/})).toBeInTheDocument();
   });
 });
 

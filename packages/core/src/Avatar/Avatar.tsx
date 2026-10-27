@@ -387,9 +387,18 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
 /**
  * A character that can stand for a word in initials: a letter, a digit, or an
  * emoji. Punctuation and other symbols, such as `(`, `"` or `-`, cannot.
+ *
+ * Built at runtime, not written as a literal: for targets without property
+ * escapes, or when no browserslist is set, Babel's
+ * transform-unicode-property-regex rewrites a `\p{…}` literal, and the copy
+ * bundled with Next.js lacks the Unicode data it needs, so a source build fails
+ * with "Unknown property". A literal is safe once Next's bundled Babel ships
+ * that data.
  */
-const INITIAL_CHARACTER =
-  /[\p{L}\p{N}\p{Extended_Pictographic}\p{Regional_Indicator}]/u;
+const INITIAL_CHARACTER = new RegExp(
+  '[\\p{L}\\p{N}\\p{Extended_Pictographic}\\p{Regional_Indicator}]',
+  'u',
+);
 
 /**
  * The first character of a word that can stand for it in initials, skipping

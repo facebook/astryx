@@ -554,9 +554,30 @@ describe('DateInput — field parity', () => {
         onChange={() => {}}
       />,
     );
-    expect(field()).toBeDisabled();
+    // Focusable, never natively disabled (AST-085 FR1), and still inert.
+    expect(field()).not.toHaveAttribute('disabled');
+    expect(field()).toHaveAttribute('aria-disabled', 'true');
+    field().focus();
+    expect(field()).toHaveFocus();
     fireEvent.click(field());
+    fireEvent.keyDown(field(), {key: 'Enter'});
+    expect(field()).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('grid')).not.toBeInTheDocument();
+  });
+
+  it('does not call a caller onClick while disabled (AST-085 FR2)', () => {
+    const onClick = vi.fn();
+    render(
+      <DateInput
+        nativePicker="never"
+        label="Ship date"
+        isDisabled
+        onClick={onClick}
+        onChange={() => {}}
+      />,
+    );
+    fireEvent.click(field());
+    expect(onClick).not.toHaveBeenCalled();
   });
 
   it('stays focusable and explains itself when disabled with a reason', () => {
@@ -643,6 +664,51 @@ describe('DateInput — field parity', () => {
     });
     expect(changeAction).toHaveBeenCalledWith('2026-03-25');
     resolve();
+  });
+
+  it('announces a busy start from a pick inside the open sheet, not behind it (spec:AST-086 FR8, Platform support)', async () => {
+    // The stubbed showModal() opens the dialog but jsdom cannot match
+    // `:modal`; stand in for the sheet the browser presents modally.
+    const matches = Element.prototype.matches;
+    const modalSpy = vi
+      .spyOn(Element.prototype, 'matches')
+      .mockImplementation(function (this: Element, selector: string) {
+        return selector === ':modal'
+          ? this instanceof HTMLDialogElement && this.open
+          : matches.call(this, selector);
+      });
+    const changeAction = vi.fn(async () => new Promise<void>(() => {}));
+    withLayout(() => {
+      render(
+        <DateInput
+          nativePicker="never"
+          label="Ship date"
+          value="2026-03-10"
+          min="2026-03-01"
+          max="2026-03-31"
+          onChange={() => {}}
+          changeAction={changeAction}
+        />,
+      );
+      fireEvent.click(field());
+      fireEvent.click(
+        within(pane('March 2026')).getByRole('button', {
+          name: /March 25, 2026/,
+        }),
+      );
+    });
+    const sheet = document.querySelector('dialog[open]');
+    expect(sheet).not.toBeNull();
+    await waitFor(() => {
+      expect(
+        sheet!.querySelector('[data-astryx-modal-live-region="polite"]'),
+      ).toHaveTextContent('Loading');
+    });
+    expect(
+      document.querySelector('[data-astryx-live-region="polite"]')
+        ?.textContent ?? '',
+    ).toBe('');
+    modalSpy.mockRestore();
   });
 
   it('drops the Field wrapper inside an InputGroup', () => {
@@ -2471,6 +2537,15 @@ describe('DateInput — scroll CSS (definition-level)', () => {
     expect(source).toContain("scrollSnapAlign: 'center'");
     expect(source).toContain(
       'paddingBlock: dateInputTouchGeometry.wheelEdgePadding',
+    );
+  });
+
+  it('leaves a two-finger pinch to the page over the wheels', () => {
+    // `pan-y` alone also refuses the browser's pinch-zoom over the wheel, so
+    // the page could not be zoomed over an open picker. The real-engine proof
+    // is WheelPinchZoom.a11y.chromium.spec.ts; jsdom computes no touch-action.
+    expect(declarations(read('Wheel.tsx'), 'scroller')).toContain(
+      "touchAction: 'pan-y pinch-zoom'",
     );
   });
 

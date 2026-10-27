@@ -29,6 +29,7 @@ import * as http from 'node:http';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {pageAssetUrls, primeCdnAssets} from './lib/cdn-asset-priming.mjs';
 import {resolvePublishedCdnVersion} from './lib/cdn-version.mjs';
 
 const ROOT = path.resolve(
@@ -95,7 +96,49 @@ if (rendered !== pinned) {
   );
 }
 
-// ── 3. Serve it, so the page loads the way a deployed one would ──────────────
+// ── 3. Prime the CDN, so the browser's requests hit a built asset ───────────
+// Both CDNs build a package on the first request that reaches them for it, and a
+// request that arrives mid-build is answered with an error document that is then
+// cached. A page pinned to a version published minutes ago therefore loads its
+// CSS as `text/plain`, which Chromium rejects as an opaque response
+// (net::ERR_BLOCKED_BY_ORB) and `networkidle` never settles on. Asking for the
+// same URLs over plain HTTP starts and finishes the build first, and turns the
+// remaining case into a line that names the asset instead of a navigation
+// timeout at the end of a 17-minute run.
+const PRIME_DEADLINE_MS = 120_000;
+const assets = pageAssetUrls(fs.readFileSync(pagePath, 'utf8'));
+const {cold} = await primeCdnAssets(assets, {deadlineMs: PRIME_DEADLINE_MS});
+if (cold.length > 0) {
+  fail(
+    `${cold.length} page asset(s) did not serve within ${PRIME_DEADLINE_MS / 1000}s`,
+    [
+      '        Every URL below is one the starter page requests, so the page cannot render',
+      '        without it. The text after :: is what the last request observed, and it',
+      '        takes one of three shapes.',
+      '',
+      '        HTTP <status> with a sentence after it: the CDN answered and its own words',
+      '        name what it could not find — jsDelivr separates the file from the release',
+      '        version from the package, and esm.sh words a missing release its own way.',
+      '        A release published minutes ago can still be building at that edge, so weigh',
+      '        the sentence against the version this run resolved before reading it as a',
+      '        URL a change broke.',
+      '',
+      '        HTTP <status> with nothing after it: it answered, and the error document did',
+      '        not read, so the number is all there is to report.',
+      '',
+      '        An error name, with the transport reason in parentheses when there is one',
+      '        (TypeError (ECONNREFUSED), or a bare TimeoutError when the request hung):',
+      '        nobody answered at all, so the asset may be fine and the DNS, the route or',
+      '        the CDN itself is the problem.',
+      '',
+      ...cold.map(({url, reason}) => `        ${url} :: ${reason}`),
+    ].join('\n'),
+  );
+  fs.rmSync(tmpDir, {recursive: true, force: true});
+  process.exit(1);
+}
+
+// ── 4. Serve it, so the page loads the way a deployed one would ─────────────
 const server = http.createServer((req, res) => {
   const body = fs.readFileSync(pagePath);
   res.writeHead(200, {'content-type': 'text/html; charset=utf-8'});
@@ -139,7 +182,7 @@ async function render() {
   }
 }
 
-// ── 4. Render, retrying once so a blip at a CDN is not a red build ───────────
+// ── 5. Render, retrying once so a blip at a CDN is not a red build ───────────
 let result;
 for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
   result = await render();
@@ -153,7 +196,7 @@ for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
 }
 server.close();
 
-// ── 5. Report ────────────────────────────────────────────────────────────────
+// ── 6. Report ────────────────────────────────────────────────────────────────
 console.log(`\n${PAGE} @ ${rendered}`);
 for (const [label, entries] of [
   ['console error', result.consoleErrors],

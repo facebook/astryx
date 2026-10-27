@@ -82,6 +82,12 @@ import type {
   CommentUser,
 } from './types';
 
+// The page's shared live regions are not the component's error Banner.
+const errorBanner = () =>
+  screen
+    .queryAllByRole('alert')
+    .find(element => !element.hasAttribute('data-astryx-live-region'));
+
 const VIEWER: CommentUser = {id: 'avery', name: 'Avery Kim'};
 const OTHER: CommentUser = {id: 'maya', name: 'Maya Chen'};
 const AGENT: CommentUser = {
@@ -402,9 +408,7 @@ describe('Comments rendering', () => {
   it('removes the fading New badge from layout when its animation ends', () => {
     render(
       <Sized>
-        <Comments
-          comments={[{...COMMENTS[0], isUnread: true, replies: []}]}
-        />
+        <Comments comments={[{...COMMENTS[0], isUnread: true, replies: []}]} />
       </Sized>,
     );
     const badge = document.querySelector('[data-comment-unread-badge="true"]');
@@ -586,8 +590,9 @@ describe('Comments live collaboration seams', () => {
     await click(screen.getByRole('button', {name: 'Thread by Avery Kim'}));
     const typingStatus = screen
       .getByText('Maya Chen and Release Assistant are typing…')
-      .closest('[role="status"]');
+      .closest('.astryx-chat-typing-indicator');
     expect(typingStatus).not.toBeNull();
+    expect(typingStatus).not.toHaveAttribute('role');
     expect(
       (typingStatus as HTMLElement).style.getPropertyValue(
         '--astryx-chat-typing-indicator-dots-column-width',
@@ -867,11 +872,7 @@ describe('Comments threads', () => {
     const onReact = vi.fn().mockResolvedValue(undefined);
     render(
       <Sized>
-        <Comments
-          comments={COMMENTS}
-          currentUser={VIEWER}
-          onReact={onReact}
-        />
+        <Comments comments={COMMENTS} currentUser={VIEWER} onReact={onReact} />
       </Sized>,
     );
     const article = articleByAuthor('Avery Kim');
@@ -896,11 +897,7 @@ describe('Comments threads', () => {
       .mockResolvedValue(undefined);
     render(
       <Sized>
-        <Comments
-          comments={COMMENTS}
-          currentUser={VIEWER}
-          onReact={onReact}
-        />
+        <Comments comments={COMMENTS} currentUser={VIEWER} onReact={onReact} />
       </Sized>,
     );
     await click(
@@ -909,12 +906,12 @@ describe('Comments threads', () => {
       }),
     );
     await flush();
-    const banner = screen.getByRole('alert');
+    const banner = errorBanner()!;
     expect(banner.textContent).toContain("Your reaction couldn't be saved.");
     await click(within(banner).getByRole('button', {name: 'Retry'}));
     await flush();
     expect(onReact).toHaveBeenCalledTimes(2);
-    expect(screen.queryByRole('alert')).toBeNull();
+    expect(errorBanner()).toBeUndefined();
   });
 
   it('copies a link to the comment', async () => {
@@ -1008,7 +1005,7 @@ describe('Comments threads', () => {
         />
       </Sized>,
     );
-    const banner = screen.getByRole('alert');
+    const banner = errorBanner()!;
     expect(banner.textContent).toContain("Couldn't post this comment.");
     await click(within(banner).getByRole('button', {name: 'Retry'}));
     await flush();
@@ -1031,7 +1028,7 @@ describe('Comments threads', () => {
     );
     await click(screen.getByRole('button', {name: 'Load earlier comments'}));
     await flush();
-    const banner = screen.getByRole('alert');
+    const banner = errorBanner()!;
     expect(banner.textContent).toContain("Earlier comments couldn't load");
     await click(within(banner).getByRole('button', {name: 'Retry'}));
     await flush();

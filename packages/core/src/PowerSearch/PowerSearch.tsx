@@ -900,6 +900,15 @@ export function PowerSearch({
           size={size}
           icon={tokenIcon}
           endContent={valueContent}
+          onMouseDown={
+            handleClick
+              ? e => {
+                  // Keep a token press from entering Tokenizer's input-focus
+                  // redirect. Click still edits/removes; Tab entry is unchanged.
+                  e.preventDefault();
+                }
+              : undefined
+          }
           onClick={
             handleClick
               ? (e: React.MouseEvent) => {
@@ -1048,15 +1057,17 @@ export function PowerSearch({
   // Announce result-count changes to screen readers through a polite live
   // region, mirroring the way Typeahead announces its dropdown result count.
   // The count is otherwise only shown visually and stays silent to assistive
-  // tech. Skip the first run so the count already present on mount isn't
-  // announced unprompted — only user-driven changes are spoken.
+  // tech. Only a change after mount is spoken: the guard compares against the
+  // last announced text rather than a mounted flag, so StrictMode's effect
+  // replay (which resets a flag and would speak the count present on mount
+  // unprompted) announces nothing until the count changes.
   const announce = useAnnounce();
-  const hasMountedRef = useRef(false);
+  const announcedResultCountRef = useRef(resultCountText);
   useEffect(() => {
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true;
+    if (resultCountText === announcedResultCountRef.current) {
       return;
     }
+    announcedResultCountRef.current = resultCountText;
     if (resultCountText != null) {
       announce(resultCountText);
     }

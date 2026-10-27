@@ -5,7 +5,7 @@
 /**
  * @file MobileTokenizer.tsx
  * @input Uses public @astryxdesign/core components only (AlertDialog,
- *   BottomSheet, BottomSheetSwitcher, Button, CheckboxIndicator, EmptyState,
+ *   BottomSheet, Button, CheckboxIndicator, EmptyState,
  *   Field, Icon, Text, TextInput, Token)
  * @output Exports MobileTokenizer — Lab prototype of the touch Tokenizer
  *   flow with a single searchable sheet, stable in-session checkbox ordering,
@@ -13,8 +13,8 @@
  * @position Lab (canary) stack layer 1: validates the design before the
  *   Core promotion (Tokenizer presentation="bottom-sheet").
  *
- * API mirrors Core Tokenizer (label/searchSource/value/onChange/change,
- * hasCreate, maxEntries) so graduation is an import swap. Differences from
+ * API mirrors Core Tokenizer (label/isLabelHidden/searchSource/value/onChange/
+ * change, renderItem, hasCreate, maxEntries) so graduation is an import swap. Differences from
  * Core are the Lab deltas: the filter is a bordered TextInput (Core's
  * PanelSearchInput is not exported), strings are literals (no i18n keys),
  * and there is no theming/spec contract yet.
@@ -26,13 +26,13 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
   type SVGProps,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
 import {AlertDialog} from '@astryxdesign/core/AlertDialog';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
-import {BottomSheetSwitcher} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
 import {EmptyState} from '@astryxdesign/core/EmptyState';
 import {Field} from '@astryxdesign/core/Field';
@@ -60,9 +60,19 @@ export interface MobileTokenizerProps<T extends SearchableItem> extends Omit<
   'onChange'
 > {
   label: string;
+  /**
+   * Hide the visible field label; the trigger and the sheet keep `label` as
+   * their accessible name. Mirrors Core Tokenizer.
+   */
+  isLabelHidden?: boolean;
   searchSource: SearchSource<T>;
   value: T[];
   onChange: (items: T[], change: MobileTokenizerChange<T>) => void;
+  /**
+   * Render function for a result row's content, shown beside the row's
+   * checkbox. Default: the item's label. Mirrors Core Tokenizer.
+   */
+  renderItem?: (item: T) => ReactNode;
   placeholder?: string;
   description?: string;
   isOptional?: boolean;
@@ -76,7 +86,6 @@ export interface MobileTokenizerProps<T extends SearchableItem> extends Omit<
   onChangeQuery?: (query: string) => void;
 }
 
-type SheetId = 'manage';
 const CREATABLE_ID_PREFIX = '__xds_create__';
 const LIST_RENDER_BATCH_SIZE = 50;
 const LIST_LOAD_MORE_THRESHOLD_PX = 200;
@@ -118,8 +127,27 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
   },
+  // An aria-disabled button gets no system disabled paint in forced colors;
+  // GrayText is the platform's disabled affordance there. Defaults repeat the
+  // base values, since StyleX merges per property.
+  triggerDisabled: {
+    borderColor: {
+      default: colorVars['--color-border'],
+      '@media (forced-colors: active)': 'GrayText',
+    },
+    color: {
+      default: null,
+      '@media (forced-colors: active)': 'GrayText',
+    },
+  },
   triggerPlaceholder: {
     color: colorVars['--color-text-secondary'],
+  },
+  triggerPlaceholderDisabled: {
+    color: {
+      default: colorVars['--color-text-secondary'],
+      '@media (forced-colors: active)': 'GrayText',
+    },
   },
   sheetBody: {
     display: 'flex',
@@ -156,6 +184,29 @@ const styles = stylex.create({
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+  },
+  // A Token authors its own color, which forced colors replace with
+  // CanvasText; GrayText marks the tokens of a disabled trigger as disabled.
+  // The default repeats Token's own default color.
+  tokenDisabled: {
+    color: {
+      default: colorVars['--color-text-primary'],
+      '@media (forced-colors: active)': 'GrayText',
+    },
+  },
+  // Same for the indicator's border: GrayText in forced colors, and the
+  // default repeats the indicator's disabled border.
+  indicatorDisabled: {
+    borderColor: {
+      default: colorVars['--color-border'],
+      '@media (forced-colors: active)': 'GrayText',
+    },
+  },
+  rowDisabled: {
+    color: {
+      default: colorVars['--color-text-primary'],
+      '@media (forced-colors: active)': 'GrayText',
     },
   },
   rowLabel: {
@@ -208,9 +259,11 @@ const styles = stylex.create({
 
 export function MobileTokenizer<T extends SearchableItem>({
   label,
+  isLabelHidden,
   searchSource,
   value,
   onChange,
+  renderItem,
   placeholder,
   description,
   isOptional,
@@ -225,7 +278,7 @@ export function MobileTokenizer<T extends SearchableItem>({
   xstyle,
 }: MobileTokenizerProps<T>) {
   const triggerId = useId();
-  const [activeSheet, setActiveSheet] = useState<SheetId | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isClearConfirmationOpen, setIsClearConfirmationOpen] = useState(false);
   const selectedIds = useMemo(() => new Set(value.map(v => v.id)), [value]);
   const isAtMax = maxEntries != null && value.length >= maxEntries;
@@ -271,7 +324,6 @@ export function MobileTokenizer<T extends SearchableItem>({
   const seqRef = useRef(0);
   const lastLoadScrollHeightRef = useRef<number | null>(null);
   const [selectedItemsAtOpen, setSelectedItemsAtOpen] = useState<T[]>(value);
-  const isSheetOpen = activeSheet === 'manage';
   useEffect(() => {
     if (!isSheetOpen) {
       return;
@@ -365,6 +417,7 @@ export function MobileTokenizer<T extends SearchableItem>({
   return (
     <Field
       label={label}
+      isLabelHidden={isLabelHidden}
       description={description}
       isOptional={isOptional}
       isDisabled={isDisabled}
@@ -374,186 +427,220 @@ export function MobileTokenizer<T extends SearchableItem>({
         type="button"
         id={triggerId}
         aria-haspopup="dialog"
-        aria-expanded={activeSheet != null}
+        aria-expanded={isSheetOpen}
         aria-label={label}
-        disabled={isDisabled}
+        aria-disabled={isDisabled || undefined}
         onClick={() => {
+          if (isDisabled) {
+            return;
+          }
           setSelectedItemsAtOpen(value);
           lastLoadScrollHeightRef.current = null;
           setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
-          setActiveSheet('manage');
+          setIsSheetOpen(true);
         }}
-        {...stylex.props(styles.trigger)}>
+        {...stylex.props(styles.trigger, isDisabled && styles.triggerDisabled)}>
         {value.length > 0 ? (
           value.map(item => (
-            <Token key={item.id} label={item.label} isDisabled={isDisabled} />
+            <Token
+              key={item.id}
+              label={item.label}
+              isDisabled={isDisabled}
+              xstyle={isDisabled ? styles.tokenDisabled : undefined}
+            />
           ))
         ) : (
-          <span {...stylex.props(styles.triggerPlaceholder)}>
+          <span
+            {...stylex.props(
+              styles.triggerPlaceholder,
+              isDisabled && styles.triggerPlaceholderDisabled,
+            )}>
             {placeholder ?? ''}
           </span>
         )}
       </button>
 
       {!isDisabled && (
-        <BottomSheetSwitcher
-          activeSheet={activeSheet}
-          onActiveSheetChange={id => setActiveSheet(id as SheetId | null)}>
-          <BottomSheet sheetId="manage" label={label} height="tall" padding={0}>
-            <div {...stylex.props(styles.sheetBody)}>
-              <div {...stylex.props(styles.filterRow)}>
-                <TextInput
-                  label={`Search ${label}`}
-                  isLabelHidden
-                  placeholder="Search..."
-                  startIcon="search"
-                  value={query}
-                  size="lg"
-                  width="100%"
-                  hasClear
-                  onChange={next => {
-                    lastLoadScrollHeightRef.current = null;
-                    setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
-                    setQuery(next);
-                    onChangeQuery?.(next);
-                  }}
-                  controlXstyle={styles.filterInput}
-                />
-              </div>
-              <div
-                {...stylex.props(styles.list)}
-                role="group"
-                aria-label={label}
-                data-testid="mobile-tokenizer-list"
-                data-rendered-count={renderedItems.length}
-                data-total-count={visibleItems.length}
-                onScroll={event => {
-                  const list = event.currentTarget;
-                  const distanceFromBottom =
-                    list.scrollHeight - list.scrollTop - list.clientHeight;
-                  if (
-                    distanceFromBottom <= LIST_LOAD_MORE_THRESHOLD_PX &&
-                    lastLoadScrollHeightRef.current !== list.scrollHeight
-                  ) {
-                    lastLoadScrollHeightRef.current = list.scrollHeight;
-                    setRenderedItemCount(current =>
-                      Math.min(
-                        current + LIST_RENDER_BATCH_SIZE,
-                        visibleItems.length,
-                      ),
-                    );
-                  }
-                }}>
-                {createItem != null && (
-                  <div
-                    data-testid="mobile-tokenizer-create-row"
-                    {...stylex.props(styles.createRow)}>
-                    <span {...stylex.props(styles.createLabel)}>
-                      <Text type="body">{createItem.label}</Text>
-                    </span>
-                    <Button
-                      label="Add"
-                      aria-label={`Add ${query.trim()}`}
-                      variant="secondary"
-                      size="lg"
-                      onClick={() => {
-                        handleAdd(createItem);
-                        lastLoadScrollHeightRef.current = null;
-                        setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
-                        setQuery('');
-                      }}
-                    />
-                  </div>
-                )}
-                {!isSearching &&
-                visibleItems.length === 0 &&
-                createItem == null ? (
-                  <EmptyState
-                    icon={
-                      <Icon
-                        icon={query.trim() === '' ? ListBulletIcon : 'search'}
-                        size="lg"
-                        color="secondary"
-                      />
-                    }
-                    title={
-                      query.trim() === ''
-                        ? 'No items available'
-                        : emptySearchResultsText
-                    }
-                    description={
-                      query.trim() === ''
-                        ? 'There are no items to choose from.'
-                        : 'Try a different search.'
-                    }
-                    isCompact
-                    xstyle={styles.empty}
-                  />
-                ) : (
-                  renderedItems.map(item => {
-                    const isSelected = selectedIds.has(item.id);
-                    const rowDisabled = !isSelected && isAtMax;
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        role="checkbox"
-                        aria-checked={isSelected}
-                        aria-label={item.label}
-                        disabled={rowDisabled}
-                        onClick={() =>
-                          isSelected ? handleRemove(item) : handleAdd(item)
-                        }
-                        {...stylex.props(styles.row)}>
-                        <span {...stylex.props(styles.rowLabel)}>
-                          <Text type="body">{item.label}</Text>
-                        </span>
-                        <CheckboxIndicator
-                          state={isSelected ? 'checked' : 'unchecked'}
-                          size="md"
-                          isDisabled={rowDisabled}
-                        />
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-              {query.trim() === '' && (
-                <div {...stylex.props(styles.footer)}>
+        <BottomSheet
+          isOpen={isSheetOpen}
+          onOpenChange={setIsSheetOpen}
+          label={label}
+          height="tall"
+          padding={0}>
+          <div {...stylex.props(styles.sheetBody)}>
+            <div {...stylex.props(styles.filterRow)}>
+              <TextInput
+                label={`Search ${label}`}
+                isLabelHidden
+                placeholder="Search..."
+                startIcon="search"
+                value={query}
+                size="lg"
+                width="100%"
+                hasClear
+                onChange={next => {
+                  lastLoadScrollHeightRef.current = null;
+                  setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
+                  setQuery(next);
+                  onChangeQuery?.(next);
+                }}
+                controlXstyle={styles.filterInput}
+              />
+            </div>
+            <div
+              {...stylex.props(styles.list)}
+              role="group"
+              aria-label={label}
+              data-testid="mobile-tokenizer-list"
+              data-rendered-count={renderedItems.length}
+              data-total-count={visibleItems.length}
+              onScroll={event => {
+                const list = event.currentTarget;
+                const distanceFromBottom =
+                  list.scrollHeight - list.scrollTop - list.clientHeight;
+                if (
+                  distanceFromBottom <= LIST_LOAD_MORE_THRESHOLD_PX &&
+                  lastLoadScrollHeightRef.current !== list.scrollHeight
+                ) {
+                  lastLoadScrollHeightRef.current = list.scrollHeight;
+                  setRenderedItemCount(current =>
+                    Math.min(
+                      current + LIST_RENDER_BATCH_SIZE,
+                      visibleItems.length,
+                    ),
+                  );
+                }
+              }}>
+              {createItem != null && (
+                <div
+                  data-testid="mobile-tokenizer-create-row"
+                  {...stylex.props(styles.createRow)}>
+                  <span {...stylex.props(styles.createLabel)}>
+                    <Text type="body">{createItem.label}</Text>
+                  </span>
                   <Button
-                    label="Clear all"
+                    label="Add"
+                    aria-label={`Add ${query.trim()}`}
                     variant="secondary"
                     size="lg"
-                    isDisabled={value.length === 0}
-                    onClick={() => setIsClearConfirmationOpen(true)}
-                    xstyle={styles.footerAction}
-                  />
-                  <Button
-                    label="Done"
-                    variant="primary"
-                    size="lg"
                     onClick={() => {
+                      handleAdd(createItem);
+                      lastLoadScrollHeightRef.current = null;
+                      setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
                       setQuery('');
-                      setActiveSheet(null);
                     }}
-                    xstyle={styles.footerAction}
                   />
                 </div>
               )}
-              <AlertDialog
-                isOpen={isClearConfirmationOpen}
-                onOpenChange={setIsClearConfirmationOpen}
-                title="Clear all selected items?"
-                description={`This removes all selected items from ${label}.`}
-                actionLabel="Clear selection"
-                onAction={() => {
-                  handleClearAll();
-                  setIsClearConfirmationOpen(false);
-                }}
-              />
+              {!isSearching &&
+              visibleItems.length === 0 &&
+              createItem == null ? (
+                <EmptyState
+                  icon={
+                    <Icon
+                      icon={query.trim() === '' ? ListBulletIcon : 'search'}
+                      size="lg"
+                      color="secondary"
+                    />
+                  }
+                  title={
+                    query.trim() === ''
+                      ? 'No items available'
+                      : emptySearchResultsText
+                  }
+                  description={
+                    query.trim() === ''
+                      ? 'There are no items to choose from.'
+                      : 'Try a different search.'
+                  }
+                  isCompact
+                  xstyle={styles.empty}
+                />
+              ) : (
+                renderedItems.map(item => {
+                  const isSelected = selectedIds.has(item.id);
+                  const rowDisabled = !isSelected && isAtMax;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      role="checkbox"
+                      aria-checked={isSelected}
+                      aria-label={item.label}
+                      aria-disabled={rowDisabled || undefined}
+                      onClick={() => {
+                        if (rowDisabled) {
+                          return;
+                        }
+                        if (isSelected) {
+                          handleRemove(item);
+                        } else {
+                          handleAdd(item);
+                        }
+                      }}
+                      {...stylex.props(
+                        styles.row,
+                        rowDisabled && styles.rowDisabled,
+                      )}>
+                      <span {...stylex.props(styles.rowLabel)}>
+                        {renderItem ? (
+                          renderItem(item)
+                        ) : (
+                          <Text
+                            type="body"
+                            color={rowDisabled ? 'inherit' : undefined}>
+                            {item.label}
+                          </Text>
+                        )}
+                      </span>
+                      <CheckboxIndicator
+                        state={isSelected ? 'checked' : 'unchecked'}
+                        size="md"
+                        isDisabled={rowDisabled}
+                        xstyle={
+                          rowDisabled ? styles.indicatorDisabled : undefined
+                        }
+                      />
+                    </button>
+                  );
+                })
+              )}
             </div>
-          </BottomSheet>
-        </BottomSheetSwitcher>
+            {query.trim() === '' && (
+              <div {...stylex.props(styles.footer)}>
+                <Button
+                  label="Clear all"
+                  variant="secondary"
+                  size="lg"
+                  isDisabled={value.length === 0}
+                  onClick={() => setIsClearConfirmationOpen(true)}
+                  xstyle={styles.footerAction}
+                />
+                <Button
+                  label="Done"
+                  variant="primary"
+                  size="lg"
+                  onClick={() => {
+                    setQuery('');
+                    setIsSheetOpen(false);
+                  }}
+                  xstyle={styles.footerAction}
+                />
+              </div>
+            )}
+            <AlertDialog
+              isOpen={isClearConfirmationOpen}
+              onOpenChange={setIsClearConfirmationOpen}
+              title="Clear all selected items?"
+              description={`This removes all selected items from ${label}.`}
+              actionLabel="Clear selection"
+              onAction={() => {
+                handleClearAll();
+                setIsClearConfirmationOpen(false);
+              }}
+            />
+          </div>
+        </BottomSheet>
       )}
     </Field>
   );

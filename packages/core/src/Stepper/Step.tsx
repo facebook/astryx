@@ -535,18 +535,27 @@ const styles = stylex.create({
     color: colorVars['--color-accent'],
   },
   iconSuccess: {
-    color: colorVars['--color-success'],
+    color: colorVars['--color-icon-success'],
   },
   iconWarning: {
-    color: colorVars['--color-warning'],
+    color: colorVars['--color-icon-warning'],
   },
   iconError: {
-    color: colorVars['--color-error'],
+    color: colorVars['--color-icon-error'],
   },
 
   // Number badge — same box as every other indicator (see INDICATOR_SIZE).
   numberBadge: {
     display: 'grid',
+    // Forced colors replace status fills with Canvas; this boundary keeps the
+    // fill's shape visible (architecture:theme-tokens INV11).
+    outlineWidth: {default: null, '@media (forced-colors: active)': '1px'},
+    outlineStyle: {default: null, '@media (forced-colors: active)': 'solid'},
+    outlineColor: {
+      default: null,
+      '@media (forced-colors: active)': 'CanvasText',
+    },
+    outlineOffset: {default: null, '@media (forced-colors: active)': '-1px'},
     placeItems: 'center',
     width: INDICATOR_SIZE,
     height: INDICATOR_SIZE,
@@ -1316,6 +1325,10 @@ export function Step({
   const iconLabelNode = (
     <div {...stylex.props(styles.iconLabelRow)}>
       {(!isCompact || indicatorPosition !== 'on-track') && indicatorNode}
+      {/* A space between the indicator and the label: the row is a flex
+          container, which drops whitespace-only text, so nothing changes on
+          screen, but a text reading of the button then keeps "1 Account" as two
+          words instead of "1Account". */}{' '}
       <span
         {...mergeProps(
           labelThemeProps,
@@ -1576,6 +1589,8 @@ export function Step({
               )}
             />
           </div>
+          {/* Whitespace between the indicator column and the label, as in
+              iconLabelNode. */}{' '}
           <div {...stylex.props(styles.otBodyV)}>
             {labelLineNode}
             {otDescriptionNode}
@@ -1658,6 +1673,7 @@ export function Step({
             )}
           />
         </div>
+        {/* Whitespace between the rail and the label, as in iconLabelNode. */}{' '}
         {/* The on-track indicator remains visible as a node on the rail at
             compact widths, but the wrapper becomes presentational with its
             label. Navigation moves to the named controls in the summary row. */}

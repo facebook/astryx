@@ -50,6 +50,14 @@ const pendingGate = gateStatus(
   'Waiting on code review: core runtime change',
 );
 const clearedGate = gateStatus('success', 'Cleared by code-owner approval.');
+const APP = 'review-app[bot]';
+const APP_CLEARED = 'Cleared by review-app approval for a write-access author.';
+const appClearedGate = gateStatus('success', APP_CLEARED);
+const appReview = (state, commitId = head2) => ({
+  user: {login: APP, type: 'Bot'},
+  state,
+  commit_id: commitId,
+});
 const ungatedSuccess = gateStatus('success', 'No code review required.');
 
 function harness(
@@ -60,6 +68,8 @@ function harness(
     moveAfterFirstRead = false,
     statusFailure = false,
     statuses = [pendingGate],
+    reviewApp = '',
+    permission = 'write',
   } = {},
 ) {
   const calls = [];
@@ -68,6 +78,7 @@ function harness(
     number: 17,
     head: {sha: head2},
     base: {sha: oldBaseSha},
+    user: {login: 'author', type: 'User'},
     labels: labels.map(name => ({name})),
   };
   const methods = {
@@ -104,6 +115,11 @@ function harness(
           };
         },
         listCommitStatusesForRef: methods.listCommitStatusesForRef,
+        getCollaboratorPermissionLevel: async ({username}) => {
+          calls.push(`permission:${username}`);
+          if (permission instanceof Error) throw permission;
+          return {data: {permission}};
+        },
         createCommitStatus: async input => {
           calls.push({type: 'status-attempt', input});
           if (statusFailure) throw new Error('persistent status failure');
@@ -134,7 +150,9 @@ function harness(
     setFailed: message => calls.push(`failed:${message}`),
     warning: message => calls.push(`warning:${message}`),
   };
-  const processValue = {env: {ENG_OWNERS: '@engineer'}};
+  const processValue = {
+    env: {ENG_OWNERS: '@engineer', REVIEW_APP: reviewApp},
+  };
   return {calls, context, core, github, processValue};
 }
 
@@ -336,4 +354,133 @@ describe('review-clear exact-head workflow', () => {
       expect(mutations(h.calls)).toEqual([]);
     },
   );
+});
+
+describe('review-clear review-app approval for write-access authors', () => {
+  const statusesOf = calls =>
+    calls.filter(call => call?.type === 'status').map(call => call.input);
+
+  it('clears the gate when the app approves a write-access author on the exact head', async () => {
+    const h = harness([appReview('APPROVED')], {reviewApp: APP});
+
+    await run(h);
+
+    expect(h.calls).toContain('permission:author');
+    expect(statusesOf(h.calls)).toEqual([
+      expect.objectContaining({
+        sha: head2,
+        context: 'review-required',
+        state: 'success',
+        description: APP_CLEARED,
+      }),
+    ]);
+    expect(h.calls).toContainEqual(
+      expect.objectContaining({type: 'remove-label'}),
+    );
+  });
+
+  it('blocks again when the app later requests changes on the exact head', async () => {
+    const h = harness([appReview('APPROVED'), appReview('CHANGES_REQUESTED')], {
+      reviewApp: APP,
+      labels: [],
+      statuses: [appClearedGate],
+    });
+
+    await run(h);
+
+    expect(statusesOf(h.calls)).toEqual([
+      expect.objectContaining({
+        state: 'pending',
+        description: 'Waiting on code review after approval withdrawal.',
+      }),
+    ]);
+    expect(h.calls).toContainEqual(
+      expect.objectContaining({type: 'add-label'}),
+    );
+  });
+
+  it.each(['read', 'triage', 'none'])(
+    'leaves a %s-permission author waiting on an engineering owner',
+    async permission => {
+      const h = harness([appReview('APPROVED')], {reviewApp: APP, permission});
+
+      await run(h);
+
+      expect(mutations(h.calls)).toEqual([]);
+    },
+  );
+
+  it('still clears a no-write author through an engineering-owner approval', async () => {
+    const h = harness([appReview('APPROVED'), review('APPROVED')], {
+      reviewApp: APP,
+      permission: 'read',
+    });
+
+    await run(h);
+
+    expect(statusesOf(h.calls)).toEqual([
+      expect.objectContaining({
+        state: 'success',
+        description: 'Cleared by code-owner approval.',
+      }),
+    ]);
+  });
+
+  it('does not let an app approval of an earlier head clear the new head', async () => {
+    const h = harness([appReview('APPROVED', head1)], {reviewApp: APP});
+
+    await run(h);
+
+    expect(mutations(h.calls)).toEqual([]);
+  });
+
+  it('fails closed when the author permission cannot be read', async () => {
+    const h = harness([appReview('APPROVED')], {
+      reviewApp: APP,
+      permission: new Error('503'),
+    });
+
+    await run(h);
+
+    expect(mutations(h.calls)).toEqual([]);
+    expect(h.calls).toContainEqual(
+      expect.stringContaining('warning:Could not read author permission'),
+    );
+  });
+
+  it('restores an app-cleared gate when the app path no longer applies', async () => {
+    const h = harness([appReview('APPROVED')], {
+      reviewApp: APP,
+      permission: new Error('503'),
+      labels: [],
+      statuses: [appClearedGate],
+    });
+
+    await run(h);
+
+    expect(statusesOf(h.calls)).toEqual([
+      expect.objectContaining({state: 'pending'}),
+    ]);
+  });
+
+  it('ignores app reviews when REVIEW_APP is unset', async () => {
+    const h = harness([appReview('APPROVED')]);
+
+    await run(h);
+
+    expect(h.calls).not.toContain('permission:author');
+    expect(mutations(h.calls)).toEqual([]);
+  });
+
+  it("keeps an engineering owner's exact-head request for changes over an app approval", async () => {
+    const h = harness([review('CHANGES_REQUESTED'), appReview('APPROVED')], {
+      reviewApp: APP,
+    });
+
+    await run(h);
+
+    expect(statusesOf(h.calls)).toEqual([
+      expect.objectContaining({state: 'pending'}),
+    ]);
+  });
 });

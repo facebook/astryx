@@ -170,7 +170,7 @@ authoring check; it does not replace runtime catalog validation.
 
 This record does not absorb adjacent facts:
 
-- The shipped `cli/integrations/templates/template-quality` guide owns the public
+- The shipped `authoring/building-blocks/templates/write-good-templates` guides own the public
   grading rules, rubric version, grade bands, categories, weights, and agent
   workflow. The public
   [Contributing Templates](https://github.com/facebook/astryx/wiki/Contributing-Templates)

@@ -347,6 +347,20 @@
       "aliases": []
     },
     {
+      "name": "component-drawer",
+      "path": "components/drawer",
+      "aliases": [
+        "components/lab/drawer"
+      ]
+    },
+    {
+      "name": "component-drawer-header",
+      "path": "components/drawer-header",
+      "aliases": [
+        "components/lab/drawer-header"
+      ]
+    },
+    {
       "name": "component-dropdown-menu",
       "path": "components/dropdown-menu",
       "aliases": []
@@ -582,16 +596,6 @@
       "aliases": []
     },
     {
-      "name": "component-lab-drawer",
-      "path": "components/lab/drawer",
-      "aliases": []
-    },
-    {
-      "name": "component-lab-drawer-header",
-      "path": "components/lab/drawer-header",
-      "aliases": []
-    },
-    {
       "name": "component-lab-emoji-picker",
       "path": "components/lab/emoji-picker",
       "aliases": []
@@ -609,6 +613,11 @@
     {
       "name": "component-lab-log-stream",
       "path": "components/lab/log-stream",
+      "aliases": []
+    },
+    {
+      "name": "component-lab-mobile-power-search",
+      "path": "components/lab/mobile-power-search",
       "aliases": []
     },
     {
@@ -2051,8 +2060,8 @@
       "aliases": []
     },
     {
-      "name": "example-drawer-mobile-the-56px-page-reveal-default",
-      "path": "examples/drawer/mobile-the-56px-page-reveal-default",
+      "name": "example-drawer-edit-form-with-footer-actions",
+      "path": "examples/drawer/edit-form-with-footer-actions",
       "aliases": []
     },
     {
@@ -2063,11 +2072,6 @@
     {
       "name": "example-drawer-slide-in-from-the-start-edge",
       "path": "examples/drawer/slide-in-from-the-start-edge",
-      "aliases": []
-    },
-    {
-      "name": "example-drawer-wide-desktop-panel-full-width-on-mobile",
-      "path": "examples/drawer/wide-desktop-panel-full-width-on-mobile",
       "aliases": []
     },
     {
@@ -2423,6 +2427,21 @@
     {
       "name": "example-link-with-tooltips",
       "path": "examples/link/with-tooltips",
+      "aliases": []
+    },
+    {
+      "name": "example-list-input-budget-allocation",
+      "path": "examples/list-input/budget-allocation",
+      "aliases": []
+    },
+    {
+      "name": "example-list-input-family-member-declaration",
+      "path": "examples/list-input/family-member-declaration",
+      "aliases": []
+    },
+    {
+      "name": "example-list-input-mailing-list",
+      "path": "examples/list-input/mailing-list",
       "aliases": []
     },
     {
@@ -4493,6 +4512,11 @@
     {
       "name": "showcase-link-default",
       "path": "showcases/link/default",
+      "aliases": []
+    },
+    {
+      "name": "showcase-list-input-tag-options",
+      "path": "showcases/list-input/tag-options",
       "aliases": []
     },
     {

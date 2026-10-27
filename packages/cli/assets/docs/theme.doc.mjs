@@ -4,9 +4,9 @@
 
 export const docs = {
   name: 'theme',
-  title: 'Theme System',
+  title: 'Theming',
   category: 'guide',
-  keywords: ['theme', 'dark mode', 'defineTheme', 'provider'],
+  keywords: ['theme', 'theming', 'theme system', 'dark mode', 'defineTheme', 'provider'],
   description:
     'How to use and create themes: see Use a theme for applying themes, and Author a theme for creating and customizing them.',
 
@@ -23,7 +23,7 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'Wire the generated module once',
-          code: "import {Theme} from '@astryxdesign/core';\nimport {themes, defaultThemeSlug} from './astryx-themes';\n\nfunction App() {\n  return (\n    <Theme theme={themes[defaultThemeSlug]}>\n      <YourApp />\n    </Theme>\n  );\n}",
+          code: "import {Theme} from '@astryxdesign/core/theme';\nimport {themes, defaultThemeSlug} from './astryx-themes';\n\nfunction App() {\n  return (\n    <Theme theme={themes[defaultThemeSlug]}>\n      <YourApp />\n    </Theme>\n  );\n}",
         },
       ],
     },
@@ -39,11 +39,11 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Quick start',
-          code: 'astryx theme add stone   # use an existing theme\nastryx theme eject stone # fork its source to customize\nastryx theme build src/themes/stone/stoneTheme.ts',
+          code: '{@command theme add stone}   # use an existing theme\n{@command theme eject stone} # fork its source to customize\n{@command theme build src/themes/stone/stoneTheme.ts}',
         },
         {
           type: 'prose',
-          text: 'For a new coordinated color system, run `astryx theme palette generate palette.config.json --out palette.generated.ts`. Review and commit the generated palette module and receipt, import its `palette` export, then reference stable stops from semantic tokens. Regenerating an accepted palette updates every mapped token that keeps those references; generation does not rewrite the theme.',
+          text: 'For a new coordinated color system, run `{@command theme palette generate palette.config.json --out palette.generated.ts}`. Review and commit the generated palette module and receipt, import its `palette` export, then reference stable stops from semantic tokens. Regenerating an accepted palette updates every mapped token that keeps those references; generation does not rewrite the theme.',
         },
         {
           type: 'code',
@@ -59,7 +59,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Use [light, dark] tuples in token values for automatic mode switching. Use mode='system' (default) on Theme to follow OS preference. Full guide: {@link generic:use-a-theme}.",
+          text: 'Light, dark, and system modes: {@link generic:use-a-theme}.',
         },
         {
           type: 'code',
@@ -74,7 +74,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Install an integration and Astryx discovers its themes automatically. Import one with `astryx theme add <name> --package <integration>`. Use `theme eject` only for an independent source fork. For the full walkthrough, see {@link generic:use-a-theme}.',
+          text: 'Install an integration and Astryx discovers its themes automatically. Import one with `{@command theme add <name> --package <integration>}`. Use `theme eject` only for an independent source fork. For the full walkthrough, see {@link generic:use-a-theme}.',
         },
       ],
     },

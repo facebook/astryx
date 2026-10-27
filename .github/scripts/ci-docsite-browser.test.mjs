@@ -18,15 +18,23 @@ const {jobs} = yaml.parse(
 );
 const owner = jobs['docsite-test'];
 const browser = jobs['docsite-browser'];
+const data = jobs['docsite-data'];
 const guard = owner.steps.find(
   step => step.name === 'Require successful docsite browser contract',
+);
+const dataGuard = owner.steps.find(
+  step => step.name === 'Require successful docsite data generation and tests',
 );
 const ACTIVE =
   "needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'";
 
 describe('docsite browser required-check projection', () => {
   it('joins the existing required context and uses the same surface route', () => {
-    expect(owner.needs).toEqual(['check-scope', 'docsite-browser']);
+    expect(owner.needs).toEqual([
+      'check-scope',
+      'docsite-browser',
+      'docsite-data',
+    ]);
     expect(owner.if).toBe(
       "${{ github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.release_bump != 'true' && always() && !cancelled() }}",
     );
@@ -34,17 +42,27 @@ describe('docsite browser required-check projection', () => {
     expect(browser.if).toBe(
       `github.event_name != 'workflow_dispatch' && ${ACTIVE}`,
     );
+    expect(data.needs).toEqual(['check-scope']);
+    expect(data.if).toBe(
+      `github.event_name != 'workflow_dispatch' && ${ACTIVE}`,
+    );
     expect(guard.if).toBe(ACTIVE);
+    expect(dataGuard.if).toBe(ACTIVE);
     expect(
-      owner.steps.find(step => step.name === 'Generate and test docsite data')
+      data.steps.find(step => step.name === 'Generate and test docsite data')
         .if,
     ).toBe(ACTIVE);
     expect(guard.env).toEqual({
       DOCSITE_BROWSER_RESULT: '${{ needs.docsite-browser.result }}',
     });
+    expect(dataGuard.env).toEqual({
+      DOCSITE_DATA_RESULT: '${{ needs.docsite-data.result }}',
+    });
     expect(owner['continue-on-error']).toBeUndefined();
     expect(browser['continue-on-error']).toBeUndefined();
+    expect(data['continue-on-error']).toBeUndefined();
     expect(guard['continue-on-error']).toBeUndefined();
+    expect(dataGuard['continue-on-error']).toBeUndefined();
     const run = browser.steps.find(
       step => step.name === 'Run docsite browser contracts',
     );
@@ -72,6 +90,16 @@ describe('docsite browser required-check projection', () => {
     result => {
       const check = spawnSync('sh', ['-e', '-c', guard.run], {
         env: {...process.env, DOCSITE_BROWSER_RESULT: result},
+      });
+      expect(check.status === 0).toBe(result === 'success');
+    },
+  );
+
+  it.each(['success', 'failure', 'cancelled', 'skipped', ''])(
+    'fails closed for docsite data result %j',
+    result => {
+      const check = spawnSync('sh', ['-e', '-c', dataGuard.run], {
+        env: {...process.env, DOCSITE_DATA_RESULT: result},
       });
       expect(check.status === 0).toBe(result === 'success');
     },

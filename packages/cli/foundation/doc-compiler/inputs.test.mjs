@@ -91,7 +91,6 @@ describe('collectDocInputs over what this repo ships', () => {
       'Chat',
       'ChatComposerTokenElement',
       'ContextMenuItem',
-      'Heading',
       'Indicator',
       'Layer',
       'NavMenu',
@@ -226,6 +225,7 @@ describe('collectDocInputs problems', () => {
       components: async () => [],
       templates: async () => [],
       themes: async () => [],
+      iconSets: async () => ({sets: []}),
       docs: async () => ({entries: () => []}),
       ...overrides,
     });

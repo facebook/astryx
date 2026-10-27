@@ -25,7 +25,7 @@ vi.mock('../EmojiPicker/emojiData', () => ({
   ],
 }));
 
-import {CommentComposer} from './CommentComposer';
+import {CommentComposer, CommentComposerBase} from './CommentComposer';
 
 const originalMatches = HTMLElement.prototype.matches;
 const popoverOpenState = new WeakMap<HTMLElement, boolean>();
@@ -99,6 +99,34 @@ describe('CommentComposer', () => {
     );
     fireEvent.click(screen.getByRole('button', {name: /send/i}));
     expect(onSubmit).toHaveBeenCalledWith('Looks good');
+  });
+
+  it('keeps Cancel in the tab order but inert while submitting (AST-085 FR1, FR2)', () => {
+    const onCancel = vi.fn();
+    render(
+      <CommentComposerBase
+        value="Draft"
+        onChange={() => {}}
+        onSubmit={() => {}}
+        placeholder="Edit comment"
+        onCancel={onCancel}
+        context={{kind: 'edit', commentId: 'c1'}}
+        contextLabel="Editing comment"
+        highlightColor="yellow"
+        triggers={[]}
+        agentCommands={[]}
+        hasEmojiPicker={false}
+        isSubmitting
+      />,
+    );
+    const cancel = screen.getByText('Cancel').closest('a, button')!;
+    expect(cancel).toHaveAttribute('aria-disabled', 'true');
+    expect(cancel).not.toHaveAttribute('tabindex', '-1');
+    act(() => (cancel as HTMLElement).focus());
+    expect(cancel).toHaveFocus();
+    fireEvent.click(cancel);
+    fireEvent.keyDown(cancel, {key: 'Enter'});
+    expect(onCancel).not.toHaveBeenCalled();
   });
 
   it('shows the placeholder as the input’s name, and keeps Post focusable while submitting', () => {
@@ -183,6 +211,60 @@ describe('CommentComposer', () => {
     expect(onChange).toHaveBeenCalledWith(
       'See this\n\n![Chart](https://example.com/a%20b.png)',
     );
+  });
+
+  it('keeps the image picker free of native disabled and refuses files while busy (AST-085 FR1, FR2)', async () => {
+    const onUploadImages = vi.fn();
+    render(
+      <CommentComposer
+        value="Draft"
+        onChange={() => {}}
+        onSubmit={() => {}}
+        onUploadImages={onUploadImages}
+        isSubmitting
+      />,
+    );
+    const input = document.querySelector('input[type="file"]');
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error('File input not found');
+    }
+    expect(input).not.toHaveAttribute('disabled');
+    const file = new File(['png'], 'chart.png', {type: 'image/png'});
+    await act(async () => {
+      fireEvent.change(input, {target: {files: [file]}});
+      await Promise.resolve();
+    });
+    expect(onUploadImages).not.toHaveBeenCalled();
+  });
+
+  it('does not open the image chooser from the error banner while busy', async () => {
+    const onUploadImages = vi.fn();
+    const props = {
+      value: 'Draft',
+      onChange: () => {},
+      onSubmit: () => {},
+      onUploadImages,
+    };
+    const view = render(<CommentComposer {...props} />);
+    const input = document.querySelector('input[type="file"]');
+    if (!(input instanceof HTMLInputElement)) {
+      throw new Error('File input not found');
+    }
+    const openChooser = vi.spyOn(input, 'click').mockImplementation(() => {});
+    await act(async () => {
+      fireEvent.change(input, {
+        target: {
+          files: [new File(['%PDF'], 'doc.pdf', {type: 'application/pdf'})],
+        },
+      });
+    });
+    view.rerender(<CommentComposer {...props} isSubmitting />);
+    fireEvent.click(screen.getByRole('button', {name: 'Choose images'}));
+    expect(openChooser).not.toHaveBeenCalled();
+
+    view.rerender(<CommentComposer {...props} />);
+    fireEvent.click(screen.getByRole('button', {name: 'Choose images'}));
+    expect(openChooser).toHaveBeenCalledTimes(1);
   });
 
   it('refuses files that are not images', async () => {
