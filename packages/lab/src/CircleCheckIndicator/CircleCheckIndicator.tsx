@@ -12,7 +12,7 @@
  *   it to `checkbox` (`defineTheme({indicators: {checkbox:
  *   CircleCheckIndicator}})`), and a list's edit mode can render it directly
  *
- * Geometry is UIKit's (`selection.multiselectCircle`: the circle's diameter
+ * Geometry is UIKit's (`circleCheckTable` in circleCheck.table.ts: the circle's diameter
  * and stroke, the checkmark's ink box, stroke and offset below centre);
  * colours are the theme's: the accent fill, and the emphasized border the
  * checkbox's empty box uses for the empty ring.

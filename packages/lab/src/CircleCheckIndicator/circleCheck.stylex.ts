@@ -3,16 +3,15 @@
 /**
  * @file circleCheck.stylex.ts
  * @input Uses StyleX and the theme's duration and easing tokens
- * @output Exports `circleCheckConsts` (the build-time mirror of the UIKit
- *   constants table's `selection.mark.changeMs` and
- *   `selection.multiselectCircle`, read at test time from
- *   `@astryxdesign/core/motion/uikit`) and the styles that read it:
+ * @output Exports `circleCheckConsts` (the build-time mirror of
+ *   circleCheck.table.ts's `circleCheckTable`: the mark change and the
+ *   circle's geometry) and the styles that read it:
  *   `circleCheckMotionStyles` (the mark's colour transition) and
  *   `circleCheckSizeStyles` (the circle, its stroke, its checkmark and its
  *   bar at each size)
  * @position Internal to CircleCheckIndicator, which composes these styles
  *
- * StyleX evaluates a style at build time and cannot read the constants
+ * StyleX evaluates a style at build time and cannot read the circle's
  * table, so the values are mirrored here as constants, and
  * circleCheck.test.tsx fails if they drift. The styles that read them live
  * beside them on purpose: StyleX inlines a `defineConsts` value it reads in
@@ -33,26 +32,26 @@ import {durationVars, easeVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 export const circleCheckConsts = stylex.defineConsts({
   /**
-   * `selection.mark.changeMs`: how long a selection mark takes to change
+   * `circleCheckTable.changeMs`: how long a selection mark takes to change
    * under a finger. UIKit changes every measured selection mark in one
    * frame, the collection list's multiselect circle included.
    */
   markChangeMs: '0ms',
-  /** `multiselectCircle.large.diameter`. */
+  /** `circleCheckTable.large.diameter`. */
   mdDiameter: '21.8px',
-  /** `multiselectCircle.large.stroke`. */
+  /** `circleCheckTable.large.stroke`. */
   mdStroke: '1.54px',
-  /** `multiselectCircle.large.checkSize`. */
+  /** `circleCheckTable.large.checkSize`. */
   mdCheckSize: '9px',
-  /** `multiselectCircle.large.checkStroke`. */
+  /** `circleCheckTable.large.checkStroke`. */
   mdCheckStroke: '1.35px',
-  /** `multiselectCircle.large.checkOffsetY`. */
+  /** `circleCheckTable.large.checkOffsetY`. */
   mdCheckOffsetY: '1px',
-  /** `multiselectCircle.xSmall.diameter`. */
+  /** `circleCheckTable.xSmall.diameter`. */
   smDiameter: '18px',
-  /** `multiselectCircle.xSmall.stroke`. */
+  /** `circleCheckTable.xSmall.stroke`. */
   smStroke: '1.27px',
-  /** `multiselectCircle.xSmall.checkSize`. */
+  /** `circleCheckTable.xSmall.checkSize`. */
   smCheckSize: '8px',
   /** Derived: the Large check stroke, scaled by the check size (9 → 8). */
   smCheckStroke: '1.2px',

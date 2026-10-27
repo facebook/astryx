@@ -3,8 +3,7 @@
 /**
  * @file circleCheck.test.tsx
  * @input vitest, Testing Library, CircleCheckIndicator, its build-time
- *   mirror and the UIKit constants table
- *   (`@astryxdesign/core/motion/uikit`)
+ *   mirror and its measured table (circleCheck.table.ts)
  * @output Holds the mirror to the table (the mark clock and the multiselect
  *   circle's geometry, with the two derived xSmall values), and asserts what
  *   the circle ships: its colour change takes the table's one frame under
@@ -18,11 +17,11 @@
 
 import {describe, expect, it} from 'vitest';
 import {render} from '@testing-library/react';
-import {selection} from '@astryxdesign/core/motion/uikit';
+import {circleCheckTable} from './circleCheck.table';
 import {CircleCheckIndicator} from './CircleCheckIndicator';
 import {circleCheckConsts} from './circleCheck.stylex';
 
-const {large, xSmall} = selection.multiselectCircle;
+const {large, xSmall} = circleCheckTable;
 
 /**
  * Every declaration on `el`'s own classes, keyed by property, per enclosing
@@ -80,7 +79,7 @@ const REDUCED_MOTION_INSTANT =
 describe('circleCheckConsts mirror the constants table', () => {
   it('takes the mark clock', () => {
     expect(toNumber(circleCheckConsts.markChangeMs)).toBe(
-      selection.mark.changeMs,
+      circleCheckTable.changeMs,
     );
   });
 
@@ -146,7 +145,7 @@ describe('CircleCheckIndicator ships the table', () => {
         media.includes('(pointer: coarse)'),
     );
     expect(touch.map(([, value]) => toNumber(value))).toEqual([
-      selection.mark.changeMs,
+      circleCheckTable.changeMs,
     ]);
     expect(
       durations.filter(([media]) => media?.includes('-webkit-touch-callout')),
