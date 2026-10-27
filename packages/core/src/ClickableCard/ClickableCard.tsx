@@ -119,6 +119,11 @@ const styles = stylex.create({
         default: 'background-color',
         [PRESSED_ON]: 'none',
         [PRESSED_FADING]: 'none',
+        // Reduced motion on a touch screen: only opacity may cross-fade
+        // (design:reduced-motion DR2), so the overlay's colour changes at
+        // once.
+        '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+          'opacity',
       },
       transitionDuration: {
         default: durationVars['--duration-fast'],
@@ -178,7 +183,13 @@ const styles = stylex.create({
     paddingInlineEnd: `calc(var(--container-padding-inline-end) - ${borderVars['--border-width']})`,
     paddingBlockStart: `calc(var(--container-padding-block-start) - ${borderVars['--border-width']})`,
     paddingBlockEnd: `calc(var(--container-padding-block-end) - ${borderVars['--border-width']})`,
-    transitionProperty: 'border-color',
+    transitionProperty: {
+      default: 'border-color',
+      // Reduced motion on a touch screen: only opacity may cross-fade
+      // (design:reduced-motion DR2), so the border's colour changes at once.
+      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+        'opacity',
+    },
     transitionDuration: {
       default: durationVars['--duration-fast'],
       // Reduced motion (design:reduced-motion, motion/reducedMotion.ts): with

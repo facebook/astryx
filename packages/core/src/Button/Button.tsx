@@ -113,31 +113,17 @@ const styles = stylex.create({
     },
     transitionProperty: {
       default: 'background-image, background-color, color, opacity, transform',
-      // Under reduced motion nothing scales, so nothing transitions transform.
-      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
-        'background-image, background-color, color, opacity',
-      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
-        'none',
+      // Under reduced motion a button's hover and press change at once, with
+      // a mouse or a finger (Button's record, FR15): design:reduced-motion
+      // allows a touch screen only an opacity cross-fade (DR2), and nothing
+      // of a button fades on opacity.
+      '@media (prefers-reduced-motion: reduce)': 'none',
     },
     transitionDuration: {
       default: durationVars['--duration-fast'],
-      // Reduced motion (design:reduced-motion, motion/reducedMotion.ts): with
-      // a fine primary pointer the change is immediate (DR3); on a touch
-      // screen it is the policy's cross-fade, whatever the theme sets (DR2,
-      // DR4).
-      '@media (prefers-reduced-motion: reduce) and (not (pointer: coarse))':
-        '0s',
-      // The cross-fade's values are reducedMotionFadeConsts'
-      // (motion/reducedMotion.stylex.ts), spelled out because that module is
-      // internal and a swizzled component imports only exported paths;
-      // motion/reducedMotionValues.test.ts holds them equal.
-      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)': '200ms',
+      '@media (prefers-reduced-motion: reduce)': '0s',
     },
-    transitionTimingFunction: {
-      default: easeVars['--ease-standard'],
-      '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
-        'cubic-bezier(0.42, 0, 0.58, 1)',
-    },
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
   pressable: {
     transform: {

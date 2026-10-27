@@ -222,6 +222,11 @@ const styles = stylex.create({
         default: 'background-color',
         [PRESSED_ON]: 'none',
         [PRESSED_FADING]: 'none',
+        // Reduced motion on a touch screen: only opacity may cross-fade
+        // (design:reduced-motion DR2), so the overlay's colour changes at
+        // once.
+        '@media (prefers-reduced-motion: reduce) and (pointer: coarse)':
+          'opacity',
       },
       transitionDuration: {
         default: durationVars['--duration-fast'],
