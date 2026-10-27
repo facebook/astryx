@@ -182,7 +182,7 @@ export const zoomMedia = {
      * would coast passes `cancelTravel`, so a short flick down closes.
      * @source GUESS — UIScrollView's normal deceleration rate, the WWDC18
      *   projection's default; Photos' own projection is not measured
-     * @measure M-ZM4
+     * @measure M-ZM5
      */
     projectionRate: 0.998,
     /**
