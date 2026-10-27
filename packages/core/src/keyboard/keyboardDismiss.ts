@@ -43,7 +43,9 @@
  * pen the browser reports as touches, through touch listeners on the
  * scroller; a mouse, and a pen it reports as a pointer only, through a
  * `pointerdown` on the scroller and document listeners that live only while
- * the button is down (FR24). Every listener is passive: dismissal never
+ * the button is down (FR24). In a desktop browser such a press takes focus
+ * off the field itself, so that path decides only where a press leaves the
+ * field focused. Every listener is passive: dismissal never
  * claims the touch or delays the scroll. It blurs the focused field, and the
  * keyboard layout guide reports the hide from the blur, so content on the
  * keyboard rides it down. Where the keyboard is comes from the keyboard

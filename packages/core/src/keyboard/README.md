@@ -146,7 +146,8 @@ hardware keyboard leaves the focus alone). Every pointer drags (`spec:AST-094`
 FR19, FR43): a finger, and a pen the browser reports as touches, through
 touch listeners on the scroller; a mouse, and a pen reported as a pointer
 only, through a `pointerdown` there and document listeners that live only
-while the button is down (FR24). Every listener is passive. The blur hands
+while the button is down (FR24); in a desktop browser such a press takes focus
+off the field itself. Every listener is passive. The blur hands
 the hide to the guide, which starts it at the blur.
 
 ## What the page sees (Mobile Safari, iOS 26.2)
@@ -241,9 +242,9 @@ keyboard module measures them from the visual viewport, as in every browser
   finger in that region (`Chat/keyboardSurface.ts`). A drag down the
   transcript to the composer that lifts there dismisses the keyboard
   (`interactive`, with the composer as the bar on the keyboard; part of
-  ChatLayout's behavior, no caller control, for every pointer: a finger, a
-  pen or a mouse); the dismissal only blurs the focused field, so focus moves
-  nowhere else (no Done park).
+  ChatLayout's behavior, no caller control, attached for every pointer; a
+  desktop mouse press already takes focus off the composer); the dismissal
+  only blurs the focused field, so focus moves nowhere else (no Done park).
 
 ## Files
 

@@ -498,7 +498,7 @@ test.describe('under a mouse', () => {
   });
 });
 
-test.describe('a mouse press on the transcript', () => {
+test.describe('a mouse or pen press on the transcript', () => {
   // A desktop browser: the primary pointer is fine (the projects emulate a
   // phone).
   test.use({hasTouch: false, isMobile: false});
@@ -519,6 +519,53 @@ test.describe('a mouse press on the transcript', () => {
     await expect(
       page.getByRole('group', {name: 'Message composer'}),
     ).toHaveCount(0);
+  });
+
+  test('a pen press reported as a pointer does the same', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'pen input is dispatched through the Chrome DevTools Protocol',
+    );
+    const chat = await openChat(page);
+    const rows = await keyboardUp(page, chat);
+    await page.evaluate(() => {
+      const seen: string[] = [];
+      (window as unknown as {__pointerTypes: string[]}).__pointerTypes = seen;
+      window.addEventListener(
+        'pointerdown',
+        event => seen.push(event.pointerType),
+        true,
+      );
+    });
+    const client = await page.context().newCDPSession(page);
+    const pen = async (
+      type: 'mousePressed' | 'mouseMoved' | 'mouseReleased',
+      y: number,
+    ) =>
+      client.send('Input.dispatchMouseEvent', {
+        type,
+        x: rows.x,
+        y,
+        button: 'left',
+        buttons: type === 'mouseReleased' ? 0 : 1,
+        clickCount: 1,
+        pointerType: 'pen',
+      });
+    await pen('mousePressed', 120);
+    expect(
+      await page.evaluate(
+        () => (window as unknown as {__pointerTypes: string[]}).__pointerTypes,
+      ),
+    ).toEqual(['pen']);
+    await expect(chat.editable).not.toBeFocused();
+    for (let step = 1; step <= 12; step += 1) {
+      await pen('mouseMoved', 120 + ((rows.inComposer - 120) * step) / 12);
+    }
+    await pen('mouseReleased', rows.inComposer);
+    await expect(chat.editable).not.toBeFocused();
   });
 });
 

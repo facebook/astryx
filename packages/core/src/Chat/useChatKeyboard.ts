@@ -45,10 +45,11 @@
  *   mode (keyboard/keyboardDismiss.ts; spec:AST-094 FR36, FR37): the composer
  *   is the bar on the keyboard, so its height is the dismiss padding. It is
  *   part of ChatLayout's behavior with no caller control
- *   (ChatLayout.spec.md FR10), for every pointer, a finger, a pen or a mouse
- *   (spec:AST-094 FR19, FR43), and the dismissal only blurs the focused
- *   field: focus moves nowhere else, not to the composer region the
- *   keyboard's Done parks it on.
+ *   (ChatLayout.spec.md FR10), attached for every pointer (spec:AST-094 FR19,
+ *   FR43), though in a desktop browser a mouse or pen press takes focus off
+ *   the composer itself, and the dismissal only blurs the focused field:
+ *   focus moves nowhere else, not to the composer region the keyboard's Done
+ *   parks it on.
  * - A tap on the composer's text while it is not focused focuses it without
  *   Safari's reveal (`preventScroll`), which would otherwise scroll the
  *   whole page up to show a field that the keyboard is about to cover, and

@@ -25,9 +25,9 @@
  * both laid out from the keyboard height (functional styles, no added
  * element), with the keyboard's own spring riding on top; every route into
  * the composer's text focuses it without Safari scrolling the page, and a
- * finger dragging the transcript down to the composer dismisses the keyboard,
- * as in Messages (part of ChatLayout's touch behavior with no caller control;
- * ChatLayout.spec.md FR10).
+ * finger's drag down the transcript to the composer dismisses the keyboard,
+ * as in Messages, while in a desktop browser a mouse press takes focus off
+ * the composer itself (no caller control; ChatLayout.spec.md FR10).
  *
  * Density (compact/balanced/spacious) is controlled via a prop with
  * 'balanced' as the default. No JS measurement or ResizeObserver needed.
