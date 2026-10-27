@@ -66,8 +66,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **Other indicator modes show status by color alone, or not at all.** With
   `indicator="number"`, a reached step shows status only through badge color
   and a not-started step shows none. A custom node shows status only through
-  its wrapper's color, on every step. `indicator="none"` shows no indicator, so
-  status shows only in the visually hidden word. WCAG 1.4.1 requires information
+  its wrapper's color, on every step. `indicator="none"` shows no indicator, and
+  under `auto` the current step's ring and label keep progress color whatever
+  its `status`, so in both cases status shows only in the visually hidden word. WCAG 1.4.1 requires information
   not to be conveyed by color alone.
 - **A clickable step's name hides its other text.** The button's name is the
   step number, label, and status word, and nothing describes it, so the
@@ -80,8 +81,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 **Owns**
 
 - Progress derivation, indicator selection, status glyphs and text, the
-  clickable button, disabled and optional handling, density fallback, and the
-  content slot (FR1–FR8).
+  clickable button, disabled and optional handling, and density fallback
+  (FR1–FR7).
+- Where `children` render and how they stay mounted (FR8), and the focus outline
+  (FR9).
 
 **Does not own / non-goals**
 
@@ -110,7 +113,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | FR3 | `indicator="auto"` shows the number while not started, the ring while in progress, and a check once completed; `number` always shows the number; `none` shows nothing; a non-string node renders as given; any other string falls back to the ring while not started or in progress and the check once completed, with no number, status glyph, or status color. Indicators are `aria-hidden`.                                                                                                                                                                                                                                                                                                                                                                                                               | Current source and tests        |
 | FR4 | `status` never recolors the progress bar. Under `indicator="auto"` it recolors a non-current step with `success`, `warning`, or `error` and shows a distinct status glyph (replacing the number on not-started steps); the current step's ring and `accent` keep progress color. Under `number` it recolors reached badges only.                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Current source and tests        |
 | FR5 | Each Step exposes a visually hidden status word: `error` or `warning` for those statuses, `completed` when completed or `success`, in every layout.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Current source and tests        |
-| FR6 | `isDisabled` dims the indicator (the label's disabled paint is `component:Stepper` FR10) and blocks activation (FR2's implementation gap). `isOptional` appends the translated `@astryx.step.optional` ("Optional") after the label. `endContent` sits at the end of the label row.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Current source and tests        |
+| FR6 | `isDisabled` dims the indicator with fixed paint and no theme state (the label's disabled paint and its `disabled` selector are `component:Stepper` FR10) and blocks activation (FR2's implementation gap). `isOptional` appends the translated `@astryx.step.optional` ("Optional") after the label. `endContent` sits at the end of the label row.                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Current source and tests        |
 | FR7 | `density` sets the Step's padding: block padding in every layout, plus inline padding for spacious separated steps and both axes for vertical on-track steps; it falls back to the Stepper's density.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Current source                  |
 | FR8 | `children` render below the label and description; in a compact horizontal Stepper they stay mounted, hidden with the expanded details, so local state survives. The label stays on one line and ellipsizes; its full text remains in the accessible name.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Current source, docs, and tests |
 | FR9 | The step button paints the shared focus outline.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Current source                  |
@@ -145,8 +148,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **AR1 — Current step.** FR1's `aria-current="step"`.
 - **AR2 — Non-color status.** With `indicator="auto"`, FR4's glyphs and FR5's
   hidden text carry status beyond color; indicators stay hidden from assistive
-  technology. Implementation gap: in `number`, custom-node, and `none` modes
-  status shows by color alone or only in the hidden word (Current-state
+  technology. Implementation gap: in `number`, custom-node, and `none` modes,
+  and on the `auto` current step, status shows by color alone or only in the
+  hidden word (Current-state
   impact).
 - **AR3 — Clickable name.** FR2's button name includes the step number, label,
   and status word. Implementation gap: a clickable step's description, optional
