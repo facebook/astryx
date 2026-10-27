@@ -58,6 +58,7 @@ import {isRtlElement} from '../hooks/isRtlElement';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {list} from '../motion/uikit/list';
 import {
+  animatorFor,
   motionNow,
   releaseMotion,
   springHome,
@@ -68,6 +69,25 @@ import {useTouchPresentation} from '../utils/touchPresentation';
 const SPRING = list.update.outlineSpring;
 /** The chevron turns a quarter turn between collapsed and expanded. */
 const QUARTER_TURN = 90;
+
+/**
+ * When `element`'s `y` comes within half a pixel of `target` on its running
+ * curve (document timeline, ms), sampled every 4 ms from `from`; null when it
+ * does not within 3 s.
+ */
+function clipTime(
+  element: HTMLElement,
+  target: number,
+  from: number,
+): number | null {
+  const animator = animatorFor(element);
+  for (let time = from; time <= from + 3000; time += 4) {
+    if (Math.abs(animator.get('y', time) - target) <= 0.5) {
+      return time;
+    }
+  }
+  return null;
+}
 
 export interface TreeExpansionMotion {
   /** Render the children: expanded, or still sliding away. */
@@ -101,6 +121,8 @@ export function useTreeExpansionMotion(
   const previousRef = useRef({isExpanded, shown});
   /** The motion in flight; a newer one makes an older one's ending moot. */
   const generationRef = useRef(0);
+  /** The collapse's removal, timed for the frame its block is clipped. */
+  const leaveTimerRef = useRef<number | null>(null);
   // External system (`architecture:react-component-runtime` INV3): the shared
   // motion animators (utils/rowMotion.ts) of the group's rows and of the
   // chevron. A toggle starts them and a toggle mid-motion retargets them;
@@ -121,6 +143,10 @@ export function useTreeExpansionMotion(
     }
     const at = motionNow();
     const mine = ++generationRef.current;
+    if (leaveTimerRef.current != null) {
+      window.clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = null;
+    }
     const height = element.offsetHeight;
     const children = Array.from(element.children).filter(
       (child): child is HTMLElement => child instanceof HTMLElement,
@@ -179,6 +205,29 @@ export function useTreeExpansionMotion(
     const block = children.map(async child =>
       springTo(child, -height, SPRING, at, 'exit'),
     );
+    // The group leaves the frame its block is fully clipped (within half a
+    // pixel of the group's height above its top edge), not when the spring
+    // settles: nothing of it shows from then on, so the rows below take
+    // their places at once with no empty band (`spec:AST-105` FR2). Under
+    // reduced motion the block fades where it is, and the group leaves when
+    // the fade ends.
+    const lead = children[0];
+    const clippedAt =
+      lead != null && animatorFor(lead).reducedMotion() === 'off'
+        ? clipTime(lead, -height, at)
+        : null;
+    if (clippedAt != null) {
+      leaveTimerRef.current = window.setTimeout(
+        () => {
+          leaveTimerRef.current = null;
+          if (generationRef.current === mine) {
+            setShown(false);
+          }
+        },
+        Math.max(0, clippedAt - motionNow()),
+      );
+      return;
+    }
     void Promise.all(block).then(results => {
       if (generationRef.current !== mine || results.some(done => !done)) {
         return;
@@ -196,6 +245,9 @@ export function useTreeExpansionMotion(
   useIsomorphicLayoutEffect(
     () => () => {
       generationRef.current += 1;
+      if (leaveTimerRef.current != null) {
+        window.clearTimeout(leaveTimerRef.current);
+      }
       groupElementRef.current?.style.removeProperty('overflow');
     },
     [],

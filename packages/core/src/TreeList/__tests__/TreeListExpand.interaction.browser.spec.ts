@@ -483,6 +483,62 @@ test('collapse: the children slide back under the parent, then leave, and the ro
   expect((await below.boundingBox())?.y ?? 0).toBeCloseTo(belowCollapsed, 0);
 });
 
+test('collapse: the group leaves the frame its block is fully clipped, not when the spring settles', async ({
+  page,
+}) => {
+  await open(page);
+  const {group, child} = parts(page);
+  await tapToggle(page);
+  await expect(child).toBeVisible();
+  await expect.poll(async () => translateY(child)).toBe(0);
+  await expect
+    .poll(async () => group.evaluate(el => getComputedStyle(el).overflow))
+    .not.toBe('clip');
+  const height = await group.evaluate(el => (el as HTMLElement).offsetHeight);
+  // When the outline spring brings the block within half a pixel of the
+  // group's height above it: from then on nothing of it shows.
+  let clipMs = 0;
+  while (height * (1 - progress(clipMs)) > 0.5) {
+    clipMs += 4;
+  }
+  expect(clipMs).toBeLessThan(SETTLE_MS - 100);
+  // From the collapse's commit (the group turns inert) to its removal.
+  const watch = page.evaluate(
+    async () =>
+      new Promise<number>(resolve => {
+        const parent = document.querySelector('[data-tree-id="components"]');
+        if (parent == null) {
+          throw new Error('no parent');
+        }
+        let start = 0;
+        const observer = new MutationObserver(() => {
+          const current = parent.querySelector(':scope > [role="group"]');
+          if (start === 0 && current?.hasAttribute('inert') === true) {
+            start = performance.now();
+          }
+          if (start !== 0 && current == null) {
+            observer.disconnect();
+            resolve(performance.now() - start);
+          }
+        });
+        observer.observe(parent, {
+          subtree: true,
+          childList: true,
+          attributes: true,
+          attributeFilter: ['inert'],
+        });
+      }),
+  );
+  await tapToggle(page);
+  const elapsed = await watch;
+  // Closer to the clip than to the settle: no empty band before the rows
+  // below take their places.
+  expect(elapsed, `clip ${clipMs} ms, settle ${SETTLE_MS} ms`).toBeLessThan(
+    (clipMs + SETTLE_MS) / 2,
+  );
+  expect(elapsed).toBeGreaterThan(clipMs - 50);
+});
+
 test('the end of a collapse shows no child outside the group, up to the frame the group leaves', async ({
   page,
 }) => {
