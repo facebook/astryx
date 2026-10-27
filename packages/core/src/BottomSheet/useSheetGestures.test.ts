@@ -1627,6 +1627,31 @@ describe('useSheetGestures', () => {
       expect(hook.result.current.isDragging).toBe(true);
     });
 
+    it("never flings the sheet on a mouse wheel's quick notches: a notch carries no release speed, so where the pull is decides (spec:AST-094 FR36)", () => {
+      // Sheet 400 with a 120 px stop: offsets [0, 280], gone at 400.
+      const {hook, onDismiss} = setup({snapHeights: () => [120]});
+      const body = makeScroller({
+        scrollTop: 0,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      attach(hook, sheetOf(body));
+      // Three 100 px notches 16 ms apart: 290 px of pull past the pan's
+      // start, beside the 280 px detent, at a speed that would throw the
+      // sheet away if it were a drag's.
+      wheelOn(body, -100, 0);
+      wheelOn(body, -100, 16);
+      wheelOn(body, -100, 32);
+      expect(hook.result.current.isDragging).toBe(true);
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+      expect(hook.result.current.isDragging).toBe(false);
+      land();
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(hook.result.current.settledOffset).toBe(280);
+    });
+
     it('leaves the scrolling to content that can still scroll that way', () => {
       const {hook} = setup({snapHeights: () => [200]});
       const body = makeScroller({

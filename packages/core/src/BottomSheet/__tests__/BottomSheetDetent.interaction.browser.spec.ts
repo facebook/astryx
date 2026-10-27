@@ -1483,6 +1483,38 @@ test.describe('wheel and trackpad scrolling on the web (spec:AST-094 FR43)', () 
     ).toBeLessThan(1);
   });
 
+  test('three quick mouse-wheel notches at the content top rest the sheet on a detent, never dismissed: a notch carries no release speed (spec:AST-094 FR36)', async ({
+    page,
+  }) => {
+    const driver = await webInputDriver(page);
+    test.skip(!driver.wheels, WHEEL_SKIP);
+    const sheet = await openWithMouse(page);
+    const rect = await sheet.boundingBox();
+    if (rect == null) {
+      throw new Error('no sheet');
+    }
+    const top = rect.y;
+    const overBody = {x: rect.x + rect.width / 2, y: rect.y + 160};
+    // Whole 100 px steps on one axis: a mouse wheel's notches.
+    for (let step = 0; step < 3; step += 1) {
+      await driver.wheel({...overBody, dy: -100});
+    }
+    expect(await sheetTop(sheet)).toBeGreaterThan(top + 200);
+    await page.waitForTimeout(200);
+    await expect(
+      page.getByRole('dialog', {name: 'Nearby places'}),
+    ).toBeVisible();
+    await waitForRest(sheet);
+    const viewport = page.viewportSize();
+    if (viewport == null) {
+      throw new Error('no viewport');
+    }
+    const rest = await sheetTop(sheet);
+    expect(
+      Math.min(Math.abs(rest - top), Math.abs(rest - viewport.height * 0.5)),
+    ).toBeLessThan(1);
+  });
+
   test('a trackpad scrolling up over the handle pulls the sheet too, and it comes to rest on a detent', async ({
     page,
   }) => {
