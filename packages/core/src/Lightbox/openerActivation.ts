@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
 /**
  * @file openerActivation.ts
  * @input The document's click events, captured while a viewer on a touch
