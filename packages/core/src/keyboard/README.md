@@ -29,7 +29,7 @@ exported from the package entry.
   room (FR8).
 - **One set of listeners (FR1, INV11):** `subscribeKeyboardHeight(window, fn)`
   delivers every report (the visual viewport's resize and scroll, the window's
-  resize, focus moves) from one set of listeners per window, however many
+  resize) from one set of listeners per window, however many
   components subscribe, and `getKeyboardHeight(window)` gives a reader the
   height that report measured. No other code in core listens to the visual
   viewport for the keyboard.

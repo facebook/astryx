@@ -392,6 +392,19 @@ describe('one set of listeners per window (FR1, INV11)', () => {
       }
     }
   });
+  it('listens to the visual viewport and the window only, with no document focus listener (spec:AST-094 FR24)', () => {
+    const documentAdd = vi.spyOn(document, 'addEventListener');
+    const stop = subscribeKeyboardHeight(window, () => {});
+    try {
+      expect(
+        documentAdd.mock.calls.filter(([type]) => type.startsWith('focus')),
+      ).toEqual([]);
+    } finally {
+      stop();
+      documentAdd.mockRestore();
+    }
+  });
+
   it('reads a keyboard that is already up when the first subscriber attaches', () => {
     // Nothing listens yet: the keyboard came up before any keyboard-aware
     // component mounted (a sheet opened from a focused field).
