@@ -348,7 +348,13 @@ function syncPinnedDividers(
       }
       continue;
     }
-    const value = [`${edge.width}px`, edge.style, edge.color];
+    // A row's border (or a row group's) is painted by the table along the
+    // whole row, under the pinned cell too, and follows a restyle in CSS
+    // alone: the pinned cell draws nothing over it. Only a cell's border is
+    // copied as values.
+    const value = edge.isRow
+      ? ['0px', 'none', 'transparent']
+      : [`${edge.width}px`, edge.style, edge.color];
     const isSame =
       isCarrying &&
       cell.style.getPropertyValue(PINNED_DIVIDER_WIDTH) === value[0] &&

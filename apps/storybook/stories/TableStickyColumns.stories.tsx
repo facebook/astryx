@@ -281,14 +281,19 @@ export const PinnedDividersLive: Story = {
 /**
  * The table appears from state below the component that calls the hooks
  * ("Show table"), the way a tab or a disclosure shows one: the pinned cells
- * still carry the app's red 2 px border on the second row.
+ * still carry the app's red 2 px border on the second row, and follow it when
+ * "Recolour row" turns it green from that same component.
  */
 function RevealBelowOwner({children}: {children: React.ReactNode}) {
   const [isShown, setIsShown] = useState(false);
+  const [isGreen, setIsGreen] = useState(false);
   return (
-    <div>
+    <div data-row-color={isGreen ? 'green' : 'red'}>
       <button type="button" onClick={() => setIsShown(on => !on)}>
         Show table
+      </button>
+      <button type="button" onClick={() => setIsGreen(on => !on)}>
+        Recolour row
       </button>
       {isShown && children}
     </div>
@@ -300,7 +305,7 @@ export const PinnedDividersRevealed: Story = {
     const sticky = useTableStickyColumns<Employee>({startKeys: ['name']});
     return (
       <div data-testid="pinned-dividers-revealed" style={{maxWidth: 720}}>
-        <style>{`[data-testid="pinned-dividers-revealed"] tbody tr:nth-child(2) { border-bottom: 2px solid rgb(220, 38, 38); }`}</style>
+        <style>{`[data-testid="pinned-dividers-revealed"] tbody tr:nth-child(2) { border-bottom: 2px solid rgb(220, 38, 38); } [data-testid="pinned-dividers-revealed"] [data-row-color="green"] tbody tr:nth-child(2) { border-bottom-color: rgb(22, 163, 74); }`}</style>
         <RevealBelowOwner>
           <Table
             data={employees}

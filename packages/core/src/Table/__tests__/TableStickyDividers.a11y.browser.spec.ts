@@ -424,3 +424,24 @@ test("a table revealed from state below the hooks' owner carries a winning row b
       .toBe(true);
   }
 });
+
+test("a row border recoloured without re-rendering the hooks' owner stays whole under the pinned column", async ({
+  page,
+}) => {
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-tablestickycolumns--pinned-dividers-revealed&viewMode=story`,
+  );
+  await page.getByRole('button', {name: 'Show table'}).click();
+  await expect(page.locator('.astryx-table-scroll-wrapper')).toBeVisible();
+  await page.getByRole('button', {name: 'Recolour row'}).click();
+  for (const left of [0, 150]) {
+    await scrollTo(page, left);
+    await expect
+      .poll(async () => {
+        const {pinned, unpinned} = await dividerPixels(page, 1);
+        const green = darkest(pinned);
+        return sameColumn(pinned, unpinned, 24) && green[1] > green[0] + 60;
+      }, `at ${left}px`)
+      .toBe(true);
+  }
+});
