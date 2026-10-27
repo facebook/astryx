@@ -132,6 +132,7 @@ describe('architecture:react-component-runtime INV12 source boundary', () => {
       .sort();
     expect(users).toEqual([
       'Collapsible/Collapsible.tsx',
+      'Table/plugins/rowExpansion/useTableRowExpansion.tsx',
       'TreeList/TreeList.tsx',
       'hooks/useAnimatedLayout.ts',
     ]);

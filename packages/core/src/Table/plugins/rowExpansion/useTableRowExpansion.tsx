@@ -18,7 +18,13 @@
  * - /packages/core/src/Table/useTableRowExpansion.doc.mjs
  */
 
-import {useMemo, useRef, type ReactNode} from 'react';
+import {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   spacingVars,
@@ -45,7 +51,17 @@ import type {
   BodyRowRenderProps,
   BodyCellRenderProps,
   HeaderCellRenderProps,
+  ScrollWrapperRenderProps,
 } from '../../types';
+import {LayoutChangeSnapshot} from '../../../motion/LayoutChangeSnapshot';
+import {
+  applyLayoutChangeTransition,
+  playLayoutChange,
+  reportLayoutChange,
+  type AnimatedLayout,
+  type LayoutChange,
+} from '../../../motion/animatedLayout';
+import {glidingDividerStyles, markGlidingRows} from '../../glidingDivider';
 
 // =============================================================================
 // Config
@@ -107,6 +123,13 @@ export interface UseTableRowExpansionConfig<T extends Record<string, unknown>> {
    * @default false (only the chevron toggles expansion).
    */
   hasRowClickExpansion?: boolean;
+  /**
+   * A handle from `useAnimatedLayout`. With it, opening or closing a row's
+   * panel glides the rows after it to their new places instead of jumping,
+   * and an opening panel plays its entrance on the same motion. Without it,
+   * rows jump, as before.
+   */
+  animatedLayout?: AnimatedLayout;
 }
 
 // =============================================================================
@@ -214,9 +237,15 @@ const expansionStyles = stylex.create({
  */
 const dividerStyles = stylex.create({
   expandedRowCell: {
+    '--_table-row-divider-width': '0px',
     borderBottomWidth: 0,
   },
   panelCell: {
+    // The width this divider draws, for its stand-in during a glide.
+    '--_table-row-divider-width': {
+      default: borderVars['--border-width'],
+      [stylex.when.ancestor(':last-child', tableRowMarker)]: '0px',
+    },
     borderBottomWidth: {
       default: borderVars['--border-width'],
       // Same rule TableCell uses: no trailing line under the last row of the
@@ -308,6 +337,7 @@ function ExpansionChevron({
   return (
     <button
       type="button"
+      data-expansion-toggle=""
       {...stylex.props(
         expansionStyles.chevronButton,
         chevronOffsetStyles[ctx?.density ?? 'balanced'],
@@ -359,6 +389,7 @@ function ExpansionPanelCell({
         expansionStyles.expandedCell,
         panelIndentStyles[ctx?.density ?? 'balanced'],
         hasRowDividers && dividerStyles.panelCell,
+        glidingDividerStyles.cell,
       )}>
       {children}
     </td>
@@ -407,6 +438,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
     getIsItemExpandable,
     hasRowClickExpansion,
     panelVariant = 'transparent',
+    animatedLayout,
   } = config;
 
   const t = useTranslator();
@@ -414,6 +446,121 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
   // Final rendered column count, captured in transformColumns (pipeline step
   // 1) and read in transformBodyRow for the detail panel's colSpan.
   const columnCountRef = useRef(1);
+
+  // With an `animatedLayout` handle, a panel opening or closing glides the
+  // rows after it (`spec:AST-105`, `architecture:react-component-runtime`
+  // INV12). LayoutChangeSnapshot measures each changed row in the commit,
+  // before the DOM changes; the layout effect below runs the glide after it.
+  const scrollWrapperRef = useRef<HTMLDivElement | null>(null);
+  const pendingLayoutRef = useRef<
+    {change: LayoutChange; key: string; isExpanding: boolean}[]
+  >([]);
+  // The scroll wrapper's height before a change, and the height it holds
+  // while rows glide up into it (see the layout effect).
+  const wrapperHeightBeforeRef = useRef<number | null>(null);
+  const heldHeightRef = useRef(0);
+  const rowFor = useCallback(
+    (key: string) =>
+      scrollWrapperRef.current?.querySelector<HTMLElement>(
+        `tr[data-expansion-key="${CSS.escape(key)}"]`,
+      ) ?? null,
+    [],
+  );
+  const measureChanges = useCallback(
+    (previous: Set<string>) => {
+      if (animatedLayout == null) {
+        return;
+      }
+      const changed = [
+        ...[...previous].filter(key => !expandedKeys.has(key)),
+        ...[...expandedKeys].filter(key => !previous.has(key)),
+      ];
+      // Only a closing panel shrinks the wrapper (see the layout effect).
+      wrapperHeightBeforeRef.current = changed.some(
+        key => !expandedKeys.has(key),
+      )
+        ? (scrollWrapperRef.current?.getBoundingClientRect().height ?? null)
+        : null;
+      for (const key of changed) {
+        const row = rowFor(key);
+        if (row == null) {
+          continue;
+        }
+        const change = reportLayoutChange(animatedLayout, () => row);
+        change.measureBefore();
+        // The chevron turns on the glide's motion (`spec:AST-108` FR4a);
+        // written after the measurement so the read finds the layout clean.
+        applyLayoutChangeTransition(
+          animatedLayout,
+          row.querySelector<HTMLElement>('[data-expansion-toggle] > *'),
+        );
+        pendingLayoutRef.current.push({
+          change,
+          key,
+          isExpanding: expandedKeys.has(key),
+        });
+      }
+    },
+    [animatedLayout, expandedKeys, rowFor],
+  );
+  useLayoutEffect(() => {
+    const pendings = pendingLayoutRef.current;
+    pendingLayoutRef.current = [];
+    const moved: HTMLElement[] = [];
+    for (const pending of pendings) {
+      const isMeasured = pending.change.animate();
+      const row = rowFor(pending.key);
+      if (isMeasured && row != null) {
+        moved.push(row);
+      }
+      const panel = row?.nextElementSibling;
+      if (
+        pending.isExpanding &&
+        isMeasured &&
+        panel instanceof HTMLElement &&
+        panel.hasAttribute('data-expansion-panel')
+      ) {
+        playLayoutChange(animatedLayout, panel);
+      }
+    }
+    // The table's scroll wrapper clips what it holds, and a panel that closed
+    // shrank it at once: the rows gliding up into its place would be cut off
+    // at its new bottom until they arrive. For the glide, it keeps its old
+    // height as bottom padding, given back with an equal negative margin so
+    // the content after the table moves exactly as it would have; both go
+    // together when the rows stop, which changes nothing outside.
+    const wrapper = scrollWrapperRef.current;
+    const before = wrapperHeightBeforeRef.current;
+    wrapperHeightBeforeRef.current = null;
+    if (moved.length === 0) {
+      return;
+    }
+    // The glide starts in the microtask the module queued in animate(), which
+    // reads the new layout; this one runs after it, before the frame paints,
+    // and reads everything before it writes, so the table is laid out once.
+    queueMicrotask(() => {
+      const after =
+        before == null ? undefined : wrapper?.getBoundingClientRect().height;
+      const held =
+        before != null && after != null && before - after > 0.5
+          ? before - after
+          : 0;
+      const stopped = Promise.all(moved.map(markGlidingRows));
+      if (held === 0 || wrapper == null) {
+        return;
+      }
+      const hold = (height: number) => {
+        wrapper.style.paddingBlockEnd = height > 0 ? `${height}px` : '';
+        wrapper.style.marginBlockEnd = height > 0 ? `${-height}px` : '';
+      };
+      heldHeightRef.current += held;
+      hold(heldHeightRef.current);
+      void stopped.then(() => {
+        heldHeightRef.current = Math.max(0, heldHeightRef.current - held);
+        hold(heldHeightRef.current);
+      });
+    });
+  }, [expandedKeys, animatedLayout, rowFor]);
 
   const expansionColumn = useMemo(
     (): TableColumn<T> => ({
@@ -515,6 +662,36 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
         };
       },
 
+      transformScrollWrapper(
+        props: ScrollWrapperRenderProps,
+      ): ScrollWrapperRenderProps {
+        const existingRef = props.htmlProps.ref;
+        const mergedRef = (node: HTMLDivElement | null) => {
+          scrollWrapperRef.current = node;
+          if (typeof existingRef === 'function') {
+            existingRef(node);
+          } else if (existingRef != null) {
+            existingRef.current = node;
+          }
+        };
+        return {
+          ...props,
+          htmlProps: {...props.htmlProps, ref: mergedRef},
+          beforeTable:
+            animatedLayout == null ? (
+              props.beforeTable
+            ) : (
+              <>
+                {props.beforeTable}
+                <LayoutChangeSnapshot
+                  value={expandedKeys}
+                  onBeforeChange={measureChanges}
+                />
+              </>
+            ),
+        };
+      },
+
       transformBodyRow(props: BodyRowRenderProps, item: T): BodyRowRenderProps {
         const expandable = getIsItemExpandable
           ? getIsItemExpandable(item)
@@ -523,15 +700,23 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
           return props;
         }
         const key = getRowKey(item);
+        // The row a glide measures from, found again after the commit.
+        const keyAttribute: Record<string, string> = {
+          'data-expansion-key': key,
+        };
+        const keyed = {
+          ...props,
+          htmlProps: {...props.htmlProps, ...keyAttribute},
+        };
 
         // Whole-row-click expansion (opt-in), applied before the collapsed
         // early-return: a collapsed row is precisely the one a click has to
         // reach, since opening it is the whole point.
         const withClick = hasRowClickExpansion
           ? {
-              ...props,
+              ...keyed,
               htmlProps: {
-                ...props.htmlProps,
+                ...keyed.htmlProps,
                 onClick: (event: React.MouseEvent<HTMLTableRowElement>) => {
                   // Don't hijack clicks on interactive cell content (the
                   // chevron already stops propagation, but a composed
@@ -565,13 +750,13 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
                   if (hasTextSelection(row)) {
                     return;
                   }
-                  props.htmlProps.onClick?.(event);
+                  keyed.htmlProps.onClick?.(event);
                   onToggle(key);
                 },
               },
-              xstyle: [...props.xstyle, expansionStyles.clickableRow],
+              xstyle: [...keyed.xstyle, expansionStyles.clickableRow],
             }
-          : props;
+          : keyed;
 
         if (!expandedKeys.has(key)) {
           return withClick;
@@ -590,6 +775,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
               // this row is the table's last, the same way TableCell does.
               tableRowMarker,
               panelVariant === 'muted' && expansionStyles.expandedRow,
+              glidingDividerStyles.row,
             )}>
             <ExpansionPanelCell colSpan={columnCountRef.current}>
               {renderExpanded(item)}
@@ -620,6 +806,8 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
       onToggle,
       t,
       expansionColumn,
+      animatedLayout,
+      measureChanges,
     ],
   );
 }

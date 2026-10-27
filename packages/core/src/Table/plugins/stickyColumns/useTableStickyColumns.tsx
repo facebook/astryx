@@ -24,6 +24,7 @@ import type {
   ScrollWrapperRenderProps,
 } from '../../types';
 import {resolveColumnFloorWidths} from '../../columnUtils';
+import {collapsedBottom, GLIDING_ATTRIBUTE} from '../../glidingDivider';
 
 // =============================================================================
 // Config
@@ -171,6 +172,7 @@ const SHADOW_VAR_END = '--table-sticky-shadow-end';
 const PINNED_ATTRIBUTE = 'data-astryx-table-pinned';
 /** Spread into a pinned cell's props: the attribute the divider sync finds. */
 const PINNED_PROPS = {[PINNED_ATTRIBUTE]: ''} as Record<string, string>;
+// Same names as glidingDivider.ts: StyleX cannot read an imported constant.
 const PINNED_DIVIDER_WIDTH = '--_table-row-divider-app-width';
 const PINNED_DIVIDER_STYLE = '--_table-row-divider-app-style';
 const PINNED_DIVIDER_COLOR = '--_table-row-divider-app-color';
@@ -291,63 +293,6 @@ const shadowStyles = stylex.create({
 // Pinned dividers: app overrides
 // =============================================================================
 
-/** Border styles by collapsed-border precedence, weakest first (CSS 2.1). */
-const STYLE_RANK = [
-  'inset',
-  'groove',
-  'outset',
-  'ridge',
-  'dotted',
-  'dashed',
-  'solid',
-  'double',
-];
-
-interface BottomEdge {
-  width: number;
-  style: string;
-  color: string;
-}
-
-function bottomEdge(element: Element): BottomEdge {
-  const style = getComputedStyle(element);
-  return {
-    width: parseFloat(style.borderBottomWidth) || 0,
-    style: style.borderBottomStyle,
-    color: style.borderBottomColor,
-  };
-}
-
-/**
- * The bottom border the table paints for a cell: the cell's own, or its row's
- * where an app styles the row and the row's wins the collapse (wider, then
- * the stronger style; the cell wins a tie).
- */
-function collapsedBottom(cell: Element): BottomEdge {
-  const own = bottomEdge(cell);
-  const row = cell.parentElement;
-  if (row == null) {
-    return own;
-  }
-  const other = bottomEdge(row);
-  if (own.style === 'hidden' || other.style === 'hidden') {
-    return {width: 0, style: 'none', color: own.color};
-  }
-  const drawn = (edge: BottomEdge) => edge.style !== 'none' && edge.width > 0;
-  if (!drawn(other)) {
-    return own;
-  }
-  if (!drawn(own) || other.width > own.width) {
-    return other;
-  }
-  if (other.width < own.width) {
-    return own;
-  }
-  return STYLE_RANK.indexOf(other.style) > STYLE_RANK.indexOf(own.style)
-    ? other
-    : own;
-}
-
 /**
  * Where an app styles a cell's or row's `border-bottom` directly, past the
  * custom properties, the pinned divider takes the border the table paints.
@@ -357,6 +302,11 @@ function syncPinnedDividers(root: HTMLElement): void {
   for (const cell of root.querySelectorAll<HTMLElement>(
     `[${PINNED_ATTRIBUTE}]`,
   )) {
+    // A row a glide is moving carries its own divider for the glide (its
+    // cells' borders are transparent until it ends): leave it be.
+    if (cell.parentElement?.hasAttribute(GLIDING_ATTRIBUTE) === true) {
+      continue;
+    }
     cell.style.removeProperty(PINNED_DIVIDER_WIDTH);
     cell.style.removeProperty(PINNED_DIVIDER_STYLE);
     cell.style.removeProperty(PINNED_DIVIDER_COLOR);

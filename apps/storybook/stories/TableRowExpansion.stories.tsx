@@ -1,13 +1,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState} from 'react';
+import {useMemo, useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
   Table,
   useTableRowExpansion,
+  useTableStickyColumns,
   pixel,
   proportional,
 } from '@astryxdesign/core/Table';
+import {useAnimatedLayout} from '@astryxdesign/core/hooks';
 import type {TableColumn} from '@astryxdesign/core/Table';
 import {VStack, HStack} from '@astryxdesign/core/Stack';
 import {Text, Heading} from '@astryxdesign/core/Text';
@@ -161,6 +163,91 @@ export const NotAllRowsExpandable: Story = {
         hasHover
         plugins={{expansion}}
       />
+    );
+  },
+};
+
+/**
+ * With an `animatedLayout` handle, opening or closing a row's panel glides the
+ * rows after it instead of jumping them, the panel plays in on the same
+ * motion, and each row's divider moves with its row. The Customer column is
+ * pinned and the table scrolls horizontally, so the pinned cells' own
+ * dividers move too. Under Reduce Motion the rows change at once.
+ */
+export const GlidingRows: Story = {
+  render: () => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const animatedLayout = useAnimatedLayout({containerRef});
+    const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
+      () => new Set(),
+    );
+    const expansion = useTableRowExpansion<Order>({
+      expandedKeys,
+      onToggle: key => setExpandedKeys(prev => toggleKey(prev, key)),
+      getRowKey: item => item.id,
+      renderExpanded: item => <OrderItems order={item} />,
+      animatedLayout,
+    });
+    const sticky = useTableStickyColumns<Order>({startKeys: ['customer']});
+    const wideColumns = useMemo(
+      () => columns.map(column => ({...column, width: pixel(220)})),
+      [],
+    );
+    return (
+      <div
+        ref={containerRef}
+        data-testid="gliding-rows"
+        style={{maxWidth: 640}}>
+        <Table
+          data={orders}
+          columns={wideColumns}
+          idKey="id"
+          hasHover
+          plugins={{expansion, sticky}}
+        />
+        <p>Content after the table glides too.</p>
+      </div>
+    );
+  },
+};
+
+const manyOrders: Order[] = Array.from({length: 2000}, (_, index) => ({
+  ...orders[index % orders.length],
+  id: `ord-${String(index + 1).padStart(4, '0')}`,
+}));
+
+/**
+ * A long table (2,000 rows, not virtualized) with an `animatedLayout`
+ * handle: a glide moves only the rows near the visible part, so opening a
+ * panel costs the same as in a short table.
+ */
+export const GlidingRowsLongTable: StoryObj<{glide?: boolean}> = {
+  args: {glide: true},
+  render: ({glide}) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const animatedLayout = useAnimatedLayout({containerRef});
+    const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
+      () => new Set(),
+    );
+    const expansion = useTableRowExpansion<Order>({
+      expandedKeys,
+      onToggle: key => setExpandedKeys(prev => toggleKey(prev, key)),
+      getRowKey: item => item.id,
+      renderExpanded: item => <OrderItems order={item} />,
+      animatedLayout: glide === false ? undefined : animatedLayout,
+    });
+    return (
+      <div
+        ref={containerRef}
+        data-testid="gliding-rows-long"
+        style={{maxWidth: 720, height: 520, overflow: 'auto'}}>
+        <Table
+          data={manyOrders}
+          columns={columns}
+          idKey="id"
+          plugins={{expansion}}
+        />
+      </div>
     );
   },
 };
