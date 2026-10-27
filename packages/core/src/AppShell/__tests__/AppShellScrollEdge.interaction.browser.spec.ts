@@ -17,7 +17,7 @@
  *   band; the layer is hidden from assistive technology; a mouse keeps
  *   today's opaque bar; a storyboard of the fade in and out
  * @position Browser proof for AppShell.tsx's touch bar and
- *   hooks/useScrollEdgeEffect.ts, run by `pnpm test:interaction`; jsdom
+ *   motion/useScrollEdgeEffect.ts, run by `pnpm test:interaction`; jsdom
  *   scrolls nothing and runs no animations. Touch is one model on every
  *   touch device, so the phone profile here (a coarse pointer) is the touch
  *   case in both engines. A finger's scroll is a synthetic finger resting
