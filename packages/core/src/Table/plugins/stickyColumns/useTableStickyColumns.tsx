@@ -171,7 +171,7 @@ const SHADOW_VAR_END = '--table-sticky-shadow-end';
 // is read on mount and on resize (syncPinnedDividers).
 const PINNED_ATTRIBUTE = 'data-astryx-table-pinned';
 /** Spread into a pinned cell's props: the attribute the divider sync finds. */
-const PINNED_PROPS = {[PINNED_ATTRIBUTE]: ''} as Record<string, string>;
+const PINNED_PROPS: Record<string, string> = {[PINNED_ATTRIBUTE]: ''};
 // Same names as glidingDivider.ts: StyleX cannot read an imported constant.
 const PINNED_DIVIDER_WIDTH = '--_table-row-divider-app-width';
 const PINNED_DIVIDER_STYLE = '--_table-row-divider-app-style';
@@ -359,6 +359,11 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
   // listeners (synchronizing with the DOM) rather than React state, so
   // scrolling never triggers re-renders.
   const detachRef = useRef<(() => void) | null>(null);
+  // The scroll container's merged ref, kept while the inner ref is the same.
+  const mergedScrollWrapperRef = useRef<{
+    inner: ScrollWrapperRenderProps['htmlProps']['ref'] | null;
+    merged: (node: HTMLDivElement | null) => void;
+  } | null>(null);
   const attachScrollShadow = useCallback((el: HTMLDivElement | null) => {
     detachRef.current?.();
     detachRef.current = null;
@@ -485,16 +490,27 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
           return props;
         }
         // Compose with any ref a prior plugin (e.g. virtualization) set on the
-        // scroll container.
-        const existingRef = props.htmlProps.ref;
-        const mergedRef = (node: HTMLDivElement | null) => {
-          attachScrollShadow(node);
-          if (typeof existingRef === 'function') {
-            existingRef(node);
-          } else if (existingRef != null) {
-            // RefObject — assign through its writable `.current`.
-            existingRef.current = node;
-          }
+        // scroll container. One merged ref per inner ref, so React does not
+        // re-attach it on every render: the scroll listeners, the resize
+        // observer and the pinned dividers' read (syncPinnedDividers, on
+        // mount and on resize) run once, not once per render.
+        const existingRef = props.htmlProps.ref ?? null;
+        const cached = mergedScrollWrapperRef.current;
+        const mergedRef =
+          cached != null && cached.inner === existingRef
+            ? cached.merged
+            : (node: HTMLDivElement | null) => {
+                attachScrollShadow(node);
+                if (typeof existingRef === 'function') {
+                  existingRef(node);
+                } else if (existingRef != null) {
+                  // RefObject — assign through its writable `.current`.
+                  existingRef.current = node;
+                }
+              };
+        mergedScrollWrapperRef.current = {
+          inner: existingRef,
+          merged: mergedRef,
         };
         return {
           ...props,
