@@ -498,6 +498,30 @@ test.describe('under a mouse', () => {
   });
 });
 
+test.describe('a mouse press on the transcript', () => {
+  // A desktop browser: the primary pointer is fine (the projects emulate a
+  // phone).
+  test.use({hasTouch: false, isMobile: false});
+
+  test('takes focus off the composer at the press, so the keyboard leaves before any drag reaches the composer (spec:AST-094 FR43)', async ({
+    page,
+  }) => {
+    const chat = await openChat(page);
+    const rows = await keyboardUp(page, chat);
+    await page.mouse.move(rows.x, 120);
+    await page.mouse.down();
+    // The browser's own press moves focus off the composer: the keyboard's
+    // hide starts here, with or without the drag's dismissal.
+    await expect(chat.editable).not.toBeFocused();
+    await page.mouse.move(rows.x, rows.inComposer, {steps: 12});
+    await page.mouse.up();
+    await expect(chat.editable).not.toBeFocused();
+    await expect(
+      page.getByRole('group', {name: 'Message composer'}),
+    ).toHaveCount(0);
+  });
+});
+
 test('the dock comes down when the composer text loses focus', async ({
   page,
 }) => {
