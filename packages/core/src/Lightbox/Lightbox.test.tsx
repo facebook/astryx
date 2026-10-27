@@ -1422,3 +1422,82 @@ describe('Lightbox with an unusable controlled index', () => {
     ).not.toThrow();
   });
 });
+
+describe('Lightbox opener fallback listener (spec:AST-094 FR24)', () => {
+  // Counts the capture-phase `click` listeners Lightbox's own code adds to
+  // or removes from the document (the opener record), told apart from other
+  // modules' by the frame that calls the document.
+  function countLightboxCaptureClicks(
+    method: 'addEventListener' | 'removeEventListener',
+  ) {
+    let count = 0;
+    const original = document[method].bind(document);
+    const spy = vi
+      .spyOn(document, method)
+      .mockImplementation(
+        (
+          type: string,
+          listener: EventListenerOrEventListenerObject | null,
+          options?: boolean | EventListenerOptions,
+        ) => {
+          const capture =
+            options === true ||
+            (typeof options === 'object' && options.capture === true);
+          // [0] the message, [1] this function, [2] the spy, [3] the caller.
+          const caller = (new Error().stack ?? '').split('\n')[3] ?? '';
+          if (
+            type === 'click' &&
+            capture &&
+            /[\\/]Lightbox[\\/](?![^\s]*\.test\.)/.test(caller)
+          ) {
+            count += 1;
+          }
+          return original(
+            type,
+            listener as EventListenerOrEventListenerObject,
+            options,
+          );
+        },
+      );
+    return {count: () => count, restore: () => spy.mockRestore()};
+  }
+
+  it('adds no document listener where the primary pointer is fine', () => {
+    const added = countLightboxCaptureClicks('addEventListener');
+    const {unmount} = render(
+      <Lightbox
+        isOpen={false}
+        onOpenChange={() => {}}
+        media={{src: '/photo.jpg', alt: 'Photo'}}
+      />,
+    );
+    expect(added.count()).toBe(0);
+    unmount();
+    added.restore();
+  });
+
+  it('shares one document listener across the viewers on a touch screen', () => {
+    const restorePointer = stubCoarsePointer();
+    const added = countLightboxCaptureClicks('addEventListener');
+    const removed = countLightboxCaptureClicks('removeEventListener');
+    const {unmount} = render(
+      <>
+        {[0, 1, 2].map(i => (
+          <Lightbox
+            key={i}
+            isOpen={false}
+            onOpenChange={() => {}}
+            media={{src: `/photo-${i}.jpg`, alt: `Photo ${i}`}}
+          />
+        ))}
+      </>,
+    );
+    expect(added.count()).toBe(1);
+    // The last viewer to go takes the listener with it.
+    unmount();
+    expect(removed.count()).toBe(1);
+    added.restore();
+    removed.restore();
+    restorePointer();
+  });
+});
