@@ -10,7 +10,9 @@
  * out: that is an unclean render like any other, reported with the requests
  * still in flight when the wait gave up, so the output names the asset that
  * hung instead of ending the run on a stack trace. renderUntilClean retries
- * an unclean render once, so a blip at a CDN is not a red build.
+ * an unclean render once, so a blip at a CDN is not a red build, and fits
+ * every attempt inside one deadline, so a page that hangs on each attempt
+ * still gets its report printed before the job running it is stopped.
  */
 
 /** Playwright's error for a navigation whose wait condition never came. */
@@ -23,19 +25,38 @@ function isTimeout(error) {
  * page errors and failed requests, and the first button's text (null when no
  * button rendered). A navigation that times out comes back with `timedOut`
  * and the URLs still in flight (`pendingRequests`, in request order); any
- * other navigation error throws.
+ * other navigation error throws. With `budgetMs`, the whole attempt fits in
+ * it: the navigation waits no longer than the budget, and the button no
+ * longer than what is left of it.
  *
  * @param {string} url
  * @param {{
  *   launch: () => Promise<import('playwright').Browser>,
  *   navigationTimeoutMs?: number,
  *   buttonTimeoutMs?: number,
+ *   budgetMs?: number,
+ *   now?: () => number,
  * }} options
  */
 export async function renderPage(
   url,
-  {launch, navigationTimeoutMs = 90_000, buttonTimeoutMs = 15_000},
+  {
+    launch,
+    navigationTimeoutMs = 90_000,
+    buttonTimeoutMs = 15_000,
+    budgetMs,
+    now = Date.now,
+  },
 ) {
+  const startedAt = now();
+  /**
+   * `limitMs`, cut to what is left of the budget. Never 0: Playwright reads a
+   * timeout of 0 as no timeout at all.
+   */
+  const withinBudget = limitMs =>
+    budgetMs == null
+      ? limitMs
+      : Math.max(1, Math.min(limitMs, budgetMs - (now() - startedAt)));
   const consoleErrors = [];
   const pageErrors = [];
   const failedRequests = [];
@@ -62,7 +83,7 @@ export async function renderPage(
     try {
       await page.goto(url, {
         waitUntil: 'networkidle',
-        timeout: navigationTimeoutMs,
+        timeout: withinBudget(navigationTimeoutMs),
       });
     } catch (error) {
       if (!isTimeout(error)) {
@@ -80,7 +101,7 @@ export async function renderPage(
     const button = await page
       .getByRole('button')
       .first()
-      .textContent({timeout: buttonTimeoutMs})
+      .textContent({timeout: withinBudget(buttonTimeoutMs)})
       .catch(() => null);
 
     return {
@@ -109,19 +130,37 @@ export function isCleanRender(result) {
 
 /**
  * Run `render` until one comes back clean, at most `attempts` times, and
- * return the last result. `onRetry(attempt)` hears each retry.
+ * return the last result. With a `deadline` (in `now()`'s clock), each attempt
+ * is handed `budgetMs`, an equal share of the time left (so the retry gets
+ * whatever the first attempt left unused), and no attempt starts once the
+ * deadline has passed. `onRetry(attempt, leftMs)` hears each retry.
  *
  * @template {{timedOut: boolean, consoleErrors: string[], pageErrors: string[], failedRequests: string[], button: string | null}} R
- * @param {() => Promise<R>} render
- * @param {{attempts?: number, onRetry?: (attempt: number) => void}} [options]
+ * @param {(attempt: {budgetMs?: number}) => Promise<R>} render
+ * @param {{
+ *   attempts?: number,
+ *   deadline?: number,
+ *   now?: () => number,
+ *   onRetry?: (attempt: number, leftMs?: number) => void,
+ * }} [options]
  * @returns {Promise<R>}
  */
-export async function renderUntilClean(render, {attempts = 2, onRetry} = {}) {
+export async function renderUntilClean(
+  render,
+  {attempts = 2, deadline, now = Date.now, onRetry} = {},
+) {
+  const leftMs = () => (deadline == null ? undefined : deadline - now());
   let result;
   for (let attempt = 1; attempt <= attempts; attempt++) {
-    result = await render();
-    if (isCleanRender(result)) break;
-    if (attempt < attempts) onRetry?.(attempt);
+    const left = leftMs();
+    result = await render({
+      budgetMs:
+        left == null ? undefined : Math.floor(left / (attempts - attempt + 1)),
+    });
+    if (isCleanRender(result) || attempt === attempts) break;
+    const remaining = leftMs();
+    if (remaining != null && remaining <= 0) break;
+    onRetry?.(attempt, remaining);
   }
   return result;
 }

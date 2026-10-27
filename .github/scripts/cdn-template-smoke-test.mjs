@@ -149,11 +149,21 @@ await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const url = `http://127.0.0.1:${server.address().port}/`;
 
 // ── 5. Render, retrying once so a blip at a CDN is not a red build ───────────
+// Every attempt shares the one 90 s wait this step has always had, so the retry
+// adds no time to it: this step can start with under two minutes of the
+// smoke-test job's 15-minute limit left, and a page that hangs on both
+// attempts still prints the report naming what hung before the job is stopped.
+const RENDER_BUDGET_MS = 90_000;
 const result = await renderUntilClean(
-  () => renderPage(url, {launch: () => chromium.launch()}),
+  ({budgetMs}) =>
+    renderPage(url, {launch: async () => chromium.launch(), budgetMs}),
   {
     attempts: ATTEMPTS,
-    onRetry: attempt => console.log(`  retry ${attempt} of ${ATTEMPTS - 1}`),
+    deadline: Date.now() + RENDER_BUDGET_MS,
+    onRetry: (attempt, leftMs) =>
+      console.log(
+        `  retry ${attempt} of ${ATTEMPTS - 1}, ${Math.round(leftMs / 1000)} s left`,
+      ),
   },
 );
 server.close();
