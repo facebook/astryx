@@ -9,8 +9,8 @@
  * @output Animation proofs for a control's press release on the
  *   compositor: it follows UIButton's curve on the button's layer and on a
  *   card's `::after` (sampled frame by frame, both engines), keeps fading on
- *   every frame while the main thread is blocked, keeps its layer until the
- *   strength reaches 0 when a busy first frame starts it late (both
+ *   every frame while the main thread is blocked, starts at the first frame
+ *   after a busy one and keeps its layer until the strength reaches 0 (both
  *   engines), and does no Layout or Paint; under reduced motion it is one opacity cross-fade of 200 ms or
  *   less on a coarse pointer (design:reduced-motion DR2) and immediate with
  *   any other pointer (DR3); a storyboard of the release, its trace
@@ -600,7 +600,7 @@ test('the release of a button keeps fading on every frame while the main thread 
   expect(strengths[0].strength).toBeGreaterThan((last?.strength ?? 1) + 0.2);
 });
 
-test('after a busy first frame, the release keeps a button’s layer until its strength reaches 0', async ({
+test('after a busy first frame, the release starts at that frame and keeps a button’s layer until its strength reaches 0', async ({
   page,
 }) => {
   const opened = await openSurface(page, BUTTONS, secondaryButton);
@@ -649,9 +649,15 @@ test('after a busy first frame, the release keeps a button’s layer until its s
       ).__release,
   );
   const fading = frames.filter(([press]) => press === 'fading');
-  // The release ran on frames after the block, and its last frame still
-  // written shows the layer at rest: the release went when its animation
-  // ended, not partway through it on a clock started before the block.
+  // The release starts when the browser first styles it, after the block:
+  // the first frame shows it at most two frames in. A start pinned before
+  // the block would show it 150 ms in.
+  expect(fading[0]?.[1], JSON.stringify(frames)).toBeGreaterThan(
+    expectedStrength((2 * 1000) / 60),
+  );
+  // It ran on frames after the block, and its last frame still written
+  // shows the layer at rest: the release went when its animation ended, not
+  // partway through it on a clock started before the block.
   expect(fading.length, JSON.stringify(frames)).toBeGreaterThan(2);
   expect(fading.at(-1)?.[1], JSON.stringify(frames)).toBeLessThan(0.05);
 });
