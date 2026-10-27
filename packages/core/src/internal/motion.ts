@@ -90,6 +90,7 @@ export {
   NAVIGATION_INTERACTIVE_POP_FINISH_SPRING,
   NAVIGATION_POP_SPRING,
   NAVIGATION_PUSH_SPRING,
+  pageControl,
   QUICK_CHANGE_SPRING,
   registerNavigationTable,
   registerScrollTable,

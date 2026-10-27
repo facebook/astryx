@@ -59,6 +59,7 @@ export type {
   TouchPhase,
   TouchSample,
 } from '../gestures/types';
+export {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 export {
   COMPACT_QUERY,
   COMPACT_TOUCH_QUERY,

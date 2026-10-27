@@ -11,7 +11,7 @@
  * SYNC: When modified, update pageControlModel.test.ts and PageControl.tsx.
  */
 
-import {pageControl} from '@astryxdesign/core/motion/uikit';
+import {pageControl} from '@astryxdesign/core/internal/motion';
 
 const PC = pageControl;
 

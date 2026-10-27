@@ -70,9 +70,9 @@ import {colorVars, focusVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {
   TapGestureRecognizer,
   useGestureRecognizer,
-} from '@astryxdesign/core/gestures';
-import {UIKIT_TAP, pageControl} from '@astryxdesign/core/motion/uikit';
-import {TOUCH_QUERY} from '@astryxdesign/core/utils/touchPresentation';
+} from '@astryxdesign/core/internal/touch';
+import {UIKIT_TAP, pageControl} from '@astryxdesign/core/internal/motion';
+import {TOUCH_QUERY} from '@astryxdesign/core/internal/touch';
 import {pageControlLayout, tapTarget, windowOffset} from './pageControlModel';
 
 const PC = pageControl;
