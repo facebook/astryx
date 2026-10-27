@@ -115,7 +115,8 @@ export interface LightboxProps extends BaseProps<HTMLDialogElement> {
    */
   defaultIndex?: number;
   /**
-   * Callback when the gallery index changes via prev/next navigation.
+   * Callback when the gallery index changes: the previous and next buttons,
+   * the arrow keys or a swipe.
    */
   onIndexChange?: (index: number) => void;
   /**
