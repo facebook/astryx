@@ -2,10 +2,9 @@
 
 /**
  * @file touch.ts
- * @input The gesture core: the arena, the recognizers and their geometry,
- *   the pan recognizer, the gesture types, and the touch presentation queries
+ * @input The gesture core: the arena, the recognizers, and their geometry
  * @output `@astryxdesign/core/internal/touch`: the gesture core's primitives
- *   and the touch queries for Lab components, re-exported by name
+ *   for Lab components, re-exported by name
  * @position An internal entry reserved for Astryx's own packages:
  *   undocumented, outside the public API and its compatibility promise
  *   (spec:AST-017 FR21), versioned in lockstep with Core, and allowed only in
@@ -17,8 +16,8 @@
  *   listeners: a recognizer listens only once a component starts it under a
  *   coarse pointer (`spec:AST-094` FR19, FR24).
  *
- * SYNC: When modified, update scripts/touch-support-bundle.test.mjs,
- * scripts/core-internal-entries.test.mjs and touch.test.ts.
+ * SYNC: When modified, update scripts/touch-support-bundle.test.mjs and
+ * touch.test.ts.
  */
 
 export {browserClock, GestureArena} from '../gestures/GestureArena';
@@ -41,6 +40,9 @@ export {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer
 export {ScreenEdgePanGestureRecognizer} from '../gestures/ScreenEdgePanGestureRecognizer';
 export {TapGestureRecognizer} from '../gestures/TapGestureRecognizer';
 export {DEFAULT_ENVIRONMENT} from '../gestures/types';
+
+// The pan recognizer, the gesture types and the touch presentation queries
+// Lab builds on.
 export {PanGestureRecognizer} from '../gestures/PanGestureRecognizer';
 export type {
   PanDirection,
