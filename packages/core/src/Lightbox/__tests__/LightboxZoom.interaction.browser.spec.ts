@@ -21,6 +21,7 @@
 
 import {expect, test, type Locator, type Page} from '@playwright/test';
 import {
+  CONTROL_RGB,
   animationStoryboard,
   blockMainThread,
   busyWindowProof,
@@ -42,6 +43,7 @@ import {
   pinch,
   releaseAnimations,
   sampleCurve,
+  startBusyControl,
   startScreencast,
   timeline,
   touchDriver,
@@ -56,7 +58,6 @@ import {
   type TouchFrame,
   type TouchScript,
 } from '@astryxdesign/interaction-harness';
-import {cadenceOutside, presentedFramesExpected} from './screenSignal';
 
 const storybook = withStorybook(test);
 
@@ -733,11 +734,13 @@ test('a tap beside the photo closes the viewer; a tap on it does not', async ({
 
 test('the double-tap zoom keeps advancing every frame while the main thread is blocked', async ({
   page,
-  browserName,
 }, testInfo) => {
   const {driver, photo, state} = await openViewer(page);
   const before = await state();
   await markElement(photo, {mode: 'outline'});
+  // A compositor-only control animation in the same window: what the
+  // compositor presented while the main thread spun, on this machine.
+  await startBusyControl(page);
   const cast = await startScreencast(page);
   await driver.play(
     doubleTap({x: 201, y: before.stage.y + before.stage.height / 2}),
@@ -747,10 +750,11 @@ test('the double-tap zoom keeps advancing every frame while the main thread is b
   await page.waitForTimeout(100);
   const castFrames = await cast.stop();
   const tracked = await trackMarker(page, castFrames);
+  const control = await trackMarker(page, castFrames, {rgb: CONTROL_RGB});
   const proof = busyWindowProof(
     tracked,
     {from: block.from, to: Math.min(block.to, zoom.to)},
-    {axis: 'height', settledWithin: 1},
+    {axis: 'height', settledWithin: 1, control},
   );
   await writeEvidence(
     'busy-main-thread/lightbox-double-tap-zoom',
@@ -764,6 +768,10 @@ test('the double-tap zoom keeps advancing every frame while the main thread is b
             t: +(f.t - block.from).toFixed(1),
             y: f.box?.y ?? null,
             h: f.box?.height ?? null,
+          })),
+          control: control.map(f => ({
+            t: +(f.t - block.from).toFixed(1),
+            x: f.box?.x ?? null,
           })),
         },
         null,
@@ -782,19 +790,11 @@ test('the double-tap zoom keeps advancing every frame while the main thread is b
     data: t => ({h: tracked.find(f => f.t === t)?.box?.height ?? -1}),
   });
   await film.write(testInfo, {block, zoom});
-  // Judged at the recording's own pace outside the block: Linux WebKit
-  // composites in software on the same CPU the blocked main thread spins
-  // on, so on a loaded machine it presents more slowly during the block than
-  // outside it (its median is held to 1.5 times that pace).
-  const cadence = cadenceOutside(tracked, block);
-  expect(proof.medianFrameMs).toBeLessThanOrEqual(
-    Math.max(20, cadence * (browserName === 'webkit' ? 1.5 : 1.15)),
-  );
-  expect(proof.frames).toBeGreaterThanOrEqual(
-    presentedFramesExpected(proof) - 2,
-  );
-  expect(proof.changed).toBeGreaterThanOrEqual(proof.frames - 3);
-  expect(proof.longestStallMs).toBeLessThan(cadence * 2.5);
+  // Judged against the control: a two-core runner's software compositor and
+  // the screencast share the core the block spins on, so every compositor
+  // animation presents fewer frames there, the control's too. The photo keeps
+  // pace with the control, and a main-thread animation would not.
+  expect(proof.verdict.failures).toEqual([]);
   expect(proof.monotonic).toBe(true);
 });
 
