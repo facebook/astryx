@@ -1469,7 +1469,7 @@ test.describe('a mouse or a pen drags the lens too (spec:AST-094 FR43)', () => {
     await expect.poll(refusesSelection).toBe(false);
   });
 
-  test('under a mouse the bar listens on its own element, and on the document only while a press is down', async ({
+  test('under a mouse the bar listens on its own element, and on the page only while a press is down; the shared click guard stays', async ({
     page,
     browserName,
   }) => {
@@ -1479,51 +1479,82 @@ test.describe('a mouse or a pen drags the lens too (spec:AST-094 FR43)', () => {
     );
     await openFine(page);
     const cdp = await page.context().newCDPSession(page);
+    /** Each listener as its type and its capture and passive flags. */
     const listeners = async (expression: string) => {
       const {result} = await cdp.send('Runtime.evaluate', {expression});
       const {listeners: found} = await cdp.send(
         'DOMDebugger.getEventListeners',
-        {
-          objectId: result.objectId ?? '',
-        },
+        {objectId: result.objectId ?? ''},
       );
-      return found.map(listener => listener.type).sort();
+      return found
+        .map(
+          listener =>
+            `${listener.type}${listener.useCapture ? '/capture' : ''}${listener.passive ? '/passive' : ''}`,
+        )
+        .sort();
     };
     const pageLevel = async () => [
-      ...(await listeners('document')),
-      ...(await listeners('window')),
+      ...(await listeners('document')).map(entry => `document:${entry}`),
+      ...(await listeners('window')).map(entry => `window:${entry}`),
     ];
+    /** What `after` adds to `before` and what it drops, counting repeats. */
+    const delta = (before: string[], after: string[]) => {
+      const added = [...after];
+      const removed: string[] = [];
+      for (const entry of before) {
+        const index = added.indexOf(entry);
+        if (index < 0) {
+          removed.push(entry);
+        } else {
+          added.splice(index, 1);
+        }
+      }
+      return {added, removed};
+    };
     const capsule = 'document.querySelector(\'[role="tablist"]\')';
-    // spec:AST-094 FR24, FR43: one passive pointerdown on the bar itself.
-    expect(await listeners(capsule)).toContain('pointerdown');
-    // The page's shared listeners (the click guard, the input stream) install
-    // once, at the first press, and stay; after it, a press adds document
-    // listeners only while it is down.
-    const press = async (name: string) => {
-      const {x, y} = await itemCenter(page, name);
+    // spec:AST-094 FR24, FR43: on the bar itself, the passive pointerdown a
+    // press starts from, and the claiming recognizer's touchmove, which FR24
+    // counts outside its budget (FR19).
+    expect(await listeners(capsule)).toEqual([
+      'pointerdown/capture/passive',
+      'touchmove',
+    ]);
+    // openStory returns while Storybook is still completing the story's
+    // render: its own decorators' effects (the measure addon's document
+    // pointermove among them) run when the render finishes, so the baseline
+    // waits for that.
+    await page.waitForFunction(
+      () =>
+        (
+          window as unknown as {
+            __STORYBOOK_PREVIEW__?: {currentRender?: {phase?: string}};
+          }
+        ).__STORYBOOK_PREVIEW__?.currentRender?.phase === 'finished',
+    );
+    // The tabs are read first: Playwright's own locator reads add its
+    // listeners to the window, which are the harness's, not the page's.
+    const library = await itemCenter(page, 'Library');
+    const browse = await itemCenter(page, 'Browse');
+    const atRest = await pageLevel();
+    const press = async ({x, y}: {x: number; y: number}) => {
       await page.mouse.move(x, y);
       await page.mouse.down();
       const during = await pageLevel();
       await page.mouse.up();
       return during;
     };
-    // What stays after a press, once the release's own cleanup has run.
-    const settled = async () => {
-      let last = await pageLevel();
-      for (;;) {
-        await page.waitForTimeout(50);
-        const next = await pageLevel();
-        if (JSON.stringify(next) === JSON.stringify(last)) {
-          return next;
-        }
-        last = next;
-      }
-    };
-    await press('Library');
-    const atRest = await settled();
-    const during = await press('Browse');
-    await expect.poll(pageLevel).toEqual(atRest);
-    expect(during.length).toBeGreaterThan(atRest.length);
+    // While a press is down the gesture host listens on the page, and the
+    // release removes all of it. The one listener that stays is the click
+    // guard's: it swallowed the browser's click for the press the lens took,
+    // and it is installed once per page and kept (FR24 counts it once).
+    expect(delta(atRest, await press(library)).added).not.toEqual([]);
+    await expect
+      .poll(async () => delta(atRest, await pageLevel()))
+      .toEqual({added: ['window:click/capture'], removed: []});
+    // A second press leaves nothing more behind.
+    const afterFirst = await pageLevel();
+    expect(delta(afterFirst, await press(browse)).added).not.toEqual([]);
+    await expect.poll(pageLevel).toEqual(afterFirst);
   });
 
   test(
