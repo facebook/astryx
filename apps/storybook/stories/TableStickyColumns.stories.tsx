@@ -176,6 +176,25 @@ export const PinnedDividers: Story = {
 };
 
 /**
+ * A `system`-mode Theme on its own surface, with a control that switches it
+ * to dark: its state lives here, so switching it re-renders only this and the
+ * table, not the story that calls the table's hooks.
+ */
+function ThemeAroundTable({children}: {children: React.ReactNode}) {
+  const [isDark, setIsDark] = useState(false);
+  return (
+    <Theme theme={neutralTheme} mode={isDark ? 'dark' : 'system'}>
+      <div style={{backgroundColor: 'var(--color-background-surface)'}}>
+        <button type="button" onClick={() => setIsDark(on => !on)}>
+          Theme dark
+        </button>
+        {children}
+      </div>
+    </Theme>
+  );
+}
+
+/**
  * A border that changes after mount reaches the pinned cells, and the edge
  * shadows follow columns added without a resize. Hovering a row turns its
  * line purple (an app's `:hover` rule on the cells); "Highlight" sets the
@@ -243,18 +262,17 @@ export const PinnedDividersLive: Story = {
             Add columns
           </button>
         </p>
-        {/* A `system`-mode Theme: the table follows the operating system's
-            light or dark. */}
-        <Theme theme={neutralTheme} mode="system">
-          <div style={{backgroundColor: 'var(--color-background-surface)'}}>
-            <Table
-              data={employees}
-              columns={shown}
-              idKey="id"
-              plugins={{stickyColumns: sticky}}
-            />
-          </div>
-        </Theme>
+        {/* The table sits in its own Theme (`system` by default, so it
+            follows the operating system), switched by a control inside it, so
+            the switch does not re-render the component that calls the hooks. */}
+        <ThemeAroundTable>
+          <Table
+            data={employees}
+            columns={shown}
+            idKey="id"
+            plugins={{stickyColumns: sticky}}
+          />
+        </ThemeAroundTable>
       </div>
     );
   },
