@@ -72,7 +72,6 @@ import {
 import {useTranslator, type TranslatorFn} from '../i18n/useTranslator';
 import type {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer';
 import {reorder} from '../motion/uikit/reorder';
-import type {DurationBounce} from '../motion/spring';
 import {
   animatorFor,
   isMoving,
@@ -103,7 +102,6 @@ import {
   clampTop,
   dropPosition,
   settleSpring,
-  slideSpring,
   type ReorderGeometry,
 } from './reorderModel';
 
@@ -399,11 +397,6 @@ interface DragSession {
   readonly edge: EdgeAutoscroll;
   /** Points per tick of the running autoscroll; 0 when none. */
   step: number;
-  /**
-   * The slides' spring under the list's theme, read at the begin; null with
-   * a mouse, whose rows take their places at once.
-   */
-  readonly slide: DurationBounce | null;
   /** The dragged row's inline stacking before the drag. */
   readonly restore: RowRestore;
   /** The copy of the dragged row that follows the pointer. */
@@ -1073,7 +1066,6 @@ export class ListReorderController implements ListReorderSession {
         apply: delta => this.scrollBy(session, delta),
       }),
       step: 0,
-      slide: this.animates ? touchMotion.slideBase(list) : null,
       restore,
       preview,
       line,
@@ -1312,7 +1304,7 @@ export class ListReorderController implements ListReorderSession {
       const spring =
         index === dragged
           ? settleSpring(value, element.offsetHeight)
-          : slideSpring(0, touchMotion.slideBase(list));
+          : touchMotion.glideBase(list);
       touchMotion.home(element, spring, at, index === dragged);
     }
     list.removeAttribute(REORDERING_ATTRIBUTE);
@@ -1451,12 +1443,7 @@ export class ListReorderController implements ListReorderSession {
       }
       // A row still sliding from the previous move goes on from where it is
       // shown, as a drop's rows do.
-      touchMotion.follow(
-        element,
-        shift,
-        slideSpring(0, touchMotion.slideBase(list)),
-        at,
-      );
+      touchMotion.follow(element, shift, touchMotion.glideBase(list), at);
     }
     list.removeAttribute(REORDERING_ATTRIBUTE);
   }
@@ -1486,12 +1473,7 @@ export class ListReorderController implements ListReorderSession {
         // Every row's place after the drop is its new layout place, so each
         // running spring (the drop's settle, a row's slide) goes on to 0 from
         // the shifted value.
-        touchMotion.follow(
-          element,
-          shift,
-          slideSpring(0, touchMotion.slideBase(list)),
-          at,
-        );
+        touchMotion.follow(element, shift, touchMotion.glideBase(list), at);
       } else {
         animatorFor(element).set({y: 0});
         releaseMotion(element, 'translate');

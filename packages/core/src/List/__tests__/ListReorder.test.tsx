@@ -51,6 +51,7 @@ import {useAnnounce} from '../../hooks/useAnnounce';
 import {motionRole} from '../../motion/roles';
 import {getGestureHost} from '../../gestures/GestureHost';
 import {pointerQuery} from '../../gestures/__tests__/pointerQuery';
+import {touchMotion} from '../ListReorderTouch';
 
 function moveKey<T extends Key>(
   items: ReadonlyArray<T>,
@@ -1096,6 +1097,22 @@ describe('List reorderable', () => {
       expect(labels()).toEqual(['A', 'B', 'C']);
     },
   );
+
+  it("plays a committed move's glide on the shared settle role, springs.settle (spec:AST-105 FR4)", async () => {
+    stubPrimaryPointer(true);
+    const glide = vi.spyOn(touchMotion, 'glideBase');
+    const user = userEvent.setup();
+    render(<ReorderableRows initial={['A', 'B', 'C']} />);
+    const list = screen.getByRole('list');
+    layOut(list);
+    const handle = handleOf('A');
+    handle.focus();
+    await user.keyboard(' {ArrowDown}');
+    await waitFor(() => expect(glide).toHaveBeenCalled());
+    expect(glide.mock.results[0]?.value).toEqual({duration: 0.5, bounce: 0});
+    expect(motionRole('springs.settle')).toBeDefined();
+    glide.mockRestore();
+  });
 
   it("keeps the slides' spring an internal constant: touch motion has no theme surface", () => {
     const drag = (coarse: boolean) => {
