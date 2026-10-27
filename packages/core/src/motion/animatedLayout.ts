@@ -1208,7 +1208,11 @@ export function playLayoutFrames(
       animations.push(animation);
     }
   }
-  return () => animations.forEach(animation => animation.cancel());
+  // Held through the motion, then released: every part shares one clock, so
+  // the first to finish ends them all and each element shows its own styles.
+  const end = () => animations.forEach(animation => animation.cancel());
+  animations[0]?.addEventListener?.('finish', end);
+  return end;
 }
 
 /**
