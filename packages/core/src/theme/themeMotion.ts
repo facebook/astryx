@@ -27,33 +27,21 @@
  */
 
 import {expandMotionScale, type MotionScaleConfig} from './expandMotionScale';
+import {
+  resolveKnobs,
+  type MotionCharacter,
+  type ResolvedMotionKnobs,
+  type ThemeMotionKnobs,
+} from './motionKnobs';
 import {durationDefaults, easeDefaults} from './tokens.stylex';
 
-/** How lively a theme's motion feels. */
-export type MotionCharacter = 'crisp' | 'standard' | 'expressive';
-
-/** Whether a theme reduces motion for everyone. */
-export type ThemeReducedMotion = 'system' | 'always';
-
-/** The three motion knobs a theme sets (`spec:AST-108` FR1). */
-export interface ThemeMotionKnobs {
-  /**
-   * Scales every motion duration: 1 is Astryx's own, 0.75 the quickest and
-   * 1.5 the slowest (values outside are clamped). Default 1.
-   */
-  tempo?: number;
-  /**
-   * `'crisp'` decelerates without overshoot, `'standard'` is Astryx's own,
-   * `'expressive'` overshoots slightly on entrances and moves. Exits and
-   * fades never overshoot. Default `'standard'`.
-   */
-  character?: MotionCharacter;
-  /**
-   * `'always'` reduces motion for everyone; `'system'` follows each person's
-   * Reduce Motion setting. No value loosens Reduce Motion. Default `'system'`.
-   */
-  reducedMotion?: ThemeReducedMotion;
-}
+export {
+  TEMPO_RANGE,
+  type MotionCharacter,
+  type ResolvedMotionKnobs,
+  type ThemeMotionKnobs,
+  type ThemeReducedMotion,
+} from './motionKnobs';
 
 /**
  * A theme's `motion`: the knobs, the existing `MotionScaleConfig`, or both.
@@ -61,22 +49,6 @@ export interface ThemeMotionKnobs {
  */
 export type ThemeMotionConfig =
   ThemeMotionKnobs | (MotionScaleConfig & ThemeMotionKnobs);
-
-/** The knobs with their defaults filled in and `tempo` clamped. */
-export interface ResolvedMotionKnobs {
-  readonly tempo: number;
-  readonly character: MotionCharacter;
-  readonly reducedMotion: ThemeReducedMotion;
-  /**
-   * Whether the theme sets `tempo` itself. A `MotionScaleConfig` alone
-   * implies a tempo for its CSS durations only; the animator's springs stay
-   * at tempo 1 unless this is true (FR5).
-   */
-  readonly tempoIsSet: boolean;
-}
-
-/** The range `tempo` is clamped to. */
-export const TEMPO_RANGE = {min: 0.75, max: 1.5} as const;
 
 /**
  * The entrance and move curve at each character. `'standard'` is the theme's
@@ -89,37 +61,17 @@ export const CHARACTER_EASE = {
   expressive: 'cubic-bezier(0.3, 1.2, 0.5, 1)',
 } as const satisfies Record<MotionCharacter, string | null>;
 
-const CHARACTERS: ReadonlyArray<MotionCharacter> = [
-  'crisp',
-  'standard',
-  'expressive',
-];
+/** The knobs of `config`, defaults filled in, `tempo` clamped. */
+export function resolveMotionKnobs(
+  config: ThemeMotionConfig | undefined,
+): ResolvedMotionKnobs {
+  return resolveKnobs(config);
+}
 
 function isScaleConfig(
   config: ThemeMotionConfig,
 ): config is MotionScaleConfig & ThemeMotionKnobs {
   return 'fast' in config && 'medium' in config && 'ratio' in config;
-}
-
-/** The knobs of `config`, defaults filled in, `tempo` clamped. */
-export function resolveMotionKnobs(
-  config: ThemeMotionConfig | undefined,
-): ResolvedMotionKnobs {
-  const tempoIsSet =
-    typeof config?.tempo === 'number' && Number.isFinite(config.tempo);
-  const tempo = tempoIsSet
-    ? Math.min(
-        TEMPO_RANGE.max,
-        Math.max(TEMPO_RANGE.min, config.tempo as number),
-      )
-    : 1;
-  const character =
-    config?.character != null && CHARACTERS.includes(config.character)
-      ? config.character
-      : 'standard';
-  const reducedMotion =
-    config?.reducedMotion === 'always' ? 'always' : 'system';
-  return {tempo, character, reducedMotion, tempoIsSet};
 }
 
 /** A duration token's value in ms (`'175ms'` → 175). */
