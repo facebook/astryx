@@ -13,7 +13,7 @@
  * @position Unit tests of packages/core/src/touch-support/useTouchLayer.ts
  */
 
-import {Activity, StrictMode, useRef} from 'react';
+import {Activity, StrictMode, memo, useRef, useState} from 'react';
 import {act, render, screen} from '@testing-library/react';
 import {renderToString} from 'react-dom/server';
 import {afterEach, describe, expect, it, vi} from 'vitest';
@@ -141,21 +141,27 @@ describe('useTouchLayer', () => {
     expect(setup).toHaveBeenCalledTimes(1);
   });
 
-  it('sets nothing up when a layer rendered hidden under a coarse pointer is shown after the pointer turned fine', async () => {
+  it('sets nothing up when a layer rendered hidden under a coarse pointer is revealed, without rendering again, after the pointer turned fine', async () => {
     const turn = primaryPointer(true);
     const {setup, Layer} = recorder();
-    const view = render(
-      <Activity mode="hidden">
-        <Layer />
-      </Activity>,
-    );
+    // Memoized, so the reveal shows the hidden render without rendering it
+    // again: only the attach-time read sees the pointer has turned fine.
+    const Hidden = memo(Layer);
+    let show: (isVisible: boolean) => void = () => {};
+    function Host() {
+      const [isVisible, setVisible] = useState(false);
+      show = setVisible;
+      return (
+        <Activity mode={isVisible ? 'visible' : 'hidden'}>
+          <Hidden />
+        </Activity>
+      );
+    }
+    render(<Host />);
+    await act(async () => {});
     turn(false);
     await act(async () => {
-      view.rerender(
-        <Activity mode="visible">
-          <Layer />
-        </Activity>,
-      );
+      show(true);
     });
     expect(setup).not.toHaveBeenCalled();
   });
