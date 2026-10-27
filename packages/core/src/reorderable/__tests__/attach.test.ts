@@ -12,6 +12,7 @@
 import {act, fireEvent, screen, waitFor} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {createReorderable} from '../createReorderable';
+import {__resetLiveRegionsForTest} from '../../hooks/useAnnounce';
 
 interface Card {
   readonly id: string;
@@ -48,6 +49,9 @@ function deck(names: ReadonlyArray<string>) {
 
 afterEach(() => {
   document.body.replaceChildren();
+  // The shared announcement channel keeps its regions; they went with the
+  // body.
+  __resetLiveRegionsForTest();
 });
 
 describe('createReorderable attach', () => {
@@ -159,10 +163,78 @@ describe('createReorderable attach', () => {
     for (const {grip} of cards.slice(1)) {
       expect(grip).toHaveAttribute('role', 'img');
       expect(grip).not.toHaveAttribute('aria-pressed');
-      expect(grip).toHaveAccessibleName('grip');
+      expect(grip).toHaveAttribute('aria-label', 'grip');
       expect(grip.tabIndex).toBe(-1);
+      // A row that stays shows no handle (spec:AST-103 FR1, DEC-2).
+      expect(grip.hidden).toBe(true);
     }
     expect(cards[0].grip).toHaveAttribute('role', 'button');
+    expect(cards[0].grip.hidden).toBe(false);
+    detach();
+    for (const {grip} of cards) {
+      expect(grip.hidden).toBe(false);
+    }
+  });
+
+  it('names a row that stays in the refusal of a move past it (spec:AST-103 FR1, FR4)', async () => {
+    const {container, cards, items, move} = deck(['Pinned', 'Milk', 'Eggs']);
+    const onReorder = vi.fn(({key, to}: {key: string | number; to: number}) =>
+      move(String(key), to),
+    );
+    const {detach} = createReorderable({
+      onReorder,
+      isReorderable: key => key !== 'pinned',
+    }).attach(container, {items});
+    const milk = cards[1].grip;
+    milk.focus();
+    fireEvent.keyDown(milk, {key: 'Enter'});
+    fireEvent.keyDown(milk, {key: 'ArrowUp'});
+    expect(onReorder).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent("Can't move past Pinned"),
+    );
+    detach();
+  });
+
+  it('listens on the container only: none on a handle or an item (spec:AST-103 FR5)', () => {
+    const {container, cards, items} = deck(['Milk', 'Eggs']);
+    const add = vi.spyOn(EventTarget.prototype, 'addEventListener');
+    const {detach} = createReorderable({onReorder: () => {}}).attach(
+      container,
+      {items},
+    );
+    const targets = add.mock.contexts;
+    for (const {el, grip} of cards) {
+      expect(
+        targets.filter(target => target === grip || target === el),
+      ).toEqual([]);
+    }
+    const onContainer = add.mock.calls
+      .filter((_, index) => targets[index] === container)
+      .map(([type]) => type);
+    expect(onContainer).toEqual(
+      expect.arrayContaining(['click', 'keydown', 'focusout']),
+    );
+    add.mockRestore();
+    detach();
+  });
+
+  it('announces through the shared polite channel, adding no live region of its own (spec:AST-103 FR4)', async () => {
+    const {container, cards, items, move} = deck(['Milk', 'Eggs', 'Bread']);
+    const {detach} = createReorderable({
+      onReorder: ({key, to}) => move(String(key), to),
+    }).attach(container, {items});
+    const milk = cards[0].grip;
+    milk.focus();
+    fireEvent.keyDown(milk, {key: 'Enter'});
+    fireEvent.keyDown(milk, {key: 'ArrowDown'});
+    // The shared channel's page region (hooks/useAnnounce.ts).
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-astryx-live-region="polite"]'),
+      ).toHaveTextContent('Milk, position 2 of 3, after Eggs, before Bread'),
+    );
+    expect(document.querySelectorAll('[aria-live="polite"]')).toHaveLength(1);
     detach();
   });
 
@@ -530,10 +602,19 @@ describe('createReorderable attach', () => {
     },
   );
 
-  it('announces inside the modal dialog that encloses the container (spec:AST-086 FR14)', async () => {
-    const dialog = document.createElement('div');
-    dialog.setAttribute('role', 'dialog');
-    dialog.setAttribute('aria-modal', 'true');
+  it('announces inside the open native modal that encloses the container (spec:AST-086 FR14)', async () => {
+    // jsdom has no showModal(), so an open dialog never matches `:modal`;
+    // stand in for a dialog opened modally.
+    const matches = Element.prototype.matches;
+    const modal = vi
+      .spyOn(Element.prototype, 'matches')
+      .mockImplementation(function (this: Element, selector: string) {
+        return selector === ':modal'
+          ? this instanceof HTMLDialogElement && this.open
+          : matches.call(this, selector);
+      });
+    const dialog = document.createElement('dialog');
+    dialog.open = true;
     document.body.append(dialog);
     const {container, cards, items, move} = deck(['Milk', 'Eggs', 'Bread']);
     dialog.append(container);
@@ -549,10 +630,9 @@ describe('createReorderable attach', () => {
         'Milk, position 2 of 3, after Eggs, before Bread',
       ),
     );
-    const live = dialog.querySelector('[aria-live="polite"]');
-    expect(live).not.toBeNull();
+    expect(dialog.querySelector('[aria-live="polite"]')).not.toBeNull();
     detach();
-    expect(dialog.querySelector('[aria-live="polite"]')).toBeNull();
+    modal.mockRestore();
   });
 
   it('drops an item in a positions() layout on the slot whose centre is nearest its own (spec:AST-103 FR1)', () => {
