@@ -184,6 +184,7 @@ export function attachReorder(
     const saved = HANDLE_ATTRIBUTES.map(
       name => [name, handle.getAttribute(name)] as const,
     );
+    const savedTouchAction = handle.style.touchAction;
     const name = nameOf(element);
     if (name === '' && !warnedUnnamed) {
       warnedUnnamed = true;
@@ -203,6 +204,10 @@ export function attachReorder(
     handle.setAttribute('aria-describedby', hintId);
     handle.setAttribute('tabindex', '0');
     handle.setAttribute(HANDLE_ATTRIBUTE, '');
+    // Where the primary pointer is coarse the page keeps its pan until the
+    // hold claims the finger (a flick scrolls); where it is fine, no pan, so
+    // a pen drags the item at once (spec:AST-094 FR18, FR43).
+    handle.style.touchAction = isCoarse ? 'manipulation' : 'none';
     const unregister = controller.registerHandle(handle, key, name);
     const onClick = () => {
       if (!controller.takeDrag(handle)) {
@@ -242,6 +247,10 @@ export function attachReorder(
           handle.setAttribute(attribute, value);
         }
       }
+      handle.style.touchAction = savedTouchAction;
+      if (handle.getAttribute('style') === '') {
+        handle.removeAttribute('style');
+      }
     });
   };
   // Wires each reorderable item's handle and unwires the handles of items
@@ -274,8 +283,11 @@ export function attachReorder(
 
   // --- Listeners, the hint, `start` ----------------------------------------
 
-  const detachMouse = controller.attachMouse();
-  const detachTouch = isCoarse ? controller.attachTouch() : () => {};
+  // Every pointer (spec:AST-094 FR43): a mouse, and a pen where the primary
+  // pointer is fine, drag at once; a finger, and a pen where it is coarse,
+  // hold first.
+  const detachMouse = controller.attachMouse(!isCoarse);
+  const detachTouch = controller.attachTouch(isCoarse);
   // `start(key)` reaches this container's items (FR4a), the latest attached.
   const unmountSession = mountSession(options, controller);
   const observer = new MutationObserver(queueCommit);
