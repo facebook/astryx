@@ -18,6 +18,7 @@ import {
   pointerQuery,
 } from '../gestures/__tests__/pointerQuery';
 import {PRESS_GROUP_ITEM_ATTRIBUTE} from '../utils/pressFeedback';
+import {Button} from '../Button';
 import {ToggleButton} from './ToggleButton';
 import {ToggleButtonGroup} from './ToggleButtonGroup';
 
@@ -229,6 +230,57 @@ describe('ToggleButtonGroup tracks a held pointer across its toggles (family:act
     );
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenLastCalledWith(['underline']);
+  });
+
+  it('leaves a member that is not a toggle its own click: the group does not take a press that lands on it', () => {
+    const onMore = vi.fn();
+    const onChange = vi.fn();
+    const view = render(
+      <ToggleButtonGroup
+        type="multiple"
+        label="Formatting"
+        value={[]}
+        onChange={onChange}
+        data-testid="group">
+        <ToggleButton label="Bold" value="bold" data-testid="a" />
+        <Button label="More" onClick={onMore} data-testid="more" />
+      </ToggleButtonGroup>,
+    );
+    const group = view.getByTestId('group');
+    const more = view.getByTestId('more');
+    place(group, {left: 0, top: 100, width: 160, height: 32});
+    place(view.getByTestId('a'), A);
+    place(more, B);
+    act(() => {
+      vi.advanceTimersToNextFrame();
+    });
+    const f = finger();
+    f.down(more, centerOf(B));
+    f.up(more, centerOf(B));
+    more.dispatchEvent(
+      new MouseEvent('click', {bubbles: true, cancelable: true, detail: 1}),
+    );
+    expect(onMore).toHaveBeenCalledTimes(1);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('touching toggles take no area from each other: 28 px toggles at x = 0, 80 and 160, a finger at x = 82 toggles only the middle one, and 8 px below a toggle still counts for it', () => {
+    const {group, a, b, c, onChange} = mount();
+    place(group, {left: 0, top: 100, width: 240, height: 28});
+    place(a, {left: 0, top: 100, width: 80, height: 28});
+    place(b, {left: 80, top: 100, width: 80, height: 28});
+    place(c, {left: 160, top: 100, width: 80, height: 28});
+    const tapAt = (point: Point) => {
+      const f = finger();
+      f.down(group, point);
+      f.up(group, point);
+    };
+    tapAt({x: 82, y: 114});
+    expect(onChange).toHaveBeenLastCalledWith(['italic']);
+    tapAt({x: 120, y: 136});
+    expect(onChange).toHaveBeenCalledTimes(2);
+    tapAt({x: 120, y: 137});
+    expect(onChange).toHaveBeenCalledTimes(2);
   });
 
   it('a finger just past a small toggle, inside its 44 px target, toggles it (FR5)', () => {
