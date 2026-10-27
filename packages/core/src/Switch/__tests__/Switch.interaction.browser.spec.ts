@@ -227,6 +227,19 @@ interface OpenSwitch {
   center: {x: number; y: number};
 }
 
+/** Waits for the switch's measured hit insets (utils/hitArea, a frame after mount). */
+async function waitForHitArea(page: Page): Promise<void> {
+  await page.waitForFunction(() => {
+    const surface = document.querySelector<HTMLElement>(
+      '#storybook-root [role="switch"]',
+    )?.parentElement;
+    return (
+      surface?.style.getPropertyValue('--astryx-hit-inset-top') !== '' &&
+      surface?.style.getPropertyValue('--astryx-hit-inset-top') != null
+    );
+  });
+}
+
 async function openSwitch(
   page: Page,
   storyId = 'core-switch--default',
@@ -684,10 +697,11 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     expect(on.height).toBe(THUMB_ON);
   });
 
-  test('under a coarse pointer the switch’s hit area is at least 44 × 44 px, centered on the track, with nothing visible added', async ({
+  test('under a coarse pointer the switch’s hit area grows to 44 × 44 px, centered on the track, with nothing visible added', async ({
     page,
   }) => {
     const {driver, input, center} = await openSwitch(page);
+    await waitForHitArea(page);
     const boxes = await page.evaluate(() => {
       const i = document.querySelector<HTMLElement>(
         '#storybook-root [role="switch"]',
@@ -727,6 +741,41 @@ test.describe('Switch touch presentation (UISwitch, iOS 26.2), under a finger', 
     // A tap 18 px above the thumb's center, outside the 24 px track but
     // inside the hit area, toggles the switch.
     await tapForClick(driver, {x: center.x, y: center.y - 18});
+    await expect(input).toBeChecked();
+  });
+
+  test('under a coarse pointer the hit area stops halfway to a link beside it: a tap nearer the link is the link’s, a tap nearer the switch toggles it', async ({
+    page,
+  }) => {
+    const {driver, input} = await openSwitch(
+      page,
+      'core-switch--beside-a-link',
+    );
+    await waitForHitArea(page);
+    const boxes = await page.evaluate(() => {
+      const i = document.querySelector<HTMLElement>(
+        '#storybook-root [role="switch"]',
+      )!;
+      const surface = i.parentElement!;
+      const link = document.querySelector<HTMLElement>('#storybook-root a')!;
+      const box = (e: HTMLElement) => {
+        const r = e.getBoundingClientRect();
+        return {left: r.left, right: r.right, top: r.top, bottom: r.bottom};
+      };
+      return {hit: box(i), switch: box(surface), link: box(link)};
+    });
+    const gap = boxes.link.left - boxes.switch.right;
+    expect(gap).toBeGreaterThan(0);
+    // The right side stops at half the gap; the other sides grow to 44 px.
+    expect(boxes.hit.right).toBeCloseTo(boxes.switch.right + gap / 2, 0);
+    expect(boxes.hit.bottom - boxes.hit.top).toBeCloseTo(44, 0);
+    const y = (boxes.switch.top + boxes.switch.bottom) / 2;
+    // 1.5 px from the link: the link's.
+    await tapForClick(driver, {x: boxes.link.left - 1.5, y});
+    await expect(input).not.toBeChecked();
+    await expect(page).toHaveURL(/#wifi-details$/);
+    // 1.5 px from the switch: the switch's.
+    await tapForClick(driver, {x: boxes.switch.right + 1.5, y});
     await expect(input).toBeChecked();
   });
 

@@ -63,6 +63,8 @@ import {reducedMotionFadeConsts} from '../motion/reducedMotion.stylex';
 import {PRESS_HOLDS_DRAG_ATTRIBUTE} from '../utils/pressFeedback';
 import {switchPressLayerStyles} from './switchPressLayer';
 import {useSwitchTouch, type SwitchTouchParts} from './useSwitchTouch';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {watchHitArea, writeHitInsets} from '../utils/hitArea';
 
 /**
  * The track box of each size, px (width × height), for the touch
@@ -79,18 +81,13 @@ const TRACK_SIZE = {sm: [32, 20], md: [40, 24]} as const;
  */
 const TOUCH = '@media (pointer: coarse)';
 
-const wrapperSizeStyles = stylex.create({
-  sm: {
-    width: 32,
-    height: 20,
-  },
-  md: {
-    width: 40,
-    height: 24,
-  },
-});
+// The measured hit insets (utils/hitArea), 0 until measured.
+const HIT_TOP = 'var(--astryx-hit-inset-top, 0px)';
+const HIT_RIGHT = 'var(--astryx-hit-inset-right, 0px)';
+const HIT_BOTTOM = 'var(--astryx-hit-inset-bottom, 0px)';
+const HIT_LEFT = 'var(--astryx-hit-inset-left, 0px)';
 
-const inputSizeStyles = stylex.create({
+const wrapperSizeStyles = stylex.create({
   sm: {
     width: 32,
     height: 20,
@@ -250,12 +247,24 @@ const styles = stylex.create({
     },
     zIndex: 1,
   },
-  // Under a coarse pointer the invisible input, centered on the track, is the
-  // 44 × 44 px hit area a finger needs (Switch FR4); nothing visible grows.
+  // The invisible input covers the track. Under a coarse pointer it is the
+  // hit area a finger needs (Switch FR4): it grows toward 44 × 44 px by the
+  // insets utils/hitArea measures, each side stopping at half the gap to a
+  // neighbouring target, and its center moves with any uneven side; nothing
+  // visible grows. The insets are 0 until measured. Physical left and
+  // translate, as centerInline: the insets are physical sides.
   inputCoarse: {
-    '@media (pointer: coarse)': {
-      minInlineSize: 44,
-      minBlockSize: 44,
+    width: {
+      default: '100%',
+      '@media (pointer: coarse)': `calc(100% + ${HIT_LEFT} + ${HIT_RIGHT})`,
+    },
+    height: {
+      default: '100%',
+      '@media (pointer: coarse)': `calc(100% + ${HIT_TOP} + ${HIT_BOTTOM})`,
+    },
+    transform: {
+      default: 'translate(-50%, -50%)',
+      '@media (pointer: coarse)': `translate(calc(-50% + (${HIT_RIGHT} - ${HIT_LEFT}) / 2), calc(-50% + (${HIT_BOTTOM} - ${HIT_TOP}) / 2))`,
     },
   },
   inputDisabled: {
@@ -939,6 +948,15 @@ export function Switch({
         isDisabled && !on && styles.trackDisabledOff,
       ),
     );
+  // Under a coarse pointer, the hit area's insets toward 44 px, stopping at
+  // half the gap to each neighbouring target (Switch FR4).
+  useIsomorphicLayoutEffect(() => {
+    const surface = surfaceRef.current;
+    if (surface == null) {
+      return;
+    }
+    return watchHitArea(surface, insets => writeHitInsets(surface, insets));
+  }, []);
   useSwitchTouch(touchParts, {
     isOn,
     isInteractive: !isDisabled && !isBusy,
@@ -991,7 +1009,6 @@ export function Switch({
           styles.input,
           rtlStyles.centerInline('-50%'),
           styles.inputCoarse,
-          inputSizeStyles[size],
           isDisabled && styles.inputDisabled,
           isBusy && styles.inputBusy,
           switchFocusInput,

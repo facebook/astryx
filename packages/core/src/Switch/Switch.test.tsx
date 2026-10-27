@@ -1235,6 +1235,97 @@ describe('touch listeners (spec:AST-094 FR24)', () => {
   });
 });
 
+describe('hit area under a coarse pointer (Switch FR4)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('grows toward 44 × 44 px and stops halfway to a link beside it, so a tap nearer the link is the link’s', () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(pointer: coarse)',
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    let reveal: ((entries: IntersectionObserverEntry[]) => void) | null = null;
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(callback: (entries: IntersectionObserverEntry[]) => void) {
+          reveal = callback;
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    const frames: (() => void)[] = [];
+    vi.stubGlobal('requestAnimationFrame', (run: () => void) =>
+      frames.push(run),
+    );
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+    const {container} = render(
+      <div>
+        <Switch
+          label="Wi-Fi"
+          isLabelHidden
+          size="sm"
+          value={false}
+          onChange={() => {}}
+        />
+        <a href="#details">Details</a>
+      </div>,
+    );
+    const input = screen.getByRole('switch');
+    const surface = input.parentElement as HTMLElement;
+    const link = container.querySelector('a') as HTMLElement;
+    const box = (left: number, top: number, width: number, height: number) =>
+      ({
+        left,
+        top,
+        right: left + width,
+        bottom: top + height,
+        width,
+        height,
+        x: left,
+        y: top,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    // A 32 × 20 (small) switch with the link 8 px to its right.
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        if (this === surface) {
+          return box(100, 100, 32, 20);
+        }
+        if (this === link) {
+          return box(140, 100, 60, 20);
+        }
+        return box(0, 0, 0, 0);
+      },
+    );
+    expect(surface.style.getPropertyValue('--astryx-hit-inset-right')).toBe('');
+    reveal!([
+      {
+        target: surface,
+        isIntersecting: true,
+      } as unknown as IntersectionObserverEntry,
+    ]);
+    frames.splice(0).forEach(run => run());
+    // Up and down 12 px (20 → 44); left 6 px (32 → 44); right stops at
+    // 4 px, half the 8 px gap.
+    expect(surface.style.getPropertyValue('--astryx-hit-inset-top')).toBe(
+      '12px',
+    );
+    expect(surface.style.getPropertyValue('--astryx-hit-inset-left')).toBe(
+      '6px',
+    );
+    expect(surface.style.getPropertyValue('--astryx-hit-inset-right')).toBe(
+      '4px',
+    );
+  });
+});
+
 describe('forced colors (WCAG 1.4.11)', () => {
   it('compiles forced-colors overrides so on/off state survives Windows High Contrast', () => {
     render(<Switch label="Notifications" value={true} onChange={() => {}} />);
