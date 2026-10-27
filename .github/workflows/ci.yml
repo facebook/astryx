@@ -2178,8 +2178,9 @@ jobs:
           run_gate
           code=$?
           if [ "$code" = 3 ]; then
-            # Reverse dependents too many for a focused review, or none with
-            # a stable story: the whole plan runs instead (spec:AST-030 FR13).
+            # Nothing the scope reaches has a stable story: the whole plan
+            # runs instead (spec:AST-030 FR13). An over-budget focused plan
+            # writes the skipped verdict, answered below the same way.
             COMMAND=release
             SCOPE_ARGS=()
             run_gate

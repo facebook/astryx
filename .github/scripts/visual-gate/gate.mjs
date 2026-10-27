@@ -106,7 +106,11 @@ let components = (flag('components') ?? '').split(',').filter(Boolean);
  * dependents, spec:AST-030 FR13), audited where they have a stable story.
  */
 const dependents = (flag('dependents') ?? '').split(',').filter(Boolean);
-/** Exit code that asks the caller for the whole plan instead. */
+/**
+ * Exit code that asks the caller for the whole plan instead: nothing the scope
+ * reaches has a stable story. An over-budget focused plan writes the
+ * `skipped` verdict, which the workflow also answers with the whole plan.
+ */
 const BROADEN_EXIT_CODE = 3;
 /** For the `theme-matrix` tier: only these shipped themes changed. */
 const matrixThemes = (flag('themes') ?? '').split(',').filter(Boolean);
@@ -236,10 +240,8 @@ async function plan({scoutOnly = false} = {}) {
     config.defaultTheme,
   );
   const themeStories = baselineVisualStories(stories, baselineManifest);
-  let auditedDependents = 0;
   if (dependents.length > 0) {
     const scope = visualComponentScope(stories, components, dependents);
-    auditedDependents = scope.components.length - components.length;
     if (scope.dropped.length > 0) {
       console.log(`Reverse dependents with no stable story: ${scope.dropped.join(', ')}`);
     }
@@ -471,14 +473,6 @@ async function check() {
     config.prVisualShotLimit,
   );
   const totalOverBudget = shots.length > maxShots;
-  if (componentOverBudget && auditedDependents > 0) {
-    // Reverse dependents too many for a focused review: the caller runs the
-    // whole plan instead of skipping the comparison (spec:AST-030 FR13).
-    console.log(
-      `${componentShotCount} component-selected shots with ${auditedDependents} reverse dependents exceed the ${config.prVisualShotLimit}-shot budget; asking for the whole plan.`,
-    );
-    process.exit(BROADEN_EXIT_CODE);
-  }
   if (componentOverBudget || totalOverBudget) {
     const measuredShots = componentOverBudget
       ? componentShotCount
