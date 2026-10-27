@@ -981,6 +981,9 @@ describe('List reorderable', () => {
     expect(preview).not.toBeNull();
     expect(preview).toHaveAttribute('aria-hidden', 'true');
     expect(preview!.textContent).toBe(a.textContent);
+    // The same item, moving: the row's reduced emphasis, not raised (DR2).
+    expect(preview!.style.opacity).toBe(a.style.opacity);
+    expect(preview!.style.boxShadow).toBe('none');
     expect(preview!.style.translate).toBe('0px 70px');
     // The line sits after C, where A would land (position 2 of 0-2).
     const line = list.querySelector<HTMLElement>('[data-astryx-reorder-line]');
@@ -996,6 +999,24 @@ describe('List reorderable', () => {
     expect(list.querySelector('[data-astryx-reorder-preview]')).toBeNull();
     expect(list.querySelector('[data-astryx-reorder-line]')).toBeNull();
     expect(a).not.toHaveAttribute('data-astryx-reorder-source');
+  });
+
+  it('announces Done when a drag ends reorder mode, keeping its moves', async () => {
+    stubPrimaryPointer(false);
+    render(<ReorderableRows initial={['A', 'B', 'C']} />);
+    const list = screen.getByRole('list');
+    layOut(list);
+    const handle = handleOf('A');
+    fireEvent.click(handle);
+    expect(handle).toHaveAttribute('aria-pressed', 'true');
+    mouseDrag(handle, 322, 322 + 70);
+    expect(handle).toHaveAttribute('aria-pressed', 'false');
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent('Done, A at position 1 of 3'),
+    );
+    act(() => {
+      fireEvent.pointerUp(handle, {...MOUSE, clientY: 322 + 70});
+    });
   });
 
   it('restores a cancelled drag at once: no preview, no line, the source undimmed, nothing moved', async () => {

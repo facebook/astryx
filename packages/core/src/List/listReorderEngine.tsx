@@ -203,8 +203,12 @@ export const PREVIEW_ATTRIBUTE = 'data-astryx-reorder-preview';
 /** Marks the insertion line at the drop position. */
 export const LINE_ATTRIBUTE = 'data-astryx-reorder-line';
 
-/** The dragged row's opacity in its place while its preview moves. */
-const SOURCE_OPACITY = '0.4';
+/**
+ * The temporary reduced emphasis the dragged row and its preview share
+ * (design:ordered-collection-reordering DR2): the same item, moving, and
+ * not raised.
+ */
+const MOVING_OPACITY = '0.6';
 /** The insertion line's thickness, px. */
 const LINE_THICKNESS = 2;
 
@@ -227,7 +231,10 @@ function overlay(element: HTMLElement, marker: string): HTMLElement {
   return element;
 }
 
-/** The preview: a copy of `row`, at its place, opaque and lifted. */
+/**
+ * The preview: a copy of `row` at its place, with the same reduced emphasis
+ * as the row and no elevation (DR2).
+ */
 function previewOf(row: HTMLElement, top: number, background: string | null) {
   const preview = row.cloneNode(true) as HTMLElement;
   preview.removeAttribute('id');
@@ -240,7 +247,8 @@ function previewOf(row: HTMLElement, top: number, background: string | null) {
     insetInlineStart: `${row.offsetLeft}px`,
     inlineSize: `${row.offsetWidth}px`,
     boxSizing: 'border-box',
-    boxShadow: 'var(--shadow-high)',
+    boxShadow: 'none',
+    opacity: MOVING_OPACITY,
   });
   if (background != null) {
     preview.style.backgroundColor = background;
@@ -977,8 +985,10 @@ export class ListReorderController implements ListReorderSession {
     if (list == null || this.session != null) {
       return false;
     }
-    // A drag ends reorder mode, keeping its moves.
-    this.setMode(null);
+    // A drag ends reorder mode, keeping its moves, and says so.
+    if (this.modeHandle != null) {
+      this.endMode();
+    }
     // A drop still waiting for its commit is settled where it is.
     this.flushPending();
     const rows = rowsOf(list);
@@ -1019,8 +1029,8 @@ export class ListReorderController implements ListReorderSession {
     // The rows stay where they are until the drop
     // (design:ordered-collection-reordering): the dragged row is dimmed in
     // its place, a preview of it follows the pointer, and an insertion line
-    // marks where it would land. The preview is opaque, as the row is: a row
-    // without its own background takes the surface's behind the list.
+    // marks where it would land. The preview has a background, as the row
+    // does: a row without its own takes the surface's behind the list.
     const background = isTransparent(getComputedStyle(row).backgroundColor)
       ? surfaceColor(list)
       : null;
@@ -1036,7 +1046,7 @@ export class ListReorderController implements ListReorderSession {
     const line = lineFor(row);
     list.append(preview, line);
     row.setAttribute(SOURCE_ATTRIBUTE, '');
-    row.style.opacity = SOURCE_OPACITY;
+    row.style.opacity = MOVING_OPACITY;
     list.setAttribute(REORDERING_ATTRIBUTE, '');
     const session: DragSession = {
       list,
