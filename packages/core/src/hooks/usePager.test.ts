@@ -848,10 +848,11 @@ describe('createPager', () => {
   });
 
   // design:reduced-motion (current): after the finger lifts nothing travels.
-  // A release's settle is a touch release: an opacity cross-fade of at most
-  // 200 ms on any pointer (DR2, DR3). goTo cross-fades on a coarse pointer
-  // (DR2) and lands at once on any other (DR3). The drag itself follows the
-  // finger (out of scope).
+  // A finger's release settles with an opacity cross-fade of at most 200 ms
+  // on any pointer (DR2); a mouse's, a trackpad's or a pen's follows DR2 on a
+  // coarse primary pointer and DR3 otherwise (spec:AST-094 FR43). goTo
+  // cross-fades on a coarse pointer (DR2) and lands at once on any other
+  // (DR3). The drag itself follows the pointer (out of scope).
   function reducedPager(f: Fixture, defaultIndex: number, coarse: boolean) {
     stubMedia(true, coarse);
     const reduced = createAnimator(f.track, {
@@ -916,8 +917,6 @@ describe('createPager', () => {
       );
   }
 
-  // Touch reaches the pager only where the primary pointer is coarse
-  // (spec:AST-094 FR19), so a release always settles on a coarse pointer.
   it('under Reduce Motion, a release settle does not travel: an opacity cross-fade of at most 200 ms on a coarse pointer (a touch release, DR2)', async () => {
     const f = setup({defaultIndex: 1});
     const {pager, reduced} = reducedPager(f, 1, true);
@@ -938,6 +937,55 @@ describe('createPager', () => {
     for (const fade of fades) {
       expect(activeMs(fade, 'opacity')).toBeLessThanOrEqual(200);
     }
+    expect(-reduced.get('x', now)).toBeCloseTo(2 * WIDTH, 0);
+  });
+
+  // spec:AST-094 FR43: under reduced motion a release from a mouse, a
+  // trackpad, or a pen follows DR2 on a coarse primary pointer and DR3
+  // otherwise.
+  for (const coarse of [false, true]) {
+    it(`under Reduce Motion, a mouse drag's release follows the primary pointer (spec:AST-094 FR43): ${coarse ? 'coarse, an opacity cross-fade of at most 200 ms (DR2)' : 'fine, at once with no cross-fade (DR3)'}`, async () => {
+      const f = setup({defaultIndex: 1});
+      const {pager, reduced} = reducedPager(f, 1, coarse);
+      const before = recorded.length;
+      mouse('pointerdown', f.page, 300, 100, now);
+      for (let i = 1; i <= 62; i++) {
+        await advance(8, f.clock);
+        mouse('pointermove', f.page, 300 - 4 * i, 100, now);
+      }
+      await advance(8, f.clock);
+      mouse('pointerup', f.page, 52, 100, now);
+      await frames(f, 40);
+      expect(pager.index).toBe(2);
+      expect(travelsSince(before)).toEqual([]);
+      const fades = fadesSince(before);
+      if (coarse) {
+        expect(fades.length).toBeGreaterThan(0);
+        for (const fade of fades) {
+          expect(activeMs(fade, 'opacity')).toBeLessThanOrEqual(200);
+        }
+      } else {
+        expect(fades).toEqual([]);
+      }
+      expect(-reduced.get('x', now)).toBeCloseTo(2 * WIDTH, 0);
+    });
+  }
+
+  it("under Reduce Motion on a fine primary pointer, a trackpad scroll's release lands at once (spec:AST-094 FR43, DR3)", async () => {
+    const f = setup({defaultIndex: 1});
+    const {pager, reduced} = reducedPager(f, 1, false);
+    const before = recorded.length;
+    for (let i = 0; i < 12; i++) {
+      wheel(f.page, {dx: 6.5, time: now});
+      await advance(8, f.clock);
+    }
+    // The scroll ends 100 ms after its last wheel.
+    await advance(120, f.clock);
+    f.clock.runDue(now);
+    await frames(f, 40);
+    expect(pager.index).toBe(2);
+    expect(travelsSince(before)).toEqual([]);
+    expect(fadesSince(before)).toEqual([]);
     expect(-reduced.get('x', now)).toBeCloseTo(2 * WIDTH, 0);
   });
 
