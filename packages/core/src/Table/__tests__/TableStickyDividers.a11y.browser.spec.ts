@@ -191,3 +191,31 @@ test("a theme's divider color and an app's row border carry over to the pinned c
     expect(red[0], `app at ${left}px is red`).toBeGreaterThan(red[2] + 60);
   }
 });
+
+test('a border that changes after mount reaches the pinned cell', async ({
+  page,
+}) => {
+  await mount(page, 'pinned-dividers-live');
+  await page.getByRole('button', {name: 'Add columns'}).click();
+  await page.getByRole('button', {name: 'Highlight'}).click();
+  for (const left of [0, 150]) {
+    await scrollTo(page, left);
+    const {pinned, unpinned} = await dividerPixels(page, 2);
+    expect(sameColumn(pinned, unpinned, 24), `at ${left}px`).toBe(true);
+    const green = darkest(pinned);
+    expect(green[1], `at ${left}px is green`).toBeGreaterThan(green[0] + 60);
+  }
+});
+
+test('the end shadow follows columns added without a resize', async ({
+  page,
+}) => {
+  const wrapper = await mount(page, 'pinned-dividers-live');
+  const shadow = async () =>
+    wrapper.evaluate(el =>
+      (el as HTMLElement).style.getPropertyValue('--table-sticky-shadow-end'),
+    );
+  expect(await shadow()).toBe('0');
+  await page.getByRole('button', {name: 'Add columns'}).click();
+  await expect.poll(shadow).toBe('1');
+});
