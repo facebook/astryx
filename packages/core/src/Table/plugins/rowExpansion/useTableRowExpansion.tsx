@@ -464,12 +464,22 @@ function ExpansionPanelCell({
 function ExpansionSnapshot({
   value,
   onBeforeChange,
+  onColumnLines,
 }: {
   value: Set<string>;
   onBeforeChange: (previous: Set<string>) => void;
+  /** The chevrons drop a spring an earlier glide set on them. */
+  onColumnLines: () => void;
 }) {
   const ctx = useTableContext();
-  if (ctx?.dividers === 'grid' || ctx?.dividers === 'columns') {
+  const hasColumnLines =
+    ctx?.dividers === 'grid' || ctx?.dividers === 'columns';
+  useLayoutEffect(() => {
+    if (hasColumnLines) {
+      onColumnLines();
+    }
+  }, [hasColumnLines, onColumnLines]);
+  if (hasColumnLines) {
     return null;
   }
   return <LayoutChangeSnapshot value={value} onBeforeChange={onBeforeChange} />;
@@ -606,12 +616,10 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
     },
     [animatedLayout, expandedKeys, rowFor],
   );
-  // Without a handle the chevrons keep the theme's own turn: a spring a
-  // handle set stays only while it is passed (`spec:AST-105` FR2).
-  useLayoutEffect(() => {
-    if (animatedLayout != null) {
-      return;
-    }
+  // The chevrons back on the theme's own turn: a spring a handle set stays
+  // only while the glide runs (`spec:AST-105` FR2), so it goes without a
+  // handle and in a table with column lines.
+  const resetChevrons = useCallback(() => {
     const table = scrollWrapperRef.current?.querySelector('table');
     for (const glyph of table?.querySelectorAll<HTMLElement>(
       '[data-expansion-toggle] > *',
@@ -621,7 +629,12 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
         applyLayoutChangeTransition(null, glyph);
       }
     }
-  }, [animatedLayout]);
+  }, []);
+  useLayoutEffect(() => {
+    if (animatedLayout == null) {
+      resetChevrons();
+    }
+  }, [animatedLayout, resetChevrons]);
 
   useLayoutEffect(() => {
     const pendings = pendingLayoutRef.current;
@@ -866,6 +879,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
                 <ExpansionSnapshot
                   value={expandedKeys}
                   onBeforeChange={measureChanges}
+                  onColumnLines={resetChevrons}
                 />
               </>
             ),
@@ -988,6 +1002,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
       expansionColumn,
       animatedLayout,
       measureChanges,
+      resetChevrons,
     ],
   );
 }

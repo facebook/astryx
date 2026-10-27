@@ -145,6 +145,27 @@ describe('useTableRowExpansion adopts animatedLayout (spec:AST-105 FR1, FR2)', (
     },
   );
 
+  it.each(['columns', 'grid'] as const)(
+    'takes the spring off a chevron when the table turns to %s dividers',
+    async dividers => {
+      const user = userEvent.setup();
+      const {rerender} = render(<ExpandableTable withHandle dividers="rows" />);
+      stubGeometry();
+      await user.click(screen.getAllByRole('button', {name: /expand/i})[0]);
+      await flush();
+      const glyph = document.querySelector<HTMLElement>(
+        '[data-expansion-toggle] > *',
+      );
+      expect(
+        glyph?.style.getPropertyValue('transition-timing-function'),
+      ).toMatch(/^linear\(/);
+      rerender(<ExpandableTable withHandle dividers={dividers} />);
+      expect(glyph?.style.getPropertyValue('transition-timing-function')).toBe(
+        '',
+      );
+    },
+  );
+
   it('changes nothing without a handle', async () => {
     const user = userEvent.setup();
     render(<ExpandableTable withHandle={false} />);
