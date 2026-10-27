@@ -54,7 +54,8 @@
  *    animation, strength 1 → 0 over {@link PRESS_RELEASE_DURATION} (UIKit's
  *    deselect crossfade; the controller removes the attribute when the same
  *    clock runs out, and by then the paint is gone). It fades to nothing, not
- *    to the hover strength: under a finger there is no hover to land on.
+ *    to what the element rests on: the hover overlay while a hover-capable
+ *    pointer is over it (`--_press-rest`), nothing under a finger.
  *
  * WHY AN ANIMATION AND NOT A TRANSITION. Two reasons, both about composers.
  * StyleX is last-wins per property, and composers own their `transition-*`
@@ -159,8 +160,18 @@ const neutralImage = `linear-gradient(${colorVars['--color-neutral']}, ${colorVa
  * `var(--_press-paint-image)` and never rebuild the expression;
  * pressPaintSource.test.ts holds it to this file.
  */
-const pressedOverlayColor = `color-mix(in srgb, ${colorVars['--color-overlay-pressed']} calc(${PRESS_ALPHA} * 100%), transparent)`;
+const pressedOverlayColor = `color-mix(in srgb, ${colorVars['--color-overlay-pressed']} calc(${PRESS_ALPHA} * 100%), var(--_press-rest, transparent))`;
 const pressPaint = {
+  // What the release fades to: the hover overlay while a hover-capable
+  // pointer is over the element, nothing otherwise. A mouse release lands on
+  // the hover it still has instead of fading to nothing and snapping back.
+  '--_press-rest': {
+    default: null,
+    [HOVER_HOVER]: {
+      default: null,
+      ':hover': colorVars['--color-overlay-hover'],
+    },
+  },
   '--_press-paint': pressedOverlayColor,
   '--_press-paint-image':
     'linear-gradient(var(--_press-paint), var(--_press-paint))',

@@ -1356,6 +1356,30 @@ describe('the release fades: the arms the controller writes to', () => {
     ).toBe(true);
   });
 
+  it('fades a release to the hover overlay while a hover-capable pointer is over the element, and to nothing otherwise (spec:AST-094 FR43)', () => {
+    for (const variant of [...variants, 'pressedAlpha'] as const) {
+      const rules = rulesDeclaredFor(
+        surface(interactionOverlayStyles[variant]),
+      );
+      // The paint mixes toward the rest value, transparent by default.
+      expect(
+        rules.some(rule =>
+          /--_press-paint:[^;}]*var\(--_press-rest,\s*transparent\)/.test(rule),
+        ),
+        variant,
+      ).toBe(true);
+      // The rest value is the hover overlay, only under :hover.
+      expect(
+        rules.some(
+          rule =>
+            rule.includes(':hover') &&
+            /--_press-rest:\s*var\(--color-overlay-hover/.test(rule),
+        ),
+        variant,
+      ).toBe(true);
+    }
+  });
+
   it("paints both touch arms as the pressed token at the press's strength, and declares the strength 1 on both", () => {
     for (const variant of variants) {
       const element = surface(interactionOverlayStyles[variant]);
