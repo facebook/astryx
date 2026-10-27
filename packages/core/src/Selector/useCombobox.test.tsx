@@ -82,6 +82,9 @@ interface PickerProps {
   onOpen?: () => void;
   onClose?: () => void;
   onFieldKeyDown?: (event: React.KeyboardEvent) => void;
+  emptySearchText?: ReactNode;
+  /** Render `emptySearchText` while the list is open with no options. */
+  hasEmptyMessage?: boolean;
 }
 
 /** A field the test renders itself, with its list in the page's flow. */
@@ -94,6 +97,8 @@ function Picker({
   onOpen,
   onClose,
   onFieldKeyDown,
+  emptySearchText,
+  hasEmptyMessage = false,
 }: PickerProps) {
   const [isOpen, setIsOpen] = useState(isInitiallyOpen);
   const combobox = useCombobox({
@@ -111,6 +116,7 @@ function Picker({
     listboxId: 'people',
     field,
     query,
+    emptySearchText,
   });
   const fieldProps = combobox.getFieldProps({onKeyDown: onFieldKeyDown});
   return (
@@ -135,6 +141,11 @@ function Picker({
             </div>
           ))}
         </div>
+      ) : null}
+      {hasEmptyMessage && isOpen && options.length === 0 ? (
+        <p data-testid="empty" {...combobox.getEmptyProps()}>
+          {combobox.emptySearchText}
+        </p>
       ) : null}
     </>
   );
@@ -711,5 +722,160 @@ describe('useCombobox field props — result count (FR7)', () => {
     await nextFrames();
     expect(writes).toEqual(['3 results']);
     expect(announced()).toEqual(['3 results']);
+  });
+
+  /** The words the field shows for no matches, as a reader sees them. */
+  function shownEmptyText(): string {
+    return (screen.getByTestId('empty').textContent ?? '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  it('announces the empty message the field shows, word for word', async () => {
+    const writes = recordPoliteWrites();
+    const {rerender} = render(
+      <Picker
+        field="input"
+        query=""
+        emptySearchText="No one matches"
+        hasEmptyMessage
+      />,
+    );
+    rerender(
+      <Picker
+        field="input"
+        query="zz"
+        options={[]}
+        emptySearchText="No one matches"
+        hasEmptyMessage
+      />,
+    );
+    await waitFor(() => expect(politeText()).toBe('No one matches'));
+    await nextFrames();
+    expect(shownEmptyText()).toBe('No one matches');
+    expect(writes).toEqual([shownEmptyText()]);
+    expect(announced()).toEqual([shownEmptyText()]);
+  });
+
+  it('announces an empty message with a link as it renders', async () => {
+    const empty = (
+      <>
+        No one matches. <a href="#invite">Invite someone</a>
+      </>
+    );
+    const writes = recordPoliteWrites();
+    const {rerender} = render(
+      <Picker field="input" query="" emptySearchText={empty} hasEmptyMessage />,
+    );
+    rerender(
+      <Picker
+        field="input"
+        query="zz"
+        options={[]}
+        emptySearchText={empty}
+        hasEmptyMessage
+      />,
+    );
+    await waitFor(() =>
+      expect(politeText()).toBe('No one matches. Invite someone'),
+    );
+    await nextFrames();
+    expect(shownEmptyText()).toBe('No one matches. Invite someone');
+    expect(writes).toEqual([shownEmptyText()]);
+    expect(announced()).toEqual([shownEmptyText()]);
+  });
+
+  it('shows and announces the catalog message when emptySearchText is omitted', async () => {
+    const writes = recordPoliteWrites();
+    const {rerender} = render(
+      <Picker field="input" query="" hasEmptyMessage />,
+    );
+    rerender(<Picker field="input" query="zz" options={[]} hasEmptyMessage />);
+    await waitFor(() => expect(politeText()).toBe('No results found'));
+    await nextFrames();
+    expect(shownEmptyText()).toBe('No results found');
+    expect(writes).toEqual([shownEmptyText()]);
+    expect(announced()).toEqual([shownEmptyText()]);
+  });
+
+  it('announces each new query that matches nothing, and not an empty message the field mounts with', async () => {
+    const writes = recordPoliteWrites();
+    const {rerender} = render(
+      <Picker
+        field="input"
+        query="zz"
+        options={[]}
+        emptySearchText="No one matches"
+        hasEmptyMessage
+      />,
+    );
+    await nextFrames();
+    expect(writes).toEqual([]);
+
+    rerender(
+      <Picker
+        field="input"
+        query="zzz"
+        options={[]}
+        emptySearchText="No one matches"
+        hasEmptyMessage
+      />,
+    );
+    await waitFor(() => expect(writes).toEqual(['No one matches']));
+    await nextFrames();
+    rerender(
+      <Picker
+        field="input"
+        query="zzzz"
+        options={[]}
+        emptySearchText="No one matches"
+        hasEmptyMessage
+      />,
+    );
+    await waitFor(() =>
+      expect(writes).toEqual(['No one matches', 'No one matches']),
+    );
+    expect(announced()).toEqual(['No one matches', 'No one matches']);
+  });
+
+  it('announces a string emptySearchText that no element shows', async () => {
+    const {rerender} = render(
+      <Picker field="input" query="" emptySearchText="No one matches" />,
+    );
+    rerender(
+      <Picker
+        field="input"
+        query="zz"
+        options={[]}
+        emptySearchText="No one matches"
+      />,
+    );
+    await waitFor(() => expect(politeText()).toBe('No one matches'));
+    expect(announced()).toEqual(['No one matches']);
+  });
+
+  it('warns in development when an emptySearchText element is not shown through getEmptyProps', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const {rerender} = render(
+        <Picker field="input" query="" emptySearchText={<b>No one</b>} />,
+      );
+      rerender(
+        <Picker
+          field="input"
+          query="zz"
+          options={[]}
+          emptySearchText={<b>No one</b>}
+        />,
+      );
+      await nextFrames();
+      expect(announced()).toEqual([]);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0][0])).toMatch(
+        /^useCombobox: .*getEmptyProps\(\)/,
+      );
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

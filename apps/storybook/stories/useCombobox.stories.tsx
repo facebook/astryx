@@ -6,7 +6,9 @@
  *   Dialog, Layout, and Button
  * @output Comboboxes over text fields the story renders itself: a message
  *   field with a mention list in a layer, a search field whose results replace
- *   a page section, a contenteditable people field, and a field in a dialog
+ *   a page section, a contenteditable people field, and a field in a dialog;
+ *   each shows its empty message through `getEmptyProps`, so the words
+ *   announced for no matches are the words shown
  * @position Storybook stories for useCombobox's field props;
  *   ComboboxField.a11y.chromium.spec.ts drives these stories in Chromium
  */
@@ -223,6 +225,7 @@ function MessageFieldExample() {
     listboxId,
     field: 'textarea',
     query: mention?.query,
+    emptySearchText: 'No one matches',
   });
 
   return (
@@ -278,7 +281,9 @@ function MessageFieldExample() {
             <Rows combobox={combobox} options={options} />
           </div>
         ) : (
-          <p {...stylex.props(styles.muted)}>No one matches</p>
+          <p {...combobox.getEmptyProps()} {...stylex.props(styles.muted)}>
+            {combobox.emptySearchText}
+          </p>
         ),
       )}
       {sent.length > 0 ? (
@@ -327,6 +332,7 @@ function SearchFieldExample() {
     listboxId,
     field: 'input',
     query: query.trim(),
+    emptySearchText: 'No settings match',
   });
 
   return (
@@ -356,7 +362,9 @@ function SearchFieldExample() {
             <Rows combobox={combobox} options={options} />
           </div>
         ) : (
-          <p {...stylex.props(styles.muted)}>No settings match</p>
+          <p {...combobox.getEmptyProps()} {...stylex.props(styles.muted)}>
+            {combobox.emptySearchText}
+          </p>
         )
       ) : (
         <p {...stylex.props(styles.muted)}>
@@ -442,13 +450,21 @@ function EditableFieldExample() {
         {...combobox.getFieldProps()}
         {...stylex.props(styles.field)}
       />
-      {isShown && options.length > 0 ? (
-        <div
-          aria-label="Matching people"
-          {...combobox.getListboxProps()}
-          {...stylex.props(styles.listbox)}>
-          <Rows combobox={combobox} options={options} />
-        </div>
+      {isShown ? (
+        options.length > 0 ? (
+          <div
+            aria-label="Matching people"
+            {...combobox.getListboxProps()}
+            {...stylex.props(styles.listbox)}>
+            <Rows combobox={combobox} options={options} />
+          </div>
+        ) : (
+          // No `emptySearchText` is passed, so this shows, and the hook
+          // announces, the catalog's "No results found".
+          <p {...combobox.getEmptyProps()} {...stylex.props(styles.muted)}>
+            {combobox.emptySearchText}
+          </p>
+        )
       ) : null}
     </div>
   );
@@ -499,6 +515,7 @@ function SharePeopleField() {
     listboxId,
     field: 'input',
     query: query.trim(),
+    emptySearchText: 'No one matches',
   });
 
   return (
@@ -525,7 +542,9 @@ function SharePeopleField() {
             <Rows combobox={combobox} options={options} />
           </div>
         ) : (
-          <p {...stylex.props(styles.muted)}>No one matches</p>
+          <p {...combobox.getEmptyProps()} {...stylex.props(styles.muted)}>
+            {combobox.emptySearchText}
+          </p>
         )
       ) : null}
       <p {...stylex.props(styles.muted)}>

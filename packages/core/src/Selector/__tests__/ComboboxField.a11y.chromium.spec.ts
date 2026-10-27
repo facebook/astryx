@@ -295,6 +295,17 @@ test('in a textarea, a pick stops Enter, a hidden list leaves the arrows to the 
   expect(
     await field.evaluate(el => (el as HTMLTextAreaElement).selectionStart),
   ).toBe(0);
+  // ArrowDown on the hidden list is the caret's too: only a single-line field
+  // brings the list back (DEC-3), so the list stays hidden and the caret moves
+  // to the end of the text.
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  const caret = await field.evaluate(el => {
+    const area = el as HTMLTextAreaElement;
+    return {at: area.selectionStart, end: area.value.length};
+  });
+  expect(caret.end).toBeGreaterThan(0);
+  expect(caret.at).toBe(caret.end);
 
   await page.keyboard.press('Enter');
   await expect(page.getByText('Sent: Hi @Ada @k')).toBeVisible();
@@ -402,7 +413,7 @@ test('with no matches in the dialog, the first Escape hides the empty message an
   const field = page.getByRole('combobox', {name: 'Add people'});
   await field.click();
   await page.keyboard.type('zz');
-  const empty = page.getByText('No one matches');
+  const empty = shownText(page, 'No one matches');
   await expect(empty).toBeVisible();
   await expect(page.getByRole('listbox')).toHaveCount(0);
   await expect(field).toHaveAttribute('aria-expanded', 'false');
@@ -503,8 +514,8 @@ test('a new query is announced once, through the shared live region', async ({
   for (const [key, announcement] of [
     ['n', '5 results'],
     ['o', '2 results'],
-    ['p', 'No results found'],
-    ['e', 'No results found'],
+    ['p', 'No settings match'],
+    ['e', 'No settings match'],
   ] as const) {
     await page.keyboard.press(key);
     expected.push(announcement);
@@ -512,6 +523,8 @@ test('a new query is announced once, through the shared live region', async ({
   }
   await page.waitForTimeout(500);
   expect(await politeWrites()).toEqual(expected);
+  // The words announced for no matches are the words on screen.
+  await expect(shownText(page, 'No settings match')).toBeVisible();
   const regions = await page
     .locator('[aria-live]')
     .evaluateAll(nodes =>
@@ -571,7 +584,7 @@ test('in the dialog, a new query is announced in the dialog’s own live region,
   for (const [key, announcement] of [
     ['a', '7 results'],
     ['l', '1 result'],
-    ['z', 'No results found'],
+    ['z', 'No one matches'],
   ] as const) {
     await page.keyboard.press(key);
     expected.push(announcement);
@@ -585,6 +598,7 @@ test('in the dialog, a new query is announced in the dialog’s own live region,
   }
   await page.waitForTimeout(500);
   expect(await regionWrites()).toEqual({body: [], dialog: expected});
+  await expect(shownText(dialog, 'No one matches')).toBeVisible();
   // The region the words went to sits inside the open dialog.
   expect(
     await dialog.evaluate(
@@ -596,4 +610,74 @@ test('in the dialog, a new query is announced in the dialog’s own live region,
           ) != null,
     ),
   ).toBe(true);
+});
+
+/**
+ * The story's own empty message, a paragraph with exactly these words. The
+ * live region that announces them holds the same words for a moment, but it
+ * is never a paragraph.
+ */
+function shownText(scope: Page | Locator, words: string): Locator {
+  const exact = words.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return scope.locator('p').filter({hasText: new RegExp(`^${exact}$`)});
+}
+
+/** Records every non-empty text written to the page body's polite region. */
+async function recordPoliteWrites(
+  page: Page,
+): Promise<() => Promise<string[]>> {
+  await page.addInitScript(() => {
+    const writes: string[] = [];
+    (window as unknown as {__emptyWrites: string[]}).__emptyWrites = writes;
+    new MutationObserver(records => {
+      for (const record of records) {
+        if (
+          record.target instanceof Element &&
+          record.target.matches('[data-astryx-live-region="polite"]')
+        ) {
+          for (const node of record.addedNodes) {
+            if (node.textContent) {
+              writes.push(node.textContent);
+            }
+          }
+        }
+      }
+    }).observe(document, {childList: true, subtree: true});
+  });
+  return async () =>
+    page.evaluate(() => [
+      ...(window as unknown as {__emptyWrites: string[]}).__emptyWrites,
+    ]);
+}
+
+test('the message field announces the empty message it shows, word for word', async ({
+  page,
+}) => {
+  const politeWrites = await recordPoliteWrites(page);
+  await openStory(page, STORY.message);
+  const field = page.getByRole('textbox', {name: 'Message'});
+  await field.click();
+  await page.keyboard.type('@');
+  await expect(page.getByRole('listbox')).toBeVisible();
+  await page.keyboard.press('z');
+  const shown = shownText(page, 'No one matches');
+  await expect(shown).toBeVisible();
+  await expect.poll(politeWrites).toEqual([await shown.textContent()]);
+  await page.waitForTimeout(500);
+  expect(await politeWrites()).toEqual(['No one matches']);
+});
+
+test('the editable field shows and announces the catalog message when it passes no copy', async ({
+  page,
+}) => {
+  const politeWrites = await recordPoliteWrites(page);
+  await openStory(page, STORY.editable);
+  const field = page.getByRole('combobox', {name: 'Add people'});
+  await field.click();
+  await page.keyboard.press('z');
+  const shown = shownText(page, 'No results found');
+  await expect(shown).toBeVisible();
+  await expect.poll(politeWrites).toEqual([await shown.textContent()]);
+  await page.waitForTimeout(500);
+  expect(await politeWrites()).toEqual(['No results found']);
 });

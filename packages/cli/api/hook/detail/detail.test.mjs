@@ -31,10 +31,10 @@ describe('hook.detail leaf', () => {
     const res = await detail('useCombobox', {cwd: REPO});
     expect(res.data.importPath).toBe('@astryxdesign/core/Selector');
     expect(res.data.params.map(param => param.name)).toEqual(
-      expect.arrayContaining(['options.field', 'options.query']),
+      expect.arrayContaining(['options.field', 'options.query', 'options.emptySearchText']),
     );
     expect(res.data.returns.map(entry => entry.name)).toEqual(
-      expect.arrayContaining(['getFieldProps', 'getListboxProps', 'getOptionProps']),
+      expect.arrayContaining(['getFieldProps', 'getListboxProps', 'getOptionProps', 'emptySearchText', 'getEmptyProps']),
     );
     expect(res.data.usage.accessibility?.map(entry => entry.requirement)).toEqual(
       [1, 2, 3, 4, 5, 6, 7].map(n => `AST-075 FR${n}`),
