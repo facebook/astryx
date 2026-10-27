@@ -328,6 +328,23 @@ describe('List reorderable', () => {
     }
   });
 
+  it("gives a finger's target as an invisible hit layer, not a bigger handle: the hit area writes its insets where the primary pointer is coarse", async () => {
+    stubPrimaryPointer(true);
+    render(<ReorderableRows initial={['A', 'B']} />);
+    const handle = handleOf('A');
+    await waitFor(() =>
+      expect(handle.style.getPropertyValue('--astryx-hit-inset-top')).toMatch(
+        /px$/,
+      ),
+    );
+    for (const side of ['right', 'bottom', 'left']) {
+      expect(
+        handle.style.getPropertyValue(`--astryx-hit-inset-${side}`),
+        side,
+      ).toMatch(/px$/);
+    }
+  });
+
   it('adds one element to a row, the handle, whose lines are a pseudo-element', () => {
     const rows = (reorderable?: Reorderable) => (
       <List reorderable={reorderable}>
@@ -942,6 +959,23 @@ describe('List reorderable', () => {
     expect(down).toHaveAttribute('tabindex', '-1');
     await user.keyboard('{Escape}');
     expect(hintButton('Move down')).toBeNull();
+  });
+
+  it("gives the hint's buttons a finger's target as an invisible hit layer: the hit area writes their insets where the primary pointer is coarse", async () => {
+    stubPrimaryPointer(true);
+    const user = userEvent.setup();
+    render(<ReorderableRows initial={['Inbox', 'Sent', 'Drafts']} />);
+    handleOf('Sent').focus();
+    await user.keyboard(' ');
+    for (const name of ['Move up', 'Move down', 'Done']) {
+      const button = hintButton(name) as HTMLElement;
+      await waitFor(() =>
+        expect(
+          button.style.getPropertyValue('--astryx-hit-inset-top'),
+          name,
+        ).toMatch(/px$/),
+      );
+    }
   });
 
   it('takes an Escape that reaches the dismissal stack with the focus in the hint: the mode ends, and a layer below stays open', async () => {
