@@ -9,8 +9,10 @@
  *   are stale; node_modules, dist and generated output are not sources, and
  *   Core's translations are. A caller waiting on another's build returns only
  *   once that build released the lock. A suite builds only a missing Core;
- *   only the node global setup rebuilds a stale one, before the workers fork.
- *   Each checkout has its own lock.
+ *   only the node global setup rebuilds a stale one, before the workers fork,
+ *   and only once every run that started before it has ended. Each checkout
+ *   has its own lock and its own run leases. Every file Core's build scripts
+ *   write output with, and every local file those load, is a source.
  * @position Unit test of packages/cli/clients/cli/commands/ensure-core-built.mjs
  */
 
@@ -26,8 +28,11 @@ import {
   CORE_SOURCES,
   coreBuildIsStale,
   coreBuildLockDir,
+  coreRunLeaseDir,
+  earlierLiveRuns,
   ensureBuiltOnce,
   ensureCoreBuiltAt,
+  registerTestRun,
 } from '../packages/cli/clients/cli/commands/ensure-core-built.mjs';
 
 const REPO_ROOT = path.resolve(
@@ -353,7 +358,7 @@ describe('the build marker', () => {
 });
 
 describe("Core's build inputs", () => {
-  it("cover every script and config file Core's build scripts write output with", () => {
+  it("cover every script and config file Core's build scripts write output with, and every local file those load", () => {
     const coreDir = path.join(REPO_ROOT, 'packages/core');
     const {scripts} = JSON.parse(
       fs.readFileSync(path.join(coreDir, 'package.json'), 'utf8'),
@@ -379,11 +384,141 @@ describe("Core's build inputs", () => {
           (!relative.startsWith('..') && !path.isAbsolute(relative))
         );
       });
-    const missing = [...inputs]
-      .map(file => path.resolve(coreDir, file))
+    // Follow what those files load: a config's local plugins and presets, and
+    // a script's relative imports, transitively.
+    const resolveLocal = (from, specifier) => {
+      const base = path.resolve(path.dirname(from), specifier);
+      return ['', '.mjs', '.js', '.cjs', '.json']
+        .map(ext => base + ext)
+        .find(
+          candidate =>
+            fs.existsSync(candidate) && fs.statSync(candidate).isFile(),
+        );
+    };
+    const queue = [...inputs].map(file => path.resolve(coreDir, file));
+    const seen = new Set();
+    while (queue.length > 0) {
+      const file = queue.pop();
+      if (seen.has(file) || !fs.existsSync(file)) continue;
+      seen.add(file);
+      const text = fs.readFileSync(file, 'utf8');
+      const local = [];
+      if (file.endsWith('.json')) {
+        const config = JSON.parse(text);
+        for (const entry of [
+          ...(config.plugins ?? []),
+          ...(config.presets ?? []),
+        ]) {
+          const name = Array.isArray(entry) ? entry[0] : entry;
+          if (typeof name === 'string' && /^\.\.?\//.test(name))
+            local.push(name);
+        }
+        if (
+          typeof config.extends === 'string' &&
+          /^\.\.?\//.test(config.extends)
+        ) {
+          local.push(config.extends);
+        }
+      } else {
+        for (const [, specifier] of text.matchAll(
+          /(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\s*\(\s*)['"](\.\.?\/[^'"]+)['"]/g,
+        )) {
+          local.push(specifier);
+        }
+      }
+      for (const specifier of local) {
+        const target = resolveLocal(file, specifier);
+        if (target) queue.push(target);
+      }
+    }
+    const missing = [...seen]
       .filter(file => !covered(file))
       .map(file => path.relative(REPO_ROOT, file));
     expect(inputs.size).toBeGreaterThan(3);
+    expect(seen.size).toBeGreaterThan(inputs.size);
     expect(missing).toEqual([]);
+  });
+});
+
+describe('run leases', () => {
+  /** A stale build (a source newer than it) and a lease directory. */
+  function staleTree() {
+    const built = tree();
+    fs.utimesSync(built.source, 3000, 3000);
+    return {...built, leaseDir: path.join(dir, 'runs')};
+  }
+
+  it('make a stale rebuild wait until a run that started before it has ended', () => {
+    const {entry, roots, leaseDir} = staleTree();
+    registerTestRun({leaseDir, pid: 101, now: 1});
+    registerTestRun({leaseDir, pid: process.pid, now: 2});
+    const ends = Date.now() + 300;
+    let builtAt = 0;
+    ensureCoreBuiltAt({
+      entry,
+      roots,
+      build: () => {
+        builtAt = Date.now();
+      },
+      lockDir: path.join(dir, 'lock'),
+      rebuildStale: true,
+      runLeaseDir: leaseDir,
+      isAlive: pid => pid === 101 && Date.now() < ends,
+      pollMs: 20,
+    });
+    expect(builtAt).toBeGreaterThanOrEqual(ends);
+  });
+
+  it('let a run that started later wait instead, so two runs never wait for each other', () => {
+    const {entry, roots, leaseDir} = staleTree();
+    registerTestRun({leaseDir, pid: process.pid, now: 1});
+    registerTestRun({leaseDir, pid: 202, now: 2});
+    expect(earlierLiveRuns(leaseDir, {isAlive: () => true})).toEqual([]);
+    expect(earlierLiveRuns(leaseDir, {pid: 202, isAlive: () => true})).toEqual([
+      process.pid,
+    ]);
+    let builds = 0;
+    ensureCoreBuiltAt({
+      entry,
+      roots,
+      build: () => {
+        builds++;
+      },
+      lockDir: path.join(dir, 'lock'),
+      rebuildStale: true,
+      runLeaseDir: leaseDir,
+      isAlive: () => true,
+    });
+    expect(builds).toBe(1);
+  });
+
+  it('drop the lease of a run whose process is gone', () => {
+    const {leaseDir} = staleTree();
+    registerTestRun({leaseDir, pid: 303, now: 1});
+    registerTestRun({leaseDir, pid: process.pid, now: 2});
+    expect(earlierLiveRuns(leaseDir, {isAlive: () => false})).toEqual([]);
+    expect(fs.readdirSync(leaseDir)).toEqual([String(process.pid)]);
+  });
+
+  it("end with the run: the teardown removes this run's lease", () => {
+    const {leaseDir} = staleTree();
+    const end = registerTestRun({leaseDir});
+    expect(fs.readdirSync(leaseDir)).toEqual([String(process.pid)]);
+    end();
+    expect(fs.readdirSync(leaseDir)).toEqual([]);
+  });
+
+  it('are held by the node global setup for its whole run, beside its own lock', () => {
+    const setup = fs.readFileSync(
+      path.join(REPO_ROOT, 'vitest.global-setup.node.mjs'),
+      'utf8',
+    );
+    expect(setup).toMatch(
+      /const endRun = registerTestRun\(\);[\s\S]*ensureCoreBuilt\(\{rebuildStale: true\}\)[\s\S]*return endRun;/,
+    );
+    expect(path.dirname(coreRunLeaseDir(REPO_ROOT))).toBe(
+      path.dirname(coreBuildLockDir(REPO_ROOT)),
+    );
+    expect(coreRunLeaseDir(REPO_ROOT)).not.toBe(coreBuildLockDir(REPO_ROOT));
   });
 });

@@ -3,7 +3,8 @@
 /**
  * @file globalSetup for the `node` test project.
  * @input Shared ensureCoreBuilt helper and authored Sandbox template descriptors.
- * @output Builds Core (again when its build is older than its sources) and
+ * @output Holds this run's lease, builds Core (again when its build is older
+ *   than its sources and no earlier run is still running) and
  *   regenerates the Sandbox template registry and route wrappers once, before
  *   any test worker forks.
  * @position Referenced by vitest.config.ts's `node` project. The build-theme
@@ -17,9 +18,15 @@
 
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {ensureCoreBuilt} from './packages/cli/clients/cli/commands/ensure-core-built.mjs';
+import {
+  ensureCoreBuilt,
+  registerTestRun,
+} from './packages/cli/clients/cli/commands/ensure-core-built.mjs';
 
 export default function setup() {
+  // This run holds a lease for its whole length, so a later run's setup does
+  // not rebuild Core under it; the returned teardown ends the lease.
+  const endRun = registerTestRun();
   // A stale Core is rebuilt only here, before the workers: a suite that
   // rebuilt it mid-run would delete dist under suites still reading it.
   ensureCoreBuilt({rebuildStale: true});
@@ -34,4 +41,5 @@ export default function setup() {
       maxBuffer: 32 * 1024 * 1024,
     },
   );
+  return endRun;
 }

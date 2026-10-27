@@ -24,7 +24,10 @@
  * generate from those sources are not sources. A suite's beforeAll builds
  * only a missing Core: rebuilding a stale one mid-run would delete dist under
  * suites still reading it. Each checkout has its own lock, so one worktree's
- * rebuild never holds up another's suites.
+ * rebuild never holds up another's suites. Each node run also holds a lease in
+ * the checkout while it runs, and a stale rebuild waits until every run that
+ * started before it has ended, so a second run never rebuilds Core under a run
+ * already in progress.
  */
 
 import {execFileSync} from 'node:child_process';
@@ -57,12 +60,14 @@ export const CORE_SOURCES = [
   path.join(REPO_ROOT, 'packages/core/locales'),
   path.join(REPO_ROOT, 'packages/core/package.json'),
   path.join(REPO_ROOT, 'packages/core/babel.config.json'),
+  path.join(REPO_ROOT, 'packages/core/babel-plugin-add-extensions.cjs'),
   path.join(REPO_ROOT, 'packages/core/tsconfig.build.json'),
   path.join(REPO_ROOT, 'tsconfig.json'),
   path.join(REPO_ROOT, 'packages/core/scripts/build-pseudo-locale.mjs'),
   path.join(REPO_ROOT, 'scripts/generate-i18n-runtime.mjs'),
   path.join(REPO_ROOT, 'scripts/add-declaration-extensions.mjs'),
   path.join(REPO_ROOT, 'scripts/build-css.mjs'),
+  path.join(REPO_ROOT, 'scripts/stylex-module-resolution.cjs'),
 ];
 // Git-ignored output generated from those sources, by the build and again by
 // the Vitest global setup (internal/test-utils/src/globalSetup.ts): rewritten
@@ -85,6 +90,89 @@ export function coreBuildLockDir(repoRoot) {
   return path.join(os.tmpdir(), `astryx-core-build-${key}.lock`);
 }
 const LOCK_DIR = coreBuildLockDir(REPO_ROOT);
+
+/**
+ * The directory where each node test run of the checkout at `repoRoot` holds
+ * a lease for as long as it runs: one file per run, named by its process id
+ * and holding the time it started.
+ * @param {string} repoRoot
+ */
+export function coreRunLeaseDir(repoRoot) {
+  return coreBuildLockDir(repoRoot).replace(/\.lock$/, '.runs');
+}
+const RUN_LEASE_DIR = coreRunLeaseDir(REPO_ROOT);
+
+/** @param {number} pid */
+function processIsAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return /** @type {NodeJS.ErrnoException} */ (error).code === 'EPERM';
+  }
+}
+
+/**
+ * Registers this process as a running test run of the checkout, and returns
+ * the function that ends its lease (the global setup's teardown).
+ * @param {{leaseDir?: string, pid?: number, now?: number}} [options]
+ */
+export function registerTestRun({
+  leaseDir = RUN_LEASE_DIR,
+  pid = process.pid,
+  now = Date.now(),
+} = {}) {
+  fs.mkdirSync(leaseDir, {recursive: true});
+  const file = path.join(leaseDir, String(pid));
+  fs.writeFileSync(file, String(now));
+  return () => fs.rmSync(file, {force: true});
+}
+
+/**
+ * The runs in `leaseDir` that started before this one (by start time, then
+ * process id) and are still alive: those may be reading the build now. A run
+ * that started later waits for this one instead, so two runs never wait for
+ * each other. A lease whose process is gone is removed.
+ * @param {string} leaseDir
+ * @param {{pid?: number, isAlive?: (pid: number) => boolean}} [options]
+ */
+export function earlierLiveRuns(
+  leaseDir,
+  {pid = process.pid, isAlive = processIsAlive} = {},
+) {
+  /** @type {string[]} */
+  let names;
+  try {
+    names = fs.readdirSync(leaseDir);
+  } catch {
+    return [];
+  }
+  /** @param {string} name */
+  const startOf = name => {
+    try {
+      return Number(fs.readFileSync(path.join(leaseDir, name), 'utf8'));
+    } catch {
+      return NaN;
+    }
+  };
+  const own = startOf(String(pid));
+  const ownStart = Number.isFinite(own) ? own : Infinity;
+  /** @type {number[]} */
+  const earlier = [];
+  for (const name of names) {
+    const other = Number(name);
+    if (!Number.isInteger(other) || other === pid) continue;
+    if (!isAlive(other)) {
+      fs.rmSync(path.join(leaseDir, name), {force: true});
+      continue;
+    }
+    const start = startOf(name);
+    if (start < ownStart || (start === ownStart && other < pid)) {
+      earlier.push(other);
+    }
+  }
+  return earlier;
+}
 
 const BUILD_TIMEOUT_MS = 180_000;
 // A lock older than this is assumed abandoned by a crashed/killed worker.
@@ -238,7 +326,10 @@ export function ensureBuiltOnce({
 /**
  * Build Core when `entry` is missing, or also when it is older than
  * `roots` with `rebuildStale`, in one process at a time.
- * @param {{entry: string, roots: readonly string[], generated?: readonly string[], build: () => void, lockDir: string, rebuildStale?: boolean, staleLockMs?: number, pollMs?: number}} options
+ * A stale build is rebuilt only once every run that started before this one
+ * (`runLeaseDir`) has ended: one may still be reading it. A missing build has
+ * no reader.
+ * @param {{entry: string, roots: readonly string[], generated?: readonly string[], build: () => void, lockDir: string, rebuildStale?: boolean, runLeaseDir?: string, isAlive?: (pid: number) => boolean, staleLockMs?: number, pollMs?: number}} options
  */
 export function ensureCoreBuiltAt({
   entry,
@@ -247,9 +338,27 @@ export function ensureCoreBuiltAt({
   build,
   lockDir,
   rebuildStale = false,
+  runLeaseDir,
+  isAlive,
   staleLockMs,
-  pollMs,
+  pollMs = POLL_MS,
 }) {
+  if (rebuildStale && runLeaseDir) {
+    let announced = false;
+    while (
+      fs.existsSync(entry) &&
+      coreBuildIsStale(entry, roots, generated) &&
+      earlierLiveRuns(runLeaseDir, {isAlive}).length > 0
+    ) {
+      if (!announced) {
+        console.warn(
+          '[ensure-core-built] Core changed; waiting for the test run already running in this checkout to end before rebuilding it.',
+        );
+        announced = true;
+      }
+      sleepSync(pollMs);
+    }
+  }
   ensureBuiltOnce({
     isBuilt: rebuildStale
       ? () => !coreBuildIsStale(entry, roots, generated)
@@ -266,7 +375,8 @@ export function ensureCoreBuiltAt({
  * concurrently from parallel Vitest workers. A build-theme suite's beforeAll
  * calls it with no options and builds only a missing Core; the node global
  * setup passes `rebuildStale`, so a build older than Core's sources is rebuilt
- * there, before any worker forks, and never under a running suite.
+ * there, before any worker forks, and once every run that started before it
+ * has ended, so never under a running suite.
  * @param {{rebuildStale?: boolean}} [options]
  */
 export function ensureCoreBuilt({rebuildStale = false} = {}) {
@@ -277,5 +387,6 @@ export function ensureCoreBuilt({rebuildStale = false} = {}) {
     build: buildCore,
     lockDir: LOCK_DIR,
     rebuildStale,
+    runLeaseDir: RUN_LEASE_DIR,
   });
 }
