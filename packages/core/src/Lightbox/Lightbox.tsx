@@ -57,6 +57,7 @@ import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {layerTextReset} from '../Layer/layerTextReset.stylex';
 import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
 import {LayerContentBoundary} from '../Layer/layerScopedContext';
+import {ModalAnnounceProvider} from '../hooks/ModalAnnounceProvider';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
@@ -1570,182 +1571,196 @@ export function Lightbox({
       )}
       {...props}>
       <LayerDepthProvider>
-        <LayerContentBoundary>
-          <div
-            ref={containerRef}
-            {...stylex.props(styles.container, lightboxScope)}>
+        <ModalAnnounceProvider dialogRef={dialogRef} isOpen={isOpen}>
+          <LayerContentBoundary>
             <div
-              ref={blackoutRef}
-              data-lightbox-blackout=""
-              aria-hidden
-              {...stylex.props(styles.blackout)}
-            />
-            <div data-lightbox-chrome="" {...stylex.props(styles.chromeLayer)}>
-              {/* Close button */}
-              <IconButton
-                icon={<Icon icon="close" size="sm" color="inherit" />}
-                label={t('@astryx.lightbox.close')}
-                variant="ghost"
-                onClick={handleClose}
-                xstyle={[styles.closeButton, styles.controlButton]}
+              ref={containerRef}
+              {...stylex.props(styles.container, lightboxScope)}>
+              <div
+                ref={blackoutRef}
+                data-lightbox-blackout=""
+                aria-hidden
+                {...stylex.props(styles.blackout)}
               />
+              <div
+                data-lightbox-chrome=""
+                {...stylex.props(styles.chromeLayer)}>
+                {/* Close button */}
+                <IconButton
+                  icon={<Icon icon="close" size="sm" color="inherit" />}
+                  label={t('@astryx.lightbox.close')}
+                  variant="ghost"
+                  onClick={handleClose}
+                  xstyle={[styles.closeButton, styles.controlButton]}
+                />
 
-              {/* Gallery nav: prev — stays mounted and is disabled at the start of
+                {/* Gallery nav: prev — stays mounted and is disabled at the start of
             the range so pressing/arrowing to the boundary doesn't unmount the
             focused control and drop focus to <body>. */}
-              {isGallery && (
-                <IconButton
-                  icon={
-                    <Icon
-                      icon="chevronLeft"
-                      size="sm"
-                      color="inherit"
-                      xstyle={rtlStyles.mirror}
-                    />
-                  }
-                  label={t('@astryx.lightbox.previous')}
-                  variant="ghost"
-                  isDisabled={!canPrev}
-                  onClick={goToPrev}
-                  xstyle={[
-                    styles.navButton,
-                    styles.navPrev,
-                    styles.controlButton,
-                  ]}
-                />
-              )}
-            </div>
-
-            {/* Media + caption group (centered together) */}
-            <div
-              data-lightbox-media=""
-              {...stylex.props(
-                styles.mediaGroup,
-                isZoomTarget && !isGallery && isTouch && styles.mediaGroupZoom,
-                isGallery && styles.mediaGroupGallery,
-              )}>
-              <div
-                ref={imageWrapperRef}
-                // The wrapper is a keyboard-operable zoom toggle when zoom is
-                // enabled: Enter/Space toggles, aria-pressed reflects state.
-                role={isZoomTarget ? 'button' : undefined}
-                tabIndex={isZoomTarget ? 0 : undefined}
-                aria-pressed={isZoomTarget ? isZoomed : undefined}
-                aria-label={
-                  isZoomTarget ? t('@astryx.lightbox.zoom') : undefined
-                }
-                {...stylex.props(
-                  styles.imageWrapper,
-                  isGallery && styles.imageWrapperGallery,
-                  isZoomTarget &&
-                    !isGallery &&
-                    isTouch &&
-                    styles.imageWrapperZoomTarget,
-                  isZoomTarget &&
-                    !isGallery &&
-                    isTouch &&
-                    styles.imageWrapperFill,
-                  !isZoomTarget &&
-                    !isVideo &&
-                    !isGallery &&
-                    isTouch &&
-                    styles.imageWrapperDismissTarget,
-                  isZoomTarget && focusOutlineStyles.focusVisible,
-                  isZoomTarget && !isZoomed && styles.imageWrapperZoomable,
-                  isZoomTarget && isZoomed && styles.imageWrapperZoomed,
-                )}
-                onKeyDown={isZoomTarget ? handleImageKeyDown : undefined}
-                onPointerDown={e => {
-                  didDragRef.current = false;
-                  pressRef.current = {x: e.clientX, y: e.clientY};
-                }}>
-                {isGallery ? (
-                  <div
-                    ref={trackRef}
-                    {...stylex.props(
-                      styles.track,
-                      isZoomTarget && isTouch && styles.trackZoomTarget,
-                      !isZoomTarget &&
-                        !isVideo &&
-                        isTouch &&
-                        styles.imageWrapperDismissTarget,
-                    )}>
-                    {pageIndexes.map(i => (
-                      <div
-                        key={i}
-                        data-lightbox-page=""
-                        data-current={i === index ? '' : undefined}
-                        // Only the current page is on screen at rest: the
-                        // others stay out of the tab order and the
-                        // accessibility tree.
-                        inert={i !== index ? true : undefined}
-                        aria-hidden={i !== index ? true : undefined}
-                        {...stylex.props(styles.page, pageStyles.position(i))}>
-                        <div
-                          ref={i === index ? pageMediaRef : undefined}
-                          data-lightbox-page-media=""
-                          {...stylex.props(styles.pageMedia)}>
-                          {renderMedia(mediaArray[i], i === index)}
-                        </div>
-                        {mediaArray[i].caption && (
-                          <div
-                            data-lightbox-caption=""
-                            {...stylex.props(
-                              styles.caption,
-                              styles.pageCaption,
-                            )}>
-                            {mediaArray[i].caption}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  renderMedia(currentItem, true)
+                {isGallery && (
+                  <IconButton
+                    icon={
+                      <Icon
+                        icon="chevronLeft"
+                        size="sm"
+                        color="inherit"
+                        xstyle={rtlStyles.mirror}
+                      />
+                    }
+                    label={t('@astryx.lightbox.previous')}
+                    variant="ghost"
+                    isDisabled={!canPrev}
+                    onClick={goToPrev}
+                    xstyle={[
+                      styles.navButton,
+                      styles.navPrev,
+                      styles.controlButton,
+                    ]}
+                  />
                 )}
               </div>
 
-              {!isGallery && currentItem.caption && (
-                <div data-lightbox-caption="" {...stylex.props(styles.caption)}>
-                  {currentItem.caption}
-                </div>
-              )}
-            </div>
-
-            <div data-lightbox-chrome="" {...stylex.props(styles.chromeLayer)}>
-              {/* Gallery nav: next — see "prev" above; stays mounted and disabled at
-            the end of the range instead of unmounting. */}
-              {isGallery && (
-                <IconButton
-                  icon={
-                    <Icon
-                      icon="chevronRight"
-                      size="sm"
-                      color="inherit"
-                      xstyle={rtlStyles.mirror}
-                    />
+              {/* Media + caption group (centered together) */}
+              <div
+                data-lightbox-media=""
+                {...stylex.props(
+                  styles.mediaGroup,
+                  isZoomTarget &&
+                    !isGallery &&
+                    isTouch &&
+                    styles.mediaGroupZoom,
+                  isGallery && styles.mediaGroupGallery,
+                )}>
+                <div
+                  ref={imageWrapperRef}
+                  // The wrapper is a keyboard-operable zoom toggle when zoom is
+                  // enabled: Enter/Space toggles, aria-pressed reflects state.
+                  role={isZoomTarget ? 'button' : undefined}
+                  tabIndex={isZoomTarget ? 0 : undefined}
+                  aria-pressed={isZoomTarget ? isZoomed : undefined}
+                  aria-label={
+                    isZoomTarget ? t('@astryx.lightbox.zoom') : undefined
                   }
-                  label={t('@astryx.lightbox.next')}
-                  variant="ghost"
-                  isDisabled={!canNext}
-                  onClick={goToNext}
-                  xstyle={[
-                    styles.navButton,
-                    styles.navNext,
-                    styles.controlButton,
-                  ]}
-                />
-              )}
-
-              {/* Gallery counter */}
-              {isGallery && mediaArray.length > 1 && (
-                <div {...stylex.props(styles.counter)}>
-                  {index + 1} / {mediaArray.length}
+                  {...stylex.props(
+                    styles.imageWrapper,
+                    isGallery && styles.imageWrapperGallery,
+                    isZoomTarget &&
+                      !isGallery &&
+                      isTouch &&
+                      styles.imageWrapperZoomTarget,
+                    isZoomTarget &&
+                      !isGallery &&
+                      isTouch &&
+                      styles.imageWrapperFill,
+                    !isZoomTarget &&
+                      !isVideo &&
+                      !isGallery &&
+                      isTouch &&
+                      styles.imageWrapperDismissTarget,
+                    isZoomTarget && focusOutlineStyles.focusVisible,
+                    isZoomTarget && !isZoomed && styles.imageWrapperZoomable,
+                    isZoomTarget && isZoomed && styles.imageWrapperZoomed,
+                  )}
+                  onKeyDown={isZoomTarget ? handleImageKeyDown : undefined}
+                  onPointerDown={e => {
+                    didDragRef.current = false;
+                    pressRef.current = {x: e.clientX, y: e.clientY};
+                  }}>
+                  {isGallery ? (
+                    <div
+                      ref={trackRef}
+                      {...stylex.props(
+                        styles.track,
+                        isZoomTarget && isTouch && styles.trackZoomTarget,
+                        !isZoomTarget &&
+                          !isVideo &&
+                          isTouch &&
+                          styles.imageWrapperDismissTarget,
+                      )}>
+                      {pageIndexes.map(i => (
+                        <div
+                          key={i}
+                          data-lightbox-page=""
+                          data-current={i === index ? '' : undefined}
+                          // Only the current page is on screen at rest: the
+                          // others stay out of the tab order and the
+                          // accessibility tree.
+                          inert={i !== index ? true : undefined}
+                          aria-hidden={i !== index ? true : undefined}
+                          {...stylex.props(
+                            styles.page,
+                            pageStyles.position(i),
+                          )}>
+                          <div
+                            ref={i === index ? pageMediaRef : undefined}
+                            data-lightbox-page-media=""
+                            {...stylex.props(styles.pageMedia)}>
+                            {renderMedia(mediaArray[i], i === index)}
+                          </div>
+                          {mediaArray[i].caption && (
+                            <div
+                              data-lightbox-caption=""
+                              {...stylex.props(
+                                styles.caption,
+                                styles.pageCaption,
+                              )}>
+                              {mediaArray[i].caption}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    renderMedia(currentItem, true)
+                  )}
                 </div>
-              )}
+
+                {!isGallery && currentItem.caption && (
+                  <div
+                    data-lightbox-caption=""
+                    {...stylex.props(styles.caption)}>
+                    {currentItem.caption}
+                  </div>
+                )}
+              </div>
+
+              <div
+                data-lightbox-chrome=""
+                {...stylex.props(styles.chromeLayer)}>
+                {/* Gallery nav: next — see "prev" above; stays mounted and disabled at
+            the end of the range instead of unmounting. */}
+                {isGallery && (
+                  <IconButton
+                    icon={
+                      <Icon
+                        icon="chevronRight"
+                        size="sm"
+                        color="inherit"
+                        xstyle={rtlStyles.mirror}
+                      />
+                    }
+                    label={t('@astryx.lightbox.next')}
+                    variant="ghost"
+                    isDisabled={!canNext}
+                    onClick={goToNext}
+                    xstyle={[
+                      styles.navButton,
+                      styles.navNext,
+                      styles.controlButton,
+                    ]}
+                  />
+                )}
+
+                {/* Gallery counter */}
+                {isGallery && mediaArray.length > 1 && (
+                  <div {...stylex.props(styles.counter)}>
+                    {index + 1} / {mediaArray.length}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </LayerContentBoundary>
+          </LayerContentBoundary>
+        </ModalAnnounceProvider>
       </LayerDepthProvider>
     </dialog>
   );
