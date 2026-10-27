@@ -202,7 +202,16 @@ const styles = stylex.create({
     position: 'relative',
     textAlign: 'start',
     textDecoration: 'none',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      // Under a hovering mouse the colours change at once: the press
+      // controller swaps the hover colour for its image at the press and
+      // back at the release's end, and an eased swap would flash.
+      ':hover': {
+        default: null,
+        '@media (hover: hover)': '0s',
+      },
+    },
     transitionProperty: 'background-color, color',
     transitionTimingFunction: easeVars['--ease-standard'],
     width: '100%',

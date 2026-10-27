@@ -717,6 +717,13 @@ const styles = stylex.create({
     transitionDuration: {
       default: durationVars['--duration-fast-min'],
       '@media (prefers-reduced-motion: reduce)': '0s',
+      // Under a hovering mouse the colour changes at once: the press
+      // controller swaps the hover colour for its image at the press and
+      // back at the release's end, and an eased swap would flash.
+      ':hover': {
+        default: null,
+        '@media (hover: hover)': '0s',
+      },
     },
     transitionTimingFunction: easeVars['--ease-standard'],
     backgroundColor: 'transparent',
@@ -756,6 +763,13 @@ const styles = stylex.create({
     transitionDuration: {
       default: durationVars['--duration-fast-min'],
       '@media (prefers-reduced-motion: reduce)': '0s',
+      // Under a hovering mouse the colour changes at once: the press
+      // controller swaps the hover colour for its image at the press and
+      // back at the release's end, and an eased swap would flash.
+      ':hover': {
+        default: null,
+        '@media (hover: hover)': '0s',
+      },
     },
     transitionTimingFunction: easeVars['--ease-standard'],
     backgroundColor: 'transparent',
