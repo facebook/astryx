@@ -59,7 +59,7 @@ export const docs = {
       name: 'animatedLayout',
       type: 'AnimatedLayout',
       description:
-        "A handle from useAnimatedLayout. With it, opening or closing a panel glides the rows after it (and the content after the table) to their new places instead of jumping, the opening panel plays in on the same motion, and each row's divider moves with it. Under Reduce Motion, and in a table with dividers: grid (its column lines do not move yet), the rows change at once. Without it, rows jump.",
+        "A handle from useAnimatedLayout. With it, opening or closing a panel glides the rows after it (and the content after the table) to their new places instead of jumping, the opening panel plays in on the same motion, and each row's divider moves with it. Under Reduce Motion, and in a table with column lines (dividers columns or grid, which do not move yet), the rows change at once. Without it, rows jump.",
     },
   ],
   examples: [
@@ -131,6 +131,6 @@ export const docsDense = {
     hasRowClickExpansion:
       'Toggle a row by clicking anywhere on it, not just the chevron; pointer-only, skips interactive cell content and text selections. Defaults to false.',
     animatedLayout:
-      'Handle from useAnimatedLayout: opening or closing a panel glides the rows after it instead of jumping them. Reduce Motion and dividers: grid: rows change at once.',
+      'Handle from useAnimatedLayout: opening or closing a panel glides the rows after it instead of jumping them. Under Reduce Motion or with column lines, rows change at once.',
   },
 };

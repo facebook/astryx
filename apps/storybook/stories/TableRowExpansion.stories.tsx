@@ -178,13 +178,17 @@ const sevenOrders = manyOrders.slice(0, 7);
  * rows after it instead of jumping them, the panel plays in on the same
  * motion, and each row's divider moves with its row. The Customer column is
  * pinned and the table scrolls horizontally, so the pinned cells' own
- * dividers move too. Under Reduce Motion, and with `dividers="grid"` (the
- * `grid` control), the rows change at once. The `themed` control sets a blue
- * theme border and an app's red border on the third row's cells.
+ * dividers move too. Under Reduce Motion, and with column lines (the
+ * `dividers` control at "columns" or "grid"), the rows change at once. The
+ * `themed` control sets a blue theme border and an app's red border on the
+ * tbody's third row.
  */
-export const GlidingRows: StoryObj<{themed?: boolean; grid?: boolean}> = {
-  args: {themed: false, grid: false},
-  render: ({themed, grid}) => {
+export const GlidingRows: StoryObj<{
+  themed?: boolean;
+  dividers?: 'rows' | 'columns' | 'grid';
+}> = {
+  args: {themed: false, dividers: 'rows'},
+  render: ({themed, dividers}) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const animatedLayout = useAnimatedLayout({containerRef});
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
@@ -214,7 +218,7 @@ export const GlidingRows: StoryObj<{themed?: boolean; grid?: boolean}> = {
         <Table
           data={sevenOrders}
           columns={wideColumns}
-          dividers={grid === true ? 'grid' : undefined}
+          dividers={dividers}
           idKey="id"
           hasHover
           plugins={{expansion, sticky}}

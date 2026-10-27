@@ -440,9 +440,10 @@ function ExpansionPanelCell({
 }
 
 /**
- * Measures each expansion change for the glide, except in a grid table: its
- * column lines are painted at the cells' static places too, and only row
- * dividers have a moving stand-in, so a grid table's rows change at once
+ * Measures each expansion change for the glide, except in a table with
+ * column lines (`dividers` "columns" or "grid"): they are painted at the
+ * cells' static places too, and only row dividers have a moving stand-in, so
+ * such a table changes at once, panel, rows and chevron, as without a handle
  * (component:Table FR15).
  */
 function ExpansionSnapshot({
@@ -453,7 +454,7 @@ function ExpansionSnapshot({
   onBeforeChange: (previous: Set<string>) => void;
 }) {
   const ctx = useTableContext();
-  if (ctx?.dividers === 'grid') {
+  if (ctx?.dividers === 'grid' || ctx?.dividers === 'columns') {
     return null;
   }
   return <LayoutChangeSnapshot value={value} onBeforeChange={onBeforeChange} />;

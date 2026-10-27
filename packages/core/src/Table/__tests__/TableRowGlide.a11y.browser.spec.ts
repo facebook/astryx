@@ -192,7 +192,7 @@ test("a theme's divider and an app's override move with their rows, pinned cells
   }
 });
 
-test('the chevron turns on the glide; a grid table and Reduce Motion change at once', async ({
+test('the chevron turns on the glide; column lines and Reduce Motion change at once', async ({
   page,
 }) => {
   await mount(page, 'gliding-rows');
@@ -207,8 +207,10 @@ test('the chevron turns on the glide; a grid table and Reduce Motion change at o
     );
   expect(timing.startsWith('linear(')).toBe(true);
 
-  await mount(page, 'gliding-rows', '&args=grid:!true');
-  expect(await toggleAndHold(page, 0, 90)).toBe(0);
+  for (const dividers of ['columns', 'grid']) {
+    await mount(page, 'gliding-rows', `&args=dividers:${dividers}`);
+    expect(await toggleAndHold(page, 0, 90), dividers).toBe(0);
+  }
 
   await page.emulateMedia({reducedMotion: 'reduce'});
   await mount(page, 'gliding-rows');

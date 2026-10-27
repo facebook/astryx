@@ -57,7 +57,7 @@ function ExpandableTable({
   dividers,
 }: {
   withHandle: boolean;
-  dividers?: 'rows' | 'grid';
+  dividers?: 'rows' | 'columns' | 'grid';
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const animatedLayout = useAnimatedLayout({containerRef});
@@ -127,14 +127,23 @@ describe('useTableRowExpansion adopts animatedLayout (spec:AST-105 FR1, FR2)', (
     ).toMatch(/^linear\(/);
   });
 
-  it('changes the rows at once in a grid table, even with a handle (Table FR15)', async () => {
-    const user = userEvent.setup();
-    render(<ExpandableTable withHandle dividers="grid" />);
-    stubGeometry();
-    await user.click(screen.getAllByRole('button', {name: /expand/i})[0]);
-    await flush();
-    expect(animated).toEqual([]);
-  });
+  it.each(['columns', 'grid'] as const)(
+    'changes everything at once with %s dividers, even with a handle (Table FR15)',
+    async dividers => {
+      const user = userEvent.setup();
+      render(<ExpandableTable withHandle dividers={dividers} />);
+      stubGeometry();
+      await user.click(screen.getAllByRole('button', {name: /expand/i})[0]);
+      await flush();
+      // No glide, no panel entrance, and the chevron keeps the theme's turn.
+      expect(animated).toEqual([]);
+      expect(
+        document
+          .querySelector<HTMLElement>('[data-expansion-toggle] > *')
+          ?.style.getPropertyValue('transition-timing-function'),
+      ).toBe('');
+    },
+  );
 
   it('changes nothing without a handle', async () => {
     const user = userEvent.setup();
