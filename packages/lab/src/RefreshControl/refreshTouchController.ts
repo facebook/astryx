@@ -33,14 +33,12 @@
  * - A programmatic begin (controlled `isRefreshing`, or `refresh()`) adds the
  *   inset with no visible motion, as `beginRefreshing()` does.
  *
- * A finger or a pen pulls, under any primary pointer (`spec:AST-094` FR43):
- * a drag at the top, with the same mapping, trigger, settle and drawing; a
- * pen pull clears the text selection its drag started. A mouse drag does
- * not pull: its text selection and native drag stay the browser's, as
- * `spec:AST-057` AR2 keeps a mouse off a row. A trackpad's two-finger scroll
- * toward the top pulls once the content is at its top, as a finger does, and
- * keeps the page's text selection; a mouse wheel's notches do not pull (one
- * would cross the trigger at once). The top edge follows the touch presentation
+ * Every pointer pulls, under any primary pointer (`spec:AST-094` FR43): a
+ * drag at the top, with the same mapping, trigger, settle and drawing; a pen
+ * or a mouse pull clears the text selection its drag started. A trackpad's
+ * two-finger scroll toward the top pulls once the content is at its top, as a
+ * finger does, and keeps the page's text selection; a mouse wheel's notches
+ * do not pull (one would cross the trigger at once). The top edge follows the touch presentation
  * (`useTouchPresentation`: a coarse primary pointer, one touch model on iOS
  * and Android alike): only there does the pull take the page's overscroll
  * near the top and replace the browser's own pull to refresh (Safari's and
@@ -130,7 +128,7 @@ function spinKeyframes(spokes: number): Keyframe[] {
 const TURN_DEGREES = (refreshControl.turnRad * 180) / Math.PI;
 
 export interface RefreshTouchControllerOptions {
-  /** The pull applies: not disabled, no scroll lock (a finger or a pen, FR43). */
+  /** The pull applies: not disabled, no scroll lock (every pointer, FR43). */
   readonly isPullEnabled: boolean;
   /**
    * The pull takes the top edge (the touch presentation): near the top the
@@ -298,8 +296,9 @@ export function useRefreshTouchController({
    */
   const selection = useRef<string | null>(null);
   /**
-   * The text a pen drag selected in the content before its pull began
-   * (spec:AST-094 FR43): the pull takes the drag, so the selection goes.
+   * The text a pen's or a mouse's drag selected in the content before its
+   * pull began (spec:AST-094 FR43): the pull takes the drag, so the selection
+   * goes.
    */
   const clearDragSelection = useCallback(() => {
     const element = contentElement.current;
@@ -313,9 +312,10 @@ export function useRefreshTouchController({
     }
   }, []);
   /**
-   * The pointer of the latest pull: only a finger's release cross-fades under
-   * Reduce Motion; a pen's or a trackpad's lands at once (design:reduced-motion
-   * DR2, DR3).
+   * The pointer of the latest pull: under Reduce Motion a finger's release
+   * cross-fades (design:reduced-motion DR2), as the animator makes any
+   * release on a coarse primary pointer do; elsewhere a pen's, a mouse's or a
+   * trackpad's lands at once (DR3, spec:AST-094 FR43).
    */
   const pullPointer = useRef<PointerKind>('touch');
   const holdSelection = useCallback(() => {
@@ -557,9 +557,11 @@ export function useRefreshTouchController({
       const from = content.animator.get('y');
       // No start time: from rest, the animator starts the settle when the
       // compositor does, so its first frame is the start of the curve. A
-      // finger's release starts it, so under Reduce Motion the animator
-      // cross-fades it instead of moving it (design:reduced-motion DR2); a
-      // pen's release lands at once (DR3, spec:AST-094 FR43).
+      // finger's release starts it as a touch release, so under Reduce Motion
+      // the animator cross-fades it instead of moving it
+      // (design:reduced-motion DR2); the animator does so for any release
+      // where the primary pointer is coarse, and lands a pen's or a mouse's at
+      // once elsewhere (DR3, spec:AST-094 FR43).
       const touchRelease = pullPointer.current === 'touch';
       content.animator.animate(
         {y: target},

@@ -25,9 +25,8 @@
  *   lift;
  * - one finger: a second finger is the browser's (pinch-zoom).
  *
- * A pen reads the same way as a finger (`spec:AST-094` FR43); a mouse drag
- * is not read: its text selection and native drag stay the browser's, as
- * `spec:AST-057` AR2 keeps a mouse off a row. A trackpad's two-finger scroll
+ * Every pointer reads the same way (`spec:AST-094` FR43): a pen's or a
+ * mouse's drag pulls as a finger's does. A trackpad's two-finger scroll
  * pulls through a second instance that takes only that scroll (scroll-edge,
  * `allowedScrollTypes: ['continuous']`, no pointer), so it takes a scroll
  * only where nothing under the pointer could scroll for it.
@@ -52,7 +51,7 @@ import type {
 export class RefreshPullRecognizer extends PanGestureRecognizer {
   /** Called when the first contact of a gesture lands, with its timestamp. */
   onTouchDown: ((time: number) => void) | null = null;
-  /** The pointer of the gesture's first contact: a finger or a pen. */
+  /** The pointer of the gesture's first contact. */
   pointerType: PointerKind = 'touch';
   /** Set when the gesture is a trackpad's scroll rather than a contact. */
   scrollType: GestureTouch['scrollType'] | null = null;
@@ -62,7 +61,6 @@ export class RefreshPullRecognizer extends PanGestureRecognizer {
       name: 'RefreshPull',
       direction: 'vertical',
       maximumNumberOfTouches: 1,
-      allowedPointerTypes: ['touch', 'pen'],
       ...options,
     });
   }

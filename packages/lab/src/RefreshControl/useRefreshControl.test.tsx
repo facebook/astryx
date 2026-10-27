@@ -524,21 +524,28 @@ describe('useRefreshControl', () => {
     await waitFor(() => expect(translateY(content())).toBeCloseTo(60, 5));
   });
 
-  it('does not pull under a mouse drag: its text selection and native drag stay the browser’s (spec:AST-094 FR43, as spec:AST-057 AR2 keeps a mouse off a row)', () => {
+  it('pulls under a mouse drag as under a finger: the same mapping, a trigger with the button down, the settle onto the inset (spec:AST-094 FR43)', async () => {
     useTouchScreen(false);
-    const onRefresh = vi.fn();
+    const onRefresh = vi.fn(() => new Promise<void>(() => {}));
     render(
       <Refreshable data-testid="refresh" onRefresh={onRefresh}>
         <p>Inbox</p>
       </Refreshable>,
     );
     const drag = pointerDrag(content(), 'mouse');
-    for (const step of [30, 30, 30, 30]) {
+    for (const step of [12, 8, 20]) {
       drag.move(step);
     }
+    // 40 px of travel, 10 of them the pan's hysteresis, as under a finger.
+    expect(translateY(content())).toBeCloseTo(30, 5);
+    for (const step of [20, 20, 25]) {
+      drag.move(step);
+    }
+    // 105 px of travel: past the trigger, with the button still down.
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+    expect(content()).toHaveAttribute('aria-busy', 'true');
     drag.lift();
-    expect(onRefresh).not.toHaveBeenCalled();
-    expect(translateY(content())).toBe(0);
+    await waitFor(() => expect(translateY(content())).toBeCloseTo(60, 5));
   });
 
   it('pulls under a trackpad’s two-finger scroll at the top as under a finger: the same mapping, a trigger, the settle onto the inset once the scroll ends (spec:AST-094 FR43)', async () => {
@@ -593,30 +600,33 @@ describe('useRefreshControl', () => {
     expect(translateY(content())).toBe(0);
   });
 
-  it('with a pen, a pull clears the selection its drag started and holds selection off until it ends (spec:AST-094 FR43)', async () => {
-    useTouchScreen(false);
-    render(
-      <Refreshable data-testid="refresh" onRefresh={() => {}}>
-        <p>Inbox</p>
-      </Refreshable>,
-    );
-    const drag = pointerDrag(content(), 'pen');
-    drag.move(4);
-    // The browser may select text as the pen moves, before the pan begins.
-    act(() => {
-      document.getSelection()?.selectAllChildren(content());
-    });
-    expect(document.getSelection()?.isCollapsed).toBe(false);
-    for (const step of [8, 20]) {
-      drag.move(step);
-    }
-    expect(translateY(content())).toBeGreaterThan(0);
-    expect(document.getSelection()?.isCollapsed ?? true).toBe(true);
-    expect(content().style.getPropertyValue('user-select')).toBe('none');
-    drag.lift();
-    await waitFor(() => expect(translateY(content())).toBe(0));
-    expect(content().style.getPropertyValue('user-select')).toBe('');
-  });
+  it.each(['pen', 'mouse'] as const)(
+    'with a %s, a pull clears the selection its drag started and holds selection off until it ends (spec:AST-094 FR43)',
+    async pointerType => {
+      useTouchScreen(false);
+      render(
+        <Refreshable data-testid="refresh" onRefresh={() => {}}>
+          <p>Inbox</p>
+        </Refreshable>,
+      );
+      const drag = pointerDrag(content(), pointerType);
+      drag.move(4);
+      // The browser may select text as the drag moves, before the pan begins.
+      act(() => {
+        document.getSelection()?.selectAllChildren(content());
+      });
+      expect(document.getSelection()?.isCollapsed).toBe(false);
+      for (const step of [8, 20]) {
+        drag.move(step);
+      }
+      expect(translateY(content())).toBeGreaterThan(0);
+      expect(document.getSelection()?.isCollapsed ?? true).toBe(true);
+      expect(content().style.getPropertyValue('user-select')).toBe('none');
+      drag.lift();
+      await waitFor(() => expect(translateY(content())).toBe(0));
+      expect(content().style.getPropertyValue('user-select')).toBe('');
+    },
+  );
 
   it('pulls on any touch screen, an Android phone’s included: one touch model, no iOS check', async () => {
     useIos(false);

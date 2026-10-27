@@ -14,13 +14,11 @@
  *   and the gate. Everything a finger drives is the touch layer,
  *   refreshTouchController.ts, imported here and nowhere else.
  *
- * A finger or a pen pulls, under any primary pointer (`spec:AST-094` FR43):
- * a drag at the top, with the same mapping, trigger, settle and drawing; a
- * pen pull clears the text selection its drag started. A mouse drag does
- * not pull: its text selection and native drag stay the browser's, as
- * `spec:AST-057` AR2 keeps a mouse off a row. A trackpad's two-finger scroll
- * toward the top pulls once the content is at its top, as a finger does; a
- * mouse wheel's notches do not. The top edge follows the touch presentation
+ * Every pointer pulls, under any primary pointer (`spec:AST-094` FR43): a
+ * drag at the top, with the same mapping, trigger, settle and drawing; a pen
+ * or a mouse pull clears the text selection its drag started. A trackpad's
+ * two-finger scroll toward the top pulls once the content is at its top, as a
+ * finger does; a mouse wheel's notches do not. The top edge follows the touch presentation
  * (`useTouchPresentation`: a coarse primary pointer, one touch model on iOS
  * and Android alike): only there does the pull take the page's overscroll
  * near the top and replace the browser's own pull to refresh (Safari's and
