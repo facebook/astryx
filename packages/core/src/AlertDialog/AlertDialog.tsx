@@ -69,9 +69,14 @@ const styles = stylex.create({
   // a long press does: the browser may pinch-zoom there but never pans (Chrome
   // on Android cancels a pointer it pans, which would cancel the group's
   // press), and a double tap zooms nothing (`spec:AST-094` FR18: the gesture
-  // host never allows more than this).
+  // host never allows more than this). A press that slides across the
+  // actions selects none of their labels, for a mouse too (`spec:AST-094`
+  // FR41: the hold does something); the title and the message stay
+  // selectable.
   trackingRow: {
     touchAction: 'pinch-zoom',
+    userSelect: 'none',
+    WebkitUserSelect: 'none',
   },
   // UIKit's alert motion drives the dialog (useAlertMotion): the theme's
   // entrance keyframes stand down.
