@@ -48,6 +48,7 @@ import {
   blockMainThread,
   busyWindowProof,
   compareCurve,
+  CONTROL_RGB,
   countBetween,
   cubicBezier,
   curveOf,
@@ -71,6 +72,7 @@ import {
   sampleRects,
   seekAnimations,
   springStep,
+  startBusyControl,
   startCompositorTrace,
   startScreencast,
   Storyboard,
@@ -369,6 +371,76 @@ test.describe('frame evidence', () => {
     const slowRaf = await run('raf', 6);
     expect(slowRaf.verdict.pass, slowRaf.summary).toBe(false);
     expect(slowRaf.verdict.failures.join('\n')).toMatch(/longest stall/);
+  });
+
+  test('against a compositor-only control in the same window, a compositor animation passes and a rAF one fails, whatever the screencast rate', async ({
+    page,
+  }, testInfo) => {
+    await busyFixture(page);
+    const box = page.locator('#box');
+    await markElement(box, {mode: 'outline'});
+    const control = await startBusyControl(page);
+
+    const run = async (driver: 'compositor' | 'raf', everyNthFrame = 1) => {
+      await box.evaluate((el, how) => {
+        el.getAnimations().forEach(a => a.cancel());
+        el.style.transform = 'none';
+        if (how === 'compositor') {
+          el.animate(
+            [{transform: 'translateY(0px)'}, {transform: 'translateY(560px)'}],
+            {duration: 1600, easing: 'linear'},
+          );
+        } else {
+          const start = performance.now();
+          const step = (now: number) => {
+            const p = Math.min(1, (now - start) / 1600);
+            el.style.transform = `translateY(${560 * p}px)`;
+            if (p < 1) {
+              requestAnimationFrame(step);
+            }
+          };
+          requestAnimationFrame(step);
+        }
+      }, driver);
+      const cast = await startScreencast(page, {everyNthFrame});
+      await page.waitForTimeout(200);
+      const window = await blockMainThread(page, 700);
+      await page.waitForTimeout(200);
+      const frames = await cast.stop();
+      const tracked = await trackMarker(page, frames);
+      const controlFrames = await trackMarker(page, frames, {rgb: CONTROL_RGB});
+      const proof = busyWindowProof(tracked, window, {
+        axis: 'y',
+        control: controlFrames,
+      });
+      // The judgment without the control, for the record only: on a
+      // two-core runner it can fail where the control shows the compositor
+      // itself presented no more.
+      const alone = busyWindowProof(tracked, window, {axis: 'y'});
+      testInfo.annotations.push({
+        type: `busy-main-thread ${driver} 1/${everyNthFrame} against the control`,
+        description: `${proof.summary} | without the control: ${alone.verdict.failures.join('; ') || 'pass'}`,
+      });
+      return proof;
+    };
+
+    const compositor = await run('compositor');
+    expect(compositor.verdict.failures, compositor.summary).toEqual([]);
+    expect(compositor.control?.moved).toBeGreaterThanOrEqual(4);
+
+    // The mutant: a main-thread animation freezes while the control moves.
+    const raf = await run('raf');
+    expect(raf.verdict.pass, raf.summary).toBe(false);
+    expect(raf.verdict.failures.join('\n')).toMatch(
+      /moved on 0 of the \d+ frames the control moved/,
+    );
+
+    // A slower screencast samples the control and the component alike.
+    const slow = await run('compositor', 6);
+    expect(slow.verdict.failures, slow.summary).toEqual([]);
+    const slowRaf = await run('raf', 6);
+    expect(slowRaf.verdict.pass, slowRaf.summary).toBe(false);
+    await control.remove();
   });
 
   test('frames the screencast skips while the compositor presents them are not a stall; a frozen animation still fails with the compositor record', async ({
