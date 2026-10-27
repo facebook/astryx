@@ -32,6 +32,7 @@ import {Badge} from '@astryxdesign/core/Badge';
 import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
 import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {Drawer, DrawerHeader} from '@astryxdesign/core/Drawer';
 import {Tab, TabList} from '@astryxdesign/core/TabList';
 // A swizzled copy of core's TabList carrying the proposed travelling indicator.
 import {
@@ -1219,5 +1220,160 @@ export function ListReorderRig({mode}: {mode: Mode}) {
           : 'FLIP: measure, move, invert, play. Rows travel on --ease-move, so a change the user did not initiate stays followable.'}
       </Hint>
     </VStack>
+  );
+}
+
+// --- Drawer: the exit, cut or awaited --------------------------------------
+
+/** The hold the old close used before it hid the panel. */
+const DRAWER_OLD_HOLD_MS = 250;
+
+const drawerSx = stylex.create({
+  frame: {
+    position: 'relative',
+    height: '150px',
+    width: '100%',
+    overflow: 'hidden',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: 'var(--color-border)',
+    borderRadius: 'var(--radius-md, 9px)',
+    backgroundColor: 'var(--color-background-body)',
+  },
+  panel: {
+    position: 'absolute',
+    insetBlock: 0,
+    insetInlineEnd: 0,
+    width: '46%',
+    padding: '12px',
+    backgroundColor: 'var(--color-background-surface)',
+    borderInlineStartWidth: '1px',
+    borderInlineStartStyle: 'solid',
+    borderInlineStartColor: 'var(--color-border)',
+    boxShadow: 'var(--shadow-high)',
+    transitionProperty: 'transform',
+    // Core's Drawer: --duration-medium (the lab's --duration-overlay alias of
+    // it) on the curve it ships today, and
+    // 0.01s under Reduce Motion, as Core sets it. The lab's own Reduce Motion
+    // modes zero the travel too (--lab-translate).
+    transitionDuration: {
+      default: 'calc(var(--lab-duration-overlay) * var(--lab-translate, 1))',
+      '@media (prefers-reduced-motion: reduce)': '0.01s',
+    },
+    transitionTimingFunction: 'var(--ease-standard-today)',
+  },
+  line: {
+    height: '8px',
+    borderRadius: '4px',
+    backgroundColor: 'var(--color-border)',
+    marginBlockEnd: '8px',
+  },
+});
+
+/**
+ * Drawer's close, mirrored in a pane. Core's Drawer is a top-layer dialog at
+ * the viewport's edge, so the pane mirrors its panel: the same transform on
+ * the same tokens (--duration-medium through the lab's --duration-overlay
+ * alias, and the --ease-standard Core ships today). `cut` hides the panel
+ * after a fixed 250ms, the close the preview plan describes; `awaited` hides it
+ * when its transform transition ends, with a backstop past the computed
+ * duration, which is what Core's Drawer does today.
+ */
+export function DrawerExitRig({close}: {close: 'cut' | 'awaited'}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isRendered, setIsRendered] = useState(false);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const {scaledMs, speed} = useMotionLab();
+  const slideMs = scaledMs('--duration-overlay');
+
+  const toggle = useCallback(() => {
+    if (!isRendered) {
+      setIsRendered(true);
+      // Present first, then slide in on the next frame.
+      requestAnimationFrame(() => requestAnimationFrame(() => setIsOpen(true)));
+      return;
+    }
+    setIsOpen(false);
+  }, [isRendered]);
+
+  useEffect(() => {
+    if (isOpen || !isRendered) {
+      return;
+    }
+    if (close === 'cut') {
+      // The hold slows with the rail, so the cut lands at the same point of
+      // the slide at every speed.
+      const id = window.setTimeout(
+        () => setIsRendered(false),
+        DRAWER_OLD_HOLD_MS * speed,
+      );
+      return () => window.clearTimeout(id);
+    }
+    const panel = panelRef.current;
+    const done = () => setIsRendered(false);
+    const onEnd = (event: TransitionEvent) => {
+      if (event.target === panel && event.propertyName === 'transform') {
+        done();
+      }
+    };
+    panel?.addEventListener('transitionend', onEnd);
+    const backstop = window.setTimeout(done, slideMs + 50);
+    return () => {
+      panel?.removeEventListener('transitionend', onEnd);
+      window.clearTimeout(backstop);
+    };
+  }, [close, isOpen, isRendered, slideMs, speed]);
+
+  // Long enough for a whole slide and a beat at rest at any rail speed, so
+  // the two panes stay in step.
+  useLoop(toggle, Math.max(1400, slideMs + 1000));
+
+  return (
+    <VStack gap={2} {...stylex.props(sx.full)}>
+      <div {...stylex.props(drawerSx.frame)}>
+        {isRendered && (
+          <div
+            ref={panelRef}
+            data-drawer-exit={close}
+            {...stylex.props(drawerSx.panel)}
+            style={{transform: isOpen ? 'translateX(0)' : 'translateX(100%)'}}>
+            <div {...stylex.props(drawerSx.line)} style={{width: '70%'}} />
+            <div {...stylex.props(drawerSx.line)} />
+            <div {...stylex.props(drawerSx.line)} style={{width: '55%'}} />
+          </div>
+        )}
+      </div>
+      <Hint>
+        {close === 'cut'
+          ? 'Hidden 250ms into a 410ms slide, the close the preview plan describes. On the decelerating curve Core ships, the panel is already about 97% out by then, so the cut removes the last few pixels.'
+          : 'Hidden when the slide ends, with a backstop past its computed duration. This is what Core\u2019s Drawer does today (Drawer FR9).'}
+      </Hint>
+    </VStack>
+  );
+}
+
+/**
+ * Opens Core's own Drawer, to check its close at 1x. It is a top-layer
+ * dialog outside the lab's scope, so the rail's speed does not reach it.
+ */
+export function RealDrawerProbe() {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <>
+      <Button
+        label="Open Core’s Drawer"
+        variant="secondary"
+        onClick={() => setIsOpen(true)}
+      />
+      <Drawer
+        label="Core Drawer"
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        hasScrim={false}
+        width={320}>
+        <DrawerHeader title="Core Drawer" onOpenChange={setIsOpen} />
+        <Text>Close it and watch the panel slide all the way out.</Text>
+      </Drawer>
+    </>
   );
 }
