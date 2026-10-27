@@ -89,6 +89,9 @@ function setup() {
           <label><input type="radio" name="plan" value="pro" checked /> Pro</label>
           <iframe src="about:blank"></iframe>
           <canvas width="40" height="20"></canvas>
+          <label for="plan-pro">Pro plan</label>
+          <div id="scroller">Rows</div>
+          <svg><text id="axis">Axis</text></svg>
         </main>
       </div>
     </div>`;
@@ -182,6 +185,49 @@ describe('the in-place swap (spec:AST-105 FR8)', () => {
       0,
     );
     getContext.mockRestore();
+  });
+
+  it('labels no live control: a copied label drops its for', () => {
+    const {handle, content} = setup();
+    const swap = holdLayoutSwap(handle, content);
+    const label = Array.from(swap!.copy.querySelectorAll('label')).find(
+      element => element.textContent === 'Pro plan',
+    );
+    expect(label).toBeDefined();
+    expect(label?.hasAttribute('for')).toBe(false);
+  });
+
+  it('keeps a scrolled descendant scrolled as it was once laid out', () => {
+    const {handle, content, host} = setup();
+    const scroller = document.getElementById('scroller') as HTMLElement;
+    Object.defineProperty(scroller, 'scrollTop', {value: 25});
+    const set = vi.spyOn(Element.prototype, 'scrollTop', 'set');
+    const swap = holdLayoutSwap(handle, content);
+    playLayoutSwap(swap!, {host, copy: travel, incoming: []});
+    const copied = set.mock.contexts.find(
+      element => (element as Element).textContent === 'Rows',
+    );
+    expect(copied).toBeDefined();
+    expect(set).toHaveBeenCalledWith(25);
+    set.mockRestore();
+  });
+
+  it('fades a copied SVG label through its text element, not a span', () => {
+    const {handle, content, host} = setup();
+    const swap = holdLayoutSwap(handle, content);
+    playLayoutSwap(swap!, {
+      host,
+      copy: travel,
+      copyText: p => 1 - p,
+      incoming: [],
+    });
+    expect(swap!.copy.querySelector('svg span')).toBeNull();
+    const axis = played.find(
+      entry =>
+        entry.element.namespaceURI === 'http://www.w3.org/2000/svg' &&
+        entry.element.textContent === 'Axis',
+    );
+    expect(axis?.element.tagName.toLowerCase()).toBe('text');
   });
 
   it('lays the copy out on its old rect whatever its box sizing', () => {
