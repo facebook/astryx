@@ -91,7 +91,7 @@ export const docs = {
       // the description instead (#1645).
       type: 'LightboxItem | LightboxItem[]',
       description:
-        'Items to display. Pass a single object for one item, or an array for gallery mode with prev/next navigation. Each item is either an image/video (src, alt, optional caption and type) or an arbitrary React subtree (type custom, content, label, optional caption). Both kinds can be mixed in one gallery.',
+        "Items to display. Pass a single object for one item, or an array for gallery mode with prev/next navigation. Each item is either a media item {src: string, alt: string, caption?: ReactNode, type?: 'image' | 'video'} (type defaults to 'image', and zoom/pan is disabled for 'video') or a custom item {type: 'custom', content: ReactNode, label: string, caption?: ReactNode}, which renders arbitrary React content without zoom/pan. Both kinds can be mixed in one gallery.",
       required: true,
     },
     {
@@ -210,7 +210,7 @@ export const docsZh = {
       name: 'media',
       type: 'LightboxItem | LightboxItem[]',
       description:
-        '要显示的项目。传入单个对象或数组（用于画廊模式的上一张/下一张导航）。每项可以是图片/视频（src、alt、可选 caption 和 type），也可以是任意 React 子树（type 为 custom、content、label、可选 caption）。两种类型可在同一画廊中混用。',
+        "要显示的项目。传入单个对象或数组（用于画廊模式的上一张/下一张导航）。每项可以是媒体项 {src, alt, caption?, type?: 'image' | 'video'}（type 默认为 'image'，'video' 禁用缩放/平移），也可以是自定义项 {type: 'custom', content, label, caption?}（渲染任意 React 内容，不支持缩放/平移）。两种类型可在同一画廊中混用。",
       required: true,
     },
     {
