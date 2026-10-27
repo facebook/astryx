@@ -47,8 +47,8 @@ Astryx components behave predictably when people move between keyboard, pointer,
 touch, pen, and programmatic focus. Essential actions remain perceivable and
 reachable while their controlled state or task context is presented, and newer user
 intent remains authoritative over stale work, and every Core and Lab gesture of one kind, dragged or scrolling, reads the
-same release velocity. This record defines those shared interaction invariants, the
-one gesture velocity source, the shared modality state, the boundary between modality and
+same release velocity, and scroll-linked motion reads one scroll progress. This record defines those shared interaction invariants, the
+one gesture velocity source, the one scroll-progress source, the shared modality state, the boundary between modality and
 component focus ownership, and the evidence required when any of them changes.
 
 It does not define focus-ring appearance, hover paint, press treatment, or new
@@ -171,8 +171,8 @@ work.
   subscription delivers it off the render path to the animator or a CSS custom
   property, never React state. Native `animation-timeline: scroll()` is
   preferred where the platform supports it, with this as the fallback. Progress
-  still reports under Reduce Motion, and travel it drives follows the
-  animator's planner. Scroll snapping and momentum stay native. It adds no
+  still reports under reduced motion, and travel it drives stops there on every
+  path, through the animator or a CSS custom property alike. Scroll snapping and momentum stay native. It adds no
   module and is internal (`spec:AST-017` FR21).
 
 ## Allowed variation
@@ -238,9 +238,12 @@ is asked to carry a new decision.
   lifetimes, and focus-paint ownership.
 - `architecture:react-component-runtime` owns shared lifecycle and resource
   mechanisms. This record owns only the cross-cutting modality-path,
-  no-stale-interaction-outcome, and gesture-velocity-source requirements.
+  no-stale-interaction-outcome, gesture-velocity-source, and
+  scroll-progress-source (INV12) requirements.
 - The Core velocity tracker and its release filter (INV10) — the one source of
   gesture velocity for Core components; not exported.
+- The native-scroll module's progress and its subscription (INV12) — the one
+  source of scroll progress for Core components; not exported.
 
 ## Deciding specs
 
