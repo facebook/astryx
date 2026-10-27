@@ -63,9 +63,6 @@ import {
 /** Set on the stage while a finger or the mouse drags a zoomed photo. */
 export const ZOOM_DRAGGING_ATTRIBUTE = 'data-zoom-dragging';
 
-/** A mouse press moves this far (px) before it drags the photo. */
-const MOUSE_DRAG_SLOP = 3;
-
 /** A drag's initial direction on screen. */
 export type PanDirection = 'left' | 'right';
 
@@ -389,7 +386,9 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
       const dx = event.clientX - drag.start.x;
       const dy = event.clientY - drag.start.y;
       if (!drag.began) {
-        if (Math.hypot(dx, dy) < MOUSE_DRAG_SLOP) {
+        // A press that has not moved is still a click; the drag, and its
+        // grab cursor, begin with the first pixel of travel.
+        if (dx === 0 && dy === 0) {
           return;
         }
         drag.began = true;
@@ -454,29 +453,49 @@ export function useZoomCore(options: UseZoomCoreOptions): ZoomCore {
   // A rotation or resize keeps the same photo point centred at the same
   // on-screen size (the shared resize observer). It watches the surface: in
   // a gallery the stage moves to each current page, while the track, whose
-  // size every page shares, stays. Re-attached whenever the stage turns on
-  // (the dialog may mount late).
-  const surfaceRef = options.surfaceRef ?? options.stageRef;
-  useEffect(() => {
-    const surface = surfaceRef.current;
-    if (!isEnabled || surface == null) {
-      return undefined;
+  // size every page shares, stays.
+  const onResize = useCallback(() => {
+    const before = geometryRef.current;
+    if (before == null || !zoomedRef.current) {
+      return;
     }
-    return observeResize(surface, () => {
-      const before = geometryRef.current;
-      if (before == null || !zoomedRef.current) {
-        return;
-      }
-      const after = measure();
-      if (after == null) {
-        return;
-      }
-      animator.stop();
-      const next = transformForResize(before, after, targetRef.current);
-      write(next);
-      setZoomed(isZoomed(after, next));
-    });
-  }, [animator, isEnabled, measure, surfaceRef, setZoomed, write]);
+    const after = measure();
+    if (after == null) {
+      return;
+    }
+    animator.stop();
+    const next = transformForResize(before, after, targetRef.current);
+    write(next);
+    setZoomed(isZoomed(after, next));
+  }, [animator, measure, setZoomed, write]);
+  // The surface mounts with the viewer's first media, which can come after
+  // the viewer (a gallery mounted closed while its photos load), so the
+  // subscription follows the element, and zoom turning on or off, after every
+  // render rather than the one there at mount.
+  const surfaceRef = options.surfaceRef ?? options.stageRef;
+  const resizeRef = useRef<{surface: HTMLElement; stop: () => void} | null>(
+    null,
+  );
+  const onResizeRef = useRef(onResize);
+  useIsomorphicLayoutEffect(() => {
+    onResizeRef.current = onResize;
+    const surface = isEnabled ? surfaceRef.current : null;
+    if ((resizeRef.current?.surface ?? null) === surface) {
+      return;
+    }
+    resizeRef.current?.stop();
+    resizeRef.current =
+      surface == null
+        ? null
+        : {surface, stop: observeResize(surface, () => onResizeRef.current())};
+  });
+  useEffect(
+    () => () => {
+      resizeRef.current?.stop();
+      resizeRef.current = null;
+    },
+    [],
+  );
 
   // The keyboard works on where the photo is going, like UIKit's model
   // values: a press during a settle continues from that settle's end.

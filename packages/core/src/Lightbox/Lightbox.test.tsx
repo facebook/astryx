@@ -274,6 +274,92 @@ describe('Lightbox', () => {
       expect(onOpenChange).not.toHaveBeenCalled();
     });
 
+    it('shows the last item as the current one for an index past the end', () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          index={media.length + 2}
+        />,
+      );
+      const photo = screen.getByAltText('Image C');
+      expect(photo).not.toHaveAttribute('aria-hidden');
+      const page = photo.closest('[data-lightbox-page]')!;
+      expect(page).toHaveAttribute('data-current');
+      expect(page).not.toHaveAttribute('inert');
+      expect(
+        screen.getByText(`${media.length} / ${media.length}`),
+      ).toBeTruthy();
+    });
+
+    it('pauses a playing video once the viewer moves to another item', () => {
+      const items = [
+        {src: '/clip.mp4', alt: 'A clip', type: 'video' as const},
+        {src: '/b.jpg', alt: 'Image B'},
+      ];
+      const {rerender} = render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={items}
+          index={0}
+        />,
+      );
+      const video = document.querySelector('video')!;
+      // Started by someone: playing, with its sound.
+      const pause = vi.fn();
+      video.pause = pause;
+      Object.defineProperty(video, 'paused', {
+        configurable: true,
+        get: () => pause.mock.calls.length > 0,
+      });
+      rerender(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={items}
+          index={1}
+        />,
+      );
+      // Still mounted as the pager's neighbour, and stopped.
+      expect(document.querySelector('video')).toBe(video);
+      expect(pause).toHaveBeenCalledTimes(1);
+    });
+
+    it('stays open on a click on the photo, with zoom off', () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={onOpenChange}
+          media={media}
+          index={0}
+        />,
+      );
+      const current = document.querySelector('[data-current]')!;
+      const box = current.querySelector<HTMLElement>(
+        '[data-lightbox-page-media]',
+      )!;
+      // The photo takes no pointer events: a click on it lands on its box.
+      current.querySelector('img')!.getBoundingClientRect = () => ({
+        x: 100,
+        y: 100,
+        left: 100,
+        top: 100,
+        right: 500,
+        bottom: 300,
+        width: 400,
+        height: 200,
+        toJSON: () => ({}),
+      });
+      fireEvent.click(box, {clientX: 300, clientY: 200});
+      expect(onOpenChange).not.toHaveBeenCalled();
+      // Beside the photo, on the same box, the click is the backdrop's.
+      fireEvent.click(box, {clientX: 20, clientY: 200});
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
     it('shows gallery counter', () => {
       render(
         <Lightbox
@@ -980,6 +1066,34 @@ describe('Lightbox mouse and pen zoom where the primary pointer is fine', () => 
     pen('pointerup', 900);
     // The left edge stops on the stage's left edge.
     expect(photoTransform(img).translate).toBe('0px -100px');
+  });
+
+  it('pans a zoomed photo from a mouse drag’s first pixel, the grab cursor at once', async () => {
+    const {stage, img} = renderPhoto();
+    fireEvent.keyDown(document.querySelector('dialog')!, {key: '+'});
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 400));
+    });
+    const mouse = (type: string, x: number) => {
+      const event = new Event(type, {bubbles: true, cancelable: true});
+      Object.defineProperty(event, 'pointerType', {value: 'mouse'});
+      Object.defineProperty(event, 'button', {value: 0});
+      Object.defineProperty(event, 'pointerId', {value: 1});
+      Object.defineProperty(event, 'clientX', {value: x});
+      Object.defineProperty(event, 'clientY', {value: 300});
+      act(() => {
+        stage.dispatchEvent(event);
+      });
+    };
+    mouse('pointerdown', 200);
+    // A press alone neither drags nor grabs: a click stays a click.
+    expect(stage).not.toHaveAttribute('data-zoom-dragging');
+    mouse('pointermove', 198);
+    // 2 px: the photo follows and the grab cursor shows, with no threshold.
+    expect(photoTransform(img).translate).toBe('-202px -100px');
+    expect(stage).toHaveAttribute('data-zoom-dragging');
+    mouse('pointerup', 198);
+    expect(stage).not.toHaveAttribute('data-zoom-dragging');
   });
 });
 
