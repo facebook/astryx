@@ -419,6 +419,13 @@ export interface UseSheetGesturesOptions {
    */
   onScrimTracking?: (tracking: boolean) => void;
   /**
+   * Given with `onScrimTracking`: whether the dialog's `::backdrop` is the
+   * visible scrim at this moment. A stack shows one backdrop: a sheet stacked
+   * above another keeps a transparent one, and a sheet whose scrim another
+   * took over drops it, so neither plays the dim there. Omitted: always.
+   */
+  isScrimShown?: () => boolean;
+  /**
    * True while the sheet presents under a finger (`present`), false once it
    * lands. UIKit drops every touch that begins during a sheet's presentation,
    * for its whole life (F4 b59): the host holds input meanwhile.
@@ -604,6 +611,7 @@ export function useSheetGestures({
   onSnap,
   onScrimOpacity,
   onScrimTracking,
+  isScrimShown,
   onPresentingChange,
 }: UseSheetGesturesOptions): UseSheetGesturesResult {
   const [dragOffset, setDragOffset] = useState(0);
@@ -751,6 +759,7 @@ export function useSheetGestures({
   const onSnapRef = useRef(onSnap);
   const onScrimOpacityRef = useRef(onScrimOpacity);
   const onScrimTrackingRef = useRef(onScrimTracking);
+  const isScrimShownRef = useRef(isScrimShown);
   const onPresentingChangeRef = useRef(onPresentingChange);
   useEffect(() => {
     onDismissRef.current = onDismiss;
@@ -758,6 +767,7 @@ export function useSheetGestures({
     onSnapRef.current = onSnap;
     onScrimOpacityRef.current = onScrimOpacity;
     onScrimTrackingRef.current = onScrimTracking;
+    isScrimShownRef.current = isScrimShown;
     onPresentingChangeRef.current = onPresentingChange;
   });
 
@@ -834,7 +844,12 @@ export function useSheetGestures({
       touchRelease = false,
     ) => {
       const dialog = sheetElRef.current?.closest('dialog');
-      if (!isScrimTrackingRef.current || dialog == null) {
+      // Only on the stack's visible backdrop: a transparent one stays clear.
+      if (
+        !isScrimTrackingRef.current ||
+        dialog == null ||
+        isScrimShownRef.current?.() === false
+      ) {
         return;
       }
       stopScrimFollow();

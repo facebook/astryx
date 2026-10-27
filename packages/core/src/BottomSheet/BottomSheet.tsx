@@ -513,6 +513,12 @@ function StandaloneBottomSheet({
       writeScrimOpacity(dialogRef.current, opacity, scrimWriteRef.current),
     [],
   );
+  // The same rule for the dim a release plays on the backdrop itself: only
+  // the stack's visible backdrop carries it.
+  const isScrimShown = useCallback(() => {
+    const view = stackViewRef.current;
+    return !(view.isStacked && !view.ownsScrim) && !view.isScrimTakenOver;
+  }, []);
   const handleScrimOpacity = useCallback((opacity: number) => {
     // Only the sheet whose backdrop is the visible scrim thins it; a sheet
     // stacked above it has a transparent backdrop that a drag must not reveal.
@@ -869,6 +875,7 @@ function StandaloneBottomSheet({
         onDismiss={dismissOnLightInteraction}
         onScrimOpacity={handleScrimOpacity}
         onScrimTracking={hasScrim ? handleScrimTracking : undefined}
+        isScrimShown={hasScrim ? isScrimShown : undefined}
         hasSpringPresentation
         onPresentingChange={setIsEntranceHeld}
         onElementChange={handlePanelElementChange}
