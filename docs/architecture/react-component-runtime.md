@@ -200,8 +200,8 @@ those contracts.
   a jump from twelve to over a million does not spin. Under reduced motion the
   new value is written at once on any pointer, as an in-place value change
   (`design:reduced-motion` DR2). It
-  announces nothing: where the component has its own live region, that region
-  announces the final value, never the values between. Number formatting stays
+  announces nothing: where the component's own record announces the value,
+  only the final value is announced, never the values between. Number formatting stays
   with the caller. The value mode is part of the animator, adds no module, and
   is internal (`spec:AST-017` FR21).
 
