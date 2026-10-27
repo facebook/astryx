@@ -44,6 +44,14 @@ function railWidth(): number {
     : EXPANDED;
 }
 
+/** Moves the timeline past any motion, as time passing would. */
+function settle() {
+  Object.defineProperty(document, 'timeline', {
+    configurable: true,
+    value: {currentTime: 1000 + 5000},
+  });
+}
+
 function rect(left: number, width: number): DOMRect {
   return DOMRect.fromRect({x: left, y: 0, width, height: 600});
 }
@@ -224,17 +232,31 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     expect(fadeIn?.keyframes.at(-1)?.opacity).toBe(1);
   });
 
-  it('expands by revealing the new rail with a clip, applied before the first frame paints', async () => {
+  it('expands by revealing the real rail with a clip under the old rail, applied before the first frame paints', async () => {
     render(<Shell />);
     await toggle();
-    recorded.forEach(entry => entry.animation.finish());
+    act(() => {
+      recorded.forEach(entry => entry.animation.finish());
+    });
+    settle();
     recorded = [];
     await toggle();
 
     expect(railWidth()).toBe(EXPANDED);
-    // A copy of the new rail is clipped open; the real one waits under it.
-    const [reveal] = animated('clipPath');
-    expect(reveal.element.textContent).toContain('Projects');
+    // The real rail is clipped open from the old width.
+    const reveal = animated('clipPath').find(
+      entry => !entry.element.hasAttribute('inert'),
+    );
+    expect(reveal).toBeDefined();
+    // The old, collapsed rail is held over it at first and fades, so the first
+    // frame is the frame before the click.
+    const old = recorded.find(
+      entry =>
+        entry.element.hasAttribute('inert') &&
+        entry.element.querySelector('button[aria-label="Projects"]') != null,
+    );
+    expect(old?.keyframes[0].opacity).toBe(1);
+    expect(old?.keyframes.at(-1)?.opacity).toBe(0);
     expect(reveal?.keyframes[0].clipPath).toContain(
       `${EXPANDED - COLLAPSED}px`,
     );
@@ -246,6 +268,27 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
       entry => entry.element !== main && entry.element.contains(main),
     );
     expect(slide.keyframes[0].translate).toBe(`${COLLAPSED - EXPANDED}px 0px`);
+  });
+
+  it('starts a change made mid-motion from the width the rail shows', async () => {
+    render(<Shell />);
+    await toggle();
+    // 150 ms into the collapse the clip shows part of the old rail.
+    Object.defineProperty(document, 'timeline', {
+      configurable: true,
+      value: {currentTime: 1150},
+    });
+    recorded = [];
+    await toggle();
+    const reveal = animated('clipPath').find(
+      entry => !entry.element.hasAttribute('inert'),
+    );
+    const start = Number(
+      /inset\(0px ([\d.]+)px/.exec(String(reveal?.keyframes[0].clipPath))?.[1],
+    );
+    // It reveals from the shown width, not from the collapsed one.
+    expect(start).toBeGreaterThan(0);
+    expect(start).toBeLessThan(EXPANDED - COLLAPSED);
   });
 
   it('leaves the real collapsed rail and no copies once the motion ends', async () => {

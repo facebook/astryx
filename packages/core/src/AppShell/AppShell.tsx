@@ -50,6 +50,7 @@ import {useAnimatedLayout} from '../hooks/useAnimatedLayout';
 import {
   holdLayoutSwap,
   layoutMotionFor,
+  playLayoutFrames,
   playLayoutSwap,
   reportLayoutChange,
   type LayoutChange,
@@ -807,22 +808,16 @@ export function AppShell({
         ) {
           column = column.parentElement;
         }
-        if (pending.swap == null || column.parentElement == null) {
-          return () => {};
-        }
         const after = main.getBoundingClientRect();
         const isRtl = getComputedStyle(main).direction === 'rtl';
         const travel = isRtl
           ? pending.before.right - after.right
           : pending.before.left - after.left;
-        const incoming: {element: Element; frames: (p: number) => Keyframe}[] =
-          Array.from(main.children, element => ({
-            element,
-            frames: p => ({opacity: p}),
-          }));
         // An expand slides the narrower column in from its old start, which
         // opens a gap at its trailing edge: the content surface (the elevated
-        // backdrop, or the main element) reaches over it as it closes.
+        // backdrop, or the main element) reaches over it as it closes,
+        // whether or not the old wrap is held.
+        const cover: {element: Element; frames: (p: number) => Keyframe}[] = [];
         const surface = backdropRef.current ?? main;
         const color = getComputedStyle(surface).backgroundColor;
         if (
@@ -830,18 +825,27 @@ export function AppShell({
           layoutMotionFor(main).kind === 'spring' &&
           !/^rgba\(.*,\s*0\)$|^transparent$/.test(color)
         ) {
-          incoming.push({
+          cover.push({
             element: surface,
             frames: p => ({
               boxShadow: `${-travel * (1 - p)}px 0px 0px 0px ${color}`,
             }),
           });
         }
+        if (pending.swap == null || column.parentElement == null) {
+          return playLayoutFrames(contentLayout, cover);
+        }
         return playLayoutSwap(pending.swap, {
           host: column.parentElement,
           copy: p => ({opacity: 1 - p}),
           rideWith: {element: column, travel: {x: travel, y: 0}},
-          incoming,
+          incoming: [
+            ...Array.from(main.children, element => ({
+              element,
+              frames: (p: number) => ({opacity: p}),
+            })),
+            ...cover,
+          ],
         });
       },
     }),

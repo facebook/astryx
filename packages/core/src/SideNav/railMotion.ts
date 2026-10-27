@@ -21,8 +21,11 @@
  *   fades out as the real rail fades in, so the real rail, icons only, is all
  *   that remains.
  * - An expand reveals the real rail by a clip from the old width, its text
- *   fading in over the last 60% so no label shows at the collapsed width. No
- *   copy.
+ *   fading in over the last 60% so no label shows at the collapsed width,
+ *   under the old, collapsed rail held by the same swap, which fades over the
+ *   first 60%: the first frame is the frame before the click.
+ * - A change made during a running motion starts from the width the rail
+ *   shows, so the rail stays continuous.
  * - Every starting clip applies in the commit's layout effect, before the
  *   first frame paints.
  * - Under Reduce Motion it follows `design:reduced-motion`: opacity only
@@ -38,6 +41,7 @@ import {
   createAnimatedLayout,
   holdLayoutSwap,
   layoutMotionFor,
+  playLayoutFrames,
   playLayoutSwap,
   type AnimatedLayout,
   type LayoutSwap,
@@ -68,21 +72,34 @@ export function createRailLayout(
 export interface RailSnapshot {
   readonly rail: HTMLElement;
   readonly railRect: DOMRect;
-  /** The old rail, for a collapse to cover. */
+  /** The width the rail shows: its own, or a running motion's. */
+  readonly visibleWidth: number;
+  /** The old rail, held by the swap. */
   readonly swap: LayoutSwap | null;
 }
 
-/** Before the change commits: the old rail and where it was. */
+/** A playing rail motion. */
+export interface RailMotion {
+  /** Ends it at once (a new change, an unmount). */
+  end(): void;
+  /** The width the rail shows now. */
+  visibleWidth(): number;
+}
+
+/** Before the change commits: the old rail, where it was and what it shows. */
 export function snapshotRail(
   rail: HTMLElement | null,
   handle: AnimatedLayout,
+  visibleWidth: number | null,
 ): RailSnapshot | null {
   if (rail == null || typeof rail.animate !== 'function') {
     return null;
   }
+  const railRect = rail.getBoundingClientRect();
   return {
     rail,
-    railRect: rail.getBoundingClientRect(),
+    railRect,
+    visibleWidth: visibleWidth ?? railRect.width,
     swap: holdLayoutSwap(handle, rail),
   };
 }
@@ -98,52 +115,71 @@ function textElements(rail: HTMLElement): Element[] {
   );
 }
 
+const AT_REST: RailMotion = {end: () => {}, visibleWidth: () => Number.NaN};
+
 /**
  * After the change commits, before paint: play the rail's motion from the
- * snapshot. Returns what ends it at once (an unmount mid-motion).
+ * snapshot, on the module's motion.
  */
 export function playRail(
   snapshot: RailSnapshot,
   current: HTMLElement | null,
-): () => void {
-  const {railRect, swap} = snapshot;
+  handle: AnimatedLayout,
+): RailMotion {
+  const {railRect, swap, visibleWidth: from} = snapshot;
   // The rail as it is now: a resizable rail's nav remounts when its resize
   // wrapper comes and goes with the collapse.
   const rail = current?.isConnected === true ? current : snapshot.rail;
   if (!rail.isConnected) {
-    return () => {};
+    return AT_REST;
   }
   const motion = layoutMotionFor(rail);
   const next = rail.getBoundingClientRect();
-  const delta = next.width - railRect.width;
-  if (motion.kind === 'instant' || Math.abs(delta) < 0.5) {
-    return () => {};
+  if (motion.kind === 'instant' || Math.abs(next.width - from) < 0.5) {
+    return AT_REST;
   }
+  const now = () => Number(rail.ownerDocument.timeline?.currentTime ?? 0);
+  const startedAt = now();
+  const durationMs =
+    motion.kind === 'spring' ? motion.progress.durationMs : motion.durationMs;
+  const visibleWidth = () => {
+    const elapsed = now() - startedAt;
+    if (elapsed >= durationMs) {
+      // Settled: the rail shows its own width.
+      return Number.NaN;
+    }
+    const p =
+      motion.kind === 'spring' ? 1 - motion.progress.remaining(elapsed) : 0;
+    return from + (next.width - from) * p;
+  };
   const rtl = getComputedStyle(rail).direction === 'rtl';
   const inset = (px: number) =>
     rtl ? `inset(0px 0px 0px ${px}px)` : `inset(0px ${px}px 0px 0px)`;
+  // The copy keeps the rail's inline-start edge where the rail is now, so it
+  // meets the real rail wherever SideNav sits (a centered rail moves).
+  const at = DOMRect.fromRect({
+    x: rtl ? next.right - railRect.width : next.left,
+    y: next.top,
+    width: railRect.width,
+    height: railRect.height,
+  });
+  const host = rail.parentElement;
 
-  if (delta < 0) {
-    // A collapse covers the old rail, held by the swap.
-    if (swap == null || rail.parentElement == null) {
-      return () => {};
+  if (next.width < from) {
+    // A collapse covers the old rail, held by the swap, from the width it
+    // shows down to the new one.
+    if (swap == null || host == null) {
+      return AT_REST;
     }
-    // The copy keeps the rail's inline-start edge where the rail is now, so
-    // it closes onto the real rail wherever SideNav sits (a centered rail
-    // moves when it narrows).
-    const at = DOMRect.fromRect({
-      x: rtl ? next.right - railRect.width : next.left,
-      y: next.top,
-      width: railRect.width,
-      height: railRect.height,
-    });
-    return playLayoutSwap(
+    const startInset = railRect.width - from;
+    const endInset = railRect.width - next.width;
+    const end = playLayoutSwap(
       {...swap, rect: at},
       {
-        host: rail.parentElement,
+        host,
         isOpaque: true,
         copy: p => ({
-          clipPath: inset(-delta * p),
+          clipPath: inset(startInset + (endInset - startInset) * p),
           opacity: 1 - clamp((p - 0.7) / 0.3),
         }),
         copyText: p => 1 - clamp(p / 0.4),
@@ -152,62 +188,33 @@ export function playRail(
         ],
       },
     );
+    return {end, visibleWidth};
   }
 
-  // An expand reveals the real rail; the copy the snapshot held is unused.
-  const travels = motion.kind === 'spring';
-  const duration = travels ? motion.progress.durationMs : motion.durationMs;
-  const timing: KeyframeAnimationOptions = {
-    duration,
-    easing: travels ? 'linear' : motion.easing,
-    fill: 'both',
-  };
-  // Progress 0 → 1: spring-sampled frames, or two frames under a fade.
-  const frames = (frame: (p: number) => Keyframe): Keyframe[] => {
-    if (!travels) {
-      return [frame(0), frame(1)];
-    }
-    const count = Math.max(2, Math.ceil(duration / (1000 / 60)) + 1);
-    return Array.from({length: count}, (_, i) => {
-      const offset = i / (count - 1);
-      const p = 1 - motion.progress.remaining(offset * duration);
-      return {...frame(p), offset};
-    });
-  };
-  const now = rail.ownerDocument.timeline?.currentTime ?? null;
-  const animations: Animation[] = [];
-  const play = (element: Element, keyframes: Keyframe[]) => {
-    const animation = (element as HTMLElement).animate(keyframes, timing);
-    if (now != null) {
-      animation.startTime = now;
-    }
-    animations.push(animation);
-  };
-  if (travels) {
-    play(
-      rail,
-      frames(p => ({clipPath: inset(delta * (1 - p))})),
-    );
-    for (const element of textElements(rail)) {
-      play(
-        element,
-        frames(p => ({opacity: clamp((p - 0.4) / 0.6)})),
-      );
-    }
-  } else {
-    play(
-      rail,
-      frames(p => ({opacity: p})),
-    );
-  }
-  let isDone = false;
-  const end = () => {
-    if (!isDone) {
-      isDone = true;
-      animations.forEach(animation => animation.cancel());
-    }
-  };
-  // Every part runs on one clock, so the first to finish ends them all.
-  animations[0]?.addEventListener('finish', end);
-  return end;
+  // An expand reveals the real rail from the width it showed, its text fading
+  // in late, under the old, collapsed rail fading early.
+  const reveal = next.width - from;
+  const incoming = [
+    {
+      element: rail,
+      frames: (p: number) => ({clipPath: inset(reveal * (1 - p))}),
+    },
+    ...textElements(rail).map(element => ({
+      element,
+      frames: (p: number) => ({opacity: clamp((p - 0.4) / 0.6)}),
+    })),
+  ];
+  const end =
+    swap != null && host != null
+      ? playLayoutSwap(
+          {...swap, rect: at},
+          {
+            host,
+            isOpaque: true,
+            copy: p => ({opacity: 1 - clamp(p / 0.6)}),
+            incoming,
+          },
+        )
+      : playLayoutFrames(handle, incoming);
+  return {end, visibleWidth};
 }

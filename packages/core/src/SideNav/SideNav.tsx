@@ -61,6 +61,7 @@ import {
   playRail,
   snapshotRail,
   SideNavShellContext,
+  type RailMotion,
   type RailSnapshot,
 } from './railMotion';
 // =============================================================================
@@ -493,12 +494,20 @@ export function SideNav({
   const shell = use(SideNavShellContext);
   const ownLayout = useMemo(() => createRailLayout(() => navRef.current), []);
   const railSnapshotRef = useRef<RailSnapshot | null>(null);
-  const endMotionRef = useRef<(() => void) | null>(null);
+  const motionRef = useRef<{rail: RailMotion; endContent: () => void} | null>(
+    null,
+  );
   const measureRail = useCallback(() => {
-    endMotionRef.current?.();
+    // A change during a running motion starts from what the rail shows.
+    const running = motionRef.current;
+    const visible = running?.rail.visibleWidth() ?? Number.NaN;
+    running?.rail.end();
+    running?.endContent();
+    motionRef.current = null;
     railSnapshotRef.current = snapshotRail(
       shell?.rail() ?? navRef.current,
       shell?.animatedLayout ?? ownLayout,
+      Number.isFinite(visible) ? visible : null,
     );
     shell?.beforeRailChange();
   }, [shell, ownLayout]);
@@ -508,15 +517,23 @@ export function SideNav({
     if (snapshot == null) {
       return;
     }
-    const endRail = playRail(snapshot, shell?.rail() ?? navRef.current);
-    const endContent = shell?.afterRailChange() ?? (() => {});
-    endMotionRef.current = () => {
-      endRail();
-      endContent();
+    motionRef.current = {
+      rail: playRail(
+        snapshot,
+        shell?.rail() ?? navRef.current,
+        shell?.animatedLayout ?? ownLayout,
+      ),
+      endContent: shell?.afterRailChange() ?? (() => {}),
     };
-  }, [collapsed, shell]);
+  }, [collapsed, shell, ownLayout]);
   // An unmount mid-motion removes the copy at once.
-  useLayoutEffect(() => () => endMotionRef.current?.(), []);
+  useLayoutEffect(
+    () => () => {
+      motionRef.current?.rail.end();
+      motionRef.current?.endContent();
+    },
+    [],
+  );
 
   const toggle = useCallback(() => {
     const next = !collapsed;
