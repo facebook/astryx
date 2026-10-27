@@ -1779,6 +1779,49 @@ describe('DropdownMenuGroup (compound mode)', () => {
       screen.getByRole('group', {name: 'T', hidden: true}),
     );
   });
+
+  it('forwards host attributes to the group while keeping its role and heading name', () => {
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuGroup
+          title="Version history"
+          id="history-group"
+          data-testid="history"
+          data-analytics-id="menu-history"
+          aria-describedby="history-hint"
+          aria-labelledby="elsewhere"
+          // @ts-expect-error role is component-owned
+          role="presentation">
+          <DropdownMenuItem label="Restore" onClick={() => {}} />
+        </DropdownMenuGroup>
+      </DropdownMenu>,
+    );
+    const group = screen.getByTestId('history');
+    expect(group).toHaveAttribute('data-analytics-id', 'menu-history');
+    expect(group).toHaveAttribute('id', 'history-group');
+    expect(group).toHaveAttribute('aria-describedby', 'history-hint');
+    expect(group).toHaveAttribute('role', 'group');
+    // The visible title keeps naming the group.
+    expect(
+      screen.getByRole('group', {name: 'Version history', hidden: true}),
+    ).toBe(group);
+  });
+
+  it('an untitled group takes a caller-supplied accessible name', () => {
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <span id="recent-label">Recent</span>
+        <DropdownMenuGroup aria-labelledby="recent-label" data-testid="recent">
+          <DropdownMenuItem label="Only" onClick={() => {}} />
+        </DropdownMenuGroup>
+      </DropdownMenu>,
+    );
+    const group = screen.getByTestId('recent');
+    expect(group).toHaveAttribute('aria-labelledby', 'recent-label');
+    expect(screen.getByRole('group', {name: 'Recent', hidden: true})).toBe(
+      group,
+    );
+  });
 });
 
 describe('DropdownMenu dividers', () => {
