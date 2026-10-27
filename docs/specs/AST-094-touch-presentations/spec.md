@@ -465,7 +465,7 @@ outside a menu closes it.
 - **FR24 — Gesture work costs nothing where it is not used.** A component
   that uses no gesture registers no gesture listener, observer or timer, and
   while a touch presentation is disabled none is active. Under a fine pointer
-  a component that uses a gesture keeps one listener on its element and adds
+  a component that uses a gesture listens only on its own element and adds
   document listeners only during a press, removing them at the release (FR43);
   the shared press controller and the menu press model's stray-click
   swallower (`module:DropdownMenu/useMenuPress` PR2), each installed once per
