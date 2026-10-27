@@ -13,12 +13,15 @@
 import {act, render} from '@testing-library/react';
 import {StrictMode, useEffect, useRef} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import type {SelectionLock} from '../GestureRecognizer';
 import {getGestureHost} from '../GestureHost';
 import {PanGestureRecognizer} from '../PanGestureRecognizer';
 import type {ControlEvent} from '../PressTracker';
+import {lockSelection} from '../../utils/selectionLock';
 import {TapGestureRecognizer} from '../TapGestureRecognizer';
-import {useGestureRecognizer, usePressTracker} from '../useGestureRecognizer';
-import {coarsePrimaryPointer} from './harness';
+import {useGestureRecognizer} from '../useGestureRecognizer';
+import {usePressTracker} from '../usePressTracker';
+import {coarsePrimaryPointer, pointerQuery} from './pointerQuery';
 
 function touch(
   type: string,
@@ -63,7 +66,7 @@ function Draggable({
   return <div data-testid="surface" ref={ref} />;
 }
 
-// A phone: the document's host listens only where the pointer is coarse.
+// A phone: the host attaches only where the primary pointer is coarse.
 let restorePointer: () => void = () => {};
 beforeEach(() => {
   restorePointer = coarsePrimaryPointer();
@@ -210,6 +213,35 @@ describe('useGestureRecognizer', () => {
     (pan as PanGestureRecognizer | null)?.setEnabled(false);
     expect(states).toEqual(['began', 'cancelled']);
     touch('touchend', surface, {id: 6, x: 30, y: 0}, 32, true);
+  });
+
+  it("attaches a recognizer that reads each event's pointer where the primary pointer is fine (spec:AST-057)", () => {
+    const pointer = pointerQuery(false);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const onPan = vi.fn();
+      function Swipe() {
+        const ref = useRef<HTMLDivElement>(null);
+        useGestureRecognizer(
+          ref,
+          () => new PanGestureRecognizer({direction: 'horizontal'}),
+          onPan,
+          {perEventPointer: true},
+        );
+        return <div data-testid="surface" ref={ref} />;
+      }
+      const {getByTestId, unmount} = render(<Swipe />);
+      const surface = getByTestId('surface');
+      touch('touchstart', surface, {id: 9, x: 0, y: 0}, 0);
+      touch('touchmove', surface, {id: 9, x: 30, y: 0}, 16);
+      expect(onPan).toHaveBeenCalled();
+      touch('touchend', surface, {id: 9, x: 30, y: 0}, 32, true);
+      unmount();
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+      pointer.restore();
+    }
   });
 
   it('reports a recognizer that required the disabled one to fail after the isEnabled Effect, not inside it, in its recognized state (react-component-runtime INV2)', async () => {
@@ -428,11 +460,13 @@ function Button({
   onEvent,
   cancelTravel,
   isBraking,
+  selectionLock,
   isDisabled = false,
 }: {
   onEvent: (event: ControlEvent) => void;
   cancelTravel?: number;
   isBraking?: () => boolean;
+  selectionLock?: SelectionLock;
   isDisabled?: boolean;
 }) {
   const ref = useRef<HTMLButtonElement>(null);
@@ -440,6 +474,7 @@ function Button({
     onControlEvent: event => onEvent(event),
     cancelTravel,
     isBraking,
+    selectionLock,
     isEnabled: () => !isDisabled,
   });
   return (
@@ -451,8 +486,9 @@ function Button({
 
 describe('usePressTracker', () => {
   it('gives the host no listener while the control is disabled (FR24)', () => {
-    const add = vi.spyOn(document, 'addEventListener');
-    const remove = vi.spyOn(document, 'removeEventListener');
+    // The host listens through the window's input stream (utils/inputStream).
+    const add = vi.spyOn(window, 'addEventListener');
+    const remove = vi.spyOn(window, 'removeEventListener');
     const {rerender, unmount} = render(
       <Button onEvent={() => {}} isDisabled />,
     );
@@ -530,6 +566,24 @@ describe('usePressTracker', () => {
     expect(events).toEqual(['touchDown', 'touchUpInside']);
   });
 
+  it('locks selection and the callout for each press of a control whose hold acts, given the lock (spec:AST-094 FR41)', () => {
+    const {getByTestId} = render(
+      <Button onEvent={() => {}} selectionLock={lockSelection} />,
+    );
+    const button = getByTestId('button');
+    // Where iOS WebKit does not run, the lock refuses a selection by
+    // cancelling selectstart (jsdom has no touch callout).
+    const refuses = () => {
+      const event = new Event('selectstart', {bubbles: true, cancelable: true});
+      button.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    touch('touchstart', button, {id: 3, x: 1, y: 1}, 0);
+    expect(refuses()).toBe(true);
+    touch('touchend', button, {id: 3, x: 1, y: 1}, 50, true);
+    expect(refuses()).toBe(false);
+  });
+
   it('takes an option changed after mount from the next touch', () => {
     const events: ControlEvent[] = [];
     const {getByTestId, rerender} = render(
@@ -565,6 +619,70 @@ describe('usePressTracker', () => {
     unmount();
     expect(highlights).toEqual(seenHighlights);
     expect(events).toEqual(seenEvents);
+  });
+
+  it('attaches a per-event press tracker where the primary pointer is fine, which takes no mouse press there, beside one that stays inactive', () => {
+    const pointer = pointerQuery(false);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const held: ControlEvent[] = [];
+      const inactive: ControlEvent[] = [];
+      function Stepper({
+        events,
+        perEventPointer,
+        testId,
+      }: {
+        events: ControlEvent[];
+        perEventPointer: boolean;
+        testId: string;
+      }) {
+        const ref = useRef<HTMLButtonElement>(null);
+        usePressTracker(ref, {
+          onControlEvent: event => events.push(event),
+          perEventPointer,
+        });
+        return (
+          <button data-testid={testId} ref={ref} type="button">
+            +
+          </button>
+        );
+      }
+      const {getByTestId} = render(
+        <>
+          <Stepper events={held} perEventPointer testId="held" />
+          <Stepper events={inactive} perEventPointer={false} testId="other" />
+        </>,
+      );
+      const mouse = (type: string, target: Element, id: number) => {
+        const event = new PointerEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          pointerId: id,
+          pointerType: 'mouse',
+          clientX: 5,
+          clientY: 5,
+          button: 0,
+          buttons: type === 'pointerdown' ? 1 : 0,
+        });
+        target.dispatchEvent(event);
+      };
+      const stepper = getByTestId('held');
+      boundsOf(stepper, 44, 44);
+      mouse('pointerdown', stepper, 1);
+      mouse('pointerup', stepper, 1);
+      // Its press feedback is for a finger (spec:AST-094 FR19): a mouse
+      // keeps the desktop's handling.
+      expect(held).toEqual([]);
+      const other = getByTestId('other');
+      boundsOf(other, 44, 44);
+      mouse('pointerdown', other, 2);
+      mouse('pointerup', other, 2);
+      expect(inactive).toEqual([]);
+    } finally {
+      warn.mockRestore();
+      pointer.restore();
+    }
   });
 
   it('passes isBraking through to the tracker', () => {
