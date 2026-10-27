@@ -125,11 +125,22 @@ const fades = () =>
     keyframes.some(frame => frame.opacity !== undefined),
   );
 
+/** Whether a recorded animation moves the element (FR2: no travel). */
+const travels = () =>
+  recorded.some(({keyframes}) => {
+    const values = keyframes
+      .map(frame => frame.translate)
+      .filter(value => value !== undefined);
+    return new Set(values).size > 1;
+  });
+
 describe('the release under Reduce Motion on a fine pointer (DR2, DR3)', () => {
   it('a touch drag\u2019s release cross-fades into the snap point', async () => {
     const {onSettle} = drawer();
     release(300, 0, 'touch');
     expect(fades()).toBe(true);
+    // It goes to its snap point without travel.
+    expect(travels()).toBe(false);
     await vi.advanceTimersByTimeAsync(1000);
     expect(onSettle).toHaveBeenCalledWith(1);
   });
