@@ -31,7 +31,8 @@ deciding_specs: []
 
 A person who asks their device to reduce motion still sees every change Astryx
 shows, with no travel, scaling, or springing. On a touch screen a change
-cross-fades, as iOS does with Reduce Motion and Prefer Cross-Fade; with a mouse,
+cross-fades, as iOS does with Reduce Motion and Prefer Cross-Fade, except an
+in-place value change, which applies at once; with a mouse,
 trackpad, or keyboard the change is immediate.
 
 ## Design principles
@@ -53,11 +54,11 @@ trackpad, or keyboard the change is immediate.
 
 ## State representation
 
-| State                             | Required representation                                     | Allowed variation          |
-| --------------------------------- | ----------------------------------------------------------- | -------------------------- |
-| reduced motion, coarse pointer    | Opacity-only cross-fade of 200 ms or less (DR2)             | A shorter cross-fade       |
-| reduced motion, any other pointer | Immediate change (DR3), except a touch drag's release (DR2) | None                       |
-| no reduced-motion preference      | Outside this record                                         | Component and theme motion |
+| State                             | Required representation                                                                         | Allowed variation          |
+| --------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------- |
+| reduced motion, coarse pointer    | Opacity-only cross-fade of 200 ms or less (DR2); an in-place value change applies at once (DR2) | A shorter cross-fade       |
+| reduced motion, any other pointer | Immediate change (DR3), except a touch drag's release (DR2)                                     | None                       |
+| no reduced-motion preference      | Outside this record                                                                             | Component and theme motion |
 
 ## Responsive and input behavior
 
