@@ -1563,6 +1563,91 @@ describe('useSheetGestures', () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
+  describe('wheel and trackpad scrolling on the body (spec:AST-094 FR43)', () => {
+    // A pan takes wheel and trackpad scrolling it allows, as a contact moving
+    // with the content, once every scroller under the pointer is at its edge
+    // that way, and ends 100 ms after the last wheel.
+    function wheelOn(
+      target: EventTarget,
+      dy: number,
+      time: number,
+      mode: number = WheelEvent.DOM_DELTA_PIXEL,
+    ): WheelEvent {
+      const event = new WheelEvent('wheel', {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        clientX: 50,
+        clientY: 300,
+        deltaY: dy,
+        deltaMode: mode,
+      });
+      Object.defineProperty(event, 'timeStamp', {value: timeBase + time});
+      act(() => {
+        target.dispatchEvent(event);
+      });
+      return event;
+    }
+    function scrollUp(target: EventTarget, mode?: number): void {
+      for (let i = 0; i < 8; i += 1) {
+        wheelOn(target, -12, i * 16, mode);
+      }
+    }
+
+    it('a trackpad scrolling up at the content top pulls the sheet down, and the sheet settles once the scrolling stops', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const body = makeScroller({
+        scrollTop: 0,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      attach(hook, sheetOf(body));
+      scrollUp(body);
+      expect(hook.result.current.isDragging).toBe(true);
+      expect(liveOffset(hook)).toBeGreaterThan(0);
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+      expect(hook.result.current.isDragging).toBe(false);
+      // A short pull: the release puts it back on its detent.
+      land();
+      expect(liveOffset(hook)).toBe(0);
+      expect(travel(sheetOf(body))).toBeCloseTo(0, 0);
+    });
+
+    it("a mouse wheel's notches at the content top pull it too", () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const body = makeScroller({
+        scrollTop: 0,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      attach(hook, sheetOf(body));
+      scrollUp(body, WheelEvent.DOM_DELTA_LINE);
+      expect(hook.result.current.isDragging).toBe(true);
+    });
+
+    it('leaves the scrolling to content that can still scroll that way', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const body = makeScroller({
+        scrollTop: 300,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      attach(hook, sheetOf(body));
+      scrollUp(body);
+      expect(hook.result.current.isDragging).toBe(false);
+    });
+
+    it('takes no wheel on the handle', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      attach(hook, t);
+      scrollUp(handleOf(t));
+      expect(hook.result.current.isDragging).toBe(false);
+    });
+  });
+
   describe('body overscroll', () => {
     // A mouse on the scrolling body (the pointer path, spec:AST-017 FR59): a
     // pull down where nothing under the pointer can scroll up drags the sheet

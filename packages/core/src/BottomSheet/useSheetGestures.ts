@@ -2110,6 +2110,15 @@ export function useSheetGestures({
   );
   const notePointer = useCallback(
     (recognizer: GestureRecognizer, touch: GestureTouch): boolean => {
+      // Wheel and trackpad scrolling drive the body's pans on every primary
+      // pointer, as a mouse would drag them (spec:AST-094 FR43).
+      if (touch.scrollType != null) {
+        if (pointerDragRef.current != null) {
+          return false;
+        }
+        pointerKinds.set(recognizer, touch.pointerType);
+        return true;
+      }
       // The recognizers serve a finger, and a pen, where the primary pointer
       // is coarse (spec:AST-094 FR19); a mouse, and anything where it is
       // fine, take the pointer path below (spec:AST-017 FR59).
@@ -2223,6 +2232,9 @@ export function useSheetGestures({
         direction: 'down',
         maximumNumberOfTouches: 1,
         allowedPointerTypes: ['touch', 'pen'],
+        // A trackpad or a mouse wheel scrolling up at the content's top pulls
+        // too (spec:AST-094 FR43).
+        allowedScrollTypes: ['continuous', 'discrete'],
         scrollEdge: true,
         shouldBegin: canBegin,
         shouldReceiveTouch: notePointer,
@@ -2242,6 +2254,7 @@ export function useSheetGestures({
         direction: 'up',
         maximumNumberOfTouches: 1,
         allowedPointerTypes: ['touch', 'pen'],
+        allowedScrollTypes: ['continuous', 'discrete'],
         scrollEdge: true,
         shouldBegin: () => canBegin() && activeOffsetRef.current > 0,
         shouldReceiveTouch: notePointer,

@@ -66,6 +66,8 @@ import {
   withStorybook,
   waitForAnimation,
   waitForRest,
+  webInputDriver,
+  WHEEL_SKIP,
   writeEvidence,
   type CastFrame,
   type InputRecord,
@@ -1433,3 +1435,70 @@ for (const idiom of ['ios', 'android'] as const) {
     expect(await sheetTop(sheet)).toBeCloseTo(halfTop, 0);
   });
 }
+
+// On the web the body's pans also take wheel and trackpad scrolling, after
+// the content under the pointer has scrolled to its edge; the handle takes
+// none (spec:AST-094 FR43).
+test.describe('wheel and trackpad scrolling on the web (spec:AST-094 FR43)', () => {
+  async function openWithMouse(page: Page): Promise<Locator> {
+    await openStory(page, storybook(), 'core-bottomsheet--snap-points');
+    await page.getByRole('button', {name: 'Open nearby places'}).click();
+    const sheet = page
+      .getByRole('dialog', {name: 'Nearby places'})
+      .locator('.astryx-bottom-sheet')
+      .first();
+    await expect(sheet).toBeVisible();
+    await waitForRest(sheet);
+    return sheet;
+  }
+
+  test('a trackpad scrolling up at the content top pulls the sheet down, and the sheet comes to rest once the scrolling stops', async ({
+    page,
+  }) => {
+    const driver = await webInputDriver(page);
+    test.skip(!driver.wheels, WHEEL_SKIP);
+    const sheet = await openWithMouse(page);
+    const rect = await sheet.boundingBox();
+    if (rect == null) {
+      throw new Error('no sheet');
+    }
+    const top = rect.y;
+    const overBody = {x: rect.x + rect.width / 2, y: rect.y + 160};
+    for (let step = 0; step < 6; step += 1) {
+      await driver.wheel({...overBody, dy: -15});
+    }
+    expect(await sheetTop(sheet)).toBeGreaterThan(top + 20);
+    // The pull ends 100 ms after its last wheel; the release runs from there.
+    await page.waitForTimeout(200);
+    await waitForRest(sheet);
+    // The release puts it on a detent, the tall one or the half-viewport one
+    // (snapPoints={[0.5]}), as a drag's release does.
+    const viewport = page.viewportSize();
+    if (viewport == null) {
+      throw new Error('no viewport');
+    }
+    const rest = await sheetTop(sheet);
+    expect(
+      Math.min(Math.abs(rest - top), Math.abs(rest - viewport.height * 0.5)),
+    ).toBeLessThan(1);
+  });
+
+  test('a wheel over the handle leaves the sheet where it is', async ({
+    page,
+  }) => {
+    const driver = await webInputDriver(page);
+    test.skip(!driver.wheels, WHEEL_SKIP);
+    const sheet = await openWithMouse(page);
+    const rect = await sheet.boundingBox();
+    if (rect == null) {
+      throw new Error('no sheet');
+    }
+    const top = rect.y;
+    const overHandle = {x: rect.x + rect.width / 2, y: rect.y + 12};
+    for (let step = 0; step < 6; step += 1) {
+      await driver.wheel({...overHandle, dy: -15});
+    }
+    await page.waitForTimeout(300);
+    expect(Math.abs((await sheetTop(sheet)) - top)).toBeLessThan(1);
+  });
+});
