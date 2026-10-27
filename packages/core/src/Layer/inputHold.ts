@@ -49,17 +49,15 @@
  * gesture host hears it; a touch's start is never canceled (that would cancel
  * a pinch too), and a move is canceled, so that it pans nothing, only while
  * one finger is down. A click a key or assistive technology sends (`detail`
- * 0) passes. During a presentation a mouse passes too: the shield takes no
- * hits from the start when a mouse is the page's latest pointer (from a
- * document's first hold on, its pointers are watched, between holds too),
- * and stops taking them once a mouse moves, and the gesture host's gate lets
- * a mouse through; a finger's press makes the shield take hits again (a
- * finger that lands while it does not is captured to it, so its release
- * stays the hold's and a light-dismissing layer stays open). Nothing watches
- * a document's pointers before its first hold, so in the first layer a page
- * holds, a mouse press made before any movement still meets the shield. A
- * dismissal's shield takes every hit, a mouse's included: its content is
- * inert, and a click would fall through it to the page.
+ * 0) passes. During a presentation a mouse passes too: once a mouse moves,
+ * the shield stops taking hits and the gesture host's gate lets it through,
+ * and a finger's press makes the shield take hits again (a finger that lands
+ * while it does not is captured to it, so its release stays the hold's and a
+ * light-dismissing layer stays open). Nothing listens while nothing is held
+ * (spec:AST-094 FR24), so a hold cannot know a pointer used before it began:
+ * a mouse press made before the mouse has moved during the hold still meets
+ * the shield. A dismissal's shield takes every hit, a mouse's included: its
+ * content is inert, and a click would fall through it to the page.
  *
  * The shield sets its own `pointer-events` and `visibility`, so a layer root
  * that takes no hits itself (its content or a backdrop child opts back in)
@@ -75,10 +73,13 @@
  * when the last one ends (when what ends it settles, resolved or rejected;
  * when its release runs; on unmount, for the hook). Nothing is written to
  * the DOM but the shield and the content's `inert` attribute; the host
- * learns through one touch gate per document that asks whether the target is
- * in a held layer, walking the flat tree as it does (a slotted node to its
- * slot, a shadow root to its host), for that event's pointer. A layer that
- * leaves the document holds nothing more.
+ * learns through a touch gate that asks whether the target is in a held
+ * layer, walking the flat tree as it does (a slotted node to its slot, a
+ * shadow root to its host), for that event's pointer. While any of its
+ * layers is held, a document has one gate and one set of window listeners,
+ * however many layers are held; the gate goes when its last hold ends, and
+ * the listeners once the presses they hold have ended (spec:AST-094 FR24). A
+ * layer that leaves the document holds nothing more.
  *
  * SYNC: When modified, update inputHold.test.tsx,
  * __tests__/inputHold.interaction.browser.spec.ts and the components
@@ -109,14 +110,29 @@ interface HeldLayer {
   shield: HTMLElement | null;
   /** The content a dismissal made inert, and whether each was already. */
   inertContent: Map<Element, boolean> | null;
-  /** Ends the holding of new presses; held ones are followed to their end. */
-  releasePresses: (() => void) | null;
+}
+
+/** A document while any of its layers is held. */
+interface HeldDocument {
+  /** Its held layers, oldest first. */
+  readonly layers: Set<Element>;
+  /** Removes the gesture host's gate. */
+  readonly releaseGate: () => void;
+}
+
+/** A document's press hold, while its window listeners are on. */
+interface PressHold {
+  /** New presses are held again (a layer is held). */
+  hold: () => void;
+  /** No new press is held; held ones are followed to their end. */
+  release: () => void;
 }
 
 const held = new WeakMap<Element, HeldLayer>();
-const gatedDocuments = new WeakSet<Document>();
+const heldDocuments = new WeakMap<Document, HeldDocument>();
+const pressHolds = new WeakMap<Document, PressHold>();
 const liveShields = new WeakSet<Node>();
-/** The pointer of the latest pointer event a hold saw, by document. */
+/** The latest pointer heard while the document's layers are held. */
 const latestPointer = new WeakMap<Document, string>();
 
 /**
@@ -170,32 +186,56 @@ function holdsTarget(target: Node): boolean {
 }
 
 /**
- * One gate per document: the host holds a held layer's touches away. With it,
- * from the document's first hold on, a passive watch of its pointers keeps
- * the latest one, between holds too, so a layer a mouse opens knows it.
+ * Starts holding `layer`. A document's first held layer registers the
+ * gesture host's gate and turns its press hold's window listeners on: once
+ * per document however many layers are held (spec:AST-094 FR24). Nothing is
+ * remembered from before: a pointer used while nothing was held went
+ * unheard.
  */
-function gate(doc: Document): void {
-  if (gatedDocuments.has(doc)) {
-    return;
+function startHolding(layer: Element): void {
+  const doc = layer.ownerDocument;
+  let state = heldDocuments.get(doc);
+  if (state == null) {
+    state = {
+      layers: new Set(),
+      releaseGate: getGestureHost(doc).addTouchGate(holdsTarget),
+    };
+    heldDocuments.set(doc, state);
   }
-  gatedDocuments.add(doc);
-  getGestureHost(doc).addTouchGate(holdsTarget);
-  const watchPointer = (event: Event) => {
-    const {pointerType} = event as PointerEvent;
-    if (
-      pointerType === 'mouse' ||
-      pointerType === 'touch' ||
-      pointerType === 'pen'
-    ) {
-      latestPointer.set(doc, pointerType);
+  state.layers.add(layer);
+  pressHoldFor(doc)?.hold();
+}
+
+/** Stops holding `layer`; after the document's last one, ends its holding. */
+function stopHolding(layer: Element): void {
+  heldDocuments.get(layer.ownerDocument)?.layers.delete(layer);
+  liveLayers(layer.ownerDocument);
+}
+
+/**
+ * The document's held layers still in it, oldest first: a layer that has left
+ * the document holds nothing more. When none is left, the gesture host's gate
+ * goes and the press hold stops holding new presses, its listeners going once
+ * the presses it holds have ended (spec:AST-094 FR24).
+ */
+function liveLayers(doc: Document): Element[] {
+  const state = heldDocuments.get(doc);
+  if (state == null) {
+    return [];
+  }
+  for (const layer of state.layers) {
+    if (!layer.isConnected) {
+      state.layers.delete(layer);
     }
-  };
-  for (const type of ['pointerdown', 'pointermove'] as const) {
-    doc.defaultView?.addEventListener(type, watchPointer, {
-      capture: true,
-      passive: true,
-    });
   }
+  if (state.layers.size > 0) {
+    return [...state.layers];
+  }
+  heldDocuments.delete(doc);
+  latestPointer.delete(doc);
+  state.releaseGate();
+  pressHolds.get(doc)?.release();
+  return [];
 }
 
 const SWALLOWED = [
@@ -269,22 +309,16 @@ export function holdInput(
   layer: Element,
   {until, scope}: InputHoldOptions,
 ): () => void {
-  gate(layer.ownerDocument);
   let state = held.get(layer);
   if (state == null) {
-    state = {
-      viewport: 0,
-      layer: 0,
-      shield: null,
-      inertContent: null,
-      releasePresses: null,
-    };
+    state = {viewport: 0, layer: 0, shield: null, inertContent: null};
     held.set(layer, state);
   }
+  startHolding(layer);
   if (state.shield == null) {
     state.shield = addShield(layer);
-    // A presentation a mouse opened lets it through from the start, its
-    // press before any movement included.
+    // A presentation held while a mouse is the latest pointer heard lets it
+    // through from the start.
     if (
       scope === 'viewport' &&
       latestPointer.get(layer.ownerDocument) === 'mouse'
@@ -292,7 +326,6 @@ export function holdInput(
       state.shield.style.pointerEvents = 'none';
     }
   }
-  state.releasePresses ??= holdPresses(layer);
   if (scope === 'viewport') {
     state.viewport += 1;
   } else {
@@ -327,8 +360,8 @@ export function holdInput(
         liveShields.delete(current.shield);
         current.shield.remove();
       }
-      current.releasePresses?.();
       held.delete(layer);
+      stopHolding(layer);
     }
   };
   const end = 'finished' in until ? until.finished : until;
@@ -371,15 +404,25 @@ const PRESS_EVENTS = [
 
 const WINDOW_LISTENER = {capture: true, passive: false} as const;
 
+/** The document's press hold, turned on if it is off. */
+function pressHoldFor(doc: Document): PressHold | null {
+  let hold = pressHolds.get(doc) ?? null;
+  if (hold == null) {
+    hold = createPressHold(doc);
+    if (hold != null) {
+      pressHolds.set(doc, hold);
+    }
+  }
+  return hold;
+}
+
 /**
- * Holds every press of a finger or a pen that lands in `layer`'s window
- * while `layer` is held, each to its own end, and lets a moving mouse
- * through a presentation's shield. Returns the release: no new press is held
- * after it, and the listeners go once the held presses and their clicks have
- * ended.
+ * Holds every press of a finger or a pen that lands in `doc`'s window while
+ * any of its layers is held, each to its own end, and lets a moving mouse
+ * through a presentation's shield. One per document; its listeners go once
+ * nothing is held and the held presses and their clicks have ended.
  */
-function holdPresses(layer: Element): (() => void) | null {
-  const doc = layer.ownerDocument;
+function createPressHold(doc: Document): PressHold | null {
   const view = doc.defaultView;
   if (view == null) {
     return null;
@@ -426,11 +469,10 @@ function holdPresses(layer: Element): (() => void) | null {
     }
   };
 
-  /** A layer that has left the document holds nothing more. */
+  /** Whether a layer is still held (one that left the document is not). */
   const holdsNewPress = () => {
-    if (isHolding && !layer.isConnected) {
-      isHolding = false;
-      settle();
+    if (isHolding) {
+      liveLayers(doc);
     }
     return isHolding;
   };
@@ -440,16 +482,19 @@ function holdPresses(layer: Element): (() => void) | null {
     settle();
   };
 
-  /** The shield takes hits for a finger or a pen, not for a moving mouse. */
+  /** A shield takes hits for a finger or a pen, not for a moving mouse. */
   const followPointer = (pointerType: string) => {
-    const state = held.get(layer);
-    if (state?.shield == null) {
-      return;
-    }
-    const value =
-      pointerType === 'mouse' && state.layer === 0 ? 'none' : 'auto';
-    if (state.shield.style.pointerEvents !== value) {
-      state.shield.style.pointerEvents = value;
+    latestPointer.set(doc, pointerType);
+    for (const layer of liveLayers(doc)) {
+      const state = held.get(layer);
+      if (state?.shield == null) {
+        continue;
+      }
+      const value =
+        pointerType === 'mouse' && state.layer === 0 ? 'none' : 'auto';
+      if (state.shield.style.pointerEvents !== value) {
+        state.shield.style.pointerEvents = value;
+      }
     }
   };
 
@@ -459,8 +504,9 @@ function holdPresses(layer: Element): (() => void) | null {
    * layer stays open.
    */
   const captureToShield = (event: PointerEvent) => {
-    const shield = held.get(layer)?.shield;
-    if (shield == null || event.target === shield) {
+    const top = liveLayers(doc).at(-1);
+    const shield = top == null ? null : held.get(top)?.shield;
+    if (shield == null || isInputShield(event.target as Node | null)) {
       return;
     }
     try {
@@ -473,9 +519,9 @@ function holdPresses(layer: Element): (() => void) | null {
   const onPointer = (event: Event) => {
     const {pointerId, pointerType, type} = event as PointerEvent;
     if (
-      isHolding &&
       (type === 'pointermove' || type === 'pointerdown') &&
-      (pointerType === 'mouse' || HELD_POINTERS.has(pointerType))
+      (pointerType === 'mouse' || HELD_POINTERS.has(pointerType)) &&
+      holdsNewPress()
     ) {
       followPointer(pointerType);
     }
@@ -579,6 +625,9 @@ function holdPresses(layer: Element): (() => void) | null {
       return;
     }
     isListening = false;
+    if (pressHolds.get(doc) === pressHold) {
+      pressHolds.delete(doc);
+    }
     if (timer !== undefined) {
       clearTimeout(timer);
     }
@@ -603,13 +652,23 @@ function holdPresses(layer: Element): (() => void) | null {
     view.addEventListener(type, onPress, WINDOW_LISTENER);
   }
 
-  return () => {
-    if (!isHolding) {
-      return;
-    }
-    isHolding = false;
-    settle();
+  const pressHold: PressHold = {
+    hold() {
+      isHolding = true;
+      if (timer !== undefined) {
+        clearTimeout(timer);
+        timer = undefined;
+      }
+    },
+    release() {
+      if (!isHolding) {
+        return;
+      }
+      isHolding = false;
+      settle();
+    },
   };
+  return pressHold;
 }
 
 /**

@@ -222,40 +222,6 @@ test("a mouse clicks a held light-dismissing popover's action, and a click outsi
   expect((await readLog(page)).clicks).toEqual(['popAction', 'under']);
 });
 
-test("once the page has held input, a layer that opens under a resting mouse takes the mouse's press before any movement, as with no hold, while a finger's tap on it is still held (spec:AST-094 FR35)", async ({
-  page,
-}) => {
-  const driver = await load(page);
-  // The page's first hold: from it on, the hold hears the page's pointers.
-  await open(page, 'dialog');
-  await hold(page, 'dialog', 'viewport');
-  await release(page);
-  await page.evaluate(() => {
-    (document.getElementById('dialog') as HTMLDialogElement).close();
-  });
-  // Where the popover's action appears: the mouse rests there before it
-  // opens.
-  await open(page, 'pop');
-  const action = await centre(page, 'popAction');
-  await page.evaluate(() => {
-    document.getElementById('pop')?.hidePopover();
-  });
-  await page.mouse.move(action.x - 40, action.y);
-  await page.mouse.move(action.x, action.y, {steps: 4});
-  await open(page, 'pop');
-  await hold(page, 'pop', 'viewport');
-  // The mouse presses without moving: the press reaches the action.
-  await page.mouse.down();
-  await page.mouse.up();
-  await expect
-    .poll(async () => (await readLog(page)).clicks)
-    .toEqual(['popAction']);
-  // A finger's tap on the action is still held.
-  await driver.tap(action);
-  await settle(page);
-  expect((await readLog(page)).clicks).toEqual(['popAction']);
-});
-
 test('a touch that lands during a hold and lifts after its release reaches nothing to its end: no release, end or click lands anywhere, and the next tap clicks (spec:AST-094 FR35)', async ({
   page,
 }) => {
