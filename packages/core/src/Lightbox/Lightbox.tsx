@@ -160,11 +160,12 @@ export interface LightboxProps extends BaseProps<HTMLDialogElement> {
   hasAutoPlay?: boolean;
   /**
    * Experimental options: anything in this object may change or be removed in
-   * a patch release, and omitting it keeps the stable behavior. `sourceFor`
-   * returns the element an item opens from and closes into, usually its
-   * thumbnail: on a touch screen the photo zooms out of it on open and back
-   * into it on close (UIKit's zoom transition), and a photo dragged down lands
-   * in it. It returns null for an item with none on screen.
+   * a patch release. `sourceFor` returns the element an item opens from and
+   * closes into, usually its thumbnail: on a touch screen the photo zooms out
+   * of it on open and back into it on close (UIKit's zoom transition), and a
+   * photo dragged down lands in it. It returns null for an item with none on
+   * screen. Without it, on a touch screen the element that opened the viewer
+   * is the opened item's source when it shows a picture.
    * @experimental
    */
   experimental?: LightboxExperimentalOptions;
@@ -803,6 +804,11 @@ export function Lightbox({
   };
   // The photo was dismissed: the viewer closes without zooming.
   const dismissedRef = useRef(false);
+  // A dismissed photo still leaving or landing: the close waits for it.
+  const dismissLandingRef = useRef<{
+    landing: Promise<void>;
+    resolve: () => void;
+  } | null>(null);
   // Set when a dismissal has asked the caller to close; the next render
   // (one more is asked for) reads the caller's answer.
   const dismissalAnsweredRef = useRef(false);
@@ -908,6 +914,11 @@ export function Lightbox({
       onRelease: dismisses => {
         if (dismisses) {
           dismissedRef.current = true;
+          let resolve = () => {};
+          const landing = new Promise<void>(done => {
+            resolve = done;
+          });
+          dismissLandingRef.current = {landing, resolve};
           // A photo shrinking into its thumbnail lands on the thumbnail's
           // picture, which fades in over it while the cell stays hidden.
           const source = sourceElementFor(index);
@@ -957,14 +968,20 @@ export function Lightbox({
             setBackdropMoving(false);
           }
         });
+        if (dismisses) {
+          // The release decides the close and reports it from here, the
+          // handler that caused it (architecture:react-component-runtime
+          // INV2); the viewer stays until the photo has left or landed. A
+          // caller may keep it open (the close is its call): the render after
+          // its answer brings the photo, the backdrop and the controls back.
+          handleClose();
+          dismissalAnsweredRef.current = true;
+          renderAfterDismissal();
+        }
       },
       onDismissed: () => {
-        handleClose();
-        // A caller may keep the viewer open (the close is its call): the
-        // render after its answer brings the photo, the backdrop and the
-        // controls back rather than leave an open, invisible dialog.
-        dismissalAnsweredRef.current = true;
-        renderAfterDismissal();
+        // The photo has left or landed: the close it reported can end.
+        dismissLandingRef.current?.resolve();
       },
     },
   });
@@ -1048,6 +1065,7 @@ export function Lightbox({
       // A close still landing is called off: the viewer stays.
       closeTokenRef.current += 1;
       dismissedRef.current = false;
+      dismissLandingRef.current = null;
       restoreLanded();
       if (restoreFaded()) {
         now.stage.rest();
@@ -1065,7 +1083,7 @@ export function Lightbox({
       openerRef.current =
         activation != null &&
         activation.target.isConnected &&
-        performance.now() - activation.time < 1000
+        Date.now() - activation.time < 1000
           ? (activation.target.closest('button, a') ?? activation.target)
           : document.activeElement;
       openedIndexRef.current = now.index;
@@ -1183,6 +1201,7 @@ export function Lightbox({
     const finish = () => {
       restoreLanded();
       dismissedRef.current = false;
+      dismissLandingRef.current = null;
       dialog.close();
       if (restoreFaded()) {
         now.stage.rest();
@@ -1191,7 +1210,20 @@ export function Lightbox({
         triggerElementRef.current.focus();
       }
     };
-    // A dismissed photo has already landed (or left): close now.
+    // A dismissed photo still leaving or landing: the viewer closes once it
+    // has (the release reported the close).
+    const landing = dismissedRef.current
+      ? dismissLandingRef.current?.landing
+      : undefined;
+    if (landing != null) {
+      const token = ++closeTokenRef.current;
+      void landing.then(() => {
+        if (closeTokenRef.current === token) {
+          finish();
+        }
+      });
+      return;
+    }
     const container = containerRef.current;
     const source =
       !dismissedRef.current && now.isImage && now.isTouch
@@ -1233,7 +1265,9 @@ export function Lightbox({
     }
     dismissalAnsweredRef.current = false;
     if (isOpen) {
+      // Kept open: the landing is called off.
       dismissedRef.current = false;
+      dismissLandingRef.current = null;
       restoreLanded();
       stage.rest();
       restoreFaded();

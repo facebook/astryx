@@ -4,68 +4,57 @@
 
 /**
  * @file openerActivation.ts
- * @input The document's click events, captured while a viewer on a touch
- *   screen is closed
- * @output useOpenerActivation and takeOpenerActivation: the element whose
- *   click opened a viewer, the zoom transition's source fallback
- * @position Lightbox's opener record, one listener for every viewer
+ * @input The shared touch press controller's last touch landing
+ * @output useOpenerActivation and takeOpenerActivation: the element whose tap
+ *   opened a viewer, the zoom transition's source fallback
+ * @position Lightbox's opener record, read from the shared press controller
  *
- * A click or a tap on the element that opens a viewer (which a plain image,
- * or a button in Safari, does not focus) is recorded by one capture-phase
- * listener on the document, shared by every closed viewer on a touch screen
- * and removed, with the record, when the last of them goes. Where the primary pointer is fine
- * there is none: only the touch presentation's zoom transition reads the
- * opener (spec:AST-094 FR24).
+ * A tap on the element that opens a viewer (which a plain image, or a button
+ * in Safari, does not focus) is where a finger last landed. The touch press
+ * controller, installed once per page however many surfaces hold it, already
+ * watches every landing; a closed viewer on a touch screen holds it and reads
+ * that landing rather than listening to the document itself
+ * (spec:AST-094 FR24). Where the primary pointer is fine nothing is held:
+ * only the touch presentation's zoom transition reads the opener.
  *
- * SYNC: When modified, update Lightbox.tsx and Lightbox.test.tsx.
+ * SYNC: When modified, update Lightbox.tsx and openerActivation.test.ts.
  */
 
 import {useEffect} from 'react';
+import {installPressFeedback, lastTouchLanding} from '../utils/pressFeedback';
 
 export interface OpenerActivation {
-  /** The element the click or tap landed on. */
+  /** The element the finger landed on. */
   readonly target: Element;
-  /** The event's time stamp (the `performance.now()` clock). */
+  /** When it landed (the `Date.now()` clock). */
   readonly time: number;
 }
 
-let lastActivation: OpenerActivation | null = null;
-let users = 0;
-
-function recordOpenerActivation(event: Event): void {
-  if (event.target instanceof Element) {
-    lastActivation = {target: event.target, time: event.timeStamp};
-  }
-}
+/** The landing taken last: one landing opens one viewer. */
+let taken = -1;
 
 /**
- * Records the activation that opens a viewer while `isEnabled`, a closed
- * viewer under the touch presentation: the first such viewer adds the one
- * listener, the last one to go removes it.
+ * Holds the shared touch press controller while `isEnabled`, a closed viewer
+ * under the touch presentation; the last holder to go uninstalls it, and the
+ * landing it recorded goes with it.
  */
 export function useOpenerActivation(isEnabled: boolean): void {
-  useEffect(() => {
-    if (!isEnabled) {
-      return undefined;
-    }
-    if (users === 0) {
-      document.addEventListener('click', recordOpenerActivation, true);
-    }
-    users += 1;
-    return () => {
-      users -= 1;
-      if (users === 0) {
-        document.removeEventListener('click', recordOpenerActivation, true);
-        // No viewer is left to read it: the record keeps no element.
-        lastActivation = null;
-      }
-    };
-  }, [isEnabled]);
+  useEffect(
+    () => (isEnabled ? installPressFeedback() : undefined),
+    [isEnabled],
+  );
 }
 
-/** The activation recorded last, cleared as it is read. */
+/** The landing recorded last, if not taken already. */
 export function takeOpenerActivation(): OpenerActivation | null {
-  const activation = lastActivation;
-  lastActivation = null;
-  return activation;
+  const landing = lastTouchLanding();
+  if (
+    landing == null ||
+    landing.time === taken ||
+    !(landing.target instanceof Element)
+  ) {
+    return null;
+  }
+  taken = landing.time;
+  return {target: landing.target, time: landing.time};
 }
