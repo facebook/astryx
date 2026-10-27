@@ -14,7 +14,11 @@
  * A copy takes no part in the page: it is inert and hidden from assistive
  * technology, carries no ids or test ids, joins no form or radio group (a
  * copied checked radio would uncheck the live one), and its frames and media
- * load nothing. Laying it out changes no ancestor's position.
+ * load nothing. Laying it out changes no ancestor's position, and a scaled
+ * host draws it at the old size. Limits: a rule keyed on a removed `id` does
+ * not style the copy, and content holding a canvas whose pixels cannot be
+ * read back (a WebGL canvas without `preserveDrawingBuffer`, or a tainted
+ * one) is not copied: the new content enters without an old copy.
  *
  * SYNC: When modified, update /packages/core/src/motion/animatedLayout.ts
  */
@@ -22,9 +26,39 @@
 /** Above this many elements, old content is not copied: the new one enters. */
 const MAX_COPIED_ELEMENTS = 1500;
 
-/** Whether `element` is small enough to copy. */
+/** Whether a canvas's pixels can be read back: drawn into a small probe. */
+function isReadable(canvas: HTMLCanvasElement): boolean {
+  if (canvas.width === 0 || canvas.height === 0) {
+    return true;
+  }
+  const probe = canvas.ownerDocument.createElement('canvas');
+  probe.width = 16;
+  probe.height = 16;
+  const context = probe.getContext('2d', {willReadFrequently: true});
+  if (context == null) {
+    // No 2D canvas here (a test environment): nothing to tell.
+    return true;
+  }
+  try {
+    context.drawImage(canvas, 0, 0, 16, 16);
+    const {data} = context.getImageData(0, 0, 16, 16);
+    // A canvas that reads back empty is either blank or unreadable; either
+    // way its copy would show nothing, so the content is not copied.
+    return data.some((value, index) => index % 4 === 3 && value !== 0);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether `element` can be copied faithfully: small enough, and every canvas
+ * in it readable.
+ */
 export function isCopyable(element: Element): boolean {
-  return element.getElementsByTagName('*').length <= MAX_COPIED_ELEMENTS;
+  return (
+    element.getElementsByTagName('*').length <= MAX_COPIED_ELEMENTS &&
+    Array.from(element.getElementsByTagName('canvas')).every(isReadable)
+  );
 }
 
 /** Scroll offsets a copy restores once laid out (a clone carries none). */
@@ -69,9 +103,8 @@ export function inertCopy(element: HTMLElement): HTMLElement {
       node.removeAttribute(name);
     }
   }
-  // A clone's canvas is blank: paint each with its source's pixels. A WebGL
-  // canvas drawn without `preserveDrawingBuffer` cannot be read once it is
-  // presented, by any API, so its copy stays blank.
+  // A clone's canvas is blank: paint each with its source's pixels (content
+  // with an unreadable canvas is not copied: `isCopyable`).
   const sources = element.querySelectorAll('canvas');
   copy.querySelectorAll('canvas').forEach((canvas, index) => {
     const source = sources[index];
@@ -118,12 +151,25 @@ export function placeOver(
     height: `${rect.height}px`,
   });
   host.appendChild(element);
+  // The origin, and the host's scale: the rect is in viewport pixels, the
+  // copy's styles in the host's own.
   const origin = element.getBoundingClientRect();
-  element.style.left = `${rect.left - origin.left}px`;
-  element.style.top = `${rect.top - origin.top}px`;
+  const scaleX =
+    origin.width > 0 && rect.width > 0 ? origin.width / rect.width : 1;
+  const scaleY =
+    origin.height > 0 && rect.height > 0 ? origin.height / rect.height : 1;
+  element.style.width = `${rect.width / scaleX}px`;
+  element.style.height = `${rect.height / scaleY}px`;
+  element.style.left = `${(rect.left - origin.left) / scaleX}px`;
+  element.style.top = `${(rect.top - origin.top) / scaleY}px`;
   for (const [node, top, left] of scrollOffsets.get(element) ?? []) {
-    node.scrollTop = top;
-    node.scrollLeft = left;
+    // At once, whatever the element's own `scroll-behavior`.
+    if (typeof node.scrollTo === 'function') {
+      node.scrollTo({top, left, behavior: 'instant'});
+    } else {
+      node.scrollTop = top;
+      node.scrollLeft = left;
+    }
   }
 }
 
