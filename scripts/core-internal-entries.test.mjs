@@ -80,6 +80,7 @@ const COVERED = [
   'motion/uikit/timing',
   'motion/resolveMotion',
   'motion/useAnimator',
+  'motion/uikit/list',
 ];
 
 /** Every file under `dir` whose name matches `pattern`. */
