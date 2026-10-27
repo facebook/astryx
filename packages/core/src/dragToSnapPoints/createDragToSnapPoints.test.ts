@@ -17,17 +17,25 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {coarsePrimaryPointer} from '../gestures/__tests__/harness';
+import {resolveSnapPoint} from '../motion/resolveSnapPoint';
 import {
   createDragToSnapPoints,
   DEFAULT_FLICK_THRESHOLD,
-  snapPointAfterRelease,
 } from './createDragToSnapPoints';
 
 const POINTS = [0, 240, 480];
 
-describe('snapPointAfterRelease (FR2, AST-094 FR37)', () => {
+// The factory settles where Core's one release policy says, called with
+// the drag's start: these are FR2's and FR37's cases through that call.
+describe('the release policy the factory calls (FR2, AST-094 FR37)', () => {
   const at = (offset: number, velocity: number, startIndex = 0) =>
-    snapPointAfterRelease({snapPoints: POINTS, offset, velocity, startIndex});
+    resolveSnapPoint({
+      points: POINTS,
+      position: offset,
+      velocity,
+      flickThreshold: DEFAULT_FLICK_THRESHOLD,
+      start: POINTS[startIndex],
+    }).index;
 
   it('a slow release settles on the nearest snap point', () => {
     expect(at(100, 300)).toBe(0);
@@ -44,13 +52,13 @@ describe('snapPointAfterRelease (FR2, AST-094 FR37)', () => {
 
   it('flickThreshold changes the speed that carries', () => {
     expect(
-      snapPointAfterRelease({
-        snapPoints: POINTS,
-        offset: 30,
+      resolveSnapPoint({
+        points: POINTS,
+        position: 30,
         velocity: 600,
-        startIndex: 0,
         flickThreshold: 500,
-      }),
+        start: 0,
+      }).index,
     ).toBe(1);
   });
 

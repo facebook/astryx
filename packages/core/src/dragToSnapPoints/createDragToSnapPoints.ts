@@ -7,8 +7,7 @@
  * @input An element; the public pan (gestures/createPanGesture.ts) and the
  *   motion animator with the `springs.settle` role
  * @output The public snap-point drag (`spec:AST-107` FR2, FR6):
- *   `createDragToSnapPoints`, its options and handle, and
- *   `snapPointAfterRelease`, the release rule
+ *   `createDragToSnapPoints`, its options and handle
  * @position Public entry point, re-exported from the package root. The
  *   `useDragToSnapPoints` hook (hooks/useDragToSnapPoints.ts) is a thin
  *   wrapper over it.
@@ -18,7 +17,8 @@
  * the nearest one to where it is, except that a release faster than
  * `flickThreshold` carries to the next one in its direction, and a release
  * moving back toward where the drag started returns to the snap point it
- * started from (`spec:AST-094` FR37). The settle plays the `springs.settle`
+ * started from (`spec:AST-094` FR37): Core's one release policy,
+ * `resolveSnapPoint`, called with the drag's start. The settle plays the `springs.settle`
  * motion role from the release velocity (FR38); under Reduce Motion a touch
  * drag's release cross-fades and a mouse or pen drag's lands at once
  * (`design:reduced-motion` DR2, DR3). `settleTo(index)` settles without a drag: the keyboard path.
@@ -35,6 +35,7 @@ import {
   type PanGestureEvent,
 } from '../gestures/createPanGesture';
 import {createMotionAnimator} from '../motion/animator';
+import {resolveSnapPoint} from '../motion/resolveSnapPoint';
 import {registerSpringsTable, springs} from '../motion/uikit/springs';
 
 /**
@@ -72,61 +73,6 @@ export interface DragToSnapPoints {
   settleTo(index: number): void;
   /** Removes every listener and stops the element where it is. */
   destroy(): void;
-}
-
-/** A speed below this, in px/s, has no direction: numerical noise only. */
-const STILL = 1;
-
-/** The index of the snap point nearest `offset` (the lower one on a tie). */
-function nearestIndex(snapPoints: ReadonlyArray<number>, offset: number) {
-  let best = 0;
-  for (let i = 1; i < snapPoints.length; i++) {
-    if (
-      Math.abs(snapPoints[i] - offset) < Math.abs(snapPoints[best] - offset)
-    ) {
-      best = i;
-    }
-  }
-  return best;
-}
-
-/**
- * Where a release settles (FR2): back on the snap point the drag started
- * from when its velocity points back toward the start (`spec:AST-094` FR37);
- * otherwise, faster than `flickThreshold`, the next snap point past the
- * element in the velocity's direction; otherwise the nearest one.
- */
-export function snapPointAfterRelease({
-  snapPoints,
-  offset,
-  velocity,
-  startIndex,
-  flickThreshold = DEFAULT_FLICK_THRESHOLD,
-}: {
-  snapPoints: ReadonlyArray<number>;
-  offset: number;
-  velocity: number;
-  startIndex: number;
-  flickThreshold?: number;
-}): number {
-  const direction = Math.abs(velocity) < STILL ? 0 : Math.sign(velocity);
-  const towardStart = Math.sign(snapPoints[startIndex] - offset);
-  if (direction !== 0 && direction === towardStart) {
-    return startIndex;
-  }
-  if (direction !== 0 && Math.abs(velocity) > flickThreshold) {
-    if (direction > 0) {
-      const next = snapPoints.findIndex(point => point > offset);
-      return next === -1 ? snapPoints.length - 1 : next;
-    }
-    for (let i = snapPoints.length - 1; i >= 0; i--) {
-      if (snapPoints[i] < offset) {
-        return i;
-      }
-    }
-    return 0;
-  }
-  return nearestIndex(snapPoints, offset);
 }
 
 function checkSnapPoints(snapPoints: ReadonlyArray<number>) {
@@ -174,7 +120,12 @@ export function createDragToSnapPoints(
   checkSnapPoints(snapPoints);
   const animator = createMotionAnimator(element);
   // The snap point the element rests on, or is settling toward.
-  let index = nearestIndex(snapPoints, 0);
+  let index = resolveSnapPoint({
+    points: snapPoints,
+    position: 0,
+    velocity: 0,
+    flickThreshold,
+  }).index;
   // Each settle and each drag takes a turn; only the latest settle reports.
   let turn = 0;
   let drag: {startOffset: number; startIndex: number} | null = null;
@@ -223,7 +174,7 @@ export function createDragToSnapPoints(
         animator.set({[axis]: offset});
         return;
       }
-      const {startIndex} = drag;
+      const {startIndex, startOffset} = drag;
       drag = null;
       // Only a touch drag's release cross-fades under Reduce Motion; a mouse
       // or pen drag's lands at once (design:reduced-motion DR2, DR3).
@@ -233,17 +184,17 @@ export function createDragToSnapPoints(
         return;
       }
       const release = velocity[axis];
-      settle(
-        snapPointAfterRelease({
-          snapPoints,
-          offset,
-          velocity: release,
-          startIndex,
-          flickThreshold,
-        }),
-        release,
-        touchRelease,
-      );
+      // Core's one release policy: the nearest snap point, the next one in
+      // its direction past the flick speed, and back to where the drag
+      // started when the release moves back toward it (spec:AST-094 FR37).
+      const {index: target} = resolveSnapPoint({
+        points: snapPoints,
+        position: offset,
+        velocity: release,
+        flickThreshold,
+        start: startOffset,
+      });
+      settle(target, release, touchRelease);
     },
   });
 
