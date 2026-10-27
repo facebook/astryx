@@ -78,16 +78,7 @@ export function readAnalysis(analysisPath) {
     'modifiedComponentOwners',
     'modifiedComponents',
   );
-  // Reverse dependents of a changed shared module are audited too
-  // (spec:AST-030 FR13); the field is optional for older artifacts.
-  const dependents = analysis.dependentComponentOwners ?? [];
-  if (
-    !Array.isArray(dependents) ||
-    dependents.some(value => typeof value !== 'string')
-  ) {
-    throw new Error('dependentComponentOwners must be an array of strings');
-  }
-  const owners = [...added.owners, ...modified.owners, ...dependents];
+  const owners = [...added.owners, ...modified.owners];
   if (
     analysis.forceFullComponentAudits !== undefined &&
     typeof analysis.forceFullComponentAudits !== 'boolean'

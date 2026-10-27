@@ -72,7 +72,7 @@ describe('Node-tooling CI routing', () => {
 
   it('runs the Node project and required lint owners for tooling', () => {
     const nodeSuite = ci.jobs['test-node'].steps.find(candidate =>
-      /\bpnpm test:node\b/.test(candidate.run ?? ''),
+      /^pnpm test:node\b/.test(candidate.run ?? ''),
     );
     expect(nodeSuite.if).not.toContain('tooling_only');
     expect(
