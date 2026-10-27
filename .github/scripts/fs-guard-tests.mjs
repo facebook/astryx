@@ -2,8 +2,11 @@
 // Lists the tests that read repository sources through the file system,
 // directly or through a module they import: guards over every component's
 // files see changes no import reaches, so a scoped pull request runs them all
-// (spec:AST-030 FR13). A computed `import()` counts as reading sources, and
-// so does a child process: the script it runs reads what it likes.
+// (spec:AST-030 FR13). Any spelling of the `fs`, `fs/promises` or
+// `child_process` modules counts (`node:` or bare; `from`, `require`, a
+// `createRequire` require, `import()`, `vi.importActual`), as do a computed
+// `import()` and `import.meta.glob`: a child process's script reads what it
+// likes, and a glob or computed import reads what it lists.
 //
 // Usage: node .github/scripts/fs-guard-tests.mjs  (newline-separated paths)
 
@@ -13,8 +16,18 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const TEST_FILE = /\.test\.(?:tsx?|mjs|cjs|js)$/;
-const READS_FILES =
-  /\bnode:(?:fs|child_process)\b|\bfrom\s*['"](?:fs(?:\/promises)?|child_process)['"]|\brequire\(\s*['"](?:fs(?:\/promises)?|child_process)['"]\s*\)|\bimport\(\s*[^'"\s)]/;
+const FILE_MODULE = String.raw`(?:fs|fs\/promises|child_process)`;
+const READS_FILES = new RegExp(
+  [
+    String.raw`\bnode:${FILE_MODULE}\b`,
+    String.raw`\bfrom\s*['"]${FILE_MODULE}['"]`,
+    // Any call naming the module: require, a createRequire require,
+    // import(), vi.importActual.
+    String.raw`\(\s*['"]${FILE_MODULE}['"]\s*[,)]`,
+    String.raw`\bimport\.meta\.glob\b`,
+    String.raw`\bimport\(\s*[^'"\s)]`,
+  ].join('|'),
+);
 const RELATIVE_SPECIFIER =
   /(?:\bfrom|\bimport|\brequire\s*\()\s*\(?\s*['"](\.{1,2}\/[^'"]+)['"]/g;
 const EXTENSIONS = ['', '.ts', '.tsx', '.mjs', '.js', '.cjs', '.mts', '.cts'];

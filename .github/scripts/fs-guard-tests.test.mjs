@@ -21,6 +21,17 @@ const sources = {
     "import {execFileSync} from 'node:child_process';",
   'packages/cli/test/readme-gen.test.mjs':
     "const {spawnSync} = require('child_process');",
+  'packages/core/src/AspectRatio/AspectRatio.test.tsx':
+    "const {readFileSync} = await import('fs');",
+  'packages/core/src/theme/onMediaTokens.test.ts':
+    'const fs = await import("fs/promises");',
+  'scripts/node-prefix.test.cjs': "const fs = require('node:fs/promises');",
+  'scripts/create-require.test.mjs':
+    "const load = createRequire(import.meta.url);\nconst cp = load('child_process');",
+  'scripts/actual.test.ts': "const real = await vi.importActual('fs');",
+  'scripts/glob.test.ts':
+    "const stories = import.meta.glob('./stories/*.tsx');",
+  'scripts/named-like.test.mjs': "import {fsLike} from 'fs-extra-like';",
 };
 
 const guards = () =>
@@ -47,7 +58,19 @@ describe('fsGuardTests', () => {
     expect(guards()).toContain('packages/cli/test/readme-gen.test.mjs');
   });
 
+  it.each([
+    'packages/core/src/AspectRatio/AspectRatio.test.tsx',
+    'packages/core/src/theme/onMediaTokens.test.ts',
+    'scripts/node-prefix.test.cjs',
+    'scripts/create-require.test.mjs',
+    'scripts/actual.test.ts',
+    'scripts/glob.test.ts',
+  ])('lists %s, which names a file module in another spelling', file => {
+    expect(guards()).toContain(file);
+  });
+
   it('leaves out tests whose imports read no files', () => {
+    expect(guards()).not.toContain('scripts/named-like.test.mjs');
     expect(guards()).not.toContain('packages/core/src/Button/Button.test.tsx');
     expect(guards()).not.toContain('scripts/plain.test.mjs');
     expect(guards()).not.toContain('scripts/literal.test.mjs');

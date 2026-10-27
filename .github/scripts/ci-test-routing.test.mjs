@@ -189,6 +189,29 @@ describe.each(Object.entries(WORKFLOWS))(
         expect(share.env.SCOPED).toBe(
           "${{ github.event_name == 'pull_request' && needs.check-scope.outputs.full_suite == 'false' }}",
         );
+        // The Node lane runs the same scoped share, guards included.
+        const node = workflow.jobs['test-node'].steps.find(
+          step => step.name === 'Run this shard of the Node tests',
+        );
+        expect(node.run.trim()).toBe(
+          [
+            'if [ "$SCOPED" = true ]; then',
+            `  pnpm test:node --changed=HEAD^1 --passWithNoTests ${SHARD_ARG}`,
+            '  # Tests that read sources through the file system, directly or',
+            "  # through a helper (guards over every component's files), see",
+            '  # changes no import reaches: they all run too.',
+            '  # The list goes through a file so a failing lister fails the step.',
+            '  node .github/scripts/fs-guard-tests.mjs > "$RUNNER_TEMP/fs-guards.txt"',
+            '  mapfile -t GUARDS < "$RUNNER_TEMP/fs-guards.txt"',
+            '  if [ "${#GUARDS[@]}" -gt 0 ]; then',
+            `    pnpm test:node --passWithNoTests ${SHARD_ARG} "\${GUARDS[@]}"`,
+            '  fi',
+            'else',
+            `  pnpm test:node ${SHARD_ARG}`,
+            'fi',
+          ].join('\n'),
+        );
+        expect(node.env.SCOPED).toBe(share.env.SCOPED);
       } else {
         expect(share.run.trim()).toBe(`pnpm test:ui ${SHARD_ARG}`);
       }
