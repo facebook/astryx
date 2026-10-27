@@ -7,8 +7,9 @@
  * @input NumberInput's stepping state and its stepper buttons; the gesture
  *   system's PressTracker (usePressTracker) and its selection lock
  *   (gestures/selectionLock.ts), the coarse-pointer gate
- *   (utils/coarsePointer.ts), stepperTracking.ts and the UIKit press and
- *   click constants (motion/uikit/gestures.ts)
+ *   (utils/coarsePointer.ts), stepperTracking.ts, the UIKit press
+ *   constants (motion/uikit/gestures.ts) and the click guard's window
+ *   (utils/clickGuard.ts)
  * @output The steppers' press layer: useStepperTouch, which tracks a press on
  *   the steppers (a held half repeats on one steady ramp, a slide carries it
  *   to the other half, the pressed half paints at once), shows the stepping
@@ -61,7 +62,8 @@ import {
   type UsePressTrackerOptions,
 } from '../gestures';
 import {lockSelection} from '../gestures/selectionLock';
-import {UIKIT_CLICK, UIKIT_PRESS} from '../motion/uikit/gestures';
+import {UIKIT_PRESS} from '../motion/uikit/gestures';
+import {CLICK_GUARD_WINDOW_MS} from '../utils/clickGuard';
 import {paintPress, readPressPaint} from '../utils/pressFeedback';
 import {halfAt, StepperTracking, type StepperHalf} from './stepperTracking';
 
@@ -356,7 +358,7 @@ export function useStepperTouch(
     if (
       !isFromPointer ||
       lift == null ||
-      browserClock.now() - lift.at > UIKIT_CLICK.strayClickWindow.value
+      browserClock.now() - lift.at > CLICK_GUARD_WINDOW_MS
     ) {
       return 'own';
     }

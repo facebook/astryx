@@ -28,6 +28,7 @@ import {useState} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {NumberInput} from './NumberInput';
 import {pointerQuery} from '../gestures/__tests__/pointerQuery';
+import {CLICK_GUARD_WINDOW_MS} from '../utils/clickGuard';
 
 interface Box {
   top: number;
@@ -585,6 +586,22 @@ describe('NumberInput steppers under a finger', () => {
     touch('touchend', increment, INCREMENT, id);
     expect(committed(onChange)).toEqual([6]);
     wait(1500);
+    act(() => {
+      increment.dispatchEvent(clickNaming('mouse', 1));
+    });
+    expect(committed(onChange)).toEqual([6, 7]);
+  });
+
+  it('a pointer click past the click guard\'s window after a hold is a press of its own', () => {
+    // A press\'s own click follows its lift at once; the gesture system bounds
+    // that wait with the click guard\'s window (CLICK_GUARD_WINDOW_MS, M-G17
+    // in motion/MEASUREMENTS.md), so half a second later a click steps.
+    const {onChange, increment} = setup();
+    const id = fingerDown(increment, INCREMENT);
+    wait(600);
+    touch('touchend', increment, INCREMENT, id);
+    expect(committed(onChange)).toEqual([6]);
+    wait(CLICK_GUARD_WINDOW_MS + 100);
     act(() => {
       increment.dispatchEvent(clickNaming('mouse', 1));
     });
