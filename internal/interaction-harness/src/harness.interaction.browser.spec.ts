@@ -1264,6 +1264,48 @@ test.describe('frame evidence', () => {
 });
 
 test.describe('wheel and pen input', () => {
+  test("at a device-pixel ratio of 3, a wheel step reaches the page as exactly its delta, where Playwright's own wheel delivers a third of it in Chromium", async ({
+    browser,
+    browserName,
+  }) => {
+    // A desktop context at DPR 3: the phone context has no wheel in WebKit.
+    const context = await browser.newContext({
+      viewport: {width: 402, height: 714},
+      deviceScaleFactor: 3,
+      isMobile: false,
+      hasTouch: false,
+    });
+    try {
+      const page = await context.newPage();
+      await page.route('http://wheel.test/', route =>
+        route.fulfill({
+          contentType: 'text/html',
+          body: `<!doctype html><meta name=viewport content="width=device-width,initial-scale=1"><body style="margin:0;height:3000px"><script>window.__deltas=[];addEventListener('wheel',e=>__deltas.push(e.deltaY),{passive:true});</script>`,
+        }),
+      );
+      await page.goto('http://wheel.test/');
+      const seen = () =>
+        page.evaluate(() =>
+          (window as unknown as {__deltas: number[]}).__deltas.splice(0),
+        );
+      expect(await page.evaluate(() => window.devicePixelRatio)).toBe(3);
+
+      const driver = await webInputDriver(page);
+      expect(driver.wheels).toBe(true);
+      await driver.wheel({x: 200, y: 300, dy: 100});
+      expect(await seen()).toEqual([100]);
+
+      // Playwright's own wheel, pinned: Chromium divides it by the ratio.
+      await page.mouse.move(200, 300);
+      await page.mouse.wheel(0, 100);
+      await expect
+        .poll(async () => (await seen())[0])
+        .toBeCloseTo(browserName === 'chromium' ? 100 / 3 : 100, 5);
+    } finally {
+      await context.close();
+    }
+  });
+
   /** A non-passive wheel listener: Chromium then waits for the page itself. */
   const listenNonPassively = (page: Page) =>
     page.evaluate(() =>
