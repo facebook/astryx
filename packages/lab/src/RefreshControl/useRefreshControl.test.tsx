@@ -149,6 +149,30 @@ function pointerDrag(target: EventTarget, pointerType: 'mouse' | 'pen') {
   };
 }
 
+/**
+ * Wheel steps of `dy` CSS px each, in pixel mode (spec:AST-094 FR43): small
+ * steps read as a trackpad's two-finger scroll, whole 100 px ones as a mouse
+ * wheel's notches. A negative `dy` scrolls toward the top.
+ */
+function wheel(target: EventTarget, steps: number[]): void {
+  for (const dy of steps) {
+    clock += 16;
+    const event = new WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      clientX: 100,
+      clientY: 100,
+      deltaY: dy,
+      deltaMode: 0,
+    });
+    Object.defineProperty(event, 'timeStamp', {value: clock});
+    act(() => {
+      target.dispatchEvent(event);
+    });
+  }
+}
+
 function translateY(element: HTMLElement): number {
   const value = element.style.getPropertyValue('translate');
   if (value === '' || value === 'none') {
@@ -513,6 +537,58 @@ describe('useRefreshControl', () => {
       drag.move(step);
     }
     drag.lift();
+    expect(onRefresh).not.toHaveBeenCalled();
+    expect(translateY(content())).toBe(0);
+  });
+
+  it('pulls under a trackpad’s two-finger scroll at the top as under a finger: the same mapping, a trigger, the settle onto the inset once the scroll ends (spec:AST-094 FR43)', async () => {
+    useTouchScreen(false);
+    const onRefresh = vi.fn(() => new Promise<void>(() => {}));
+    render(
+      <Refreshable data-testid="refresh" onRefresh={onRefresh}>
+        <p>Inbox</p>
+      </Refreshable>,
+    );
+    wheel(content(), [-12, -8, -20]);
+    // 40 px of scroll toward the top, 10 of them the pan's hysteresis, as
+    // under a finger.
+    expect(translateY(content())).toBeCloseTo(30, 5);
+    wheel(content(), [-20, -20, -25]);
+    // 105 px: past the trigger (73 px of overscroll), mid-scroll.
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+    expect(content()).toHaveAttribute('aria-busy', 'true');
+    // The scroll ends 100 ms after its last step: the content settles onto
+    // the inset.
+    await waitFor(() => expect(translateY(content())).toBeCloseTo(60, 5));
+  });
+
+  it('keeps the page’s text selection through a trackpad pull: a scroll selects nothing (spec:AST-094 FR43)', async () => {
+    useTouchScreen(false);
+    render(
+      <Refreshable data-testid="refresh" onRefresh={() => {}}>
+        <p>Inbox</p>
+      </Refreshable>,
+    );
+    act(() => {
+      document.getSelection()?.selectAllChildren(content());
+    });
+    wheel(content(), [-12, -8, -20]);
+    expect(translateY(content())).toBeGreaterThan(0);
+    expect(document.getSelection()?.isCollapsed).toBe(false);
+    await waitFor(() => expect(translateY(content())).toBe(0));
+    expect(document.getSelection()?.isCollapsed).toBe(false);
+  });
+
+  it('does not pull under a mouse wheel’s notches (spec:AST-094 FR43)', async () => {
+    useTouchScreen(false);
+    const onRefresh = vi.fn();
+    render(
+      <Refreshable data-testid="refresh" onRefresh={onRefresh}>
+        <p>Inbox</p>
+      </Refreshable>,
+    );
+    wheel(content(), [-100, -100, -100]);
+    await new Promise(resolve => setTimeout(resolve, 150));
     expect(onRefresh).not.toHaveBeenCalled();
     expect(translateY(content())).toBe(0);
   });

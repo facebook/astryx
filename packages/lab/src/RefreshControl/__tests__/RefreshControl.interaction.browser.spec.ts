@@ -1283,6 +1283,127 @@ test('under Reduce Motion a release from a pen lands at once: no travel and no f
 });
 
 /**
+ * Resolves once the content's settle starts: the release of a pull that
+ * ended without a lift (a trackpad's scroll ends when its gesture does).
+ */
+async function waitForSettleStart(content: Locator, timeout = 3000) {
+  await content.evaluate(
+    (element, ms) =>
+      new Promise<void>((resolve, reject) => {
+        const deadline = performance.now() + ms;
+        const tick = () => {
+          if (element.getAnimations().some(a => a.playState === 'running')) {
+            resolve();
+            return;
+          }
+          if (performance.now() > deadline) {
+            reject(
+              new Error('waitForSettleStart: the pull was never released'),
+            );
+            return;
+          }
+          requestAnimationFrame(tick);
+        };
+        tick();
+      }),
+    timeout,
+  );
+}
+
+/** The page's scroll position once it has stopped moving (a smooth scroll ends). */
+async function pageScrollRest(page: Page, timeout = 3000): Promise<number> {
+  return page.evaluate(
+    ms =>
+      new Promise<number>((resolve, reject) => {
+        const deadline = performance.now() + ms;
+        let last = Number.NaN;
+        let still = 0;
+        const tick = () => {
+          const y = window.scrollY;
+          still = y === last ? still + 1 : 0;
+          last = y;
+          if (still >= 3) {
+            resolve(y);
+            return;
+          }
+          if (performance.now() > deadline) {
+            reject(new Error(`pageScrollRest: still scrolling (${y})`));
+            return;
+          }
+          requestAnimationFrame(tick);
+        };
+        tick();
+      }),
+    timeout,
+  );
+}
+
+/**
+ * A trackpad's two-finger scroll over the content: `steps` wheel steps of
+ * `dy` CSS px in pixel mode. A whole 100 px step reads as a mouse wheel's
+ * notch instead.
+ */
+async function scrollWheel(page: Page, steps: number, dy: number) {
+  const driver = await webInputDriver(page);
+  for (let step = 0; step < steps; step++) {
+    await driver.wheel({x: 200, y: 300, dy});
+  }
+}
+
+test('with a trackpad, a two-finger scroll at the top pulls and refreshes as a finger does (spec:AST-094 FR43)', async ({
+  browser,
+}) => {
+  const {context, page, content} = await desktopPage(browser);
+  try {
+    // 300 px of scroll toward the top: past the trigger.
+    await scrollWheel(page, 30, -10);
+    // The scroll's gesture ends after its last step (#8676): the pull's
+    // release starts the settle, and the content comes to rest on the inset.
+    await waitForSettleStart(content);
+    await waitForContentRest(content);
+    expect(await isBusy(content)).toBe(true);
+    expect(await shownPull(content)).toBeCloseTo(HEIGHT, 0);
+  } finally {
+    await context.close();
+  }
+});
+
+test('with a trackpad, a scroll down the page and back up short of its top stays the page’s and pulls nothing (spec:AST-094 FR43)', async ({
+  browser,
+}) => {
+  const {context, page, content} = await desktopPage(browser);
+  try {
+    // A scroll down from the top is the page's, not the pull's.
+    await scrollWheel(page, 20, 10);
+    const scrolled = await pageScrollRest(page);
+    expect(scrolled).toBeGreaterThan(100);
+    // Back up, short of the top: still the page's.
+    await scrollWheel(page, 5, -10);
+    const back = await pageScrollRest(page);
+    expect(back).toBeLessThan(scrolled);
+    expect(back).toBeGreaterThan(0);
+    expect(await shownPull(content)).toBe(0);
+    expect(await isBusy(content)).toBe(false);
+  } finally {
+    await context.close();
+  }
+});
+
+test('with a mouse wheel, notches at the top pull nothing (spec:AST-094 FR43)', async ({
+  browser,
+}) => {
+  const {context, page, content} = await desktopPage(browser);
+  try {
+    await scrollWheel(page, 3, -100);
+    await page.waitForTimeout(300);
+    expect(await shownPull(content)).toBe(0);
+    expect(await isBusy(content)).toBe(false);
+  } finally {
+    await context.close();
+  }
+});
+
+/**
  * The indicator band's top, px below the scroll view's top: the band holding
  * the spinner (the spinner itself turns, so its box grows with the angle).
  */
