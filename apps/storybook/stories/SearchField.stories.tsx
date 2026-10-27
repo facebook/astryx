@@ -3,10 +3,6 @@
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {SearchField, type SearchFieldHandle} from '@astryxdesign/lab';
-import {type MotionCurve} from '@astryxdesign/core/motion/animator';
-import {cubicBezier} from '@astryxdesign/core/motion/bezier';
-import {search, timing} from '@astryxdesign/core/motion/uikit';
-import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
 import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
 
 // =============================================================================
@@ -70,102 +66,161 @@ const row: React.CSSProperties = {
   fontSize: 17,
 };
 
-/** A curve the animator plays: `value(progress(t))` over `duration` s. */
-function curve(
-  duration: number,
-  value: (p: number) => number,
-  progress: (t: number) => number,
-): MotionCurve {
-  const at = (t: number) => value(progress(t));
-  return {
-    duration,
-    at,
-    velocity: t => {
-      if (duration <= 0 || t >= duration) {
-        return 0;
-      }
-      const a = Math.max(0, t - 0.001);
-      const b = Math.min(duration, t + 0.001);
-      return (at(b) - at(a)) / (b - a);
-    },
-  };
+// UIKit's activation clock and curve, as Core's UIKit tables hold them
+// (`search.activationMs` and the `timing.curves.move` role). A story uses no
+// Core motion source (architecture:react-component-runtime INV13), so it
+// restates them and plays them with the Web Animations API.
+const ACTIVATION_MS = 383.3;
+const MOVE_EASING = 'cubic-bezier(0.42, 0, 0.58, 1)';
+/** Keyframes per curve for the title's fade, which is not a bezier. */
+const FADE_STEPS = 40;
+
+/**
+ * The large title's opacity at the activation's progress `a` (1 = active),
+ * as UIKit fades it: (1 − a / 0.35)² on activation; on cancel it comes back
+ * from a = 0.35, that is p = 0.65 of the cancel.
+ */
+function titleOpacity(a: number, activating: boolean): number {
+  return activating
+    ? Math.max(0, 1 - a / 0.35) ** 2
+    : Math.min(1, Math.max(0, (1 - a - 0.65) / 0.35));
 }
 
 /**
  * The host's half of a lift, as a navigation bar does it (NavigationStack
  * runs the real one): the content rises with the field by `lift` on the
- * field's clock, and the large title fades as UIKit's does (opacity
- * (1 − p / 0.35)² on activation; on cancel it comes back from p = 0.65).
- * Placed at once under a mouse, as the field is.
+ * field's clock, and the large title fades as UIKit's does. Placed at once
+ * under a mouse, as the field is. Each animation starts at the field's own
+ * start time, so the two move as one; a change of mind adds the change
+ * between the targets on top of the motion on screen, as the field does.
  */
-function useLiftedHost(isActive: boolean, lift: number) {
-  const content = useAnimator();
-  const title = useAnimator();
+function useLiftedHost(
+  isActive: boolean,
+  lift: number,
+  fieldRef: React.RefObject<HTMLDivElement | null>,
+) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const {isTouch} = useTouchPresentation();
   const settled = useRef<boolean | null>(null);
-  const moving = useRef(false);
+  const running = useRef<Animation[]>([]);
   useLayoutEffect(() => {
+    const content = contentRef.current;
+    const title = titleRef.current;
+    if (content == null || title == null) {
+      return;
+    }
     const target = isActive && lift > 0;
     const y = target ? -lift : 0;
-    if (settled.current === null || !isTouch || lift === 0) {
+    const place = () => {
+      for (const animation of running.current) {
+        animation.cancel();
+      }
+      running.current = [];
+      content.style.translate = `0px ${y}px`;
+      title.style.opacity = String(target ? 0 : 1);
+    };
+    // Placed at once under a mouse, and under Reduce Motion, where the
+    // field only cross-fades.
+    const reduced =
+      content.ownerDocument.defaultView?.matchMedia(
+        '(prefers-reduced-motion: reduce)',
+      ).matches ?? false;
+    if (settled.current === null || !isTouch || lift === 0 || reduced) {
       settled.current = target;
-      content.animator.set({y});
-      title.animator.set({opacity: target ? 0 : 1});
+      place();
       return;
     }
     if (settled.current === target) {
       return;
     }
     settled.current = target;
-    if (content.animator.element == null) {
-      return;
-    }
-    const seconds = search.activationMs / 1000;
-    const ease = cubicBezier(timing.curves.move);
-    const progress = (t: number) =>
-      ease(seconds > 0 ? Math.min(1, Math.max(0, t / seconds)) : 1);
-    // `p` is the activation's progress (1 = active), whichever way it runs.
-    const activation = (p: number) => (target ? p : 1 - p);
-    // As the field does: from rest on the frame that presents the page at
-    // rest (in the same task as the field's, so both start together), and a
-    // change of mind added to the curves on screen, on the whole clock.
-    const options = moving.current
-      ? {additive: true}
-      : {start: 'presented' as const};
-    const fromY = content.animator.get('y');
-    moving.current = true;
-    const handles = [
-      content.animator.play(
-        {y: curve(seconds, p => fromY + (y - fromY) * p, progress)},
-        options,
-      ),
-      title.animator.play(
-        {
-          opacity: curve(
-            seconds,
-            p => {
-              const a = activation(p);
-              return target
-                ? Math.max(0, 1 - a / 0.35) ** 2
-                : Math.min(1, Math.max(0, (1 - a - 0.65) / 0.35));
-            },
-            progress,
-          ),
-        },
-        options,
-      ),
-    ];
-    let cancelled = false;
-    void Promise.all(handles.map(handle => handle.finished)).then(results => {
-      if (!cancelled && results.every(Boolean)) {
-        moving.current = false;
-      }
+    // From rest, the curves replace what is there; mid-flight they add the
+    // change between the targets to the motion on screen. Either way the
+    // content's shape is linear in the eased progress p, and the title's
+    // value is its fade at p, so both play on the field's easing.
+    const additive = running.current.length > 0;
+    // The previous target: rest when activating, the lift when cancelling.
+    const fromY = target ? 0 : -lift;
+    const fade = Array.from({length: FADE_STEPS + 1}, (_, k) => {
+      const p = k / FADE_STEPS;
+      const value = titleOpacity(target ? p : 1 - p, target);
+      return {
+        offset: p,
+        opacity: additive
+          ? value - titleOpacity(target ? 0 : 1, target)
+          : value,
+      };
     });
+    const timing: KeyframeAnimationOptions = {
+      duration: ACTIVATION_MS,
+      easing: MOVE_EASING,
+      fill: 'forwards',
+      composite: additive ? 'add' : 'replace',
+    };
+    const added = [
+      content.animate(
+        additive
+          ? [{translate: '0px 0px'}, {translate: `0px ${y - fromY}px`}]
+          : [{translate: `0px ${fromY}px`}, {translate: `0px ${y}px`}],
+        timing,
+      ),
+      title.animate(fade, timing),
+    ];
+    running.current = [...running.current, ...added];
+    // Start on the field's clock. The field starts its motion from the frame
+    // that presents it at rest, after this commit, so the story's curves wait
+    // (paused at their start) for the field root's new animation and take its
+    // start time.
+    const before = new Set(fieldRef.current?.getAnimations() ?? []);
+    for (const animation of added) {
+      animation.pause();
+    }
+    let frames = 0;
+    const startWithField = () => {
+      const field = fieldRef.current
+        ?.getAnimations()
+        .find(animation => !before.has(animation));
+      if (field == null) {
+        frames += 1;
+        if (frames > 30) {
+          for (const animation of added) {
+            animation.play();
+          }
+        } else {
+          requestAnimationFrame(startWithField);
+        }
+        return;
+      }
+      const align = () => {
+        for (const animation of added) {
+          animation.startTime = field.startTime;
+        }
+      };
+      if (field.startTime != null) {
+        align();
+      } else {
+        void field.ready.then(align, () => {});
+      }
+    };
+    requestAnimationFrame(startWithField);
+    let cancelled = false;
+    void Promise.all(added.map(animation => animation.finished)).then(
+      () => {
+        if (
+          !cancelled &&
+          running.current.every(a => a.playState === 'finished')
+        ) {
+          place();
+        }
+      },
+      () => {},
+    );
     return () => {
       cancelled = true;
     };
-  }, [isActive, lift, isTouch, content, title]);
-  return {contentRef: content.ref, titleRef: title.ref};
+  }, [isActive, lift, isTouch, fieldRef]);
+  return {contentRef, titleRef};
 }
 
 function Screen({
@@ -185,13 +240,15 @@ function Screen({
   const results = FRUITS.filter(fruit =>
     fruit.toLowerCase().includes(query.trim().toLowerCase()),
   );
-  const {contentRef, titleRef} = useLiftedHost(isActive, lift);
+  const fieldRef = useRef<HTMLDivElement>(null);
+  const {contentRef, titleRef} = useLiftedHost(isActive, lift, fieldRef);
   return (
     <div style={page} dir={dir}>
       <h1 ref={titleRef} style={largeTitle}>
         Search
       </h1>
       <SearchField
+        ref={fieldRef}
         label="Search"
         placeholder="Fruits"
         value={query}

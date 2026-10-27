@@ -62,13 +62,16 @@ import {
   type RefObject,
 } from 'react';
 import {
+  isRtlElement,
   PanGestureRecognizer,
+  useFingerScroll,
   useGestureRecognizer,
-} from '@astryxdesign/core/gestures';
-import {useFingerScroll} from '@astryxdesign/core/gestures/useFingerScroll';
-import {registerTabBarTable, tabBar} from '@astryxdesign/core/motion/uikit';
-import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
-import {isRtlElement} from '../utils/isRtlElement';
+} from '@astryxdesign/core/internal/touch';
+import {
+  registerTabBarTable,
+  tabBar,
+  useAnimator,
+} from '@astryxdesign/core/internal/motion';
 import {accessoryBox} from './tabBarModel';
 
 export interface UseTabBarMinimizeOptions {

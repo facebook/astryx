@@ -53,10 +53,12 @@ import {
   useState,
   type RefObject,
 } from 'react';
-import {usePressTracker} from '@astryxdesign/core/gestures/usePressTracker';
-import {registerTabBarTable, tabBar} from '@astryxdesign/core/motion/uikit';
-import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
-import {isRtlElement} from '../utils/isRtlElement';
+import {isRtlElement, usePressTracker} from '@astryxdesign/core/internal/touch';
+import {
+  registerTabBarTable,
+  tabBar,
+  useAnimator,
+} from '@astryxdesign/core/internal/motion';
 import {useKeyboardHeight} from '../keyboard/useKeyboardHeight';
 import {searchCancelShift, searchFieldBox, searchLift} from './tabBarModel';
 
