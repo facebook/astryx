@@ -2242,9 +2242,6 @@ export function useSheetGestures({
         direction: 'vertical',
         maximumNumberOfTouches: 1,
         allowedPointerTypes: ['touch', 'pen'],
-        // On the web a pan also takes wheel and trackpad scrolling
-        // (spec:AST-094 FR43).
-        allowedScrollTypes: ['continuous', 'discrete'],
         selectionLock: lockSheetSelection,
         shouldBegin: canBegin,
         shouldReceiveTouch: notePointer,
@@ -2262,9 +2259,6 @@ export function useSheetGestures({
         direction: 'down',
         maximumNumberOfTouches: 1,
         allowedPointerTypes: ['touch', 'pen'],
-        // A trackpad or a mouse wheel scrolling up at the content's top pulls
-        // too (spec:AST-094 FR43).
-        allowedScrollTypes: ['continuous', 'discrete'],
         scrollEdge: true,
         shouldBegin: canBegin,
         shouldReceiveTouch: notePointer,
@@ -2284,7 +2278,6 @@ export function useSheetGestures({
         direction: 'up',
         maximumNumberOfTouches: 1,
         allowedPointerTypes: ['touch', 'pen'],
-        allowedScrollTypes: ['continuous', 'discrete'],
         scrollEdge: true,
         shouldBegin: () => canBegin() && activeOffsetRef.current > 0,
         shouldReceiveTouch: notePointer,
