@@ -28,9 +28,10 @@
  * (response 0.15 s, critically damped) through core's animator.
  *
  * The indicators take the theme's primary text colour; the current one is
- * opaque and the others are at 45 %, UIKit's default alphas (themes keep
- * their colour). When the page changes, the old current indicator fades over
- * 0.125 s after a tap and 0.25 s otherwise; the new one lights at once.
+ * opaque and the others are at 48 %: UIKit's 45 %, raised to the 3:1
+ * contrast the only page-count cue needs (themes keep their colour). When the
+ * page changes, the old current indicator fades over 0.125 s after a tap and
+ * 0.25 s otherwise; the new one lights at once.
  *
  * HOW IT PAGES
  *
