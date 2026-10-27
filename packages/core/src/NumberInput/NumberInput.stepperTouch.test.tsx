@@ -856,9 +856,10 @@ describe('NumberInput steppers under a mouse where the primary pointer is coarse
 });
 
 describe('NumberInput steppers losing a held press', () => {
-  // A press whose owner goes away mid-hold (the steppers unmounting, or the
-  // primary pointer changing kind, which detaches the press tracker or the
-  // column's own handlers) lets go at once, as a disabled field does.
+  // A press whose owner goes away mid-hold (the steppers unmounting) lets go
+  // at once, as a disabled field does. The primary pointer changing kind
+  // detaches nothing: one press tracker serves every pointer (`spec:AST-094`
+  // FR43), and the press is the gesture host's to keep or cancel.
   it('a hold lets go when the steppers go away: no further step, no commit', () => {
     coarsePrimaryPointer();
     const onChange = vi.fn<(value: number | null) => void>();
@@ -874,7 +875,7 @@ describe('NumberInput steppers losing a held press', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('a finger hold lets go when the primary pointer turns fine', () => {
+  it('a finger hold the gesture host cancels as the primary pointer turns fine commits nothing', () => {
     const pointer = pointerQuery(true);
     try {
       const {onChange, input, increment} = setup();
@@ -892,7 +893,7 @@ describe('NumberInput steppers losing a held press', () => {
     }
   });
 
-  it('a mouse hold lets go when the primary pointer turns coarse', () => {
+  it('a mouse hold carries on as the primary pointer turns coarse, and commits once at its release (spec:AST-094 FR43)', () => {
     const pointer = pointerQuery(false);
     try {
       const {onChange, input, increment} = setup();
@@ -903,9 +904,14 @@ describe('NumberInput steppers losing a held press', () => {
       act(() => {
         pointer.set(true);
       });
-      wait(2000);
-      expect(shown(input)).toBe('5');
+      wait(500);
+      expect(Number(shown(input))).toBeGreaterThan(6);
       expect(onChange).not.toHaveBeenCalled();
+      const reached = Number(shown(input));
+      fireEvent.pointerUp(increment, {...mouse, clientX: 212, clientY: 8});
+      expect(committed(onChange)).toEqual([reached]);
+      wait(1000);
+      expect(committed(onChange)).toEqual([reached]);
     } finally {
       pointer.restore();
     }

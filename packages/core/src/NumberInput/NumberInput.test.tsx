@@ -2822,10 +2822,8 @@ describe('NumberInput stepper column under a held finger', () => {
     );
     expect(touchSource).toContain('keepsTouch: true,');
     expect(touchSource).toContain('selectionLock: lockSelection,');
-    // The column's press tracker attaches only where the primary pointer is
-    // coarse (`spec:AST-094` FR19, FR24).
-    expect(touchSource).toMatch(
-      /usePressTracker\(\s*isCoarse \? columnRef : noColumnRef,/,
-    );
+    // The column's press tracker attaches for every pointer (`spec:AST-094`
+    // FR43, FR19).
+    expect(touchSource).toMatch(/usePressTracker\(columnRef, options\)/);
   });
 });

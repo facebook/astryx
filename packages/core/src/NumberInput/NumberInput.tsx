@@ -1185,7 +1185,6 @@ export function NumberInput({
     // The steppers never take focus: an editing field stays focused.
     event.preventDefault();
     stepperPointerTypeRef.current = event.pointerType;
-    stepperTouch.pointer.onPointerDown(event);
   };
 
   // iOS Safari follows the second tap of a quick double tap with a
@@ -1462,9 +1461,6 @@ export function NumberInput({
           ref={stepperColumnRef}
           onPointerDown={handleStepperPointerDown}
           onMouseDown={handleStepperMouseDown}
-          onPointerMove={stepperTouch.pointer.onPointerMove}
-          onPointerUp={stepperTouch.pointer.onPointerUp}
-          onPointerCancel={stepperTouch.pointer.onPointerCancel}
           onClick={handleColumnClick}
           {...stylex.props(
             styles.numberSteppers,

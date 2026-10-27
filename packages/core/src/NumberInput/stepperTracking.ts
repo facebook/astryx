@@ -7,9 +7,8 @@
  *   explicit times), repeatInterval, halfAt (which half a point is on) and
  *   the StepperHalf type
  * @position Pure half of NumberInput's stepper press: no DOM. The press layer
- *   (NumberInputTouch.tsx) feeds it from the gesture system's PressTracker
- *   (a finger) and the column's own pointer events (a mouse or a pen);
- *   tested by stepperTracking.test.ts with a manual clock
+ *   (NumberInputTouch.tsx) feeds it from the gesture system's PressTracker,
+ *   for every pointer; tested by stepperTracking.test.ts with a manual clock
  *
  * The rules (motion/uikit/stepper.ts):
  *
