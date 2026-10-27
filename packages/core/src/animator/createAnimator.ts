@@ -157,11 +157,15 @@ export function createAttachableAnimator(): {
   readonly attach: (element: HTMLElement | null) => void;
 } {
   const motion: MotionAnimator = createMotionAnimator(null);
+  // Calls do nothing while no element is attached (before the ref attaches,
+  // or after it lets go) and after destroy; animate and decay resolve at once.
+  let element: HTMLElement | null = null;
   let destroyed = false;
+  const inactive = () => destroyed || element == null;
   const animator: Animator = {
     async animate(target, options) {
       const to = motionValues(target);
-      if (destroyed || Object.keys(to).length === 0) {
+      if (inactive() || Object.keys(to).length === 0) {
         return;
       }
       // The role registry is written on first use, never on import.
@@ -173,7 +177,7 @@ export function createAttachableAnimator(): {
       }).finished;
     },
     async decay(velocity) {
-      if (destroyed) {
+      if (inactive()) {
         return;
       }
       const curves = coast(motion, {x: velocity.x, y: velocity.y});
@@ -183,7 +187,7 @@ export function createAttachableAnimator(): {
       await motion.decay(curves).finished;
     },
     set(values) {
-      if (!destroyed) {
+      if (!inactive()) {
         motion.set(motionValues(values));
       }
     },
@@ -194,7 +198,7 @@ export function createAttachableAnimator(): {
       return snapshot(channel => motion.getVelocity(channel));
     },
     stop() {
-      if (!destroyed) {
+      if (!inactive()) {
         motion.stop();
       }
     },
@@ -207,9 +211,10 @@ export function createAttachableAnimator(): {
   };
   return {
     animator,
-    attach: element => {
+    attach: next => {
       if (!destroyed) {
-        motion.attach(element);
+        element = next;
+        motion.attach(next);
       }
     },
   };

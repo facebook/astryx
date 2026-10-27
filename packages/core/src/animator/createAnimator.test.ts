@@ -256,6 +256,28 @@ describe('createAnimator', () => {
     expect(animator.get().x).toBe(10);
   });
 
+  it('a later animate or decay on a channel resolves its earlier promise where it stopped', async () => {
+    const animator = createAnimator(element());
+    const settled: string[] = [];
+    void animator.animate({x: 300}).then(() => settled.push('first animate'));
+    await started();
+    await advance(60);
+    const before = animator.get().x;
+    void animator.animate({x: -100}).then(() => settled.push('second animate'));
+    await advance(0);
+    expect(settled).toEqual(['first animate']);
+    // The second picks up where the first stopped on screen.
+    expect(animator.get().x).toBeCloseTo(before, 0);
+    await advance(40);
+    void animator.decay({x: 800}).then(() => settled.push('decay'));
+    await advance(0);
+    expect(settled).toEqual(['first animate', 'second animate']);
+    await advance(40);
+    void animator.animate({x: 0});
+    await advance(0);
+    expect(settled).toEqual(['first animate', 'second animate', 'decay']);
+  });
+
   it('decay coasts x and y on the normal deceleration from the velocity', async () => {
     const animator = createAnimator(element());
     let done = false;

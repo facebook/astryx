@@ -24,7 +24,7 @@ export const docs = {
       name: 'ref',
       type: '(element: HTMLElement | null) => void',
       description:
-        'Pass it as the `ref` of the one element to animate. It is the same function on every render. When the element unmounts its motion stops and its values are kept, so a remount resumes from them.',
+        'Pass it as the `ref` of the one element to animate. It is the same function on every render. When the element unmounts its motion stops and its values are kept, so a remount resumes from them. Before the element attaches, and while it is unmounted, every call does nothing and `animate` and `decay` resolve at once.',
     },
     {
       name: 'animator',

@@ -15,7 +15,8 @@
  * returns the same object on every render, and nothing it does sets state,
  * so animating never re-renders the component. The ref attaches the element
  * when it mounts and lets it go when it unmounts (running motion stops, the
- * values stay); a remount resumes from them.
+ * values stay); a remount resumes from them. While no element is attached,
+ * every call does nothing, and `animate` and `decay` resolve at once.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/useAnimator.test.tsx

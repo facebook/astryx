@@ -94,19 +94,26 @@ describe('useAnimator', () => {
     }
   });
 
-  it('an animator used before its ref attaches keeps its values, and the element gets them on attach', () => {
+  it('an animator used before its ref attaches does nothing and resolves at once', async () => {
     const box: {current: AnimatorHandle | null} = {current: null};
     const {rerender, getByTestId} = render(<Probe box={box} show={false} />);
     const animator = box.current!;
-    // Unattached: no element yet, nothing throws, the values are kept.
+    // Unattached: no element yet, so nothing happens and nothing throws.
     animator.set({x: 30, opacity: 0.4});
-    expect(animator.get()).toMatchObject({x: 30, opacity: 0.4});
-    void animator.animate({y: 10});
+    animator.stop();
+    expect(animator.get()).toMatchObject({x: 0, opacity: 1});
+    let resolved = 0;
+    await Promise.all([
+      animator.animate({y: 10}).then(() => resolved++),
+      animator.decay({x: 900}).then(() => resolved++),
+    ]);
+    expect(resolved).toBe(2);
     rerender(<Probe box={box} show />);
     const target = getByTestId('target');
-    expect(target.style.translate).not.toBe('');
-    expect(target.style.opacity).toBe('0.4');
-    expect(animator.get().x).toBe(30);
+    expect(animator.get()).toMatchObject({x: 0, y: 0, opacity: 1});
+    // Attached, it works.
+    animator.set({x: 30});
+    expect(target.style.translate).toBe('30px 0px');
   });
 
   it('an unmount lets the element go and keeps the values; a remount resumes from them', () => {
@@ -115,10 +122,11 @@ describe('useAnimator', () => {
     const animator = box.current!;
     animator.set({x: 12, rotate: 5});
     rerender(<Probe box={box} show={false} />);
+    // With no element attached, a call does nothing.
     animator.set({x: 24});
-    expect(animator.get()).toMatchObject({x: 24, rotate: 5});
+    expect(animator.get()).toMatchObject({x: 12, rotate: 5});
     rerender(<Probe box={box} show />);
-    expect(getByTestId('target').style.translate).toBe('24px 0px');
+    expect(getByTestId('target').style.translate).toBe('12px 0px');
     expect(getByTestId('target').style.rotate).toBe('5deg');
   });
 
