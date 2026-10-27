@@ -571,7 +571,7 @@ export const PREVIEW_PLAN: ReadonlyArray<PreviewRow> = [
     motionCost: 'idle',
     dirs: ['TopNav'],
     today: 'Mega-menu with a real exit, sub-lists, chevrons.',
-    gap: 'The only popover exit in core that travels, and it never checks reduced motion.',
+    gap: 'Its panel exit travels, and it never checks reduced motion.',
     shows:
       'Its exit as the existing proof the pattern works, plus the missing reduced-motion branch.',
     hardCase:
