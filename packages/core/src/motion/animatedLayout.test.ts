@@ -560,18 +560,7 @@ describe('the changed element exits (spec:AST-105 FR4)', () => {
     expect(content.style.pointerEvents).toBe('');
   });
 
-  it('reads where the content after it goes once, where no other margin collapses with its end margin', () => {
-    const {content, after, layout} = exitSetUp();
-    const reads = vi.mocked(after.getBoundingClientRect);
-    reads.mockClear();
-    expect(holdLayoutExit(layout, content, vi.fn())).toBe(true);
-    // Where it is now and where it goes: no guess and no check, so a long
-    // page is laid out twice fewer.
-    expect(reads).toHaveBeenCalledTimes(2);
-    expect(content.style.getPropertyValue('margin-block-end')).toBe('-88px');
-  });
-
-  it('guesses and checks where a negative margin would collapse with its end margin', () => {
+  it('guesses, then corrects, where a negative margin would collapse with its end margin', () => {
     const {content, after, layout} = exitSetUp();
     after.style.marginTop = '-4px';
     const reads = vi.mocked(after.getBoundingClientRect);

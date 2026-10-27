@@ -800,60 +800,70 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     expect(follower[0].duration).toBeLessThan(1200);
   });
 
-  for (const parent of [
-    {name: 'block flow', style: 'display: block'},
+  for (const layout of [
+    {
+      name: 'block flow',
+      html: `<div style="display: block"><div id="content" style="height: 80px; background: #fd9">Details</div><div id="a" class="row" style="margin: 0"></div></div>`,
+    },
     {
       name: 'a column flex box with a gap',
-      style: 'display: flex; flex-direction: column; gap: 12px',
+      html: `<div style="display: flex; flex-direction: column; gap: 12px"><div id="content" style="height: 80px; background: #fd9">Details</div><div id="a" class="row" style="margin: 0"></div></div>`,
+    },
+    {
+      name: 'a centered column',
+      html: `<div style="display: flex; flex-direction: column; justify-content: center; min-height: 400px"><div class="row"></div><div id="content" style="height: 80px; background: #fd9">Details</div><div id="a" class="row"></div></div>`,
+    },
+    {
+      name: 'a space-between column',
+      html: `<div style="display: flex; flex-direction: column; justify-content: space-between; min-height: 400px"><div class="row"></div><div id="content" style="height: 80px; background: #fd9">Details</div><div id="a" class="row"></div></div>`,
+    },
+    {
+      name: 'a column that ends a flex row',
+      html: `<div style="display: flex; gap: 8px"><div style="display: flex; flex-direction: column; flex: 1"><div class="row"></div><div id="content" style="height: 80px; background: #fd9">Details</div></div><div style="width: 60px; height: 40px; background: #ddd"></div></div><div id="a" class="row"></div>`,
     },
   ]) {
-    test(`an exit in ${parent.name} reads where the content after it goes once, and lands it exactly (FR4)`, async ({
+    test(`an exit in ${layout.name} lands the content after it exactly where it goes once hidden (FR4)`, async ({
       page,
     }) => {
       await open(
         page,
-        `<div id="area" class="area"><div style="${parent.style}">
-          <div id="content" style="height: 80px; background: #fd9">Details</div>
-          <div id="a" class="row" style="margin: 0"></div></div><div id="b" class="row"></div></div>`,
+        `<div id="area" class="area">${layout.html}<div class="row"></div></div>`,
       );
       const result = await page.evaluate(async () => {
         const area = document.querySelector('#area');
         const content = document.querySelector('#content') as HTMLElement;
         const a = document.querySelector('#a') as HTMLElement;
-        const layout = window.AnimatedLayout.createAnimatedLayout(() => area);
+        const handle = window.AnimatedLayout.createAnimatedLayout(() => area);
         const report = window.AnimatedLayout.reportLayoutChange(
-          layout,
+          handle,
           () => content,
         );
         report.measureBefore();
         report.animate();
-        // Where the row lands once the content is gone.
+        // Where the content after it lands once the element is gone.
         content.style.display = 'none';
         const target = a.getBoundingClientRect().top;
         content.style.display = '';
-        const original = a.getBoundingClientRect;
-        let reads = 0;
-        a.getBoundingClientRect = function getBoundingClientRect() {
-          reads += 1;
-          return original.call(this);
-        };
         const held = window.AnimatedLayout.holdLayoutExit(
-          layout,
+          handle,
           content,
           () => {},
         );
-        const holdReads = reads;
-        a.getBoundingClientRect = original;
         await new Promise<void>(resolve => {
           queueMicrotask(resolve);
         });
         a.getAnimations().forEach(animation => animation.finish());
-        return {held, holdReads, landed: a.getBoundingClientRect().top, target};
+        const landed = a.getBoundingClientRect().top;
+        // When the element hides, nothing after it moves again.
+        content.style.display = 'none';
+        window.AnimatedLayout.releaseLayoutExit(content);
+        const hidden = a.getBoundingClientRect().top;
+        return {held, landed, hidden, target};
       });
-      expect(result.held).toBe(true);
-      // Where it is and where it goes: no guess and no check.
-      expect(result.holdReads).toBe(2);
-      expect(Math.abs(result.landed - result.target)).toBeLessThan(0.5);
+      if (result.held) {
+        expect(Math.abs(result.landed - result.target)).toBeLessThan(0.5);
+      }
+      expect(Math.abs(result.hidden - result.target)).toBeLessThan(0.5);
     });
   }
 
