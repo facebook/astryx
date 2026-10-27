@@ -33,8 +33,10 @@ export type {
   MotionValues,
   SpringTransition,
 } from '../motion/animator';
+export {animatorFor} from '../motion/animator';
 export {cubicBezier} from '../motion/bezier';
 export type {BezierPoints} from '../motion/bezier';
+export {reducedMotionFade} from '../motion/reducedMotion';
 export {
   absoluteVelocity,
   dampingRatioOf,

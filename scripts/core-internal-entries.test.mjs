@@ -78,6 +78,7 @@ const COVERED = [
   'motion/uikit/springs',
   'motion/uikit/timing',
   'motion/uikit/pageControl',
+  'motion/reducedMotion',
 ];
 
 /** Every file under `dir` whose name matches `pattern`. */

@@ -90,9 +90,9 @@ import {
 } from '@astryxdesign/core/utils';
 import {isRtlElement} from '@astryxdesign/core/hooks';
 import {colorVars, focusVars} from '@astryxdesign/core/theme/tokens.stylex';
-import {useTouchPresentation} from '@astryxdesign/core/utils/touchPresentation';
-import {animatorFor} from '@astryxdesign/core/motion/animator';
-import {UIKIT_TAP, pageControl} from '@astryxdesign/core/motion/uikit';
+import {useTouchPresentation} from '@astryxdesign/core/internal/touch';
+import {animatorFor} from '@astryxdesign/core/internal/motion';
+import {UIKIT_TAP, pageControl} from '@astryxdesign/core/internal/motion';
 import {usePageControlTouch} from './PageControlTouch';
 import {
   BOX,

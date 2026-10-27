@@ -24,10 +24,10 @@ import {
   PanGestureRecognizer,
   TapGestureRecognizer,
   useGestureRecognizer,
-} from '@astryxdesign/core/gestures';
-import {animatorFor} from '@astryxdesign/core/motion/animator';
-import {reducedMotionFade} from '@astryxdesign/core/motion/reducedMotion';
-import {pageControl} from '@astryxdesign/core/motion/uikit';
+} from '@astryxdesign/core/internal/touch';
+import {animatorFor} from '@astryxdesign/core/internal/motion';
+import {reducedMotionFade} from '@astryxdesign/core/internal/motion';
+import {pageControl} from '@astryxdesign/core/internal/motion';
 import {
   BOX,
   PITCH,
