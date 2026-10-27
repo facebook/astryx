@@ -5,10 +5,12 @@
 /**
  * @file useAlertMotion.ts
  * @input Whether the alert is open, whether it runs UIKit's motion, the
- *   motion animator and the alert entries of the UIKit constants table
+ *   motion animator, the alert entries of the UIKit constants table, and the
+ *   layer runtime's input hold (Layer/inputHold)
  * @output Exports useAlertMotion and AlertMotion: when the Dialog is
- *   presented (it stays open while the alert leaves), the callback ref that
- *   puts the animators on the dialog, and whether a touch may act right now
+ *   presented (it stays open while the alert leaves), and the callback ref
+ *   that puts the animators and the input hold on the dialog; whether a touch
+ *   may act is the hold's (isInHeldLayer), which the gesture host reads
  * @position Internal hook of AlertDialog; the touch presentation's motion
  *
  * UIKit's alert motion (measured on iOS 26.2; numbers in
@@ -65,7 +67,7 @@ import {
   toSpring,
   type SpringDescription,
 } from '../motion/spring';
-import {holdInput, isInHeldLayer} from '../Layer/inputHold';
+import {holdInput} from '../Layer/inputHold';
 import {
   alertController,
   alertMotion,
@@ -163,8 +165,6 @@ export interface AlertMotion {
   readonly isDriving: boolean;
   /** Callback ref for the dialog element. */
   readonly ref: (element: HTMLElement | null) => void;
-  /** Whether a touch landing now may act (false during the transitions). */
-  readonly acceptsTouches: () => boolean;
 }
 
 export function useAlertMotion({
@@ -229,12 +229,6 @@ export function useAlertMotion({
   // The action a dismissal's hold blurred (its content turns inert), given
   // focus back if the alert reopens mid-exit.
   const blurredByDismissalRef = useRef<HTMLElement | null>(null);
-  const acceptsTouches = useCallback(
-    () =>
-      !isEnabledRef.current ||
-      (statusRef.current === 'open' && !isInHeldLayer(elementRef.current)),
-    [],
-  );
   // Unmounting lets the alert go at once, hold included. The alert counts as
   // hidden again, so an effect replay (StrictMode runs every cleanup once,
   // then every effect) presents it again and places its hold
@@ -373,7 +367,7 @@ export function useAlertMotion({
     return () => clearTimeout(backstop);
   }, [isLeaving]);
 
-  return {isPresented, isDriving: isEnabled, ref, acceptsTouches};
+  return {isPresented, isDriving: isEnabled, ref};
 }
 
 /**
