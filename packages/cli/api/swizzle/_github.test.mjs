@@ -16,6 +16,11 @@ import * as path from 'node:path';
 import {execFileSync, spawn, spawnSync} from 'node:child_process';
 import {checkGhCli} from './_github.mjs';
 
+vi.mock('node:fs', async importOriginal => {
+  const actual = await importOriginal();
+  return {...actual, statSync: vi.fn(actual.statSync)};
+});
+
 vi.mock('node:child_process', () => ({
   execFileSync: vi.fn(),
   spawn: vi.fn(),
@@ -84,10 +89,21 @@ describe('checkGhCli', () => {
     }
   });
 
-  it('throws on a gh it cannot read for another reason, rather than read it as not there', () => {
+  it('reads a gh symlink loop, or a PATH entry too long to resolve, as no gh there', () => {
     const looped = dirWith({});
     fs.symlinkSync('gh', path.join(looped, 'gh'));
-    expect(() => checkGhCli({PATH: looped}, 'linux')).toThrow(/ELOOP/);
+    const tooLong = path.join(dirWith({}), 'x'.repeat(300));
+    expect(
+      checkGhCli({PATH: [looped, tooLong].join(path.delimiter)}, 'linux'),
+    ).toBe(false);
+  });
+
+  it('throws a stat error that does not mean no gh there', () => {
+    const tools = dirWith({});
+    vi.mocked(fs.statSync).mockImplementationOnce(() => {
+      throw Object.assign(new Error('EIO: i/o error, stat'), {code: 'EIO'});
+    });
+    expect(() => checkGhCli({PATH: tools}, 'linux')).toThrow(/EIO/);
   });
 
   it('on Windows, finds gh with a PATHEXT extension', () => {
