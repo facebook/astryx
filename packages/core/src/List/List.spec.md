@@ -31,7 +31,9 @@ system_specs:
     spec:AST-002/DEC-2,
     spec:AST-017/FR4,
     spec:AST-057/FR9,
+    spec:AST-094,
     spec:AST-103,
+    spec:AST-105,
   ]
 ---
 
@@ -103,6 +105,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 | ------------------------------ | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | -------- | ---------------- | ---------- | -------------------------------------------- |
 | Edge treatment                 | `padded`, `flush`, `outset`, `bleed` | Where row content and row paint sit relative to the list's edges and the host's padding                                                          | Every density, marker style, and divider setting; `outset` and `bleed` read host padding | `padded` | `component:List` | accepted   | Other values are rejected by the public type |
 | Edge compensation (deprecated) | omitted, `inline`                    | Same as `edge="outset"`                                                                                                                          | As `outset`                                                                              | omitted  | `component:List` | deprecated | Other values are rejected by the public type |
+| Animated layout                | absent, a `useAnimatedLayout` handle | Inserted, removed, and moved rows animate, and the rows after a change glide to their new places (FR14)                                          | Every density, marker style, edge treatment, and divider setting                         | absent   | `spec:AST-105`   | proposed   | Other values are rejected by the public type |
+| Edit mode                      | `false`, `true`                      | Every row makes room at its leading edge for an editing control, and its trailing content leaves (FR15)                                          | Every density, marker style, edge treatment, and divider setting                         | `false`  | `component:List` | proposed   | Other values are rejected by the public type |
+| Editing control                | omitted, `select`                    | The control edit mode shows in each row's leading room: `select` is a selection indicator, checked while the row is selected (FR16)              | Edit mode only; nothing shows outside it                                                 | omitted  | `component:List` | proposed   | Other values are rejected by the public type |
 | Reordering                     | absent, a `createReorderable` object | Rows can be reordered by handle, keyboard, and assistive technology; `onReorder` receives the moved row's key and its new index (`spec:AST-103`) | Every density, marker style, edge treatment, and divider setting                         | absent   | `spec:AST-103`   | accepted   | Other values are rejected by the public type |
 
 ## Behavioral and layout contract
@@ -119,6 +124,12 @@ Consumer migration instructions belong in consumer docs and release notes.
 | FR8  | `outset` and `bleed` are valid only under a host state whose published inline inset matches its applied padding: a visually neutral host, such as a Layout region with explicit padding or a padded ScrollableArea, or the content area of a Card, Section (any variant), Dialog, or BottomSheet. Those hosts bound their padding with a border, background, or clip; FR6 keeps row paint inside the padding edge, so it never covers the border or changes the host's outline. Automatic LayoutContent/LayoutPanel states with a known publication mismatch are not eligible until that gap is fixed, and Drawer's content area is not admitted until it has its own evidence. | `architecture:container-padding/INV8–INV11`; real-browser evidence in each admitted host | Accepted contract                                     |
 | FR9  | The list element containing the rows MUST clip in the inline axis with `overflow-inline: clip`, never `hidden`. Under `outset` and `bleed` its inline edges MUST reach the host's padding edge, so the clip never cuts resting row paint and a swiped row paints no further than that edge.                                                                                                                                                                                                                                                                                                                                                                                     | `spec:AST-057/FR9`                                                                       | Verified by `List.test.tsx` and real-browser geometry |
 | FR10 | Under a coarse primary pointer (`spec:AST-094` FR13), every ListItem row MUST offer a hit target at least 44 px tall, through its padding or an invisible hit area, with no visual change, where its neighbors leave room: the hit area never overlaps a neighboring row's or control's target, and between close neighbors it is clamped to half the gap; row height and geometry stay as they are at every density. A fine pointer keeps today's hit target.                                                                                                                                                                                                                  | Owner decision, 2026-10-26: no row-height change, a 44 px touch target                   | Accepted contract                                     |
+| FR11 | Under a coarse primary pointer (`spec:AST-094` FR13), while a row of a List with `hasDividers` is pressed (FR12) or held (FR13), its own divider and the divider above it MUST NOT paint across its highlight. Both return at the release while the highlight fades, and in the frame the highlight drops when the page takes the touch for a scroll. A fine pointer keeps every divider.                                                                                                                                                                                                                                                                                       | UIKit `UITableView` separators beside a highlighted cell, iOS 26.2                       | Proposed; awaiting an engineering owner's approval    |
+| FR12 | Under a coarse primary pointer, an interactive row's press MUST paint through one press layer on the row's `::before`, above its background and below its content, at the cell press strength, and its release MUST fade on the cell release curve on the compositor (`spec:AST-094` FR11). At rest the row's `::before` and stacking are as they were; while the row is pressed or held, the layer replaces a caller's decoration on its `::before`, so decoration that stays through a press belongs on a child.                                                                                                                                                              | `spec:AST-094` FR11, the cell press model                                                | Proposed; awaiting an engineering owner's approval    |
+| FR13 | A navigation container MAY keep the row whose activation pushed it selected while the pushed content covers it. The held row's highlight MUST stay at full strength, MUST deselect with the pop's progress (an interactive pop scrubs it), MUST return at once when the pop cancels, and focus MUST return to the row when the pop ends. The hold applies under a coarse primary pointer; with a fine pointer the press releases at the lift.                                                                                                                                                                                                                                   | UIKit table cells under a navigation push, iOS 26.2                                      | Proposed; awaiting an engineering owner's approval    |
+| FR14 | List MUST take an `animatedLayout` handle (`spec:AST-105` FR1) and report each row inserted, removed, or moved between renders. With a handle, an inserted row fades in once rows moving past have cleared it, a removed row collapses in place and leaves within one second, a row crossing rows that move the other way rides above them on the list's surface, and the rows after a change glide to their new places (`spec:AST-105` FR3), all on the shared motion role (`spec:AST-105` FR4). Without a handle the list changes at once (`spec:AST-105` FR2). Rows need stable keys.                                                                                        | `spec:AST-105` FR1–FR5; UIKit `UITableView` batch updates, iOS 26.2                      | Proposed; awaiting an engineering owner's approval    |
+| FR15 | With `isEditing`, every row MUST make room at its leading edge for an editing control: its content moves inline by the editing indent (40 px) beyond the row's applied inline inset, a theme `item.paddingInline` override included (FR7), and its trailing content leaves. Under a coarse primary pointer, entering and leaving MUST move the content on the list's edit motion role (`spec:AST-094` FR4) and fade the trailing content in place; under a fine pointer the list switches at once. A row's activation and its one tab stop are unchanged.                                                                                                                       | UIKit `UITableView` editing mode, iOS 26.2                                               | Proposed; awaiting an engineering owner's approval    |
+| FR16 | `editingControl="select"` MUST show, in edit mode, a selection indicator in each row's leading room, checked while the row is selected, entering and leaving with the row's content (FR15). Activating a row runs its action as outside edit mode, for the caller to toggle its selection, and the row keeps its one tab stop (AR3). The prop's public type is exported as `ListEditingControl`.                                                                                                                                                                                                                                                                                | UIKit multiple selection during editing, iOS 26.2                                        | Proposed; awaiting an engineering owner's approval    |
 
 ### Allowed variation
 
@@ -131,6 +142,8 @@ Consumer migration instructions belong in consumer docs and release notes.
   may vary without changing the collection-wide treatment.
 - Under a coarse primary pointer, a row's hit target grows toward 44 px where
   its neighbors leave room (FR10); row geometry and appearance are unchanged.
+- Under a fine pointer, rows keep their dividers through a press (FR11) and edit
+  mode switches at once (FR15).
 
 ### Representative states
 
@@ -143,6 +156,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 | `outset` or `bleed`, host inset smaller than row inset | Row paint stops at the host's padding edge; content keeps the row inset.               | Either logical edge independently.  |
 | `outset` or `bleed`, no host inset                     | Content placed as `padded`; `bleed` rows are square.                                   | Standalone lists and overlays.      |
 | LTR or RTL                                             | Logical start/end mapping follows direction.                                           | Writing direction.                  |
+| A divided list, a row pressed under a finger           | The row's own divider and the one above it hide; they return as the highlight fades.   | Middle or last row.                 |
+| `animatedLayout`, rows change                          | Staying rows move to their new places; a removed row collapses; new rows fade in.      | Reduced motion: the role's policy.  |
+| `isEditing`                                            | Content moves by the editing indent beyond the applied inset; trailing content leaves. | Theme `item.paddingInline`.         |
+| `isEditing` with `editingControl="select"`             | Each row shows a selection indicator, checked while the row is selected.               | Selected and unselected rows.       |
 
 ### Transformation and precedence order
 
@@ -161,6 +178,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 - **PR1 — CSS geometry only.** Every treatment MUST add no measurement, observer,
   listener, state, Effect, or render pass. Deprecation warnings are dev-only.
+- **PR2 — Motion only where it applies.** FR11–FR13 and FR15–FR16 add no
+  listener, observer, measurement, or animation under a fine pointer; FR14
+  measures rows only with a handle, and FR15 only in edit mode. Every motion
+  runs on transform and opacity.
 
 ## Accessibility contract
 
@@ -168,6 +189,11 @@ Consumer migration instructions belong in consumer docs and release notes.
   interactive element, accessible role/name/state, focus target, or tab order.
 - **AR2 — Direction remains logical.** Each treatment MUST produce the mirrored
   geometry under RTL without changing DOM order.
+- **AR3 — Edit-mode selection is announced.** With the selection control, each
+  row's activation MUST expose the row's selection as a checked state
+  (`role="checkbox"` with `aria-checked`), so assistive technology announces it
+  as it toggles; the indicator itself MUST be hidden from the accessibility
+  tree. Outside edit mode a row's semantics are unchanged.
 
 ## Design relationships
 
@@ -190,6 +216,13 @@ Consumer migration instructions belong in consumer docs and release notes.
   containing swipe-capable rows clips in the inline axis; List carries that clip
   (FR9) and `ListItem` passes `swipeActions` and `swipeBehavior` through to
   `Item` unchanged.
+- `spec:AST-094` owns the touch presentation gate (FR13), the press model
+  (FR11), and motion roles (FR4); FR11–FR13 and FR15 apply them to list rows.
+- `spec:AST-105` owns the animated layout handle and its shared motion; List
+  adopts it for row updates (FR14) and owns only its rows' own entering,
+  exiting, and crossing.
+- A navigation container owns when a push and a pop happen; the selection hold
+  (FR13) owns only the held row's highlight and its focus return.
 - `spec:AST-103` owns reordering. List is its first adopter: it
   takes the `reorderable` object, a row's key is its `ListItem`'s `itemKey`
   and its position is its index, and the
@@ -203,6 +236,11 @@ Consumer migration instructions belong in consumer docs and release notes.
 | FR1–FR7, FR9              | List, Item, and theme-registry tests                            | every treatment; all densities; static and interactive rows; header; deprecated alias alone and with `edge`; ListItem outside a List                                                                                                                                                                                                 | Removing context propagation, using one host edge for both inline edges, zeroing padding without the shared inset source, or dropping the list's reach or clip fails                                        | `audit:List/layout` |
 | FR2–FR6, FR8–FR9, AR1–AR2 | Real-browser List geometry evidence                             | each treatment in a Card at two paddings, a Section, an inline Dialog with and without Layout, a BottomSheet, a padded ScrollableArea scrolling vertically and in both axes, a LayoutContent with explicit padding, and standalone; header and dividers; LTR/RTL; hovered and selected rows; a swiped row under `outset` and `bleed` | Header movement, content off the expected line, paint past the host's padding edge, clipped resting paint, or a changed row box fails                                                                       | `audit:List/visual` |
 | FR10                      | List tests of the touch hit target and real-browser hit-testing | every density; a row with a description; compact rows packed closer than 44 px; a row with an end control; a coarse and a fine pointer; a theme row padding                                                                                                                                                                          | A coarse-pointer row whose target stays at its box where its neighbors leave room, a target that reaches a neighboring row's or control's target, a changed row box, or a changed fine-pointer target fails | `audit:List/layout` |
+| FR11                      | Real-browser divider evidence under a finger and a mouse        | a middle row and the last row pressed; a press the page takes for a scroll; dark mode; RTL; a mouse                                                                                                                                                                                                                                  | A divider painted across a pressed row's highlight under a finger, or a divider hidden for a mouse, fails                                                                                                   | `audit:List/visual` |
+| FR12                      | Item press-layer tests and real-browser pixel evidence          | press, hold, and release; a release while the main thread is blocked; a mouse                                                                                                                                                                                                                                                        | A release that stops while script runs, a layer painted at rest, or a stacking context at rest fails                                                                                                        | `audit:List/visual` |
+| FR13, AR1                 | Selection-hold tests and real-browser navigation evidence       | a programmatic pop; an interactive pop, scrubbed and cancelled; reduced motion; a keyboard pop; a mouse                                                                                                                                                                                                                              | A row deselected before the pop, a cancelled pop that leaves the row deselected, or focus not returned to the row fails                                                                                     | `audit:List/visual` |
+| FR14                      | List update-motion tests and real-browser frame evidence        | an insert, a removal, and a reorder, with and without a handle; reduced motion; a mouse                                                                                                                                                                                                                                              | A staying row that jumps with a handle, motion without one, a removed row left in place past one second, or layout or paint per frame fails                                                                 | `audit:List/visual` |
+| FR15–FR16, AR3            | List edit-mode tests and real-browser evidence                  | entering and leaving; a theme `item.paddingInline` override; selected and unselected rows with the selection control; a screen reader's reading of a row; a mouse                                                                                                                                                                    | Content that does not clear the editing control, a jump with no room made, a lost tab stop, or a selection that assistive technology does not announce fails                                                | `audit:List/layout` |
 | Migration                 | `astryx upgrade` codemod tests                                  | static, aliased, already-migrated, dynamic, and computed-`edge` callsites; a second run                                                                                                                                                                                                                                              | A dynamic value or a computed `edge` rewritten, a static one missed, or a second run that changes output fails                                                                                              | `audit:List/docs`   |
 | Documentation             | `List.doc.mjs`, Storybook, and `scripts/check-knowledge.mjs`    | public prop, values, default, deprecation, and representative composition                                                                                                                                                                                                                                                            | Missing or stale contract, docs, or example fails                                                                                                                                                           | `audit:List/docs`   |
 
@@ -262,9 +300,31 @@ their geometry.
 Rejected: bleed as the default inside padded hosts, because it would move every
 existing list in a container.
 
+### DEC-5 — A touch list behaves as a UIKit table under a finger only
+
+**Reference:** `component:List/DEC-5`
+
+**Decider:** pending an engineering owner
+
+Under a coarse primary pointer a list row follows the UIKit table cell, read on
+iOS 26.2: its separators give way to its highlight, a row tapped to push stays
+selected until the pop, and edit mode makes room for its control. Under a fine
+pointer the list keeps the web's own behavior (`spec:AST-094` FR13). Row
+updates are the one exception: they animate through the shared animated layout
+handle under every pointer (`spec:AST-105` FR5). Each motion plays a motion
+role, never a literal curve (`spec:AST-094` FR4), and edit mode's room is
+measured from the row's applied inset, so a theme's row padding moves the
+control with the text.
+
+Rejected: the same motion for a mouse, which the web does not expect.
+
 ## Open questions
 
-None.
+- **OQ1 — Edit mode and reorder mode.** How `isEditing` composes with
+  `reorderable` (`spec:AST-103`): (a) independently, so a reorderable list in
+  edit mode shows both the editing control at the leading edge and the reorder
+  handle at the trailing edge, as a UIKit table does; or (b) edit mode hides
+  the reorder handles until it ends.
 
 ## Content boundary
 
