@@ -282,6 +282,7 @@ function heldDrag(from: {x: number; y: number}, dx: number) {
 
 test('the row trails the finger on the tracking spring and catches up when it stops', async ({
   page,
+  browserName,
 }) => {
   const {driver, row, start} = await openRow(page);
   const dx = 140;
@@ -324,9 +325,13 @@ test('the row trails the finger on the tracking spring and catches up when it st
   // When the finger stops, the row catches up with it.
   expect(caughtUp).toBeCloseTo(swipe(dx), 0);
   await waitForRest(row);
-  expect(await readLongTasks(page, {from: started, to: Date.now()})).toEqual(
-    [],
-  );
+  // No long task on the page while it tracked: the Long Tasks API is
+  // Chromium-only, so WebKit runs the rest of the case.
+  if (browserName === 'chromium') {
+    expect(await readLongTasks(page, {from: started, to: Date.now()})).toEqual(
+      [],
+    );
+  }
 });
 
 test('the settle after a held release is UIKit’s spring, frame by frame, with the panel in step', async ({
