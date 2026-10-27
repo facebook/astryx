@@ -1603,6 +1603,47 @@ const resumeFramesIfStalled = async (page: Page): Promise<boolean> => {
   return hasFrames;
 };
 
+/**
+ * Samples the search content's rise per frame, in real time from the rise's
+ * own start (`riseFrom`, epoch ms), clicking Cancel at 150 ms into it, and
+ * keeps sampling to 1 s.
+ */
+const traceCancel = async (page: Page, riseFrom: number) =>
+  page.evaluate(async from => {
+    const card = document.querySelector('[data-navigation-screen="root"]');
+    const field = card?.querySelector('[data-navigation-search]');
+    const content = field?.nextElementSibling as HTMLElement;
+    const cancel = [...(field?.querySelectorAll('button') ?? [])].find(
+      button =>
+        button.textContent?.trim() === 'Cancel' ||
+        button.getAttribute('aria-label') === 'Cancel',
+    );
+    const y = () => {
+      const value = getComputedStyle(content).translate;
+      return value === 'none' ? 0 : parseFloat(value.split(' ')[1] ?? '0');
+    };
+    const out: {t: number; y: number; cancelled: boolean}[] = [];
+    const start = from - performance.timeOrigin;
+    let cancelled = false;
+    await new Promise<void>(resolve => {
+      const tick = () => {
+        const t = performance.now() - start;
+        out.push({t, y: y(), cancelled});
+        if (!cancelled && t >= 150) {
+          cancelled = true;
+          cancel?.click();
+        }
+        if (t < 1000) {
+          requestAnimationFrame(tick);
+        } else {
+          resolve();
+        }
+      };
+      requestAnimationFrame(tick);
+    });
+    return out;
+  }, riseFrom);
+
 /** Whether the page presents for a finger (`pointer: coarse`). */
 const isTouchPresentation = (page: Page) =>
   page.evaluate(() => matchMedia('(pointer: coarse)').matches);
@@ -1988,48 +2029,33 @@ test.describe('search in the bar', () => {
     await expect
       .poll(async () => (await readSearch(page, 'root')).contentY)
       .toBeCloseTo(0, 0);
-    await field.click();
-    test.skip(
-      !(await resumeFramesIfStalled(page)),
-      'no frames to sample in this engine',
-    );
-    await waitForAnimation(rootCard.locator('[data-navigation-search] + div'));
     // Per frame, in real time (a held animation would not move the
-    // animator's own clock): Cancel 150 ms into the rise.
-    const trace = await page.evaluate(async () => {
-      const card = document.querySelector('[data-navigation-screen="root"]');
-      const field = card?.querySelector('[data-navigation-search]');
-      const content = field?.nextElementSibling as HTMLElement;
-      const cancel = [...(field?.querySelectorAll('button') ?? [])].find(
-        button =>
-          button.textContent?.trim() === 'Cancel' ||
-          button.getAttribute('aria-label') === 'Cancel',
+    // animator's own clock) from the rise's own start: Cancel 150 ms into the
+    // rise. A busy runner's round trip can begin the trace after that point,
+    // which would land the cancel late in the rise (not the bar's doing):
+    // then the bar is let back down and the activation tried again.
+    let trace: {t: number; y: number; cancelled: boolean}[] = [];
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      await field.click();
+      test.skip(
+        !(await resumeFramesIfStalled(page)),
+        'no frames to sample in this engine',
       );
-      const y = () => {
-        const value = getComputedStyle(content).translate;
-        return value === 'none' ? 0 : parseFloat(value.split(' ')[1] ?? '0');
-      };
-      const out: {t: number; y: number; cancelled: boolean}[] = [];
-      const start = performance.now();
-      let cancelled = false;
-      await new Promise<void>(resolve => {
-        const tick = () => {
-          const t = performance.now() - start;
-          out.push({t, y: y(), cancelled});
-          if (!cancelled && t >= 150) {
-            cancelled = true;
-            cancel?.click();
-          }
-          if (t < 1000) {
-            requestAnimationFrame(tick);
-          } else {
-            resolve();
-          }
-        };
-        requestAnimationFrame(tick);
-      });
-      return out;
-    });
+      const [rise] = await waitForAnimation(
+        rootCard.locator('[data-navigation-search] + div'),
+      );
+      trace = await traceCancel(page, rise.from);
+      if (trace.filter(sample => !sample.cancelled).length >= 3) {
+        break;
+      }
+      await expect
+        .poll(async () => (await readSearch(page, 'root')).contentY)
+        .toBeCloseTo(0, 0);
+    }
+    expect(
+      trace.filter(sample => !sample.cancelled).length,
+      'three frames of the rise before the cancel point, in 3 attempts',
+    ).toBeGreaterThanOrEqual(3);
     const before = trace.filter(sample => !sample.cancelled);
     const after = trace.filter(sample => sample.cancelled);
     const turn = before[before.length - 1];
