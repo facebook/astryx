@@ -85,6 +85,10 @@ const sx = stylex.create({
     width: '100%',
   },
   outlineItem: {
+    // One item per row, so the marker moves on every step.
+    display: 'block',
+    width: '100%',
+    textAlign: 'start',
     padding: '5px 0 5px 14px',
     cursor: 'pointer',
     color: 'var(--color-text-secondary)',
@@ -767,7 +771,12 @@ export function OutlineMarkerRig({
     }
   }, [index, mode]);
 
-  useLoop(() => setIndex(i => (i + 1) % OUTLINE_ITEMS.length), intervalMs);
+  // The scroll rate runs faster than the lab's usual 700 ms floor.
+  useLoop(
+    () => setIndex(i => (i + 1) % OUTLINE_ITEMS.length),
+    intervalMs,
+    Math.min(700, intervalMs),
+  );
 
   return (
     <VStack gap={2} {...stylex.props(sx.full)}>

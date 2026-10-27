@@ -359,8 +359,8 @@ function OutlinePreview() {
         <Text type="supporting" color="secondary">
           The proposed marker uses a CSS transition on transform, so a move that
           starts mid-slide begins from where the marker is. Keeping its velocity
-          through an interrupted move (animator retargeting) lands with the
-          public useAnimator.
+          through an interrupted move needs Astryx's animator, which the sandbox
+          can use only once it has a public API.
         </Text>
       </DemoBody>
     </DemoCard>
