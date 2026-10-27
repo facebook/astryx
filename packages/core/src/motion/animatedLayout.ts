@@ -1009,7 +1009,10 @@ export function applyLayoutChangeTransition(
   );
 }
 
-/** @internal For tests: the motion a change in `area` plays. */
+/**
+ * @internal The motion a change in `area` plays, for tests and for SideNav's
+ * rail motion, which plays on the same clock (`component:SideNav` FR6).
+ */
 export function layoutMotionFor(area: Element): LayoutMotion {
   return layoutMotion(area);
 }
