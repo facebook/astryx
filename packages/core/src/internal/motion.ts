@@ -35,6 +35,7 @@ export type {
 } from '../motion/animator';
 export {cubicBezier} from '../motion/bezier';
 export type {BezierPoints} from '../motion/bezier';
+export {resolveMotion} from '../motion/resolveMotion';
 export {
   absoluteVelocity,
   dampingRatioOf,
@@ -130,3 +131,4 @@ export type {
   GestureConstantUnit,
   HapticFeedbackKind,
 } from '../motion/uikit';
+export {useAnimator} from '../motion/useAnimator';

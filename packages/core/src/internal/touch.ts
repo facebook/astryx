@@ -38,6 +38,7 @@ export {
   unwrapAngle,
 } from '../gestures/geometry';
 export {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer';
+export {ScreenEdgePanGestureRecognizer} from '../gestures/ScreenEdgePanGestureRecognizer';
 export {TapGestureRecognizer} from '../gestures/TapGestureRecognizer';
 export {DEFAULT_ENVIRONMENT} from '../gestures/types';
 export {PanGestureRecognizer} from '../gestures/PanGestureRecognizer';
@@ -59,6 +60,7 @@ export type {
   TouchPhase,
   TouchSample,
 } from '../gestures/types';
+export {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 export {
   COMPACT_QUERY,
   COMPACT_TOUCH_QUERY,
