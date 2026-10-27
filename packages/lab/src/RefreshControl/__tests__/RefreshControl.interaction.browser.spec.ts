@@ -19,8 +19,10 @@
  *   does not turn the spinner; under a fine pointer a pen's or a mouse's drag
  *   pulls and refreshes as a finger's does and the top edge stays the
  *   browser's (spec:AST-094 FR43), and under Reduce Motion a pen's release
- *   lands at once there (DR3) and cross-fades on a touch screen (DR2);
- *   storyboards of the pull, the settle and the end.
+ *   lands at once there (DR3) and cross-fades on a touch screen (DR2); a
+ *   trackpad's or a wheel's scroll at the top pulls through a finger's
+ *   mapping while a scroll down the page stays the page's; storyboards of the
+ *   pull, the settle and the end.
  *
  * The control follows the touch presentation (a coarse primary pointer, one
  * touch model on iOS and Android alike). The harness's touch contexts report

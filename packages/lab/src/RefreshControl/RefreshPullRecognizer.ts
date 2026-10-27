@@ -26,10 +26,10 @@
  * - one finger: a second finger is the browser's (pinch-zoom).
  *
  * Every pointer reads the same way (`spec:AST-094` FR43): a pen's or a
- * mouse's drag pulls as a finger's does. A trackpad's or a wheel's scroll
- * pulls through a second instance that takes only scrolling (scroll-edge, no
- * pointer), so it takes a scroll only where nothing under the pointer could
- * scroll for it; the first takes no scrolling.
+ * mouse's drag pulls as a finger's does, and takes no scrolling. A
+ * trackpad's or a wheel's scroll pulls through RefreshScrollPullRecognizer,
+ * which takes only scrolling, only where nothing under the pointer could
+ * scroll for it (scroll-edge), and claims what it takes.
  * `pointerType` and `scrollType` record the first contact's input, and
  * `onTouchDown` reports that first contact landing, so a settle in flight can
  * stop where it is (UIScrollView brakes on touch-down).
@@ -80,5 +80,30 @@ export class RefreshPullRecognizer extends PanGestureRecognizer {
       this.onTouchDown?.(event.time);
     }
     super.touchesBegan(touches, event);
+  }
+}
+
+/**
+ * The scroll pull: a trackpad's or a wheel's scroll at the top. A scroll-edge
+ * pan that takes scrolling and no pointer, so it takes a scroll only where
+ * nothing under the pointer could scroll for it: the owner at its top and the
+ * content moving down. It claims what it takes: the host cancels each wheel
+ * of a gesture it takes, so its element gets a blocking `wheel` listener,
+ * which only a recognizer that claims may register (`spec:AST-094` FR20). It
+ * takes no pointer, so it adds no `touchmove` listener.
+ */
+export class RefreshScrollPullRecognizer extends RefreshPullRecognizer {
+  constructor(options: PanGestureRecognizerOptions = {}) {
+    super({
+      name: 'RefreshScrollPull',
+      scrollEdge: true,
+      allowedPointerTypes: [],
+      ...options,
+    });
+  }
+
+  /** The wheel it takes is its own: the host cancels it. */
+  override get claimsTouches(): boolean {
+    return true;
   }
 }

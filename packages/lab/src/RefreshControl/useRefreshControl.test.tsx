@@ -12,7 +12,9 @@
  *   FR43: a pen's or a mouse's drag pulls as a finger's does and clears the
  *   selection its drag started, and under a fine pointer the top edge stays
  *   the browser's and no scroll listener is held; any touch screen,
- *   Android's included, pulls), the disabled
+ *   Android's included, pulls; a trackpad's or a wheel's scroll at the top
+ *   pulls through a pan that claims it (FR20) and keeps the page's
+ *   selection), the disabled
  *   state, the scroll-lock stand-down and the top-edge overscroll policy on
  *   the page and on a scroll container
  * @position Testing; colocated with useRefreshControl.ts. Motion itself is

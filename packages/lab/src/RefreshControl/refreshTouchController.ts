@@ -80,7 +80,10 @@ import {refreshControl} from '@astryxdesign/core/internal/motion';
 import {scroll} from '@astryxdesign/core/internal/motion';
 import {registerTimingTable, timing} from '@astryxdesign/core/internal/motion';
 import {useAnimator} from '@astryxdesign/core/internal/motion';
-import {RefreshPullRecognizer} from './RefreshPullRecognizer';
+import {
+  RefreshPullRecognizer,
+  RefreshScrollPullRecognizer,
+} from './RefreshPullRecognizer';
 import {
   REFRESH_REVEAL_VAR,
   REFRESH_SPIN_STEP_VAR,
@@ -847,18 +850,13 @@ export function useRefreshTouchController({
     onPull,
   );
   // A trackpad's or a wheel's scroll pulls through a second pan that takes
-  // only scrolling, both kinds as a pan does by default (spec:AST-094 FR43).
-  // As a scroll-edge pan it takes a scroll only where nothing under the
-  // pointer could scroll for it: the owner at its top and the content moving
-  // down. Every other scroll stays the page's.
+  // only scrolling (spec:AST-094 FR43), only where nothing under the pointer
+  // could scroll for it: the owner at its top and the content moving down.
+  // Every other scroll stays the page's. It claims what it takes, so its
+  // blocking `wheel` listener is a claimer's (FR20).
   const scrollRecognizer = useGestureRecognizer(
     contentElement,
-    () =>
-      new RefreshPullRecognizer({
-        name: 'RefreshScrollPull',
-        scrollEdge: true,
-        allowedPointerTypes: [],
-      }),
+    () => new RefreshScrollPullRecognizer(),
     onPull,
   );
   // Syncs whether the pull applies (not disabled, no scroll lock)
