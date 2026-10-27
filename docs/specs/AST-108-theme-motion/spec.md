@@ -59,8 +59,7 @@ defineTheme({
   - `tempo` is a number, default `1`, clamped to 0.75–1.5; it scales every
     motion duration;
   - `character` is `'crisp'`, `'standard'` (default), or `'expressive'`; it
-    picks the entrance and move curves and the spring bounce. Three steps are
-    the recommendation the owner adopted with the knobs; a continuous bounce
+    picks the entrance and move curves and the spring bounce. a continuous bounce
     is not offered;
   - `reducedMotion` is `'system'` (default) or `'always'`; `'always'` applies
     `design:reduced-motion` DR1–DR3 for everyone, and `'system'` follows each
@@ -69,7 +68,7 @@ defineTheme({
   `--duration-*` tokens are their base values times `tempo`. `character` sets
   only the job-named `--ease-entrance` and `--ease-move` tokens, declared in
   `tokens.stylex.ts`. `--ease-standard`, which today's exits read, and
-  `--ease-exit`, whose default is `spec:AST-090` FR12's, are the same at every character, so exits stay
+  `--ease-exit`, whose default is `cubic-bezier(0.3, 0, 0.6, 0.6)`, are the same at every character, so exits stay
   quiet. With `tempo` 1 and `character`
   `'standard'`, the tokens are today's: `--duration-*` 130, 175, 230, 310, 410,
   550, 730, 975 and 1300 ms, and `--ease-standard`
@@ -102,7 +101,8 @@ defineTheme({
   band, the on-screen keyboard's motion (`spec:AST-099` FR8), the press
   model's clocks (its onset delay, cancel distance, and tap flash), hover-intent
   delays, gesture thresholds (`spec:AST-002` FR3), the loop periods of busy
-  indicators such as Spinner and Skeleton, which read no tempo-scaled token,
+  indicators such as Spinner and Skeleton, which read the duration their theme
+  sets before `tempo` scales it, so a `MotionScaleConfig` still times them,
   or the 200 ms Reduce Motion cap; `tempo` may shorten a
   Reduce Motion cross-fade but never lengthens it.
 - **FR5 — Existing motion configuration keeps working.** `defineTheme`'s
@@ -114,8 +114,9 @@ defineTheme({
   before, springs included. Explicit
   `MotionScaleConfig` fields and explicit `tokens` win over `tempo` and
   `character`, and an extending theme's motion configuration replaces its
-  base's, as today. An adaptation rule may set the knobs like any other
-  `motion` value (`spec:AST-012` FR4).
+  base's, as today. An adaptation rule may set `tempo` and `character` like
+  any other `motion` value (`spec:AST-012` FR4); `reducedMotion` is set on the
+  theme itself, since its root mark has no conditional form.
 - **FR6 — Server rendering gets the same values.** A theme is plain data, and
   the theme utilities run on the server. `'system'` is resolved by emitting
   the reduced token set behind `prefers-reduced-motion` in the generated CSS,
@@ -137,6 +138,8 @@ defineTheme({
 - `defineTheme`'s `motion` widens to accept the three knobs beside the existing
   `MotionScaleConfig`; existing themes render exactly as before.
 - Core gains `--ease-entrance`, `--ease-move`, and `--ease-exit`.
+- Spinner and Skeleton read their loop durations before `tempo` scales them
+  (FR4), so their timing is unchanged under every existing theme.
 - BottomSheet's sheet and scrim share `--duration-medium` today; when the
   sheet settles on `springs.settle`, its scrim's fade takes the spring's settle
   time (FR4a).
@@ -163,7 +166,8 @@ defineTheme({
 **Decider:** `cixzhang`, `2026-10-26`
 
 Theme authors set how fast and how lively motion feels and whether it is
-reduced for everyone; few want per-use values. Three knobs drive CSS tokens and JavaScript springs from the same values, and the measured
+reduced for everyone; few want per-use values. Three character steps, not a continuous bounce,
+are the recommendation adopted with the knobs. Three knobs drive CSS tokens and JavaScript springs from the same values, and the measured
 per-role values stay internal. This supersedes `spec:AST-094` DEC-11's "all
 internal" for exactly these three knobs.
 
