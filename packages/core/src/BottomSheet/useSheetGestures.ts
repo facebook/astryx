@@ -1083,18 +1083,50 @@ export function useSheetGestures({
       setScrollPreservationInset(0);
       // eslint-disable-next-line @eslint-react/set-state-in-effect -- resets gesture state on controlled reopen
       setSettlingLayoutOffset(null);
-      // The sheet's animator too, the compositor `translate` it moves: back
-      // to rest, with no exit pending.
-      gestureExitRef.current = null;
-      travelHandleRef.current = null;
-      animator.set({y: 0});
-      // And the dialog's ::backdrop dim: its animation stops, and the host
-      // gets its own easing back.
-      stopScrimFollow();
-      if (isScrimTrackingRef.current) {
-        isScrimTrackingRef.current = false;
-        onScrimTrackingRef.current?.(false);
+      // The sheet's animator too, the compositor `translate` it moves, with
+      // no exit pending. Reopened before its entrance landed, the entrance
+      // runs on (a close queued meanwhile stands down at the landing, see
+      // `dismiss`). Reopened while its exit spring runs, it springs back from
+      // where it is, keeping that spring's velocity (spec:AST-094 FR6), on the
+      // present spring. Otherwise it is put back at rest.
+      const isEntering = entranceRef.current != null;
+      if (!isEntering) {
+        const isExitInFlight =
+          gestureExitRef.current != null && travelHandleRef.current != null;
+        travelHandleRef.current = null;
+        if (isExitInFlight) {
+          // The travel was measured from the exit's base: fold that in, so
+          // the channel holds the sheet's whole offset from the tallest
+          // detent.
+          const base = travelLayoutBaseRef.current + travelBaseRef.current;
+          travelBaseRef.current = 0;
+          travelLayoutBaseRef.current = 0;
+          if (base !== 0) {
+            animator.rebase({y: base});
+          }
+          const handle = animator.animate(
+            {y: 0},
+            {spring: SHEET_PRESENT_SPRING},
+            {crossfadeAs: 'entrance'},
+          );
+          travelHandleRef.current = handle;
+          void handle.finished.then(() => {
+            if (travelHandleRef.current === handle) {
+              travelHandleRef.current = null;
+            }
+          });
+        } else {
+          animator.set({y: 0});
+        }
+        // And the dialog's ::backdrop dim: its animation stops, and the host
+        // gets its own easing back.
+        stopScrimFollow();
+        if (isScrimTrackingRef.current) {
+          isScrimTrackingRef.current = false;
+          onScrimTrackingRef.current?.(false);
+        }
       }
+      gestureExitRef.current = null;
     }
   }, [animator, isOpen, recordSettledLayoutOffset, stopScrimFollow]);
 
@@ -1908,10 +1940,17 @@ export function useSheetGestures({
       return startDismiss();
     }
     const base = travelBaseRef.current;
+    // The host asks for the exit once the sheet is closing.
+    const wasClosing = !isOpenRef.current;
     const queued: SheetGestureExit = {
       finished: entrance.then(async () => {
         if (gestureExitRef.current === queued) {
           gestureExitRef.current = null;
+        }
+        // Opened again before it landed: the newer intent owns the outcome
+        // (`architecture:interaction-modality` INV8), so the sheet stays.
+        if (wasClosing && isOpenRef.current) {
+          return false;
         }
         return startDismiss()?.finished ?? true;
       }),

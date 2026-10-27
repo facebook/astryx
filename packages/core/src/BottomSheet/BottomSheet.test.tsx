@@ -1379,6 +1379,63 @@ describe('BottomSheet', () => {
       delete (Element.prototype as {animate?: unknown}).animate;
     });
 
+    it('a non-modal sheet holds only itself while it enters: the page beside it stays live, and a tap on the sheet does nothing until it lands (FR35)', async () => {
+      recordAnimate();
+      const onPage = vi.fn();
+      const onInside = vi.fn();
+      function Page({isOpen}: {isOpen: boolean}) {
+        return (
+          <>
+            <button type="button" onClick={onPage}>
+              Page
+            </button>
+            <BottomSheet
+              hasScrim={false}
+              isOpen={isOpen}
+              onOpenChange={vi.fn()}
+              label="Filters">
+              <button type="button" onClick={onInside}>
+                Inside
+              </button>
+            </BottomSheet>
+          </>
+        );
+      }
+      const {rerender} = render(<Page isOpen={false} />);
+      rerender(<Page isOpen />);
+      vi.spyOn(getSheet(), 'getBoundingClientRect').mockReturnValue(
+        rect({top: 300, bottom: 848}),
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60);
+      });
+      const dialog = getSheet().closest('dialog') as HTMLElement;
+      // The page beside it is live: no shield covers it, and its button
+      // takes the tap.
+      expect([...dialog.children].some(isInputShield)).toBe(false);
+      expect(isInHeldLayer(dialog)).toBe(false);
+      fireEvent.click(screen.getByRole('button', {name: 'Page'}));
+      expect(onPage).toHaveBeenCalledTimes(1);
+      // A tap on the entering sheet activates nothing.
+      const inside = screen.getByRole('button', {name: 'Inside', hidden: true});
+      fireEvent.pointerDown(inside, {pointerType: 'touch'});
+      fireEvent.pointerUp(inside, {pointerType: 'touch'});
+      fireEvent.click(inside);
+      expect(onInside).not.toHaveBeenCalled();
+      // Landed: the sheet takes taps again.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      fireEvent.pointerDown(inside, {pointerType: 'touch'});
+      fireEvent.pointerUp(inside, {pointerType: 'touch'});
+      fireEvent.click(inside);
+      expect(onInside).toHaveBeenCalledTimes(1);
+      delete (Element.prototype as {animate?: unknown}).animate;
+    });
+
     it('keeps keys and assistive technology live while the sheet enters (FR35)', async () => {
       recordAnimate();
       const onOpenChange = vi.fn();
@@ -1456,6 +1513,110 @@ describe('BottomSheet', () => {
         await vi.advanceTimersByTimeAsync(2000);
       });
       expect(dialog).not.toHaveAttribute('open');
+      delete (Element.prototype as {animate?: unknown}).animate;
+    });
+
+    it('a close queued during the entrance that a reopen supersedes plays no dismissal: the sheet lands and stays (architecture:interaction-modality INV8)', async () => {
+      const played = recordAnimate();
+      const {rerender} = render(
+        <BottomSheet isOpen={false} onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      rerender(
+        <BottomSheet isOpen onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      vi.spyOn(getSheet(), 'getBoundingClientRect').mockReturnValue(
+        rect({top: 300, bottom: 848}),
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+      const before = travelOf(played, getSheet()).length;
+      const dialog = screen.getByRole('dialog');
+      const sheet = getSheet();
+      // Escape at 100 ms: the close waits for the landing (F4 b59)...
+      rerender(
+        <BottomSheet isOpen={false} onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+      // ...and the sheet is opened again before it lands: the newer intent
+      // owns the outcome.
+      rerender(
+        <BottomSheet isOpen onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      // Nothing carried it off screen: the 500 px dismissal never played.
+      const after = travelOf(played, sheet).slice(before);
+      expect(after.filter(y => y > 1)).toEqual([]);
+      expect(dialog).toHaveAttribute('open');
+      delete (Element.prototype as {animate?: unknown}).animate;
+    });
+
+    it('a sheet reopened during its exit springs back from where it is (spec:AST-094 FR6)', async () => {
+      const played = recordAnimate();
+      const {rerender} = render(
+        <BottomSheet isOpen={false} onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      rerender(
+        <BottomSheet isOpen onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      vi.spyOn(getSheet(), 'getBoundingClientRect').mockReturnValue(
+        rect({top: 300, bottom: 848}),
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      const sheet = getSheet();
+      const dialog = screen.getByRole('dialog');
+      // Closed: the dismissal spring runs toward 500 px.
+      rerender(
+        <BottomSheet isOpen={false} onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(120);
+      });
+      const before = travelOf(played, sheet).length;
+      // Reopened 120 ms in, partway down.
+      rerender(
+        <BottomSheet isOpen onOpenChange={vi.fn()} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      const back = travelOf(played, sheet).slice(before);
+      // A spring from where the sheet was, back to the detent: no jump.
+      expect(back.length).toBeGreaterThan(2);
+      expect(back[0]).toBeGreaterThan(20);
+      expect(back.at(-1)).toBeCloseTo(0, 0);
+      expect(dialog).toHaveAttribute('open');
       delete (Element.prototype as {animate?: unknown}).animate;
     });
 
