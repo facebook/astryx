@@ -1079,6 +1079,56 @@ test.describe('where the browser reports the keyboard itself (Chrome on Android)
 test.describe('with a mouse', () => {
   test.use({hasTouch: false, isMobile: false});
 
+  test("a click on the text is the browser's own: it focuses once and reaches the input, where the tap claim attaches (spec:AST-094 FR43)", async ({
+    page,
+  }) => {
+    // No VirtualKeyboard API: the keyboard covers the page, so the field
+    // claims a finger's tap on its text (FR4). The claim takes only a finger:
+    // with gestures attached for every pointer (FR43), a mouse press stays
+    // the browser's, which focuses the field itself and puts the caret.
+    await installKeyboard(page);
+    await openStory(page, storybook(), 'lab-searchfield--bottom');
+    expect(
+      await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
+    ).toBe(false);
+    const field = page.getByRole('searchbox', {name: 'Search'});
+    await field.evaluate(input => {
+      const counts = {focus: 0, click: 0, pointerdownPrevented: 0};
+      (window as unknown as {__searchCounts: typeof counts}).__searchCounts =
+        counts;
+      input.addEventListener('focus', () => {
+        counts.focus += 1;
+      });
+      input.addEventListener('click', () => {
+        counts.click += 1;
+      });
+      input.ownerDocument.addEventListener('pointerdown', event => {
+        // Read after every listener ran.
+        setTimeout(() => {
+          if (event.defaultPrevented) {
+            counts.pointerdownPrevented += 1;
+          }
+        });
+      });
+    });
+    await field.click();
+    await expect(root(page)).toHaveAttribute(
+      'data-search-field-active',
+      'true',
+    );
+    await page.waitForTimeout(100);
+    expect(
+      await page.evaluate(
+        () =>
+          (window as unknown as {__searchCounts: Record<string, number>})
+            .__searchCounts,
+      ),
+    ).toEqual({focus: 1, click: 1, pointerdownPrevented: 0});
+    expect(await page.evaluate(() => document.activeElement?.role)).toBe(
+      'searchbox',
+    );
+  });
+
   test('a click puts every part at its end at once, and a keyboard report moves nothing', async ({
     page,
   }) => {
