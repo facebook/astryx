@@ -36,15 +36,18 @@
  * UIKit's `onDrag`, which dismisses as a drag begins, is not offered: a drag
  * that dismisses the keyboard decides at its release (FR36).
  *
- * Only a touch that starts above that line, outside the focused field, while
+ * Only a drag that starts above that line, outside the focused field, while
  * a software keyboard is up, is followed: a drag in the bar or in the text
  * (moving the caret, selecting), or with only a hardware keyboard, never
- * dismisses. Every listener is passive: dismissal never claims the touch or
- * delays the scroll. It blurs the focused field, and the keyboard layout
- * guide reports the hide from the blur, so content on the keyboard rides it
- * down. Where the keyboard is comes from the keyboard module, core's one
- * source for it (spec:AST-099). The caller registers it only where the
- * primary pointer is coarse (FR19).
+ * dismisses. Every pointer drags (spec:AST-094 FR19, FR43): a finger, and a
+ * pen the browser reports as touches, through touch listeners on the
+ * scroller; a mouse, and a pen it reports as a pointer only, through a
+ * `pointerdown` on the scroller and document listeners that live only while
+ * the button is down (FR24). Every listener is passive: dismissal never
+ * claims the touch or delays the scroll. It blurs the focused field, and the
+ * keyboard layout guide reports the hide from the blur, so content on the
+ * keyboard rides it down. Where the keyboard is comes from the keyboard
+ * module, core's one source for it (spec:AST-099).
  *
  * SYNC: When modified, update /packages/core/src/keyboard/README.md and the
  * consumers it lists.
@@ -117,24 +120,54 @@ export function observeKeyboardDismiss(
   const triggerLine = () =>
     layoutViewportHeight(win) - keyboardHeight() - padding;
 
+  // Whether a drag starting at `clientY` on `target` is one to follow: a
+  // field that brings up the keyboard has focus, a software keyboard is up
+  // (none with a hardware keyboard on a touch screen, whatever the mode), and
+  // the drag starts outside the field, above the line.
+  const startsDismissDrag = (target: EventTarget | null, clientY: number) => {
+    const editable = focusedEditable(doc);
+    if (editable == null || keyboardHeight() <= 0) {
+      return false;
+    }
+    if (target instanceof win.Node && editable.contains(target)) {
+      return false;
+    }
+    padding = Math.max(0, dismissPadding?.() ?? 0);
+    return clientY < triggerLine();
+  };
+
+  // The one decision, at the release (FR36, FR37).
+  const decide = (clientY: number, timeStamp: number) => {
+    // px per second, 0 after a still pause before the lift (spec:AST-100).
+    const velocity = tracker.velocity(timeStamp).y;
+    if (velocity < 0 || keyboardHeight() <= 0) {
+      return;
+    }
+    // Where it lifts decides, with no projection (see the header).
+    if (clientY < triggerLine()) {
+      return;
+    }
+    // The keyboard module's dismissal: no surface parks the focus it leaves.
+    const editable = focusedEditable(doc);
+    if (editable != null) {
+      blurAsDismissal(editable);
+    }
+  };
+
+  // A mouse or a pen reported as a pointer only, followed while its button
+  // is down; null between drags.
+  let pointerId: number | null = null;
+
   const onTouchStart = (event: TouchEvent) => {
+    // A pen the browser also reports as touches is followed as one.
+    stopPointer();
     if (touchId != null || event.touches.length !== 1) {
       // A second finger: not a scroll drag to follow.
       touchId = null;
       return;
     }
-    const editable = focusedEditable(doc);
     const touch = event.changedTouches[0];
-    // Without a software keyboard up (a hardware keyboard on a touch screen)
-    // there is nothing to dismiss, whatever the mode.
-    if (editable == null || touch == null || keyboardHeight() <= 0) {
-      return;
-    }
-    if (event.target instanceof win.Node && editable.contains(event.target)) {
-      return;
-    }
-    padding = Math.max(0, dismissPadding?.() ?? 0);
-    if (touch.clientY >= triggerLine()) {
+    if (touch == null || !startsDismissDrag(event.target, touch.clientY)) {
       return;
     }
     touchId = touch.identifier;
@@ -161,7 +194,6 @@ export function observeKeyboardDismiss(
     }
   };
 
-  // The one decision, at the release (FR36, FR37).
   const onTouchEnd = (event: TouchEvent) => {
     const touch = followed(event);
     if (touch == null) {
@@ -169,20 +201,7 @@ export function observeKeyboardDismiss(
     }
     touchId = null;
     tracker.add(touch.clientX, touch.clientY, event.timeStamp);
-    // px per second, 0 after a still pause before the lift (spec:AST-100).
-    const velocity = tracker.velocity(event.timeStamp).y;
-    if (velocity < 0 || keyboardHeight() <= 0) {
-      return;
-    }
-    // Where it lifts decides, with no projection (see the header).
-    if (touch.clientY < triggerLine()) {
-      return;
-    }
-    // The keyboard module's dismissal: no surface parks the focus it leaves.
-    const editable = focusedEditable(doc);
-    if (editable != null) {
-      blurAsDismissal(editable);
-    }
+    decide(touch.clientY, event.timeStamp);
   };
 
   // The browser cancelled the touch: no release, no decision.
@@ -193,14 +212,69 @@ export function observeKeyboardDismiss(
   };
 
   const passive = {passive: true} as const;
+  const capture = {capture: true, passive: true} as const;
+
+  const onPointerMove = (event: PointerEvent) => {
+    if (event.pointerId === pointerId) {
+      tracker.add(event.clientX, event.clientY, event.timeStamp);
+    }
+  };
+  const onPointerUp = (event: PointerEvent) => {
+    if (event.pointerId !== pointerId) {
+      return;
+    }
+    stopPointer();
+    tracker.add(event.clientX, event.clientY, event.timeStamp);
+    decide(event.clientY, event.timeStamp);
+  };
+  // The browser took the pointer (a pen's scroll): no release, no decision.
+  const onPointerCancel = (event: PointerEvent) => {
+    if (event.pointerId === pointerId) {
+      stopPointer();
+    }
+  };
+  function stopPointer() {
+    if (pointerId == null) {
+      return;
+    }
+    pointerId = null;
+    doc.removeEventListener('pointermove', onPointerMove, true);
+    doc.removeEventListener('pointerup', onPointerUp, true);
+    doc.removeEventListener('pointercancel', onPointerCancel, true);
+  }
+  const onPointerDown = (event: PointerEvent) => {
+    // A finger takes the touch listeners; only the primary button drags.
+    if (
+      event.pointerType === 'touch' ||
+      !event.isPrimary ||
+      event.button !== 0 ||
+      touchId != null ||
+      pointerId != null ||
+      !startsDismissDrag(event.target, event.clientY)
+    ) {
+      return;
+    }
+    pointerId = event.pointerId;
+    tracker.reset();
+    tracker.add(event.clientX, event.clientY, event.timeStamp);
+    // On the document while the button is down, so a release past the
+    // scroller (on the composer) is heard; removed at the release (FR24).
+    doc.addEventListener('pointermove', onPointerMove, capture);
+    doc.addEventListener('pointerup', onPointerUp, capture);
+    doc.addEventListener('pointercancel', onPointerCancel, capture);
+  };
+
   scroller.addEventListener('touchstart', onTouchStart, passive);
   scroller.addEventListener('touchmove', onTouchMove, passive);
   scroller.addEventListener('touchend', onTouchEnd, passive);
   scroller.addEventListener('touchcancel', onTouchCancel, passive);
+  scroller.addEventListener('pointerdown', onPointerDown, passive);
   return () => {
+    stopPointer();
     scroller.removeEventListener('touchstart', onTouchStart);
     scroller.removeEventListener('touchmove', onTouchMove);
     scroller.removeEventListener('touchend', onTouchEnd);
     scroller.removeEventListener('touchcancel', onTouchCancel);
+    scroller.removeEventListener('pointerdown', onPointerDown);
   };
 }

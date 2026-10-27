@@ -298,7 +298,7 @@ describe('ChatLayout and the software keyboard', () => {
     vi.unstubAllGlobals();
   });
 
-  it('keeps no room for a finger under a fine primary pointer, which registers no touch-only listener (FR19, FR24)', async () => {
+  it('keeps no room for a finger under a fine primary pointer, where only the drag-to-dismiss listens for touches (spec:AST-094 FR19, FR24, FR43)', async () => {
     vi.stubGlobal('matchMedia', (query: string) => ({
       matches: query === '(pointer: fine)',
       media: query,
@@ -322,9 +322,18 @@ describe('ChatLayout and the software keyboard', () => {
       renderLayout();
       report(window.innerHeight - 300);
       await settle();
-      expect(added.filter(type => type.startsWith('touch'))).toEqual([]);
+      // The drag-to-dismiss, which attaches under every pointer, on the
+      // layout's root: one listener of each kind, and none that waits for a
+      // finger's scroll to end.
+      expect(added.filter(type => type.startsWith('touch'))).toEqual([
+        'touchstart',
+        'touchmove',
+        'touchend',
+        'touchcancel',
+      ]);
+      expect(added.filter(type => type === 'pointerdown')).toHaveLength(1);
       // One scroll listener: the transcript's auto-follow, which a mouse
-      // wheel needs too; none waits for a finger's scroll to end.
+      // wheel needs too.
       expect(added.filter(type => type === 'scroll')).toHaveLength(1);
     } finally {
       vi.restoreAllMocks();
@@ -565,6 +574,44 @@ describe('focus moves into the composer (spec:AST-099 FR4)', () => {
     expect(document.activeElement).toBe(document.body);
   });
 
+  it('dismisses the keyboard from a finger\u2019s drag where the primary pointer is fine, as on a touch-screen laptop (spec:AST-094 FR43)', () => {
+    primaryPointer('fine');
+    const {message} = renderWithSearch('textarea');
+    const viewport = window.visualViewport as unknown as EventTarget & {
+      height: number;
+    };
+    viewport.height = window.innerHeight - 300;
+    act(() => {
+      viewport.dispatchEvent(new Event('resize'));
+    });
+    // The composer rests at the keyboard's top edge, so the drag dismisses
+    // where the finger reaches the keyboard.
+    screen.getByRole('group', {
+      name: 'Message composer',
+    }).getBoundingClientRect = () =>
+      new DOMRect(0, window.innerHeight - 300, 400, 60);
+    act(() => message.focus());
+    const transcript = screen.getByText('Hello');
+    const finger = (type: string, clientY: number, time: number) => {
+      const point = {identifier: 0, clientX: 100, clientY};
+      const event = new Event(type, {bubbles: true});
+      Object.assign(event, {
+        touches: type === 'touchend' ? [] : [point],
+        changedTouches: [point],
+      });
+      Object.defineProperty(event, 'timeStamp', {value: time});
+      act(() => {
+        transcript.dispatchEvent(event);
+      });
+    };
+    finger('touchstart', 100, 0);
+    finger('touchmove', window.innerHeight - 300, 16);
+    // The drag decides at the lift (spec:AST-094 FR36).
+    expect(document.activeElement).toBe(message);
+    finger('touchend', window.innerHeight - 300, 116);
+    expect(document.activeElement).toBe(document.body);
+  });
+
   it('dismisses from the composer\u2019s top on a page WebKit pinch-zooms', () => {
     primaryPointer('coarse');
     const {message} = renderWithSearch('textarea');
@@ -610,7 +657,7 @@ describe('focus moves into the composer (spec:AST-099 FR4)', () => {
     expect(document.activeElement).not.toBe(message);
   });
 
-  it('registers no touch listener and installs no focus takeover under a mouse (architecture INV13, spec:AST-094 FR24)', () => {
+  it('registers no touch listener on the composer region and installs no focus takeover under a mouse (spec:AST-094 FR24)', () => {
     primaryPointer('fine');
     const touchTargets: EventTarget[] = [];
     const addEventListener = EventTarget.prototype.addEventListener;
@@ -624,10 +671,15 @@ describe('focus moves into the composer (spec:AST-099 FR4)', () => {
     );
     renderWithSearch('textarea');
     const layout = screen.getByTestId('layout');
-    // React's own root listeners sit outside the layout.
+    // The transcript's drag-to-dismiss listens on the layout's own root under
+    // every pointer (spec:AST-094 FR43); React's root listeners sit outside
+    // the layout; nothing else in it listens for touches.
     expect(
       touchTargets.filter(
-        target => target instanceof Node && layout.contains(target),
+        target =>
+          target instanceof Node &&
+          target !== layout &&
+          layout.contains(target),
       ),
     ).toEqual([]);
     expect(__focusTakeoverCallersForTest(document)).toBe(0);

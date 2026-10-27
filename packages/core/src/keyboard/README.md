@@ -140,10 +140,14 @@ at any time, for something that appears while the keyboard moves.
 - UIKit's `onDrag`, which dismisses as a drag begins, is not offered: a drag
   that dismisses the keyboard decides at its release.
 
-Only a touch that starts above that line and outside the focused editable,
+Only a drag that starts above that line and outside the focused editable,
 while a software keyboard is up (the keyboard module's height), is followed (a
-hardware keyboard leaves the focus alone), and every listener is passive. The blur hands the hide to the guide,
-which starts it at the blur.
+hardware keyboard leaves the focus alone). Every pointer drags (`spec:AST-094`
+FR19, FR43): a finger, and a pen the browser reports as touches, through
+touch listeners on the scroller; a mouse, and a pen reported as a pointer
+only, through a `pointerdown` there and document listeners that live only
+while the button is down (FR24). Every listener is passive. The blur hands
+the hide to the guide, which starts it at the blur.
 
 ## What the page sees (Mobile Safari, iOS 26.2)
 
@@ -234,11 +238,12 @@ keyboard module measures them from the visual viewport, as in every browser
   focus takeover (`refuseFocusReveal`), so none scrolls the page; the
   keyboard's Done parks focus on the composer region, a named group that is
   no tab stop. The composer's own focus routes pass `preventScroll` under a
-  finger in that region (`Chat/keyboardSurface.ts`). A finger dragging the
-  transcript down to the composer and lifting it there dismisses the keyboard (`interactive`, with the composer as the bar on the
-  keyboard; part of ChatLayout's touch behavior, no caller control, registered
-  only under a coarse pointer); the dismissal only blurs the focused field, so
-  focus moves nowhere else (no Done park).
+  finger in that region (`Chat/keyboardSurface.ts`). A drag down the
+  transcript to the composer that lifts there dismisses the keyboard
+  (`interactive`, with the composer as the bar on the keyboard; part of
+  ChatLayout's behavior, no caller control, for every pointer: a finger, a
+  pen or a mouse); the dismissal only blurs the focused field, so focus moves
+  nowhere else (no Done park).
 
 ## Files
 

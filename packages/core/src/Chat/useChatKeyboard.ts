@@ -40,14 +40,15 @@
  *   end of the messages inside the scrollport until the scroll caught up,
  *   which Safari puts off while the finger is down, and the sticky dock
  *   would leave the bottom to sit at that end.
- * - A finger dragging the transcript down to the composer dismisses the
- *   keyboard when it lifts there, Messages' `interactive`
+ * - A drag down the transcript to the composer dismisses the keyboard when
+ *   it lifts there, Messages' `interactive`
  *   mode (keyboard/keyboardDismiss.ts; spec:AST-094 FR36, FR37): the composer
  *   is the bar on the keyboard, so its height is the dismiss padding. It is
- *   part of ChatLayout's touch behavior with no caller control
- *   (ChatLayout.spec.md FR10), registered only under a coarse pointer (FR19),
- *   and the dismissal only blurs the focused field: focus moves nowhere else,
- *   not to the composer region the keyboard's Done parks it on.
+ *   part of ChatLayout's behavior with no caller control
+ *   (ChatLayout.spec.md FR10), for every pointer, a finger, a pen or a mouse
+ *   (spec:AST-094 FR19, FR43), and the dismissal only blurs the focused
+ *   field: focus moves nowhere else, not to the composer region the
+ *   keyboard's Done parks it on.
  * - A tap on the composer's text while it is not focused focuses it without
  *   Safari's reveal (`preventScroll`), which would otherwise scroll the
  *   whole page up to show a field that the keyboard is about to cover, and
@@ -556,14 +557,15 @@ export function useChatKeyboard({
     }
   }, [lift, scrollRef, dock.animator, messages.animator]);
 
-  // Synchronizes the transcript's touch stream with the software keyboard: a
-  // drag lifted at the composer dismisses it (architecture:react-component-
-  // runtime INV3).
+  // Synchronizes the transcript's drags with the software keyboard: a drag
+  // lifted at the composer dismisses it (architecture:react-component-runtime
+  // INV3). Under every pointer, a finger, a pen or a mouse (spec:AST-094 FR19,
+  // FR43), wherever a keyboard is measured; it listens on the layout's own
+  // root, and on the document only while a button is down (FR24).
   useIsomorphicLayoutEffect(() => {
     const root = rootRef.current;
     const win = root?.ownerDocument.defaultView;
-    // Under a coarse pointer, with a keyboard to measure, only (FR19).
-    if (root == null || win == null || !isTouch || !isKeyboardMeasurable(win)) {
+    if (root == null || win == null || !isKeyboardMeasurable(win)) {
       return undefined;
     }
     return observeKeyboardDismiss(root, {
@@ -578,7 +580,7 @@ export function useChatKeyboard({
               composer.getBoundingClientRect().top;
       },
     });
-  }, [rootRef, isTouch]);
+  }, [rootRef]);
 
   // A tap on the composer's text that would bring up the keyboard is the
   // keyboard module's tap route (spec:AST-099 FR4): focused here without

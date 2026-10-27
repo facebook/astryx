@@ -757,6 +757,41 @@ test('a drag that reaches the composer dismisses the keyboard and the dock rides
   await waitForAnimation(chat.dock);
 });
 
+test.describe('a finger where the primary pointer is fine, as on a touch-screen laptop', () => {
+  test.use({hasTouch: true, isMobile: false});
+  test.beforeEach(async ({page}) => {
+    // The primary pointer reads fine while touch input is present.
+    await page.addInitScript(() => {
+      const matchMedia = window.matchMedia.bind(window);
+      window.matchMedia = query =>
+        /\(pointer:\s*coarse\)/.test(query)
+          ? matchMedia('(min-width: 100000px)')
+          : /\(pointer:\s*fine\)/.test(query)
+            ? matchMedia('(min-width: 0px)')
+            : matchMedia(query);
+    });
+  });
+
+  test('a drag that reaches the composer dismisses the keyboard (spec:AST-094 FR19, FR43)', async ({
+    page,
+  }) => {
+    const chat = await openChat(page);
+    expect(
+      await page.evaluate(() => window.matchMedia('(pointer: fine)').matches),
+    ).toBe(true);
+    const rows = await keyboardUp(page, chat);
+    const driver = await touchDriver(page);
+    await driver.play(
+      drag(
+        {x: rows.x, y: 120},
+        {x: rows.x, y: rows.inComposer},
+        {durationMs: 300},
+      ),
+    );
+    await expect(chat.editable).not.toBeFocused();
+  });
+});
+
 test('the rise keeps advancing every frame while the main thread is blocked', async ({
   page,
   browserName,
