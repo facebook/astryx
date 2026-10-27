@@ -245,3 +245,36 @@ test('a mouse drag on a thumb pans: the value holds through the 10 px hysteresis
   }
   await page.mouse.up();
 });
+
+test('a right click on the track moves nothing and paints nothing: only a primary click presses (spec:AST-094 FR43)', async ({
+  page,
+}) => {
+  const {thumb, control, value} = await openSlider(
+    page,
+    'core-slider--default',
+  );
+  await expect
+    .poll(async () =>
+      control.evaluate(element =>
+        element.getAttribute('data-astryx-touch-action'),
+      ),
+    )
+    .toBe('manipulation');
+  const paint = async () =>
+    thumb.evaluate(element => getComputedStyle(element).backgroundImage);
+  const start = await value();
+  const box = await control.boundingBox();
+  if (box == null) {
+    throw new Error('no control');
+  }
+  const at = {x: box.x + box.width * 0.2, y: box.y + box.height / 2};
+  await page.mouse.move(at.x, at.y);
+  // A right click is the page's context request (FR43), not a press.
+  await page.mouse.down({button: 'right'});
+  expect(await paint()).toBe('none');
+  await page.mouse.up({button: 'right'});
+  expect(await value()).toBe(start);
+  // A primary click there still sets the value.
+  await page.mouse.click(at.x, at.y);
+  expect(await value()).toBeLessThan(start);
+});
