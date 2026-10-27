@@ -82,7 +82,7 @@ export const paging = {
     /**
      * Released slower than `advanceSpeed`, the scroll view settles on the
      * page nearest the content position: past half a page, the next one.
-     * `selectPage` keeps the start page instead for a release moving back
+     * The pager's release rule keeps the start page instead for a release moving back
      * toward it (`spec:AST-094` FR37).
      * @source measured: UIKit lab, iOS 26.2 simulator, releases at rest from
      *   page 1: content at 48.5 % of the page stays, 57.5 % goes to the next
