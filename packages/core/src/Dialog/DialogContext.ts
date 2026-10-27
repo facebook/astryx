@@ -6,7 +6,8 @@
  * @file DialogContext.ts
  * @input React context
  * @output Internal dialog context for child focus behavior and default labelling
- * @position Dialog internals; consumed by focus-managing children and DialogHeader
+ * @position Dialog internals; consumed by focus-managing children and DialogHeader,
+ *   and by Lab's DialogHeroHeader through the internal/dialog-context entry
  */
 
 import {createContext, use} from 'react';
