@@ -702,7 +702,9 @@ jobs:
             # Tests that read sources through the file system, directly or
             # through a helper (guards over every component's files), see
             # changes no import reaches: they all run too.
-            mapfile -t GUARDS < <(node .github/scripts/fs-guard-tests.mjs)
+            # The list goes through a file so a failing lister fails the step.
+            node .github/scripts/fs-guard-tests.mjs > "$RUNNER_TEMP/fs-guards.txt"
+            mapfile -t GUARDS < "$RUNNER_TEMP/fs-guards.txt"
             if [ "${#GUARDS[@]}" -gt 0 ]; then
               pnpm test:ui --passWithNoTests --shard=${{ matrix.shard }}/${{ strategy.job-total }} "${GUARDS[@]}"
             fi
@@ -763,7 +765,9 @@ jobs:
             # Tests that read sources through the file system, directly or
             # through a helper (guards over every component's files), see
             # changes no import reaches: they all run too.
-            mapfile -t GUARDS < <(node .github/scripts/fs-guard-tests.mjs)
+            # The list goes through a file so a failing lister fails the step.
+            node .github/scripts/fs-guard-tests.mjs > "$RUNNER_TEMP/fs-guards.txt"
+            mapfile -t GUARDS < "$RUNNER_TEMP/fs-guards.txt"
             if [ "${#GUARDS[@]}" -gt 0 ]; then
               pnpm test:node --passWithNoTests --shard=${{ matrix.shard }}/${{ strategy.job-total }} "${GUARDS[@]}"
             fi
@@ -2122,7 +2126,7 @@ jobs:
         run: |
           set -eu
           # Component names are not globally unique; use their package identity.
-          COMPONENTS=$(jq -r '. as $root | [(.newComponents + .modifiedComponents + (.dependentComponents // []))[] | select($root.componentStats[.].package == "@astryxdesign/core")] | unique | join(",")' analysis.json)
+          COMPONENTS=$(jq -r '. as $root | [(.newComponents + .modifiedComponents + (.dependentComponents // []))[] | select($root.componentStats[.].package == "@astryxdesign/core")] + [(.familyComponents // [])[] | select(.package == "@astryxdesign/core") | .name] | unique | join(",")' analysis.json)
           THEMES=$(jq -r '(.changedStableThemes // []) | join(",")' analysis.json)
           COMMAND=check
           if [ "$BROAD_STABLE_VISUAL" = 'true' ]; then

@@ -212,7 +212,8 @@ they are separately named.
   what those owners run. The Vitest test owner runs the tests whose module graph
   reaches a changed file, against the merge commit's base parent, plus every test
   that reads repository sources through the file system, directly or through a
-  module it imports; a computed `import()` counts as reading sources. The visual and RTL
+  module it imports; a computed `import()` or a child process counts as reading
+  sources. The visual and RTL
   owners audit the changed components and their reverse dependents: the
   components whose built bundle, `import()` targets included, reaches a changed
   module. A changed module that no component bundle holds adds none, and without

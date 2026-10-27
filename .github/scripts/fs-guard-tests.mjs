@@ -2,7 +2,8 @@
 // Lists the tests that read repository sources through the file system,
 // directly or through a module they import: guards over every component's
 // files see changes no import reaches, so a scoped pull request runs them all
-// (spec:AST-030 FR13). A computed `import()` counts as reading sources.
+// (spec:AST-030 FR13). A computed `import()` counts as reading sources, and
+// so does a child process: the script it runs reads what it likes.
 //
 // Usage: node .github/scripts/fs-guard-tests.mjs  (newline-separated paths)
 
@@ -13,7 +14,7 @@ import {fileURLToPath} from 'node:url';
 
 const TEST_FILE = /\.test\.(?:tsx?|mjs|cjs|js)$/;
 const READS_FILES =
-  /\bnode:fs\b|\bfrom\s*['"]fs(?:\/promises)?['"]|\brequire\(\s*['"]fs(?:\/promises)?['"]\s*\)|\bimport\(\s*[^'"\s)]/;
+  /\bnode:(?:fs|child_process)\b|\bfrom\s*['"](?:fs(?:\/promises)?|child_process)['"]|\brequire\(\s*['"](?:fs(?:\/promises)?|child_process)['"]\s*\)|\bimport\(\s*[^'"\s)]/;
 const RELATIVE_SPECIFIER =
   /(?:\bfrom|\bimport|\brequire\s*\()\s*\(?\s*['"](\.{1,2}\/[^'"]+)['"]/g;
 const EXTENSIONS = ['', '.ts', '.tsx', '.mjs', '.js', '.cjs', '.mts', '.cts'];

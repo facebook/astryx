@@ -67,6 +67,28 @@ const pkgDist = (pkg) => `${pkg.dir}/dist`;
 
 // Get canonical direct public component names for a package. Nested family,
 // context, and shared directories deliberately stay unresolved so audits widen.
+// The canonical components a nested package's folder implements (its docs
+// name them, and the barrel exports them from inside it).
+const familyIndex = new Map();
+function familyMembers(pkg, folder) {
+  const sourceDir = path.join(process.cwd(), pkgSrc(pkg));
+  if (!familyIndex.has(pkg.name)) {
+    familyIndex.set(pkg.name, {
+      canonical: new Set(nestedPackageComponentNames(process.cwd(), pkg)),
+      exports: componentExportsFromBarrel(path.join(sourceDir, 'index.ts'), sourceDir),
+    });
+  }
+  const { canonical, exports } = familyIndex.get(pkg.name);
+  const directory = path.join(sourceDir, folder);
+  try {
+    return documentedComponentNames(directory).filter(
+      (name) => canonical.has(name) && exports.get(name)?.startsWith(`${directory}${path.sep}`),
+    );
+  } catch {
+    return [];
+  }
+}
+
 function getComponentNames(pkg) {
   if (pkg.layout === 'flat') {
     return flatPackageComponentNames(process.cwd(), pkg);
@@ -870,6 +892,18 @@ function analyze() {
     console.log(`Reverse dependents: ${dependentComponentOwners.join(', ') || 'none'}`);
   }
 
+  // The components each changed multi-component folder implements: visual
+  // audits them by name, whatever their bundles say.
+  const familyComponents = [];
+  for (const source of baseOnly ? [] : unresolvedComponentSources) {
+    const [packageName, folder] = source.split('/');
+    const pkg = PACKAGES.find((candidate) => candidate.packageName === packageName);
+    if (pkg == null || pkg.layout === 'flat') continue;
+    for (const name of familyMembers(pkg, folder)) {
+      familyComponents.push({ package: pkg.name, name });
+    }
+  }
+
   if (baseOnly) {
     const baseResult = {
       headSha: execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim(),
@@ -891,7 +925,11 @@ function analyze() {
     modifiedComponentOwners,
     dependentComponents,
     dependentComponentOwners,
-    unresolvedComponentSources: unreachedSources,
+    familyComponents,
+    // Every changed multi-component folder stays listed: PR accessibility
+    // expands it to its members (spec:AST-030 FR12, DEC-5). Only the sources
+    // no bundle decided ask for full audits.
+    unresolvedComponentSources,
     forceFullComponentAudits: forceFull || unreachedSources.length > 0,
     newExports,
     componentStats,

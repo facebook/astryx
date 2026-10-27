@@ -285,7 +285,14 @@ describe('analyze-pr component ownership', () => {
       // stories of their own) does not.
       expect(analysis.modifiedComponentOwners).toEqual(['core/Tokenizer']);
       expect(analysis.dependentComponentOwners).toEqual(['core/Chat', 'core/ChatComposer']);
-      expect(analysis.unresolvedComponentSources).toEqual([]);
+      // The changed family folder stays listed, so PR accessibility expands
+      // it to its members (spec:AST-030 FR12, DEC-5), and visual gets it.
+      expect(analysis.unresolvedComponentSources).toEqual(['core/Chat']);
+      expect(analysis.familyComponents).toEqual([
+        {package: '@astryxdesign/core', name: 'Chat'},
+        {package: '@astryxdesign/core', name: 'ChatComposer'},
+      ]);
+      // Its change was decided by the folder, so it asks for no full audit.
       expect(analysis.forceFullComponentAudits).toBe(false);
     } finally {
       fs.rmSync(repo, {recursive: true, force: true});
@@ -338,7 +345,9 @@ describe('analyze-pr base and head sizes', () => {
       expect(analysis.modifiedComponentOwners).toEqual([]);
       expect(analysis.dependentComponentOwners).toEqual(['core/Card']);
       expect(analysis.dependentComponents).toEqual(['Card']);
-      expect(analysis.unresolvedComponentSources).toEqual([]);
+      // The shared folder stays listed (PR accessibility finds no component
+      // documented in it); its reach decided it, so no full audit.
+      expect(analysis.unresolvedComponentSources).toEqual(['core/hooks']);
       expect(analysis.forceFullComponentAudits).toBe(false);
 
       // A change to shared infrastructure asks for full audits whatever it

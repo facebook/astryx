@@ -17,6 +17,10 @@ const sources = {
   'scripts/plain.test.mjs': "import {sum} from './sum.mjs';",
   'scripts/sum.mjs': 'export const sum = (a, b) => a + b;',
   'scripts/literal.test.mjs': "const mod = await import('./sum.mjs');",
+  'packages/core/src/motion/springRows.test.ts':
+    "import {execFileSync} from 'node:child_process';",
+  'packages/cli/test/readme-gen.test.mjs':
+    "const {spawnSync} = require('child_process');",
 };
 
 const guards = () =>
@@ -36,6 +40,11 @@ describe('fsGuardTests', () => {
 
   it('lists a test that imports a computed path', () => {
     expect(guards()).toContain('scripts/topics.test.mjs');
+  });
+
+  it('lists a test that runs a script in a child process, which reads what it likes', () => {
+    expect(guards()).toContain('packages/core/src/motion/springRows.test.ts');
+    expect(guards()).toContain('packages/cli/test/readme-gen.test.mjs');
   });
 
   it('leaves out tests whose imports read no files', () => {
