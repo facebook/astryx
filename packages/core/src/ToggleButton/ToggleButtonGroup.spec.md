@@ -129,8 +129,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ### Performance and resources
 
-- **PR1 — No group listeners.** The group adds no event listener, observer, or
-  measurement.
+- **PR1 — Group listeners only for press tracking.** The group adds no
+  observer or measurement, and no event listener beyond the press tracking
+  `family:action-groups` FR5 gives it.
 
 ## Accessibility contract
 

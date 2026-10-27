@@ -154,7 +154,8 @@ frame target contract.
 ### Performance and resources
 
 This contract introduces no new measurement, observer, listener, render pass, or
-runtime work.
+runtime work beyond the press tracking `family:action-groups` FR5 gives an
+action row of two or more actions.
 
 ## Accessibility contract
 
