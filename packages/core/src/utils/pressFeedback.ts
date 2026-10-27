@@ -6,7 +6,8 @@
  *   scroll and visibility events
  * @output Exports paintPress and readPressPaint (the one writer of the press
  *   attribute for every painter), PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE,
- *   pressableProps and installPressFeedback
+ *   pressableProps, the action-group item marker (PRESS_GROUP_ITEM_ATTRIBUTE,
+ *   pressGroupItemProps) and installPressFeedback
  * @position The DOM half of the touch press model: one delegated controller
  *   per document that writes `data-astryx-press` on the nearest pressable surface.
  *   Installed by usePressFeedback (hooks/usePressFeedback.ts) on first mount;
@@ -31,10 +32,17 @@
  *
  * A surface's hold does nothing, so it keeps the browser's long-press text
  * selection (`spec:AST-094` FR41); only an element whose hold does something
- * suppresses it, through the gesture host (gestures/selectionLock.ts).
+ * suppresses it, through the gesture host (utils/selectionLock.ts).
  *
  * Its one touch-only listener, `touchcancel`, is on only while the primary
- * pointer is coarse (gestures/coarsePointer.ts, `spec:AST-094` FR24).
+ * pointer is coarse (coarsePointer.ts, `spec:AST-094` FR24).
+ *
+ * An action of a group whose own tracker follows a held pointer across its
+ * siblings (`family:action-groups`) carries {@link PRESS_GROUP_ITEM_ATTRIBUTE}:
+ * that tracker paints its press, so the controller leaves a pointer's press
+ * there alone, and the two never write the attribute over each other. A
+ * member the group's tracker skips (a field, a menu trigger) carries no
+ * marker and keeps the controller's press.
  *
  * SYNC: When modified, update pressGesture.ts, hooks/usePressFeedback.ts,
  * utils/interactionOverlay.stylex.ts and pressFeedback.test.ts.
@@ -53,7 +61,8 @@ import {
   PRESS_SCROLL_BRAKE_MS,
   pressGestureStep,
 } from './pressGesture';
-import {isCoarsePointer, watchCoarsePointer} from '../gestures/coarsePointer';
+import {isCoarsePointer, watchCoarsePointer} from './coarsePointer';
+import {subscribeInput} from './inputStream';
 
 /**
  * The marker the controller finds with `closest()`. Every Astryx component
@@ -71,6 +80,18 @@ export const PRESSED_ATTRIBUTE = 'data-astryx-press';
 export const pressableProps: {readonly [PRESSABLE_ATTRIBUTE]: ''} = {
   [PRESSABLE_ATTRIBUTE]: '',
 };
+
+/**
+ * Marks an action whose group tracks a held pointer across its siblings
+ * (`family:action-groups`): the group's tracker paints a pointer's press on
+ * it, and the controller paints none there. The owner renders it on each
+ * action its tracker follows, so it is in place before the first press.
+ */
+export const PRESS_GROUP_ITEM_ATTRIBUTE = 'data-astryx-press-group-item';
+
+/** Spread onto each action a group's tracker follows. */
+export const pressGroupItemProps: {readonly [PRESS_GROUP_ITEM_ATTRIBUTE]: ''} =
+  {[PRESS_GROUP_ITEM_ATTRIBUTE]: ''};
 
 /**
  * How long after a touch a scroll can still be that finger's momentum.
@@ -291,6 +312,15 @@ function surfaceAt(target: EventTarget | null): HTMLElement | null {
 }
 
 /**
+ * Whether a group's own tracker paints this surface's press
+ * ({@link PRESS_GROUP_ITEM_ATTRIBUTE}). The touch is still recorded, so a
+ * scroll it drives arms the brake as any finger's does.
+ */
+function trackedByGroup(element: HTMLElement): boolean {
+  return element.closest(`[${PRESS_GROUP_ITEM_ATTRIBUTE}]`) != null;
+}
+
+/**
  * Is this touch a BRAKE on a list the finger set moving, rather than a press?
  *
  * A native list highlights nothing for one, and nothing else would cancel it:
@@ -373,7 +403,7 @@ function onPointerDown(event: PointerEvent): void {
   const braking = element != null && scrollerIsBraking(element);
   lastTouchAt = Date.now();
   lastTouchTarget = event.target instanceof Node ? event.target : null;
-  if (element == null || braking) {
+  if (element == null || braking || trackedByGroup(element)) {
     return;
   }
   live = {
@@ -488,10 +518,11 @@ function onVisibilityChange(): void {
   }
 }
 
-const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
+/** The input stream subscriptions while installed. */
+let unsubscribers: (() => void)[] = [];
 
-/** Whether the touch-only `touchcancel` listener is on. */
-let hearsTouchCancel = false;
+/** The touch-only `touchcancel` subscription, while the pointer is coarse. */
+let stopTouchCancel: (() => void) | null = null;
 let stopWatchingPointer: (() => void) | null = null;
 
 /**
@@ -500,14 +531,14 @@ let stopWatchingPointer: (() => void) | null = null;
  * through `pointercancel`.
  */
 function hearTouchCancel(on: boolean): void {
-  if (on === hearsTouchCancel) {
+  if (on === (stopTouchCancel != null)) {
     return;
   }
-  hearsTouchCancel = on;
   if (on) {
-    window.addEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
+    stopTouchCancel = subscribeInput(window, 'touchcancel', onCancel);
   } else {
-    window.removeEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
+    stopTouchCancel?.();
+    stopTouchCancel = null;
   }
 }
 
@@ -524,33 +555,34 @@ function armTouchCancel(): void {
   hearTouchCancel(isCoarsePointer(window));
 }
 
+// Every listener is passive and on the window's capture phase, through the
+// shared input stream (utils/inputStream.ts): a page of pressables blocks no
+// scroll, and an app's capture-phase stopPropagation at the document cannot
+// starve the controller.
 function addListeners(): void {
-  window.addEventListener('pointerdown', onPointerDown, PASSIVE_CAPTURE);
-  window.addEventListener('pointermove', onPointerMove, PASSIVE_CAPTURE);
-  window.addEventListener('pointerup', onPointerUp, PASSIVE_CAPTURE);
-  window.addEventListener('pointercancel', onCancel, PASSIVE_CAPTURE);
-  // `dragstart`, and NOT `contextmenu`: a long press that becomes a drag has
-  // taken the gesture, but a right-click is a mouse act this controller never
-  // tracks, and listening for it would read as a takeover of the browser's
-  // own menu.
-  window.addEventListener('dragstart', onCancel, PASSIVE_CAPTURE);
-  // `scroll` does not bubble, so the capture phase is the only way one
-  // listener hears every scroller in the document.
-  document.addEventListener('scroll', onScroll, PASSIVE_CAPTURE);
-  document.addEventListener('visibilitychange', onVisibilityChange);
+  unsubscribers = [
+    subscribeInput(window, 'pointerdown', onPointerDown),
+    subscribeInput(window, 'pointermove', onPointerMove),
+    subscribeInput(window, 'pointerup', onPointerUp),
+    subscribeInput(window, 'pointercancel', onCancel),
+    // `dragstart`, and NOT `contextmenu`: a long press that becomes a drag
+    // has taken the gesture, but a right-click is a mouse act this controller
+    // never tracks, and listening for it would read as a takeover of the
+    // browser's own menu.
+    subscribeInput(window, 'dragstart', onCancel),
+    // `scroll` does not bubble; the capture phase hears every scroller.
+    subscribeInput(window, 'scroll', onScroll),
+    subscribeInput(window, 'visibilitychange', onVisibilityChange),
+  ];
 }
 
 function removeListeners(): void {
-  window.removeEventListener('pointerdown', onPointerDown, PASSIVE_CAPTURE);
-  window.removeEventListener('pointermove', onPointerMove, PASSIVE_CAPTURE);
-  window.removeEventListener('pointerup', onPointerUp, PASSIVE_CAPTURE);
-  window.removeEventListener('pointercancel', onCancel, PASSIVE_CAPTURE);
+  for (const unsubscribe of unsubscribers.splice(0)) {
+    unsubscribe();
+  }
   stopWatchingPointer?.();
   stopWatchingPointer = null;
   hearTouchCancel(false);
-  window.removeEventListener('dragstart', onCancel, PASSIVE_CAPTURE);
-  document.removeEventListener('scroll', onScroll, PASSIVE_CAPTURE);
-  document.removeEventListener('visibilitychange', onVisibilityChange);
 }
 
 /**

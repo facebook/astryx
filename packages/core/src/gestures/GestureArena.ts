@@ -161,6 +161,11 @@ export class GestureArena {
     return this.records.get(id)?.isClaimed === true;
   }
 
+  /** @internal The view-level consumer of this touch, if any. */
+  consumerOf(id: number): TouchConsumer | null {
+    return this.records.get(id)?.consumer ?? null;
+  }
+
   /** The live touch with this id. */
   getTouch(id: number): GestureTouch | undefined {
     return this.records.get(id)?.touch;
@@ -215,6 +220,7 @@ export class GestureArena {
           target: input.target,
           scroll: input.scroll ?? null,
           takenByBrowser: false,
+          ...(input.isFeedbackOnly === true ? {isFeedbackOnly: true} : {}),
         };
         const participants: GestureRecognizer[] = [];
         for (const [depth, recognizer] of input.recognizers.entries()) {
@@ -590,7 +596,9 @@ export class GestureArena {
       }
     }
     this.claim(recognizer);
-    if (recognizer.cancelsTouchesInView) {
+    // A watcher takes nothing from the view either: the press and the click
+    // under it stay (spec:AST-094 FR11, FR19; FR15 exempts watchers).
+    if (recognizer.claimsTouches && recognizer.cancelsTouchesInView) {
       this.cancelViewTouchesOf(recognizer);
     }
   }
@@ -602,7 +610,11 @@ export class GestureArena {
   ): boolean {
     if (
       !sharesTouches(winner, other) ||
-      internals(winner).allowsSimultaneous(other)
+      internals(winner).allowsSimultaneous(other) ||
+      // A watcher (claimsTouches false) prevents nothing and nothing
+      // prevents it.
+      !winner.claimsTouches ||
+      !other.claimsTouches
     ) {
       return false;
     }
@@ -629,6 +641,7 @@ export class GestureArena {
       return;
     }
     internals(recognizer).pending = null;
+    // apply() gives back any claim it held (releaseClaim), waiting or not.
     this.apply(recognizer, 'failed');
     this.reviewPending();
   }
