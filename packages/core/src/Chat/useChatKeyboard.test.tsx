@@ -25,6 +25,7 @@ import {ChatComposer} from './ChatComposer';
 import {ChatLayout} from './ChatLayout';
 import {editableToClaim, focusAtPoint} from './useChatKeyboard';
 import {getKeyboardLayoutGuide} from '../keyboard';
+import {__focusTakeoverCallersForTest} from '../keyboard/keyboardHeight';
 
 type FakeViewport = EventTarget & {
   height: number;
@@ -418,6 +419,44 @@ describe('focus moves into the composer (spec:AST-099 FR4)', () => {
     act(() => message.focus());
     act(() => message.blur());
     expect(document.activeElement).toBe(document.body);
+  });
+
+  it('registers no touch listener and installs no focus takeover under a mouse (architecture INV13, spec:AST-094 FR24)', () => {
+    primaryPointer('fine');
+    const touchTargets: EventTarget[] = [];
+    const addEventListener = EventTarget.prototype.addEventListener;
+    vi.spyOn(EventTarget.prototype, 'addEventListener').mockImplementation(
+      function (this: EventTarget, type, listener, options) {
+        if (type.startsWith('touch')) {
+          touchTargets.push(this);
+        }
+        addEventListener.call(this, type, listener, options);
+      },
+    );
+    renderWithSearch('textarea');
+    const layout = screen.getByTestId('layout');
+    // React's own root listeners sit outside the layout.
+    expect(
+      touchTargets.filter(
+        target => target instanceof Node && layout.contains(target),
+      ),
+    ).toEqual([]);
+    expect(__focusTakeoverCallersForTest(document)).toBe(0);
+  });
+
+  it('installs the focus takeover for each ChatLayout under a finger, through the keyboard module\u2019s one listener (spec:AST-094 FR24)', () => {
+    primaryPointer('coarse');
+    render(
+      <>
+        <ChatLayout composer={<textarea aria-label="First" />}>
+          <p>Hello</p>
+        </ChatLayout>
+        <ChatLayout composer={<textarea aria-label="Second" />}>
+          <p>Hi</p>
+        </ChatLayout>
+      </>,
+    );
+    expect(__focusTakeoverCallersForTest(document)).toBe(2);
   });
 });
 

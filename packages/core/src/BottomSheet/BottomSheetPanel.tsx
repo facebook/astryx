@@ -68,7 +68,7 @@ import {
   resolveSnapPoints,
   type BottomSheetSnapPoint,
 } from './snapOffsets';
-import {useSheetKeyboard} from '../keyboard/keyboardHeight';
+import {useSheetKeyboard} from '../keyboard/sheetKeyboard';
 import {useSheetGestures} from './useSheetGestures';
 
 const HEIGHT_BUDGETS = {
