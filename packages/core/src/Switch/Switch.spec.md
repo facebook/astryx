@@ -216,9 +216,9 @@ gap.
 FR4 rests on owner direction of 2026-10-26: the thumb keeps its circle and its
 size on every device, and a coarse pointer gets a hit area that grows toward
 44 × 44 px and stops halfway to its neighbours, with nothing visible added. FR5 rests on owner direction of 2026-10-25. Under a mouse or a pen a press
-slid off keeps the native checkbox's cancel: `spec:AST-020` FR9's exception
-permits the toggle but does not require it, and the shared contract presses
-with a mouse. No other component-local design or API decision is recorded.
+slid off keeps the native checkbox's cancel: `spec:AST-094` FR11 lets a toggle
+under `spec:AST-020` FR9's slide-off exception complete only on a lift after
+the finger slid off. No other component-local design or API decision is recorded.
 
 ## Open questions
 
