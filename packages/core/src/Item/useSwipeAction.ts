@@ -732,7 +732,8 @@ export function useSwipeAction({
   const activateEntry = useCallback(
     (fire: () => boolean) => {
       const layout = layoutRef.current;
-      if (stateRef.current.phase !== 'resting' || layout == null) {
+      // From the release that opens the row, not only once it rests.
+      if (!isSwipeOpen(stateRef.current) || layout == null) {
         return;
       }
       const root = rootRef.current;

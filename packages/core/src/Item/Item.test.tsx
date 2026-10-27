@@ -1395,6 +1395,26 @@ describe('swipeActions', () => {
       expect(onClick).not.toHaveBeenCalled();
     });
 
+    it('fires a tapped entry while the row is still springing open: the row is open from its release', async () => {
+      const onActivate = vi.fn();
+      const onClick = vi.fn();
+      const {row} = renderRow({
+        leading: [{label: 'Unread', onActivate}],
+        onClick,
+      });
+      dragLeading(row, 45);
+      // Released past half the panel 16 ms ago: the settle has hundreds of
+      // milliseconds left, yet the row already counts as open, so its panel
+      // is live and an entry tapped now fires.
+      const panel = panelOf(row, 'leading') as HTMLElement;
+      expect(panel).not.toHaveAttribute('inert');
+      fireEvent.click(screen.getByRole('button', {name: 'Unread'}));
+      expect(onActivate).toHaveBeenCalledTimes(1);
+      await settled();
+      expect(xOf(row)).toBe(0);
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
     it('opens on a flick from short of half the panel, and fires nothing', async () => {
       const onActivate = vi.fn();
       const {row} = renderRow({leading: [{label: 'Unread', onActivate}]});
@@ -1511,7 +1531,11 @@ describe('swipeActions', () => {
       await act(async () => {
         vi.advanceTimersByTime(16);
       });
-      expect(panelOf(row, 'leading')).toHaveAttribute('inert');
+      // Mid-fade the row has not travelled: it lands at the bottom of the
+      // dip. It is open from its release, as after a spring, so its panel is
+      // already live.
+      expect(xOf(row)).toBe(45);
+      expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
       await act(async () => {
         vi.advanceTimersByTime(534);
       });
