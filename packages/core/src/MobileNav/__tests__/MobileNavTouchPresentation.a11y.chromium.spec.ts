@@ -5,21 +5,20 @@
  * @input The built MobileNav "Default" and AppShell "Auto Height" stories, real
  *   Chromium touch input in a phone context and a mouse on a fine-pointer page
  * @output Browser evidence that under a finger the drawer takes no tap while
- *   it slides in, while keys and assistive technology stay live, and that it
- *   dismisses as an iOS sheet does: the dialog stays modal and rendered while the drawer slides
- *   out and the scrim fades to the end; nothing takes a tap during the
- *   slide-out, neither the leaving drawer nor the page; the dialog closes
- *   and focus returns to the opener when the slide-out ends. Under a mouse
- *   nothing is held and the close keeps its timing. Inside AppShell the
- *   slide-out plays to its end under either pointer.
+ *   it slides in, while keys and assistive technology stay live; that after
+ *   a close the leaving drawer takes no tap until the dialog closes, on the
+ *   close's own timing (at most 250 ms in, FR5), when focus returns to the
+ *   opener and the page takes taps again. Under a mouse nothing is held and
+ *   the close keeps its timing. Inside AppShell the slide-out plays to its
+ *   end under either pointer.
  * @position Chromium proof for MobileNav's touch presentation (MobileNav.tsx)
  *   and AppShell's Activity hold; the jsdom layer is
  *   MobileNavTouchPresentation.test.tsx and MobileNavCloseEdgeCases
  *
- * UIKit ignores touches for the whole of a dismissal, on the presenting view
- * and on the one leaving, and gives input back when it completes (measured on
- * iOS 26.2: taps 0.1 s and 0.25 s into a sheet or full-screen dismissal are
- * dropped before reaching any window).
+ * UIKit drops touches for the whole of a dismissal (measured on iOS 26.2:
+ * taps 0.1 s and 0.25 s into a sheet or full-screen dismissal reach no
+ * window). MobileNav's close keeps its own timing (FR5, ORD3), so its leaving
+ * drawer takes no input only until the dialog closes.
  */
 
 import {expect, test, type Page} from '@playwright/test';
@@ -68,11 +67,27 @@ interface LoggedEvent {
  */
 async function openNav(
   page: Page,
-  {input = 'touch'}: {input?: 'touch' | 'mouse'} = {},
+  {
+    input = 'touch',
+    tokenDefault = false,
+  }: {
+    input?: 'touch' | 'mouse';
+    /**
+     * Runs the slide at the token default, `--duration-medium: 410ms`, rather
+     * than the story theme's 300 ms, so a close at the end of the slide-out
+     * (410 ms) and one on FR5's timing (at most 250 ms) are far apart.
+     */
+    tokenDefault?: boolean;
+  } = {},
 ) {
   await page.goto(
     `${storybook.origin}/iframe.html?id=core-mobilenav--default&viewMode=story`,
   );
+  if (tokenDefault) {
+    await page.addStyleTag({
+      content: '* { --duration-medium: 410ms !important; }',
+    });
+  }
   const opener = page.getByRole('button', {name: 'Open Navigation'});
   // A tap focuses the button in Chromium; focusing it first makes the opener
   // explicit for the focus-return assertions.
@@ -176,67 +191,61 @@ const state = async (page: Page) =>
   });
 
 /**
- * Attempts at the slide-out's midway probe. The probe looks at a fixed time
- * after the tap; an engine that has not drawn the fade's first frame by then
- * (WebKit compiling a newly animated layer's shaders on a cold cache, 450–700
- * ms) still shows the scrim at full strength there. That probe missed its
- * window rather than finding a scrim that does not fade, so it runs again on a
- * fresh page, and fails only if it never lands inside the fade.
+ * Attempts at a case that must act inside the close, before the dialog closes
+ * (at most 250 ms after the close tap). A runner that gets there only after
+ * the close missed its window rather than finding nothing held, so the case
+ * runs again on a fresh page, and fails only if it never lands inside the
+ * close.
  */
-const SLIDE_OUT_PROBE_ATTEMPTS = 3;
+const CLOSE_WINDOW_ATTEMPTS = 3;
 
-test('the dialog stays modal while the drawer slides out, then closes and returns focus', async ({
+test('the leaving drawer takes no input until the dialog closes, at most 250 ms in (FR5), then focus returns', async ({
   page,
 }) => {
-  let durationMs = 0;
   let closeTapped = 0;
-  let midway: Awaited<ReturnType<typeof state>> | null = null;
+  let early: Awaited<ReturnType<typeof state>> | null = null;
   for (
     let attempt = 1;
-    attempt <= SLIDE_OUT_PROBE_ATTEMPTS && midway == null;
+    attempt <= CLOSE_WINDOW_ATTEMPTS && early == null;
     attempt++
   ) {
-    const opened = await openNav(page);
-    durationMs = opened.durationMs;
-    expect(durationMs).toBeGreaterThan(100);
+    const opened = await openNav(page, {tokenDefault: true});
+    expect(opened.durationMs).toBeGreaterThan(400);
 
     await page.touchscreen.tap(opened.backdrop.x, opened.backdrop.y);
     closeTapped = await now(page);
-    await page.waitForTimeout(durationMs * 0.5);
+    await page.waitForTimeout(60);
     const probe = await state(page);
-    // Still modal with the scrim untouched: the fade had not begun.
-    if (probe.modal && probe.scrim === 1) {
+    // Already closed: the probe came after the close, not inside it.
+    if (!probe.modal) {
       console.log(
-        `↻ the slide-out had not drawn its first frame at the midway probe (attempt ${attempt}); probing again`,
+        `↻ the dialog had closed before the early probe (attempt ${attempt}); probing again`,
       );
       continue;
     }
-    midway = probe;
+    early = probe;
   }
-  if (midway == null) {
+  if (early == null) {
     throw new Error(
-      `in ${SLIDE_OUT_PROBE_ATTEMPTS} attempts the midway probe never landed inside the slide-out`,
+      `in ${CLOSE_WINDOW_ATTEMPTS} attempts the early probe never landed before the close`,
     );
   }
-  await page.waitForTimeout(durationMs * 0.5 + 200);
+  await page.waitForTimeout(500);
 
-  // Midway: still the modal dialog holding the page, the drawer inert, the
-  // scrim part of the way out, and focus on neither the drawer nor the opener
-  // (Chromium parks it on the dialog element once the drawer goes inert).
-  expect(midway.modal).toBe(true);
-  expect(midway.drawerInert).toBe(true);
-  expect(midway.scrim).toBeGreaterThan(0);
-  expect(midway.scrim).toBeLessThan(1);
-  expect(midway.focusInDrawer).toBe(false);
-  expect(midway.focusOnOpener).toBe(false);
+  // Before the close: still the modal dialog holding the page, the leaving
+  // drawer inert, and focus on neither the drawer nor the opener (Chromium
+  // parks it on the dialog element once the drawer goes inert).
+  expect(early.modal).toBe(true);
+  expect(early.drawerInert).toBe(true);
+  expect(early.focusInDrawer).toBe(false);
+  expect(early.focusOnOpener).toBe(false);
 
-  // The dialog closed when the slide-out ended, not before...
+  // The dialog closed on its own timing, at most 250 ms in, well before the
+  // 410 ms slide-out ended...
   const events = await loggedEvents(page);
   const closed = events.find(e => e.type === 'open' && e.open === false);
   expect(closed).toBeDefined();
-  expect((closed?.t ?? 0) - closeTapped).toBeGreaterThanOrEqual(
-    durationMs - 30,
-  );
+  expect((closed?.t ?? Infinity) - closeTapped).toBeLessThan(290);
   // ...and focus went back to the opener once it had.
   const returned = events.find(
     e => e.type === 'focus' && e.name === 'Open Navigation',
@@ -244,52 +253,89 @@ test('the dialog stays modal while the drawer slides out, then closes and return
   expect(returned).toBeDefined();
   // Same task as the close; the observer logs the close a microtask later.
   expect(returned?.t ?? 0).toBeGreaterThanOrEqual((closed?.t ?? Infinity) - 2);
-  expect((await state(page)).modal).toBe(false);
+  const after = await state(page);
+  expect(after.modal).toBe(false);
+  expect(after.drawerInert).toBe(false);
 });
 
-test('a tap on the leaving drawer does nothing', async ({page}) => {
-  const {nav, durationMs} = await openNav(page);
-  const link = nav.getByRole('link', {name: 'Projects'});
-
-  await nav.getByRole('button', {name: /close navigation/i}).tap();
-  // Tap where the link is right now, early in the slide-out.
-  const box = await link.boundingBox();
-  if (box == null) {
-    throw new Error('no link box');
-  }
-  await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
-  await page.waitForTimeout(durationMs + 200);
-
-  // The close button's own click is the only click on the drawer.
-  const events = await loggedEvents(page);
-  expect(events.filter(e => e.type === 'click' && e.inDrawer)).toHaveLength(1);
-});
-
-test('the page takes taps again only once the slide-out has ended', async ({
+test('a tap on the leaving drawer before the dialog closes does nothing', async ({
   page,
 }) => {
-  const {durationMs, backdrop} = await openNav(page);
+  for (let attempt = 1; attempt <= CLOSE_WINDOW_ATTEMPTS; attempt++) {
+    const {nav} = await openNav(page, {tokenDefault: true});
+    const link = nav.getByRole('link', {name: 'Projects'});
 
-  await page.touchscreen.tap(backdrop.x, backdrop.y);
-  await page.waitForTimeout(durationMs * 0.75);
-  // Late in the slide-out: dropped, like a tap in a UIKit dismissal.
-  await page.touchscreen.tap(backdrop.x, backdrop.y);
-  await page.waitForTimeout(durationMs * 0.25 + 200);
-  // After it: the page takes it.
-  await page.touchscreen.tap(backdrop.x, backdrop.y);
+    await nav.getByRole('button', {name: /close navigation/i}).tap();
+    // Tap where the link is right now, early in the close.
+    const box = await link.boundingBox();
+    if (box == null) {
+      throw new Error('no link box');
+    }
+    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+    const tapped = await now(page);
+    await page.waitForTimeout(500);
 
-  const events = await loggedEvents(page);
-  const closed = events.find(e => e.type === 'open' && e.open === false);
-  expect(closed).toBeDefined();
-  const clicks = events.filter(e => e.type === 'click');
-  const pageClicks = clicks.filter(e => !e.inDialog);
-  // The page got exactly one click: the one after the close. The late tap
-  // reached only the dialog's backdrop (which can only ask to close again),
-  // never the page and never the drawer.
-  expect(pageClicks).toHaveLength(1);
-  expect(pageClicks[0].t).toBeGreaterThan(closed?.t ?? Infinity);
-  expect(clicks.some(e => e.inDrawer)).toBe(false);
-  expect(clicks.filter(e => e.inDialog).every(e => e.onBackdrop)).toBe(true);
+    const events = await loggedEvents(page);
+    const closed = events.find(e => e.type === 'open' && e.open === false);
+    expect(closed).toBeDefined();
+    // The tap came after the close, not inside it.
+    if (tapped > (closed?.t ?? Infinity)) {
+      console.log(
+        `↻ the tap landed after the close (attempt ${attempt}); tapping again`,
+      );
+      continue;
+    }
+    // The close button's own click is the only click on the drawer.
+    expect(events.filter(e => e.type === 'click' && e.inDrawer)).toHaveLength(
+      1,
+    );
+    return;
+  }
+  throw new Error(
+    `in ${CLOSE_WINDOW_ATTEMPTS} attempts the tap never landed before the close`,
+  );
+});
+
+test('the page takes taps again once the dialog has closed', async ({
+  page,
+}) => {
+  for (let attempt = 1; attempt <= CLOSE_WINDOW_ATTEMPTS; attempt++) {
+    const {backdrop} = await openNav(page, {tokenDefault: true});
+
+    await page.touchscreen.tap(backdrop.x, backdrop.y);
+    // Inside the close: it reaches only the dialog's backdrop, which can only
+    // ask to close again.
+    await page.touchscreen.tap(backdrop.x, backdrop.y);
+    const lateTapped = await now(page);
+    // Once the dialog has closed, while the drawer still slides out, the page
+    // takes the next tap.
+    await page.waitForFunction(() => !document.querySelector('dialog')?.open);
+    await page.touchscreen.tap(backdrop.x, backdrop.y);
+
+    const events = await loggedEvents(page);
+    const closed = events.find(e => e.type === 'open' && e.open === false);
+    expect(closed).toBeDefined();
+    // The second tap came after the close, not inside it.
+    if (lateTapped > (closed?.t ?? Infinity)) {
+      console.log(
+        `↻ the second tap landed after the close (attempt ${attempt}); tapping again`,
+      );
+      continue;
+    }
+    const clicks = events.filter(e => e.type === 'click');
+    const pageClicks = clicks.filter(e => !e.inDialog);
+    // The page got exactly one click: the one after the close. The tap inside
+    // the close reached only the dialog's backdrop, never the page and never
+    // the drawer.
+    expect(pageClicks).toHaveLength(1);
+    expect(pageClicks[0].t).toBeGreaterThan(closed?.t ?? Infinity);
+    expect(clicks.some(e => e.inDrawer)).toBe(false);
+    expect(clicks.filter(e => e.inDialog).every(e => e.onBackdrop)).toBe(true);
+    return;
+  }
+  throw new Error(
+    `in ${CLOSE_WINDOW_ATTEMPTS} attempts the second tap never landed before the close`,
+  );
 });
 
 test('a tap during the slide-in reaches nothing', async ({page}) => {
@@ -425,9 +471,10 @@ async function appShellDrawerAfterClose(
 test.describe('inside AppShell the slide-out plays to its end', () => {
   test('under a finger', async ({page}) => {
     const drawer = await appShellDrawerAfterClose(page, 'touch');
-    // 390 ms into the 410 ms slide-out: not hidden, and the dialog still
-    // open until the slide-out ends.
-    expect(drawer).toEqual({hiddenByActivity: false, open: true});
+    // 390 ms into the 410 ms slide-out: the dialog closed on its own timing
+    // (at most 250 ms in), as under a mouse, and the drawer is not hidden
+    // while it finishes its slide-out.
+    expect(drawer).toEqual({hiddenByActivity: false, open: false});
   });
 
   test.describe('under a mouse', () => {

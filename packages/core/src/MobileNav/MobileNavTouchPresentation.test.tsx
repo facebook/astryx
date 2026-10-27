@@ -4,11 +4,11 @@
  * @file MobileNavTouchPresentation.test.tsx
  * @input Uses vitest, @testing-library/react, MobileNav and the Layer
  *   module's input hold
- * @output Tests that under a finger the drawer presents and dismisses as a
- *   UIKit sheet does (no touch until the slide-in ends, while keys and
- *   assistive technology stay live; no input until the slide-out ends, the
- *   dialog closing at its end), and that under a mouse nothing is held and
- *   the close keeps its timing
+ * @output Tests that under a finger the drawer takes no touch until its
+ *   slide-in ends while keys and assistive technology stay live, and after a
+ *   close takes no input until the dialog closes, on the mouse's timing (at
+ *   most 250 ms in), and that under a mouse nothing is held and the close
+ *   keeps its timing
  * @position Unit tests for MobileNav's touch presentation
  *
  * SYNC: When modified, update the header comment in MobileNav.tsx.
@@ -27,7 +27,7 @@ import {
 } from 'vitest';
 import {stubMatchMedia} from '../__tests__/stubMatchMedia';
 import {isInHeldLayer} from '../Layer/inputHold';
-import {MAX_EXIT_MS, MobileNav} from './MobileNav';
+import {MAX_CLOSE_DELAY_MS, MAX_EXIT_MS, MobileNav} from './MobileNav';
 
 function Harness() {
   const [isOpen, setIsOpen] = useState(false);
@@ -46,8 +46,9 @@ function Harness() {
   );
 }
 
-// jsdom resolves no `var()`, so the drawer's slide reads as unreadable and
-// runs for MAX_EXIT_MS; the hold ends when its timer settles.
+// jsdom resolves no `var()`, so the drawer's slide-in reads as unreadable and
+// runs for MAX_EXIT_MS, and a close lands MAX_CLOSE_DELAY_MS in; a hold ends
+// when its timer settles.
 async function advance(ms: number) {
   await act(async () => {
     vi.advanceTimersByTime(ms);
@@ -121,7 +122,7 @@ describe('MobileNav under a finger', () => {
     expect(document.activeElement).toBe(home);
   });
 
-  it('stays open, modal and held until the slide-out ends, then closes and gives focus back', async () => {
+  it('holds the leaving drawer until the dialog closes, at most 250 ms in (FR5), then gives focus back', async () => {
     render(<Harness />);
     const open = screen.getByRole('button', {name: 'Open'});
     open.focus();
@@ -130,16 +131,18 @@ describe('MobileNav under a finger', () => {
     const dialog = screen.getByTestId('mobile-nav');
 
     fireEvent.click(screen.getByRole('button', {name: /close navigation/i}));
-    // A mouse's close would have run by now (at most 250 ms in).
-    await advance(260);
+    await advance(100);
+    // Before the close: still open and modal, and the leaving drawer's
+    // content takes no input.
     expect(dialog).toHaveAttribute('open');
     expect(isInHeldLayer(dialog)).toBe(true);
-    // The leaving drawer's content takes no input.
     expect(
       screen.getByRole('link', {name: 'Home', hidden: true}).closest('[inert]'),
     ).not.toBeNull();
 
-    await advance(MAX_EXIT_MS - 260 + 10);
+    // The close keeps the mouse's timing, at most MAX_CLOSE_DELAY_MS in, and
+    // the hold ends with it.
+    await advance(MAX_CLOSE_DELAY_MS - 100 + 10);
     expect(dialog).not.toHaveAttribute('open');
     expect(isInHeldLayer(dialog)).toBe(false);
     expect(
@@ -148,7 +151,7 @@ describe('MobileNav under a finger', () => {
     expect(document.activeElement).toBe(open);
   });
 
-  it('reopened during the slide-out, puts focus back into the drawer', async () => {
+  it('reopened before the dialog closes, puts focus back into the drawer', async () => {
     render(<Harness />);
     const open = screen.getByRole('button', {name: 'Open'});
     open.focus();

@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Under a finger, MobileNav presents and dismisses as an iOS sheet does. It takes no touch until its slide-in ends and no input until its slide-out ends, at most 550 ms. Its dialog stays open through the slide-out, so the scrim fades over the whole of it, and focus returns when the slide-out ends. Under a mouse nothing changes.
+[fix] Under a finger, MobileNav takes no touch until its slide-in ends, and after a close its leaving drawer takes no input until the dialog closes, on the close's own timing (at most 250 ms). Under a mouse nothing changes.
 
 @vjeux

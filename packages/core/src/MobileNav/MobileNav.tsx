@@ -35,12 +35,13 @@
  * restore has to follow it. Until close() runs the rest of the document is
  * inert and focus() on the opener is silently dropped.
  *
- * Under a finger the drawer presents and dismisses as a UIKit sheet does
- * (iOS 26.2): nothing takes a touch until the slide-in ends, and nothing takes
- * any input until the slide-out ends, through the Layer module's input hold. The dialog stays open, and so keeps the page inert, until the
- * slide-out ends; the scrim fades over the whole of it; then the dialog
- * closes and focus goes back. Under a mouse nothing is held, and the dialog
- * closes partway into the slide-out (MAX_CLOSE_DELAY_MS) as before.
+ * Under a finger, through the Layer module's input hold, nothing takes a
+ * touch until the slide-in ends (`spec:AST-094` FR35), and after a close
+ * request the leaving drawer takes no input until the dialog closes. The
+ * dialog closes on the same timing under every pointer: partway into the
+ * slide-out, at most MAX_CLOSE_DELAY_MS after the request (FR5, ORD3); the
+ * slide-out then finishes while the dialog's `display` transition holds it
+ * rendered. Under a mouse nothing is held.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/MobileNav/index.ts (exports if types change)
@@ -373,8 +374,8 @@ export function parseLongestDurationMs(value: string): number | null {
 }
 
 /**
- * How long the drawer's slide (in or out) that has just started runs, in ms:
- * its `--duration-medium` transition, which themes rewrite, read rather than
+ * How long the drawer's slide-in that has just started runs, in ms: its
+ * `--duration-medium` transition, which themes rewrite, read rather than
  * assumed, and at most MAX_EXIT_MS. Under reduced motion the drawer moves in
  * 0.01 s.
  */
@@ -559,11 +560,12 @@ export function MobileNav({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
-  // Under a finger, the input hold on the drawer's layer while it slides in
-  // or out (Layer/inputHold); null under a mouse.
+  // Under a finger, the input hold on the drawer's layer while it slides in,
+  // or from a close request until the dialog closes (Layer/inputHold); null
+  // under a mouse.
   const releaseHoldRef = useRef<(() => void) | null>(null);
   // Whether the last run's cleanup released a hold: a reopen then knows the
-  // slide-out it interrupted held the drawer's content inert.
+  // close it interrupted held the drawer's content inert.
   const wasHeldRef = useRef(false);
   // Element that was focused when the drawer opened; focus goes back to it
   // once the native dialog has closed (see closeAndRestoreFocus).
@@ -631,11 +633,10 @@ export function MobileNav({
       return;
     }
 
-    // Under a finger the drawer presents and dismisses as a UIKit sheet
-    // does: nothing takes a touch until the slide-in has finished, and
-    // nothing takes any input until the slide-out has finished (iOS 26.2),
-    // at most MAX_EXIT_MS.
-    // Under a mouse nothing is held. The pointer is the one condition this
+    // Under a finger nothing takes a touch until the slide-in has finished
+    // (`spec:AST-094` FR35), and after a close request the leaving drawer
+    // takes no input until the dialog closes, on the close's own timing
+    // (FR5, ORD3). Under a mouse nothing is held. The pointer is the one condition this
     // presentation names (AST-094 FR13), read as the drawer opens or closes.
     const isTouch =
       dialog.ownerDocument.defaultView?.matchMedia(TOUCH_QUERY).matches ??
@@ -662,7 +663,7 @@ export function MobileNav({
           document.activeElement as HTMLElement | null;
         dialog.showModal();
       } else if (wasHeld && !dialog.contains(document.activeElement)) {
-        // Reopened during a held slide-out: its inert content dropped focus.
+        // Reopened during a held close: its inert content dropped focus.
         // Put focus back where showModal() puts it.
         drawerRef.current?.focus();
       }
@@ -670,17 +671,17 @@ export function MobileNav({
         hold('viewport', resolveSlideDuration(drawerRef.current));
       }
     } else if (dialog.open && isTouch) {
-      // The dialog stays open, and so keeps the page inert, until the
-      // slide-out ends; its content takes no input meanwhile. Then it
-      // closes and focus goes back to the opener.
-      const duration = resolveSlideDuration(drawerRef.current);
-      hold('layer', duration);
+      // The leaving drawer's content takes no input until the dialog closes,
+      // at most MAX_CLOSE_DELAY_MS in, as under a mouse (FR5, ORD3); then
+      // focus goes back to the opener.
+      const delay = resolveCloseDelay(dialog);
+      hold('layer', delay);
       closeTimeoutRef.current = setTimeout(() => {
         releaseHoldRef.current?.();
         releaseHoldRef.current = null;
         closeAndRestoreFocus(dialog, triggerElementRef);
         setIsCloseHeld(false);
-      }, duration);
+      }, delay);
     } else if (dialog.open) {
       releaseHoldRef.current?.();
       releaseHoldRef.current = null;
