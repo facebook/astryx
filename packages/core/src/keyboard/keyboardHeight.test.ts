@@ -694,6 +694,29 @@ describe('the browser\u2019s own reveal pan (FR4)', () => {
     watch.stop();
     expect(remove.mock.calls.map(([type]) => type)).toEqual(['touchstart']);
   });
+
+  it('shares one document touch listener among its watches (architecture INV13, spec:AST-094 FR24)', () => {
+    const add = vi.spyOn(document, 'addEventListener');
+    const remove = vi.spyOn(document, 'removeEventListener');
+    const touched: string[] = [];
+    const first = watchRevealPan(window, {
+      owns: () => true,
+      onTouch: () => touched.push('first'),
+    });
+    const second = watchRevealPan(window, {
+      owns: () => true,
+      onTouch: () => touched.push('second'),
+    });
+    expect(add.mock.calls.map(([type]) => type)).toEqual(['touchstart']);
+    document.dispatchEvent(new Event('touchstart'));
+    expect(touched).toEqual(['first', 'second']);
+    first.stop();
+    expect(remove).not.toHaveBeenCalled();
+    document.dispatchEvent(new Event('touchstart'));
+    expect(touched).toEqual(['first', 'second', 'second']);
+    second.stop();
+    expect(remove.mock.calls.map(([type]) => type)).toEqual(['touchstart']);
+  });
 });
 
 describe('the tap route (FR4)', () => {
