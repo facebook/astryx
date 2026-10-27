@@ -14,7 +14,7 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {createRef} from 'react';
 import {renderToString} from 'react-dom/server';
-import {fireEvent, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen} from '@testing-library/react';
 import {PageControl} from './PageControl';
 
 /**
@@ -126,13 +126,59 @@ function swipe(
   return cancelled;
 }
 
+/** A mouse pointer event at `x` for the gesture host (jsdom has no PointerEvent). */
+function mouse(
+  target: Element,
+  type: 'pointerdown' | 'pointermove' | 'pointerup',
+  x: number,
+) {
+  const event = new Event(type, {bubbles: true, cancelable: true});
+  const fields: Record<string, unknown> = {
+    pointerType: 'mouse',
+    pointerId: 1,
+    isPrimary: true,
+    button: 0,
+    buttons: type === 'pointerup' ? 0 : 1,
+    clientX: x,
+    clientY: 10,
+  };
+  for (const [key, value] of Object.entries(fields)) {
+    Object.defineProperty(event, key, {value});
+  }
+  target.dispatchEvent(event);
+}
+
 /**
- * A mouse's click at `x` (a fine primary pointer: the gesture host listens to
- * nothing there, spec:AST-094 FR19, FR24), pressed at `fromX`.
+ * A mouse's click at `x`, pressed at `fromX`: the press and release reach the
+ * gesture host, which listens to every pointer (spec:AST-094 FR43), and the
+ * browser sends its click after them.
  */
 function click(target: Element, x: number, fromX = x) {
-  fireEvent.pointerDown(target, {clientX: fromX, clientY: 10});
+  mouse(target, 'pointerdown', fromX);
+  if (x !== fromX) {
+    mouse(target, 'pointermove', x);
+  }
+  mouse(target, 'pointerup', x);
   fireEvent.click(target, {clientX: x, clientY: 10});
+}
+
+/**
+ * Lays the row out for jsdom: page `i`'s dot 10 px wide at 100 + 16·i, the
+ * control from 80 to 280.
+ */
+function layOutRow() {
+  return vi
+    .spyOn(Element.prototype, 'getBoundingClientRect')
+    .mockImplementation(function (this: Element) {
+      const page = this.getAttribute('data-page');
+      if (page != null) {
+        return new DOMRect(100 + 16 * Number(page), 0, 10, 10);
+      }
+      if (this.getAttribute('role') === 'slider') {
+        return new DOMRect(80, 0, 200, 30);
+      }
+      return new DOMRect(0, 0, 0, 0);
+    });
 }
 
 /** WCAG contrast of `fg` at `alpha` over `bg` against `bg`. */
@@ -333,13 +379,63 @@ describe('PageControl', () => {
     expect(onChange).toHaveBeenLastCalledWith(1);
   });
 
-  it("with a mouse, a press that travels more than 45 px is a drag and pages nothing (UIKit's tap rule)", () => {
+  // spec:AST-094 FR43: input takes every pointer; the touch presentation (the
+  // window, the platter, the fades) stays on a coarse pointer.
+  it('with a mouse, a press and release on the trailing side ask for the next page through the tap recognizer, before any click', () => {
     asMouse();
     const {onChange} = renderControl();
-    click(screen.getByRole('slider'), 46, 0);
-    expect(onChange).not.toHaveBeenCalled();
-    click(screen.getByRole('slider'), 44, 0);
+    const slider = screen.getByRole('slider');
+    mouse(slider, 'pointerdown', 50);
+    mouse(slider, 'pointerup', 50);
+    expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith(3);
+  });
+
+  it('with a mouse, a tap pages once: the click the browser sends after it does not page again', () => {
+    asMouse();
+    const {onChange} = renderControl();
+    click(screen.getByRole('slider'), 50);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith(3);
+  });
+
+  it('with a mouse, a drag scrubs: the page follows the pointer to the dot under it (spec:AST-094 FR43)', () => {
+    asMouse();
+    const rects = layOutRow();
+    try {
+      const {onChange} = renderControl();
+      const slider = screen.getByRole('slider');
+      // Pressed on page 2's dot (centre 137), dragged to page 4's (169).
+      mouse(slider, 'pointerdown', 137);
+      for (let i = 1; i <= 8; i++) {
+        mouse(slider, 'pointermove', 137 + 4 * i);
+      }
+      mouse(slider, 'pointerup', 169);
+      expect(onChange).toHaveBeenCalledWith(3);
+      expect(onChange).toHaveBeenLastCalledWith(4);
+    } finally {
+      rects.mockRestore();
+    }
+  });
+
+  it('with a mouse, a press held past 155 ms shows no platter and dims nothing: the held look is the touch presentation', () => {
+    vi.useFakeTimers();
+    try {
+      asMouse();
+      renderControl();
+      const slider = screen.getByRole('slider');
+      const dot = slider.querySelector('[data-page="0"]') as HTMLElement;
+      const restOpacity = dot.style.opacity;
+      mouse(slider, 'pointerdown', 50);
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
+      expect(slider.hasAttribute('data-interacting')).toBe(false);
+      expect(dot.style.opacity).toBe(restOpacity);
+      mouse(slider, 'pointerup', 50);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   // spec:AST-094 FR19: a recognizer that competes with the page's scroll
