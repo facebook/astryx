@@ -33,9 +33,9 @@ system_specs: []
 
 SegmentedControl presents a group of mutually exclusive choices through
 SegmentedControlItem children. This draft records the consumer anatomy, the
-theming ownership, and how a finger presses, drags, and selects; targets and
-public API are unchanged, and `segmented-control-item` reflects a `pressed`
-state under a finger (FR7).
+theming ownership, and how a finger presses, drags, and selects; targets,
+their states and public API are unchanged: a pressed segment shows the shared
+pressed overlay under a finger as under a mouse (FR7).
 
 ## Compatibility and migration
 
