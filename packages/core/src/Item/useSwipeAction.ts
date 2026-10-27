@@ -39,9 +39,10 @@
  * or moving: a browser commits to scrolling a touch at about 10 px, so the
  * row must claim before that. The swipe itself begins where UIKit's does,
  * after 25 px, from 0, and in between the row carries on as it was. The pan
- * reads each touch's pointer, as `spec:AST-057` says: a finger swipes the row
- * whatever the primary pointer and a mouse never starts it, one rule on every
- * device. The foundation tells the browser (`touch-action: pan-y
+ * attaches for every pointer (`spec:AST-094` FR43) and takes a finger only, as
+ * `spec:AST-057` says: a finger swipes the row whatever the primary pointer,
+ * and a mouse or a pen never starts it, one rule on every device. The
+ * foundation tells the browser (`touch-action: pan-y
  * pinch-zoom`, `touchmove` cancelled only while the pan owns the touch, the
  * click the browser synthesizes swallowed) and leaves a pinch to the page: a
  * finger that lands while another is down, on the row or anywhere else, never
@@ -78,8 +79,8 @@
  * busy. A drag costs no React render; the
  * claim, the confirming and the landing each cost one.
  *
- * The gesture reads each touch's pointer: a finger swipes the row on every
- * device, whatever the primary pointer, and a mouse never does.
+ * Only a finger swipes the row: on every device, whatever the primary
+ * pointer; a mouse or a pen never does.
  *
  * Under Reduce Motion (`design:reduced-motion`) the finger's own drag is
  * direct manipulation and follows it one for one, but nothing a release or
@@ -1229,6 +1230,9 @@ export function useSwipeAction({
     rootRef,
     () =>
       new PanGestureRecognizer({
+        // Recognizers attach for every pointer (`spec:AST-094` FR43); only a
+        // finger drags the row: a mouse and a pen never start the swipe
+        // (`spec:AST-057` FR6, AR2).
         allowedPointerTypes: ['touch'],
         direction: 'horizontal',
         hysteresis: SWIPE.claim,
@@ -1274,16 +1278,14 @@ export function useSwipeAction({
           break;
       }
     },
-    // `spec:AST-057` reads each event's pointer: a finger swipes the row on
-    // every device and a mouse never does, so the host's fine-pointer gate
-    // (`spec:AST-094` FR19) does not apply to it.
-    {perEventPointer: true},
   );
 
   // A tap on an open row's own content closes it and activates nothing, as
-  // UIKit's dismissal does: the tap recognizes at the lift, and taking the
-  // touch cancels the click it would have made. The panel's entries keep
-  // their own taps, and a closed row never offers this recognizer a touch.
+  // UIKit's dismissal does: the tap recognizes at the lift, and the host
+  // keeps the click it would have made from the row (it cancels the touch,
+  // or where the primary pointer is fine its click guard swallows the
+  // click). The panel's entries keep their own taps, and a closed row never
+  // offers this recognizer a touch.
   useGestureRecognizer(
     rootRef,
     () =>
@@ -1302,9 +1304,6 @@ export function useSwipeAction({
         close();
       }
     },
-    // The swipe's own dismissal reads each event's pointer, as the swipe
-    // does (`spec:AST-057`).
-    {perEventPointer: true},
   );
 
   const onKeyDown = useCallback(
