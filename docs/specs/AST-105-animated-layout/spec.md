@@ -97,14 +97,15 @@ const animatedLayout = useAnimatedLayout({containerRef: scrollRef});
   `containerRef` animate together on one shared motion role. Fixed and stuck
   sticky elements stay put, the glide never scrolls the area, and Reduce
   Motion is respected."
-- **FR8 — Two elements can swap in place.** The animated-layout module also
-  swaps one element for another in the same place, such as a skeleton for its
-  content: the two overlap so the area is never empty, a short show delay keeps
-  a fast load from flashing the first, and a direction carries a forward or back
-  page change. The swap shares FR4's one motion and, under Reduce Motion,
-  follows the animator's planner. Layer exits stay with the layer runtime's
-  exit copy (`architecture:layer-runtime` INV14). The swap is internal; the
-  hook's public contract is unchanged.
+- **FR8 — Two elements can swap in place.** An area can swap one element for
+  another in the same place, such as a skeleton for its content: the two
+  overlap so the area is never empty, a short show delay keeps a fast load
+  from flashing the first, and a direction carries a forward or back page
+  change. The swap shares FR4's one motion. Under reduced motion it follows
+  `design:reduced-motion` DR1–DR3: an opacity-only cross-fade under a coarse
+  primary pointer, an immediate change otherwise. Layer exits stay with the
+  layer runtime's exit copy (`architecture:layer-runtime` INV14). The swap is
+  internal; the hook's public contract is unchanged.
 
 ## Coverage
 
@@ -147,6 +148,8 @@ Out of coverage, each taking its final place at once:
   the first adopters, and their docs gain the `animatedLayout` prop.
 - Core gains the `useAnimatedLayout` export and its documentation (FR7).
 - `architecture:react-component-runtime` INV12 produces the glide.
+- `architecture:react-component-runtime` INV12 also gains the in-place swap
+  (FR8); no component swaps yet.
 
 ## Verification
 
