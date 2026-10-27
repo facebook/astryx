@@ -169,24 +169,30 @@ async function touchActionsAbove(photo: Locator): Promise<string[]> {
   });
 }
 
-test('the zoom target keeps the browser’s touch-action where the primary pointer is fine', async ({
+test('the zoom target takes its touches as on a phone where the primary pointer is fine too', async ({
   page,
 }) => {
   const {stage, img} = await openViewer(page);
-  // No touch layer runs here (spec:AST-094 FR19), so nothing may take the
-  // touches from the browser: a touchscreen laptop's pinch still zooms the
-  // page.
+  // Gestures attach for every pointer (spec:AST-094 FR43): a touchscreen
+  // laptop's finger pinches and pans the photo as on a phone, so the zoom
+  // target claims its touches, as under a coarse pointer.
   expect(await stage.evaluate(el => getComputedStyle(el).touchAction)).toBe(
-    'auto',
+    'none',
   );
-  expect(new Set(await touchActionsAbove(img))).toEqual(new Set(['auto']));
+  expect(await touchActionsAbove(img)).toEqual([
+    'auto',
+    'none',
+    'auto',
+    'auto',
+  ]);
 });
 
-test('a photo without zoom leaves the browser its touch-action where the primary pointer is fine', async ({
+test('a photo without zoom takes one-finger drags as on a phone where the primary pointer is fine too', async ({
   page,
 }) => {
-  // The drag to dismiss is touch work: with a mouse nothing takes the
-  // touches (a touchscreen laptop's one-finger pan still reaches the page).
+  // The drag to dismiss attaches for every pointer (spec:AST-094 FR43): a
+  // touchscreen laptop's finger drags the photo down as on a phone, and the
+  // page keeps its pinch.
   await page.route('https://picsum.photos/**', async route =>
     route.fulfill({
       contentType: 'image/svg+xml',
@@ -200,14 +206,30 @@ test('a photo without zoom leaves the browser its touch-action where the primary
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
   const photo = dialog.getByRole('img').first();
-  expect(new Set(await touchActionsAbove(photo))).toEqual(new Set(['auto']));
+  expect(await touchActionsAbove(photo)).toEqual([
+    'auto',
+    'pinch-zoom',
+    'auto',
+    'auto',
+  ]);
 });
 
-test('in a gallery, nothing takes the browser’s touch-action where the primary pointer is fine', async ({
+test('a gallery takes its touches as on a phone where the primary pointer is fine too', async ({
   page,
 }) => {
+  // The track (the zoom stage's surface) claims its touches and the pager's
+  // viewport its horizontal pan, as under a coarse pointer (spec:AST-094
+  // FR43).
   const {current} = await openGallery(page);
-  expect(new Set(await touchActionsAbove(current))).toEqual(new Set(['auto']));
+  expect(await touchActionsAbove(current)).toEqual([
+    'auto',
+    'auto',
+    'auto',
+    'none',
+    'pan-y pinch-zoom',
+    'auto',
+    'auto',
+  ]);
 });
 
 for (const via of ['the Next button', 'the arrow key'] as const) {
@@ -293,13 +315,21 @@ test('in a gallery, a mouse click beside the photo closes the viewer', async ({
   });
 });
 
-test('a mouse double-click zooms 2x about the centre and back, wherever it lands', async ({
+test('a mouse double-click zooms in about where it lands, as a finger’s double tap, hiding the controls, and the next zooms back', async ({
   page,
 }) => {
   const {stage, img, fitted, stageBox} = await openViewer(page);
-  // A quarter of the way in from the photo's top-left corner: Photos' double
-  // tap would bring this point to the centre; Lightbox's released zoom
-  // ignores it.
+  const chromeAlpha = async () =>
+    page.evaluate(() =>
+      parseFloat(
+        getComputedStyle(
+          document.querySelector('dialog [data-lightbox-chrome]') as Element,
+        ).opacity,
+      ),
+    );
+  // A quarter of the way in from the photo's top-left corner: the stage's
+  // double tap (spec:AST-094 FR43) zooms to the aspect fill about that point,
+  // where the released zoom went 2x about the centre.
   await page.mouse.dblclick(
     fitted.x + fitted.width / 4,
     fitted.y + fitted.height / 4,
@@ -307,25 +337,27 @@ test('a mouse double-click zooms 2x about the centre and back, wherever it lands
   await expect(stage).toHaveAttribute('aria-pressed', 'true');
   await settled(page);
   const zoomed = await boxOf(img);
-  expect(zoomed.width / fitted.width).toBeCloseTo(2, 2);
-  expect(zoomed.height / fitted.height).toBeCloseTo(2, 2);
-  expect(Math.abs(centre(zoomed).x - centre(stageBox).x)).toBeLessThan(1);
-  expect(Math.abs(centre(zoomed).y - centre(stageBox).y)).toBeLessThan(1);
+  expect(zoomed.width / fitted.width).toBeGreaterThan(1.03);
+  // The photo moved toward the clicked point: no longer centred.
+  expect(centre(zoomed).y - centre(stageBox).y).toBeGreaterThan(5);
+  // A zoom by a pointer hides the controls, as a finger's does.
+  await expect.poll(chromeAlpha, {timeout: 3000}).toBe(0);
   await page.mouse.dblclick(centre(stageBox).x, centre(stageBox).y);
   await expect(stage).toHaveAttribute('aria-pressed', 'false');
   await settled(page);
   const back = await boxOf(img);
   expect(back.width).toBeCloseTo(fitted.width, 1);
   expect(back.x).toBeCloseTo(fitted.x, 1);
+  await expect.poll(chromeAlpha, {timeout: 3000}).toBe(1);
 });
 
-test('the double-click zoom plays the released 200 ms ease-out', async ({
+test('the keyboard’s zoom plays the released 200 ms ease-out', async ({
   page,
 }) => {
-  const {fitted, stageBox} = await openViewer(page);
-  // Samples the photo's width every frame from the double-click on. The
-  // sampler is in place before the double-click (an awaited install): one the
-  // page gets first would leave it waiting for a press that already came.
+  const {stage, fitted} = await openViewer(page);
+  // Samples the photo's width every frame from the key press on. The sampler
+  // is in place before the press (an awaited install): one the page gets
+  // first would leave it waiting for a press that already came.
   await page.evaluate(() => {
     (window as unknown as {__samples: Promise<[number, number][]>}).__samples =
       new Promise<[number, number][]>(resolve => {
@@ -333,7 +365,7 @@ test('the double-click zoom plays the released 200 ms ease-out', async ({
         const samples: [number, number][] = [];
         let start: number | null = null;
         window.addEventListener(
-          'dblclick',
+          'keydown',
           () => {
             start = performance.now();
           },
@@ -352,7 +384,10 @@ test('the double-click zoom plays the released 200 ms ease-out', async ({
         requestAnimationFrame(tick);
       });
   });
-  await page.mouse.dblclick(centre(stageBox).x, centre(stageBox).y);
+  // The keyboard keeps Lightbox's released zoom: Enter zooms 2x about the
+  // centre (a double-click is the stage's double tap now, FR43).
+  await stage.focus();
+  await page.keyboard.press('Enter');
   const samples = await page.evaluate(
     async () =>
       (window as unknown as {__samples: Promise<[number, number][]>}).__samples,
@@ -381,7 +416,7 @@ test('the double-click zoom plays the released 200 ms ease-out', async ({
   expect((doneAt ?? Number.POSITIVE_INFINITY) - origin).toBeLessThan(250);
 });
 
-test('a pen double-click zooms too: no touch layer takes the pen', async ({
+test('a pen double-click zooms, as a finger’s double tap', async ({
   page,
   browserName,
 }) => {
@@ -413,7 +448,7 @@ test('a pen double-click zooms too: no touch layer takes the pen', async ({
   await expect(stage).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('a pen drag pans a zoomed photo too: no touch layer takes the pen', async ({
+test('a pen drag pans a zoomed photo through the stage’s pan', async ({
   page,
   browserName,
 }) => {
@@ -423,7 +458,9 @@ test('a pen drag pans a zoomed photo too: no touch layer takes the pen', async (
   );
   const {stage, img, stageBox} = await openViewer(page);
   const middle = centre(stageBox);
-  await page.mouse.dblclick(middle.x, middle.y);
+  // 2x about the centre, with room to pan either way.
+  await stage.focus();
+  await page.keyboard.press('+');
   await expect(stage).toHaveAttribute('aria-pressed', 'true');
   await settled(page);
   const before = await boxOf(img);
@@ -450,7 +487,9 @@ test('a pen drag pans a zoomed photo too: no touch layer takes the pen', async (
   await pen('mouseReleased', middle.x - 80, false);
   await settled(page);
   const after = await boxOf(img);
-  expect(after.x - before.x).toBeCloseTo(-80, 0);
+  // The stage's pan takes the pen (spec:AST-094 FR43): it follows past the
+  // pan's 10 px threshold, and may coast on after the release.
+  expect(after.x - before.x).toBeLessThanOrEqual(-70);
 });
 
 test('a mouse drag stops at the photo’s edges instead of carrying it out of view', async ({

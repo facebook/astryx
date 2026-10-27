@@ -79,7 +79,6 @@ import {zoomMedia} from '../motion/uikit/zoomMedia';
 import {useZoomStage, type ZoomStage} from './useZoomStage';
 import {lightboxScope} from './lightbox.markers.stylex';
 import {useTouchPresentation} from '../utils/touchPresentation';
-import {isCoarsePointer} from '../utils/coarsePointer';
 import {animatorFor, type Animator} from '../motion/animator';
 import {liftCopy, type LiftedCopy} from '../liftFromTrigger/liftFromTrigger';
 import {sourceBoxOf, openingFadeStart, zoomFromSource} from './zoomFromSource';
@@ -471,11 +470,6 @@ const pageStyles = stylex.create({
   }),
 });
 
-/** Touch and pen hide the controls (Photos is a touch viewer). */
-function isTouchInput(input: string): boolean {
-  return input === 'touch' || input === 'pen';
-}
-
 /** A control layer or a caption: what a tap on the photo hides. */
 function isChromeElement(element: HTMLElement | null): boolean {
   return (
@@ -760,15 +754,13 @@ export function Lightbox({
   // Where the last press on the stage landed: a mouse drag released beside
   // the photo still fires a click there, which is no click (UIKit's tap
   // movement limit).
-  const pressRef = useRef<{x: number; y: number} | null>(null);
+  // And on which photo: a tap the stage recognizes after the double-tap
+  // interval belongs to the photo it landed on.
+  const pressRef = useRef<{x: number; y: number; index: number} | null>(null);
   // With the controls hidden, a click or tap where the stage does not take
   // it (a video page, the dark area beside a photo the stage only hugs)
   // brings them back instead of closing the viewer unseen.
   const showHiddenChromeRef = useRef<() => boolean>(() => false);
-  // A click on the photo under a fine pointer toggles the controls once a
-  // double-click can no longer follow; the second click calls it off.
-  const clickToggleRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const toggleChromeRef = useRef<() => void>(() => {});
   // The photo the zoom stage moves, in a gallery or alone: where a click
   // counts as the photo's.
   const currentPhotoRef = useRef<HTMLElement | null>(null);
@@ -786,14 +778,10 @@ export function Lightbox({
         return;
       }
       // A gallery's stage fills the viewer: a click on it beside the media is
-      // a backdrop click too. With zoom on under a coarse pointer, the stage's
-      // own tap handles it (after the double-tap interval); a fine pointer has
-      // no stage tap (spec:AST-094 FR19), so its click closes here.
+      // a backdrop click too. With zoom on, the stage's own tap handles it
+      // for every pointer, after the double-tap interval (spec:AST-094 FR43).
       const target = e.target as Element;
-      const stageTaps =
-        hasZoom &&
-        !isVideo &&
-        isCoarsePointer(e.currentTarget.ownerDocument.defaultView);
+      const stageTaps = hasZoom && !isVideo;
       const press = pressRef.current;
       const dragged =
         hasZoom &&
@@ -815,31 +803,6 @@ export function Lightbox({
         e.clientX <= photoBox.right &&
         e.clientY >= photoBox.top &&
         e.clientY <= photoBox.bottom;
-      // Only a pointer's click on the photo toggles the controls: a keyboard
-      // activation (Enter on Next) fires a click too, with no click count and
-      // at (0, 0), and a click on the controls is theirs.
-      const pointerClick =
-        e.detail >= 1 && target.closest('[data-lightbox-chrome]') == null;
-      // Under a fine pointer a click on the photo hides or shows the controls
-      // once a double-click can no longer follow, as a tap does under a
-      // finger (spec:AST-094 FR43: gestures attach for every pointer). The
-      // second click of a double-click, which zooms, calls it off.
-      if (
-        onPhoto &&
-        pointerClick &&
-        hasZoom &&
-        !isVideo &&
-        !stageTaps &&
-        !dragged
-      ) {
-        clearTimeout(clickToggleRef.current);
-        if (e.detail < 2) {
-          clickToggleRef.current = setTimeout(() => {
-            toggleChromeRef.current();
-          }, UIKIT_TAP.maximumIntervalBetweenTaps.value);
-        }
-        return;
-      }
       if (
         isGallery &&
         !stageTaps &&
@@ -855,11 +818,6 @@ export function Lightbox({
     },
     [handleClose, hasZoom, isGallery, isVideo],
   );
-  // A pending toggle belongs to the photo it was clicked on: a page change
-  // calls it off.
-  useEffect(() => {
-    clearTimeout(clickToggleRef.current);
-  }, [index]);
 
   // Zoom: pinch, double tap or double-click, Enter/Space on the image, or
   // +/- keys. Zoom changes are silent to assistive tech (only the transform
@@ -1062,7 +1020,12 @@ export function Lightbox({
     }
     for (const element of chromeElements()) {
       const animator = animatorFor(element);
-      if (animator.get('opacity') !== 0 && !element.getAnimations().length) {
+      // Without Web Animations the animator writes styles and nothing runs
+      // (the motion system's own reading, animatedLayout's movedByApp).
+      const fading =
+        typeof element.getAnimations === 'function' &&
+        element.getAnimations().length > 0;
+      if (animator.get('opacity') !== 0 && !fading) {
         animator.set({opacity: 0});
       }
     }
@@ -1133,10 +1096,11 @@ export function Lightbox({
       blackoutAnimator()?.set({opacity: backdropAlpha});
     }
   };
-  // The zoom stage for every pointer (the keyboard, a mouse double-click and
-  // drag) and, under a finger, its touch layer: one touch model on every
-  // touch device (the shared touch resolver), whose pinch and pan give past
-  // their limits and bounce back.
+  // The zoom stage: the keyboard's zoom and pan, and the gestures of every
+  // pointer, a mouse, a pen and a finger alike (spec:AST-094 FR43), whose
+  // pinch (a ctrl-wheel's too) and pan (a wheel's too) give past their
+  // limits and bounce back. The touch presentation, which only the zoom
+  // transition and the opener record read, is the shared touch resolver's.
   const {isTouch} = useTouchPresentation();
   // The opener is the element the viewer was opened from: a click or tap on
   // it (which a plain image, or a button in Safari, does not focus), else
@@ -1150,7 +1114,6 @@ export function Lightbox({
     stageRef: isGallery ? pageMediaRef : imageWrapperRef,
     surfaceRef: isGallery ? trackRef : imageWrapperRef,
     isEnabled: isOpen && isZoomTarget,
-    isTouch,
     itemKey: viewedItem,
     onZoomedChange: next => {
       setIsZoomed(next);
@@ -1160,30 +1123,31 @@ export function Lightbox({
             ? t('@astryx.lightbox.zoomedIn')
             : t('@astryx.lightbox.zoomedOut'),
         );
-        // Photos hides the controls as a finger zooms. Where the primary
-        // pointer is fine no zoom hides them, a pen's or a finger's
-        // included, as before (spec:AST-017 FR59).
-        if (isTouch && isTouchInput(lastInputRef.current)) {
+        // Photos hides the controls as a gesture zooms, a mouse's, a pen's
+        // or a finger's alike (spec:AST-094 FR43); a zoom from the keyboard
+        // leaves them, so the keys that zoomed can reach them.
+        if (lastInputRef.current !== 'keyboard') {
           setChrome({hidden: next, immersive: next});
         }
       }
     },
-    onDragStart,
   });
   const stage = useZoomStage(zoom, {
     stageRef: isGallery ? pageMediaRef : imageWrapperRef,
     surfaceRef: isGallery ? trackRef : imageWrapperRef,
-    isEnabled: isOpen && isZoomTarget && isTouch,
+    isEnabled: isOpen && isZoomTarget,
     itemKey: viewedItem,
     onPinchZoomed: next => {
       // Photos hides them as the pinch passes the fitted size, not at the
       // lift; the return shows them once the photo is back at it.
-      if (next && isTouchInput(lastInputRef.current)) {
+      if (next) {
         setChrome({hidden: true, immersive: true});
       }
     },
     onTapPhoto: () => {
-      if (!isTouchInput(lastInputRef.current)) {
+      // A page change before the tap was recognized calls it off: the next
+      // photo keeps its controls.
+      if (pressRef.current != null && pressRef.current.index !== index) {
         return;
       }
       const hidden = !chromeHiddenRef.current;
@@ -1196,6 +1160,9 @@ export function Lightbox({
     // With the controls hidden, a tap beside the photo brings them back
     // (Photos' tap on the background) rather than closing unseen.
     onTapOutside: () => {
+      if (pressRef.current != null && pressRef.current.index !== index) {
+        return;
+      }
       if (chromeHiddenRef.current) {
         setChrome({
           hidden: false,
@@ -1207,9 +1174,9 @@ export function Lightbox({
     },
     onDragStart,
     dismiss: {
-      // Touch work, like the zoom's: nothing attaches where the primary
-      // pointer is fine (spec:AST-094 FR19).
-      isEnabled: isOpen && !isVideo && isTouch,
+      // Every pointer's, like the zoom's (spec:AST-094 FR43); a video keeps
+      // its own controls' drags.
+      isEnabled: isOpen && !isVideo,
       onDrag: travel => {
         fadeForDismissal(
           dismissBackdropAlpha(travel),
@@ -1217,17 +1184,15 @@ export function Lightbox({
         );
       },
       // Photos' pinch to close fades them by the pinch's scale instead,
-      // under any finger (one touch model).
-      onPinch: isTouch
-        ? scale => {
-            fadeForDismissal(
-              pinchCloseBackdropAlpha(scale),
-              pinchCloseChromeAlpha(scale),
-            );
-          }
-        : undefined,
+      // under any pinch, a ctrl-wheel's included (spec:AST-094 FR43).
+      onPinch: scale => {
+        fadeForDismissal(
+          pinchCloseBackdropAlpha(scale),
+          pinchCloseChromeAlpha(scale),
+        );
+      },
       target: () => sourceBoxOf(sourceElementFor(index)),
-      onRelease: dismisses => {
+      onRelease: (dismisses, touch) => {
         if (dismisses) {
           dismissedRef.current = true;
           let resolve = () => {};
@@ -1256,7 +1221,7 @@ export function Lightbox({
             portalAnimator.animate(
               {opacity: 1},
               {spring: zoomMedia.dismiss.dismissSizeSpring},
-              {touchRelease: true},
+              {touchRelease: touch},
             );
             restoreLanded();
             landedRef.current = lifted;
@@ -1280,23 +1245,23 @@ export function Lightbox({
         const backdropMotion = backdrop?.animate(
           {opacity},
           {spring},
-          {touchRelease: true},
+          {touchRelease: touch},
         );
         for (const animator of chrome) {
           if (returning && isChromeElement(animator.element)) {
             animator.play(
               {opacity: chromeFadeCurve(animator.get('opacity'), false)},
-              {touchRelease: true},
+              {touchRelease: touch},
             );
           } else {
-            animator.animate({opacity}, {spring}, {touchRelease: true});
+            animator.animate({opacity}, {spring}, {touchRelease: touch});
           }
         }
         if (immersiveRef.current) {
           blackoutAnimator()?.animate(
             {opacity},
             {spring},
-            {touchRelease: true},
+            {touchRelease: touch},
           );
         }
         // Back at rest: the blur returns, unless the backdrop moved again.
@@ -1327,14 +1292,6 @@ export function Lightbox({
     currentPhotoRef,
   );
   stageApiRef.current = stage;
-  toggleChromeRef.current = () => {
-    if (dialogRef.current?.open !== true) {
-      return;
-    }
-    const hidden = !chromeHiddenRef.current;
-    // Zoomed, a click toggles only the controls: the black stays.
-    setChrome({hidden, immersive: isZoomed ? true : hidden});
-  };
   showHiddenChromeRef.current = () => {
     if (!chromeHiddenRef.current) {
       return false;
@@ -1393,7 +1350,6 @@ export function Lightbox({
     () => () => {
       openTokenRef.current += 1;
       closeTokenRef.current += 1;
-      clearTimeout(clickToggleRef.current);
       clearTimeout(openTimerRef.current);
       endEntranceRef.current?.();
       transitionAbortRef.current?.abort();
@@ -1686,8 +1642,10 @@ export function Lightbox({
     gap: zoomMedia.viewer.pageGap,
     index,
     isPanEnabled: isOpen && isGallery,
+    // Every pointer pages, a mouse's drag and a trackpad's scroll included
+    // (spec:AST-094 FR43).
     panOptions: {
-      allowedPointerTypes: ['touch', 'pen'],
+      allowedPointerTypes: ['touch', 'pen', 'mouse'],
       maximumNumberOfTouches: 1,
     },
     shouldBeginPan: direction => !stage.isZoomed() || stage.isAtEdge(direction),
@@ -1928,10 +1886,7 @@ export function Lightbox({
                 data-lightbox-media=""
                 {...stylex.props(
                   styles.mediaGroup,
-                  isZoomTarget &&
-                    !isGallery &&
-                    isTouch &&
-                    styles.mediaGroupZoom,
+                  isZoomTarget && !isGallery && styles.mediaGroupZoom,
                   isGallery && styles.mediaGroupGallery,
                 )}>
                 <div
@@ -1947,18 +1902,11 @@ export function Lightbox({
                   {...stylex.props(
                     styles.imageWrapper,
                     isGallery && styles.imageWrapperGallery,
-                    isZoomTarget &&
-                      !isGallery &&
-                      isTouch &&
-                      styles.imageWrapperZoomTarget,
-                    isZoomTarget &&
-                      !isGallery &&
-                      isTouch &&
-                      styles.imageWrapperFill,
+                    isZoomTarget && !isGallery && styles.imageWrapperZoomTarget,
+                    isZoomTarget && !isGallery && styles.imageWrapperFill,
                     !isZoomTarget &&
                       !isVideo &&
                       !isGallery &&
-                      isTouch &&
                       styles.imageWrapperDismissTarget,
                     isZoomTarget && focusOutlineStyles.focusVisible,
                     isZoomTarget && !isZoomed && styles.imageWrapperZoomable,
@@ -1967,17 +1915,16 @@ export function Lightbox({
                   onKeyDown={isZoomTarget ? handleImageKeyDown : undefined}
                   onPointerDown={e => {
                     didDragRef.current = false;
-                    pressRef.current = {x: e.clientX, y: e.clientY};
+                    pressRef.current = {x: e.clientX, y: e.clientY, index};
                   }}>
                   {isGallery ? (
                     <div
                       ref={trackRef}
                       {...stylex.props(
                         styles.track,
-                        isZoomTarget && isTouch && styles.trackZoomTarget,
+                        isZoomTarget && styles.trackZoomTarget,
                         !isZoomTarget &&
                           !isVideo &&
-                          isTouch &&
                           styles.imageWrapperDismissTarget,
                       )}>
                       {pageIndexes.map(i => (

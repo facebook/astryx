@@ -339,7 +339,7 @@ test('a pinch hides them as it passes the fitted size, before the lift', async (
   expect(await v.black()).toBe(1);
 });
 
-test('with a mouse (a fine pointer), a click on the photo hides the controls once a double-click cannot follow, the next shows them, and a double-click only zooms (FR43)', async ({
+test('with a mouse (a fine pointer), a click on the photo hides the controls once a double-click cannot follow, the next shows them, and a double-click zooms in and hides them (FR43)', async ({
   browser,
 }) => {
   const context = await browser.newContext({
@@ -385,10 +385,12 @@ test('with a mouse (a fine pointer), a click on the photo hides the controls onc
     // The next click brings them back.
     await page.mouse.click(centre.x, centre.y);
     await expect.poll(alpha, {timeout: 3000}).toBe(1);
-    // A double-click zooms and leaves them.
+    // A double-click zooms in and hides them, as a double tap does.
     await page.mouse.dblclick(centre.x, centre.y);
-    await page.waitForTimeout(700);
-    expect(await alpha()).toBe(1);
+    await expect(
+      dialog.getByRole('button', {name: 'Zoom'}).first(),
+    ).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(alpha, {timeout: 3000}).toBe(0);
     await expect(dialog).toBeVisible();
   } finally {
     await context.close();

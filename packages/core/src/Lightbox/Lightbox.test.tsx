@@ -1091,10 +1091,10 @@ describe('Lightbox', () => {
   });
 });
 
-describe('Lightbox mouse and pen zoom where the primary pointer is fine', () => {
-  // Touch work leaves fine-pointer behavior alone (spec:AST-017 FR59): with no
-  // touch layer, a double-click from any pointer keeps Lightbox's released
-  // zoom, 2× about the centre, whatever the photo or the clicked point.
+describe('Lightbox gestures for a mouse and a pen (spec:AST-094 FR43)', () => {
+  // Gestures attach for every pointer: a mouse's or a pen's double-click is
+  // the stage's double tap, a zoom by any pointer hides the controls as a
+  // finger's does, and a zoomed photo pans once the pan begins.
   let restoreLayout: () => void = () => {};
   beforeEach(() => {
     restoreLayout = stubStageLayout();
@@ -1103,29 +1103,74 @@ describe('Lightbox mouse and pen zoom where the primary pointer is fine', () => 
     restoreLayout();
   });
 
-  /** A press then a double-click as a browser sends them, from `pointerType`. */
+  /** A pointer event as a browser sends it, at `time` (ms). */
+  function pointer(
+    type: 'pointerdown' | 'pointermove' | 'pointerup',
+    target: Element,
+    pointerType: 'mouse' | 'pen',
+    x: number,
+    y: number,
+    time: number,
+  ): void {
+    const event = new Event(type, {bubbles: true, cancelable: true});
+    const fields: Record<string, unknown> = {
+      pointerType,
+      pointerId: pointerType === 'pen' ? 7 : 1,
+      isPrimary: true,
+      button: 0,
+      buttons: type === 'pointerup' ? 0 : 1,
+      clientX: x,
+      clientY: y,
+      timeStamp: time,
+    };
+    for (const [key, value] of Object.entries(fields)) {
+      Object.defineProperty(event, key, {value});
+    }
+    act(() => {
+      target.dispatchEvent(event);
+    });
+  }
+
+  /** Two clicks within the double-tap interval, then the browser's dblclick. */
   function doubleClick(
     target: Element,
-    pointerType: 'mouse' | 'pen' | 'touch',
+    pointerType: 'mouse' | 'pen',
     x: number,
     y: number,
   ): void {
-    const down = new Event('pointerdown', {bubbles: true, cancelable: true});
-    Object.defineProperty(down, 'pointerType', {value: pointerType});
-    Object.defineProperty(down, 'button', {value: 0});
-    Object.defineProperty(down, 'pointerId', {value: 1});
-    Object.defineProperty(down, 'clientX', {value: x});
-    Object.defineProperty(down, 'clientY', {value: y});
+    const t0 = performance.now();
+    pointer('pointerdown', target, pointerType, x, y, t0);
+    pointer('pointerup', target, pointerType, x, y, t0 + 40);
+    pointer('pointerdown', target, pointerType, x, y, t0 + 120);
+    pointer('pointerup', target, pointerType, x, y, t0 + 160);
     act(() => {
-      target.dispatchEvent(down);
       target.dispatchEvent(
         new MouseEvent('dblclick', {bubbles: true, clientX: x, clientY: y}),
       );
     });
   }
 
+  /** A finger's double tap, on a phone (a coarse primary pointer). */
+  function fingerDoubleTap(target: Element, x: number, y: number): void {
+    const t0 = performance.now();
+    const at = (type: string, down: boolean, time: number) => {
+      const event = new Event(type, {bubbles: true, cancelable: true});
+      const entry = {identifier: 1, clientX: x, clientY: y, target};
+      Object.defineProperty(event, 'touches', {value: down ? [entry] : []});
+      Object.defineProperty(event, 'changedTouches', {value: [entry]});
+      Object.defineProperty(event, 'timeStamp', {value: time});
+      act(() => {
+        target.dispatchEvent(event);
+      });
+    };
+    at('touchstart', true, t0);
+    at('touchend', false, t0 + 40);
+    at('touchstart', true, t0 + 120);
+    at('touchend', false, t0 + 160);
+  }
+
   function renderPhoto() {
-    render(
+    const view = render(
       <Lightbox
         isOpen={true}
         onOpenChange={() => {}}
@@ -1134,102 +1179,76 @@ describe('Lightbox mouse and pen zoom where the primary pointer is fine', () => 
       />,
     );
     return {
+      view,
       stage: screen.getByRole('button', {name: 'Zoom'}),
       img: screen.getByAltText('Photo'),
     };
   }
 
-  it('zooms a mouse double-click 2× about the centre and back, whatever point was clicked', () => {
+  it("zooms a mouse double-click where a finger's double tap zooms, and back", () => {
+    const restoreCoarse = stubCoarsePointer();
+    let finger: {translate: string; scale: string};
+    try {
+      const {view, stage, img} = renderPhoto();
+      fingerDoubleTap(stage, 20, 220);
+      finger = photoTransform(img);
+      view.unmount();
+    } finally {
+      restoreCoarse();
+    }
+    // Near the photo's top-left corner: Photos' double tap zooms the photo
+    // in about that point, whatever the pointer.
+    expect(finger.scale).not.toBe('');
     const {stage, img} = renderPhoto();
-    // Near the photo's top-left corner: Photos' double tap would centre that
-    // point at 3×; the released zoom ignores it.
     doubleClick(stage, 'mouse', 20, 220);
-    expect(photoTransform(img)).toEqual({
-      translate: '-200px -100px',
-      scale: '2 2',
-    });
+    expect(photoTransform(img)).toEqual(finger);
     expect(stage).toHaveAttribute('aria-pressed', 'true');
     doubleClick(stage, 'mouse', 20, 220);
     expect(stage).toHaveAttribute('aria-pressed', 'false');
   });
 
-  it('zooms a pen double-click too, since no touch layer takes it', () => {
-    const {stage, img} = renderPhoto();
-    doubleClick(stage, 'pen', 200, 300);
-    expect(photoTransform(img)).toEqual({
-      translate: '-200px -100px',
-      scale: '2 2',
-    });
-    expect(stage).toHaveAttribute('aria-pressed', 'true');
-  });
-
-  it("keeps the controls through a pen's zoom, as through a mouse's", () => {
-    // Photos hides them as a finger zooms; where the primary pointer is fine
-    // no zoom ever hid them (spec:AST-017 FR59).
+  it('zooms a pen double-click the same way', () => {
     const {stage} = renderPhoto();
     doubleClick(stage, 'pen', 200, 300);
     expect(stage).toHaveAttribute('aria-pressed', 'true');
-    const container = document.querySelector('dialog')!.firstElementChild!;
-    expect(container).not.toHaveAttribute('data-chrome-hidden');
   });
 
-  it('pans a zoomed photo under a pen drag too, stopping at its edges', async () => {
+  it("hides the controls as a mouse's or a pen's zoom does a finger's; the keyboard's zoom leaves them", () => {
+    const container = () =>
+      document.querySelector('dialog')!.firstElementChild!;
+    const mouse = renderPhoto();
+    doubleClick(mouse.stage, 'mouse', 200, 300);
+    expect(mouse.stage).toHaveAttribute('aria-pressed', 'true');
+    expect(container()).toHaveAttribute('data-chrome-hidden');
+    mouse.view.unmount();
+    const pen = renderPhoto();
+    doubleClick(pen.stage, 'pen', 200, 300);
+    expect(container()).toHaveAttribute('data-chrome-hidden');
+    pen.view.unmount();
+    const keys = renderPhoto();
+    fireEvent.keyDown(document.querySelector('dialog')!, {key: '+'});
+    expect(keys.stage).toHaveAttribute('aria-pressed', 'true');
+    expect(container()).not.toHaveAttribute('data-chrome-hidden');
+  });
+
+  it('pans a zoomed photo under a mouse drag once the pan begins, with the grab cursor', async () => {
     const {stage, img} = renderPhoto();
     fireEvent.keyDown(document.querySelector('dialog')!, {key: '+'});
-    expect(photoTransform(img).translate).toBe('-200px -100px');
     // A drag starts where the photo shows: let the 200 ms zoom land first.
     await act(async () => {
       await new Promise(resolve => setTimeout(resolve, 400));
     });
-    const pen = (type: string, x: number) => {
-      const event = new Event(type, {bubbles: true, cancelable: true});
-      Object.defineProperty(event, 'pointerType', {value: 'pen'});
-      Object.defineProperty(event, 'button', {value: 0});
-      Object.defineProperty(event, 'pointerId', {value: 7});
-      Object.defineProperty(event, 'clientX', {value: x});
-      Object.defineProperty(event, 'clientY', {value: 300});
-      act(() => {
-        stage.dispatchEvent(event);
-      });
-    };
-    pen('pointerdown', 200);
-    pen('pointermove', 170);
-    pen('pointermove', 150);
-    pen('pointerup', 150);
-    // 50 px to the left, as the pen moved; a mouse drag moves it the same.
-    expect(photoTransform(img).translate).toBe('-250px -100px');
-    pen('pointerdown', 150);
-    pen('pointermove', 900);
-    pen('pointerup', 900);
-    // The left edge stops on the stage's left edge.
-    expect(photoTransform(img).translate).toBe('0px -100px');
-  });
-
-  it('pans a zoomed photo from a mouse drag’s first pixel, the grab cursor at once', async () => {
-    const {stage, img} = renderPhoto();
-    fireEvent.keyDown(document.querySelector('dialog')!, {key: '+'});
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 400));
-    });
-    const mouse = (type: string, x: number) => {
-      const event = new Event(type, {bubbles: true, cancelable: true});
-      Object.defineProperty(event, 'pointerType', {value: 'mouse'});
-      Object.defineProperty(event, 'button', {value: 0});
-      Object.defineProperty(event, 'pointerId', {value: 1});
-      Object.defineProperty(event, 'clientX', {value: x});
-      Object.defineProperty(event, 'clientY', {value: 300});
-      act(() => {
-        stage.dispatchEvent(event);
-      });
-    };
-    mouse('pointerdown', 200);
-    // A press alone neither drags nor grabs: a click stays a click.
+    const from = photoTransform(img).translate;
+    const t0 = performance.now();
+    pointer('pointerdown', stage, 'mouse', 200, 300, t0);
+    // 2 px is under the pan's threshold: no drag, no grab.
+    pointer('pointermove', stage, 'mouse', 198, 300, t0 + 16);
+    expect(photoTransform(img).translate).toBe(from);
     expect(stage).not.toHaveAttribute('data-zoom-dragging');
-    mouse('pointermove', 198);
-    // 2 px: the photo follows and the grab cursor shows, with no threshold.
-    expect(photoTransform(img).translate).toBe('-202px -100px');
+    pointer('pointermove', stage, 'mouse', 170, 300, t0 + 32);
+    expect(photoTransform(img).translate).not.toBe(from);
     expect(stage).toHaveAttribute('data-zoom-dragging');
-    mouse('pointerup', 198);
+    pointer('pointerup', stage, 'mouse', 170, 300, t0 + 48);
     expect(stage).not.toHaveAttribute('data-zoom-dragging');
   });
 });
@@ -1278,7 +1297,7 @@ describe('Lightbox double-click under the touch layer', () => {
   });
 });
 
-describe('Lightbox recognizers follow the touch presentation (spec:AST-094 FR19)', () => {
+describe('Lightbox recognizers attach for every pointer (spec:AST-094 FR43)', () => {
   /** Names of the Lightbox recognizers attached while `body` runs. */
   function lightboxRecognizersAttached(body: () => void): string[] {
     const attach = vi.spyOn(getGestureHost(document), 'attach');
@@ -1292,7 +1311,7 @@ describe('Lightbox recognizers follow the touch presentation (spec:AST-094 FR19)
     }
   }
 
-  it('attaches none where the primary pointer is fine: a photo takes no drag to dismiss', () => {
+  it('attaches the drag to dismiss where the primary pointer is fine too', () => {
     expect(
       lightboxRecognizersAttached(() => {
         render(
@@ -1303,7 +1322,7 @@ describe('Lightbox recognizers follow the touch presentation (spec:AST-094 FR19)
           />,
         );
       }),
-    ).toEqual([]);
+    ).not.toEqual([]);
   });
 
   it('attaches the drag to dismiss under the touch layer', () => {
