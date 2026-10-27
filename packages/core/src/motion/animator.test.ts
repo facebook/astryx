@@ -9,9 +9,8 @@
  *   back: presentation values and velocities, retarget continuity, stop,
  *   completion, Reduced Motion substitutions, momentum curves (a coast with
  *   edges), late attach
- * @position Testing; what the compositor plays (frames advancing through a
- *   blocked main thread) needs a real browser, which these tests do not
- *   cover
+ * @position Testing; the compositor itself is proven in
+ *   __tests__/animator.interaction.browser.spec.ts
  */
 
 import {execFileSync} from 'node:child_process';
@@ -28,7 +27,7 @@ import {
 import {cubicBezier} from './bezier';
 import {coast} from './coast';
 import {solveDecay} from './decay';
-import {solveSpring, toSpring} from './spring';
+import {solveSpring, solveSpringTowardRamp, toSpring} from './spring';
 import {scroll} from './uikit/scroll';
 import {springs} from './uikit/springs';
 import {timing} from './uikit/timing';
@@ -67,18 +66,23 @@ const requestFrame = (callback: () => void) => {
  * properties, so the page is modeled here).
  */
 let stylesheet: Record<string, string> = {};
+/** The stylesheet's values for a pseudo-element of the element. */
+let pseudoStylesheet: Record<string, string> = {};
 
 beforeEach(() => {
   clock = 1000;
   recorded = [];
   frameQueue = [];
   stylesheet = {};
+  pseudoStylesheet = {};
   vi.spyOn(window, 'getComputedStyle').mockImplementation(
-    element =>
+    (element, pseudo) =>
       ({
         getPropertyValue: (property: string) =>
-          (element as HTMLElement).style.getPropertyValue(property) ||
-          (stylesheet[property] ?? ''),
+          pseudo != null
+            ? (pseudoStylesheet[property] ?? '')
+            : (element as HTMLElement).style.getPropertyValue(property) ||
+              (stylesheet[property] ?? ''),
       }) as unknown as CSSStyleDeclaration,
   );
   vi.useFakeTimers();
@@ -649,6 +653,23 @@ describe('review fixes', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it('rebasing a curve that waits for its first frame keeps it in its call', async () => {
+    const {animator} = setup();
+    animator.play({
+      opacity: {duration: 0.3, at: t => 1 - t, velocity: () => -1},
+      x: {duration: 0.3, at: t => 100 * t, velocity: () => 100},
+      rotate: {duration: 0.3, at: t => 90 * t, velocity: () => 90},
+    });
+    animator.rebase({x: -20});
+    animator.animate({y: 50}, {spring: springs.settle});
+    clock = 1300;
+    await commitFrame(1300);
+    // Every curve starts with the browser's start.
+    // 100 ms in: 9° (not the 27° of a curve dated at the call), x 10 − 20.
+    expect(animator.get('rotate', 1400)).toBeCloseTo(9, 6);
+    expect(animator.get('x', 1400)).toBeCloseTo(-10, 6);
+  });
+
   it('a rebase and a retarget in the task of a drop from rest start on the browser\u2019s clock', async () => {
     // A list row's drop: it springs home from where the finger left it.
     const {animator} = setup();
@@ -782,6 +803,12 @@ describe('animatorFor: one animator per element', () => {
     const b = document.createElement('div');
     expect(animatorFor(a)).toBe(animatorFor(a));
     expect(animatorFor(a)).not.toBe(animatorFor(b));
+    expect(animatorFor(a, {pseudoElement: '::backdrop'})).toBe(
+      animatorFor(a, {pseudoElement: '::backdrop'}),
+    );
+    expect(animatorFor(a, {pseudoElement: '::backdrop'})).not.toBe(
+      animatorFor(a),
+    );
   });
 
   it('composes two callers’ axes in one translate track', async () => {
@@ -873,6 +900,32 @@ describe('promotion: a compositing layer while it moves', () => {
     expect(element.style.willChange).toBe('');
   });
 
+  it("reads the stylesheet's will-change in a task of its own, so a promotion reads no style in its own task", async () => {
+    // A drag's first move promotes: reading the stylesheet's reasons then
+    // would force a style recalculation in the input handler.
+    stylesheet['will-change'] = 'transform, opacity';
+    const {animator, element} = setup();
+    await commitFrame(clock);
+    await vi.advanceTimersByTimeAsync(0);
+    const readsOf = () =>
+      vi
+        .mocked(window.getComputedStyle)
+        .mock.calls.filter(([read]) => read === element).length;
+    const before = readsOf();
+    animator.set({y: 10});
+    expect(readsOf()).toBe(before);
+    expect(element.style.willChange).toBe('transform, opacity, translate');
+    await advance(PROMOTION_LINGER_MS + 10);
+    expect(element.style.willChange).toBe('');
+  });
+
+  it("keeps the stylesheet's will-change when an element attached in this task moves at once", () => {
+    stylesheet['will-change'] = 'transform, opacity';
+    const {animator, element} = setup();
+    animator.animate({y: 100}, {spring: springs.settle});
+    expect(element.style.willChange).toBe('transform, opacity, translate');
+  });
+
   it('promotes during direct manipulation, until the writes stop', async () => {
     const {animator, element} = setup();
     animator.set({y: 10});
@@ -883,6 +936,52 @@ describe('promotion: a compositing layer while it moves', () => {
     expect(element.style.willChange).toBe('translate');
     await advance(20);
     expect(element.style.willChange).toBe('');
+  });
+
+  it('set with promote: false writes the values without a layer, and leaves other promotion alone', async () => {
+    // A one-off switch (a veil under a sticky header during a programmatic
+    // scroll) must not give its element a layer.
+    const {animator, element} = setup();
+    animator.set({opacity: 0.5}, {promote: false});
+    expect(element.style.opacity).toBe('0.5');
+    expect(element.style.willChange).toBe('');
+    await advance(PROMOTION_LINGER_MS + 10);
+    expect(element.style.willChange).toBe('');
+
+    // A channel a running motion promoted stays promoted, on its own clock.
+    const moving = setup();
+    moving.animator.animate({x: 120}, {spring: springs.settle});
+    expect(moving.element.style.willChange).toBe('translate');
+    moving.animator.set({opacity: 0.25}, {promote: false});
+    expect(moving.element.style.opacity).toBe('0.25');
+    expect(moving.element.style.willChange).toBe('translate');
+    await advance(5000 + PROMOTION_LINGER_MS);
+    expect(moving.element.style.willChange).toBe('');
+
+    // A channel with other motion still running gets its animation's layer.
+    const shared = setup();
+    shared.animator.animate({y: 80}, {spring: springs.settle});
+    shared.animator.set({x: 10}, {promote: false});
+    expect(live('translate').length).toBeGreaterThan(0);
+    expect(shared.element.style.willChange).toBe('translate');
+  });
+
+  it('promotes a pseudo-element through a custom property on its host', async () => {
+    const {animator, element} = setup({pseudoElement: '::backdrop'});
+    animator.set({opacity: 0});
+    // set() promotes a pseudo-element too.
+    expect(
+      element.style.getPropertyValue('--astryx-motion-will-change-backdrop'),
+    ).toBe('opacity');
+    animator.animate({opacity: 1}, {spring: springs.alertPresent});
+    expect(
+      element.style.getPropertyValue('--astryx-motion-will-change-backdrop'),
+    ).toBe('opacity');
+    expect(element.style.willChange).toBe('');
+    await advance(5000 + PROMOTION_LINGER_MS);
+    expect(
+      element.style.getPropertyValue('--astryx-motion-will-change-backdrop'),
+    ).toBe('');
   });
 
   it('ends promotion on the element it leaves', () => {
@@ -1110,6 +1209,64 @@ describe('Reduced Motion (design:reduced-motion)', () => {
       ),
     );
 
+  it('a call naming the opacity a running dip heads to keeps the dip', async () => {
+    const {animator} = reduced();
+    animator.animate({x: 100}, {spring: springs.navigationPush});
+    await commitFrame(clock);
+    const start = clock;
+    await advance(fade / 4);
+    // Mid fade out: a call names the opacity the dip returns to.
+    const handle = animator.animate({opacity: 1}, {spring: springs.settle});
+    // The dip goes on as it was: at its bottom when it was due, not opening
+    // a second dip from where it had got to.
+    expect(animator.get('opacity', start + fade / 2)).toBeCloseTo(0, 6);
+    await advance(fade / 4 + 1);
+    // Landed at the bottom; the fade back in ends when the dip was due to.
+    expect(animator.get('x')).toBe(100);
+    expect(animator.get('opacity', start + fade)).toBeCloseTo(1, 6);
+    await advance(fade + END_HOLD_MS + 1);
+    expect(animator.get('x')).toBe(100);
+    expect(animator.get('opacity')).toBe(1);
+    expect(await handle.finished).toBe(true);
+  });
+
+  it('a call naming the opacity a dip heads to, in the same task as the dip, hands the browser no second fade', async () => {
+    const {animator} = reduced();
+    animator.animate({x: 100}, {spring: springs.navigationPush});
+    animator.animate({opacity: 1}, {spring: springs.settle});
+    await commitFrame(clock);
+    const fades = recorded.filter(animation =>
+      animation.keyframes.some(keyframe => 'opacity' in keyframe),
+    );
+    expect(fades).toHaveLength(1);
+    expect(fades[0].cancelled).toBe(false);
+  });
+
+  it('a release played as a dip, then its state layer naming the opacity the dip returns to, fades once', async () => {
+    // A swipe row's release: the move's layer plays the travel, then the
+    // state layer lands its opacity on the same element in the same task.
+    const {animator} = reduced();
+    const move = animator.play(
+      {x: {duration: 0.3, at: t => (100 * t) / 0.3, velocity: () => 100 / 0.3}},
+      {touchRelease: true},
+    );
+    const state = animator.animate(
+      {opacity: 1},
+      {spring: springs.settle},
+      {touchRelease: true},
+    );
+    await commitFrame(clock);
+    const fades = recorded.filter(animation =>
+      animation.keyframes.some(keyframe => 'opacity' in keyframe),
+    );
+    expect(fades).toHaveLength(1);
+    await advance(fade + END_HOLD_MS + 1);
+    expect(animator.get('x')).toBe(100);
+    expect(animator.get('opacity')).toBe(1);
+    expect(await move.finished).toBe(true);
+    expect(await state.finished).toBe(true);
+  });
+
   it('an entrance after an outside finish starts from what is on screen', async () => {
     const {animator} = reduced();
     animator.animate(
@@ -1147,6 +1304,9 @@ describe('Reduced Motion (design:reduced-motion)', () => {
         {spring: springs.quickChange},
         {crossfadeAs: 'exit'},
       );
+      animator.play({
+        rotate: {duration: 0.3, at: t => 30 * t, velocity: () => 30},
+      });
       await advance(1000);
     }
     expect(recorded.length).toBeGreaterThan(0);
@@ -1327,6 +1487,68 @@ describe('Reduced Motion (design:reduced-motion)', () => {
     await advance(fade + END_HOLD_MS + 1);
     expect(next.style.opacity).toBe('');
     next.remove();
+  });
+
+  it('a node detached mid-dip and attached again in a later task shows the move landed and visible', async () => {
+    const {animator, element} = reduced();
+    // The call owns its opacity: its dip writes the low opacity inline.
+    animator.animate({x: 240, opacity: 1}, {spring: springs.navigationPush});
+    await advance(25);
+    expect(Number(element.style.opacity)).toBeLessThan(1);
+    animator.attach(null);
+    await advance(100);
+    animator.attach(element);
+    expect(animator.get('x')).toBe(240);
+    expect(animator.get('opacity')).toBe(1);
+    expect(element.style.opacity).not.toBe('0');
+    expect(Number(element.style.opacity || '1')).toBe(1);
+  });
+
+  it('a node detached mid-dip while another axis moves is left with no animation or promotion', async () => {
+    const {animator, element} = reduced();
+    animator.set({x: 0, y: 0});
+    // y coasts (momentum keeps its motion) while x waits in a dip.
+    const start = clock;
+    animator.decay(coast(animator, {y: 800}, {at: start}), {at: start});
+    animator.animate({x: 240}, {spring: springs.navigationPush});
+    await advance(25);
+    animator.attach(null);
+    await advance(1);
+    expect(
+      recorded.filter(
+        animation =>
+          animation.element === element &&
+          !animation.cancelled &&
+          animation.playState !== 'finished',
+      ),
+    ).toEqual([]);
+    expect(element.style.willChange).toBe('');
+  });
+
+  it('lands a waiting move on the latest node detached in the task, after a replacement too', async () => {
+    const {animator} = reduced();
+    animator.animate({x: 240, opacity: 1}, {spring: springs.navigationPush});
+    await advance(25);
+    const next = document.createElement('div');
+    document.body.append(next);
+    animator.attach(null);
+    animator.attach(next);
+    animator.attach(null);
+    await advance(100);
+    // The node attached last, then detached, is the one left visible.
+    expect(Number(next.style.opacity || '1')).toBe(1);
+    next.remove();
+  });
+
+  it('a dispose right after a detach lands the waiting move on that node', async () => {
+    const {animator, element} = reduced();
+    animator.animate({x: 240, opacity: 1}, {spring: springs.navigationPush});
+    await advance(25);
+    animator.attach(null);
+    animator.dispose();
+    await advance(100);
+    expect(Number(element.style.opacity || '1')).toBe(1);
+    expect(element.style.willChange).toBe('');
   });
 
   it('an identity held over a differing stylesheet follows a node replacement', () => {
@@ -1818,7 +2040,10 @@ describe('Reduced Motion (design:reduced-motion)', () => {
     await commitFrame(clock);
     await advance(20);
     animator.attach(null);
+    // The unmount is deferred to a microtask: read once it has run.
+    await Promise.resolve();
     expect(element.style.willChange).toBe('');
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("a new element taking over an exit by role leaves the stylesheet's opacity on the outgoing one", async () => {
@@ -1850,6 +2075,75 @@ describe('Reduced Motion (design:reduced-motion)', () => {
     expect(animator.get('opacity')).toBeCloseTo(0.8, 9);
     expect(element.style.opacity).toBe('0.8');
     expect(element.style.translate).toBe('100px 0px');
+  });
+
+  it("a pseudo-element's dip borrows its own opacity and hands it back without touching the host", async () => {
+    for (const role of [undefined, 'exit'] as const) {
+      const {animator, element} = setup({
+        reduced: true,
+        coarse: true,
+        pseudoElement: '::before',
+      });
+      element.style.opacity = '0.5'; // the host's own, untouched
+      pseudoStylesheet = {opacity: '0.3'};
+      animator.animate(
+        {x: 100},
+        {spring: springs.navigationPush},
+        role == null ? {} : {crossfadeAs: role},
+      );
+      await commitFrame(clock);
+      const [fadeLayer] = live('opacity');
+      const values = fadeLayer.keyframes.map(k => Number(k.opacity));
+      expect(Math.max(...values)).toBeCloseTo(0.3, 9);
+      await advance(fade * 2 + END_HOLD_MS + 1);
+      expect(animator.get('x')).toBe(100);
+      // The pseudo-element's stylesheet owns its opacity again; the host
+      // keeps its own.
+      expect(live('opacity')).toEqual([]);
+      expect(element.style.opacity).toBe('0.5');
+    }
+  });
+
+  it("a pseudo-element's identity hold follows a node replacement", () => {
+    const {animator, element} = setup({pseudoElement: '::backdrop'});
+    pseudoStylesheet = {opacity: '0'};
+    animator.set({opacity: 1});
+    animator.attach(null);
+    const next = document.createElement('div');
+    document.body.append(next);
+    animator.attach(next);
+    const held = live('opacity').filter(
+      animation => animation.element === next,
+    );
+    expect(held).toHaveLength(1);
+    expect(Number(held[0].keyframes.at(-1)!.opacity)).toBe(1);
+    expect(live('opacity').some(a => a.element === element)).toBe(false);
+    next.remove();
+  });
+
+  it('a pseudo-element shown over a hiding stylesheet keeps its own opacity through a move', async () => {
+    for (const role of [undefined, 'entrance'] as const) {
+      const {animator} = setup({
+        reduced: true,
+        coarse: true,
+        pseudoElement: '::backdrop',
+      });
+      pseudoStylesheet = {opacity: '0'};
+      animator.set({opacity: 1});
+      animator.animate(
+        {x: 100},
+        {spring: springs.navigationPush},
+        role == null ? {} : {crossfadeAs: role},
+      );
+      await commitFrame(clock);
+      for (let step = 0; step < 8; step++) {
+        await advance(fade / 4);
+      }
+      expect(animator.get('x')).toBe(100);
+      expect(animator.get('opacity')).toBe(1);
+      const [held] = live('opacity');
+      expect(Number(held.keyframes.at(-1)?.opacity)).toBe(1);
+    }
   });
 
   it('a move dips: fades out, lands while transparent, fades back in', async () => {
@@ -2086,6 +2380,20 @@ describe('Reduced Motion (design:reduced-motion)', () => {
     );
   });
 
+  it('a played curve, opacity alone included, becomes the timed fade', async () => {
+    const {animator} = reduced();
+    // A long dim that would follow a sheet's spring.
+    animator.play({
+      opacity: {duration: 0.6, at: t => 1 - t / 0.6, velocity: () => -1 / 0.6},
+    });
+    await commitFrame(clock); // the browser starts it
+    expect(animator.get('opacity', 1000 + fade)).toBe(0);
+    expect(Number(live('opacity')[0].options.duration)).toBeCloseTo(
+      fade + END_HOLD_MS,
+      6,
+    );
+  });
+
   it('a slide without opacity takes its direction from crossfadeAs', async () => {
     const entrance = reduced().animator;
     entrance.set({x: 300});
@@ -2126,9 +2434,13 @@ describe('Reduced Motion (design:reduced-motion)', () => {
   it('completes at once on a fine pointer, opacity included', () => {
     const {animator} = reduced(false);
     animator.animate({x: 100, opacity: 0.5}, {spring: springs.navigationPush});
+    animator.play({
+      y: {duration: 0.4, at: t => 100 * t, velocity: () => 100},
+    });
     expect(recorded).toHaveLength(0);
     expect(animator.get('x')).toBe(100);
     expect(animator.get('opacity')).toBe(0.5);
+    expect(animator.get('y')).toBeCloseTo(40, 9);
   });
 
   it('fades on a fine pointer when a touch release started the call', async () => {
@@ -2180,6 +2492,139 @@ describe('Reduced Motion (design:reduced-motion)', () => {
     await commitFrame(clock); // the browser starts it
     expect(live('opacity')).toHaveLength(0);
     expect(animator.getVelocity('y', 1010)).toBeLessThan(0);
+  });
+});
+
+describe('play: any closed-form curve', () => {
+  // A press that keeps deepening: the scale's target falls at 0.16 per
+  // second and the presentation follows it on a spring.
+  const pressSpring = toSpring(springs.contextMenuLift);
+  const press = solveSpringTowardRamp(pressSpring, {
+    from: 1,
+    target: 1,
+    slope: -0.16,
+  });
+  const pressCurve = {
+    duration: 0.266,
+    at: (t: number) => press.value(t),
+    velocity: (t: number) => press.velocity(t),
+  };
+
+  it('bakes the curve into keyframes and reads it back', async () => {
+    const {animator, element} = setup();
+    animator.play({scale: pressCurve});
+    const [animation] = live('scale');
+    await commitFrame(1000);
+    expect(animation.startTime).toBe(1000);
+    expect(Number(animation.options.duration)).toBeCloseTo(
+      266 + END_HOLD_MS,
+      6,
+    );
+    // Up to the end: from then on the value rests where the curve ended.
+    for (let t = 0; t < 266; t += 0.5) {
+      const [sx, sy] = sampleAt(animation, 'scale', 1000 + t);
+      expect(Math.abs(sx - press.value(t / 1000))).toBeLessThan(0.001);
+      expect(sy).toBe(sx);
+      expect(animator.get('scale', 1000 + t)).toBeCloseTo(
+        press.value(t / 1000),
+        12,
+      );
+      expect(animator.getVelocity('scaleY', 1000 + t)).toBeCloseTo(
+        press.velocity(t / 1000),
+        12,
+      );
+    }
+    const end = press.value(0.266);
+    expect(animator.get('scale', 1266)).toBeCloseTo(end, 12);
+    expect(animator.getVelocity('scale', 1266)).toBe(0);
+    for (const axis of parse(element.style.scale)) {
+      expect(axis).toBeCloseTo(end, 4);
+    }
+  });
+
+  it('finishes true at its end, false when interrupted', async () => {
+    const {animator} = setup();
+    const done = animator.play({
+      x: {duration: 0.2, at: t => 100 * t, velocity: () => 100},
+    });
+    await advance(250);
+    await expect(done.finished).resolves.toBe(true);
+    const cut = animator.play({
+      x: {duration: 0.2, at: t => 20 + 100 * t, velocity: () => 100},
+    });
+    await advance(50);
+    animator.set({x: 0});
+    await expect(cut.finished).resolves.toBe(false);
+  });
+
+  it('a later animate starts from the played value and velocity', async () => {
+    const {animator} = setup();
+    animator.play({scale: pressCurve});
+    await advance(120);
+    const value = animator.get('scale');
+    const velocity = animator.getVelocity('scale');
+    expect(value).toBeCloseTo(press.value(0.12), 12);
+    animator.animate({scale: 1.06}, {spring: springs.contextMenuLift});
+    expect(animator.get('scale')).toBeCloseTo(value, 9);
+    expect(animator.getVelocity('scale')).toBeCloseTo(velocity, 9);
+  });
+
+  it('a zero-length curve puts the value in place', () => {
+    const {animator, element} = setup();
+    animator.play({opacity: {duration: 0, at: () => 0.4, velocity: () => 0}});
+    expect(live('opacity')).toHaveLength(0);
+    expect(animator.get('opacity')).toBe(0.4);
+    expect(element.style.opacity).toBe('0.4');
+  });
+
+  it('under Reduced Motion a played travel cross-fades to its end', async () => {
+    const reduced = setup({
+      reduced: true,
+      coarse: true,
+    });
+    reduced.animator.play({
+      x: {duration: 0.3, at: t => 300 * t, velocity: () => 300},
+    });
+    await commitFrame(clock); // the browser starts it
+    const [opacity] = live('opacity');
+    expect(opacity).toBeDefined();
+    expect(live('translate')).toHaveLength(0);
+    await advance(timing.reducedMotionCrossFadeMs);
+    expect(reduced.animator.get('x')).toBeCloseTo(90, 9);
+  });
+
+  it('its handle retargets only with a spring', () => {
+    const {animator} = setup();
+    const handle = animator.play({
+      x: {duration: 0.3, at: t => 300 * t, velocity: () => 300},
+    });
+    expect(() => handle.retarget({x: 0})).toThrow(/spring/);
+    handle.retarget({x: 0}, {spring: springs.settle});
+    expect(animator.getVelocity('x')).toBeCloseTo(300, 9);
+  });
+
+  it('lets an explicit axis win over scale, in either order', () => {
+    const {animator} = setup();
+    const flat = (value: number) => ({
+      duration: 0,
+      at: () => value,
+      velocity: () => 0,
+    });
+    animator.play({scaleY: flat(0.5), scale: flat(2)});
+    expect(animator.get('scaleX')).toBe(2);
+    expect(animator.get('scaleY')).toBe(0.5);
+    animator.play({scale: flat(3), scaleX: flat(0.25)});
+    expect(animator.get('scaleX')).toBe(0.25);
+    expect(animator.get('scaleY')).toBe(3);
+  });
+
+  it('rejects a curve without a finite duration', () => {
+    const {animator} = setup();
+    expect(() =>
+      animator.play({
+        x: {duration: Number.POSITIVE_INFINITY, at: () => 0, velocity: () => 0},
+      }),
+    ).toThrow(RangeError);
   });
 });
 
@@ -2316,6 +2761,56 @@ describe('decay: momentum curves (a coast)', () => {
     );
     expect(source).not.toMatch(/from '\.\/decay'/);
     expect(source).not.toMatch(/from '\.\/uikit\/scroll'/);
+  });
+});
+
+describe('pseudoElement: a dialog\u2019s ::backdrop', () => {
+  it('targets the pseudo-element, writes no inline style and holds the end state', async () => {
+    const {animator, element} = setup({pseudoElement: '::backdrop'});
+    animator.set({opacity: 0});
+    const [held] = live('opacity');
+    expect(held.options).toMatchObject({
+      fill: 'both',
+      pseudoElement: '::backdrop',
+    });
+    expect(held.keyframes.map(k => k.opacity)).toEqual(['0', '0']);
+    expect(element.style.opacity).toBe('');
+
+    animator.animate({opacity: 1}, {spring: springs.alertPresent});
+    // The new animation exists before the hold goes: no frame in between.
+    expect(held.cancelled).toBe(true);
+    const [fade] = live('opacity');
+    expect(fade.options).toMatchObject({
+      fill: 'both',
+      pseudoElement: '::backdrop',
+    });
+    expect(fade.keyframes[fade.keyframes.length - 1].opacity).toBe('1');
+    expect(element.style.opacity).toBe('');
+    await advance(Number(fade.options.duration) + 1000);
+    // Past the curve's end, a static animation holds the end value.
+    expect(fade.cancelled).toBe(true);
+    const [rest] = live('opacity');
+    expect(rest.options).toMatchObject({
+      fill: 'both',
+      pseudoElement: '::backdrop',
+    });
+    expect(rest.keyframes.map(k => k.opacity)).toEqual(['1', '1']);
+    expect(animator.get('opacity')).toBe(1);
+  });
+
+  it('an exit holds 0 until the next animation replaces it', async () => {
+    const {animator} = setup({
+      pseudoElement: '::backdrop',
+      initial: {opacity: 1},
+    });
+    animator.animate({opacity: 0}, {spring: springs.alertDismiss});
+    const [fade] = live('opacity');
+    await advance(Number(fade.options.duration) + 1000);
+    const [rest] = live('opacity');
+    expect(rest.keyframes.map(k => k.opacity)).toEqual(['0', '0']);
+    animator.animate({opacity: 1}, {spring: springs.alertPresent});
+    expect(rest.cancelled).toBe(true);
+    expect(live('opacity')).toHaveLength(1);
   });
 });
 
