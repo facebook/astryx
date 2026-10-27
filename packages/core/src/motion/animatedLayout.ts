@@ -1065,10 +1065,11 @@ export function holdLayoutSwap(
   }
   const box = element.getBoundingClientRect();
   if (!isVisiblePart) {
-    return {area, copy: inertCopy(element), rect: box};
+    const copy = inertCopy(element);
+    return copy == null ? null : {area, copy, rect: box};
   }
-  const {copy, rect} = visiblePartCopy(element);
-  return {area, copy, rect};
+  const part = visiblePartCopy(element);
+  return part == null ? null : {area, ...part};
 }
 
 /**

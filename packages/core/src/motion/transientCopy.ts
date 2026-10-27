@@ -16,9 +16,10 @@
  * copied checked radio would uncheck the live one), and its frames and media
  * load nothing. Laying it out changes no ancestor's position, and a scaled
  * host draws it at the old size. Limits: a rule keyed on a removed `id` does
- * not style the copy, and content holding a canvas whose pixels cannot be
- * read back (a WebGL canvas without `preserveDrawingBuffer`, or a tainted
- * one) is not copied: the new content enters without an old copy.
+ * not style the copy, and content holding a canvas whose pixels read back
+ * empty is not copied, so the new content enters without an old copy: a
+ * canvas that cannot be read back (a WebGL canvas without
+ * `preserveDrawingBuffer`, a tainted one) or a blank one.
  *
  * SYNC: When modified, update /packages/core/src/motion/animatedLayout.ts
  */
@@ -26,39 +27,40 @@
 /** Above this many elements, old content is not copied: the new one enters. */
 const MAX_COPIED_ELEMENTS = 1500;
 
-/** Whether a canvas's pixels can be read back: drawn into a small probe. */
-function isReadable(canvas: HTMLCanvasElement): boolean {
-  if (canvas.width === 0 || canvas.height === 0) {
-    return true;
-  }
-  const probe = canvas.ownerDocument.createElement('canvas');
-  probe.width = 16;
-  probe.height = 16;
-  const context = probe.getContext('2d', {willReadFrequently: true});
-  if (context == null) {
-    // No 2D canvas here (a test environment): nothing to tell.
-    return true;
-  }
-  try {
-    context.drawImage(canvas, 0, 0, 16, 16);
-    const {data} = context.getImageData(0, 0, 16, 16);
-    // A canvas that reads back empty is either blank or unreadable; either
-    // way its copy would show nothing, so the content is not copied.
-    return data.some((value, index) => index % 4 === 3 && value !== 0);
-  } catch {
-    return false;
-  }
+/** Whether `element` is small enough to copy. */
+export function isCopyable(element: Element): boolean {
+  return element.getElementsByTagName('*').length <= MAX_COPIED_ELEMENTS;
 }
 
 /**
- * Whether `element` can be copied faithfully: small enough, and every canvas
- * in it readable.
+ * Paints `canvas` with `source`'s pixels at its own size; false when they
+ * read back empty: unreadable (a WebGL canvas without
+ * `preserveDrawingBuffer`, a tainted one) or blank.
  */
-export function isCopyable(element: Element): boolean {
-  return (
-    element.getElementsByTagName('*').length <= MAX_COPIED_ELEMENTS &&
-    Array.from(element.getElementsByTagName('canvas')).every(isReadable)
-  );
+function paintCanvas(
+  canvas: HTMLCanvasElement,
+  source: HTMLCanvasElement,
+): boolean {
+  if (canvas.width === 0 || canvas.height === 0) {
+    return true;
+  }
+  const context = canvas.getContext('2d', {willReadFrequently: true});
+  if (context == null) {
+    // No 2D canvas here (a test environment): nothing to paint or tell.
+    return true;
+  }
+  try {
+    context.drawImage(source, 0, 0);
+    const {data} = context.getImageData(0, 0, canvas.width, canvas.height);
+    for (let index = 3; index < data.length; index += 4) {
+      if (data[index] !== 0) {
+        return true;
+      }
+    }
+    return false;
+  } catch {
+    return false;
+  }
 }
 
 /** Scroll offsets a copy restores once laid out (a clone carries none). */
@@ -73,7 +75,7 @@ const scrollOffsets = new WeakMap<
  * control, and copied frames and media load nothing. Scrolled descendants
  * keep their offsets once the copy is laid out (`placeOver`).
  */
-export function inertCopy(element: HTMLElement): HTMLElement {
+export function inertCopy(element: HTMLElement): HTMLElement | null {
   const copy = element.cloneNode(true) as HTMLElement;
   const sourceNodes = [element, ...element.querySelectorAll('*')];
   const copyNodes = [copy, ...copy.querySelectorAll('*')];
@@ -103,17 +105,13 @@ export function inertCopy(element: HTMLElement): HTMLElement {
       node.removeAttribute(name);
     }
   }
-  // A clone's canvas is blank: paint each with its source's pixels (content
-  // with an unreadable canvas is not copied: `isCopyable`).
+  // A clone's canvas is blank: paint each with its source's pixels. Content
+  // with a canvas that reads back empty is not copied.
   const sources = element.querySelectorAll('canvas');
-  copy.querySelectorAll('canvas').forEach((canvas, index) => {
-    const source = sources[index];
-    try {
-      canvas.getContext('2d')?.drawImage(source, 0, 0);
-    } catch {
-      // A canvas the copy cannot read (tainted, or a lost context) stays blank.
-    }
-  });
+  const canvases = Array.from(copy.querySelectorAll('canvas'));
+  if (!canvases.every((canvas, index) => paintCanvas(canvas, sources[index]))) {
+    return null;
+  }
   copy.setAttribute('aria-hidden', 'true');
   copy.setAttribute('inert', '');
   copy.style.pointerEvents = 'none';
@@ -153,11 +151,17 @@ export function placeOver(
   host.appendChild(element);
   // The origin, and the host's scale: the rect is in viewport pixels, the
   // copy's styles in the host's own.
+  // The rendered size over the layout size, as the glide's `scaleOf` reads
+  // it, so a size the copy's own CSS imposes is not taken for a scale.
   const origin = element.getBoundingClientRect();
   const scaleX =
-    origin.width > 0 && rect.width > 0 ? origin.width / rect.width : 1;
+    origin.width > 0 && element.offsetWidth > 0
+      ? origin.width / element.offsetWidth
+      : 1;
   const scaleY =
-    origin.height > 0 && rect.height > 0 ? origin.height / rect.height : 1;
+    origin.height > 0 && element.offsetHeight > 0
+      ? origin.height / element.offsetHeight
+      : 1;
   element.style.width = `${rect.width / scaleX}px`;
   element.style.height = `${rect.height / scaleY}px`;
   element.style.left = `${(rect.left - origin.left) / scaleX}px`;
@@ -181,8 +185,11 @@ export function placeOver(
 export function visiblePartCopy(element: HTMLElement): {
   copy: HTMLElement;
   rect: DOMRect;
-} {
+} | null {
   const content = inertCopy(element);
+  if (content == null) {
+    return null;
+  }
   content.removeAttribute('role');
   content.removeAttribute('tabindex');
   Object.assign(content.style, {
