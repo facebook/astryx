@@ -2699,6 +2699,8 @@ jobs:
         typecheck,
         build-sandbox,
         build,
+        pr-a11y-guards,
+        pr-a11y-specs,
         pr-a11y,
         interaction-scope,
         pr-interaction,
