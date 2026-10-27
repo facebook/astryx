@@ -132,6 +132,16 @@ const styles = stylex.create({
       },
       '[data-astryx-press="on"]': 'scale(0.98)',
     },
+    // The press scale's transition stays on the compositor only while the
+    // button keeps its own layer: a layer the browser makes for the
+    // transition and drops at its end repaints the button. Under the touch
+    // press model the button keeps one from the touch to the end of its
+    // release, so the release does no Paint per frame.
+    willChange: {
+      default: null,
+      '[data-astryx-press="on"]': 'transform',
+      '[data-astryx-press="fading"]': 'transform',
+    },
   },
   inactive: {
     cursor: 'default',
