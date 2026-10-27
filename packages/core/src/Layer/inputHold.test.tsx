@@ -279,8 +279,14 @@ describe("holdInput decides by each event's pointer (spec:AST-094 FR35)", () => 
     type: string,
     pointerType: string,
     pointerId = 1,
+    buttons = 0,
   ): Event {
-    const event = new PointerEvent(type, {...INIT, pointerId, pointerType});
+    const event = new PointerEvent(type, {
+      ...INIT,
+      pointerId,
+      pointerType,
+      buttons,
+    });
     element.dispatchEvent(event);
     return event;
   }
@@ -435,6 +441,7 @@ describe("holdInput decides by each event's pointer (spec:AST-094 FR35)", () => 
     const isGated = (target: Node) => touchGates.some(gate => gate(target));
     // Before any pointer: held.
     expect(isGated(child)).toBe(true);
+    pointer(child, 'pointermove', 'mouse');
     pointer(child, 'pointerdown', 'mouse');
     expect(isGated(child)).toBe(false);
     pointer(child, 'pointerup', 'mouse');
@@ -442,9 +449,31 @@ describe("holdInput decides by each event's pointer (spec:AST-094 FR35)", () => 
     expect(isGated(child)).toBe(true);
     pointer(child, 'pointerup', 'touch', 2);
     hold(layer, 'layer');
+    pointer(child, 'pointermove', 'mouse');
     pointer(child, 'pointerdown', 'mouse');
     expect(isGated(child)).toBe(true);
     expect(isGated(document.body)).toBe(false);
+  });
+
+  it("keeps a presentation's shield up for a mouse press that begins on it, to that press's end, and the gate holds what lands on the shield: its release and click are the shield's, not what lies beneath", () => {
+    const {layer, child} = mountLayer();
+    hold(layer);
+    const shield = layer.lastElementChild as HTMLElement;
+    const isGated = (target: Node) => touchGates.some(gate => gate(target));
+    // A mouse that has not moved during the hold presses: the press meets
+    // the shield, which stays up through the press, a drag included.
+    pointer(shield, 'pointerdown', 'mouse', 1, 1);
+    expect(shield.style.pointerEvents).toBe('auto');
+    pointer(shield, 'pointermove', 'mouse', 1, 1);
+    expect(shield.style.pointerEvents).toBe('auto');
+    expect(isGated(shield)).toBe(true);
+    pointer(shield, 'pointerup', 'mouse');
+    // Only a mouse moving with no button down lets it through.
+    pointer(document.body, 'pointermove', 'mouse');
+    expect(shield.style.pointerEvents).toBe('none');
+    expect(isGated(child)).toBe(false);
+    // What lands on a shield is held, a mouse's press included.
+    expect(isGated(shield)).toBe(true);
   });
 
   it('lets a key or assistive technology click through: it counts no press', () => {
