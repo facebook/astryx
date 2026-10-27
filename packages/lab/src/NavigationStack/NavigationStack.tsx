@@ -91,7 +91,7 @@ import {
   solveSpring,
   toSpring,
   type SpringDescription,
-} from '@astryxdesign/core/motion/spring';
+} from '@astryxdesign/core/internal/motion';
 import {
   navigation,
   registerNavigationTable,
