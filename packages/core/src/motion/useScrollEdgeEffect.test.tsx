@@ -618,3 +618,15 @@ function normalCdf(z: number): number {
   const half = (sum * h) / 3 / Math.sqrt(2 * Math.PI);
   return z >= 0 ? 0.5 + half : 0.5 - half;
 }
+
+describe('the internal motion entry', () => {
+  // Lab reaches the effect and its table only through
+  // `@astryxdesign/core/internal/motion` (architecture:react-component-runtime
+  // INV13), by name, as the same values Core imports by path.
+  it('re-exports the effect and the bars table by name', async () => {
+    const entry: Record<string, unknown> = await import('../internal/motion');
+    expect(entry.useScrollEdgeEffect).toBe(useScrollEdgeEffect);
+    expect(entry.bars).toBe(bars);
+    expect(entry.registerBarsTable).toBe(registerBarsTable);
+  });
+});

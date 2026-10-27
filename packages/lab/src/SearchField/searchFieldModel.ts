@@ -2,8 +2,8 @@
 
 /**
  * @file searchFieldModel.ts
- * @input The UIKit search table (`search` from
- *   `@astryxdesign/core/motion/uikit`) and core's cubic-bézier curves
+ * @input The UIKit search table and core's cubic-bézier curves (`search`,
+ *   `timing` and `cubicBezier` from `@astryxdesign/core/internal/motion`)
  * @output Pure math for SearchField: the active field's width, the targets
  *   of every animated part at rest and while active, and the timed curves
  *   that move them (a UIViewPropertyAnimator's cubic-bézier clock, started
@@ -24,9 +24,12 @@
  * SYNC: When modified, update searchFieldModel.test.ts and SearchField.tsx.
  */
 
-import {type MotionCurve} from '@astryxdesign/core/motion/animator';
-import {cubicBezier} from '@astryxdesign/core/motion/bezier';
-import {search, timing} from '@astryxdesign/core/motion/uikit';
+import {
+  cubicBezier,
+  type MotionCurve,
+  search,
+  timing,
+} from '@astryxdesign/core/internal/motion';
 
 /**
  * The activation's curve, UIKit's ease-in-ease-out (the `timing.curves.move`

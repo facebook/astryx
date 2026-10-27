@@ -12,7 +12,7 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {search} from '@astryxdesign/core/motion/uikit';
+import {search} from '@astryxdesign/core/internal/motion';
 import {
   searchBarItemOpacity,
   searchClock,
