@@ -282,6 +282,36 @@ test('during the entrance a tap on the dim and a grab are ignored, and input ret
   await expect(dialog).not.toHaveAttribute('open');
 });
 
+test('a non-modal sheet holds only itself while it enters: a tap on the page beside it lands (spec:AST-094 FR35)', async ({
+  page,
+}) => {
+  await emulateIosWebKit(page);
+  await openStory(page, storybook(), 'core-bottomsheet--no-scrim');
+  const driver = await touchDriver(page);
+  const tapOn = async (locator: Locator) => {
+    const box = await locator.boundingBox();
+    if (box == null) {
+      throw new Error('nothing to tap');
+    }
+    await driver.tap({x: box.x + box.width / 2, y: box.y + box.height / 2});
+  };
+  const counter = page.getByRole('button', {name: /Background clicks/});
+  await tapOn(page.getByRole('button', {name: 'Open sheet'}));
+  // ~60 ms into the entrance: the page's counter, above the rising sheet.
+  await page.waitForTimeout(60);
+  await tapOn(counter);
+  await expect(counter).toHaveAccessibleName('Background clicks: 1');
+  // The sheet still finishes entering and stays open (a non-modal sheet is
+  // a manual popover).
+  await expect
+    .poll(async () =>
+      page
+        .locator('dialog[aria-label="Nearby places"]')
+        .evaluate(dialog => dialog.matches(':popover-open')),
+    )
+    .toBe(true);
+});
+
 test('during the entrance keys stay live: Escape closes the sheet once it lands (spec:AST-094 FR35)', async ({
   page,
 }) => {

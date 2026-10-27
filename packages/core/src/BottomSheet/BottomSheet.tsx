@@ -4,7 +4,7 @@
 
 /**
  * @file BottomSheet.tsx
- * @input Uses React, StyleX, core hooks, shared layer dismissal, the layer input hold, the modal outlet registry, the shared interaction modality, named BottomSheetPanel, BottomSheetSwitcherContext, BottomSheetHostContext, the private bottom-sheet stack registry
+ * @input Uses React, StyleX, core hooks, shared layer dismissal, the layer input hold, the sheet self hold, the modal outlet registry, the shared interaction modality, named BottomSheetPanel, BottomSheetSwitcherContext, BottomSheetHostContext, the private bottom-sheet stack registry
  * @output Exports BottomSheet component and BottomSheetProps
  * @position Public BottomSheet router plus private standalone/switcher hosts
  *
@@ -105,6 +105,7 @@ import {ModalAnnounceProvider} from '../hooks/ModalAnnounceProvider';
 import {useModalOutlet} from '../Layer/modalOutlet';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {useInputHold} from '../Layer/inputHold';
+import {useSheetSelfHold} from './sheetSelfHold';
 import {focusForLastInput} from '../utils/focusReturn';
 import {useInteractionModalityTracking} from '../utils/interactionModality';
 import {
@@ -536,12 +537,17 @@ function StandaloneBottomSheet({
   // with the sheet). The pin is lifted only after a style flush has applied
   // the last value, so that value does not ease in again.
   // Under a finger every touch presentation holds pointer input while it
-  // enters (`spec:AST-094` FR35, DEC-16): the layer's input hold covers the
-  // sheet and the scrim until the sheet lands, so a tap or a drag that lands
-  // then reaches neither, as UIKit drops such a touch (F4 b59). Keys and
-  // assistive technology stay live.
+  // enters (`spec:AST-094` FR35, DEC-16), as UIKit drops such a touch (F4
+  // b59). A modal sheet's hold is the layer's, over the sheet and the scrim
+  // until the sheet lands; a non-modal sheet holds only a tap or a drag on
+  // itself, and the page beside it stays live. Keys and assistive technology
+  // stay live.
   const [isEntranceHeld, setIsEntranceHeld] = useState(false);
-  useInputHold(dialogRef, {isHeld: isEntranceHeld, scope: 'viewport'});
+  useInputHold(dialogRef, {
+    isHeld: isEntranceHeld && hasScrim,
+    scope: 'viewport',
+  });
+  useSheetSelfHold(dialogRef, isEntranceHeld && !hasScrim);
   const handleScrimTracking = useCallback((tracking: boolean) => {
     const dialog = dialogRef.current;
     if (dialog == null) {
@@ -966,10 +972,14 @@ function SwitcherBottomSheetItem({
   const isHostSheet = hasValidSheetId && hostSheet === sheetId;
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   // A step's sheet enters on the stylesheet; under a finger it holds pointer
-  // input until that entrance ends, as a lone sheet does (`spec:AST-094`
-  // FR35, DEC-16).
+  // input until that entrance ends, as a lone sheet does, a non-modal flow
+  // only on itself (`spec:AST-094` FR35, DEC-16).
   const [isEntranceHeld, setIsEntranceHeld] = useState(false);
-  useInputHold(dialogRef, {isHeld: isEntranceHeld, scope: 'viewport'});
+  useInputHold(dialogRef, {
+    isHeld: isEntranceHeld && hasScrim,
+    scope: 'viewport',
+  });
+  useSheetSelfHold(dialogRef, isEntranceHeld && !hasScrim);
   const dialogModeRef = useRef<'modal' | 'non-modal' | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const previousPhaseRef = useRef(phase);
