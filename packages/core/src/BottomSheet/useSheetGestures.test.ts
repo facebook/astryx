@@ -2479,38 +2479,44 @@ describe('useSheetGestures: the release on the compositor', () => {
     handleOf(t).appendChild(toggle);
     attach(hook, t);
     // A drag that begins on it.
-    act(() => touchEvent('touchstart', toggle, [{id: 901, x: 50, y: 0}], 0));
+    act(() => {
+      touchEvent('touchstart', toggle, [{id: 901, x: 50, y: 0}], 0);
+    });
     for (let i = 1; i <= 6; i += 1) {
-      act(() =>
-        touchEvent('touchmove', toggle, [{id: 901, x: 50, y: i * 10}], i * 16),
-      );
+      act(() => {
+        touchEvent('touchmove', toggle, [{id: 901, x: 50, y: i * 10}], i * 16);
+      });
     }
     expect(hook.result.current.isDragging).toBe(true);
     expect(toggle.style.getPropertyValue('user-select')).toBe('none');
-    act(() => touchEvent('touchend', toggle, [{id: 901, x: 50, y: 60}], 100));
+    act(() => {
+      touchEvent('touchend', toggle, [{id: 901, x: 50, y: 60}], 100);
+    });
     expect(toggle.style.getPropertyValue('user-select')).toBe('');
     act(() => {
       vi.advanceTimersByTime(80);
     });
     // A finger that lands on it and catches the settling sheet.
-    act(() =>
-      touchEvent('touchstart', toggle, [{id: 902, x: 50, y: 500}], 1000),
-    );
+    act(() => {
+      touchEvent('touchstart', toggle, [{id: 902, x: 50, y: 500}], 1000);
+    });
     expect(hook.result.current.isDragging).toBe(true);
     expect(toggle.style.getPropertyValue('user-select')).toBe('none');
     // And it stays locked as that finger drags the sheet on.
     for (let i = 1; i <= 6; i += 1) {
-      act(() =>
+      act(() => {
         touchEvent(
           'touchmove',
           toggle,
           [{id: 902, x: 50, y: 500 + i * 10}],
           1000 + i * 16,
-        ),
-      );
+        );
+      });
       expect(toggle.style.getPropertyValue('user-select')).toBe('none');
     }
-    act(() => touchEvent('touchend', toggle, [{id: 902, x: 50, y: 560}], 1600));
+    act(() => {
+      touchEvent('touchend', toggle, [{id: 902, x: 50, y: 560}], 1600);
+    });
     expect(toggle.style.getPropertyValue('user-select')).toBe('');
   });
 
