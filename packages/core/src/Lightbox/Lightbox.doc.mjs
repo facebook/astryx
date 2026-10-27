@@ -99,7 +99,7 @@ export const docs = {
       name: 'hasZoom',
       type: 'boolean',
       description:
-        'Enable zoom (images only): under a coarse primary pointer (a touch screen), pinch, or double-tap to zoom in at that point and back; a double-click or Enter/Space/+/- zooms 2× about the centre and back. When zoomed, drag (with momentum under a finger) or use arrow keys to pan. On a touch screen a tap on the photo hides the controls and turns the background black, as a zoom in does; the next tap, a return to the fitted size, or a keyboard focus on a control brings them back. On a touch screen a pinch in from the fitted size shrinks the photo, and closes the viewer into its thumbnail once it goes below about 93.5 % unless it is opened again by 5 % before the lift.',
+        'Enable zoom (images only): under a coarse primary pointer (a touch screen), pinch, or double-tap to zoom in at that point and back; a double-click or Enter/Space/+/- zooms 2× about the centre and back. When zoomed, drag (with momentum under a finger) or use arrow keys to pan. A tap or a click on the photo hides the controls and turns the background black (on a touch screen a zoom in does too); the next tap or click, a return to the fitted size, or a keyboard focus on a control brings them back. On a touch screen a pinch in from the fitted size shrinks the photo, and closes the viewer into its thumbnail once it goes below about 93.5 % unless it is opened again by 5 % before the lift.',
       default: 'false',
     },
     {
@@ -221,7 +221,7 @@ export const docsZh = {
       name: 'hasZoom',
       type: 'boolean',
       description:
-        '启用缩放（仅图片）：在触屏上，双指捏合或双点按在该处放大并还原；双击或使用 Enter/Space/+/- 键以中心放大 2 倍并还原。缩放后可拖动（手指拖动带惯性）或用方向键平移。在触摸屏上，点按照片会隐藏控件并使背景变黑（放大时也是如此）；再次点按、还原到适合大小或用键盘聚焦控件会让控件重新出现。在触摸屏上，从适合大小双指向内捏合会缩小照片；一旦小于约 93.5%，除非松开前又张开 5%，查看器就会关闭并缩回缩略图。',
+        '启用缩放（仅图片）：在触屏上，双指捏合或双点按在该处放大并还原；双击或使用 Enter/Space/+/- 键以中心放大 2 倍并还原。缩放后可拖动（手指拖动带惯性）或用方向键平移。点按或单击照片会隐藏控件并使背景变黑（在触摸屏上放大时也是如此）；再次点按或单击、还原到适合大小或用键盘聚焦控件会让控件重新出现。在触摸屏上，从适合大小双指向内捏合会缩小照片；一旦小于约 93.5%，除非松开前又张开 5%，查看器就会关闭并缩回缩略图。',
       default: 'false',
     },
     {
@@ -315,7 +315,7 @@ export const docsDense = {
     onIndexChange:
       'Callback when gallery index changes (buttons, keys or a swipe).',
     hasZoom:
-      'Enable zoom (pinch, double-tap or double-click, Enter/Space, or +/-) and pan (drag or arrow keys) for images; on touch, a tap on the photo hides the controls and a pinch in closes the viewer.',
+      'Enable zoom (pinch, double-tap or double-click, Enter/Space, or +/-) and pan (drag or arrow keys) for images; a tap or click on the photo hides the controls, and on touch a pinch in closes the viewer.',
     experimental:
       'Experimental options, which may change in a patch release: sourceFor, the element an item zooms out of on open and back into on close on a touch screen (its thumbnail).',
     xstyle: 'StyleX styles for layout customization.',

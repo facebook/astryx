@@ -769,6 +769,10 @@ export function Lightbox({
   // it (a video page, the dark area beside a photo the stage only hugs)
   // brings them back instead of closing the viewer unseen.
   const showHiddenChromeRef = useRef<() => boolean>(() => false);
+  // A click on the photo under a fine pointer toggles the controls once a
+  // double-click can no longer follow; the second click calls it off.
+  const clickToggleRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const toggleChromeRef = useRef<() => void>(() => {});
   const handleBackdropClick = useCallback(
     (e: ReactMouseEvent<HTMLDialogElement>) => {
       if (didDragRef.current) {
@@ -815,6 +819,19 @@ export function Lightbox({
           e.clientY <= r.bottom
         );
       });
+      // Under a fine pointer a click on the photo hides or shows the controls
+      // once a double-click can no longer follow, as a tap does under a
+      // finger (spec:AST-094 FR43: gestures attach for every pointer). The
+      // second click of a double-click, which zooms, calls it off.
+      if (onPhoto && hasZoom && !isVideo && !stageTaps && !dragged) {
+        clearTimeout(clickToggleRef.current);
+        if (e.detail < 2) {
+          clickToggleRef.current = setTimeout(() => {
+            toggleChromeRef.current();
+          }, UIKIT_TAP.maximumIntervalBetweenTaps.value);
+        }
+        return;
+      }
       if (
         isGallery &&
         !stageTaps &&
@@ -1273,6 +1290,14 @@ export function Lightbox({
     },
   });
   stageApiRef.current = stage;
+  toggleChromeRef.current = () => {
+    if (dialogRef.current?.open !== true) {
+      return;
+    }
+    const hidden = !chromeHiddenRef.current;
+    // Zoomed, a click toggles only the controls: the black stays.
+    setChrome({hidden, immersive: isZoomed ? true : hidden});
+  };
   showHiddenChromeRef.current = () => {
     if (!chromeHiddenRef.current) {
       return false;
@@ -1331,6 +1356,7 @@ export function Lightbox({
     () => () => {
       openTokenRef.current += 1;
       closeTokenRef.current += 1;
+      clearTimeout(clickToggleRef.current);
       clearTimeout(openTimerRef.current);
       endEntranceRef.current?.();
       transitionAbortRef.current?.abort();
