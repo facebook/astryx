@@ -46,7 +46,7 @@ function sourceFiles(dir: string): string[] {
 }
 
 describe('architecture:react-component-runtime INV12 source boundary', () => {
-  it('animates no layout property: only translate, opacity and the entrance clip', () => {
+  it('animates no layout property: opacity and the entrance clip itself, the glide\u2019s translate through the rect morph', () => {
     const body = code(moduleSource);
     // No keyframe or style object names a box property.
     expect(body).not.toMatch(
@@ -57,11 +57,12 @@ describe('architecture:react-component-runtime INV12 source boundary', () => {
     ]
       .map(match => match[1])
       .sort();
-    expect([...new Set(animated)]).toEqual([
-      'clipPath',
-      'opacity',
-      'translate',
-    ]);
+    expect([...new Set(animated)]).toEqual(['clipPath', 'opacity']);
+    // The shifted content's translate plays through the shared rect morph,
+    // on a path that keeps each element's size (INV12).
+    expect(body).toMatch(/from '\.\/rectMorph'/);
+    expect(body).toMatch(/createRectMorph\(/);
+    expect(body).toMatch(/\.present\(path,/);
   });
 
   it('walks only through parentElement and nextElementSibling, entering display: contents alone', () => {
