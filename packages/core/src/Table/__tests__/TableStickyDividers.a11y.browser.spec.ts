@@ -381,3 +381,26 @@ test("an open panel's divider follows an operating-system switch between light a
     })
     .toBe(true);
 });
+
+test("a carried border follows a Theme switched between the hooks' owner and the table", async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName === 'webkit', WEBKIT_DOUBLE_PAINT);
+  await page.emulateMedia({colorScheme: 'light'});
+  await mount(page, 'pinned-dividers-live');
+  await page.getByRole('button', {name: 'Add columns'}).click();
+  await page.getByRole('button', {name: 'Token row borders'}).click();
+  // The Theme around the table switches on its own state: the component
+  // that calls the hooks does not re-render.
+  await page.getByRole('button', {name: 'Theme dark'}).click();
+  for (const left of [0, 150]) {
+    await scrollTo(page, left);
+    await expect
+      .poll(async () => {
+        const {pinned, unpinned} = await dividerPixels(page, 1);
+        return sameColumn(pinned, unpinned, 12);
+      }, `at ${left}px`)
+      .toBe(true);
+  }
+});
