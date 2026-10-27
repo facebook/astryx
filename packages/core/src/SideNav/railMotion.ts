@@ -105,7 +105,8 @@ function textElements(rail: HTMLElement): Element[] {
 export function playRail(snapshot: RailSnapshot): () => void {
   const {rail, railRect, swap} = snapshot;
   const motion = layoutMotionFor(rail);
-  const delta = rail.getBoundingClientRect().width - railRect.width;
+  const next = rail.getBoundingClientRect();
+  const delta = next.width - railRect.width;
   if (motion.kind === 'instant' || Math.abs(delta) < 0.5) {
     return () => {};
   }
@@ -118,18 +119,30 @@ export function playRail(snapshot: RailSnapshot): () => void {
     if (swap == null || rail.parentElement == null) {
       return () => {};
     }
-    return playLayoutSwap(swap, {
-      host: rail.parentElement,
-      isOpaque: true,
-      copy: p => ({
-        clipPath: inset(-delta * p),
-        opacity: 1 - clamp((p - 0.7) / 0.3),
-      }),
-      copyText: p => 1 - clamp(p / 0.4),
-      incoming: [
-        {element: rail, frames: p => ({opacity: clamp((p - 0.7) / 0.3)})},
-      ],
+    // The copy keeps the rail's inline-start edge where the rail is now, so
+    // it closes onto the real rail wherever SideNav sits (a centered rail
+    // moves when it narrows).
+    const at = DOMRect.fromRect({
+      x: rtl ? next.right - railRect.width : next.left,
+      y: next.top,
+      width: railRect.width,
+      height: railRect.height,
     });
+    return playLayoutSwap(
+      {...swap, rect: at},
+      {
+        host: rail.parentElement,
+        isOpaque: true,
+        copy: p => ({
+          clipPath: inset(-delta * p),
+          opacity: 1 - clamp((p - 0.7) / 0.3),
+        }),
+        copyText: p => 1 - clamp(p / 0.4),
+        incoming: [
+          {element: rail, frames: p => ({opacity: clamp((p - 0.7) / 0.3)})},
+        ],
+      },
+    );
   }
 
   // An expand reveals the real rail; the copy the snapshot held is unused.

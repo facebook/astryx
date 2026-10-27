@@ -133,9 +133,13 @@ function AppTopNav({
  * The TopNav already displays the app name, so the SideNav omits its header
  * to avoid doubling the identity.
  */
-function SideNavWithoutHeader() {
+function SideNavWithoutHeader({
+  collapsible,
+}: {
+  collapsible?: React.ComponentProps<typeof SideNav>['collapsible'];
+}) {
   return (
-    <SideNav>
+    <SideNav collapsible={collapsible}>
       <SideNavSection title="Main" isHeaderHidden>
         <SideNavItem
           label="Dashboard"
@@ -544,6 +548,7 @@ export const AutoHeightWithFields: Story = {
  */
 export const ControlledCollapse: Story = {
   render: function ControlledCollapseStory() {
+    const [isCollapsed, setIsCollapsed] = useState(false);
     return (
       <AppShell
         contentPadding={6}
@@ -553,19 +558,90 @@ export const ControlledCollapse: Story = {
             heading={<TopNavHeading heading="Acme App" />}
             endContent={
               <Button
-                label="Toggle sidebar"
+                label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                 variant="ghost"
                 icon={<Bars3Icon style={{width: 16, height: 16}} />}
                 isIconOnly
+                onClick={() => setIsCollapsed(collapsed => !collapsed)}
               />
             }
           />
         }
-        sideNav={<SideNavWithoutHeader />}>
+        sideNav={
+          <SideNavWithoutHeader
+            collapsible={{
+              isCollapsed,
+              onCollapsedChange: setIsCollapsed,
+              hasButton: false,
+            }}
+          />
+        }>
         <MockContent />
       </AppShell>
     );
   },
+};
+
+/** A page whose lines rewrap when the rail collapses or expands. */
+function RewrappingPage() {
+  return (
+    <div {...stylex.props(styles.longContent)}>
+      <Text type="large">Quarterly planning</Text>
+      <Text type="body">
+        Twelve projects are active this quarter and three are archived. Each
+        card shows its owner, its last update and its next milestone, so a long
+        description wraps to the width of the page.
+      </Text>
+      <Text type="body">
+        Collapse the side navigation and the page gets wider: these sentences
+        rewrap. The old wrapping fades out while the new one fades in, as both
+        slide with the rail on one motion. Expand it again and they slide back.
+      </Text>
+      <Text type="body">
+        Nothing animates a width: the layout takes its final size at once, the
+        rail covers or reveals its labels with a clip, and it ends in the real
+        collapsed state, icons only.
+      </Text>
+    </div>
+  );
+}
+
+function RailCollapseStory() {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  return (
+    <AppShell
+      contentPadding={6}
+      mobileNav={{breakpoint: 'none'}}
+      sideNav={
+        <SideNavWithoutHeader
+          collapsible={{isCollapsed, onCollapsedChange: setIsCollapsed}}
+        />
+      }>
+      <RewrappingPage />
+    </AppShell>
+  );
+}
+
+/**
+ * The side nav's collapse motion (`component:SideNav` FR6,
+ * `component:AppShell` FR17). Press the collapse button at the bottom of the
+ * rail: the layout snaps, the rail covers or reveals its labels with a clip,
+ * and the page's old and new wrapping cross-fade as they slide on one motion.
+ * Reduce Motion cross-fades with a finger and changes at once with a mouse.
+ */
+export const RailCollapseMotion: Story = {
+  name: 'Rail collapse motion',
+  render: () => <RailCollapseStory />,
+};
+
+/**
+ * The same motion on a phone: `mobileNav={{breakpoint: 'none'}}` keeps the
+ * rail inline at 390 px instead of the mobile drawer.
+ */
+export const RailCollapseMotionPhone: Story = {
+  name: 'Rail collapse motion (phone)',
+  globals: {viewport: {value: 'mobile1', isRotated: false}},
+  render: () => <RailCollapseStory />,
 };
 
 /**

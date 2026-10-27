@@ -27,6 +27,8 @@ interface Recorded {
 }
 
 let recorded: Recorded[] = [];
+/** Where the rail's inline-start edge sits for a width (a centered rail moves). */
+let railLeft = (_width: number) => 0;
 let media: Record<string, boolean> = {};
 
 /** The real rail (not a copy): collapsed rows carry their label as a name. */
@@ -48,6 +50,7 @@ function rect(left: number, width: number): DOMRect {
 
 beforeEach(() => {
   recorded = [];
+  railLeft = () => 0;
   media = {};
   vi.stubGlobal('matchMedia', (query: string) => ({
     matches: media[query] ?? false,
@@ -71,7 +74,10 @@ beforeEach(() => {
         return rect(0, SHELL_WIDTH);
       }
       const nav = realNav();
-      if (nav != null && (this === nav || this.contains(nav))) {
+      if (this === nav) {
+        return rect(railLeft(width), width);
+      }
+      if (nav != null && this.contains(nav)) {
         return rect(0, width);
       }
       // The main element and the column around it, beside the rail.
@@ -318,6 +324,19 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
       document.querySelectorAll<HTMLElement>('*'),
     ).filter(element => element.style.overflow === 'clip');
     expect(clipped).toEqual([]);
+  });
+
+  it("keeps the old rail's copy on the real rail's edge wherever SideNav sits", async () => {
+    // A rail centered in its parent moves when it narrows.
+    railLeft = width => (SHELL_WIDTH - width) / 2;
+    render(<Shell inShell={false} />);
+    await toggle();
+    const copy = copies().find(element => element.matches('nav'));
+    expect(copy).toBeDefined();
+    expect((copy as HTMLElement).style.left).toBe(
+      `${(SHELL_WIDTH - COLLAPSED) / 2}px`,
+    );
+    expect((copy as HTMLElement).style.width).toBe(`${EXPANDED}px`);
   });
 
   it('changes at once without Web Animations', async () => {
