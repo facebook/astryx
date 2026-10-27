@@ -964,6 +964,29 @@ export function NumberInput({
     event.preventDefault();
   };
 
+  // Where a stepper press leaves focus (`component:NumberInput` FR5). A mouse
+  // click moves focus to the field, so the arrow keys and the wheel keep
+  // stepping, and so do a pen and an activation with no pointer (a screen
+  // reader's) where the primary pointer is fine. A finger, and a pen or an
+  // activation with no pointer where the primary pointer is coarse, step the
+  // value without moving focus: there, focusing the field would bring up the
+  // on-screen keyboard, which a stepper never does.
+  const focusAfterPress = (
+    pointerType: string | null,
+    event: React.MouseEvent<HTMLElement>,
+  ) => {
+    const isMouseClick = pointerType === 'mouse' && event.detail > 0;
+    const isFinePointer = !isCoarsePrimaryPointer(
+      event.currentTarget.ownerDocument.defaultView,
+    );
+    if (
+      isMouseClick ||
+      (isFinePointer && (pointerType === 'pen' || pointerType == null))
+    ) {
+      inputRef.current?.focus();
+    }
+  };
+
   const pressStepper = (
     direction: StepDirection,
     event: React.MouseEvent<HTMLButtonElement>,
@@ -984,22 +1007,7 @@ export function NumberInput({
     ) {
       return;
     }
-    // A mouse click moves focus to the field, so the arrow keys and the wheel
-    // keep stepping, and so do a pen and an activation with no pointer (a
-    // screen reader's) where the primary pointer is fine. A finger, and a pen
-    // or an activation with no pointer where the primary pointer is coarse,
-    // step the value without moving focus: there, focusing the field would
-    // bring up the on-screen keyboard, which a stepper never does.
-    const isMouseClick = pointerType === 'mouse' && event.detail > 0;
-    const isFinePointer = !isCoarsePrimaryPointer(
-      event.currentTarget.ownerDocument.defaultView,
-    );
-    if (
-      isMouseClick ||
-      (isFinePointer && (pointerType === 'pen' || pointerType == null))
-    ) {
-      inputRef.current?.focus();
-    }
+    focusAfterPress(pointerType, event);
     if (click === 'none') {
       return;
     }
@@ -1008,8 +1016,9 @@ export function NumberInput({
 
   // A click on the column itself, not on a half (its border), steps the half
   // the tap it follows lifted on (spec:AST-094 FR11), and nothing otherwise.
-  // It never reaches the field's click-to-focus, so a finger brings up no
-  // keyboard there either; a mouse focuses the field, as on a half.
+  // It never reaches the field's click-to-focus; a press there leaves focus
+  // as one on a half does (focusAfterPress). Only a pointer presses the
+  // column itself, so a click no pointer sent moves no focus there.
   const handleColumnClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget) {
       return;
@@ -1017,8 +1026,8 @@ export function NumberInput({
     event.stopPropagation();
     const pointerType = stepperPointerTypeRef.current;
     stepperPointerTypeRef.current = null;
-    if (pointerType === 'mouse' && event.detail > 0) {
-      inputRef.current?.focus();
+    if (pointerType != null) {
+      focusAfterPress(pointerType, event);
     }
     const click = stepperTouch.takeClick(event.nativeEvent);
     if (click === 'increment' || click === 'decrement') {
