@@ -422,6 +422,50 @@ describe('useActionGroupTracking', () => {
     expect(onDelete).not.toHaveBeenCalled();
   });
 
+  it('expands the hit area for a finger only: a mouse hit-tests the exact rects (family:action-groups FR5)', () => {
+    const outside = {x: DELETE.left + DELETE.width + 5, y: centerOf(DELETE).y};
+    // A finger 5 px past Delete's edge, inside a 10 px expansion, keeps it lit.
+    const touched = mount({options: {highlightExpansion: 10}});
+    const f = finger();
+    f.down(touched.del, centerOf(DELETE));
+    f.move(touched.del, outside);
+    expect(paintOf(touched.del)).toBe('on');
+    f.cancel(touched.del, outside);
+    touched.unmount();
+    // A mouse under a fine pointer at the same point is off Delete: nothing
+    // is lit, and the release there runs nothing.
+    restorePointer();
+    const fine = pointerQuery(false);
+    restorePointer = fine.restore;
+    const {del, onCancel, onDelete} = mount({
+      options: {highlightExpansion: 10},
+    });
+    runAttachFrame();
+    const mouse = (type: string, point: {x: number; y: number}) => {
+      time += 16;
+      const event = new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 1,
+        pointerType: 'mouse',
+        isPrimary: true,
+        button: 0,
+        buttons: type === 'pointerup' ? 0 : 1,
+        clientX: point.x,
+        clientY: point.y,
+      });
+      Object.defineProperty(event, 'timeStamp', {value: time});
+      del.dispatchEvent(event);
+    };
+    mouse('pointerdown', centerOf(DELETE));
+    expect(paintOf(del)).toBe('on');
+    mouse('pointermove', outside);
+    expect(paintOf(del)).toBeNull();
+    mouse('pointerup', outside);
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
   it('tracks a pen like a finger: a slide from Delete to Cancel runs Cancel', () => {
     const {cancel, del, onCancel, onDelete} = mount();
     const pen = (type: string, point: {x: number; y: number}) => {
