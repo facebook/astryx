@@ -668,6 +668,30 @@ test.describe('spec:AST-105 FR2–FR4', () => {
     });
   }
 
+  test('in a centered column the card around the change glides with the content before it, so nothing slides over the opening content (spec:AST-105 Coverage)', async ({
+    page,
+  }) => {
+    await open(
+      page,
+      `<div id="area" class="area"><div style="display: flex; flex-direction: column; justify-content: center; min-height: 400px">
+        <div id="before" class="row" style="margin: 0"></div>
+        <div id="card" style="padding: 8px; background: #eef"><div id="title" style="height: 24px">Title</div><div id="changed" style="height: 0"></div></div>
+        <div id="after" class="row" style="margin: 0"></div></div></div>`,
+    );
+    await change(page, {
+      changed: '#changed',
+      mutate: `document.querySelector('#changed').style.height = '120px'`,
+    });
+    const card = await page.evaluate(() => window.motionOf('#card'));
+    const before = await page.evaluate(() => window.motionOf('#before'));
+    const title = await page.evaluate(() => window.motionOf('#title'));
+    // The card and the row above it glide up together from their old place;
+    // the title inside the card rides with it.
+    expect(startOffset(card[0].first).y).toBeCloseTo(60, 0);
+    expect(startOffset(before[0].first).y).toBeCloseTo(60, 0);
+    expect(title).toEqual([]);
+  });
+
   test('in a long list the walk reads only the rows near the visible part, and rows a tall collapse pulls up into view glide in (FR3)', async ({
     page,
   }) => {
