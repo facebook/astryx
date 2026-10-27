@@ -11,7 +11,11 @@ approved_at: 2026-10-26
 phase: accepted
 owners: [cixzhang]
 affects_architecture:
-  [architecture:theme-tokens, architecture:theme-authoring-contract]
+  [
+    architecture:theme-tokens,
+    architecture:theme-authoring-contract,
+    architecture:theme-application,
+  ]
 affects_families: []
 affects_contributing: []
 affects_consumer_docs: [motion, tokens, theme]
@@ -157,8 +161,11 @@ defineTheme({
 - BottomSheet's sheet and scrim share `--duration-medium`; when the
   sheet settles on `springs.settle`, its scrim's fade takes the spring's settle
   time (FR4a).
-- `spec:AST-094` FR1, FR4, and DEC-15, `design:reduced-motion` DR2a, the draft
-  `design:motion` DR3, and `spec:AST-090` are amended to match.
+- `spec:AST-094` FR1, FR4, and DEC-15, `design:reduced-motion` DR2a,
+  `spec:AST-012` FR4 (`reducedMotion` stays root-owned),
+  `architecture:theme-application` INV1 (`'always'` reaches nested
+  providers), the draft `design:motion` DR3, and `spec:AST-090` are amended to
+  match.
 
 ## Verification
 
@@ -167,7 +174,7 @@ defineTheme({
 | FR1, FR2 | Theme unit tests over generated CSS                                                  | each `tempo` bound and 1; each `character`; `reducedMotion` both values; no `motion`                                                                                                                                          | a token off its formula, the released tokens changed at the defaults, an exit curve that changes, or a value outside a clamp fails                                                                                                                                                     |
 | FR3      | Tests that the CSS tokens and the animator's tables derive from the same knob values | each role at the defaults and at each knob value; an adaptation rule that sets `tempo` or `character`                                                                                                                         | a role off its measured value at the defaults, a role that ignores a knob it follows, or overshoot on a weight-0 role fails                                                                                                                                                            |
 | FR4a     | Browser tests of each paired animation at each knob value                            | an element and gliding siblings, a sheet and its scrim, a menu's grow and content, a CSS fade with a spring                                                                                                                   | paired animations that end more than one frame apart fail                                                                                                                                                                                                                              |
-| FR4      | Unit tests of each fixed item                                                        | finger tracking, momentum, rubber band, keyboard, press and hover clocks, loops, Reduce Motion cap; Spinner and Skeleton loops at each tempo                                                                                  | a fixed item that moves with a knob, or a cross-fade longer than 200 ms, fails                                                                                                                                                                                                         |
+| FR4      | Unit tests of each fixed item                                                        | finger tracking, momentum, rubber band, keyboard, press and hover clocks, loops, Reduce Motion cap; Spinner and Skeleton loops at each tempo                                                                                  | a fixed item that moves with `tempo` or `character`, or a cross-fade longer than 200 ms, fails                                                                                                                                                                                         |
 | FR5      | Theme tests with the released configurations                                         | a `MotionScaleConfig` theme, explicit tokens, an extending theme; an adaptation rule that sets `tempo` or `character`                                                                                                         | changed output for an existing theme, or a knob that beats an explicit field, fails                                                                                                                                                                                                    |
 | FR6      | Server-render tests and import checks                                                | a server render with each `reducedMotion`; importing the theme and motion modules; `'always'` with the person's setting off, across components that key on `prefers-reduced-motion`; a nested theme under an `'always'` theme | a DOM access at import or on the server, theme CSS emitted for `'system'`, a hydration change, or a component style, script reader, or `when: {motion}` rule that ignores the root mark under `'always'`, or a nested theme that restores motion under an ancestor's `'always'`, fails |
 | FR7      | Docs review                                                                          | each listed doc                                                                                                                                                                                                               | a doc without the knobs, the fixed list, or the precedence fails                                                                                                                                                                                                                       |
