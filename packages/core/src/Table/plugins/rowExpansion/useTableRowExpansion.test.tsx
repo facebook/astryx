@@ -296,9 +296,10 @@ describe('useTableRowExpansion (detail panel)', () => {
       for (const cell of cellsOf('Ada')) {
         expect(cell).toHaveStyle({borderBottomWidth: '0'});
       }
-      expect(panelCell()).toHaveStyle({
-        borderBottomWidth: 'var(--border-width)',
-      });
+      // The token width, unless the row hands down its own.
+      expect(getComputedStyle(panelCell()).borderBottomWidth).toMatch(
+        /var\(--_table-panel-divider-width,\s*var\(--border-width\)\)/,
+      );
     });
 
     it('leaves collapsed rows keeping their own divider', () => {
@@ -310,16 +311,17 @@ describe('useTableRowExpansion (detail panel)', () => {
 
     it('draws no panel divider on a table without row dividers', () => {
       render(<Harness initialExpanded={new Set(['a'])} dividers="none" />);
-      expect(panelCell()).not.toHaveStyle({
-        borderBottomWidth: 'var(--border-width)',
-      });
+      expect(getComputedStyle(panelCell()).borderBottomWidth).not.toMatch(
+        /--border-width/,
+      );
     });
 
     it('draws the panel divider under grid dividers too', () => {
       render(<Harness initialExpanded={new Set(['a'])} dividers="grid" />);
-      expect(panelCell()).toHaveStyle({
-        borderBottomWidth: 'var(--border-width)',
-      });
+      // The token width, unless the row hands down its own.
+      expect(getComputedStyle(panelCell()).borderBottomWidth).toMatch(
+        /var\(--_table-panel-divider-width,\s*var\(--border-width\)\)/,
+      );
     });
   });
 
