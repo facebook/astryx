@@ -761,7 +761,7 @@
 .fillTrack {
   position: relative;
   height: 8px;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   overflow: hidden;
 }
 
@@ -786,8 +786,17 @@
   }
 }
 
-:dir(rtl) .fillScale {
+[dir='rtl'] .fillScale {
   transform-origin: right center;
+}
+
+/* Forced colours paint the track and fill as Canvas: Core's fill keeps its
+   shape with a CanvasText outline, and so does the copy. */
+@media (forced-colors: active) {
+  .fillScale {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }
 
 /* ---------------------------------------------------------------- tint ---- */
