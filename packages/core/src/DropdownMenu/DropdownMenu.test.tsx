@@ -2933,7 +2933,7 @@ describe('DropdownMenu touch presentation (UIMenu under a finger)', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
-  describe('on a phone (compact and touch): over its trigger, as UIMenu', () => {
+  describe('on a phone (compact and touch): beside its trigger, as on a larger screen', () => {
     beforeEach(() => {
       vi.stubGlobal(
         'matchMedia',
@@ -2951,73 +2951,31 @@ describe('DropdownMenu touch presentation (UIMenu under a finger)', () => {
       );
     });
 
-    it('is centered on its trigger, 8 px (or the safe area) off the viewport\u2019s sides, and top-aligned with a trigger in the upper half', async () => {
+    it('opens at the layer\u2019s placement beside its trigger, not over it', async () => {
       const user = userEvent.setup();
       const trigger = renderMenu();
       await user.click(trigger);
       const {style} = popoverOf();
-      expect(style.getPropertyValue('justify-self')).toBe('anchor-center');
-      // UIKit's 8 pt margin, or the safe area where larger, plus the
-      // LayerProvider inset for that edge: the layer runtime's gutter terms.
-      expect(style.getPropertyValue('left')).toBe(
-        'calc(max(8px, env(safe-area-inset-left, 0px)) + var(--astryx-layer-inset-inline-start, 0px))',
-      );
-      expect(style.getPropertyValue('right')).toBe(
-        'calc(max(8px, env(safe-area-inset-right, 0px)) + var(--astryx-layer-inset-inline-end, 0px))',
-      );
-      // jsdom drops anchor() values; the bottom edge is released and the top
-      // edge is the one pinned (its value is checked in a real browser).
-      expect(style.getPropertyValue('bottom')).toBe('auto');
-      expect(style.getPropertyValue('top')).not.toBe('auto');
-      // Not the layer's below-the-trigger placement.
-      expect(style.getPropertyValue('position-area')).toBe('');
-    });
-
-    it('is bottom-aligned with a trigger whose center is in the lower half', async () => {
-      const lowRect = HTMLElement.prototype.getBoundingClientRect;
-      HTMLElement.prototype.getBoundingClientRect = function (
-        this: HTMLElement,
-      ) {
-        const rect = lowRect.call(this);
-        if (this.hasAttribute('popover')) {
-          return rect;
-        }
-        const top = window.innerHeight - 100;
-        return {...rect, top, y: top, bottom: top + rect.height};
-      };
-      const user = userEvent.setup();
-      const trigger = renderMenu();
-      await user.click(trigger);
-      const {style} = popoverOf();
-      expect(style.getPropertyValue('top')).toBe('auto');
-      expect(style.getPropertyValue('bottom')).not.toBe('auto');
-    });
-
-    it('a mouse on a compact screen keeps the layer\u2019s placement below its trigger', async () => {
-      asMouse();
-      const user = userEvent.setup();
-      const trigger = renderMenu();
-      await user.click(trigger);
-      const {style} = popoverOf();
+      // Not centered on the trigger or pinned to the viewport's sides.
       expect(style.getPropertyValue('justify-self')).toBe('');
       expect(style.getPropertyValue('left')).toBe('');
       expect(style.getPropertyValue('right')).toBe('');
+      expect(style.getPropertyValue('top')).toBe('');
+      expect(style.getPropertyValue('bottom')).toBe('');
     });
 
-    it('presentation="popover" on a compact touch screen keeps the layer\u2019s placement below its trigger', async () => {
+    it('keeps the caller\u2019s placement', async () => {
       const user = userEvent.setup();
       render(
-        <DropdownMenu button={{label: 'Pinned'}} presentation="popover">
+        <DropdownMenu button={{label: 'Above'}} placement="above">
           <DropdownMenuItem label="Edit" onClick={() => {}} />
           <DropdownMenuItem label="Delete" onClick={() => {}} />
         </DropdownMenu>,
       );
-      expect(window.matchMedia(TOUCH_QUERY).matches).toBe(true);
-      await user.click(screen.getByRole('button', {name: /Pinned/}));
+      await user.click(screen.getByRole('button', {name: /Above/}));
       const {style} = popoverOf();
       expect(style.getPropertyValue('justify-self')).toBe('');
       expect(style.getPropertyValue('top')).toBe('');
-      expect(style.getPropertyValue('bottom')).toBe('');
     });
   });
 
@@ -3259,7 +3217,70 @@ describe('DropdownMenu press model', () => {
     }
   });
 
-  it('presentation="popover" pins the released trigger under a finger: it opens at 500 ms and its opening press follows the settle rule', () => {
+  it('under a coarse pointer the finger that opened the menu picks only once it travels the handoff (spec:AST-094 FR29)', () => {
+    stubCoarsePointer();
+    vi.useFakeTimers();
+    try {
+      const onPick = vi.fn();
+      const trigger = renderMenu(onPick);
+      fireEvent.pointerDown(trigger, {...touch, clientX: 0, clientY: 0});
+      act(() => {
+        vi.advanceTimersByTime(MENU_PRESS_LONG_PRESS_MS);
+      });
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      // A still lift picks nothing, however long the finger rested.
+      act(() => {
+        vi.advanceTimersByTime(MENU_PRESS_SETTLE_MS);
+      });
+      fireEvent.pointerMove(item('Delete'), {...touch, clientX: 0, clientY: 3});
+      expect(item('Delete')).not.toHaveFocus();
+      // UIMenu's handoff: the finger picks once it travels from the first
+      // sample the menu saw.
+      fireEvent.pointerMove(item('Delete'), {
+        ...touch,
+        clientX: 0,
+        clientY: 3 + UIKIT_GESTURES.menuPress.handoff.value,
+      });
+      expect(item('Delete')).toHaveFocus();
+      fireEvent.pointerUp(item('Delete'), {
+        ...touch,
+        clientX: 0,
+        clientY: 3 + UIKIT_GESTURES.menuPress.handoff.value,
+      });
+      expect(onPick).toHaveBeenCalledWith('Delete');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('presentation="popover" pins the settle rule under a finger: once the opening press has settled, a still lift picks the row under it', () => {
+    // spec:AST-094 FR25: a moved touch default comes back through
+    // `presentation`, never through a public threshold.
+    stubCoarsePointer();
+    vi.useFakeTimers();
+    try {
+      const onPick = vi.fn<(label: string) => void>();
+      render(
+        <DropdownMenu button={{label: 'Pinned'}} presentation="popover">
+          <DropdownMenuItem label="Edit" onClick={() => onPick('Edit')} />
+          <DropdownMenuItem label="Delete" onClick={() => onPick('Delete')} />
+        </DropdownMenu>,
+      );
+      const trigger = screen.getByRole('button', {name: /Pinned/});
+      fireEvent.pointerDown(trigger, {...touch, clientX: 0, clientY: 0});
+      act(() => {
+        vi.advanceTimersByTime(MENU_PRESS_LONG_PRESS_MS + MENU_PRESS_SETTLE_MS);
+      });
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      fireEvent.pointerMove(item('Delete'), {...touch, clientX: 0, clientY: 2});
+      fireEvent.pointerUp(item('Delete'), {...touch, clientX: 0, clientY: 2});
+      expect(onPick).toHaveBeenCalledWith('Delete');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('presentation="popover" pins the released trigger under a finger: it opens at 500 ms, not on the press', () => {
     // spec:AST-094 FR25: a moved touch default comes back through
     // `presentation`, never through a public threshold.
     stubCoarsePointer();
@@ -3285,14 +3306,6 @@ describe('DropdownMenu press model', () => {
       });
       expect(MENU_PRESS_LONG_PRESS_MS).toBe(500);
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
-      // No handoff distance: once the press has settled, a finger that barely
-      // moved picks the row under it, as before.
-      act(() => {
-        vi.advanceTimersByTime(MENU_PRESS_SETTLE_MS);
-      });
-      fireEvent.pointerMove(item('Delete'), {...touch, clientX: 0, clientY: 2});
-      fireEvent.pointerUp(item('Delete'), {...touch, clientX: 0, clientY: 2});
-      expect(onPick).toHaveBeenCalledWith('Delete');
     } finally {
       vi.useRealTimers();
     }

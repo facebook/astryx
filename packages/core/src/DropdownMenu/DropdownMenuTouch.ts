@@ -5,10 +5,8 @@
 /**
  * @file DropdownMenuTouch.ts
  * @input menuSurfaceMotion.ts (UIMenu's grow and collapse on the animator),
- *   menuTouchPlacement.ts (the menu over its trigger on a compact touch
- *   screen), and the springs table's register function
- * @output DropdownMenu's touch layer: createMenuSurfaceMotion and its type,
- *   COVER_TRIGGER_STYLE and placeOverTrigger
+ *   the springs table's register function
+ * @output DropdownMenu's touch layer: createMenuSurfaceMotion and its type
  * @position The one module DropdownMenu imports touch-only code through, and
  *   its only import site is DropdownMenu.tsx. The mouse paths stay outside
  *   it, so a desktop build can swap it for a no-op (AST-080 FR8).
@@ -39,5 +37,3 @@ export function createMenuSurfaceMotion(
   registerSpringsTable();
   return createSurfaceMotion(...args);
 }
-
-export {COVER_TRIGGER_STYLE, placeOverTrigger} from './menuTouchPlacement';
