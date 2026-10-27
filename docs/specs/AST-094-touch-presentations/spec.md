@@ -271,8 +271,8 @@ a measured, sourced difference exists.
 - **FR19 — Claims are made in time and only by an owner.** Recognizers attach for every pointer, with FR43's
   exceptions. This rule governs
   this record's behaviors only; `spec:AST-057` keeps its per-event pointer
-  read for the row swipe, as its record states. A `family:action-groups` member is
-  the one exception for its own group: under a fine pointer it keeps one
+  read for the row swipe, as its record states. A `family:action-groups` member
+  tracks its own group as FR24 allows: under a fine pointer it keeps one
   `pointerdown` listener on the group element, cancelable where the member
   needs it, adds document listeners only during a press, removed at the
   release, and may arm one per-document click swallower from the release until
