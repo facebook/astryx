@@ -317,6 +317,23 @@ describe('List reorderable', () => {
     }
   });
 
+  it("gives a finger's target as an invisible hit layer, not a bigger handle: the hit area writes its insets where the primary pointer is coarse", async () => {
+    stubPrimaryPointer(true);
+    render(<ReorderableRows initial={['A', 'B']} />);
+    const handle = handleOf('A');
+    await waitFor(() =>
+      expect(handle.style.getPropertyValue('--astryx-hit-inset-top')).toMatch(
+        /px$/,
+      ),
+    );
+    for (const side of ['right', 'bottom', 'left']) {
+      expect(
+        handle.style.getPropertyValue(`--astryx-hit-inset-${side}`),
+        side,
+      ).toMatch(/px$/);
+    }
+  });
+
   it('adds one element to a row, the handle, whose lines are a pseudo-element', () => {
     const rows = (reorderable?: Reorderable) => (
       <List reorderable={reorderable}>
