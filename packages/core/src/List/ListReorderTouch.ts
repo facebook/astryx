@@ -92,6 +92,21 @@ function releaseOnArrival(element: HTMLElement, arrived: Promise<boolean>) {
 }
 
 /** UIKit's motion for the rows of a reorder under a finger. */
+/**
+ * A row's offset: along the list (a number, its y), or on both axes in a
+ * `positions()` layout (spec:AST-103 FR1).
+ */
+type Shift = number | {readonly x: number; readonly y: number};
+
+function asShift(shift: Shift): {x?: number; y: number} {
+  return typeof shift === 'number' ? {y: shift} : {x: shift.x, y: shift.y};
+}
+
+/** The rest the offset goes to: 0 on each axis it moves on. */
+function zeroOf(shift: {x?: number; y: number}): {x?: number; y: number} {
+  return shift.x == null ? {y: 0} : {x: 0, y: 0};
+}
+
 export const touchMotion = {
   /**
    * The rows' glide to their new places once a move commits (a drop, a
@@ -112,16 +127,17 @@ export const touchMotion = {
    */
   glide(
     element: HTMLElement,
-    shift: number,
+    shift: Shift,
     spring: SpringDescription,
     at: number,
-    velocity: number,
+    velocity: Shift,
   ): void {
-    animatorFor(element).rebase({y: shift}, {at});
+    const from = asShift(shift);
+    const speed = asShift(velocity);
+    animatorFor(element).rebase(from, {at});
     releaseOnArrival(
       element,
-      animateRow(element, {y: 0}, spring, {at, velocity: {y: velocity}})
-        .finished,
+      animateRow(element, zeroOf(from), spring, {at, velocity: speed}).finished,
     );
   },
   /**
@@ -150,15 +166,16 @@ export const touchMotion = {
    */
   follow(
     element: HTMLElement,
-    shift: number,
+    shift: Shift,
     spring: SpringDescription,
     at: number,
   ): void {
+    const from = asShift(shift);
     const running = motionOf(element, 'y')?.spring ?? spring;
-    animatorFor(element).rebase({y: shift}, {at});
+    animatorFor(element).rebase(from, {at});
     releaseOnArrival(
       element,
-      animateRow(element, {y: 0}, running, {at}).finished,
+      animateRow(element, zeroOf(from), running, {at}).finished,
     );
   },
 };

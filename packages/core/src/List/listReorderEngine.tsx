@@ -183,6 +183,11 @@ function shownY(element: HTMLElement, at: number): number {
   return animatorFor(element).get('y', at);
 }
 
+/** Its `x` on screen at `at`, which a `positions()` layout moves. */
+function shownX(element: HTMLElement, at: number): number {
+  return animatorFor(element).get('x', at);
+}
+
 /**
  * The list's rows: its element children, without the ghost of a removed row
  * still collapsing (the update motion's, `GHOST_ATTRIBUTE`), which holds no
@@ -323,6 +328,11 @@ function layoutTop(row: HTMLElement, list: HTMLElement): number {
   return row.offsetTop - base;
 }
 
+function layoutLeft(row: HTMLElement, list: HTMLElement): number {
+  const base = row.offsetParent === list ? 0 : list.offsetLeft;
+  return row.offsetLeft - base;
+}
+
 function isScrollContainer(element: HTMLElement): boolean {
   const {overflowY} = getComputedStyle(element);
   return (
@@ -432,6 +442,8 @@ interface DragSession {
   /** The pointer's distance from the dragged item's left. */
   readonly grabX: number;
   lastX: number;
+  /** The rows' layout lefts at the begin, in a `positions()` layout. */
+  readonly lefts: ReadonlyArray<number> | null;
   /** Points per tick of the running autoscroll; 0 when none. */
   step: number;
   /** The dragged row's inline stacking before the drag. */
@@ -472,6 +484,14 @@ interface PendingDrop {
    */
   readonly velocity: number;
   readonly restore: RowRestore;
+  /**
+   * In a `positions()` layout, the rows' layout lefts at the begin, the
+   * preview's at the drop, and the release's x velocity: the glides move on
+   * both axes. Null in a measured layout.
+   */
+  readonly lefts: ReadonlyArray<number> | null;
+  readonly droppedLeft: number;
+  readonly velocityX: number;
 }
 
 /** A reorder mode move, reported and waiting for its commit. */
@@ -563,6 +583,8 @@ export interface ReorderGestureEvent {
    * dropped row's glide starts at (spec:AST-094 FR6, FR38).
    */
   readonly velocity?: number;
+  /** At a release, its x velocity in px/s, for a `positions()` layout. */
+  readonly velocityX?: number;
 }
 
 /** A long press's state as a reorder gesture's; null while it waits. */
@@ -955,11 +977,13 @@ export class ListReorderController implements ListReorderSession {
         end();
         if (isDragging) {
           velocity.add(up.clientX, up.clientY, up.timeStamp);
+          const release = velocity.velocity(up.timeStamp);
           this.gesture(null, {
             state: 'ended',
             y: up.clientY,
             x: up.clientX,
-            velocity: velocity.velocity(up.timeStamp).y,
+            velocity: release.y,
+            velocityX: release.x,
           });
         }
       };
@@ -1029,6 +1053,10 @@ export class ListReorderController implements ListReorderSession {
               state === 'ended' && touch != null
                 ? velocity.velocity(touch.time).y
                 : undefined,
+            velocityX:
+              state === 'ended' && touch != null
+                ? velocity.velocity(touch.time).x
+                : undefined,
           });
         }
       },
@@ -1049,7 +1077,7 @@ export class ListReorderController implements ListReorderSession {
         this.track(event.y, event.x ?? this.session?.lastX ?? 0);
         break;
       case 'ended':
-        this.drop(event.velocity ?? 0);
+        this.drop(event.velocity ?? 0, event.velocityX ?? 0);
         break;
       case 'cancelled':
         this.cancel();
@@ -1189,6 +1217,7 @@ export class ListReorderController implements ListReorderSession {
       left,
       grabX: x - (originX + left),
       lastX: x,
+      lefts: slots == null ? null : rows.map(item => layoutLeft(item, list)),
     };
     this.session = session;
     // Rows still sliding from an earlier drag go to their places.
@@ -1342,7 +1371,7 @@ export class ListReorderController implements ListReorderSession {
    * The drop: the move is reported, and on its commit the row glides into
    * its place, starting at the release's y `velocity` in px/s.
    */
-  private drop(velocity: number): void {
+  private drop(velocity: number, velocityX = 0): void {
     const session = this.session;
     if (session == null) {
       return;
@@ -1355,6 +1384,10 @@ export class ListReorderController implements ListReorderSession {
     // there into its new place, and the rows it passed to theirs.
     const droppedTop =
       geometry.rows[dragged].top + shownY(session.preview, motionNow());
+    const droppedLeft =
+      session.lefts == null
+        ? 0
+        : session.lefts[dragged] + shownX(session.preview, motionNow());
     this.clearOverlays(session);
     const dropped = this.messages?.dropped(position + 1, rows.length) ?? '';
     const key = this.keyOf(element);
@@ -1384,6 +1417,9 @@ export class ListReorderController implements ListReorderSession {
       droppedTop,
       velocity,
       restore: session.restore,
+      lefts: session.lefts,
+      droppedLeft,
+      velocityX,
     };
     options.onReorder({key, to: position});
     // A consumer that does not apply the move by the end of the task gets
@@ -1606,33 +1642,49 @@ export class ListReorderController implements ListReorderSession {
       const from =
         index === pending.dragged ? pending.droppedTop : pending.tops[index];
       const shift = from - layoutTop(element, list);
+      // In a positions() layout the row moves on both axes.
+      const lefts = pending.lefts;
+      const shiftX =
+        lefts == null
+          ? 0
+          : (index === pending.dragged ? pending.droppedLeft : lefts[index]) -
+            layoutLeft(element, list);
       const value = shownY(element, at);
-      if (Math.abs(value + shift) < MIN_MOVE_PX && !isMoving(element)) {
-        animatorFor(element).set({y: 0});
+      const valueX = lefts == null ? 0 : shownX(element, at);
+      const rest = lefts == null ? {y: 0} : {x: 0, y: 0};
+      if (
+        Math.abs(value + shift) < MIN_MOVE_PX &&
+        Math.abs(valueX + shiftX) < MIN_MOVE_PX &&
+        !isMoving(element)
+      ) {
+        animatorFor(element).set(rest);
         releaseMotion(element, 'translate');
         continue;
       }
-      if (Math.abs(shift) < MIN_MOVE_PX) {
+      if (Math.abs(shift) < MIN_MOVE_PX && Math.abs(shiftX) < MIN_MOVE_PX) {
         continue;
       }
+      const moved = lefts == null ? shift : {x: shiftX, y: shift};
       if (this.animates && index === pending.dragged) {
         // The dragged row glides from where its preview was dropped into its
         // new layout place, starting at the release's velocity
         // (spec:AST-094 FR6, FR38).
         touchMotion.glide(
           element,
-          shift,
+          moved,
           touchMotion.glideBase(list),
           at,
-          pending.velocity,
+          lefts == null
+            ? pending.velocity
+            : {x: pending.velocityX, y: pending.velocity},
         );
       } else if (this.animates) {
         // Every other row's place after the drop is its new layout place, so
         // its running spring (a row's glide) goes on to 0 from the shifted
         // value, or the glide starts from rest.
-        touchMotion.follow(element, shift, touchMotion.glideBase(list), at);
+        touchMotion.follow(element, moved, touchMotion.glideBase(list), at);
       } else {
-        animatorFor(element).set({y: 0});
+        animatorFor(element).set(rest);
         releaseMotion(element, 'translate');
       }
     }
