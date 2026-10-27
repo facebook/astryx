@@ -655,7 +655,7 @@ export const BesideALink: Story = {
     docs: {
       description: {
         story:
-          'A small switch 8 px from a link. Under a coarse pointer the switch’s invisible hit area grows toward 44 × 44 px but stops halfway to the link, so a tap nearer the link opens the link and a tap nearer the switch toggles it.',
+          'A small switch 8 px from a link. Under a coarse pointer the switch’s invisible hit area grows toward 44 × 44 px but stops halfway to the link, so a tap on the link opens it and a tap nearer the switch toggles it.',
       },
     },
   },
