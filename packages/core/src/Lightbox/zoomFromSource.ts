@@ -218,6 +218,16 @@ function valuesAt(path: MorphPath, p: number) {
  * the source (close). Null when there is nothing to zoom from or into (no
  * source box, or no photo laid out): the caller opens or closes at once.
  */
+/**
+ * The backdrop's and the controls' opacity on the opening's first frame: the
+ * value they wait at while the photo is still decoding, so the dim never shows
+ * at full before it fades in.
+ */
+export function openingFadeStart(container: Element): number {
+  const openSpring = resolveMotion(container, zoomMedia.transition.openSpring);
+  return Math.min(1, Math.max(0, zoomOpenProgress({spring: openSpring}).at(0)));
+}
+
 export function zoomFromSource({
   kind,
   source,

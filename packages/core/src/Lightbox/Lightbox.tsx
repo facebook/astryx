@@ -80,6 +80,7 @@ import {
   hideSource,
   showSourcePortal,
   sourceBoxOf,
+  openingFadeStart,
   zoomFromSource,
 } from './zoomFromSource';
 import {dismissBackdropAlpha, dismissChromeAlpha} from './zoomStage';
@@ -1146,6 +1147,8 @@ export function Lightbox({
             };
             void opening.then(landed, landed);
           } else {
+            // No zoom after all: what waited at its first value comes back.
+            restoreFaded();
             endEntrance();
           }
         };
@@ -1157,6 +1160,14 @@ export function Lightbox({
           // photo stays hidden (the thumbnail shows) until it can zoom, at
           // most a moment.
           img.style.opacity = '0';
+          // Meanwhile the backdrop and the controls wait at the opening's
+          // first value, so the dim never shows at full before it fades in.
+          const waiting = fadesNow();
+          markFaded(waiting);
+          const first = openingFadeStart(container);
+          for (const animator of waiting) {
+            animator.set({opacity: first});
+          }
           if (typeof img.decode === 'function') {
             img.decode().then(start, start);
           }

@@ -13,7 +13,7 @@
  * A click or a tap on the element that opens a viewer (which a plain image,
  * or a button in Safari, does not focus) is recorded by one capture-phase
  * listener on the document, shared by every closed viewer on a touch screen
- * and removed when the last of them goes. Where the primary pointer is fine
+ * and removed, with the record, when the last of them goes. Where the primary pointer is fine
  * there is none: only the touch presentation's zoom transition reads the
  * opener (spec:AST-094 FR24).
  *
@@ -56,6 +56,8 @@ export function useOpenerActivation(isEnabled: boolean): void {
       users -= 1;
       if (users === 0) {
         document.removeEventListener('click', recordOpenerActivation, true);
+        // No viewer is left to read it: the record keeps no element.
+        lastActivation = null;
       }
     };
   }, [isEnabled]);
