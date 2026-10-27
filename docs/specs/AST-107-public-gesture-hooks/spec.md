@@ -165,6 +165,14 @@ onSettle}) → {settleTo(index), destroy}`, and `createAnimator(element) →
   | Layout-change reporting, internal by `spec:AST-105` FR1              | animated layout                    |
   | Touch hit-area expansion (`utils/hitArea`)                           | coarse-pointer targets             |
 
+- **FR8 — A headless context menu.** `createContextMenu(element, {items |
+render, onOpenChange?, presentation?}) → {open(at?), close(), destroy()}`
+  attaches a context menu to any element: it opens on the element's context
+  request (a long press, a right click, or Shift+F10), at `at` when given, and
+  `destroy` removes every listener it added. `useContextMenu(ref, options) →
+{open, close}` is its thin React wrapper (FR6), and `component:ContextMenu`
+  is built on it (FR7): one job at two layers
+  (`architecture:public-component-api` INV21).
 - **FR5 — Each hook ships with docs and a playing-cards example.** Each public
   API here, factory and hook alike, and `createReorderable`'s `positions` (`spec:AST-103`), ships with
   docsite documentation: its usage, its options, its keyboard and
@@ -178,20 +186,22 @@ onSettle}) → {settleTo(index), destroy}`, and `createAnimator(element) →
 
 ## Current-state impact
 
-- Core gains the three factories and the three hooks over them, their docsite
+- Core gains the three factories and the three hooks over them, the headless
+  context menu and its hook, their docsite
   pages, and a playing-cards example in plain JavaScript and in React.
 
 ## Verification
 
-| Contract | Verification                                                                                                  | Representative states                                                                                                   | Mutation or failure expectation                                                                                                                                  |
-| -------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1      | Unit and browser tests of `usePanGesture`                                                                     | a drag on each axis, a cancel, a press, a long press                                                                    | a recognizer in the result, a missing state, a drag off its axis, or a press or long press reported as a pan fails                                               |
-| FR2      | Unit and browser tests of `useDragToSnapPoints`                                                               | a slow release, a flick past `flickThreshold` and the default flick speed, a release moving back, `settleTo` from a key | a settle on the wrong snap point, a reversed drag that settles elsewhere, or a missing `onSettle` fails                                                          |
-| FR3      | Unit and browser tests of `useAnimator`                                                                       | each method, Reduce Motion, an unattached ref                                                                           | a missing method or channel, an `animate` off `springs.stateChange`, or motion that ignores Reduce Motion fails                                                  |
-| FR4      | Export check of `@astryxdesign/core` and its hooks                                                            | the public exports                                                                                                      | a recognizer, the arena, the internal animator module, or the resolver reachable from a public export fails                                                      |
-| FR6      | Unit tests of each factory and its hook, server-render and import checks, and listener counts after `destroy` | each factory without React; each hook; a server import; `destroy` mid-drag                                              | a hook with behavior its factory lacks, a listener left after `destroy`, or DOM work at import fails                                                             |
-| FR7      | Source boundary check over Core and Lab against the gap table                                                 | every Core and Lab component that drags, snaps, animates one element, reorders, or animates layout                      | a component reaching internals for a job the public layer covers, or an internal use whose job is not in the gap table, fails                                    |
-| FR5      | Docsite review of each hook's page and the playing-cards example                                              | each hook's page; the playing-cards demo                                                                                | a hook without usage, options, a keyboard path, Reduce Motion, a component-prop note, or a live example, or a demo that imports anything but public hooks, fails |
+| Contract | Verification                                                                                                  | Representative states                                                                                                          | Mutation or failure expectation                                                                                                                                  |
+| -------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1      | Unit and browser tests of `usePanGesture`                                                                     | a drag on each axis, a cancel, a press, a long press                                                                           | a recognizer in the result, a missing state, a drag off its axis, or a press or long press reported as a pan fails                                               |
+| FR2      | Unit and browser tests of `useDragToSnapPoints`                                                               | a slow release, a flick past `flickThreshold` and the default flick speed, a release moving back, `settleTo` from a key        | a settle on the wrong snap point, a reversed drag that settles elsewhere, or a missing `onSettle` fails                                                          |
+| FR3      | Unit and browser tests of `useAnimator`                                                                       | each method, Reduce Motion, an unattached ref                                                                                  | a missing method or channel, an `animate` off `springs.stateChange`, or motion that ignores Reduce Motion fails                                                  |
+| FR4      | Export check of `@astryxdesign/core` and its hooks                                                            | the public exports                                                                                                             | a recognizer, the arena, the internal animator module, or the resolver reachable from a public export fails                                                      |
+| FR6      | Unit tests of each factory and its hook, server-render and import checks, and listener counts after `destroy` | each factory without React; each hook; a server import; `destroy` mid-drag                                                     | a hook with behavior its factory lacks, a listener left after `destroy`, or DOM work at import fails                                                             |
+| FR7      | Source boundary check over Core and Lab against the gap table                                                 | every Core and Lab component that drags, snaps, animates one element, reorders, or animates layout                             | a component reaching internals for a job the public layer covers, or an internal use whose job is not in the gap table, fails                                    |
+| FR8      | Unit and browser tests of `createContextMenu` and `useContextMenu`, and ContextMenu's tests over them         | a long press, a right click, and Shift+F10 on a plain element; `open(at)`; `close`; `destroy` while open; `items` and `render` | a context request that opens nothing, a listener left after `destroy`, a hook with behavior of its own, or a ContextMenu that bypasses the factory fails         |
+| FR5      | Docsite review of each hook's page and the playing-cards example                                              | each hook's page; the playing-cards demo                                                                                       | a hook without usage, options, a keyboard path, Reduce Motion, a component-prop note, or a live example, or a demo that imports anything but public hooks, fails |
 
 ## Decision log
 
@@ -219,6 +229,18 @@ wherever it covers their job, so its gaps are visible and listed rather than
 hidden behind internals.
 
 Rejected: hooks only, and components that bypass the public layer.
+
+### DEC-3 — The context menu gets a public headless layer
+
+**Reference:** `spec:AST-107/DEC-3`
+**Decider:** `cixzhang`, `2026-10-26`
+
+A row in a list, a card, or any element a product owns needs a context menu
+without a wrapper element that breaks its markup, so the menu is a public
+factory that attaches to the element itself, with a thin hook, and
+`<ContextMenu>` is built on the same factory.
+
+Rejected: a context menu reachable only through the `<ContextMenu>` wrapper.
 
 ## Open questions
 
