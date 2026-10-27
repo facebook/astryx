@@ -278,6 +278,41 @@ test('every page centres its photo on the same box, with or without a caption', 
   expect(Math.abs(after - first)).toBeLessThan(1);
 });
 
+test('the photo keeps its box when paging changes which captions are rendered', async ({
+  page,
+}) => {
+  // The first photo's caption runs to several lines, the last one's to one,
+  // and the two between have none. On the third photo only the short one is
+  // rendered, yet the photo row stays the one every page shares: the photo
+  // neither grows nor moves.
+  const g = await openGallery(page, {
+    story: 'core-lightbox--gallery-with-captions',
+    trigger: 'Open gallery with captions',
+  });
+  const shown = async () =>
+    g.track.evaluate(el => {
+      const r = el
+        .querySelector(':scope > [data-current] [data-lightbox-page-media]')
+        ?.getBoundingClientRect();
+      return r == null ? null : {top: r.top, height: r.height};
+    });
+  const first = await shown();
+  expect(first).not.toBeNull();
+  const mid = {x: g.box.x + g.box.width * 0.8, y: g.box.y + g.box.height / 2};
+  for (const counter of ['2 / 4', '3 / 4']) {
+    await g.driver.play(slowDrag(mid, -g.box.width * 0.6));
+    await waitForRest(g.track);
+    expect(await g.counter()).toBe(counter);
+    const now = await shown();
+    expect(Math.abs((now?.top ?? Number.NaN) - (first?.top ?? 0))).toBeLessThan(
+      0.5,
+    );
+    expect(
+      Math.abs((now?.height ?? Number.NaN) - (first?.height ?? 0)),
+    ).toBeLessThan(0.5);
+  }
+});
+
 test('a zoomed photo keeps the drag until its edge; the next drag from the edge pages', async ({
   page,
 }) => {

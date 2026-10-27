@@ -30,6 +30,7 @@
  */
 
 import {cubicBezier} from '../motion/bezier';
+import {project} from '../motion/projection';
 import {rubberBandClamp, rubberBandUnclamp} from '../motion/rubberBand';
 import {zoomMedia} from '../motion/uikit/zoomMedia';
 import type {MotionCurve} from '../motion/animator';
@@ -520,12 +521,19 @@ export function dismissChromeAlpha(travel: number): number {
 }
 
 /**
- * Whether a released drag to dismiss dismisses: any release does, unless
- * the finger was moving up when it lifted or came back within
- * `zoomMedia.dismiss.cancelTravel` of where it started.
+ * Whether a released drag to dismiss dismisses, decided once at the lift
+ * (spec:AST-094 FR36, FR37): a finger moving up cancels; otherwise the drag
+ * dismisses when its projected travel, the travel plus where its velocity
+ * would coast (`zoomMedia.dismiss.projectionRate`), passes
+ * `zoomMedia.dismiss.cancelTravel`. A short flick down closes; a short pull
+ * lifted still springs back.
  */
 export function dismissCommits(travel: number, velocityY: number): boolean {
-  return velocityY >= 0 && travel > zoomMedia.dismiss.cancelTravel;
+  return (
+    velocityY >= 0 &&
+    project(travel, velocityY, zoomMedia.dismiss.projectionRate) >
+      zoomMedia.dismiss.cancelTravel
+  );
 }
 
 /**

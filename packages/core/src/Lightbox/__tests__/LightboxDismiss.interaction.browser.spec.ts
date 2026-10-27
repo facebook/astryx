@@ -590,7 +590,7 @@ test("while the controls fade with a drag, a tap on Close still reaches it, abov
   expect(hit).toBe('Close');
 });
 
-test('the backdrop dims without blurring the page, under a finger and with a mouse', async ({
+test('the backdrop dims and blurs the page as on main, under a finger and with a mouse', async ({
   page,
   browser,
 }) => {
@@ -608,7 +608,7 @@ test('the backdrop dims without blurring the page, under a finger and with a mou
   expect(
     await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
   ).toBe(true);
-  expect(await filterOf(v.dialog)).toBe('none');
+  expect(await filterOf(v.dialog)).toBe('blur(2px)');
   // A fine pointer too.
   const context = await browser.newContext({
     viewport: {width: 1280, height: 800},
@@ -624,7 +624,7 @@ test('the backdrop dims without blurring the page, under a finger and with a mou
     await desktop.getByRole('button', {name: STORIES.plain.trigger}).click();
     const dialog = desktop.getByRole('dialog');
     await expect(dialog).toBeVisible();
-    expect(await filterOf(dialog)).toBe('none');
+    expect(await filterOf(dialog)).toBe('blur(2px)');
   } finally {
     await context.close();
   }
