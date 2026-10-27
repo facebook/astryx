@@ -43,8 +43,7 @@ This table is a review projection; the body below is authoritative.
 ## Intent
 
 Step is one stage of a Stepper flow. It owns its progress derivation, its
-indicator choice, its status cues and text alternatives, its clickable form,
-and its optional and content slots. Consumer usage lives in `Step.doc.mjs`.
+indicator choice, its status cues and text alternatives, its clickable form, its optional cue, and where its content renders. Consumer usage lives in `Step.doc.mjs`.
 
 ## Compatibility and migration
 
