@@ -67,6 +67,7 @@ const COVERED = [
   'gestures/types',
   'gestures/useGestureRecognizer',
   'utils/touchPresentation',
+  'hooks/isRtlElement',
   'motion/animator',
   'motion/bezier',
   'motion/spring',

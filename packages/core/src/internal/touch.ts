@@ -60,6 +60,7 @@ export type {
   TouchSample,
 } from '../gestures/types';
 export {useGestureRecognizer} from '../gestures/useGestureRecognizer';
+export {isRtlElement} from '../hooks/isRtlElement';
 export {
   COMPACT_QUERY,
   COMPACT_TOUCH_QUERY,
