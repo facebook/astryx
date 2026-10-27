@@ -178,8 +178,11 @@ export const PinnedDividers: Story = {
  * shadows follow columns added without a resize. Hovering a row turns its
  * line purple (an app's `:hover` rule on the cells); "Highlight" sets the
  * third row's border through React state; "Thick top" gives the fourth row a
- * 3 px top border, which wins the collapse over the third row's bottom; "Add
- * columns" widens the table inside the same wrapper.
+ * 3 px top border, which wins the collapse over the third row's bottom; "Row
+ * borders" draws an app's 2 px blue border on the rows that turns red on
+ * hover (`tr:hover`); "First row top" gives the first body row a 3 px top
+ * border, which wins over the header's bottom; "Add columns" widens the
+ * table inside the same wrapper.
  */
 export const PinnedDividersLive: Story = {
   render: () => {
@@ -190,6 +193,8 @@ export const PinnedDividersLive: Story = {
     const [isHighlighted, setIsHighlighted] = useState(false);
     const [hasMoreColumns, setHasMoreColumns] = useState(false);
     const [hasThickTop, setHasThickTop] = useState(false);
+    const [hasRowBorders, setHasRowBorders] = useState(false);
+    const [hasFirstRowTop, setHasFirstRowTop] = useState(false);
     const shown = hasMoreColumns
       ? columns
       : columns.filter(column => ['name', 'status'].includes(column.key));
@@ -198,6 +203,12 @@ export const PinnedDividersLive: Story = {
         <style>{`[data-testid="pinned-dividers-live"] tbody tr:hover td { border-bottom-color: rgb(147, 51, 234); }`}</style>
         {isHighlighted && (
           <style>{`[data-testid="pinned-dividers-live"] tbody tr:nth-child(3) td { border-bottom: 2px solid rgb(22, 163, 74); }`}</style>
+        )}
+        {hasRowBorders && (
+          <style>{`[data-testid="pinned-dividers-live"] tbody tr { border-bottom: 2px solid rgb(37, 99, 235); } [data-testid="pinned-dividers-live"] tbody tr:hover { border-bottom-color: rgb(220, 38, 38); }`}</style>
+        )}
+        {hasFirstRowTop && (
+          <style>{`[data-testid="pinned-dividers-live"] tbody tr:first-child td { border-top: 3px solid rgb(234, 88, 12); }`}</style>
         )}
         {hasThickTop && (
           <style>{`[data-testid="pinned-dividers-live"] tbody tr:nth-child(4) td { border-top: 3px solid rgb(234, 88, 12); }`}</style>
@@ -208,6 +219,12 @@ export const PinnedDividersLive: Story = {
           </button>{' '}
           <button type="button" onClick={() => setHasThickTop(on => !on)}>
             Thick top
+          </button>{' '}
+          <button type="button" onClick={() => setHasRowBorders(on => !on)}>
+            Row borders
+          </button>{' '}
+          <button type="button" onClick={() => setHasFirstRowTop(on => !on)}>
+            First row top
           </button>{' '}
           <button type="button" onClick={() => setHasMoreColumns(on => !on)}>
             Add columns
