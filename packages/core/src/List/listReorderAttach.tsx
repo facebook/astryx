@@ -148,6 +148,26 @@ export function attachReorder(
     }, 0);
   };
   let commitQueued = false;
+  /** The move waiting for its commit, whose handle then takes the focus. */
+  let moved: {key: string | number; to: number} | null = null;
+  let movedTimer: ReturnType<typeof setTimeout> | null = null;
+  // Once a move commits, the moved item's handle as items() now returns it
+  // takes the focus and scrolls into view, however the app moved or
+  // rendered the item (spec:AST-103 FR4b).
+  const focusMoved = () => {
+    if (moved == null) {
+      return;
+    }
+    const {key, to} = moved;
+    const current = ownItems();
+    if (current.findIndex(item => item.key === key) !== to) {
+      return;
+    }
+    moved = null;
+    const {element, handle} = current[to];
+    handle.focus({preventScroll: true});
+    element.scrollIntoView?.({block: 'nearest', inline: 'nearest'});
+  };
   // A move commits once items() reports the new order: right after
   // onReorder returns, or when the container's children change.
   const queueCommit = () => {
@@ -162,17 +182,29 @@ export function attachReorder(
       }
       wire();
       controller.commit();
+      focusMoved();
     });
   };
   const sessionOptions: ListReorderOptions = {
     ...options,
     onReorder: move => {
+      moved = {key: move.key as string | number, to: move.to};
+      // A move not applied by the end of its task is refused (the
+      // controller announces it): its handle takes no focus later.
+      if (movedTimer != null) {
+        clearTimeout(movedTimer);
+      }
+      movedTimer = setTimeout(() => {
+        movedTimer = null;
+        moved = null;
+      }, 0);
       options.onReorder(move);
       queueCommit();
     },
   };
   const isCoarse =
     doc.defaultView?.matchMedia?.('(pointer: coarse)').matches ?? false;
+  controller.refusal = 'not-moved';
   controller.configure({
     options: sessionOptions,
     announce,
@@ -182,7 +214,11 @@ export function attachReorder(
 
   // --- Handles -----------------------------------------------------------
 
-  const wired = new Map<HTMLElement, () => void>();
+  /** Each wired handle: its item's key and element, and its unwiring. */
+  const wired = new Map<
+    HTMLElement,
+    {key: string | number; element: HTMLElement; unwire: () => void}
+  >();
   let warnedUnnamed = false;
   const wireHandle = (
     handle: HTMLElement,
@@ -243,28 +279,39 @@ export function attachReorder(
     handle.addEventListener('click', onClick);
     handle.addEventListener('keydown', onKeyDown);
     handle.addEventListener('focusout', onFocusOut);
-    wired.set(handle, () => {
-      unregister();
-      handle.removeEventListener('click', onClick);
-      handle.removeEventListener('keydown', onKeyDown);
-      handle.removeEventListener('focusout', onFocusOut);
-      for (const [attribute, value] of saved) {
-        if (value == null) {
-          handle.removeAttribute(attribute);
-        } else {
-          handle.setAttribute(attribute, value);
+    wired.set(handle, {
+      key,
+      element,
+      unwire: () => {
+        unregister();
+        handle.removeEventListener('click', onClick);
+        handle.removeEventListener('keydown', onKeyDown);
+        handle.removeEventListener('focusout', onFocusOut);
+        for (const [attribute, value] of saved) {
+          if (value == null) {
+            handle.removeAttribute(attribute);
+          } else {
+            handle.setAttribute(attribute, value);
+          }
         }
-      }
-      handle.style.touchAction = savedTouchAction;
-      if (handle.getAttribute('style') === '') {
-        handle.removeAttribute('style');
-      }
+        handle.style.touchAction = savedTouchAction;
+        if (handle.getAttribute('style') === '') {
+          handle.removeAttribute('style');
+        }
+      },
     });
   };
   // Wires each reorderable item's handle and unwires the handles of items
-  // that left or stopped being reorderable.
+  // that left or stopped being reorderable. An item the app rendered anew
+  // (its key on new elements) takes its old elements' place in the session
+  // first, so reorder mode and the focus follow it.
   const wire = () => {
     const kept = new Set<HTMLElement>();
+    const fresh: {
+      key: string | number;
+      element: HTMLElement;
+      handle: HTMLElement;
+    }[] = [];
     for (const {key, element, handle} of ownItems()) {
       if (key == null || sessionOptions.isReorderable?.(key) === false) {
         continue;
@@ -272,13 +319,27 @@ export function attachReorder(
       kept.add(handle);
       if (!wired.has(handle)) {
         wireHandle(handle, key, element);
+        fresh.push({key, element, handle});
       }
     }
-    for (const [handle, unwire] of [...wired]) {
-      if (!kept.has(handle)) {
-        unwire();
-        wired.delete(handle);
+    const gone = [...wired].filter(([handle]) => !kept.has(handle));
+    if (fresh.length > 0 && gone.length > 0) {
+      const rows = new Map<HTMLElement, HTMLElement>();
+      const handles = new Map<HTMLElement, HTMLElement>();
+      for (const item of fresh) {
+        const old = gone.find(([, entry]) => entry.key === item.key);
+        if (old != null) {
+          rows.set(old[1].element, item.element);
+          handles.set(old[0], item.handle);
+        }
       }
+      if (rows.size > 0) {
+        controller.adoptElements(rows, handles);
+      }
+    }
+    for (const [handle, entry] of gone) {
+      entry.unwire();
+      wired.delete(handle);
     }
   };
   let isAttached = true;
@@ -318,12 +379,15 @@ export function attachReorder(
       detachMouse();
       detachTouch();
       unmountSession();
-      for (const unwire of wired.values()) {
-        unwire();
+      for (const entry of wired.values()) {
+        entry.unwire();
       }
       wired.clear();
       if (announceTimer != null) {
         clearTimeout(announceTimer);
+      }
+      if (movedTimer != null) {
+        clearTimeout(movedTimer);
       }
       root.unmount();
       hintHost.remove();

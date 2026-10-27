@@ -300,6 +300,61 @@ describe('createReorderable attach', () => {
     expect(Array.from(container.children)).toEqual(cards.map(card => card.el));
   });
 
+  it("keeps reorder mode and the focus on the moved item's handle when the app rebuilds its markup (spec:AST-103 FR4b)", async () => {
+    // An app that renders its items anew on each change: new elements, the
+    // same keys.
+    const container = document.createElement('div');
+    document.body.append(container);
+    let order = ['milk', 'eggs', 'bread'];
+    const render = () => {
+      container.replaceChildren(
+        ...order.map(key => {
+          const element = document.createElement('div');
+          element.dataset.key = key;
+          element.append(key[0].toUpperCase() + key.slice(1));
+          const grip = document.createElement('span');
+          grip.dataset.grip = '';
+          element.append(grip);
+          return element;
+        }),
+      );
+    };
+    render();
+    const items = () =>
+      Array.from(container.querySelectorAll<HTMLElement>('[data-key]')).map(
+        element => ({
+          key: element.dataset.key,
+          element,
+          handle: element.querySelector<HTMLElement>('[data-grip]') ?? element,
+        }),
+      );
+    const gripOf = (key: string) =>
+      container.querySelector<HTMLElement>(`[data-key="${key}"] [data-grip]`)!;
+    const onReorder = vi.fn(({key, to}: {key: string | number; to: number}) => {
+      order = order.filter(each => each !== key);
+      order.splice(to, 0, String(key));
+      render();
+    });
+    const {detach} = createReorderable({onReorder}).attach(container, {items});
+    gripOf('milk').focus();
+    fireEvent.keyDown(gripOf('milk'), {key: 'Enter'});
+    fireEvent.keyDown(gripOf('milk'), {key: 'ArrowDown'});
+    expect(onReorder).toHaveBeenCalledWith({key: 'milk', to: 1});
+    await waitFor(() =>
+      expect(document.body).toHaveTextContent(
+        'Milk, position 2 of 3, after Eggs, before Bread',
+      ),
+    );
+    // The new handle is the mode's, and has the focus.
+    expect(gripOf('milk')).toHaveAttribute('aria-pressed', 'true');
+    expect(document.activeElement).toBe(gripOf('milk'));
+    // Its arrows move the item again.
+    fireEvent.keyDown(gripOf('milk'), {key: 'ArrowDown'});
+    expect(onReorder).toHaveBeenLastCalledWith({key: 'milk', to: 2});
+    await waitFor(() => expect(document.activeElement).toBe(gripOf('milk')));
+    detach();
+  });
+
   it("refuses and announces a move whose order hasn't changed by the end of its task", async () => {
     const {container, cards, items} = deck(['Milk', 'Eggs', 'Bread']);
     const onReorder = vi.fn();
@@ -311,12 +366,78 @@ describe('createReorderable attach', () => {
     fireEvent.click(milk);
     fireEvent.keyDown(milk, {key: 'ArrowDown'});
     expect(onReorder).toHaveBeenCalledWith({key: 'milk', to: 1});
+    // The move is refused and announced as one (spec:AST-103 FR4b).
     await waitFor(() =>
-      expect(document.body).toHaveTextContent(
-        'Milk, position 1 of 3, at the top, before Eggs',
-      ),
+      expect(document.body).toHaveTextContent("Can't move Milk"),
     );
     expect(document.body).not.toHaveTextContent('position 2 of 3');
+    detach();
+  });
+
+  it("focuses the dropped item's handle once a drop commits, however the app rendered it (spec:AST-103 FR4b)", async () => {
+    const container = document.createElement('div');
+    document.body.append(container);
+    let order = ['milk', 'eggs', 'bread'];
+    const render = () => {
+      container.replaceChildren(
+        ...order.map((key, index) => {
+          const element = document.createElement('div');
+          element.dataset.key = key;
+          element.append(key);
+          Object.defineProperty(element, 'offsetParent', {
+            configurable: true,
+            get: () => container,
+          });
+          Object.defineProperty(element, 'offsetTop', {
+            configurable: true,
+            value: index * 44,
+          });
+          Object.defineProperty(element, 'offsetHeight', {
+            configurable: true,
+            value: 44,
+          });
+          element.getBoundingClientRect = () =>
+            DOMRect.fromRect({
+              x: 0,
+              y: 300 + index * 44,
+              width: 300,
+              height: 44,
+            });
+          const grip = document.createElement('span');
+          grip.dataset.grip = '';
+          element.append(grip);
+          return element;
+        }),
+      );
+    };
+    render();
+    const items = () =>
+      Array.from(container.querySelectorAll<HTMLElement>('[data-key]')).map(
+        element => ({
+          key: element.dataset.key,
+          element,
+          handle: element.querySelector<HTMLElement>('[data-grip]') ?? element,
+        }),
+      );
+    const gripOf = (key: string) =>
+      container.querySelector<HTMLElement>(`[data-key="${key}"] [data-grip]`)!;
+    const {detach} = createReorderable({
+      onReorder: ({key, to}) => {
+        order = order.filter(each => each !== key);
+        order.splice(to, 0, String(key));
+        render();
+      },
+    }).attach(container, {items});
+    const MOUSE = {pointerType: 'mouse', pointerId: 1, button: 0, clientX: 280};
+    const grip = gripOf('milk');
+    fireEvent.pointerDown(grip, {...MOUSE, clientY: 322});
+    fireEvent.pointerMove(grip, {...MOUSE, clientY: 330});
+    fireEvent.pointerMove(grip, {...MOUSE, clientY: 322 + 70});
+    act(() => {
+      fireEvent.pointerUp(grip, {...MOUSE, clientY: 322 + 70});
+    });
+    expect(order).toEqual(['eggs', 'bread', 'milk']);
+    await waitFor(() => expect(document.activeElement).toBe(gripOf('milk')));
     detach();
   });
 

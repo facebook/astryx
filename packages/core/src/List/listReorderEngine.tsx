@@ -540,6 +540,8 @@ interface ReorderMessages {
   itemAt: (position: number) => string;
   /** Reorder mode ended: the row's name and its place. */
   modeDone: (label: string, position: number, total: number) => string;
+  /** A move the app did not apply, on an attached container (FR4b). */
+  notMoved: (label: string) => string;
   /** A move in a two-dimensional layout: the item's row and column too. */
   placeGrid: (
     label: string,
@@ -576,6 +578,7 @@ export function messagesFrom(t: TranslatorFn): ReorderMessages {
     itemAt: position => t('@astryx.list.reorderItemAt', {position}),
     modeDone: (label, position, total) =>
       t('@astryx.list.reorderModeDone', {label, position, total}),
+    notMoved: label => t('@astryx.list.reorderNotMoved', {label}),
     placeGrid: (label, row, column, position, total) =>
       t('@astryx.list.reorderPlaceGrid', {
         label,
@@ -687,6 +690,12 @@ export class ListReorderController implements ListReorderSession {
   private endMouse: (() => void) | null = null;
   /** Whether a list whose rows have no item key has been warned about. */
   private warnedUnkeyed = false;
+  /**
+   * What a move the caller did not apply announces: the place its row kept
+   * (a List), or that it cannot move (an attached container, spec:AST-103
+   * FR4b).
+   */
+  refusal: 'kept-place' | 'not-moved' = 'kept-place';
 
   constructor(
     private readonly getList: () => HTMLElement | null,
@@ -739,6 +748,47 @@ export class ListReorderController implements ListReorderSession {
         }
       }
     };
+  }
+
+  /**
+   * An attached container's app rendered some items anew (the same keys,
+   * new elements): reorder mode, the focus to give back, and the move or
+   * drop waiting for its commit follow each item to its new element
+   * (spec:AST-103 FR4b). Called with the new handles registered and before
+   * the old ones go, so the mode does not end with its old handle.
+   */
+  adoptElements(
+    rows: ReadonlyMap<HTMLElement, HTMLElement>,
+    handles: ReadonlyMap<Element, HTMLElement>,
+  ): void {
+    const row = (element: HTMLElement) => rows.get(element) ?? element;
+    if (this.focusRow != null) {
+      this.focusRow = row(this.focusRow);
+    }
+    if (this.announcement != null) {
+      this.announcement = {
+        ...this.announcement,
+        row: row(this.announcement.row),
+      };
+    }
+    if (this.committedMove != null) {
+      this.committedMove = {
+        ...this.committedMove,
+        rows: this.committedMove.rows.map(row),
+      };
+    }
+    if (this.pending != null) {
+      this.pending = {...this.pending, rows: this.pending.rows.map(row)};
+    }
+    const handle =
+      this.modeHandle == null ? undefined : handles.get(this.modeHandle);
+    if (handle != null) {
+      // The same mode, on the item's new handle: its last move and line stay.
+      this.modeHandle = handle;
+      for (const listener of [...this.modeListeners]) {
+        listener();
+      }
+    }
   }
 
   /** Records the name of a row without a handle; returns the removal. */
@@ -1434,7 +1484,10 @@ export class ListReorderController implements ListReorderSession {
       row: element,
       to: position,
       landed: dropped,
-      kept: this.messages?.cancelled(dragged + 1, rows.length) ?? '',
+      kept:
+        this.refusal === 'not-moved'
+          ? (this.messages?.notMoved(this.nameOf(element, dragged)) ?? '')
+          : (this.messages?.cancelled(dragged + 1, rows.length) ?? ''),
       politeness: 'polite',
     });
     this.pending = {
@@ -1881,7 +1934,10 @@ export class ListReorderController implements ListReorderSession {
       row,
       to,
       landed: this.placeIn(order, to, grid),
-      kept: this.placeIn(rows, index, grid),
+      kept:
+        this.refusal === 'not-moved'
+          ? (this.messages?.notMoved(this.nameOf(row, index)) ?? '')
+          : this.placeIn(rows, index, grid),
       politeness: undefined,
     });
     if (this.animates) {
