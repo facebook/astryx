@@ -617,6 +617,8 @@ describe('createPopoverSurfaceMotion', () => {
     it('takes every touch until the present spring settles, as UIKit ignores touches during the presentation', async () => {
       const {element, motion} = create();
       motion.enter(() => GEOMETRY);
+      // The presentation, and its hold, start in the next frame.
+      frame();
       const hold = holdOf(element);
       expect(hold).not.toBeNull();
       // A manual popover inside the layer: above everything in the top layer,
@@ -649,6 +651,7 @@ describe('createPopoverSurfaceMotion', () => {
     it('ignores a tap without a trace: it moves no focus and fires no click', () => {
       const {element, motion} = create();
       motion.enter(() => GEOMETRY);
+      frame();
       const hold = holdOf(element)!;
       // The compatibility mousedown moves focus and the touch's end makes
       // the click: both are cancelled, so the focused control keeps focus.
@@ -666,12 +669,14 @@ describe('createPopoverSurfaceMotion', () => {
     it('lets go at once when the popover is dismissed or reset during the presentation', () => {
       const dismissed = create();
       dismissed.motion.enter(() => GEOMETRY);
+      frame();
       expect(holdOf(dismissed.element)).not.toBeNull();
       dismissed.motion.exit();
       expect(holdOf(dismissed.element)).toBeNull();
 
       const reset = create();
       reset.motion.enter(() => GEOMETRY);
+      frame();
       reset.motion.reset();
       expect(holdOf(reset.element)).toBeNull();
       // No hold is left in the top layer (the dismissal's copy is, by design).
@@ -681,6 +686,7 @@ describe('createPopoverSurfaceMotion', () => {
     it('holds under Reduce Motion too, for the length of the cross-fade', async () => {
       const {element, motion} = create(true);
       motion.enter(() => GEOMETRY);
+      frame();
       const hold = holdOf(element);
       expect(hold).not.toBeNull();
       clock += timing.reducedMotionCrossFadeMs / 2;
@@ -698,6 +704,7 @@ describe('createPopoverSurfaceMotion', () => {
       Reflect.deleteProperty(HTMLElement.prototype, 'showPopover');
       const {element, motion} = create();
       motion.enter(() => GEOMETRY);
+      frame();
       const hold = holdOf(element);
       // Not in the top layer, so it covers only what a fixed element can:
       // the tap it does take is still a tap inside the popover.
