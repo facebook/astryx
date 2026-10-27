@@ -29,6 +29,11 @@
  *   those units per second. A rule converts at its own boundary (a pop's
  *   progress is `position / width`).
  * - Rules are data: pure functions, tested against their UIKit measurements.
+ *   Under a finger, a release rule that picks one of a set of rest
+ *   positions picks it with `resolveSnapPoint` (resolveSnapPoint.ts), the motion
+ *   foundation's release policy, rather than with its own nearest/flick
+ *   logic (the sheet's finger path does). A mouse path may keep its own
+ *   rule (the sheet's settles with `resolveSettleOffset`).
  *   The track rule turns the finger's travel into where the driver goes and
  *   the drag's own state (a confirmed full swipe); the release rule turns
  *   where the gesture let go, and that state, into a target and a motion.
