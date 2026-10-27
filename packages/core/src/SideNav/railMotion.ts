@@ -76,6 +76,21 @@ function copyOf(element: HTMLElement): HTMLElement {
   return copy;
 }
 
+/** The background `element` shows: its own, or the nearest ancestor's. */
+function paintedBackground(element: HTMLElement): string {
+  for (
+    let node: HTMLElement | null = element;
+    node;
+    node = node.parentElement
+  ) {
+    const color = getComputedStyle(node).backgroundColor;
+    if (color !== 'transparent' && !/^rgba\(.*,\s*0\)$/.test(color)) {
+      return color;
+    }
+  }
+  return 'Canvas';
+}
+
 const running = new WeakMap<HTMLElement, () => void>();
 
 /** Before the change commits: the old rail and wrap, and where they were. */
@@ -196,6 +211,8 @@ export function playRail(
     insetInlineStart: `${rtl ? parentRect.right - copyRect.right : copyRect.left - parentRect.left}px`,
     width: `${copyRect.width}px`,
     height: `${copyRect.height}px`,
+    // Opaque, so what is under the copy never shows through its text.
+    backgroundColor: paintedBackground(rail),
   });
   if (getComputedStyle(parent).position === 'static') {
     const previous = parent.style.position;
