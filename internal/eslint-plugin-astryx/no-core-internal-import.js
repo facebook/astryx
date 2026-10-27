@@ -3,19 +3,21 @@
 /**
  * @file no-core-internal-import.js
  * @description Reports imports of Core's internal subpaths and of its
- * gesture, motion and touch-support source. The repo config turns it on for
+ * internal, gesture, motion and touch-support source. The repo config turns it on for
  * every linted file outside packages/core and packages/lab (the global
  * ignores still leave some scripts unlinted), so only Core and Lab may import
  * them.
  *
  * Reported, by `import`, `export … from`, `import()`, `require()` and
- * `typeof import()`:
+ * `typeof import()` (a dynamic import or require named by a string or by a
+ * template literal with no expressions):
  *   - `@astryxdesign/core/internal` and any `@astryxdesign/core/internal/*`
  *     subpath, which are reserved for Astryx's own packages and sit outside
  *     the compatibility promise (spec:AST-017 FR21);
  *   - `@astryxdesign/core/gestures`, `@astryxdesign/core/motion` and their
- *     subpaths, and any path into `core/src/gestures`, `core/src/motion` or
- *     `core/src/touch-support`, which have no entry of their own
+ *     subpaths, and any path into `core/src/internal`, `core/src/gestures`,
+ *     `core/src/motion` or `core/src/touch-support`: Core's source, which a
+ *     package outside Core and Lab reaches only through public entries
  *     (architecture:react-component-runtime INV13).
  *
  * A custom rule rather than a `no-restricted-imports` block, because flat
@@ -24,11 +26,11 @@
  */
 
 const INTERNAL = /^@astryxdesign\/core\/internal(?:\/|$)/;
-// Core's gesture core, motion and touch support, which have no entry of
-// their own: by package path, or by a path into Core's source.
+// Core's internal entries' sources, gesture core, motion and touch support:
+// by package path, or by a path into Core's source.
 const DEEP = [
   /^@astryxdesign\/core\/(?:gestures|motion)(?:\/|$)/,
-  /(?:^|\/)core\/src\/(?:gestures|motion|touch-support)(?:\/|$)/,
+  /(?:^|\/)core\/src\/(?:internal|gestures|motion|touch-support)(?:\/|$)/,
 ];
 
 const rule = {
@@ -42,7 +44,7 @@ const rule = {
     messages: {
       internal:
         "'{{source}}' is one of Core's internal subpaths, reserved for Astryx's own packages (Core and Lab) and outside the compatibility promise. Use Core's public API instead.",
-      deep: "'{{source}}' reaches into Core's gesture, motion or touch-support source, which has no entry of its own and is for Core and Lab only (architecture:react-component-runtime INV13). Use Core's public API instead.",
+      deep: "'{{source}}' reaches into Core's internal, gesture, motion or touch-support source, which is for Core and Lab only (architecture:react-component-runtime INV13). Use Core's public API instead.",
     },
   },
   create(context) {
@@ -56,9 +58,19 @@ const rule = {
         context.report({node, messageId: 'deep', data: {source}});
       }
     }
+    // A dynamic `import()` or `require()` names its module by a string, or
+    // by a template literal with no expressions, which is a string too.
     function checkLiteral(node) {
-      if (node != null && node.type === 'Literal') {
+      if (node == null) {
+        return;
+      }
+      if (node.type === 'Literal') {
         check(node, node.value);
+      } else if (
+        node.type === 'TemplateLiteral' &&
+        node.expressions.length === 0
+      ) {
+        check(node, node.quasis[0]?.value.cooked);
       }
     }
     return {
