@@ -416,44 +416,56 @@ test('a flick hands the row’s velocity to the settle', async ({
     await installTimerGate(page);
     // The row's tracking curve as the finger lifts, before the release
     // replaces it: its keyframes, points on the curve. And how long after
-    // the last move the lift was stamped.
+    // the last move the lift was stamped. The lift is the finger's first
+    // lift event: its pointerup comes before its touchend, and a gesture host
+    // may release on either; a move is either of its moves.
     await opened.row.evaluate(node => {
       let lastMove = Number.NaN;
-      addEventListener(
-        'touchmove',
-        event => {
-          lastMove = event.timeStamp;
-        },
-        {capture: true},
-      );
-      addEventListener(
-        'touchend',
-        event => {
-          Object.assign(window, {__liftGap: event.timeStamp - lastMove});
-        },
-        {capture: true, once: true},
-      );
-      addEventListener(
-        'touchend',
-        () => {
-          const animation = node
-            .getAnimations()
-            .find(candidate =>
-              (candidate.effect as KeyframeEffect)
-                .getKeyframes()
-                .some(frame => 'translate' in frame),
-            );
-          const effect = animation?.effect as KeyframeEffect | undefined;
-          const duration = Number(effect?.getComputedTiming().duration ?? 0);
-          Object.assign(window, {
-            __trackingAtLift: (effect?.getKeyframes() ?? []).map(frame => ({
-              t: (frame.computedOffset ?? 0) * duration,
-              value: parseFloat(String(frame.translate)),
-            })),
-          });
-        },
-        {capture: true, once: true},
-      );
+      let firstMoveHandled = Number.NaN;
+      let lifted = false;
+      const onMove = (event: Event) => {
+        lastMove = Math.max(
+          Number.isNaN(lastMove) ? event.timeStamp : lastMove,
+          event.timeStamp,
+        );
+        // When the row's tracking spring could first have started: the host
+        // handles the move right after this listener.
+        if (Number.isNaN(firstMoveHandled)) {
+          firstMoveHandled = performance.now();
+        }
+      };
+      addEventListener('pointermove', onMove, {capture: true});
+      addEventListener('touchmove', onMove, {capture: true});
+      const onLift = (event: Event) => {
+        // The longest the tracking spring can have run in the animator's
+        // model when the host releases, on this lift event (right after this
+        // listener) or the one before it.
+        Object.assign(window, {
+          __liftElapsed: (performance.now() - firstMoveHandled) / 1000,
+        });
+        if (lifted) {
+          return;
+        }
+        lifted = true;
+        Object.assign(window, {__liftGap: event.timeStamp - lastMove});
+        const animation = node
+          .getAnimations()
+          .find(candidate =>
+            (candidate.effect as KeyframeEffect)
+              .getKeyframes()
+              .some(frame => 'translate' in frame),
+          );
+        const effect = animation?.effect as KeyframeEffect | undefined;
+        const duration = Number(effect?.getComputedTiming().duration ?? 0);
+        Object.assign(window, {
+          __trackingAtLift: (effect?.getKeyframes() ?? []).map(frame => ({
+            t: (frame.computedOffset ?? 0) * duration,
+            value: parseFloat(String(frame.translate)),
+          })),
+        });
+      };
+      addEventListener('pointerup', onLift, {capture: true});
+      addEventListener('touchend', onLift, {capture: true});
     });
     await opened.driver.play(
       flick(opened.start, {
@@ -585,16 +597,27 @@ test('a flick hands the row’s velocity to the settle', async ({
   const startValue = target + d0;
   let handOff: number;
   if (Math.abs(startValue - trackingAt(0)) < 0.05) {
-    // Not started on screen: the speed the curve reached within its first
-    // frames.
+    // Not started on screen: the speed the curve has reached in the
+    // animator's model by the release. The model runs it from the first move
+    // the browser has not started yet, so it has run no longer than the page
+    // measured from the first move to the last lift event (a busy machine can
+    // push that past the curve's first frames).
+    const elapsed = await page.evaluate(
+      () => (window as unknown as {__liftElapsed: number}).__liftElapsed,
+    );
+    expect(Number.isFinite(elapsed)).toBe(true);
     handOff = trackingSpeed(0);
-    for (let s = 0; s <= 0.1; s += 0.0001) {
+    for (let s = 0; s <= elapsed + 0.005; s += 0.0001) {
       if (Math.abs(trackingSpeed(s) - v0) < Math.abs(handOff - v0)) {
         handOff = trackingSpeed(s);
       }
     }
   } else {
-    // On screen: the point of the curve where the settle starts.
+    // On screen: the point of the curve where the settle starts. The
+    // tracking curve is read from its keyframes, which sit within a quarter
+    // pixel of it, so that point is known to within a quarter pixel: in time,
+    // a quarter pixel over the curve's speed there (right after a retarget
+    // the speed changes by about 3 px/s a millisecond).
     let lo = 0;
     let hi = tracking[tracking.length - 1].t / 1000;
     const side = Math.sign(trackingAt(lo) - startValue);
@@ -606,7 +629,14 @@ test('a flick hands the row’s velocity to the settle', async ({
         hi = mid;
       }
     }
-    handOff = trackingSpeed((lo + hi) / 2);
+    const at = (lo + hi) / 2;
+    const slack = 0.25 / Math.max(Math.abs(trackingSpeed(at)), 1);
+    handOff = trackingSpeed(at);
+    for (let s = Math.max(0, at - slack); s <= at + slack; s += slack / 50) {
+      if (Math.abs(trackingSpeed(s) - v0) < Math.abs(handOff - v0)) {
+        handOff = trackingSpeed(s);
+      }
+    }
   }
   expect(v0).toBeLessThan(0);
   expect(Math.abs(v0 - handOff), `v0 ${v0}, row ${handOff}`).toBeLessThan(1);
