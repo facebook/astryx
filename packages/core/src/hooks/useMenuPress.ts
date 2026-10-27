@@ -27,14 +27,16 @@
  *   tracked release and disarms at the next pointer press or after a short
  *   window; a click with `detail === 0` (a keyboard's or a screen reader's)
  *   always passes.
- * - A mouse press on the trigger opens the menu at once. A finger held for
- *   `longPressDelayMs` opens it and the opening press follows the settle
- *   rule (see menuPressGesture.ts). DropdownMenu's own entry
- *   (`useDropdownMenuPress`, touch model `'uikit'`, `spec:AST-094` FR29)
- *   instead opens it as a finger presses on a trigger in a fixed bar, and
- *   inside a scroll view once the 150 ms content-touch delay has passed with
- *   no scroll; the opening finger then travels UIMenu's handoff distance
- *   before it picks.
+ * - A mouse press on the trigger opens the menu at once. With
+ *   `longPressDelayMs` unset, a finger on a touch screen (a coarse primary
+ *   pointer: touch model `'uikit'`, `spec:AST-094` FR25, FR29) opens it as
+ *   it presses on a trigger in a fixed bar, and inside a scroll view once the
+ *   150 ms content-touch delay has passed with no scroll; the opening finger
+ *   then travels UIMenu's handoff distance before it picks. Where the primary
+ *   pointer is fine, or with a delay set, a finger held for that delay (500 ms
+ *   unset) opens it and the opening press follows the settle rule (see
+ *   menuPressGesture.ts). DropdownMenu's own entry (`useDropdownMenuPress`)
+ *   passes its touch model itself.
  * - `pointercancel`, a second pointer, or the window losing focus end the
  *   gesture with nothing acting; the model never re-implements scrolling.
  * - While a press is tracked in an overflowing menu, a pointer resting near
@@ -72,6 +74,8 @@ import {
   type MenuPressPointerType,
 } from './menuPressGesture';
 import {useMenuTriggerPress, type MenuTriggerContext} from './menuTriggerPress';
+import {TOUCH_QUERY} from '../utils/touchPresentation';
+import {useMediaQuery} from './useMediaQuery';
 import type {UseLongPressHandlers} from './useLongPress';
 import {edgeAutoscroll} from '../utils/edgeAutoscroll';
 import {focusForLastInput} from '../utils/focusReturn';
@@ -196,8 +200,9 @@ export interface UseMenuPressOptions {
    */
   itemSelector: string;
   /**
-   * A mouse pressed the trigger, or a finger has rested on it for the
-   * long-press delay: open the menu under the held pointer. Return whether it opened; a `false` (the
+   * A mouse pressed the trigger, or a finger opened it: as it pressed, on a
+   * touch screen with no `longPressDelayMs` given, or else once it had rested
+   * for that delay. Open the menu under the held pointer. Return whether it opened; a `false` (the
    * press closed an open menu instead) ends the gesture. The click the
    * trigger receives for this same gesture is reported by
    * {@link UseMenuPressReturn.isTriggerClickFromPress} so the caller can
@@ -232,7 +237,10 @@ export interface UseMenuPressOptions {
   hitTest?: (x: number, y: number) => Element | null;
   /**
    * How long a finger rests on the trigger before the menu opens under it.
-   * @default 500
+   * Unset, the wait follows `spec:AST-094` FR29 where the primary pointer is
+   * coarse (none in a fixed bar, 150 ms in a scroll view, the opening finger
+   * picking after UIMenu's handoff) and is 500 ms where it is fine. Set, it
+   * is that wait everywhere, as released (`spec:AST-094` FR25).
    */
   longPressDelayMs?: number;
   /** Whether the model is live. @default true */
@@ -254,7 +262,9 @@ export interface DropdownMenuPressOptions extends UseMenuPressOptions {
    * settle rule. `'uikit'` (`spec:AST-094` FR29): as the finger presses on a
    * trigger in a fixed bar, and inside a scroll view once the content-touch
    * delay has passed with no scroll; the opening finger picks only after
-   * UIMenu's handoff distance. A mouse is unaffected.
+   * UIMenu's handoff distance. A mouse is unaffected. A menu with no
+   * trigger (a sub-menu) takes its root's, so a finger in it follows the
+   * root's rules: a cancelled touch clears its lit row (`spec:AST-094` FR28).
    * @default 'pointer'
    */
   touchModel?: 'pointer' | 'uikit';
@@ -266,7 +276,10 @@ export interface UseMenuPressReturn {
     onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
     [MENU_PRESS_MARKER]: '';
   };
-  /** Spread onto the trigger: a mouse press opens; a held finger opens. */
+  /**
+   * Spread onto the trigger: a mouse press opens; a finger opens as it
+   * presses on a touch screen with no delay given, or else once held for it.
+   */
   triggerProps: {
     onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>) => void;
@@ -391,7 +404,17 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
   // `touchModel` does not reach the model.
   const {touchModel: _touchModel, ...publicOptions} =
     options as DropdownMenuPressOptions;
-  return useDropdownMenuPress({...publicOptions, touchModel: 'pointer'});
+  // An unset delay follows FR29 where the primary pointer is coarse
+  // (spec:AST-094 FR25); a set one, or a fine primary pointer, keeps the
+  // released wait.
+  const isCoarsePrimary = useMediaQuery(TOUCH_QUERY, false);
+  return useDropdownMenuPress({
+    ...publicOptions,
+    touchModel:
+      publicOptions.longPressDelayMs === undefined && isCoarsePrimary
+        ? 'uikit'
+        : 'pointer',
+  });
 }
 
 /**
@@ -428,13 +451,13 @@ export type MenuSurfacePressReturn = Omit<
  * The press model for a menu that never presses a trigger (a sub-menu, a
  * context menu, a Selector's list, a sheet's action list): the menu half
  * alone, so the trigger half's long-press detectors and scroll probe stay
- * out of its bundle (menuTriggerPress.ts). Not exported from the hooks entry
- * point.
+ * out of its bundle (menuTriggerPress.ts). A sub-menu passes its root
+ * menu's touch model. Not exported from the hooks entry point.
  *
  * @internal
  */
 export function useMenuSurfacePress(
-  options: UseMenuPressOptions,
+  options: DropdownMenuPressOptions,
 ): MenuSurfacePressReturn {
   return useMenuPressModel(options).surface;
 }
@@ -665,7 +688,33 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
           }
           return;
         }
+        case 'withdraw': {
+          // The window's blur withdrew a finger's gesture: it stays tracked to
+          // its release, but nothing drives the menu any more (the hold, the
+          // autoscroll, the page lock). A row it lit clears where the primary
+          // pointer is coarse (spec:AST-094 FR28, FR19).
+          longPressApiRef.current?.cancel();
+          stopAutoscroll();
+          touchMovePreventerRef.current?.();
+          touchMovePreventerRef.current = null;
+          if (
+            effect.clear === true &&
+            optionsRef.current.touchModel === 'uikit'
+          ) {
+            highlight(null);
+          }
+          return;
+        }
         case 'settle': {
+          // A finger's lit row clears on a cancel only where the primary
+          // pointer is coarse (the 'uikit' touch model); elsewhere the
+          // highlight stays as before (spec:AST-094 FR19, AST-017 FR59).
+          if (
+            effect.clear === true &&
+            optionsRef.current.touchModel === 'uikit'
+          ) {
+            highlight(null);
+          }
           endGesture();
           if (effect.stray) {
             armStrayClick(doc);
@@ -677,7 +726,7 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
         }
       }
     },
-    [activate, endGesture, getDocument, highlight],
+    [activate, endGesture, getDocument, highlight, stopAutoscroll],
   );
 
   const step = useCallback(
@@ -829,6 +878,12 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
         stepRef.current({type: 'cancel'});
       };
       const onOtherPointerDown = (event: PointerEvent) => {
+        // Any press ends a withdrawn gesture: its finger lifted where the
+        // page could not see it, and the new press's click must act (FR5).
+        if (gestureRef.current.phase === 'withdrawn') {
+          stepRef.current({type: 'cancel'});
+          return;
+        }
         // A second pointer ends the gesture: two fingers are a pinch or a
         // scroll, never a pick.
         if (event.pointerId !== pointerIdRef.current) {
@@ -837,7 +892,12 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
         }
       };
       const onBlur = () => {
-        stepRef.current({type: 'cancel'});
+        // A finger's or pen's gesture is withdrawn, not ended: the browser can
+        // keep the touch alive past the blur, so the gesture stays tracked on
+        // these listeners until its release, which acts on nothing and whose
+        // click is swallowed (`spec:AST-094` FR28, module FR5). A mouse press
+        // ends as a cancel and keeps its click (`spec:AST-017` FR59).
+        stepRef.current({type: 'withdraw'});
       };
 
       doc.addEventListener('pointermove', onMove, true);

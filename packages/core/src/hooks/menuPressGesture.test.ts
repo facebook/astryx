@@ -114,9 +114,24 @@ describe('menuPressStep — inside the menu', () => {
     expect(last).toEqual({type: 'settle', stray: true, dismiss: false});
   });
 
-  it('Tracking → Idle: a cancel (scroll, second pointer, browser) acts on nothing', () => {
+  it('Tracking → Idle: a cancel (scroll, second pointer, browser) acts on nothing and clears the lit row', () => {
     const {gesture, last} = run([downInMenu('A'), move('B'), {type: 'cancel'}]);
     expect(gesture.phase).toBe('idle');
+    expect(last).toEqual({
+      type: 'settle',
+      stray: false,
+      dismiss: false,
+      clear: true,
+    });
+  });
+
+  it('Tracking → Idle: a cancelled MOUSE press keeps its lit row', () => {
+    const {last} = run([downInMenu('A', 'mouse'), move('B'), {type: 'cancel'}]);
+    expect(last).toEqual({type: 'settle', stray: false, dismiss: false});
+  });
+
+  it('Tracking → Idle: a cancel with nothing lit has nothing to clear', () => {
+    const {last} = run([downInMenu('A'), move(null), {type: 'cancel'}]);
     expect(last).toEqual({type: 'settle', stray: false, dismiss: false});
   });
 
@@ -400,8 +415,57 @@ describe('menuPressStep — a finger that opened the menu hands off after travel
   });
 });
 
+describe('menuPressStep — the window loses focus mid-press (spec:AST-094 FR28)', () => {
+  it('a finger\u2019s gesture is withdrawn, not ended: its lit row clears, and nothing it does highlights', () => {
+    const {gesture, effects} = run([
+      downInMenu('A'),
+      {type: 'withdraw'},
+      move('B'),
+    ]);
+    expect(gesture).toEqual({phase: 'withdrawn', pointerType: 'touch'});
+    expect(effects.slice(1)).toEqual([
+      {type: 'withdraw', clear: true},
+      {type: 'none'},
+    ]);
+  });
+
+  it('the withdrawn finger\u2019s release acts on nothing and swallows its click; a cancel ends it quietly', () => {
+    expect(run([downInMenu('A'), {type: 'withdraw'}, up('B')])).toMatchObject({
+      gesture: {phase: 'idle'},
+      last: {type: 'settle', stray: true, dismiss: false},
+    });
+    expect(
+      run([downInMenu('A'), {type: 'withdraw'}, {type: 'cancel'}]),
+    ).toMatchObject({
+      gesture: {phase: 'idle'},
+      last: {type: 'settle', stray: false, dismiss: false},
+    });
+  });
+
+  it('a finger holding the trigger, or one that opened the menu, is withdrawn with nothing to clear', () => {
+    expect(run([downOnTrigger('touch'), {type: 'withdraw'}])).toMatchObject({
+      gesture: {phase: 'withdrawn'},
+      last: {type: 'withdraw'},
+    });
+    expect(
+      run([
+        downOnTrigger('pen'),
+        {type: 'opened', time: 500},
+        {type: 'withdraw'},
+      ]),
+    ).toMatchObject({gesture: {phase: 'withdrawn'}, last: {type: 'withdraw'}});
+  });
+
+  it('a mouse\u2019s gesture ends as a cancel, keeping its click (spec:AST-017 FR59)', () => {
+    expect(run([downInMenu('A', 'mouse'), {type: 'withdraw'}])).toMatchObject({
+      gesture: {phase: 'idle'},
+      last: {type: 'settle', stray: false, dismiss: false},
+    });
+  });
+});
+
 describe('menuPressStep, the released public machine', () => {
-  it('keeps the released shapes: no handoff state', () => {
+  it('keeps the released shapes: no handoff state, no settle clear', () => {
     let gesture = menuPressStep(IDLE_MENU_PRESS, {
       type: 'down',
       target: 'menu',
