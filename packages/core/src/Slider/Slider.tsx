@@ -59,6 +59,7 @@ import {
 } from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {isPrimaryClick} from '../utils/primaryClick';
 import {useTouchPresentation} from '../utils/touchPresentation';
 import {slider as UIKIT_SLIDER} from '../motion/uikit/slider';
 import {
@@ -980,6 +981,12 @@ export function Slider({ref, ...props}: SliderProps) {
   const handlePointerDown = useCallback(
     (e: PointerEvent<HTMLDivElement>) => {
       if (isDisabled) {
+        return;
+      }
+      // Only a primary click presses: a right click, a pen's barrel button
+      // and a macOS ctrl-click are the platform's context request
+      // (spec:AST-094 FR43), as the gesture host reads them.
+      if (!isPrimaryClick(e)) {
         return;
       }
       // A finger or a pen belongs to the slider's gestures: a thumb takes a
