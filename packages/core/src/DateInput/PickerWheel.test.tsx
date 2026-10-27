@@ -362,6 +362,38 @@ describe('PickerWheel — a finger', () => {
     expect(row('17').style.transform).toBe(rowTransform(0));
   });
 
+  it('is held where it shows by a finger that catches it in its rubber band, then follows that finger (spec:AST-094 FR6)', () => {
+    const {column, row} = renderWheel({
+      options: MINUTES,
+      value: 59,
+      label: 'Minute',
+    });
+    /** The wheel's offset, from its last row's angle on the cylinder. */
+    const offsetOf = () => 59 * ROW - angleOf(row('59')) * RADIUS;
+    // Up past the last row (10 px of hysteresis and 180 more), held, lifted:
+    // the wheel starts back out of its rubber band.
+    drag(column, 200, 10, {steps: 30, interval: 30, hold: 300});
+    // A finger lands while the bounce is still far out: the wheel stops
+    // there, drawn where it was (the return runs on the compositor, so the
+    // catch is what draws it here).
+    advance(16);
+    touch('touchstart', column, 150);
+    advance(16);
+    const caught = offsetOf();
+    expect(caught - 59 * ROW).toBeGreaterThan(40);
+    // The hysteresis, then 6 px more up: the band gives a little of it, never
+    // a jump back.
+    touch('touchmove', column, 140);
+    advance(16);
+    touch('touchmove', column, 134);
+    advance(16);
+    const moved = offsetOf() - caught;
+    expect(moved).toBeGreaterThan(0.5);
+    expect(moved).toBeLessThan(6);
+    touch('touchend', column, 134);
+    advance(2000);
+  });
+
   it('is stopped where it is by a finger that lands on it, and commits nothing', () => {
     const {column, onChange, row} = renderWheel({
       options: MINUTES,

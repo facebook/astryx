@@ -103,7 +103,6 @@ import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {isRtlElement} from '../hooks/isRtlElement';
-import {rubberBandInverse} from '../motion/rubberBand';
 import {resolveMotion} from '../motion/resolveMotion';
 import {picker} from '../motion/uikit/picker';
 import {registerScrollTable, scroll} from '../motion/uikit/scroll';
@@ -126,6 +125,7 @@ import {WheelRows, type WheelRange, type WheelRowClasses} from './wheelRows';
 import {reducedMotionFade} from '../motion/reducedMotion';
 import {
   dragOffset,
+  fingerOffset,
   nearestIndex,
   offsetBounds,
   planRelease,
@@ -1121,21 +1121,4 @@ function placeShift(
     from = atLeft ? columnBox.left + inset : columnBox.right - inset;
   }
   return target - from;
-}
-
-/**
- * The finger's offset for a shown one: past an end, the travel that the
- * rubber band shows as `shown` (so a drag that starts in a bounce continues
- * without a jump).
- */
-function fingerOffset(shown: number, layout: WheelLayout): number {
-  const {min, max} = offsetBounds(layout);
-  const dimension = GEOMETRY.rubberBandDimension;
-  if (shown < min) {
-    return min + rubberBandInverse(shown - min, dimension);
-  }
-  if (shown > max) {
-    return max + rubberBandInverse(shown - max, dimension);
-  }
-  return shown;
 }
