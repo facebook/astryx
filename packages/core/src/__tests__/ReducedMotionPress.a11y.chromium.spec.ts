@@ -125,6 +125,38 @@ async function transitionsOf(
     }));
 }
 
+/**
+ * The properties that animate (a duration above 0) on the element and on its
+ * overlay (`::after`), from the computed `transition-property` and
+ * `transition-duration` lists (a shorter duration list repeats).
+ */
+async function animatedPropertiesOf(
+  page: Page,
+  index: number,
+): Promise<{element: string[]; overlay: string[]}> {
+  return page
+    .locator(SURFACE)
+    .nth(index)
+    .evaluate(element => {
+      const animated = (style: CSSStyleDeclaration) => {
+        const properties = style.transitionProperty
+          .split(',')
+          .map(part => part.trim());
+        const durations = style.transitionDuration
+          .split(',')
+          .map(part => part.trim());
+        return properties.filter((property, at) => {
+          const duration = durations[at % durations.length] ?? '0s';
+          return property !== 'none' && Number.parseFloat(duration) > 0;
+        });
+      };
+      return {
+        element: animated(getComputedStyle(element)),
+        overlay: animated(getComputedStyle(element, '::after')),
+      };
+    });
+}
+
 test('a pressed button never scales under reduced motion, with a mouse or a finger (DR1)', async ({
   browser,
 }) => {
@@ -197,25 +229,56 @@ test('with a fine primary pointer, a button’s and a card’s state changes are
   }
 });
 
-test('on a touch screen, a button’s and a card’s colour changes stay cross-fades of 200 ms or less under reduced motion (DR2)', async ({
+test('on a touch screen under reduced motion, a button changes at once and a card cross-fades opacity alone, in 200 ms or less (DR2, Button FR15)', async ({
   browser,
 }) => {
   const button = await open(browser, PHONE, BUTTON);
   try {
-    const {element} = await transitionsOf(button.page, 0);
-    expect(element).toBeGreaterThan(0);
-    expect(element).toBeLessThanOrEqual(200);
+    // Button keeps its transitions instant under reduced motion on every
+    // pointer (its record's FR15).
+    expect((await transitionsOf(button.page, 0)).element).toBe(0);
+    expect(await animatedPropertiesOf(button.page, 0)).toEqual({
+      element: [],
+      overlay: [],
+    });
   } finally {
     await button.close();
   }
   for (const [name, story, index] of CARDS) {
     const card = await open(browser, PHONE, story);
     try {
-      const {overlay} = await transitionsOf(card.page, index);
-      expect(overlay, name).toBeGreaterThan(0);
-      expect(overlay, name).toBeLessThanOrEqual(200);
+      // Only opacity may animate, on the card and on its overlay.
+      const {element, overlay} = await animatedPropertiesOf(card.page, index);
+      expect(element, `${name} element`).toEqual(
+        element.length === 0 ? [] : ['opacity'],
+      );
+      expect(overlay, `${name} overlay`).toEqual(['opacity']);
+      const durations = await transitionsOf(card.page, index);
+      expect(durations.overlay, name).toBeLessThanOrEqual(200);
     } finally {
       await card.close();
     }
+  }
+});
+
+test('on a touch screen under reduced motion, selecting a SelectableCard runs only opacity transitions (DR2)', async ({
+  browser,
+}) => {
+  const [, story, index] = CARDS[1];
+  const card = await open(browser, PHONE, story);
+  try {
+    await card.page.locator(SURFACE).nth(index).tap();
+    const transitions = await card.page.evaluate(() =>
+      document
+        .getAnimations()
+        .filter(
+          (animation): animation is CSSTransition =>
+            animation instanceof CSSTransition,
+        )
+        .map(animation => animation.transitionProperty),
+    );
+    expect(transitions.filter(property => property !== 'opacity')).toEqual([]);
+  } finally {
+    await card.close();
   }
 });
