@@ -389,7 +389,7 @@ export default function ReducedMotionPage() {
         <DemoBody>
           <Text type="supporting">
             Set the rail to <strong>Degrade</strong> and hover: movement stops
-            across the lab and these rows keep their fade. Colour is not
+            across the lab and the tokenised rows keep their fade. Colour is not
             movement, and this tint is exactly the feedback degrade exists to
             preserve — which is why delete is defensible on a hover tint and
             indefensible on a spinner, where the motion <em>is</em> the message.
@@ -400,8 +400,8 @@ export default function ReducedMotionPage() {
             literal cannot be reached by a switch, a media query or a sweep.
           </Text>
           <Text type="supporting" color="secondary">
-            <strong>Try it: </strong>on <strong>Degrade</strong> the right pane
-            keeps its tint and loses only movement — the state feedback
+            <strong>Try it: </strong>on <strong>Degrade</strong> the tokenised
+            pane keeps its tint and loses only movement — the state feedback
             survives. On <strong>Delete</strong> the tint snaps, and the
             affordance goes with it. That is the whole decision, in one hover.
             (This behaviour was itself a bug in the lab until the policy was

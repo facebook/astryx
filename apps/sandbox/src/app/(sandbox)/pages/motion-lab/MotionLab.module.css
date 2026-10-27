@@ -761,6 +761,8 @@
    also shows the tint with no transition at all. */
 .tintTable {
   width: 100%;
+  /* Three panes share a narrow window: the columns shrink to the pane. */
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
 }
@@ -768,6 +770,7 @@
 .tintTable td {
   padding: var(--space-2, 6px) var(--space-3, 10px);
   border-bottom: 1px solid var(--color-border);
+  overflow-wrap: anywhere;
 }
 
 /* Also the "real rule" rows on the Bugs page, which are divs: the padding
@@ -812,7 +815,7 @@
 }
 
 .noopRow:hover {
-  background: var(--color-background-hover, var(--color-background-elevated));
+  background-color: var(--color-overlay-hover);
 }
 
 /* ------------------------------------------------------------- origin ----- */
