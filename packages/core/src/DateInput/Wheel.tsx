@@ -444,8 +444,11 @@ export function Wheel({
     isActive,
   );
 
-  // Park the committed row under the band whenever the wheel is shown, or the
-  // value is changed from outside (the calendar scrolled to another month).
+  // Park the committed row under the band whenever the wheel is shown, at
+  // once. A value changed from outside while it is shown (a bound clamping the
+  // time after another wheel turned, the calendar scrolled to another month)
+  // turns the wheel onto its row instead, as UIDatePicker turns onto its
+  // maximum (component:DateInput DEC-1): it never jumps there.
   //
   // NEVER while the wheel is still moving. A scroller that is mid-gesture or
   // still carrying momentum is the user's, and repositioning it does not stop
@@ -453,10 +456,15 @@ export function Wheel({
   // as a new settle, commits the next row along, and parks again. See
   // useScrollSettle. The settle handler re-checks the position afterwards, so
   // a correction that is genuinely needed still happens, just at rest.
+  const parkedRef = useRef(false);
   useEffect(() => {
+    if (!isActive) {
+      parkedRef.current = false;
+      return;
+    }
     // Nor while a reduced-motion dip is still to land its rows: they land
     // under it, on this row.
-    if (!isActive || !isAtRestRef.current || pendingFadeRef.current != null) {
+    if (!isAtRestRef.current || pendingFadeRef.current != null) {
       return;
     }
     const size = itemBlockSize();
@@ -465,11 +473,16 @@ export function Wheel({
       return;
     }
     if (Math.round(scroller.scrollTop / size) !== selectedIndex) {
-      scroller.scrollTo({top: selectedIndex * size, behavior: 'auto'});
+      if (parkedRef.current) {
+        scrollToIndex(selectedIndex, 'smooth');
+      } else {
+        scroller.scrollTo({top: selectedIndex * size, behavior: 'auto'});
+      }
     }
+    parkedRef.current = true;
     // eslint-disable-next-line @eslint-react/set-state-in-effect -- the highlight follows a scroll position, which only exists after layout
     setActiveIndex(selectedIndex);
-  }, [isActive, selectedIndex, itemBlockSize, isAtRestRef]);
+  }, [isActive, selectedIndex, itemBlockSize, isAtRestRef, scrollToIndex]);
 
   // Highlight follows the finger. rAF-throttled: a scroll can fire far more
   // often than the display refreshes, and this only feeds a repaint.

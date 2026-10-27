@@ -170,3 +170,45 @@ test('under reduced motion an arrow key step lands under its cross-fade, never a
   await expect(selectedHour(hours)).toHaveText('11');
   await expect(field).toHaveValue('11:00 AM');
 });
+
+test('a meridiem change past the maximum turns the hour wheel onto it, frame by frame (component:DateInput DEC-1)', async ({
+  page,
+}) => {
+  const {field, hours} = await openHourWheel(page);
+  const meridiem = page.getByRole('listbox', {name: 'AM/PM'});
+  const labels = await hours.locator('[role="option"]').allTextContents();
+  const row = await hours
+    .locator('[role="option"]')
+    .first()
+    .evaluate(el => el.getBoundingClientRect().height);
+  const from = labels.indexOf('10') * row;
+  const to = labels.indexOf('5') * row;
+  // The hour wheel's scroll position on every frame, from before the tap.
+  await hours.evaluate(scroller => {
+    const tops: number[] = [];
+    (window as unknown as {hourTops: number[]}).hourTops = tops;
+    const sample = () => {
+      tops.push(scroller.scrollTop);
+      if (tops.length < 150) {
+        requestAnimationFrame(sample);
+      }
+    };
+    requestAnimationFrame(sample);
+  });
+  // 10 PM is past the 5 PM maximum: the field clamps to it.
+  await meridiem.getByRole('option', {name: 'PM'}).tap();
+  await expect(field).toHaveValue('5:00 PM', {timeout: 3000});
+  await sleep(1000);
+  const tops = await page.evaluate(
+    () => (window as unknown as {hourTops: number[]}).hourTops,
+  );
+  // From 10 onto 5 through the rows between, as UIDatePicker turns onto its
+  // maximum, never a jump, and only ever one way.
+  expect(Math.abs(tops[0] - from)).toBeLessThan(1);
+  expect(Math.abs(tops[tops.length - 1] - to)).toBeLessThan(1);
+  const between = tops.filter(top => top < from - 2 && top > to + 2);
+  expect(between.length).toBeGreaterThanOrEqual(4);
+  for (let i = 1; i < tops.length; i++) {
+    expect(tops[i]).toBeLessThanOrEqual(tops[i - 1] + 0.5);
+  }
+});

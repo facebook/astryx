@@ -139,6 +139,23 @@ describe('Wheel — where it comes to rest', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('turns onto a value set while it is shown, as a bound clamping the time after another wheel turned (component:DateInput DEC-1)', () => {
+    // 22:00 past a 17:00 maximum: the field clamps to 17:00, and the hour
+    // wheel, at rest on 22, turns onto 17 as UIDatePicker's does; it never
+    // jumps there, and it commits nothing of its own.
+    const {onChange, scrollTo, rerender} = renderWheel(22);
+    scrollTo.mockClear();
+    rerender(
+      <Wheel label="Hour" options={HOURS} value={17} onChange={onChange} />,
+    );
+    expect(scrollTo).toHaveBeenCalledWith({top: 17 * ROW, behavior: 'smooth'});
+    expect(scrollTo).not.toHaveBeenCalledWith({
+      top: 17 * ROW,
+      behavior: 'auto',
+    });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('a stop on another disabled row still travels to the bounds', () => {
     const {onChange, scrollTo, stopOn} = renderWheel(8);
     stopOn(6);
