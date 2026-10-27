@@ -33,7 +33,8 @@ affects_consumer_docs:
 
 When something inside an area changes size, the changed element and the
 content after it animate together on one shared motion role instead of
-jumping. An app opts in once per area; without it, nothing changes.
+jumping. An app opts in once per area; without it, nothing changes, except where a
+component's record holds its own handle for its own change (FR2).
 
 ## Non-goals
 
@@ -182,7 +183,9 @@ Out of coverage, each taking its final place at once:
 
 Content that jumps when something above it changes size is disorienting, on
 any pointer. An app passes one handle per area to the components whose size
-changes, so the opt-in is explicit and composes without wrappers; the
+changes, so the opt-in is explicit and composes without wrappers; a component holds its own
+handle only where its record says so for its own change (FR2;
+`component:SideNav/DEC-2`); the
 content after a change glides on one shared motion role with the changed
 element, inside the area and only where it is visible.
 
