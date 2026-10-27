@@ -20,6 +20,7 @@ import {
   type HitInsets,
   type HitRect,
   NO_HIT_INSETS,
+  resetHitAreaForTests,
   resolveHitTarget,
   watchHitArea,
   writeHitInsets,
@@ -241,6 +242,8 @@ describe('watchHitArea', () => {
   });
 
   afterEach(() => {
+    resetHitAreaForTests();
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
     document.body.innerHTML = '';
   });
@@ -496,6 +499,49 @@ describe('watchHitArea', () => {
     expect(onWindow).not.toHaveBeenCalled();
     expect(onElement).not.toHaveBeenCalled();
     stop();
+  });
+
+  it('listens for presses once, on the document: a watched control, row or handle gets no listener of its own (spec:AST-103 FR5)', () => {
+    const elements = ['switch', 'other'].map(byId);
+    const onElements = elements.map(element =>
+      vi.spyOn(element, 'addEventListener'),
+    );
+    const onDocument = vi.spyOn(document, 'addEventListener');
+    const stops = elements.map(element => watchHitArea(element, () => {}));
+    for (const spy of onElements) {
+      expect(spy).not.toHaveBeenCalled();
+    }
+    expect(
+      onDocument.mock.calls.filter(([type]) => type === 'pointerdown'),
+    ).toHaveLength(1);
+    stops.forEach(stop => stop());
+  });
+
+  it('leaves nothing behind after resetHitAreaForTests, even from a watch never stopped', () => {
+    watchHitArea(byId('switch'), () => {});
+    const offDocument = vi.spyOn(document, 'removeEventListener');
+    resetHitAreaForTests();
+    expect(
+      offDocument.mock.calls.filter(([type]) => type === 'pointerdown'),
+    ).toHaveLength(1);
+    coarse = false;
+    const onDocument = vi.spyOn(document, 'addEventListener');
+    const stop = watchHitArea(byId('other'), () => {});
+    expect(onDocument).not.toHaveBeenCalled();
+    stop();
+  });
+
+  it('reads the pointer query at each watch, so a watch never left behind keeps a stale coarse answer', () => {
+    const left = watchHitArea(byId('switch'), () => {});
+    // The environment's pointer turns fine through a new query object (a
+    // test's stub), and the earlier watch never stopped.
+    coarse = false;
+    const other = byId('other');
+    const onElement = vi.spyOn(other, 'addEventListener');
+    const stop = watchHitArea(other, () => {});
+    expect(onElement).not.toHaveBeenCalled();
+    stop();
+    left();
   });
 
   it('stops hearing a control after its function runs', () => {

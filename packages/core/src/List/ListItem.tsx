@@ -7,7 +7,7 @@
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, the List row edge
  *   treatment, the press layer (dividers beside a touch-pressed or held row
  *   hide and the layer reaches over the row's own), the touch hit area
- *   (listRow.stylex.ts, kept live by utils/hitArea.ts), the travelling
+ *   (utils/touchHitArea.ts and its layer), the travelling
  *   marker of an update's slide (List/useListUpdateMotion.ts), CheckboxInput,
  *   and the marker or task checkbox a ListMarkerScope sets (Markdown's nested
  *   lists and the task items of mixed lists)
@@ -25,7 +25,7 @@
  * - /packages/cli/assets/templates/blocks/components/List/ (showcase blocks)
  */
 
-import {use, useEffect, useRef, type ReactNode} from 'react';
+import {use, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -47,10 +47,11 @@ import {mergeProps} from '../utils';
 import {Item} from '../Item';
 import type {ItemAlign, ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
-import {listRowConsts, listRowStyles} from './listRow.stylex';
+import {listRowConsts} from './listRow.stylex';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useMergedRefs} from '../hooks/useMergedRefs';
-import {MIN_TOUCH_TARGET, watchHitArea, writeHitInsets} from '../utils/hitArea';
+import {useTouchHitArea} from '../utils/touchHitArea';
+import {touchHitAreaStyles} from '../utils/touchHitArea.stylex';
 
 // =============================================================================
 // Types
@@ -418,85 +419,6 @@ const embeddedStyles = stylex.create({
  * <ListItem label="Docs" href="/docs" target="_blank" rel="noreferrer" />
  * ```
  */
-/**
- * The theme's touch target size in px (`--size-touch-target`), read under a
- * finger only; the 44px minimum otherwise.
- */
-function touchTargetSize(row: HTMLElement): number {
-  const view = row.ownerDocument.defaultView;
-  if (view?.matchMedia?.('(pointer: coarse)').matches !== true) {
-    return MIN_TOUCH_TARGET;
-  }
-  const value = view
-    .getComputedStyle(row)
-    .getPropertyValue('--size-touch-target')
-    .trim();
-  const size = value.endsWith('px') ? Number.parseFloat(value) : Number.NaN;
-  return Number.isFinite(size) && size > 0 ? size : MIN_TOUCH_TARGET;
-}
-
-/**
- * The finite animations running or held in the row's list: its rows' motions
- * (an update's slide, a swipe, edit mode's slide) and their parts'.
- */
-function listAnimations(row: HTMLElement): Animation[] {
-  const list = row.parentElement ?? row;
-  if (typeof list.getAnimations !== 'function') {
-    return [];
-  }
-  return list.getAnimations({subtree: true}).filter(animation => {
-    if (animation.playState !== 'running' && animation.playState !== 'paused') {
-      return false;
-    }
-    const end = animation.effect?.getComputedTiming().endTime;
-    return typeof end === 'number' && Number.isFinite(end);
-  });
-}
-
-/**
- * Keeps the row's hit insets live through the shared touch hit area. Rows
- * move by transform, which the shared measurement reads as they stand in one
- * frame: a measurement that arrives while the list moves is dropped, and once
- * the motion ends the row is watched afresh, so its insets are taken at rest
- * and no frame of a compositor motion lays out or paints for them.
- */
-function watchRowHitArea(row: HTMLElement, minSize: number): () => void {
-  let stop = (): void => {};
-  let isStopped = false;
-  let isWaiting = false;
-  const watch = (): void => {
-    stop = watchHitArea(
-      row,
-      insets => {
-        const moving = listAnimations(row);
-        if (moving.length === 0) {
-          writeHitInsets(row, insets);
-          return;
-        }
-        if (isWaiting) {
-          return;
-        }
-        isWaiting = true;
-        void Promise.allSettled(
-          moving.map(async animation => animation.finished),
-        ).then(() => {
-          isWaiting = false;
-          if (!isStopped) {
-            stop();
-            watch();
-          }
-        });
-      },
-      minSize,
-    );
-  };
-  watch();
-  return () => {
-    isStopped = true;
-    stop();
-  };
-}
-
 export function ListItem({
   label,
   description,
@@ -540,20 +462,11 @@ export function ListItem({
   }, []);
   // Under a finger, an interactive row's hit target grows toward the touch
   // target where its neighbors leave room, with no visual or layout change
-  // (component:List FR10): utils/hitArea.ts measures how far, and the row's
-  // invisible layer (listRowStyles.touchHitArea) reads it.
+  // (component:List FR10): useTouchHitArea keeps the row's insets live, and
+  // its invisible layer (touchHitAreaStyles.layer) reads them.
   const isTouchTarget =
     (onClick != null || href != null || interactiveRef != null) && !isDisabled;
-  // External system (`architecture:react-component-runtime` INV3): the shared
-  // touch hit area (utils/hitArea.ts), which measures the row against its
-  // neighbours and writes its insets on the row; the cleanup stops the watch.
-  useEffect(() => {
-    const row = rowRef.current;
-    if (!isTouchTarget || row == null) {
-      return undefined;
-    }
-    return watchRowHitArea(row, touchTargetSize(row));
-  }, [isTouchTarget]);
+  useTouchHitArea(rowRef, isTouchTarget);
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
   const edge = ctx?.edge ?? 'padded';
@@ -655,7 +568,7 @@ export function ListItem({
           edge === 'bleed' ? editingStyles.rowBleed : editingStyles.row,
           hasDividers && styles.withDivider,
           hasDividers && embeddedStyles.noRadius,
-          isTouchTarget && listRowStyles.touchHitArea,
+          isTouchTarget && touchHitAreaStyles.layer,
           edge === 'flush' && styles.edgeFlush,
           edge === 'outset' && styles.edgeOutset,
           edge === 'bleed' && styles.edgeBleed,

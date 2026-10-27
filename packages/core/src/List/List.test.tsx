@@ -621,11 +621,11 @@ describe('List', () => {
     for (const text of ['Pressable', 'Link']) {
       const {touch, other} = touchGatedRules(row(text));
       const layer = afterRules(touch).join('\n');
-      // Positioned past the row by the measured insets, clipped to the strips
+      // Positioned past the row by the measured insets, clipped to the band
       // outside the row's own box, and painting nothing.
       expect(layer).toContain('position: absolute');
       expect(layer).toMatch(/clip-path: polygon\(evenodd/);
-      for (const side of ['top', 'bottom'] as const) {
+      for (const side of ['top', 'right', 'bottom', 'left'] as const) {
         expect(layer).toMatch(
           new RegExp(
             `${side}: calc\\(var\\(${HIT_INSET_PROPERTIES[side]}, ?0px\\) \\* -1\\)`,
