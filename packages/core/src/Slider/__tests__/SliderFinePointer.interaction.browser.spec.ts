@@ -13,7 +13,12 @@
  */
 
 import {expect, test, type Locator, type Page} from '@playwright/test';
-import {openStory, withStorybook} from '@astryxdesign/interaction-harness';
+import {
+  openStory,
+  WHEEL_SKIP,
+  webInputDriver,
+  withStorybook,
+} from '@astryxdesign/interaction-harness';
 
 const storybook = withStorybook(test);
 
@@ -21,6 +26,8 @@ const storybook = withStorybook(test);
 test.use({
   isMobile: false,
   hasTouch: false,
+  // WebKit takes wheel input only in a desktop context at scale 1.
+  deviceScaleFactor: 1,
   viewport: {width: 800, height: 600},
 });
 
@@ -237,11 +244,12 @@ test('a mouse drag on a thumb pans: the value holds through the 10 px hysteresis
   await page.mouse.move(at.x + HYSTERESIS - 4, at.y, {steps: 3});
   expect(await value()).toBe(start);
   // Past it the value follows the travel beyond the claim, as UISlider's.
+  // The value renders after the move's frame, so the reads wait for it.
   for (const travel of [30, 60]) {
     await page.mouse.move(at.x + travel, at.y, {steps: 5});
-    expect(await value()).toBe(
-      Math.round(start + ((travel - HYSTERESIS) * 100) / length),
-    );
+    await expect
+      .poll(value)
+      .toBe(Math.round(start + ((travel - HYSTERESIS) * 100) / length));
   }
   await page.mouse.up();
 });
@@ -277,4 +285,68 @@ test('a right click on the track moves nothing and paints nothing: only a primar
   // A primary click there still sets the value.
   await page.mouse.click(at.x, at.y);
   expect(await value()).toBeLessThan(start);
+});
+
+test('a wheel or a trackpad’s scroll over a thumb leaves the value and the page keeps it, in either direction: a control’s thumb is no pan', async ({
+  page,
+}) => {
+  const driver = await webInputDriver(page);
+  test.skip(!driver.wheels, WHEEL_SKIP);
+  await recordListeners(page);
+  const {thumb, control, center, value} = await openSlider(
+    page,
+    'core-slider--default',
+  );
+  await expect
+    .poll(async () =>
+      control.evaluate(element =>
+        element.getAttribute('data-astryx-touch-action'),
+      ),
+    )
+    .toBe('manipulation');
+  // The thumb listens for no wheel (spec:AST-094 FR24).
+  expect(
+    await thumb.evaluate(node =>
+      (
+        window as unknown as {
+          __listeners: {target: EventTarget; type: string; removed: boolean}[];
+        }
+      ).__listeners.some(
+        entry =>
+          !entry.removed && entry.target === node && entry.type === 'wheel',
+      ),
+    ),
+  ).toBe(false);
+  // Every wheel reaches the page unprevented: the page scrolls as it would.
+  await page.evaluate(() => {
+    const w = window as unknown as {__wheels: boolean[]};
+    w.__wheels = [];
+    window.addEventListener(
+      'wheel',
+      event => {
+        w.__wheels.push(event.defaultPrevented);
+      },
+      {passive: true},
+    );
+  });
+  const prevented = async () =>
+    page.evaluate(() =>
+      (window as unknown as {__wheels: boolean[]}).__wheels.some(Boolean),
+    );
+  /** A wheel gesture ends after a quiet spell (100 ms): wait it out. */
+  const settle = async () => page.waitForTimeout(250);
+  const start = await value();
+  const at = await center();
+  // A wheel's vertical notch, a horizontal notch (Shift and the wheel) and
+  // a trackpad's horizontal scroll: none moves the value.
+  await driver.wheel({x: at.x, y: at.y, dy: 100});
+  await settle();
+  await driver.wheel({x: at.x, y: at.y, dx: -100});
+  await settle();
+  for (let step = 0; step < 10; step += 1) {
+    await driver.wheel({x: at.x, y: at.y, dx: -6});
+  }
+  await settle();
+  expect(await value()).toBe(start);
+  expect(await prevented()).toBe(false);
 });
