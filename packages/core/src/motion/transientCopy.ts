@@ -46,6 +46,16 @@ export function inertCopy(element: HTMLElement): HTMLElement {
       node.removeAttribute(name);
     }
   }
+  // A clone's canvas is blank: paint each with its source's pixels.
+  const sources = element.querySelectorAll('canvas');
+  copy.querySelectorAll('canvas').forEach((canvas, index) => {
+    const source = sources[index];
+    try {
+      canvas.getContext('2d')?.drawImage(source, 0, 0);
+    } catch {
+      // A canvas the copy cannot read (tainted, or a lost context) stays blank.
+    }
+  });
   copy.setAttribute('aria-hidden', 'true');
   copy.setAttribute('inert', '');
   copy.style.pointerEvents = 'none';
@@ -75,6 +85,7 @@ export function placeOver(
 ): void {
   Object.assign(element.style, {
     position: 'absolute',
+    boxSizing: 'border-box',
     margin: '0px',
     left: '0px',
     top: '0px',
@@ -102,11 +113,13 @@ export function visiblePartCopy(element: HTMLElement): {
   Object.assign(content.style, {
     position: 'absolute',
     top: `${-element.scrollTop}px`,
-    left: '0px',
+    left: `${-element.scrollLeft}px`,
     boxSizing: 'border-box',
     width: `${element.clientWidth}px`,
     height: 'auto',
     padding: getComputedStyle(element).padding,
+    // The holder is the visible part, inside the border.
+    borderWidth: '0px',
     margin: '0px',
     overflow: 'visible',
     translate: 'none',

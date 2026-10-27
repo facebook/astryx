@@ -88,6 +88,7 @@ function setup() {
           <h2 id="title">Projects</h2>
           <label><input type="radio" name="plan" value="pro" checked /> Pro</label>
           <iframe src="about:blank"></iframe>
+          <canvas width="40" height="20"></canvas>
         </main>
       </div>
     </div>`;
@@ -166,9 +167,34 @@ describe('the in-place swap (spec:AST-105 FR8)', () => {
     expect(text?.keyframes.at(-1)?.opacity).toBe(0);
   });
 
+  it("paints a copied canvas with its source's pixels", () => {
+    const drawImage = vi.fn();
+    const getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockImplementation(
+        () => ({drawImage}) as unknown as CanvasRenderingContext2D,
+      );
+    const {handle, content} = setup();
+    holdLayoutSwap(handle, content);
+    expect(drawImage).toHaveBeenCalledWith(
+      content.querySelector('canvas'),
+      0,
+      0,
+    );
+    getContext.mockRestore();
+  });
+
+  it('lays the copy out on its old rect whatever its box sizing', () => {
+    const {handle, content, host} = setup();
+    const swap = holdLayoutSwap(handle, content);
+    playLayoutSwap(swap!, {host, copy: travel, incoming: []});
+    expect(swap!.copy.style.boxSizing).toBe('border-box');
+  });
+
   it('copies only the visible part of a scroll container, scrolled as it was', () => {
     const {handle, content} = setup();
     Object.defineProperty(content, 'scrollTop', {value: 40});
+    Object.defineProperty(content, 'scrollLeft', {value: 30});
     Object.defineProperty(content, 'clientWidth', {value: 600});
     Object.defineProperty(content, 'clientHeight', {value: 300});
     const swap = holdLayoutSwap(handle, content, {isVisiblePart: true});
@@ -176,6 +202,9 @@ describe('the in-place swap (spec:AST-105 FR8)', () => {
     expect(swap?.rect.height).toBe(300);
     const inner = swap?.copy.firstElementChild as HTMLElement;
     expect(inner.style.top).toBe('-40px');
+    expect(inner.style.left).toBe('-30px');
+    // The holder is the part inside the border: the copy carries none.
+    expect(inner.style.borderWidth).toBe('0px');
     expect(inner.style.width).toBe('600px');
     expect(inner.hasAttribute('role')).toBe(false);
   });
