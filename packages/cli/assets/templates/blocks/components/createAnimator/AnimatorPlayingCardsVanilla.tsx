@@ -33,23 +33,36 @@ function mountDeck(table: HTMLElement, discardButton: HTMLButtonElement) {
     cursor: 'grab',
     userSelect: 'none',
   });
-  table.append(card);
+  // Announces each discard to screen readers.
+  const status = document.createElement('div');
+  status.setAttribute('aria-live', 'polite');
+  Object.assign(status.style, {
+    position: 'absolute',
+    width: '1px',
+    height: '1px',
+    overflow: 'hidden',
+    clipPath: 'inset(50%)',
+    whiteSpace: 'nowrap',
+  });
+  table.append(card, status);
   const animator = createAnimator(card);
 
   async function discard(vx: number, vy: number) {
     const speed = Math.hypot(vx, vy);
     const boost = speed < MIN_THROW ? MIN_THROW / Math.max(speed, 1) : 1;
-    await Promise.all([
-      animator.decay({x: speed < 1 ? MIN_THROW : vx * boost, y: vy * boost}),
-      animator.animate({opacity: 0}),
-    ]);
+    // The card coasts on while it fades; once it is gone, the next card is
+    // dealt in place, which ends the coast.
+    void animator.decay({x: speed < 1 ? MIN_THROW : vx * boost, y: vy * boost});
+    await animator.animate({opacity: 0});
+    status.textContent = `${DECK[top % DECK.length]} discarded`;
     top += 1;
     card.textContent = DECK[top % DECK.length];
     animator.set({x: 0, y: 0, rotate: 0, scale: 0.9, opacity: 0});
     await animator.animate({scale: 1, opacity: 1});
   }
 
-  // The drag: follow the pointer, then read the last 80 ms on release.
+  // The drag: follow the pointer, then read the 80 ms before the release, so
+  // a pointer that held still before letting go releases at rest.
   let origin: {x: number; y: number} | null = null;
   let samples: {t: number; x: number; y: number}[] = [];
   function onDown(event: PointerEvent) {
@@ -68,13 +81,14 @@ function mountDeck(table: HTMLElement, discardButton: HTMLButtonElement) {
     samples.push({t: event.timeStamp, x, y});
     animator.set({x, y, rotate: x / 18});
   }
-  function onUp() {
+  function onUp(event: PointerEvent) {
     if (origin == null) {
       return;
     }
     origin = null;
-    const last = samples.at(-1);
-    const first = samples.find(s => last != null && last.t - s.t <= 80);
+    const recent = samples.filter(s => event.timeStamp - s.t <= 80);
+    const first = recent[0];
+    const last = recent.at(-1);
     const seconds = last && first ? (last.t - first.t) / 1000 : 0;
     const vx = seconds > 0 && last && first ? (last.x - first.x) / seconds : 0;
     const vy = seconds > 0 && last && first ? (last.y - first.y) / seconds : 0;
@@ -98,6 +112,7 @@ function mountDeck(table: HTMLElement, discardButton: HTMLButtonElement) {
     discardButton.removeEventListener('click', onDiscard);
     animator.destroy();
     card.remove();
+    status.remove();
   };
 }
 

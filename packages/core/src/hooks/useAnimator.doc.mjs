@@ -30,7 +30,7 @@ export const docs = {
       name: 'animator',
       type: 'AnimatorHandle',
       description:
-        "The element's animator, the same object on every render: `animate(target, {velocity?})` springs channels to a target on the theme's state-change motion, at its tempo and character, `decay(velocity)` coasts them from a release velocity, `set(values)` jumps them, `get()` and `getVelocity()` read them, and `stop()` halts them. The channels are `x` and `y` (px), `scale` (1 at the element's size), `rotate` (degrees) and `opacity` (0 to 1). `animate` and `decay` return a promise that resolves when the motion ends. Calling it never re-renders the component, and it works before the ref attaches: the element shows its values when it mounts.",
+        "The element's animator, the same object on every render: `animate(target, {velocity?})` springs channels to a target on the theme's state-change motion, at its tempo and character, `decay(velocity)` coasts them from a release velocity, `set(values)` jumps them, `get()` and `getVelocity()` read them, and `stop()` halts them. The channels are `x` and `y` (px), `scale` (1 at the element's size), `rotate` (degrees) and `opacity` (0 to 1). `animate` and `decay` return a promise that resolves when the motion ends. Calling it never re-renders the component. Calls before the ref attaches do nothing and resolve at once.",
     },
   ],
   usage: {

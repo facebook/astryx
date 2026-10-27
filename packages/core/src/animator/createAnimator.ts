@@ -58,8 +58,8 @@ export type AnimatorSnapshot = Readonly<Record<AnimatorChannel, number>>;
 /** Options of `AnimatorHandle.animate`. */
 export interface AnimatorAnimateOptions {
   /**
-   * Each channel's velocity at the start, such as a drag's release velocity
-   * (`usePanGesture` reports it at `ended`). A channel without one keeps the
+   * Each channel's velocity at the start, such as a drag's release velocity.
+   * A channel without one keeps the
    * velocity it has on screen, so an `animate` that interrupts another
    * carries on smoothly.
    */

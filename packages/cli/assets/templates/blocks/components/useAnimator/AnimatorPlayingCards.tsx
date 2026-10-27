@@ -29,10 +29,17 @@ interface Sample {
   y: number;
 }
 
-/** The release velocity in px/s, over the drag's last 80 ms. */
-function releaseVelocity(samples: Sample[]): {x: number; y: number} {
-  const last = samples.at(-1);
-  const first = samples.find(s => last != null && last.t - s.t <= 80);
+/**
+ * The release velocity in px/s, over the 80 ms before the release: a finger
+ * that held still before letting go releases at rest.
+ */
+function releaseVelocity(
+  samples: Sample[],
+  releasedAt: number,
+): {x: number; y: number} {
+  const recent = samples.filter(s => releasedAt - s.t <= 80);
+  const first = recent[0];
+  const last = recent.at(-1);
   if (last == null || first == null || last.t === first.t) {
     return {x: 0, y: 0};
   }
@@ -52,13 +59,12 @@ export default function AnimatorPlayingCards() {
     const speed = Math.hypot(velocity.x, velocity.y);
     const boost = speed < MIN_THROW ? MIN_THROW / Math.max(speed, 1) : 1;
     const throwX = speed < 1 ? MIN_THROW : velocity.x * boost;
-    await Promise.all([
-      animator.decay({x: throwX, y: velocity.y * boost}),
-      animator.animate({opacity: 0}),
-    ]);
+    // The card coasts on while it fades; once it is gone, the next card is
+    // dealt in place, which ends the coast.
+    void animator.decay({x: throwX, y: velocity.y * boost});
+    await animator.animate({opacity: 0});
     setStatus(`${card.name} discarded`);
     setTop(index => index + 1);
-    // The next card is dealt in place.
     animator.set({x: 0, y: 0, rotate: 0, scale: 0.9, opacity: 0});
     await animator.animate({scale: 1, opacity: 1});
   };
@@ -87,13 +93,13 @@ export default function AnimatorPlayingCards() {
     animator.set({x, y, rotate: x / 18});
   };
 
-  const onPointerUp = () => {
+  const onPointerUp = (event: PointerEvent<HTMLDivElement>) => {
     const current = drag.current;
     drag.current = null;
     if (current == null) {
       return;
     }
-    const velocity = releaseVelocity(current.samples);
+    const velocity = releaseVelocity(current.samples, event.timeStamp);
     if (Math.abs(velocity.x) > THROW_SPEED) {
       void discard(velocity);
     } else {
