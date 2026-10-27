@@ -2043,4 +2043,62 @@ describe("inputMode 'pointer-events'", () => {
       touch('touchmove', box, [claimed], [claimed], 32).defaultPrevented,
     ).toBe(true);
   });
+
+  it("cancels a claimed finger's touchend, and leaves an unclaimed one's alone", () => {
+    const {box, other} = mount('<div id="box"></div><div id="other"></div>');
+    const pointerHost = new GestureHost(document, {
+      clock,
+      inputMode: 'pointer-events',
+      isPrimaryPointerCoarse: () => true,
+    });
+    const pan = new PanGestureRecognizer({direction: 'horizontal'});
+    detachers.push(
+      pointerHost.attach(box, pan),
+      pointerHost.attach(other, new TapGestureRecognizer()),
+    );
+    // A pan that claims, then lifts: its touchend is cancelled (FR21).
+    pointer('pointerdown', box, {
+      pointerType: 'touch',
+      x: 10,
+      y: 10,
+      buttons: 1,
+      time: 0,
+    });
+    const finger = {id: 7, x: 10, y: 10};
+    touch('touchstart', box, [finger], [finger], 0);
+    pointer('pointermove', box, {
+      pointerType: 'touch',
+      x: 40,
+      y: 10,
+      buttons: 1,
+      time: 32,
+    });
+    expect(pan.state).toBe('began');
+    pointer('pointerup', box, {pointerType: 'touch', x: 40, y: 10, time: 48});
+    const lifted = {...finger, x: 40};
+    expect(touch('touchend', box, [lifted], [], 48).defaultPrevented).toBe(
+      true,
+    );
+    // A tap nobody claimed before its lift keeps its touchend.
+    pointer('pointerdown', other, {
+      id: 2,
+      pointerType: 'touch',
+      x: 10,
+      y: 80,
+      buttons: 1,
+      time: 400,
+    });
+    const second = {id: 8, x: 10, y: 80};
+    touch('touchstart', other, [second], [second], 400);
+    pointer('pointerup', other, {
+      id: 2,
+      pointerType: 'touch',
+      x: 10,
+      y: 80,
+      time: 460,
+    });
+    expect(touch('touchend', other, [second], [], 460).defaultPrevented).toBe(
+      false,
+    );
+  });
 });
