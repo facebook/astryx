@@ -469,7 +469,7 @@ describe('build-css astryx.css', () => {
 
     it('gives an interactive row its hit layer only under a finger, and no row a new height', () => {
       // Its top and bottom edges, grown by the insets utils/hitArea.ts measures
-      // (List/listRow.stylex.ts, component:List FR10).
+      // (utils/touchHitArea.stylex.ts, component:List FR10).
       const edges = rules().filter(rule =>
         /::after\{(top|bottom):calc\(var\(--astryx-hit-inset-(top|bottom), ?0px\) ?\* ?-1\)\}/.test(
           rule,

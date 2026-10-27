@@ -16,7 +16,7 @@
  *   pixels, too coarse for a 1 px half gap, so the hit tests probe whole
  *   pixels inside a wider growth
  * @position Interaction evidence for ListItem's touch hit area
- *   (listRow.stylex.ts, measured by utils/hitArea.ts) under a finger
+ *   (utils/touchHitArea.stylex.ts, kept live by utils/touchHitArea.ts) under a finger
  *   (./touchStory.ts)
  */
 
