@@ -16,8 +16,9 @@
  * - The rail covers or reveals by a clip on its outer element, which paints
  *   its background. A collapse lays a copy of the old, expanded rail over the
  *   real collapsed one and clips the copy down to the new width; the copy's
- *   text fades over the first 40% and the copy over the last 30%, so the real
- *   rail, icons only, is all that remains. An expand clips a copy of the new
+ *   text fades over the first 40% and, over the last 30%, the copy fades out
+ *   as the real rail fades in, so the real rail, icons only, is all that
+ *   remains. An expand clips a copy of the new
  *   rail open from the old width, its text fading in over the last 60% so no
  *   label shows at the collapsed width, while the real rail waits under it.
  * - The content column slides from its old place to its new one (the rail's
@@ -240,6 +241,11 @@ export function playRail(
       })),
     );
     fadeText(p => 1 - clamp(p / 0.4));
+    // The real rail fades in as the copy fades out, so the icons cross once.
+    play(
+      rail,
+      frames(p => ({opacity: clamp((p - 0.7) / 0.3)})),
+    );
   } else {
     // The real rail waits under its copy: a rail without a background of its
     // own would show its labels through it.
