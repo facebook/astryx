@@ -107,9 +107,10 @@ defineTheme({
 - **FR5 — Existing motion configuration keeps working.** `defineTheme`'s
   `motion` also accepts the existing `MotionScaleConfig`, and
   `expandMotionScale` and the `MotionScale*` types are unchanged. A
-  `MotionScaleConfig` keeps generating its tokens, so an existing theme's CSS
-  is unchanged, and gives the animator the `tempo` its `medium` value implies
-  against the default, used as is rather than clamped to the knob's range. Explicit
+  `MotionScaleConfig` keeps generating its CSS duration tokens, and the tempo
+  it implies drives those durations only: the animator's tables stay at tempo 1
+  unless the theme sets `tempo` itself, so an existing theme renders exactly as
+  before, springs included. Explicit
   `MotionScaleConfig` fields and explicit `tokens` win over `tempo` and
   `character`, and an extending theme's motion configuration replaces its
   base's, as today.
@@ -129,8 +130,7 @@ defineTheme({
 ## Current-state impact
 
 - `defineTheme`'s `motion` widens to accept the three knobs beside the existing
-  `MotionScaleConfig`; an existing theme's CSS is unchanged, and its springs
-  follow the tempo its configuration implies.
+  `MotionScaleConfig`; existing themes render exactly as before.
 - Core gains `--ease-entrance`, `--ease-move`, and `--ease-exit`.
 - BottomSheet's scrim fades over `--duration-medium` while the sheet settles
   on its spring; it moves to the spring's settle time (FR4a).
