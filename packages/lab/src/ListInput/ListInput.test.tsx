@@ -10,7 +10,7 @@
  */
 
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {useMemo, useState, type Key} from 'react';
+import {useMemo, useState} from 'react';
 import userEvent from '@testing-library/user-event';
 import {createReorderable} from '@astryxdesign/core/reorderable';
 import {
@@ -120,7 +120,7 @@ function renderListInput(overrides: Partial<ListInputProps<Guest>> = {}) {
 
 /** A reorderable object whose moves go to `onReorder` and nowhere else. */
 function reorderableFor(
-  onReorder: (move: {key: Key; to: number}) => void = () => {},
+  onReorder: (move: {key: string | number; to: number}) => void = () => {},
 ) {
   return createReorderable({onReorder});
 }
@@ -134,8 +134,8 @@ function OwnedList({
   isReorderable,
   ...props
 }: Partial<ListInputProps<Guest>> & {
-  onReorder?: (move: {key: Key; to: number}) => void;
-  isReorderable?: (key: Key) => boolean;
+  onReorder?: (move: {key: string | number; to: number}) => void;
+  isReorderable?: (key: string | number) => boolean;
 }) {
   const [value, setValue] = useState(props.value ?? guests);
   const reorderable = useMemo(
@@ -174,7 +174,7 @@ function OwnedList({
   );
 }
 
-const isNotAda = (key: Key) => key !== 'ada';
+const isNotAda = (key: string | number) => key !== 'ada';
 
 const HINT =
   'Drag to move this item, or press Space or Enter, then the arrow keys to move it one place at a time. Press Escape when you are done.';

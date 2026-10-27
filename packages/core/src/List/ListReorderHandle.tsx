@@ -46,10 +46,8 @@ import {
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, focusVars} from '../theme/tokens.stylex';
-import {
-  focusOutlineProps,
-  ownRingContainerStyles,
-} from '../utils/focusOutline.stylex';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {ownRingContainerStyles} from './ownRing.stylex';
 import {useTranslator} from '../i18n/useTranslator';
 import {devWarn} from '../utils/devWarning';
 import {ItemLabelContext} from '../Item/ItemLabelContext';
