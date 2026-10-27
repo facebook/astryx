@@ -69,6 +69,20 @@ function tree() {
 }
 
 describe('coreBuildIsStale', () => {
+  it('throws on a built entry it cannot read, rather than read it as missing', () => {
+    const {roots, source} = tree();
+    expect(() =>
+      coreBuildIsStale(path.join(source, 'index.js'), roots),
+    ).toThrow(/ENOTDIR/);
+  });
+
+  it('throws on a source it cannot read, rather than skip it', () => {
+    const {entry, source} = tree();
+    expect(() =>
+      coreBuildIsStale(entry, [path.join(source, 'nested.ts')]),
+    ).toThrow(/ENOTDIR/);
+  });
+
   it('is stale with no build', () => {
     const {entry, roots} = tree();
     fs.rmSync(entry);
@@ -494,27 +508,53 @@ describe('run leases', () => {
     expect(timerAt).toBeLessThan(builds[0]);
   });
 
-  it('give up after the limit: the run tests the build it has, with a warning naming the live run', async () => {
+  it('give up after the limit: the run stops with an error naming the live run, and rebuilds nothing', async () => {
     const built = staleTree();
     registerTestRun({leaseDir: built.leaseDir, pid: 101, now: 1});
     registerTestRun({leaseDir: built.leaseDir, pid: process.pid, now: 2});
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // The wait announces itself once; this test reads only the outcome.
+    const announced = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
       const startedAt = Date.now();
       const {builds, done} = forRun(built, {
         isAlive: pid => pid === 101,
         limitMs: 150,
       });
-      await done;
+      await expect(done).rejects.toThrow(
+        /test run 101 in this checkout still uses that build/,
+      );
       expect(Date.now() - startedAt).toBeLessThan(2000);
       expect(builds).toEqual([]);
       expect(coreBuildIsStale(built.entry, built.roots)).toBe(true);
-      expect(warn.mock.calls.at(-1)?.[0]).toMatch(
-        /Gave up waiting for test run 101/,
-      );
+      expect(announced.mock.calls[0]?.[0]).toMatch(/waiting up to 0 s/);
     } finally {
-      warn.mockRestore();
+      announced.mockRestore();
     }
+  });
+
+  it('throw on a lease directory it cannot read, rather than read it as empty', () => {
+    const built = staleTree();
+    fs.writeFileSync(built.leaseDir, 'not a directory');
+    expect(() => earlierLiveRuns(built.leaseDir)).toThrow(/ENOTDIR/);
+  });
+
+  it('throw on a lease it cannot read, rather than read it as no start time', () => {
+    const built = staleTree();
+    registerTestRun({leaseDir: built.leaseDir, pid: process.pid, now: 2});
+    fs.mkdirSync(path.join(built.leaseDir, '101'));
+    expect(() =>
+      earlierLiveRuns(built.leaseDir, {isAlive: () => true}),
+    ).toThrow(/EISDIR/);
+  });
+
+  it('throw on a lease whose process id the system refuses, rather than read the run as ended and remove its lease', () => {
+    const built = staleTree();
+    registerTestRun({leaseDir: built.leaseDir, pid: process.pid, now: 2});
+    registerTestRun({leaseDir: built.leaseDir, pid: 2 ** 31, now: 1});
+    expect(() => earlierLiveRuns(built.leaseDir)).toThrow(/pid/);
+    expect(fs.existsSync(path.join(built.leaseDir, String(2 ** 31)))).toBe(
+      true,
+    );
   });
 
   it('let a run that started later wait instead, so two runs never wait for each other', async () => {

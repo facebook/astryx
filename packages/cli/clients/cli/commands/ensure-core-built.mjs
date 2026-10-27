@@ -110,7 +110,11 @@ function processIsAlive(pid) {
     process.kill(pid, 0);
     return true;
   } catch (error) {
-    return /** @type {NodeJS.ErrnoException} */ (error).code === 'EPERM';
+    const {code} = /** @type {NodeJS.ErrnoException} */ (error);
+    // ESRCH: no such process, so it has ended. EPERM: it runs as another user.
+    if (code === 'ESRCH') return false;
+    if (code === 'EPERM') return true;
+    throw error;
   }
 }
 
@@ -146,15 +150,23 @@ export function earlierLiveRuns(
   let names;
   try {
     names = fs.readdirSync(leaseDir);
-  } catch {
-    return [];
+  } catch (error) {
+    // No run has registered in this checkout yet.
+    if (/** @type {NodeJS.ErrnoException} */ (error).code === 'ENOENT') {
+      return [];
+    }
+    throw error;
   }
   /** @param {string} name */
   const startOf = name => {
     try {
       return Number(fs.readFileSync(path.join(leaseDir, name), 'utf8'));
-    } catch {
-      return NaN;
+    } catch (error) {
+      // The run ended, and its lease went, between the listing and this read.
+      if (/** @type {NodeJS.ErrnoException} */ (error).code === 'ENOENT') {
+        return NaN;
+      }
+      throw error;
     }
   };
   const own = startOf(String(pid));
@@ -199,8 +211,12 @@ export function coreBuildIsStale(entry, roots, generated = []) {
   let built;
   try {
     built = fs.statSync(entry).mtimeMs;
-  } catch {
-    return true;
+  } catch (error) {
+    // Not built yet.
+    if (/** @type {NodeJS.ErrnoException} */ (error).code === 'ENOENT') {
+      return true;
+    }
+    throw error;
   }
   const skipped = new Set(generated.map(p => path.resolve(p)));
   const pending = [...roots];
@@ -212,8 +228,12 @@ export function coreBuildIsStale(entry, roots, generated = []) {
     let stat;
     try {
       stat = fs.statSync(current);
-    } catch {
-      continue;
+    } catch (error) {
+      // Removed while the walk ran.
+      if (/** @type {NodeJS.ErrnoException} */ (error).code === 'ENOENT') {
+        continue;
+      }
+      throw error;
     }
     if (stat.isDirectory()) {
       for (const name of fs.readdirSync(current)) {
@@ -414,9 +434,9 @@ export async function waitForEarlierRuns({
 
 /**
  * The node global setup's Core step: once the runs that started earlier have
- * ended, a stale build is rebuilt. If one is still live at the limit, the
- * stale build stays (rebuilding it would delete dist under that run), and a
- * warning names the run: this run tests the build it has.
+ * ended, a stale build is rebuilt. If one is still live at the limit, this run
+ * stops with an error naming it: rebuilding would delete dist under that run,
+ * and testing the stale build would test old code.
  * @param {{entry: string, roots: readonly string[], generated?: readonly string[], build: () => void, lockDir: string, leaseDir: string, isAlive?: (pid: number) => boolean, pid?: number, pollMs?: number, limitMs?: number}} options
  */
 export async function ensureCoreBuiltForRunAt({
@@ -442,8 +462,8 @@ export async function ensureCoreBuiltForRunAt({
     limitMs,
   });
   if (stillLive.length > 0) {
-    console.warn(
-      `[ensure-core-built] Gave up waiting for test run ${stillLive.join(', ')}: this run tests the Core build already in packages/core/dist, which is older than Core's sources. Run again once that run has ended.`,
+    throw new Error(
+      `[ensure-core-built] Core's sources changed since packages/core/dist was built, and test run ${stillLive.join(', ')} in this checkout still uses that build after ${Math.round((limitMs ?? EARLIER_RUN_WAIT_MS) / 1000)} s: rebuilding would delete dist under it, and this run would test old code. Run again once it ends.`,
     );
   }
   ensureCoreBuiltAt({
@@ -452,7 +472,7 @@ export async function ensureCoreBuiltForRunAt({
     generated,
     build,
     lockDir,
-    rebuildStale: stillLive.length === 0,
+    rebuildStale: true,
     pollMs,
   });
 }
