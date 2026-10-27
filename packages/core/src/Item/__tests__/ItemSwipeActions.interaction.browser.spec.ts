@@ -117,11 +117,11 @@ async function openRow(page: Page): Promise<OpenRow> {
   };
 }
 
-/** How far the row opens: the entries' natural widths together. */
+/** How far the row opens: the entries' widths together, read as the row reads them (`offsetWidth`). */
 const openWidthOf = async (track: Locator) =>
   track.evaluate(node =>
     Array.from(node.children).reduce(
-      (width, entry) => width + entry.getBoundingClientRect().width,
+      (width, entry) => width + (entry as HTMLElement).offsetWidth,
       0,
     ),
   );
@@ -1352,7 +1352,11 @@ test('under Reduce Motion backing out of a confirmed full swipe returns to the f
   const confirmAt = confirmPointOf(openWidth, rest.width);
   const h = swipeActions.hysteresis;
   // Out past the confirm point and held there while the confirm's fade
-  // plays out, then back short of it, held, and lifted.
+  // plays out, then back short of it, held, and lifted. The way back is
+  // 39 px, not 40, so no move lands exactly on the confirm point: the moves
+  // straddle it by half a pixel or more, and the move that backs out is the
+  // same for the row and for this test, whatever rounding each one's sum
+  // carries.
   const out = drag(
     start,
     {x: start.x - (confirmAt + h + 20), y: start.y},
@@ -1361,7 +1365,7 @@ test('under Reduce Motion backing out of a confirmed full swipe returns to the f
   const last = out[out.length - 1];
   const back = drag(
     last.fingers[0],
-    {x: start.x - (confirmAt + h - 20), y: start.y},
+    {x: start.x - (confirmAt + h - 19), y: start.y},
     {durationMs: 300, hz: 60, restMs: 300},
   ).map(frame => ({...frame, t: frame.t + last.t + 16}));
   let confirmed = false;
