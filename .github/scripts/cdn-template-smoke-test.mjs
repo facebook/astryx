@@ -4,9 +4,8 @@
 /**
  * CDN starter-page smoke test — scaffolds `astryx template --cdn` into a temp
  * directory, serves it, and opens it in headless Chromium. Fails on any console
- * error, page error, or failed request, on a page that does not finish loading
- * (naming what is still loading), and on a page that loaded without rendering
- * anything.
+ * error, page error, or failed request, and on a page that loaded without
+ * rendering anything.
  *
  * This is the one recipe we ship that runs entirely outside the repo: no
  * bundler resolves its imports, no test double stands in for jsDelivr or
@@ -31,6 +30,11 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {pageAssetUrls, primeCdnAssets} from './lib/cdn-asset-priming.mjs';
+import {
+  renderPage,
+  renderUntilClean,
+  uncleanFindings,
+} from './lib/cdn-page-render.mjs';
 import {resolvePublishedCdnVersion} from './lib/cdn-version.mjs';
 
 const ROOT = path.resolve(
@@ -40,8 +44,6 @@ const ROOT = path.resolve(
 const CLI = path.join(ROOT, 'packages/cli/clients/cli/bin/astryx.mjs');
 const PAGE = 'cdn.template.html';
 const ATTEMPTS = 2;
-// How long the page gets to load its module graph and run it.
-const LOAD_TIMEOUT_MS = 90_000;
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-cdn-smoke-'));
 const pagePath = path.join(tmpDir, PAGE);
@@ -104,7 +106,7 @@ if (rendered !== pinned) {
 // request that arrives mid-build is answered with an error document that is then
 // cached. A page pinned to a version published minutes ago therefore loads its
 // CSS as `text/plain`, which Chromium rejects as an opaque response
-// (net::ERR_BLOCKED_BY_ORB), and the page never renders. Asking for the
+// (net::ERR_BLOCKED_BY_ORB) and `networkidle` never settles on. Asking for the
 // same URLs over plain HTTP starts and finishes the build first, and turns the
 // remaining case into a line that names the asset instead of a navigation
 // timeout at the end of a 17-minute run.
@@ -150,86 +152,46 @@ const server = http.createServer((req, res) => {
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const url = `http://127.0.0.1:${server.address().port}/`;
 
-/** Load the page once and report everything that went wrong. */
-async function render() {
-  const consoleErrors = [];
-  const pageErrors = [];
-  const failedRequests = [];
-  /** Requests sent and not yet answered, to name them if the load stalls. */
-  const pending = new Set();
-
-  const browser = await chromium.launch();
-  try {
-    const page = await browser.newPage();
-    page.on('console', m => {
-      if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 300));
-    });
-    page.on('pageerror', e => pageErrors.push(String(e).slice(0, 300)));
-    page.on('requestfailed', r =>
-      failedRequests.push(`${r.url()} :: ${r.failure()?.errorText}`),
-    );
-    page.on('response', r => {
-      if (r.status() >= 400) failedRequests.push(`${r.status()} ${r.url()}`);
-    });
-    page.on('request', r => pending.add(r));
-    page.on('requestfinished', r => pending.delete(r));
-    page.on('requestfailed', r => pending.delete(r));
-
-    // The page's own ready signal: its load event, which waits for the module
-    // script and every module it imports to load and run, then the button it
-    // renders. Not `networkidle`: the page imports Core through esm.sh, some
-    // 380 module requests, and one slow or never-answered request it does not
-    // wait on (a web font) keeps the network busy long after the page has
-    // rendered, so `networkidle` timed out on a page that works.
-    try {
-      await page.goto(url, {waitUntil: 'load', timeout: LOAD_TIMEOUT_MS});
-    } catch (error) {
-      const stalled = [...pending].map(r => r.url()).slice(0, 10);
-      return {
-        consoleErrors,
-        pageErrors,
-        failedRequests,
-        button: null,
-        load: [
-          String(error).split('\n')[0],
-          ...stalled.map(u => `still loading: ${u}`),
-        ],
-      };
-    }
-    // A page that throws during render still fires its load event with an
-    // empty root, so the render itself has to be asserted, not just the error
-    // streams.
-    const button = await page
-      .getByRole('button')
-      .first()
-      .textContent({timeout: 15_000})
-      .catch(() => null);
-
-    return {consoleErrors, pageErrors, failedRequests, button, load: []};
-  } finally {
-    await browser.close();
-  }
-}
-
 // ── 5. Render, retrying once so a blip at a CDN is not a red build ───────────
-let result;
-for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
-  result = await render();
-  const clean =
-    result.load.length === 0 &&
-    result.consoleErrors.length === 0 &&
-    result.pageErrors.length === 0 &&
-    result.failedRequests.length === 0 &&
-    result.button;
-  if (clean) break;
-  if (attempt < ATTEMPTS) console.log(`  retry ${attempt} of ${ATTEMPTS - 1}`);
-}
+// Every attempt shares the one 90 s wait this step has always had, so the retry
+// adds no time to it: this step can start with under two minutes of the
+// smoke-test job's 15-minute limit left, and a page that hangs on both
+// attempts still prints the report naming what hung before the job is stopped.
+const RENDER_BUDGET_MS = 90_000;
+const result = await renderUntilClean(
+  ({budgetMs}) =>
+    renderPage(url, {launch: async () => chromium.launch(), budgetMs}),
+  {
+    attempts: ATTEMPTS,
+    deadline: Date.now() + RENDER_BUDGET_MS,
+    // The attempt a retry replaces is printed in full: a CDN blip that clears
+    // on the retry still shows in the log, rather than vanishing behind a
+    // green run.
+    onRetry: (attempt, leftMs, discarded) => {
+      console.log(
+        `  retry ${attempt} of ${ATTEMPTS - 1}, ${Math.round(leftMs / 1000)} s left, after:`,
+      );
+      for (const finding of uncleanFindings(discarded)) {
+        console.log(`        ${finding}`);
+      }
+    },
+  },
+);
 server.close();
 
 // ── 6. Report ────────────────────────────────────────────────────────────────
 console.log(`\n${PAGE} @ ${rendered}`);
+if (result.timedOut) {
+  fail(
+    'the page never went idle, so its navigation timed out',
+    result.pendingRequests.length === 0
+      ? '        no request was in flight when the wait gave up'
+      : result.pendingRequests
+          .map(entry => `        still in flight: ${entry}`)
+          .join('\n'),
+  );
+}
 for (const [label, entries] of [
-  ['load failure', result.load],
   ['console error', result.consoleErrors],
   ['page error', result.pageErrors],
   ['failed request', result.failedRequests],
@@ -245,7 +207,7 @@ for (const [label, entries] of [
 }
 if (result.button) {
   console.log(`  ok    rendered a button: "${result.button.trim()}"`);
-} else if (result.load.length === 0) {
+} else if (!result.timedOut) {
   fail('the page loaded but rendered no button');
 }
 
