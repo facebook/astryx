@@ -170,7 +170,7 @@ work.
   held pointer across a group's actions for every `family:action-groups`
   member other than menus, whose tracking and public `menuPressStep` stay
   with `module:DropdownMenu/useMenuPress`. No other member keeps its own copy
-  of the tracking. It is not exported (`spec:AST-017`
+  of the tracking. Moving menus onto the shared tracker is planned (OQ1). It is not exported (`spec:AST-017`
   FR21).
 
 ## Allowed variation
@@ -277,3 +277,9 @@ indicator on pointer press, and keeping internal action focus owned by the
 action. The benchmark also verifies programmatic editor focus after both
 keyboard and pointer input before the behavior is treated as complete. A
 benchmark demonstrates the invariants; it does not carry authority for them.
+
+## Open questions
+
+- **OQ1 — When menus move onto the shared tracker.** (`engineering`) Open.
+  Planned: `module:DropdownMenu/useMenuPress` converges onto the shared
+  tracker as a follow-up, on the timing the owner set.
