@@ -653,6 +653,17 @@ test.describe('under a finger', () => {
   test('a tap while the alert presents reaches nothing', async ({page}) => {
     const {driver, trigger, dialog} = await openPage(page);
     const triggerPoint = await centerOf(trigger);
+    // On the window, ahead of the hold's own listeners there (the hold
+    // swallows a held touch at the window, so the document never hears it).
+    await page.evaluate(() => {
+      const log = {start: Number.NaN, touches: [] as number[]};
+      (window as unknown as {__presentLog: typeof log}).__presentLog = log;
+      window.addEventListener(
+        'touchstart',
+        event => log.touches.push(event.timeStamp),
+        true,
+      );
+    });
     await driver.tap(triggerPoint);
     await waitForAnimation(dialog);
     const cancelPoint = await centerOf(
@@ -665,13 +676,9 @@ test.describe('under a finger', () => {
         .find(
           a => (a.effect as KeyframeEffect | null)?.target === dialogElement,
         )?.startTime;
-      const log = {start: Number(start), touches: [] as number[]};
-      (window as unknown as {__presentLog: typeof log}).__presentLog = log;
-      document.addEventListener(
-        'touchstart',
-        event => log.touches.push(event.timeStamp),
-        true,
-      );
+      const log = (window as unknown as {__presentLog: {start: number; touches: number[]}}).__presentLog;
+      log.start = Number(start);
+      log.touches.length = 0;
     });
     await driver.tap(cancelPoint);
     const log = await page.evaluate(
@@ -756,7 +763,7 @@ test.describe('under a finger', () => {
         document.body.append(spacer);
         const log = {heldAtDrag: [] as boolean[], clicks: [] as string[]};
         (window as unknown as {__dragLog: typeof log}).__dragLog = log;
-        document.addEventListener(
+        window.addEventListener(
           'touchstart',
           () =>
             log.heldAtDrag.push(
@@ -847,7 +854,7 @@ test.describe('under a finger', () => {
       await page.evaluate(() => {
         const log = {heldAtPinch: [] as boolean[]};
         (window as unknown as {__pinchLog: typeof log}).__pinchLog = log;
-        document.addEventListener(
+        window.addEventListener(
           'touchstart',
           () =>
             log.heldAtPinch.push(

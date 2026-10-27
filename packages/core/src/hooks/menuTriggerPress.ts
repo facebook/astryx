@@ -4,9 +4,11 @@
 
 /**
  * @file menuTriggerPress.ts
- * @input The menu press model's shared state (useMenuPress.ts), useLongPress,
- *   the native scroll probe, the menu press values, the system's long-press
- *   duration (motion/uikit/longPress.ts) and the coarse-pointer read
+ * @input The menu press model's shared state (useMenuPress.ts), the
+ *   long-press detector (useLongPress.ts), the native scroll probe, the menu
+ *   press values, the system's long-press duration and tolerance
+ *   (motion/uikit/longPress.ts) and the coarse-pointer read, taken when a
+ *   press starts
  * @output Exports `useMenuTriggerPress`: the trigger half of the menu press
  *   model (a mouse press-down open, a held or pressed finger open, the
  *   scroll-view wait)
@@ -19,12 +21,7 @@
  * SYNC: When modified, update useMenuPress.ts and useMenuPress.test.tsx.
  */
 
-import {
-  useCallback,
-  useMemo,
-  useSyncExternalStore,
-  type RefObject,
-} from 'react';
+import {useCallback, useMemo, type RefObject} from 'react';
 import {currentGesture} from '../Layer/gestureCounter';
 import {createNativeScrollProbe} from '../gestures/nativeScroll';
 import type {
@@ -36,9 +33,16 @@ import {
   DELAYS_CONTENT_TOUCHES_MS,
   MENU_PRESS_HOLD_OPEN_SLOP_PX,
 } from './menuPressValues';
-import {useLongPress, type UseLongPressHandlers} from './useLongPress';
-import {LONG_PRESS_DURATION_MS} from '../motion/uikit/longPress';
-import {isCoarsePointer, watchCoarsePointer} from '../utils/coarsePointer';
+import {
+  useLongPressDetector,
+  type LongPressDetectorHandlers,
+  type LongPressTolerance,
+} from './useLongPress';
+import {
+  LONG_PRESS_ALLOWABLE_MOVEMENT_PX,
+  LONG_PRESS_DURATION_MS,
+} from '../motion/uikit/longPress';
+import {isCoarsePointer} from '../utils/coarsePointer';
 
 /**
  * How long a finger rests on the trigger before the menu opens under it,
@@ -56,11 +60,17 @@ export const MENU_PRESS_LONG_PRESS_MS = LONG_PRESS_DURATION_MS;
  */
 export const MENU_PRESS_TRIGGER_DRIFT_PX = MENU_PRESS_HOLD_OPEN_SLOP_PX;
 
-const viewOrNull = () => (typeof window === 'undefined' ? null : window);
-const subscribeCoarsePointer = (onChange: () => void) =>
-  watchCoarsePointer(viewOrNull(), onChange);
-const readCoarsePointer = () => isCoarsePointer(viewOrNull());
-const readServerCoarsePointer = () => false;
+/**
+ * A finger held on the trigger: FR29's drift allowance where the primary
+ * pointer is coarse; where it is fine, the released behavior's tolerance
+ * (useMenuPress FR9), the long press's own. Read when the press starts, so
+ * no menu observes the pointer query (`spec:AST-094` FR24).
+ */
+function triggerTolerance(): LongPressTolerance {
+  return isCoarsePointer(typeof window === 'undefined' ? null : window)
+    ? {moveCancelPx: MENU_PRESS_TRIGGER_DRIFT_PX}
+    : {moveCancelPx: LONG_PRESS_ALLOWABLE_MOVEMENT_PX};
+}
 
 /** What the trigger half reads and drives of the model. @internal */
 export interface MenuTriggerContext {
@@ -80,13 +90,17 @@ export interface MenuTriggerContext {
    * keeps the one the live press uses.
    */
   readonly setHoldDetectors: (detectors: {
-    plain: UseLongPressHandlers;
-    scroller: UseLongPressHandlers;
+    plain: LongPressDetectorHandlers;
+    scroller: LongPressDetectorHandlers;
   }) => void;
-  /** Starts the live press's hold, in a scroll view or not, at a point. */
+  /**
+   * Starts the live press's hold, in a scroll view or not, at a point, with
+   * the press's own tolerance when it has one.
+   */
   readonly startHold: (
     kind: 'plain' | 'scroller',
     at: {x: number; y: number},
+    tolerance?: LongPressTolerance,
   ) => void;
   readonly setLastPointerEvent: (event: PointerEvent) => void;
   /** Whether the model ignores this pointer; a match is cleared. */
@@ -179,28 +193,19 @@ export function useMenuTriggerPress(
   // lands.
   // With `touchModel: 'uikit'` only a trigger inside a scroll view waits
   // (the content-touch delay, within the drift allowance); one in a fixed bar
-  // opens as the finger presses, so its detector never runs. A held finger
-  // keeps FR29's drift allowance where the primary pointer is coarse; where
-  // it is fine, the shared tolerance stays (useMenuPress FR9).
+  // opens as the finger presses, so its detector never runs. Any other held
+  // finger takes the trigger's tolerance as its press starts
+  // (triggerTolerance).
   const isUikit = options.touchModel === 'uikit';
-  const isPrimaryPointerCoarse = useSyncExternalStore(
-    subscribeCoarsePointer,
-    readCoarsePointer,
-    readServerCoarsePointer,
-  );
   const pointerHoldMs = options.longPressDelayMs ?? MENU_PRESS_LONG_PRESS_MS;
-  const pointerHoldDriftPx = isPrimaryPointerCoarse
-    ? MENU_PRESS_TRIGGER_DRIFT_PX
-    : undefined;
-  const plainHold = useLongPress({
+  const plainHold = useLongPressDetector({
     onLongPress: fireLongPress,
     delayMs: pointerHoldMs,
-    moveCancelPx: pointerHoldDriftPx,
   });
-  const scrollerHold = useLongPress({
+  const scrollerHold = useLongPressDetector({
     onLongPress: fireLongPress,
     delayMs: isUikit ? DELAYS_CONTENT_TOUCHES_MS : pointerHoldMs,
-    moveCancelPx: isUikit ? MENU_PRESS_HOLD_OPEN_SLOP_PX : pointerHoldDriftPx,
+    ...(isUikit ? {moveCancelPx: MENU_PRESS_HOLD_OPEN_SLOP_PX} : {}),
   });
   ctx.setHoldDetectors({plain: plainHold, scroller: scrollerHold});
 
@@ -250,10 +255,14 @@ export function useMenuTriggerPress(
       ctx.attach(native.pointerId);
       ctx.setLastPointerEvent(native);
       if (pointerType !== 'mouse') {
-        ctx.startHold(inScrollView ? 'scroller' : 'plain', {
-          x: native.clientX,
-          y: native.clientY,
-        });
+        // A uikit finger in a scroll view keeps the scroll view's drift
+        // allowance (its detector's own); any other finger takes the
+        // trigger's tolerance, read now.
+        ctx.startHold(
+          inScrollView ? 'scroller' : 'plain',
+          {x: native.clientX, y: native.clientY},
+          isUikitFinger && inScrollView ? undefined : triggerTolerance(),
+        );
       }
       ctx.step(down, native);
     },
