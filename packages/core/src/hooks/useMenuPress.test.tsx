@@ -21,7 +21,7 @@ import {
   useDropdownMenuPress,
   useMenuPress,
 } from './useMenuPress';
-import {MENU_PRESS_SETTLE_MS} from './menuPressGesture';
+import {MENU_PRESS_HANDOFF_PX, MENU_PRESS_SETTLE_MS} from './menuPressGesture';
 import {UIKIT_GESTURES} from '../motion/uikit/gestures';
 import {scroll} from '../motion/uikit/scroll';
 
@@ -797,6 +797,141 @@ describe('useMenuPress — the trigger', () => {
   it('marks the menu root as carrying the press model', () => {
     render(<Harness />);
     expect(screen.getByRole('menu')).toHaveAttribute('data-astryx-menu-press');
+  });
+});
+
+describe('useMenuPress — the opening finger hands off (DropdownMenu\u2019s touch model, spec:AST-094 FR29)', () => {
+  it('the finger that opened the menu from the trigger picks only once it travels the handoff from the first sample', () => {
+    vi.useFakeTimers();
+    const onSelect = vi.fn();
+    const onOpenChange = vi.fn();
+    render(
+      <Harness
+        touchModel="uikit"
+        onSelect={onSelect}
+        onOpenChange={onOpenChange}
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    fireEvent.pointerDown(trigger, {...touch(), clientX: 0, clientY: 0});
+    act(() => {
+      vi.advanceTimersByTime(MENU_PRESS_LONG_PRESS_MS);
+    });
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    // The first sample after the open is where the distance counts from.
+    fireEvent.pointerMove(row('C'), {...touch(), clientX: 0, clientY: 4});
+    fireEvent.pointerMove(row('C'), {
+      ...touch(),
+      clientX: 0,
+      clientY: 4 + MENU_PRESS_HANDOFF_PX - 1,
+    });
+    expect(row('C')).not.toHaveFocus();
+    fireEvent.pointerMove(row('C'), {
+      ...touch(),
+      clientX: 0,
+      clientY: 4 + MENU_PRESS_HANDOFF_PX,
+    });
+    expect(row('C')).toHaveFocus();
+    fireEvent.pointerUp(row('C'), {
+      ...touch(),
+      clientX: 0,
+      clientY: 4 + MENU_PRESS_HANDOFF_PX,
+    });
+    expect(onSelect).toHaveBeenCalledWith('C');
+  });
+
+  it('the finger that opened the menu lifts without travelling the handoff: nothing acts and the menu stays', () => {
+    vi.useFakeTimers();
+    const onSelect = vi.fn();
+    const onOpenChange = vi.fn();
+    render(
+      <Harness
+        touchModel="uikit"
+        onSelect={onSelect}
+        onOpenChange={onOpenChange}
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    fireEvent.pointerDown(trigger, {...touch(), clientX: 0, clientY: 0});
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    // The row under the finger is not highlighted however long it rests.
+    fireEvent.pointerMove(row('A'), {...touch(), clientX: 0, clientY: 1});
+    fireEvent.pointerMove(row('A'), {...touch(), clientX: 0, clientY: 9});
+    expect(row('A')).not.toHaveFocus();
+    fireEvent.pointerUp(row('A'), {...touch(), clientX: 0, clientY: 9});
+    // The browser's click for the press is spent too.
+    fireEvent.click(row('A'), {detail: 1});
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('the pointer model (the public hook\u2019s) keeps the settle rule: once the press has settled, a still finger\u2019s lift over a row acts', () => {
+    vi.useFakeTimers();
+    const onSelect = vi.fn();
+    render(<Harness onSelect={onSelect} />);
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    fireEvent.pointerDown(trigger, {...touch(), clientX: 0, clientY: 0});
+    act(() => {
+      vi.advanceTimersByTime(MENU_PRESS_LONG_PRESS_MS + MENU_PRESS_SETTLE_MS);
+    });
+    fireEvent.pointerMove(row('A'), {...touch(), clientX: 0, clientY: 2});
+    fireEvent.pointerUp(row('A'), {...touch(), clientX: 0, clientY: 2});
+    expect(onSelect).toHaveBeenCalledWith('A');
+  });
+});
+
+describe('useMenuPress — the public hook takes no touch model option', () => {
+  function PublicHarness({onSelect}: {onSelect: (label: string) => void}) {
+    const menuRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const [isOpen, setIsOpen] = useState(false);
+    const press = useMenuPress({
+      menuRef,
+      triggerRef,
+      itemSelector: ITEM_SELECTOR,
+      onTriggerPress: () => {
+        setIsOpen(true);
+        return true;
+      },
+      // An untyped caller passing DropdownMenu's own option gets nothing
+      // from it: the touch model is not part of the public hook.
+      ...({touchModel: 'uikit'} as object),
+    });
+    return (
+      <>
+        <button type="button" ref={triggerRef} {...press.triggerProps}>
+          Open
+        </button>
+        {isOpen ? (
+          <div ref={menuRef} role="menu" {...press.menuProps}>
+            <div role="menuitem" tabIndex={-1} onClick={() => onSelect('A')}>
+              A
+            </div>
+          </div>
+        ) : null}
+      </>
+    );
+  }
+
+  it('the opening finger keeps the settle rule, though an untyped caller passes the touch model', () => {
+    vi.useFakeTimers();
+    const onSelect = vi.fn();
+    render(<PublicHarness onSelect={onSelect} />);
+    fireEvent.pointerDown(screen.getByRole('button', {name: 'Open'}), {
+      ...touch(),
+      clientX: 0,
+      clientY: 0,
+    });
+    act(() => {
+      vi.advanceTimersByTime(MENU_PRESS_LONG_PRESS_MS + MENU_PRESS_SETTLE_MS);
+    });
+    // No handoff: the settled press's still lift acts, as released.
+    fireEvent.pointerMove(row('A'), {...touch(), clientX: 0, clientY: 2});
+    fireEvent.pointerUp(row('A'), {...touch(), clientX: 0, clientY: 2});
+    expect(onSelect).toHaveBeenCalledWith('A');
   });
 });
 
