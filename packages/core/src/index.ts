@@ -178,6 +178,9 @@ export * from './animator';
 // Hooks
 export * from './hooks';
 
+// Gestures: the public layer over the gesture system (spec:AST-107)
+export {createPanGesture} from './gestures/createPanGesture';
+
 // Utilities
 export * from './utils';
 

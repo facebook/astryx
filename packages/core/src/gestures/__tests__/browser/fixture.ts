@@ -11,6 +11,7 @@
  * @position Browser fixture of gestures.chromium.spec.ts; test-only
  */
 
+import {createPanGesture} from '../../createPanGesture';
 import {getGestureHost} from '../../GestureHost';
 import type {GestureRecognizer} from '../../GestureRecognizer';
 import {LongPressGestureRecognizer} from '../../LongPressGestureRecognizer';
@@ -82,6 +83,7 @@ document.body.innerHTML = `
     </div>
     <div id="passive" style="height: 60px; background: #dfd; touch-action: pan-y pinch-zoom">passive control</div>
     <div id="card" style="height: 80px; background: #def">card (swipe up)</div>
+    <div id="publicPan" style="height: 80px; background: #fde">public pan (drag sideways)</div>
     <div style="height: 1600px">page</div>
   </div>`;
 
@@ -145,6 +147,20 @@ host.attach(element('sheetBody'), sheet);
 const card = new PanGestureRecognizer({name: 'card', direction: 'up'});
 record(card, () => ({x: card.translation().x, y: card.translation().y}));
 host.attach(element('card'), card);
+
+// The public pan (spec:AST-107 FR1): a drag reported as values, on its axis.
+createPanGesture(element('publicPan'), {
+  axis: 'x',
+  onPan: ({state, translation}) => {
+    window.__gestures.push({
+      name: 'publicPan',
+      state,
+      time: performance.now(),
+      x: translation.x,
+      y: translation.y,
+    });
+  },
+});
 
 // A control with no recognizer of its own (no blocking listener): only a
 // press consumer, under pan-y, as a passive switch is.

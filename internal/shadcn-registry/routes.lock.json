@@ -3920,6 +3920,11 @@
       "aliases": []
     },
     {
+      "name": "hook-use-pan-gesture",
+      "path": "hooks/use-pan-gesture",
+      "aliases": []
+    },
+    {
       "name": "hook-use-popover",
       "path": "hooks/use-popover",
       "aliases": []

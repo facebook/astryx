@@ -141,3 +141,11 @@ export type {
   ContainerRevealOptions,
   ContentRevealOptions,
 } from './useContainerReveal';
+
+export {usePanGesture} from './usePanGesture';
+export type {
+  PanGesture,
+  PanGestureEvent,
+  PanGestureOptions,
+  PanGestureState,
+} from '../gestures/createPanGesture';
