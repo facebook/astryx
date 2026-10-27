@@ -1342,6 +1342,56 @@ describe('swipeActions', () => {
       expect(onClick).not.toHaveBeenCalled();
     });
 
+    it('lands a trackpad’s release at once under Reduce Motion on a fine pointer: no fade, since no finger started it (design:reduced-motion DR3, spec:AST-094 FR43)', async () => {
+      reduceMotion();
+      const {row} = renderRow();
+      // Followed one for one while it moves: 90 px of scroll, 65 past the
+      // swipe's 25 px.
+      Array.from({length: 12}, () => scroll(row, -7.5));
+      expect(xOf(row)).toBe(65);
+      // The gesture ends 100 ms after its last wheel; its release lands at
+      // once, with no animated property.
+      await act(async () => {
+        vi.advanceTimersByTime(116);
+      });
+      expect(xOf(row)).toBe(72);
+      expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
+    });
+
+    it('lands a pen’s release at once under Reduce Motion on a fine pointer (design:reduced-motion DR3, spec:AST-094 FR43)', async () => {
+      reduceMotion();
+      const {row} = renderRow();
+      const pen = (type: string, x: number) => {
+        void act(() => vi.advanceTimersByTime(16));
+        act(() => {
+          row.dispatchEvent(
+            new PointerEvent(type, {
+              bubbles: true,
+              button: 0,
+              buttons: type === 'pointerup' ? 0 : 1,
+              clientX: x,
+              clientY: 10,
+              pointerId: 1,
+              pointerType: 'pen',
+            }),
+          );
+        });
+      };
+      pen('pointerdown', 10);
+      pen('pointermove', 20);
+      pen('pointermove', 35);
+      pen('pointermove', 80);
+      for (let i = 0; i < 20; i += 1) {
+        pen('pointermove', 80);
+      }
+      expect(xOf(row)).toBe(45);
+      pen('pointerup', 80);
+      await act(async () => {
+        vi.advanceTimersByTime(16);
+      });
+      expect(xOf(row)).toBe(72);
+    });
+
     it('leaves a vertical wheel to the page: the row stays shut', async () => {
       const {row} = renderRow();
       const events = Array.from({length: 6}, () => scroll(row, 0, 12));

@@ -1863,6 +1863,53 @@ test.describe('under a trackpad or a mouse wheel (a desktop context)', () => {
     expect(await page.evaluate(() => String(getSelection()))).toBe('');
   });
 
+  test('under Reduce Motion a trackpad’s release lands the row at once on a fine pointer, with no fade (design:reduced-motion DR3, spec:AST-094 FR43)', async ({
+    page,
+  }) => {
+    await page.emulateMedia({reducedMotion: 'reduce'});
+    await openStory(page, storybook(), 'core-item--swipe-actions');
+    const driver = await webInputDriver(page);
+    test.skip(!driver.wheels, WHEEL_SKIP);
+    const row = page.locator('.astryx-item').first();
+    const panel = row.locator('[data-swipe-panel="trailing"]');
+    await expect(panel).toBeAttached();
+    const openWidth = await openWidthOf(panel.locator(':scope > div').first());
+    const rest = await row.boundingBox();
+    if (rest == null) {
+      throw new Error('no row');
+    }
+    const at = {x: rest.x + rest.width / 2, y: rest.y + rest.height / 2};
+    // Every frame, count the row's own opacity dips, as rowDipsOf does: a
+    // cross-fade would play one on the root (its panels hold their own
+    // opacity at rest, so they are left out).
+    await row.evaluate(node => {
+      const counted = node as HTMLElement & {dips?: number};
+      counted.dips = 0;
+      const sample = () => {
+        const dips = node
+          .getAnimations()
+          .filter(animation =>
+            (animation.effect as KeyframeEffect)
+              .getKeyframes()
+              .some(
+                frame => frame.opacity != null && Number(frame.opacity) < 0.05,
+              ),
+          ).length;
+        counted.dips = Math.max(counted.dips ?? 0, dips);
+        requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    for (let i = 0; i < 12; i += 1) {
+      await driver.wheel({...at, dx: 8});
+    }
+    await expect.poll(async () => xOf(row)).toBeCloseTo(-openWidth, 0);
+    await page.waitForTimeout(400);
+    expect(
+      await row.evaluate(node => (node as HTMLElement & {dips?: number}).dips),
+    ).toBe(0);
+  });
+
   test('a mouse click on the content of a row a trackpad opened closes it and reaches nothing, as a finger’s tap does (spec:AST-057 DEC-7)', async ({
     page,
   }) => {

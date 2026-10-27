@@ -308,11 +308,22 @@ function timeToPass(
 }
 
 /**
- * What started a settle: a touch drag ending (its release, or the browser
- * taking the touch), or anything else (Escape, a pointer outside, a tapped
- * entry, a tap on the content, a scroll).
+ * What started a settle: a finger's drag ending (its release, or the browser
+ * taking the touch), which cross-fades under Reduce Motion whatever the
+ * primary pointer (design:reduced-motion DR2), or anything else: a pen's or a
+ * wheel's release, Escape, a pointer outside, a tapped entry, a tap on the
+ * content, a scroll. Those follow the primary pointer: a cross-fade where it
+ * is coarse, at once where it is fine (DR3, `spec:AST-094` FR43).
  */
 type SettleCause = 'release' | 'other';
+
+/** Whether a pan's contact is a finger's: not a pen's, and not a wheel's scroll. */
+function isFingerContact(pan: PanGestureRecognizer): boolean {
+  const touch = pan.trackedTouches[0];
+  return (
+    touch != null && touch.pointerType === 'touch' && touch.scrollType == null
+  );
+}
 
 // =============================================================================
 // The hook
@@ -434,6 +445,8 @@ interface Drag {
   canConfirm: boolean;
   /** The state the row had when the touch was claimed, for a swipe that never began. */
   previous: SwipeState;
+  /** A finger drives the swipe, not a pen or a wheel: its release cross-fades on every pointer. */
+  isFinger: boolean;
   /** Past UIKit's threshold: the row follows the finger. */
   started: boolean;
   /** Which way the finger crossed the threshold: +1 toward the side, -1 away. */
@@ -1087,6 +1100,7 @@ export function useSwipeAction({
       canConfirm: latestRef.current.canConfirm(side),
       confirmAt: confirmPoint(layout.openWidth, rowWidth),
       isArmed: false,
+      isFinger: isFingerContact(pan),
       layout,
       previous: stateRef.current,
       raw: 0,
@@ -1205,12 +1219,13 @@ export function useSwipeAction({
         track: {isConfirmed: drag.isArmed, wasConfirmed: drag.wasConfirmed},
       },
     ).outcome;
+    const cause: SettleCause = drag.isFinger ? 'release' : 'other';
     if (landing === 'perform') {
-      slideOutAndFire(layout, 'release');
+      slideOutAndFire(layout, cause);
     } else if (landing === 'open') {
-      settle(layout, layout.openWidth, 'resting', undefined, 'release');
+      settle(layout, layout.openWidth, 'resting', undefined, cause);
     } else {
-      settle(layout, 0, 'idle', undefined, 'release');
+      settle(layout, 0, 'idle', undefined, cause);
     }
   };
 
@@ -1224,7 +1239,13 @@ export function useSwipeAction({
       abandon(drag);
       return;
     }
-    settle(drag.layout, 0, 'idle', undefined, 'release');
+    settle(
+      drag.layout,
+      0,
+      'idle',
+      undefined,
+      drag.isFinger ? 'release' : 'other',
+    );
   };
 
   useGestureRecognizer(
