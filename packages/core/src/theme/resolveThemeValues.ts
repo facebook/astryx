@@ -31,7 +31,11 @@ import {
   generateTypeScaleComponents,
   type TypeScaleConfig,
 } from './expandTypeScale';
-import {expandThemeMotion, type ThemeMotionConfig} from './themeMotion';
+import {
+  expandThemeMotion,
+  preTempoName,
+  type ThemeMotionConfig,
+} from './themeMotion';
 import {expandRadiusScale, type RadiusScaleConfig} from './expandRadiusScale';
 import {expandColorScale, type ColorScaleConfig} from './expandColorScale';
 import {deepMergeComponents} from './mergeComponents';
@@ -317,6 +321,12 @@ export function resolveThemeValues(
     for (const [key, value] of Object.entries(input.tokens)) {
       if (value !== undefined) {
         tokens[key] = resolveTokenValue(value, {strict: strictTokens});
+        // An explicit duration beats tempo, so a busy loop reading the
+        // pre-tempo value reads it too (spec:AST-108 FR4).
+        const preTempo = preTempoName(key);
+        if (preTempo !== key && preTempo in tokens) {
+          tokens[preTempo] = tokens[key];
+        }
       }
     }
   }

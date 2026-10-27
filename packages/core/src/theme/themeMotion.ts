@@ -137,6 +137,16 @@ export function durationTokensAt(tempo: number): Record<string, string> {
 }
 
 /**
+ * The custom property holding a duration token's value before `tempo`
+ * scaled it (`--duration-slow` → `--pre-tempo-duration-slow`). Busy loops
+ * (Spinner, Skeleton) read it, falling back to the token, so their timing
+ * follows a duration scale or an explicit token but never `tempo` (FR4).
+ */
+export function preTempoName(token: string): string {
+  return token.replace(/^--duration-/, '--pre-tempo-duration-');
+}
+
+/**
  * The motion tokens `config` generates (FR2, FR5): `--duration-*` times
  * `tempo`, with a `MotionScaleConfig`'s own durations winning, and the
  * job-named `--ease-entrance` and `--ease-move` at the theme's character.
@@ -151,9 +161,20 @@ export function expandThemeMotion(
   const tokens: Record<string, string> = {};
   if (knobs.tempoIsSet) {
     Object.assign(tokens, durationTokensAt(knobs.tempo));
+    for (const [name, value] of Object.entries(durationDefaults)) {
+      tokens[preTempoName(name)] = value;
+    }
   }
   if (isScaleConfig(config)) {
-    Object.assign(tokens, expandMotionScale(config));
+    const scale = expandMotionScale(config);
+    Object.assign(tokens, scale);
+    if (knobs.tempoIsSet) {
+      for (const [name, value] of Object.entries(scale)) {
+        if (name.startsWith('--duration-')) {
+          tokens[preTempoName(name)] = value;
+        }
+      }
+    }
   }
   const scaleEasing =
     isScaleConfig(config) && config.easing != null ? config.easing : null;

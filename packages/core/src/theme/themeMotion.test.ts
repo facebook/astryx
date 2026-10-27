@@ -11,6 +11,8 @@
  * @position Testing; validates themeMotion.ts and its use in defineTheme
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
 import {describe, expect, it} from 'vitest';
 import {defineTheme} from './defineTheme';
 import {expandMotionScale} from './expandMotionScale';
@@ -237,5 +239,44 @@ describe('resolveThemeMotion (spec:AST-108 FR6)', () => {
     );
     expect(motion.easings['--ease-entrance']).toBe(CHARACTER_EASE.expressive);
     expect(motion.easings['--ease-standard']).toBe(STANDARD);
+  });
+});
+
+describe('busy loops read the duration before tempo (spec:AST-108 FR4)', () => {
+  it.each([0.75, 1.5])(
+    'at tempo %s the pre-tempo durations stay today\u2019s while the tokens scale',
+    tempo => {
+      const tokens = expandThemeMotion({tempo});
+      expect(tokens['--pre-tempo-duration-slow-min']).toBe('730ms');
+      expect(tokens['--pre-tempo-duration-medium-max']).toBe('550ms');
+      expect(tokens['--duration-slow-min']).toBe(
+        `${Math.round(730 * tempo)}ms`,
+      );
+    },
+  );
+
+  it('a duration scale still times the loops, and an explicit token too', () => {
+    const scale = {fast: 100, medium: 250, ratio: 0.75};
+    const tokens = expandThemeMotion({...scale, tempo: 1.5});
+    expect(tokens['--pre-tempo-duration-medium-max']).toBe(
+      expandMotionScale(scale)['--duration-medium-max'],
+    );
+    const theme = defineTheme({
+      name: 'LoopTimed',
+      motion: {tempo: 1.5},
+      tokens: {'--duration-medium-max': '600ms'},
+    });
+    expect(theme.tokens['--pre-tempo-duration-medium-max']).toBe('600ms');
+  });
+
+  it('Spinner and Skeleton read the pre-tempo duration first', () => {
+    const read = (file: string) =>
+      fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+    expect(read('Spinner/Spinner.tsx')).toContain(
+      "`var(--pre-tempo-duration-slow-min, ${durationVars['--duration-slow-min']})`",
+    );
+    expect(read('Skeleton/Skeleton.tsx')).toContain(
+      "`var(--pre-tempo-duration-medium-max, ${durationVars['--duration-medium-max']})`",
+    );
   });
 });
