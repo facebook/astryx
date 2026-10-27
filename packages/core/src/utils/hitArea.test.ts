@@ -56,6 +56,13 @@ describe('clampedHitInsets', () => {
     ).toEqual({top: 10, right: 4, bottom: 10, left: 10});
   });
 
+  it('stops at half the gap to a neighbour that does not grow itself (a long link)', () => {
+    // A 32 × 20 switch 8 px from a link wider and taller than 44 px.
+    expect(
+      clampedHitInsets(rect(100, 100, 32, 20), [rect(140, 88, 120, 44)]).right,
+    ).toBe(4);
+  });
+
   it('does not grow toward a neighbour it touches', () => {
     expect(
       clampedHitInsets(rect(100, 100, 24, 24), [rect(124, 100, 24, 24)]).right,
@@ -86,6 +93,17 @@ describe('clampedHitInsets', () => {
     expect(a.bottom + insetsA.bottom).toBeLessThanOrEqual(b.top - insetsB.top);
   });
 
+  it('cuts the same side as a diagonal neighbour of another size, so the two areas never overlap', () => {
+    const small = rect(100, 100, 16, 16);
+    // 12 px across and 14 px down.
+    const wide = rect(128, 130, 32, 20);
+    const a = clampedHitInsets(small, [wide]);
+    const b = clampedHitInsets(wide, [small]);
+    expect(small.bottom + a.bottom).toBeLessThanOrEqual(wide.top - b.top);
+    expect(a.bottom).toBe(7);
+    expect(b.top).toBe(7);
+  });
+
   it('ignores a neighbour that overlaps the target (an ancestor or an overlay)', () => {
     expect(
       clampedHitInsets(rect(100, 100, 24, 24), [rect(90, 90, 200, 60)]),
@@ -105,6 +123,12 @@ describe('resolveHitTarget', () => {
   it('extends each button toward 44 px where nothing is near', () => {
     expect(resolveHitTarget(-7, 14, toolbar)).toBe(0);
     expect(resolveHitTarget(14, 35, toolbar)).toBe(0);
+  });
+
+  it('gives a corner touch to the nearer of two diagonal targets', () => {
+    const pair: HitRect[] = [rect(100, 100, 24, 24), rect(128, 130, 24, 24)];
+    // 9.2 px from the first, 4 px from the second.
+    expect(resolveHitTarget(133, 126, pair)).toBe(1);
   });
 
   it('answers -1 beyond every hit area', () => {
@@ -304,6 +328,28 @@ describe('watchHitArea', () => {
     pointerListeners.forEach(listener => listener());
     expect(heard.at(-1)).toEqual(NO_HIT_INSETS);
     stop();
+  });
+
+  it('re-measures once the page settles after a change that moves a neighbour without resizing the control', async () => {
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+    const control = byId('switch');
+    const link = byId('link');
+    place(control, rect(100, 100, 24, 24));
+    place(link, rect(400, 100, 60, 24));
+    const heard: HitInsets[] = [];
+    const stop = watchHitArea(control, insets => heard.push(insets));
+    show(control);
+    flush();
+    expect(heard.at(-1)?.right).toBe(10);
+    // The link moves to 8 px away as text before it changes.
+    place(link, rect(132, 100, 60, 24));
+    link.textContent = 'More details';
+    await Promise.resolve();
+    vi.advanceTimersByTime(100);
+    flush();
+    expect(heard.at(-1)?.right).toBe(4);
+    stop();
+    vi.useRealTimers();
   });
 
   it('stops hearing a control after its function runs', () => {
