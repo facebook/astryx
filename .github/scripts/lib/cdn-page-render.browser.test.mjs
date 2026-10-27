@@ -14,7 +14,7 @@
 import http from 'node:http';
 import {chromium} from 'playwright';
 import {afterAll, beforeAll, describe, expect, it} from 'vitest';
-import {renderPage} from './cdn-page-render.mjs';
+import {renderPage, renderUntilClean} from './cdn-page-render.mjs';
 
 const PAGE =
   '<!doctype html><button>Start</button>' +
@@ -61,5 +61,21 @@ describe.runIf(process.env.ASTRYX_CDN_SMOKE_BROWSER === '1')(
       expect(result.timedOut).toBe(true);
       expect(result.pendingRequests).toEqual([`${url}stall.js`]);
     });
+
+    it('fits both attempts at a page that never goes idle inside one deadline', async () => {
+      const started = Date.now();
+      const result = await renderUntilClean(
+        (attempt = {}) =>
+          renderPage(url, {
+            launch: async () => chromium.launch(),
+            budgetMs: attempt.budgetMs,
+          }),
+        {attempts: 2, deadline: Date.now() + 4_000},
+      );
+      // Two browser launches beside the 4 s the attempts share.
+      expect(Date.now() - started).toBeLessThan(8_000);
+      expect(result.timedOut).toBe(true);
+      expect(result.pendingRequests).toEqual([`${url}stall.js`]);
+    }, 20_000);
   },
 );

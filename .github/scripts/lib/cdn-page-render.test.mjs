@@ -29,26 +29,37 @@ function navigationTimeout() {
 }
 
 /**
- * A browser `launch` whose pages run `onGoto(page, launchIndex)` while
- * navigating, then settle the navigation with `gotoErrors[launchIndex]` (none
- * resolves it) and answer the button query with `button`.
+ * A browser `launch` whose pages run `onGoto(page, launchIndex, options)`
+ * while navigating, then settle the navigation with `gotoErrors[launchIndex]`
+ * (none resolves it), and answer the button query with `button` after running
+ * `onButton(options)`.
  */
-function fakeLaunch({onGoto = () => {}, gotoErrors = [], button = 'Start'}) {
+function fakeLaunch({
+  onGoto = () => {},
+  onButton = () => {},
+  gotoErrors = [],
+  button = 'Start',
+}) {
   let launches = 0;
   let closed = 0;
   const launch = async () => {
     const index = launches;
     launches += 1;
     const page = new EventEmitter();
-    page.goto = async () => {
-      onGoto(page, index);
+    page.goto = async (_url, options) => {
+      onGoto(page, index, options);
       const error = gotoErrors[index];
       if (error != null) {
         throw error;
       }
     };
     page.getByRole = () => ({
-      first: () => ({textContent: async () => button}),
+      first: () => ({
+        textContent: async options => {
+          onButton(options);
+          return button;
+        },
+      }),
     });
     return {
       newPage: async () => page,
@@ -59,6 +70,16 @@ function fakeLaunch({onGoto = () => {}, gotoErrors = [], button = 'Start'}) {
   };
   return {launch, launches: () => launches, closed: () => closed};
 }
+
+/** A render whose navigation timed out with the core module still in flight. */
+const TIMED_OUT = {
+  consoleErrors: [],
+  pageErrors: [],
+  failedRequests: [],
+  timedOut: true,
+  pendingRequests: [CORE],
+  button: null,
+};
 
 describe('renderPage', () => {
   it('reports a page that goes idle and renders a button as clean', async () => {
@@ -117,6 +138,41 @@ describe('renderPage', () => {
   });
 });
 
+describe('renderPage within a budget', () => {
+  it('waits for the navigation no longer than its budget, and for the button no longer than what is left of it', async () => {
+    let clock = 0;
+    const timeouts = {};
+    const {launch} = fakeLaunch({
+      onGoto: (_page, _index, options) => {
+        timeouts.navigation = options.timeout;
+        clock += 30_000;
+      },
+      onButton: options => {
+        timeouts.button = options.timeout;
+      },
+    });
+    await renderPage(URL, {launch, budgetMs: 40_000, now: () => clock});
+    expect(timeouts).toEqual({navigation: 40_000, button: 10_000});
+  });
+
+  it('never asks for a timeout of 0, which Playwright reads as no timeout at all', async () => {
+    let clock = 0;
+    const timeouts = {};
+    const {launch} = fakeLaunch({
+      onGoto: (_page, _index, options) => {
+        timeouts.navigation = options.timeout;
+        clock += 5_000;
+      },
+      onButton: options => {
+        timeouts.button = options.timeout;
+      },
+    });
+    await renderPage(URL, {launch, budgetMs: 5_000, now: () => clock});
+    expect(timeouts.navigation).toBe(5_000);
+    expect(timeouts.button).toBeGreaterThan(0);
+  });
+});
+
 describe('renderUntilClean', () => {
   it('retries a navigation timeout once, then reports the requests still in flight', async () => {
     const {launch, launches} = fakeLaunch({
@@ -132,6 +188,56 @@ describe('renderUntilClean', () => {
     expect(retries).toEqual([1]);
     expect(result.timedOut).toBe(true);
     expect(result.pendingRequests).toEqual([CORE]);
+  });
+
+  it('gives each attempt an equal share of the time left before the deadline', async () => {
+    let clock = 0;
+    const budgets = [];
+    await renderUntilClean(
+      async ({budgetMs}) => {
+        budgets.push(budgetMs);
+        clock += budgetMs;
+        return TIMED_OUT;
+      },
+      {attempts: 2, deadline: 90_000, now: () => clock},
+    );
+    expect(budgets).toEqual([45_000, 45_000]);
+  });
+
+  it('gives the retry what the first attempt left unused', async () => {
+    let clock = 0;
+    const budgets = [];
+    await renderUntilClean(
+      async ({budgetMs}) => {
+        budgets.push(budgetMs);
+        clock += 10_000;
+        return {...TIMED_OUT, timedOut: false, failedRequests: [CORE]};
+      },
+      {attempts: 2, deadline: 90_000, now: () => clock},
+    );
+    expect(budgets).toEqual([45_000, 80_000]);
+  });
+
+  it('does not retry once the deadline has passed, and reports the attempt it has', async () => {
+    let clock = 0;
+    let calls = 0;
+    const retries = [];
+    const result = await renderUntilClean(
+      async () => {
+        calls += 1;
+        clock += 95_000;
+        return TIMED_OUT;
+      },
+      {
+        attempts: 2,
+        deadline: 90_000,
+        now: () => clock,
+        onRetry: attempt => retries.push(attempt),
+      },
+    );
+    expect(calls).toBe(1);
+    expect(retries).toEqual([]);
+    expect(result).toBe(TIMED_OUT);
   });
 
   it('stops at the first clean render after a timeout', async () => {
