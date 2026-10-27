@@ -2,7 +2,7 @@
 
 import {render} from '@testing-library/react';
 import {useRef} from 'react';
-import {afterEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {GestureHost} from '../gestures/GestureHost';
 import {
   holdInput,
@@ -235,6 +235,16 @@ describe("holdInput decides by each event's pointer (spec:AST-094 FR35)", () => 
     }
   });
 
+  beforeEach(() => {
+    // Each case starts with a finger as the page's latest pointer.
+    document.body.dispatchEvent(
+      new PointerEvent('pointerdown', {...INIT, pointerType: 'touch'}),
+    );
+    document.body.dispatchEvent(
+      new PointerEvent('pointerup', {...INIT, pointerType: 'touch'}),
+    );
+  });
+
   /** A button that records every event that reaches it. */
   function recorder(parent: Element = document.body) {
     const button = document.createElement('button');
@@ -367,6 +377,44 @@ describe("holdInput decides by each event's pointer (spec:AST-094 FR35)", () => 
     hold(layer, 'layer');
     pointer(document.body, 'pointermove', 'mouse');
     expect(shield.style.pointerEvents).toBe('auto');
+  });
+
+  it("starts a presentation's shield letting a mouse through when a mouse is the page's latest pointer, so its press before any movement passes", () => {
+    const {layer, child} = mountLayer();
+    const {button, reached} = recorder(layer);
+    // The mouse moved last, before the layer opened.
+    pointer(document.body, 'pointermove', 'mouse');
+    hold(layer);
+    const shield = layer.lastElementChild as HTMLElement;
+    expect(shield.style.pointerEvents).toBe('none');
+    const isGated = (target: Node) => touchGates.some(gate => gate(target));
+    expect(isGated(child)).toBe(false);
+    pointer(button, 'pointerdown', 'mouse');
+    mouse(button, 'mousedown');
+    pointer(button, 'pointerup', 'mouse');
+    mouse(button, 'mouseup');
+    click(button, 'mouse');
+    expect(reached).toEqual([
+      'pointerdown',
+      'mousedown',
+      'pointerup',
+      'mouseup',
+      'click',
+    ]);
+  });
+
+  it("starts a presentation's shield taking hits when a finger is the page's latest pointer, and a dismissal's whatever the pointer", () => {
+    const {layer} = mountLayer();
+    hold(layer);
+    expect((layer.lastElementChild as HTMLElement).style.pointerEvents).toBe(
+      'auto',
+    );
+    const other = mountLayer().layer;
+    pointer(document.body, 'pointermove', 'mouse');
+    hold(other, 'layer');
+    expect((other.lastElementChild as HTMLElement).style.pointerEvents).toBe(
+      'auto',
+    );
   });
 
   it("lets the gesture host's gate pass a mouse during a presentation and hold it during a dismissal", () => {

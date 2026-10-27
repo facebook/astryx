@@ -49,14 +49,17 @@
  * gesture host hears it; a touch's start is never canceled (that would cancel
  * a pinch too), and a move is canceled, so that it pans nothing, only while
  * one finger is down. A click a key or assistive technology sends (`detail`
- * 0) passes. During a presentation a mouse passes too: once it moves, the
- * shield stops taking hits and the gesture host's gate lets it through, and a
- * finger's press makes the shield take them again (a finger that lands while
- * it does not is captured to it, so its release stays the hold's and a
- * light-dismissing layer stays open). A press that lands before the mouse
- * has moved still meets the shield. A dismissal's shield takes every hit,
- * a mouse's included: its content is inert, and a click would fall through
- * it to the page.
+ * 0) passes. During a presentation a mouse passes too: the shield takes no
+ * hits from the start when a mouse is the page's latest pointer (from a
+ * document's first hold on, its pointers are watched, between holds too),
+ * and stops taking them once a mouse moves, and the gesture host's gate lets
+ * a mouse through; a finger's press makes the shield take hits again (a
+ * finger that lands while it does not is captured to it, so its release
+ * stays the hold's and a light-dismissing layer stays open). Nothing watches
+ * a document's pointers before its first hold, so in the first layer a page
+ * holds, a mouse press made before any movement still meets the shield. A
+ * dismissal's shield takes every hit, a mouse's included: its content is
+ * inert, and a click would fall through it to the page.
  *
  * The shield sets its own `pointer-events` and `visibility`, so a layer root
  * that takes no hits itself (its content or a backdrop child opts back in)
@@ -166,13 +169,33 @@ function holdsTarget(target: Node): boolean {
   return isHeld && (doc == null || latestPointer.get(doc) !== 'mouse');
 }
 
-/** One gate per document: the host holds a held layer's touches away. */
+/**
+ * One gate per document: the host holds a held layer's touches away. With it,
+ * from the document's first hold on, a passive watch of its pointers keeps
+ * the latest one, between holds too, so a layer a mouse opens knows it.
+ */
 function gate(doc: Document): void {
   if (gatedDocuments.has(doc)) {
     return;
   }
   gatedDocuments.add(doc);
   getGestureHost(doc).addTouchGate(holdsTarget);
+  const watchPointer = (event: Event) => {
+    const {pointerType} = event as PointerEvent;
+    if (
+      pointerType === 'mouse' ||
+      pointerType === 'touch' ||
+      pointerType === 'pen'
+    ) {
+      latestPointer.set(doc, pointerType);
+    }
+  };
+  for (const type of ['pointerdown', 'pointermove'] as const) {
+    doc.defaultView?.addEventListener(type, watchPointer, {
+      capture: true,
+      passive: true,
+    });
+  }
 }
 
 const SWALLOWED = [
@@ -260,6 +283,14 @@ export function holdInput(
   }
   if (state.shield == null) {
     state.shield = addShield(layer);
+    // A presentation a mouse opened lets it through from the start, its
+    // press before any movement included.
+    if (
+      scope === 'viewport' &&
+      latestPointer.get(layer.ownerDocument) === 'mouse'
+    ) {
+      state.shield.style.pointerEvents = 'none';
+    }
   }
   state.releasePresses ??= holdPresses(layer);
   if (scope === 'viewport') {
@@ -353,7 +384,6 @@ function holdPresses(layer: Element): (() => void) | null {
   if (view == null) {
     return null;
   }
-  latestPointer.delete(doc);
   /** Whether a new press is held: until the release. */
   let isHolding = true;
   let isListening = true;
@@ -442,11 +472,12 @@ function holdPresses(layer: Element): (() => void) | null {
 
   const onPointer = (event: Event) => {
     const {pointerId, pointerType, type} = event as PointerEvent;
-    if (pointerType === 'mouse' || HELD_POINTERS.has(pointerType)) {
-      latestPointer.set(doc, pointerType);
-      if (isHolding && (type === 'pointermove' || type === 'pointerdown')) {
-        followPointer(pointerType);
-      }
+    if (
+      isHolding &&
+      (type === 'pointermove' || type === 'pointerdown') &&
+      (pointerType === 'mouse' || HELD_POINTERS.has(pointerType))
+    ) {
+      followPointer(pointerType);
     }
     if (type === 'pointerdown') {
       if (!holdsNewPress() || !HELD_POINTERS.has(pointerType)) {
