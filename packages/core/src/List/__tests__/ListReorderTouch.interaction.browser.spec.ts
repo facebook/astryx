@@ -26,15 +26,23 @@ import {
   touchDriver,
   withStorybook,
 } from '@astryxdesign/interaction-harness';
+import {solveSpring, toSpring} from '../../motion/spring';
 import {reorder} from '../../motion/uikit/reorder';
+import {springs} from '../../motion/uikit/springs';
 import {openStory} from './touchStory';
 
 const storybook = withStorybook(test);
 
 /** Past the claim delay: the hold claims the drag. */
 const HOLD_MS = reorder.claim.delayMs + 150;
-/** Long enough for any drop's spring to settle. */
-const SETTLE_MS = reorder.settle.maxDuration * 1000 + 300;
+/**
+ * Long enough for a drop's glide to settle: it plays the shared settle role,
+ * springs.settle (spec:AST-105 FR4).
+ */
+const SETTLE_MS =
+  solveSpring(toSpring(springs.settle), {from: 0, to: 1}).settleTime(0.001) *
+    1000 +
+  300;
 
 const isTouch = async (page: Page) =>
   page.evaluate(() => matchMedia('(pointer: coarse)').matches);
