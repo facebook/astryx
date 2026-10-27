@@ -400,28 +400,39 @@ function ExpansionPanelCell({
   useLayoutEffect(() => {
     const cell = cellRef.current;
     const row = cell?.parentElement?.previousElementSibling;
-    // A row a glide is moving has transparent cells until it ends: the
-    // panel keeps what it carries.
-    if (
-      cell == null ||
-      row == null ||
-      !hasRowDividers ||
-      row.hasAttribute(GLIDING_ATTRIBUTE)
-    ) {
+    if (cell == null || row == null || !hasRowDividers) {
       return;
     }
-    const edge = panelDividerFor(row);
-    if (edge == null) {
-      return;
-    }
-    const set = (name: string, value: string) => {
-      if (cell.style.getPropertyValue(name) !== value) {
-        cell.style.setProperty(name, value);
+    const carry = () => {
+      const edge = panelDividerFor(row);
+      if (edge == null) {
+        return;
       }
+      const set = (name: string, value: string) => {
+        if (cell.style.getPropertyValue(name) !== value) {
+          cell.style.setProperty(name, value);
+        }
+      };
+      set('--_table-panel-divider-width', edge.width);
+      set('--_table-panel-divider-style', edge.style);
+      set('--_table-panel-divider-color', edge.color);
     };
-    set('--_table-panel-divider-width', edge.width);
-    set('--_table-panel-divider-style', edge.style);
-    set('--_table-panel-divider-color', edge.color);
+    if (!row.hasAttribute(GLIDING_ATTRIBUTE)) {
+      carry();
+      return;
+    }
+    // A row a glide is moving has transparent cells until it ends: the
+    // panel reads its row once the glide has let it go.
+    let frame = 0;
+    const carryWhenStill = () => {
+      if (row.hasAttribute(GLIDING_ATTRIBUTE)) {
+        frame = requestAnimationFrame(carryWhenStill);
+        return;
+      }
+      carry();
+    };
+    frame = requestAnimationFrame(carryWhenStill);
+    return () => cancelAnimationFrame(frame);
   });
   return (
     <td
@@ -529,6 +540,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
   // layout effect).
   const closedHeightRef = useRef(0);
   const heldHeightRef = useRef(0);
+  const holdBaseRef = useRef<{padding: number; margin: number} | null>(null);
   const rowFor = useCallback(
     (key: string) =>
       scrollWrapperRef.current?.querySelector<HTMLElement>(
@@ -560,8 +572,18 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
           panel?.hasAttribute('data-expansion-panel') === true
         ) {
           closedHeightRef.current += panel.getBoundingClientRect().height;
+          // The wrapper's own bottom padding and margin (a container's
+          // bleed), which the hold adds to rather than replaces.
+          const wrapper = scrollWrapperRef.current;
+          if (wrapper != null && holdBaseRef.current == null) {
+            const style = getComputedStyle(wrapper);
+            holdBaseRef.current = {
+              padding: parseFloat(style.paddingBlockEnd) || 0,
+              margin: parseFloat(style.marginBlockEnd) || 0,
+            };
+          }
         }
-        // The chevron turns on the glide's motion (`spec:AST-108` FR4a);
+        // The chevron turns on the glide's motion (component:Table FR15);
         // written after the measurement so the read finds the layout clean.
         applyLayoutChangeTransition(
           animatedLayout,
@@ -654,6 +676,9 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
     const wrapper = scrollWrapperRef.current;
     const held = moved.length > 0 ? closedHeightRef.current : 0;
     closedHeightRef.current = 0;
+    if (heldHeightRef.current === 0 && held <= 0.5) {
+      holdBaseRef.current = null;
+    }
     if (moved.length === 0) {
       return;
     }
@@ -676,8 +701,14 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
         return;
       }
       const hold = (height: number) => {
-        wrapper.style.paddingBlockEnd = height > 0 ? `${height}px` : '';
-        wrapper.style.marginBlockEnd = height > 0 ? `${-height}px` : '';
+        const base = holdBaseRef.current ?? {padding: 0, margin: 0};
+        wrapper.style.paddingBlockEnd =
+          height > 0 ? `${base.padding + height}px` : '';
+        wrapper.style.marginBlockEnd =
+          height > 0 ? `${base.margin - height}px` : '';
+        if (height <= 0) {
+          holdBaseRef.current = null;
+        }
       };
       heldHeightRef.current += held;
       hold(heldHeightRef.current);
