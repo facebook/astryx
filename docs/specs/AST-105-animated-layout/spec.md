@@ -66,7 +66,9 @@ const animatedLayout = useAnimatedLayout({containerRef: scrollRef});
 - **FR2 — Without a handle, nothing changes.** A component without a handle
   keeps its behavior: the changed element shows its change as its own record
   says, and content after it takes its place at once. AppShell's content area
-  holds its own handle for a side nav collapse (`component:AppShell` FR17).
+  holds its own handle for a side nav collapse or expand (`component:AppShell`
+  FR17), and the SideNav rail holds its own for a collapse
+  (`component:SideNav` FR6).
 - **FR3 — The content after a change glides within the area.** For any change
   a component holding the handle reports, such as a disclosure opening,
   content loading in, a message appearing, or an item inserted or removed,
@@ -111,8 +113,8 @@ const animatedLayout = useAnimatedLayout({containerRef: scrollRef});
   also hold the area's old content as one transient copy, inert and hidden from
   assistive technology, while the new content enters, and removes it when the
   swap ends (`architecture:component-style-authoring` INV7); AppShell's
-  content area does this during a side nav collapse (`component:AppShell`
-  FR17), and the SideNav rail holds its old expanded state while a collapse's
+  content area does this during a side nav collapse or expand
+  (`component:AppShell` FR17), and the SideNav rail holds its old expanded state while a collapse's
   clip closes (`component:SideNav` FR6). The swap is internal; the hook's public contract is unchanged.
 
 ## Coverage
