@@ -25,7 +25,7 @@ verified_by:
     packages/core/src/theme/themeRegistry.test.ts,
     packages/core/src/AppShell/AppShell.test.tsx,
   ]
-deciding_specs: [spec:AST-012/DEC-1, spec:AST-087/DEC-2]
+deciding_specs: [spec:AST-012/DEC-1, spec:AST-087/DEC-2, spec:AST-108/DEC-1]
 ---
 
 # Theme application
@@ -95,7 +95,8 @@ standard width map.
 ## Boundaries and invariants
 
 - **INV1 — The nearest provider wins.** Children read the closest Theme context
-  and CSS scope.
+  and CSS scope. One exception: a theme's `reducedMotion: 'always'` also reaches
+  every nested provider (`spec:AST-108` FR6).
 - **INV2 — Only the root provider changes `<html>`.** Nested providers stay local
   and cannot change browser chrome or portal-wide theme identity.
 - **INV3 — Detached consumers share one root-theme store.** A separate React
