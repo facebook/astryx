@@ -8,7 +8,7 @@ export const docs = {
   displayName: 'Dropdown Menu Submenu',
   isHiddenFromOverview: true,
   description:
-    'A single menu row that reveals a nested flyout of its own items. The row adopts DropdownMenuItem semantics (label / icon / description / isDisabled); its children become the flyout content. Opens inline-end with viewport auto-flip; Right/Enter/Space opens and focuses the first item, Left/Escape closes and returns focus to the trigger (Right/Left swap in RTL). On a phone (a coarse pointer, decided when the menu opened) the row drills in instead: its rows replace the menu\'s rows in the same box, led by a header that shows the row\'s label with its chevron turned down and is named by that label and then "Back to <parent>", and the header, Escape or ArrowLeft return to the row; a drill-in under a mouse (`presentation="drill-in"`) replaces the rows as before, led by a "Back to <parent>" row. As on iOS, the menu\'s box grows to the sub-menu from the edge it is anchored by while the parent stays behind as a slightly smaller card, and going back reverses it. Host attributes and DOM event handlers (aria-*, data-*, id) reach the trigger row, the element carrying role="menuitem" and aria-haspopup="menu"; a caller\'s handlers run after the row\'s own, except for the keys that open the flyout (the open arrow, Enter, Space) and a click on a disabled row. For data-driven menus, give a menu item a nested `items` array instead of using this component directly.',
+    'A single menu row that reveals a nested flyout of its own items. The row adopts DropdownMenuItem semantics (label / icon / description / isDisabled); its children become the flyout content. Opens inline-end with viewport auto-flip; Right/Enter/Space opens and focuses the first item, Left/Escape closes and returns focus to the trigger (Right/Left swap in RTL). On a phone (a coarse pointer, decided when the menu opened) the row opens its sub-menu in place instead: its rows open as a card in the same box, over the menu\'s rows, led by a header that shows the row\'s label with its chevron turned down and is named by that label and then "Back to <parent>", and the header, Escape or ArrowLeft return to the row; a sub-menu with its own header or footer replaces the menu\'s rows, led by a "Back to <parent>" row; a drill-in under a mouse (`presentation="drill-in"`) replaces the rows as before, led by a "Back to <parent>" row. As on iOS, the menu\'s box grows to the sub-menu from the edge it is anchored by while the parent stays behind as a slightly smaller card, and going back reverses it. Host attributes and DOM event handlers (aria-*, data-*, id) reach the trigger row, the element carrying role="menuitem" and aria-haspopup="menu"; a caller\'s handlers run after the row\'s own, except for the keys that open the flyout (the open arrow, Enter, Space) and a click on a disabled row. For data-driven menus, give a menu item a nested `items` array instead of using this component directly.',
   playground: {
     defaults: {label: 'Move to'},
   },
@@ -66,7 +66,7 @@ export const docs = {
       name: 'presentation',
       type: "'flyout' | 'drill-in' | 'adaptive'",
       description:
-        "How the sub-menu shows its rows. 'flyout' opens them beside the row; 'drill-in' replaces the menu's rows with them and a Back row, in the same box; 'adaptive' drills in when a finger opened the menu (a coarse pointer, decided when the menu opened) and flies out otherwise.",
+        "How the sub-menu shows its rows. 'flyout' opens them beside the row; 'drill-in' shows them in the same box: on a phone as a card over the menu's rows, under a header named by the row's label and then \"Back to <parent>\", and otherwise (a mouse, or a sub-menu with its own header or footer) in place of the menu's rows, under a \"Back to <parent>\" row; 'adaptive' drills in when a finger opened the menu (a coarse pointer, decided when the menu opened) and flies out otherwise.",
       default: "'adaptive'",
     },
     {
@@ -119,7 +119,7 @@ export const docsDense = {
       'minimum flyout width, capped to the viewport (default: content, min 160px)',
     onOpenChange: 'called when flyout opens/closes',
     presentation:
-      "'flyout' beside the row | 'drill-in' replaces the rows + Back row | 'adaptive' (default) drills in on a coarse pointer",
+      "'flyout' beside the row | 'drill-in' same box (a card over the rows on a phone; rows replaced + Back row otherwise) | 'adaptive' (default) drills in on a coarse pointer",
     header:
       'content above the rows, outside the menu; surface becomes a modal dialog named by the row (Tab wraps, Escape returns to the row)',
     footer: 'content below the rows, outside the menu; same rules as header',

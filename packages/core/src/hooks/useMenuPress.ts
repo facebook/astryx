@@ -72,7 +72,7 @@ import {
   type MenuPressPointerType,
 } from './menuPressGesture';
 import {useMenuTriggerPress, type MenuTriggerContext} from './menuTriggerPress';
-import type {UseLongPressHandlers} from './useLongPress';
+import type {LongPressDetectorHandlers} from './useLongPress';
 import {edgeAutoscroll} from '../utils/edgeAutoscroll';
 import {focusForLastInput} from '../utils/focusReturn';
 import {useInteractionModalityTracking} from '../utils/interactionModality';
@@ -415,7 +415,7 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
   // handle is held in a ref because the pointer handlers below are stable
   // callbacks and the hook is created further down, once `fireLongPress`
   // exists.
-  const longPressApiRef = useRef<UseLongPressHandlers | null>(null);
+  const longPressApiRef = useRef<LongPressDetectorHandlers | null>(null);
   // Which detector the live press uses: inside a scrolling region or not.
   const holdKindRef = useRef<'plain' | 'scroller'>('plain');
   const touchMovePreventerRef = useRef<(() => void) | null>(null);
@@ -839,8 +839,8 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
   const attachRef = useRef(attach);
   attachRef.current = attach;
   const holdDetectorsRef = useRef<{
-    plain: UseLongPressHandlers;
-    scroller: UseLongPressHandlers;
+    plain: LongPressDetectorHandlers;
+    scroller: LongPressDetectorHandlers;
   } | null>(null);
   const [triggerContext] = useState<MenuTriggerContext>(() => ({
     optionsRef,
@@ -855,7 +855,7 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
           ? detectors.scroller
           : detectors.plain;
     },
-    startHold: (kind, at) => {
+    startHold: (kind, at, tolerance) => {
       holdKindRef.current = kind;
       const detectors = holdDetectorsRef.current;
       if (detectors == null) {
@@ -863,7 +863,7 @@ function useMenuPressModel(options: DropdownMenuPressOptions): {
       }
       const hold = kind === 'scroller' ? detectors.scroller : detectors.plain;
       longPressApiRef.current = hold;
-      hold.start(at);
+      hold.start(at, tolerance);
     },
     setLastPointerEvent: event => {
       lastPointerEventRef.current = event;
