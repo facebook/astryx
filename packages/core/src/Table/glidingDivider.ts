@@ -125,60 +125,54 @@ export function collapsedBottom(cell: Element): BottomEdge {
     : own;
 }
 
-function endWhenStill(row: HTMLElement): void {
-  const running = row.getAnimations();
-  if (running.length === 0) {
-    row.removeAttribute(GLIDING_ATTRIBUTE);
-    row.style.removeProperty(APP_DIVIDER_WIDTH);
-    row.style.removeProperty(APP_DIVIDER_STYLE);
-    row.style.removeProperty(APP_DIVIDER_COLOR);
-    return;
-  }
-  // A new glide may replace this one (cancelling it): look again then.
-  void Promise.all(
-    running.map(async animation => {
-      await animation.finished.catch(() => undefined);
-    }),
-  ).then(() => endWhenStill(row));
-}
+/** The batch that marked a row last: only that batch unmarks it. */
+const markedBy = new WeakMap<Element, symbol>();
 
-/** Whether a glide (or an entrance) is moving the row now. */
-function isMoving(row: Element): row is HTMLElement {
-  return (
-    row instanceof HTMLTableRowElement &&
-    typeof row.getAnimations === 'function' &&
-    row.getAnimations().length > 0
-  );
+/**
+ * A row's own bottom border, for its stand-in while it moves; null for a row
+ * already carrying one. Read where the glide reads the layout (`animate`'s
+ * `beforeMove`), before anything starts moving.
+ */
+export function rowEdge(row: Element): BottomEdge | null {
+  if (row.hasAttribute(GLIDING_ATTRIBUTE) || row.lastElementChild == null) {
+    return null;
+  }
+  return collapsedBottom(row.lastElementChild);
 }
 
 /**
- * Marks the rows a glide is moving around `changed`, so their cells draw a
- * divider that moves with them, and unmarks each when its motion ends. A
+ * Marks the rows a glide is moving around `changed`, and `entering` (a row
+ * playing its entrance, with that entrance), so their cells draw a divider
+ * that moves with them; unmarks them in one batch when that motion ends. A
  * glide moves a contiguous run of rows next to the change and stops near the
- * visible part, so this walks out from the changed row each way and stops
- * once rows are still: it never visits the rest of a long table. The row's
- * own bottom border (an app's or a theme's, past the tokens) is read here,
- * before its cells' borders go transparent, and carried onto the stand-in.
- *
- * Every read comes before any write: a write between two reads would make
- * the browser restyle the whole table again for the next one. Resolves when
- * the rows it found have stopped.
+ * visible part, so this walks out from the changed row each way and stops at
+ * still rows: it never visits the rest of a long table. It asks the motion
+ * module which rows glide and takes the borders read before the glide
+ * started (`edges`), so it reads nothing from the layout: it only writes.
+ * Resolves when the motion has ended.
  */
-export async function markGlidingRows(changed: HTMLElement): Promise<void> {
-  const moving: HTMLElement[] = [];
-  if (isMoving(changed)) {
-    moving.push(changed);
+export async function markGlidingRows(
+  changed: HTMLElement,
+  edges: ReadonlyMap<Element, BottomEdge>,
+  entering: {row: HTMLElement; animation: Animation} | null,
+  glideOf: (element: Element) => Animation | null,
+): Promise<void> {
+  const rows = new Map<HTMLElement, Animation | null>();
+  const glide = glideOf(changed);
+  if (glide != null) {
+    rows.set(changed, glide);
   }
   for (const step of [
     'nextElementSibling',
     'previousElementSibling',
   ] as const) {
     let row = changed[step];
-    // The changed row's own panel may be still: look one row past it.
+    // The changed row's own panel enters rather than glides: look past it.
     let stillInARow = 0;
-    while (row != null && stillInARow < 2) {
-      if (isMoving(row)) {
-        moving.push(row);
+    while (row instanceof HTMLElement && stillInARow < 2) {
+      const animation = glideOf(row);
+      if (animation != null) {
+        rows.set(row, animation);
         stillInARow = 0;
       } else {
         stillInARow += 1;
@@ -186,27 +180,37 @@ export async function markGlidingRows(changed: HTMLElement): Promise<void> {
       row = row[step];
     }
   }
-  const fresh = moving.filter(row => !row.hasAttribute(GLIDING_ATTRIBUTE));
-  const edges = fresh.map(row =>
-    row.lastElementChild == null ? null : collapsedBottom(row.lastElementChild),
-  );
-  fresh.forEach((row, index) => {
-    const edge = edges[index];
-    if (edge != null) {
+  if (entering != null) {
+    rows.set(entering.row, entering.animation);
+  }
+  if (rows.size === 0) {
+    return;
+  }
+  const batch = Symbol('glide');
+  for (const row of rows.keys()) {
+    const edge = edges.get(row);
+    if (edge != null && !row.hasAttribute(GLIDING_ATTRIBUTE)) {
       row.style.setProperty(APP_DIVIDER_WIDTH, `${edge.width}px`);
       row.style.setProperty(APP_DIVIDER_STYLE, edge.style);
       row.style.setProperty(APP_DIVIDER_COLOR, edge.color);
+      row.setAttribute(GLIDING_ATTRIBUTE, '');
     }
-    row.setAttribute(GLIDING_ATTRIBUTE, '');
-  });
-  for (const row of fresh) {
-    endWhenStill(row);
+    markedBy.set(row, batch);
   }
   await Promise.all(
-    moving.flatMap(row =>
-      row.getAnimations().map(async animation => {
-        await animation.finished.catch(() => undefined);
-      }),
-    ),
+    [...rows.values()].map(async animation => {
+      await animation?.finished.catch(() => undefined);
+    }),
   );
+  // Writes only, and only for rows no later glide has taken over.
+  for (const row of rows.keys()) {
+    if (markedBy.get(row) !== batch) {
+      continue;
+    }
+    markedBy.delete(row);
+    row.removeAttribute(GLIDING_ATTRIBUTE);
+    row.style.removeProperty(APP_DIVIDER_WIDTH);
+    row.style.removeProperty(APP_DIVIDER_STYLE);
+    row.style.removeProperty(APP_DIVIDER_COLOR);
+  }
 }

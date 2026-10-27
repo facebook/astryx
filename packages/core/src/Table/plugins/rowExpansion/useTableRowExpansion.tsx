@@ -56,12 +56,18 @@ import type {
 import {LayoutChangeSnapshot} from '../../../motion/LayoutChangeSnapshot';
 import {
   applyLayoutChangeTransition,
+  glideOf,
   playLayoutChange,
   reportLayoutChange,
   type AnimatedLayout,
   type LayoutChange,
 } from '../../../motion/animatedLayout';
-import {glidingDividerStyles, markGlidingRows} from '../../glidingDivider';
+import {
+  glidingDividerStyles,
+  markGlidingRows,
+  rowEdge,
+  type BottomEdge,
+} from '../../glidingDivider';
 
 // =============================================================================
 // Config
@@ -455,9 +461,10 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
   const pendingLayoutRef = useRef<
     {change: LayoutChange; key: string; isExpanding: boolean}[]
   >([]);
-  // The scroll wrapper's height before a change, and the height it holds
-  // while rows glide up into it (see the layout effect).
-  const wrapperHeightBeforeRef = useRef<number | null>(null);
+  // The height the closing panels gave up (read with the measurement), and
+  // the height the scroll wrapper holds while rows glide up into it (see the
+  // layout effect).
+  const closedHeightRef = useRef(0);
   const heldHeightRef = useRef(0);
   const rowFor = useCallback(
     (key: string) =>
@@ -475,12 +482,6 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
         ...[...previous].filter(key => !expandedKeys.has(key)),
         ...[...expandedKeys].filter(key => !previous.has(key)),
       ];
-      // Only a closing panel shrinks the wrapper (see the layout effect).
-      wrapperHeightBeforeRef.current = changed.some(
-        key => !expandedKeys.has(key),
-      )
-        ? (scrollWrapperRef.current?.getBoundingClientRect().height ?? null)
-        : null;
       for (const key of changed) {
         const row = rowFor(key);
         if (row == null) {
@@ -488,6 +489,15 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
         }
         const change = reportLayoutChange(animatedLayout, () => row);
         change.measureBefore();
+        // A closing panel's height, read in the same layout the measurement
+        // just read.
+        const panel = row.nextElementSibling;
+        if (
+          !expandedKeys.has(key) &&
+          panel?.hasAttribute('data-expansion-panel') === true
+        ) {
+          closedHeightRef.current += panel.getBoundingClientRect().height;
+        }
         // The chevron turns on the glide's motion (`spec:AST-108` FR4a);
         // written after the measurement so the read finds the layout clean.
         applyLayoutChangeTransition(
@@ -506,47 +516,87 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
   useLayoutEffect(() => {
     const pendings = pendingLayoutRef.current;
     pendingLayoutRef.current = [];
-    const moved: HTMLElement[] = [];
+    // The rows that changed, each with the panel it opened (if that panel
+    // plays in) and the borders of the rows the glide may move.
+    const moved: {
+      row: HTMLElement;
+      panel: HTMLElement | null;
+      entrance: Animation | null;
+      edges: Map<Element, BottomEdge>;
+    }[] = [];
     for (const pending of pendings) {
-      const isMeasured = pending.change.animate();
       const row = rowFor(pending.key);
-      if (isMeasured && row != null) {
-        moved.push(row);
+      if (row == null) {
+        pending.change.animate();
+        continue;
       }
-      const panel = row?.nextElementSibling;
-      if (
-        pending.isExpanding &&
-        isMeasured &&
-        panel instanceof HTMLElement &&
-        panel.hasAttribute('data-expansion-panel')
-      ) {
-        playLayoutChange(animatedLayout, panel);
+      const next = row.nextElementSibling;
+      // Filled in by beforeMove, during the glide's own microtask.
+      const record = {
+        row,
+        panel:
+          pending.isExpanding &&
+          next instanceof HTMLElement &&
+          next.hasAttribute('data-expansion-panel')
+            ? next
+            : null,
+        entrance: null as Animation | null,
+        edges: new Map<Element, BottomEdge>(),
+      };
+      // Read where the glide reads the layout, before anything moves: the
+      // rows' borders, then the panel's entrance (it reads too).
+      const isMeasured = pending.change.animate(candidates => {
+        for (const candidate of candidates) {
+          if (
+            candidate instanceof HTMLTableRowElement &&
+            candidate.parentElement === row.parentElement
+          ) {
+            const edge = rowEdge(candidate);
+            if (edge != null) {
+              record.edges.set(candidate, edge);
+            }
+          }
+        }
+        if (record.panel != null) {
+          const edge = rowEdge(record.panel);
+          if (edge != null) {
+            record.edges.set(record.panel, edge);
+          }
+          record.entrance = playLayoutChange(animatedLayout, record.panel);
+        }
+      });
+      if (isMeasured) {
+        moved.push(record);
       }
     }
     // The table's scroll wrapper clips what it holds, and a panel that closed
     // shrank it at once: the rows gliding up into its place would be cut off
-    // at its new bottom until they arrive. For the glide, it keeps its old
-    // height as bottom padding, given back with an equal negative margin so
-    // the content after the table moves exactly as it would have; both go
-    // together when the rows stop, which changes nothing outside.
+    // at its new bottom until they arrive. For the glide, it keeps the height
+    // the panels gave up as bottom padding, given back with an equal negative
+    // margin so the content after the table moves exactly as it would have;
+    // both go together when the rows stop, which changes nothing outside.
     const wrapper = scrollWrapperRef.current;
-    const before = wrapperHeightBeforeRef.current;
-    wrapperHeightBeforeRef.current = null;
+    const held = moved.length > 0 ? closedHeightRef.current : 0;
+    closedHeightRef.current = 0;
     if (moved.length === 0) {
       return;
     }
-    // The glide starts in the microtask the module queued in animate(), which
-    // reads the new layout; this one runs after it, before the frame paints,
-    // and reads everything before it writes, so the table is laid out once.
+    // The glide starts in the microtask the module queued in animate(); this
+    // one runs after it, before the frame paints, and only writes.
     queueMicrotask(() => {
-      const after =
-        before == null ? undefined : wrapper?.getBoundingClientRect().height;
-      const held =
-        before != null && after != null && before - after > 0.5
-          ? before - after
-          : 0;
-      const stopped = Promise.all(moved.map(markGlidingRows));
-      if (held === 0 || wrapper == null) {
+      const stopped = Promise.all(
+        moved.map(async ({row, panel, entrance, edges}) =>
+          markGlidingRows(
+            row,
+            edges,
+            panel != null && entrance != null
+              ? {row: panel, animation: entrance}
+              : null,
+            glideOf,
+          ),
+        ),
+      );
+      if (held <= 0.5 || wrapper == null) {
         return;
       }
       const hold = (height: number) => {

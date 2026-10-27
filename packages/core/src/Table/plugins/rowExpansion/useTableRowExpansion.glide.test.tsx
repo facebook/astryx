@@ -20,7 +20,7 @@ import {pixel} from '../../columnUtils';
 import type {TableColumn} from '../../types';
 import {useTableRowExpansion} from './useTableRowExpansion';
 import {useAnimatedLayout} from '../../../hooks/useAnimatedLayout';
-import {markGlidingRows} from '../../glidingDivider';
+import {markGlidingRows, rowEdge} from '../../glidingDivider';
 
 type Row = {id: string; name: string};
 const rows: Row[] = [
@@ -130,35 +130,43 @@ describe('useTableRowExpansion adopts animatedLayout (spec:AST-105 FR1, FR2)', (
 });
 
 describe('markGlidingRows', () => {
-  it('marks a moving row and carries its divider while it moves, and clears both after', async () => {
+  it('marks the moving rows and carries their divider while they move, and clears both after', async () => {
     const body = document.createElement('tbody');
-    const row = document.createElement('tr');
-    row.append(document.createElement('td'));
-    body.append(row);
+    const rows = [0, 1, 2, 3, 4].map(() => {
+      const row = document.createElement('tr');
+      row.append(document.createElement('td'));
+      body.append(row);
+      return row;
+    });
     document.body.append(body);
     let finish = () => {};
-    const motion = {
+    const glide = {
       finished: new Promise<void>(resolve => {
         finish = resolve;
       }),
     } as unknown as Animation;
-    let running = [motion];
-    Object.assign(row, {getAnimations: () => running});
+    // The change is row 1; rows 2 and 3 glide, row 4 is still.
+    const moving = new Set([rows[2], rows[3]]);
+    const glideOf = (element: Element) =>
+      moving.has(element as HTMLTableRowElement) ? glide : null;
 
-    void markGlidingRows(row);
-    expect(row.hasAttribute('data-astryx-row-gliding')).toBe(true);
-    expect(row.style.getPropertyValue('--_table-row-divider-app-width')).toBe(
-      '0px',
-    );
+    const edges = new Map(rows.map(row => [row, rowEdge(row)!] as const));
+    const done = markGlidingRows(rows[1], edges, null, glideOf);
+    expect(
+      rows.map(row => row.hasAttribute('data-astryx-row-gliding')),
+    ).toEqual([false, false, true, true, false]);
+    expect(
+      rows[2].style.getPropertyValue('--_table-row-divider-app-width'),
+    ).toBe('0px');
 
-    running = [];
     finish();
-    await flush();
-    await flush();
-    expect(row.hasAttribute('data-astryx-row-gliding')).toBe(false);
-    expect(row.style.getPropertyValue('--_table-row-divider-app-width')).toBe(
-      '',
+    await done;
+    expect(rows.some(row => row.hasAttribute('data-astryx-row-gliding'))).toBe(
+      false,
     );
+    expect(
+      rows[2].style.getPropertyValue('--_table-row-divider-app-width'),
+    ).toBe('');
     body.remove();
   });
 });
