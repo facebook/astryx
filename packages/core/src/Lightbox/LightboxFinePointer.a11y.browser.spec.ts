@@ -254,7 +254,7 @@ for (const via of ['the Next button', 'the arrow key'] as const) {
       await page.keyboard.press('ArrowRight');
     }
     const places = await page.evaluate(
-      () => (window as unknown as {__places: Promise<number[]>}).__places,
+      async () => (window as unknown as {__places: Promise<number[]>}).__places,
     );
     await expect(dialog).toContainText('2 / 4');
     expect(places.length).toBeGreaterThan(10);
@@ -354,7 +354,7 @@ test('the double-click zoom plays the released 200 ms ease-out', async ({
   });
   await page.mouse.dblclick(centre(stageBox).x, centre(stageBox).y);
   const samples = await page.evaluate(
-    () =>
+    async () =>
       (window as unknown as {__samples: Promise<[number, number][]>}).__samples,
   );
   const to = fitted.width * 2;
