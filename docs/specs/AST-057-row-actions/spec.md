@@ -67,8 +67,8 @@ and not on one whose role forbids them. That sorts the list row and the
 standalone row in, and the option, menu-item and radio rows out, without
 naming a component; a row type nobody has written yet sorts itself.
 
-The gesture is an accelerator for a finger and a trackpad: it adds a faster
-path to a verb under a finger or a trackpad's horizontal scroll, and changes
+The gesture is an accelerator for a finger, a pen, and a trackpad: it adds a
+faster path to a verb under a finger, a pen, or a trackpad's horizontal scroll, and changes
 nothing for a mouse drag, hover, or the keyboard. Each side's
 verbs are declared as data — a label that names the state the verb reaches,
 an icon, a handler, how it looks, and whether the row holds out afterwards —
