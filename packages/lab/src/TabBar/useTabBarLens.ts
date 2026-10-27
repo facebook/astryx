@@ -65,8 +65,16 @@
  * through a busy main thread. Under Reduce Motion the animator cross-fades
  * instead of moving and a press scales nothing (design:reduced-motion).
  * Each spring is handed to the animator as a table entry, so it plays as the
- * theme sets its motion role. Under a mouse this hook writes nothing:
- * TabBar's CSS slides the lens and a click is a plain click.
+ * theme sets its motion role.
+ *
+ * Under a fine pointer (a mouse, a pen, or a finger on a screen whose primary
+ * pointer is fine) the same press drags the lens in the mouse presentation
+ * (`spec:AST-094` FR43): a click stays a plain click, and once the press
+ * drags past the allowable movement the lens's resting place follows it on
+ * TabBar's CSS transition, with no lift, no copy of the items and no spring.
+ * The release chooses the item nearest the press, as a lift does, a click's
+ * included (the gesture host swallows the browser's click for a press a
+ * recognizer took), and the lens transitions onto it.
  *
  * SYNC: When modified, update TabBar.tsx, tabBarModel.ts and
  * __tests__/TabBar.interaction.browser.spec.ts.
@@ -135,17 +143,22 @@ interface Press {
   hasLens: boolean;
   /** Landed on a disabled tab: nothing moves until the finger drags. */
   isIgnored: boolean;
+  /** A fine pointer's press: it drags the lens's resting place (CSS). */
+  readonly isFine: boolean;
 }
 
 export interface UseTabBarLensOptions {
   readonly capsuleRef: RefObject<HTMLDivElement | null>;
   readonly count: number;
   readonly selectedIndex: number;
-  /** A finger drives the bar (the touch presentation: a coarse pointer). */
+  /**
+   * The touch presentation (a coarse primary pointer): a finger lifts the
+   * lens on springs. Otherwise a press drags it in the mouse presentation.
+   */
   readonly isTouch: boolean;
   /** The bar is minimized (useTabBarMinimize.ts): the lens is in the circle. */
   readonly isMinimized: boolean;
-  /** A finger lifted over the item at `index`. */
+  /** A press released over the item at `index`: a lift, or a drag's release. */
   readonly onLift: (index: number) => void;
   /**
    * Whether the item at `index` is disabled: a finger landing on it is
@@ -155,6 +168,8 @@ export interface UseTabBarLensOptions {
 }
 
 export interface TabBarLensRefs {
+  /** The lens's resting place: a fine pointer's drag moves it (CSS). */
+  readonly lens: (element: HTMLElement | null) => void;
   /** The capsule: the flex. */
   readonly capsule: (element: HTMLElement | null) => void;
   /**
@@ -224,6 +239,20 @@ export function useTabBarLens({
   const copyItems = useAnimatorList(count);
 
   const pressRef = useRef<Press | null>(null);
+  // The lens's resting place, which a fine pointer's drag moves: TabBar's
+  // transition on `translate` carries it (none under Reduce Motion), and
+  // clearing the inline value hands it back to the selected item's place.
+  const lensRef = useRef<HTMLElement | null>(null);
+  const lensElementRef = useCallback((element: HTMLElement | null) => {
+    lensRef.current = element;
+  }, []);
+  /** Puts the lens's resting place `x` px from the first item's, or back (null). */
+  const placeLens = (x: number | null) => {
+    const element = lensRef.current;
+    if (element != null) {
+      element.style.translate = x == null ? '' : `${x}px 0`;
+    }
+  };
   // The settle a lift started toward a newly chosen item, until the new
   // selection renders (or the app keeps the old one).
   const settleRef = useRef<number | null>(null);
@@ -386,7 +415,12 @@ export function useTabBarLens({
       isDragging: false,
       hasLens: selected >= 0,
       isIgnored,
+      isFine: !isTouch,
     };
+    // A fine pointer: nothing moves until the press drags.
+    if (!isTouch) {
+      return;
+    }
     // No tab selected (there is no lens to move: the lift chooses the tab
     // nearest the finger), or a finger landing on a disabled tab (UIKit
     // ignores the tap): nothing moves now.
@@ -419,6 +453,19 @@ export function useTabBarLens({
     const x = recognizer.location().x - press.left;
     press.lastX = x;
     press.isDragging ||= Math.abs(x - press.startX) > DRAG_SLOP;
+    if (press.isFine) {
+      // A fine pointer's drag carries the lens's resting place, held on an
+      // enabled tab like a finger's chase; from a disabled tab it counts
+      // from here.
+      if (!press.isDragging) {
+        return;
+      }
+      press.isIgnored = false;
+      if (press.hasLens && selected >= 0) {
+        placeLens(chaseTarget(x, press.centers) - press.centers[0]);
+      }
+      return;
+    }
     const at = performance.now();
     if (press.isIgnored) {
       if (!press.isDragging) {
@@ -452,6 +499,17 @@ export function useTabBarLens({
     const selected = selectedRef.current;
     // A tap on a disabled tab moved nothing and chooses nothing.
     if (press == null || press.isIgnored) {
+      return;
+    }
+    if (press.isFine) {
+      // The release chooses the item nearest the press, a click's too: the
+      // host swallows the browser's click for a press a recognizer took. The
+      // lens's resting place transitions onto the selection rendered.
+      const nearest = nearestIndex(press.lastX, press.centers);
+      if (!isCancelled && isDisabledRef.current?.(nearest) !== true) {
+        flushSync(() => onLiftRef.current(nearest));
+      }
+      placeLens(null);
       return;
     }
     // The app's answer to this lift, as rendered now: the tab the finger
@@ -514,7 +572,9 @@ export function useTabBarLens({
       new LongPressGestureRecognizer({
         name: 'tab-bar-selection',
         minimumPressDuration: 0,
-        allowedPointerTypes: ['touch', 'pen'],
+        // Every pointer (`spec:AST-094` FR43): a finger in the touch
+        // presentation, a mouse or a pen dragging in the mouse one.
+        allowedPointerTypes: ['touch', 'pen', 'mouse'],
         // The hold lifts the lens and drags it, so no selection or callout
         // starts under the finger; a press at 0 ms brings no lock of its
         // own (`spec:AST-094` FR41).
@@ -543,21 +603,22 @@ export function useTabBarLens({
       }
     },
     {
-      isEnabled: isTouch && !isMinimized,
+      isEnabled: !isMinimized,
       // Under a mouse the host writes no touch styles: desktop selection
       // is unchanged.
       manageStyle: isTouch,
     },
   );
 
-  // The recognizer turned off (another input took over, or the bar
-  // minimized): a press it was tracking ends here, as a cancel, since a
-  // recognizer turned off reports nothing more. A cancel chooses nothing,
-  // so the app hears nothing.
+  // The bar minimized (the recognizer turns off) or the presentation changed
+  // under a press: the press ends here, as a cancel, since a recognizer turned
+  // off reports nothing more. A cancel chooses nothing, so the app hears
+  // nothing.
   const endRef = useRef(end);
   endRef.current = end;
   useEffect(() => {
-    if ((!isTouch || isMinimized) && pressRef.current != null) {
+    const press = pressRef.current;
+    if (press != null && (isMinimized || press.isFine === isTouch)) {
       endRef.current(true);
     }
   }, [isTouch, isMinimized]);
@@ -728,6 +789,7 @@ export function useTabBarLens({
   }, [selectedIndex, count, isTouch, capsuleRef, body, copy]);
 
   return {
+    lens: lensElementRef,
     capsule: capsule.ref,
     body: bodyRef,
     clip: glass.ref,

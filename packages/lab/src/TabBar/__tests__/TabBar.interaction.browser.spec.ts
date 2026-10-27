@@ -55,6 +55,7 @@ import {
   sampleRects,
   springStep,
   startScreencast,
+  Storyboard,
   tap as tapScript,
   touchDriver,
   touchStoryboard,
@@ -1524,6 +1525,55 @@ test.describe('a mouse or a pen drags the lens too (spec:AST-094 FR43)', () => {
     await expect.poll(pageLevel).toEqual(atRest);
     expect(during.length).toBeGreaterThan(atRest.length);
   });
+
+  test(
+    'storyboard: a mouse drag carries the lens on the theme’s motion, and the release chooses',
+    {tag: '@storyboard'},
+    async ({page}, testInfo) => {
+      await openFine(page);
+      const storyboard = new Storyboard(page, {
+        name: 'tabbar-mouse-drag',
+        clip: page.getByRole('tablist', {name: 'Sections'}),
+        columns: 2,
+        cellScale: 1,
+      });
+      const start = await itemCenter(page, 'Home');
+      const end = await itemCenter(page, 'Browse');
+      await page.mouse.move(start.x, start.y);
+      await page.mouse.down();
+      // Each label says where the lens's centre is, from Home's.
+      const lensAt = async () =>
+        `lens ${Math.round((await lensCenterX(page)) - start.x)} px`;
+      await storyboard.capture(`pressed on Home, ${await lensAt()}`, 0);
+      for (let step = 1; step <= 12; step++) {
+        await page.mouse.move(
+          start.x + ((end.x - start.x) * step) / 12,
+          start.y,
+        );
+        if (step % 4 === 0) {
+          await storyboard.capture(
+            `dragging ${step}/12, ${await lensAt()}`,
+            step * 16,
+          );
+        }
+      }
+      await page.waitForTimeout(300);
+      await storyboard.capture(`held over Browse, ${await lensAt()}`, 500);
+      await page.mouse.up();
+      for (const after of [40, 120, 400]) {
+        await page.waitForTimeout(after === 40 ? 40 : after - 40);
+        await storyboard.capture(
+          `released, +${after} ms, ${await lensAt()}`,
+          500 + after,
+        );
+      }
+      await storyboard.write(testInfo);
+      await expect(tab(page, 'Browse')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+    },
+  );
 
   test('with Reduce Motion a mouse drag moves the lens at once', async ({
     page,

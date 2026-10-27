@@ -51,7 +51,9 @@
  * That motion is TabBar's touch layer (TabBarTouch.ts), its one import site.
  * Under a mouse (a fine pointer) the lens slides on the theme's duration and
  * easing (a CSS transition on `translate`, run by the compositor), the
- * selected look moving to the new tab at once, and no touch code runs. Under
+ * selected look moving to the new tab at once; a press that drags carries the
+ * lens on the same transition, with no lift and no copy of the items, and its
+ * release chooses the tab under it (`spec:AST-094` FR43). Under
  * Reduce Motion
  * nothing travels (design:reduced-motion, applied by the animator): on a
  * touch screen the lens cross-fades (it fades out where it was and in at the
@@ -956,8 +958,9 @@ export function TabBar({
     : items.findIndex(item => item.value === value);
   const baseId = useId();
 
-  // UIKit's motion and gestures belong to a finger (a coarse primary pointer,
-  // iOS and Android alike); a mouse keeps the theme's motion.
+  // UIKit's motion belongs to a finger (a coarse primary pointer, iOS and
+  // Android alike); a mouse keeps the theme's motion, and its drag carries
+  // the lens on it (`spec:AST-094` FR43).
   const isTouch = useTouchPresentation().isTouch;
 
   const capsuleRef = useRef<HTMLDivElement | null>(null);
@@ -1420,6 +1423,7 @@ export function TabBar({
           ) : null}
           {shownIndex >= 0 ? (
             <div
+              ref={lens.lens}
               aria-hidden
               data-tab-bar-lens=""
               {...stylex.props(
