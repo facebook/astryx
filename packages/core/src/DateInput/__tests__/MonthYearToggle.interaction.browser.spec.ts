@@ -259,6 +259,25 @@ test('a second tap mid-fade turns the fade around from where it is', async ({
     content:
       '[data-panel], button[aria-label$="Choose month and year"] .astryx-icon { transition-duration: 2000ms !important; }',
   });
+  // Every frame's opacity, with the page's clock, from before the first tap
+  // until the wheels rest: the turnaround is read from the fade itself. A log
+  // started after the wait below could begin once the turnaround had begun,
+  // reading its first value as the peak.
+  await wheels.evaluate(element => {
+    const state = {log: [] as [number, number][], stop: false};
+    (window as unknown as {fade: typeof state}).fade = state;
+    const t0 = performance.now();
+    const tick = () => {
+      state.log.push([
+        performance.now() - t0,
+        Number(getComputedStyle(element).opacity),
+      ]);
+      if (!state.stop) {
+        requestAnimationFrame(tick);
+      }
+    };
+    requestAnimationFrame(tick);
+  });
   await driver.tap(titleAt);
   await wheels.evaluate(
     async element =>
@@ -273,27 +292,15 @@ test('a second tap mid-fade turns the fade around from where it is', async ({
         check();
       }),
   );
-  // Every frame's opacity, with the page's clock, from here on.
-  await wheels.evaluate(element => {
-    const log: [number, number][] = [];
-    (window as unknown as {fade: typeof log}).fade = log;
-    const t0 = performance.now();
-    const tick = () => {
-      log.push([
-        performance.now() - t0,
-        Number(getComputedStyle(element).opacity),
-      ]);
-      if (performance.now() - t0 < 3000) {
-        requestAnimationFrame(tick);
-      }
-    };
-    requestAnimationFrame(tick);
-  });
   await driver.tap(titleAt);
-  await page.waitForTimeout(2600);
-  const fade = await page.evaluate(
-    () => (window as unknown as {fade: [number, number][]}).fade,
-  );
+  await waitForRest(wheels);
+  const fade = await page.evaluate(() => {
+    const state = (
+      window as unknown as {fade: {log: [number, number][]; stop: boolean}}
+    ).fade;
+    state.stop = true;
+    return state.log;
+  });
   const values = fade.map(([, opacity]) => opacity);
   const peak = Math.max(...values);
   const peakAt = values.indexOf(peak);
