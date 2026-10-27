@@ -9,6 +9,8 @@ import {
   pixel,
 } from '@astryxdesign/core/Table';
 import type {TableColumn} from '@astryxdesign/core/Table';
+import {Theme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 
 // =============================================================================
 // Sample Data — wide enough to require horizontal scroll
@@ -183,7 +185,8 @@ export const PinnedDividers: Story = {
  * hover (`tr:hover`); "First row top" gives the first body row a 3 px top
  * border, which wins over the header's bottom; "Token row borders" draws a
  * 2 px row border in the theme's border token, which follows a light/dark
- * switch; "Add columns" widens the table inside the same wrapper.
+ * switch (the table sits in a `system`-mode Theme); "Add columns" widens the
+ * table inside the same wrapper.
  */
 export const PinnedDividersLive: Story = {
   render: () => {
@@ -240,12 +243,18 @@ export const PinnedDividersLive: Story = {
             Add columns
           </button>
         </p>
-        <Table
-          data={employees}
-          columns={shown}
-          idKey="id"
-          plugins={{stickyColumns: sticky}}
-        />
+        {/* A `system`-mode Theme: the table follows the operating system's
+            light or dark. */}
+        <Theme theme={neutralTheme} mode="system">
+          <div style={{backgroundColor: 'var(--color-background-surface)'}}>
+            <Table
+              data={employees}
+              columns={shown}
+              idKey="id"
+              plugins={{stickyColumns: sticky}}
+            />
+          </div>
+        </Theme>
       </div>
     );
   },

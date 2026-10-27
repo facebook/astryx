@@ -11,6 +11,8 @@ import {
 } from '@astryxdesign/core/Table';
 import {useAnimatedLayout} from '@astryxdesign/core/hooks';
 import type {TableColumn} from '@astryxdesign/core/Table';
+import {Theme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 import {VStack, HStack} from '@astryxdesign/core/Stack';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {Badge} from '@astryxdesign/core/Badge';
@@ -134,6 +136,37 @@ export const DetailPanel: Story = {
         hasHover
         plugins={{expansion}}
       />
+    );
+  },
+};
+
+/**
+ * An open panel's divider is the one its row hands down, in the theme's
+ * colour, and follows a switch between light and dark: the table sits in a
+ * `system`-mode Theme, which follows the operating system.
+ */
+export const PanelDividerFollowsScheme: Story = {
+  render: () => {
+    const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
+      () => new Set(['ord-1001']),
+    );
+    const expansion = useTableRowExpansion<Order>({
+      expandedKeys,
+      onToggle: key => setExpandedKeys(prev => toggleKey(prev, key)),
+      getRowKey: item => item.id,
+      renderExpanded: item => <OrderItems order={item} />,
+    });
+    return (
+      <Theme theme={neutralTheme} mode="system">
+        <div style={{backgroundColor: 'var(--color-background-surface)'}}>
+          <Table
+            data={orders}
+            columns={columns}
+            idKey="id"
+            plugins={{expansion}}
+          />
+        </div>
+      </Theme>
     );
   },
 };

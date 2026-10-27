@@ -32,6 +32,7 @@ import type {
 import {resolveColumnFloorWidths} from '../../columnUtils';
 import {collapsedBottom} from '../../rowDivider';
 import {GLIDING_ATTRIBUTE} from '../../glidingDivider';
+import {useTheme} from '../../../theme/useTheme';
 
 // =============================================================================
 // Config
@@ -529,6 +530,11 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
     };
   }, []);
 
+  // Re-rendered when the colour mode changes (a Theme's mode, or the
+  // operating system's under `system`), so a carried border is read again
+  // after it; a Theme nested below this hook's owner is covered by the
+  // scheme listener in attachScrollShadow.
+  useTheme();
   // After each commit: a border that changed with the render (a row
   // highlighted on click) reaches the pinned divider, and the edge shadows
   // follow content that changed without a resize.

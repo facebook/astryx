@@ -331,7 +331,10 @@ test("the first body row's wider top border wins under the pinned header too", a
 
 test('a carried border follows an operating-system switch between light and dark', async ({
   page,
+  browserName,
 }) => {
+  test.skip(browserName === 'webkit', WEBKIT_DOUBLE_PAINT);
+  // The story's table sits in a `system`-mode Theme.
   await page.emulateMedia({colorScheme: 'light'});
   await mount(page, 'pinned-dividers-live');
   await page.getByRole('button', {name: 'Add columns'}).click();
@@ -346,4 +349,35 @@ test('a carried border follows an operating-system switch between light and dark
       }, `at ${left}px`)
       .toBe(true);
   }
+});
+
+test("an open panel's divider follows an operating-system switch between light and dark", async ({
+  page,
+}) => {
+  await page.emulateMedia({colorScheme: 'light'});
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-tablerowexpansion--panel-divider-follows-scheme&viewMode=story`,
+  );
+  await expect(page.locator('tr[data-expansion-panel]')).toBeVisible();
+  // The colour the panel's divider draws, against its row's cells' (the
+  // panel sits on its own surface, so its pixels differ from a row's).
+  const colours = async () =>
+    page.evaluate(() => {
+      const panel = document.querySelector('tr[data-expansion-panel] > td');
+      const row =
+        panel?.parentElement?.previousElementSibling?.lastElementChild;
+      return {
+        panel: panel == null ? '' : getComputedStyle(panel).borderBottomColor,
+        row: row == null ? '' : getComputedStyle(row).borderBottomColor,
+      };
+    });
+  const light = await colours();
+  expect(light.panel).toBe(light.row);
+  await page.emulateMedia({colorScheme: 'dark'});
+  await expect
+    .poll(async () => {
+      const dark = await colours();
+      return dark.panel === dark.row && dark.panel !== light.panel;
+    })
+    .toBe(true);
 });

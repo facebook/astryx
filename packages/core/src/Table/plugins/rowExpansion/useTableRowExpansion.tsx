@@ -36,6 +36,7 @@ import {
 } from '../../../theme/tokens.stylex';
 import {tableRowMarker} from '../../table.stylex';
 import {panelDividerFor} from '../../rowDivider';
+import {useTheme} from '../../../theme/useTheme';
 import {Icon} from '../../../Icon';
 import {VisuallyHidden} from '../../../VisuallyHidden';
 import {resolveContextActions} from '../../tableContextMenu';
@@ -394,6 +395,9 @@ function ExpansionPanelCell({
   const ctx = useTableContext();
   const hasRowDividers = ctx?.dividers === 'rows' || ctx?.dividers === 'grid';
   const cellRef = useRef<HTMLTableCellElement>(null);
+  // Re-rendered when the colour mode changes (a Theme's mode, or the
+  // operating system's under `system`), so the carried colour is read again.
+  useTheme();
   // The panel carries its row's divider (a theme's `table-cell` border or an
   // app's own never reach this cell, which is not one of the row's cells).
   // Read after each commit; written only when it differs.
@@ -541,11 +545,15 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
   const closedHeightRef = useRef(0);
   const heldHeightRef = useRef(0);
   const holdBaseRef = useRef<{padding: number; margin: number} | null>(null);
+  // This table's own body rows only: a table nested in a panel can reuse the
+  // same row keys. The first table in the wrapper is this one.
   const rowFor = useCallback(
     (key: string) =>
-      scrollWrapperRef.current?.querySelector<HTMLElement>(
-        `tr[data-expansion-key="${CSS.escape(key)}"]`,
-      ) ?? null,
+      scrollWrapperRef.current
+        ?.querySelector('table')
+        ?.querySelector<HTMLElement>(
+          `:scope > tbody > tr[data-expansion-key="${CSS.escape(key)}"]`,
+        ) ?? null,
     [],
   );
   const measureChanges = useCallback(
@@ -604,10 +612,14 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
     if (animatedLayout != null) {
       return;
     }
-    for (const glyph of scrollWrapperRef.current?.querySelectorAll<HTMLElement>(
+    const table = scrollWrapperRef.current?.querySelector('table');
+    for (const glyph of table?.querySelectorAll<HTMLElement>(
       '[data-expansion-toggle] > *',
     ) ?? []) {
-      applyLayoutChangeTransition(null, glyph);
+      // This table's chevrons, not a nested table's.
+      if (glyph.closest('table') === table) {
+        applyLayoutChangeTransition(null, glyph);
+      }
     }
   }, [animatedLayout]);
 
