@@ -182,19 +182,25 @@ test('the double-click zoom plays the released 200 ms ease-out', async ({
   const to = fitted.width * 2;
   const progress = (width: number) =>
     (width - fitted.width) / (to - fitted.width);
-  // Progress at 100 ms, interpolated between the frames around it: CSS
+  // Timed from the last frame before the photo moved: an engine can start
+  // the animation a frame or more after the double-click, more on a busy
+  // runner, and the start-up is not the curve.
+  const first = samples.findIndex(([, width]) => progress(width) > 0.001);
+  expect(first).toBeGreaterThanOrEqual(0);
+  const origin = first > 0 ? samples[first - 1][0] : 0;
+  // Progress 100 ms in, interpolated between the frames around it: CSS
   // `ease-out` over 200 ms is past 0.6 there (0.69 at its middle), where
   // UIScrollView's eased settle over its ~0.31 s is near 0.25.
-  const after = samples.findIndex(([t]) => t >= 100);
+  const after = samples.findIndex(([t]) => t - origin >= 100);
   expect(after).toBeGreaterThan(0);
   const [t0, w0] = samples[after - 1];
   const [t1, w1] = samples[after];
-  const at100 = progress(w0 + ((w1 - w0) * (100 - t0)) / (t1 - t0));
+  const at100 = progress(w0 + ((w1 - w0) * (origin + 100 - t0)) / (t1 - t0));
   expect(at100).toBeGreaterThan(0.5);
-  // It ends within the 200 ms and a frame or two of start-up.
+  // It ends within the 200 ms and a frame or two.
   const doneAt = samples.find(([, width]) => progress(width) > 0.995)?.[0];
   expect(doneAt).toBeDefined();
-  expect(doneAt ?? Number.POSITIVE_INFINITY).toBeLessThan(300);
+  expect((doneAt ?? Number.POSITIVE_INFINITY) - origin).toBeLessThan(250);
 });
 
 test('a pen double-click zooms too: no touch layer takes the pen', async ({
