@@ -242,6 +242,17 @@ describe('resolveThemeMotion (spec:AST-108 FR6)', () => {
   });
 });
 
+describe('the press release follows tempo (spec:AST-108 FR4, component:Button FR15)', () => {
+  it('writes the tempo beside the duration tokens for the release fade, and nothing without one', () => {
+    expect(expandThemeMotion({tempo: 1.5})['--_astryx-motion-tempo']).toBe(
+      '1.5',
+    );
+    expect(
+      expandThemeMotion({character: 'crisp'})['--_astryx-motion-tempo'],
+    ).toBeUndefined();
+  });
+});
+
 describe('busy loops read the duration before tempo (spec:AST-108 FR4)', () => {
   it.each([0.75, 1.5])(
     'at tempo %s the pre-tempo durations stay today\u2019s while the tokens scale',

@@ -101,6 +101,21 @@ const TIMER_MS: Record<NonNullable<PressStep['timer']>, number> = {
   onset: PRESS_ONSET_MS,
 };
 
+/**
+ * The tempo of the theme `element` is in: the nearest
+ * `data-astryx-motion-tempo`, which a theme with a `tempo` writes, as the
+ * stylesheet's `--_astryx-motion-tempo` inherits; 1 outside one. The release
+ * fade scales by it (`spec:AST-108` FR4, `component:Button` FR15); the onset
+ * delay and the tap flash stay fixed.
+ */
+function themeTempo(element: Element): number {
+  const value = element
+    .closest('[data-astryx-motion-tempo]')
+    ?.getAttribute('data-astryx-motion-tempo');
+  const tempo = value == null ? Number.NaN : Number(value);
+  return Number.isFinite(tempo) && tempo > 0 ? tempo : 1;
+}
+
 const TIMER_EVENT = {
   fade: 'fadeEnd',
   flash: 'flashEnd',
@@ -161,16 +176,19 @@ function apply(step: PressStep): void {
     // A TIMER, never `requestAnimationFrame`: iOS throttles frame callbacks
     // while a scroll runs, so a frame-based delay would fire late, after the
     // scroll, and paint a control nobody is pressing any more.
-    live.timer = setTimeout(() => {
-      if (live != null) {
-        live.timer = null;
-      }
-      apply(
-        pressGestureStep(live?.gesture ?? idlePressGesture(), {
-          kind: TIMER_EVENT[kind],
-        }),
-      );
-    }, TIMER_MS[kind]);
+    live.timer = setTimeout(
+      () => {
+        if (live != null) {
+          live.timer = null;
+        }
+        apply(
+          pressGestureStep(live?.gesture ?? idlePressGesture(), {
+            kind: TIMER_EVENT[kind],
+          }),
+        );
+      },
+      TIMER_MS[kind] * (kind === 'fade' ? themeTempo(live.element) : 1),
+    );
   }
 }
 
