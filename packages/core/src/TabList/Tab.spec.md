@@ -165,15 +165,17 @@ FR1–FR2.
 
 ## Verification map
 
-| Contract | Verification                                                                                    | Representative states              | Mutation or failure expectation                              | Audit section             |
-| -------- | ----------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------ | ------------------------- |
-| FR1, FR2 | `TabList.test.tsx` aria-current, polymorphic link, and tabs-pattern tests; `Tabs.a11y.test.tsx` | Navigation, link, tabs             | Wrong role or state fails.                                   | `audit:Tab/accessibility` |
-| FR3      | `TabList.test.tsx` single tab stop and roving tabindex tests                                    | Selected, no match, arrow movement | Extra tab stops, or a stop that does not follow focus, fail. | `audit:Tab/accessibility` |
-| FR4, FR5 | `TabList.test.tsx` onChange and disabled tests                                                  | Click, disabled button             | Selection when disabled fails.                               | `audit:Tab/behavior`      |
-| FR6, FR7 | `TabList.test.tsx` icon, icon-only, and pressed-overlay tests                                   | Icon, selected icon, hidden label  | Wrong icon, name, or overlay fails.                          | `audit:Tab/behavior`      |
+| Contract | Verification                                                                                    | Representative states             | Mutation or failure expectation                  | Audit section             |
+| -------- | ----------------------------------------------------------------------------------------------- | --------------------------------- | ------------------------------------------------ | ------------------------- |
+| FR1, FR2 | `TabList.test.tsx` aria-current, polymorphic link, and tabs-pattern tests; `Tabs.a11y.test.tsx` | Navigation, link, tabs            | Wrong role or state fails.                       | `audit:Tab/accessibility` |
+| FR3      | `TabList.test.tsx` single tab stop and roving tabindex tests                                    | Selected, no match                | Extra tab stops, or a wrong starting stop, fail. | `audit:Tab/accessibility` |
+| FR4, FR5 | `TabList.test.tsx` onChange and disabled tests                                                  | Click, disabled button            | Selection when disabled fails.                   | `audit:Tab/behavior`      |
+| FR6, FR7 | `TabList.test.tsx` icon, icon-only, and pressed-overlay tests                                   | Icon, selected icon, hidden label | Wrong icon, name, or overlay fails.              | `audit:Tab/behavior`      |
 
 Read from source, with no focused test yet:
 
+- FR3: the stop moving with arrow, Home, and End focus, and the fallback past a
+  disabled selected entry.
 - FR1: the button's `type="button"`.
 - FR4: the caller `onClick` running first, and its `preventDefault()`
   cancelling selection.
