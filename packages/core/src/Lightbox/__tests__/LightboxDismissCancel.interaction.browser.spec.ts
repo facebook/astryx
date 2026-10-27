@@ -274,6 +274,36 @@ test('brought back within 10 pt of the start and held still, it springs back fro
   await expectRestored(v);
 });
 
+test('the backdrop keeps its blur at rest and fades without it while it moves', async ({
+  page,
+}) => {
+  const v = await openViewer(page);
+  const filter = async () =>
+    v.dialog.evaluate(el => {
+      const style = getComputedStyle(
+        el,
+        '::backdrop',
+      ) as CSSStyleDeclaration & {webkitBackdropFilter?: string};
+      return style.backdropFilter || style.webkitBackdropFilter || 'none';
+    });
+  expect(await filter()).toBe('blur(2px)');
+  // On a 2-core limit a full-viewport blur repainted every frame of the fade
+  // drops frames, so the drag fades the backdrop without it.
+  let during: string | null = null;
+  let moves = 0;
+  await v.driver.play(pullThenReturn(v.centre, 120, 4), {
+    onEvent: async step => {
+      moves += step.type === 'touchMove' ? 1 : 0;
+      if (step.type === 'touchMove' && moves === 10 && during == null) {
+        during = await filter();
+      }
+    },
+  });
+  expect(during).toBe('none');
+  await expectRestored(v);
+  await expect.poll(filter).toBe('blur(2px)');
+});
+
 test('an 18 px flick down closes: its projected travel passes the commit point (FR36)', async ({
   page,
 }) => {

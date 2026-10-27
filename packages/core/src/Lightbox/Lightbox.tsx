@@ -157,12 +157,13 @@ const styles = stylex.create({
     overflow: 'hidden',
     outline: 'none',
     // The backdrop dims and blurs the page as on main: the theme's overlay
-    // colour over a 2 px blur. The drag to dismiss fades it every frame;
-    // removing the blur during a drag is the owners' call (#8120 covers the
-    // modal scrims).
+    // colour over a 2 px blur. While it fades (a drag to dismiss and its
+    // release) the blur comes off, through the dialog's
+    // --_lightbox-backdrop-filter: on a 2-core limit a full-viewport blur
+    // repainted every frame of the fade drops frames.
     '::backdrop': {
       backgroundColor: colorVars['--color-overlay'],
-      backdropFilter: 'blur(2px)',
+      backdropFilter: 'var(--_lightbox-backdrop-filter, blur(2px))',
     },
   },
   container: {
@@ -586,6 +587,8 @@ export function Lightbox({
     }
 
     if (isOpen && !dialog.open) {
+      // Opened at rest: the backdrop's blur is back (setBackdropMoving).
+      dialog.style.removeProperty('--_lightbox-backdrop-filter');
       triggerElementRef.current = document.activeElement;
       dialog.showModal();
     } else if (!isOpen && dialog.open) {
@@ -715,6 +718,19 @@ export function Lightbox({
   // Drag to dismiss, as in Photos: the backdrop and, faster, the controls
   // and the neighbouring photos fade with the drag's travel; a dismissal
   // fades them out on its spring and closes once the photo has left.
+  // The backdrop's blur comes off while the backdrop moves and back once it
+  // rests (the dialog's style, '::backdrop'). Each move counts: a release's
+  // end restores it only if nothing has moved the backdrop since.
+  const backdropMovesRef = useRef(0);
+  const setBackdropMoving = useCallback((moving: boolean) => {
+    const dialog = dialogRef.current;
+    if (moving) {
+      dialog?.style.setProperty('--_lightbox-backdrop-filter', 'none');
+    } else {
+      dialog?.style.removeProperty('--_lightbox-backdrop-filter');
+    }
+  }, []);
+
   const dismissFades = useCallback((): {
     backdrop: Animator | null;
     chrome: Animator[];
@@ -778,6 +794,8 @@ export function Lightbox({
       onDrag: travel => {
         const {backdrop, chrome} = dismissFades();
         fadedRef.current = backdrop == null ? chrome : [backdrop, ...chrome];
+        backdropMovesRef.current += 1;
+        setBackdropMoving(true);
         backdrop?.set({opacity: dismissBackdropAlpha(travel)});
         const opacity = dismissChromeAlpha(travel);
         for (const animator of chrome) {
@@ -791,11 +809,22 @@ export function Lightbox({
           ? zoomMedia.dismiss.dismissSizeSpring
           : zoomMedia.dismiss.cancelSizeSpring;
         const opacity = dismisses ? 0 : 1;
-        for (const animator of backdrop == null
-          ? chrome
-          : [backdrop, ...chrome]) {
+        const move = (backdropMovesRef.current += 1);
+        setBackdropMoving(true);
+        const backdropMotion = backdrop?.animate(
+          {opacity},
+          {spring},
+          {touchRelease: true},
+        );
+        for (const animator of chrome) {
           animator.animate({opacity}, {spring}, {touchRelease: true});
         }
+        // Back at rest: the blur returns, unless the backdrop moved again.
+        void backdropMotion?.finished.then(() => {
+          if (!dismisses && backdropMovesRef.current === move) {
+            setBackdropMoving(false);
+          }
+        });
       },
       onDismissed: () => {
         handleClose();
@@ -816,6 +845,8 @@ export function Lightbox({
   const restoreAfterDismissalRef = useRef(() => {});
   restoreAfterDismissalRef.current = () => {
     stageForOpenRef.current.reset();
+    backdropMovesRef.current += 1;
+    setBackdropMoving(false);
     const faded = fadedRef.current;
     fadedRef.current = [];
     for (const animator of faded) {
