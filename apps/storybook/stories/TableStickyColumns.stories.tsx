@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState} from 'react';
+import React, {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
   Table,
@@ -126,6 +126,40 @@ export const PinStart: Story = {
         <p style={note}>
           <code>startKeys: ['name']</code> — scroll right to see the Name column
           stay pinned with a drop shadow.
+        </p>
+        <Table
+          data={employees}
+          columns={columns}
+          idKey="id"
+          plugins={{stickyColumns: sticky}}
+        />
+      </div>
+    );
+  },
+};
+
+/**
+ * A pinned column draws each row's divider itself, so the line under it moves
+ * with the column. A theme's divider color (`--table-row-divider-color`, set
+ * on the wrapper here) and an app's own `border-bottom` on a row (the second
+ * row) both carry over to the pinned cells.
+ */
+export const PinnedDividers: Story = {
+  render: () => {
+    const sticky = useTableStickyColumns<Employee>({startKeys: ['name']});
+    return (
+      <div
+        data-testid="pinned-dividers"
+        style={
+          {
+            maxWidth: 720,
+            '--table-row-divider-color': 'rgb(37, 99, 235)',
+          } as React.CSSProperties
+        }>
+        <style>{`[data-testid="pinned-dividers"] tbody tr:nth-child(2) { border-bottom: 2px solid rgb(220, 38, 38); }`}</style>
+        <p style={note}>
+          A blue theme divider on every row and an app&apos;s red 2 px border on
+          the second row, both on the pinned Name column as you scroll.
         </p>
         <Table
           data={employees}
