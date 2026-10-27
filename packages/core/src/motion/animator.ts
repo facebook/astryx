@@ -161,6 +161,7 @@
 import {cubicBezier} from './bezier';
 import {solveSpring, toSpring, type SpringDescription} from './spring';
 import {resolveMotion} from './resolveMotion';
+import {themeReducesMotion} from './themeKnobs';
 import {
   reducedMotionCrossFade,
   registerReducedMotionCrossFade,
@@ -777,8 +778,10 @@ export function createAnimator(
       : null);
   const pseudoElement = options.pseudoElement;
   // Reduced Motion reads the person's settings and nothing else: no option
-  // overrides them (design:reduced-motion DR4).
-  const prefersReducedMotion = defaultPrefersReducedMotion;
+  // overrides them (design:reduced-motion DR4). A theme that reduces motion
+  // for everyone counts as the setting (spec:AST-108 FR6).
+  const prefersReducedMotion = () =>
+    defaultPrefersReducedMotion() || themeReducesMotion(target);
   const isCoarsePointer = defaultIsCoarsePointer;
   const resting: Record<MotionProperty, number> = {
     ...IDENTITY,
