@@ -26,6 +26,7 @@ import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {getForcedColorsRules} from '../__tests__/forcedColors';
 import {Button} from '../Button';
 import {SideNav} from './SideNav';
+import {__resetMenuPressForTest} from '../hooks/useMenuPress';
 import {SideNavCollapseButton} from './SideNavCollapseButton';
 import {SideNavHeading} from './SideNavHeading';
 import {SideNavItem} from './SideNavItem';
@@ -424,6 +425,43 @@ describe('SideNavHeading', () => {
         <div role="menuitem">Beta</div>
       </>
     );
+
+    it('acts on the item a press slid across the menu lifts on, once (family:action-groups FR1, FR2, FR5)', async () => {
+      __resetMenuPressForTest();
+      const user = userEvent.setup();
+      const onAlpha = vi.fn();
+      const onBeta = vi.fn();
+      render(
+        <SideNavHeading
+          heading="My App"
+          menu={
+            <>
+              <div role="menuitem" tabIndex={-1} onClick={onAlpha}>
+                Alpha
+              </div>
+              <div role="menuitem" tabIndex={-1} onClick={onBeta}>
+                Beta
+              </div>
+            </>
+          }
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Open menu'}));
+      const item = (name: string) =>
+        screen.getByRole('menuitem', {name, hidden: true});
+      for (const pointer of [
+        {pointerType: 'touch', pointerId: 1},
+        {pointerType: 'mouse', pointerId: 2, button: 0},
+      ]) {
+        onAlpha.mockClear();
+        onBeta.mockClear();
+        fireEvent.pointerDown(item('Alpha'), pointer);
+        fireEvent.pointerMove(item('Beta'), pointer);
+        fireEvent.pointerUp(item('Beta'), pointer);
+        expect(onBeta).toHaveBeenCalledTimes(1);
+        expect(onAlpha).not.toHaveBeenCalled();
+      }
+    });
 
     it('does not wrap the heading menu popup in a modal dialog', async () => {
       const user = userEvent.setup();
