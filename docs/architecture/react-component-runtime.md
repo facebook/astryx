@@ -174,7 +174,8 @@ those contracts.
   siblings. Changes in one area in the same frame are measured together. A
   component reports a change through an internal, non-exported function that
   takes the `useAnimatedLayout` handle, so the handle stays member-free, and
-  each moving element is one the page already renders
+  each moving element is one the page already renders, except a swap's one
+  transient copy of the old content (`spec:AST-105` FR8)
   (`architecture:component-style-authoring` INV7). The module follows INV3
   and INV5.
 - **INV13 — One shared set of internal touch modules.** Core's touch

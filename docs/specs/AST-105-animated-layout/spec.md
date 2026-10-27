@@ -107,8 +107,12 @@ const animatedLayout = useAnimatedLayout({containerRef: scrollRef});
   change. The swap shares FR4's one motion. Under reduced motion it follows
   `design:reduced-motion` DR1–DR3: an opacity-only cross-fade under a coarse
   primary pointer, an immediate change otherwise. Layer exits stay with the
-  layer runtime's exit copy (`architecture:layer-runtime` INV14). The swap is
-  internal; the hook's public contract is unchanged.
+  layer runtime's exit copy (`architecture:layer-runtime` INV14). A swap can
+  also hold the area's old content as one transient copy, inert and hidden from
+  assistive technology, while the new content enters, and removes it when the
+  swap ends (`architecture:component-style-authoring` INV7); AppShell's
+  content area does this during a side nav collapse (`component:AppShell`
+  FR17). The swap is internal; the hook's public contract is unchanged.
 
 ## Coverage
 
