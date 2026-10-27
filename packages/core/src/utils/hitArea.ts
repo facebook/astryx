@@ -99,7 +99,8 @@ function growth(rect: HitRect, minSize: number): HitInsets {
  * How far `target` may grow on each side: toward `minSize` on each axis,
  * centered, and on each side no further than half the gap to a neighbour.
  * A neighbour counts when either one, at full growth toward `minSize`, would
- * reach into the other's half of the gap; it stops the side facing it, or,
+ * reach into the other's half of the gap, or their full areas would meet; it
+ * stops the side facing it, or,
  * for a neighbour apart on both axes (diagonal), the side with the larger gap.
  * That decision rests on the two rects alone, so the neighbour decides the
  * same about this target and the two areas never overlap. A neighbour
@@ -128,10 +129,14 @@ export function clampedHitInsets(
       bottom: Math.max(0, gap.y) / 2,
       left: Math.max(0, gap.x) / 2,
     };
-    // Either one, at full growth, would reach into the other's half.
+    // Either one, at full growth, would reach into the other's half, or
+    // their full areas would meet (a wide and a tall target, diagonally).
+    const reach = grown(target, full);
+    const neighbourReach = grown(rect, growth(rect, minSize));
     const crosses =
-      intersects(grown(target, full), grown(rect, half)) ||
-      intersects(grown(rect, growth(rect, minSize)), grown(target, half));
+      intersects(reach, grown(rect, half)) ||
+      intersects(neighbourReach, grown(target, half)) ||
+      intersects(reach, neighbourReach);
     if (!crosses) {
       continue;
     }
@@ -340,7 +345,9 @@ function measureOne(
   candidates: ReadonlyArray<Candidate>,
 ): {target: HitRect; insets: HitInsets} {
   const target = plainRect(watch.element);
-  const reach = Math.max(0, watch.minSize / 2);
+  // Two targets each growing up to half the minimum reach each other from a
+  // minimum apart.
+  const reach = Math.max(0, watch.minSize);
   const band = grown(target, {
     top: reach,
     right: reach,
@@ -438,17 +445,31 @@ function onPress(event: Event): void {
   }
   if (!isInside) {
     const swallow = (click: Event) => {
+      disarm();
+      // A keyboard or assistive-technology activation (detail 0) is never
+      // this touch's click: it goes through.
+      if ((click as MouseEvent).detail === 0) {
+        return;
+      }
       click.preventDefault();
       click.stopPropagation();
-      disarm();
     };
+    const doc = element.ownerDocument;
     const disarm = () => {
       element.removeEventListener('click', swallow, true);
+      element.removeEventListener('pointercancel', disarm, true);
+      doc.removeEventListener('pointerdown', onNextPress, PASSIVE_CAPTURE);
       if (entry.disarm === disarm) {
         entry.disarm = null;
       }
     };
+    // Any next press, here or elsewhere (the control's own label), ends it.
+    const onNextPress = () => disarm();
     element.addEventListener('click', swallow, true);
+    // A touch the browser takes (a scroll) sends no click.
+    element.addEventListener('pointercancel', disarm, true);
+    // Registered after this press's own dispatch has passed the document.
+    doc.addEventListener('pointerdown', onNextPress, PASSIVE_CAPTURE);
     entry.disarm = disarm;
   }
 }
@@ -637,6 +658,8 @@ export function watchHitArea(
       observe(element, entry);
     }
   } else {
+    // Another watch of an observed element: as visible as the first.
+    watch.isVisible = [...entry.watches][0]?.isVisible ?? watch.isVisible;
     entry.watches.add(watch);
   }
   if (watch.isVisible) {
