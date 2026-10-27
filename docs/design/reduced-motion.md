@@ -54,11 +54,12 @@ trackpad, or keyboard the change is immediate.
 
 ## State representation
 
-| State                             | Required representation                                                                         | Allowed variation          |
-| --------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------- |
-| reduced motion, coarse pointer    | Opacity-only cross-fade of 200 ms or less (DR2); an in-place value change applies at once (DR2) | A shorter cross-fade       |
-| reduced motion, any other pointer | Immediate change (DR3), except a touch drag's release (DR2)                                     | None                       |
-| no reduced-motion preference      | Outside this record                                                                             | Component and theme motion |
+| State                                             | Required representation                                                                         | Allowed variation          |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------- |
+| reduced motion, coarse pointer                    | Opacity-only cross-fade of 200 ms or less (DR2); an in-place value change applies at once (DR2) | A shorter cross-fade       |
+| reduced motion, any other pointer                 | Immediate change (DR3), except a touch drag's release (DR2)                                     | None                       |
+| no reduced-motion preference, theme on `'system'` | Outside this record                                                                             | Component and theme motion |
+| a theme on `'always'` (DR2a)                      | As reduced motion, whatever the person's setting                                                | DR1–DR3                    |
 
 ## Responsive and input behavior
 
