@@ -274,6 +274,14 @@ export abstract class GestureRecognizer {
     );
   }
 
+  /**
+   * @internal Whether the host cancels this recognizer's touch moves before it
+   * begins. Only a scroll-edge pan does (spec:AST-094 FR19).
+   */
+  protected get holdsTouchBeforeBegin(): boolean {
+    return false;
+  }
+
   /** How many touches the recognizer is tracking right now. */
   get numberOfTouches(): number {
     return this.touches.size;

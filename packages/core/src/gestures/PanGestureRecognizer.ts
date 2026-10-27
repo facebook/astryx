@@ -27,8 +27,12 @@
  *
  * - `scrollEdge`: the pan begins only if no scroller under the touch could
  *   scroll for that movement — the finger landed at the edge and pulls away
- *   from it. The browser has not committed yet, so beginning claims the
- *   touch and the browser never scrolls.
+ *   from it. From the first such move the host cancels the touch's moves,
+ *   so the browser never starts a scroll or rubber-band before the pan
+ *   begins at its hysteresis (`spec:AST-094` FR19's scroll-edge exception,
+ *   UISheetPresentationController moving the sheet when its scroll view is
+ *   at the top). A move toward the content, or across the pan, stays the
+ *   browser's.
  *
  * Who gets the drag is decided once, when it begins: a drag that began as
  * the browser's scroll stays the browser's to the lift and rubber-bands at
@@ -311,6 +315,31 @@ export class PanGestureRecognizer extends GestureRecognizer {
       return sign === 0 || Math.sign(along) === sign ? 'begin' : 'fail';
     }
     return across * Math.min(1, this.axisRatio) > magnitude ? 'fail' : 'wait';
+  }
+
+  /**
+   * @internal A scroll-edge pan holds its touch from the first move while
+   * every scroller under the finger is at its edge and the finger moves away
+   * from that edge, in the pan's direction (spec:AST-094 FR19). It still
+   * begins at its hysteresis (FR17).
+   */
+  protected override get holdsTouchBeforeBegin(): boolean {
+    if (
+      !this.scrollEdge ||
+      this.state !== 'possible' ||
+      this.numberOfTouches < this.minimumNumberOfTouches ||
+      this.numberOfTouches > this.maximumNumberOfTouches
+    ) {
+      return false;
+    }
+    const moved = this.raw;
+    if (moved.x === 0 && moved.y === 0) {
+      return false;
+    }
+    return (
+      this.classify(moved) === 'begin' &&
+      !this.nativeCanScroll(moved.x, moved.y)
+    );
   }
 
   private tryBegin(): void {

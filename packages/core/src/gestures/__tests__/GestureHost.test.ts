@@ -860,22 +860,89 @@ describe('GestureHost', () => {
     touch('touchend', card, [{...finger, y: 88}], [], 64);
   });
 
-  it('leaves a scroll-edge pan to claim at its begin', () => {
-    const {sheet} = mount('<div id="sheet"></div>');
+  it("leaves a scroll-edge pan's touch to the page while the list under the finger can scroll that way (spec:AST-094 FR14, FR19)", () => {
+    const {sheet, list} = mount(
+      '<div id="sheet"><div id="list" style="overflow-y: auto"><div id="row"></div></div></div>',
+    );
+    // Scrolled away from its top: a finger moving down scrolls the list.
+    scrollable(list, {scrollTop: 50, scrollHeight: 1000, clientHeight: 400});
     const pan = new PanGestureRecognizer({
       name: 'sheet',
       direction: 'down',
       scrollEdge: true,
     });
     detachers.push(host.attach(sheet, pan));
+    const row = document.getElementById('row') as HTMLElement;
     const finger = {id: 1, x: 50, y: 100};
-    touch('touchstart', sheet, [finger], [finger], 0);
+    touch('touchstart', row, [finger], [finger], 0);
     const at = (y: number, time: number) =>
-      touch('touchmove', sheet, [{...finger, y}], [{...finger, y}], time);
-    expect(at(107, 16).defaultPrevented).toBe(false);
-    expect(at(112, 32).defaultPrevented).toBe(true);
+      touch('touchmove', row, [{...finger, y}], [{...finger, y}], time);
+    expect(at(102, 16).defaultPrevented).toBe(false);
+    expect(at(107, 32).defaultPrevented).toBe(false);
+    // At its begin the list can still scroll: the drag is the browser's.
+    expect(at(112, 48).defaultPrevented).toBe(false);
+    expect(pan.state).toBe('failed');
+    touch('touchend', row, [{...finger, y: 112}], [], 64);
+  });
+
+  it("holds a scroll-edge pan's touch from its first move while every scroller under the finger is at its edge and the finger pulls away from it; the pan still begins at 10 pt (spec:AST-094 FR17, FR19)", () => {
+    const {sheet, list} = mount(
+      '<div id="sheet"><div id="list" style="overflow-y: auto"><div id="row"></div></div></div>',
+    );
+    scrollable(list, {scrollTop: 0, scrollHeight: 1000, clientHeight: 400});
+    const pan = new PanGestureRecognizer({
+      name: 'sheet',
+      direction: 'down',
+      scrollEdge: true,
+    });
+    detachers.push(host.attach(sheet, pan));
+    const row = document.getElementById('row') as HTMLElement;
+    const finger = {id: 1, x: 50, y: 100};
+    touch('touchstart', row, [finger], [finger], 0);
+    const at = (y: number, time: number, x = 50) =>
+      touch('touchmove', row, [{...finger, x, y}], [{...finger, x, y}], time);
+    // A slow pull: the browser never starts the list's scroll or rubber-band.
+    expect(at(101, 16).defaultPrevented).toBe(true);
+    expect(at(104, 32).defaultPrevented).toBe(true);
+    expect(pan.state).toBe('possible');
+    expect(at(111, 48).defaultPrevented).toBe(true);
     expect(pan.state).toBe('began');
-    touch('touchend', sheet, [{...finger, y: 112}], [], 48);
+    touch('touchend', row, [{...finger, y: 111}], [], 64);
+  });
+
+  it('leaves the move to the page when the finger at the edge moves toward the content or across the pan', () => {
+    const {sheet, list} = mount(
+      '<div id="sheet"><div id="list" style="overflow-y: auto"><div id="row"></div></div></div>',
+    );
+    scrollable(list, {scrollTop: 0, scrollHeight: 1000, clientHeight: 400});
+    const pan = new PanGestureRecognizer({
+      name: 'sheet',
+      direction: 'down',
+      scrollEdge: true,
+    });
+    detachers.push(host.attach(sheet, pan));
+    const row = document.getElementById('row') as HTMLElement;
+    // Up, toward the content: the list scrolls.
+    const up = {id: 1, x: 50, y: 100};
+    touch('touchstart', row, [up], [up], 0);
+    expect(
+      touch('touchmove', row, [{...up, y: 98}], [{...up, y: 98}], 16)
+        .defaultPrevented,
+    ).toBe(false);
+    touch('touchend', row, [{...up, y: 98}], [], 32);
+    // Mostly sideways: not the pan's direction.
+    const across = {id: 2, x: 50, y: 100};
+    touch('touchstart', row, [across], [across], 100);
+    expect(
+      touch(
+        'touchmove',
+        row,
+        [{...across, x: 54, y: 101}],
+        [{...across, x: 54, y: 101}],
+        116,
+      ).defaultPrevented,
+    ).toBe(false);
+    touch('touchend', row, [{...across, x: 54, y: 101}], [], 132);
   });
 
   it('names the pointer a finger, a pen or a mouse is driven by', () => {

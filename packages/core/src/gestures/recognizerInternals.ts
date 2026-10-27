@@ -36,6 +36,7 @@ export interface RecognizerInternals {
   pending: 'began' | 'ended' | null;
   readonly seenTouchIds: Set<number>;
   readonly acceptsTouchInput: boolean;
+  readonly holdsTouchBeforeBegin: boolean;
   requiresFailureOf(other: GestureRecognizer): boolean;
   allowsSimultaneous(other: GestureRecognizer): boolean;
   shouldBegin(): boolean;
