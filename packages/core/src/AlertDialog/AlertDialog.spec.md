@@ -127,7 +127,9 @@ intentional decision. A `current` contract contains no unresolved rows.
 
 ### Performance and resources
 
-\1
+- **PR1 — Dialog-owned resources.** AlertDialog's only listener is the
+  small-screen media query behind the button order; Dialog owns the modal
+  lifecycle.
 
 - **PR2 — The touch presentation adds no element.** The motion plays on the
   dialog surface and its `::backdrop`; AlertDialog renders no extra element
