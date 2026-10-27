@@ -489,6 +489,7 @@ export function SideNav({
   // with it (`component:AppShell` FR17).
   const shell = use(SideNavShellContext);
   const railSnapshotRef = useRef<RailSnapshot | null>(null);
+  const endRailRef = useRef<(() => void) | null>(null);
   const railElement = useCallback(
     () => shell?.rail() ?? navRef.current,
     [shell],
@@ -500,9 +501,11 @@ export function SideNav({
     const snapshot = railSnapshotRef.current;
     railSnapshotRef.current = null;
     if (snapshot != null) {
-      playRail(snapshot, shell);
+      endRailRef.current = playRail(snapshot, shell);
     }
   }, [collapsed, shell]);
+  // An unmount mid-motion removes the copies and restores the row at once.
+  useLayoutEffect(() => () => endRailRef.current?.(), []);
 
   const toggle = useCallback(() => {
     const next = !collapsed;
@@ -703,12 +706,8 @@ export function SideNav({
   // Overlay drag handle inside the nav when resizable.
   // Uses ResizeHandle in overlay mode so the handle sits inside
   // the panel's overflow: clip bounds.
-  const railMotion = (
-    <LayoutChangeSnapshot value={collapsed} onBeforeChange={measureRail} />
-  );
-  const content = showResizeHandle ? (
+  const rail = showResizeHandle ? (
     <div {...stylex.props(styles.resizableContainer)}>
-      {railMotion}
       {navElement}
       <ResizeHandle
         data-testid="astryx-sidenav-resize-handle"
@@ -723,9 +722,14 @@ export function SideNav({
       />
     </div>
   ) : (
+    navElement
+  );
+  // The snapshot stays mounted outside the resize wrapper, which comes and
+  // goes with the collapse it measures.
+  const content = (
     <>
-      {railMotion}
-      {navElement}
+      <LayoutChangeSnapshot value={collapsed} onBeforeChange={measureRail} />
+      {rail}
     </>
   );
 

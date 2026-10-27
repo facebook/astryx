@@ -72,6 +72,19 @@ function copyOf(element: HTMLElement): HTMLElement {
     node.removeAttribute('id');
     node.removeAttribute('data-testid');
   }
+  // A copied control joins no form or radio group (a checked radio would
+  // uncheck the live one), and copied media and frames load nothing.
+  for (const node of copy.querySelectorAll('[name], [form]')) {
+    node.removeAttribute('name');
+    node.removeAttribute('form');
+  }
+  for (const node of copy.querySelectorAll(
+    'iframe, video, audio, source, embed, object',
+  )) {
+    for (const attribute of ['src', 'srcdoc', 'data', 'autoplay']) {
+      node.removeAttribute(attribute);
+    }
+  }
   copy.setAttribute('aria-hidden', 'true');
   copy.setAttribute('inert', '');
   copy.style.pointerEvents = 'none';
@@ -187,17 +200,20 @@ export function snapshotRail(
 
 const clamp = (value: number) => Math.min(1, Math.max(0, value));
 
-/** After the change commits, before paint: play the motion from the snapshot. */
+/**
+ * After the change commits, before paint: play the motion from the snapshot.
+ * Returns what ends it at once (an unmount mid-motion).
+ */
 export function playRail(
   snapshot: RailSnapshot,
   shell: SideNavShell | null,
-): void {
+): () => void {
   const {rail, railRect, railCopy, columnRect, wrapCopy, wrapRect} = snapshot;
   const motion = layoutMotionFor(rail);
   const next = rail.getBoundingClientRect();
   const delta = next.width - railRect.width;
   if (motion.kind === 'instant' || Math.abs(delta) < 0.5) {
-    return;
+    return () => {};
   }
   const rtl = getComputedStyle(rail).direction === 'rtl';
   const travels = motion.kind === 'spring';
@@ -366,4 +382,5 @@ export function playRail(
   running.set(rail, end);
   // Every part runs on one clock, so the first to finish ends them all.
   animations[0]?.addEventListener('finish', end);
+  return end;
 }

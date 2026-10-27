@@ -111,17 +111,31 @@ afterEach(() => {
   delete (HTMLElement.prototype as unknown as {animate?: unknown}).animate;
 });
 
-function Shell({inShell = true}: {inShell?: boolean}) {
+function Shell({
+  inShell = true,
+  hasNav = true,
+  isResizable = false,
+}: {
+  inShell?: boolean;
+  hasNav?: boolean;
+  isResizable?: boolean;
+}) {
   const nav = (
-    <SideNav collapsible>
+    <SideNav collapsible resizable={isResizable}>
       <SideNavItem label="Home" icon={<svg aria-hidden="true" />} />
       <SideNavItem label="Projects" icon={<svg aria-hidden="true" />} />
     </SideNav>
   );
   return inShell ? (
-    <AppShell height="fill" mobileNav={{breakpoint: 'none'}} sideNav={nav}>
+    <AppShell
+      height="fill"
+      mobileNav={{breakpoint: 'none'}}
+      sideNav={hasNav ? nav : undefined}>
       <h1>Projects page</h1>
       <p>The page beside the rail.</p>
+      <label>
+        <input type="radio" name="plan" value="pro" defaultChecked /> Pro
+      </label>
     </AppShell>
   ) : (
     nav
@@ -263,6 +277,43 @@ describe('SideNav rail motion (component:SideNav FR6, component:AppShell FR17)',
     toggle();
     expect(animated('clipPath').length).toBeGreaterThan(0);
     expect(animated('translate')).toEqual([]);
+  });
+
+  it('leaves the page form state alone: a checked radio stays checked', () => {
+    render(<Shell />);
+    const pro = screen.getByRole('radio', {name: 'Pro'});
+    expect(pro).toBeChecked();
+    toggle();
+    // The copied radio joins no group, so it cannot uncheck the live one.
+    const [copied] = copies().flatMap(copy =>
+      Array.from(copy.querySelectorAll('input[type="radio"]')),
+    );
+    expect(copied).toBeDefined();
+    expect(copied).not.toHaveAttribute('name');
+    expect(pro).toBeChecked();
+    act(() => {
+      recorded.forEach(entry => entry.animation.finish());
+    });
+    expect(pro).toBeChecked();
+  });
+
+  it('plays for a resizable rail too, whose resize wrapper comes and goes with the collapse', () => {
+    render(<Shell isResizable />);
+    toggle();
+    expect(railWidth()).toBe(COLLAPSED);
+    expect(animated('clipPath').length).toBeGreaterThan(0);
+  });
+
+  it('removes its copies and restores the row when the rail unmounts mid-motion', () => {
+    const {rerender} = render(<Shell />);
+    toggle();
+    expect(copies().length).toBeGreaterThan(0);
+    rerender(<Shell hasNav={false} />);
+    expect(copies()).toEqual([]);
+    const clipped = Array.from(
+      document.querySelectorAll<HTMLElement>('*'),
+    ).filter(element => element.style.overflow === 'clip');
+    expect(clipped).toEqual([]);
   });
 
   it('changes at once without Web Animations', () => {
