@@ -1198,6 +1198,29 @@ describe('swipeActions', () => {
     expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
   });
 
+  it('keeps the rest a settle lands while a claimed touch holds the row, when that touch lifts before the swipe begins', async () => {
+    const {row} = renderRow();
+    // Released past half the panel: the row settles open.
+    dragLeading(row, 45);
+    // While it settles, a finger claims it and holds short of the swipe.
+    const f = finger(row);
+    f.down(150);
+    f.move(160);
+    // The settle lands under the held finger.
+    await settled();
+    expect(xOf(row)).toBe(72);
+    f.up();
+    await settled();
+    // The row rests open, its panel live, and it still closes.
+    expect(xOf(row)).toBe(72);
+    expect(panelOf(row, 'leading')).not.toHaveAttribute('inert');
+    const button = screen.getByRole('button', {name: 'Unread'});
+    button.focus();
+    fireEvent.keyDown(button, {key: 'Escape'});
+    await settled();
+    expect(xOf(row)).toBe(0);
+  });
+
   it('springs back when the browser cancels a swipe in progress', async () => {
     const onActivate = vi.fn();
     const {row} = renderRow({leading: [{label: 'Unread', onActivate}]});
