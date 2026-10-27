@@ -469,8 +469,9 @@ FR1–FR3 and DEC-3, so a mouse released outside a menu closes it.
 
 - **FR43 — Gestures work on the web.** Gestures attach for every pointer, a
   mouse, a pen, and a finger, not only a coarse primary pointer. These stay
-  off: row swipe actions under a mouse or a trackpad, which would take the
-  browser's text selection and native drag (`spec:AST-057` AR2, DEC-4); a
+  off: row swipe actions under a mouse, which would take the browser's text
+  selection and native drag, while a trackpad's horizontal scroll swipes a
+  row (`spec:AST-057` AR2, DEC-7); a
   pinch under a pen; the screen-edge pan under a mouse, a trackpad, or a pen;
   and the touch target size, which stays coarse-only and never overlaps a
   neighbor's target. On the web, a pan also
