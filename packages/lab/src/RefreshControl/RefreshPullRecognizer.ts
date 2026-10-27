@@ -27,10 +27,13 @@
  *
  * A pen reads the same way as a finger (`spec:AST-094` FR43); a mouse drag
  * is not read: its text selection and native drag stay the browser's, as
- * `spec:AST-057` AR2 keeps a mouse off a row. `pointerType` records the first
- * contact's pointer, and `onTouchDown` reports that first contact landing, so
- * a settle in flight can stop where it is (UIScrollView brakes on
- * touch-down).
+ * `spec:AST-057` AR2 keeps a mouse off a row. A trackpad's two-finger scroll
+ * pulls through a second instance that takes only that scroll (scroll-edge,
+ * `allowedScrollTypes: ['continuous']`, no pointer), so it takes a scroll
+ * only where nothing under the pointer could scroll for it.
+ * `pointerType` and `scrollType` record the first contact's input, and
+ * `onTouchDown` reports that first contact landing, so a settle in flight can
+ * stop where it is (UIScrollView brakes on touch-down).
  *
  * SYNC: When modified, update:
  * - /packages/lab/src/RefreshControl/useRefreshControl.ts
@@ -51,6 +54,8 @@ export class RefreshPullRecognizer extends PanGestureRecognizer {
   onTouchDown: ((time: number) => void) | null = null;
   /** The pointer of the gesture's first contact: a finger or a pen. */
   pointerType: PointerKind = 'touch';
+  /** Set when the gesture is a trackpad's scroll rather than a contact. */
+  scrollType: GestureTouch['scrollType'] | null = null;
 
   constructor(options: PanGestureRecognizerOptions = {}) {
     super({
@@ -73,6 +78,7 @@ export class RefreshPullRecognizer extends PanGestureRecognizer {
   ): void {
     if (this.numberOfTouches === touches.length) {
       this.pointerType = touches[0]?.pointerType ?? 'touch';
+      this.scrollType = touches[0]?.scrollType ?? null;
       this.onTouchDown?.(event.time);
     }
     super.touchesBegan(touches, event);

@@ -37,8 +37,10 @@
  * a drag at the top, with the same mapping, trigger, settle and drawing; a
  * pen pull clears the text selection its drag started. A mouse drag does
  * not pull: its text selection and native drag stay the browser's, as
- * `spec:AST-057` AR2 keeps a mouse off a row; nor does a trackpad's or a
- * wheel's scroll. The top edge follows the touch presentation
+ * `spec:AST-057` AR2 keeps a mouse off a row. A trackpad's two-finger scroll
+ * toward the top pulls once the content is at its top, as a finger does, and
+ * keeps the page's text selection; a mouse wheel's notches do not pull (one
+ * would cross the trigger at once). The top edge follows the touch presentation
  * (`useTouchPresentation`: a coarse primary pointer, one touch model on iOS
  * and Android alike): only there does the pull take the page's overscroll
  * near the top and replace the browser's own pull to refresh (Safari's and
@@ -312,7 +314,8 @@ export function useRefreshTouchController({
   }, []);
   /**
    * The pointer of the latest pull: only a finger's release cross-fades under
-   * Reduce Motion; a pen's lands at once (design:reduced-motion DR2, DR3).
+   * Reduce Motion; a pen's or a trackpad's lands at once (design:reduced-motion
+   * DR2, DR3).
    */
   const pullPointer = useRef<PointerKind>('touch');
   const holdSelection = useCallback(() => {
@@ -745,95 +748,115 @@ export function useRefreshTouchController({
     }
   }, [content.animator, model, settle]);
 
-  const recognizer = useGestureRecognizer(
-    contentElement,
-    () => new RefreshPullRecognizer(),
-    pan => {
-      const state = model.current;
-      if (pan.state === 'began' || pan.state === 'changed') {
-        const translation = pan.translation().y;
-        if (anchor.current == null) {
-          // Not pulling yet: the browser may be scrolling the content (a drag
-          // that began as a scroll). The pull starts where the content is at
-          // its top under a finger moving down, in the same touch: the
-          // browser keeps the finger all along, so nothing changes hands
-          // (AST-094 FR14; the pan only watches, FR20).
-          const current =
-            pan.state === 'began' ? resolveOwner() : owner.current;
-          // At `began` the finger's whole move counts, the threshold's
-          // included (a slow drag begins at a translation of zero).
-          const isMovingDown =
-            pan.state === 'began'
-              ? translation + pan.travelAtBegan.y > 0
-              : translation > lastTranslation.current;
-          lastTranslation.current = translation;
-          if (!isMovingDown || scrollTopOf(current) > 0) {
-            return;
-          }
-          // From rest the travel is the pan's (which leaves out its
-          // hysteresis, as UIKit's does); past a scroll it starts where the
-          // content ran out.
-          anchor.current = pan.state === 'began' ? 0 : translation;
-          pullPointer.current = pan.pointerType;
+  const onPull = (pan: RefreshPullRecognizer) => {
+    const state = model.current;
+    if (pan.state === 'began' || pan.state === 'changed') {
+      const translation = pan.translation().y;
+      if (anchor.current == null) {
+        // Not pulling yet: the browser may be scrolling the content (a drag
+        // that began as a scroll). The pull starts where the content is at
+        // its top under a finger moving down, in the same touch: the
+        // browser keeps the finger all along, so nothing changes hands
+        // (AST-094 FR14; the pan only watches, FR20).
+        const current = pan.state === 'began' ? resolveOwner() : owner.current;
+        // At `began` the finger's whole move counts, the threshold's
+        // included (a slow drag begins at a translation of zero).
+        const isMovingDown =
+          pan.state === 'began'
+            ? translation + pan.travelAtBegan.y > 0
+            : translation > lastTranslation.current;
+        lastTranslation.current = translation;
+        if (!isMovingDown || scrollTopOf(current) > 0) {
+          return;
+        }
+        // From rest the travel is the pan's (which leaves out its
+        // hysteresis, as UIKit's does); past a scroll it starts where the
+        // content ran out.
+        anchor.current = pan.state === 'began' ? 0 : translation;
+        pullPointer.current = pan.pointerType;
+        // A scroll selects nothing and keeps the page's selection; a pen's
+        // drag gives up what it selected before the pull took it.
+        if (pan.scrollType == null) {
           if (pan.pointerType !== 'touch') {
             clearDragSelection();
           }
           holdSelection();
-          const shown = content.animator.get('y');
-          stopPlacing();
-          const dimension = heightOf(current);
-          const mode: PullMode = state.isRefreshing ? 'band' : 'reveal';
-          pull.current = {
-            dimension,
-            mode,
-            trigger: triggerDistance(dimension),
-            floor: state.isRefreshing ? REFRESH_HEIGHT : 0,
-            travel0: pullTravel(shown, dimension, mode),
-            scrollTop0: scrollTopOf(current),
-          };
-          dispatch({type: 'pullStart'});
         }
-        lastTranslation.current = translation;
-        const geometry = pull.current;
-        // A browser that scrolls the content back as the finger returns
-        // (Chromium) takes over from the pull.
-        const scrolledBack =
-          scrollTopOf(owner.current) - geometry.scrollTop0 > 0.5;
-        const travel = scrolledBack
-          ? 0
-          : geometry.travel0 + (translation - anchor.current);
-        const overscroll = Math.max(
-          geometry.floor,
-          pullOverscroll(travel, geometry.dimension, geometry.mode),
-        );
-        const hadTriggered = model.current.hasTriggered;
-        dispatch({type: 'pullMove', overscroll, trigger: geometry.trigger});
-        if (!hadTriggered && model.current.hasTriggered) {
-          // The frame after the trigger steps onto the finger (within the
-          // one-to-one band).
-          geometry.mode =
-            geometry.mode === 'band' ? 'band' : modeAfterTrigger(travel);
-        }
-        place(overscroll);
-        if (!model.current.isRefreshing) {
-          setReveal(revealProgress(overscroll, geometry.dimension));
-        }
-        return;
+        const shown = content.animator.get('y');
+        stopPlacing();
+        const dimension = heightOf(current);
+        const mode: PullMode = state.isRefreshing ? 'band' : 'reveal';
+        pull.current = {
+          dimension,
+          mode,
+          trigger: triggerDistance(dimension),
+          floor: state.isRefreshing ? REFRESH_HEIGHT : 0,
+          travel0: pullTravel(shown, dimension, mode),
+          scrollTop0: scrollTopOf(current),
+        };
+        dispatch({type: 'pullStart'});
       }
-      if (pan.state !== 'ended' && pan.state !== 'cancelled') {
-        return;
+      lastTranslation.current = translation;
+      const geometry = pull.current;
+      // A browser that scrolls the content back as the finger returns
+      // (Chromium) takes over from the pull.
+      const scrolledBack =
+        scrollTopOf(owner.current) - geometry.scrollTop0 > 0.5;
+      const travel = scrolledBack
+        ? 0
+        : geometry.travel0 + (translation - anchor.current);
+      const overscroll = Math.max(
+        geometry.floor,
+        pullOverscroll(travel, geometry.dimension, geometry.mode),
+      );
+      const hadTriggered = model.current.hasTriggered;
+      dispatch({type: 'pullMove', overscroll, trigger: geometry.trigger});
+      if (!hadTriggered && model.current.hasTriggered) {
+        // The frame after the trigger steps onto the finger (within the
+        // one-to-one band).
+        geometry.mode =
+          geometry.mode === 'band' ? 'band' : modeAfterTrigger(travel);
       }
-      const wasPulling = anchor.current != null;
-      anchor.current = null;
-      if (!wasPulling) {
-        // A scroll that never reached the top: a settle the finger caught
-        // resumes.
-        resumeSettle();
-        return;
+      place(overscroll);
+      if (!model.current.isRefreshing) {
+        setReveal(revealProgress(overscroll, geometry.dimension));
       }
-      releaseSelection();
-      dispatch({type: pan.state === 'ended' ? 'pullEnd' : 'pullCancel'});
-    },
+      return;
+    }
+    if (pan.state !== 'ended' && pan.state !== 'cancelled') {
+      return;
+    }
+    const wasPulling = anchor.current != null;
+    anchor.current = null;
+    if (!wasPulling) {
+      // A scroll that never reached the top: a settle the finger caught
+      // resumes.
+      resumeSettle();
+      return;
+    }
+    releaseSelection();
+    dispatch({type: pan.state === 'ended' ? 'pullEnd' : 'pullCancel'});
+  };
+  const recognizer = useGestureRecognizer(
+    contentElement,
+    () => new RefreshPullRecognizer(),
+    onPull,
+  );
+  // A trackpad's two-finger scroll pulls through a second pan that takes only
+  // that scroll (spec:AST-094 FR43). As a scroll-edge pan it takes a scroll
+  // only where nothing under the pointer could scroll for it: the owner at
+  // its top and the content moving down. Every other scroll stays the
+  // page's, and a mouse wheel's notches are never taken.
+  const scrollRecognizer = useGestureRecognizer(
+    contentElement,
+    () =>
+      new RefreshPullRecognizer({
+        name: 'RefreshScrollPull',
+        scrollEdge: true,
+        allowedPointerTypes: [],
+        allowedScrollTypes: ['continuous'],
+      }),
+    onPull,
   );
   // Syncs whether the pull applies (not disabled, no scroll lock)
   // with the recognizer, an object outside React. Turned off mid-pull, it
@@ -841,25 +864,34 @@ export function useRefreshTouchController({
   // and ends the pull (the hook's own `isEnabled` would end it silently).
   useEffect(() => {
     recognizer.setEnabled(isPullEnabled);
-  }, [isPullEnabled, recognizer]);
+    scrollRecognizer.setEnabled(isPullEnabled);
+  }, [isPullEnabled, recognizer, scrollRecognizer]);
 
   useEffect(() => {
-    // A finger landing on a settle in flight stops it (UIScrollView brakes);
-    // if no pull follows, the settle resumes.
-    recognizer.onTouchDown = () => {
-      resolveOwner();
-      applyEdge();
-      cancelPendingEnd();
-      stopPlacing();
-    };
-    const stopListening = recognizer.addTransitionListener(current => {
-      if (current.state === 'failed') {
-        resumeSettle();
-      }
+    // A finger landing on a settle in flight stops it (UIScrollView brakes),
+    // as a trackpad's scroll starting does; if no pull follows, the settle
+    // resumes.
+    const pans = [recognizer, scrollRecognizer];
+    const stops = pans.map(pan => {
+      pan.onTouchDown = () => {
+        resolveOwner();
+        applyEdge();
+        cancelPendingEnd();
+        stopPlacing();
+      };
+      return pan.addTransitionListener(current => {
+        if (current.state === 'failed') {
+          resumeSettle();
+        }
+      });
     });
     return () => {
-      recognizer.onTouchDown = null;
-      stopListening();
+      for (const pan of pans) {
+        pan.onTouchDown = null;
+      }
+      for (const stop of stops) {
+        stop();
+      }
     };
   }, [
     applyEdge,
@@ -867,6 +899,7 @@ export function useRefreshTouchController({
     recognizer,
     resolveOwner,
     resumeSettle,
+    scrollRecognizer,
     stopPlacing,
   ]);
 
