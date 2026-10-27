@@ -21,12 +21,12 @@
  * - /packages/lab/src/RefreshControl/refreshPull.test.ts
  */
 
-import {cubicBezier} from '@astryxdesign/core/motion/bezier';
+import {cubicBezier} from '@astryxdesign/core/internal/motion';
 import {
   rubberBand,
   rubberBandInverse,
-} from '@astryxdesign/core/motion/rubberBand';
-import {refreshControl} from '@astryxdesign/core/motion/uikit/refresh';
+} from '@astryxdesign/core/internal/motion';
+import {refreshControl} from '@astryxdesign/core/internal/motion';
 
 /** The refreshing inset and one-to-one stretch, pt. */
 export const REFRESH_HEIGHT: number = refreshControl.height;

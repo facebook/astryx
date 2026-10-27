@@ -66,19 +66,16 @@ import {
   useState,
   type RefCallback,
 } from 'react';
-import {claimRootScrollStyle} from '@astryxdesign/core/gestures';
-import {useGestureRecognizer} from '@astryxdesign/core/gestures/useGestureRecognizer';
-import type {MotionCurve} from '@astryxdesign/core/motion/animator';
-import {cubicBezier} from '@astryxdesign/core/motion/bezier';
-import {resolveMotion} from '@astryxdesign/core/motion/resolveMotion';
-import {solveSpring, toSpring} from '@astryxdesign/core/motion/spring';
-import {refreshControl} from '@astryxdesign/core/motion/uikit/refresh';
-import {scroll} from '@astryxdesign/core/motion/uikit/scroll';
-import {
-  registerTimingTable,
-  timing,
-} from '@astryxdesign/core/motion/uikit/timing';
-import {useAnimator} from '@astryxdesign/core/motion/useAnimator';
+import {claimRootScrollStyle} from '@astryxdesign/core/internal/touch';
+import {useGestureRecognizer} from '@astryxdesign/core/internal/touch';
+import type {MotionCurve} from '@astryxdesign/core/internal/motion';
+import {cubicBezier} from '@astryxdesign/core/internal/motion';
+import {resolveMotion} from '@astryxdesign/core/internal/motion';
+import {solveSpring, toSpring} from '@astryxdesign/core/internal/motion';
+import {refreshControl} from '@astryxdesign/core/internal/motion';
+import {scroll} from '@astryxdesign/core/internal/motion';
+import {registerTimingTable, timing} from '@astryxdesign/core/internal/motion';
+import {useAnimator} from '@astryxdesign/core/internal/motion';
 import {RefreshPullRecognizer} from './RefreshPullRecognizer';
 import {
   REFRESH_REVEAL_VAR,
