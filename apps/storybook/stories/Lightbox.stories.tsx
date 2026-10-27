@@ -130,6 +130,38 @@ export const GalleryWithZoom: Story = {
 };
 
 /**
+ * A gallery whose captions differ in length: the photo keeps one box
+ * whichever pages, and so whichever captions, are rendered.
+ */
+export const GalleryWithCaptions: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <button onClick={() => setIsOpen(true)}>
+          Open gallery with captions
+        </button>
+        <Lightbox
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          media={[
+            {
+              ...GALLERY_MEDIA[0],
+              caption:
+                'A winding path through the forest, past the old mill and down to the river, where the trail turns back toward the village',
+            },
+            GALLERY_MEDIA[1],
+            GALLERY_MEDIA[3],
+            {...GALLERY_MEDIA[2], caption: 'Golden hour'},
+          ]}
+          hasZoom
+        />
+      </>
+    );
+  },
+};
+
+/**
  * A controlled gallery whose parent keeps its index (it pages only with its
  * own buttons, say while a change is confirmed): a swipe returns to the
  * photo the parent shows.

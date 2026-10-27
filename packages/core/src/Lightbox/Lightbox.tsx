@@ -228,9 +228,10 @@ const styles = stylex.create({
     position: 'relative',
   },
   // Two rows, the photo's and the caption's, that every page shares
-  // (subgrid): the caption row is as tall as the tallest rendered caption,
-  // so every photo centres on the same box, with or without a caption, and
-  // the next photo slides in level with the current one.
+  // (subgrid): the caption row is as tall as the gallery's tallest caption
+  // (the current page lays out, unseen, those no rendered page shows), so
+  // every photo centres on the same box, with or without a caption, the next
+  // photo slides in level with the current one, and paging never resizes it.
   track: {
     position: 'absolute',
     inset: 0,
@@ -268,6 +269,25 @@ const styles = stylex.create({
   pageCaption: {
     gridRow: '2',
     justifySelf: 'center',
+  },
+  // The current page's caption row when it also lays out, unseen, the
+  // captions no rendered page shows (`unrenderedCaptions`): one grid cell
+  // holds its own caption and those, so the row is the tallest of them.
+  pageCaptionRow: {
+    gridRow: '2',
+    display: 'grid',
+    justifyItems: 'center',
+    minWidth: 0,
+  },
+  captionStacked: {
+    gridArea: '1 / 1',
+  },
+  captionSizer: {
+    display: 'grid',
+    justifyItems: 'center',
+    justifySelf: 'stretch',
+    visibility: 'hidden',
+    pointerEvents: 'none',
   },
   imageWrapperZoomable: {
     cursor: {
@@ -436,7 +456,7 @@ export function Lightbox({
   // Index state (controlled + uncontrolled)
   const isControlled = controlledIndex !== undefined;
   const [uncontrolledIndex, setUncontrolledIndex] = useState(defaultIndex);
-  const index = isControlled ? controlledIndex : uncontrolledIndex;
+  const requestedIndex = isControlled ? controlledIndex : uncontrolledIndex;
 
   const setIndex = useCallback(
     (value: number) => {
@@ -459,10 +479,11 @@ export function Lightbox({
     [media],
   );
   const isGallery = mediaArray.length > 1;
-  const currentItem =
-    mediaArray.length > 0
-      ? mediaArray[Math.min(index, mediaArray.length - 1)]
-      : null;
+  // The item shown, current in every respect (its page, the counter, the
+  // pager, the announcement): an index past either end shows the nearest
+  // item. A NaN index stays NaN (the viewed-item check below).
+  const index = Math.max(0, Math.min(requestedIndex, mediaArray.length - 1));
+  const currentItem = mediaArray.length > 0 ? mediaArray[index] : null;
   const currentType = currentItem?.type ?? 'image';
   const isVideo = currentType === 'video';
   const canPrev = isGallery && index > 0;
@@ -503,7 +524,7 @@ export function Lightbox({
     if (!indexChanged || !isOpen || !wasOpen) {
       return;
     }
-    const item = mediaArray[Math.min(index, mediaArray.length - 1)];
+    const item = mediaArray[index];
     const position = {index: index + 1, total: mediaArray.length};
     announce(
       item?.alt
@@ -511,6 +532,22 @@ export function Lightbox({
         : t('@astryx.lightbox.imagePosition', position),
     );
   }, [index, isOpen, announce, mediaArray, t]);
+
+  // A video left on another page stops: the pager keeps the neighbours
+  // mounted, and a playing one would go on, with its sound, off screen.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container == null) {
+      return;
+    }
+    for (const video of container.querySelectorAll<HTMLVideoElement>(
+      '[data-lightbox-page]:not([data-current]) video',
+    )) {
+      if (!video.paused) {
+        video.pause();
+      }
+    }
+  }, [index]);
 
   // Open/close dialog
   useIsomorphicLayoutEffect(() => {
@@ -598,21 +635,23 @@ export function Lightbox({
         press != null &&
         Math.hypot(e.clientX - press.x, e.clientY - press.y) >
           UIKIT_TAP.allowableMovement.value;
-      // A click on the photo itself is the photo's (a double-click zooms it).
-      const onPhoto =
-        hasZoom &&
-        !isVideo &&
-        [...e.currentTarget.querySelectorAll('[data-current] img')].some(
-          media => {
-            const r = media.getBoundingClientRect();
-            return (
-              e.clientX >= r.left &&
-              e.clientX <= r.right &&
-              e.clientY >= r.top &&
-              e.clientY <= r.bottom
-            );
-          },
+      // A click on the photo itself is the photo's, zoom or not (a
+      // double-click zooms it): the photo takes no pointer events, so the
+      // click lands on its box.
+      const onPhoto = [
+        ...e.currentTarget.querySelectorAll('[data-current] img'),
+      ].some(media => {
+        const r = media.getBoundingClientRect();
+        // A photo with no size yet (still loading) is not under the click.
+        return (
+          r.width > 0 &&
+          r.height > 0 &&
+          e.clientX >= r.left &&
+          e.clientX <= r.right &&
+          e.clientY >= r.top &&
+          e.clientY <= r.bottom
         );
+      });
       if (
         isGallery &&
         !stageTaps &&
@@ -828,6 +867,15 @@ export function Lightbox({
   const pageIndexes = isGallery
     ? [index - 1, index, index + 1].filter(i => i >= 0 && i < mediaArray.length)
     : [];
+  // The captions no rendered page shows: the current page lays them out,
+  // unseen, in the caption row, so the row stays as tall as the gallery's
+  // tallest caption whichever pages are rendered, and paging never resizes
+  // the photo row.
+  const unrenderedCaptions = isGallery
+    ? mediaArray.flatMap((item, i) =>
+        item.caption && !pageIndexes.includes(i) ? [i] : [],
+      )
+    : [];
 
   return (
     <dialog
@@ -960,14 +1008,46 @@ export function Lightbox({
                             {...stylex.props(styles.pageMedia)}>
                             {renderMedia(mediaArray[i], i === index)}
                           </div>
-                          {mediaArray[i].caption && (
-                            <div
-                              {...stylex.props(
-                                styles.caption,
-                                styles.pageCaption,
-                              )}>
-                              {mediaArray[i].caption}
+                          {i === index && unrenderedCaptions.length > 0 ? (
+                            <div {...stylex.props(styles.pageCaptionRow)}>
+                              {mediaArray[i].caption && (
+                                <div
+                                  {...stylex.props(
+                                    styles.caption,
+                                    styles.captionStacked,
+                                  )}>
+                                  {mediaArray[i].caption}
+                                </div>
+                              )}
+                              <div
+                                aria-hidden
+                                inert
+                                {...stylex.props(
+                                  styles.captionStacked,
+                                  styles.captionSizer,
+                                )}>
+                                {unrenderedCaptions.map(j => (
+                                  <div
+                                    key={j}
+                                    {...stylex.props(
+                                      styles.caption,
+                                      styles.captionStacked,
+                                    )}>
+                                    {mediaArray[j].caption}
+                                  </div>
+                                ))}
+                              </div>
                             </div>
+                          ) : (
+                            mediaArray[i].caption && (
+                              <div
+                                {...stylex.props(
+                                  styles.caption,
+                                  styles.pageCaption,
+                                )}>
+                                {mediaArray[i].caption}
+                              </div>
+                            )
                           )}
                         </div>
                       ))}
