@@ -188,7 +188,9 @@ a measured, sourced difference exists.
   control's press ends when the browser takes the touch (FR20), and its
   activation stays the browser's click.
   Under a fine pointer a control uses a third profile with no delay: its
-  press paints at press-down and clears at the release (DEC-21).
+  press paint starts at once on `pointerdown`, through the same press
+  controller and release fade as a finger's, in place of CSS `:active`; the
+  scroll brake stays touch-only (DEC-21).
   A cell (a table or collection cell) highlights 150 ms after touch-down inside
   a scroll view, drops the highlight when the scroll wins (FR20), and activates on a
   lift inside it with no scroll taking the touch (FR20). A control is inside a scroll view when it sits in a scrollable container,
