@@ -162,25 +162,18 @@ const styles = stylex.create({
   // with the surface behind it, for the length of its slide (the attribute
   // List/useListUpdateMotion.ts writes): a UIKit cell passes its neighbours
   // opaque and on top, and rows here have no background of their own. The
-  // layer covers the padding box, under the press layer, so the row's divider
-  // and its press stay visible; a selected row keeps its own fill.
+  // surface is an inset shadow across the padding box, under the press layer
+  // and the row's content, so the row's divider and its press stay visible;
+  // a selected row keeps its own fill. It takes no pseudo-element: under a
+  // finger the row's `::after` is its hit layer (List/listRow.stylex.ts).
   travelling: {
     zIndex: {
       default: null,
       '[data-astryx-travelling]': 1,
     },
-    '::after': {
-      content: {
-        default: null,
-        '[data-astryx-travelling]:not([aria-selected="true"],[aria-current="true"])':
-          '""',
-      },
-      position: 'absolute',
-      inset: 0,
-      zIndex: -2,
-      borderRadius: 'inherit',
-      pointerEvents: 'none',
-      backgroundColor: colorVars['--color-background-surface'],
+    boxShadow: {
+      default: null,
+      '[data-astryx-travelling]:not([aria-selected="true"],[aria-current="true"])': `inset 0 0 0 100vmax ${colorVars['--color-background-surface']}`,
     },
   },
   // List's edge treatments. Each reads --_item-inset-inline, the variable
