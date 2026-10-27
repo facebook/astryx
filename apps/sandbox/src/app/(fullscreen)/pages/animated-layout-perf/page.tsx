@@ -107,8 +107,11 @@ function formatCount(value: number | null): string {
 
 /** A value's change from its baseline, as the other perf pages show it. */
 function formatChange(value: number | null, base: number | null): string {
-  if (value == null || base == null) {
+  if (base == null) {
     return 'no baseline';
+  }
+  if (value == null) {
+    return 'baseline saved';
   }
   if (base === 0) {
     return value === 0 ? '±0%' : 'new';
@@ -324,6 +327,10 @@ export default function AnimatedLayoutPerfPage() {
         // The layout walk runs in a microtask after the commit.
         await Promise.resolve();
         await Promise.resolve();
+        // The browser's own style and layout for the change, inside the clock
+        // in both modes (the walk forces it anyway), so with the handle minus
+        // without is the walk alone. Not a counted read.
+        void original.call(viewport);
         walks.push(performance.now() - start);
         reads.push(rects);
         animations.push(
