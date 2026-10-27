@@ -55,8 +55,21 @@ export interface StoryboardOptions {
   readonly cellScale?: number;
 }
 
+/**
+ * Chromium photographs the page by copying its compositor surface. Right after
+ * the page's surface changes (a navigation, a resize) the copy can come back
+ * empty, and Chromium answers "Unable to capture screenshot" once its own five
+ * retries, issued without waiting for a new frame, have all found no surface.
+ * A capture that fails that way is taken again after the page has presented
+ * two more frames, at most this many attempts in all.
+ */
+const CAPTURE_ATTEMPTS = 3;
+const EMPTY_SURFACE_COPY = /Unable to capture screenshot/;
+
 export class Storyboard {
   readonly frames: StoryboardFrame[] = [];
+  /** Captures Chromium returned empty and that were taken again two frames later. */
+  readonly recaptures: {label: string; error: string}[] = [];
   private clipBox: ClipBox | undefined;
 
   constructor(
@@ -64,20 +77,36 @@ export class Storyboard {
     readonly options: StoryboardOptions,
   ) {}
 
-  /** Photographs the clip now and records `data` with it. */
+  /**
+   * Photographs the clip now and records `data` with it. An empty surface
+   * copy (see CAPTURE_ATTEMPTS) is taken again once the page has presented two
+   * more frames; any other failure, or a third empty copy, throws.
+   */
   async capture(
     label: string,
     t: number,
     data: Readonly<Record<string, unknown>> = {},
   ): Promise<void> {
     const clip = await this.resolveClip();
-    const png = await this.page.screenshot({
-      clip,
-      scale: 'css',
-      animations: 'allow',
-      caret: 'hide',
-    });
-    this.frames.push({label, t, data, png});
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        const png = await this.page.screenshot({
+          clip,
+          scale: 'css',
+          animations: 'allow',
+          caret: 'hide',
+        });
+        this.frames.push({label, t, data, png});
+        return;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (attempt >= CAPTURE_ATTEMPTS || !EMPTY_SURFACE_COPY.test(message)) {
+          throw error;
+        }
+        this.recaptures.push({label, error: message.split('\n')[0]});
+        await frames(this.page, 2);
+      }
+    }
   }
 
   private async resolveClip(): Promise<ClipBox | undefined> {
@@ -123,6 +152,7 @@ export class Storyboard {
       browser: this.page.context().browser()?.browserType().name() ?? null,
       viewport: this.page.viewportSize(),
       clip: this.clipBox ?? null,
+      ...(this.recaptures.length > 0 ? {recaptures: this.recaptures} : {}),
       ...extra,
       frames: this.frames.map(({label, t, data}) => ({label, t, data})),
     };
@@ -305,8 +335,8 @@ export interface TouchStoryboardOptions extends StoryboardOptions {
  * sees the filmstrip's pacing in both engines: two frames, `measure` and a
  * photograph per event, about 100 ms between moves instead of the script's
  * 16.7. Its release velocity is that much lower, so a flick that dismisses
- * when played can settle back when filmed: film such a gesture from a
- * screencast (`startScreencast`, `castStoryboard`) instead.
+ * when played can settle back when filmed: a storyboard cannot show such a
+ * gesture; record it in real time instead.
  */
 export async function touchStoryboard(
   page: Page,
@@ -333,65 +363,4 @@ export async function touchStoryboard(
     },
   });
   return storyboard;
-}
-
-/**
- * A filmstrip of screencast frames (real presented frames, e.g. the frames of
- * a busy-main-thread window), labelled with their time relative to `zero`.
- * Evidence for what the compositor presented, not a deterministic storyboard.
- */
-export async function castStoryboard(
-  page: Page,
-  frames: readonly {
-    readonly t: number;
-    readonly data: string;
-    readonly format: 'png' | 'jpeg';
-  }[],
-  options: StoryboardOptions & {
-    readonly zero: number;
-    readonly from?: number;
-    readonly to?: number;
-    readonly data?: (t: number) => Readonly<Record<string, unknown>>;
-  },
-): Promise<Storyboard> {
-  const storyboard = new Storyboard(page, options);
-  for (const frame of frames) {
-    if (options.from != null && frame.t < options.from) {
-      continue;
-    }
-    if (options.to != null && frame.t > options.to) {
-      continue;
-    }
-    const png =
-      frame.format === 'png'
-        ? Buffer.from(frame.data, 'base64')
-        : await toPng(page, frame.data);
-    const t = frame.t - options.zero;
-    storyboard.frames.push({
-      label: `t=${t.toFixed(1)} ms`,
-      t,
-      data: options.data?.(frame.t) ?? {},
-      png,
-    });
-  }
-  return storyboard;
-}
-
-async function toPng(page: Page, jpegBase64: string): Promise<Buffer> {
-  const scratch = await page.context().newPage();
-  try {
-    const url = await scratch.evaluate(async data => {
-      const bitmap = await createImageBitmap(
-        await (await fetch(`data:image/jpeg;base64,${data}`)).blob(),
-      );
-      const canvas = document.createElement('canvas');
-      canvas.width = bitmap.width;
-      canvas.height = bitmap.height;
-      canvas.getContext('2d')?.drawImage(bitmap, 0, 0);
-      return canvas.toDataURL('image/png');
-    }, jpegBase64);
-    return Buffer.from(url.slice(url.indexOf(',') + 1), 'base64');
-  } finally {
-    await scratch.close();
-  }
 }
