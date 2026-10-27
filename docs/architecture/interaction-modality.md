@@ -179,9 +179,9 @@ work.
   `@astryxdesign/core`, one internal module, `actionGroupTracker`, tracks a
   held pointer across a group's actions for every `family:action-groups`
   member other than menus and Selector's and MultiSelector's options, whose
-  tracking and public `menuPressStep` stay with
-  `module:DropdownMenu/useMenuPress`. No other member keeps its own copy
-  of the tracking. Moving menus onto the shared tracker is planned (OQ1). It is not exported (`spec:AST-017`
+  tracking and public `menuPressStep` belong to
+  `module:DropdownMenu/useMenuPress` (OQ1; implementation gap: MultiSelector
+  does not mount it yet). No other member keeps its own copy of the tracking. It is not exported (`spec:AST-017`
   FR21).
 
 ## Allowed variation
@@ -254,6 +254,8 @@ is asked to carry a new decision.
   gesture velocity for Core components; not exported.
 - The native-scroll module's progress and its subscription (INV12) — the one
   source of scroll progress for Core components; not exported.
+- The action-group tracker (INV13) — the one press tracker for action groups
+  outside menus and Selector's and MultiSelector's options; not exported.
 
 ## Deciding specs
 
@@ -278,7 +280,7 @@ reachability, newer-intent precedence, and the evidence/scope guard were approve
 | INV9       | Concrete-harm reproduction, representative normal/legacy/no-new-prop paths, and coincident public-delta inventory                                                     | Unsupported or aesthetic preference is treated as harm, unaffected behavior changes, or an API, layout, sizing, default, sticky, or exception delta escapes direct authority                                                                                                                                |
 | INV10      | Source boundary check over Core and Lab, a Lab-to-Core comparison on one recorded stream, and release-filter unit tests over recorded iOS pan and scroll-view streams | A Core component with its own sample buffer, velocity math, or release filter; a Lab component with its own sample buffer, velocity math, or release filter; a Lab component reporting a different velocity than Core for the same stream; an export of the tracker; a non-zero release after a still pause |
 | INV12      | Unit tests of native scroll's progress and real-browser proofs of its adopters                                                                                        | Progress routed through React state, a missing edge, travel under Reduce Motion, use where native scroll-driven animation is supported, or a public export fails                                                                                                                                            |
-| INV13      | Source boundary check over Core and each family member's pointer-stream tests                                                                                         | A member that tracks a held pointer across its actions with its own code, or a public export of the tracker, fails                                                                                                                                                                                          |
+| INV13      | Source boundary check over Core and each family member's pointer-stream tests                                                                                         | A member outside menus and Selector's and MultiSelector's options that tracks a held pointer across its actions with its own code, or a public export of the tracker, fails                                                                                                                                 |
 
 Real-browser evidence is required when the behavior depends on
 `:focus-visible`, pointer capability, touch or pen synthesis, rendered focus
@@ -295,6 +297,5 @@ benchmark demonstrates the invariants; it does not carry authority for them.
 
 ## Open questions
 
-- **OQ1 — When menus move onto the shared tracker.** (`engineering`) Open.
-  Planned: `module:DropdownMenu/useMenuPress` converges onto the shared
-  tracker as a follow-up, on the timing the owner set.
+- **OQ1 — When do menus and Selector's and MultiSelector's options move onto
+  the shared tracker?** (`engineering`) Open.
