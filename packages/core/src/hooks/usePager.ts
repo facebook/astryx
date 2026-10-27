@@ -49,6 +49,12 @@
  *   release's report still waiting when the pager detaches, or when a
  *   controlled move replaces its page, is dropped: no callback runs from an
  *   unmount or from the owner's own update. `onSettle` when the track rests.
+ * - A controlled `index` wins, as a controlled input's value does: a page
+ *   the pager reports (a swipe, or `goTo`) that the owner does not take
+ *   returns the pager to `index`, unreported.
+ * - `usePager` attaches the pan and the catch only under the touch
+ *   presentation (a coarse primary pointer, `spec:AST-094` FR19); on any
+ *   other pointer the pager takes no input and still animates `goTo`.
  *
  * Positions are content offsets in px, 0 at page 0 and growing toward later
  * pages; the track is translated by −position, or +position when the
@@ -99,8 +105,10 @@ import {
 import {rubberBandClamp, rubberBandUnclamp} from '../motion/rubberBand';
 import {paging} from '../motion/uikit/paging';
 import {observeResize} from '../utils/sharedResizeObserver';
+import {TOUCH_QUERY} from '../utils/touchQueries';
 import {isRtlElement} from './isRtlElement';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
+import {useMediaQuery} from './useMediaQuery';
 
 /** Why the target page changed. */
 export type PagerChangeReason = 'drag' | 'goTo' | 'controlled';
@@ -192,7 +200,11 @@ export interface Pager {
   /** Update options; a smaller count clamps the target page. */
   setOptions(options: Partial<PagerOptions>): void;
   /** Attach to the elements; returns a detach function. */
-  attach(viewport: HTMLElement, track: HTMLElement): () => void;
+  attach(
+    viewport: HTMLElement,
+    track: HTMLElement,
+    options?: PagerAttachOptions,
+  ): () => void;
   /** Detach and stop everything (attaching again restarts it). */
   dispose(): void;
 }
@@ -1013,7 +1025,11 @@ export function createPager(
 
   let detachAll: (() => void) | null = null;
 
-  function attach(nextViewport: HTMLElement, nextTrack: HTMLElement) {
+  function attach(
+    nextViewport: HTMLElement,
+    nextTrack: HTMLElement,
+    {touch = true}: PagerAttachOptions = {},
+  ) {
     detachAll?.();
     viewport = nextViewport;
     trackElement = nextTrack;
@@ -1027,14 +1043,27 @@ export function createPager(
       settled = target;
     }
     animator.set({x: positionToX(offsetOf(target))});
-    const removePanListener = pan.addListener(onPan);
-    const removeCatchListener = catcher.addListener(onCatch);
-    const host = environment.host ?? getGestureHost(nextViewport.ownerDocument);
-    const detachPan = host.attach(nextViewport, pan);
-    // The catcher sits on the track so its long-press styles (no callout,
-    // no selection) stay off the pages' text: the viewport's touch-action
-    // already covers the touches that land on the track.
-    const detachCatch = host.attach(nextTrack, catcher, {manageStyle: false});
+    // The recognizers, only under the touch presentation (FR19).
+    let detachTouch = () => {};
+    if (touch) {
+      const removePanListener = pan.addListener(onPan);
+      const removeCatchListener = catcher.addListener(onCatch);
+      const host =
+        environment.host ?? getGestureHost(nextViewport.ownerDocument);
+      const detachPan = host.attach(nextViewport, pan);
+      // The catcher sits on the track so its long-press styles (no callout,
+      // no selection) stay off the pages' text: the viewport's touch-action
+      // already covers the touches that land on the track.
+      const detachCatch = host.attach(nextTrack, catcher, {
+        manageStyle: false,
+      });
+      detachTouch = () => {
+        detachCatch();
+        detachPan();
+        removeCatchListener();
+        removePanListener();
+      };
+    }
     const unobserve = observeResize(nextViewport, measure);
     // Children pages also move when the track's own size changes (a child
     // added, removed or resized).
@@ -1044,10 +1073,7 @@ export function createPager(
     detachAll = () => {
       unobserve();
       unobserveTrack();
-      detachCatch();
-      detachPan();
-      removeCatchListener();
-      removePanListener();
+      detachTouch();
       dropReport();
       stopSettle();
       dropDeferred();
@@ -1087,12 +1113,26 @@ export function createPager(
   };
 }
 
+export interface PagerAttachOptions {
+  /**
+   * Attach the pan and the catch to the gesture host: only under the touch
+   * presentation (a coarse primary pointer, `spec:AST-094` FR19). Without
+   * them the pager takes no input and still animates `goTo`.
+   * @default true
+   */
+  touch?: boolean;
+}
+
 export interface UsePagerOptions extends PagerOptions {
   /** The gesture surface: the clipped box the pages show through. */
   viewportRef: RefObject<HTMLElement | null>;
   /** The row of pages the pager translates. */
   trackRef: RefObject<HTMLElement | null>;
-  /** Controlled target page; a change animates to it (reason 'controlled'). */
+  /**
+   * Controlled target page; a change animates to it (reason 'controlled'),
+   * and a page the pager reports that the owner does not take returns it
+   * here.
+   */
   index?: number;
   /** Live toggle for the pan; turning it off mid-drag cancels the drag. */
   isPanEnabled?: boolean;
@@ -1119,15 +1159,29 @@ export function usePager({
   ...options
 }: UsePagerOptions): Pager {
   const latestRef = useRef(options);
+  // The controlled `index` of the last commit, read when the pager reports.
+  const indexRef = useRef(index);
   useIsomorphicLayoutEffect(() => {
     latestRef.current = options;
+    indexRef.current = index;
   });
+  // Bumped when the pager reports a page while `index` is controlled: the
+  // render it causes, batched with the owner's own update, returns the pager
+  // to `index` if the owner kept it (the controlled sync below).
+  const [reported, setReported] = useState(0);
+  // The touch presentation (a coarse primary pointer): the recognizers
+  // attach only there (spec:AST-094 FR19).
+  const isTouch = useMediaQuery(TOUCH_QUERY);
   const [pager] = useState(() =>
     createPager({
       ...options,
       defaultIndex: index ?? options.defaultIndex,
-      onIndexChange: (i, reason) =>
-        latestRef.current.onIndexChange?.(i, reason),
+      onIndexChange: (i, reason) => {
+        latestRef.current.onIndexChange?.(i, reason);
+        if (indexRef.current != null) {
+          setReported(n => n + 1);
+        }
+      },
       onSettle: (i, previous) => latestRef.current.onSettle?.(i, previous),
       onPagesChange: pageCount => latestRef.current.onPagesChange?.(pageCount),
       shouldBeginPan: direction =>
@@ -1142,31 +1196,45 @@ export function usePager({
     pager.setOptions({count, gap, loop, pages});
   }, [pager, count, gap, loop, pages]);
 
-  // Attaches the pager to the viewport and track nodes, and again whenever
-  // either node is replaced: it runs after every commit and does nothing while
-  // the nodes stay the same.
+  // Attaches the pager to the viewport and track nodes, with its recognizers
+  // under the touch presentation only, and again whenever either node is
+  // replaced or the primary pointer changes kind: it runs after every commit
+  // and does nothing while those stay the same.
   const attachedRef = useRef<{
     viewport: HTMLElement | null;
     track: HTMLElement | null;
+    touch: boolean;
     detach: (() => void) | null;
-  }>({viewport: null, track: null, detach: null});
+  }>({viewport: null, track: null, touch: false, detach: null});
   useIsomorphicLayoutEffect(() => {
     const viewport = viewportRef.current;
     const track = trackRef.current;
     const attached = attachedRef.current;
-    if (viewport === attached.viewport && track === attached.track) {
+    if (
+      viewport === attached.viewport &&
+      track === attached.track &&
+      isTouch === attached.touch
+    ) {
       return;
     }
     attached.detach?.();
     attached.viewport = viewport;
     attached.track = track;
+    attached.touch = isTouch;
     attached.detach =
-      viewport != null && track != null ? pager.attach(viewport, track) : null;
+      viewport != null && track != null
+        ? pager.attach(viewport, track, {touch: isTouch})
+        : null;
   });
   useIsomorphicLayoutEffect(
     () => () => {
       attachedRef.current.detach?.();
-      attachedRef.current = {viewport: null, track: null, detach: null};
+      attachedRef.current = {
+        viewport: null,
+        track: null,
+        touch: false,
+        detach: null,
+      };
     },
     [pager],
   );
@@ -1176,13 +1244,17 @@ export function usePager({
     pager.pan.setEnabled(isPanEnabled);
   }, [pager, isPanEnabled]);
 
-  // Synchronizes the pager's animation with a controlled index. The move is
-  // the owner's own, so it is not reported back through onIndexChange.
+  // Synchronizes the pager, an imperative system outside React (the track's
+  // animation and its gesture recognizers), with a controlled `index`: a new
+  // `index` moves it there, and so does the render that follows a page it
+  // reported and the owner did not take (a refused swipe or goTo), as a
+  // controlled input returns to its value. The move is the owner's own: it
+  // is not reported back. Idempotent: it moves only while the two differ.
   useEffect(() => {
     if (index != null && index !== pager.index) {
       pager.goTo(index, {reason: 'controlled'});
     }
-  }, [pager, index]);
+  }, [pager, index, reported]);
 
   return pager;
 }
