@@ -81,14 +81,13 @@ const headerStyles = stylex.create({
   },
 });
 
-// The header's divider reads the same custom properties as a body row's
-// (see TableCell.tsx), so a theme sets every row divider in one place.
 const headerDividerStyles = stylex.create({
   cell: {
-    '--_table-divider-width': `var(--table-row-divider-width, ${borderVars['--border-width']})`,
-    borderBottomWidth: 'var(--_table-divider-width)',
-    borderBottomStyle: 'var(--table-row-divider-style, solid)',
-    borderBottomColor: `var(--table-row-divider-color, ${colorVars['--color-border']})`,
+    // For a pinned header cell's own divider to match (plugins/stickyColumns).
+    '--_table-row-divider-width': borderVars['--border-width'],
+    borderBottomWidth: borderVars['--border-width'],
+    borderBottomStyle: 'solid',
+    borderBottomColor: colorVars['--color-border'],
   },
 });
 

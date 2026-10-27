@@ -172,19 +172,9 @@ describe('TableHeaderCell', () => {
     );
     const declarations = headerCellDeclarations(container);
     // The header/body separator is unconditional inside a table.
-    // It reads the row-divider custom properties, defaulting to the tokens.
-    expect(declarations).toContain(
-      '--_table-divider-width: var(--table-row-divider-width,var(--border-width))',
-    );
-    expect(declarations).toContain(
-      'border-bottom-width: var(--_table-divider-width)',
-    );
-    expect(declarations).toContain(
-      'border-bottom-style: var(--table-row-divider-style,solid)',
-    );
-    expect(declarations).toContain(
-      'border-bottom-color: var(--table-row-divider-color,var(--color-border))',
-    );
+    expect(declarations).toContain('border-bottom-width: var(--border-width)');
+    expect(declarations).toContain('border-bottom-style: solid');
+    expect(declarations).toContain('border-bottom-color: var(--color-border)');
     // …but the column divider is not.
     expect(declarations.filter(d => d.includes('border-inline-end'))).toEqual(
       [],

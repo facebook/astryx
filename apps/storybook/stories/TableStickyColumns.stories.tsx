@@ -140,9 +140,9 @@ export const PinStart: Story = {
 
 /**
  * A pinned column draws each row's divider itself, so the line under it moves
- * with the column. A theme's divider color (`--table-row-divider-color`, set
- * on the wrapper here) and an app's own `border-bottom` on a row (the second
- * row) both carry over to the pinned cells.
+ * with the column. A theme's border color (`--color-border`, set on the
+ * wrapper here) and an app's own `border-bottom` on a row (the second row)
+ * both carry over to the pinned cells.
  */
 export const PinnedDividers: Story = {
   render: () => {
@@ -153,13 +153,14 @@ export const PinnedDividers: Story = {
         style={
           {
             maxWidth: 720,
-            '--table-row-divider-color': 'rgb(37, 99, 235)',
+            '--color-border': 'rgb(37, 99, 235)',
           } as React.CSSProperties
         }>
         <style>{`[data-testid="pinned-dividers"] tbody tr:nth-child(2) { border-bottom: 2px solid rgb(220, 38, 38); }`}</style>
         <p style={note}>
-          A blue theme divider on every row and an app&apos;s red 2 px border on
-          the second row, both on the pinned Name column as you scroll.
+          A blue theme border color on every row and an app&apos;s red 2 px
+          border on the second row, both on the pinned Name column as you
+          scroll.
         </p>
         <Table
           data={employees}

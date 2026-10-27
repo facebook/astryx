@@ -165,16 +165,17 @@ const SHADOW_VAR_END = '--table-sticky-shadow-end';
 // whichever scrolled cell's border passes beneath it, and missing where that
 // cell has none. The cell's ::before (already the row overlay's layer) extends
 // over the cell's border area, covers whatever the table painted there with
-// the pinned base, and draws the divider with the same width, style and color
-// the cell's own border reads (TableCell.tsx).
+// the pinned base, and draws the divider with the cell's own border tokens
+// (TableCell.tsx); a border an app or a theme sets on the cell or row directly
+// is read on mount and on resize (syncPinnedDividers).
 const PINNED_ATTRIBUTE = 'data-astryx-table-pinned';
 /** Spread into a pinned cell's props: the attribute the divider sync finds. */
 const PINNED_PROPS = {[PINNED_ATTRIBUTE]: ''} as Record<string, string>;
-const PINNED_DIVIDER_WIDTH = '--_table-pinned-divider-width';
-const PINNED_DIVIDER_STYLE = '--_table-pinned-divider-style';
-const PINNED_DIVIDER_COLOR = '--_table-pinned-divider-color';
+const PINNED_DIVIDER_WIDTH = '--_table-row-divider-app-width';
+const PINNED_DIVIDER_STYLE = '--_table-row-divider-app-style';
+const PINNED_DIVIDER_COLOR = '--_table-row-divider-app-color';
 const PINNED_BASE = `var(--table-sticky-background, ${colorVars['--color-background-card']})`;
-const DIVIDER_WIDTH = `var(${PINNED_DIVIDER_WIDTH}, var(--_table-divider-width, 0px))`;
+const DIVIDER_WIDTH = `var(${PINNED_DIVIDER_WIDTH}, var(--_table-row-divider-width, 0px))`;
 
 const stickyStyles = stylex.create({
   cell: {
@@ -198,8 +199,8 @@ const stickyStyles = stylex.create({
       // scrolled cell's border), then the divider over it.
       marginBottom: `calc(-1 * ${DIVIDER_WIDTH})`,
       borderBottomWidth: DIVIDER_WIDTH,
-      borderBottomStyle: `var(${PINNED_DIVIDER_STYLE}, var(--table-row-divider-style, solid))`,
-      borderBottomColor: `var(${PINNED_DIVIDER_COLOR}, var(--table-row-divider-color, ${colorVars['--color-border']}))`,
+      borderBottomStyle: `var(${PINNED_DIVIDER_STYLE}, solid)`,
+      borderBottomColor: `var(${PINNED_DIVIDER_COLOR}, ${colorVars['--color-border']})`,
       backgroundImage: `linear-gradient(${PINNED_BASE}, ${PINNED_BASE})`,
       backgroundSize: `100% ${DIVIDER_WIDTH}`,
       backgroundPosition: 'bottom',

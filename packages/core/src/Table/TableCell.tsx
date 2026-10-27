@@ -143,25 +143,25 @@ const contextMenuCellStyles = stylex.create({
   },
 });
 
-// The row divider reads three custom properties a theme or an app can set on
-// the table, a row or a cell (`--table-row-divider-width`, `-style`, `-color`).
-// Anything that draws a stand-in for this border (a pinned cell's divider)
-// reads the same properties, so the two never disagree.
 const dividerRowStyles = stylex.create({
   cell: {
-    // The width this cell actually draws, for a stand-in to match.
-    '--_table-divider-width': {
-      default: `var(--table-row-divider-width, ${borderVars['--border-width']})`,
+    // The width this cell's divider draws, for a pinned cell's own divider
+    // to match (plugins/stickyColumns). Private plumbing, not a theme API.
+    '--_table-row-divider-width': {
+      default: borderVars['--border-width'],
+      [stylex.when.ancestor(':last-child', tableRowMarker)]: '0px',
+    },
+    borderBottomWidth: {
+      default: borderVars['--border-width'],
       // Skip border on cells in the last body row to avoid a
       // redundant line at the bottom of the table.
       // Scoped to tableRowMarker so only the parent <tr> is checked —
       // without the scope, <tbody> (also a :last-child) would match
       // and suppress borders on every row.
-      [stylex.when.ancestor(':last-child', tableRowMarker)]: '0px',
+      [stylex.when.ancestor(':last-child', tableRowMarker)]: '0',
     },
-    borderBottomWidth: 'var(--_table-divider-width)',
-    borderBottomStyle: 'var(--table-row-divider-style, solid)',
-    borderBottomColor: `var(--table-row-divider-color, ${colorVars['--color-border']})`,
+    borderBottomStyle: 'solid',
+    borderBottomColor: colorVars['--color-border'],
   },
 });
 
