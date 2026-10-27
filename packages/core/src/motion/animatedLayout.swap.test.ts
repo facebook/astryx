@@ -18,6 +18,7 @@ import {
   createAnimatedLayout,
   holdLayoutSwap,
   playLayoutSwap,
+  reportLayoutChange,
 } from './animatedLayout';
 
 interface Played {
@@ -208,5 +209,104 @@ describe('the in-place swap (spec:AST-105 FR8)', () => {
     media['(prefers-reduced-motion: reduce)'] = true;
     expect(holdLayoutSwap(handle, content)).toBeNull();
     expect(played).toEqual([]);
+  });
+});
+
+describe('a swap that rides a glide (spec:AST-105 FR8 with FR3)', () => {
+  function rideSetup() {
+    document.body.innerHTML = `
+      <div id="area">
+        <div id="rail"></div>
+        <div id="column"><main id="content"><h2>Projects</h2></main></div>
+      </div>`;
+    const area = document.getElementById('area') as HTMLElement;
+    const rail = document.getElementById('rail') as HTMLElement;
+    const column = document.getElementById('column') as HTMLElement;
+    const content = document.getElementById('content') as HTMLElement;
+    let phase: 'before' | 'after' = 'before';
+    const railWidth = () => (phase === 'before' ? 260 : 48);
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        if (this === area) {
+          return DOMRect.fromRect({x: 0, y: 0, width: 1000, height: 600});
+        }
+        if (this === rail) {
+          return DOMRect.fromRect({
+            x: 0,
+            y: 0,
+            width: railWidth(),
+            height: 600,
+          });
+        }
+        if (this === column || this === content) {
+          return DOMRect.fromRect({
+            x: railWidth(),
+            y: 0,
+            width: 1000 - railWidth(),
+            height: 600,
+          });
+        }
+        return DOMRect.fromRect({x: 0, y: 0, width: 0, height: 0});
+      },
+    );
+    return {
+      handle: createAnimatedLayout(() => area),
+      area,
+      rail,
+      column,
+      content,
+      after: () => (phase = 'after'),
+    };
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('moves the copy with the glide of the element it rides, frame by frame', async () => {
+    const {handle, area, rail, column, content, after} = rideSetup();
+    const swap = holdLayoutSwap(handle, content);
+    const change = reportLayoutChange(handle, {current: rail});
+    change.measureBefore();
+    after();
+    change.animate();
+    playLayoutSwap(swap!, {
+      host: area,
+      copy: p => ({opacity: 1 - p}),
+      rideWith: {element: column, travel: {x: 212, y: 0}},
+      incoming: [],
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    const glide = played.find(entry => entry.element === column);
+    const ride = played.find(entry => entry.element === swap!.copy);
+    expect(glide?.keyframes[0].translate).toBe('212px 0px');
+    expect(ride?.keyframes[0]).toMatchObject({
+      opacity: 1,
+      translate: '0px 0px',
+    });
+    expect(ride?.keyframes.at(-1)).toMatchObject({
+      opacity: 0,
+      translate: '-212px 0px',
+    });
+    // The same frames: at every sample the copy sits where the column does,
+    // less the travel.
+    expect(ride?.keyframes.length).toBe(glide?.keyframes.length);
+  });
+
+  it('takes its new place at once when the element it rides does not glide', async () => {
+    const {handle, area, column, content, after} = rideSetup();
+    const swap = holdLayoutSwap(handle, content);
+    after();
+    playLayoutSwap(swap!, {
+      host: area,
+      copy: p => ({opacity: 1 - p}),
+      rideWith: {element: column, travel: {x: 212, y: 0}},
+      incoming: [],
+    });
+    await Promise.resolve();
+    const ride = played.find(entry => entry.element === swap!.copy);
+    expect(ride?.keyframes[0].translate).toBe('-212px 0px');
+    expect(ride?.keyframes.at(-1)?.translate).toBe('-212px 0px');
   });
 });

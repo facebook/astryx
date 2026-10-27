@@ -1014,6 +1014,16 @@ export interface LayoutSwapMotion {
   readonly copyText?: (p: number) => number;
   /** The copy paints above its neighbours, in the background it shows. */
   readonly isOpaque?: boolean;
+  /**
+   * An element the glide moves, such as the column the old content sat in:
+   * the copy rides its glide, frame by frame, by `travel` (the old place less
+   * the new). Without a glide (it lands silently), the copy takes its new
+   * place at once, as the element does.
+   */
+  readonly rideWith?: {
+    readonly element: Element;
+    readonly travel: {readonly x: number; readonly y: number};
+  };
   /** Elements the page already renders, entering with the swap. */
   readonly incoming: ReadonlyArray<{
     readonly element: Element;
@@ -1082,22 +1092,6 @@ export function playLayoutSwap(
       ? sampleKeyframes(motion.progress, remaining => shape(1 - remaining))
       : [shape(0), shape(1)];
   const animations: Animation[] = [];
-  const play = (element: Element, shape: (p: number) => Keyframe) => {
-    const animation = safeAnimate(element, frames(shape), options);
-    if (animation != null) {
-      animations.push(animation);
-    }
-  };
-  play(copy, travels ? how.copy : p => ({opacity: 1 - p}));
-  const {copyText} = how;
-  if (travels && copyText != null) {
-    for (const span of wrapText(copy)) {
-      play(span, p => ({opacity: copyText(p)}));
-    }
-  }
-  for (const {element, frames: shape} of how.incoming) {
-    play(element, travels ? shape : p => ({opacity: p}));
-  }
   let isDone = false;
   const end = () => {
     if (isDone) {
@@ -1107,11 +1101,57 @@ export function playLayoutSwap(
     animations.forEach(animation => animation.cancel());
     copy.remove();
   };
-  if (animations.length === 0) {
+  const play = (element: Element, shape: (p: number) => Keyframe) => {
+    const animation = safeAnimate(element, frames(shape), options);
+    if (animation != null) {
+      animations.push(animation);
+    }
+  };
+  const {rideWith} = how;
+  if (travels && rideWith != null) {
+    // After this commit's glides start (the batch flushes in a microtask
+    // queued before this one), before the frame paints.
+    queueMicrotask(() => {
+      if (isDone) {
+        return;
+      }
+      const glide = glides.get(rideWith.element);
+      const durationMs = glide?.durationMs ?? motion.progress.durationMs;
+      const animation = safeAnimate(
+        copy,
+        sampleOver(durationMs, t => {
+          const offset = glide?.offsetAt(t) ?? AT_REST(t);
+          const x = offset.x - rideWith.travel.x;
+          const y = offset.y - rideWith.travel.y;
+          return {
+            ...how.copy(1 - motion.progress.remaining(t)),
+            translate: `${x}px ${y}px`,
+          };
+        }),
+        {duration: durationMs, easing: 'linear', fill: 'both'},
+      );
+      if (animation != null) {
+        animations.push(animation);
+        animation.addEventListener?.('finish', end);
+      }
+    });
+  } else {
+    play(copy, travels ? how.copy : p => ({opacity: 1 - p}));
+  }
+  const {copyText} = how;
+  if (travels && copyText != null) {
+    for (const span of wrapText(copy)) {
+      play(span, p => ({opacity: copyText(p)}));
+    }
+  }
+  for (const {element, frames: shape} of how.incoming) {
+    play(element, travels ? shape : p => ({opacity: p}));
+  }
+  if (animations.length === 0 && !(travels && rideWith != null)) {
     end();
   } else {
     // Every part runs on one clock, so the first to finish ends them all.
-    animations[0].addEventListener?.('finish', end);
+    animations[0]?.addEventListener?.('finish', end);
   }
   return end;
 }
