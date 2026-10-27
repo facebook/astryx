@@ -1136,6 +1136,9 @@ describe('swipeActions', () => {
         );
         return <div ref={ref} data-testid="other" />;
       }
+      // Attached where the primary pointer is fine without reading each
+      // event's pointer, the other recognizer warns once in development (its
+      // misuse is this case's point); the row warns nothing.
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const {row} = renderRow();
       render(<Other />);
@@ -1148,6 +1151,10 @@ describe('swipeActions', () => {
       dragLeading(row, 45);
       await settled();
       expect(xOf(row)).toBe(72);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('attached where the primary pointer is fine'),
+      );
       warn.mockRestore();
       // The control: on a phone's pointer the same tap is recognized.
       const coarse = pointerQuery(true);
