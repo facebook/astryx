@@ -38,17 +38,31 @@ const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '../../../../..',
 );
-const CORE_THEME_ENTRY = path.join(
+// The build's last output: `build:css` writes it after the compiled modules,
+// their declarations and the declaration extensions, so a build that was
+// interrupted or failed before it finished has no marker and reads as missing.
+// (`dist/theme/index.js`, which the build-theme suites import, comes about
+// 11 s into a 38 s build.)
+export const CORE_BUILD_MARKER = path.join(
   REPO_ROOT,
-  'packages/core/dist/theme/index.js',
+  'packages/core/dist/astryx.css',
 );
-// What the build compiles: a file here newer than the built entry means dist
-// is stale. A checkout rewrites the files it changes, so they read as newer.
-// The translations live outside src, in locales.
+// What the build compiles, and the scripts and config it compiles with: a file
+// here newer than the marker means dist is stale. A checkout rewrites the files
+// it changes, so they read as newer. The translations live outside src, in
+// locales. The scripts are the ones Core's `build*` scripts run that write
+// output (not its checks).
 export const CORE_SOURCES = [
   path.join(REPO_ROOT, 'packages/core/src'),
   path.join(REPO_ROOT, 'packages/core/locales'),
   path.join(REPO_ROOT, 'packages/core/package.json'),
+  path.join(REPO_ROOT, 'packages/core/babel.config.json'),
+  path.join(REPO_ROOT, 'packages/core/tsconfig.build.json'),
+  path.join(REPO_ROOT, 'tsconfig.json'),
+  path.join(REPO_ROOT, 'packages/core/scripts/build-pseudo-locale.mjs'),
+  path.join(REPO_ROOT, 'scripts/generate-i18n-runtime.mjs'),
+  path.join(REPO_ROOT, 'scripts/add-declaration-extensions.mjs'),
+  path.join(REPO_ROOT, 'scripts/build-css.mjs'),
 ];
 // Git-ignored output generated from those sources, by the build and again by
 // the Vitest global setup (internal/test-utils/src/globalSetup.ts): rewritten
@@ -257,7 +271,7 @@ export function ensureCoreBuiltAt({
  */
 export function ensureCoreBuilt({rebuildStale = false} = {}) {
   ensureCoreBuiltAt({
-    entry: CORE_THEME_ENTRY,
+    entry: CORE_BUILD_MARKER,
     roots: CORE_SOURCES,
     generated: CORE_GENERATED,
     build: buildCore,

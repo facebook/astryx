@@ -21,6 +21,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {afterEach, describe, expect, it} from 'vitest';
 import {
+  CORE_BUILD_MARKER,
   CORE_GENERATED,
   CORE_SOURCES,
   coreBuildIsStale,
@@ -308,5 +309,81 @@ describe('coreBuildLockDir', () => {
     } finally {
       fs.rmSync(other, {recursive: true, force: true});
     }
+  });
+});
+
+describe('the build marker', () => {
+  it("is the output Core's build writes last, after the modules and their declarations", () => {
+    const {scripts} = JSON.parse(
+      fs.readFileSync(
+        path.join(REPO_ROOT, 'packages/core/package.json'),
+        'utf8',
+      ),
+    );
+    const steps = scripts.build.split('&&').map(step => step.trim());
+    const at = name => steps.findIndex(step => step.includes(name));
+    expect(path.relative(REPO_ROOT, CORE_BUILD_MARKER)).toBe(
+      'packages/core/dist/astryx.css',
+    );
+    expect(at('build:css')).toBeGreaterThan(at('build:esm'));
+    expect(at('build:css')).toBeGreaterThan(at('tsc '));
+    expect(at('build:css')).toBeGreaterThan(at('add-declaration-extensions'));
+    expect(scripts['build:css']).toContain('build-css.mjs');
+    expect(
+      fs.readFileSync(path.join(REPO_ROOT, 'scripts/build-css.mjs'), 'utf8'),
+    ).toContain("outFile: 'astryx.css'");
+  });
+
+  it('rebuilds a build that stopped before its marker, even when its modules are newer than every source', () => {
+    // A rebuild interrupted after Babel wrote dist/theme/index.js, before the
+    // declarations and the stylesheet: the marker is missing.
+    const {write, roots} = tree();
+    write('dist/theme/index.js', 'export {};', 3000);
+    let builds = 0;
+    ensureCoreBuiltAt({
+      entry: path.join(dir, 'dist/astryx.css'),
+      roots,
+      build: () => {
+        builds++;
+      },
+      lockDir: path.join(dir, 'lock'),
+    });
+    expect(builds).toBe(1);
+  });
+});
+
+describe("Core's build inputs", () => {
+  it("cover every script and config file Core's build scripts write output with", () => {
+    const coreDir = path.join(REPO_ROOT, 'packages/core');
+    const {scripts} = JSON.parse(
+      fs.readFileSync(path.join(coreDir, 'package.json'), 'utf8'),
+    );
+    const inputs = new Set();
+    for (const [name, command] of Object.entries(scripts)) {
+      if (!/^build(:|$)/.test(name)) continue;
+      for (const [, file] of command.matchAll(/\bnode\s+(\S+\.m?js)/g)) {
+        // Checks read the build; they write nothing it depends on.
+        if (!/\/(check-|clean-dist)/.test(file)) inputs.add(file);
+      }
+      for (const [, file] of command.matchAll(
+        /--(?:config-file|project)\s+(\S+)/g,
+      )) {
+        inputs.add(file);
+      }
+    }
+    const covered = file =>
+      CORE_SOURCES.some(root => {
+        const relative = path.relative(root, file);
+        return (
+          relative === '' ||
+          (!relative.startsWith('..') && !path.isAbsolute(relative))
+        );
+      });
+    const missing = [...inputs]
+      .map(file => path.resolve(coreDir, file))
+      .filter(file => !covered(file))
+      .map(file => path.relative(REPO_ROOT, file));
+    expect(inputs.size).toBeGreaterThan(3);
+    expect(missing).toEqual([]);
   });
 });
