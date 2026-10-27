@@ -9,8 +9,8 @@
  *   rows it watches, that the insets land on the row, the theme's touch
  *   target size under a finger, that a measurement taken mid-motion waits for
  *   the motion to end, and that it stops when the row goes
- * @position Test for ListItem's hit area wiring (ListItem.tsx,
- *   listRow.stylex.ts); the layer's own CSS is checked in List.test.tsx, its
+ * @position Test for ListItem's hit area wiring (ListItem.tsx, through
+ *   utils/touchHitArea.ts); the layer's own CSS is checked in List.test.tsx, its
  *   hit testing in __tests__/ListTouchHitArea.interaction.browser.spec.ts
  */
 
@@ -37,10 +37,10 @@ vi.mock('../utils/hitArea', async importOriginal => {
     watchHitArea: (
       element: Element,
       onInsets: (insets: HitInsets) => void,
-      minSize?: number,
+      options?: {readonly minSize?: number},
     ) => {
       const stop = vi.fn();
-      watches.push({element, onInsets, minSize, stop});
+      watches.push({element, onInsets, minSize: options?.minSize, stop});
       return stop;
     },
   };
