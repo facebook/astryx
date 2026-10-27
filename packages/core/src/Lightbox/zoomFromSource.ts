@@ -20,7 +20,9 @@
  * picture flies, until the last transition holding it ends (a close can
  * interrupt the opening). Under Reduce Motion the animator's default applies
  * (design:reduced-motion): the photo fades in place on a touch screen and
- * shows at once otherwise, no portal flies and the source stays shown.
+ * shows at once otherwise, no portal flies and the source stays shown. An
+ * opening may aim at where the photo is about to rest: a gallery page the
+ * pager lands before the first frame (`offset`).
  *
  * SYNC: When modified, update Lightbox.tsx and
  * __tests__/LightboxZoomTransition.interaction.browser.spec.ts.
@@ -158,6 +160,13 @@ export interface ZoomFromSourceOptions {
    * shows again and the portal goes at once.
    */
   signal?: AbortSignal;
+  /**
+   * How far the photo's page still moves before the first frame, along the
+   * pager (px): a gallery opened on a page the pager lands at its new width
+   * in the same frame. The opening aims at where the photo will rest.
+   * @default 0
+   */
+  offset?: number;
 }
 
 /** Openings in flight, by container: a close turns them around. */
@@ -185,6 +194,7 @@ export function zoomFromSource({
   fades,
   src,
   signal,
+  offset = 0,
 }: ZoomFromSourceOptions): Promise<void> | null {
   // A close during the opening turns it around from where it shows, on the
   // opening's geometry, as UIKit's interruptible transition does: an additive
@@ -195,7 +205,11 @@ export function zoomFromSource({
   const opening = kind === 'close' ? openings.get(container) : undefined;
   const turning = opening?.started === true && opening.source === source;
   const sourceBox = sourceBoxOf(source);
-  const fitted = stage.fittedBox();
+  const measured = stage.fittedBox();
+  const fitted =
+    measured != null && offset !== 0
+      ? {...measured, x: measured.x + offset}
+      : measured;
   const detail = kind === 'open' || turning ? fitted : stage.shownBox();
   if (sourceBox == null || fitted == null || detail == null) {
     return null;

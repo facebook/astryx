@@ -73,7 +73,7 @@ import {useTranslator} from '../i18n';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {isRtlElement} from '../hooks/isRtlElement';
 import {useZoomCore} from './useZoomCore';
-import {usePager} from '../hooks/usePager';
+import {usePager, type Pager} from '../hooks/usePager';
 import {UIKIT_TAP} from '../motion/uikit/gestures';
 import {zoomMedia} from '../motion/uikit/zoomMedia';
 import {useZoomStage, type ZoomStage} from './useZoomStage';
@@ -1195,6 +1195,8 @@ export function Lightbox({
   // Aborts the transition in flight: its thumbnail shows again and its
   // portal goes (an unmount mid-transition).
   const transitionAbortRef = useRef<AbortController | null>(null);
+  // The gallery's pager, for the opening (it is created further down).
+  const pagerRef = useRef<Pager | null>(null);
   // Unmounted (a caller may render the viewer only while it is open): the
   // timers and continuations stop, and a thumbnail a landed photo or a
   // transition hid shows again.
@@ -1278,12 +1280,23 @@ export function Lightbox({
           : document.activeElement;
       openedIndexRef.current = now.index;
       dialog.showModal();
+      // Opened on another page: the pager is there at once, unanimated (its
+      // own sync, an Effect, would slide there during the opening). It lands
+      // the track at the shown viewer's width before the first frame.
+      const pagerNow = pagerRef.current;
+      if (pagerNow != null && pagerNow.index !== now.index) {
+        pagerNow.goTo(now.index, {animated: false, reason: 'controlled'});
+      }
       const source =
         now.isImage && now.isTouch ? now.sourceElementFor(now.index) : null;
       const container = containerRef.current;
-      const img = container?.querySelector<HTMLImageElement>(
-        '[data-current] img, :scope > [data-lightbox-media] img',
-      );
+      // The current page's photo in a gallery, else the one photo: queried in
+      // that order, as the media group holds every page of a gallery.
+      const img =
+        container?.querySelector<HTMLImageElement>('[data-current] img') ??
+        container?.querySelector<HTMLImageElement>(
+          ':scope > [data-lightbox-media] img',
+        );
       if (source != null && container != null && img != null) {
         // Under a finger, a tap or a drag that lands while the viewer
         // enters is held until the opening ends, as UIKit delivers no touch
@@ -1304,6 +1317,15 @@ export function Lightbox({
           openTokenRef.current += 1;
           clearTimeout(openTimerRef.current);
           img.style.opacity = '';
+          // The opened page may not rest in the viewport yet (the pager lands
+          // it before the first frame): the opening aims where it will rest.
+          const page = img.closest<HTMLElement>('[data-lightbox-page]');
+          const viewport = imageWrapperRef.current;
+          const offset =
+            page != null && viewport != null
+              ? viewport.getBoundingClientRect().left -
+                page.getBoundingClientRect().left
+              : 0;
           const fades = fadesNow();
           const next = transition();
           const opening = zoomFromSource({
@@ -1314,6 +1336,7 @@ export function Lightbox({
             fades,
             src: now.src,
             signal: next.signal,
+            offset,
           });
           next.release();
           if (opening != null) {
@@ -1323,11 +1346,13 @@ export function Lightbox({
             endEntrance();
           }
         };
-        if (img.complete && img.naturalWidth > 0) {
+        if (img.complete && img.naturalWidth > 0 && img.offsetWidth > 0) {
           start();
         } else {
-          // Not decoded yet: the photo stays hidden (the thumbnail shows)
-          // until it can zoom, at most a moment.
+          // Not decoded, or not laid out yet (a page the opening mounts has
+          // no size until its picture applies, even from the cache): the
+          // photo stays hidden (the thumbnail shows) until it can zoom, at
+          // most a moment.
           img.style.opacity = '0';
           if (typeof img.decode === 'function') {
             img.decode().then(start, start);
@@ -1447,6 +1472,7 @@ export function Lightbox({
       }
     },
   });
+  pagerRef.current = pager;
 
   useEffect(() => {
     const reported = swipeReportRef.current;
