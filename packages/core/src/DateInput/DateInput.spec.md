@@ -194,6 +194,14 @@ approved policy.
 - **PR2 — Scroll work.** Scroll-driven measurement and selection updates remain
   animation-frame throttled or settle-driven; listeners, frames, timers, and observers
   are cleaned up on deactivation or unmount.
+- **PR3 — The touch wheel draws each label three times.** Under a finger, a sheet's
+  picker wheel draws each shown row's label in its option, on the drum, and in the
+  band's copy, as UIPickerView's two tables do, so a row crossing the band's edge shows
+  magnified and plain at once. This is an owner exception to
+  `architecture:component-style-authoring` INV7 (content renders once) and to the
+  open-layer allowance of `spec:AST-017` FR60: with the sheet open, DateInput's
+  narrow-range sheet has 1,018 elements under a finger against 1,009 under a mouse,
+  and TimeInput's has 250 against 286.
 
 ## Accessibility contract
 
