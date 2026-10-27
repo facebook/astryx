@@ -95,7 +95,10 @@ interface Viewer {
   dialog: Locator;
   photo: Locator;
   chrome: Locator;
-  blackout: Locator;
+  /** The viewer's container, whose `::before` is the black. */
+  container: Locator;
+  /** The black's opacity: the container's `::before`. */
+  black: () => Promise<number>;
   centre: {x: number; y: number};
   alpha: (locator: Locator) => Promise<number>;
 }
@@ -125,23 +128,53 @@ async function openGallery(page: Page): Promise<Viewer> {
   if (rect == null) {
     throw new Error('no photo');
   }
+  const chrome = dialog.locator('[data-lightbox-chrome]').first();
+  const container = chrome.locator('xpath=..');
   return {
     driver,
     dialog,
     photo,
-    chrome: dialog.locator('[data-lightbox-chrome]').first(),
-    blackout: dialog.locator('[data-lightbox-blackout]'),
+    chrome,
+    container,
+    black: async () =>
+      container.evaluate(el =>
+        parseFloat(getComputedStyle(el, '::before').opacity),
+      ),
     centre: {x: rect.x + rect.width / 2, y: rect.y + rect.height / 2},
     alpha: async locator =>
       locator.evaluate(el => parseFloat(getComputedStyle(el).opacity)),
   };
 }
 
+test("the black is the viewer container's own ::before, with no element of its own (INV7)", async ({
+  page,
+}) => {
+  const v = await openGallery(page);
+  await expect(v.dialog.locator('[data-lightbox-blackout]')).toHaveCount(0);
+  const before = await v.container.evaluate(el => {
+    const style = getComputedStyle(el, '::before');
+    return {
+      content: style.content,
+      color: style.backgroundColor,
+      opacity: style.opacity,
+    };
+  });
+  expect(before.content).not.toBe('none');
+  // The theme's ink for light surfaces (near-black), opaque; the black's own
+  // opacity is 0 at rest.
+  const [r = 255, g = 255, b = 255, alpha = 1] = (
+    before.color.match(/[\d.]+/g) ?? []
+  ).map(Number);
+  expect(Math.max(r, g, b)).toBeLessThan(40);
+  expect(alpha).toBe(1);
+  expect(before.opacity).toBe('0');
+});
+
 async function hideByTap(v: Viewer, page: Page) {
   await v.driver.tap(v.centre);
   await waitForAnimation(v.chrome);
   await waitForRest(v.chrome);
-  await waitForRest(v.blackout);
+  await waitForRest(v.container);
   await frames(page, 1);
 }
 
@@ -155,7 +188,10 @@ test('a tap on the photo hides the controls on the 0.2 s easeInEaseOut fade, and
   const held = await holdAnimations(page, v.dialog);
   const times = timeline(200);
   const chrome = curveOf(await sampleCurve(v.chrome, times), 'opacity');
-  const black = curveOf(await sampleCurve(v.blackout, times), 'opacity');
+  const black = curveOf(
+    await sampleCurve(v.container, times, {pseudoElement: '::before'}),
+    'opacity',
+  );
   await releaseAnimations(page);
   await writeEvidence(
     'curves/lightbox-chrome-hide',
@@ -179,9 +215,9 @@ test('a tap on the photo hides the controls on the 0.2 s easeInEaseOut fade, and
     expect(value, `black at ${t} ms`).toBeCloseTo(expected, 2);
   }
   await waitForRest(v.chrome);
-  await waitForRest(v.blackout);
+  await waitForRest(v.container);
   expect(await v.alpha(v.chrome)).toBe(0);
-  expect(await v.alpha(v.blackout)).toBe(1);
+  expect(await v.black()).toBe(1);
   // Hidden controls take no taps: one on the Close button's spot shows them
   // again instead of closing the viewer unseen.
   const close = await v.dialog
@@ -212,7 +248,7 @@ test('the next tap on the photo shows them, the black clearing at once', async (
   await holdAnimations(page, v.dialog);
   const [chrome, black] = await Promise.all([
     sampleCurve(v.chrome, [0, 100, 200]),
-    sampleCurve(v.blackout, [0, 50, 100]),
+    sampleCurve(v.container, [0, 50, 100], {pseudoElement: '::before'}),
   ]);
   await releaseAnimations(page);
   expect(chrome.map(s => s.opacity)).toEqual([
@@ -237,13 +273,13 @@ test('a double tap that zooms in hides them, and one back to the fitted size sho
   await waitForRest(v.chrome);
   await waitForRest(v.photo);
   expect(await v.alpha(v.chrome)).toBe(0);
-  expect(await v.alpha(v.blackout)).toBe(1);
+  expect(await v.black()).toBe(1);
   await v.driver.play(doubleTap(v.centre));
   await waitForAnimation(v.chrome);
   await waitForRest(v.chrome);
   await waitForRest(v.photo);
   expect(await v.alpha(v.chrome)).toBe(1);
-  expect(await v.alpha(v.blackout)).toBe(0);
+  expect(await v.black()).toBe(0);
 });
 
 test('zoomed, a tap toggles only the controls: the black stays', async ({
@@ -254,17 +290,17 @@ test('zoomed, a tap toggles only the controls: the black stays', async ({
   await waitForAnimation(v.chrome);
   await waitForRest(v.chrome);
   await waitForRest(v.photo);
-  expect(await v.alpha(v.blackout)).toBe(1);
+  expect(await v.black()).toBe(1);
   await v.driver.tap(v.centre);
   await waitForAnimation(v.chrome);
   await waitForRest(v.chrome);
   expect(await v.alpha(v.chrome)).toBe(1);
-  expect(await v.alpha(v.blackout)).toBe(1);
+  expect(await v.black()).toBe(1);
   await v.driver.tap(v.centre);
   await waitForAnimation(v.chrome);
   await waitForRest(v.chrome);
   expect(await v.alpha(v.chrome)).toBe(0);
-  expect(await v.alpha(v.blackout)).toBe(1);
+  expect(await v.black()).toBe(1);
 });
 
 test('a pinch hides them as it passes the fitted size, before the lift', async ({
@@ -294,7 +330,7 @@ test('a pinch hides them as it passes the fitted size, before the lift', async (
   expect(hidingBeforeLift).toBe(true);
   await waitForRest(v.chrome);
   expect(await v.alpha(v.chrome)).toBe(0);
-  expect(await v.alpha(v.blackout)).toBe(1);
+  expect(await v.black()).toBe(1);
 });
 
 test('with a mouse (a fine pointer), a click on the photo leaves the controls', async ({
@@ -433,7 +469,7 @@ test('a drag down keeps them hidden while the black fades with the backdrop, and
       readings.push({
         t: step.t,
         chrome: await v.alpha(v.chrome),
-        black: await v.alpha(v.blackout),
+        black: await v.black(),
         backdrop: await v.dialog.evaluate(el =>
           parseFloat(getComputedStyle(el, '::backdrop').opacity),
         ),
@@ -448,11 +484,11 @@ test('a drag down keeps them hidden while the black fades with the backdrop, and
   expect(Math.min(...readings.map(r => r.black))).toBeLessThan(0.9);
   // The cancel springs the black back with the backdrop, and brings the
   // controls back as Photos does.
-  await waitForRest(v.blackout);
+  await waitForRest(v.container);
   await waitForRest(v.chrome);
   await waitForRest(v.photo);
   await expect(v.dialog).toBeVisible();
-  expect(await v.alpha(v.blackout)).toBe(1);
+  expect(await v.black()).toBe(1);
   expect(await v.alpha(v.chrome)).toBe(1);
 });
 
@@ -522,7 +558,10 @@ test('under Reduce Motion the fades are opacity only and last 200 ms or less', a
   const duration = Math.max(...held.map(a => a.curveEndMs));
   const times = timeline(duration);
   const chrome = await sampleCurve(v.chrome, times);
-  const black = curveOf(await sampleCurve(v.blackout, times), 'opacity');
+  const black = curveOf(
+    await sampleCurve(v.container, times, {pseudoElement: '::before'}),
+    'opacity',
+  );
   await releaseAnimations(page);
   expect(duration).toBeLessThanOrEqual(205);
   const alphas = curveOf(chrome, 'opacity').map(c => c.value);
@@ -649,7 +688,7 @@ test(
       clip: {x: 0, y: 0, width: viewport.width, height: viewport.height},
       measure: async () => ({
         controls: +(await v.alpha(v.chrome)).toFixed(2),
-        black: +(await v.alpha(v.blackout)).toFixed(2),
+        black: +(await v.black()).toFixed(2),
       }),
       columns: 6,
       cellScale: 0.35,

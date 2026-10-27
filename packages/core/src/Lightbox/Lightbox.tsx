@@ -219,6 +219,20 @@ const styles = stylex.create({
     width: '100%',
     height: '100%',
     position: 'relative',
+    // The black the viewer turns as a tap hides the controls, as Photos'
+    // background does: under the photo (and a source's picture), over the
+    // backdrop. The colour that reads on light surfaces is black in every
+    // theme; a theme that retints it retints this. The container's own
+    // pseudo-element, no element of its own (architecture:layer-runtime INV7).
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      zIndex: -1,
+      backgroundColor: colorVars['--color-on-light'],
+      opacity: 0,
+      pointerEvents: 'none',
+    },
   },
   mediaGroup: {
     display: 'flex',
@@ -432,18 +446,6 @@ const styles = stylex.create({
       default: 'auto',
       [stylex.when.ancestor('[data-chrome-hidden]', lightboxScope)]: 'none',
     },
-  },
-  // The black the viewer turns as a tap hides the controls, as Photos'
-  // background does: under the photo (and a source's picture), over the
-  // backdrop. The colour that reads on light surfaces is black in every
-  // theme; a theme that retints it retints this.
-  blackout: {
-    position: 'absolute',
-    inset: 0,
-    zIndex: -1,
-    backgroundColor: colorVars['--color-on-light'],
-    opacity: 0,
-    pointerEvents: 'none',
   },
   // The controls sit in layers over the viewer that pass clicks through. A
   // drag to dismiss fades the layers, which carry no transition of their own
@@ -868,7 +870,6 @@ export function Lightbox({
   // in the middle of a gesture renders nothing.
   const chromeHiddenRef = useRef(false);
   const immersiveRef = useRef(false);
-  const blackoutRef = useRef<HTMLDivElement>(null);
   /** The last input: a pointer type, or 'keyboard'. */
   const lastInputRef = useRef<string>('mouse');
   const chromeElements = useCallback((): HTMLElement[] => {
@@ -882,10 +883,13 @@ export function Lightbox({
         ];
   }, []);
   const blackoutAnimator = useCallback((): Animator | null => {
-    const blackout = blackoutRef.current;
-    return blackout == null
+    const container = containerRef.current;
+    return container == null
       ? null
-      : animatorFor(blackout, {initial: {opacity: 0}});
+      : animatorFor(container, {
+          pseudoElement: '::before',
+          initial: {opacity: 0},
+        });
   }, []);
   const setChrome = useCallback(
     ({hidden, immersive}: {hidden: boolean; immersive: boolean}) => {
@@ -1763,12 +1767,6 @@ export function Lightbox({
             <div
               ref={containerRef}
               {...stylex.props(styles.container, lightboxScope)}>
-              <div
-                ref={blackoutRef}
-                data-lightbox-blackout=""
-                aria-hidden
-                {...stylex.props(styles.blackout)}
-              />
               <div
                 data-lightbox-chrome=""
                 {...stylex.props(styles.chromeLayer)}>
