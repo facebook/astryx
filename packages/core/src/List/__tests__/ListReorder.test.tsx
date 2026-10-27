@@ -944,6 +944,23 @@ describe('List reorderable', () => {
     expect(hintButton('Move down')).toBeNull();
   });
 
+  it("gives the hint's buttons a finger's target as an invisible hit layer: the hit area writes their insets where the primary pointer is coarse", async () => {
+    stubPrimaryPointer(true);
+    const user = userEvent.setup();
+    render(<ReorderableRows initial={['Inbox', 'Sent', 'Drafts']} />);
+    handleOf('Sent').focus();
+    await user.keyboard(' ');
+    for (const name of ['Move up', 'Move down', 'Done']) {
+      const button = hintButton(name) as HTMLElement;
+      await waitFor(() =>
+        expect(
+          button.style.getPropertyValue('--astryx-hit-inset-top'),
+          name,
+        ).toMatch(/px$/),
+      );
+    }
+  });
+
   it('takes an Escape that reaches the dismissal stack with the focus in the hint: the mode ends, and a layer below stays open', async () => {
     const user = userEvent.setup();
     const outer = vi.fn();

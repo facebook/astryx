@@ -96,6 +96,7 @@ import {
 } from '../utils/rowMotion';
 import {edgeAutoscroll, type EdgeAutoscroll} from '../utils/edgeAutoscroll';
 import {useTouchPresentation} from '../utils/touchPresentation';
+import {watchHitArea, writeHitInsets} from '../utils/hitArea';
 import {devWarn} from '../utils/devWarning';
 import {GHOST_ATTRIBUTE} from './useListUpdateMotion';
 import {
@@ -1861,17 +1862,14 @@ function ListReorderHost({reorder}: {reorder: ListReorderContextValue}) {
 }
 
 const hintStyles = stylex.create({
-  // A glyph or Done: the hint's text, with nothing of a button's own. Under
-  // a finger each is 44 px wide, so a glyph's target is centered on it and
-  // never covers its neighbour (design:bidirectionality DR8), and its
-  // target reaches 44 px tall without growing the hint's height.
+  // A glyph or Done: the hint's text, with nothing of a button's own, the
+  // same size under every pointer. A finger's 44 px target is the invisible
+  // hit layer below, grown by the insets the hit area writes where the
+  // primary pointer is coarse, each side capped at half the gap to a
+  // neighbouring target (utils/hitArea.ts), so it never covers one.
   button: {
     position: 'relative',
     display: 'inline-flex',
-    minWidth: {
-      default: null,
-      '@media (pointer: coarse)': 44,
-    },
     alignItems: 'center',
     justifyContent: 'center',
     margin: 0,
@@ -1887,14 +1885,13 @@ const hintStyles = stylex.create({
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
+    // SYNC: utils/hitArea.ts HIT_INSET_PROPERTIES (StyleX reads no
+    // imported value).
     '::after': {
       content: '""',
       position: 'absolute',
-      insetBlock: {
-        default: 0,
-        '@media (pointer: coarse)': 'min(0px, calc((100% - 44px) / 2))',
-      },
-      insetInline: 0,
+      inset:
+        'calc(var(--astryx-hit-inset-top, 0px) * -1) calc(var(--astryx-hit-inset-right, 0px) * -1) calc(var(--astryx-hit-inset-bottom, 0px) * -1) calc(var(--astryx-hit-inset-left, 0px) * -1)',
     },
   },
   done: {
@@ -1919,8 +1916,19 @@ function HintButton({
   isText?: boolean;
   children: ReactNode;
 }) {
+  const ref = useRef<HTMLButtonElement | null>(null);
+  // A finger's target: the hit area watches the button where the primary
+  // pointer is coarse and writes how far its hit layer may grow.
+  useIsomorphicLayoutEffect(() => {
+    const button = ref.current;
+    if (button == null) {
+      return undefined;
+    }
+    return watchHitArea(button, insets => writeHitInsets(button, insets));
+  }, []);
   return (
     <button
+      ref={ref}
       type="button"
       tabIndex={-1}
       aria-label={label}
