@@ -17,13 +17,18 @@
  * builds and the rest wait for it to release the lock before reading dist:
  * dist/theme/index.js appears long before the build's declarations do.
  *
- * A build older than Core's sources counts as missing: a reused worktree
- * checked out to a new head keeps its old dist, and the suites would
- * otherwise test the new CLI against the old theme build. The files the build
- * and the test setup generate from those sources are not sources.
+ * The node project's global setup also rebuilds a build older than Core's
+ * sources, before any test worker forks: a reused worktree checked out to a
+ * new head keeps its old dist, and the suites would otherwise test the new CLI
+ * against the old theme build. The files the build and the test setup
+ * generate from those sources are not sources. A suite's beforeAll builds
+ * only a missing Core: rebuilding a stale one mid-run would delete dist under
+ * suites still reading it. Each checkout has its own lock, so one worktree's
+ * rebuild never holds up another's suites.
  */
 
 import {execFileSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -52,8 +57,20 @@ export const CORE_GENERATED = [
   path.join(REPO_ROOT, 'packages/core/src/i18n/generated-locales'),
   path.join(REPO_ROOT, 'packages/core/locales/pseudo.json'),
 ];
-// A lock directory (mkdir is atomic across processes) guards the build.
-const LOCK_DIR = path.join(os.tmpdir(), 'astryx-core-build.lock');
+/**
+ * The lock directory (mkdir is atomic across processes) that guards the Core
+ * build of the checkout at `repoRoot`: one per checkout.
+ * @param {string} repoRoot
+ * @returns {string}
+ */
+export function coreBuildLockDir(repoRoot) {
+  const key = createHash('sha256')
+    .update(path.resolve(repoRoot))
+    .digest('hex')
+    .slice(0, 16);
+  return path.join(os.tmpdir(), `astryx-core-build-${key}.lock`);
+}
+const LOCK_DIR = coreBuildLockDir(REPO_ROOT);
 
 const BUILD_TIMEOUT_MS = 180_000;
 // A lock older than this is assumed abandoned by a crashed/killed worker.
@@ -105,11 +122,6 @@ export function coreBuildIsStale(entry, roots, generated = []) {
     }
   }
   return false;
-}
-
-/** Whether packages/core/dist holds a build of Core's current sources. */
-function coreIsBuilt() {
-  return !coreBuildIsStale(CORE_THEME_ENTRY, CORE_SOURCES, CORE_GENERATED);
 }
 
 function buildCore() {
@@ -210,10 +222,46 @@ export function ensureBuiltOnce({
 }
 
 /**
- * Ensure packages/core/dist is built exactly once, even when called
- * concurrently from parallel Vitest workers. Safe to call from every
- * build-theme suite's beforeAll.
+ * Build Core when `entry` is missing, or also when it is older than
+ * `roots` with `rebuildStale`, in one process at a time.
+ * @param {{entry: string, roots: readonly string[], generated?: readonly string[], build: () => void, lockDir: string, rebuildStale?: boolean, staleLockMs?: number, pollMs?: number}} options
  */
-export function ensureCoreBuilt() {
-  ensureBuiltOnce({isBuilt: coreIsBuilt, build: buildCore, lockDir: LOCK_DIR});
+export function ensureCoreBuiltAt({
+  entry,
+  roots,
+  generated = [],
+  build,
+  lockDir,
+  rebuildStale = false,
+  staleLockMs,
+  pollMs,
+}) {
+  ensureBuiltOnce({
+    isBuilt: rebuildStale
+      ? () => !coreBuildIsStale(entry, roots, generated)
+      : () => fs.existsSync(entry),
+    build,
+    lockDir,
+    staleLockMs,
+    pollMs,
+  });
+}
+
+/**
+ * Ensure packages/core/dist is built exactly once, even when called
+ * concurrently from parallel Vitest workers. A build-theme suite's beforeAll
+ * calls it with no options and builds only a missing Core; the node global
+ * setup passes `rebuildStale`, so a build older than Core's sources is rebuilt
+ * there, before any worker forks, and never under a running suite.
+ * @param {{rebuildStale?: boolean}} [options]
+ */
+export function ensureCoreBuilt({rebuildStale = false} = {}) {
+  ensureCoreBuiltAt({
+    entry: CORE_THEME_ENTRY,
+    roots: CORE_SOURCES,
+    generated: CORE_GENERATED,
+    build: buildCore,
+    lockDir: LOCK_DIR,
+    rebuildStale,
+  });
 }

@@ -8,7 +8,9 @@
  *   source file: a missing entry, a source or package.json changed after it,
  *   are stale; node_modules, dist and generated output are not sources, and
  *   Core's translations are. A caller waiting on another's build returns only
- *   once that build released the lock.
+ *   once that build released the lock. A suite builds only a missing Core;
+ *   only the node global setup rebuilds a stale one, before the workers fork.
+ *   Each checkout has its own lock.
  * @position Unit test of packages/cli/clients/cli/commands/ensure-core-built.mjs
  */
 
@@ -22,7 +24,9 @@ import {
   CORE_GENERATED,
   CORE_SOURCES,
   coreBuildIsStale,
+  coreBuildLockDir,
   ensureBuiltOnce,
+  ensureCoreBuiltAt,
 } from '../packages/cli/clients/cli/commands/ensure-core-built.mjs';
 
 const REPO_ROOT = path.resolve(
@@ -197,5 +201,112 @@ describe('ensureBuiltOnce', () => {
     expect(built).toBe(true);
     expect(heldDuringBuild).toBe(true);
     expect(fs.existsSync(lockDir)).toBe(false);
+  });
+});
+
+describe('ensureCoreBuiltAt', () => {
+  it('builds a missing Core', () => {
+    const {entry, roots} = tree();
+    fs.rmSync(entry);
+    let builds = 0;
+    ensureCoreBuiltAt({
+      entry,
+      roots,
+      build: () => {
+        builds++;
+      },
+      lockDir: path.join(dir, 'lock'),
+    });
+    expect(builds).toBe(1);
+  });
+
+  it('leaves a present build alone in a suite, even when a source changed after it', () => {
+    // A Core edit while the suites run must not rebuild under them: the
+    // build deletes dist first, and suites still reading it fail.
+    const {source, entry, roots} = tree();
+    fs.utimesSync(source, 3000, 3000);
+    expect(coreBuildIsStale(entry, roots)).toBe(true);
+    let builds = 0;
+    ensureCoreBuiltAt({
+      entry,
+      roots,
+      build: () => {
+        builds++;
+      },
+      lockDir: path.join(dir, 'lock'),
+    });
+    expect(builds).toBe(0);
+  });
+
+  it('rebuilds a build older than a source when asked, as the global setup does', () => {
+    const {source, entry, roots} = tree();
+    fs.utimesSync(source, 3000, 3000);
+    let builds = 0;
+    ensureCoreBuiltAt({
+      entry,
+      roots,
+      build: () => {
+        builds++;
+      },
+      lockDir: path.join(dir, 'lock'),
+      rebuildStale: true,
+    });
+    expect(builds).toBe(1);
+  });
+
+  it('is asked to rebuild a stale Core only by the node global setup', () => {
+    const setup = fs.readFileSync(
+      path.join(REPO_ROOT, 'vitest.global-setup.node.mjs'),
+      'utf8',
+    );
+    expect(setup).toContain('ensureCoreBuilt({rebuildStale: true})');
+    const suites = [];
+    const walk = current => {
+      for (const entry of fs.readdirSync(current, {withFileTypes: true})) {
+        const full = path.join(current, entry.name);
+        if (entry.isDirectory()) {
+          if (entry.name !== 'node_modules') walk(full);
+        } else if (
+          entry.name.endsWith('.test.mjs') &&
+          /ensureCoreBuilt\([^)]*rebuildStale/.test(
+            fs.readFileSync(full, 'utf8'),
+          )
+        ) {
+          suites.push(path.relative(REPO_ROOT, full));
+        }
+      }
+    };
+    walk(path.join(REPO_ROOT, 'packages/cli'));
+    expect(suites).toEqual([]);
+  });
+});
+
+describe('coreBuildLockDir', () => {
+  it('gives each checkout its own lock', () => {
+    expect(coreBuildLockDir('/work/a')).not.toBe(coreBuildLockDir('/work/b'));
+    expect(coreBuildLockDir('/work/a')).toBe(coreBuildLockDir('/work/a/'));
+    expect(path.dirname(coreBuildLockDir('/work/a'))).toBe(os.tmpdir());
+  });
+
+  it("does not keep a checkout with a current build waiting on another checkout's build", () => {
+    const {entry, roots} = tree();
+    const other = coreBuildLockDir(path.join(dir, 'other-checkout'));
+    fs.mkdirSync(other);
+    try {
+      const started = Date.now();
+      ensureCoreBuiltAt({
+        entry,
+        roots,
+        build: () => {
+          throw new Error('a current build is not rebuilt');
+        },
+        lockDir: coreBuildLockDir(dir),
+        staleLockMs: 5000,
+        pollMs: 50,
+      });
+      expect(Date.now() - started).toBeLessThan(1000);
+    } finally {
+      fs.rmSync(other, {recursive: true, force: true});
+    }
   });
 });

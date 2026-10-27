@@ -3,8 +3,9 @@
 /**
  * @file globalSetup for the `node` test project.
  * @input Shared ensureCoreBuilt helper and authored Sandbox template descriptors.
- * @output Builds Core and regenerates the Sandbox template registry and route
- *   wrappers once, before any test worker forks.
+ * @output Builds Core (again when its build is older than its sources) and
+ *   regenerates the Sandbox template registry and route wrappers once, before
+ *   any test worker forks.
  * @position Referenced by vitest.config.ts's `node` project. The build-theme
  *   suites need a compiled Core; the Sandbox route contract imports generated
  *   template metadata and scans ignored wrappers that do not exist in a fresh
@@ -19,7 +20,9 @@ import {fileURLToPath} from 'node:url';
 import {ensureCoreBuilt} from './packages/cli/clients/cli/commands/ensure-core-built.mjs';
 
 export default function setup() {
-  ensureCoreBuilt();
+  // A stale Core is rebuilt only here, before the workers: a suite that
+  // rebuilt it mid-run would delete dist under suites still reading it.
+  ensureCoreBuilt({rebuildStale: true});
   // The ignored registry and ~700 physical page wrappers are build outputs,
   // not fixtures to check in. The route-manifest test must see the same inputs
   // as `pnpm -F @astryxdesign/sandbox build` on a clean CI checkout.
