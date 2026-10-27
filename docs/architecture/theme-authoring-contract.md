@@ -249,10 +249,6 @@ public surface belongs to
 
 ## Owning code
 
-- An internal, pure `resolveThemeMotion(theme)` returns a theme's motion
-  knobs, durations, easings, and role tables for the animator and for server
-  code; it touches no DOM and has no import-time side effects
-  (`spec:AST-108` FR6).
 - `packages/core/src/theme/defineTheme.ts` owns the public input, normalized IR,
   orchestration, and extension behavior.
 - `themeAdaptations.ts` owns the fixed breakpoint/condition vocabulary,
@@ -288,6 +284,12 @@ validator still requires the original theme-derived prefix and uses that prefix 
 classify local references. Until the implementation lands, INV8's prefix-independent
 clauses are current authority but not enforcement. Existing explicit enrollment,
 owner, lineage, collision, cycle, and legacy-unenrolled behavior remains shipped.
+
+The motion resolver is accepted but unshipped: an internal, pure
+`resolveThemeMotion(theme)` returns a theme's motion knobs, durations, easings,
+and role tables for the animator and for server code, touching no DOM and with
+no import-time side effects (`spec:AST-108` FR6). Until it lands, FR6's
+resolution is current authority but not enforcement.
 
 ## Verification
 
