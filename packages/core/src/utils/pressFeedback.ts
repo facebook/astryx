@@ -65,7 +65,7 @@
  *
  * Its touch-only listeners, the finger's `touchend` and `touchcancel`, are on
  * only while a press is tracked and the primary pointer is coarse
- * (gestures/coarsePointer.ts, `spec:AST-094` FR24).
+ * (coarsePointer.ts, `spec:AST-094` FR24).
  *
  * SYNC: When modified, update pressGesture.ts, hooks/usePressFeedback.ts,
  * hooks/usePressFeedback.doc.mjs, utils/interactionOverlay.stylex.ts and
@@ -87,7 +87,7 @@ import {
 } from './pressGesture';
 import {controlPressConsts} from './controlPressLayer.stylex';
 import {TOUCH_QUERY} from './touchPresentation';
-import {isCoarsePointer, watchCoarsePointer} from '../gestures/coarsePointer';
+import {isCoarsePointer, watchCoarsePointer} from './coarsePointer';
 
 /**
  * The marker the controller finds with `closest()`. Every Astryx component
