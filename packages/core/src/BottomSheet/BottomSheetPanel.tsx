@@ -372,6 +372,8 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   onScrimOpacity: (opacity: number) => void;
   /** Given by a host whose scrim is the dialog's ::backdrop; see useSheetGestures. */
   onScrimTracking?: (tracking: boolean) => void;
+  /** Whether that ::backdrop is the stack's visible scrim; see useSheetGestures. */
+  isScrimShown?: () => boolean;
   onElementChange?: (element: HTMLDivElement | null) => void;
   onMotionStart?: (motion: BottomSheetPanelMotion) => void;
   onMotionComplete?: (motion: BottomSheetPanelMotion) => void;
@@ -518,6 +520,7 @@ export function BottomSheetPanel({
   onDismiss,
   onScrimOpacity,
   onScrimTracking,
+  isScrimShown,
   onElementChange,
   onMotionStart,
   onMotionComplete,
@@ -615,6 +618,7 @@ export function BottomSheetPanel({
     snapHeights,
     onScrimOpacity,
     onScrimTracking,
+    isScrimShown,
   });
 
   const {getViewportProps, getContentProps} = useScrollableArea({

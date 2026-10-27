@@ -411,6 +411,13 @@ export interface UseSheetGesturesOptions {
    * sheet. False hands it back, at the value last written.
    */
   onScrimTracking?: (tracking: boolean) => void;
+  /**
+   * Given with `onScrimTracking`: whether the dialog's `::backdrop` is the
+   * visible scrim at this moment. A stack shows one backdrop: a sheet stacked
+   * above another keeps a transparent one, and a sheet whose scrim another
+   * took over drops it, so neither plays the dim there. Omitted: always.
+   */
+  isScrimShown?: () => boolean;
 }
 
 export interface SheetContentProps {
@@ -566,6 +573,7 @@ export function useSheetGestures({
   onSnap,
   onScrimOpacity,
   onScrimTracking,
+  isScrimShown,
 }: UseSheetGesturesOptions): UseSheetGesturesResult {
   const [dragOffset, setDragOffset] = useState(0);
   const [settledOffset, setSettledOffset] = useState(0);
@@ -712,12 +720,14 @@ export function useSheetGestures({
   const onSnapRef = useRef(onSnap);
   const onScrimOpacityRef = useRef(onScrimOpacity);
   const onScrimTrackingRef = useRef(onScrimTracking);
+  const isScrimShownRef = useRef(isScrimShown);
   useEffect(() => {
     onDismissRef.current = onDismiss;
     canDismissRef.current = canDismiss;
     onSnapRef.current = onSnap;
     onScrimOpacityRef.current = onScrimOpacity;
     onScrimTrackingRef.current = onScrimTracking;
+    isScrimShownRef.current = isScrimShown;
   });
 
   // The scrim, while a gesture or its release moves it (`onScrimTracking`):
@@ -791,7 +801,12 @@ export function useSheetGestures({
       touchRelease = false,
     ) => {
       const dialog = sheetElRef.current?.closest('dialog');
-      if (!isScrimTrackingRef.current || dialog == null) {
+      // Only on the stack's visible backdrop: a transparent one stays clear.
+      if (
+        !isScrimTrackingRef.current ||
+        dialog == null ||
+        isScrimShownRef.current?.() === false
+      ) {
         return;
       }
       stopScrimFollow();
