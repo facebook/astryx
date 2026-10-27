@@ -4214,7 +4214,7 @@ describe("useSheetGestures: the body's pull at the content's edge", () => {
 
   it('never holds a real scroll: a list that can still scroll that way keeps every move', () => {
     const {hook, body, touch} = pullOn(120);
-    const moves: Array<Event | undefined> = [];
+    const moves: (Event | undefined)[] = [];
     act(() => {
       touch(body, 'touchstart', 100);
       for (const y of [103, 106, 115, 130]) {
