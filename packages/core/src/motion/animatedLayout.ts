@@ -335,12 +335,42 @@ interface Band {
   readonly end: number;
 }
 
-function bandFor(area: Element, changedSize: number): Band {
-  const visible = visibleRect(area);
-  const reach = Math.max(visible.height, changedSize);
-  const start = visible.top - reach;
-  const end = visible.bottom + reach;
-  return {start, end};
+function bandFor(visible: DOMRect, reach: number): Band {
+  return {start: visible.top - reach, end: visible.bottom + reach};
+}
+
+/**
+ * What one frame's walks read, kept so a level two changes share, or a walk
+ * repeated when the band grows, reads each element once.
+ */
+interface WalkCache {
+  readonly rects: Map<Element, DOMRect>;
+  /** Whether the element takes part, or `contents` for a boxless element. */
+  readonly parts: Map<Element, boolean | 'contents'>;
+}
+
+function partOf(element: Element, cache: WalkCache): boolean | 'contents' {
+  let part = cache.parts.get(element);
+  if (part === undefined) {
+    const style = element.ownerDocument.defaultView?.getComputedStyle(element);
+    part =
+      style == null
+        ? false
+        : style.display === 'contents'
+          ? 'contents'
+          : takesPart(element, style);
+    cache.parts.set(element, part);
+  }
+  return part;
+}
+
+function rectOf(element: Element, cache: WalkCache): DOMRect {
+  let rect = cache.rects.get(element);
+  if (rect === undefined) {
+    rect = element.getBoundingClientRect();
+    cache.rects.set(element, rect);
+  }
+  return rect;
 }
 
 /**
@@ -358,16 +388,13 @@ function collectCandidates(
   changed: Element,
   area: Element,
   band: Band,
+  cache: WalkCache,
 ): Map<Element, DOMRect> {
-  const view = changed.ownerDocument.defaultView;
   const out = new Map<Element, DOMRect>();
-  /** Takes `element`; returns false once it lies past the band. */
+  /** Takes `element`; returns false once it lies outside the band. */
   const take = (element: Element, isAfter: boolean): boolean => {
-    const style = view?.getComputedStyle(element);
-    if (style == null) {
-      return true;
-    }
-    if (style.display === 'contents') {
+    const part = partOf(element, cache);
+    if (part === 'contents') {
       for (
         let child = isAfter
           ? element.firstElementChild
@@ -383,11 +410,11 @@ function collectCandidates(
       }
       return true;
     }
-    if (!takesPart(element, style)) {
+    if (!part) {
       return true;
     }
-    const rect = element.getBoundingClientRect();
-    if (isAfter ? rect.top > band.end : rect.bottom < band.start) {
+    const rect = rectOf(element, cache);
+    if (rect.top > band.end || rect.bottom < band.start) {
       return false;
     }
     out.set(element, rect);
@@ -398,10 +425,11 @@ function collectCandidates(
     node != null && node !== area;
     node = node.parentElement
   ) {
-    if (node !== changed) {
-      // An ancestor of the change: where its layout moves it (a centered
-      // column), it glides, and what is inside moves only by its own change.
-      out.set(node, node.getBoundingClientRect());
+    if (node !== changed && partOf(node, cache) === true) {
+      // An ancestor of the change in flow: where its layout moves it (a
+      // centered column), it glides, and what is inside moves only by its own
+      // change. A positioned or top-layer ancestor takes its final place.
+      out.set(node, rectOf(node, cache));
     }
     for (
       let sibling = node.nextElementSibling;
@@ -433,6 +461,11 @@ interface Batch {
   readonly candidates: Map<Element, Element[]>;
   /** The changed elements' sizes before the change, added up. */
   changedSize: number;
+  /** How far past the visible part the walks reach (0 before the first). */
+  reach: number;
+  /** The area's visible part, read once per frame. */
+  visible: DOMRect | null;
+  readonly cache: WalkCache;
   scheduled: boolean;
 }
 
@@ -447,6 +480,9 @@ function batchFor(area: Element): Batch {
       before: new Map(),
       candidates: new Map(),
       changedSize: 0,
+      reach: 0,
+      visible: null,
+      cache: {rects: new Map(), parts: new Map()},
       scheduled: false,
     };
     batches.set(area, created);
@@ -689,15 +725,25 @@ export function reportLayoutChange(
         return;
       }
       const batch = batchFor(area);
-      if (!batch.changed.has(element)) {
-        batch.changed.add(element);
-        batch.changedSize += element.getBoundingClientRect().height;
+      if (batch.changed.has(element)) {
+        return;
       }
+      batch.changed.add(element);
+      batch.changedSize += rectOf(element, batch.cache).height;
+      batch.visible ??= visibleRect(area);
       // Changes in one frame add up: every change's walk reaches the band
-      // their summed size can pull into view.
-      const band = bandFor(area, batch.changedSize);
-      for (const changed of batch.changed) {
-        const candidates = collectCandidates(changed, area, band);
+      // their summed size can pull into view. When that outgrows the band
+      // walked so far, the band at least doubles and every change is walked
+      // again (from the cache), so a frame of many changes re-walks a few
+      // times, not once per change.
+      const needed = Math.max(batch.visible.height, batch.changedSize);
+      const walks = needed > batch.reach ? [...batch.changed] : [element];
+      if (needed > batch.reach) {
+        batch.reach = Math.max(needed, batch.reach * 2);
+      }
+      const band = bandFor(batch.visible, batch.reach);
+      for (const changed of walks) {
+        const candidates = collectCandidates(changed, area, band, batch.cache);
         for (const [candidate, rect] of candidates) {
           if (!batch.before.has(candidate)) {
             batch.before.set(candidate, rect);
