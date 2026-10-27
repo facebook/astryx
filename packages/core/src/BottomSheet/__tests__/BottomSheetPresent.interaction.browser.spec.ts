@@ -246,6 +246,18 @@ test('during the entrance a tap on the dim and a grab are ignored, and input ret
   const {driver, dialog, sheet, tapTrigger} = await story(page);
   const viewport = page.viewportSize() ?? {width: 402, height: 714};
   const center = viewport.width / 2;
+  // When each contact ends, on the page's clock: under load the grab's end can
+  // land after the sheet does.
+  await page.evaluate(() => {
+    window.addEventListener(
+      'pointerup',
+      () => {
+        (window as unknown as {__lastLift?: number}).__lastLift =
+          performance.now();
+      },
+      true,
+    );
+  });
   await tapTrigger();
   // ~60 ms in: a tap on the dimmed page above the sheet.
   await page.waitForTimeout(60);
@@ -258,7 +270,14 @@ test('during the entrance a tap on the dim and a grab are ignored, and input ret
   // Neither reached it: the sheet presented to its detent and stayed.
   await expect(dialog).toHaveAttribute('open');
   expect(await sheetTop(sheet)).toBeLessThan(viewport.height * 0.15);
-  // Landed: the hold is released and a tap on the dim closes the sheet.
+  // Landed: the hold is released and a tap on the dim closes the sheet. A tap
+  // within about 300 ms of a touch drag's end is the browser's (Chromium makes
+  // no click of it: it ends that gesture), so the tap waits that out from the
+  // grab's own end.
+  await page.waitForFunction(() => {
+    const lift = (window as unknown as {__lastLift?: number}).__lastLift;
+    return lift != null && performance.now() - lift >= 400;
+  });
   await driver.tap({x: center, y: 30});
   await expect(dialog).not.toHaveAttribute('open');
 });
