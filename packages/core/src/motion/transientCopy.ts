@@ -27,15 +27,38 @@ export function isCopyable(element: Element): boolean {
   return element.getElementsByTagName('*').length <= MAX_COPIED_ELEMENTS;
 }
 
+/** Scroll offsets a copy restores once laid out (a clone carries none). */
+const scrollOffsets = new WeakMap<
+  HTMLElement,
+  ReadonlyArray<readonly [Element, number, number]>
+>();
+
 /**
  * A copy that takes no part: no ids or test ids, no form or radio group (a
- * copied checked radio would uncheck the live one), and copied frames and
- * media load nothing.
+ * copied checked radio would uncheck the live one), no label for a live
+ * control, and copied frames and media load nothing. Scrolled descendants
+ * keep their offsets once the copy is laid out (`placeOver`).
  */
 export function inertCopy(element: HTMLElement): HTMLElement {
   const copy = element.cloneNode(true) as HTMLElement;
-  for (const node of [copy, ...copy.querySelectorAll('*')]) {
-    for (const name of ['id', 'data-testid', 'name', 'form', 'autofocus']) {
+  const sourceNodes = [element, ...element.querySelectorAll('*')];
+  const copyNodes = [copy, ...copy.querySelectorAll('*')];
+  const offsets: [Element, number, number][] = [];
+  sourceNodes.forEach((source, index) => {
+    if (source.scrollTop !== 0 || source.scrollLeft !== 0) {
+      offsets.push([copyNodes[index], source.scrollTop, source.scrollLeft]);
+    }
+  });
+  scrollOffsets.set(copy, offsets);
+  for (const node of copyNodes) {
+    for (const name of [
+      'id',
+      'data-testid',
+      'name',
+      'form',
+      'for',
+      'autofocus',
+    ]) {
       node.removeAttribute(name);
     }
   }
@@ -46,7 +69,9 @@ export function inertCopy(element: HTMLElement): HTMLElement {
       node.removeAttribute(name);
     }
   }
-  // A clone's canvas is blank: paint each with its source's pixels.
+  // A clone's canvas is blank: paint each with its source's pixels. A WebGL
+  // canvas drawn without `preserveDrawingBuffer` cannot be read once it is
+  // presented, by any API, so its copy stays blank.
   const sources = element.querySelectorAll('canvas');
   copy.querySelectorAll('canvas').forEach((canvas, index) => {
     const source = sources[index];
@@ -96,6 +121,10 @@ export function placeOver(
   const origin = element.getBoundingClientRect();
   element.style.left = `${rect.left - origin.left}px`;
   element.style.top = `${rect.top - origin.top}px`;
+  for (const [node, top, left] of scrollOffsets.get(element) ?? []) {
+    node.scrollTop = top;
+    node.scrollLeft = left;
+  }
 }
 
 /**
@@ -129,6 +158,12 @@ export function visiblePartCopy(element: HTMLElement): {
   holder.setAttribute('inert', '');
   Object.assign(holder.style, {overflow: 'hidden', pointerEvents: 'none'});
   holder.appendChild(content);
+  // The content's own offset is its position; its scrolled descendants
+  // restore theirs when the holder is laid out.
+  scrollOffsets.set(
+    holder,
+    (scrollOffsets.get(content) ?? []).filter(([node]) => node !== content),
+  );
   const box = element.getBoundingClientRect();
   return {
     copy: holder,
@@ -141,8 +176,14 @@ export function visiblePartCopy(element: HTMLElement): {
   };
 }
 
-/** Wraps each run of text in a copy in its own span, so the text can fade. */
-export function wrapText(copy: HTMLElement): HTMLElement[] {
+const SVG = 'http://www.w3.org/2000/svg';
+
+/**
+ * The elements that let a copy's text fade: each run of HTML text wrapped in
+ * its own span, and each SVG `text` element as it is (a span does not render
+ * inside SVG).
+ */
+export function wrapText(copy: HTMLElement): Element[] {
   const walker = copy.ownerDocument.createTreeWalker(copy, 4);
   const texts: Text[] = [];
   while (walker.nextNode()) {
@@ -150,10 +191,20 @@ export function wrapText(copy: HTMLElement): HTMLElement[] {
       texts.push(walker.currentNode as Text);
     }
   }
-  return texts.map(text => {
+  const faded = new Set<Element>();
+  for (const text of texts) {
+    const parent = text.parentElement;
+    if (parent?.namespaceURI === SVG) {
+      const svgText = parent.closest('text');
+      if (svgText != null) {
+        faded.add(svgText);
+      }
+      continue;
+    }
     const span = copy.ownerDocument.createElement('span');
     text.replaceWith(span);
     span.appendChild(text);
-    return span;
-  });
+    faded.add(span);
+  }
+  return [...faded];
 }
