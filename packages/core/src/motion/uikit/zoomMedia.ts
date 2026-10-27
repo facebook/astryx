@@ -352,6 +352,16 @@ export const zoomMedia = {
      */
     closeSpring: {response: 0.204, dampingRatio: 1},
     /**
+     * With no thumbnail to return to, a pinch-closed photo shrinks to this
+     * fraction of its fitted size about the fitted box's centre, fading out
+     * on the way.
+     * @source GUESS — Photos scrolls its grid to the photo's cell before
+     *   closing into it, so the stand-in for a page with no thumbnail is to
+     *   measure
+     * @measure M-ZM4
+     */
+    missingSourceScale: 0.5,
+    /**
      * Springing back, the photo returns to the fitted size on this
      * critically damped spring from rest, settled ~0.37 s after the lift;
      * the backdrop and the chrome return on `closeSpring`. (Photos starts

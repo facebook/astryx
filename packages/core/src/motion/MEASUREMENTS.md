@@ -295,8 +295,9 @@ about a frame behind, and UIKit tracks the drag's progress at 0.92 / 0.34.
 Lightbox's drag follows Photos' own dismissal instead, so the table keeps
 none of it.
 
-| ID    | What                         | App and gesture                                                                    | Extract                                                                   | Method |
-| ----- | ---------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------ |
-| M-ZM1 | Double tap on a filled photo | Photos: double tap a photo with the screen's aspect (402 × 874) at the fitted size | the zoom it lands on (aspect fill gives 1)                                | B, C   |
-| M-ZM2 | Maximum zoom                 | Photos: pinch a 4032 × 3024 and a 1200 × 800 photo as far as it goes               | the zoom it settles on against the photo's pixel size and the fitted size | B, C   |
-| M-ZM3 | Dismiss cancel distance      | Photos: pull a photo down 6–19 pt, bring it back to N pt and lift without moving   | the largest N that still cancels                                          | B, C   |
+| ID    | What                         | App and gesture                                                                             | Extract                                                                                                      | Method |
+| ----- | ---------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------ |
+| M-ZM1 | Double tap on a filled photo | Photos: double tap a photo with the screen's aspect (402 × 874) at the fitted size          | the zoom it lands on (aspect fill gives 1)                                                                   | B, C   |
+| M-ZM2 | Maximum zoom                 | Photos: pinch a 4032 × 3024 and a 1200 × 800 photo as far as it goes                        | the zoom it settles on against the photo's pixel size and the fitted size                                    | B, C   |
+| M-ZM3 | Dismiss cancel distance      | Photos: pull a photo down 6–19 pt, bring it back to N pt and lift without moving            | the largest N that still cancels                                                                             | B, C   |
+| M-ZM4 | Pinch close with no cell     | Photos: page to a photo whose grid cell is scrolled off screen, pinch in past 0.93 and lift | whether the grid scrolls to the cell first, else where the photo goes: scale, position and opacity per frame | B, C   |

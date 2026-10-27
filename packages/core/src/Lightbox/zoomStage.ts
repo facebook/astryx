@@ -650,13 +650,13 @@ export function pinchCloses(smallest: number, released: number): boolean {
 }
 
 /**
- * Where a pinch-closed photo goes with no thumbnail to return to: half its
- * fitted size about the fitted box's centre, as the zoom transition's
- * stand-in for a missing source (zoomTransition.ts, a GUESS that
- * MEASUREMENTS.md M-ZT3 tracks), fading out on the way.
+ * Where a pinch-closed photo goes with no thumbnail to return to:
+ * `zoomMedia.pinchClose.missingSourceScale` of its fitted size about the
+ * fitted box's centre (a GUESS that MEASUREMENTS.md M-ZM4 tracks), fading
+ * out on the way.
  */
 export function pinchCloseExit(geometry: ZoomGeometry): ZoomTransform {
-  const scale = 0.5;
+  const scale = zoomMedia.pinchClose.missingSourceScale;
   return {
     x: (geometry.fit.width * (1 - scale)) / 2,
     y: (geometry.fit.height * (1 - scale)) / 2,
