@@ -457,6 +457,9 @@ export function ListItem({
     (onClick != null || href != null || interactiveRef != null) && !isDisabled;
   const rowRef = useRef<HTMLLIElement | null>(null);
   const mergedRef = useMergedRefs(ref, rowRef);
+  // External system (`architecture:react-component-runtime` INV3): the shared
+  // touch hit area (utils/hitArea.ts), which measures the row against its
+  // neighbours and writes its insets on the row; the cleanup stops the watch.
   useEffect(() => {
     const row = rowRef.current;
     if (!isTouchTarget || row == null) {
