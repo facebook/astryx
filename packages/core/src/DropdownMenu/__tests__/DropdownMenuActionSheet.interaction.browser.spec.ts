@@ -10,7 +10,10 @@
  *   an alert-style card that presents from scale 1.2 (capped at the viewport
  *   width) and opacity 0 with its
  *   dimming on the alert spring; a finger that lands on one action and lifts
- *   on another runs the one it lifts on, once; a tap outside dismisses it with
+ *   on another runs the one it lifts on, once; a tap or a drag that lands
+ *   while it enters, on an action or on the dimming, runs and dismisses
+ *   nothing and the card stays, while a key during the entrance still acts
+ *   (`spec:AST-094` FR35); a tap outside dismisses it with
  *   a fade alone; storyboards of the present and the dismiss. A mouse keeps the
  *   bottom sheet
  * @position Evidence for DropdownMenu's action-sheet card
@@ -389,6 +392,75 @@ test('a finger that lands on one action and lifts on another runs the one it lif
   );
   await expect(card).toBeHidden();
   expect(await picked(page)).toEqual([thirdLabel]);
+});
+
+test('a tap that lands while the card enters runs nothing and the card stays; once it has entered, the same tap runs its action (spec:AST-094 FR35)', async ({
+  page,
+}) => {
+  const {driver, trigger, card} = await openPage(page);
+  await driver.tap(await centerOf(trigger));
+  await expect(card).toBeVisible();
+  // Still entering: the alert's present spring has just begun.
+  const actions = card.locator('[data-astryx-action-sheet-action]');
+  const target = await centerOf(actions.nth(0));
+  const label = (await actions.nth(0).textContent())?.trim();
+  await driver.tap(target);
+  await page.waitForTimeout(100);
+  expect(await picked(page)).toEqual([]);
+  await expect(card).toBeVisible();
+  // Entered: the same tap runs the action.
+  await page.waitForTimeout(alertController.present.ignoresTouchesForMs + 100);
+  await driver.tap(await centerOf(actions.nth(0)));
+  await expect(card).toBeHidden();
+  expect(await picked(page)).toEqual([label]);
+});
+
+test('a tap on the dimming while the card enters does not dismiss it: it finishes entering and stays open; once entered, the same tap dismisses it (spec:AST-094 FR35)', async ({
+  page,
+}) => {
+  const {driver, trigger, card} = await openPage(page);
+  const {width, height} = viewportOf(page);
+  // Well outside the centered card, on the dimming.
+  const outside = {x: Math.round(width / 2), y: Math.round(height * 0.06)};
+  await driver.tap(await centerOf(trigger));
+  await expect(card).toBeVisible();
+  await driver.tap(outside);
+  await page.waitForTimeout(alertController.present.ignoresTouchesForMs + 100);
+  await expect(card).toBeVisible();
+  expect(await picked(page)).toEqual([]);
+  // Entered: a tap on the dimming dismisses it, as before.
+  await driver.tap(outside);
+  await expect(card).toBeHidden();
+});
+
+test('a drag that lands while the card enters reaches nothing beneath it, and a key during the entrance still acts (spec:AST-094 FR35)', async ({
+  page,
+}) => {
+  const {driver, trigger, card} = await openPage(page);
+  await driver.tap(await centerOf(trigger));
+  await expect(card).toBeVisible();
+  const actions = card.locator('[data-astryx-action-sheet-action]');
+  const first = await centerOf(actions.nth(0));
+  const third = await centerOf(actions.nth(2));
+  // A drag across the actions during the entrance runs none of them.
+  await driver.play(
+    drag(first, third, {holdMs: 30, durationMs: 120, hz: 60, restMs: 30}),
+  );
+  await page.waitForTimeout(100);
+  expect(await picked(page)).toEqual([]);
+  await expect(card).toBeVisible();
+  // Keys stay live during an entrance: close it, reopen it, and activate an
+  // action with the keyboard while it still enters.
+  await page.keyboard.press('Escape');
+  await expect(card).toBeHidden();
+  await page.waitForTimeout(alertController.dismiss.durationMs + 100);
+  await driver.tap(await centerOf(trigger));
+  await expect(card).toBeVisible();
+  const label = (await actions.nth(1).textContent())?.trim();
+  await actions.nth(1).focus();
+  await page.keyboard.press('Enter');
+  await expect(card).toBeHidden();
+  expect(await picked(page)).toEqual([label]);
 });
 
 test('a tap outside dismisses it with a fade alone, on the alert spring', async ({

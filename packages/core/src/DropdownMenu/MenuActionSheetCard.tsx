@@ -19,8 +19,10 @@
  * card centered on the screen (measured on the iOS 26.2 simulator):
  *
  * - it scales from 1.2 to 1 and fades in while the dimming fades in, on the
- *   alert's spring, and leaves with a fade on the same spring; touches during
- *   either transition reach nothing (useAlertMotion);
+ *   alert's spring, and leaves with a fade on the same spring; a tap or a
+ *   drag during either transition reaches nothing, as useAlertMotion holds
+ *   the card's layer while it enters and leaves (`spec:AST-094` FR35),
+ *   while keys and assistive technology stay live;
  * - the actions are one stack with Cancel last, at the same weight;
  * - a finger is tracked across the actions as one group: the action under it
  *   highlights, sliding moves the highlight, the lift runs the action under
@@ -56,6 +58,7 @@ import {useActionGroupTracking} from '../hooks/useActionGroupTracking';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {alertController} from '../motion/uikit/alert';
 import {spacingVars} from '../theme/tokens.stylex';
+import {pressGroupItemProps} from '../utils/pressFeedback';
 import {useTouchPresentation} from '../utils/touchPresentation';
 import type {
   DropdownMenuItemData,
@@ -209,15 +212,15 @@ export function MenuActionSheetCard({
     highlightOnsetMs: alertController.actions.highlightOnsetMs,
     highlightExpansion: alertController.actions.highlightExpansion,
     shouldTrack: target => target !== surfaceRef.current,
-    isInert: () => !motion.acceptsTouches(),
     isEnabled: isTracking,
     manageStyle: false,
   });
   const actionProps = {
     [ACTION_ATTRIBUTE]: '',
-    // The group owns the press paint while it tracks; Button's own marker
-    // would paint the same attribute on its own clock.
-    'data-astryx-pressable': isTracking ? undefined : '',
+    // While the group tracks, its tracker paints a pointer's press on each
+    // action and the document's press feedback leaves it alone
+    // (`family:action-groups`), as on an alert's actions.
+    ...(isTracking ? pressGroupItemProps : undefined),
   };
 
   const renderAction = (item: DropdownMenuItemData, key: string) => (

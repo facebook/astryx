@@ -181,6 +181,20 @@ describe('DropdownMenu action sheet on a phone, under a finger (iOS 26: an alert
     expect(document.querySelector('.astryx-bottom-sheet')).toBeNull();
   });
 
+  it("each action carries the action-group item marker while the card tracks, so the document's press feedback leaves its press to the group's tracker (family:action-groups)", async () => {
+    const user = userEvent.setup();
+    const trigger = renderActionSheet();
+    await user.click(trigger);
+    const card = await screen.findByRole('dialog', {name: 'Project actions'});
+    const actions = Array.from(
+      card.querySelectorAll('[data-astryx-action-sheet-action]'),
+    );
+    expect(actions).toHaveLength(4);
+    for (const action of actions) {
+      expect(action).toHaveAttribute('data-astryx-press-group-item', '');
+    }
+  });
+
   it('runs the chosen action and closes', async () => {
     const onDelete = vi.fn();
     const user = userEvent.setup();
