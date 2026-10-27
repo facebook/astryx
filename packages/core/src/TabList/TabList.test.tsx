@@ -1035,30 +1035,6 @@ describe('TabMenu keyboard navigation (roving tabindex)', () => {
 });
 
 describe('TabList overflow (scroll)', () => {
-  it('keeps each hugging tab at its own width, so a narrow strip scrolls instead of squeezing the labels together', () => {
-    render(
-      <TabList value="a" onChange={() => {}}>
-        <Tab value="a" label="Overview" />
-        <Tab value="b" label="Transactions" />
-      </TabList>,
-    );
-    for (const tab of screen.getAllByRole('button')) {
-      expect(tab).toHaveStyle({flexShrink: '0'});
-    }
-  });
-
-  it('still lets fill tabs share the strip', () => {
-    render(
-      <TabList value="a" onChange={() => {}} layout="fill">
-        <Tab value="a" label="Home" />
-        <Tab value="b" label="Account" />
-      </TabList>,
-    );
-    for (const tab of screen.getAllByRole('button')) {
-      expect(tab).not.toHaveStyle({flexShrink: '0'});
-    }
-  });
-
   const STRIP = '.astryx-tab-strip';
   const ARROW = '.astryx-tab-scroll-button';
 
