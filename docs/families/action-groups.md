@@ -64,7 +64,8 @@ A component is a member when it renders a set of two or more sibling
 momentary, toggle, or option actions that a person chooses one of. Members
 today:
 
-- menus: DropdownMenu, ContextMenu, and their sub-menus;
+- menus: DropdownMenu, ContextMenu, and their sub-menus, and the navigation
+  menus of TopNav (TopNavMenu), SideNav's collapsed rail, and NavHeadingMenu;
 - option lists: Selector's and MultiSelector's options, and the wheels of
   DateInput, DateTimeInput, and TimeInput;
 - AlertDialog's actions;
@@ -90,6 +91,9 @@ These are not members:
 - RadioList, CheckboxList, and SelectableCard, whose rows and cards sit in
   scrolling lists;
 - Token chips, which are removable and have no group control.
+- the suggestion lists of Typeahead (also Tokenizer's), CommandPalette, and the
+  chat composer's trigger menu, whose focus stays in the text input, as a text
+  input's does.
 
 ## Shared owner
 
@@ -152,13 +156,18 @@ Selector's and MultiSelector's options FR1–FR5
 
 ## Adoption and exceptions
 
-| Components or surface                            | Required adoption                                                     |
-| ------------------------------------------------ | --------------------------------------------------------------------- |
-| Menus and Selector's and MultiSelector's options | Follow FR1–FR5 through `module:DropdownMenu/useMenuPress`.            |
-| Date and time wheels                             | Follow FR1–FR5 through the shared implementation.                     |
-| AlertDialog's actions                            | Track the actions only.                                               |
-| ButtonGroup, ToggleButtonGroup, Toolbar          | Track sibling buttons; a field inside is skipped; toggles follow FR4. |
-| Banner and Toast action rows                     | Track only a row with two or more sibling actions.                    |
+| Components or surface                                          | Required adoption                                                     |
+| -------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Menus and Selector's and MultiSelector's options               | Follow FR1–FR5 through `module:DropdownMenu/useMenuPress`.            |
+| TopNav's, SideNav's collapsed-rail, and NavHeadingMenu's menus | Follow FR1–FR5 through `module:DropdownMenu/useMenuPress`, as menus.  |
+| Date and time wheels                                           | Follow FR1–FR5 through the shared implementation.                     |
+| AlertDialog's actions                                          | Track the actions only.                                               |
+| ButtonGroup, ToggleButtonGroup, Toolbar                        | Track sibling buttons; a field inside is skipped; toggles follow FR4. |
+| Banner and Toast action rows                                   | Track only a row with two or more sibling actions.                    |
+
+TopNav's, SideNav's collapsed-rail, and NavHeadingMenu's menus track presses
+with their own code today; their adoption of the menu press model is an
+implementation gap.
 
 These are required outcomes, not a claim of completed adoption. The excluded
 components listed under the membership rule are not exceptions to approve;
