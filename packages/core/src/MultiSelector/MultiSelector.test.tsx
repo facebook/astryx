@@ -4603,3 +4603,81 @@ describe('MultiSelector in an InputGroup', () => {
     expect(groupClasses().some(c => classes.has(c))).toBe(false);
   });
 });
+
+describe('MultiSelector caller aria-labelledby', () => {
+  const FRUITS = ['Apple', 'Banana', 'Cherry'];
+
+  it('names the trigger by its label and a caller aria-labelledby', () => {
+    render(
+      <>
+        <span id="lunch-heading">Lunch</span>
+        <MultiSelector
+          label="Fruits"
+          options={FRUITS}
+          value={[]}
+          onChange={() => {}}
+          aria-labelledby="lunch-heading"
+        />
+      </>,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Fruits Lunch'});
+    expect(trigger.getAttribute('aria-labelledby')?.split(' ')).toContain(
+      'lunch-heading',
+    );
+  });
+
+  it('names a grouped trigger by the group, its label, and a caller aria-labelledby', () => {
+    render(
+      <>
+        <span id="lunch-heading">Lunch</span>
+        <InputGroup label="Order">
+          <MultiSelector
+            label="Fruits"
+            options={FRUITS}
+            value={[]}
+            onChange={() => {}}
+            aria-labelledby="lunch-heading"
+          />
+        </InputGroup>
+      </>,
+    );
+    expect(
+      screen.getByRole('combobox', {name: 'Order Fruits Lunch'}),
+    ).toBeInTheDocument();
+  });
+
+  it('leaves a standalone trigger named by its label element without a caller aria-labelledby', () => {
+    render(
+      <MultiSelector
+        label="Fruits"
+        options={FRUITS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Fruits'});
+    expect(trigger).not.toHaveAttribute('aria-labelledby');
+  });
+
+  it('still hands a caller aria-labelledby to a renderTrigger control unchanged', () => {
+    render(
+      <>
+        <span id="lunch-heading">Lunch</span>
+        <MultiSelector
+          label="Fruits"
+          options={FRUITS}
+          value={[]}
+          onChange={() => {}}
+          aria-labelledby="lunch-heading"
+          renderTrigger={props => (
+            <button type="button" {...props}>
+              Pick fruits
+            </button>
+          )}
+        />
+      </>,
+    );
+    const opener = screen.getByRole('button', {name: 'Lunch'});
+    expect(opener).toHaveAttribute('aria-labelledby', 'lunch-heading');
+  });
+});
