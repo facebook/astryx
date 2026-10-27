@@ -271,6 +271,28 @@ describe('NavHeadingMenuItem', () => {
     expect(other).toHaveFocus();
   });
 
+  it('leaves focus on the page when an Activity boundary reveals a row', () => {
+    const tree = (mode: 'visible' | 'hidden') => (
+      <Activity mode={mode}>
+        <NavHeadingMenu>
+          <NavHeadingMenuItem label="Docs" href="/docs" />
+        </NavHeadingMenu>
+      </Activity>
+    );
+    const {rerender} = render(tree('visible'));
+    screen.getByRole('menuitem').focus();
+    expect(screen.getByRole('menuitem')).toHaveFocus();
+
+    // Hide while focused, then drop focus to the page.
+    rerender(tree('hidden'));
+    (document.activeElement as HTMLElement | null)?.blur();
+
+    // The same node re-attaches on reveal; it was not replaced, so it must not
+    // pull focus back from the page.
+    rerender(tree('visible'));
+    expect(document.activeElement).toBe(document.body);
+  });
+
   it('does not take focus on reveal when isDisabled flipped while hidden', () => {
     const tree = (mode: 'visible' | 'hidden', isDisabled: boolean) => (
       <>
