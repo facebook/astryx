@@ -229,6 +229,11 @@ remain documented in `BottomSheet.doc.mjs`.
   - in a BottomSheetSwitcher, each sheet's positioner holds its panel at the
     block end and hides a sheet that is not presented, so one dialog can
     switch between sheets.
+  - while a modal sheet enters under a finger, the layer's input hold adds a
+    shield inside the dialog: a transparent cover of the viewport that takes
+    a tap or a drag landing during the entrance (`spec:AST-094` FR35). It is
+    removed when the sheet lands. A non-modal sheet adds no shield: it holds
+    only input on itself, and the page beside it stays live.
 - The handle's pill is a pseudo-element and a standalone sheet's dialog holds
   the panel in place, so a standalone sheet's frame has no positioner or pill
   element of its own.
