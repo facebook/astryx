@@ -13,6 +13,12 @@ import {act} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {hydrateRoot} from 'react-dom/client';
 import {renderToString} from 'react-dom/server';
+// The menu and its on-demand sheet, loaded while this file is collected,
+// which is untimed: a first load can take seconds on a busy machine. Each
+// fresh module graph below runs these modules again without that cost.
+import './DropdownMenu';
+import './MenuBottomSheet';
+import './MenuBottomSheetActionList';
 
 afterEach(() => {
   vi.restoreAllMocks();
