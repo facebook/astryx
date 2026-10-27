@@ -120,7 +120,9 @@ No normative assets are included. Pointer and keyboard sequences belong under
 keyboard reorder mode included (DR7).
 
 Implementation gap: Lab's ListInput and TransferList draw no insertion line
-when reordering by keyboard (DR7).
+when reordering by keyboard (DR7); ListInput's keyboard grab mode moves the
+rows before the commit (DR3); and both build their own drag preview
+(`architecture:component-style-authoring` INV7).
 
 ## Decision log
 

@@ -141,7 +141,8 @@ not evidence of conformance or violation.
   reorderable item is dragged (`design:ordered-collection-reordering`); it is
   made by one Core mechanism for its kind, rather than by each component, and is removed within 1
   second of the transition ending. Until that shared mechanism exists, a
-  layer's own exit, presentation-switch, or handoff copy is a recorded conformance gap, not an
+  layer's own exit, presentation-switch, or handoff copy, or a reorderable
+  collection's own drag preview, is a recorded conformance gap, not an
   exception. A change to a component prefers removing or
   merging nodes; any added element is justified against this invariant with
   measured element counts before and after. Two budgets follow from it:
