@@ -41,7 +41,7 @@ import type {ReactNode, Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
 import {useMergedRefs} from '@astryxdesign/core/hooks';
-import {refreshControl} from '@astryxdesign/core/motion/uikit/refresh';
+import {refreshControl} from '@astryxdesign/core/internal/motion';
 import {
   colorVars,
   spacingVars,
