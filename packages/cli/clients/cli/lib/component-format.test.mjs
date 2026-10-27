@@ -145,6 +145,37 @@ describe('formatFull theming override keys', () => {
   });
 });
 
+describe('formatFull guaranteed properties', () => {
+  it("lists a target's guaranteed properties under the targets table", () => {
+    const docs = {
+      name: 'Switch',
+      description: 'A switch.',
+      theming: {
+        targets: [
+          {className: 'astryx-switch'},
+          {
+            className: 'astryx-switch-thumb',
+            guaranteedProperties: ['aspectRatio'],
+          },
+        ],
+      },
+    };
+    const out = formatFull(docs);
+    expect(out).toContain('Guaranteed properties');
+    expect(out).toContain('- `astryx-switch-thumb`: `aspectRatio`');
+    expect(out).not.toContain('- `astryx-switch`:');
+  });
+
+  it('prints no guaranteed-properties note when no target declares any', () => {
+    const docs = {
+      name: 'Card',
+      description: 'A card.',
+      theming: {targets: [{className: 'astryx-card'}]},
+    };
+    expect(formatFull(docs)).not.toContain('Guaranteed properties');
+  });
+});
+
 /** Pipes that actually separate cells — a `\|` is content, not a separator. */
 function cellPipes(row) {
   return (row.match(/(?<!\\)\|/g) || []).length;

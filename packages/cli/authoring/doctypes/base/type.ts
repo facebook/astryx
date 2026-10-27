@@ -515,6 +515,13 @@ export interface ComponentThemingTarget {
    *  selectors such as `[data-checked="checked"]`. Omit if the element has no
    *  state-driven selectors. */
   states?: string[];
+  /** The CSS properties (camelCase authoring keys, e.g. `'borderRadius'`) a
+   *  theme can set on this target with a guaranteed, observable result. Any
+   *  property not listed is best effort. The list is literal: a shorthand
+   *  does not imply its longhands. A property outside the shared catalog is a
+   *  target-specific addition; the doc says what it does on the part.
+   *  Omit when the target guarantees nothing beyond best effort. */
+  guaranteedProperties?: string[];
 }
 
 /**
