@@ -181,8 +181,8 @@ work.
   member other than menus and Selector's and MultiSelector's options, whose
   tracking and public `menuPressStep` belong to
   `module:DropdownMenu/useMenuPress` (OQ1; implementation gaps: MultiSelector,
-  and TopNav's, SideNavHeading's, TopNavHeading's, NavHeadingMenu's and
-  BreadcrumbItem's menus,
+  and TopNav's, SideNavHeading's, TopNavHeading's, NavHeadingMenu's,
+  BreadcrumbItem's and TabMenu's menus,
   do not mount it yet). No other member keeps its own copy of the tracking. It is not exported (`spec:AST-017`
   FR21).
 
