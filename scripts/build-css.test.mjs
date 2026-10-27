@@ -242,7 +242,16 @@ describe('build-css astryx.css', () => {
   describe('the touch press release (utils/interactionOverlay.stylex.ts)', () => {
     /** `.2s`, `200ms`, `0.2s` → 200. */
     const toMs = value => {
-      const match = value.trim().match(/^([\d.]+)(ms|s)$/);
+      // Capped under reduced motion: `min(<clock>, 200ms)`.
+      const capped = /^min\((.+),\s*([\d.]+m?s)\)$/.exec(value.trim());
+      if (capped != null) {
+        return Math.min(toMs(capped[1]), toMs(capped[2]));
+      }
+      // The release plays a theme motion role: `var(--motion-…, 200ms)`.
+      const role = value.trim().match(/^var\(\s*--[\w-]+\s*,\s*(.+)\)$/);
+      const match = (role == null ? value : role[1])
+        .trim()
+        .match(/^([\d.]+)(ms|s)$/);
       return match == null
         ? Number.NaN
         : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
@@ -266,8 +275,12 @@ describe('build-css astryx.css', () => {
         /@keyframes ([\w-]+)\{from\{--astryx-press-alpha:1;?\}to\{--astryx-press-alpha:0;?\}\}/,
       );
       expect(keyframes).not.toBeNull();
-      const fading = lines().filter(line =>
-        line.includes('[data-astryx-press="fading"]'),
+      // The overlay's arms on the element itself; the compositor press
+      // layer's `::before` arms have their own block below.
+      const fading = lines().filter(
+        line =>
+          line.includes('[data-astryx-press="fading"]') &&
+          !line.includes('::before'),
       );
       expect(
         fading.some(line => line.includes(`animation-name:${keyframes[1]}`)),
@@ -277,7 +290,7 @@ describe('build-css astryx.css', () => {
         .filter(Boolean)
         .map(match => toMs(match[1]));
       // One clock, the one the controller removes the attribute on.
-      expect(durations).toEqual([await readReleaseMs()]);
+      expect([...new Set(durations)]).toEqual([await readReleaseMs()]);
       // The onset is instant: nothing animates on the on arm.
       const on = lines().filter(line =>
         line.includes('[data-astryx-press="on"]'),
@@ -291,8 +304,12 @@ describe('build-css astryx.css', () => {
       // press's strength, declared by the shared overlay styles on the element
       // the controller writes to. StyleX deduplicates the identical
       // declaration across the variants, so the shipped sheet carries it once.
-      const declarations = lines().filter(line =>
-        /\{--_press-paint:/.test(line),
+      // (The compositor press layer's rows turn this paint off with
+      // `--_press-paint: transparent`; that declaration is its own, below.)
+      const declarations = lines().filter(
+        line =>
+          /\{--_press-paint:/.test(line) &&
+          !/\{--_press-paint:transparent/.test(line),
       );
       expect(declarations).toHaveLength(1);
       expect(declarations[0]).toContain('var(--color-overlay-pressed)');
@@ -324,6 +341,83 @@ describe('build-css astryx.css', () => {
       );
     });
   });
+  describe('the compositor press layer (rowPressLayer.ts `cell`)', () => {
+    /** The cell clock and curve, read off their one stylesheet source. */
+    async function readLayerConsts() {
+      const source = await fs.readFile(
+        path.join(ROOT, 'packages/core/src/utils/rowPressLayer.stylex.ts'),
+        'utf8',
+      );
+      const ms = source.match(/cellReleaseMs:\s*(\d+)/);
+      const ease = source.match(/cellReleaseEase:\s*'([^']+)'/);
+      if (ms == null || ease == null) {
+        throw new Error('cellPressConsts not found in rowPressLayer.stylex.ts');
+      }
+      return {
+        ms: Number(ms[1]),
+        points: ease[1].match(/-?\d*\.?\d+/g).map(Number),
+      };
+    }
+    const toMs = value => {
+      // Capped under reduced motion: `min(<clock>, 200ms)`.
+      const capped = /^min\((.+),\s*([\d.]+m?s)\)$/.exec(value.trim());
+      if (capped != null) {
+        return Math.min(toMs(capped[1]), toMs(capped[2]));
+      }
+      // The release plays a theme motion role: `var(--motion-…, 200ms)`.
+      const role = value.trim().match(/^var\(\s*--[\w-]+\s*,\s*(.+)\)$/);
+      const match = (role == null ? value : role[1])
+        .trim()
+        .match(/^([\d.]+)(ms|s)$/);
+      return match == null
+        ? Number.NaN
+        : Number(match[1]) * (match[2] === 's' ? 1000 : 1);
+    };
+    const layerLines = arm =>
+      astryxCss
+        .split('\n')
+        .filter(line => line.includes(arm) && line.includes('::before'));
+
+    it('releases with an opacity keyframe animation on the cell clock and curve', async () => {
+      // Opacity, the property engines run on the compositor: the release
+      // keeps fading while script runs.
+      const keyframes = astryxCss.match(
+        /@keyframes ([\w-]+)\{from\{opacity:1;?\}to\{opacity:0;?\}\}/,
+      );
+      expect(keyframes).not.toBeNull();
+      const fading = layerLines('[data-astryx-press="fading"]');
+      expect(
+        fading.some(line => line.includes(`animation-name:${keyframes[1]}`)),
+      ).toBe(true);
+      const {ms, points} = await readLayerConsts();
+      const durations = fading
+        .map(line => line.match(/animation-duration:\s*([^;}]+)/))
+        .filter(Boolean)
+        .map(match => toMs(match[1]));
+      expect([...new Set(durations)]).toEqual([ms]);
+      const curves = fading
+        .map(line => line.match(/animation-timing-function:\s*([^;}]+)/))
+        .filter(Boolean)
+        .map(match => match[1].match(/-?\d*\.?\d+/g).map(Number));
+      expect(curves).toEqual([points]);
+    });
+
+    it('lets the motion animator promote the layer it animates', () => {
+      expect(astryxCss).toMatch(
+        /::before\{[^}]*will-change:var\(--astryx-motion-will-change-before,\s*auto\)/,
+      );
+    });
+
+    it('shows the layer at once on the on arm, and rests it at 0 on the fading arm under its release', () => {
+      const on = layerLines('[data-astryx-press="on"]');
+      expect(on.some(line => /\{opacity:1;?\}/.test(line))).toBe(true);
+      expect(on.some(line => line.includes('animation'))).toBe(false);
+      // Nothing of the layer at rest (a row's own `::before` is untouched):
+      // its opacity is only ever a press arm's.
+      const fading = layerLines('[data-astryx-press="fading"]');
+      expect(fading.some(line => /\{opacity:0;?\}/.test(line))).toBe(true);
+    });
+  });
 
   describe('Layout header/footer padding collapse (Layout/layoutEdges.stylex.ts)', () => {
     it('ships no :has() on the layout followed by a descendant * for the header or footer', () => {
@@ -336,6 +430,41 @@ describe('build-css astryx.css', () => {
             /astryx-layout-(header|footer)/.test(line) && /:has\(/.test(line),
         );
       expect(costly).toEqual([]);
+    });
+  });
+
+  describe("the list rows' touch arms (List, TreeList)", () => {
+    /**
+     * A rule the build puts inside the touch gate (TOUCH_QUERY,
+     * utils/touchPresentation.ts): a coarse primary pointer, iOS and Android
+     * alike, never a mouse. No engine condition: one touch model.
+     */
+    const TOUCH_GATED = /^@media \(pointer: coarse\)\{(?!@supports)/;
+    const rules = () => astryxCss.split('\n').map(line => line.trim());
+    /** Rules that hide a divider or reach the press layer over one. */
+    const dividerArms = state =>
+      rules().filter(
+        rule =>
+          rule.includes(`[data-astryx-press="${state}"]`) &&
+          (rule.includes('{border-bottom-color:transparent}') ||
+            rule.includes('::before{bottom:')),
+      );
+
+    it('hides the dividers beside a pressed row, and reaches its layer over them, only under a finger', () => {
+      const arms = dividerArms('on');
+      // Its own divider, the one above, the layer's reach, the last row's.
+      expect(arms.length).toBeGreaterThanOrEqual(4);
+      for (const rule of arms) {
+        expect(rule).toMatch(TOUCH_GATED);
+      }
+    });
+
+    it('keeps them hidden around a row held through a navigation push the same way', () => {
+      const arms = dividerArms('held');
+      expect(arms.length).toBeGreaterThanOrEqual(4);
+      for (const rule of arms) {
+        expect(rule).toMatch(TOUCH_GATED);
+      }
     });
   });
 });
