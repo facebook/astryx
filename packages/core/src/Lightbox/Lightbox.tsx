@@ -11,12 +11,12 @@
  *   animator, usePager (a gallery pages like Photos: a UIKit paging scroll view with Photos'
  *   40 pt gap), and the compositor animator for Photos' drag to dismiss (the
  *   backdrop and the controls' layers fade with the drag), zoomFromSource (UIKit's
- *   zoom transition between a source, `sourceFor`, and the photo), zoomStage's chrome
+ *   zoom transition between a source, `experimental.sourceFor`, and the photo), zoomStage's chrome
  *   curves (a tap on the photo hides the controls, as Photos' chrome), holdInput (the
  *   Layer module's input hold: a touch opening holds taps and drags until it ends,
  *   spec:AST-094 FR35) and openerActivation (the click that opened a viewer, recorded by
  *   one document listener every closed touch viewer shares)
- * @output Exports Lightbox component, LightboxProps, LightboxMedia
+ * @output Exports Lightbox component, LightboxProps, LightboxExperimentalOptions, LightboxMedia
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -113,6 +113,18 @@ export interface LightboxMedia {
   type?: LightboxMediaType;
 }
 
+/**
+ * Lightbox's experimental options (`experimental`): anything here may change or
+ * be removed in a patch release.
+ */
+export interface LightboxExperimentalOptions {
+  /**
+   * The element an item opens from and closes into, usually its thumbnail, or
+   * null for an item with none on screen.
+   */
+  sourceFor?: (index: number) => HTMLElement | null;
+}
+
 export interface LightboxProps extends BaseProps<HTMLDialogElement> {
   /** Ref forwarded to the root dialog element */
   ref?: React.Ref<HTMLDialogElement>;
@@ -146,9 +158,10 @@ export interface LightboxProps extends BaseProps<HTMLDialogElement> {
    */
   onIndexChange?: (index: number) => void;
   /**
-   * Enable zoom (images only): on a touch screen, pinch or double-tap to
-   * zoom in at that point; a double-click or Enter/Space/`+`/`-` zooms 2×
-   * about the centre. When zoomed, drag or use arrow keys to pan.
+   * Enable zoom (images only): under a coarse primary pointer (a touch
+   * screen), pinch or double-tap to zoom in at that point; a double-click
+   * or Enter/Space/`+`/`-` zooms 2× about the centre. When zoomed, drag or
+   * use arrow keys to pan.
    * @default false
    */
   hasZoom?: boolean;
@@ -158,17 +171,15 @@ export interface LightboxProps extends BaseProps<HTMLDialogElement> {
    */
   hasAutoPlay?: boolean;
   /**
-   * The element an item's photo opens from and closes into, usually its
-   * thumbnail: on a touch screen (a coarse primary pointer) the viewer zooms
-   * out of it on open and back into it on close (UIKit's zoom transition),
-   * for whichever item shows then; with a mouse it opens and closes at once,
-   * as before. Return null when there is none, or it is off screen. Without
-   * it, the element that opened the viewer is the opened item's source when
-   * it shows a picture (an image, or a button or link around one).
-   *
-   * Proposed; pending owner review.
+   * Experimental options: anything in this object may change or be removed in
+   * a patch release, and omitting it keeps the stable behavior. `sourceFor`
+   * returns the element an item opens from and closes into, usually its
+   * thumbnail: on a touch screen the photo zooms out of it on open and back
+   * into it on close (UIKit's zoom transition), and a photo dragged down lands
+   * in it. It returns null for an item with none on screen.
+   * @experimental
    */
-  sourceFor?: (index: number) => HTMLElement | null;
+  experimental?: LightboxExperimentalOptions;
 }
 
 // =============================================================================
@@ -190,12 +201,14 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     overflow: 'hidden',
     outline: 'none',
-    // The backdrop dims the page without blurring it, on every pointer, as the
-    // owners decided for modal backdrops (#8120): a full-viewport
-    // backdrop-filter is costly to repaint, and the touch paths fade the
-    // backdrop every frame. The dim is the theme's overlay colour.
+    // The backdrop dims and blurs the page as on main: the theme's overlay
+    // colour over a 2 px blur. While it fades (a drag to dismiss and its
+    // release) the blur comes off, through the dialog's
+    // --_lightbox-backdrop-filter: on a 2-core limit a full-viewport blur
+    // repainted every frame of the fade drops frames.
     '::backdrop': {
       backgroundColor: colorVars['--color-overlay'],
+      backdropFilter: 'var(--_lightbox-backdrop-filter, blur(2px))',
     },
   },
   container: {
@@ -213,7 +226,9 @@ const styles = stylex.create({
     alignItems: 'center',
     maxWidth: '100%',
     maxHeight: '100%',
-    overflow: 'hidden',
+    // ZOOM_DISMISSING_ATTRIBUTE on the stage inside: a photo dragged to
+    // dismiss draws outside the box that hugs it.
+    overflow: {default: 'hidden', ':has([data-zoom-dismissing])': 'visible'},
   },
   // On a touch screen (the shared touch resolver, useTouchPresentation) a
   // zoomable photo's stage fills the viewer, as a photo viewer's zooming
@@ -235,7 +250,8 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
+    // ZOOM_DISMISSING_ATTRIBUTE: a photo dragged to dismiss draws outside it.
+    overflow: {default: 'hidden', ':is([data-zoom-dismissing])': 'visible'},
     cursor: 'default',
     userSelect: 'none',
     minHeight: 0,
@@ -274,9 +290,10 @@ const styles = stylex.create({
     position: 'relative',
   },
   // Two rows, the photo's and the caption's, that every page shares
-  // (subgrid): the caption row is as tall as the tallest rendered caption,
-  // so every photo centres on the same box, with or without a caption, and
-  // the next photo slides in level with the current one.
+  // (subgrid): the caption row is as tall as the gallery's tallest caption
+  // (the current page lays out, unseen, those no rendered page shows), so
+  // every photo centres on the same box, with or without a caption, the next
+  // photo slides in level with the current one, and paging never resizes it.
   track: {
     position: 'absolute',
     inset: 0,
@@ -314,6 +331,25 @@ const styles = stylex.create({
   pageCaption: {
     gridRow: '2',
     justifySelf: 'center',
+  },
+  // The current page's caption row when it also lays out, unseen, the
+  // captions no rendered page shows (`unrenderedCaptions`): one grid cell
+  // holds its own caption and those, so the row is the tallest of them.
+  pageCaptionRow: {
+    gridRow: '2',
+    display: 'grid',
+    justifyItems: 'center',
+    minWidth: 0,
+  },
+  captionStacked: {
+    gridArea: '1 / 1',
+  },
+  captionSizer: {
+    display: 'grid',
+    justifyItems: 'center',
+    justifySelf: 'stretch',
+    visibility: 'hidden',
+    pointerEvents: 'none',
   },
   imageWrapperZoomable: {
     cursor: {
@@ -509,7 +545,7 @@ export function Lightbox({
   onIndexChange,
   hasZoom = false,
   hasAutoPlay = false,
-  sourceFor,
+  experimental,
   xstyle,
   className,
   style,
@@ -551,7 +587,7 @@ export function Lightbox({
   // Index state (controlled + uncontrolled)
   const isControlled = controlledIndex !== undefined;
   const [uncontrolledIndex, setUncontrolledIndex] = useState(defaultIndex);
-  const index = isControlled ? controlledIndex : uncontrolledIndex;
+  const requestedIndex = isControlled ? controlledIndex : uncontrolledIndex;
 
   const setIndex = useCallback(
     (value: number) => {
@@ -574,10 +610,11 @@ export function Lightbox({
     [media],
   );
   const isGallery = mediaArray.length > 1;
-  const currentItem =
-    mediaArray.length > 0
-      ? mediaArray[Math.min(index, mediaArray.length - 1)]
-      : null;
+  // The item shown, current in every respect (its page, the counter, the
+  // pager, the announcement): an index past either end shows the nearest
+  // item. A NaN index stays NaN (the viewed-item check below).
+  const index = Math.max(0, Math.min(requestedIndex, mediaArray.length - 1));
+  const currentItem = mediaArray.length > 0 ? mediaArray[index] : null;
   const currentType = currentItem?.type ?? 'image';
   const isVideo = currentType === 'video';
   const canPrev = isGallery && index > 0;
@@ -618,7 +655,7 @@ export function Lightbox({
     if (!indexChanged || !isOpen || !wasOpen) {
       return;
     }
-    const item = mediaArray[Math.min(index, mediaArray.length - 1)];
+    const item = mediaArray[index];
     const position = {index: index + 1, total: mediaArray.length};
     announce(
       item?.alt
@@ -626,6 +663,22 @@ export function Lightbox({
         : t('@astryx.lightbox.imagePosition', position),
     );
   }, [index, isOpen, announce, mediaArray, t]);
+
+  // A video left on another page stops: the pager keeps the neighbours
+  // mounted, and a playing one would go on, with its sound, off screen.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container == null) {
+      return;
+    }
+    for (const video of container.querySelectorAll<HTMLVideoElement>(
+      '[data-lightbox-page]:not([data-current]) video',
+    )) {
+      if (!video.paused) {
+        video.pause();
+      }
+    }
+  }, [index]);
 
   // A closed viewer is not closed again: while a closing photo lands, Close,
   // a backdrop click and a platform cancel do nothing.
@@ -638,6 +691,7 @@ export function Lightbox({
   // An item's source: the caller's, or for the opened item the element that
   // opened the viewer when it shows a picture (a thumbnail, or a button or
   // link around one); a text button opens and closes plainly.
+  const sourceFor = experimental?.sourceFor;
   const sourceElementFor = useCallback(
     (i: number): HTMLElement | null => {
       if (sourceFor != null) {
@@ -738,21 +792,23 @@ export function Lightbox({
         press != null &&
         Math.hypot(e.clientX - press.x, e.clientY - press.y) >
           UIKIT_TAP.allowableMovement.value;
-      // A click on the photo itself is the photo's (a double-click zooms it).
-      const onPhoto =
-        hasZoom &&
-        !isVideo &&
-        [...e.currentTarget.querySelectorAll('[data-current] img')].some(
-          media => {
-            const r = media.getBoundingClientRect();
-            return (
-              e.clientX >= r.left &&
-              e.clientX <= r.right &&
-              e.clientY >= r.top &&
-              e.clientY <= r.bottom
-            );
-          },
+      // A click on the photo itself is the photo's, zoom or not (a
+      // double-click zooms it): the photo takes no pointer events, so the
+      // click lands on its box.
+      const onPhoto = [
+        ...e.currentTarget.querySelectorAll('[data-current] img'),
+      ].some(media => {
+        const r = media.getBoundingClientRect();
+        // A photo with no size yet (still loading) is not under the click.
+        return (
+          r.width > 0 &&
+          r.height > 0 &&
+          e.clientX >= r.left &&
+          e.clientX <= r.right &&
+          e.clientY >= r.top &&
+          e.clientY <= r.bottom
         );
+      });
       if (
         isGallery &&
         !stageTaps &&
@@ -969,6 +1025,19 @@ export function Lightbox({
   // Drag to dismiss, as in Photos: the backdrop and, faster, the controls
   // and the neighbouring photos fade with the drag's travel; a dismissal
   // fades them out on its spring and closes once the photo has left.
+  // The backdrop's blur comes off while the backdrop moves and back once it
+  // rests (the dialog's style, '::backdrop'). Each move counts: a release's
+  // end restores it only if nothing has moved the backdrop since.
+  const backdropMovesRef = useRef(0);
+  const setBackdropMoving = useCallback((moving: boolean) => {
+    const dialog = dialogRef.current;
+    if (moving) {
+      dialog?.style.setProperty('--_lightbox-backdrop-filter', 'none');
+    } else {
+      dialog?.style.removeProperty('--_lightbox-backdrop-filter');
+    }
+  }, []);
+
   const dismissFades = useCallback((): {
     backdrop: Animator | null;
     chrome: Animator[];
@@ -1078,6 +1147,8 @@ export function Lightbox({
       onDrag: travel => {
         const {backdrop, chrome} = dismissFades();
         markFaded(backdrop == null ? chrome : [backdrop, ...chrome]);
+        backdropMovesRef.current += 1;
+        setBackdropMoving(true);
         const backdropAlpha = dismissBackdropAlpha(travel);
         backdrop?.set({opacity: backdropAlpha});
         const opacity = dismissChromeAlpha(travel);
@@ -1131,9 +1202,14 @@ export function Lightbox({
           containerRef.current?.removeAttribute('data-chrome-hidden');
         }
         const opacity = dismisses ? 0 : 1;
-        for (const animator of backdrop == null
-          ? chrome
-          : [backdrop, ...chrome]) {
+        const move = (backdropMovesRef.current += 1);
+        setBackdropMoving(true);
+        const backdropMotion = backdrop?.animate(
+          {opacity},
+          {spring},
+          {touchRelease: true},
+        );
+        for (const animator of chrome) {
           if (returning && isChromeElement(animator.element)) {
             animator.play(
               {opacity: chromeFadeCurve(animator.get('opacity'), false)},
@@ -1150,6 +1226,12 @@ export function Lightbox({
             {touchRelease: true},
           );
         }
+        // Back at rest: the blur returns, unless the backdrop moved again.
+        void backdropMotion?.finished.then(() => {
+          if (!dismisses && backdropMovesRef.current === move) {
+            setBackdropMoving(false);
+          }
+        });
       },
       onDismissed: () => {
         handleClose();
@@ -1171,7 +1253,8 @@ export function Lightbox({
   };
 
   // Open and close the dialog. Under the touch layer, with a source
-  // (`sourceFor`, or the element that opened the viewer for the opened item),
+  // (`experimental.sourceFor`, or the element that opened the viewer for the
+  // opened item),
   // the photo zooms out of it on open and back into the current item's on
   // close (UIKit's zoom transition); the dialog stays open, the page inert,
   // until the photo has landed. Where the primary pointer is fine the viewer
@@ -1183,6 +1266,7 @@ export function Lightbox({
     dismissFades,
     restChrome,
     blackoutAnimator,
+    setBackdropMoving,
     sourceElementFor,
     index,
     src: currentItem?.src ?? '',
@@ -1194,6 +1278,7 @@ export function Lightbox({
     dismissFades,
     restChrome,
     blackoutAnimator,
+    setBackdropMoving,
     sourceElementFor,
     index,
     src: currentItem?.src ?? '',
@@ -1278,6 +1363,9 @@ export function Lightbox({
         now.stage.rest();
         restFades();
       }
+      // At rest: the backdrop's blur is back (setBackdropMoving).
+      backdropMovesRef.current += 1;
+      now.setBackdropMoving(false);
       if (dialog.open) {
         return;
       }
@@ -1354,7 +1442,16 @@ export function Lightbox({
           next.release();
           if (opening != null) {
             markFaded(fades);
-            void opening.then(endEntrance, endEntrance);
+            // The backdrop fades without its blur until the photo lands.
+            const move = (backdropMovesRef.current += 1);
+            now.setBackdropMoving(true);
+            const landed = () => {
+              if (backdropMovesRef.current === move) {
+                now.setBackdropMoving(false);
+              }
+              endEntrance();
+            };
+            void opening.then(landed, landed);
           } else {
             endEntrance();
           }
@@ -1423,6 +1520,9 @@ export function Lightbox({
       return;
     }
     markFaded(fades);
+    // The backdrop fades without its blur while the photo returns.
+    backdropMovesRef.current += 1;
+    now.setBackdropMoving(true);
     const token = ++closeTokenRef.current;
     void closing.then(() => {
       if (closeTokenRef.current === token) {
@@ -1441,6 +1541,8 @@ export function Lightbox({
       stage.rest();
       restoreFaded();
       restChrome();
+      backdropMovesRef.current += 1;
+      setBackdropMoving(false);
     }
   });
 
@@ -1612,6 +1714,15 @@ export function Lightbox({
   const pageIndexes = isGallery
     ? [index - 1, index, index + 1].filter(i => i >= 0 && i < mediaArray.length)
     : [];
+  // The captions no rendered page shows: the current page lays them out,
+  // unseen, in the caption row, so the row stays as tall as the gallery's
+  // tallest caption whichever pages are rendered, and paging never resizes
+  // the photo row.
+  const unrenderedCaptions = isGallery
+    ? mediaArray.flatMap((item, i) =>
+        item.caption && !pageIndexes.includes(i) ? [i] : [],
+      )
+    : [];
 
   return (
     <dialog
@@ -1773,15 +1884,48 @@ export function Lightbox({
                             {...stylex.props(styles.pageMedia)}>
                             {renderMedia(mediaArray[i], i === index)}
                           </div>
-                          {mediaArray[i].caption && (
-                            <div
-                              data-lightbox-caption=""
-                              {...stylex.props(
-                                styles.caption,
-                                styles.pageCaption,
-                              )}>
-                              {mediaArray[i].caption}
+                          {i === index && unrenderedCaptions.length > 0 ? (
+                            <div {...stylex.props(styles.pageCaptionRow)}>
+                              {mediaArray[i].caption && (
+                                <div
+                                  data-lightbox-caption=""
+                                  {...stylex.props(
+                                    styles.caption,
+                                    styles.captionStacked,
+                                  )}>
+                                  {mediaArray[i].caption}
+                                </div>
+                              )}
+                              <div
+                                aria-hidden
+                                inert
+                                {...stylex.props(
+                                  styles.captionStacked,
+                                  styles.captionSizer,
+                                )}>
+                                {unrenderedCaptions.map(j => (
+                                  <div
+                                    key={j}
+                                    {...stylex.props(
+                                      styles.caption,
+                                      styles.captionStacked,
+                                    )}>
+                                    {mediaArray[j].caption}
+                                  </div>
+                                ))}
+                              </div>
                             </div>
+                          ) : (
+                            mediaArray[i].caption && (
+                              <div
+                                data-lightbox-caption=""
+                                {...stylex.props(
+                                  styles.caption,
+                                  styles.pageCaption,
+                                )}>
+                                {mediaArray[i].caption}
+                              </div>
+                            )
                           )}
                         </div>
                       ))}

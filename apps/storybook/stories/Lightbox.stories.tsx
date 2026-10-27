@@ -155,6 +155,38 @@ export const GalleryWithZoom: Story = {
 };
 
 /**
+ * A gallery whose captions differ in length: the photo keeps one box
+ * whichever pages, and so whichever captions, are rendered.
+ */
+export const GalleryWithCaptions: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <button onClick={() => setIsOpen(true)}>
+          Open gallery with captions
+        </button>
+        <Lightbox
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          media={[
+            {
+              ...GALLERY_MEDIA[0],
+              caption:
+                'A winding path through the forest, past the old mill and down to the river, where the trail turns back toward the village',
+            },
+            GALLERY_MEDIA[1],
+            GALLERY_MEDIA[3],
+            {...GALLERY_MEDIA[2], caption: 'Golden hour'},
+          ]}
+          hasZoom
+        />
+      </>
+    );
+  },
+};
+
+/**
  * A controlled gallery whose parent keeps its index (it pages only with its
  * own buttons, say while a change is confirmed): a swipe returns to the
  * photo the parent shows.
@@ -182,7 +214,7 @@ export const GalleryKeepsIndex: Story = {
 
 /**
  * Photos open from their thumbnails and close back into the one showing:
- * `sourceFor` hands the viewer each item's thumbnail, and the photo zooms
+ * `experimental.sourceFor` hands the viewer each item's thumbnail, and the photo zooms
  * out of it (UIKit's zoom transition). Page to another photo and close, or
  * drag it down: it lands in its own thumbnail.
  */
@@ -227,7 +259,7 @@ export const ZoomFromThumbnails: Story = {
           media={GALLERY_MEDIA}
           index={index}
           onIndexChange={setIndex}
-          sourceFor={i => thumbnails.current[i] ?? null}
+          experimental={{sourceFor: i => thumbnails.current[i] ?? null}}
           hasZoom
         />
       </>
@@ -281,7 +313,7 @@ export const MountedWhileOpen: Story = {
             media={GALLERY_MEDIA}
             index={openIndex}
             onIndexChange={setOpenIndex}
-            sourceFor={i => thumbnails.current[i] ?? null}
+            experimental={{sourceFor: i => thumbnails.current[i] ?? null}}
             hasZoom
           />
         )}
@@ -328,7 +360,7 @@ export const InsideADialog: Story = {
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           media={{src: SAMPLE_IMAGE, alt: 'Forest path'}}
-          sourceFor={() => thumbnail.current}
+          experimental={{sourceFor: () => thumbnail.current}}
           hasZoom
         />
       </>
