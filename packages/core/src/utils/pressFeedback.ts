@@ -61,7 +61,7 @@
  *
  * A surface's hold does nothing, so it keeps the browser's long-press text
  * selection (`spec:AST-094` FR41); only an element whose hold does something
- * suppresses it, through the gesture host (gestures/selectionLock.ts).
+ * suppresses it, through the gesture host (utils/selectionLock.ts).
  *
  * Its touch-only listeners, the finger's `touchend` and `touchcancel`, are on
  * only while a press is tracked and the primary pointer is coarse
@@ -85,9 +85,10 @@ import {
   PRESS_SCROLL_BRAKE_MS,
   pressGestureStep,
 } from './pressGesture';
-import {controlPressConsts} from './controlPressLayer.stylex';
-import {TOUCH_QUERY} from './touchPresentation';
 import {isCoarsePointer, watchCoarsePointer} from './coarsePointer';
+import {controlPressConsts} from './controlPressLayer.stylex';
+import {subscribeInput} from './inputStream';
+import {TOUCH_QUERY} from './touchPresentation';
 
 /**
  * The marker the controller finds with `closest()`. Every Astryx component
@@ -790,8 +791,8 @@ function onPointerDown(event: PointerEvent): void {
     clearPen();
     penDown = true;
   } else {
-    // The finger's lift is heard only where the primary pointer is coarse
-    // (FR24): elsewhere nothing waits for it.
+    // A finger counts as down only where its lift is heard: the touch-only
+    // listeners are on only while the primary pointer is coarse (FR24).
     touching = isCoarsePointer(window);
   }
   lastTouchTarget = event.target instanceof Node ? event.target : null;
@@ -1051,19 +1052,62 @@ function onVisibilityChange(): void {
 const PASSIVE_CAPTURE = {capture: true, passive: true} as const;
 const PASSIVE = {passive: true} as const;
 
+/*
+ * Pointer, touch, drag, scroll and visibility input arrive through the shared
+ * input stream (utils/inputStream.ts): one passive listener per type on the
+ * window's capture phase for every subscriber in the page, which an app's
+ * capture-phase stopPropagation cannot starve, and which hears every
+ * scroller's `scroll` and `scrollend` (neither bubbles). The keyboard stays
+ * on the window's bubble phase, outside the stream: a Space press must see
+ * the target's `preventDefault` (`defaultPrevented`), as `:active` does, and
+ * only the bubble phase has run the target's own listeners.
+ */
+
+/** The stream subscriptions that arm the controller, while it is installed. */
+let arming: (() => void)[] = [];
+/** The stream subscriptions that track a live press, while one is. */
+let trackingSubscriptions: (() => void)[] = [];
+
+const unsubscribeAll = (subscriptions: (() => void)[]): void => {
+  for (const unsubscribe of subscriptions.splice(0)) {
+    unsubscribe();
+  }
+};
+
 /** The two listeners a document carries at rest: they only arm the rest. */
 function addArmingListeners(): void {
-  window.addEventListener('pointerdown', onPointerDown, PASSIVE_CAPTURE);
+  arming = [subscribeInput(window, 'pointerdown', onPointerDown)];
   window.addEventListener('keydown', onKeyDown, PASSIVE);
 }
 
 function removeArmingListeners(): void {
-  window.removeEventListener('pointerdown', onPointerDown, PASSIVE_CAPTURE);
+  unsubscribeAll(arming);
   window.removeEventListener('keydown', onKeyDown);
 }
 
-/** Whether the finger's touch-only listeners are on (see hearTouch). */
-let hearsTouch = false;
+function addTrackingListeners(): void {
+  trackingSubscriptions = [
+    subscribeInput(window, 'pointermove', onPointerMove),
+    subscribeInput(window, 'pointerup', onPointerUp),
+    subscribeInput(window, 'pointercancel', onCancel),
+    subscribeInput(window, 'dragstart', onDragStart),
+    subscribeInput(window, 'scroll', onScroll),
+    subscribeInput(window, 'scrollend', onScrollEnd),
+    subscribeInput(window, 'visibilitychange', onVisibilityChange),
+  ];
+  stopWatchingPointer = watchCoarsePointer(window, followPointer);
+  hearTouch(isCoarsePointer(window));
+}
+
+function removeTrackingListeners(): void {
+  unsubscribeAll(trackingSubscriptions);
+  stopWatchingPointer?.();
+  stopWatchingPointer = null;
+  hearTouch(false);
+}
+
+/** The finger's touch-only subscriptions, while tracked and coarse. */
+let touchSubscriptions: (() => void)[] = [];
 /** Stops following the primary pointer, while a press is tracked. */
 let stopWatchingPointer: (() => void) | null = null;
 
@@ -1073,18 +1117,17 @@ let stopWatchingPointer: (() => void) | null = null;
  * through `pointerup` and `pointercancel`.
  */
 function hearTouch(on: boolean): void {
-  if (on === hearsTouch) {
+  if (on === touchSubscriptions.length > 0) {
     return;
   }
-  hearsTouch = on;
   if (on) {
-    window.addEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
-    window.addEventListener('touchend', onTouchEnd, PASSIVE_CAPTURE);
-    window.addEventListener('touchcancel', onTouchEnd, PASSIVE_CAPTURE);
+    touchSubscriptions = [
+      subscribeInput(window, 'touchcancel', onCancel),
+      subscribeInput(window, 'touchend', onTouchEnd),
+      subscribeInput(window, 'touchcancel', onTouchEnd),
+    ];
   } else {
-    window.removeEventListener('touchcancel', onCancel, PASSIVE_CAPTURE);
-    window.removeEventListener('touchend', onTouchEnd, PASSIVE_CAPTURE);
-    window.removeEventListener('touchcancel', onTouchEnd, PASSIVE_CAPTURE);
+    unsubscribeAll(touchSubscriptions);
   }
 }
 
@@ -1096,33 +1139,6 @@ function followPointer(isCoarse: boolean): void {
     touching = false;
     settle();
   }
-}
-
-function addTrackingListeners(): void {
-  window.addEventListener('pointermove', onPointerMove, PASSIVE_CAPTURE);
-  window.addEventListener('pointerup', onPointerUp, PASSIVE_CAPTURE);
-  window.addEventListener('pointercancel', onCancel, PASSIVE_CAPTURE);
-  stopWatchingPointer = watchCoarsePointer(window, followPointer);
-  hearTouch(isCoarsePointer(window));
-  window.addEventListener('dragstart', onDragStart, PASSIVE_CAPTURE);
-  // `scroll` and `scrollend` do not bubble, so the capture phase is the only
-  // way one listener hears every scroller in the document.
-  document.addEventListener('scroll', onScroll, PASSIVE_CAPTURE);
-  document.addEventListener('scrollend', onScrollEnd, PASSIVE_CAPTURE);
-  document.addEventListener('visibilitychange', onVisibilityChange);
-}
-
-function removeTrackingListeners(): void {
-  window.removeEventListener('pointermove', onPointerMove, PASSIVE_CAPTURE);
-  window.removeEventListener('pointerup', onPointerUp, PASSIVE_CAPTURE);
-  window.removeEventListener('pointercancel', onCancel, PASSIVE_CAPTURE);
-  stopWatchingPointer?.();
-  stopWatchingPointer = null;
-  hearTouch(false);
-  window.removeEventListener('dragstart', onDragStart, PASSIVE_CAPTURE);
-  document.removeEventListener('scroll', onScroll, PASSIVE_CAPTURE);
-  document.removeEventListener('scrollend', onScrollEnd, PASSIVE_CAPTURE);
-  document.removeEventListener('visibilitychange', onVisibilityChange);
 }
 
 /** Whether the key-release listeners are attached. */

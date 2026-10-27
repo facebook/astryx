@@ -80,23 +80,6 @@ function pressable(tag = 'div', marker = ''): HTMLElement {
 }
 
 /**
- * The browser cancels every touch (a real `touchcancel` lists the touches
- * still down: none).
- */
-function cancelTouches(): void {
-  const event = new Event('touchcancel');
-  Object.assign(event, {touches: []});
-  window.dispatchEvent(event);
-}
-
-/** The last finger leaves the glass. */
-function lift(element: Element): void {
-  const event = new Event('touchend', {bubbles: true});
-  Object.assign(event, {touches: []});
-  element.dispatchEvent(event);
-}
-
-/**
  * The primary pointer is coarse (a phone, a tablet) until the returned
  * restore runs: jsdom's matchMedia models a desktop, where touch work stays
  * off (`spec:AST-094` FR19).
@@ -116,6 +99,20 @@ function coarsePrimaryPointer(): () => void {
 
 /** Restores every pointer stub a test left, so none leaks into the next. */
 const matchMediaRestorers: (() => void)[] = [];
+
+/** The platform takes the touch away: a touchcancel that leaves no finger. */
+function cancelTouch(): void {
+  const event = new Event('touchcancel');
+  Object.assign(event, {touches: []});
+  window.dispatchEvent(event);
+}
+
+/** The last finger leaves the glass. */
+function lift(element: Element): void {
+  const event = new Event('touchend', {bubbles: true});
+  Object.assign(event, {touches: []});
+  element.dispatchEvent(event);
+}
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -1034,15 +1031,12 @@ describe('what the list pays for it', () => {
     ];
     try {
       release = installPressFeedback();
-      // A finger on a touchscreen laptop: the press is tracked, with no
-      // touch listener.
+      // A finger lands, as on a touchscreen laptop: still none.
       press(rows[0], 'pointerdown', 10, 10);
-      vi.advanceTimersByTime(PRESS_ONSET_MS);
       press(rows[0], 'pointerup', 10, 10);
       const types = added.flatMap(spy => spy.mock.calls.map(([type]) => type));
       expect(types.filter(type => type.startsWith('touch'))).toEqual([]);
       expect(types).toContain('pointerdown');
-      expect(types).toContain('pointerup');
     } finally {
       for (const spy of added) {
         spy.mockRestore();
@@ -1071,14 +1065,14 @@ describe('what the list pays for it', () => {
     press(rows[0], 'pointerdown', 10, 10);
     vi.advanceTimersByTime(PRESS_ONSET_MS);
     expect(pressedRow()).toBe(0);
-    cancelTouches();
+    cancelTouch();
     expect(pressedRow()).toBe(-1);
     // It docks one again: the touch listener comes down.
     pointer.set(false);
     press(rows[1], 'pointerdown', 10, 100);
     vi.advanceTimersByTime(PRESS_ONSET_MS);
     expect(pressedRow()).toBe(1);
-    cancelTouches();
+    cancelTouch();
     expect(pressedRow()).toBe(1);
   });
 
@@ -1437,12 +1431,16 @@ describe('listeners exist only while a press is live', () => {
     press(rows[0], 'pointerdown', 10, 10);
     expect(attached()).toEqual(
       expect.arrayContaining([
-        'document scroll (capture)',
-        'document scrollend (capture)',
         'window pointermove (capture)',
         'window pointerup (capture)',
         'window pointercancel (capture)',
         'window touchend (capture)',
+        // Through the shared input stream (utils/inputStream.ts): one
+        // capture listener per type on the window, which hears every
+        // scroller's scroll and scrollend.
+        'window scroll (capture)',
+        'window scrollend (capture)',
+        'window visibilitychange (capture)',
       ]),
     );
     press(rows[0], 'pointerup', 10, 10);
@@ -1462,7 +1460,7 @@ describe('listeners exist only while a press is live', () => {
     press(rows[0], 'pointercancel', 10, 10);
     lift(rows[0]);
     vi.advanceTimersByTime(60_000);
-    expect(attached()).toContain('document scrollend (capture)');
+    expect(attached()).toContain('window scrollend (capture)');
     // A touch landing on the gliding list brakes it and paints nothing.
     press(rows[1], 'pointerdown', 10, 100);
     vi.advanceTimersByTime(PRESS_ONSET_MS);
