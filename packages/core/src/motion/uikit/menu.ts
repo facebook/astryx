@@ -4,9 +4,8 @@
  * @file menu.ts
  * @input Nothing; data only
  * @output Exports `menu`: the shape the menu grows out of and collapses
- *   into, where it sits over its button on a phone, and
- *   how a sub-menu opens in place (the box's springs, the parent list's scale
- *   and drop behind it)
+ *   into, and how a sub-menu opens in place (the box's springs, the parent
+ *   list's scale and drop behind it)
  * @position The menu domain of the UIKit constants table (motion/uikit); its
  *   springs are `springs.menuOpen`, `springs.menuClose` and, under Reduce
  *   Motion, `springs.menuReducedMotion`
@@ -42,29 +41,6 @@ export const menu = {
    * @measure M-MN3
    */
   collapsedSize: 22,
-  /**
-   * On a phone the menu covers its button: centered on it, top-aligned with
-   * it, and kept this far from the screen's sides.
-   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, settled menu frames, Oct 23 2026: a 250 pt menu from a
-   *   button centered at x 201 sits at x 76 (centered); from a button at
-   *   x 8 it sits at x 8, and from one ending at x 394 on the 402 pt screen
-   *   it ends at 394; its top is the button's top
-   * @measure M-MN3
-   */
-  screenMargin: 8,
-  /**
-   * The menu opens upward instead, its bottom aligned with the button's
-   * bottom, when the button's center is below this fraction of the screen's
-   * height.
-   * @source measured: UIKit lab (injected host app), iOS 26.2 simulator,
-   *   iPhone 17 Pro, settled menu frames, Oct 23 2026: on the 874 pt screen,
-   *   buttons centered at y 132 and 352 opened downward and buttons centered
-   *   at y 442 and 802 upward, so the threshold lies in (0.40, 0.51]
-   * @source GUESS — 0.5, the screen's middle
-   * @measure M-MN3
-   */
-  openUpwardBelow: 0.5,
   /**
    * The sub-menu's header as it opens: its title cross-fades from the row's
    * regular weight to semibold, and its chevron turns from ahead to down, on
