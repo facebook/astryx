@@ -4,57 +4,51 @@
 
 /**
  * @file useActionGroupTracking.ts
- * @input A ref to the element whose touches are tracked, the selector of the
- *   actions inside it, and the component's tracking constants
+ * @input A ref to a group of sibling actions, the actions' selector, and the
+ *   component's tracking constants
  * @output Exports useActionGroupTracking and ActionGroupTrackingOptions
- * @position Internal hook (not exported from the hooks entry) for the touch
- *   presentations whose actions UIKit tracks as one group, as an alert's
- *   are; consumed by AlertDialog
+ * @position Internal hook (not exported from the hooks entry): the long
+ *   press that drives the shared action-group tracker
+ *   (`hooks/actionGroupTracker.ts`) for a group a held pointer slides
+ *   across (`family:action-groups`); consumed by AlertDialog
  *
- * UIKit tracks an alert's actions as one group, not as separate buttons
- * (measured on iOS 26.2; the numbers are in motion/uikit/alert.ts):
+ * A group of sibling actions behaves like a menu under a press
+ * (`family:action-groups` FR1–FR5, `spec:AST-094` FR26–FR28): the action
+ * under the pointer highlights, the highlight follows the pointer from
+ * action to action (nothing over a gap, a disabled action, or outside the
+ * group), and the lift runs the action under the pointer, once, through its
+ * own click; a lift outside the group, a cancelled pointer, a second finger
+ * or the window losing focus runs nothing. While the owner says presses are
+ * inert (`isInert`, read when a press begins: an alert during its present or
+ * dismiss transition), a press is still taken, so the browser makes no click
+ * of it, but paints and runs nothing. The tracking itself, the rects
+ * read once when the press begins, the highlight and its release fade, and
+ * the lift's click, is the shared tracker's; this hook only drives it.
  *
- * - the action under the finger highlights in the touch-down frame;
- * - sliding off it cuts its highlight and sliding onto another highlights
- *   that one; between or outside the actions nothing is highlighted;
- * - lifting runs the action under the finger, and nothing when there is
- *   none; the lifted action's highlight fades;
- * - tracking spans the whole element it is attached to, so a touch that
- *   lands on the message highlights nothing until it slides onto an action;
- * - while the owner says presses are inert (`isInert`, read when a press
- *   begins: an alert during its present or dismiss transition), a touch is
- *   still taken, so the browser makes no click of it, but paints and runs
- *   nothing, as UIKit drops touches during a transition.
- *
- * One recognizer does it: a long press with no minimum duration and no
- * movement limit, so it begins on the touch, claims it (nothing under the
+ * One recognizer drives it: a long press with no minimum duration and no
+ * movement limit, so it begins on the press, claims it (nothing under the
  * finger scrolls) and swallows the browser's click for it. Inside a scroller
  * it first waits the scroll view's content-touch delay without travelling
  * past the press slop, so a flick still scrolls. The actions' own press
- * tracking never sees the touch (`delaysTouchesBegan`), and the action runs
- * through its own click, inside the lift, so it keeps the user activation
- * and every click handler. A pen is tracked like a finger, as UIKit tracks
- * Apple Pencil on an alert's actions; a mouse keeps the browser's own click.
- * The recognizer is attached only while tracking is on, so a caller that
- * turns it on under a touch presentation attaches no touch work where the
- * primary pointer is fine (`spec:AST-094` FR19). Turning tracking off, or
- * unmounting, ends any release fade still running.
- *
- * Nothing reads layout after the press begins: the actions' rects are read
- * once when it begins, then hit-tested. A move costs at most two attribute
- * writes and never a render.
+ * tracking never sees the press (`delaysTouchesBegan`). Every pointer is
+ * tracked, a mouse and a pen as well as a finger (FR5): where the primary
+ * pointer is fine the gesture host serves the group with one passive
+ * `pointerdown` listener and document listeners only during a press
+ * (`spec:AST-094` FR19, its action-group exception). The recognizer is
+ * attached only while tracking is on. Turning tracking off, or unmounting,
+ * ends any press and any release fade still running.
  *
  * SYNC: When modified, update useActionGroupTracking.test.tsx
  */
 
-import {useEffect, useRef, type RefObject} from 'react';
+import {useEffect, useRef, useState, type RefObject} from 'react';
+import {isActive} from '../gestures/GestureRecognizer';
 import {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer';
-import {lockSelection} from '../gestures/selectionLock';
+import {lockSelection} from '../utils/selectionLock';
 import type {GestureTouch, PointerKind} from '../gestures/types';
 import {useGestureRecognizer} from '../gestures/useGestureRecognizer';
 import {UIKIT_PRESS} from '../motion/uikit/gestures';
-import {PRESSED_ATTRIBUTE} from '../utils/pressFeedback';
-import {PRESS_FADE_MS} from '../utils/pressGesture';
+import {createActionGroupTracker} from './actionGroupTracker';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 
 export interface ActionGroupTrackingOptions {
@@ -64,9 +58,9 @@ export interface ActionGroupTrackingOptions {
   highlightOnsetMs: number;
   /** How far outside an action the finger keeps it highlighted, px. */
   highlightExpansion: number;
-  /** Contacts that are tracked; others keep the browser's click. @default touch and pen */
+  /** Pointers that are tracked; others keep the browser's click. @default every pointer */
   pointerTypes?: ReadonlyArray<PointerKind>;
-  /** A touch whose target this rejects is not tracked (a modal's backdrop). */
+  /** A press whose target this rejects is not tracked. */
   shouldTrack?: (target: unknown) => boolean;
   /**
    * Read when a press begins: when true, the press is still taken (the
@@ -74,38 +68,18 @@ export interface ActionGroupTrackingOptions {
    * UIKit drops touches during a presentation transition.
    */
   isInert?: () => boolean;
-  /**
-   * Off, nothing is attached and nothing is tracked: pass the touch
-   * presentation's state, so no touch work attaches where the primary
-   * pointer is fine (`spec:AST-094` FR19). @default true
-   */
+  /** Off, nothing is attached and nothing is tracked. @default true */
   isEnabled?: boolean;
   /**
    * Let the gesture host write a long press's permanent styles on the
-   * tracked element (`touch-action`, and no callout and no text selection
-   * for every pointer). Pass false to keep text selectable with a mouse: a
-   * held finger or pen still starts no selection and opens no callout
-   * (the recognizer's `selectionLock`, `spec:AST-094` FR41). @default true
+   * group (`touch-action`, and no callout and no text selection for every
+   * pointer). A held finger or pen starts no selection and opens no callout
+   * either way (the recognizer's `selectionLock`, `spec:AST-094` FR41).
+   * @default true
    */
   manageStyle?: boolean;
   /** Runs the action under the finger at the lift. @default its own click */
   onActivate?: (item: HTMLElement) => void;
-}
-
-/** An action that is not enabled takes no highlight and does not run. */
-const DISABLED = ':disabled, [aria-disabled="true"]';
-
-interface TrackedAction {
-  readonly element: HTMLElement;
-  readonly left: number;
-  readonly top: number;
-  readonly right: number;
-  readonly bottom: number;
-}
-
-interface TrackingState {
-  actions: TrackedAction[];
-  highlighted: HTMLElement | null;
 }
 
 const PRESS = UIKIT_PRESS;
@@ -113,125 +87,81 @@ const PRESS = UIKIT_PRESS;
 /** The ref handed to the recognizer while tracking is off: no element. */
 const DETACHED: RefObject<Element | null> = {current: null};
 
+/** Every pointer a group tracks (`family:action-groups` FR5). */
+const EVERY_POINTER: ReadonlyArray<PointerKind> = ['touch', 'pen', 'mouse'];
+
 /**
- * Track touches on the element behind `ref` across the actions inside it,
- * the way UIKit tracks an alert's actions.
+ * The group's press: a long press that a second finger on the group ends
+ * with nothing acting (`family:action-groups` FR3), where a plain long press
+ * ignores it.
+ */
+class ActionGroupPress extends LongPressGestureRecognizer {
+  protected override acceptsTouch(touch: GestureTouch): boolean {
+    if (isActive(this.state)) {
+      this.setState('cancelled');
+      return false;
+    }
+    return super.acceptsTouch(touch);
+  }
+}
+
+/**
+ * Track a held pointer on the group behind `ref` across the actions inside
+ * it, through the shared action-group tracker.
  */
 export function useActionGroupTracking(
   ref: RefObject<HTMLElement | null>,
   options: ActionGroupTrackingOptions,
-): LongPressGestureRecognizer {
+): ActionGroupPress {
   const optionsRef = useRef(options);
-  // Keeps the recognizer's delegate and listener, which run outside render,
-  // reading the latest options.
+  // Keeps the recognizer's delegate and the tracker, which run outside
+  // render, reading the latest options.
   useIsomorphicLayoutEffect(() => {
     optionsRef.current = options;
   });
-  const stateRef = useRef<TrackingState>({actions: [], highlighted: null});
-  const fadesRef = useRef(new Map<Element, ReturnType<typeof setTimeout>>());
+  const [tracker] = useState(() =>
+    createActionGroupTracker(() => ({
+      roots: () => [ref.current],
+      itemSelector: optionsRef.current.itemSelector,
+      highlightExpansion: optionsRef.current.highlightExpansion,
+      onActivate: optionsRef.current.onActivate,
+      // The browser's own click for a press the group ran is taken, so the
+      // action runs once: the gesture host swallows it for a press it claims,
+      // and this covers one it does not (a mouse where the primary pointer is
+      // coarse). An activation with no click count always passes.
+      swallowsNativeClick: true,
+    })),
+  );
   const isEnabled = options.isEnabled ?? true;
-  // When tracking turns off and when the group unmounts: drops a touch it is
-  // tracking (its highlight is cut, and its lift runs nothing, as the
+  // When tracking turns off and when the group unmounts: drops a press it
+  // is tracking (its highlight is cut, and its lift runs nothing, as the
   // recognizer is disabled; the gesture host does not report a cancellation
   // to a disabled recognizer's listener), and ends the release fades it
-  // started (their timers, and the paint each would remove): the lift that
-  // runs an action usually closes the alert before its fade ends.
-  useEffect(() => {
-    const fades = fadesRef.current;
-    const tracking = stateRef;
-    return () => {
-      const {highlighted} = tracking.current;
-      if (highlighted?.getAttribute(PRESSED_ATTRIBUTE) === 'on') {
-        highlighted.removeAttribute(PRESSED_ATTRIBUTE);
-      }
-      tracking.current = {actions: [], highlighted: null};
-      for (const [element, timer] of fades) {
-        clearTimeout(timer);
-        if (element.getAttribute(PRESSED_ATTRIBUTE) === 'fading') {
-          element.removeAttribute(PRESSED_ATTRIBUTE);
-        }
-      }
-      fades.clear();
-    };
-  }, [isEnabled]);
-
-  const clearFade = (element: Element) => {
-    const fade = fadesRef.current.get(element);
-    if (fade != null) {
-      clearTimeout(fade);
-      fadesRef.current.delete(element);
-    }
-  };
-  const paint = (element: HTMLElement) => {
-    clearFade(element);
-    element.setAttribute(PRESSED_ATTRIBUTE, 'on');
-  };
-  const cut = (element: HTMLElement) => {
-    clearFade(element);
-    element.removeAttribute(PRESSED_ATTRIBUTE);
-  };
-  const release = (element: HTMLElement) => {
-    clearFade(element);
-    element.setAttribute(PRESSED_ATTRIBUTE, 'fading');
-    fadesRef.current.set(
-      element,
-      setTimeout(() => {
-        fadesRef.current.delete(element);
-        if (element.getAttribute(PRESSED_ATTRIBUTE) === 'fading') {
-          element.removeAttribute(PRESSED_ATTRIBUTE);
-        }
-      }, PRESS_FADE_MS),
-    );
-  };
-
-  const highlight = (next: HTMLElement | null) => {
-    const state = stateRef.current;
-    if (next === state.highlighted) {
-      return;
-    }
-    if (state.highlighted != null) {
-      cut(state.highlighted);
-    }
-    state.highlighted = next;
-    if (next != null) {
-      paint(next);
-    }
-  };
-
-  const actionAt = (x: number, y: number): HTMLElement | null => {
-    const margin = optionsRef.current.highlightExpansion;
-    for (const action of stateRef.current.actions) {
-      if (
-        x >= action.left - margin &&
-        x <= action.right + margin &&
-        y >= action.top - margin &&
-        y <= action.bottom + margin
-      ) {
-        return action.element;
-      }
-    }
-    return null;
-  };
-
-  const reset = () => {
-    stateRef.current = {actions: [], highlighted: null};
-  };
+  // started: the lift that runs an action usually closes the group's owner
+  // before its fade ends.
+  useEffect(
+    () => () => {
+      tracker.cancel();
+      tracker.dispose();
+    },
+    [tracker, isEnabled],
+  );
 
   return useGestureRecognizer(
     isEnabled ? ref : DETACHED,
     () =>
-      new LongPressGestureRecognizer({
+      new ActionGroupPress({
         name: 'ActionGroupTracking',
         minimumPressDuration: options.highlightOnsetMs,
         allowableMovement: Number.POSITIVE_INFINITY,
-        allowedPointerTypes: options.pointerTypes ?? ['touch', 'pen'],
+        allowedPointerTypes: options.pointerTypes ?? EVERY_POINTER,
         delaysTouchesBegan: true,
-        // The group's hold does something (it tracks the finger across the
+        // The group's hold does something (it tracks the pointer across the
         // actions, and the lift picks one), so a held finger or pen starts
         // no text selection and opens no callout on it while down, as on
         // UIKit's action rows (`spec:AST-094` FR41). A long press brings
         // this lock by default; the group names it, since its hold has no
-        // minimum duration. A mouse keeps selecting text.
+        // minimum duration.
         selectionLock: lockSelection,
         shouldReceiveTouch: (recognizer, touch) =>
           receiveTouch(recognizer, touch, optionsRef.current),
@@ -239,61 +169,21 @@ export function useActionGroupTracking(
     recognizer => {
       switch (recognizer.state) {
         case 'began': {
-          const root = ref.current;
-          const actions: TrackedAction[] = [];
-          // An inert press tracks no action: nothing to paint, nothing to run.
-          if (root != null && optionsRef.current.isInert?.() !== true) {
-            for (const element of root.querySelectorAll<HTMLElement>(
-              optionsRef.current.itemSelector,
-            )) {
-              if (element.matches(DISABLED)) {
-                continue;
-              }
-              const rect = element.getBoundingClientRect();
-              actions.push({
-                element,
-                left: rect.left,
-                top: rect.top,
-                right: rect.right,
-                bottom: rect.bottom,
-              });
-            }
-          }
-          stateRef.current = {actions, highlighted: null};
           const {x, y} = recognizer.location();
-          highlight(actionAt(x, y));
+          tracker.begin(x, y, {inert: optionsRef.current.isInert?.() === true});
           break;
         }
         case 'changed': {
           const {x, y} = recognizer.location();
-          highlight(actionAt(x, y));
+          tracker.move(x, y);
           break;
         }
-        case 'ended': {
-          const lifted = stateRef.current.highlighted;
-          reset();
-          if (lifted == null) {
-            break;
-          }
-          release(lifted);
-          if (!lifted.matches(DISABLED)) {
-            const activate = optionsRef.current.onActivate;
-            if (activate != null) {
-              activate(lifted);
-            } else {
-              lifted.click();
-            }
-          }
+        case 'ended':
+          tracker.end();
           break;
-        }
-        case 'cancelled': {
-          const highlighted = stateRef.current.highlighted;
-          reset();
-          if (highlighted != null) {
-            cut(highlighted);
-          }
+        case 'cancelled':
+          tracker.cancel();
           break;
-        }
         case 'possible':
         case 'failed':
           // Listeners are not called for these.
@@ -303,6 +193,7 @@ export function useActionGroupTracking(
     {
       isEnabled,
       manageStyle: options.manageStyle ?? true,
+      actionGroup: true,
     },
   );
 }

@@ -9,9 +9,11 @@
  *   painted in the touch-down event; the paint follows the finger and is cut,
  *   not faded, when it leaves; the lift runs only the action under the
  *   finger, once; a touch on the message or a cancel runs nothing; a disabled
- *   action is skipped; an inert press is taken and dropped; inside a
- *   scroller a flick is left to the scroller; a mouse keeps the browser's
- *   click; no render per move
+ *   action is skipped; an inert press is taken and dropped; a second finger
+ *   or the window losing focus cancels;
+ *   inside a scroller a flick is left to the scroller; a mouse under a fine
+ *   pointer is tracked like a finger; the shared tracker does the tracking;
+ *   no render per move
  * @position jsdom tests of packages/core/src/hooks/useActionGroupTracking.ts
  */
 
@@ -20,14 +22,28 @@ import {useRef} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {GestureHost} from '../gestures/GestureHost';
 import {LongPressGestureRecognizer} from '../gestures/LongPressGestureRecognizer';
-import {lockSelection} from '../gestures/selectionLock';
-import {coarsePrimaryPointer} from '../gestures/__tests__/pointerQuery';
+import {lockSelection} from '../utils/selectionLock';
+import {
+  coarsePrimaryPointer,
+  pointerQuery,
+} from '../gestures/__tests__/pointerQuery';
 import {UIKIT_PRESS} from '../motion/uikit/gestures';
 import {PRESS_FADE_MS} from '../utils/pressGesture';
+import {createActionGroupTracker} from './actionGroupTracker';
+import type * as ActionGroupTrackerModule from './actionGroupTracker';
 import {
   useActionGroupTracking,
   type ActionGroupTrackingOptions,
 } from './useActionGroupTracking';
+
+// The shared tracker, spied on as it runs (family:action-groups: one module).
+vi.mock('./actionGroupTracker', async importOriginal => {
+  const actual = await importOriginal<typeof ActionGroupTrackerModule>();
+  return {
+    ...actual,
+    createActionGroupTracker: vi.fn(actual.createActionGroupTracker),
+  };
+});
 
 interface Contact {
   id: number;
@@ -295,38 +311,90 @@ describe('useActionGroupTracking', () => {
     expect(onCancel).not.toHaveBeenCalled();
   });
 
-  it('ignores a second finger once the first is tracking', () => {
+  it('ends the gesture with nothing acting when a second finger lands (family:action-groups FR3)', () => {
     const {cancel, del, onCancel, onDelete} = mount();
     const first = {id: nextTouchId++, ...centerOf(CANCEL)};
     const second = {id: nextTouchId++, ...centerOf(DELETE)};
     time += 1000;
     touch('touchstart', cancel, first, time);
+    expect(paintOf(cancel)).toBe('on');
     time += 30;
     touch('touchstart', del, second, time, [first]);
-    expect(paintOf(cancel)).toBe('on');
+    // The second finger ends the gesture: its highlight is cut.
+    expect(paintOf(cancel)).toBeNull();
     expect(paintOf(del)).toBeNull();
     time += 16;
     touch('touchend', del, second, time, [first]);
     time += 16;
     touch('touchend', cancel, first, time);
-    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onCancel).not.toHaveBeenCalled();
     expect(onDelete).not.toHaveBeenCalled();
   });
 
-  it('leaves a mouse to the browser: no paint, and the click runs once', () => {
+  it('ends the gesture with nothing acting when the window loses focus (family:action-groups FR3)', () => {
     const {cancel, onCancel} = mount();
-    cancel.dispatchEvent(
-      new PointerEvent('pointerdown', {
-        bubbles: true,
-        pointerType: 'mouse',
-        button: 0,
-        clientX: 50,
-        clientY: 124,
-      }),
-    );
+    const f = finger();
+    f.down(cancel, centerOf(CANCEL));
+    expect(paintOf(cancel)).toBe('on');
+    act(() => {
+      window.dispatchEvent(new Event('blur'));
+    });
     expect(paintOf(cancel)).toBeNull();
-    cancel.click();
+    f.up(cancel, centerOf(CANCEL));
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
+  it('tracks through the shared action-group tracker', () => {
+    vi.mocked(createActionGroupTracker).mockClear();
+    const {cancel, onCancel} = mount();
+    expect(createActionGroupTracker).toHaveBeenCalledTimes(1);
+    const f = finger();
+    f.down(cancel, centerOf(CANCEL));
+    f.up(cancel, centerOf(CANCEL));
     expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(createActionGroupTracker).toHaveBeenCalledTimes(1);
+  });
+
+  it("tracks a mouse under a fine pointer: a press on Delete slid to Cancel runs Cancel once, and the browser's own click runs nothing more (family:action-groups FR5)", () => {
+    restorePointer();
+    const fine = pointerQuery(false);
+    restorePointer = fine.restore;
+    const {cancel, del, onCancel, onDelete} = mount();
+    runAttachFrame();
+    const mouse = (
+      target: Element,
+      type: string,
+      point: {x: number; y: number},
+    ) => {
+      time += 16;
+      const event = new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 1,
+        pointerType: 'mouse',
+        isPrimary: true,
+        button: 0,
+        buttons: type === 'pointerup' ? 0 : 1,
+        clientX: point.x,
+        clientY: point.y,
+      });
+      Object.defineProperty(event, 'timeStamp', {value: time});
+      target.dispatchEvent(event);
+    };
+    mouse(del, 'pointerdown', centerOf(DELETE));
+    expect(paintOf(del)).toBe('on');
+    mouse(del, 'pointermove', centerOf(CANCEL));
+    expect(paintOf(del)).toBeNull();
+    expect(paintOf(cancel)).toBe('on');
+    mouse(cancel, 'pointerup', centerOf(CANCEL));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    // The browser's own click for that press (on the buttons' common
+    // parent, where the press began and ended apart) runs nothing more.
+    cancel.parentElement?.dispatchEvent(
+      new MouseEvent('click', {bubbles: true, cancelable: true, detail: 1}),
+    );
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onDelete).not.toHaveBeenCalled();
   });
 
   it('tracks a pen like a finger: a slide from Delete to Cancel runs Cancel', () => {
