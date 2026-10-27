@@ -64,7 +64,7 @@ export const docs = {
   },
   usage: {
     description:
-      'Pull to refresh under a finger (a coarse primary pointer, on iOS and Android alike), following UIRefreshControl: pulling the content down past the top reveals a spinner; pulling far enough starts a refresh while the finger is still down; letting go settles the content just below the spinner until the refresh ends, then it slides back up. On the page it replaces the browser’s own pull to refresh near the top while mounted. A mouse or trackpad has no pull. Pair it with a visible refresh button. useRefreshControl gives the same behavior to a custom indicator.',
+      'Pull to refresh following UIRefreshControl, with a finger or a pen: pulling the content down past the top reveals a spinner; pulling far enough starts a refresh while the finger or pen is still down; letting go settles the content just below the spinner until the refresh ends, then it slides back up. Under a finger (a coarse primary pointer, on iOS and Android alike) it replaces the browser’s own pull to refresh near the top of the page while mounted. A mouse drag, a trackpad’s scroll and a wheel’s do not pull. Pair it with a visible refresh button. useRefreshControl gives the same behavior to a custom indicator.',
     bestPractices: [
       {
         guidance: true,
@@ -143,7 +143,7 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Pull to refresh under a finger (a coarse primary pointer, on iOS and Android alike), following UIRefreshControl: pulling the content down past the top reveals a spinner; pulling far enough starts a refresh while the finger is still down; letting go settles the content just below the spinner until the refresh ends, then it slides back up. On the page it replaces the browser’s own pull to refresh near the top while mounted. A mouse or trackpad has no pull. Pair it with a visible refresh button. useRefreshControl gives the same behavior to a custom indicator.',
+      'Pull to refresh following UIRefreshControl, with a finger or a pen: pulling the content down past the top reveals a spinner; pulling far enough starts a refresh while the finger or pen is still down; letting go settles the content just below the spinner until the refresh ends, then it slides back up. Under a finger (a coarse primary pointer, on iOS and Android alike) it replaces the browser’s own pull to refresh near the top of the page while mounted. A mouse drag, a trackpad’s scroll and a wheel’s do not pull. Pair it with a visible refresh button. useRefreshControl gives the same behavior to a custom indicator.',
     bestPractices: [
       {
         guidance: true,
@@ -180,7 +180,7 @@ export const docsDense = {
     'Pull to refresh as UIRefreshControl: pull past the top, trigger with the finger down, settle under the spinner until the refresh ends. Under a finger only.',
   usage: {
     description:
-      'Pull to refresh under a finger (a coarse primary pointer, on iOS and Android alike), following UIRefreshControl: pulling the content down past the top reveals a spinner; pulling far enough starts a refresh while the finger is still down; letting go settles the content just below the spinner until the refresh ends, then it slides back up. On the page it replaces the browser’s own pull to refresh near the top while mounted. A mouse or trackpad has no pull. Pair it with a visible refresh button. useRefreshControl gives the same behavior to a custom indicator.',
+      'Pull to refresh following UIRefreshControl, with a finger or a pen: pulling the content down past the top reveals a spinner; pulling far enough starts a refresh while the finger or pen is still down; letting go settles the content just below the spinner until the refresh ends, then it slides back up. Under a finger (a coarse primary pointer, on iOS and Android alike) it replaces the browser’s own pull to refresh near the top of the page while mounted. A mouse drag, a trackpad’s scroll and a wheel’s do not pull. Pair it with a visible refresh button. useRefreshControl gives the same behavior to a custom indicator.',
     bestPractices: [
       {
         guidance: true,
