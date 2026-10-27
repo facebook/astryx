@@ -58,6 +58,20 @@ async function open(page: Page, globals?: string) {
   await expect(row(page, 'Drafts')).toBeVisible();
 }
 
+/**
+ * A theme's row padding, set where a theme sets it: the theme's cascade layer,
+ * above every component class (`component:List` FR7).
+ */
+async function themeRowPadding(page: Page, padding: string): Promise<void> {
+  await page.addInitScript(value => {
+    document.addEventListener('DOMContentLoaded', () => {
+      const style = document.createElement('style');
+      style.textContent = `@layer astryx-theme { .astryx-item { padding-inline: ${value}; --_item-inset-inline: ${value}; } }`;
+      document.head.append(style);
+    });
+  }, padding);
+}
+
 /** Activates the Edit / Done button. */
 async function toggle(page: Page) {
   await page.getByRole('button', {name: /^(Edit|Done)$/}).click();
@@ -89,6 +103,31 @@ test('entering edit mode slides the text by the indent on the table spring, samp
   expect(midFade).toBeLessThan(1);
   await releaseAnimations(page, {finish: true});
   await expect(accessory).toHaveCount(0);
+  expect(Math.abs((await left(label)) - (was + INDENT))).toBeLessThan(0.5);
+});
+
+test('under a theme’s row padding, edit mode makes its room beyond the theme’s inset, and the text slides by exactly that room', async ({
+  page,
+}) => {
+  await themeRowPadding(page, '24px');
+  await open(page);
+  const label = text(page, 'Sent');
+  const was = await left(label);
+  // The theme's inset applies at rest.
+  const padding = await row(page, 'Sent').evaluate(el =>
+    Number.parseFloat(getComputedStyle(el).paddingInlineStart),
+  );
+  expect(padding).toBe(24);
+  await toggle(page);
+  await holdAnimations(page);
+  for (const t of [0, 67, 168, 400]) {
+    await seekAnimations(page, t);
+    const expected = was + INDENT * progress(t);
+    expect(Math.abs((await left(label)) - expected), `t=${t}`).toBeLessThan(
+      0.5,
+    );
+  }
+  await releaseAnimations(page, {finish: true});
   expect(Math.abs((await left(label)) - (was + INDENT))).toBeLessThan(0.5);
 });
 

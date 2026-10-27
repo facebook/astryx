@@ -23,7 +23,6 @@ import {
   presentation,
   type RowMotion,
 } from '../utils/rowMotion';
-import {rulesDeclaredFor} from '../__tests__/pressState';
 import {List} from './List';
 import {ListItem} from './ListItem';
 
@@ -106,7 +105,7 @@ describe('List edit mode', () => {
     }
   });
 
-  it('makes the room on the row itself, with no element of its own: its leading padding grows by UIKit’s indent', () => {
+  it('makes the room on the row itself, with no element of its own: its leading padding grows by UIKit’s indent beyond the inset it applies', () => {
     stubPointer('mouse');
     const Plain = ({isEditing}: {isEditing: boolean}) => (
       <List isEditing={isEditing}>
@@ -120,12 +119,28 @@ describe('List edit mode', () => {
     expect(rowOf('Inbox').querySelectorAll('*').length).toBe(count);
     // UIKit's edit-mode indent: the visible text's shift in a plain table.
     expect(INDENT).toBe(40);
-    const padding = rulesDeclaredFor(rowOf('Inbox')).filter(
-      rule =>
-        rule.includes('[data-astryx-editing]') &&
-        rule.includes('padding-inline-start'),
+    // An inline style, beyond the inset the row applies (the theme's when it
+    // sets one): a theme's row padding sits in the theme's cascade layer,
+    // above every component class, so a class could not add to it.
+    expect(rowOf('Inbox').style.getPropertyValue('padding-inline-start')).toBe(
+      `calc(var(--_item-inset-inline) + ${INDENT}px)`,
     );
-    expect(padding.join('\n')).toContain(`${INDENT}px`);
+    rerender(<Plain isEditing={false} />);
+    expect(rowOf('Inbox').style.getPropertyValue('padding-inline-start')).toBe(
+      '',
+    );
+  });
+
+  it('under `edge="bleed"`, the room adds to the bleed inset', () => {
+    stubPointer('mouse');
+    render(
+      <List isEditing edge="bleed">
+        <ListItem label="Inbox" onClick={() => undefined} />
+      </List>,
+    );
+    expect(rowOf('Inbox').style.getPropertyValue('padding-inline-start')).toBe(
+      `calc(max(var(--container-padding-inline-start, 0px), var(--_item-inset-inline)) + ${INDENT}px)`,
+    );
   });
 
   it('under a finger, the content slides in from where it was on the table spring', async () => {
