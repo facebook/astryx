@@ -101,15 +101,19 @@ const sx = stylex.create({
     overflow: 'hidden',
     height: '240px',
   },
-  // The fix's rail: its width animates, scaled by the lab's speed and dropped
-  // by the lab's Reduce Motion modes (--lab-translate), and by the OS setting.
+  // The shell fills its demo frame rather than the window.
+  shellFill: {height: '100%'},
+  // The fix's rail: its width animates on the lab's collapse-and-expand
+  // duration (--lab-duration-reveal, which carries the speed control and
+  // Delete) and decelerating curve, and snaps under Degrade (--lab-translate)
+  // and the OS setting.
   railWidth: {
     transitionProperty: 'width',
     transitionDuration: {
-      default: 'calc(280ms * var(--lab-speed, 1) * var(--lab-translate, 1))',
+      default: 'calc(var(--lab-duration-reveal) * var(--lab-translate, 1))',
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
-    transitionTimingFunction: 'cubic-bezier(0.2, 0, 0, 1)',
+    transitionTimingFunction: 'var(--ease-entry)',
   },
   // A page narrower than the content area, as an app's page is beside a rail
   // (a demo pane is narrow, so the width is scaled down with it).
@@ -589,7 +593,8 @@ function RailIcon(props: SVGProps<SVGSVGElement>) {
 /**
  * The real AppShell and SideNav, collapsing on a loop through SideNav's own
  * controlled `collapsible` config. Today the rail snaps between its widths.
- * The fix animates the rail's width (280 ms, decelerating), so the content,
+ * The fix animates the rail's width (the lab's reveal duration and entry
+ * curve, decelerating), so the content,
  * AppShell's flex sibling, follows the rail edge in the same frame with no
  * script per frame, and the page is anchored to the rail edge rather than
  * centered in its own widening space, so it never re-centers. Reduce Motion
@@ -602,9 +607,13 @@ export function RailRig({mode}: {mode: Mode}) {
 
   return (
     <VStack gap={2} {...stylex.props(sx.full)}>
-      <div {...stylex.props(sx.shellFrame)}>
+      {/* A demo, not part of the page: inert keeps its shell's main landmark,
+          skip link and items out of the page's accessibility tree and tab
+          order. */}
+      <div inert {...stylex.props(sx.shellFrame)}>
         <AppShell
           height="fill"
+          xstyle={sx.shellFill}
           sideNav={
             <SideNav
               collapsible={{
@@ -636,7 +645,7 @@ export function RailRig({mode}: {mode: Mode}) {
       </div>
       <Hint>
         {isFix
-          ? 'The rail\u2019s width animates for 280 ms on a decelerating curve. The content is AppShell\u2019s flex sibling, so its edge follows the rail in the same frame, and the page is anchored to that edge, so it moves with the rail instead of half as far. Reduce Motion snaps.'
+          ? 'The rail\u2019s width animates on the lab\u2019s collapse-and-expand duration and decelerating curve. The content is AppShell\u2019s flex sibling, so its edge follows the rail in the same frame, and the page is anchored to that edge, so it moves with the rail instead of half as far. Reduce Motion snaps.'
           : 'Today: the real SideNav snaps between its widths, so the page beside it jumps.'}
       </Hint>
     </VStack>

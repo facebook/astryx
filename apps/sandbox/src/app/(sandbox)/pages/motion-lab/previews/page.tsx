@@ -153,7 +153,9 @@ export default function PreviewsPage() {
             Both panes are the real <code>AppShell</code> and{' '}
             <code>SideNav</code>, collapsed through SideNav&rsquo;s own
             controlled <code>collapsible</code> config. The proposal animates
-            the rail&rsquo;s width for 280 ms on a decelerating curve. The
+            the rail&rsquo;s width on the lab&rsquo;s collapse-and-expand
+            duration (<code>--duration-reveal</code>) and decelerating curve (
+            <code>--ease-entry</code>), so tuning either token reaches it. The
             content is AppShell&rsquo;s flex sibling, so its edge follows the
             rail in the same frame with no script per frame. The page is
             anchored to that edge (<code>margin-inline: 0 auto</code>) rather
