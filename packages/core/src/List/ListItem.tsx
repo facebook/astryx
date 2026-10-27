@@ -25,7 +25,7 @@
  * - /packages/cli/assets/templates/blocks/components/List/ (showcase blocks)
  */
 
-import {use, useRef, type ReactNode} from 'react';
+import {use, useRef, type CSSProperties, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -39,6 +39,7 @@ import {
   EDITING_ATTRIBUTE,
   EDITING_CONTROL_ATTRIBUTE,
   ListContext,
+  type ListEdge,
   type ListMarker,
 } from './ListContext';
 import {useIndicator} from '../Indicator';
@@ -336,23 +337,15 @@ const markerStyles = stylex.create({
 const TASK_CHECKBOX_SIZE = 20;
 
 const editingStyles = stylex.create({
-  // The room edit mode makes at a row's leading edge for an editing control,
-  // on the row itself (no element of its own): its leading padding grows by
-  // the indent while it carries EDITING_ATTRIBUTE, so the content moves by
-  // exactly the indent. The default is the row's leading padding out of edit
-  // mode, as Item and the edge treatment set it (`rowBleed` for 'bleed').
+  // The row's leading padding out of edit mode, as Item and the edge
+  // treatment set it (`rowBleed` for 'bleed'); edit mode's room is added on
+  // top of it (editingRoom below).
   row: {
-    paddingInlineStart: {
-      default: 'var(--_item-inset-inline)',
-      '[data-astryx-editing]': `calc(var(--_item-inset-inline) + ${listRowConsts.editingIndent})`,
-    },
+    paddingInlineStart: 'var(--_item-inset-inline)',
   },
   rowBleed: {
-    paddingInlineStart: {
-      default:
-        'max(var(--container-padding-inline-start, 0px), var(--_item-inset-inline))',
-      '[data-astryx-editing]': `calc(max(var(--container-padding-inline-start, 0px), var(--_item-inset-inline)) + ${listRowConsts.editingIndent})`,
-    },
+    paddingInlineStart:
+      'max(var(--container-padding-inline-start, 0px), var(--_item-inset-inline))',
   },
   // The editing control, placed itself (no wrapper) in the room the row's
   // padding makes: centred UIKit's distance past the row's resting text
@@ -376,6 +369,25 @@ const editingStyles = stylex.create({
     insetInlineStart: `calc(max(var(--container-padding-inline-start, 0px), var(--_item-inset-inline)) + ${listRowConsts.editingControlCenter})`,
   },
 });
+
+/**
+ * The room edit mode makes at a row's leading edge for an editing control,
+ * on the row itself (no element of its own): its leading padding grows by the
+ * indent beyond the inset it applies, so the content moves by exactly the
+ * indent (`component:List` FR15). It is an inline style because a theme's
+ * `item.paddingInline` sits in the theme's cascade layer, above every
+ * component class (FR7): a class could not add to it. The inset it adds to
+ * is the theme's when one is set, through `--_item-inset-inline`.
+ */
+function editingRoom(edge: ListEdge | undefined): CSSProperties {
+  const inset =
+    edge === 'bleed'
+      ? 'max(var(--container-padding-inline-start, 0px), var(--_item-inset-inline))'
+      : 'var(--_item-inset-inline)';
+  return {
+    paddingInlineStart: `calc(${inset} + ${listRowConsts.editingIndent})`,
+  };
+}
 
 const taskMarkerStyles = stylex.create({
   // A task item's checkbox stands where the marker would, centered on the
@@ -509,8 +521,8 @@ export function ListItem({
     ) : null;
 
   // Edit mode: room at the leading edge for an editing control (the row's
-  // own padding, through EDITING_ATTRIBUTE), and no trailing content once it
-  // has faded (List/useListEditingMotion.ts).
+  // own padding, editingRoom), and no trailing content once it has faded
+  // (List/useListEditingMotion.ts).
   const isEditing = ctx?.isEditing ?? false;
   const showsTrailing = ctx?.showsTrailing ?? true;
   // Edit mode's control: the theme's checkbox indicator, decorative (the row
@@ -575,7 +587,10 @@ export function ListItem({
           xstyle,
         ] as StyleXStyles
       }
-      {...mergeProps(themeProps('list-item'), {className, style})}
+      {...mergeProps(themeProps('list-item'), {
+        className,
+        style: isEditing ? {...style, ...editingRoom(edge)} : style,
+      })}
       {...(isEditing ? {[EDITING_ATTRIBUTE]: ''} : undefined)}
       {...restProps}
     />
