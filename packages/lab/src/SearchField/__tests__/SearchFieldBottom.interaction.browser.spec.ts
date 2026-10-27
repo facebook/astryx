@@ -45,6 +45,8 @@ import {
   waitForRest,
   withStorybook,
   writeEvidence,
+  PEN_SKIP,
+  webInputDriver,
 } from '@astryxdesign/interaction-harness';
 
 import {readFades, recordFades} from './fadeRecorder';
@@ -608,6 +610,56 @@ test('a tap focuses the field without Safari’s reveal', async ({page}) => {
   // The field's own tap focused it, asking the browser not to scroll it into
   // view (Mobile Safari would pan the page instead of letting the bar ride).
   expect(calls).toEqual([{role: 'searchbox', options: {preventScroll: true}}]);
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
+});
+
+test("a pen tap on the text is claimed as a finger's is: the field's own tap focuses it with preventScroll (spec:AST-094 FR43)", async ({
+  page,
+}) => {
+  const {field} = await openBottom(page);
+  const input = await webInputDriver(page);
+  test.skip(!input.pens, PEN_SKIP);
+  // Every focus the page makes, with its options, and the pointer types that
+  // press.
+  await page.evaluate(() => {
+    const seen = {focus: [] as unknown[], pointers: [] as string[]};
+    (window as unknown as {__penSeen: typeof seen}).__penSeen = seen;
+    const focus = HTMLElement.prototype.focus;
+    HTMLElement.prototype.focus = function (options?: FocusOptions) {
+      seen.focus.push({
+        role: this.getAttribute('role'),
+        options: options ?? null,
+      });
+      focus.call(this, options);
+    };
+    document.addEventListener(
+      'pointerdown',
+      event => seen.pointers.push(event.pointerType),
+      true,
+    );
+  });
+  const scrollBefore = await page.evaluate(() => window.scrollY);
+  const {x, y} = await centerOf(field);
+  await input.pen([
+    {x, y, t: 0},
+    {x, y, t: 60},
+  ]);
+  await expect(field).toBeFocused();
+  const seen = await page.evaluate(
+    () =>
+      (window as unknown as {__penSeen: {focus: unknown[]; pointers: string[]}})
+        .__penSeen,
+  );
+  // A pen, and the claim took it: the field's own tap focused it with
+  // preventScroll, as for a finger (without the pen in the claim, no focus
+  // comes from script). Chromium sends a pen's compatibility mousedown right
+  // after its pointerdown, before any tap is recognized, so the browser has
+  // already focused the field there; on iOS a pencil's compatibility events
+  // follow its touchend.
+  expect(seen.pointers).toEqual(['pen']);
+  expect(seen.focus).toEqual([
+    {role: 'searchbox', options: {preventScroll: true}},
+  ]);
   expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
 });
 

@@ -491,6 +491,9 @@ export function useSearchFieldMotion({
   // the focus on, that focus pans nothing, so the tap stays the browser's.
   // The recognizer attaches only where it claims (react-component-runtime
   // INV5): any other field keeps the browser's own touch-action and tap.
+  // It takes a finger and a pen, which Safari reveals a field for alike
+  // (spec:AST-094 FR43); a mouse press stays the browser's, which places the
+  // caret and selects text where it lands.
   const [claimsTap, setClaimsTap] = useState(false);
   useLayoutEffect(() => {
     const win = rootAnimator.animator.element?.ownerDocument.defaultView;
@@ -553,7 +556,7 @@ export function useSearchFieldMotion({
     () =>
       new TapGestureRecognizer({
         name: 'search-field-bottom-focus',
-        allowedPointerTypes: ['touch'],
+        allowedPointerTypes: ['touch', 'pen'],
         shouldReceiveTouch: (_recognizer, touch) => {
           const input = inputRef.current;
           const target = touch.target as Element | null;
