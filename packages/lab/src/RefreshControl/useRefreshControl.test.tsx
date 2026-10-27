@@ -9,10 +9,10 @@
  * @output Covers the pull (UIKit's mapping, trigger with the finger down,
  *   release onto the inset or back to the top), the end, controlled and
  *   programmatic refreshes, the announcement, every pointer (spec:AST-094
- *   FR43: a pen pulls as a finger does and clears the selection its drag
- *   started, a mouse drag stays the browser's, and under a fine pointer the
- *   top edge stays the browser's; any touch screen, Android's included,
- *   pulls), the disabled
+ *   FR43: a pen's or a mouse's drag pulls as a finger's does and clears the
+ *   selection its drag started, and under a fine pointer the top edge stays
+ *   the browser's and no scroll listener is held; any touch screen,
+ *   Android's included, pulls), the disabled
  *   state, the scroll-lock stand-down and the top-edge overscroll policy on
  *   the page and on a scroll container
  * @position Testing; colocated with useRefreshControl.ts. Motion itself is
@@ -795,36 +795,47 @@ describe('useRefreshControl', () => {
     scroller.remove();
   });
 
-  it('holds its scroll listener only while a finger can pull, and no resize listener', () => {
-    // react-component-runtime INV5: optional behavior holds its resources
-    // only while enabled. Other parts (the gesture host) keep their own, so
-    // compare a disabled control with an enabled one.
-    const listenersFor = (isDisabled: boolean) => {
-      const scrolls = vi.spyOn(document, 'addEventListener');
-      const resizes = vi.spyOn(window, 'addEventListener');
-      const {unmount} = render(
-        <Refreshable
-          data-testid="refresh"
-          onRefresh={() => {}}
-          isDisabled={isDisabled}>
-          <p>Inbox</p>
-        </Refreshable>,
-      );
-      const counts = {
-        scroll: scrolls.mock.calls.filter(call => call[0] === 'scroll').length,
-        resize: resizes.mock.calls.filter(call => call[0] === 'resize').length,
+  it.each([
+    ['a touch screen', true, 1],
+    ['a fine pointer', false, 0],
+  ] as const)(
+    'on %s, holds its scroll listener only while the pull takes the top edge, and no resize listener (spec:AST-094 FR24)',
+    (_screen, isTouchScreen, scrollListeners) => {
+      // react-component-runtime INV5: optional behavior holds its resources
+      // only while enabled. Other parts (the gesture host) keep their own, so
+      // compare a disabled control with an enabled one. Under a fine pointer
+      // the pull still listens on its content (FR43), but the top edge stays
+      // the browser's, so it watches no scroll (FR24).
+      useTouchScreen(isTouchScreen);
+      const listenersFor = (isDisabled: boolean) => {
+        const scrolls = vi.spyOn(document, 'addEventListener');
+        const resizes = vi.spyOn(window, 'addEventListener');
+        const {unmount} = render(
+          <Refreshable
+            data-testid="refresh"
+            onRefresh={() => {}}
+            isDisabled={isDisabled}>
+            <p>Inbox</p>
+          </Refreshable>,
+        );
+        const counts = {
+          scroll: scrolls.mock.calls.filter(call => call[0] === 'scroll')
+            .length,
+          resize: resizes.mock.calls.filter(call => call[0] === 'resize')
+            .length,
+        };
+        unmount();
+        scrolls.mockRestore();
+        resizes.mockRestore();
+        return counts;
       };
-      unmount();
-      scrolls.mockRestore();
-      resizes.mockRestore();
-      return counts;
-    };
-    const disabled = listenersFor(true);
-    const enabled = listenersFor(false);
-    expect(enabled.scroll - disabled.scroll).toBe(1);
-    expect(enabled.resize - disabled.resize).toBe(0);
-    render(<p data-testid="refresh">Gone</p>);
-  });
+      const disabled = listenersFor(true);
+      const enabled = listenersFor(false);
+      expect(enabled.scroll - disabled.scroll).toBe(scrollListeners);
+      expect(enabled.resize - disabled.resize).toBe(0);
+      render(<p data-testid="refresh">Gone</p>);
+    },
+  );
 
   it('ends a refresh that begins and ends before React renders: refresh() from a timer, with an onRefresh that settles at once', async () => {
     let refresh: () => void = () => {};

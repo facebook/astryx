@@ -16,11 +16,11 @@
  *   inset; a finger catching the settle resumes it without a jump; under
  *   Reduce Motion (design:reduced-motion) a release and the end only fade,
  *   within 200 ms, whatever a `--motion-…` variable says, and the trigger
- *   does not turn the spinner; under a fine pointer a pen drag pulls and
- *   refreshes as a finger does, a mouse drag pulls nothing, and the top edge
- *   stays the browser's (spec:AST-094 FR43), and under Reduce Motion a pen
- *   release lands at once (DR3); storyboards of the pull, the settle and the
- *   end.
+ *   does not turn the spinner; under a fine pointer a pen's or a mouse's drag
+ *   pulls and refreshes as a finger's does and the top edge stays the
+ *   browser's (spec:AST-094 FR43), and under Reduce Motion a pen's release
+ *   lands at once there (DR3) and cross-fades on a touch screen (DR2);
+ *   storyboards of the pull, the settle and the end.
  *
  * The control follows the touch presentation (a coarse primary pointer, one
  * touch model on iOS and Android alike). The harness's touch contexts report
